@@ -7,7 +7,7 @@
 //   strike {strike, attacker, target, at, blocked}  parry {target}  postureBreak {enemy}
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
 //   itemUsed {item}  land {x, z, fx}  stainRecovered {x, z, souls}  alert {enemy, by}  lock  switchTarget  zoom {dir}
-//   pause  resume
+//   pause  resume  device {device}
 const events = {
   handlers: {}, anyHandlers: [],
   on(type, fn) { (this.handlers[type] || (this.handlers[type] = [])).push(fn); },

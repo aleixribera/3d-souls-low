@@ -24,6 +24,15 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Hit-pause briefly freezes both sides on impact. Bigger hits pause longer.
 - Inputs are remembered for a short time (buffer), so a press slightly early still counts.
 
+## Input
+
+- **Keyboard and mouse, or a gamepad.** Every action is a list of codes in `ACTIONS`: keys, mouse buttons and gamepad buttons (`PadRB`…). Gamepad buttons go through the same buffer as keys.
+- **Gamepad layout** (Souls standard): RB light, RT heavy, LB block, LT parry, B roll, A jump, right stick click lock-on, right stick flick switch target, X flask, Y rest, Start pause, Back restart, D-pad up/down zoom.
+- The left stick is analog: a slight tilt walks slowly. Keys always move at full speed.
+- The right stick turns the camera (same sensitivity and invert options as the mouse). While locked on, a flick to one side switches to the nearest target on that side of the screen; holding the stick does not keep switching. Tab still cycles through targets.
+- Menus work with the D-pad or left stick, A to confirm and B to go back.
+- Prompts, the help panel and menu hints name the keys or buttons of the device used last.
+
 ## Combat
 
 - **Attacks** have three phases: wind-up, active (the hitbox exists), recovery. An attack can have several strikes in a row.

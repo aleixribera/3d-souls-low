@@ -18,6 +18,12 @@ const CONFIG = {
   zoom: { min: 2.6, max: 12, step: 0.8, default: 6.4, rate: 7, repeatDelay: 0.28, repeat: 0.09,
           heightRatio: 0.48 },   // camera height = distance * heightRatio
   mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
+  // Gamepad (standard layout). Sticks: dead zone, then rescaled to 0..1. Camera speeds are rad/s at full
+  // tilt and sensitivity 5 (the Options value scales them like the mouse). A flick switches lock-on target
+  // when the right stick passes `flick` sideways after resting below `flickReset`. Menus repeat a held
+  // direction after `menuDelay`, then every `menuRepeat` s.
+  gamepad: { deadzone: 0.2, trigger: 0.35, lookYaw: 2.6, lookPitch: 1.4, flick: 0.75, flickReset: 0.35,
+             menuStick: 0.6, menuDelay: 0.35, menuRepeat: 0.12 },
   lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
           slack: 0.42, drift: 0.18,   // camera yaw slack (rad) and the slow drift inside it (1/s)
           autoRange: 9,               // first-encounter auto lock-on distance

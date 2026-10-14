@@ -9,7 +9,7 @@ A small Souls-like 3D action game that runs straight from one HTML file (Three.j
 - **Online:** open the GitHub Pages link for this repo (Settings → Pages).
 - **Locally:** download the repository (the HTML file together with the `js` folder) and double-click `combat-arena-3d.html`. It needs internet access once to load Three.js.
 
-Keyboard and mouse only; there are no touch controls.
+Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls.
 
 ## Modes
 
@@ -20,24 +20,28 @@ Keyboard and mouse only; there are no touch controls.
 
 ## Controls
 
-| Action | Keys |
-|---|---|
-| Move | W A S D / Arrow keys |
-| Camera | Mouse (click the view to capture it) |
-| Jump (costs stamina) | Space |
-| Roll | Shift |
-| Light attack | J / Left mouse |
-| Heavy attack | K / Right mouse |
-| Jump attack | Light or heavy while airborne |
-| Block (hold) | L / Ctrl |
-| Parry | E |
-| Lock-on / switch target | Q / Tab |
-| Zoom | Mouse wheel / = and - |
-| Rest at bonfire | F |
-| Use flask | G |
-| Restart fight / level | R, twice (once on the death or victory screen) |
-| Pause and options (incl. Graphics: High / Low) | Escape |
-| Help / hitboxes | F1 (H toggles hitboxes) |
+| Action | Keys | Gamepad |
+|---|---|---|
+| Move | W A S D / Arrow keys | Left stick (analog: tilt slightly to walk slowly) |
+| Camera | Mouse (click the view to capture it) | Right stick |
+| Jump (costs stamina) | Space | A |
+| Roll | Shift | B |
+| Light attack | J / Left mouse | RB |
+| Heavy attack | K / Right mouse | RT |
+| Jump attack | Light or heavy while airborne | Light or heavy while airborne |
+| Block (hold) | L / Ctrl | LB |
+| Parry | E | LT |
+| Lock-on | Q | Right stick click (R3) |
+| Switch target | Tab | Flick the right stick left or right |
+| Zoom | Mouse wheel / = and - | D-pad up / down |
+| Rest at bonfire | F | Y |
+| Use flask | G | X |
+| Restart fight / level | R, twice (once on the death or victory screen) | Back / View, twice |
+| Pause and options (incl. Graphics: High / Low) | Escape | Start / Menu |
+| Help / hitboxes | F1 (H toggles hitboxes) | — |
+| Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A, B |
+
+On-screen prompts show keys or gamepad buttons, whichever you used last.
 
 ! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
 

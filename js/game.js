@@ -38,7 +38,7 @@ const Game = {
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', go: () => { this.reset(); this.showMenu('main'); } },
       ] },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: true, back: 'pause', items: [
-        { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse (lock-on off).',
+        { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
         { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
         { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: 'Default for the F1 hitbox display.', adjust: () => { settings.hitboxes = !settings.hitboxes; } },
@@ -63,9 +63,7 @@ const Game = {
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub;
-    $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
-      (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
-      (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
+    this.showMenuHint();
     list.textContent = '';
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
@@ -77,6 +75,19 @@ const Game = {
       list.appendChild(b);
     });
     this.select(keepSelection ? this.selected : 0);
+  },
+  // Key or button names follow the device used last, so this is redone when it changes.
+  showMenuHint() {
+    const screen = this.screen;
+    $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
+      (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
+      (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
+  },
+  // One step of directional menu input (keys, D-pad or stick).
+  menuStep(dir) {
+    if (dir === 'up') this.select(this.selected - 1);
+    else if (dir === 'down') this.select(this.selected + 1);
+    else this.adjust(dir === 'left' ? -1 : 1);
   },
   select(i) {
     const n = $('menuList').children.length;
@@ -260,19 +271,32 @@ const Game = {
       .sort((a, b) => ((a.v ? Math.abs(a.v.x) : 2) - (b.v ? Math.abs(b.v.x) : 2)) || a.d - b.d)
       .map(c => c.e);
   },
+  // The on-screen target nearest to the current one in direction `dir` (-1 left, 1 right), or null.
+  sideTarget(dir) {
+    const cur = this.inView(this.lock), x0 = cur ? cur.x : 0;
+    let best = null, bestD = Infinity;
+    for (const { e } of findEnemies(this.player, this.enemies, { range: CONFIG.lock.range })) {
+      const v = e !== this.lock && this.inView(e), d = v ? (v.x - x0) * dir : 0;
+      if (d > 0 && d < bestD) { bestD = d; best = e; }
+    }
+    return best;
+  },
   updateLock(dt) {
     const p = this.player;
     if (input.consume('lock')) {
       if (this.lock) this.setLock(null);
       else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); events.emit('lock'); } }
     }
+    // Switch target: Tab cycles through the candidates; a right-stick flick picks the nearest one on that side of the screen.
+    const flick = { PadFlickL: -1, PadFlickR: 1 }[input.pressedCode('switchTarget')] || 0;
     if (input.consume('switchTarget') && this.lock) {
-      const c = this.lockCandidates();
-      if (c.length) {
-        const i = c.indexOf(this.lock), prev = this.lock;
-        this.setLock(c[(i + 1) % c.length]);
-        if (this.lock !== prev) events.emit('switchTarget');
+      const prev = this.lock;
+      if (flick) { const e = this.sideTarget(flick); if (e) this.setLock(e); }
+      else {
+        const c = this.lockCandidates();
+        if (c.length) this.setLock(c[(c.indexOf(this.lock) + 1) % c.length]);
       }
+      if (this.lock !== prev) events.emit('switchTarget');
     }
     // Auto lock-on: the first time each enemy comes into range (and into view), lock onto it
     // unless already locked. An enemy is only ever auto-locked once.
@@ -433,14 +457,16 @@ const Game = {
   },
 
   // Movement input: relative to the target when locked on, otherwise to the camera's heading.
+  // Keys give full speed; the gamepad's left stick is analog (length 0..1), so a slight tilt walks slowly.
   moveInput() {
-    const ix = (input.isHeld('right') ? 1 : 0) - (input.isHeld('left') ? 1 : 0);
-    const iy = (input.isHeld('up') ? 1 : 0) - (input.isHeld('down') ? 1 : 0);
+    let ix = (input.isHeld('right') ? 1 : 0) - (input.isHeld('left') ? 1 : 0);
+    let iy = (input.isHeld('up') ? 1 : 0) - (input.isHeld('down') ? 1 : 0), mag = 1;
+    if (!ix && !iy) { ix = gamepad.move.x; iy = gamepad.move.y; mag = Math.min(1, Math.hypot(ix, iy)); }
     if (!ix && !iy) return { x: 0, z: 0, has: false };
     const p = this.player, yaw = this.lock ? Math.atan2(this.lock.x - p.x, this.lock.z - p.z) : this.cam.yaw;
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
     const x = fx * iy - fz * ix, z = fz * iy + fx * ix, l = Math.hypot(x, z);
-    return { x: x / l, z: z / l, has: true };
+    return { x: x / l * mag, z: z / l * mag, has: true };
   },
 
   stepZoom(dir) {
@@ -461,6 +487,15 @@ const Game = {
     const M = CONFIG.mouse, s = settings.sensitivity;
     this.cam.yaw -= dx * M.yawPerPx * s;
     this.cam.pitch = clamp(this.cam.pitch + dy * M.pitchPerPx * s * (settings.invert ? -1 : 1), M.pitchMin, M.pitchMax);
+    this.mouseHold = M.holdTime;
+  },
+
+  // Right stick (x, y in -1..1, y down), once per rendered frame: turns the camera like the mouse.
+  stickLook(x, y, dt) {
+    if (this.mode !== 'play' || this.lock) return;
+    const G = CONFIG.gamepad, M = CONFIG.mouse, s = settings.sensitivity / 5;
+    this.cam.yaw -= x * G.lookYaw * s * dt;
+    this.cam.pitch = clamp(this.cam.pitch + y * G.lookPitch * s * dt * (settings.invert ? -1 : 1), M.pitchMin, M.pitchMax);
     this.mouseHold = M.holdTime;
   },
 

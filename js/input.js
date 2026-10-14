@@ -2,50 +2,72 @@
 // ============================================================================
 // 3. input
 // ============================================================================
+// Keyboard codes, mouse buttons ('Mouse0') and gamepad buttons ('PadRB', see js/gamepad.js).
+// Movement and the camera on a gamepad come from the sticks (Game.moveInput, gamepad.js); a right-stick
+// flick presses 'PadFlickL' or 'PadFlickR'.
 const ACTIONS = {
   up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
-  jump: ['Space'], roll: ['ShiftLeft', 'ShiftRight'],
-  light: ['KeyJ', 'Mouse0'], heavy: ['KeyK', 'Mouse2'],
-  block: ['KeyL', 'ControlLeft', 'ControlRight'], parry: ['KeyE'],
-  lock: ['KeyQ'], switchTarget: ['Tab'], rest: ['KeyF'], flask: ['KeyG'],
-  zoomIn: ['Equal', 'NumpadAdd'], zoomOut: ['Minus', 'NumpadSubtract'],
+  jump: ['Space', 'PadA'], roll: ['ShiftLeft', 'ShiftRight', 'PadB'],
+  light: ['KeyJ', 'Mouse0', 'PadRB'], heavy: ['KeyK', 'Mouse2', 'PadRT'],
+  block: ['KeyL', 'ControlLeft', 'ControlRight', 'PadLB'], parry: ['KeyE', 'PadLT'],
+  lock: ['KeyQ', 'PadR3'], switchTarget: ['Tab', 'PadFlickL', 'PadFlickR'], rest: ['KeyF', 'PadY'], flask: ['KeyG', 'PadX'],
+  zoomIn: ['Equal', 'NumpadAdd', 'PadUp'], zoomOut: ['Minus', 'NumpadSubtract', 'PadDown'],
 };
 // Keys handled directly by the key handler rather than through ACTIONS.
 const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1' };
-// Menu navigation.
+const SYSTEM_PAD = { pause: 'PadStart', restart: 'PadBack' };   // gamepad equivalents (handled in gamepad.js)
+// Menu navigation. The gamepad's left stick also moves the selection.
 const MENU_KEYS = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'],
                     right: ['KeyD', 'ArrowRight'], confirm: ['Enter', 'KeyJ'], back: ['Escape'] };
+const MENU_PAD = { up: 'PadUp', down: 'PadDown', left: 'PadLeft', right: 'PadRight', confirm: 'PadA', back: 'PadB' };
 const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), Object.values(SYSTEM_KEYS)));
+const isPadCode = c => c.startsWith('Pad');
 
 // Labels built from the live bindings: "[ j / LMB ]" (keyboard first, then mouse), or "[ Space ]".
 const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
   Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
-  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB' };
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB',
+  PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y', PadLB: 'LB', PadRB: 'RB', PadLT: 'LT', PadRT: 'RT', PadL3: 'L3', PadR3: 'R3',
+  PadStart: 'Start', PadBack: 'Back', PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →',
+  PadFlickL: 'Right stick ←', PadFlickR: '→' };   // read together: "Right stick ← / →"
 function keyLabel(code) {
   if (KEY_LABELS[code]) return KEY_LABELS[code];
   if (code.startsWith('Key')) return code.slice(3).toLowerCase();
   if (code.startsWith('Digit')) return code.slice(5);
   return code;
 }
+// Labels follow the device used last (input.device): gamepad buttons after a gamepad press, keys otherwise.
+const usingPad = () => input.device === 'pad';
 // extraMouse: a mouse input bound outside ACTIONS (the wheel), shown after the key.
 function bindLabel(action, extraMouse) {
   const codes = ACTIONS[action];
-  const key = codes.find(c => !c.startsWith('Mouse')), mouse = codes.find(c => c.startsWith('Mouse'));
+  const pad = codes.filter(isPadCode);
+  if (usingPad() && pad.length) return `[ ${pad.map(keyLabel).join(' / ')} ]`;
+  const key = codes.find(c => !c.startsWith('Mouse') && !isPadCode(c)), mouse = codes.find(c => c.startsWith('Mouse'));
   const parts = [keyLabel(key)];
   if (mouse) parts.push(keyLabel(mouse)); else if (extraMouse) parts.push(extraMouse);
   return `[ ${parts.join(' / ')} ]`;
 }
-const moveLabel = () => `[ ${['up', 'left', 'down', 'right'].map(a => keyLabel(ACTIONS[a][0])).join(' ')} ]`;
-const systemLabel = name => `[ ${keyLabel(SYSTEM_KEYS[name])} ]`;
-const menuLabel = name => MENU_KEYS[name].map(keyLabel).join('/');
+const moveLabel = () => usingPad() ? '[ Left stick ]' : `[ ${['up', 'left', 'down', 'right'].map(a => keyLabel(ACTIONS[a][0])).join(' ')} ]`;
+const systemLabel = name => `[ ${keyLabel(usingPad() && SYSTEM_PAD[name] || SYSTEM_KEYS[name])} ]`;
+const menuLabel = name => usingPad() ? keyLabel(MENU_PAD[name]) : MENU_KEYS[name].map(keyLabel).join('/');
 
 const input = {
+  device: 'keyboard',   // 'keyboard' (keys and mouse) or 'pad': the last one used, for button labels
+  // Set the device used last; announces a change so labels can follow.
+  use(device) { if (device !== this.device) { this.device = device; events.emit('device', { device }); } },
   held: new Set(),
   pressed: new Map(),   // code -> time of press (s); each press is consumed at most once
   now() { return performance.now() / 1000; },
   down(code) { if (!this.held.has(code)) { this.held.add(code); this.pressed.set(code, this.now()); } },
   up(code) { this.held.delete(code); },
   isHeld(action) { return ACTIONS[action].some(c => this.held.has(c)); },
+  // The code of the action's most recent buffered press (e.g. which flick switched target), or null.
+  pressedCode(action) {
+    let best = null;
+    for (const c of ACTIONS[action]) if (this.pressed.has(c) && (!best || this.pressed.get(c) > this.pressed.get(best))) best = c;
+    return best;
+  },
   // True if the action was pressed within the buffer window. Does not consume.
   peek(action) {
     const t = this.now();

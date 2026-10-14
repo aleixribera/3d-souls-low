@@ -16,16 +16,16 @@ const hud = {
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const rows = [
-      ['Move', moveLabel()], ['Camera', 'Mouse (click the view to capture it)'],
+      ['Move', moveLabel()], ['Camera', usingPad() ? 'Right stick' : 'Mouse (click the view to capture it)'],
       ['Jump', bindLabel('jump')], ['Roll', bindLabel('roll')],
       ['Light attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
       ['Jump attack', 'Light or heavy while airborne'],
-      ['Block (hold)', `[ ${ACTIONS.block.map(keyLabel).filter((v, i, a) => a.indexOf(v) === i).join(' / ')} ]`],
+      ['Block (hold)', usingPad() ? bindLabel('block') : `[ ${ACTIONS.block.filter(c => !isPadCode(c)).map(keyLabel).filter((v, i, a) => a.indexOf(v) === i).join(' / ')} ]`],
       ['Parry', `${bindLabel('parry')} just before the blow lands`],
       ['Lock-on', bindLabel('lock')], ['Switch target', `${bindLabel('switchTarget')} while locked on`],
       ['Zoom in / out', `${bindLabel('zoomIn', 'Wheel up')} ${bindLabel('zoomOut', 'Wheel down')}`],
       ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')],
-      ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', systemLabel('help')],
+      ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`],
     ];
     const table = $('helpTable'); table.textContent = '';
     for (const [k, v] of rows) {
@@ -33,9 +33,9 @@ const hud = {
     }
     $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
-    $('helpWarn').textContent = ACTIONS.block.some(c => c.startsWith('Control'))
+    $('helpWarn').textContent = !usingPad() && ACTIONS.block.some(c => c.startsWith('Control'))
       ? `Prefer ${keyLabel(ACTIONS.block[0])} for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.` : '';
-    $('helpHint').textContent = `${keyLabel(SYSTEM_KEYS.help)}: help`;
+    $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && LEVELS.find(l => l.id === game.level.next);
     $('completeHint').textContent = next ? `Onward to ${next.name}…`

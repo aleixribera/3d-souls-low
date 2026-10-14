@@ -19,12 +19,14 @@ function registerListeners() {
   events.on('alert', d => spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, F.alert));
   events.on('enemyDeath', d => { if (Game.player) Game.player.souls += d.enemy.def.souls || 0; });
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
+  events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
 }
 
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
+  input.use('keyboard');
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
@@ -33,10 +35,8 @@ window.addEventListener('keydown', ev => {
   if (Game.mode === 'menu' || Game.mode === 'pause') {
     if (code === 'Tab') ev.preventDefault();
     if (ev.repeat) return;
-    const handled = isKey('up', code) ? Game.select(Game.selected - 1) || true
-      : isKey('down', code) ? Game.select(Game.selected + 1) || true
-      : isKey('left', code) ? Game.adjust(-1) || true
-      : isKey('right', code) ? Game.adjust(1) || true
+    const dir = ['up', 'down', 'left', 'right'].find(d => isKey(d, code));
+    const handled = dir ? Game.menuStep(dir) || true
       : isKey('confirm', code) ? Game.confirm() || true
       : isKey('back', code) ? Game.menuBack() || true : false;
     if (handled) ev.preventDefault();
@@ -55,6 +55,7 @@ window.addEventListener('blur', () => input.held.clear());
 hud.toggle.addEventListener('change', () => { settings.hitboxes = hud.toggle.checked; saveSettings(); });
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 canvas.addEventListener('mousedown', ev => {
+  input.use('keyboard');
   if (Game.mode !== 'play') return;
   ev.preventDefault();
   // The click that captures the mouse only captures it; it does not also swing the sword.
@@ -72,6 +73,7 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && Game.mode === 'play') Game.pause(true);
 });
 window.addEventListener('wheel', ev => {
+  input.use('keyboard');
   if (Game.mode !== 'play') return;
   Game.stepZoom(ev.deltaY > 0 ? 1 : -1);
 }, { passive: true });
@@ -107,6 +109,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const frameDt = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
+  gamepad.poll(frameDt);   // in menus too: the pad navigates them
   if (Game.mode !== 'play') { accumulator = 0; return; }   // menus and pause: simulation stopped
   accumulator += frameDt;
   let steps = 0;
@@ -118,5 +121,5 @@ requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
 window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, LEVEL_1, LEVEL_2, TUTORIAL, ARENA,
-                   PS, ES, input, hud, settings, camera, renderer, events, validateData, visuals, get world() { return world; } };
+                   PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, get world() { return world; } };
 window.__arenaReady = true;
