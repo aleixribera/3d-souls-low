@@ -39,6 +39,12 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Attacks** have three phases: wind-up, active (the hitbox exists), recovery. An attack can have several strikes in a row.
 - **Hitboxes** are boxes in front of the attacker. **Bodies** are upright cylinders. A hit lands when they overlap. Each strike hits each target once.
 - **Wind-ups glow red** so the player can read them.
+- **Optional attack mechanics** (fields on an enemy attack, checked at load):
+  - *Roll-only* (`rollOnly: true`): cannot be blocked or parried, only dodged. Its wind-up glows cold blue instead of red, and a faint blue ring flashes on the ground under the enemy as it starts (`perilous` event).
+  - *Gap closer* (`minRange` + `dash: { speed, from }`): picked only when the player is between `minRange` and `range`. From `from` (a fraction of the wind-up) the enemy rushes forward at `speed` until the strike would reach, then strikes. It does not turn while rushing unless it also tracks, so a late sidestep beats it.
+  - *Tracking* (`track: rate`): the enemy keeps turning toward the player at `rate` through the whole wind-up and the swing, instead of locking its aim part way through. Roll through it or away late.
+  - An enemy picks a random attack that suits the distance; gap closers only at mid range, the rest at any range (it walks in).
+  - Test enemies for each mechanic (`TEST_DEFS`, `js/data/test-enemies.js`) are duels in the `#dev` Test Grounds.
 - **Nothing hits, sees or locks on through a closed gate.** In room levels, walls and pillars block too.
 - **Order each step:** parry first, then the player's hits, then enemy hits.
 

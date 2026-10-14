@@ -934,4 +934,5 @@ function registerVisualListeners() {
   events.on('playerDeath', d => visuals.blood(chest(d.player), VIS.blood.deathSize));
   events.on('rest', d => visuals.flare(d.bonfire));
   events.on('gateOpened', d => visuals.gateDust(d.gate));
+  events.on('perilous', d => groundFx.ring(d.enemy.x, d.enemy.z, VIS.rollOnlyGlow.ring * d.enemy.def.scale, VIS.rollOnlyGlow.color, VIS.rollOnlyGlow.opacity));
 }

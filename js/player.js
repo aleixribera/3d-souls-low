@@ -259,7 +259,7 @@ class Player {
     const B = CONFIG.block, C = CONFIG.player;
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     let damage = strike.damage, poise = strike.poise, knock = strike.knock, blocked = false, guardBroken = false;
-    if (this.state === PS.BLOCK && isInFront(this, from.x, from.z)) {
+    if (this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z)) {   // roll-only goes through the guard
       this.spend(B.staminaBase + strike.damage * B.staminaPerDamage);
       if (this.stamina <= 0) guardBroken = true;
       else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }

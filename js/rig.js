@@ -1,5 +1,6 @@
 'use strict';
 const WARN_COLOR = new THREE.Color(0xff3a1a);
+const ROLL_ONLY_COLOR = new THREE.Color(CONFIG.VISUALS.rollOnlyGlow.color);   // wind-up of an attack that cannot be blocked or parried
 const HURT_COLOR = new THREE.Color(0xff1010);
 const HIT_COLOR = new THREE.Color(0xffffff);
 const CRACK_COLOR = new THREE.Color(0xffc060);
@@ -102,9 +103,11 @@ class Rig {
     this.weapon.rotation.y += this.lag; this.weapon.rotation.x += this.lagPitch;
   }
   setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
-  setWarning(k) {
-    this.weaponMat.color.copy(this.weaponBase).lerp(WARN_COLOR, k);
-    this.weaponMat.emissive.copy(WARN_COLOR).multiplyScalar(k * 1.6);
+  setWarning(k, color = WARN_COLOR) {
+    this.weaponMat.color.copy(this.weaponBase).lerp(color, k);
+    this.weaponMat.emissive.copy(color).multiplyScalar(k * 1.6);
+    const G = color === WARN_COLOR ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
+    this.warnGlow.material.color.setHex(G.color).multiplyScalar(G.boost);
     this.setGlow(k);
   }
   setFlash(k) {

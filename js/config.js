@@ -145,6 +145,9 @@ const CONFIG = {
     // Characters: cloth desaturated toward grey, a separate (pale) skin or helmet material.
     enemy: { desaturate: 0.3, darkMul: 0.6, skin: 0xa8a294, skinRoughness: 0.75 },
     windupGlow: { color: 0xff2a10, boost: 2.2, opacity: 0.85, size: 1.5, along: 0.6 },   // additive halo on the blade; ignores fog
+    // Roll-only attacks (cannot be blocked or parried): a cold blue blade instead of red, and a faint ring
+    // on the ground under the enemy as the wind-up starts (`ring`: size, `opacity`: its peak).
+    rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },
              shaft: { k: 0.22 } },   // warm (or pale) light pools on the floor

@@ -33,7 +33,7 @@ Each step is small and verified before the next.
 2. [x] Gamepad support (standard Souls layout: RB light, RT heavy, LB block, LT parry, B roll, A jump, right stick click lock-on, right stick flick switch, X flask, Y rest, Start pause).
 3. [x] Death refills flasks; remove souls and bloodstains.
 4. [x] Attack tokens and surrounding.
-5. [ ] Roll-only attacks and lunges, as systems tested on test enemies.
+5. [x] Roll-only attacks and lunges, as systems tested on test enemies.
 6. [ ] New enemies that use them.
 7. [ ] Height: stairs, ramps, drops.
 8. [ ] Open areas, plus switching off distant lights and enemies.

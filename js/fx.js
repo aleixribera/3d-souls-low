@@ -71,8 +71,9 @@ const groundFx = (() => {
   };
   const ringGeo = new THREE.RingGeometry(0.9, 1, 48), crackGeo = new THREE.PlaneGeometry(2, 2), crackTex = makeCrackTexture();
   const dustGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-  const rings = Array.from({ length: G.maxRings }, () => ({ age: Infinity, size: 1,
-    mesh: flat(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0.04) }));
+  const RING_COLOR = 0xe8dcc0;
+  const rings = Array.from({ length: G.maxRings }, () => ({ age: Infinity, size: 1, peak: 0.5,
+    mesh: flat(ringGeo, new THREE.MeshBasicMaterial({ color: RING_COLOR, transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0.04) }));
   const cracks = Array.from({ length: G.maxCracks }, () => ({ age: Infinity,
     mesh: flat(crackGeo, new THREE.MeshBasicMaterial({ color: 0x050403, alphaMap: crackTex, transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2 }), 0.02) }));
@@ -84,8 +85,13 @@ const groundFx = (() => {
   const cursor = { ring: 0, crack: 0, dust: 0 };
   const next = (pool, key) => pool[cursor[key]++ % pool.length];   // round-robin = oldest first
   return {
+    // A lone ring on the ground (no cracks or dust), e.g. the roll-only warning. `peak`: starting opacity.
+    ring(x, z, size, color, peak) {
+      const r = next(rings, 'ring'); r.age = 0; r.size = size; r.peak = peak; r.mesh.material.color.setHex(color);
+      r.mesh.position.x = x; r.mesh.position.z = z; r.mesh.visible = true;
+    },
     spawn(x, z, fx) {
-      const r = next(rings, 'ring'); r.age = 0; r.size = fx.ring; r.mesh.position.x = x; r.mesh.position.z = z; r.mesh.visible = true;
+      this.ring(x, z, fx.ring, RING_COLOR, 0.5);
       const c = next(cracks, 'crack'); c.age = 0; c.mesh.position.x = x; c.mesh.position.z = z;
       c.mesh.scale.set(fx.crack, fx.crack, 1); c.mesh.rotation.z = rand(0, Math.PI * 2); c.mesh.visible = true;
       for (let i = 0; i < fx.dust; i++) {
@@ -100,7 +106,7 @@ const groundFx = (() => {
         r.age += dt; const p = r.age / G.ringTime;
         if (p >= 1) { r.mesh.visible = false; continue; }
         const s = r.size * (0.25 + 0.75 * ease(p) + p * 0.1);
-        r.mesh.scale.set(s, s, 1); r.mesh.material.opacity = 0.5 * (1 - p) * (1 - p);
+        r.mesh.scale.set(s, s, 1); r.mesh.material.opacity = r.peak * (1 - p) * (1 - p);
       }
       for (const c of cracks) {
         if (!c.mesh.visible) continue;

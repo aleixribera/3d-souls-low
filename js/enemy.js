@@ -123,21 +123,29 @@ class Enemy {
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
         if (!this.token) { this.next = null; [tx, tz] = this.circleVelocity(player, dist); break; }   // not its turn: circle
-        if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
+        if (this.cooldown <= 0 && !this.next) this.next = this.pickAttack(dist);
         const want = this.next ? this.next.range : d.holdRange;
         if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
         else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) {
           this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
+          if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
         }
         break;
       }
       case ES.WINDUP: {
-        const hit = this.attack.hits[this.hitIndex];
-        if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
+        const a = this.attack, hit = a.hits[this.hitIndex];
+        // Tracking attacks keep turning for the whole wind-up; others stop part way, so a late dodge works.
+        if (a.track) this.yaw = turnToward(this.yaw, toPlayer, a.track * dt);
+        else if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
+        // Gap closer: rush forward late in the wind-up, stopping once the strike would reach.
+        if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
+          tx = this.vx = Math.sin(this.yaw) * a.dash.speed; tz = this.vz = Math.cos(this.yaw) * a.dash.speed;   // full speed at once
+        }
         if (this.stateTime >= hit.startup) this.strike();
         break;
       }
       case ES.ACTIVE: {
+        if (this.attack.track) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * dt);
         tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge;
         this.endStrikeWhenDone();
         break;
@@ -179,6 +187,13 @@ class Enemy {
     if (l < 0.15) return [0, 0];   // in place: stand and watch
     const sp = d.speed * T.speedMul / Math.max(1, l);
     return [vx * sp, vz * sp];
+  }
+  // A random attack that suits the distance: gap closers (`minRange`) only when the player is between
+  // their minRange and range; the rest at any distance (the enemy walks in to use them).
+  pickAttack(dist) {
+    const ok = this.def.attacks.filter(a => !a.minRange || (dist >= a.minRange && dist <= a.range));
+    const pool = ok.length ? ok : this.def.attacks;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover.
   strike() { this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack)); this.setState(ES.ACTIVE); }
@@ -339,7 +354,7 @@ class Enemy {
       r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
     }
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
-    r.setWarning(warn);
+    r.setWarning(warn, a && a.rollOnly ? ROLL_ONLY_COLOR : WARN_COLOR);   // roll-only attacks glow their own colour
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else r.setTint(HIT_COLOR, this.tint * 0.8);
   }
