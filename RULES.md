@@ -28,7 +28,7 @@ How the systems in `combat-arena-3d.html` behave. Read this before adding mechan
 ## Player
 
 - **Stamina** pays for attacks, rolls, jumps and blocked hits. It regenerates after a short pause.
-- **Roll** gives brief invulnerability at its start.
+- **Roll** gives brief invulnerability at its start. It is available whenever the stamina bar isn't empty (it drains what's left). A roll pressed mid-swing comes out as soon as the swing reaches its recovery.
 - **Block** works only against hits from the front. It cuts damage but costs stamina; running out breaks the guard and staggers the player.
 - **Parry** works in a short window just before an enemy strike lands. Success leaves the enemy open and makes the next attack a stronger riposte.
 - **Jump attacks** strike on landing, then have a short recovery.

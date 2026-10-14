@@ -304,7 +304,8 @@ const CONFIG = {
     jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
     jumpAttackAirControl: 0.6,   // multiplier on air control during a jump attack
     landKeep: 0.35,              // horizontal speed kept on a jump-attack landing
-    rollCost: 27, rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
+    rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
+    rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     rollExitKeep: 0.3,           // speed kept when a roll ends
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
@@ -1626,7 +1627,7 @@ class Player {
   isFree() { return this.in('free'); }
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; }
+  setState(s) { this.state = s; this.stateTime = 0; this.rollQueued = false; }
   spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
   attackPhase() { return attackTimeline(this.attack, this.stateTime).phase; }
   invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
@@ -1674,7 +1675,7 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
-    if (this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); return true; }
+    if (this.stamina > 0 && input.consume('roll')) { this.startRoll(mv); return true; }
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
     for (const [action, id] of Object.entries(M.ground)) {
       if (this.stamina > 0 && input.consume(action)) { this.beginAttack(M.attacks[id], mv, face, enemies); this.setState(PS.ATTACK); return true; }
@@ -1764,7 +1765,9 @@ class Player {
         if (tl.phase !== PHASE.ACTIVE) this.hitbox = null;
         const lunging = tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > C.lungeStart);
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
-        if (tl.phase === PHASE.RECOVERY && this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); break; }
+        // Roll out of a swing: a press during wind-up or strike is kept and fires as recovery begins.
+        if (tl.phase !== PHASE.RECOVERY) { if (input.consume('roll')) this.rollQueued = true; }
+        else if (this.stamina > 0 && (this.rollQueued || input.consume('roll'))) { this.startRoll(mv); break; }
         if (tl.done) this.setState(PS.IDLE);
         break;
       }
