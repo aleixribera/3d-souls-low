@@ -1638,8 +1638,15 @@ class Player {
   item(id) { return this.inventory[id] || { count: 0, max: 0 }; }
   refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
+  // Any stamina allows one emergency roll; a roll that empties the bar leaves the player winded:
+  // no more rolls until stamina is back to a full roll's cost.
+  canRoll() {
+    if (this.winded && this.stamina >= CONFIG.player.rollCost) this.winded = false;
+    return this.stamina > 0 && !this.winded;
+  }
   startRoll(mv) {
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
+    if (this.stamina - CONFIG.player.rollCost < 1) this.winded = true;   // the bar is (all but) empty after this roll
     this.spend(CONFIG.player.rollCost);
     this.hitbox = null; this.setState(PS.ROLL);
   }
@@ -1675,7 +1682,7 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
-    if (this.stamina > 0 && input.consume('roll')) { this.startRoll(mv); return true; }
+    if (this.canRoll() && input.consume('roll')) { this.startRoll(mv); return true; }
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
     for (const [action, id] of Object.entries(M.ground)) {
       if (this.stamina > 0 && input.consume(action)) { this.beginAttack(M.attacks[id], mv, face, enemies); this.setState(PS.ATTACK); return true; }
@@ -1767,7 +1774,7 @@ class Player {
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         // Roll out of a swing: a press during wind-up or strike is kept and fires as recovery begins.
         if (tl.phase !== PHASE.RECOVERY) { if (input.consume('roll')) this.rollQueued = true; }
-        else if (this.stamina > 0 && (this.rollQueued || input.consume('roll'))) { this.startRoll(mv); break; }
+        else if (this.canRoll() && (this.rollQueued || input.consume('roll'))) { this.startRoll(mv); break; }
         if (tl.done) this.setState(PS.IDLE);
         break;
       }
