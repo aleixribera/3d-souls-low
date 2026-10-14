@@ -27,8 +27,9 @@ const isPadCode = c => c.startsWith('Pad');
 const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
   Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB',
-  PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y', PadLB: 'LB', PadRB: 'RB', PadLT: 'LT', PadRT: 'RT', PadL3: 'L3', PadR3: 'R3',
-  PadStart: 'Start', PadBack: 'Back', PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →',
+  // Gamepad buttons: Xbox name / PlayStation name.
+  PadA: 'A / ✕', PadB: 'B / ○', PadX: 'X / □', PadY: 'Y / △', PadLB: 'LB / L1', PadRB: 'RB / R1', PadLT: 'LT / L2', PadRT: 'RT / R2',
+  PadL3: 'L3', PadR3: 'R3', PadStart: 'Menu / Options', PadBack: 'View / Share', PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →',
   PadFlickL: 'Right stick ←', PadFlickR: '→' };   // read together: "Right stick ← / →"
 function keyLabel(code) {
   if (KEY_LABELS[code]) return KEY_LABELS[code];

@@ -301,6 +301,11 @@ const Game = {
     }
     const t = this.lock;
     if (!t) return;
+    if (!t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
+      const next = this.lockCandidates().find(e => e !== t);
+      this.setLock(next || null);
+      return;
+    }
     if (!t.alive() || !p.alive() || gateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
     this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
     if (this.lockLost > CONFIG.lock.lostTime) this.setLock(null);

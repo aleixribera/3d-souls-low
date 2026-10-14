@@ -28,7 +28,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 ## Input
 
 - **Keyboard and mouse, or a gamepad.** Every action is a list of codes in `ACTIONS`: keys, mouse buttons and gamepad buttons (`PadRB`…). Gamepad buttons go through the same buffer as keys.
-- **Gamepad layout** (Souls standard): RB light, RT heavy, LB block, LT parry, B roll, A jump, right stick click lock-on, right stick flick switch target, X flask, Y rest, Start pause, Back restart, D-pad up/down zoom.
+- **Gamepad layout** (Souls standard, Xbox / PlayStation names): RB / R1 light, RT / R2 heavy, LB / L1 block, LT / L2 parry, B / ○ roll, A / ✕ jump, right stick click lock-on, right stick flick switch target, X / □ flask, Y / △ rest, Menu / Options pause, View / Share restart, D-pad up/down zoom. Prompts show both names.
 - The left stick is analog: a slight tilt walks slowly. Keys always move at full speed.
 - The right stick turns the camera (same sensitivity and invert options as the mouse). While locked on, a flick to one side switches to the nearest target on that side of the screen; holding the stick does not keep switching. Tab still cycles through targets.
 - Menus work with the D-pad or left stick, A to confirm and B to go back.
@@ -65,7 +65,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Each behaviour has its own **notice range**. Enemies give up and walk home if the player gets too far away, they are dragged too far from home, or they lose sight of the player.
 - **How enemies break.** Every enemy uses exactly one of these:
   - *Poise* (default): hits drain a hidden poise value. Small hits make the enemy flinch; at zero it staggers.
-  - *Posture* (bosses, e.g. Giant Skeleton): hits never interrupt it. Only hits chained close together fill a visible posture bar; full means it kneels, open, and takes extra damage.
+  - *Posture* (bosses, e.g. Giant Skeleton): hits never interrupt it. Every landed hit fills a visible posture bar, and hits chained close together fill it faster. It drains only after a pause without hits. Full means it kneels, open, and takes extra damage.
   - *Stagger meter* (e.g. Undead Knight): hits never interrupt it. Each hit fills a visible meter (heavy hits fill more); full means it kneels, open. The meter drains if left alone.
   - *Shield guard* (e.g. Shield Warden): works like the stagger meter (every hit fills a visible meter; full means the guard breaks and it kneels, open). On top of that, its raised shield cuts damage from hits to the front, and those blocked hits fill the meter much less. The shield is lowered while it attacks and in the last step before a swing. Hits from the side or behind, and ripostes after a parry, do full damage.
 - **Visible over enemies:** non-boss enemies show a small health bar over their head once they're fighting or hurt, with the stagger/guard meter under it when they have one. Bosses use the big bar at the top of the screen instead.
@@ -89,6 +89,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Rendering lives in its own file (`js/visuals.js`) with its numbers in `CONFIG.VISUALS`. It only draws: it reacts to events (strike, death, rest, gate opened) and never changes combat, AI, collision or layouts. Dressing (rubble, arches, banners) has no collision.
 - **Graphics: High / Low** (pause → Options). High adds bloom, colour grade, vignette (redder at low health), grain and light shafts. Low skips post-processing and thins the particles.
 - The red wind-up glow is never dimmed: it has its own halo that ignores fog, and the colour grade leaves strong reds saturated.
+- **Lock-on:** when the locked target dies, the lock moves to the next enemy in reach (the one nearest the centre of the screen), if there is one.
 - **Camera:** follows behind the player and is pushed in so it never passes through walls or closed gates. Locking on frames both the player and the target.
 
 ## Adding things — checklist

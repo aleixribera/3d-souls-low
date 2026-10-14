@@ -65,8 +65,9 @@ class Enemy {
     if (M && this.state !== ES.BROKEN && (this.guardTime += dt) > M.decayDelay)
       this.guardMeter = Math.max(0, this.guardMeter - M.decay * dt);
     tickPoise(this, dt, E.poiseResetTime, d.poise);
-    // Posture holds while the boss is open from a parry, so the riposte window can build on it.
-    if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && !player.isAttacking())
+    // Posture drains only after `chainGap` s without a landed hit (and never while the player swings), and
+    // holds while the boss is open from a parry, so the riposte window can build on it.
+    if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && this.chainTime > d.posture.chainGap && !player.isAttacking())
       this.posture = Math.max(0, this.posture - d.posture.decay * dt);
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     this.playerDist = dist;
@@ -235,11 +236,11 @@ class Enemy {
     this.kx += kx; this.kz += kz;
     if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (P) {
-      // Bosses ignore interrupts; only chained hits build posture.
+      // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
       const chained = this.chainTime <= P.chainGap;
       this.chainTime = 0;
       if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
-      return { broke: chained && this.addPosture(strike.postureDmg), died: false };
+      return { broke: this.addPosture(strike.postureDmg * (chained ? P.chainMul : 1)), died: false };
     }
     if (this.in('shrugsHits') || this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
     if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }

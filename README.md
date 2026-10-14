@@ -20,26 +20,26 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 
 ## Controls
 
-| Action | Keys | Gamepad |
+| Action | Keys | Gamepad (Xbox / PlayStation) |
 |---|---|---|
 | Move | W A S D / Arrow keys | Left stick (analog: tilt slightly to walk slowly) |
 | Camera | Mouse (click the view to capture it) | Right stick |
-| Jump (costs stamina) | Space | A |
-| Roll | Shift | B |
-| Light attack | J / Left mouse | RB |
-| Heavy attack | K / Right mouse | RT |
+| Jump (costs stamina) | Space | A / ✕ |
+| Roll | Shift | B / ○ |
+| Light attack | J / Left mouse | RB / R1 |
+| Heavy attack | K / Right mouse | RT / R2 |
 | Jump attack | Light or heavy while airborne | Light or heavy while airborne |
-| Block (hold) | L / Ctrl | LB |
-| Parry | E | LT |
+| Block (hold) | L / Ctrl | LB / L1 |
+| Parry | E | LT / L2 |
 | Lock-on | Q | Right stick click (R3) |
 | Switch target | Tab | Flick the right stick left or right |
 | Zoom | Mouse wheel / = and - | D-pad up / down |
-| Rest at bonfire | F | Y |
-| Use flask | G | X |
-| Restart fight / level | R, twice (once on the death or victory screen) | Back / View, twice |
-| Pause and options (incl. Graphics: High / Low) | Escape | Start / Menu |
+| Rest at bonfire | F | Y / △ |
+| Use flask | G | X / □ |
+| Restart fight / level | R, twice (once on the death or victory screen) | View / Share, twice |
+| Pause and options (incl. Graphics: High / Low) | Escape | Menu / Options |
 | Help / hitboxes | F1 (H toggles hitboxes) | — |
-| Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A, B |
+| Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A / ✕, B / ○ |
 
 On-screen prompts show keys or gamepad buttons, whichever you used last.
 

@@ -57,9 +57,10 @@ const ENEMY_DEFS = [
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
     hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, holdRange: 3.6,
     cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    // Boss posture: replaces poise interrupts (hits never cancel its swings). Only chained hits build it;
-    // each attack's postureDmg says how much. A parry adds `parry`.
-    posture: { max: 100, parry: 38, chainGap: 1.8, decay: 7, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
+    // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
+    // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
+    // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit.
+    posture: { max: 100, parry: 38, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { id: 'sweep', name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
