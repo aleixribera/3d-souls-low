@@ -1,4 +1,4 @@
-# Roadmap
+# Plan: Level 3 "The Tower" — new building blocks, new enemies, new level style
 
 ## Context
 Steps 1–5 of ROADMAP.md are done: the game is split into `js/` files, it supports gamepads, death is free, attack tokens are in, and roll-only, dash and tracking attacks exist on test enemies. Roadmap steps 6 (new enemies), 7 (height) and 8 (open areas with culling) all meet in one place: **Level 3**, a single level that combines an open courtyard with a tower climbed by **outer walkways**. It uses every mechanic so far, and it introduces the enemies and building blocks the later levels will reuse. Story comes later; names here are placeholders.
