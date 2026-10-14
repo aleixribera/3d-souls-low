@@ -6,7 +6,7 @@ const ENEMY_DEFS = [
     scale: 1.0, bulk: 1.0, radius: 0.4, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },   // ashen, leathery
     hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, holdRange: 2.4,
-    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7, souls: 60,
+    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       { id: 'swing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
@@ -21,7 +21,7 @@ const ENEMY_DEFS = [
     scale: 1.3, bulk: 1.3, radius: 0.6, color: 0x7b8088, weapon: 'sword', offhand: 'shield', idle: 'still',
     visual: { skin: 0x6e737a, skinMetal: 0.2, metal: 0.3, roughness: 0.5 },   // worn steel, helmed
     hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, holdRange: 2.9,
-    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8, souls: 220,
+    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8,
     // Stagger meter (shown under its health bar), replacing poise: hits never interrupt it until the meter
     // fills (about 2 hits: 2 heavy, heavy + light, or 3 light), then it kneels, open, for `breakTime`.
     // Drains at `decay`/s once `decayDelay` s pass without a hit.
@@ -41,7 +41,7 @@ const ENEMY_DEFS = [
     scale: 0.85, bulk: 0.8, radius: 0.32, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
     visual: { skin: 0xbab29e, roughness: 0.8 },   // pale face, dark cloth
     hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, holdRange: 2.3,
-    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6, souls: 90,
+    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
       { id: 'stab', name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
@@ -56,7 +56,7 @@ const ENEMY_DEFS = [
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
     hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, holdRange: 3.6,
-    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, souls: 1200,
+    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     // Boss posture: replaces poise interrupts (hits never cancel its swings). Only chained hits build it;
     // each attack's postureDmg says how much. A parry adds `parry`.
     posture: { max: 100, parry: 38, chainGap: 1.8, decay: 7, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
@@ -74,7 +74,7 @@ const ENEMY_DEFS = [
     scale: 1.12, bulk: 1.15, radius: 0.48, color: 0x56636e, weapon: 'sword', offhand: 'kite', idle: 'still',
     visual: { skin: 0x5c6670, skinMetal: 0.15, metal: 0.25, roughness: 0.55 },   // blued steel, helmed
     hp: 140, poise: 85, speed: 2.2, turnRate: 2.6, trackRate: 1.5, holdRange: 2.5,
-    cooldown: [0.6, 1.2], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75, souls: 150,
+    cooldown: [0.6, 1.2], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard: hits from within `arc` (rad) of its facing are blocked (taking `damageMul` of the damage)
     // while the shield is up: not attacking, and not within `lowerReach` of striking range with an attack chosen.
     // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
@@ -98,9 +98,9 @@ const ENEMY_DEFS = [
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing.
 const TRAINING_DEFS = [
   { id: 'dummy', name: 'Training Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x7a6440, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
-    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, attacks: [] },
+    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [] },
   { id: 'sparringDummy', name: 'Sparring Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x6a5446, weapon: 'sword', visual: { skin: 0x8a7650, roughness: 0.95 },
-    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, restTime: 1.3,
+    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, restTime: 1.3,
     attacks: [
       { id: 'trainingSwing', name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
         damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },

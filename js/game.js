@@ -12,7 +12,7 @@ const Game = {
   selected: 0,
   player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0, restartArm: 0,
-  spawn: null, stain: null, deathTimer: 0,
+  spawn: null, deathTimer: 0,
   zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
@@ -141,7 +141,6 @@ const Game = {
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     groundFx.clear(); swordTrail.clear();
   },
-  dropStain() { if (this.stain) { scene.remove(this.stain.group); this.stain = null; } },
   // Spawn options for a level entry: the one place placement rules live.
   spawnSpec(entry, behavior) {
     const L = this.level, V = CONFIG.level;
@@ -163,7 +162,7 @@ const Game = {
   },
   // Full restart of the current fight or level.
   reset() {
-    this.clearActors(); this.dropStain();
+    this.clearActors();
     input.pressed.clear();
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
     $('fade').classList.remove('show');   // fades back in after a level transition
@@ -175,7 +174,7 @@ const Game = {
     // A zone fights one enemy (`enemy` + `spawn`) or several (`enemies`); `members` lists them either way.
     this.zones = (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
       spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));
-    this.spawnPlayer(null);
+    this.spawnPlayer();
     hud.reset(this);
     if (this.isTutorial()) {
       this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0 };
@@ -185,16 +184,16 @@ const Game = {
     this.enemies = this.makeEnemies();
     if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
   },
-  // carry: { inventory } from the previous life, or null for a fresh start.
-  spawnPlayer(carry) {
+  // A fresh player at the respawn point: full health and full flasks, after a death too.
+  spawnPlayer() {
     if (this.player) this.player.rig.dispose();
-    this.player = new Player(PLAYER_DEF, this.spawn.x, this.spawn.z, this.spawn.yaw, carry);
+    this.player = new Player(PLAYER_DEF, this.spawn.x, this.spawn.z, this.spawn.yaw);
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
   },
 
-  // ---- bonfires, death, souls ------------------------------------------------------------------
+  // ---- bonfires, death -------------------------------------------------------------------------
   nearBonfire() {
     const p = this.player;
     return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range) || null;
@@ -237,19 +236,9 @@ const Game = {
   },
   onPlayerDeath() {
     const p = this.player;
-    this.dropStain();                                   // an unrecovered stain is lost for good
-    if (p.souls > 0) this.stain = { x: p.x, z: p.z, souls: p.souls, ...makeBloodstain(p.x, p.z) };
-    p.souls = 0;
     this.deathTimer = 0; this.setLock(null);
     canvas.classList.add('dying');
     events.emit('playerDeath', { player: p });
-  },
-  checkStain() {
-    const p = this.player, s = this.stain;
-    if (!s || !p.alive() || Math.hypot(s.x - p.x, s.z - p.z) > CONFIG.bloodstain.pickupRange) return;
-    p.souls += s.souls;
-    events.emit('stainRecovered', { x: s.x, z: s.z, souls: s.souls });
-    this.dropStain();
   },
 
   // ---- lock-on -----------------------------------------------------------------------------------
@@ -417,16 +406,12 @@ const Game = {
       this.complete = true;
       events.emit('levelComplete');
     }
-    // Carry straight on into the next level: wait, fade to black, then load it (souls come along).
+    // Carry straight on into the next level: wait, fade to black, then load it.
     if (this.complete && this.level.next && p.alive()) {
       const N = CONFIG.nextLevel;
       this.nextTimer += dt;
       if (this.nextTimer >= N.delay) $('fade').classList.add('show');
-      if (this.nextTimer >= N.delay + N.fadeTime) {
-        const souls = p.souls;
-        this.startLevel(this.level.next);
-        this.player.souls = souls;
-      }
+      if (this.nextTimer >= N.delay + N.fadeTime) this.startLevel(this.level.next);
     }
   },
 
@@ -569,7 +554,7 @@ const Game = {
   },
 
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
-  // body separation, combat, deaths, bloodstain, level gates or tutorial, camera.
+  // body separation, combat, deaths, level gates or tutorial, camera.
   update(dt) {
     const p = this.player, c = this.cam;
     p.savePrev(); for (const e of this.enemies) e.savePrev();
@@ -579,7 +564,7 @@ const Game = {
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;
-      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer({ inventory: p.inventory }); return; }
+      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer(); return; }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
       if (slow > 0) for (const e of this.enemies) e.update(dt * slow, p);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);
@@ -602,7 +587,6 @@ const Game = {
       p.hp = 1; p.stunTime = CONFIG.player.hurtTime; p.setState(PS.HURT);
     }
     if (!p.alive()) this.onPlayerDeath();
-    this.checkStain();
     if (this.isTutorial()) this.updateTutorial(dt);
     else if (this.kind === 'level') this.updateLevel(dt);
     this.updateCamera(dt, false);
@@ -631,10 +615,6 @@ const Game = {
       const q = lockAt[1];
       lockMarker.position.set(q.x, q.y + this.lock.height + CONFIG.lock.markerGap, q.z);
       lockMarker.rotation.y = t * 2.5;
-    }
-    if (this.stain) {
-      this.stain.wisp.position.y = 0.45 + Math.sin(t * 2) * 0.08;
-      this.stain.wisp.material.opacity = 0.55 + Math.sin(t * 3.1) * 0.25;
     }
     for (const g of world.gates) g.mesh.position.y = ease(g.lift) * g.liftHeight;
     // Irregular, subtle flicker in brightness and warmth.

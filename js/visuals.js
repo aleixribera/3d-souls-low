@@ -621,7 +621,7 @@ const visuals = (() => {
   const grade = new ShaderPass(GRADE_SHADER);
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
   const ash = makeAsh(), decals = makeBloodDecals(), debris = makeDebris();
-  let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [] }, lowHp = 0, debrisTimer = 0, stainGlow = null;
+  let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [] }, lowHp = 0, debrisTimer = 0;
 
   function applyCounts() {
     const P = VIS.particles, a = A.ash || 0, d = A.dust || 0, amount = Math.min(1, a + d);
@@ -859,7 +859,7 @@ const visuals = (() => {
     // Called once per stage build (loadStage), after applyAtmosphere. Everything added goes in the stage group.
     dressStage(d, built) {
       def = d; A = d.atmosphere || {}; st = { bonfires: [] };
-      decals.clear(); debris.clear(); stainGlow = null;
+      decals.clear(); debris.clear();
       const G = built.group, rnd = seeded(strSeed(d.id)), pools = [];
       G.traverse(o => { if (o.isMesh && o.material && o.material.isMeshStandardMaterial) weather(o.material, 'stone'); });   // room materials
       dressFlames(G, d, pools);
@@ -888,10 +888,6 @@ const visuals = (() => {
         f.core.material.color.copy(f.coreColor).multiplyScalar(pulse * (1 + fl));
         f.embers.material.uniforms.uFlare.value = fl;
       }
-      if (stainGlow) {
-        if (!game.stain || game.stain.group !== stainGlow.parent) { stainGlow.material.dispose(); stainGlow = null; }
-        else stainGlow.material.opacity = 0.55 + Math.sin(t * VIS.stainGlow.rate) * 0.3;
-      }
       decals.update(dt);
       const D = VIS.debris, p = game.player;
       if (A.debris && quality.debris && p && p.alive() && def.layout !== 'arena') {
@@ -919,13 +915,6 @@ const visuals = (() => {
       if (burst) spawnBurst(at, B.burst);
       decals.splat(at.x + rand(-B.spread, B.spread), at.z + rand(-B.spread, B.spread), between(Math.random, B.size) * size);
     },
-    markStain(game) {
-      if (!game.stain) return;
-      const S = VIS.stainGlow;
-      if (stainGlow) stainGlow.material.dispose();
-      stainGlow = glowSprite(S.color, S.boost, S.size, 0.6, 0.8);
-      stainGlow.position.y = S.height; game.stain.group.add(stainGlow);
-    },
     flare(bonfire) { const f = st.bonfires.find(f => f.b === bonfire); if (f) f.flare = 1; },
     gateDust(g) {
       if (!quality.debris || !def || def.layout === 'arena') return;
@@ -942,7 +931,7 @@ function registerVisualListeners() {
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.55, z: b.z });
   events.on('strike', d => { if (!d.blocked && !d.target.training) visuals.blood(d.at, 1); });
   events.on('enemyDeath', d => { if (!d.enemy.training) visuals.blood({ x: d.enemy.x, y: 0.2, z: d.enemy.z }, VIS.blood.deathSize, false); });
-  events.on('playerDeath', d => { visuals.blood(chest(d.player), VIS.blood.deathSize); visuals.markStain(Game); });
+  events.on('playerDeath', d => visuals.blood(chest(d.player), VIS.blood.deathSize));
   events.on('rest', d => visuals.flare(d.bonfire));
   events.on('gateOpened', d => visuals.gateDust(d.gate));
 }

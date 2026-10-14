@@ -154,17 +154,6 @@ const lockMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0),
   new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false, depthTest: false, transparent: true, opacity: 0.9 }));
 lockMarker.renderOrder = 11; lockMarker.visible = false; scene.add(lockMarker);
 
-// Bloodstain: a faintly glowing pool and wisp where the player last died.
-function makeBloodstain(x, z) {
-  const g = new THREE.Group();
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(0.55, 18), new THREE.MeshBasicMaterial({ color: 0x8a1010, transparent: true, opacity: 0.75, depthWrite: false }));
-  pool.rotation.x = -Math.PI / 2; pool.position.y = 0.04; g.add(pool);
-  const wisp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff5a40, transparent: true, opacity: 0.8 }));
-  wisp.position.y = 0.45; g.add(wisp);
-  g.position.set(x, 0, z); scene.add(g);
-  return { group: g, wisp, pool };
-}
-
 const boxEdges = new THREE.EdgesGeometry(UNIT_BOX);
 const makeWire = color => {
   const l = new THREE.LineSegments(boxEdges, new THREE.LineBasicMaterial({ color, fog: false, depthTest: false }));

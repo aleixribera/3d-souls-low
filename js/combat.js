@@ -52,7 +52,7 @@ function parryTiming(p, e, extra) {
 }
 
 // Order each step: parry, then player hitboxes against enemies, then enemy hitboxes against the player.
-// Damage itself lives in Player.takeHit / Enemy.takeHit; effects and souls listen to the events.
+// Damage itself lives in Player.takeHit / Enemy.takeHit; effects listen to the events.
 function resolveCombat(game) {
   const p = game.player, P = CONFIG.parry;
   const live = game.enemies.filter(e => e.alive());

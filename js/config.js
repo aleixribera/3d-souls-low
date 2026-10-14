@@ -61,7 +61,6 @@ const CONFIG = {
   // The overlay's CSS timings are set from these numbers at load, so they always line up.
   death: { slowTime: 1.4, respawnDelay: 4.8, textDelay: 0.6, textFade: 2.2, hintDelay: 2.6 },
   restartConfirmTime: 2.2,   // R must be pressed twice within this time to restart mid-fight
-  bloodstain: { pickupRange: 1.3 },
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
            firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
@@ -92,7 +91,6 @@ const CONFIG = {
           hurt: { color: 0xb01818, count: 14, speed: 4.5 },
           parry: { color: 0xfff6d0, count: 26, speed: 7.5 },
           postureBreak: { color: 0xffc060, count: 30, speed: 8 },
-          stain: { color: 0xffe0a0, count: 20, speed: 4 },
           alert: { color: 0xff6a30, count: 10, speed: 2.5 },
         },
         postureBreakShake: { time: 0.22, amp: 0.08 } },
@@ -150,7 +148,6 @@ const CONFIG = {
                pulsePeriod: 3.2, pulse: 0.12, flareTime: 2.2, flareLight: 1.6, flareCore: 0.8 },
     blood: { decals: 28, life: 16, fade: 4, size: [0.35, 0.75], deathSize: 2.2, spread: 0.5,
              burst: { color: 0x5a0606, count: 10, speed: 3.5 } },
-    stainGlow: { color: 0xff4020, boost: 1.8, size: 1.9, height: 0.35, rate: 2.2 },
     rubble: { spacing: [1.6, 3.4], cluster: 3, size: [0.12, 0.42] },
     arches: { spring: 2.6, tube: 0.24, every: 2 },   // hall ribs: spring this far below the ceiling, on every 2nd pillar pair
     banners: { width: 1.15, height: 3.0, topGap: 1.0, every: 2, sway: 0.07, swaySpeed: 1.1, colors: [0x4a1c1a, 0x2a2a30] },

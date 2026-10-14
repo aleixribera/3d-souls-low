@@ -16,7 +16,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 3. **Data is checked at load.** A broken reference stops the game with a readable error. When you add a new kind of data, add a check for it.
 4. **Tuning numbers live in CONFIG or the data entry**, never scattered through the logic.
 5. **New behaviour must be opt-in.** A new mechanic is switched on by a field in the data, so existing levels and enemies keep playing exactly the same.
-6. **Things announce what happened through events** (strike, parry, death, rest, gate opened, alert…). Effects, souls and the tutorial listen; they don't reach into combat code.
+6. **Things announce what happened through events** (strike, parry, death, rest, gate opened, alert…). Effects and the tutorial listen; they don't reach into combat code.
 
 ## Time
 
@@ -49,7 +49,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Parry** works in a short window just before an enemy strike lands. Success leaves the enemy open and makes the next attack a stronger riposte.
 - **Jump attacks** strike on landing, then have a short recovery.
 - **Poise**: hits reduce it; at zero the player staggers. A swing already in its active phase is never interrupted.
-- **Flasks** heal over time, refill at bonfires, and are kept on death.
+- **Flasks** heal over time, and refill at bonfires and on death.
 
 ## Enemies
 
@@ -77,9 +77,9 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Zone enemies stand at their posts from the start, so the player can see them coming.
 - **Optional enemies** (patrol, ambush, slumber) can be placed between zones.
 - **Bonfires** heal, refill flasks and set the respawn point. Resting brings back every enemy except those whose gates are already open. You cannot rest while an enemy is closing in.
-- **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire. Souls drop as a bloodstain where you died and can be picked up once. Dying again before that loses them.
+- **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire with full health and full flasks. Dying costs nothing but the ground covered since that bonfire: there are no souls, stats or saves. Enemies keep their state (dying does not reset them; resting does).
 - **Alert** (opt-in per level): an enemy that notices the player wakes unaware enemies nearby, if nothing blocks the line between them. Those wake others in turn.
-- **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level, keeping souls.
+- **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level.
 - **Atmosphere:** each level can set its own fog, light and colours. Optional look fields (all checked at load) add exposure, a sky/ground fill (`hemi`), a colour grade, ash and dust amounts, moss and grime, light shafts, banner colours, falling debris, and for open levels a sky, distant silhouettes and grass. Enemies can set an optional `visual` (skin colour, metalness, bare arms, rim).
 
 ## Visuals

@@ -2,11 +2,11 @@
 // ============================================================================
 // 3b. Events
 // ============================================================================
-// "Something happened" channel. Combat, items, bonfires and menus emit; effects, souls and the
+// "Something happened" channel. Combat, items, bonfires and menus emit; effects and the
 // tutorial listen (see registerListeners in the bootstrap). Events:
 //   strike {strike, attacker, target, at, blocked}  parry {target}  postureBreak {enemy}
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
-//   itemUsed {item}  land {x, z, fx}  stainRecovered {x, z, souls}  alert {enemy, by}  lock  switchTarget  zoom {dir}
+//   itemUsed {item}  land {x, z, fx}  alert {enemy, by}  lock  switchTarget  zoom {dir}
 //   pause  resume  device {device}
 const events = {
   handlers: {}, anyHandlers: [],

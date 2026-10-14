@@ -2,7 +2,7 @@
 // ============================================================================
 // 12. Bootstrap
 // ============================================================================
-// Event listeners: visual effects, souls and the tutorial, each in one place.
+// Event listeners: visual effects and the tutorial, each in one place.
 function registerListeners() {
   const F = CONFIG.fx.bursts, chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   events.on('strike', d => {
@@ -15,9 +15,7 @@ function registerListeners() {
     Game.addShake(CONFIG.fx.postureBreakShake.time, CONFIG.fx.postureBreakShake.amp);
   });
   events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
-  events.on('stainRecovered', d => spawnBurst({ x: d.x, y: 0.6, z: d.z }, F.stain));
   events.on('alert', d => spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, F.alert));
-  events.on('enemyDeath', d => { if (Game.player) Game.player.souls += d.enemy.def.souls || 0; });
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();

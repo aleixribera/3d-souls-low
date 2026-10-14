@@ -7,7 +7,6 @@ const $ = id => document.getElementById(id);
 const trailToward = (trail, value, dt) => value > trail ? value : Math.max(value, trail - dt * CONFIG.fx.trailDrain);
 const hud = {
   root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'), flaskRow: $('pFlasks'), flasks: [],
-  soulsN: $('pSoulsN'),
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), confirm: $('confirm'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutDone: $('tutDone'),
@@ -106,7 +105,6 @@ const hud = {
     this.pHp.style.width = ph * 100 + '%'; this.pTrail.style.width = this.pTrailV * 100 + '%';
     this.pSt.style.width = p.stamina / p.maxStamina * 100 + '%';
     this.syncFlasks(p.item('flask'));
-    this.soulsN.textContent = p.souls;
     this.eBars.classList.toggle('hidden', !e);
     if (e) {
       const eh = e.hp / e.def.hp;

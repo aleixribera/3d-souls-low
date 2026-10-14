@@ -6,14 +6,12 @@
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 
 class Player {
-  // carry: { inventory } kept from a previous life (death keeps flask counts).
-  constructor(def, x, z, yaw, carry) {
+  constructor(def, x, z, yaw) {
     this.def = def;
     this.rig = new Rig(def.look);
     this.radius = def.radius; this.height = BODY_HEIGHT * def.look.scale;
     this.maxHp = def.stats.maxHp; this.maxStamina = def.stats.maxStamina; this.maxPoise = def.stats.maxPoise;
-    this.inventory = carry ? carry.inventory : makeInventory(def.inventory);
-    this.souls = 0;
+    this.inventory = makeInventory(def.inventory);
     this.x = x; this.y = 0; this.z = z; this.yaw = yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
