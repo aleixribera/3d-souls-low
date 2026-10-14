@@ -5,23 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Combat Arena 3D</title>
 <style>
+  :root { --hud: 1; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #07060a; color: #cfc6ad;
     font-family: Georgia, 'Times New Roman', serif; user-select: none; }
-  canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; transition: filter 0.6s; }
+  canvas#view.dying { filter: grayscale(1) brightness(0.75); transition: filter 1.4s; }
 
   #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at 50% 40%, #17131a 0%, #07060a 75%); z-index: 10; }
+  #menu.overlay { background: #07060ab8; }
   #menu.hidden { display: none; }
   #menuBox { border: 2px solid #7d6a3a; padding: 34px 44px 26px; background: #0d0b10; min-width: 420px;
     max-width: 90vw; box-shadow: 0 0 60px #000; }
   #menuBox h1 { margin: 0 0 6px; text-align: center; letter-spacing: 6px; font-weight: normal;
     font-size: 30px; color: #b79d5c; }
-  #menuBox .sub { text-align: center; font-size: 13px; color: #6f6753; margin-bottom: 22px; letter-spacing: 2px; }
+  #menuBox .sub { text-align: center; font-size: 13px; color: #6f6753; margin-bottom: 22px; letter-spacing: 2px; min-height: 1em; }
   .enemyBtn { display: block; width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px 16px;
     text-align: left; background: #15121a; border: 1px solid #3a3226; color: #cfc6ad; cursor: pointer;
     font-family: inherit; }
   .enemyBtn .n { font-size: 19px; letter-spacing: 2px; }
   .enemyBtn .d { font-size: 13px; color: #857c66; margin-top: 3px; }
+  .enemyBtn .d:empty { display: none; }
   .enemyBtn:hover, .enemyBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
   .enemyBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
   #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
@@ -30,39 +34,58 @@
   #hud.hidden { display: none; }
   .bar { position: relative; background: #0b0a0cd0; border: 1px solid #5d5132; overflow: hidden; }
   .bar > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
-  #pBars { position: absolute; left: 22px; top: 20px; }
+  #pBars { position: absolute; left: 22px; top: 20px; transform: scale(var(--hud)); transform-origin: top left; }
   #pHp { width: min(320px, 24vw); height: 16px; }
   #pSt { width: min(260px, 20vw); height: 10px; margin-top: 6px; }
+  #pInfo { margin-top: 7px; font-size: 14px; color: #d9cda8; text-shadow: 0 0 5px #000; letter-spacing: 1px; }
+  #pInfo span { margin-right: 16px; }
+  #pFlasks { margin-top: 12px; height: 18px; }
+  .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
+    border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #14110f; }
+  .flask::before { content: ''; position: absolute; left: 3px; top: -5px; width: 3px; height: 4px;
+    border: 1px solid #5d5132; border-bottom: none; background: #14110f; }
+  .flask.full { border-color: #c9934a; background: radial-gradient(circle at 50% 70%, #ffd27a, #e3872c 55%, #8a4612);
+    box-shadow: 0 0 7px #e8902f99; }
+  .flask.full::before { border-color: #c9934a; }
+  #pSouls b { color: #e6dcb8; font-weight: normal; }
   .trail { background: #c9b26a; }
   .hp { background: linear-gradient(#a32a22, #6e1612); }
   .st { background: linear-gradient(#4f9a4a, #2d6a2e); }
-  #eBars { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); text-align: center; }
+  .po { background: linear-gradient(#e8c060, #a87a2a); }
+  #eBars { position: absolute; left: 50%; top: 20px; transform: translateX(-50%) scale(var(--hud)); transform-origin: top center; text-align: center; }
+  #eBars.hidden { visibility: hidden; }
   #eName { font-size: 17px; letter-spacing: 3px; color: #d9cda8; text-shadow: 0 0 6px #000; margin-bottom: 5px; }
   #eHp { width: 46vw; max-width: 620px; height: 12px; }
-  #ePosture { width: 30vw; max-width: 400px; height: 6px; margin: 5px auto 0; }
-  #ePosture.hidden { display: none; }
-  .posture { background: linear-gradient(#e0b84a, #a8801e); }
-  /* apex of the inverted V sits on the exact screen centre */
-  #crosshair { position: absolute; left: calc(50% - 12px); top: calc(50% - 2px); }
-  #crosshair.hidden { display: none; }
-  #helpHint { position: absolute; left: 22px; bottom: 16px; font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000; }
+  #ePost { width: 46vw; max-width: 620px; height: 6px; margin-top: 3px; }
+  #ePost.hidden { display: none; }
+  #helpHint { position: absolute; left: 22px; bottom: 16px; font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000;
+    transform: scale(var(--hud)); transform-origin: bottom left; }
   #help { position: absolute; left: 22px; bottom: 40px; background: #0d0b10e8; border: 1px solid #7d6a3a;
-    padding: 12px 16px; font-size: 13px; line-height: 1.55; pointer-events: auto; }
+    padding: 12px 16px; font-size: 13px; line-height: 1.5; pointer-events: auto; transform: scale(var(--hud)); transform-origin: bottom left; }
   #help.hidden { display: none; }
   #help table { border-collapse: collapse; }
   #help td { padding: 0 14px 0 0; }
   #help td:first-child { color: #b79d5c; }
   #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
-  #help .warn { color: #7a7260; font-size: 11px; margin-top: 6px; max-width: 300px; }
-  #died, #won { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
+  #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
+  #help .warn { color: #7a7260; font-size: 11px; margin-top: 6px; max-width: 320px; }
+  #died, #won, #complete { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
   #died .big { font-size: 78px; letter-spacing: 12px; color: #7a0f0f; text-shadow: 0 0 30px #000;
     background: linear-gradient(90deg, transparent, #000000b0 30%, #000000b0 70%, transparent); padding: 14px 0; }
-  #died .small, #won .small { font-size: 16px; color: #a89f86; margin-top: 16px; opacity: 0; letter-spacing: 2px; }
-  #died.show { opacity: 1; transition: opacity 3s ease-in; }
-  #died.show .small { opacity: 1; transition: opacity 1s linear 3.2s; }
-  #won .big { font-size: 40px; letter-spacing: 10px; color: #c9b26a; text-shadow: 0 0 20px #000; }
-  #won.show { opacity: 1; transition: opacity 2s ease-in 1s; }
-  #won.show .small { opacity: 1; transition: opacity 1s linear 3s; }
+  #died .small, #won .small, #complete .small { font-size: 16px; color: #a89f86; margin-top: 16px; opacity: 0; letter-spacing: 2px; }
+  #died.show { opacity: 1; transition: opacity 2.2s ease-in 0.6s; }
+  #died.show .small { opacity: 1; transition: opacity 1s linear 2.6s; }
+  #won .big, #complete .big { font-size: 40px; letter-spacing: 10px; color: #c9b26a; text-shadow: 0 0 20px #000; }
+  #complete .big { font-size: 54px; color: #b39a58;
+    background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
+  #won.show, #complete.show { opacity: 1; transition: opacity 2s ease-in 1s; }
+  #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
+  #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
+    color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
+  #rested.show { opacity: 1; transition: opacity 0.4s; }
+  #prompt { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 15px; color: #d9cda8;
+    text-shadow: 0 0 6px #000; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
+  #prompt.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -72,46 +95,52 @@
   <div id="pBars">
     <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
     <div class="bar" id="pSt"><div class="st" id="pStFill"></div></div>
+    <div id="pFlasks"></div>
+    <div id="pInfo2" style="margin-top:4px;font-size:14px;color:#d9cda8;text-shadow:0 0 5px #000;letter-spacing:1px"><span id="pSouls">Souls <b id="pSoulsN">0</b></span></div>
   </div>
   <div id="eBars">
     <div id="eName"></div>
     <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
-    <div class="bar" id="ePosture"><div class="posture" id="ePostureFill"></div></div>
+    <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
   </div>
-  <div id="died"><div class="big">YOU DIED</div><div class="small">Press R to respawn</div></div>
-  <div id="won"><div class="big">ENEMY FELLED</div><div class="small">R to fight again &middot; Esc for menu</div></div>
+  <div id="rested">RESTED</div>
+  <div id="prompt">F: Rest at bonfire</div>
+  <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
+  <div id="won"><div class="big">ENEMY FELLED</div><div class="small">R to fight again &middot; Esc to pause</div></div>
+  <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small">R to restart &middot; Esc to pause and leave</div></div>
   <div id="help" class="hidden">
     <table>
       <tr><td>Move</td><td>W A S D / Arrow keys</td></tr>
+      <tr><td>Camera</td><td>Mouse (click the view to capture it)</td></tr>
       <tr><td>Jump</td><td>Space</td></tr>
       <tr><td>Roll</td><td>Shift</td></tr>
       <tr><td>Light attack</td><td>J / Left mouse</td></tr>
-      <tr><td>Heavy attack</td><td>K / Right-click (quick tap)</td></tr>
+      <tr><td>Heavy attack</td><td>K / Right mouse</td></tr>
+      <tr><td>Jump attack</td><td>Light or heavy while airborne (heavy lands harder, recovers slower)</td></tr>
       <tr><td>Block (hold)</td><td>L / Ctrl</td></tr>
-      <tr><td>Parry</td><td>E, as the enemy weapon turns pale</td></tr>
-      <tr><td>Lock-on</td><td>Q</td></tr>
-      <tr><td>Camera</td><td>Hold right mouse + drag, wheel zooms</td></tr>
-      <tr><td>Shoulder camera</td><td>V (mouse aims; click to recapture the cursor)</td></tr>
-      <tr><td>Reset fight</td><td>R</td></tr>
-      <tr><td>Menu</td><td>Escape</td></tr>
+      <tr><td>Parry</td><td>E (time it just before the blow lands)</td></tr>
+      <tr><td>Lock-on</td><td>Q (toggle)</td></tr>
+      <tr><td>Switch target</td><td>Tab (while locked on)</td></tr>
+      <tr><td>Zoom in / out</td><td>Mouse wheel / = and -</td></tr>
+      <tr><td>Rest at bonfire</td><td>F</td></tr>
+      <tr><td>Use flask</td><td>G</td></tr>
+      <tr><td>Restart fight / level</td><td>R</td></tr>
+      <tr><td>Pause</td><td>Escape</td></tr>
       <tr><td>Help</td><td>F1</td></tr>
     </table>
     <label><input type="checkbox" id="hbToggle" checked> Show hitboxes (H)</label>
+    <div class="level">Level 1: defeat each gated opponent to open the next gate. Others are optional.</div>
     <div class="warn">Prefer L for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.</div>
   </div>
-  <svg id="crosshair" class="hidden" width="24" height="14" viewBox="0 0 24 14">
-    <polyline points="3,13 12,2 21,13" fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="3,13 12,2 21,13" fill="none" stroke="#f2ead0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
   <div id="helpHint">F1: help</div>
 </div>
 
 <div id="menu">
   <div id="menuBox">
-    <h1>COMBAT ARENA 3D</h1>
-    <div class="sub">CHOOSE YOUR OPPONENT</div>
+    <h1 id="menuTitle">COMBAT ARENA 3D</h1>
+    <div class="sub" id="menuSub"></div>
     <div id="menuList"></div>
-    <div class="hint">W/S or &uarr;/&darr; to select &middot; Enter or J to confirm</div>
+    <div class="hint" id="menuHint"></div>
   </div>
 </div>
 
@@ -128,56 +157,73 @@ const CONFIG = {
   arena: { halfX: 18, halfZ: 13, wallHeight: 1.3, wallThickness: 0.9 },
   input: { buffer: 0.2 },
   camera: {
-    fov: 55,
-    distance: 6.4, minDist: 3.2, maxDist: 10, zoomStep: 0.7,
-    pitch: 0.3, minPitch: -0.25, maxPitch: 1.25,       // elevation of the camera above the pivot (rad)
-    orbitSpeed: 0.0045,                                 // rad per pixel of mouse travel
-    lookHeight: 1.5, jumpFollow: 0.3,                   // pivot height; fraction of jump height followed
-    followRate: 10, followRateY: 5, lookRate: 10,       // smoothing (1/s)
-    recenterDelay: 1.2, recenterRate: 0.75, recenterPitchRate: 0.6,
-    leanRange: 9, leanAmount: 0.18, leanPullback: 0.8, extraRate: 3,
-    lockRange: 24, lockReturnDelay: 0.5, lockReturnRate: 4, lockPitch: 0.3, lockPullback: 0.45,
-    wallMargin: 0.3, floorClear: 0.3, minBoom: 0.7, boomReturn: 4,
-    deathPullback: 3.5, deathPitch: 0.95, deathRate: 0.8, deathHold: 4.5,
-    shakeTime: 0.22, shakeAmount: 0.07,
-    tapTime: 0.22, tapMove: 6,                          // a right-click this short/still is a heavy attack, not an orbit
-    // Shoulder mode: tight over-the-right-shoulder view, mouse aims freely.
-    shoulderSide: 0.6, shoulderHeight: 1.65, shoulderDist: 2.6, shoulderFollowRate: 20, shoulderBlend: 8,
-    shoulderAimDist: 20,
+    fov: 55, lookHeight: 1.35,
+    followRate: 7,        // position smoothing (1/s)
+    yawFollow: 0.85,      // how fast the camera swings behind the facing (rad/s at 90 deg off)
+    leanRange: 11, leanAmount: 0.38, leanPullback: 1.4, leanRaise: 0.5,
+    wallMargin: 0.3, gateMargin: 0.6, closeRaise: 1.6, floor: 0.6, ceilingMargin: 0.7,
   },
-  parry: {
-    // Window opens lead seconds before the strike goes active (lead scales with the wind-up) and closes post after.
-    leadFrac: 0.16, leadMin: 0.07, leadMax: 0.24, post: 0.05,
-    reachMargin: 0.9,                                   // how far outside the strike's volume a parry still connects
-    whiffCost: 12, whiffRecovery: 0.5, successTime: 0.18,
-    staggerTime: 1.9, riposteTime: 1.3, posture: 100,   // posture added to posture-meter enemies
-    hitstop: 0.11, flashTime: 0.3,
-    riposte: { light: { damage: 2.2, poise: 1 }, heavy: { damage: 2.0, poise: 2 } },
-  },
+  zoom: { min: 2.6, max: 12, step: 0.8, default: 6.4, rate: 7, repeatDelay: 0.28, repeat: 0.09,
+          heightRatio: 0.48 },   // camera height = distance * heightRatio
+  mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
+  lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
+          slack: 0.42, drift: 0.18,
+          autoRange: 9,               // first-encounter auto lock-on distance   // camera yaw slack (rad) and the slow drift inside it (1/s)
+          sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
     radius: 0.36, height: 1.8,
     maxHp: 100, maxStamina: 100, maxPoise: 30, poiseResetTime: 4,
     staminaRegen: 36, staminaDelay: 0.75,
-    walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14, lockTurnRate: 11, attackTrackRate: 3,
+    walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14,
     jumpVelocity: 8.2, airControl: 9,
     rollCost: 27, rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
-    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7,
-    startX: -6, startZ: 0,
+    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25,
+    // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
+    autoTarget: { range: 3.6, cone: 1.75, angleWeight: 1.5 },
     attacks: {
-      light: { startup: 0.22, active: 0.12, recovery: 0.34, cost: 16, damage: 18, poise: 22, knock: 3,
+      light: { kind: 'light', startup: 0.22, active: 0.12, recovery: 0.34, cost: 16, damage: 18, poise: 22, knock: 3,
                lunge: 2.4, hitstop: 0.07, anim: 'sweep',
                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
-      heavy: { startup: 0.56, active: 0.16, recovery: 0.64, cost: 40, damage: 44, poise: 52, knock: 7,
+      heavy: { kind: 'heavy', startup: 0.56, active: 0.16, recovery: 0.64, cost: 40, damage: 44, poise: 52, knock: 7,
                lunge: 3.2, hitstop: 0.13, anim: 'overhead',
                box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
     },
   },
+  // Attacks started while airborne. The hitbox opens once the wind-up is done and the player is
+  // descending, stays out until landing plus `impactTime`, and sits low so it reaches enemies below.
+  jumpAttacks: {
+    airControl: 0.6,   // multiplier on normal air control during a jump attack
+    light: { kind: 'light', startup: 0.12, cost: 18, damage: 22, poise: 26, knock: 3.5, hitstop: 0.09,
+             box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 }, impactTime: 0.08,
+             landRecovery: 0.4, hitRecoveryMul: 0.6, hop: 3.2,
+             fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } },
+    heavy: { kind: 'heavy', startup: 0.3, cost: 42, damage: 52, poise: 60, knock: 7, hitstop: 0.15,
+             box: { w: 2.2, h: 2.4, d: 2.6, fwd: 1.1, y: 0.0 }, impactTime: 0.1,
+             landRecovery: 0.8, hitRecoveryMul: 0.6, hop: 3.8,
+             fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } },
+  },
+  // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
+  groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
+                 dustLife: 0.9, shakeTime: 0.2 },
   block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
            breakTime: 1.35, hitstop: 0.05 },
+  // Parry window is anchored to the enemy's swing: it opens `lead` s before the active phase and
+  // closes `grace` s into it. A press stays armed for `arm` s, so a press succeeds only in
+  // [active - lead - arm, active + grace] — about a quarter second.
+  parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
+           riposteTime: 1.1, riposteLight: 2.4, riposteHeavy: 2.6, ripostePoise: 2.5, riposteHitstop: 1.6,
+           flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  flask: { charges: 4, heal: 45, time: 1.3, healStart: 0.35, healDuration: 0.8 },
+  rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0 },
+  death: { slowTime: 1.4, respawnDelay: 4.8 },
+  bloodstain: { pickupRange: 1.3 },
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
-           deathFade: 2.0, poiseResetTime: 5, postureDelay: 3.5, postureRegen: 22, startX: 6, startZ: 0 },
-  fx: { tintTime: 0.22, particleLife: 0.5 },
+           deathFade: 2.0, poiseResetTime: 5, startX: 6, startZ: 0,
+           riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5, patrolSpeedMul: 0.42 },
+  level: { aggroGated: 14, aggroAmbush: 7.8, aggroPatrol: 9, aggroSlumber: 5.5, leash: 22,
+           gateLiftTime: 1.6, targetRange: 14 },
+  fx: { tintTime: 0.22, particleLife: 0.5, recoilTime: 0.25 },
 };
 
 // ============================================================================
@@ -188,9 +234,9 @@ const CONFIG = {
 const ENEMY_DEFS = [
   {
     name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
-    scale: 1.0, bulk: 1.0, radius: 0.4, height: 1.8, color: 0x8a6a45, weapon: 'sword',
+    scale: 1.0, bulk: 1.0, radius: 0.4, height: 1.8, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
     hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, aggroRange: 30, holdRange: 2.4,
-    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1,
+    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7, souls: 60,
     attacks: [
       { name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
@@ -202,9 +248,9 @@ const ENEMY_DEFS = [
   },
   {
     name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
-    scale: 1.3, bulk: 1.3, radius: 0.6, height: 2.3, color: 0x7b8088, weapon: 'sword',
+    scale: 1.3, bulk: 1.3, radius: 0.6, height: 2.3, color: 0x7b8088, weapon: 'sword', idle: 'still',
     hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, aggroRange: 30, holdRange: 2.9,
-    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2,
+    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8, souls: 220,
     attacks: [
       { name: 'Greatsword Slam', anim: 'overhead', hits: [{ startup: 1.4, active: 0.18 }], recovery: 1.35,
         damage: 58, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
@@ -216,9 +262,9 @@ const ENEMY_DEFS = [
   },
   {
     name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
-    scale: 0.85, bulk: 0.8, radius: 0.32, height: 1.5, color: 0x2f5234, weapon: 'sword',
+    scale: 0.85, bulk: 0.8, radius: 0.32, height: 1.5, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
     hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, aggroRange: 30, holdRange: 2.3,
-    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0,
+    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6, souls: 90,
     attacks: [
       { name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
@@ -230,10 +276,12 @@ const ENEMY_DEFS = [
   },
   {
     name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
-    scale: 2.3, bulk: 1.2, radius: 0.95, height: 4.1, color: 0xb9b3a0, weapon: 'club',
+    scale: 2.3, bulk: 1.2, radius: 0.95, height: 4.1, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, aggroRange: 30, holdRange: 3.6,
-    // usesPosture: poise is shown as a posture meter; hits never cancel its wind-ups, the break lands after the swing.
-    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 2.4, usesPosture: true,
+    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, souls: 1200,
+    // Boss posture: replaces poise interrupts. Only chained hits build it.
+    posture: { max: 100, light: 9, heavy: 24, parry: 38, chainGap: 1.8, decay: 7, breakTime: 3.2,
+               damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
@@ -245,6 +293,36 @@ const ENEMY_DEFS = [
   },
 ];
 
+// Level 1 layout. The hall runs along +X from x = 0 to `length`; z = 0 is its centre line.
+const LEVEL_1 = {
+  name: 'Level 1: The Long Hall',
+  description: 'Four opponents, and others waiting in the dark. Clear the way forward.',
+  length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
+  start: { x: 5, z: 0 },
+  bonfires: [{ x: 2.6, z: -3.4 }, { x: 110.5, z: -4.2 }],   // start of hall, before the Fast Rogue zone
+  alcoveWidth: 2.8, alcoveDepth: 2.2,
+  alcoves: [{ x: 58, side: 1 }, { x: 87, side: -1 }, { x: 141, side: 1 }],
+  // Gated zones in order: entering x > trigger spawns the enemy; its gate at gateX lifts on its death.
+  gated: [
+    { enemy: 0, trigger: 16, spawn: { x: 28, z: 0 }, gateX: 34 },
+    { enemy: 1, trigger: 64, spawn: { x: 75, z: 0 }, gateX: 82 },
+    { enemy: 2, trigger: 112, spawn: { x: 121, z: 0 }, gateX: 128 },
+    { enemy: 3, trigger: 146, spawn: { x: 160, z: 0 }, gateX: 170 },
+  ],
+  // Optional enemies scattered between the gated zones.
+  dispersed: [
+    { behavior: 'ambush', enemy: 2, alcove: 0 },
+    { behavior: 'ambush', enemy: 2, alcove: 1 },
+    { behavior: 'ambush', enemy: 2, alcove: 2 },
+    { behavior: 'patrol', enemy: 0, z: 1.5, path: [40, 53] },
+    { behavior: 'patrol', enemy: 0, z: -2.5, path: [98, 104] },
+    { behavior: 'patrol', enemy: 0, z: -2, path: [131, 138] },
+    { behavior: 'slumber', enemy: 1, x: 93, z: 2 },
+  ],
+  torches: [{ x: 30, side: -1 }, { x: 50, side: 1 }, { x: 79, side: -1 }, { x: 100, side: 1 },
+            { x: 125, side: -1 }, { x: 150, side: 1 }, { x: 167, side: -1 }],
+};
+
 // ============================================================================
 // 3. input
 // ============================================================================
@@ -253,13 +331,13 @@ const ACTIONS = {
   jump: ['Space'], roll: ['ShiftLeft', 'ShiftRight'],
   light: ['KeyJ', 'Mouse0'], heavy: ['KeyK', 'Mouse2'],
   block: ['KeyL', 'ControlLeft', 'ControlRight'], parry: ['KeyE'],
+  lock: ['KeyQ'], switchTarget: ['Tab'], rest: ['KeyF'], flask: ['KeyG'],
+  zoomIn: ['Equal', 'NumpadAdd'], zoomOut: ['Minus', 'NumpadSubtract'],
 };
-const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), ['KeyR', 'KeyH', 'KeyQ', 'KeyV', 'Escape', 'Enter']));
+const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), ['KeyR', 'KeyH', 'Escape', 'Enter']));
 
 const input = {
   held: new Set(),
-  orbiting: false, orbitX: 0, orbitY: 0, zoom: 0,   // camera: right-drag deltas (px) and wheel notches since last step
-  orbitStart: 0, orbitTravel: 0,
   pressed: new Map(),   // code -> time of press (s); each press is consumed at most once
   now() { return performance.now() / 1000; },
   down(code) { if (!this.held.has(code)) { this.held.add(code); this.pressed.set(code, this.now()); } },
@@ -275,8 +353,14 @@ const input = {
     for (const c of ACTIONS[action]) this.pressed.delete(c);
     return true;
   },
-  clear() { this.held.clear(); this.pressed.clear(); this.orbiting = false; this.orbitX = this.orbitY = this.zoom = 0; },
+  clear() { this.held.clear(); this.pressed.clear(); },
 };
+
+// Persistent options (pause menu). Stored per browser; failures fall back to defaults.
+const SETTINGS_KEY = 'combat-arena-3d.settings';
+const settings = { sensitivity: 5, invert: false, hitboxes: true, hudScale: 1 };
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* defaults */ }
+function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
 
 // ============================================================================
 // 4. Scene setup
@@ -298,63 +382,160 @@ moonLight.position.set(-6, 14, 8);
 scene.add(moonLight);
 scene.add(new THREE.AmbientLight(0x555a70, 1.3));   // faint fill so silhouettes stay readable
 
-const BONFIRE = { x: 0, z: -(CONFIG.arena.halfZ - 2.2) };
-const fireLight = new THREE.PointLight(0xff8a3c, 11, 0, 1.0);
-fireLight.position.set(BONFIRE.x, 1.4, BONFIRE.z);
-scene.add(fireLight);
-let flame;
+const arenaGroup = new THREE.Group(), hallGroup = new THREE.Group();
+scene.add(arenaGroup, hallGroup);
+const flames = [];   // { mesh, light, base, color } flickered every frame
+const dust = [];     // { group, points, origin, seeds } drifting motes near light sources
 
+const MAT = {
+  stone: new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.95 }),
+  edge: new THREE.MeshStandardMaterial({ color: 0x5a5650, roughness: 0.95 }),
+  wall: new THREE.MeshStandardMaterial({ color: 0x45413d, roughness: 0.9 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x2a2826, roughness: 1 }),
+  ceiling: new THREE.MeshStandardMaterial({ color: 0x0c0b0d, roughness: 1 }),
+  iron: new THREE.MeshStandardMaterial({ color: 0x3b3a3c, roughness: 0.6, metalness: 0.5 }),
+  log: new THREE.MeshStandardMaterial({ color: 0x241a12, roughness: 1 }),
+};
+const addBox = (group, w, h, d, mat, x, y, z) => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); group.add(m); return m;
+};
+function addDust(group, x, y, z, spread, count) {
+  const pos = new Float32Array(count * 3), seeds = [];
+  for (let i = 0; i < count; i++) seeds.push({ x: rand(-spread, spread), y: rand(-1, 1.6), z: rand(-spread, spread), s: rand(0, 100), v: rand(0.15, 0.4) });
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const points = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffd9a0, size: 0.035, transparent: true, opacity: 0.4, depthWrite: false }));
+  group.add(points);
+  dust.push({ group, points, origin: { x, y, z }, seeds });
+}
+function addFlame(group, x, y, z, size, light) {
+  const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.28 * size, 0.95 * size, 7),
+    new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, fog: false }));
+  mesh.position.set(x, y, z); group.add(mesh);
+  if (light) group.add(light);
+  flames.push({ mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
+}
+function addBonfire(group, x, z, intensity) {
+  for (let i = 0; i < 5; i++) {
+    const log = addBox(group, 0.14, 0.14, 0.95, MAT.log, x, 0.12, z);
+    log.rotation.y = i * Math.PI / 2.5; log.rotation.x = 0.25;
+  }
+  const ash = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.08, 14), MAT.dark);
+  ash.position.set(x, 0.04, z); group.add(ash);
+  const sword = addBox(group, 0.05, 1.3, 0.09, new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: 0.6, roughness: 0.5 }), x, 0.7, z);
+  sword.rotation.z = 0.18;
+  const light = new THREE.PointLight(0xff8a3c, intensity, 0, 1.0);
+  light.position.set(x, 1.4, z);
+  addFlame(group, x, 0.62, z, 1, light);
+  addDust(group, x, 1.4, z, 2.2, 16);
+}
+// Iron portcullis spanning the hall at x; returns the group that lifts.
+function buildPortcullis(group, x, width, height) {
+  const g = new THREE.Group(); g.position.x = x;
+  const barGeo = new THREE.BoxGeometry(0.12, height, 0.12);
+  for (let z = -width / 2 + 0.25; z <= width / 2 - 0.2; z += 0.5) {
+    const b = new THREE.Mesh(barGeo, MAT.iron); b.position.set(0, height / 2, z); g.add(b);
+  }
+  const railGeo = new THREE.BoxGeometry(0.14, 0.12, width);
+  for (let y = 0.6; y < height; y += 1.1) { const r = new THREE.Mesh(railGeo, MAT.iron); r.position.set(0, y, 0); g.add(r); }
+  group.add(g); return g;
+}
+const rand = (a, b) => a + Math.random() * (b - a);
+
+const ARENA_BONFIRE = { x: 0, z: -(CONFIG.arena.halfZ - 2.2) };
 (function buildArena() {
-  const A = CONFIG.arena;
-  const stone = new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.95 });
-  const stoneEdge = new THREE.MeshStandardMaterial({ color: 0x5a5650, roughness: 0.95 });
-  const stoneWall = new THREE.MeshStandardMaterial({ color: 0x45413d, roughness: 0.9 });
-  const stoneDark = new THREE.MeshStandardMaterial({ color: 0x2a2826, roughness: 1 });
-  const box = (w, h, d, mat, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z); scene.add(m); return m;
-  };
-  // Floor, with a lighter border strip marking the playable limit.
-  box(A.halfX * 2, 0.5, A.halfZ * 2, stone, 0, -0.25, 0);
-  const e = 0.7;
-  box(A.halfX * 2, 0.02, e, stoneEdge, 0, 0.01, A.halfZ - e / 2);
-  box(A.halfX * 2, 0.02, e, stoneEdge, 0, 0.01, -A.halfZ + e / 2);
-  box(e, 0.02, A.halfZ * 2 - e * 2, stoneEdge, A.halfX - e / 2, 0.01, 0);
-  box(e, 0.02, A.halfZ * 2 - e * 2, stoneEdge, -A.halfX + e / 2, 0.01, 0);
-  // Floor seams for a little texture and motion parallax.
-  for (let x = -A.halfX + 4; x < A.halfX; x += 4) box(0.06, 0.012, A.halfZ * 2 - e * 2, stoneDark, x, 0.006, 0);
-  for (let z = -A.halfZ + 4; z < A.halfZ; z += 4) box(A.halfX * 2 - e * 2, 0.012, 0.06, stoneDark, 0, 0.006, z);
-  // Low boundary walls just outside the playable rectangle.
+  const A = CONFIG.arena, G = arenaGroup;
+  addBox(G, A.halfX * 2, 0.5, A.halfZ * 2, MAT.stone, 0, -0.25, 0);
+  const e = 0.7;   // lighter border strip marking the playable limit
+  addBox(G, A.halfX * 2, 0.02, e, MAT.edge, 0, 0.01, A.halfZ - e / 2);
+  addBox(G, A.halfX * 2, 0.02, e, MAT.edge, 0, 0.01, -A.halfZ + e / 2);
+  addBox(G, e, 0.02, A.halfZ * 2 - e * 2, MAT.edge, A.halfX - e / 2, 0.01, 0);
+  addBox(G, e, 0.02, A.halfZ * 2 - e * 2, MAT.edge, -A.halfX + e / 2, 0.01, 0);
+  for (let x = -A.halfX + 4; x < A.halfX; x += 4) addBox(G, 0.06, 0.012, A.halfZ * 2 - e * 2, MAT.dark, x, 0.006, 0);
+  for (let z = -A.halfZ + 4; z < A.halfZ; z += 4) addBox(G, A.halfX * 2 - e * 2, 0.012, 0.06, MAT.dark, 0, 0.006, z);
   const t = A.wallThickness, h = A.wallHeight;
-  box(A.halfX * 2 + t * 2, h, t, stoneWall, 0, h / 2, A.halfZ + t / 2);
-  box(A.halfX * 2 + t * 2, h, t, stoneWall, 0, h / 2, -A.halfZ - t / 2);
-  box(t, h, A.halfZ * 2, stoneWall, A.halfX + t / 2, h / 2, 0);
-  box(t, h, A.halfZ * 2, stoneWall, -A.halfX - t / 2, h / 2, 0);
-  // Surrounding ground and background pillars (no collision).
-  box(160, 0.5, 160, stoneDark, 0, -0.3, 0);
+  addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, A.halfZ + t / 2);
+  addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, -A.halfZ - t / 2);
+  addBox(G, t, h, A.halfZ * 2, MAT.wall, A.halfX + t / 2, h / 2, 0);
+  addBox(G, t, h, A.halfZ * 2, MAT.wall, -A.halfX - t / 2, h / 2, 0);
+  addBox(G, 160, 0.5, 160, MAT.dark, 0, -0.3, 0);
   const pillar = (x, z, ph) => {
-    box(1.9, 0.5, 1.9, stoneWall, x, 0.25, z);
-    box(1.4, ph, 1.4, stoneWall, x, ph / 2, z);
-    box(1.9, 0.5, 1.9, stoneWall, x, ph + 0.25, z);
+    addBox(G, 1.9, 0.5, 1.9, MAT.wall, x, 0.25, z);
+    addBox(G, 1.4, ph, 1.4, MAT.wall, x, ph / 2, z);
+    addBox(G, 1.9, 0.5, 1.9, MAT.wall, x, ph + 0.25, z);
   };
   const px = A.halfX + 3.5, pz = A.halfZ + 3.5;
   for (let x = -px; x <= px + 0.1; x += (px * 2) / 5) { pillar(x, -pz, 8 + Math.abs(x) % 3); pillar(x, pz, 7 + Math.abs(x * 1.7) % 4); }
   for (let z = -pz + 6.6; z < pz - 1; z += 6.6) { pillar(-px, z, 9); pillar(px, z, 6.5 + Math.abs(z) % 3); }
-  // Decorative bonfire.
-  const logMat = new THREE.MeshStandardMaterial({ color: 0x241a12, roughness: 1 });
-  for (let i = 0; i < 5; i++) {
-    const log = box(0.14, 0.14, 0.95, logMat, BONFIRE.x, 0.12, BONFIRE.z);
-    log.rotation.y = i * Math.PI / 2.5; log.rotation.x = 0.25;
-  }
-  const ash = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.08, 14), stoneDark);
-  ash.position.set(BONFIRE.x, 0.04, BONFIRE.z); scene.add(ash);
-  flame = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.95, 7),
-    new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, fog: false }));
-  flame.position.set(BONFIRE.x, 0.62, BONFIRE.z); scene.add(flame);
-  const swordInFire = box(0.05, 1.3, 0.09, new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: 0.6, roughness: 0.5 }),
-    BONFIRE.x, 0.7, BONFIRE.z);
-  swordInFire.rotation.z = 0.18;
+  addBonfire(G, ARENA_BONFIRE.x, ARENA_BONFIRE.z, 11);
 })();
+
+const hallGates = [];   // portcullis meshes for LEVEL_1.gated, in order
+(function buildHall() {
+  const L = LEVEL_1, G = hallGroup, len = L.length, hz = L.halfZ, wh = L.wallHeight, aw = L.alcoveWidth / 2;
+  addBox(G, len + 2, 0.5, (hz + L.alcoveDepth + 1) * 2, MAT.stone, len / 2, -0.25, 0);
+  addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, hz - 0.3);
+  addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, -hz + 0.3);
+  for (let x = 4; x < len; x += 4) addBox(G, 0.06, 0.012, hz * 2 - 1.2, MAT.dark, x, 0.006, 0);
+  addBox(G, len, 0.012, 0.06, MAT.dark, len / 2, 0.006, 0);
+  // Side walls, broken by alcoves.
+  for (const side of [1, -1]) {
+    const gaps = L.alcoves.filter(a => a.side === side).map(a => [a.x - aw, a.x + aw]).sort((a, b) => a[0] - b[0]);
+    let from = -1;
+    for (const [g0, g1] of [...gaps, [len + 1, len + 1]]) {
+      if (g0 > from) addBox(G, g0 - from, wh, 1, MAT.wall, (from + g0) / 2, wh / 2, side * (hz + 0.5));
+      from = g1;
+    }
+    for (const [g0, g1] of gaps) {
+      const d = L.alcoveDepth;
+      addBox(G, g1 - g0 + 2, 3.2, 1, MAT.wall, (g0 + g1) / 2, 1.6, side * (hz + d + 0.5));
+      addBox(G, 1, 3.2, d, MAT.wall, g0 - 0.5, 1.6, side * (hz + d / 2));
+      addBox(G, 1, 3.2, d, MAT.wall, g1 + 0.5, 1.6, side * (hz + d / 2));
+      addBox(G, g1 - g0 + 2, 0.3, d + 1, MAT.ceiling, (g0 + g1) / 2, 3.2, side * (hz + d / 2));
+      addBox(G, g1 - g0, wh - 3.2, 1, MAT.wall, (g0 + g1) / 2, 3.2 + (wh - 3.2) / 2, side * (hz + 0.5));
+    }
+  }
+  addBox(G, 1, wh, hz * 2 + 2, MAT.wall, -0.5, wh / 2, 0);
+  addBox(G, 1, wh, hz * 2 + 2, MAT.wall, len + 0.5, wh / 2, 0);
+  addBox(G, len + 2, 0.5, hz * 2 + 2, MAT.ceiling, len / 2, wh + 0.25, 0);
+  // Thin pillars along both walls for rhythm (no collision).
+  const nearGap = x => L.alcoves.some(a => Math.abs(a.x - x) < aw + 1) || L.gated.some(g => Math.abs(g.gateX - x) < 1.5);
+  for (let x = 5; x < len - 1; x += 7) {
+    for (const side of [1, -1]) {
+      if (nearGap(x)) continue;
+      addBox(G, 0.5, wh, 0.5, MAT.wall, x, wh / 2, side * (hz - 0.25));
+      addBox(G, 0.75, 0.3, 0.75, MAT.dark, x, 0.15, side * (hz - 0.25));
+      addBox(G, 0.75, 0.3, 0.75, MAT.dark, x, wh - 0.6, side * (hz - 0.25));
+    }
+  }
+  // Gates: lintel in the wall above, portcullis below.
+  for (const g of L.gated) {
+    addBox(G, 1.2, wh - L.gateHeight, hz * 2, MAT.wall, g.gateX, L.gateHeight + (wh - L.gateHeight) / 2, 0);
+    hallGates.push(buildPortcullis(G, g.gateX, hz * 2, L.gateHeight));
+  }
+  // Far end: solid wall with a closed exit gate.
+  addBox(G, 0.4, 4, 4.6, MAT.ceiling, len - 0.05, 2, 0);
+  buildPortcullis(G, len - 0.3, 4, 3.8);
+  for (const b of L.bonfires) addBonfire(G, b.x, b.z, 10);
+  for (const t of L.torches) {
+    const z = t.side * (hz - 0.15);
+    addBox(G, 0.12, 0.5, 0.12, MAT.iron, t.x, 2.6, z);
+    const light = new THREE.PointLight(0xff7a30, 4.5, 26, 1.0);
+    light.position.set(t.x, 3.2, t.side * (hz - 0.7));
+    addFlame(G, t.x, 3.05, z, 0.45, light);
+    addDust(G, t.x, 2.6, t.side * (hz - 1.6), 1.6, 10);
+  }
+})();
+
+// Walkable space for the current mode: a rectangle, side alcoves, and closed gates.
+const WORLDS = {
+  arena: { minX: -CONFIG.arena.halfX, maxX: CONFIG.arena.halfX, halfZ: CONFIG.arena.halfZ, ceiling: Infinity,
+           alcoves: [], gates: [], gateThickness: 0, bonfires: [ARENA_BONFIRE] },
+  hall: { minX: 0, maxX: LEVEL_1.length, halfZ: LEVEL_1.halfZ, ceiling: LEVEL_1.wallHeight,
+          gateThickness: LEVEL_1.gateThickness, gates: [], bonfires: LEVEL_1.bonfires,
+          alcoves: LEVEL_1.alcoves.map(a => ({ x0: a.x - LEVEL_1.alcoveWidth / 2, x1: a.x + LEVEL_1.alcoveWidth / 2, side: a.side, depth: LEVEL_1.alcoveDepth })) },
+};
+let world = WORLDS.arena;
 
 // ---- shared helpers --------------------------------------------------------
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -362,19 +543,16 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const turnToward = (cur, target, maxStep) => cur + clamp(angDiff(target, cur), -maxStep, maxStep);
-const rand = (a, b) => a + Math.random() * (b - a);
 
 const WARN_COLOR = new THREE.Color(0xff3a1a);
 const HURT_COLOR = new THREE.Color(0xff1010);
 const HIT_COLOR = new THREE.Color(0xffffff);
-const PARRY_COLOR = new THREE.Color(0xfff0a8);    // enemy weapon while its parry window is open
-const FLASH_WHITE = new THREE.Color(0xffffff);
-const FLASH_GRAY = new THREE.Color(0x777777);
+const CRACK_COLOR = new THREE.Color(0xffc060);
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 const shadowGeo = new THREE.CircleGeometry(1, 20);
 
 // Humanoid built from primitives. Local +Z is forward; the weapon arm is on -X.
-const HIP = 0.95;
+const HIP = 0.95, LEG_SEG = 0.45;   // hip pivot height; thigh and shin length
 class Rig {
   constructor({ scale, bulk, color, weapon, weaponColor }) {
     const body = new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, transparent: true });
@@ -390,10 +568,15 @@ class Rig {
     this.spin = pivot(this.tip, 0, HIP, 0);        // twists / tumbles at the hips
     part(this.spin, new THREE.BoxGeometry(0.56, 0.72, 0.32), body, 0, 0.32, 0);
     part(this.spin, new THREE.BoxGeometry(0.5, 0.14, 0.3), dark, 0, -0.05, 0);
-    part(this.spin, new THREE.SphereGeometry(0.17, 14, 10), body, 0, 0.84, 0);
+    this.head = pivot(this.spin, 0, 0.72, 0);
+    part(this.head, new THREE.SphereGeometry(0.17, 14, 10), body, 0, 0.12, 0);
     this.legL = pivot(this.spin, 0.15, -0.05, 0);
     this.legR = pivot(this.spin, -0.15, -0.05, 0);
-    for (const leg of [this.legL, this.legR]) part(leg, new THREE.BoxGeometry(0.2, 0.9, 0.22), dark, 0, -0.45, 0);
+    // Thigh + shin with a knee, so lowering the hips bends the legs instead of sinking the feet.
+    this.kneeL = pivot(this.legL, 0, -LEG_SEG, 0);
+    this.kneeR = pivot(this.legR, 0, -LEG_SEG, 0);
+    for (const leg of [this.legL, this.legR]) part(leg, new THREE.BoxGeometry(0.2, LEG_SEG + 0.02, 0.22), dark, 0, -LEG_SEG / 2, 0);
+    for (const knee of [this.kneeL, this.kneeR]) part(knee, new THREE.BoxGeometry(0.18, LEG_SEG + 0.02, 0.2), dark, 0, -LEG_SEG / 2, 0);
     this.armL = pivot(this.spin, 0.37, 0.6, 0);
     this.armR = pivot(this.spin, -0.37, 0.6, 0);
     for (const arm of [this.armL, this.armR]) part(arm, new THREE.BoxGeometry(0.16, 0.62, 0.16), body, 0, -0.31, 0);
@@ -409,31 +592,57 @@ class Rig {
     this.shadow = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadowRadius = 0.55 * scale * bulk;
+    // Visual-only state: weapon lag spring and the yaw seen last frame.
+    this.lag = 0; this.lagPitch = 0; this.lastYaw = null; this.idleW = 1;
     scene.add(this.root, this.shadow);
   }
   reset() {
     this.tip.rotation.set(0, 0, 0);
-    this.spin.rotation.set(0, 0, 0); this.spin.scale.setScalar(1); this.spin.position.y = HIP;
-    this.legL.rotation.x = this.legR.rotation.x = 0;
+    this.spin.rotation.set(0, 0, 0); this.spin.scale.setScalar(1); this.spin.position.set(0, HIP, 0);
+    this.head.rotation.set(0, 0, 0);
+    this.legL.rotation.set(0, 0, 0); this.legR.rotation.set(0, 0, 0);
+    this.kneeL.rotation.x = this.kneeR.rotation.x = 0; this.crouchDrop = 0;
     this.armL.rotation.set(-0.1, 0, 0); this.armR.rotation.set(-0.4, 0, 0);
     this.weapon.rotation.set(0.5, 0, 0);
   }
   walk(phase, amount) {
     const s = Math.sin(phase) * amount;
     this.legL.rotation.x = s; this.legR.rotation.x = -s; this.armL.rotation.x = -0.1 - s * 0.6;
+    // Knee lifts on the leg that is swinging through.
+    const lift = Math.sin(phase - 1.2) * amount * 1.4;
+    this.kneeL.rotation.x = Math.max(0, lift); this.kneeR.rotation.x = Math.max(0, -lift);
+  }
+  // Lower the hips by `drop` while keeping both feet on the floor: thighs tilt forward, knees bend.
+  // Repeated calls stack as one deeper crouch, not as two bends on top of each other.
+  crouch(drop) {
+    if (drop <= 0) return;
+    const bend = d => Math.acos(clamp(1 - d / (2 * LEG_SEG), -1, 1));
+    const a = bend(this.crouchDrop + drop) - bend(this.crouchDrop);
+    this.crouchDrop += drop;
+    this.spin.position.y -= drop;
+    this.legL.rotation.x -= a; this.legR.rotation.x -= a;
+    this.kneeL.rotation.x += 2 * a; this.kneeR.rotation.x += 2 * a;
+  }
+  // Tilt the torso at the hips without moving the feet.
+  lean(a) { this.spin.rotation.x += a; this.legL.rotation.x -= a; this.legR.rotation.x -= a; }
+  // One knee down: left foot planted ahead, right knee on the floor. k: 0..1.
+  kneel(k) {
+    this.spin.position.y = HIP - 0.45 * k;
+    this.legL.rotation.x = -1.45 * k; this.kneeL.rotation.x = 1.45 * k;
+    this.legR.rotation.x = 0.05 * k; this.kneeR.rotation.x = 1.5 * k;
   }
   // phase: 'startup' | 'active' | 'recovery', p: 0..1 through that phase, dir: mirror for alternating swings
   attackPose(anim, phase, p, dir = 1) {
-    const { armR, armL, spin, tip, legL, weapon } = this;
+    const { armR, armL, spin, tip, legL, kneeL, weapon } = this;
     const S = phase === 'startup', A = phase === 'active';
     if (anim === 'sweep') {
-      if (S) { armR.rotation.x = lerp(-0.4, -1.7, ease(p)); spin.rotation.y = dir * lerp(0, -1.1, ease(p)); }
-      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = dir * lerp(-1.1, 1.2, p); tip.rotation.x = 0.12; }
-      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = dir * lerp(1.2, 0, ease(p)); tip.rotation.x = lerp(0.12, 0, p); }
+      if (S) { armR.rotation.x = lerp(-0.4, -1.7, ease(p)); spin.rotation.y = dir * lerp(0, -1.1, ease(p)); weapon.rotation.x = lerp(0.5, -0.1, ease(p)); }
+      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = dir * lerp(-1.1, 1.2, p); tip.rotation.x = 0.12; weapon.rotation.x = lerp(-0.1, 0.9, p); }
+      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = dir * lerp(1.2, 0, ease(p)); tip.rotation.x = lerp(0.12, 0, p); weapon.rotation.x = lerp(0.9, 0.5, ease(p)); }
     } else if (anim === 'overhead') {
-      if (S) { armR.rotation.x = lerp(-0.4, -3.2, ease(p)); tip.rotation.x = lerp(0, -0.2, ease(p)); }
-      else if (A) { armR.rotation.x = lerp(-3.2, -0.7, p); tip.rotation.x = lerp(-0.2, 0.3, p); }
-      else { armR.rotation.x = lerp(-0.7, -0.4, ease(p)); tip.rotation.x = lerp(0.3, 0, ease(p)); }
+      if (S) { armR.rotation.x = lerp(-0.4, -3.2, ease(p)); tip.rotation.x = lerp(0, -0.2, ease(p)); weapon.rotation.x = lerp(0.5, 0.1, ease(p)); }
+      else if (A) { armR.rotation.x = lerp(-3.2, -0.7, p); tip.rotation.x = lerp(-0.2, 0.3, p); weapon.rotation.x = lerp(0.1, 0.8, p); }
+      else { armR.rotation.x = lerp(-0.7, -0.4, ease(p)); tip.rotation.x = lerp(0.3, 0, ease(p)); weapon.rotation.x = lerp(0.8, 0.5, ease(p)); }
     } else if (anim === 'stab') {
       if (S) { armR.rotation.x = lerp(-0.4, -1.0, ease(p)); spin.rotation.y = lerp(0, -0.8, ease(p)); weapon.rotation.x = lerp(0.5, 1.5, ease(p)); }
       else if (A) { armR.rotation.x = -1.5; spin.rotation.y = lerp(-0.8, 0.6, p); tip.rotation.x = 0.25; weapon.rotation.x = 1.5; }
@@ -443,15 +652,29 @@ class Rig {
       else if (A) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
       else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
     } else if (anim === 'stomp') {
-      if (S) { legL.rotation.x = lerp(0, -1.5, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
-      else if (A) { legL.rotation.x = lerp(-1.5, 0, p); tip.rotation.x = lerp(-0.16, 0.2, p); armR.rotation.x = armL.rotation.x = lerp(-2.6, -0.6, p); }
+      if (S) { legL.rotation.x = lerp(0, -1.5, ease(p)); kneeL.rotation.x = lerp(0, 1.3, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
+      else if (A) { legL.rotation.x = lerp(-1.5, 0, p); kneeL.rotation.x = lerp(1.3, 0, p); tip.rotation.x = lerp(-0.16, 0.2, p); armR.rotation.x = armL.rotation.x = lerp(-2.6, -0.6, p); }
       else { tip.rotation.x = lerp(0.2, 0, ease(p)); armR.rotation.x = lerp(-0.6, -0.4, p); armL.rotation.x = lerp(-0.6, -0.1, p); }
     }
   }
+  // Weapon trails the body's turning and movement slightly (visual only).
+  applyLag(yaw, speed, dt) {
+    if (this.lastYaw === null || dt <= 0) { this.lastYaw = yaw; return; }
+    const angVel = angDiff(yaw, this.lastYaw) / dt;
+    this.lastYaw = yaw;
+    const k = 1 - Math.exp(-10 * dt);
+    this.lag += (clamp(-angVel * 0.07, -0.45, 0.45) - this.lag) * k;
+    this.lagPitch += (clamp(speed * 0.035, 0, 0.25) - this.lagPitch) * k;
+    this.weapon.rotation.y += this.lag; this.weapon.rotation.x += this.lagPitch;
+  }
   setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
-  setWarning(k, color = WARN_COLOR) {
-    this.weaponMat.color.copy(this.weaponBase).lerp(color, k);
-    this.weaponMat.emissive.copy(color).multiplyScalar(k * 1.6);
+  setWarning(k) {
+    this.weaponMat.color.copy(this.weaponBase).lerp(WARN_COLOR, k);
+    this.weaponMat.emissive.copy(WARN_COLOR).multiplyScalar(k * 1.6);
+  }
+  setFlash(k) {
+    this.weaponMat.color.copy(this.weaponBase).lerp(HIT_COLOR, clamp(k, 0, 1));
+    this.weaponMat.emissive.copy(HIT_COLOR).multiplyScalar(k * 2.5);
   }
   setOpacity(a) { for (const m of this.mats) m.opacity = a; this.shadow.material.opacity = 0.45 * a; }
   place(x, y, z, yaw) {
@@ -459,18 +682,43 @@ class Rig {
     const s = this.shadowRadius * clamp(1 - y * 0.25, 0.4, 1);
     this.shadow.position.set(x, 0.03, z); this.shadow.scale.set(s, s, 1);
   }
-  dispose() { scene.remove(this.root, this.shadow); }
+  dispose() {
+    scene.remove(this.root, this.shadow);
+    this.root.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+    for (const m of this.mats) m.dispose();
+    this.shadow.material.dispose();
+  }
 }
 
-// Shared body physics: knockback decay, gravity, arena bounds.
+// Keep a body inside the current world: walls, closed gates and side alcoves.
+// Uses the body's position from the start of the step (px, pz) to know which side it came from.
+function clampToWorld(b) {
+  const W = world, r = b.radius, oldX = b.px, oldZ = b.pz;
+  let lo = W.minX + r, hi = W.maxX - r;
+  for (const g of W.gates) {
+    if (g.open) continue;
+    const h = W.gateThickness / 2 + r;
+    if (oldX <= g.x) hi = Math.min(hi, g.x - h); else lo = Math.max(lo, g.x + h);
+  }
+  b.x = clamp(b.x, lo, hi);
+  const zIn = W.halfZ - r;
+  if (Math.abs(b.z) > zIn) {
+    const side = Math.sign(b.z), inside = Math.abs(oldZ) > zIn + 1e-6, ref = inside ? oldX : b.x;
+    const a = W.alcoves.find(a => a.side === side && ref >= a.x0 + r - 1e-6 && ref <= a.x1 - r + 1e-6);
+    if (a) {
+      if (inside) b.x = clamp(b.x, a.x0 + r, a.x1 - r);
+      b.z = side * Math.min(Math.abs(b.z), W.halfZ + a.depth - r);
+    } else b.z = side * zIn;
+  }
+}
+
+// Shared body physics: knockback decay, gravity, world bounds.
 function integrateBody(b, dt, knockFriction) {
-  const A = CONFIG.arena;
   b.x += (b.vx + b.kx) * dt; b.z += (b.vz + b.kz) * dt;
   const f = Math.exp(-knockFriction * dt); b.kx *= f; b.kz *= f;
   if (b.y > 0 || b.vy > 0) { b.vy -= CONFIG.gravity * dt; b.y += b.vy * dt; }
   if (b.y <= 0) { b.y = 0; b.vy = 0; }
-  b.x = clamp(b.x, -A.halfX + b.radius, A.halfX - b.radius);
-  b.z = clamp(b.z, -A.halfZ + b.radius, A.halfZ - b.radius);
+  clampToWorld(b);
 }
 function approachVel(b, tx, tz, maxDelta) {
   const dx = tx - b.vx, dz = tz - b.vz, d = Math.hypot(dx, dz);
@@ -486,20 +734,22 @@ function deathPose(rig, tt, fade) {
 // 5. Player
 // ============================================================================
 class Player {
-  constructor() {
+  constructor(x, z, yaw) {
     const C = CONFIG.player;
     this.rig = new Rig({ scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4 });
     this.radius = C.radius; this.height = C.height;
-    this.x = C.startX; this.y = 0; this.z = C.startZ; this.yaw = Math.PI / 2;
+    this.x = x; this.y = 0; this.z = z; this.yaw = yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.hp = C.maxHp; this.stamina = C.maxStamina; this.poise = C.maxPoise;
-    this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
-    this.state = 'idle'; this.stateTime = 0;   // idle walk jump fall roll attack block parry hurt stagger dead
-    this.attack = null; this.attackKind = ''; this.riposteHit = false; this.hitbox = null; this.stunTime = 0;
-    this.riposte = 0;                          // time left in the riposte window after a parry
-    this.flash = 0; this.flashColor = FLASH_WHITE;
+    this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
+    this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
+    // idle walk jump fall roll attack jumpAttack land block parry drink rest hurt stagger dead
+    this.state = 'idle'; this.stateTime = 0;
+    this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0;
+    this.activeAt = Infinity; this.landTime = 0; this.landHit = false; this.landEvent = null;
     this.savePrev();
   }
+  alive() { return this.state !== 'dead'; }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
   spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
@@ -508,74 +758,88 @@ class Player {
     return t < a.startup ? 'startup' : t < a.startup + a.active ? 'active' : 'recovery';
   }
   invulnerable() { return this.state === 'roll' && this.stateTime < CONFIG.player.rollIFrames; }
+  canDrink() { return this.state === 'idle' || this.state === 'walk'; }
 
   startRoll(mv) {
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.spend(CONFIG.player.rollCost);
     this.hitbox = null; this.setState('roll');
   }
-  // toTarget: heading to the locked target, or null when not locked on.
-  startAttack(kind, mv, toTarget) {
-    if (toTarget !== null) this.yaw = toTarget;
+  // Heading toward the best nearby enemy in the direction the player means to swing, or null.
+  autoAim(mv, enemies) {
+    const A = CONFIG.player.autoTarget, want = mv.has ? Math.atan2(mv.x, mv.z) : this.yaw;
+    let best = null, bestScore = Infinity;
+    for (const e of enemies) {
+      if (!e.alive() || !e.awake()) continue;
+      const dx = e.x - this.x, dz = e.z - this.z, d = Math.hypot(dx, dz) - e.radius;
+      const dir = Math.atan2(dx, dz), ang = Math.abs(angDiff(dir, want));
+      if (d > A.range || ang > A.cone) continue;
+      const score = d + ang * A.angleWeight;
+      if (score < bestScore) { bestScore = score; best = dir; }
+    }
+    return best;
+  }
+  // Shared by ground and jump attacks: aim, riposte bonus, stamina.
+  beginAttack(kind, a, mv, face, enemies) {
+    const P = CONFIG.parry, rip = this.riposte > 0;
+    const auto = face === null ? this.autoAim(mv, enemies) : null;
+    if (face !== null) this.yaw = face;                // locked on: always aim at the target
+    else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    this.attack = CONFIG.player.attacks[kind]; this.attackKind = kind;
-    this.riposteHit = this.riposte > 0; this.riposte = 0;   // the first swing inside the window is the riposte
-    this.spend(this.attack.cost);
-    this.hitbox = null; this.setState('attack');
+    this.attack = a; this.riposte = 0;
+    this.payload = {
+      kind, damage: a.damage * (rip ? (kind === 'light' ? P.riposteLight : P.riposteHeavy) : 1),
+      poise: a.poise * (rip && kind === 'heavy' ? P.ripostePoise : 1),
+      knock: a.knock, hitstop: a.hitstop * (rip ? P.riposteHitstop : 1), riposte: rip,
+    };
+    this.spend(a.cost);
+    this.hitbox = null;
   }
-  parrySuccess(enemy) {
-    const P = CONFIG.parry;
-    enemy.parried();
-    this.riposte = P.riposteTime;
-    this.flash = 1; this.flashColor = FLASH_WHITE;
-    this.vx = this.vz = 0; this.stunTime = P.successTime; this.setState('parry');
-    Game.onParry(enemy);
+  startAttack(kind, mv, face, enemies) {
+    this.beginAttack(kind, CONFIG.player.attacks[kind], mv, face, enemies);
+    this.setState('attack');
   }
-  parryWhiff() {
-    const P = CONFIG.parry;
-    this.spend(P.whiffCost);
-    this.flash = 0.6; this.flashColor = FLASH_GRAY;
-    this.stunTime = P.whiffRecovery; this.setState('parry');
-    spawnBurst({ x: this.x + Math.sin(this.yaw) * 0.8, y: this.y + 1.2, z: this.z + Math.cos(this.yaw) * 0.8 }, 0x8a8a8a, 4, 1.4);
+  startJumpAttack(kind, mv, face, enemies) {
+    this.beginAttack(kind, CONFIG.jumpAttacks[kind], mv, face, enemies);
+    this.activeAt = Infinity;   // stateTime when the hitbox opened
+    this.setState('jumpAttack');
   }
+  startParry() { this.spend(CONFIG.parry.cost); this.hitbox = null; this.setState('parry'); }
   // Grounded, free to act. Returns true if an action started.
-  tryGroundAction(mv, enemy, toTarget) {
+  tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player;
     if (this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); return true; }
-    if (input.consume('parry')) { if (enemy.parryableBy(this)) this.parrySuccess(enemy); else this.parryWhiff(); return true; }
-    if (this.stamina > 0 && input.consume('heavy')) { this.startAttack('heavy', mv, toTarget); return true; }
-    if (this.stamina > 0 && input.consume('light')) { this.startAttack('light', mv, toTarget); return true; }
+    if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
+    if (this.stamina > 0 && input.consume('heavy')) { this.startAttack('heavy', mv, face, enemies); return true; }
+    if (this.stamina > 0 && input.consume('light')) { this.startAttack('light', mv, face, enemies); return true; }
     if (input.consume('jump')) { this.vy = C.jumpVelocity; this.setState('jump'); return true; }
     if (input.isHeld('block')) { this.vx = this.vz = 0; this.setState('block'); return true; }
     return false;
   }
 
-  // aimYaw: camera heading in shoulder mode, otherwise null.
-  update(dt, mv, enemy, locked, aimYaw) {
+  // lock: the locked-on enemy or null.
+  update(dt, mv, enemies, lock) {
     const C = CONFIG.player;
     this.stateTime += dt;
-    this.riposte = Math.max(0, this.riposte - dt);
-    this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
-    const toTarget = locked ? Math.atan2(enemy.x - this.x, enemy.z - this.z) : aimYaw;
-    // Locked on: face the target. Shoulder mode: face the crosshair. Otherwise face the last movement direction.
-    const face = rate => {
-      if (toTarget !== null) this.yaw = turnToward(this.yaw, toTarget, C.lockTurnRate * dt);
-      else if (mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), rate * dt);
-    };
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
+    this.brace = Math.max(0, this.brace - dt / C.braceTime);
+    this.riposte = Math.max(0, this.riposte - dt);
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     const s = this.state;
-    if (s !== 'attack' && s !== 'block' && s !== 'roll' && s !== 'dead' && this.staminaDelay <= 0)
+    if (s !== 'attack' && s !== 'jumpAttack' && s !== 'land' && s !== 'block' && s !== 'roll' && s !== 'parry' &&
+        s !== 'dead' && this.staminaDelay <= 0)
       this.stamina = Math.min(C.maxStamina, this.stamina + C.staminaRegen * dt);
     this.poiseTimer += dt;
     if (this.poiseTimer > C.poiseResetTime) this.poise = C.maxPoise;
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
+    const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
 
     switch (this.state) {
       case 'idle':
       case 'walk': {
-        if (this.tryGroundAction(mv, enemy, toTarget)) break;
-        face(C.turnRate);
+        if (this.tryGroundAction(mv, face, enemies)) break;
+        if (mv.has && face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * dt);
         approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, (mv.has ? C.accel : C.decel) * dt);
         const next = mv.has ? 'walk' : 'idle';
         if (next !== this.state) this.setState(next);
@@ -583,9 +847,35 @@ class Player {
       }
       case 'jump':
       case 'fall': {
-        face(C.turnRate * 0.4);
-        if (mv.has) approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * dt);
+        if (this.stamina > 0) {
+          const kind = input.consume('heavy') ? 'heavy' : input.consume('light') ? 'light' : null;
+          if (kind) { this.startJumpAttack(kind, mv, face, enemies); break; }
+        }
+        if (mv.has) {
+          if (face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * 0.4 * dt);
+          approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * dt);
+        }
         if (this.state === 'jump' && this.vy <= 0) this.setState('fall');
+        break;
+      }
+      case 'jumpAttack': {
+        // Momentum carries; steering is weaker than a normal jump.
+        if (mv.has) approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * CONFIG.jumpAttacks.airControl * dt);
+        const a = this.attack;
+        if (!this.hitbox && this.stateTime >= a.startup && this.vy <= 0) {
+          this.hitbox = new Hitbox(this, a.box, this.payload); this.activeAt = this.stateTime;
+        }
+        break;
+      }
+      case 'land': {
+        // Committed landing: no roll, block, parry or attack until it ends.
+        const a = this.attack;
+        approachVel(this, 0, 0, C.decel * dt);
+        if (this.hitbox && this.hitbox.hit.size > 0 && !this.landHit) {   // connected: hop and recover sooner
+          this.landHit = true; this.vy = a.hop; this.landTime = a.landRecovery * a.hitRecoveryMul;
+        }
+        if (this.hitbox && this.stateTime >= a.impactTime) this.hitbox = null;
+        if (this.stateTime >= this.landTime && this.y <= 0) this.setState('idle');
         break;
       }
       case 'roll': {
@@ -597,9 +887,8 @@ class Player {
       }
       case 'attack': {
         const a = this.attack, t = this.stateTime, endActive = a.startup + a.active;
-        if (t - dt < a.startup && t >= a.startup) this.hitbox = new Hitbox(this, a.box, a);
+        if (t - dt < a.startup && t >= a.startup) this.hitbox = new Hitbox(this, a.box, this.payload);
         if (t >= endActive) this.hitbox = null;
-        if (toTarget !== null && t < a.startup) this.yaw = turnToward(this.yaw, toTarget, C.attackTrackRate * dt);
         const lunging = t > a.startup * 0.55 && t < endActive;
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         if (t >= endActive && this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); break; }
@@ -608,43 +897,81 @@ class Player {
       }
       case 'block': {
         approachVel(this, 0, 0, C.decel * dt);
-        face(0);
-        // E while blocking: parry if the window is open, otherwise nothing happens.
-        if (input.consume('parry') && enemy.parryableBy(this)) { this.parrySuccess(enemy); break; }
+        // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
+        if (input.consume('parry')) {
+          if (this.stamina > 0 && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
+        }
         if (!input.isHeld('block')) this.setState('idle');
         break;
       }
       case 'parry': {
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= this.stunTime) this.setState('idle');
+        if (this.stateTime >= CONFIG.parry.time) this.setState('idle');   // whiffed: recovery over
+        break;
+      }
+      case 'drink': {
+        const F = CONFIG.flask;
+        approachVel(this, 0, 0, C.decel * dt);
+        const t0 = this.stateTime - dt, t1 = this.stateTime;
+        const healed = clamp(t1 - F.healStart, 0, F.healDuration) - clamp(t0 - F.healStart, 0, F.healDuration);
+        this.hp = Math.min(C.maxHp, this.hp + F.heal * healed / F.healDuration);
+        if (this.stateTime >= F.time) this.setState('idle');
+        break;
+      }
+      case 'rest': {
+        approachVel(this, 0, 0, C.decel * dt);
+        if (this.stateTime >= CONFIG.rest.time) this.setState('idle');
         break;
       }
       case 'hurt':
       case 'stagger': {
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= this.stunTime) this.setState('idle');
+        if (this.stateTime >= this.stunTime) {
+          if (this.state === 'stagger') this.poise = C.maxPoise;
+          this.setState('idle');
+        }
         break;
       }
       case 'dead': approachVel(this, 0, 0, C.decel * dt); break;
     }
+    // Locked on: keep facing the target, except while committed to a roll or a swing already released.
+    const st = this.state;
+    if (face !== null && st !== 'roll' && st !== 'dead' && st !== 'stagger' && st !== 'rest' &&
+        st !== 'land' && !(st === 'jumpAttack' && this.hitbox) &&
+        !(st === 'attack' && this.attackPhase() !== 'startup')) {
+      this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), CONFIG.lock.turnRate * dt);
+    }
 
     integrateBody(this, dt, C.knockFriction);
     if (this.y <= 0 && (this.state === 'jump' || this.state === 'fall') && this.vy <= 0 && this.stateTime > 0) this.setState('idle');
+    if (this.y <= 0 && this.state === 'jumpAttack' && this.vy <= 0 && this.stateTime > 0) {
+      // Touchdown: a swing still in wind-up strikes on impact; the hitbox lingers for impactTime.
+      const a = this.attack;
+      if (!this.hitbox) this.hitbox = new Hitbox(this, a.box, this.payload);
+      this.landHit = false; this.landTime = a.landRecovery;
+      this.landEvent = { x: this.x, z: this.z, fx: a.fx };   // read once by Game for the ground pound
+      this.vx *= 0.35; this.vz *= 0.35;
+      this.setState('land');
+    }
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
   }
 
-  pose(tt) {
+  pose(tt, ctx) {
     const r = this.rig, C = CONFIG.player;
     r.reset(); r.setOpacity(1);
     switch (this.state) {
+      case 'idle': {
+        const b = Math.sin(ctx.t * 1.6) * 0.012;
+        r.spin.scale.y = 1 + b; r.armL.rotation.z = 0.04; break;
+      }
       case 'walk': r.walk(this.walkPhase, 0.6); break;
       case 'jump': case 'fall':
-        r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
+        r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
       case 'roll': {
         const p = clamp(tt / C.rollTime, 0, 1), tuck = Math.sin(p * Math.PI);
         r.spin.rotation.x = p * Math.PI * 2;
         r.spin.scale.setScalar(1 - 0.35 * tuck); r.spin.position.y = HIP - 0.4 * tuck;
-        r.legL.rotation.x = r.legR.rotation.x = -1.2 * tuck; r.armL.rotation.x = r.armR.rotation.x = -1.2 * tuck;
+        r.legL.rotation.x = r.legR.rotation.x = -1.2 * tuck; r.kneeL.rotation.x = r.kneeR.rotation.x = 2.0 * tuck; r.armL.rotation.x = r.armR.rotation.x = -1.2 * tuck;
         break;
       }
       case 'attack': {
@@ -654,17 +981,47 @@ class Player {
         else r.attackPose(a.anim, 'recovery', (tt - a.startup - a.active) / a.recovery);
         break;
       }
+      case 'jumpAttack': {
+        const a = this.attack;
+        if (tt < this.activeAt) r.attackPose('overhead', 'startup', tt / a.startup);   // wind-up over the head
+        else r.attackPose('overhead', 'active', ease((tt - this.activeAt) / 0.2));     // driving down
+        r.legL.rotation.x += -0.7; r.kneeL.rotation.x = 1.1; r.legR.rotation.x += 0.15; r.kneeR.rotation.x = 0.9;
+        break;
+      }
+      case 'land': {
+        const k = 1 - ease(tt / Math.max(this.landTime, 0.01));
+        r.attackPose('overhead', 'active', 1);
+        r.crouch(0.08 + 0.3 * k); r.lean(0.3 * k);
+        break;
+      }
       case 'block':
         r.armR.rotation.set(-1.45, 0, -0.5); r.weapon.rotation.set(0.2, 0, 1.2); r.armL.rotation.x = -1.3; r.tip.rotation.x = 0.06; break;
-      case 'parry':
-        r.armL.rotation.x = -1.5; r.spin.rotation.y = lerp(0.7, -0.5, ease(tt / 0.14)); break;
+      case 'parry': {
+        // Quick outward deflection, then an exposed recovery.
+        const out = ease(tt / 0.12), back = ease((tt - 0.12) / (CONFIG.parry.time - 0.12));
+        const k = out * (1 - back);
+        r.armR.rotation.set(lerp(-0.4, -1.7, k), 0, -0.6 * k); r.spin.rotation.y = 0.9 * k;
+        r.weapon.rotation.set(lerp(0.5, 0.1, k), 0, 1.0 * k); r.armL.rotation.x = -0.6 * k;
+        break;
+      }
+      case 'drink': {
+        const k = Math.sin(clamp(tt / CONFIG.flask.time, 0, 1) * Math.PI);
+        r.armL.rotation.set(-2.3 * k, 0, -0.5 * k); r.head.rotation.x = -0.4 * k; break;
+      }
+      case 'rest': {
+        const k = Math.sin(clamp(tt / CONFIG.rest.time, 0, 1) * Math.PI);
+        r.kneel(k); r.lean(0.2 * k); r.head.rotation.x = 0.4 * k; break;
+      }
       case 'hurt': r.tip.rotation.x = -0.18 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI); break;
       case 'stagger':
         r.tip.rotation.x = -0.32 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI);
         r.spin.rotation.z = Math.sin(tt * 9) * 0.1; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
       case 'dead': deathPose(r, tt, 3.5); break;
     }
-    r.setWarning(this.flash, this.flashColor);
+    if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
+    r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
+    if (this.state === 'jumpAttack' && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
+    else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0));
     r.setTint(HURT_COLOR, this.tint * 0.9);
   }
 }
@@ -672,82 +1029,89 @@ class Player {
 // ============================================================================
 // 6. Enemy
 // ============================================================================
+// opts: x, z, yaw, behavior ('arena' | 'gated' | 'ambush' | 'patrol' | 'slumber'), aggro, leash, path
 class Enemy {
-  constructor(def) {
-    const E = CONFIG.enemy;
+  constructor(def, opts) {
     this.def = def;
     this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon,
       weaponColor: def.weapon === 'club' ? 0x9a927c : 0x9aa0a8 });
     this.radius = def.radius; this.height = def.height;
-    this.x = E.startX; this.y = 0; this.z = E.startZ; this.yaw = -Math.PI / 2;
+    this.behavior = opts.behavior; this.aggro = opts.aggro; this.leash = opts.leash ?? Infinity;
+    this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
+    this.x = opts.x; this.y = 0; this.z = opts.z; this.yaw = opts.yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
-    this.state = 'idle'; this.stateTime = 0;   // idle chase windup active recover hurt stagger dead
+    this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
+    this.crack = 0;                                  // visual: posture-break flash
+    this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
+    this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
+    this.rewarded = false;                           // souls granted for this kill
+    this.discovered = false;                         // has triggered its one-time auto lock-on
+    // idle patrol lurk dormant rise leap chase windup active recover hurt stagger parried broken dead
+    this.homeState = this.behavior === 'patrol' ? 'patrol' : 'idle';
+    this.state = { ambush: 'lurk', slumber: 'dormant', patrol: 'patrol' }[this.behavior] || 'idle';
+    this.stateTime = 0;
     this.cooldown = rand(0.6, 1.0); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
-    this.stunTime = 0;
     this.savePrev();
   }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
-  enterStagger(time) {
-    this.hitbox = null; this.next = null; this.poise = this.def.poise; this.poiseTimer = 0;
-    this.stunTime = time; this.setState('stagger');
-  }
-
-  // Seconds before the current strike goes active at which its parry window opens.
-  parryLead() {
-    const P = CONFIG.parry;
-    return clamp(this.attack.hits[this.hitIndex].startup * P.leadFrac, P.leadMin, P.leadMax);
-  }
-  parryWindowOpen() {
-    if (this.state === 'windup') return this.stateTime >= this.attack.hits[this.hitIndex].startup - this.parryLead();
-    return this.state === 'active' && this.stateTime <= CONFIG.parry.post;
-  }
-  // Timing right, strike not already landed, attacker in front of the player, and the strike would reach.
-  parryableBy(p) {
-    if (!this.parryWindowOpen() || (this.hitbox && this.hitbox.hit.has(p))) return false;
-    const dx = this.x - p.x, dz = this.z - p.z;
-    if (dx * Math.sin(p.yaw) + dz * Math.cos(p.yaw) <= 0) return false;
-    const reach = { x: p.x, y: p.y, z: p.z, height: p.height, radius: p.radius + CONFIG.parry.reachMargin };
-    return new Hitbox(this, this.attack.box, this.attack).overlaps(reach);
-  }
-  parried() {
-    const d = this.def, P = CONFIG.parry;
-    this.tint = 1;
-    if (d.usesPosture) {
-      // Posture meter: a parry adds a large chunk; only a full meter gives the long break.
-      const left = this.poise - P.posture;
-      this.enterStagger(left <= 0 ? d.staggerTime : P.staggerTime);
-      if (left > 0) this.poise = left;
-    } else {
-      const poise = this.poise;
-      this.enterStagger(P.staggerTime);
-      this.poise = poise;
-    }
-  }
+  alive() { return this.state !== 'dead'; }
+  // Visible and engaged enough to be the HUD target.
+  awake() { return this.state !== 'lurk' && this.state !== 'dormant'; }
 
   update(dt, player) {
     const d = this.def, E = CONFIG.enemy;
     this.stateTime += dt;
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.crack = Math.max(0, this.crack - dt / 0.5);
+    this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
     this.poiseTimer += dt;
-    if (d.usesPosture) {
-      if (this.poiseTimer > E.postureDelay) this.poise = Math.min(d.poise, this.poise + E.postureRegen * dt);
-      // A posture break earned mid-swing lands once the swing is over.
-      if (this.poise <= 0 && this.state !== 'windup' && this.state !== 'active' && this.state !== 'stagger' && this.state !== 'dead')
-        this.enterStagger(d.staggerTime);
-    } else if (this.poiseTimer > E.poiseResetTime) this.poise = d.poise;
-    const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz);
+    this.chainTime += dt;
+    if (this.poiseTimer > E.poiseResetTime) this.poise = d.poise;
+    // Posture holds while the boss is open from a parry, so the riposte window can build on it.
+    if (d.posture && this.state !== 'broken' && this.state !== 'parried' && player.state !== 'attack' && player.state !== 'jumpAttack')
+      this.posture = Math.max(0, this.posture - d.posture.decay * dt);
+    const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     const toPlayer = Math.atan2(dx, dz);
     const playerAlive = player.state !== 'dead';
+    const sees = playerAlive && dist < this.aggro;
     let tx = 0, tz = 0;
 
     switch (this.state) {
       case 'idle':
-        if (playerAlive && dist < d.aggroRange) this.setState('chase');
+        if (sees) this.setState('chase');
+        break;
+      case 'patrol': {
+        if (sees) { this.setState('chase'); break; }
+        const goal = this.path[this.pathDir > 0 ? 1 : 0], gx = goal - this.x, gz = this.pathZ - this.z, gd = Math.hypot(gx, gz);
+        if (gd < 0.3) this.pathDir *= -1;
+        else {
+          const sp = d.speed * E.patrolSpeedMul;
+          tx = gx / gd * sp; tz = gz / gd * sp;
+          this.yaw = turnToward(this.yaw, Math.atan2(gx, gz), d.turnRate * dt);
+        }
+        break;
+      }
+      case 'lurk':   // hidden in an alcove until the player passes close
+        if (sees) {
+          this.yaw = toPlayer; this.vy = E.leapVelocity;
+          this.vx = dx / dist * E.leapSpeed; this.vz = dz / dist * E.leapSpeed;
+          this.setState('leap');
+        }
+        break;
+      case 'leap':
+        tx = this.vx; tz = this.vz;
+        if (this.stateTime >= E.leapTime && this.y <= 0) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        break;
+      case 'dormant':   // lying on the floor
+        if (sees) this.setState('rise');
+        break;
+      case 'rise':
+        if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
         break;
       case 'chase': {
-        if (!playerAlive) { this.next = null; this.setState('idle'); break; }
+        if (!playerAlive || dist > this.leash) { this.next = null; this.setState(this.homeState); break; }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
         if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
@@ -781,7 +1145,13 @@ class Enemy {
         if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState('chase'); }
         break;
       case 'stagger':
-        if (this.stateTime >= this.stunTime) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        break;
+      case 'parried':
+        if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        break;
+      case 'broken':
+        if (this.stateTime >= d.posture.breakTime) { this.posture = 0; this.cooldown = d.cooldown[0]; this.setState('chase'); }
         break;
       case 'dead': break;
     }
@@ -791,50 +1161,148 @@ class Enemy {
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
   }
 
-  takeHit(damage, poiseDamage, kx, kz) {
-    const d = this.def;
+  // Boss posture: add, and break when full. Returns true if this broke the posture.
+  addPosture(amount) {
+    const P = this.def.posture;
+    if (!P || this.state === 'broken') return false;
+    this.posture = Math.min(P.max, this.posture + amount);
+    if (this.posture < P.max) return false;
+    this.hitbox = null; this.next = null; this.crack = 1;
+    this.setState('broken');
+    return true;
+  }
+  // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
+  getParried() {
+    this.hitbox = null; this.next = null;
+    if (this.def.posture) {
+      this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
+      if (this.addPosture(this.def.posture.parry)) return true;
+    }
+    this.setState('parried');
+    return false;
+  }
+
+  // Returns { broke } so the caller can add break feedback.
+  takeHit(damage, poiseDamage, kx, kz, kind) {
+    const d = this.def, P = d.posture;
+    if (P && this.state === 'broken') damage *= P.damageMul;
     this.hp = Math.max(0, this.hp - damage);
     this.tint = 1; this.poiseTimer = 0;
     this.kx += kx; this.kz += kz;
-    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState('dead'); return; }
+    const kl = Math.hypot(kx, kz) || 1, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
+    this.recoil = 1; this.recoilF = (kx * s + kz * c) / kl; this.recoilS = (kz * s - kx * c) / kl;
+    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState('dead'); return { broke: false }; }
+    if (P) {
+      // Bosses ignore interrupts; only chained hits build posture.
+      const chained = this.chainTime <= P.chainGap;
+      this.chainTime = 0;
+      if (this.state === 'dormant' || this.state === 'idle') this.setState('chase');
+      return { broke: chained && this.addPosture(kind === 'heavy' ? P.heavy : P.light) };
+    }
+    if (this.state === 'parried' || this.state === 'rise' || this.state === 'leap') return { broke: false };
+    if (this.state === 'dormant') { this.setState('rise'); return { broke: false }; }
     this.poise -= poiseDamage;
+    const unaware = this.state === 'idle' || this.state === 'patrol' || this.state === 'lurk';
     if (this.poise <= 0) {
-      if (d.usesPosture) {                                        // wind-ups are never cancelled; see update()
-        if (this.state === 'stagger') this.enterStagger(d.staggerTime);
-      } else if (this.state === 'active') this.poise = d.poise;   // committed swings are not cancelled
-      else this.enterStagger(d.staggerTime);
-    } else if (d.flinchTime > 0 && (this.state === 'idle' || this.state === 'chase' || this.state === 'recover')) {
+      if (this.state === 'active') this.poise = d.poise;          // committed swings are not cancelled
+      else { this.hitbox = null; this.next = null; this.setState('stagger'); }
+    } else if (d.flinchTime > 0 && (unaware || this.state === 'chase' || this.state === 'recover')) {
       this.setState('hurt');
+    } else if (unaware) this.setState('chase');
+    return { broke: false };
+  }
+
+  // Idle personality layered on top of the base pose, weighted by how idle the enemy is.
+  idleLayer(r, ctx, w) {
+    if (w <= 0.001) return;
+    const t = ctx.t * this.tempo + this.seed, d = this.def;
+    // Head turns toward the player now and then.
+    const look = ease((Math.sin(t * 0.37) - 0.2) * 1.5);
+    const rel = angDiff(Math.atan2(ctx.px - this.x, ctx.pz - this.z), this.yaw);
+    r.head.rotation.y += clamp(rel, -1.0, 1.0) * look * w;
+    if (d.idle === 'guard') {
+      const shift = Math.sin(t * 0.9);
+      r.spin.position.x += shift * 0.045 * w; r.tip.rotation.z += shift * 0.03 * w;
+      r.legL.rotation.z += Math.max(0, shift) * 0.08 * w; r.legR.rotation.z -= Math.max(0, -shift) * 0.08 * w;
+      const check = ease(Math.sin(t * 0.21) * 4 - 3);   // occasional weapon check
+      r.armR.rotation.x += -0.9 * check * w; r.weapon.rotation.z += 0.8 * check * w; r.head.rotation.x += 0.35 * check * w;
+    } else if (d.idle === 'still') {
+      const breath = Math.sin(t * 1.1);
+      r.spin.scale.y *= 1 + breath * 0.018 * w; r.spin.scale.x *= 1 + breath * 0.012 * w;
+      r.tip.rotation.z += Math.sin(t * 0.3) * 0.008 * w;
+    } else if (d.idle === 'twitch') {
+      // Restless footwork, added on top of whatever the legs are doing.
+      const step = Math.sin(t * 4) * 0.12 * w;
+      r.legL.rotation.x += step; r.legR.rotation.x -= step;
+      r.crouch(0.16 * w); r.tip.rotation.x += 0.12 * w;
+      const tw = Math.pow(Math.max(0, Math.sin(t * 2.3)), 12);
+      r.head.rotation.y += Math.sin(t * 17) * 0.25 * tw * w; r.armR.rotation.x -= 0.4 * tw * w;
+      // Small pacing circle (visual offset only).
+      r.root.position.x += Math.cos(t * 0.8) * 0.22 * w; r.root.position.z += Math.sin(t * 0.8) * 0.22 * w;
+    } else if (d.idle === 'sway') {
+      r.tip.rotation.z += Math.sin(t * 0.45) * 0.04 * w; r.tip.rotation.x += Math.sin(t * 0.31) * 0.025 * w;
+      r.armR.rotation.x = lerp(r.armR.rotation.x, -0.05, w);            // club rests on the ground
+      r.weapon.rotation.x = lerp(r.weapon.rotation.x, 1.25, w);
+      r.weapon.rotation.y += Math.sin(t * 0.45) * 0.12 * w;             // and drags as it sways
     }
   }
 
-  pose(tt) {
-    const r = this.rig, d = this.def;
-    r.reset(); r.setOpacity(1);
+  pose(tt, ctx) {
+    const r = this.rig, d = this.def, E = CONFIG.enemy;
+    r.reset(); r.setOpacity(1); r.root.visible = true;
     let warn = 0;
     const a = this.attack, dir = this.hitIndex % 2 ? -1 : 1;
-    const glow = this.parryWindowOpen() ? PARRY_COLOR : WARN_COLOR;   // paler glow = press E now
     switch (this.state) {
-      case 'chase': r.walk(this.walkPhase, 0.5); break;
+      case 'chase': case 'patrol': r.walk(this.walkPhase, 0.5); break;
+      case 'lurk':
+        r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;
+      case 'leap': r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;
+      case 'dormant': r.tip.rotation.x = -Math.PI / 2; r.armL.rotation.x = r.armR.rotation.x = -0.3; break;
+      case 'rise': {
+        const p = ease(tt / E.riseTime);
+        r.tip.rotation.x = -Math.PI / 2 * (1 - p); r.legL.rotation.x = -1.2 * Math.sin(p * Math.PI);
+        r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
+      }
       case 'windup': {
         const hit = a.hits[this.hitIndex];
         r.attackPose(a.anim, 'startup', tt / hit.startup, dir);
         warn = clamp(tt / 0.08, 0, 1);
         break;
       }
-      case 'active':
-        r.attackPose(a.anim, 'active', tt / a.hits[this.hitIndex].active, dir);
-        if (glow === PARRY_COLOR) warn = 1;
-        break;
+      case 'active': r.attackPose(a.anim, 'active', tt / a.hits[this.hitIndex].active, dir); break;
       case 'recover': r.attackPose(a.anim, 'recovery', tt / a.recovery, dir); break;
       case 'hurt': r.tip.rotation.x = -0.16 * Math.sin(clamp(tt / d.flinchTime, 0, 1) * Math.PI); break;
       case 'stagger':
-        r.tip.rotation.x = -0.3 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI);
+        r.tip.rotation.x = -0.3 * Math.sin(clamp(tt / d.staggerTime, 0, 1) * Math.PI);
         r.spin.rotation.z = Math.sin(tt * 8) * 0.12; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
-      case 'dead': deathPose(r, tt, CONFIG.enemy.deathFade); r.root.visible = tt < CONFIG.enemy.deathFade; break;
+      case 'parried': {
+        // Weapon knocked wide, torso thrown back, slow to recover.
+        const k = 1 - ease((tt - d.parriedTime * 0.6) / (d.parriedTime * 0.4));
+        r.tip.rotation.x = -0.38 * k; r.spin.rotation.y = 0.7 * k; r.spin.rotation.z = Math.sin(tt * 7) * 0.08 * k;
+        r.armR.rotation.set(lerp(-0.4, -2.5, k), 0, -0.9 * k); r.armL.rotation.x = lerp(-0.1, 0.5, k); break;
+      }
+      case 'broken': {
+        // Sinks to one knee, club on the floor, then hauls itself back up.
+        const T = d.posture.breakTime, k = ease(tt / 0.4) * (1 - ease((tt - T + 0.6) / 0.6));
+        r.kneel(k); r.lean(0.3 * k);
+        r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
+        r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
+      }
+      case 'dead': deathPose(r, tt, E.deathFade); r.root.visible = tt < E.deathFade; break;
     }
-    r.setWarning(warn, glow);
-    r.setTint(HIT_COLOR, this.tint * 0.8);
+    // Blend idle personality in and out so aggro never pops.
+    const idling = this.state === 'idle' || this.state === 'patrol' || this.state === 'lurk' || this.state === 'chase';
+    const wTarget = this.state === 'idle' ? 1 : this.state === 'chase' || this.state === 'patrol' || this.state === 'lurk' ? 0.25 : 0;
+    r.idleW += ((idling ? wTarget : 0) - r.idleW) * (1 - Math.exp(-5 * ctx.dt));
+    if (this.state !== 'dead' && this.state !== 'dormant') this.idleLayer(r, ctx, r.idleW);
+    if (this.recoil > 0) {
+      const k = Math.sin(this.recoil * Math.PI) * 0.26;
+      r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
+    }
+    r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
+    r.setWarning(warn);
+    if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
+    else r.setTint(HIT_COLOR, this.tint * 0.8);
   }
 }
 
@@ -864,41 +1332,81 @@ class Hitbox {
 // ============================================================================
 // 8. resolveCombat
 // ============================================================================
+const isInFront = (p, x, z) => (x - p.x) * Math.sin(p.yaw) + (z - p.z) * Math.cos(p.yaw) > 0;
+
+// Seconds until enemy e's current strike goes active (negative once active) if the player could parry
+// it now, allowing `extra` s of look-ahead; null if the strike is not parryable from here.
+function parryTiming(p, e, extra) {
+  const P = CONFIG.parry;
+  let rem;
+  if (e.state === 'windup') rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
+  else if (e.state === 'active') rem = -e.stateTime;
+  else return null;
+  if (rem > P.lead + extra || rem < -P.grace) return null;
+  if (!isInFront(p, e.x, e.z)) return null;                       // same front rule as blocking
+  const b = e.attack.box;
+  if (Math.hypot(e.x - p.x, e.z - p.z) > b.fwd + b.d / 2 + p.radius + P.reach) return null;
+  return rem;
+}
+
+function postureBreakFx(game, e) {
+  spawnBurst({ x: e.x, y: e.y + e.height * 0.65, z: e.z }, 0xffc060, 30, 8);
+  game.hitstop = Math.max(game.hitstop, e.def.posture.hitstop);
+  game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp);
+}
+
 function resolveCombat(game) {
-  const p = game.player, e = game.enemy, C = CONFIG.player, B = CONFIG.block;
+  const p = game.player, C = CONFIG.player, B = CONFIG.block, P = CONFIG.parry, E = CONFIG.enemy;
+  const live = game.enemies.filter(e => e.alive());
+  // 0. Parry, before any damage: only the strike that lands first is parried.
+  if (p.state === 'parry' && p.stateTime <= P.arm) {
+    let target = null, soonest = Infinity;
+    for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
+    if (target) {
+      const broke = target.getParried();
+      p.stamina = Math.min(C.maxStamina, p.stamina + P.cost);   // a successful parry is free
+      p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
+      p.setState('idle');
+      spawnBurst({ x: target.x, y: target.y + target.height * 0.6, z: target.z }, 0xfff6d0, 26, 7.5);
+      game.hitstop = Math.max(game.hitstop, P.hitstop);
+      game.addShake(P.shakeTime, P.shakeAmp);
+      if (broke) postureBreakFx(game, target);
+    }
+  }
   // 1. Player hitboxes against enemy bodies.
-  const playerHits = p.hitbox && e.state !== 'dead' && p.hitbox.overlaps(e) ? p.hitbox : null;
+  const playerHits = p.hitbox ? live.filter(e => p.hitbox.overlaps(e)) : [];
   // 2. Enemy hitboxes against the player's body.
-  const enemyHits = e.hitbox && p.state !== 'dead' && e.hitbox.overlaps(p) ? e.hitbox : null;
+  const enemyHits = p.state === 'dead' ? [] : live.filter(e => e.hitbox && e.hitbox.overlaps(p)).map(e => e.hitbox);
   // 3. Apply damage, poise loss, knockback and stagger.
   const contact = (hb, target) => {
     const c = hb.center();
     return { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
   };
-  if (playerHits) {
-    const a = playerHits.payload;
-    playerHits.markHit(e);
+  for (const e of playerHits) {
+    const a = p.hitbox.payload;
+    p.hitbox.markHit(e);
     const dx = e.x - p.x, dz = e.z - p.z, d = Math.hypot(dx, dz) || 1;
-    const rip = p.riposteHit ? CONFIG.parry.riposte[p.attackKind] : null;   // riposte: the swing started in the parry window
-    e.takeHit(a.damage * (rip ? rip.damage : 1), a.poise * (rip ? rip.poise : 1), dx / d * a.knock, dz / d * a.knock);
-    spawnBurst(contact(playerHits, e), rip ? 0xffffff : 0xe8d8a0, rip ? 22 : 12, rip ? 6.5 : 4.5);
-    game.hitstop = Math.max(game.hitstop, a.hitstop * (rip ? 1.5 : 1));
+    const res = e.takeHit(a.damage, a.poise, dx / d * a.knock, dz / d * a.knock, a.kind);
+    spawnBurst(contact(p.hitbox, e), a.riposte ? 0xffffff : 0xe8d8a0, a.riposte ? 22 : 12, a.riposte ? 6.5 : 4.5);
+    game.hitstop = Math.max(game.hitstop, a.hitstop);
+    if (res.broke) postureBreakFx(game, e);
   }
-  if (enemyHits && !p.invulnerable()) {   // a dodged swing stays live: it can still catch the end of a roll
-    const a = enemyHits.payload, E = CONFIG.enemy;
-    enemyHits.markHit(p);
+  for (const hb of enemyHits) {
+    if (p.invulnerable() || p.state === 'dead') continue;   // a dodged swing stays live: it can catch the end of a roll
+    const a = hb.payload, e = hb.owner;
+    hb.markHit(p);
     const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz) || 1;
-    const facingAttacker = (-dx) * Math.sin(p.yaw) + (-dz) * Math.cos(p.yaw) > 0;
     let damage = a.damage, poise = a.poise, knock = a.knock, blocked = false, broken = false;
-    if (p.state === 'block' && facingAttacker) {
+    if (p.state === 'block' && isInFront(p, e.x, e.z)) {
       p.spend(B.staminaBase + a.damage * B.staminaPerDamage);
       if (p.stamina <= 0) broken = true;
       else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
     }
     p.hp = Math.max(0, p.hp - damage);
     p.kx += dx / d * knock; p.kz += dz / d * knock;
-    const at = contact(enemyHits, p);
+    const at = contact(hb, p);
     if (blocked) {
+      p.brace = 1;
       spawnBurst(at, 0xffd070, 16, 7);
       game.hitstop = Math.max(game.hitstop, B.hitstop);
     } else {
@@ -910,37 +1418,40 @@ function resolveCombat(game) {
     else if (broken) { p.hitbox = null; p.stunTime = B.breakTime; p.poise = C.maxPoise; p.setState('stagger'); }
     else if (!blocked) {
       p.poise -= poise; p.poiseTimer = 0;
-      const committed = p.state === 'attack' && p.attackPhase() === 'active';
+      // Swings already out are not interrupted; a jump attack still in its air wind-up is cancelled.
+      const committed = (p.state === 'attack' && p.attackPhase() === 'active') || (p.state === 'jumpAttack' && !!p.hitbox);
       if (p.poise <= 0 && committed) p.poise = C.maxPoise;
       else if (!committed) {
         p.hitbox = null;
-        if (p.poise <= 0) { p.poise = C.maxPoise; p.stunTime = C.staggerTime; p.setState('stagger'); }
+        if (p.poise <= 0) { p.stunTime = C.staggerTime; p.setState('stagger'); }
         else { p.stunTime = C.hurtTime; p.setState('hurt'); }
       }
     } else if (poise > 0) { p.poise = Math.max(1, p.poise - poise); p.poiseTimer = 0; }
   }
 }
 
-// Bodies cannot overlap; the heavier enemy barely gives way.
-function separateBodies(p, e) {
-  if (p.state === 'dead' || e.state === 'dead' || p.y >= e.height) return;
-  const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz), min = p.radius + e.radius;
+// Bodies cannot overlap; enemies barely give way to the player.
+function separatePair(a, b, shareA) {
+  if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
+  const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.radius + b.radius;
   if (d >= min) return;
-  const nx = d > 1e-4 ? dx / d : Math.sin(e.yaw), nz = d > 1e-4 ? dz / d : Math.cos(e.yaw), push = min - d;
-  p.x += nx * push * 0.85; p.z += nz * push * 0.85; e.x -= nx * push * 0.15; e.z -= nz * push * 0.15;
-  const A = CONFIG.arena;
-  for (const b of [p, e]) {
-    b.x = clamp(b.x, -A.halfX + b.radius, A.halfX - b.radius);
-    b.z = clamp(b.z, -A.halfZ + b.radius, A.halfZ - b.radius);
+  const nx = d > 1e-4 ? dx / d : Math.sin(b.yaw), nz = d > 1e-4 ? dz / d : Math.cos(b.yaw), push = min - d;
+  a.x += nx * push * shareA; a.z += nz * push * shareA; b.x -= nx * push * (1 - shareA); b.z -= nz * push * (1 - shareA);
+  clampToWorld(a); clampToWorld(b);
+}
+function separateBodies(p, enemies) {
+  for (let i = 0; i < enemies.length; i++) {
+    separatePair(p, enemies[i], 0.85);
+    for (let j = i + 1; j < enemies.length; j++) separatePair(enemies[i], enemies[j], 0.5);
   }
 }
 
 // ============================================================================
-// 9. Particles and debug volumes (tints live on Rig)
+// 9. Particles, dust, markers and debug volumes (tints live on Rig)
 // ============================================================================
 const particles = [];
 const particleGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
-for (let i = 0; i < 140; i++) {
+for (let i = 0; i < 180; i++) {
   const mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false }));
   mesh.visible = false; scene.add(mesh);
   particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
@@ -966,27 +1477,166 @@ function updateParticles(dt) {
     p.mesh.material.opacity = clamp(p.life / CONFIG.fx.particleLife * 1.6, 0, 1);
   }
 }
+function updateDust(t) {
+  for (const d of dust) {
+    if (!d.group.visible) continue;
+    const pos = d.points.geometry.attributes.position.array;
+    d.seeds.forEach((s, i) => {
+      const k = t * s.v + s.s;
+      pos[i * 3] = d.origin.x + s.x + Math.sin(k * 0.7) * 0.5;
+      pos[i * 3 + 1] = d.origin.y + s.y + Math.sin(k * 0.45) * 0.4;
+      pos[i * 3 + 2] = d.origin.z + s.z + Math.cos(k * 0.6) * 0.5;
+    });
+    d.points.geometry.attributes.position.needsUpdate = true;
+  }
+}
+
+// Ground pound: shockwave ring, crack decal and dust, all from fixed pools (oldest reused first).
+// Flat unlit meshes, no lights or shadows; purely visual.
+function makeCrackTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.strokeStyle = '#fff'; g.lineCap = 'round';
+  const branch = (x, y, ang, len, w) => {
+    if (len < 8 || w < 0.6) return;
+    let px = x, py = y;
+    g.lineWidth = w; g.beginPath(); g.moveTo(px, py);
+    for (let i = 0; i < 4; i++) { ang += rand(-0.45, 0.45); px += Math.cos(ang) * len / 4; py += Math.sin(ang) * len / 4; g.lineTo(px, py); }
+    g.stroke();
+    branch(px, py, ang + rand(-0.6, 0.6), len * 0.6, w * 0.65);
+    if (Math.random() < 0.5) branch(px, py, ang + rand(0.5, 1.1) * (Math.random() < 0.5 ? -1 : 1), len * 0.45, w * 0.55);
+  };
+  for (let i = 0; i < 7; i++) branch(128, 128, i / 7 * Math.PI * 2 + rand(-0.3, 0.3), rand(55, 85), 4);
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 9, 0, Math.PI * 2); g.fill();
+  return new THREE.CanvasTexture(c);
+}
+const groundFx = (() => {
+  const G = CONFIG.groundPound;
+  const flat = (geo, mat, y) => {
+    const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.visible = false; m.renderOrder = 1;
+    scene.add(m); return m;
+  };
+  const ringGeo = new THREE.RingGeometry(0.9, 1, 48), crackGeo = new THREE.PlaneGeometry(2, 2), crackTex = makeCrackTexture();
+  const dustGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+  const rings = Array.from({ length: G.maxRings }, () => ({ age: Infinity, size: 1,
+    mesh: flat(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0.04) }));
+  const cracks = Array.from({ length: G.maxCracks }, () => ({ age: Infinity,
+    mesh: flat(crackGeo, new THREE.MeshBasicMaterial({ color: 0x050403, alphaMap: crackTex, transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2 }), 0.02) }));
+  const dusts = Array.from({ length: G.maxDust }, () => {
+    const mesh = new THREE.Mesh(dustGeo, new THREE.MeshBasicMaterial({ color: 0x8c8270, transparent: true, depthWrite: false }));
+    mesh.visible = false; scene.add(mesh);
+    return { mesh, age: Infinity, vx: 0, vy: 0, vz: 0 };
+  });
+  const cursor = { ring: 0, crack: 0, dust: 0 };
+  const next = (pool, key) => pool[cursor[key]++ % pool.length];   // round-robin = oldest first
+  return {
+    spawn(x, z, fx) {
+      const r = next(rings, 'ring'); r.age = 0; r.size = fx.ring; r.mesh.position.x = x; r.mesh.position.z = z; r.mesh.visible = true;
+      const c = next(cracks, 'crack'); c.age = 0; c.mesh.position.x = x; c.mesh.position.z = z;
+      c.mesh.scale.set(fx.crack, fx.crack, 1); c.mesh.rotation.z = rand(0, Math.PI * 2); c.mesh.visible = true;
+      for (let i = 0; i < fx.dust; i++) {
+        const d = next(dusts, 'dust'), a = rand(0, Math.PI * 2), s = rand(0.6, 1.6) * Math.sqrt(fx.ring);
+        d.age = 0; d.vx = Math.cos(a) * s; d.vz = Math.sin(a) * s; d.vy = rand(0.6, 1.5);
+        d.mesh.position.set(x + Math.cos(a) * 0.3, 0.1, z + Math.sin(a) * 0.3); d.mesh.visible = true;
+      }
+    },
+    update(dt) {
+      for (const r of rings) {
+        if (!r.mesh.visible) continue;
+        r.age += dt; const p = r.age / G.ringTime;
+        if (p >= 1) { r.mesh.visible = false; continue; }
+        const s = r.size * (0.25 + 0.75 * ease(p) + p * 0.1);
+        r.mesh.scale.set(s, s, 1); r.mesh.material.opacity = 0.5 * (1 - p) * (1 - p);
+      }
+      for (const c of cracks) {
+        if (!c.mesh.visible) continue;
+        c.age += dt;
+        if (c.age >= G.crackTime) { c.mesh.visible = false; continue; }
+        c.mesh.material.opacity = 0.85 * clamp((G.crackTime - c.age) / G.crackFade, 0, 1);
+      }
+      for (const d of dusts) {
+        if (!d.mesh.visible) continue;
+        d.age += dt; const p = d.age / G.dustLife;
+        if (p >= 1) { d.mesh.visible = false; continue; }
+        const drag = Math.exp(-3 * dt);
+        d.vx *= drag; d.vz *= drag; d.vy *= Math.exp(-1.5 * dt);
+        d.mesh.position.x += d.vx * dt; d.mesh.position.y += d.vy * dt; d.mesh.position.z += d.vz * dt;
+        d.mesh.scale.setScalar(1 + p * 1.6); d.mesh.material.opacity = 0.3 * (1 - p);
+      }
+    },
+    clear() { for (const o of [...rings, ...cracks, ...dusts]) o.mesh.visible = false; },
+  };
+})();
+
+// Sword trail during a jump attack: a ribbon through the blade's recent base/tip positions.
+const swordTrail = (() => {
+  const N = 12, pos = new Float32Array(N * 6), geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const idx = [];
+  for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  geo.setIndex(idx);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0.3,
+    side: THREE.DoubleSide, depthWrite: false }));
+  mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh);
+  const pts = [];
+  return {
+    update(active, rig) {
+      if (active) {
+        rig.root.updateMatrixWorld(true);
+        pts.unshift([rig.weapon.localToWorld(new THREE.Vector3(0, 0, 0.25)), rig.weapon.localToWorld(new THREE.Vector3(0, 0, 1.2))]);
+        if (pts.length > N) pts.pop();
+      } else if (pts.length) pts.pop();   // fade out by shortening
+      pts.forEach(([a, b], i) => { pos.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6); });
+      geo.attributes.position.needsUpdate = true;
+      geo.setDrawRange(0, Math.max(0, pts.length - 1) * 6);
+      mesh.visible = pts.length > 1;
+    },
+    clear() { pts.length = 0; mesh.visible = false; },
+  };
+})();
+
+// Lock-on marker: a small bright diamond above the target.
+const lockMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0),
+  new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false, depthTest: false, transparent: true, opacity: 0.9 }));
+lockMarker.renderOrder = 11; lockMarker.visible = false; scene.add(lockMarker);
+
+// Bloodstain: a faintly glowing pool and wisp where the player last died.
+function makeBloodstain(x, z) {
+  const g = new THREE.Group();
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(0.55, 18), new THREE.MeshBasicMaterial({ color: 0x8a1010, transparent: true, opacity: 0.75, depthWrite: false }));
+  pool.rotation.x = -Math.PI / 2; pool.position.y = 0.04; g.add(pool);
+  const wisp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff5a40, transparent: true, opacity: 0.8 }));
+  wisp.position.y = 0.45; g.add(wisp);
+  g.position.set(x, 0, z); scene.add(g);
+  return { group: g, wisp, pool };
+}
 
 const boxEdges = new THREE.EdgesGeometry(UNIT_BOX);
 const makeWire = color => {
   const l = new THREE.LineSegments(boxEdges, new THREE.LineBasicMaterial({ color, fog: false, depthTest: false }));
   l.visible = false; l.renderOrder = 10; scene.add(l); return l;
 };
-const debug = { pBody: makeWire(0x40ff60), eBody: makeWire(0x40ff60), pHit: makeWire(0xfff040), eHit: makeWire(0xff3030) };
-function updateDebug(game, show, pPos, ePos) {
-  const body = (wire, b, pos, alive) => {
-    wire.visible = show && alive;
-    wire.position.set(pos.x, pos.y + b.height / 2, pos.z); wire.scale.set(b.radius * 2, b.height, b.radius * 2);
+const debug = { bodies: [], hits: [] };
+function updateDebug(game, show, placed) {
+  let nb = 0, nh = 0;
+  const body = (b, pos) => {
+    const w = debug.bodies[nb] || (debug.bodies[nb] = makeWire(0x40ff60)); nb++;
+    w.visible = true; w.position.set(pos.x, pos.y + b.height / 2, pos.z); w.scale.set(b.radius * 2, b.height, b.radius * 2);
   };
-  const hit = (wire, hb) => {
-    wire.visible = show && !!hb;
-    if (!hb) return;
+  const hit = (hb, color) => {
+    const w = debug.hits[nh] || (debug.hits[nh] = makeWire(0xffffff)); nh++;
     const c = hb.center();
-    wire.position.set(c.x, c.y, c.z); wire.rotation.y = hb.owner.yaw; wire.scale.set(hb.box.w, hb.box.h, hb.box.d);
+    w.material.color.set(color); w.visible = true;
+    w.position.set(c.x, c.y, c.z); w.rotation.y = hb.owner.yaw; w.scale.set(hb.box.w, hb.box.h, hb.box.d);
   };
-  body(debug.pBody, game.player, pPos, game.player.state !== 'dead');
-  body(debug.eBody, game.enemy, ePos, game.enemy.state !== 'dead');
-  hit(debug.pHit, game.player.hitbox); hit(debug.eHit, game.enemy.hitbox);
+  if (show) {
+    for (const [b, pos] of placed) if (b.alive()) body(b, pos);
+    if (game.player.hitbox) hit(game.player.hitbox, 0xfff040);
+    for (const e of game.enemies) if (e.hitbox) hit(e.hitbox, 0xff3030);
+  }
+  for (let i = nb; i < debug.bodies.length; i++) debug.bodies[i].visible = false;
+  for (let i = nh; i < debug.hits.length; i++) debug.hits[i].visible = false;
 }
 
 // ============================================================================
@@ -995,239 +1645,508 @@ function updateDebug(game, show, pPos, ePos) {
 const $ = id => document.getElementById(id);
 const hud = {
   root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'),
-  eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), died: $('died'), won: $('won'),
-  help: $('help'), toggle: $('hbToggle'), posture: $('ePosture'), postureFill: $('ePostureFill'),
-  pTrailV: 1, eTrailV: 1,
-  reset(def) {
-    this.eName.textContent = def.name; this.pTrailV = this.eTrailV = 1;
-    this.posture.classList.toggle('hidden', !def.usesPosture);
-    this.died.classList.remove('show'); this.won.classList.remove('show');
+  flasks: Array.from({ length: CONFIG.flask.charges }, () => {
+    const f = document.createElement('span'); f.className = 'flask'; $('pFlasks').appendChild(f); return f;
+  }),
+  soulsN: $('pSoulsN'),
+  eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), ePost: $('ePost'), ePostFill: $('ePostFill'),
+  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'),
+  help: $('help'), toggle: $('hbToggle'),
+  pTrailV: 1, eTrailV: 1, target: null, restedTimer: 0, lastPosture: 0, postFlash: 0,
+  reset() {
+    this.pTrailV = this.eTrailV = 1; this.target = null; this.restedTimer = 0;
+    for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
   },
+  showRested() { this.restedTimer = CONFIG.rest.messageTime; },
   update(game, dt) {
-    const p = game.player, e = game.enemy;
-    const ph = p.hp / CONFIG.player.maxHp, eh = e.hp / e.def.hp;
+    const p = game.player, e = game.target();
+    const ph = p.hp / CONFIG.player.maxHp;
     // The trailing bar holds, then drains slowly toward the real value.
     this.pTrailV = ph > this.pTrailV ? ph : Math.max(ph, this.pTrailV - dt * 0.22);
-    this.eTrailV = eh > this.eTrailV ? eh : Math.max(eh, this.eTrailV - dt * 0.22);
     this.pHp.style.width = ph * 100 + '%'; this.pTrail.style.width = this.pTrailV * 100 + '%';
     this.pSt.style.width = p.stamina / CONFIG.player.maxStamina * 100 + '%';
-    this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = this.eTrailV * 100 + '%';
-    this.postureFill.style.width = clamp(1 - e.poise / e.def.poise, 0, 1) * 100 + '%';
+    this.flasks.forEach((f, i) => f.classList.toggle('full', i < game.flasks));
+    this.soulsN.textContent = game.souls;
+    this.eBars.classList.toggle('hidden', !e);
+    if (e) {
+      const eh = e.hp / e.def.hp;
+      if (e !== this.target) { this.target = e; this.eTrailV = eh; this.eName.textContent = e.def.name; }
+      this.eTrailV = eh > this.eTrailV ? eh : Math.max(eh, this.eTrailV - dt * 0.22);
+      this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = this.eTrailV * 100 + '%';
+      this.ePost.classList.toggle('hidden', !e.def.posture);
+      if (e.def.posture) {
+        if (e.posture > this.lastPosture + 0.5) this.postFlash = 0.35;   // pulse when posture rises
+        this.lastPosture = e.posture;
+        this.postFlash = Math.max(0, this.postFlash - dt);
+        this.ePostFill.style.width = e.posture / e.def.posture.max * 100 + '%';
+        this.ePostFill.style.filter = this.postFlash > 0 ? 'brightness(2.2)' : '';
+      }
+    }
+    this.restedTimer = Math.max(0, this.restedTimer - dt);
+    this.rested.classList.toggle('show', this.restedTimer > 0);
+    this.prompt.classList.toggle('show', p.alive() && (p.state === 'idle' || p.state === 'walk') && !!game.nearBonfire());
     this.died.classList.toggle('show', p.state === 'dead');
-    $('crosshair').classList.toggle('hidden', !(game.shoulder && p.state !== 'dead'));
-    this.won.classList.toggle('show', e.state === 'dead' && p.state !== 'dead');
+    const arenaWon = game.kind === 'arena' && !game.enemies[0].alive();
+    this.won.classList.toggle('show', arenaWon && p.state !== 'dead');
+    this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.state !== 'dead');
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
   showHitboxes() { return this.helpOpen() && this.toggle.checked; },
 };
+function applySettings() {
+  hud.toggle.checked = settings.hitboxes;
+  document.documentElement.style.setProperty('--hud', settings.hudScale);
+}
 
 // ============================================================================
 // 11. Game
 // ============================================================================
 const Game = {
-  mode: 'menu', selected: 0, enemyIndex: 0,
-  player: null, enemy: null, hitstop: 0,
-  locked: false,   // lock-on to the enemy
-  shoulder: false, // shoulder camera mode
-  cam: { yaw: 0, pitch: CONFIG.camera.pitch, dist: CONFIG.camera.distance, boom: CONFIG.camera.distance, extra: 0,
-         idle: 99, shake: 0, pivot: new THREE.Vector3(), lookStd: new THREE.Vector3(),
-         shoulderK: 0,   // 0 = standard view, 1 = shoulder view; blends between them
-         pos: new THREE.Vector3(), look: new THREE.Vector3(), prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
-  marker: (() => {
-    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.13),
-      new THREE.MeshBasicMaterial({ color: 0xf2ead0, fog: false, depthTest: false, transparent: true, opacity: 0.9 }));
-    m.visible = false; m.renderOrder = 11; scene.add(m); return m;
-  })(),
+  mode: 'menu',          // 'menu' | 'play' | 'pause'
+  screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
+  kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
+  selected: 0, enemyIndex: 0,
+  player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
+  lock: null, lockLost: 0,
+  souls: 0, flasks: 0, spawn: null, stain: null, deathTimer: 0,
+  zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
+  cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
+         prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
 
-  buildMenu() {
-    const list = $('menuList');
-    ENEMY_DEFS.forEach((d, i) => {
+  // ---- menus -----------------------------------------------------------------------------------
+  screens() {
+    const onOff = v => v ? 'On' : 'Off';
+    return {
+      main: { title: 'COMBAT ARENA 3D', sub: '', items: [
+        { name: 'Levels', desc: 'Walk the long hall and clear the way forward.', go: () => this.showMenu('levels') },
+        { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
+      ] },
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [{ name: LEVEL_1.name, desc: LEVEL_1.description, go: () => this.startLevel() }] },
+      enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
+        items: ENEMY_DEFS.map((d, i) => ({ name: d.name, desc: d.description, go: () => this.startFight(i) })) },
+      pause: { title: 'PAUSED', sub: '', overlay: true, items: [
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Options', desc: '', go: () => this.showMenu('options') },
+        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', go: () => { this.reset(); this.showMenu('main'); } },
+      ] },
+      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: true, back: 'pause', items: [
+        { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse (lock-on off).',
+          adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
+        { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
+        { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: 'Default for the F1 hitbox display.', adjust: () => { settings.hitboxes = !settings.hitboxes; } },
+        { name: `HUD scale: ${Math.round(settings.hudScale * 100)}%`, desc: 'Size of bars and text.',
+          adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
+        { name: 'Back', desc: '', go: () => this.showMenu('pause') },
+      ] },
+    };
+  },
+  showMenu(screen, keepSelection) {
+    const s = this.screens()[screen], list = $('menuList');
+    const inGame = screen === 'pause' || screen === 'options';
+    if (!inGame) {
+      this.mode = 'menu';
+      this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu
+      this.cam.pitch = 0;
+    } else this.mode = 'pause';
+    this.screen = screen; input.clear(); this.setLock(null);
+    if (document.pointerLockElement) document.exitPointerLock();
+    $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
+    hud.root.classList.toggle('hidden', !inGame);
+    $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub;
+    $('menuHint').innerHTML = 'W/S or &uarr;/&darr; to select &middot; Enter or J to confirm' +
+      (screen === 'options' ? ' &middot; A/D or &larr;/&rarr; to adjust' : '') + (screen === 'main' ? '' : ' &middot; Esc to go back');
+    list.textContent = '';
+    s.items.forEach((it, i) => {
       const b = document.createElement('button');
       b.className = 'enemyBtn';
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
-      b.children[0].textContent = d.name; b.children[1].textContent = d.description;
-      b.addEventListener('click', () => this.startFight(i));
+      b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
+      b.addEventListener('click', () => { this.select(i); it.go ? it.go() : this.adjust(1); });
       b.addEventListener('mouseenter', () => this.select(i));
       list.appendChild(b);
     });
-    this.select(0);
+    this.select(keepSelection ? this.selected : 0);
   },
   select(i) {
-    this.selected = (i + ENEMY_DEFS.length) % ENEMY_DEFS.length;
+    const n = $('menuList').children.length;
+    this.selected = (i + n) % n;
     [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
   },
-  showMenu() {
-    this.mode = 'menu'; input.clear(); this.locked = false; this.setShoulder(false);
-    $('menu').classList.remove('hidden'); hud.root.classList.add('hidden');
+  confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) it.go(); else this.adjust(1); },
+  adjust(d) {
+    const it = this.screens()[this.screen].items[this.selected];
+    if (!it.adjust) return;
+    it.adjust(d); saveSettings(); applySettings();
+    this.showMenu(this.screen, true);
   },
-  startFight(i) {
-    this.enemyIndex = i; this.selected = i; this.mode = 'arena';
+  menuBack() {
+    const s = this.screens()[this.screen];
+    if (this.screen === 'pause') this.resume();
+    else if (s.back) this.showMenu(s.back);
+  },
+  pause() {
+    if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
+    this.showMenu('pause');
+  },
+  resume() {
+    this.mode = 'play'; input.clear();
+    $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
+  },
+  enterPlay() {
+    this.mode = 'play';
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    this.reset();
   },
-  reset() {
+  startFight(i) { this.kind = 'arena'; this.enemyIndex = i; this.enterPlay(); this.reset(); },
+  startLevel() { this.kind = 'level'; this.enterPlay(); this.reset(); },
+
+  // ---- setup -----------------------------------------------------------------------------------
+  clearActors() {
     if (this.player) this.player.rig.dispose();
-    if (this.enemy) this.enemy.rig.dispose();
+    for (const e of this.enemies) e.rig.dispose();
+    this.player = null; this.enemies = []; this.zones = [];
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
+    groundFx.clear(); swordTrail.clear();
+  },
+  dropStain() { if (this.stain) { scene.remove(this.stain.group); this.stain = null; } },
+  makeEnemies() {
+    if (this.kind === 'arena') {
+      const E = CONFIG.enemy, def = ENEMY_DEFS[this.enemyIndex];
+      return [new Enemy(def, { x: E.startX, z: E.startZ, yaw: -Math.PI / 2, behavior: 'arena', aggro: def.aggroRange })];
+    }
+    const L = LEVEL_1, V = CONFIG.level, out = [];
+    for (const s of L.dispersed) {
+      const def = ENEMY_DEFS[s.enemy];
+      let o;
+      if (s.behavior === 'ambush') {
+        const a = L.alcoves[s.alcove];
+        o = { x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * 0.55), yaw: a.side > 0 ? Math.PI : 0, aggro: V.aggroAmbush };
+      } else if (s.behavior === 'patrol') o = { x: s.path[0], z: s.z, yaw: Math.PI / 2, aggro: V.aggroPatrol, path: s.path };
+      else o = { x: s.x, z: s.z, yaw: -Math.PI / 2, aggro: V.aggroSlumber };
+      out.push(new Enemy(def, { ...o, behavior: s.behavior, leash: V.leash }));
+    }
+    return out;
+  },
+  // Full restart of the current fight or level.
+  reset() {
+    this.clearActors(); this.dropStain();
     input.pressed.clear();
-    this.player = new Player();
-    this.enemy = new Enemy(ENEMY_DEFS[this.enemyIndex]);
-    this.hitstop = 0; this.locked = false;
-    hud.reset(this.enemy.def);
-    const c = this.cam;
-    c.yaw = this.player.yaw; c.pitch = CONFIG.camera.pitch; c.extra = 0; c.idle = 99; c.shake = 0;
-    c.shoulderK = this.shoulder ? 1 : 0;
-    input.orbitX = input.orbitY = input.zoom = 0;
+    this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0;
+    this.souls = 0; this.flasks = CONFIG.flask.charges; this.setLock(null);
+    arenaGroup.visible = this.kind === 'arena'; hallGroup.visible = this.kind === 'level';
+    if (this.kind === 'arena') {
+      world = WORLDS.arena; world.gates = [];
+      this.spawn = { x: -6, z: 0 };
+    } else {
+      const L = LEVEL_1;
+      world = WORLDS.hall;
+      this.spawn = { x: L.start.x, z: L.start.z };
+      world.gates = L.gated.map((g, i) => ({ x: g.gateX, open: false, lift: 0, mesh: hallGates[i] }));
+      this.zones = L.gated.map((g, i) => ({ ...g, spawned: false, actor: null, gate: world.gates[i], final: i === L.gated.length - 1 }));
+    }
+    this.enemies = this.makeEnemies();
+    this.spawnPlayer();
+    hud.reset();
+  },
+  spawnPlayer() {
+    if (this.player) this.player.rig.dispose();
+    this.player = new Player(this.spawn.x, this.spawn.z, Math.PI / 2);
+    this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
-  },
-  setShoulder(on) {
-    this.shoulder = on;
-    $('crosshair').classList.toggle('hidden', !on);
-    if (on) {
-      this.locked = false;   // the crosshair replaces lock-on while in shoulder mode
-      try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {}
-    } else if (document.pointerLockElement) document.exitPointerLock();
-  },
-  toggleLock() {
-    const p = this.player, e = this.enemy;
-    if (this.shoulder) return;
-    if (this.locked) { this.locked = false; return; }
-    this.locked = p.state !== 'dead' && e.state !== 'dead' && Math.hypot(e.x - p.x, e.z - p.z) <= CONFIG.camera.lockRange;
-  },
-  onParry(enemy) {
-    spawnBurst({ x: enemy.x + Math.sin(enemy.yaw) * enemy.radius, y: enemy.y + enemy.height * 0.6, z: enemy.z + Math.cos(enemy.yaw) * enemy.radius }, 0xffffff, 26, 7.5);
-    this.hitstop = Math.max(this.hitstop, CONFIG.parry.hitstop);
-    this.cam.shake = CONFIG.camera.shakeTime;
+    canvas.classList.remove('dying');
   },
 
-  // Movement input, relative to the camera's heading.
+  // ---- bonfires, death, souls ------------------------------------------------------------------
+  nearBonfire() {
+    const p = this.player;
+    return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range) || null;
+  },
+  tryRest() {
+    const p = this.player, b = this.nearBonfire();
+    if (!b || !(p.state === 'idle' || p.state === 'walk')) return;
+    // Not while an awake enemy is closing in.
+    if (this.enemies.some(e => e.alive() && e.state !== 'idle' && e.state !== 'patrol' && e.awake() &&
+        Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange)) return;
+    p.hp = CONFIG.player.maxHp; p.stamina = CONFIG.player.maxStamina; p.vx = p.vz = 0;
+    p.setState('rest');
+    this.flasks = CONFIG.flask.charges;
+    const dx = b.x > p.x ? -1.2 : 1.2;
+    this.spawn = { x: b.x + dx, z: b.z };
+    this.respawnEnemies();
+    this.setLock(null);
+    hud.showRested();
+  },
+  // Rest: every enemy returns at full HP except those whose gates are already open.
+  respawnEnemies() {
+    const keep = new Set(this.zones.filter(z => z.gate.open && z.actor).map(z => z.actor));
+    for (const e of this.enemies) if (!keep.has(e)) e.rig.dispose();
+    for (const z of this.zones) if (!z.gate.open) { z.spawned = false; z.actor = null; }
+    this.enemies = [...keep, ...this.makeEnemies()];
+  },
+  onPlayerDeath() {
+    const p = this.player;
+    this.dropStain();                                   // an unrecovered stain is lost for good
+    if (this.souls > 0) { this.stain = { x: p.x, z: p.z, souls: this.souls, ...makeBloodstain(p.x, p.z) }; }
+    this.souls = 0;
+    this.deathTimer = 0; this.setLock(null);
+    canvas.classList.add('dying');
+  },
+  checkStain() {
+    const p = this.player, s = this.stain;
+    if (!s || !p.alive() || Math.hypot(s.x - p.x, s.z - p.z) > CONFIG.bloodstain.pickupRange) return;
+    this.souls += s.souls;
+    spawnBurst({ x: s.x, y: 0.6, z: s.z }, 0xffe0a0, 20, 4);
+    this.dropStain();
+  },
+
+  // ---- lock-on -----------------------------------------------------------------------------------
+  setLock(e) { this.lock = e; this.lockLost = 0; },
+  addShake(time, amp) {
+    if (amp * time < this.shakeAmp * this.shake) return;   // keep the stronger shake
+    this.shake = this.shakeDur = time; this.shakeAmp = amp;
+  },
+  inView(e) {
+    const v = new THREE.Vector3(e.x, e.y + e.height * 0.5, e.z).project(camera);
+    return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 ? v : null;
+  },
+  // Valid targets ordered by closeness to the screen centre, then distance.
+  lockCandidates() {
+    const p = this.player, L = CONFIG.lock;
+    return this.enemies.filter(e => e.alive() && e.awake() && Math.hypot(e.x - p.x, e.z - p.z) < L.range)
+      .map(e => { const v = this.inView(e); return { e, v, d: Math.hypot(e.x - p.x, e.z - p.z) }; })
+      .filter(c => c.v || isInFront(p, c.e.x, c.e.z))
+      .sort((a, b) => ((a.v ? Math.abs(a.v.x) : 2) - (b.v ? Math.abs(b.v.x) : 2)) || a.d - b.d)
+      .map(c => c.e);
+  },
+  updateLock(dt) {
+    const p = this.player;
+    if (input.consume('lock')) {
+      if (this.lock) this.setLock(null);
+      else { const c = this.lockCandidates(); if (c.length) this.setLock(c[0]); }
+    }
+    if (input.consume('switchTarget') && this.lock) {
+      const c = this.lockCandidates();
+      if (c.length) { const i = c.indexOf(this.lock); this.setLock(c[(i + 1) % c.length]); }
+    }
+    // Auto lock-on: the first time each enemy comes into range (and into view), lock onto it
+    // unless already locked. An enemy is only ever auto-locked once.
+    if (p.alive()) {
+      for (const e of this.enemies) {
+        if (e.discovered || !e.alive() || !e.awake()) continue;
+        if (Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.lock.autoRange) continue;
+        if (!this.inView(e) && !isInFront(p, e.x, e.z)) continue;
+        e.discovered = true;
+        if (!this.lock) this.setLock(e);
+      }
+    }
+    const t = this.lock;
+    if (!t) return;
+    if (!t.alive() || !p.alive() || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
+    this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
+    if (this.lockLost > CONFIG.lock.lostTime) this.setLock(null);
+  },
+
+  // ---- level -------------------------------------------------------------------------------------
+  // Level 1: spawn gated enemies on entry, lift gates when their enemy falls.
+  updateLevel(dt) {
+    const p = this.player, V = CONFIG.level;
+    for (const z of this.zones) {
+      if (!z.spawned && p.x > z.trigger && p.state !== 'dead') {
+        z.spawned = true;
+        z.actor = new Enemy(ENEMY_DEFS[z.enemy], { x: z.spawn.x, z: z.spawn.z, yaw: -Math.PI / 2, behavior: 'gated',
+          aggro: V.aggroGated, leash: V.leash });
+        this.enemies.push(z.actor);
+      }
+      if (z.actor && !z.actor.alive() && !z.gate.open) {
+        z.gate.open = true;
+        if (z.final) this.complete = true;
+      }
+      if (z.gate.open) z.gate.lift = Math.min(1, z.gate.lift + dt / V.gateLiftTime);
+    }
+  },
+
+  // HUD/camera target: the locked target, else the closest awake enemy within range
+  // (the arena duel always shows its enemy).
+  target() {
+    if (this.lock) return this.lock;
+    if (this.kind === 'arena') return this.enemies[0];
+    const p = this.player;
+    let best = null, bd = CONFIG.level.targetRange;
+    for (const e of this.enemies) {
+      if (!e.awake() || (!e.alive() && e.stateTime > 1.5)) continue;
+      const d = Math.hypot(e.x - p.x, e.z - p.z);
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  },
+
+  // Movement input: relative to the target when locked on, otherwise to the camera's heading.
   moveInput() {
     const ix = (input.isHeld('right') ? 1 : 0) - (input.isHeld('left') ? 1 : 0);
     const iy = (input.isHeld('up') ? 1 : 0) - (input.isHeld('down') ? 1 : 0);
     if (!ix && !iy) return { x: 0, z: 0, has: false };
-    const fx = Math.sin(this.cam.yaw), fz = Math.cos(this.cam.yaw);
+    const p = this.player, yaw = this.lock ? Math.atan2(this.lock.x - p.x, this.lock.z - p.z) : this.cam.yaw;
+    const fx = Math.sin(yaw), fz = Math.cos(yaw);
     const x = fx * iy - fz * ix, z = fz * iy + fx * ix, l = Math.hypot(x, z);
     return { x: x / l, z: z / l, has: true };
   },
 
+  stepZoom(dir) {
+    const Z = CONFIG.zoom;
+    this.zoomTarget = clamp(this.zoomTarget + dir * Z.step, Z.min, Z.max);
+  },
+  updateZoomKeys(dt) {
+    const dir = (input.isHeld('zoomOut') ? 1 : 0) - (input.isHeld('zoomIn') ? 1 : 0);
+    if (input.consume('zoomIn')) { this.stepZoom(-1); this.zoomRepeat = CONFIG.zoom.repeatDelay; }
+    if (input.consume('zoomOut')) { this.stepZoom(1); this.zoomRepeat = CONFIG.zoom.repeatDelay; }
+    if (!dir) return;
+    this.zoomRepeat -= dt;
+    if (this.zoomRepeat <= 0) { this.stepZoom(dir); this.zoomRepeat = CONFIG.zoom.repeat; }
+  },
+  mouseLook(dx, dy) {
+    if (this.mode !== 'play' || this.lock) return;   // no mouse camera while locked on
+    const M = CONFIG.mouse, s = settings.sensitivity;
+    this.cam.yaw -= dx * M.yawPerPx * s;
+    this.cam.pitch = clamp(this.cam.pitch + dy * M.pitchPerPx * s * (settings.invert ? -1 : 1), M.pitchMin, M.pitchMax);
+    this.mouseHold = M.holdTime;
+  },
+
   updateCamera(dt, snap) {
-    const K = CONFIG.camera, A = CONFIG.arena, p = this.player, e = this.enemy, c = this.cam;
-    const rate = r => snap ? 1 : 1 - Math.exp(-r * dt);
-    const dead = p.state === 'dead';
-    const mx = input.orbitX, my = input.orbitY, wheel = input.zoom;
-    input.orbitX = input.orbitY = input.zoom = 0;
-    if (dead && p.stateTime > K.deathHold) return;   // settled on the fallen player: hold still
-    const ex = e.x - p.x, ez = e.z - p.z, ed = Math.hypot(ex, ez), enemyAlive = e.state !== 'dead';
-
-    // 1. Orbit: right-drag turns the view, the wheel zooms.
-    c.idle += dt; c.shake = Math.max(0, c.shake - dt);
-    if (!dead) {
-      if (mx || my) { c.yaw -= mx * K.orbitSpeed; c.pitch += my * K.orbitSpeed; }
-      if (input.orbiting || mx || my) c.idle = 0;
-      c.dist = clamp(c.dist + wheel * K.zoomStep, K.minDist, K.maxDist);
-    }
-
-    // 2. Follow / 3. lock-on framing. Both yield while the player is orbiting.
-    let extra = 0;
-    const shoulder = this.shoulder && !dead;
-    c.shoulderK += ((shoulder ? 1 : 0) - c.shoulderK) * rate(K.shoulderBlend);
-    if (shoulder) {
-      // Mouse alone steers: no recentering, lock pull or lean.
-    } else if (dead) {
-      c.pitch += (K.deathPitch - c.pitch) * rate(K.deathRate); extra = K.deathPullback;
-    } else if (this.locked) {
-      if (c.idle > K.lockReturnDelay) {
-        c.yaw += angDiff(Math.atan2(ex, ez), c.yaw) * rate(K.lockReturnRate);
-        c.pitch += (K.lockPitch - c.pitch) * rate(K.lockReturnRate);
-      }
-      extra = e.height * K.lockPullback;
+    const K = CONFIG.camera, Z = CONFIG.zoom, Lk = CONFIG.lock, W = world, p = this.player, c = this.cam;
+    const k = snap ? 1 : 1 - Math.exp(-K.followRate * dt);
+    c.zoom += (this.zoomTarget - c.zoom) * (snap ? 1 : 1 - Math.exp(-Z.rate * dt));
+    let dist = c.zoom, pitch = c.pitch;
+    const look = new THREE.Vector3(p.x, p.y * 0.5 + K.lookHeight, p.z);
+    const lock = this.lock;
+    if (lock) {
+      // Behind the player, aimed between player and target; pull back for big or distant targets.
+      const dx = lock.x - p.x, dz = lock.z - p.z, sep = Math.hypot(dx, dz);
+      // Loose yaw: inside the slack the camera barely drifts, so circling the target leaves it
+      // off to one side (seeing both); only the part beyond the slack is followed firmly.
+      const off = angDiff(Math.atan2(dx, dz), c.yaw);
+      const excess = Math.sign(off) * Math.max(0, Math.abs(off) - Lk.slack);
+      if (snap) c.yaw += off;
+      else c.yaw += excess * (1 - Math.exp(-Lk.camYawRate * dt)) + (off - excess) * Lk.drift * dt;
+      look.x += dx * Lk.frame; look.z += dz * Lk.frame;
+      look.y = lerp(look.y, lock.y + lock.height * 0.55, Lk.frame);
+      dist += Math.min(Lk.maxExtra, Math.max(0, lock.height - 1.6) * Lk.sizeDist + sep * Lk.sepDist);
+      pitch = Math.max(0, pitch) * 0.5 + Math.max(0, lock.height - 2) * 0.05;
     } else {
-      if (c.idle > K.recenterDelay && Math.hypot(p.vx, p.vz) > 0.5) {
-        // Drift behind the facing. The sine means running straight at the camera never whips it around.
-        c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.recenterRate * dt;
-        c.pitch += (K.pitch - c.pitch) * rate(K.recenterPitchRate);
+      // Swing behind the player's facing; no pull when the player runs straight at the camera.
+      this.mouseHold = Math.max(0, this.mouseHold - dt);
+      if (this.mouseHold <= 0) c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.yawFollow * dt;
+      const e = this.target();
+      if (e && e.alive()) {
+        const dx = e.x - p.x, dz = e.z - p.z;
+        const w = ease(1 - Math.hypot(dx, dz) / K.leanRange);
+        look.x += dx * K.leanAmount * w; look.z += dz * K.leanAmount * w;
+        dist += K.leanPullback * w; pitch += K.leanRaise * w / dist;
       }
-      if (enemyAlive) extra = K.leanPullback * ease(1 - ed / K.leanRange);
     }
-    c.pitch = clamp(c.pitch, K.minPitch, K.maxPitch);
-    c.extra += (extra - c.extra) * rate(dead ? K.deathRate : K.extraRate);
-
-    // Pivot at the player's head: smoothed, and only partly following jumps.
-    const sk = c.shoulderK;
-    const kf = rate(lerp(K.followRate, K.shoulderFollowRate, sk));
-    c.pivot.x += (p.x - c.pivot.x) * kf; c.pivot.z += (p.z - c.pivot.z) * kf;
-    c.pivot.y += (K.lookHeight + p.y * K.jumpFollow - c.pivot.y) * rate(K.followRateY);
-
-    // Look target: the midpoint to a locked target, otherwise the player with a slight lean toward a near enemy.
-    const look = c.pivot.clone();
-    if (dead) look.y = 0.4;
-    else if (this.locked) { look.x += ex * 0.5; look.z += ez * 0.5; look.y = (c.pivot.y + e.height * 0.55) / 2; }
-    else if (enemyAlive) { const w = K.leanAmount * ease(1 - ed / K.leanRange); look.x += ex * w; look.z += ez * w; }
-    c.lookStd.lerp(look, rate(dead ? K.deathRate : K.lookRate));
-
-    // Boom origin: the head, shifted over the right shoulder as shoulder mode blends in (kept inside the walls).
-    const limX = A.halfX - K.wallMargin, limZ = A.halfZ - K.wallMargin;
-    const side = K.shoulderSide * sk;
-    const o = new THREE.Vector3(
-      clamp(c.pivot.x - Math.cos(c.yaw) * side, -limX, limX),
-      c.pivot.y + (K.shoulderHeight - K.lookHeight) * sk,
-      clamp(c.pivot.z + Math.sin(c.yaw) * side, -limZ, limZ));
-    // Boom: cast from the origin toward the wanted camera spot; stop just short of walls and floor.
-    const cp = Math.cos(c.pitch), bx = -Math.sin(c.yaw) * cp, by = Math.sin(c.pitch), bz = -Math.cos(c.yaw) * cp;
-    let free = lerp(c.dist + c.extra, K.shoulderDist, sk);
-    if (bx > 1e-6) free = Math.min(free, (limX - o.x) / bx);
-    if (bx < -1e-6) free = Math.min(free, (-limX - o.x) / bx);
-    if (bz > 1e-6) free = Math.min(free, (limZ - o.z) / bz);
-    if (bz < -1e-6) free = Math.min(free, (-limZ - o.z) / bz);
-    if (by < -1e-6) free = Math.min(free, (K.floorClear - o.y) / by);
-    free = Math.max(K.minBoom, free);
-    // Blocked: pull in at once. Clear again: ease back out.
-    c.boom = snap || free < c.boom ? free : c.boom + (free - c.boom) * rate(K.boomReturn);
-    c.pos.set(clamp(o.x + bx * c.boom, -limX, limX), o.y + by * c.boom, clamp(o.z + bz * c.boom, -limZ, limZ));
-    // Shoulder view looks straight down the boom, so the screen centre (crosshair) is the camera's forward.
-    const aim = new THREE.Vector3(o.x - bx * K.shoulderAimDist, o.y - by * K.shoulderAimDist, o.z - bz * K.shoulderAimDist);
-    c.look.lerpVectors(c.lookStd, aim, sk);
+    const height = dist * (Z.heightRatio + pitch);
+    const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
+    // Keep the camera inside the walls and on the player's side of closed gates:
+    // shorten the boom from the player until it fits.
+    const loX = W.minX + K.wallMargin, hiX = W.maxX - K.wallMargin, limZ = W.halfZ - K.wallMargin;
+    const ox = -fx * dist, oz = -fz * dist;
+    let t = 1;
+    const fit = (from, off, lim, above) => { if (above ? from + off > lim : from + off < lim) t = Math.min(t, (lim - from) / off); };
+    fit(p.x, ox, hiX, true); fit(p.x, ox, loX, false); fit(p.z, oz, limZ, true); fit(p.z, oz, -limZ, false);
+    for (const g of W.gates) {
+      if (g.open) continue;
+      if (p.x < g.x) fit(p.x, ox, g.x - K.gateMargin, true); else fit(p.x, ox, g.x + K.gateMargin, false);
+    }
+    t = Math.max(0, t);
+    const want = new THREE.Vector3(p.x + ox * t, p.y * 0.5 + height * Math.max(t, 0.5) + (1 - t) * K.closeRaise, p.z + oz * t);
+    want.y = clamp(want.y, K.floor, W.ceiling - K.ceilingMargin);   // never through floor or ceiling
+    c.pos.lerp(want, k); c.look.lerp(look, k);
+    c.pos.x = clamp(c.pos.x, loX, hiX); c.pos.z = clamp(c.pos.z, -limZ, limZ);
+    c.pos.y = clamp(c.pos.y, K.floor, W.ceiling - K.ceilingMargin);
     if (snap) { c.prevPos.copy(c.pos); c.prevLook.copy(c.look); }
   },
 
   update(dt) {
-    const p = this.player, e = this.enemy, c = this.cam;
-    p.savePrev(); e.savePrev(); c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
-    if (this.hitstop > 0) {   // hit-pause: both sides and the camera freeze
-      this.hitstop -= dt; input.orbitX = input.orbitY = input.zoom = 0; return;
+    const p = this.player, c = this.cam;
+    p.savePrev(); for (const e of this.enemies) e.savePrev();
+    c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
+    this.updateZoomKeys(dt);
+    if (!p.alive()) {
+      // Death: the world slows to a stop, then the player returns to the last rested bonfire.
+      this.deathTimer += dt;
+      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer(); return; }
+      const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
+      if (slow > 0) for (const e of this.enemies) e.update(dt * slow, p);
+      p.update(dt, { x: 0, z: 0, has: false }, [], null);
+      this.updateCamera(dt, false);
+      return;
     }
-    if (this.locked && (p.state === 'dead' || e.state === 'dead' || Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.camera.lockRange))
-      this.locked = false;
-    p.update(dt, this.moveInput(), e, this.locked, this.shoulder ? this.cam.yaw : null);
-    e.update(dt, p);
-    separateBodies(p, e);
+    if (this.hitstop > 0) { this.hitstop -= dt; return; }   // hit-pause: both sides freeze
+    this.updateLock(dt);
+    if (input.consume('rest')) this.tryRest();
+    if (input.peek('flask') && p.canDrink() && this.flasks > 0) {
+      input.consume('flask'); this.flasks--; p.vx = p.vz = 0; p.setState('drink');
+    }
+    const live = this.enemies.filter(e => e.alive());
+    p.update(dt, this.moveInput(), live, this.lock);
+    for (const e of this.enemies) e.update(dt, p);
+    separateBodies(p, this.enemies);
     resolveCombat(this);
+    if (p.landEvent) {   // jump attack touchdown: ground pound visuals only
+      const L = p.landEvent; p.landEvent = null;
+      groundFx.spawn(L.x, L.z, L.fx);
+      this.addShake(CONFIG.groundPound.shakeTime, L.fx.shake);
+    }
+    for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; this.souls += e.def.souls; }
+    if (!p.alive()) this.onPlayerDeath();
+    this.checkStain();
+    if (this.kind === 'level') this.updateLevel(dt);
     this.updateCamera(dt, false);
   },
 
   render(alpha, frameDt) {
-    const p = this.player, e = this.enemy, c = this.cam;
+    const p = this.player, c = this.cam, t = performance.now() / 1000;
     const frozen = this.hitstop > 0, sub = frozen ? 0 : alpha * CONFIG.step;
     const at = b => ({ x: lerp(b.px, b.x, alpha), y: lerp(b.py, b.y, alpha), z: lerp(b.pz, b.z, alpha),
                        yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
-    const pp = at(p), ep = at(e);
-    p.rig.place(pp.x, pp.y, pp.z, pp.yaw); e.rig.place(ep.x, ep.y, ep.z, ep.yaw);
-    p.pose(p.stateTime + sub); e.pose(e.stateTime + sub);
-    camera.position.lerpVectors(c.prevPos, c.pos, alpha);
-    const t = performance.now() / 1000;
-    if (c.shake > 0 && !frozen) {
-      const s = CONFIG.camera.shakeAmount * c.shake / CONFIG.camera.shakeTime;
-      camera.position.x += Math.sin(t * 97) * s; camera.position.y += Math.sin(t * 131) * s;
+    const placed = [p, ...this.enemies].map(b => [b, at(b)]);
+    for (const [b, q] of placed) {
+      b.rig.place(q.x, q.y, q.z, q.yaw);
+      b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: p.x, pz: p.z });
     }
-    this.marker.visible = this.locked;
-    this.marker.position.set(ep.x, ep.y + e.height + 0.45, ep.z); this.marker.rotation.y = t * 2;
+    camera.position.lerpVectors(c.prevPos, c.pos, alpha);
+    if (this.shake > 0) {
+      const a = this.shakeAmp * this.shake / this.shakeDur;
+      camera.position.x += rand(-a, a); camera.position.y += rand(-a, a); camera.position.z += rand(-a, a);
+      this.shake = Math.max(0, this.shake - frameDt);
+    }
     camera.lookAt(new THREE.Vector3().lerpVectors(c.prevLook, c.look, alpha));
-    const flick = Math.sin(t * 11) * 0.5 + Math.sin(t * 23.7) * 0.3 + Math.sin(t * 5.3) * 0.4;
-    fireLight.intensity = 11 + flick * 1.4;
-    flame.scale.set(1 + flick * 0.08, 1 + flick * 0.16, 1 + flick * 0.08); flame.rotation.y = t * 2;
+    const lockAt = this.lock && placed.find(([b]) => b === this.lock);
+    lockMarker.visible = !!lockAt;
+    if (lockAt) {
+      const q = lockAt[1];
+      lockMarker.position.set(q.x, q.y + this.lock.height + CONFIG.lock.markerGap, q.z);
+      lockMarker.rotation.y = t * 2.5;
+    }
+    if (this.stain) {
+      this.stain.wisp.position.y = 0.45 + Math.sin(t * 2) * 0.08;
+      this.stain.wisp.material.opacity = 0.55 + Math.sin(t * 3.1) * 0.25;
+    }
+    for (const g of world.gates) g.mesh.position.y = ease(g.lift) * (LEVEL_1.gateHeight - 0.3);
+    // Irregular, subtle flicker in brightness and warmth.
+    flames.forEach((f, i) => {
+      const s = f.seed;
+      const k = Math.sin(t * 11 + s) * 0.45 + Math.sin(t * 23.7 + s * 1.3) * 0.25 + Math.sin(t * 5.3 + s * 0.7) * 0.35 + Math.sin(t * 37.1 + i) * 0.1;
+      if (f.light) {
+        f.light.intensity = f.base * (1 + k * 0.1);
+        f.light.color.copy(f.color).offsetHSL(k * 0.008, 0, k * 0.02);
+      }
+      f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
+    });
+    updateDust(t);
+    swordTrail.update(p.state === 'jumpAttack', p.rig);
+    groundFx.update(frameDt);
     updateParticles(frameDt);
-    updateDebug(this, hud.showHitboxes(), pp, ep);
+    updateDebug(this, hud.showHitboxes(), placed);
     hud.update(this, frameDt);
     renderer.render(scene, camera);
   },
@@ -1240,67 +2159,59 @@ window.addEventListener('keydown', ev => {
   const code = ev.code;
   if (code === 'F1') {
     ev.preventDefault();
-    if (!ev.repeat && Game.mode === 'arena') hud.help.classList.toggle('hidden');
+    if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
     return;
   }
-  if (Game.mode === 'menu') {
+  if (Game.mode === 'menu' || Game.mode === 'pause') {
+    if (code === 'Tab') ev.preventDefault();
     if (ev.repeat) return;
     if (code === 'ArrowUp' || code === 'KeyW') { ev.preventDefault(); Game.select(Game.selected - 1); }
     else if (code === 'ArrowDown' || code === 'KeyS') { ev.preventDefault(); Game.select(Game.selected + 1); }
-    else if (code === 'Enter' || code === 'KeyJ') { ev.preventDefault(); Game.startFight(Game.selected); }
+    else if (code === 'ArrowLeft' || code === 'KeyA') { ev.preventDefault(); Game.adjust(-1); }
+    else if (code === 'ArrowRight' || code === 'KeyD') { ev.preventDefault(); Game.adjust(1); }
+    else if (code === 'Enter' || code === 'KeyJ') { ev.preventDefault(); Game.confirm(); }
+    else if (code === 'Escape') { ev.preventDefault(); Game.menuBack(); }
     return;
   }
   if (!GAME_CODES.has(code)) return;
   ev.preventDefault();
   if (ev.repeat) return;
-  if (code === 'Escape') Game.showMenu();
+  if (code === 'Escape') Game.pause();
   else if (code === 'KeyR') Game.reset();
   else if (code === 'KeyH') hud.toggle.checked = !hud.toggle.checked;
-  else if (code === 'KeyQ') Game.toggleLock();
-  else if (code === 'KeyV') Game.setShoulder(!Game.shoulder);
   else input.down(code);
 });
 window.addEventListener('keyup', ev => input.up(ev.code));
-window.addEventListener('blur', () => { input.held.clear(); input.orbiting = false; });
+window.addEventListener('blur', () => input.held.clear());
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
-// Left mouse attacks. Right mouse held orbits the camera; a quick still tap of it is a heavy attack.
 canvas.addEventListener('mousedown', ev => {
-  if (Game.mode !== 'arena') return;
+  if (Game.mode !== 'play') return;
   ev.preventDefault();
-  if (Game.shoulder && !document.pointerLockElement) {   // recapture the cursor (e.g. after Esc released it)
-    try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {}
-  }
-  if (ev.button === 0) input.down('Mouse0');
-  else if (ev.button === 2) { input.orbiting = true; input.orbitStart = input.now(); input.orbitTravel = 0; }
+  if (!document.pointerLockElement && canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) { /* unsupported */ } }
+  if (ev.button === 0 || ev.button === 2) input.down('Mouse' + ev.button);
 });
-window.addEventListener('mousemove', ev => {
-  // Shoulder mode: plain mouse movement aims. Otherwise only a right-drag orbits.
-  if (!input.orbiting && !(Game.shoulder && Game.mode === 'arena')) return;
-  input.orbitX += ev.movementX; input.orbitY += ev.movementY;
-  if (input.orbiting) input.orbitTravel += Math.abs(ev.movementX) + Math.abs(ev.movementY);
+window.addEventListener('mouseup', ev => input.up('Mouse' + ev.button));
+document.addEventListener('mousemove', ev => {
+  if (document.pointerLockElement === canvas) Game.mouseLook(ev.movementX, ev.movementY);
 });
-window.addEventListener('mouseup', ev => {
-  if (ev.button === 0) input.up('Mouse0');
-  else if (ev.button === 2 && input.orbiting) {
-    input.orbiting = false;
-    const K = CONFIG.camera;
-    if (input.now() - input.orbitStart <= K.tapTime && input.orbitTravel <= K.tapMove) input.pressed.set('Mouse2', input.now());
-  }
+// Leaving pointer capture (the browser uses Escape for this) opens the pause menu.
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && Game.mode === 'play') Game.pause();
 });
-canvas.addEventListener('wheel', ev => {
-  if (Game.mode !== 'arena') return;
-  ev.preventDefault();
-  input.zoom += Math.sign(ev.deltaY);
-}, { passive: false });
+window.addEventListener('wheel', ev => {
+  if (Game.mode !== 'play') return;
+  Game.stepZoom(ev.deltaY > 0 ? 1 : -1);
+}, { passive: true });
 
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+  const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
 resize();
-Game.buildMenu();
+applySettings();
+Game.showMenu('main');
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;
@@ -1308,7 +2219,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const frameDt = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
-  if (Game.mode !== 'arena') { accumulator = 0; return; }
+  if (Game.mode !== 'play') { accumulator = 0; return; }   // menus and pause: simulation stopped
   accumulator += frameDt;
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
@@ -1317,7 +2228,7 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-window.__arena = { Game, CONFIG, ENEMY_DEFS, input, hud, camera };   // console handle for tuning and testing
+window.__arena = { Game, CONFIG, ENEMY_DEFS, LEVEL_1, input, hud, WORLDS, settings, camera };   // console handle for tuning and testing
 </script>
 </body>
 </html>

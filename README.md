@@ -1,6 +1,6 @@
 # Combat Arena 3D
 
-A small Souls-like 3D duel in a single HTML file (Three.js from a CDN, no build step).
+A small Souls-like 3D action game in a single HTML file (Three.js from a CDN, no build step).
 
 ## Play
 
@@ -9,20 +9,28 @@ A small Souls-like 3D duel in a single HTML file (Three.js from a CDN, no build 
 
 Keyboard and mouse only; there are no touch controls.
 
+## Modes
+
+- **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
+- **Enemies** — duel a single opponent in the arena.
+
 ## Controls
 
 | Action | Keys |
 |---|---|
 | Move | W A S D / Arrow keys |
+| Camera | Mouse (click the view to capture it) |
 | Jump | Space |
 | Roll | Shift |
 | Light attack | J / Left mouse |
-| Heavy attack | K / quick right-click |
+| Heavy attack | K / Right mouse |
+| Jump attack | Light or heavy while airborne |
 | Block (hold) | L / Ctrl |
 | Parry | E |
-| Lock-on | Q |
-| Orbit camera | Hold right mouse + drag, wheel zooms |
-| Shoulder camera | V |
-| Reset fight | R |
-| Menu | Escape |
+| Lock-on / switch target | Q / Tab |
+| Zoom | Mouse wheel / = and - |
+| Rest at bonfire | F |
+| Use flask | G |
+| Restart fight / level | R |
+| Pause and options | Escape |
 | Help / hitboxes | F1 |
