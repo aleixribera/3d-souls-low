@@ -15,6 +15,7 @@ Keyboard and mouse only; there are no touch controls.
 
 - **Levels → Tutorial** — one room of training dummies that teaches every control, step by step.
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
+- **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
 - **Enemies** — duel a single opponent in the arena.
 
 ## Controls
