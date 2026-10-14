@@ -307,7 +307,8 @@ const CONFIG = {
     rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
     rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     rollExitKeep: 0.3,           // speed kept when a roll ends
-    rollQueueTime: 1.2,          // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
+    rollChainWindow: 0.2,        // a roll pressed this close to the end of a roll is queued as the next roll
+    rollQueueTime: 1.2,         // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
@@ -1774,6 +1775,8 @@ class Player {
         const p = this.stateTime / C.rollTime;
         const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
         this.vx = fx * sp; this.vz = fz * sp;
+        // Chain rolls: only a press in the last rollChainWindow s is queued; earlier presses (mashing) are dropped.
+        if (input.consume('roll') && this.stateTime >= C.rollTime - C.rollChainWindow) this.rollQueue = C.rollQueueTime;
         if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
       }
