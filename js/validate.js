@@ -38,12 +38,13 @@ function validateData() {
   need(PLAYER_DEF.look.weapon in WEAPONS, `Player: unknown weapon "${PLAYER_DEF.look.weapon}".`);
   // Levels
   const levelIds = new Set();
-  for (const L of LEVELS) {
+  for (const L of ALL_LEVELS) {
     const where = `Level "${L.id}"`;
     need(typeof L.id === 'string' && !levelIds.has(L.id), `${where}: missing or duplicate id.`);
     levelIds.add(L.id);
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
-    if (L.next) need(LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
+    if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
+    if ('attackTokens' in L) need(Number.isInteger(L.attackTokens) && L.attackTokens >= 1, `${where}: attackTokens must be a whole number of at least 1.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
     need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);
@@ -83,6 +84,8 @@ function validateData() {
   }
   // Arena and timings
   need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
+  const K = CONFIG.tokens;
+  need(Number.isInteger(K.default) && K.default >= 1 && K.frontCone >= 0 && K.frontCone < Math.PI, 'CONFIG.tokens: default must be a whole number of at least 1, frontCone between 0 and pi.');
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)

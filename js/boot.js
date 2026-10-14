@@ -118,6 +118,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
-window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, LEVEL_1, LEVEL_2, TUTORIAL, ARENA,
+window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, tokens, LEVEL_1, LEVEL_2, TUTORIAL, ARENA,
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, get world() { return world; } };
 window.__arenaReady = true;

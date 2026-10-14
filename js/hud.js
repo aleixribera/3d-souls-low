@@ -36,7 +36,7 @@ const hud = {
       ? `Prefer ${keyLabel(ACTIONS.block[0])} for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.` : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
-    const next = game.level && game.level.next && LEVELS.find(l => l.id === game.level.next);
+    const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
     $('completeHint').textContent = next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.prompt.textContent = `${bindLabel('rest')} Rest at bonfire`;

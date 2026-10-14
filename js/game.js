@@ -27,7 +27,10 @@ const Game = {
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
+        ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
       ] },
+      tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
+        items: TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })) },
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
         items: LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })) },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
@@ -125,7 +128,7 @@ const Game = {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   },
   startFight(id) { this.kind = 'arena'; this.level = ARENA; this.duelId = id; this.enterPlay(); this.reset(); },
-  startLevel(id) { this.kind = 'level'; this.level = LEVELS.find(l => l.id === id); this.enterPlay(); this.reset(); },
+  startLevel(id) { this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset(); },
   leaveTutorial() { this.reset(); this.showMenu('levels'); },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
@@ -166,7 +169,7 @@ const Game = {
     input.pressed.clear();
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
     $('fade').classList.remove('show');   // fades back in after a level transition
-    this.setLock(null); this.tut = null;
+    this.setLock(null); this.tut = null; tokens.reset();
     const def = this.level;
     world = makeWorld(def, loadStage(def));
     const start = def.playerStart || def.start;
@@ -582,6 +585,7 @@ const Game = {
     const alerting = this.kind === 'level' && this.level.alert;
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
     p.update(dt, this.moveInput(), live, this.lock);
+    tokens.update(this, dt);
     for (const e of this.enemies) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);

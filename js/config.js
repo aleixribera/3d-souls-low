@@ -73,6 +73,14 @@ const CONFIG = {
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
   // (with a clear line between them), and those pass it on in turn.
   alert: { radius: 10 },
+  // Attack tokens (js/tokens.js): how many enemies may attack at once unless a level sets `attackTokens`.
+  // Enemies without a token circle at `ring` m (or `ringGap` beyond their own hold range, if larger),
+  // at `speedMul` of their speed, outside a `frontCone` (rad, each side of the player's facing), which
+  // follows the player's facing at `frontRate` rad/s. `patience`: seconds of waiting that put an enemy
+  // first in line; `swapMargin`: how much closer a waiter (that has waited `swapWait` s) must be to take a token
+  // from a holder still closing in.
+  tokens: { default: 2, ring: 4.6, ringGap: 1.6, speedMul: 0.62, frontCone: 0.9, frontRate: 2.5,
+            patience: 3, swapMargin: 3, swapWait: 1.5 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7 },
   level: { leash: 22,        // give up the chase when the player is this far away...

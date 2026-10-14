@@ -28,6 +28,7 @@ class Enemy {
     this.state = B.start; this.stateTime = 0;
     const fd = def.firstDelay || E.firstDelay;
     this.cooldown = rand(fd[0], fd[1]); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
+    this.token = false; this.tokenWait = 0; this.slot = null;   // attack token, time spent waiting for one, circling slot (js/tokens.js)
     this.savePrev();
   }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
@@ -120,6 +121,7 @@ class Enemy {
         if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player)) { this.next = null; this.setState(ES.RETURN); break; }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
+        if (!this.token) { this.next = null; [tx, tz] = this.circleVelocity(player, dist); break; }   // not its turn: circle
         if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
         const want = this.next ? this.next.range : d.holdRange;
         if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
@@ -140,7 +142,9 @@ class Enemy {
         break;
       }
       case ES.RECOVER:
-        if (this.stateTime >= this.attack.recovery) { this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); }
+        if (this.stateTime >= this.attack.recovery) {   // attack over: give the turn back
+          this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.token = false; this.setState(ES.CHASE);
+        }
         break;
       case ES.HURT:
         if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); }
@@ -160,6 +164,20 @@ class Enemy {
     approachVel(this, tx, tz, E.accel * dt);
     integrateBody(this, dt, E.knockFriction);
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+  // Without an attack token: keep to a ring around the player (out of reach), sliding along it toward
+  // the slot the token manager gave it, still facing the player. Returns the wanted velocity [x, z].
+  circleVelocity(player, dist) {
+    const T = CONFIG.tokens, d = this.def;
+    const ring = Math.max(T.ring, d.holdRange + T.ringGap);
+    const a = Math.atan2(this.x - player.x, this.z - player.z);
+    const rx = Math.sin(a), rz = Math.cos(a), ux = Math.cos(a), uz = -Math.sin(a);   // outward and around (+angle)
+    const out = clamp((ring - dist) * 1.2, -1, 1), along = this.slot === null ? 0 : clamp(angDiff(this.slot, a) * ring * 0.6, -1, 1);
+    let vx = rx * out + ux * along, vz = rz * out + uz * along;
+    const l = Math.hypot(vx, vz);
+    if (l < 0.15) return [0, 0];   // in place: stand and watch
+    const sp = d.speed * T.speedMul / Math.max(1, l);
+    return [vx * sp, vz * sp];
   }
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover.
   strike() { this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack)); this.setState(ES.ACTIVE); }

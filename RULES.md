@@ -8,6 +8,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - The game files are classic scripts that share one global scope. A file may only use, while it loads, what earlier files define (inside functions, anything goes).
 - Data lives in `js/data/` (player, items, enemies, shared looks) and `js/levels/` (one file per level). `js/data/levels.js` sets the Levels menu order.
 - A new file must be added to `GAME_FILES`, after everything it needs at load.
+- **Test Grounds:** opening the page with `#dev` at the end of its address adds a Test Grounds menu with developer rooms (`TEST_LEVELS` in `js/data/levels.js`) for trying out mechanics. They are checked at load like every level.
 
 ## Golden rules
 
@@ -55,6 +56,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 
 - Every enemy is built from the same humanoid parts, changed by scale, colour, weapon and off-hand.
 - **Basic loop:** notice the player → chase → pick an attack → wind up → strike → recover → cooldown.
+- **Attack tokens:** only a few enemies attack at once (2 unless the level sets `attackTokens`). An enemy needs a token to pick an attack. The others circle the player out of reach, spread over the player's sides and back, facing the player. A token is given back when its attack ends, or when its holder is flinched, staggered, parried, broken or gives up the chase. Free tokens go first to enemies that have waited longest, then to the closest, and an enemy that has waited can take the token of a holder that is still far away. Numbers live in `CONFIG.tokens`; the logic in `js/tokens.js`. A lone enemy (any duel) always holds a token.
 - **Behaviours** decide how an enemy starts and what it returns to:
   - *gated*: stands at its post.
   - *patrol*: walks a short path.

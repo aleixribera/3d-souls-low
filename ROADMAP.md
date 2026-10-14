@@ -32,7 +32,7 @@ Each step is small and verified before the next.
 1. [x] Split the single file into classic scripts (still launched from one HTML file).
 2. [x] Gamepad support (standard Souls layout: RB light, RT heavy, LB block, LT parry, B roll, A jump, right stick click lock-on, right stick flick switch, X flask, Y rest, Start pause).
 3. [x] Death refills flasks; remove souls and bloodstains.
-4. [ ] Attack tokens and surrounding.
+4. [x] Attack tokens and surrounding.
 5. [ ] Roll-only attacks and lunges, as systems tested on test enemies.
 6. [ ] New enemies that use them.
 7. [ ] Height: stairs, ramps, drops.

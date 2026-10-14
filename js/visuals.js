@@ -29,7 +29,7 @@ function checkVisualData(need, num) {
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
   for (const [k, K] of Object.entries(VIS.surfaces.kinds))
     need(K.side in VIS.surfaces.patterns && K.top in VIS.surfaces.patterns, `CONFIG.VISUALS.surfaces.kinds.${k}: unknown pattern.`);
-  for (const L of [...LEVELS, ARENA]) {
+  for (const L of [...ALL_LEVELS, ARENA]) {
     const A = L.atmosphere, w = `Level "${L.id}" atmosphere`;
     if (!A) continue;
     for (const k of Object.keys(A)) need(ATMOSPHERE_KEYS.includes(k), `${w}: unknown field "${k}" (known: ${ATMOSPHERE_KEYS.join(', ')}).`);
