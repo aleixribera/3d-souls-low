@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Combat Arena 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #07060a; color: #cfc6ad;
+    font-family: Georgia, 'Times New Roman', serif; user-select: none; }
+  canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #17131a 0%, #07060a 75%); z-index: 10; }
+  #menu.hidden { display: none; }
+  #menuBox { border: 2px solid #7d6a3a; padding: 34px 44px 26px; background: #0d0b10; min-width: 420px;
+    max-width: 90vw; box-shadow: 0 0 60px #000; }
+  #menuBox h1 { margin: 0 0 6px; text-align: center; letter-spacing: 6px; font-weight: normal;
+    font-size: 30px; color: #b79d5c; }
+  #menuBox .sub { text-align: center; font-size: 13px; color: #6f6753; margin-bottom: 22px; letter-spacing: 2px; }
+  .enemyBtn { display: block; width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px 16px;
+    text-align: left; background: #15121a; border: 1px solid #3a3226; color: #cfc6ad; cursor: pointer;
+    font-family: inherit; }
+  .enemyBtn .n { font-size: 19px; letter-spacing: 2px; }
+  .enemyBtn .d { font-size: 13px; color: #857c66; margin-top: 3px; }
+  .enemyBtn:hover, .enemyBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
+  .enemyBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
+  #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #hud.hidden { display: none; }
+  .bar { position: relative; background: #0b0a0cd0; border: 1px solid #5d5132; overflow: hidden; }
+  .bar > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
+  #pBars { position: absolute; left: 22px; top: 20px; }
+  #pHp { width: min(320px, 24vw); height: 16px; }
+  #pSt { width: min(260px, 20vw); height: 10px; margin-top: 6px; }
+  .trail { background: #c9b26a; }
+  .hp { background: linear-gradient(#a32a22, #6e1612); }
+  .st { background: linear-gradient(#4f9a4a, #2d6a2e); }
+  #eBars { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); text-align: center; }
+  #eName { font-size: 17px; letter-spacing: 3px; color: #d9cda8; text-shadow: 0 0 6px #000; margin-bottom: 5px; }
+  #eHp { width: 46vw; max-width: 620px; height: 12px; }
+  #ePosture { width: 30vw; max-width: 400px; height: 6px; margin: 5px auto 0; }
+  #ePosture.hidden { display: none; }
+  .posture { background: linear-gradient(#e0b84a, #a8801e); }
+  /* apex of the inverted V sits on the exact screen centre */
+  #crosshair { position: absolute; left: calc(50% - 12px); top: calc(50% - 2px); }
+  #crosshair.hidden { display: none; }
+  #helpHint { position: absolute; left: 22px; bottom: 16px; font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000; }
+  #help { position: absolute; left: 22px; bottom: 40px; background: #0d0b10e8; border: 1px solid #7d6a3a;
+    padding: 12px 16px; font-size: 13px; line-height: 1.55; pointer-events: auto; }
+  #help.hidden { display: none; }
+  #help table { border-collapse: collapse; }
+  #help td { padding: 0 14px 0 0; }
+  #help td:first-child { color: #b79d5c; }
+  #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
+  #help .warn { color: #7a7260; font-size: 11px; margin-top: 6px; max-width: 300px; }
+  #died, #won { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
+  #died .big { font-size: 78px; letter-spacing: 12px; color: #7a0f0f; text-shadow: 0 0 30px #000;
+    background: linear-gradient(90deg, transparent, #000000b0 30%, #000000b0 70%, transparent); padding: 14px 0; }
+  #died .small, #won .small { font-size: 16px; color: #a89f86; margin-top: 16px; opacity: 0; letter-spacing: 2px; }
+  #died.show { opacity: 1; transition: opacity 3s ease-in; }
+  #died.show .small { opacity: 1; transition: opacity 1s linear 3.2s; }
+  #won .big { font-size: 40px; letter-spacing: 10px; color: #c9b26a; text-shadow: 0 0 20px #000; }
+  #won.show { opacity: 1; transition: opacity 2s ease-in 1s; }
+  #won.show .small { opacity: 1; transition: opacity 1s linear 3s; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="pBars">
+    <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
+    <div class="bar" id="pSt"><div class="st" id="pStFill"></div></div>
+  </div>
+  <div id="eBars">
+    <div id="eName"></div>
+    <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
+    <div class="bar" id="ePosture"><div class="posture" id="ePostureFill"></div></div>
+  </div>
+  <div id="died"><div class="big">YOU DIED</div><div class="small">Press R to respawn</div></div>
+  <div id="won"><div class="big">ENEMY FELLED</div><div class="small">R to fight again &middot; Esc for menu</div></div>
+  <div id="help" class="hidden">
+    <table>
+      <tr><td>Move</td><td>W A S D / Arrow keys</td></tr>
+      <tr><td>Jump</td><td>Space</td></tr>
+      <tr><td>Roll</td><td>Shift</td></tr>
+      <tr><td>Light attack</td><td>J / Left mouse</td></tr>
+      <tr><td>Heavy attack</td><td>K / Right-click (quick tap)</td></tr>
+      <tr><td>Block (hold)</td><td>L / Ctrl</td></tr>
+      <tr><td>Parry</td><td>E, as the enemy weapon turns pale</td></tr>
+      <tr><td>Lock-on</td><td>Q</td></tr>
+      <tr><td>Camera</td><td>Hold right mouse + drag, wheel zooms</td></tr>
+      <tr><td>Shoulder camera</td><td>V (mouse aims; click to recapture the cursor)</td></tr>
+      <tr><td>Reset fight</td><td>R</td></tr>
+      <tr><td>Menu</td><td>Escape</td></tr>
+      <tr><td>Help</td><td>F1</td></tr>
+    </table>
+    <label><input type="checkbox" id="hbToggle" checked> Show hitboxes (H)</label>
+    <div class="warn">Prefer L for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.</div>
+  </div>
+  <svg id="crosshair" class="hidden" width="24" height="14" viewBox="0 0 24 14">
+    <polyline points="3,13 12,2 21,13" fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="3,13 12,2 21,13" fill="none" stroke="#f2ead0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div id="helpHint">F1: help</div>
+</div>
+
+<div id="menu">
+  <div id="menuBox">
+    <h1>COMBAT ARENA 3D</h1>
+    <div class="sub">CHOOSE YOUR OPPONENT</div>
+    <div id="menuList"></div>
+    <div class="hint">W/S or &uarr;/&darr; to select &middot; Enter or J to confirm</div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// ============================================================================
+// 1. CONFIG
+// ============================================================================
+const CONFIG = {
+  step: 1 / 60,          // fixed simulation timestep (s)
+  maxSteps: 5,           // max simulation steps per rendered frame
+  gravity: 30,
+  arena: { halfX: 18, halfZ: 13, wallHeight: 1.3, wallThickness: 0.9 },
+  input: { buffer: 0.2 },
+  camera: {
+    fov: 55,
+    distance: 6.4, minDist: 3.2, maxDist: 10, zoomStep: 0.7,
+    pitch: 0.3, minPitch: -0.25, maxPitch: 1.25,       // elevation of the camera above the pivot (rad)
+    orbitSpeed: 0.0045,                                 // rad per pixel of mouse travel
+    lookHeight: 1.5, jumpFollow: 0.3,                   // pivot height; fraction of jump height followed
+    followRate: 10, followRateY: 5, lookRate: 10,       // smoothing (1/s)
+    recenterDelay: 1.2, recenterRate: 0.75, recenterPitchRate: 0.6,
+    leanRange: 9, leanAmount: 0.18, leanPullback: 0.8, extraRate: 3,
+    lockRange: 24, lockReturnDelay: 0.5, lockReturnRate: 4, lockPitch: 0.3, lockPullback: 0.45,
+    wallMargin: 0.3, floorClear: 0.3, minBoom: 0.7, boomReturn: 4,
+    deathPullback: 3.5, deathPitch: 0.95, deathRate: 0.8, deathHold: 4.5,
+    shakeTime: 0.22, shakeAmount: 0.07,
+    tapTime: 0.22, tapMove: 6,                          // a right-click this short/still is a heavy attack, not an orbit
+    // Shoulder mode: tight over-the-right-shoulder view, mouse aims freely.
+    shoulderSide: 0.6, shoulderHeight: 1.65, shoulderDist: 2.6, shoulderFollowRate: 20, shoulderBlend: 8,
+    shoulderAimDist: 20,
+  },
+  parry: {
+    // Window opens lead seconds before the strike goes active (lead scales with the wind-up) and closes post after.
+    leadFrac: 0.16, leadMin: 0.07, leadMax: 0.24, post: 0.05,
+    reachMargin: 0.9,                                   // how far outside the strike's volume a parry still connects
+    whiffCost: 12, whiffRecovery: 0.5, successTime: 0.18,
+    staggerTime: 1.9, riposteTime: 1.3, posture: 100,   // posture added to posture-meter enemies
+    hitstop: 0.11, flashTime: 0.3,
+    riposte: { light: { damage: 2.2, poise: 1 }, heavy: { damage: 2.0, poise: 2 } },
+  },
+  player: {
+    radius: 0.36, height: 1.8,
+    maxHp: 100, maxStamina: 100, maxPoise: 30, poiseResetTime: 4,
+    staminaRegen: 36, staminaDelay: 0.75,
+    walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14, lockTurnRate: 11, attackTrackRate: 3,
+    jumpVelocity: 8.2, airControl: 9,
+    rollCost: 27, rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
+    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7,
+    startX: -6, startZ: 0,
+    attacks: {
+      light: { startup: 0.22, active: 0.12, recovery: 0.34, cost: 16, damage: 18, poise: 22, knock: 3,
+               lunge: 2.4, hitstop: 0.07, anim: 'sweep',
+               box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
+      heavy: { startup: 0.56, active: 0.16, recovery: 0.64, cost: 40, damage: 44, poise: 52, knock: 7,
+               lunge: 3.2, hitstop: 0.13, anim: 'overhead',
+               box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
+    },
+  },
+  block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
+           breakTime: 1.35, hitstop: 0.05 },
+  enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
+           windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
+           deathFade: 2.0, poiseResetTime: 5, postureDelay: 3.5, postureRegen: 22, startX: 6, startZ: 0 },
+  fx: { tintTime: 0.22, particleLife: 0.5 },
+};
+
+// ============================================================================
+// 2. ENEMY_DEFS
+// ============================================================================
+// Attack: hits[] = one {startup, active} per strike, then a shared recovery.
+// box = hit volume in the attacker's frame: w (side), h (up), d (forward), centred fwd ahead and y up.
+const ENEMY_DEFS = [
+  {
+    name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
+    scale: 1.0, bulk: 1.0, radius: 0.4, height: 1.8, color: 0x8a6a45, weapon: 'sword',
+    hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, aggroRange: 30, holdRange: 2.4,
+    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1,
+    attacks: [
+      { name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
+        damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
+        box: { w: 2.0, h: 1.4, d: 2.0, fwd: 1.3, y: 1.1 } },
+      { name: 'Overhead Strike', anim: 'overhead', hits: [{ startup: 1.0, active: 0.14 }], recovery: 1.05,
+        damage: 34, poise: 40, knock: 6, lunge: 2.0, range: 2.0,
+        box: { w: 0.9, h: 2.4, d: 2.3, fwd: 1.4, y: 1.2 } },
+    ],
+  },
+  {
+    name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
+    scale: 1.3, bulk: 1.3, radius: 0.6, height: 2.3, color: 0x7b8088, weapon: 'sword',
+    hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, aggroRange: 30, holdRange: 2.9,
+    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2,
+    attacks: [
+      { name: 'Greatsword Slam', anim: 'overhead', hits: [{ startup: 1.4, active: 0.18 }], recovery: 1.35,
+        damage: 58, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
+        box: { w: 1.5, h: 3.0, d: 3.2, fwd: 2.0, y: 1.5 } },
+      { name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.5, active: 0.12 }], recovery: 0.7,
+        damage: 16, poise: 34, knock: 11, lunge: 4.0, range: 1.6,
+        box: { w: 1.5, h: 1.6, d: 1.4, fwd: 1.2, y: 1.3 } },
+    ],
+  },
+  {
+    name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
+    scale: 0.85, bulk: 0.8, radius: 0.32, height: 1.5, color: 0x2f5234, weapon: 'sword',
+    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, aggroRange: 30, holdRange: 2.3,
+    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0,
+    attacks: [
+      { name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
+        damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
+        box: { w: 0.7, h: 1.2, d: 2.0, fwd: 1.3, y: 1.0 } },
+      { name: 'Double Slash', anim: 'sweep', hits: [{ startup: 0.42, active: 0.09 }, { startup: 0.26, active: 0.09 }],
+        recovery: 0.62, damage: 10, poise: 11, knock: 2.5, lunge: 2.6, range: 1.7,
+        box: { w: 1.7, h: 1.2, d: 1.7, fwd: 1.1, y: 1.0 } },
+    ],
+  },
+  {
+    name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
+    scale: 2.3, bulk: 1.2, radius: 0.95, height: 4.1, color: 0xb9b3a0, weapon: 'club',
+    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, aggroRange: 30, holdRange: 3.6,
+    // usesPosture: poise is shown as a posture meter; hits never cancel its wind-ups, the break lands after the swing.
+    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 2.4, usesPosture: true,
+    attacks: [
+      { name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
+        damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
+        box: { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 } },
+      { name: 'Stomp', anim: 'stomp', hits: [{ startup: 1.3, active: 0.2 }], recovery: 1.25,
+        damage: 46, poise: 75, knock: 8, lunge: 0, range: 2.4,
+        box: { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 } },
+    ],
+  },
+];
+
+// ============================================================================
+// 3. input
+// ============================================================================
+const ACTIONS = {
+  up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
+  jump: ['Space'], roll: ['ShiftLeft', 'ShiftRight'],
+  light: ['KeyJ', 'Mouse0'], heavy: ['KeyK', 'Mouse2'],
+  block: ['KeyL', 'ControlLeft', 'ControlRight'], parry: ['KeyE'],
+};
+const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), ['KeyR', 'KeyH', 'KeyQ', 'KeyV', 'Escape', 'Enter']));
+
+const input = {
+  held: new Set(),
+  orbiting: false, orbitX: 0, orbitY: 0, zoom: 0,   // camera: right-drag deltas (px) and wheel notches since last step
+  orbitStart: 0, orbitTravel: 0,
+  pressed: new Map(),   // code -> time of press (s); each press is consumed at most once
+  now() { return performance.now() / 1000; },
+  down(code) { if (!this.held.has(code)) { this.held.add(code); this.pressed.set(code, this.now()); } },
+  up(code) { this.held.delete(code); },
+  isHeld(action) { return ACTIONS[action].some(c => this.held.has(c)); },
+  // True if the action was pressed within the buffer window. Does not consume.
+  peek(action) {
+    const t = this.now();
+    return ACTIONS[action].some(c => this.pressed.has(c) && t - this.pressed.get(c) <= CONFIG.input.buffer);
+  },
+  consume(action) {
+    if (!this.peek(action)) return false;
+    for (const c of ACTIONS[action]) this.pressed.delete(c);
+    return true;
+  },
+  clear() { this.held.clear(); this.pressed.clear(); this.orbiting = false; this.orbitX = this.orbitY = this.zoom = 0; },
+};
+
+// ============================================================================
+// 4. Scene setup
+// ============================================================================
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07060a);
+scene.fog = new THREE.FogExp2(0x07060a, 0.022);
+
+const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 200);
+
+const moonLight = new THREE.DirectionalLight(0x9daad0, 2.2);
+moonLight.position.set(-6, 14, 8);
+scene.add(moonLight);
+scene.add(new THREE.AmbientLight(0x555a70, 1.3));   // faint fill so silhouettes stay readable
+
+const BONFIRE = { x: 0, z: -(CONFIG.arena.halfZ - 2.2) };
+const fireLight = new THREE.PointLight(0xff8a3c, 11, 0, 1.0);
+fireLight.position.set(BONFIRE.x, 1.4, BONFIRE.z);
+scene.add(fireLight);
+let flame;
+
+(function buildArena() {
+  const A = CONFIG.arena;
+  const stone = new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.95 });
+  const stoneEdge = new THREE.MeshStandardMaterial({ color: 0x5a5650, roughness: 0.95 });
+  const stoneWall = new THREE.MeshStandardMaterial({ color: 0x45413d, roughness: 0.9 });
+  const stoneDark = new THREE.MeshStandardMaterial({ color: 0x2a2826, roughness: 1 });
+  const box = (w, h, d, mat, x, y, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z); scene.add(m); return m;
+  };
+  // Floor, with a lighter border strip marking the playable limit.
+  box(A.halfX * 2, 0.5, A.halfZ * 2, stone, 0, -0.25, 0);
+  const e = 0.7;
+  box(A.halfX * 2, 0.02, e, stoneEdge, 0, 0.01, A.halfZ - e / 2);
+  box(A.halfX * 2, 0.02, e, stoneEdge, 0, 0.01, -A.halfZ + e / 2);
+  box(e, 0.02, A.halfZ * 2 - e * 2, stoneEdge, A.halfX - e / 2, 0.01, 0);
+  box(e, 0.02, A.halfZ * 2 - e * 2, stoneEdge, -A.halfX + e / 2, 0.01, 0);
+  // Floor seams for a little texture and motion parallax.
+  for (let x = -A.halfX + 4; x < A.halfX; x += 4) box(0.06, 0.012, A.halfZ * 2 - e * 2, stoneDark, x, 0.006, 0);
+  for (let z = -A.halfZ + 4; z < A.halfZ; z += 4) box(A.halfX * 2 - e * 2, 0.012, 0.06, stoneDark, 0, 0.006, z);
+  // Low boundary walls just outside the playable rectangle.
+  const t = A.wallThickness, h = A.wallHeight;
+  box(A.halfX * 2 + t * 2, h, t, stoneWall, 0, h / 2, A.halfZ + t / 2);
+  box(A.halfX * 2 + t * 2, h, t, stoneWall, 0, h / 2, -A.halfZ - t / 2);
+  box(t, h, A.halfZ * 2, stoneWall, A.halfX + t / 2, h / 2, 0);
+  box(t, h, A.halfZ * 2, stoneWall, -A.halfX - t / 2, h / 2, 0);
+  // Surrounding ground and background pillars (no collision).
+  box(160, 0.5, 160, stoneDark, 0, -0.3, 0);
+  const pillar = (x, z, ph) => {
+    box(1.9, 0.5, 1.9, stoneWall, x, 0.25, z);
+    box(1.4, ph, 1.4, stoneWall, x, ph / 2, z);
+    box(1.9, 0.5, 1.9, stoneWall, x, ph + 0.25, z);
+  };
+  const px = A.halfX + 3.5, pz = A.halfZ + 3.5;
+  for (let x = -px; x <= px + 0.1; x += (px * 2) / 5) { pillar(x, -pz, 8 + Math.abs(x) % 3); pillar(x, pz, 7 + Math.abs(x * 1.7) % 4); }
+  for (let z = -pz + 6.6; z < pz - 1; z += 6.6) { pillar(-px, z, 9); pillar(px, z, 6.5 + Math.abs(z) % 3); }
+  // Decorative bonfire.
+  const logMat = new THREE.MeshStandardMaterial({ color: 0x241a12, roughness: 1 });
+  for (let i = 0; i < 5; i++) {
+    const log = box(0.14, 0.14, 0.95, logMat, BONFIRE.x, 0.12, BONFIRE.z);
+    log.rotation.y = i * Math.PI / 2.5; log.rotation.x = 0.25;
+  }
+  const ash = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.08, 14), stoneDark);
+  ash.position.set(BONFIRE.x, 0.04, BONFIRE.z); scene.add(ash);
+  flame = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.95, 7),
+    new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, fog: false }));
+  flame.position.set(BONFIRE.x, 0.62, BONFIRE.z); scene.add(flame);
+  const swordInFire = box(0.05, 1.3, 0.09, new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: 0.6, roughness: 0.5 }),
+    BONFIRE.x, 0.7, BONFIRE.z);
+  swordInFire.rotation.z = 0.18;
+})();
+
+// ---- shared helpers --------------------------------------------------------
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+const turnToward = (cur, target, maxStep) => cur + clamp(angDiff(target, cur), -maxStep, maxStep);
+const rand = (a, b) => a + Math.random() * (b - a);
+
+const WARN_COLOR = new THREE.Color(0xff3a1a);
+const HURT_COLOR = new THREE.Color(0xff1010);
+const HIT_COLOR = new THREE.Color(0xffffff);
+const PARRY_COLOR = new THREE.Color(0xfff0a8);    // enemy weapon while its parry window is open
+const FLASH_WHITE = new THREE.Color(0xffffff);
+const FLASH_GRAY = new THREE.Color(0x777777);
+const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
+const shadowGeo = new THREE.CircleGeometry(1, 20);
+
+// Humanoid built from primitives. Local +Z is forward; the weapon arm is on -X.
+const HIP = 0.95;
+class Rig {
+  constructor({ scale, bulk, color, weapon, weaponColor }) {
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, transparent: true });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.6), roughness: 0.8, metalness: 0.05, transparent: true });
+    this.weaponBase = new THREE.Color(weaponColor);
+    this.weaponMat = new THREE.MeshStandardMaterial({ color: weaponColor, roughness: 0.4, metalness: 0.2, transparent: true });
+    this.bodyMats = [body, dark];
+    this.mats = [body, dark, this.weaponMat];
+    const part = (parent, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; };
+    const pivot = (parent, x, y, z) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+    this.root = new THREE.Group();
+    this.tip = pivot(this.root, 0, 0, 0);          // tips over at the feet
+    this.spin = pivot(this.tip, 0, HIP, 0);        // twists / tumbles at the hips
+    part(this.spin, new THREE.BoxGeometry(0.56, 0.72, 0.32), body, 0, 0.32, 0);
+    part(this.spin, new THREE.BoxGeometry(0.5, 0.14, 0.3), dark, 0, -0.05, 0);
+    part(this.spin, new THREE.SphereGeometry(0.17, 14, 10), body, 0, 0.84, 0);
+    this.legL = pivot(this.spin, 0.15, -0.05, 0);
+    this.legR = pivot(this.spin, -0.15, -0.05, 0);
+    for (const leg of [this.legL, this.legR]) part(leg, new THREE.BoxGeometry(0.2, 0.9, 0.22), dark, 0, -0.45, 0);
+    this.armL = pivot(this.spin, 0.37, 0.6, 0);
+    this.armR = pivot(this.spin, -0.37, 0.6, 0);
+    for (const arm of [this.armL, this.armR]) part(arm, new THREE.BoxGeometry(0.16, 0.62, 0.16), body, 0, -0.31, 0);
+    this.weapon = pivot(this.armR, 0, -0.6, 0);
+    if (weapon === 'club') {
+      part(this.weapon, new THREE.BoxGeometry(0.13, 0.13, 1.1), this.weaponMat, 0, 0, 0.5);
+      part(this.weapon, new THREE.BoxGeometry(0.3, 0.3, 0.6), this.weaponMat, 0, 0, 1.2);
+    } else {
+      part(this.weapon, new THREE.BoxGeometry(0.045, 0.1, 1.15), this.weaponMat, 0, 0, 0.62);
+      part(this.weapon, new THREE.BoxGeometry(0.3, 0.06, 0.06), dark, 0, 0, 0.06);
+    }
+    this.root.scale.set(scale * bulk, scale, scale * bulk);
+    this.shadow = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
+    this.shadow.rotation.x = -Math.PI / 2;
+    this.shadowRadius = 0.55 * scale * bulk;
+    scene.add(this.root, this.shadow);
+  }
+  reset() {
+    this.tip.rotation.set(0, 0, 0);
+    this.spin.rotation.set(0, 0, 0); this.spin.scale.setScalar(1); this.spin.position.y = HIP;
+    this.legL.rotation.x = this.legR.rotation.x = 0;
+    this.armL.rotation.set(-0.1, 0, 0); this.armR.rotation.set(-0.4, 0, 0);
+    this.weapon.rotation.set(0.5, 0, 0);
+  }
+  walk(phase, amount) {
+    const s = Math.sin(phase) * amount;
+    this.legL.rotation.x = s; this.legR.rotation.x = -s; this.armL.rotation.x = -0.1 - s * 0.6;
+  }
+  // phase: 'startup' | 'active' | 'recovery', p: 0..1 through that phase, dir: mirror for alternating swings
+  attackPose(anim, phase, p, dir = 1) {
+    const { armR, armL, spin, tip, legL, weapon } = this;
+    const S = phase === 'startup', A = phase === 'active';
+    if (anim === 'sweep') {
+      if (S) { armR.rotation.x = lerp(-0.4, -1.7, ease(p)); spin.rotation.y = dir * lerp(0, -1.1, ease(p)); }
+      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = dir * lerp(-1.1, 1.2, p); tip.rotation.x = 0.12; }
+      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = dir * lerp(1.2, 0, ease(p)); tip.rotation.x = lerp(0.12, 0, p); }
+    } else if (anim === 'overhead') {
+      if (S) { armR.rotation.x = lerp(-0.4, -3.2, ease(p)); tip.rotation.x = lerp(0, -0.2, ease(p)); }
+      else if (A) { armR.rotation.x = lerp(-3.2, -0.7, p); tip.rotation.x = lerp(-0.2, 0.3, p); }
+      else { armR.rotation.x = lerp(-0.7, -0.4, ease(p)); tip.rotation.x = lerp(0.3, 0, ease(p)); }
+    } else if (anim === 'stab') {
+      if (S) { armR.rotation.x = lerp(-0.4, -1.0, ease(p)); spin.rotation.y = lerp(0, -0.8, ease(p)); weapon.rotation.x = lerp(0.5, 1.5, ease(p)); }
+      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = lerp(-0.8, 0.6, p); tip.rotation.x = 0.25; weapon.rotation.x = 1.5; }
+      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = lerp(0.6, 0, ease(p)); tip.rotation.x = lerp(0.25, 0, p); weapon.rotation.x = lerp(1.5, 0.5, ease(p)); }
+    } else if (anim === 'bash') {
+      if (S) { armL.rotation.x = lerp(-0.1, -1.4, ease(p)); spin.rotation.y = lerp(0, 0.7, ease(p)); tip.rotation.x = lerp(0, -0.1, p); }
+      else if (A) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
+      else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
+    } else if (anim === 'stomp') {
+      if (S) { legL.rotation.x = lerp(0, -1.5, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
+      else if (A) { legL.rotation.x = lerp(-1.5, 0, p); tip.rotation.x = lerp(-0.16, 0.2, p); armR.rotation.x = armL.rotation.x = lerp(-2.6, -0.6, p); }
+      else { tip.rotation.x = lerp(0.2, 0, ease(p)); armR.rotation.x = lerp(-0.6, -0.4, p); armL.rotation.x = lerp(-0.6, -0.1, p); }
+    }
+  }
+  setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
+  setWarning(k, color = WARN_COLOR) {
+    this.weaponMat.color.copy(this.weaponBase).lerp(color, k);
+    this.weaponMat.emissive.copy(color).multiplyScalar(k * 1.6);
+  }
+  setOpacity(a) { for (const m of this.mats) m.opacity = a; this.shadow.material.opacity = 0.45 * a; }
+  place(x, y, z, yaw) {
+    this.root.position.set(x, y, z); this.root.rotation.y = yaw;
+    const s = this.shadowRadius * clamp(1 - y * 0.25, 0.4, 1);
+    this.shadow.position.set(x, 0.03, z); this.shadow.scale.set(s, s, 1);
+  }
+  dispose() { scene.remove(this.root, this.shadow); }
+}
+
+// Shared body physics: knockback decay, gravity, arena bounds.
+function integrateBody(b, dt, knockFriction) {
+  const A = CONFIG.arena;
+  b.x += (b.vx + b.kx) * dt; b.z += (b.vz + b.kz) * dt;
+  const f = Math.exp(-knockFriction * dt); b.kx *= f; b.kz *= f;
+  if (b.y > 0 || b.vy > 0) { b.vy -= CONFIG.gravity * dt; b.y += b.vy * dt; }
+  if (b.y <= 0) { b.y = 0; b.vy = 0; }
+  b.x = clamp(b.x, -A.halfX + b.radius, A.halfX - b.radius);
+  b.z = clamp(b.z, -A.halfZ + b.radius, A.halfZ - b.radius);
+}
+function approachVel(b, tx, tz, maxDelta) {
+  const dx = tx - b.vx, dz = tz - b.vz, d = Math.hypot(dx, dz);
+  if (d <= maxDelta || d === 0) { b.vx = tx; b.vz = tz; } else { b.vx += dx / d * maxDelta; b.vz += dz / d * maxDelta; }
+}
+function deathPose(rig, tt, fade) {
+  rig.tip.rotation.x = -Math.PI / 2 * ease(tt / 0.9);
+  rig.armL.rotation.x = rig.armR.rotation.x = -0.2;
+  rig.setOpacity(1 - clamp((tt - 0.7) / (fade - 0.7), 0, 1));
+}
+
+// ============================================================================
+// 5. Player
+// ============================================================================
+class Player {
+  constructor() {
+    const C = CONFIG.player;
+    this.rig = new Rig({ scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4 });
+    this.radius = C.radius; this.height = C.height;
+    this.x = C.startX; this.y = 0; this.z = C.startZ; this.yaw = Math.PI / 2;
+    this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.hp = C.maxHp; this.stamina = C.maxStamina; this.poise = C.maxPoise;
+    this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
+    this.state = 'idle'; this.stateTime = 0;   // idle walk jump fall roll attack block parry hurt stagger dead
+    this.attack = null; this.attackKind = ''; this.riposteHit = false; this.hitbox = null; this.stunTime = 0;
+    this.riposte = 0;                          // time left in the riposte window after a parry
+    this.flash = 0; this.flashColor = FLASH_WHITE;
+    this.savePrev();
+  }
+  savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
+  setState(s) { this.state = s; this.stateTime = 0; }
+  spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
+  attackPhase() {
+    const a = this.attack, t = this.stateTime;
+    return t < a.startup ? 'startup' : t < a.startup + a.active ? 'active' : 'recovery';
+  }
+  invulnerable() { return this.state === 'roll' && this.stateTime < CONFIG.player.rollIFrames; }
+
+  startRoll(mv) {
+    if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
+    this.spend(CONFIG.player.rollCost);
+    this.hitbox = null; this.setState('roll');
+  }
+  // toTarget: heading to the locked target, or null when not locked on.
+  startAttack(kind, mv, toTarget) {
+    if (toTarget !== null) this.yaw = toTarget;
+    else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
+    this.attack = CONFIG.player.attacks[kind]; this.attackKind = kind;
+    this.riposteHit = this.riposte > 0; this.riposte = 0;   // the first swing inside the window is the riposte
+    this.spend(this.attack.cost);
+    this.hitbox = null; this.setState('attack');
+  }
+  parrySuccess(enemy) {
+    const P = CONFIG.parry;
+    enemy.parried();
+    this.riposte = P.riposteTime;
+    this.flash = 1; this.flashColor = FLASH_WHITE;
+    this.vx = this.vz = 0; this.stunTime = P.successTime; this.setState('parry');
+    Game.onParry(enemy);
+  }
+  parryWhiff() {
+    const P = CONFIG.parry;
+    this.spend(P.whiffCost);
+    this.flash = 0.6; this.flashColor = FLASH_GRAY;
+    this.stunTime = P.whiffRecovery; this.setState('parry');
+    spawnBurst({ x: this.x + Math.sin(this.yaw) * 0.8, y: this.y + 1.2, z: this.z + Math.cos(this.yaw) * 0.8 }, 0x8a8a8a, 4, 1.4);
+  }
+  // Grounded, free to act. Returns true if an action started.
+  tryGroundAction(mv, enemy, toTarget) {
+    const C = CONFIG.player;
+    if (this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); return true; }
+    if (input.consume('parry')) { if (enemy.parryableBy(this)) this.parrySuccess(enemy); else this.parryWhiff(); return true; }
+    if (this.stamina > 0 && input.consume('heavy')) { this.startAttack('heavy', mv, toTarget); return true; }
+    if (this.stamina > 0 && input.consume('light')) { this.startAttack('light', mv, toTarget); return true; }
+    if (input.consume('jump')) { this.vy = C.jumpVelocity; this.setState('jump'); return true; }
+    if (input.isHeld('block')) { this.vx = this.vz = 0; this.setState('block'); return true; }
+    return false;
+  }
+
+  // aimYaw: camera heading in shoulder mode, otherwise null.
+  update(dt, mv, enemy, locked, aimYaw) {
+    const C = CONFIG.player;
+    this.stateTime += dt;
+    this.riposte = Math.max(0, this.riposte - dt);
+    this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
+    const toTarget = locked ? Math.atan2(enemy.x - this.x, enemy.z - this.z) : aimYaw;
+    // Locked on: face the target. Shoulder mode: face the crosshair. Otherwise face the last movement direction.
+    const face = rate => {
+      if (toTarget !== null) this.yaw = turnToward(this.yaw, toTarget, C.lockTurnRate * dt);
+      else if (mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), rate * dt);
+    };
+    this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.staminaDelay = Math.max(0, this.staminaDelay - dt);
+    const s = this.state;
+    if (s !== 'attack' && s !== 'block' && s !== 'roll' && s !== 'dead' && this.staminaDelay <= 0)
+      this.stamina = Math.min(C.maxStamina, this.stamina + C.staminaRegen * dt);
+    this.poiseTimer += dt;
+    if (this.poiseTimer > C.poiseResetTime) this.poise = C.maxPoise;
+    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
+
+    switch (this.state) {
+      case 'idle':
+      case 'walk': {
+        if (this.tryGroundAction(mv, enemy, toTarget)) break;
+        face(C.turnRate);
+        approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, (mv.has ? C.accel : C.decel) * dt);
+        const next = mv.has ? 'walk' : 'idle';
+        if (next !== this.state) this.setState(next);
+        break;
+      }
+      case 'jump':
+      case 'fall': {
+        face(C.turnRate * 0.4);
+        if (mv.has) approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * dt);
+        if (this.state === 'jump' && this.vy <= 0) this.setState('fall');
+        break;
+      }
+      case 'roll': {
+        const p = this.stateTime / C.rollTime;
+        const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
+        this.vx = fx * sp; this.vz = fz * sp;
+        if (this.stateTime >= C.rollTime) { this.vx *= 0.3; this.vz *= 0.3; this.setState('idle'); }
+        break;
+      }
+      case 'attack': {
+        const a = this.attack, t = this.stateTime, endActive = a.startup + a.active;
+        if (t - dt < a.startup && t >= a.startup) this.hitbox = new Hitbox(this, a.box, a);
+        if (t >= endActive) this.hitbox = null;
+        if (toTarget !== null && t < a.startup) this.yaw = turnToward(this.yaw, toTarget, C.attackTrackRate * dt);
+        const lunging = t > a.startup * 0.55 && t < endActive;
+        approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
+        if (t >= endActive && this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); break; }
+        if (t >= endActive + a.recovery) this.setState('idle');
+        break;
+      }
+      case 'block': {
+        approachVel(this, 0, 0, C.decel * dt);
+        face(0);
+        // E while blocking: parry if the window is open, otherwise nothing happens.
+        if (input.consume('parry') && enemy.parryableBy(this)) { this.parrySuccess(enemy); break; }
+        if (!input.isHeld('block')) this.setState('idle');
+        break;
+      }
+      case 'parry': {
+        approachVel(this, 0, 0, C.decel * dt);
+        if (this.stateTime >= this.stunTime) this.setState('idle');
+        break;
+      }
+      case 'hurt':
+      case 'stagger': {
+        approachVel(this, 0, 0, C.decel * dt);
+        if (this.stateTime >= this.stunTime) this.setState('idle');
+        break;
+      }
+      case 'dead': approachVel(this, 0, 0, C.decel * dt); break;
+    }
+
+    integrateBody(this, dt, C.knockFriction);
+    if (this.y <= 0 && (this.state === 'jump' || this.state === 'fall') && this.vy <= 0 && this.stateTime > 0) this.setState('idle');
+    this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
+  }
+
+  pose(tt) {
+    const r = this.rig, C = CONFIG.player;
+    r.reset(); r.setOpacity(1);
+    switch (this.state) {
+      case 'walk': r.walk(this.walkPhase, 0.6); break;
+      case 'jump': case 'fall':
+        r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
+      case 'roll': {
+        const p = clamp(tt / C.rollTime, 0, 1), tuck = Math.sin(p * Math.PI);
+        r.spin.rotation.x = p * Math.PI * 2;
+        r.spin.scale.setScalar(1 - 0.35 * tuck); r.spin.position.y = HIP - 0.4 * tuck;
+        r.legL.rotation.x = r.legR.rotation.x = -1.2 * tuck; r.armL.rotation.x = r.armR.rotation.x = -1.2 * tuck;
+        break;
+      }
+      case 'attack': {
+        const a = this.attack;
+        if (tt < a.startup) r.attackPose(a.anim, 'startup', tt / a.startup);
+        else if (tt < a.startup + a.active) r.attackPose(a.anim, 'active', (tt - a.startup) / a.active);
+        else r.attackPose(a.anim, 'recovery', (tt - a.startup - a.active) / a.recovery);
+        break;
+      }
+      case 'block':
+        r.armR.rotation.set(-1.45, 0, -0.5); r.weapon.rotation.set(0.2, 0, 1.2); r.armL.rotation.x = -1.3; r.tip.rotation.x = 0.06; break;
+      case 'parry':
+        r.armL.rotation.x = -1.5; r.spin.rotation.y = lerp(0.7, -0.5, ease(tt / 0.14)); break;
+      case 'hurt': r.tip.rotation.x = -0.18 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI); break;
+      case 'stagger':
+        r.tip.rotation.x = -0.32 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI);
+        r.spin.rotation.z = Math.sin(tt * 9) * 0.1; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
+      case 'dead': deathPose(r, tt, 3.5); break;
+    }
+    r.setWarning(this.flash, this.flashColor);
+    r.setTint(HURT_COLOR, this.tint * 0.9);
+  }
+}
+
+// ============================================================================
+// 6. Enemy
+// ============================================================================
+class Enemy {
+  constructor(def) {
+    const E = CONFIG.enemy;
+    this.def = def;
+    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon,
+      weaponColor: def.weapon === 'club' ? 0x9a927c : 0x9aa0a8 });
+    this.radius = def.radius; this.height = def.height;
+    this.x = E.startX; this.y = 0; this.z = E.startZ; this.yaw = -Math.PI / 2;
+    this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
+    this.state = 'idle'; this.stateTime = 0;   // idle chase windup active recover hurt stagger dead
+    this.cooldown = rand(0.6, 1.0); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
+    this.stunTime = 0;
+    this.savePrev();
+  }
+  savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
+  setState(s) { this.state = s; this.stateTime = 0; }
+  enterStagger(time) {
+    this.hitbox = null; this.next = null; this.poise = this.def.poise; this.poiseTimer = 0;
+    this.stunTime = time; this.setState('stagger');
+  }
+
+  // Seconds before the current strike goes active at which its parry window opens.
+  parryLead() {
+    const P = CONFIG.parry;
+    return clamp(this.attack.hits[this.hitIndex].startup * P.leadFrac, P.leadMin, P.leadMax);
+  }
+  parryWindowOpen() {
+    if (this.state === 'windup') return this.stateTime >= this.attack.hits[this.hitIndex].startup - this.parryLead();
+    return this.state === 'active' && this.stateTime <= CONFIG.parry.post;
+  }
+  // Timing right, strike not already landed, attacker in front of the player, and the strike would reach.
+  parryableBy(p) {
+    if (!this.parryWindowOpen() || (this.hitbox && this.hitbox.hit.has(p))) return false;
+    const dx = this.x - p.x, dz = this.z - p.z;
+    if (dx * Math.sin(p.yaw) + dz * Math.cos(p.yaw) <= 0) return false;
+    const reach = { x: p.x, y: p.y, z: p.z, height: p.height, radius: p.radius + CONFIG.parry.reachMargin };
+    return new Hitbox(this, this.attack.box, this.attack).overlaps(reach);
+  }
+  parried() {
+    const d = this.def, P = CONFIG.parry;
+    this.tint = 1;
+    if (d.usesPosture) {
+      // Posture meter: a parry adds a large chunk; only a full meter gives the long break.
+      const left = this.poise - P.posture;
+      this.enterStagger(left <= 0 ? d.staggerTime : P.staggerTime);
+      if (left > 0) this.poise = left;
+    } else {
+      const poise = this.poise;
+      this.enterStagger(P.staggerTime);
+      this.poise = poise;
+    }
+  }
+
+  update(dt, player) {
+    const d = this.def, E = CONFIG.enemy;
+    this.stateTime += dt;
+    this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.poiseTimer += dt;
+    if (d.usesPosture) {
+      if (this.poiseTimer > E.postureDelay) this.poise = Math.min(d.poise, this.poise + E.postureRegen * dt);
+      // A posture break earned mid-swing lands once the swing is over.
+      if (this.poise <= 0 && this.state !== 'windup' && this.state !== 'active' && this.state !== 'stagger' && this.state !== 'dead')
+        this.enterStagger(d.staggerTime);
+    } else if (this.poiseTimer > E.poiseResetTime) this.poise = d.poise;
+    const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz);
+    const toPlayer = Math.atan2(dx, dz);
+    const playerAlive = player.state !== 'dead';
+    let tx = 0, tz = 0;
+
+    switch (this.state) {
+      case 'idle':
+        if (playerAlive && dist < d.aggroRange) this.setState('chase');
+        break;
+      case 'chase': {
+        if (!playerAlive) { this.next = null; this.setState('idle'); break; }
+        this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
+        this.cooldown -= dt;
+        if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
+        const want = this.next ? this.next.range : d.holdRange;
+        if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
+        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < 0.4) {
+          this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState('windup');
+        }
+        break;
+      }
+      case 'windup': {
+        const hit = this.attack.hits[this.hitIndex];
+        if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
+        if (this.stateTime >= hit.startup) { this.hitbox = new Hitbox(this, this.attack.box, this.attack); this.setState('active'); }
+        break;
+      }
+      case 'active': {
+        const hit = this.attack.hits[this.hitIndex];
+        tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge;
+        if (this.stateTime >= hit.active) {
+          this.hitbox = null;
+          if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.setState('windup'); }
+          else this.setState('recover');
+        }
+        break;
+      }
+      case 'recover':
+        if (this.stateTime >= this.attack.recovery) { this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState('chase'); }
+        break;
+      case 'hurt':
+        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState('chase'); }
+        break;
+      case 'stagger':
+        if (this.stateTime >= this.stunTime) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        break;
+      case 'dead': break;
+    }
+
+    approachVel(this, tx, tz, E.accel * dt);
+    integrateBody(this, dt, E.knockFriction);
+    this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+
+  takeHit(damage, poiseDamage, kx, kz) {
+    const d = this.def;
+    this.hp = Math.max(0, this.hp - damage);
+    this.tint = 1; this.poiseTimer = 0;
+    this.kx += kx; this.kz += kz;
+    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState('dead'); return; }
+    this.poise -= poiseDamage;
+    if (this.poise <= 0) {
+      if (d.usesPosture) {                                        // wind-ups are never cancelled; see update()
+        if (this.state === 'stagger') this.enterStagger(d.staggerTime);
+      } else if (this.state === 'active') this.poise = d.poise;   // committed swings are not cancelled
+      else this.enterStagger(d.staggerTime);
+    } else if (d.flinchTime > 0 && (this.state === 'idle' || this.state === 'chase' || this.state === 'recover')) {
+      this.setState('hurt');
+    }
+  }
+
+  pose(tt) {
+    const r = this.rig, d = this.def;
+    r.reset(); r.setOpacity(1);
+    let warn = 0;
+    const a = this.attack, dir = this.hitIndex % 2 ? -1 : 1;
+    const glow = this.parryWindowOpen() ? PARRY_COLOR : WARN_COLOR;   // paler glow = press E now
+    switch (this.state) {
+      case 'chase': r.walk(this.walkPhase, 0.5); break;
+      case 'windup': {
+        const hit = a.hits[this.hitIndex];
+        r.attackPose(a.anim, 'startup', tt / hit.startup, dir);
+        warn = clamp(tt / 0.08, 0, 1);
+        break;
+      }
+      case 'active':
+        r.attackPose(a.anim, 'active', tt / a.hits[this.hitIndex].active, dir);
+        if (glow === PARRY_COLOR) warn = 1;
+        break;
+      case 'recover': r.attackPose(a.anim, 'recovery', tt / a.recovery, dir); break;
+      case 'hurt': r.tip.rotation.x = -0.16 * Math.sin(clamp(tt / d.flinchTime, 0, 1) * Math.PI); break;
+      case 'stagger':
+        r.tip.rotation.x = -0.3 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI);
+        r.spin.rotation.z = Math.sin(tt * 8) * 0.12; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
+      case 'dead': deathPose(r, tt, CONFIG.enemy.deathFade); r.root.visible = tt < CONFIG.enemy.deathFade; break;
+    }
+    r.setWarning(warn, glow);
+    r.setTint(HIT_COLOR, this.tint * 0.8);
+  }
+}
+
+// ============================================================================
+// 7. Hitbox helper
+// ============================================================================
+// An oriented box in the owner's frame, tested against a target's upright body cylinder.
+class Hitbox {
+  constructor(owner, box, payload) { this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); }
+  center() {
+    const o = this.owner, b = this.box;
+    return { x: o.x + Math.sin(o.yaw) * b.fwd, y: o.y + b.y, z: o.z + Math.cos(o.yaw) * b.fwd };
+  }
+  overlaps(target) {
+    if (this.hit.has(target)) return false;
+    const o = this.owner, b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
+    const dx = target.x - o.x, dz = target.z - o.z;
+    const lz = dx * s + dz * c - b.fwd, lx = dz * s - dx * c;
+    const ex = lx - clamp(lx, -b.w / 2, b.w / 2), ez = lz - clamp(lz, -b.d / 2, b.d / 2);
+    if (ex * ex + ez * ez > target.radius * target.radius) return false;
+    const y0 = o.y + b.y - b.h / 2, y1 = o.y + b.y + b.h / 2;
+    return y1 > target.y && y0 < target.y + target.height;
+  }
+  markHit(target) { this.hit.add(target); }
+}
+
+// ============================================================================
+// 8. resolveCombat
+// ============================================================================
+function resolveCombat(game) {
+  const p = game.player, e = game.enemy, C = CONFIG.player, B = CONFIG.block;
+  // 1. Player hitboxes against enemy bodies.
+  const playerHits = p.hitbox && e.state !== 'dead' && p.hitbox.overlaps(e) ? p.hitbox : null;
+  // 2. Enemy hitboxes against the player's body.
+  const enemyHits = e.hitbox && p.state !== 'dead' && e.hitbox.overlaps(p) ? e.hitbox : null;
+  // 3. Apply damage, poise loss, knockback and stagger.
+  const contact = (hb, target) => {
+    const c = hb.center();
+    return { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
+  };
+  if (playerHits) {
+    const a = playerHits.payload;
+    playerHits.markHit(e);
+    const dx = e.x - p.x, dz = e.z - p.z, d = Math.hypot(dx, dz) || 1;
+    const rip = p.riposteHit ? CONFIG.parry.riposte[p.attackKind] : null;   // riposte: the swing started in the parry window
+    e.takeHit(a.damage * (rip ? rip.damage : 1), a.poise * (rip ? rip.poise : 1), dx / d * a.knock, dz / d * a.knock);
+    spawnBurst(contact(playerHits, e), rip ? 0xffffff : 0xe8d8a0, rip ? 22 : 12, rip ? 6.5 : 4.5);
+    game.hitstop = Math.max(game.hitstop, a.hitstop * (rip ? 1.5 : 1));
+  }
+  if (enemyHits && !p.invulnerable()) {   // a dodged swing stays live: it can still catch the end of a roll
+    const a = enemyHits.payload, E = CONFIG.enemy;
+    enemyHits.markHit(p);
+    const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz) || 1;
+    const facingAttacker = (-dx) * Math.sin(p.yaw) + (-dz) * Math.cos(p.yaw) > 0;
+    let damage = a.damage, poise = a.poise, knock = a.knock, blocked = false, broken = false;
+    if (p.state === 'block' && facingAttacker) {
+      p.spend(B.staminaBase + a.damage * B.staminaPerDamage);
+      if (p.stamina <= 0) broken = true;
+      else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
+    }
+    p.hp = Math.max(0, p.hp - damage);
+    p.kx += dx / d * knock; p.kz += dz / d * knock;
+    const at = contact(enemyHits, p);
+    if (blocked) {
+      spawnBurst(at, 0xffd070, 16, 7);
+      game.hitstop = Math.max(game.hitstop, B.hitstop);
+    } else {
+      p.tint = 1;
+      spawnBurst(at, 0xb01818, 14, 4.5);
+      game.hitstop = Math.max(game.hitstop, clamp(E.hitstopBase + a.damage * E.hitstopScale, 0, E.hitstopMax));
+    }
+    if (p.hp <= 0) { p.hitbox = null; p.setState('dead'); }
+    else if (broken) { p.hitbox = null; p.stunTime = B.breakTime; p.poise = C.maxPoise; p.setState('stagger'); }
+    else if (!blocked) {
+      p.poise -= poise; p.poiseTimer = 0;
+      const committed = p.state === 'attack' && p.attackPhase() === 'active';
+      if (p.poise <= 0 && committed) p.poise = C.maxPoise;
+      else if (!committed) {
+        p.hitbox = null;
+        if (p.poise <= 0) { p.poise = C.maxPoise; p.stunTime = C.staggerTime; p.setState('stagger'); }
+        else { p.stunTime = C.hurtTime; p.setState('hurt'); }
+      }
+    } else if (poise > 0) { p.poise = Math.max(1, p.poise - poise); p.poiseTimer = 0; }
+  }
+}
+
+// Bodies cannot overlap; the heavier enemy barely gives way.
+function separateBodies(p, e) {
+  if (p.state === 'dead' || e.state === 'dead' || p.y >= e.height) return;
+  const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz), min = p.radius + e.radius;
+  if (d >= min) return;
+  const nx = d > 1e-4 ? dx / d : Math.sin(e.yaw), nz = d > 1e-4 ? dz / d : Math.cos(e.yaw), push = min - d;
+  p.x += nx * push * 0.85; p.z += nz * push * 0.85; e.x -= nx * push * 0.15; e.z -= nz * push * 0.15;
+  const A = CONFIG.arena;
+  for (const b of [p, e]) {
+    b.x = clamp(b.x, -A.halfX + b.radius, A.halfX - b.radius);
+    b.z = clamp(b.z, -A.halfZ + b.radius, A.halfZ - b.radius);
+  }
+}
+
+// ============================================================================
+// 9. Particles and debug volumes (tints live on Rig)
+// ============================================================================
+const particles = [];
+const particleGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
+for (let i = 0; i < 140; i++) {
+  const mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false }));
+  mesh.visible = false; scene.add(mesh);
+  particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
+}
+let particleCursor = 0;
+function spawnBurst(pos, color, count, speed) {
+  for (let i = 0; i < count; i++) {
+    const p = particles[particleCursor++ % particles.length];
+    const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u), s = speed * rand(0.35, 1);
+    p.vx = Math.cos(a) * r * s; p.vy = u * s + 1.5; p.vz = Math.sin(a) * r * s;
+    p.life = CONFIG.fx.particleLife * rand(0.6, 1);
+    p.mesh.position.set(pos.x, pos.y, pos.z); p.mesh.material.color.set(color); p.mesh.visible = true;
+  }
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    if (p.life <= 0) continue;
+    p.life -= dt;
+    if (p.life <= 0) { p.mesh.visible = false; continue; }
+    p.vy -= 12 * dt;
+    p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
+    p.mesh.rotation.x += dt * 9; p.mesh.rotation.y += dt * 7;
+    p.mesh.material.opacity = clamp(p.life / CONFIG.fx.particleLife * 1.6, 0, 1);
+  }
+}
+
+const boxEdges = new THREE.EdgesGeometry(UNIT_BOX);
+const makeWire = color => {
+  const l = new THREE.LineSegments(boxEdges, new THREE.LineBasicMaterial({ color, fog: false, depthTest: false }));
+  l.visible = false; l.renderOrder = 10; scene.add(l); return l;
+};
+const debug = { pBody: makeWire(0x40ff60), eBody: makeWire(0x40ff60), pHit: makeWire(0xfff040), eHit: makeWire(0xff3030) };
+function updateDebug(game, show, pPos, ePos) {
+  const body = (wire, b, pos, alive) => {
+    wire.visible = show && alive;
+    wire.position.set(pos.x, pos.y + b.height / 2, pos.z); wire.scale.set(b.radius * 2, b.height, b.radius * 2);
+  };
+  const hit = (wire, hb) => {
+    wire.visible = show && !!hb;
+    if (!hb) return;
+    const c = hb.center();
+    wire.position.set(c.x, c.y, c.z); wire.rotation.y = hb.owner.yaw; wire.scale.set(hb.box.w, hb.box.h, hb.box.d);
+  };
+  body(debug.pBody, game.player, pPos, game.player.state !== 'dead');
+  body(debug.eBody, game.enemy, ePos, game.enemy.state !== 'dead');
+  hit(debug.pHit, game.player.hitbox); hit(debug.eHit, game.enemy.hitbox);
+}
+
+// ============================================================================
+// 10. HUD
+// ============================================================================
+const $ = id => document.getElementById(id);
+const hud = {
+  root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'),
+  eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), died: $('died'), won: $('won'),
+  help: $('help'), toggle: $('hbToggle'), posture: $('ePosture'), postureFill: $('ePostureFill'),
+  pTrailV: 1, eTrailV: 1,
+  reset(def) {
+    this.eName.textContent = def.name; this.pTrailV = this.eTrailV = 1;
+    this.posture.classList.toggle('hidden', !def.usesPosture);
+    this.died.classList.remove('show'); this.won.classList.remove('show');
+  },
+  update(game, dt) {
+    const p = game.player, e = game.enemy;
+    const ph = p.hp / CONFIG.player.maxHp, eh = e.hp / e.def.hp;
+    // The trailing bar holds, then drains slowly toward the real value.
+    this.pTrailV = ph > this.pTrailV ? ph : Math.max(ph, this.pTrailV - dt * 0.22);
+    this.eTrailV = eh > this.eTrailV ? eh : Math.max(eh, this.eTrailV - dt * 0.22);
+    this.pHp.style.width = ph * 100 + '%'; this.pTrail.style.width = this.pTrailV * 100 + '%';
+    this.pSt.style.width = p.stamina / CONFIG.player.maxStamina * 100 + '%';
+    this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = this.eTrailV * 100 + '%';
+    this.postureFill.style.width = clamp(1 - e.poise / e.def.poise, 0, 1) * 100 + '%';
+    this.died.classList.toggle('show', p.state === 'dead');
+    $('crosshair').classList.toggle('hidden', !(game.shoulder && p.state !== 'dead'));
+    this.won.classList.toggle('show', e.state === 'dead' && p.state !== 'dead');
+  },
+  helpOpen() { return !this.help.classList.contains('hidden'); },
+  showHitboxes() { return this.helpOpen() && this.toggle.checked; },
+};
+
+// ============================================================================
+// 11. Game
+// ============================================================================
+const Game = {
+  mode: 'menu', selected: 0, enemyIndex: 0,
+  player: null, enemy: null, hitstop: 0,
+  locked: false,   // lock-on to the enemy
+  shoulder: false, // shoulder camera mode
+  cam: { yaw: 0, pitch: CONFIG.camera.pitch, dist: CONFIG.camera.distance, boom: CONFIG.camera.distance, extra: 0,
+         idle: 99, shake: 0, pivot: new THREE.Vector3(), lookStd: new THREE.Vector3(),
+         shoulderK: 0,   // 0 = standard view, 1 = shoulder view; blends between them
+         pos: new THREE.Vector3(), look: new THREE.Vector3(), prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
+  marker: (() => {
+    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.13),
+      new THREE.MeshBasicMaterial({ color: 0xf2ead0, fog: false, depthTest: false, transparent: true, opacity: 0.9 }));
+    m.visible = false; m.renderOrder = 11; scene.add(m); return m;
+  })(),
+
+  buildMenu() {
+    const list = $('menuList');
+    ENEMY_DEFS.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.className = 'enemyBtn';
+      b.innerHTML = `<div class="n"></div><div class="d"></div>`;
+      b.children[0].textContent = d.name; b.children[1].textContent = d.description;
+      b.addEventListener('click', () => this.startFight(i));
+      b.addEventListener('mouseenter', () => this.select(i));
+      list.appendChild(b);
+    });
+    this.select(0);
+  },
+  select(i) {
+    this.selected = (i + ENEMY_DEFS.length) % ENEMY_DEFS.length;
+    [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
+  },
+  showMenu() {
+    this.mode = 'menu'; input.clear(); this.locked = false; this.setShoulder(false);
+    $('menu').classList.remove('hidden'); hud.root.classList.add('hidden');
+  },
+  startFight(i) {
+    this.enemyIndex = i; this.selected = i; this.mode = 'arena';
+    $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    this.reset();
+  },
+  reset() {
+    if (this.player) this.player.rig.dispose();
+    if (this.enemy) this.enemy.rig.dispose();
+    for (const p of particles) { p.life = 0; p.mesh.visible = false; }
+    input.pressed.clear();
+    this.player = new Player();
+    this.enemy = new Enemy(ENEMY_DEFS[this.enemyIndex]);
+    this.hitstop = 0; this.locked = false;
+    hud.reset(this.enemy.def);
+    const c = this.cam;
+    c.yaw = this.player.yaw; c.pitch = CONFIG.camera.pitch; c.extra = 0; c.idle = 99; c.shake = 0;
+    c.shoulderK = this.shoulder ? 1 : 0;
+    input.orbitX = input.orbitY = input.zoom = 0;
+    this.updateCamera(0, true);
+  },
+  setShoulder(on) {
+    this.shoulder = on;
+    $('crosshair').classList.toggle('hidden', !on);
+    if (on) {
+      this.locked = false;   // the crosshair replaces lock-on while in shoulder mode
+      try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {}
+    } else if (document.pointerLockElement) document.exitPointerLock();
+  },
+  toggleLock() {
+    const p = this.player, e = this.enemy;
+    if (this.shoulder) return;
+    if (this.locked) { this.locked = false; return; }
+    this.locked = p.state !== 'dead' && e.state !== 'dead' && Math.hypot(e.x - p.x, e.z - p.z) <= CONFIG.camera.lockRange;
+  },
+  onParry(enemy) {
+    spawnBurst({ x: enemy.x + Math.sin(enemy.yaw) * enemy.radius, y: enemy.y + enemy.height * 0.6, z: enemy.z + Math.cos(enemy.yaw) * enemy.radius }, 0xffffff, 26, 7.5);
+    this.hitstop = Math.max(this.hitstop, CONFIG.parry.hitstop);
+    this.cam.shake = CONFIG.camera.shakeTime;
+  },
+
+  // Movement input, relative to the camera's heading.
+  moveInput() {
+    const ix = (input.isHeld('right') ? 1 : 0) - (input.isHeld('left') ? 1 : 0);
+    const iy = (input.isHeld('up') ? 1 : 0) - (input.isHeld('down') ? 1 : 0);
+    if (!ix && !iy) return { x: 0, z: 0, has: false };
+    const fx = Math.sin(this.cam.yaw), fz = Math.cos(this.cam.yaw);
+    const x = fx * iy - fz * ix, z = fz * iy + fx * ix, l = Math.hypot(x, z);
+    return { x: x / l, z: z / l, has: true };
+  },
+
+  updateCamera(dt, snap) {
+    const K = CONFIG.camera, A = CONFIG.arena, p = this.player, e = this.enemy, c = this.cam;
+    const rate = r => snap ? 1 : 1 - Math.exp(-r * dt);
+    const dead = p.state === 'dead';
+    const mx = input.orbitX, my = input.orbitY, wheel = input.zoom;
+    input.orbitX = input.orbitY = input.zoom = 0;
+    if (dead && p.stateTime > K.deathHold) return;   // settled on the fallen player: hold still
+    const ex = e.x - p.x, ez = e.z - p.z, ed = Math.hypot(ex, ez), enemyAlive = e.state !== 'dead';
+
+    // 1. Orbit: right-drag turns the view, the wheel zooms.
+    c.idle += dt; c.shake = Math.max(0, c.shake - dt);
+    if (!dead) {
+      if (mx || my) { c.yaw -= mx * K.orbitSpeed; c.pitch += my * K.orbitSpeed; }
+      if (input.orbiting || mx || my) c.idle = 0;
+      c.dist = clamp(c.dist + wheel * K.zoomStep, K.minDist, K.maxDist);
+    }
+
+    // 2. Follow / 3. lock-on framing. Both yield while the player is orbiting.
+    let extra = 0;
+    const shoulder = this.shoulder && !dead;
+    c.shoulderK += ((shoulder ? 1 : 0) - c.shoulderK) * rate(K.shoulderBlend);
+    if (shoulder) {
+      // Mouse alone steers: no recentering, lock pull or lean.
+    } else if (dead) {
+      c.pitch += (K.deathPitch - c.pitch) * rate(K.deathRate); extra = K.deathPullback;
+    } else if (this.locked) {
+      if (c.idle > K.lockReturnDelay) {
+        c.yaw += angDiff(Math.atan2(ex, ez), c.yaw) * rate(K.lockReturnRate);
+        c.pitch += (K.lockPitch - c.pitch) * rate(K.lockReturnRate);
+      }
+      extra = e.height * K.lockPullback;
+    } else {
+      if (c.idle > K.recenterDelay && Math.hypot(p.vx, p.vz) > 0.5) {
+        // Drift behind the facing. The sine means running straight at the camera never whips it around.
+        c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.recenterRate * dt;
+        c.pitch += (K.pitch - c.pitch) * rate(K.recenterPitchRate);
+      }
+      if (enemyAlive) extra = K.leanPullback * ease(1 - ed / K.leanRange);
+    }
+    c.pitch = clamp(c.pitch, K.minPitch, K.maxPitch);
+    c.extra += (extra - c.extra) * rate(dead ? K.deathRate : K.extraRate);
+
+    // Pivot at the player's head: smoothed, and only partly following jumps.
+    const sk = c.shoulderK;
+    const kf = rate(lerp(K.followRate, K.shoulderFollowRate, sk));
+    c.pivot.x += (p.x - c.pivot.x) * kf; c.pivot.z += (p.z - c.pivot.z) * kf;
+    c.pivot.y += (K.lookHeight + p.y * K.jumpFollow - c.pivot.y) * rate(K.followRateY);
+
+    // Look target: the midpoint to a locked target, otherwise the player with a slight lean toward a near enemy.
+    const look = c.pivot.clone();
+    if (dead) look.y = 0.4;
+    else if (this.locked) { look.x += ex * 0.5; look.z += ez * 0.5; look.y = (c.pivot.y + e.height * 0.55) / 2; }
+    else if (enemyAlive) { const w = K.leanAmount * ease(1 - ed / K.leanRange); look.x += ex * w; look.z += ez * w; }
+    c.lookStd.lerp(look, rate(dead ? K.deathRate : K.lookRate));
+
+    // Boom origin: the head, shifted over the right shoulder as shoulder mode blends in (kept inside the walls).
+    const limX = A.halfX - K.wallMargin, limZ = A.halfZ - K.wallMargin;
+    const side = K.shoulderSide * sk;
+    const o = new THREE.Vector3(
+      clamp(c.pivot.x - Math.cos(c.yaw) * side, -limX, limX),
+      c.pivot.y + (K.shoulderHeight - K.lookHeight) * sk,
+      clamp(c.pivot.z + Math.sin(c.yaw) * side, -limZ, limZ));
+    // Boom: cast from the origin toward the wanted camera spot; stop just short of walls and floor.
+    const cp = Math.cos(c.pitch), bx = -Math.sin(c.yaw) * cp, by = Math.sin(c.pitch), bz = -Math.cos(c.yaw) * cp;
+    let free = lerp(c.dist + c.extra, K.shoulderDist, sk);
+    if (bx > 1e-6) free = Math.min(free, (limX - o.x) / bx);
+    if (bx < -1e-6) free = Math.min(free, (-limX - o.x) / bx);
+    if (bz > 1e-6) free = Math.min(free, (limZ - o.z) / bz);
+    if (bz < -1e-6) free = Math.min(free, (-limZ - o.z) / bz);
+    if (by < -1e-6) free = Math.min(free, (K.floorClear - o.y) / by);
+    free = Math.max(K.minBoom, free);
+    // Blocked: pull in at once. Clear again: ease back out.
+    c.boom = snap || free < c.boom ? free : c.boom + (free - c.boom) * rate(K.boomReturn);
+    c.pos.set(clamp(o.x + bx * c.boom, -limX, limX), o.y + by * c.boom, clamp(o.z + bz * c.boom, -limZ, limZ));
+    // Shoulder view looks straight down the boom, so the screen centre (crosshair) is the camera's forward.
+    const aim = new THREE.Vector3(o.x - bx * K.shoulderAimDist, o.y - by * K.shoulderAimDist, o.z - bz * K.shoulderAimDist);
+    c.look.lerpVectors(c.lookStd, aim, sk);
+    if (snap) { c.prevPos.copy(c.pos); c.prevLook.copy(c.look); }
+  },
+
+  update(dt) {
+    const p = this.player, e = this.enemy, c = this.cam;
+    p.savePrev(); e.savePrev(); c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
+    if (this.hitstop > 0) {   // hit-pause: both sides and the camera freeze
+      this.hitstop -= dt; input.orbitX = input.orbitY = input.zoom = 0; return;
+    }
+    if (this.locked && (p.state === 'dead' || e.state === 'dead' || Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.camera.lockRange))
+      this.locked = false;
+    p.update(dt, this.moveInput(), e, this.locked, this.shoulder ? this.cam.yaw : null);
+    e.update(dt, p);
+    separateBodies(p, e);
+    resolveCombat(this);
+    this.updateCamera(dt, false);
+  },
+
+  render(alpha, frameDt) {
+    const p = this.player, e = this.enemy, c = this.cam;
+    const frozen = this.hitstop > 0, sub = frozen ? 0 : alpha * CONFIG.step;
+    const at = b => ({ x: lerp(b.px, b.x, alpha), y: lerp(b.py, b.y, alpha), z: lerp(b.pz, b.z, alpha),
+                       yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
+    const pp = at(p), ep = at(e);
+    p.rig.place(pp.x, pp.y, pp.z, pp.yaw); e.rig.place(ep.x, ep.y, ep.z, ep.yaw);
+    p.pose(p.stateTime + sub); e.pose(e.stateTime + sub);
+    camera.position.lerpVectors(c.prevPos, c.pos, alpha);
+    const t = performance.now() / 1000;
+    if (c.shake > 0 && !frozen) {
+      const s = CONFIG.camera.shakeAmount * c.shake / CONFIG.camera.shakeTime;
+      camera.position.x += Math.sin(t * 97) * s; camera.position.y += Math.sin(t * 131) * s;
+    }
+    this.marker.visible = this.locked;
+    this.marker.position.set(ep.x, ep.y + e.height + 0.45, ep.z); this.marker.rotation.y = t * 2;
+    camera.lookAt(new THREE.Vector3().lerpVectors(c.prevLook, c.look, alpha));
+    const flick = Math.sin(t * 11) * 0.5 + Math.sin(t * 23.7) * 0.3 + Math.sin(t * 5.3) * 0.4;
+    fireLight.intensity = 11 + flick * 1.4;
+    flame.scale.set(1 + flick * 0.08, 1 + flick * 0.16, 1 + flick * 0.08); flame.rotation.y = t * 2;
+    updateParticles(frameDt);
+    updateDebug(this, hud.showHitboxes(), pp, ep);
+    hud.update(this, frameDt);
+    renderer.render(scene, camera);
+  },
+};
+
+// ============================================================================
+// 12. Bootstrap
+// ============================================================================
+window.addEventListener('keydown', ev => {
+  const code = ev.code;
+  if (code === 'F1') {
+    ev.preventDefault();
+    if (!ev.repeat && Game.mode === 'arena') hud.help.classList.toggle('hidden');
+    return;
+  }
+  if (Game.mode === 'menu') {
+    if (ev.repeat) return;
+    if (code === 'ArrowUp' || code === 'KeyW') { ev.preventDefault(); Game.select(Game.selected - 1); }
+    else if (code === 'ArrowDown' || code === 'KeyS') { ev.preventDefault(); Game.select(Game.selected + 1); }
+    else if (code === 'Enter' || code === 'KeyJ') { ev.preventDefault(); Game.startFight(Game.selected); }
+    return;
+  }
+  if (!GAME_CODES.has(code)) return;
+  ev.preventDefault();
+  if (ev.repeat) return;
+  if (code === 'Escape') Game.showMenu();
+  else if (code === 'KeyR') Game.reset();
+  else if (code === 'KeyH') hud.toggle.checked = !hud.toggle.checked;
+  else if (code === 'KeyQ') Game.toggleLock();
+  else if (code === 'KeyV') Game.setShoulder(!Game.shoulder);
+  else input.down(code);
+});
+window.addEventListener('keyup', ev => input.up(ev.code));
+window.addEventListener('blur', () => { input.held.clear(); input.orbiting = false; });
+canvas.addEventListener('contextmenu', ev => ev.preventDefault());
+// Left mouse attacks. Right mouse held orbits the camera; a quick still tap of it is a heavy attack.
+canvas.addEventListener('mousedown', ev => {
+  if (Game.mode !== 'arena') return;
+  ev.preventDefault();
+  if (Game.shoulder && !document.pointerLockElement) {   // recapture the cursor (e.g. after Esc released it)
+    try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {}
+  }
+  if (ev.button === 0) input.down('Mouse0');
+  else if (ev.button === 2) { input.orbiting = true; input.orbitStart = input.now(); input.orbitTravel = 0; }
+});
+window.addEventListener('mousemove', ev => {
+  // Shoulder mode: plain mouse movement aims. Otherwise only a right-drag orbits.
+  if (!input.orbiting && !(Game.shoulder && Game.mode === 'arena')) return;
+  input.orbitX += ev.movementX; input.orbitY += ev.movementY;
+  if (input.orbiting) input.orbitTravel += Math.abs(ev.movementX) + Math.abs(ev.movementY);
+});
+window.addEventListener('mouseup', ev => {
+  if (ev.button === 0) input.up('Mouse0');
+  else if (ev.button === 2 && input.orbiting) {
+    input.orbiting = false;
+    const K = CONFIG.camera;
+    if (input.now() - input.orbitStart <= K.tapTime && input.orbitTravel <= K.tapMove) input.pressed.set('Mouse2', input.now());
+  }
+});
+canvas.addEventListener('wheel', ev => {
+  if (Game.mode !== 'arena') return;
+  ev.preventDefault();
+  input.zoom += Math.sign(ev.deltaY);
+}, { passive: false });
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+Game.buildMenu();
+
+// Fixed-step simulation, rendering at the display's native rate with interpolation.
+let lastTime = performance.now(), accumulator = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const frameDt = Math.min((now - lastTime) / 1000, 0.25);
+  lastTime = now;
+  if (Game.mode !== 'arena') { accumulator = 0; return; }
+  accumulator += frameDt;
+  let steps = 0;
+  while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
+  if (accumulator >= CONFIG.step) accumulator = 0;   // stalled tab: drop the backlog instead of catching up
+  Game.render(accumulator / CONFIG.step, frameDt);
+}
+requestAnimationFrame(frame);
+
+window.__arena = { Game, CONFIG, ENEMY_DEFS, input, hud, camera };   // console handle for tuning and testing
+</script>
+</body>
+</html>
