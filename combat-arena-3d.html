@@ -307,6 +307,7 @@ const CONFIG = {
     rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
     rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     rollExitKeep: 0.3,           // speed kept when a roll ends
+    rollQueueTime: 1.2,          // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
@@ -762,6 +763,9 @@ const PLAYER_GROUPS = {
   noRegen: new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
   noLockFacing: new Set([PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
+  // A roll pressed in these states is remembered and comes out as soon as rolling is allowed again
+  // (attack recovery, after the landing impact, or back on your feet). Attacks queue only before recovery.
+  queuesRoll: new Set([PS.ATTACK, PS.JUMP, PS.FALL, PS.JUMP_ATTACK, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER]),
 };
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player
@@ -1617,6 +1621,7 @@ class Player {
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
+    this.rollQueue = 0;    // timer: > 0 while a roll pressed during a busy state is waiting to come out
     this.state = PS.IDLE; this.stateTime = 0;
     this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0; this.usingItem = null;
     this.activeAt = Infinity; this.landTime = 0; this.landHit = false;
@@ -1627,7 +1632,7 @@ class Player {
   isFree() { return this.in('free'); }
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; this.rollQueued = false; }
+  setState(s) { this.state = s; this.stateTime = 0; }
   spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
   attackPhase() { return attackTimeline(this.attack, this.stateTime).phase; }
   invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
@@ -1644,7 +1649,10 @@ class Player {
     if (this.winded && this.stamina >= CONFIG.player.rollCost) this.winded = false;
     return this.stamina > 0 && !this.winded;
   }
+  // A roll is wanted now: a queued press, or a fresh one (only consumed if a roll is possible).
+  wantsRoll() { return this.canRoll() && (this.rollQueue > 0 || input.consume('roll')); }
   startRoll(mv) {
+    this.rollQueue = 0;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     if (this.stamina - CONFIG.player.rollCost < 1) this.winded = true;   // the bar is (all but) empty after this roll
     this.spend(CONFIG.player.rollCost);
@@ -1682,7 +1690,7 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
-    if (this.canRoll() && input.consume('roll')) { this.startRoll(mv); return true; }
+    if (this.wantsRoll()) { this.startRoll(mv); return true; }
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
     for (const [action, id] of Object.entries(M.ground)) {
       if (this.stamina > 0 && input.consume(action)) { this.beginAttack(M.attacks[id], mv, face, enemies); this.setState(PS.ATTACK); return true; }
@@ -1703,6 +1711,9 @@ class Player {
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
+    this.rollQueue = Math.max(0, this.rollQueue - dt);
+    if (this.in('queuesRoll') && !(this.state === PS.ATTACK && this.attackPhase() === PHASE.RECOVERY) && input.consume('roll'))
+      this.rollQueue = C.rollQueueTime;
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
@@ -1747,13 +1758,15 @@ class Player {
         break;
       }
       case PS.LAND: {
-        // Committed landing: no roll, block, parry or attack until it ends.
+        // Committed landing: no block, parry or attack until it ends. Once the impact is over and the
+        // feet are down, it can be rolled out of (like a ground attack's recovery).
         const a = this.attack, air = a.air;
         approachVel(this, 0, 0, C.decel * dt);
         if (this.hitbox && this.hitbox.hit.size > 0 && !this.landHit) {   // connected: hop and recover a bit sooner
           this.landHit = true; this.vy = air.hop; this.landTime = a.recovery * air.hitRecoveryMul;
         }
         if (this.hitbox && this.stateTime >= air.impactTime) this.hitbox = null;
+        if (!this.hitbox && this.y <= 0 && this.wantsRoll()) { this.startRoll(mv); break; }
         if (this.stateTime >= this.landTime && this.y <= 0) this.setState(PS.IDLE);
         break;
       }
@@ -1773,14 +1786,14 @@ class Player {
         const lunging = tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > C.lungeStart);
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         // Roll out of a swing: a press during wind-up or strike is kept and fires as recovery begins.
-        if (tl.phase !== PHASE.RECOVERY) { if (input.consume('roll')) this.rollQueued = true; }
-        else if (this.canRoll() && (this.rollQueued || input.consume('roll'))) { this.startRoll(mv); break; }
+        if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
         if (tl.done) this.setState(PS.IDLE);
         break;
       }
       case PS.BLOCK: {
         const bs = C.walkSpeed * C.blockSpeedMul;
         approachVel(this, mv.x * bs, mv.z * bs, (mv.has ? C.accel : C.decel) * dt);
+        if (this.wantsRoll()) { this.startRoll(mv); break; }   // roll straight out of a guard
         // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
         if (input.consume('parry')) {
           if (this.stamina > 0 && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
