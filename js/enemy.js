@@ -1,0 +1,327 @@
+'use strict';
+// ============================================================================
+// 6. Enemy
+// ============================================================================
+// opts: x, z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
+class Enemy {
+  constructor(def, opts) {
+    const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
+    this.def = def;
+    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual });
+    this.radius = def.radius; this.height = BODY_HEIGHT * def.scale;
+    this.behavior = opts.behavior; this.notice = opts.notice;
+    this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
+    this.home = { x: opts.x, z: opts.z, yaw: opts.yaw, state: B.home };
+    this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
+    this.x = opts.x; this.y = 0; this.z = opts.z; this.yaw = opts.yaw;
+    this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
+    this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
+    this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
+    this.crack = 0;                                  // visual: posture-break flash
+    this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
+    this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
+    this.rewarded = false;                           // death already announced (souls granted)
+    this.training = !!B.training;                    // tutorial dummy: rooted, never dies
+    this.immovable = this.training;
+    this.discovered = this.training;                 // has had its one-time auto lock-on (dummies never do)
+    this.state = B.start; this.stateTime = 0;
+    const fd = def.firstDelay || E.firstDelay;
+    this.cooldown = rand(fd[0], fd[1]); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
+    this.savePrev();
+  }
+  savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
+  setState(s) { this.state = s; this.stateTime = 0; }
+  in(group) { return ENEMY_GROUPS[group].has(this.state); }
+  alive() { return this.state !== ES.DEAD; }
+  awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
+  isCommitted() { return this.state === ES.ACTIVE; }
+  // Shield up: guarding enemies hold it whenever they are not attacking, reeling or down.
+  // The shield drops as soon as it picks an attack and closes in to use it (and stays down through the swing).
+  guarding() {
+    if (!this.def.guard || !ENEMY_GROUPS.guarding.has(this.state)) return false;
+    // Lowered only in the last stretch before a swing (within reach of the chosen attack, plus a step).
+    return !(this.state === ES.CHASE && this.next && this.playerDist <= this.next.range + this.def.guard.lowerReach);
+  }
+  // Woken by another enemy's alert. Returns true if this changed anything.
+  wake() {
+    if (this.training || !this.alive()) return false;
+    if (this.state === ES.DORMANT) this.setState(ES.RISE);
+    else if (this.in('unaware')) this.setState(ES.CHASE);
+    else return false;
+    return true;
+  }
+
+  update(dt, player) {
+    const d = this.def, E = CONFIG.enemy;
+    this.stateTime += dt;
+    this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
+    this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
+    this.chainTime += dt;
+    if (this.training) { this.updateTraining(dt); return; }
+    const M = d.guard || d.stagger;
+    if (M && this.state !== ES.BROKEN && (this.guardTime += dt) > M.decayDelay)
+      this.guardMeter = Math.max(0, this.guardMeter - M.decay * dt);
+    tickPoise(this, dt, E.poiseResetTime, d.poise);
+    // Posture holds while the boss is open from a parry, so the riposte window can build on it.
+    if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && !player.isAttacking())
+      this.posture = Math.max(0, this.posture - d.posture.decay * dt);
+    const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
+    this.playerDist = dist;
+    const toPlayer = Math.atan2(dx, dz);
+    const playerAlive = player.alive();
+    const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
+    let tx = 0, tz = 0;
+
+    switch (this.state) {
+      case ES.IDLE:
+        if (sees) this.setState(ES.CHASE);
+        break;
+      case ES.PATROL: {
+        if (sees) { this.setState(ES.CHASE); break; }
+        const goal = this.path[this.pathDir > 0 ? 1 : 0], gx = goal - this.x, gz = this.pathZ - this.z, gd = Math.hypot(gx, gz);
+        if (gd < 0.3) this.pathDir *= -1;
+        else {
+          const sp = d.speed * E.patrolSpeedMul;
+          tx = gx / gd * sp; tz = gz / gd * sp;
+          this.yaw = turnToward(this.yaw, Math.atan2(gx, gz), d.turnRate * dt);
+        }
+        break;
+      }
+      case ES.LURK:   // hidden in an alcove until the player passes close
+        if (sees) {
+          this.yaw = toPlayer; this.vy = E.leapVelocity;
+          this.vx = dx / dist * E.leapSpeed; this.vz = dz / dist * E.leapSpeed;
+          this.setState(ES.LEAP);
+        }
+        break;
+      case ES.LEAP:
+        tx = this.vx; tz = this.vz;
+        if (this.stateTime >= E.leapTime && this.y <= 0) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      case ES.DORMANT:   // lying on the floor
+        if (sees) this.setState(ES.RISE);
+        break;
+      case ES.RISE:
+        if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      case ES.RETURN: {   // lost the player: walk back home, then resume the home behaviour
+        if (sees) { this.setState(ES.CHASE); break; }
+        const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
+        if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
+        const sp = d.speed * E.returnSpeedMul;
+        tx = hx / hd * sp; tz = hz / hd * sp;
+        this.yaw = turnToward(this.yaw, Math.atan2(hx, hz), d.turnRate * dt);
+        break;
+      }
+      case ES.CHASE: {
+        const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
+        if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player)) { this.next = null; this.setState(ES.RETURN); break; }
+        this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
+        this.cooldown -= dt;
+        if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
+        const want = this.next ? this.next.range : d.holdRange;
+        if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
+        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) {
+          this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
+        }
+        break;
+      }
+      case ES.WINDUP: {
+        const hit = this.attack.hits[this.hitIndex];
+        if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
+        if (this.stateTime >= hit.startup) this.strike();
+        break;
+      }
+      case ES.ACTIVE: {
+        tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge;
+        this.endStrikeWhenDone();
+        break;
+      }
+      case ES.RECOVER:
+        if (this.stateTime >= this.attack.recovery) { this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); }
+        break;
+      case ES.HURT:
+        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); }
+        break;
+      case ES.STAGGER:
+        if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      case ES.PARRIED:
+        if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      case ES.BROKEN:
+        if (this.stateTime >= (d.posture || d.guard || d.stagger).breakTime) { this.posture = 0; this.guardMeter = 0; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      case ES.DEAD: break;
+    }
+
+    approachVel(this, tx, tz, E.accel * dt);
+    integrateBody(this, dt, E.knockFriction);
+    this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+  // The strike timeline shared by all enemies: windup -> active (per hit) -> recover.
+  strike() { this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack)); this.setState(ES.ACTIVE); }
+  endStrikeWhenDone() {
+    if (this.stateTime < this.attack.hits[this.hitIndex].active) return;
+    this.hitbox = null;
+    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.setState(ES.WINDUP); }
+    else this.setState(ES.RECOVER);
+  }
+  // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
+  updateTraining() {
+    if (!this.def.attacks.length) return;
+    switch (this.state) {
+      case ES.IDLE: if (this.stateTime >= this.def.restTime) { this.attack = this.def.attacks[0]; this.hitIndex = 0; this.setState(ES.WINDUP); } break;
+      case ES.WINDUP: if (this.stateTime >= this.attack.hits[this.hitIndex].startup) this.strike(); break;
+      case ES.ACTIVE: this.endStrikeWhenDone(); break;
+      case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
+      case ES.PARRIED: if (this.stateTime >= this.def.parriedTime) this.setState(ES.IDLE); break;
+    }
+  }
+
+  // Boss posture: add, and break when full. Returns true if this broke the posture.
+  addPosture(amount) {
+    const P = this.def.posture;
+    if (!P || this.state === ES.BROKEN) return false;
+    this.posture = Math.min(P.max, this.posture + amount);
+    if (this.posture < P.max) return false;
+    this.hitbox = null; this.next = null; this.crack = 1;
+    this.setState(ES.BROKEN);
+    return true;
+  }
+  // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
+  getParried() {
+    this.hitbox = null; this.next = null;
+    if (this.def.posture) {
+      this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
+      if (this.addPosture(this.def.posture.parry)) return true;
+    }
+    this.setState(ES.PARRIED);
+    return false;
+  }
+
+  // One strike from `from`. Returns { broke (posture), died }.
+  takeHit(strike, from) {
+    const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
+    const kx = dx / d * strike.knock, kz = dz / d * strike.knock;
+    const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
+    this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
+    this.tint = 1;
+    if (this.training) { this.hp = Math.max(1, this.hp - strike.damage); return { broke: false, died: false }; }   // flash and recoil only
+    const def = this.def, P = def.posture;
+    if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
+      return this.blockHit(strike, kx, kz);
+    this.hp = Math.max(0, this.hp - strike.damage * (P && this.state === ES.BROKEN ? P.damageMul : 1));
+    this.kx += kx; this.kz += kz;
+    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+    if (P) {
+      // Bosses ignore interrupts; only chained hits build posture.
+      const chained = this.chainTime <= P.chainGap;
+      this.chainTime = 0;
+      if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
+      return { broke: chained && this.addPosture(strike.postureDmg), died: false };
+    }
+    if (this.in('shrugsHits') || this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
+    if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }
+    const unaware = this.in('unaware');
+    const M = def.stagger || def.guard;
+    if (M) {   // stagger/guard meter instead of poise: hits never interrupt until the meter fills
+      if (unaware) this.setState(ES.CHASE);
+      return { broke: this.fillMeter(M, strike.attackId), died: false };
+    }
+    const r = applyPoise(this, strike.poise, this.isCommitted(), def.poise);
+    if (r === POISE.STAGGER) { this.hitbox = null; this.next = null; this.setState(ES.STAGGER); }
+    else if (r === POISE.FLINCH && def.flinchTime > 0 && this.in('canFlinch')) this.setState(ES.HURT);
+    else if (unaware) this.setState(ES.CHASE);
+    return { broke: false, died: false };
+  }
+
+  // A strike taken on the shield: reduced damage, little push, and it fills the guard meter
+  // (heavy attacks more than light ones). A full meter breaks the guard.
+  blockHit(strike, kx, kz) {
+    const G = this.def.guard;
+    this.hp = Math.max(0, this.hp - strike.damage * G.damageMul);
+    this.kx += kx * G.knockMul; this.kz += kz * G.knockMul;
+    this.tint = 0.3;
+    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+    if (this.in('unaware')) this.setState(ES.CHASE);
+    if (this.fillMeter(G, strike.attackId, G.blockedMul)) return { broke: true, died: false };
+    return { broke: false, died: false, blocked: true };
+  }
+  // Shared by the shield guard and the stagger meter (`guardMeter` holds either): heavy attacks fill
+  // more than light ones; a full meter breaks the enemy (kneels, open) for M.breakTime. Returns true on a break.
+  fillMeter(M, attackId, mul = 1) {
+    this.guardTime = 0;
+    this.guardMeter = Math.min(M.max, this.guardMeter + (M.breakers.includes(attackId) ? M.heavy : M.light) * mul);
+    if (this.guardMeter < M.max - 1e-6) return false;
+    this.hitbox = null; this.next = null; this.crack = 1;
+    this.setState(ES.BROKEN);
+    return true;
+  }
+
+  // Idle personality layered on top of the base pose, weighted by how idle the enemy is.
+  idleLayer(r, ctx, w) {
+    if (w <= 0.001) return;
+    const t = ctx.t * this.tempo + this.seed;
+    // Head turns toward the player now and then.
+    const look = ease((Math.sin(t * 0.37) - 0.2) * 1.5);
+    const rel = angDiff(Math.atan2(ctx.px - this.x, ctx.pz - this.z), this.yaw);
+    r.head.rotation.y += clamp(rel, -1.0, 1.0) * look * w;
+    lookup(IDLE_STYLES, this.def.idle || 'none', 'idle style', 'none')(r, t, w);
+  }
+
+  pose(tt, ctx) {
+    const r = this.rig, d = this.def, E = CONFIG.enemy;
+    r.reset(); r.setOpacity(1); r.root.visible = true;
+    let warn = 0;
+    const a = this.attack;
+    switch (this.state) {
+      case ES.CHASE: case ES.PATROL: case ES.RETURN: r.walk(this.walkPhase, 0.5); break;
+      case ES.LURK:
+        r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;
+      case ES.LEAP: r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;
+      case ES.DORMANT: r.tip.rotation.x = -Math.PI / 2; r.armL.rotation.x = r.armR.rotation.x = -0.3; break;
+      case ES.RISE: {
+        const p = ease(tt / E.riseTime);
+        r.tip.rotation.x = -Math.PI / 2 * (1 - p); r.legL.rotation.x = -1.2 * Math.sin(p * Math.PI);
+        r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
+      }
+      case ES.WINDUP:
+        poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
+        warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);
+        break;
+      case ES.ACTIVE: poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex); break;
+      case ES.RECOVER: poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex); break;
+      case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt); break;
+      case ES.STAGGER: flinchPose(r, true, tt / d.staggerTime, tt); break;
+      case ES.PARRIED: {
+        // Weapon knocked wide, torso thrown back, slow to recover.
+        const k = 1 - ease((tt - d.parriedTime * 0.6) / (d.parriedTime * 0.4));
+        r.tip.rotation.x = -0.38 * k; r.spin.rotation.y = 0.7 * k; r.spin.rotation.z = Math.sin(tt * 7) * 0.08 * k;
+        r.armR.rotation.set(lerp(-0.4, -2.5, k), 0, -0.9 * k); r.armL.rotation.x = lerp(-0.1, 0.5, k); break;
+      }
+      case ES.BROKEN: {
+        // Sinks to one knee, club on the floor, then hauls itself back up.
+        const T = (d.posture || d.guard || d.stagger).breakTime, k = ease(tt / 0.4) * (1 - ease((tt - T + 0.6) / 0.6));
+        r.kneel(k); r.lean(0.3 * k);
+        r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
+        r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
+      }
+      case ES.DEAD: deathPose(r, tt, E.deathFade); r.root.visible = tt < E.deathFade; break;
+    }
+    if (this.guarding()) { r.armL.rotation.x = -0.75; r.armL.rotation.z = -0.25; }   // shield held up in front
+    // Blend idle personality in and out so aggro never pops.
+    r.idleW += ((IDLE_BLEND[this.state] || 0) - r.idleW) * (1 - Math.exp(-CONFIG.fx.idleBlendRate * ctx.dt));
+    if (this.alive() && this.state !== ES.DORMANT && !this.training) this.idleLayer(r, ctx, r.idleW);
+    if (this.recoil > 0) {
+      const k = Math.sin(this.recoil * Math.PI) * CONFIG.fx.recoilLean;
+      r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
+    }
+    r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
+    r.setWarning(warn);
+    if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
+    else r.setTint(HIT_COLOR, this.tint * 0.8);
+  }
+}

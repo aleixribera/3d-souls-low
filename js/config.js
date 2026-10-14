@@ -1,0 +1,155 @@
+'use strict';
+// ============================================================================
+// 1. CONFIG
+// ============================================================================
+// Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
+const CONFIG = {
+  step: 1 / 60,          // fixed simulation timestep (s)
+  maxSteps: 5,           // max simulation steps per rendered frame
+  gravity: 30,
+  input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
+  camera: {
+    fov: 55, lookHeight: 1.35,
+    followRate: 7,        // position smoothing (1/s)
+    yawFollow: 0.85,      // how fast the camera swings behind the facing (rad/s at 90 deg off)
+    leanRange: 11, leanAmount: 0.38, leanPullback: 1.4, leanRaise: 0.5,
+    wallMargin: 0.3, gateMargin: 0.6, closeRaise: 1.6, floor: 0.6, ceilingMargin: 0.7,
+  },
+  zoom: { min: 2.6, max: 12, step: 0.8, default: 6.4, rate: 7, repeatDelay: 0.28, repeat: 0.09,
+          heightRatio: 0.48 },   // camera height = distance * heightRatio
+  mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
+  lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
+          slack: 0.42, drift: 0.18,   // camera yaw slack (rad) and the slow drift inside it (1/s)
+          autoRange: 9,               // first-encounter auto lock-on distance
+          sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
+  player: {
+    poiseResetTime: 4, staminaRegen: 36, staminaDelay: 0.75,
+    walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14,
+    airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
+    blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
+    jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
+    jumpAttackAirControl: 0.6,   // multiplier on air control during a jump attack
+    landKeep: 0.35,              // horizontal speed kept on a jump-attack landing
+    rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
+    rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
+    rollExitKeep: 0.3,           // speed kept when a roll ends
+    rollChainWindow: 0.2,        // a roll pressed this close to the end of a roll is queued as the next roll
+    rollQueueTime: 1.2,         // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
+    lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
+    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
+    // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
+    autoTarget: { range: 3.6, cone: 1.75, angleWeight: 1.5 },
+  },
+  // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
+  groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
+                 dustLife: 0.9, shakeTime: 0.2 },
+  block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
+           breakTime: 1.35, hitstop: 0.05 },
+  // Parry window is anchored to the enemy's swing: it opens `lead` s before the active phase and
+  // closes `grace` s into it. A press stays armed for `arm` s, so a press succeeds only in
+  // [active - lead - arm, active + grace] — about a quarter second.
+  parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
+           riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },
+  // Death: the world slows to a stop, YOU DIED fades in, then the player returns to the last bonfire.
+  // The overlay's CSS timings are set from these numbers at load, so they always line up.
+  death: { slowTime: 1.4, respawnDelay: 4.8, textDelay: 0.6, textFade: 2.2, hintDelay: 2.6 },
+  restartConfirmTime: 2.2,   // R must be pressed twice within this time to restart mid-fight
+  bloodstain: { pickupRange: 1.3 },
+  enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
+           windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
+           firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
+           attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
+           deathFade: 2.0, poiseResetTime: 5,
+           riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
+           patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
+  // How far each placement behaviour notices the player. The one place notice ranges are set.
+  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, dummy: 0, sparring: 0 },
+  // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
+  // (with a clear line between them), and those pass it on in turn.
+  alert: { radius: 10 },
+  // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
+  rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7 },
+  level: { leash: 22,        // give up the chase when the player is this far away...
+           homeLeash: 30,    // ...or when dragged this far from home; then walk back home
+           gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
+  tutorial: { doneTime: 0.9, completeTime: 3.0 },
+  nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
+  fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
+        recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
+        trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,
+        tagRange: 22, tagGap: 0.22,   // overhead enemy health bars: max distance, height above the head
+        bursts: {   // colour, particle count and speed of every combat burst
+          hit: { color: 0xe8d8a0, count: 12, speed: 4.5 },
+          riposte: { color: 0xffffff, count: 22, speed: 6.5 },
+          block: { color: 0xffd070, count: 16, speed: 7 },
+          hurt: { color: 0xb01818, count: 14, speed: 4.5 },
+          parry: { color: 0xfff6d0, count: 26, speed: 7.5 },
+          postureBreak: { color: 0xffc060, count: 30, speed: 8 },
+          stain: { color: 0xffe0a0, count: 20, speed: 4 },
+          alert: { color: 0xff6a30, count: 10, speed: 2.5 },
+        },
+        postureBreakShake: { time: 0.22, amp: 0.08 } },
+  // Rendering only (section 9b). Nothing here changes how the game plays. Per-level looks are optional
+  // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
+  VISUALS: {
+    defaultQuality: 'high',
+    // Graphics option presets. Both must list the same keys (checked at load).
+    quality: {
+      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4,
+              particles: 1, shafts: true, debris: true, grass: 1, embers: 1 },
+      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0,
+              particles: 0.35, shafts: false, debris: false, grass: 0.35, embers: 0.5 },
+    },
+    exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
+    hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
+    bloom: { strength: 0.34, radius: 0.5, threshold: 0.8 },
+    // Colour grade (after tone mapping): cool shadows, warm highlights, a little desaturation.
+    // Strongly red pixels skip the desaturation so the wind-up telegraph never dulls.
+    grade: { shadowTint: [0.9, 0.96, 1.08], highlightTint: [1.07, 1.0, 0.9], saturation: 0.8, contrast: 1.05 },
+    vignette: { strength: 0.5, softness: 0.55, lowHealthAt: 0.3, lowHealthRate: 3 },   // darker, redder edges below lowHealthAt
+    grain: { amount: 0.03 },
+    rim: { strength: 0.32, power: 3.0, mixWhite: 0.45 },     // silhouette light on characters; colour from the level
+    // Procedural surfaces. Patterns build the canvas textures (fractions of the texture size); kinds say how
+    // each material family weathers (tile sizes in metres; colours multiply the base colour).
+    surfaces: {
+      texSize: 512,
+      patterns: {
+        wall:  { rows: [1 / 6, 1 / 6], slab: [0.22, 0.4], shade: [0.8, 1.14], joint: 2.2, cracks: 10, freq: 10 },
+        floor: { rows: [0.17, 0.27], slab: [0.18, 0.36], shade: [0.74, 1.2], joint: 3, cracks: 8, freq: 12 },
+        metal: { rows: null, cracks: 0, streaks: 50, freq: 18 },
+      },
+      kinds: {
+        stone: { side: 'wall', top: 'floor', tileSide: 3, tileTop: 4, detail: 0.85, crack: 0.55, grimeColor: 0x9a9286,
+                 grimeHeight: 1.5, mossColor: 0x5a6448, moss: 0.5, roughVar: 0.35, rustColor: 0x000000, rust: 0 },
+        metal: { side: 'metal', top: 'metal', tileSide: 1.2, tileTop: 1.2, detail: 0.7, crack: 0.35, grimeColor: 0x8a8278,
+                 grimeHeight: 1.0, mossColor: 0x000000, moss: 0, roughVar: 0.3, rustColor: 0x5a4030, rust: 0.35 },
+        wood:  { side: 'metal', top: 'metal', tileSide: 0.6, tileTop: 0.6, detail: 0.8, crack: 0.3, grimeColor: 0x7a7268,
+                 grimeHeight: 0.3, mossColor: 0x000000, moss: 0, roughVar: 0.2, rustColor: 0x000000, rust: 0 },
+      },
+      materials: { stone: 'stone', edge: 'stone', wall: 'stone', dark: 'stone', ceiling: 'stone',   // MAT entry -> kind
+                   iron: 'metal', bonfireSword: 'metal', log: 'wood' },
+    },
+    // Characters: cloth desaturated toward grey, a separate (pale) skin or helmet material.
+    enemy: { desaturate: 0.3, darkMul: 0.6, skin: 0xa8a294, skinRoughness: 0.75 },
+    windupGlow: { color: 0xff2a10, boost: 2.2, opacity: 0.85, size: 1.5, along: 0.6 },   // additive halo on the blade; ignores fog
+    flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
+    pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },
+             shaft: { k: 0.22 } },   // warm (or pale) light pools on the floor
+    // Floating ash (falls) and dust motes (drift) in a box that follows the camera. Levels set `ash` and `dust` 0..2.
+    particles: { max: 1600, box: [34, 12, 34], size: 0.06, maxPx: 6, opacity: 0.5,
+                 ashColor: 0x8a8580, dustColor: 0xffd6a0 },
+    shafts: { radius: 1.6, topRatio: 0.55, tilt: 0.12, nearFade: [1.5, 5] },
+    bonfire: { coreColor: 0xff6a1c, coreBoost: 3, coreSize: 0.2, embers: 40, rise: 2.6, emberColor: 0xff8a30,
+               pulsePeriod: 3.2, pulse: 0.12, flareTime: 2.2, flareLight: 1.6, flareCore: 0.8 },
+    blood: { decals: 28, life: 16, fade: 4, size: [0.35, 0.75], deathSize: 2.2, spread: 0.5,
+             burst: { color: 0x5a0606, count: 10, speed: 3.5 } },
+    stainGlow: { color: 0xff4020, boost: 1.8, size: 1.9, height: 0.35, rate: 2.2 },
+    rubble: { spacing: [1.6, 3.4], cluster: 3, size: [0.12, 0.42] },
+    arches: { spring: 2.6, tube: 0.24, every: 2 },   // hall ribs: spring this far below the ceiling, on every 2nd pillar pair
+    banners: { width: 1.15, height: 3.0, topGap: 1.0, every: 2, sway: 0.07, swaySpeed: 1.1, colors: [0x4a1c1a, 0x2a2a30] },
+    debris: { max: 36, interval: 2.4, radius: 8, gateBurst: 10 },   // a level's `debris` scales how often pieces fall
+    grass: { count: 3200, extent: 46, height: 0.7, color: 0x8a7a48 },
+    silhouettes: { radii: [135, 100, 70], mix: [0.2, 0.34, 0.5], dark: 0x0c0b0d },
+  },
+};

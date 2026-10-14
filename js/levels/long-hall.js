@@ -1,0 +1,43 @@
+'use strict';
+const LEVEL_1 = {
+  id: 'long-hall', layout: 'hall',
+  next: 'sunken-keep',   // once complete, carry on into this level automatically
+  name: 'Level 1: The Long Hall',
+  description: 'Four opponents, and others waiting in the dark. Clear the way forward.',
+  help: 'Level 1: defeat each gated opponent to open the next gate. Others are optional.',
+  // Cold, grey-blue and close, with warm pools under the torches.
+  atmosphere: { background: 0x0a0d12, fog: 0x161c25, fogDensity: 0.033,
+                moon: { color: 0x8fa2c8, intensity: 1.9, position: [-6, 14, 8] },
+                ambient: { color: 0x3c4658, intensity: 1.2 },
+                hemi: { sky: 0x5a6a86, ground: 0x1a1510, intensity: 0.65 },
+                exposure: 1.05, ash: 0.6, dust: 0.45, rim: 0x8fa3c4,
+                grade: { shadowTint: [0.82, 0.93, 1.16], highlightTint: [1.05, 1.0, 0.92], saturation: 0.66 },
+                surface: { moss: 0.3, grime: 1.15 },
+                shafts: { every: 30, color: 0xa8b8d0, opacity: 0.14 },
+                banners: [0x4a1c1a, 0x2c2a33], debris: 0.25 },
+  length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
+  start: { x: 5, z: 0, yaw: Math.PI / 2 },
+  bonfires: [{ id: 'hall-start', x: 2.6, z: -3.4 }, { id: 'before-rogue', x: 109.5, z: -4.2 }],
+  alcoveWidth: 2.8, alcoveDepth: 2.2,
+  alcoves: [{ id: 'west-58', x: 58, side: 1 }, { id: 'east-87', x: 87, side: -1 }, { id: 'west-141', x: 141, side: 1 }],
+  // Gated zones in order: entering x > trigger spawns the enemy; its gate at gateX lifts on its death.
+  // The level is complete when every gate is open.
+  gated: [
+    { id: 'zone-hollow', enemy: 'hollow', trigger: 16, spawn: { x: 28, z: 0, yaw: -Math.PI / 2 }, gateX: 34 },
+    { id: 'zone-knight', enemy: 'knight', trigger: 64, spawn: { x: 75, z: 0, yaw: -Math.PI / 2 }, gateX: 82 },
+    { id: 'zone-rogue', enemy: 'rogue', trigger: 112, spawn: { x: 121, z: 0, yaw: -Math.PI / 2 }, gateX: 128 },
+    { id: 'zone-giant', enemy: 'giant', trigger: 146, spawn: { x: 160, z: 0, yaw: -Math.PI / 2 }, gateX: 170 },
+  ],
+  // Optional enemies scattered between the gated zones.
+  dispersed: [
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'west-58' },
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'east-87' },
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'west-141' },
+    { behavior: 'patrol', enemy: 'hollow', z: 1.5, path: [40, 53] },
+    { behavior: 'patrol', enemy: 'hollow', z: -2.5, path: [98, 104] },
+    { behavior: 'patrol', enemy: 'hollow', z: -2, path: [133, 140] },
+    { behavior: 'slumber', enemy: 'knight', x: 93, z: 2, yaw: -Math.PI / 2 },
+  ],
+  torches: [{ x: 30, side: -1 }, { x: 50, side: 1 }, { x: 79, side: -1 }, { x: 100, side: 1 },
+            { x: 125, side: -1 }, { x: 150, side: 1 }, { x: 167, side: -1 }],
+};

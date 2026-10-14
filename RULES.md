@@ -1,10 +1,17 @@
 # Game Rules
 
-How the systems in `combat-arena-3d.html` behave. Read this before adding mechanics, enemies or levels.
+How the systems of the game behave. Read this before adding mechanics, enemies or levels.
+
+## Files
+
+- `combat-arena-3d.html` is the page you open. It holds the styles, the HUD and menus, and a tiny loader: it imports Three.js r160, then loads the game files from `js/` in the order listed in `GAME_FILES`.
+- The game files are classic scripts that share one global scope. A file may only use, while it loads, what earlier files define (inside functions, anything goes).
+- Data lives in `js/data/` (player, items, enemies, shared looks) and `js/levels/` (one file per level). `js/data/levels.js` sets the Levels menu order.
+- A new file must be added to `GAME_FILES`, after everything it needs at load.
 
 ## Golden rules
 
-1. **Content is data.** Enemies, levels, items and attacks are plain data at the top of the script. Add content by adding data, not by writing special cases in the game logic.
+1. **Content is data.** Enemies, levels, items and attacks are plain data in `js/data/` and `js/levels/`. Add content by adding data, not by writing special cases in the game logic.
 2. **Everything is referenced by id**, never by list position.
 3. **Data is checked at load.** A broken reference stops the game with a readable error. When you add a new kind of data, add a check for it.
 4. **Tuning numbers live in CONFIG or the data entry**, never scattered through the logic.
@@ -68,7 +75,7 @@ How the systems in `combat-arena-3d.html` behave. Read this before adding mechan
 
 ## Visuals
 
-- Rendering lives in its own section (9b) with its numbers in `CONFIG.VISUALS`. It only draws: it reacts to events (strike, death, rest, gate opened) and never changes combat, AI, collision or layouts. Dressing (rubble, arches, banners) has no collision.
+- Rendering lives in its own file (`js/visuals.js`) with its numbers in `CONFIG.VISUALS`. It only draws: it reacts to events (strike, death, rest, gate opened) and never changes combat, AI, collision or layouts. Dressing (rubble, arches, banners) has no collision.
 - **Graphics: High / Low** (pause → Options). High adds bloom, colour grade, vignette (redder at low health), grain and light shafts. Low skips post-processing and thins the particles.
 - The red wind-up glow is never dimmed: it has its own halo that ignores fog, and the colour grade leaves strong reds saturated.
 - **Camera:** follows behind the player and is pushed in so it never passes through walls or closed gates. Locking on frames both the player and the target.
