@@ -1651,7 +1651,11 @@ class Player {
     return this.stamina > 0 && !this.winded;
   }
   // A roll is wanted now: a queued press, or a fresh one (only consumed if a roll is possible).
-  wantsRoll() { return this.canRoll() && (this.rollQueue > 0 || input.consume('roll')); }
+  // A queued roll that can't happen the moment it's allowed (no stamina, or winded) is dropped, never held.
+  wantsRoll() {
+    if (!this.canRoll()) { this.rollQueue = 0; return false; }
+    return this.rollQueue > 0 || input.consume('roll');
+  }
   startRoll(mv) {
     this.rollQueue = 0;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
