@@ -2,6 +2,8 @@
 
 A small Souls-like 3D action game in a single HTML file (Three.js from a CDN, no build step).
 
+! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
+
 ## Play
 
 - **Online:** open the GitHub Pages link for this repo (Settings → Pages).
@@ -35,6 +37,8 @@ Keyboard and mouse only; there are no touch controls.
 | Restart fight / level | R, twice (once on the death or victory screen) |
 | Pause and options | Escape |
 | Help / hitboxes | F1 (H toggles hitboxes) |
+
+! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
 
 ## Adding content
 
