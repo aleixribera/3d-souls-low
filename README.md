@@ -11,6 +11,7 @@ Keyboard and mouse only; there are no touch controls.
 
 ## Modes
 
+- **Levels → Tutorial** — one room of training dummies that teaches every control, step by step.
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
 - **Enemies** — duel a single opponent in the arena.
 
@@ -20,7 +21,7 @@ Keyboard and mouse only; there are no touch controls.
 |---|---|
 | Move | W A S D / Arrow keys |
 | Camera | Mouse (click the view to capture it) |
-| Jump | Space |
+| Jump (costs stamina) | Space |
 | Roll | Shift |
 | Light attack | J / Left mouse |
 | Heavy attack | K / Right mouse |

@@ -80,6 +80,15 @@
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
   #won.show, #complete.show { opacity: 1; transition: opacity 2s ease-in 1s; }
   #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
+  #tutPrompt { position: absolute; left: 50%; top: 84px; transform: translateX(-50%) scale(var(--hud)); transform-origin: top center;
+    padding: 9px 22px; background: #0d0b10d8; border: 1px solid #7d6a3a; color: #e8dcb8; font-size: 18px; letter-spacing: 1px;
+    text-shadow: 0 0 6px #000; white-space: nowrap; transition: border-color 0.2s, color 0.2s; }
+  #tutPrompt.hidden { display: none; }
+  #tutPrompt.done { border-color: #8fbf6a; color: #c8f0a8; }
+  #tutStep { color: #8f866c; font-size: 13px; margin-right: 14px; letter-spacing: 2px; }
+  #tutDone { position: absolute; left: 0; right: 0; top: 36%; text-align: center; font-size: 46px; letter-spacing: 10px;
+    color: #c9b26a; text-shadow: 0 0 20px #000; opacity: 0; transition: opacity 0.6s; }
+  #tutDone.show { opacity: 1; }
   #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
     color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
   #rested.show { opacity: 1; transition: opacity 0.4s; }
@@ -103,6 +112,8 @@
     <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
     <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
   </div>
+  <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span></div>
+  <div id="tutDone">TUTORIAL COMPLETE</div>
   <div id="rested">RESTED</div>
   <div id="prompt">F: Rest at bonfire</div>
   <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
@@ -176,7 +187,7 @@ const CONFIG = {
     staminaRegen: 36, staminaDelay: 0.75,
     walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14,
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
-    jumpVelocity: 8.2, airControl: 9,
+    jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
     rollCost: 27, rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25,
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
@@ -196,11 +207,11 @@ const CONFIG = {
     airControl: 0.6,   // multiplier on normal air control during a jump attack
     light: { kind: 'light', startup: 0.12, cost: 18, damage: 22, poise: 26, knock: 3.5, hitstop: 0.09,
              box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 }, impactTime: 0.08,
-             landRecovery: 0.4, hitRecoveryMul: 0.6, hop: 3.2,
+             landRecovery: 0.75, hitRecoveryMul: 0.85, hop: 3.2,
              fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } },
     heavy: { kind: 'heavy', startup: 0.3, cost: 42, damage: 52, poise: 60, knock: 7, hitstop: 0.15,
              box: { w: 2.2, h: 2.4, d: 2.6, fwd: 1.1, y: 0.0 }, impactTime: 0.1,
-             landRecovery: 0.8, hitRecoveryMul: 0.6, hop: 3.8,
+             landRecovery: 1.25, hitRecoveryMul: 0.85, hop: 3.8,
              fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } },
   },
   // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
@@ -224,6 +235,7 @@ const CONFIG = {
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5, patrolSpeedMul: 0.42 },
   level: { aggroGated: 14, aggroAmbush: 7.8, aggroPatrol: 9, aggroSlumber: 5.5, leash: 22,
            gateLiftTime: 1.6, targetRange: 14 },
+  tutorial: { doneTime: 0.9, completeTime: 3.0 },
   fx: { tintTime: 0.22, particleLife: 0.5, recoilTime: 0.25 },
 };
 
@@ -324,6 +336,32 @@ const LEVEL_1 = {
             { x: 125, side: -1 }, { x: 150, side: 1 }, { x: 167, side: -1 }],
 };
 
+// Tutorial: one short room in the same style as the hall, with its own bonfire.
+const TUTORIAL = {
+  name: 'Tutorial', description: 'Learn every control on training dummies. No real danger here.',
+  length: 40, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
+  start: { x: 5, z: 0 }, bonfires: [{ x: 9, z: -4 }],
+  alcoveWidth: 0, alcoveDepth: 2, alcoves: [], gated: [],
+  torches: [{ x: 14, side: 1 }, { x: 26, side: -1 }, { x: 36, side: 1 }],
+  dummyAhead: 4,          // a single target dummy stands this far ahead of the player
+  attackerAhead: 2.3,     // the attacking dummy stands within its swing range
+  pairAhead: 6, pairSpread: 3,   // two dummies for the target-switch step
+};
+
+// Training dummies: same humanoid primitives as enemies. They never move or aggro, never die,
+// stagger or lose poise. The attacker variant repeats one slow, telegraphed swing.
+const DUMMY_DEF = {
+  name: 'Training Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, height: 1.8, color: 0x7a6440, weapon: 'none',
+  hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, attacks: [],
+};
+const ATTACKER_DUMMY_DEF = {
+  ...DUMMY_DEF, name: 'Sparring Dummy', color: 0x6a5446, weapon: 'sword', restTime: 1.3,
+  attacks: [
+    { name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
+      damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },
+  ],
+};
+
 // ============================================================================
 // 3. input
 // ============================================================================
@@ -335,7 +373,30 @@ const ACTIONS = {
   lock: ['KeyQ'], switchTarget: ['Tab'], rest: ['KeyF'], flask: ['KeyG'],
   zoomIn: ['Equal', 'NumpadAdd'], zoomOut: ['Minus', 'NumpadSubtract'],
 };
-const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), ['KeyR', 'KeyH', 'Escape', 'Enter']));
+// System keys handled directly by the key handler rather than through ACTIONS.
+const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1' };
+const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), [SYSTEM_KEYS.restart, SYSTEM_KEYS.hitboxes, SYSTEM_KEYS.pause, 'Enter']));
+
+// Prompt labels built from the live bindings: "[ j / LMB ]" (keyboard first, then mouse), or "[ Space ]".
+const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
+  Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB' };
+function keyLabel(code) {
+  if (KEY_LABELS[code]) return KEY_LABELS[code];
+  if (code.startsWith('Key')) return code.slice(3).toLowerCase();
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code;
+}
+// extraMouse: a mouse input bound outside ACTIONS (the wheel), shown after the key.
+function bindLabel(action, extraMouse) {
+  const codes = ACTIONS[action];
+  const key = codes.find(c => !c.startsWith('Mouse')), mouse = codes.find(c => c.startsWith('Mouse'));
+  const parts = [keyLabel(key)];
+  if (mouse) parts.push(keyLabel(mouse)); else if (extraMouse) parts.push(extraMouse);
+  return `[ ${parts.join(' / ')} ]`;
+}
+const moveLabel = () => `[ ${['up', 'left', 'down', 'right'].map(a => keyLabel(ACTIONS[a][0])).join(' ')} ]`;
+const systemLabel = name => `[ ${keyLabel(SYSTEM_KEYS[name])} ]`;
 
 const input = {
   held: new Set(),
@@ -383,8 +444,8 @@ moonLight.position.set(-6, 14, 8);
 scene.add(moonLight);
 scene.add(new THREE.AmbientLight(0x555a70, 1.3));   // faint fill so silhouettes stay readable
 
-const arenaGroup = new THREE.Group(), hallGroup = new THREE.Group();
-scene.add(arenaGroup, hallGroup);
+const arenaGroup = new THREE.Group(), hallGroup = new THREE.Group(), tutorialGroup = new THREE.Group();
+scene.add(arenaGroup, hallGroup, tutorialGroup);
 const flames = [];   // { mesh, light, base, color } flickered every frame
 const dust = [];     // { group, points, origin, seeds } drifting motes near light sources
 
@@ -471,9 +532,10 @@ const ARENA_BONFIRE = { x: 0, z: -(CONFIG.arena.halfZ - 2.2) };
   addBonfire(G, ARENA_BONFIRE.x, ARENA_BONFIRE.z, 11);
 })();
 
-const hallGates = [];   // portcullis meshes for LEVEL_1.gated, in order
-(function buildHall() {
-  const L = LEVEL_1, G = hallGroup, len = L.length, hz = L.halfZ, wh = L.wallHeight, aw = L.alcoveWidth / 2;
+// Builds a hall layout (Level 1, or the tutorial room) into group G. Returns the gate portcullis meshes in order.
+function buildHall(L, G) {
+  const gates = [];
+  const len = L.length, hz = L.halfZ, wh = L.wallHeight, aw = L.alcoveWidth / 2;
   addBox(G, len + 2, 0.5, (hz + L.alcoveDepth + 1) * 2, MAT.stone, len / 2, -0.25, 0);
   addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, hz - 0.3);
   addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, -hz + 0.3);
@@ -512,7 +574,7 @@ const hallGates = [];   // portcullis meshes for LEVEL_1.gated, in order
   // Gates: lintel in the wall above, portcullis below.
   for (const g of L.gated) {
     addBox(G, 1.2, wh - L.gateHeight, hz * 2, MAT.wall, g.gateX, L.gateHeight + (wh - L.gateHeight) / 2, 0);
-    hallGates.push(buildPortcullis(G, g.gateX, hz * 2, L.gateHeight));
+    gates.push(buildPortcullis(G, g.gateX, hz * 2, L.gateHeight));
   }
   // Far end: solid wall with a closed exit gate.
   addBox(G, 0.4, 4, 4.6, MAT.ceiling, len - 0.05, 2, 0);
@@ -526,7 +588,10 @@ const hallGates = [];   // portcullis meshes for LEVEL_1.gated, in order
     addFlame(G, t.x, 3.05, z, 0.45, light);
     addDust(G, t.x, 2.6, t.side * (hz - 1.6), 1.6, 10);
   }
-})();
+  return gates;
+}
+const hallGates = buildHall(LEVEL_1, hallGroup);   // portcullis meshes for LEVEL_1.gated, in order
+buildHall(TUTORIAL, tutorialGroup);
 
 // Walkable space for the current mode: a rectangle, side alcoves, and closed gates.
 const WORLDS = {
@@ -535,6 +600,8 @@ const WORLDS = {
   hall: { minX: 0, maxX: LEVEL_1.length, halfZ: LEVEL_1.halfZ, ceiling: LEVEL_1.wallHeight,
           gateThickness: LEVEL_1.gateThickness, gates: [], bonfires: LEVEL_1.bonfires,
           alcoves: LEVEL_1.alcoves.map(a => ({ x0: a.x - LEVEL_1.alcoveWidth / 2, x1: a.x + LEVEL_1.alcoveWidth / 2, side: a.side, depth: LEVEL_1.alcoveDepth })) },
+  tutorial: { minX: 0, maxX: TUTORIAL.length, halfZ: TUTORIAL.halfZ, ceiling: TUTORIAL.wallHeight,
+              gateThickness: 0, gates: [], bonfires: TUTORIAL.bonfires, alcoves: [] },
 };
 let world = WORLDS.arena;
 
@@ -585,7 +652,7 @@ class Rig {
     if (weapon === 'club') {
       part(this.weapon, new THREE.BoxGeometry(0.13, 0.13, 1.1), this.weaponMat, 0, 0, 0.5);
       part(this.weapon, new THREE.BoxGeometry(0.3, 0.3, 0.6), this.weaponMat, 0, 0, 1.2);
-    } else {
+    } else if (weapon === 'sword') {
       part(this.weapon, new THREE.BoxGeometry(0.045, 0.1, 1.15), this.weaponMat, 0, 0, 0.62);
       part(this.weapon, new THREE.BoxGeometry(0.3, 0.06, 0.06), dark, 0, 0, 0.06);
     }
@@ -791,7 +858,7 @@ class Player {
     this.payload = {
       kind, damage: a.damage * (rip ? (kind === 'light' ? P.riposteLight : P.riposteHeavy) : 1),
       poise: a.poise * (rip && kind === 'heavy' ? P.ripostePoise : 1),
-      knock: a.knock, hitstop: a.hitstop * (rip ? P.riposteHitstop : 1), riposte: rip,
+      knock: a.knock, hitstop: a.hitstop * (rip ? P.riposteHitstop : 1), riposte: rip, air: a.impactTime !== undefined,
     };
     this.spend(a.cost);
     this.hitbox = null;
@@ -813,7 +880,7 @@ class Player {
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
     if (this.stamina > 0 && input.consume('heavy')) { this.startAttack('heavy', mv, face, enemies); return true; }
     if (this.stamina > 0 && input.consume('light')) { this.startAttack('light', mv, face, enemies); return true; }
-    if (input.consume('jump')) { this.vy = C.jumpVelocity; this.setState('jump'); return true; }
+    if (this.stamina > 0 && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState('jump'); return true; }
     if (input.isHeld('block')) { this.setState('block'); return true; }
     return false;
   }
@@ -1032,7 +1099,7 @@ class Player {
 // ============================================================================
 // 6. Enemy
 // ============================================================================
-// opts: x, z, yaw, behavior ('arena' | 'gated' | 'ambush' | 'patrol' | 'slumber'), aggro, leash, path
+// opts: x, z, yaw, behavior ('arena' | 'gated' | 'ambush' | 'patrol' | 'slumber' | 'dummy' | 'sparring'), aggro, leash, path
 class Enemy {
   constructor(def, opts) {
     this.def = def;
@@ -1050,6 +1117,9 @@ class Enemy {
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
     this.rewarded = false;                           // souls granted for this kill
     this.discovered = false;                         // has triggered its one-time auto lock-on
+    this.dummy = this.behavior === 'dummy' || this.behavior === 'sparring';   // tutorial: rooted, never dies
+    this.immovable = this.dummy;
+    if (this.dummy) this.discovered = true;          // dummies never trigger auto lock-on
     // idle patrol lurk dormant rise leap chase windup active recover hurt stagger parried broken dead
     this.homeState = this.behavior === 'patrol' ? 'patrol' : 'idle';
     this.state = { ambush: 'lurk', slumber: 'dormant', patrol: 'patrol' }[this.behavior] || 'idle';
@@ -1071,6 +1141,7 @@ class Enemy {
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
     this.poiseTimer += dt;
     this.chainTime += dt;
+    if (this.dummy) { this.updateDummy(dt); return; }
     if (this.poiseTimer > E.poiseResetTime) this.poise = d.poise;
     // Posture holds while the boss is open from a parry, so the riposte window can build on it.
     if (d.posture && this.state !== 'broken' && this.state !== 'parried' && player.state !== 'attack' && player.state !== 'jumpAttack')
@@ -1175,6 +1246,18 @@ class Enemy {
     return true;
   }
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
+  // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
+  updateDummy(dt) {
+    if (this.behavior !== 'sparring') return;
+    const a = this.def.attacks[0], hit = a.hits[0];
+    switch (this.state) {
+      case 'idle': if (this.stateTime >= this.def.restTime) { this.attack = a; this.hitIndex = 0; this.setState('windup'); } break;
+      case 'windup': if (this.stateTime >= hit.startup) { this.hitbox = new Hitbox(this, a.box, a); this.setState('active'); } break;
+      case 'active': if (this.stateTime >= hit.active) { this.hitbox = null; this.setState('recover'); } break;
+      case 'recover': if (this.stateTime >= a.recovery) this.setState('idle'); break;
+      case 'parried': if (this.stateTime >= this.def.parriedTime) this.setState('idle'); break;
+    }
+  }
   getParried() {
     this.hitbox = null; this.next = null;
     if (this.def.posture) {
@@ -1187,6 +1270,12 @@ class Enemy {
 
   // Returns { broke } so the caller can add break feedback.
   takeHit(damage, poiseDamage, kx, kz, kind) {
+    if (this.dummy) {   // flash and recoil only: no knockback, poise, stagger or death
+      const kl = Math.hypot(kx, kz) || 1, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
+      this.hp = Math.max(1, this.hp - damage); this.tint = 1;
+      this.recoil = 1; this.recoilF = (kx * s + kz * c) / kl; this.recoilS = (kz * s - kx * c) / kl;
+      return { broke: false };
+    }
     const d = this.def, P = d.posture;
     if (P && this.state === 'broken') damage *= P.damageMul;
     this.hp = Math.max(0, this.hp - damage);
@@ -1297,7 +1386,7 @@ class Enemy {
     const idling = this.state === 'idle' || this.state === 'patrol' || this.state === 'lurk' || this.state === 'chase';
     const wTarget = this.state === 'idle' ? 1 : this.state === 'chase' || this.state === 'patrol' || this.state === 'lurk' ? 0.25 : 0;
     r.idleW += ((idling ? wTarget : 0) - r.idleW) * (1 - Math.exp(-5 * ctx.dt));
-    if (this.state !== 'dead' && this.state !== 'dormant') this.idleLayer(r, ctx, r.idleW);
+    if (this.state !== 'dead' && this.state !== 'dormant' && !this.dummy) this.idleLayer(r, ctx, r.idleW);
     if (this.recoil > 0) {
       const k = Math.sin(this.recoil * Math.PI) * 0.26;
       r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
@@ -1367,6 +1456,7 @@ function resolveCombat(game) {
     for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
     if (target) {
       const broke = target.getParried();
+      game.notify('parry');
       p.stamina = Math.min(C.maxStamina, p.stamina + P.cost);   // a successful parry is free
       p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
       p.setState('idle');
@@ -1390,6 +1480,7 @@ function resolveCombat(game) {
     p.hitbox.markHit(e);
     const dx = e.x - p.x, dz = e.z - p.z, d = Math.hypot(dx, dz) || 1;
     const res = e.takeHit(a.damage, a.poise, dx / d * a.knock, dz / d * a.knock, a.kind);
+    game.notify('hit', { kind: a.kind, air: a.air, target: e });
     spawnBurst(contact(p.hitbox, e), a.riposte ? 0xffffff : 0xe8d8a0, a.riposte ? 22 : 12, a.riposte ? 6.5 : 4.5);
     game.hitstop = Math.max(game.hitstop, a.hitstop);
     if (res.broke) postureBreakFx(game, e);
@@ -1409,6 +1500,7 @@ function resolveCombat(game) {
     p.kx += dx / d * knock; p.kz += dz / d * knock;
     const at = contact(hb, p);
     if (blocked) {
+      game.notify('block');
       p.brace = 1;
       spawnBurst(at, 0xffd070, 16, 7);
       game.hitstop = Math.max(game.hitstop, B.hitstop);
@@ -1435,6 +1527,7 @@ function resolveCombat(game) {
 
 // Bodies cannot overlap; enemies barely give way to the player.
 function separatePair(a, b, shareA) {
+  if (b.immovable) shareA = 1; else if (a.immovable) shareA = 0;   // dummies never get pushed
   if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
   const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.radius + b.radius;
   if (d >= min) return;
@@ -1654,6 +1747,7 @@ const hud = {
   soulsN: $('pSoulsN'),
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'),
+  tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutDone: $('tutDone'),
   help: $('help'), toggle: $('hbToggle'),
   pTrailV: 1, eTrailV: 1, target: null, restedTimer: 0, lastPosture: 0, postFlash: 0,
   reset() {
@@ -1689,6 +1783,15 @@ const hud = {
     this.rested.classList.toggle('show', this.restedTimer > 0);
     this.prompt.classList.toggle('show', p.alive() && (p.state === 'idle' || p.state === 'walk') && !!game.nearBonfire());
     this.died.classList.toggle('show', p.state === 'dead');
+    // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
+    const tut = game.tut, step = game.currentStep();
+    this.tutPrompt.classList.toggle('hidden', !step);
+    if (step) {
+      this.tutStep.textContent = `${tut.index + 1} / ${game.tutorialSteps().length}`;
+      this.tutText.textContent = step.text();
+      this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
+    }
+    this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);
     const arenaWon = game.kind === 'arena' && !game.enemies[0].alive();
     this.won.classList.toggle('show', arenaWon && p.state !== 'dead');
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.state !== 'dead');
@@ -1707,7 +1810,8 @@ function applySettings() {
 const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
   screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
-  kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
+  kind: 'arena',         // what is being played: 'arena' (single duel) | 'level' | 'tutorial'
+  tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer }
   selected: 0, enemyIndex: 0,
   player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0,
@@ -1724,7 +1828,10 @@ const Game = {
         { name: 'Levels', desc: 'Walk the long hall and clear the way forward.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
       ] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [{ name: LEVEL_1.name, desc: LEVEL_1.description, go: () => this.startLevel() }] },
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
+        { name: TUTORIAL.name, desc: TUTORIAL.description, go: () => this.startTutorial() },
+        { name: LEVEL_1.name, desc: LEVEL_1.description, go: () => this.startLevel() },
+      ] },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
         items: ENEMY_DEFS.map((d, i) => ({ name: d.name, desc: d.description, go: () => this.startFight(i) })) },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: [
@@ -1787,13 +1894,18 @@ const Game = {
     if (this.screen === 'pause') this.resume();
     else if (s.back) this.showMenu(s.back);
   },
-  pause() {
+  // fromPointer: triggered by losing mouse capture rather than by the pause key.
+  pause(fromPointer) {
     if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
+    // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
+    if (this.kind === 'tutorial' && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
+    this.notify('pause');
   },
   resume() {
     this.mode = 'play'; input.clear();
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
+    this.notify('resume');
   },
   enterPlay() {
     this.mode = 'play';
@@ -1802,6 +1914,8 @@ const Game = {
   },
   startFight(i) { this.kind = 'arena'; this.enemyIndex = i; this.enterPlay(); this.reset(); },
   startLevel() { this.kind = 'level'; this.enterPlay(); this.reset(); },
+  startTutorial() { this.kind = 'tutorial'; this.enterPlay(); this.reset(); },
+  leaveTutorial() { this.reset(); this.showMenu('levels'); },
 
   // ---- setup -----------------------------------------------------------------------------------
   clearActors() {
@@ -1837,6 +1951,17 @@ const Game = {
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0;
     this.souls = 0; this.flasks = CONFIG.flask.charges; this.setLock(null);
     arenaGroup.visible = this.kind === 'arena'; hallGroup.visible = this.kind === 'level';
+    tutorialGroup.visible = this.kind === 'tutorial';
+    this.tut = null;
+    if (this.kind === 'tutorial') {
+      world = WORLDS.tutorial;
+      this.spawn = { x: TUTORIAL.start.x, z: TUTORIAL.start.z };
+      this.spawnPlayer();
+      hud.reset();
+      this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0 };
+      this.setupTutorialStep();
+      return;
+    }
     if (this.kind === 'arena') {
       world = WORLDS.arena; world.gates = [];
       this.spawn = { x: -6, z: 0 };
@@ -1868,14 +1993,15 @@ const Game = {
     const p = this.player, b = this.nearBonfire();
     if (!b || !(p.state === 'idle' || p.state === 'walk')) return;
     // Not while an awake enemy is closing in.
-    if (this.enemies.some(e => e.alive() && e.state !== 'idle' && e.state !== 'patrol' && e.awake() &&
+    if (this.enemies.some(e => !e.dummy && e.alive() && e.state !== 'idle' && e.state !== 'patrol' && e.awake() &&
         Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange)) return;
     p.hp = CONFIG.player.maxHp; p.stamina = CONFIG.player.maxStamina; p.vx = p.vz = 0;
     p.setState('rest');
     this.flasks = CONFIG.flask.charges;
     const dx = b.x > p.x ? -1.2 : 1.2;
     this.spawn = { x: b.x + dx, z: b.z };
-    this.respawnEnemies();
+    if (this.kind !== 'tutorial') this.respawnEnemies();
+    this.notify('rest');
     this.setLock(null);
     hud.showRested();
   },
@@ -1925,11 +2051,15 @@ const Game = {
     const p = this.player;
     if (input.consume('lock')) {
       if (this.lock) this.setLock(null);
-      else { const c = this.lockCandidates(); if (c.length) this.setLock(c[0]); }
+      else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); this.notify('lock'); } }
     }
     if (input.consume('switchTarget') && this.lock) {
       const c = this.lockCandidates();
-      if (c.length) { const i = c.indexOf(this.lock); this.setLock(c[(i + 1) % c.length]); }
+      if (c.length) {
+        const i = c.indexOf(this.lock), prev = this.lock;
+        this.setLock(c[(i + 1) % c.length]);
+        if (this.lock !== prev) this.notify('switch');
+      }
     }
     // Auto lock-on: the first time each enemy comes into range (and into view), lock onto it
     // unless already locked. An enemy is only ever auto-locked once.
@@ -1947,6 +2077,92 @@ const Game = {
     if (!t.alive() || !p.alive() || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
     this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
     if (this.lockLost > CONFIG.lock.lostTime) this.setLock(null);
+  },
+
+  // ---- tutorial ---------------------------------------------------------------------------------
+  // Each step: prompt text (labels from the live bindings), which dummies it needs, optional setup,
+  // and how it completes: on(type, data, t) for game events and/or check(game, t) polled each step.
+  // Returning true from either advances the tutorial.
+  tutorialSteps() {
+    const B = bindLabel;
+    return [
+      { id: 'move', text: () => `Walk around ${moveLabel()}`, check: (g, t) => t.dist >= 5 },
+      { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === 'jump' },
+      { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === 'roll' },
+      { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}`,
+        on: (type, d) => type === 'hit' && d.kind === 'light' && !d.air },
+      { id: 'heavy', dummies: 'one', text: () => `Hit the dummy with a heavy attack ${B('heavy')}: slower, stronger`,
+        on: (type, d) => type === 'hit' && d.kind === 'heavy' && !d.air },
+      { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
+        on: (type, d, t) => { if (type === 'hit' && d.air) t.flags.airHit = true; },
+        check: (g, t) => t.flags.airHit && g.player.state !== 'jumpAttack' && g.player.state !== 'land' },   // after the landing
+      { id: 'block', dummies: 'sparring', text: () => `Hold block ${B('block')} and take the dummy's swing on your guard`,
+        on: type => type === 'block' },
+      { id: 'parry', dummies: 'sparring', text: () => `Parry ${B('parry')} just before the dummy's swing lands`,
+        on: type => type === 'parry' },
+      { id: 'flask', text: () => `You're hurt. Drink from your flask ${B('flask')}`,
+        setup: g => { g.player.hp = Math.min(g.player.hp, 55); g.flasks = Math.max(g.flasks, 1); },
+        on: (type, d, t) => { if (type === 'flask') t.flags.drank = true; },
+        check: (g, t) => t.flags.drank && g.player.state !== 'drink' },
+      { id: 'rest', text: () => `Walk to the bonfire and rest ${B('rest')}`, on: type => type === 'rest' },
+      { id: 'lock', dummies: 'one', text: () => `Lock on to the dummy ${B('lock')}`, on: type => type === 'lock' },
+      { id: 'switch', dummies: 'pair', text: () => `Lock on ${B('lock')}, then switch target ${B('switchTarget')}`,
+        on: type => type === 'switch' },
+      { id: 'zoom', text: () => `Zoom the camera in ${B('zoomIn', 'Wheel up')} and out ${B('zoomOut', 'Wheel down')}`,
+        on: (type, d, t) => { if (type === 'zoomIn' || type === 'zoomOut') t.flags[type] = true; return t.flags.zoomIn && t.flags.zoomOut; } },
+      { id: 'pause', text: () => `Open the pause menu ${systemLabel('pause')}, then close it again ${systemLabel('pause')}`,
+        on: (type, d, t) => { if (type === 'pause') t.flags.paused = true; return type === 'resume' && t.flags.paused; } },
+    ];
+  },
+  currentStep() { return this.tut ? this.tutorialSteps()[this.tut.index] || null : null; },
+  tutorialAllowsPause() { const s = this.currentStep(); return !!s && s.id === 'pause' && this.tut.doneTimer <= 0; },
+  // Fresh dummies for the step (this is also how a dummy "resets").
+  setupTutorialStep() {
+    const T = TUTORIAL, t = this.tut, s = this.currentStep(), p = this.player;
+    for (const e of this.enemies) e.rig.dispose();
+    this.enemies = []; this.setLock(null);
+    t.flags = {}; t.dist = 0;
+    if (!s) return;
+    const dir = p.x + T.pairAhead < T.length - 3 ? 1 : -1;   // place ahead, or behind near the far wall
+    const spot = ahead => ({ x: clamp(p.x + dir * ahead, 2, T.length - 2), z: clamp(p.z, -T.halfZ + 2, T.halfZ - 2) });
+    const add = (def, behavior, at) => {
+      const e = new Enemy(def, { x: at.x, z: at.z, yaw: Math.atan2(p.x - at.x, p.z - at.z), behavior, aggro: 0 });
+      this.enemies.push(e);
+    };
+    if (s.dummies === 'one') add(DUMMY_DEF, 'dummy', spot(T.dummyAhead));
+    else if (s.dummies === 'sparring') add(ATTACKER_DUMMY_DEF, 'sparring', spot(T.attackerAhead));
+    else if (s.dummies === 'pair') {
+      const c = spot(T.pairAhead);
+      for (const side of [-1, 1]) add(DUMMY_DEF, 'dummy', { x: c.x, z: clamp(c.z + side * T.pairSpread, -T.halfZ + 1.5, T.halfZ - 1.5) });
+    }
+    if (s.setup) s.setup(this, t);
+  },
+  completeStep() { this.tut.doneTimer = CONFIG.tutorial.doneTime; },
+  notify(type, data) {
+    const t = this.tut, s = this.currentStep();
+    if (!t || !s || t.doneTimer > 0 || !s.on) return;
+    if (s.on(type, data || {}, t)) this.completeStep();
+  },
+  updateTutorial(dt) {
+    const t = this.tut, p = this.player;
+    if (t.completeTimer > 0) {   // all steps done: show the message, then back to the Levels list
+      t.completeTimer -= dt;
+      if (t.completeTimer <= 0) this.leaveTutorial();
+      return;
+    }
+    const s = this.currentStep();
+    if (!s) return;
+    if (t.doneTimer > 0) {   // brief confirmation before the next prompt replaces this one
+      t.doneTimer -= dt;
+      if (t.doneTimer <= 0) {
+        t.index++;
+        if (this.currentStep()) this.setupTutorialStep();
+        else { for (const e of this.enemies) e.rig.dispose(); this.enemies = []; t.completeTimer = CONFIG.tutorial.completeTime; }
+      }
+      return;
+    }
+    if (p.state === 'walk') t.dist += Math.hypot(p.x - p.px, p.z - p.pz);
+    if (s.check && s.check(this, t)) this.completeStep();
   },
 
   // ---- level -------------------------------------------------------------------------------------
@@ -1997,6 +2213,7 @@ const Game = {
   stepZoom(dir) {
     const Z = CONFIG.zoom;
     this.zoomTarget = clamp(this.zoomTarget + dir * Z.step, Z.min, Z.max);
+    this.notify(dir < 0 ? 'zoomIn' : 'zoomOut');
   },
   updateZoomKeys(dt) {
     const dir = (input.isHeld('zoomOut') ? 1 : 0) - (input.isHeld('zoomIn') ? 1 : 0);
@@ -2088,6 +2305,7 @@ const Game = {
     if (input.consume('rest')) this.tryRest();
     if (input.peek('flask') && p.canDrink() && this.flasks > 0) {
       input.consume('flask'); this.flasks--; p.vx = p.vz = 0; p.setState('drink');
+      this.notify('flask');
     }
     const live = this.enemies.filter(e => e.alive());
     p.update(dt, this.moveInput(), live, this.lock);
@@ -2100,9 +2318,13 @@ const Game = {
       this.addShake(CONFIG.groundPound.shakeTime, L.fx.shake);
     }
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; this.souls += e.def.souls; }
+    if (!p.alive() && this.kind === 'tutorial') {   // nothing can kill you in the tutorial
+      p.hp = 1; p.stunTime = CONFIG.player.hurtTime; p.setState('hurt');
+    }
     if (!p.alive()) this.onPlayerDeath();
     this.checkStain();
     if (this.kind === 'level') this.updateLevel(dt);
+    if (this.kind === 'tutorial') this.updateTutorial(dt);
     this.updateCamera(dt, false);
   },
 
@@ -2160,7 +2382,7 @@ const Game = {
 // ============================================================================
 window.addEventListener('keydown', ev => {
   const code = ev.code;
-  if (code === 'F1') {
+  if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
     return;
@@ -2173,15 +2395,15 @@ window.addEventListener('keydown', ev => {
     else if (code === 'ArrowLeft' || code === 'KeyA') { ev.preventDefault(); Game.adjust(-1); }
     else if (code === 'ArrowRight' || code === 'KeyD') { ev.preventDefault(); Game.adjust(1); }
     else if (code === 'Enter' || code === 'KeyJ') { ev.preventDefault(); Game.confirm(); }
-    else if (code === 'Escape') { ev.preventDefault(); Game.menuBack(); }
+    else if (code === SYSTEM_KEYS.pause) { ev.preventDefault(); Game.menuBack(); }
     return;
   }
   if (!GAME_CODES.has(code)) return;
   ev.preventDefault();
   if (ev.repeat) return;
-  if (code === 'Escape') Game.pause();
-  else if (code === 'KeyR') Game.reset();
-  else if (code === 'KeyH') hud.toggle.checked = !hud.toggle.checked;
+  if (code === SYSTEM_KEYS.pause) Game.pause(false);
+  else if (code === SYSTEM_KEYS.restart) Game.reset();
+  else if (code === SYSTEM_KEYS.hitboxes) hud.toggle.checked = !hud.toggle.checked;
   else input.down(code);
 });
 window.addEventListener('keyup', ev => input.up(ev.code));
@@ -2199,7 +2421,7 @@ document.addEventListener('mousemove', ev => {
 });
 // Leaving pointer capture (the browser uses Escape for this) opens the pause menu.
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement && Game.mode === 'play') Game.pause();
+  if (!document.pointerLockElement && Game.mode === 'play') Game.pause(true);
 });
 window.addEventListener('wheel', ev => {
   if (Game.mode !== 'play') return;
