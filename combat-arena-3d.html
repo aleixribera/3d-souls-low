@@ -458,8 +458,9 @@ const ENEMY_DEFS = [
     // while the shield is up: not attacking, and not within `lowerReach` of striking range with an attack chosen.
     // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
     // attack, `light` otherwise. At `max` the guard breaks (2 heavy, 1 heavy + 2 light, or 3 light).
+    // Hits taken on the shield fill only `blockedMul` of that, so flanking or punishing swings breaks it far faster.
     // The meter drains at `decay`/s once `decayDelay` s pass without a hit.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, breakers: ['heavy', 'jumpHeavy'],
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.75, active: 0.14 }], recovery: 0.8,
@@ -2032,14 +2033,14 @@ class Enemy {
     this.tint = 0.3;
     if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (this.in('unaware')) this.setState(ES.CHASE);
-    if (this.fillMeter(G, strike.attackId)) return { broke: true, died: false };
+    if (this.fillMeter(G, strike.attackId, G.blockedMul)) return { broke: true, died: false };
     return { broke: false, died: false, blocked: true };
   }
   // Shared by the shield guard and the stagger meter (`guardMeter` holds either): heavy attacks fill
   // more than light ones; a full meter breaks the enemy (kneels, open) for M.breakTime. Returns true on a break.
-  fillMeter(M, attackId) {
+  fillMeter(M, attackId, mul = 1) {
     this.guardTime = 0;
-    this.guardMeter = Math.min(M.max, this.guardMeter + (M.breakers.includes(attackId) ? M.heavy : M.light));
+    this.guardMeter = Math.min(M.max, this.guardMeter + (M.breakers.includes(attackId) ? M.heavy : M.light) * mul);
     if (this.guardMeter < M.max - 1e-6) return false;
     this.hitbox = null; this.next = null; this.crack = 1;
     this.setState(ES.BROKEN);

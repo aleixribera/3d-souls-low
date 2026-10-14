@@ -49,7 +49,7 @@ How the systems in `combat-arena-3d.html` behave. Read this before adding mechan
   - *Poise* (default): hits drain a hidden poise value. Small hits make the enemy flinch; at zero it staggers.
   - *Posture* (bosses, e.g. Giant Skeleton): hits never interrupt it. Only hits chained close together fill a visible posture bar; full means it kneels, open, and takes extra damage.
   - *Stagger meter* (e.g. Undead Knight): hits never interrupt it. Each hit fills a visible meter (heavy hits fill more); full means it kneels, open. The meter drains if left alone.
-  - *Shield guard* (e.g. Shield Warden): works like the stagger meter (every hit fills a visible meter; full means the guard breaks and it kneels, open). On top of that, its raised shield cuts damage from hits to the front. The shield is lowered while it attacks and in the last step before a swing. Hits from the side or behind, and ripostes after a parry, do full damage.
+  - *Shield guard* (e.g. Shield Warden): works like the stagger meter (every hit fills a visible meter; full means the guard breaks and it kneels, open). On top of that, its raised shield cuts damage from hits to the front, and those blocked hits fill the meter much less. The shield is lowered while it attacks and in the last step before a swing. Hits from the side or behind, and ripostes after a parry, do full damage.
 - **Visible over enemies:** non-boss enemies show a small health bar over their head once they're fighting or hurt, with the stagger/guard meter under it when they have one. Bosses use the big bar at the top of the screen instead.
 
 ## Levels
