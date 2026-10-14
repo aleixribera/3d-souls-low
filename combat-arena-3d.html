@@ -455,10 +455,11 @@ const ENEMY_DEFS = [
     hp: 140, poise: 85, speed: 2.2, turnRate: 2.6, trackRate: 1.5, holdRange: 2.5,
     cooldown: [0.6, 1.2], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75, souls: 150,
     // Shield guard: hits from within `arc` (rad) of its facing are blocked (taking `damageMul` of the damage)
-    // while it is not attacking or closing in to attack. Each blocked hit fills a visible guard meter:
-    // `heavy` for a `breakers` attack, `light` otherwise. At `max` the guard breaks (2 heavy, 1 heavy + 2 light,
-    // or 3 light). The meter drains at `decay`/s once `decayDelay` s pass without a blocked hit.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, breakers: ['heavy', 'jumpHeavy'],
+    // while the shield is up: not attacking, and not within `lowerReach` of striking range with an attack chosen.
+    // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
+    // attack, `light` otherwise. At `max` the guard breaks (2 heavy, 1 heavy + 2 light, or 3 light).
+    // The meter drains at `decay`/s once `decayDelay` s pass without a hit.
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.75, active: 0.14 }], recovery: 0.8,
@@ -1822,7 +1823,11 @@ class Enemy {
   isCommitted() { return this.state === ES.ACTIVE; }
   // Shield up: guarding enemies hold it whenever they are not attacking, reeling or down.
   // The shield drops as soon as it picks an attack and closes in to use it (and stays down through the swing).
-  guarding() { return !!this.def.guard && ENEMY_GROUPS.guarding.has(this.state) && !(this.state === ES.CHASE && this.next); }
+  guarding() {
+    if (!this.def.guard || !ENEMY_GROUPS.guarding.has(this.state)) return false;
+    // Lowered only in the last stretch before a swing (within reach of the chosen attack, plus a step).
+    return !(this.state === ES.CHASE && this.next && this.playerDist <= this.next.range + this.def.guard.lowerReach);
+  }
   // Woken by another enemy's alert. Returns true if this changed anything.
   wake() {
     if (this.training || !this.alive()) return false;
@@ -1848,6 +1853,7 @@ class Enemy {
     if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && !player.isAttacking())
       this.posture = Math.max(0, this.posture - d.posture.decay * dt);
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
+    this.playerDist = dist;
     const toPlayer = Math.atan2(dx, dz);
     const playerAlive = player.alive();
     const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
@@ -2005,9 +2011,10 @@ class Enemy {
     if (this.in('shrugsHits') || this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
     if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }
     const unaware = this.in('unaware');
-    if (def.stagger) {   // stagger meter instead of poise: hits never interrupt until the meter fills
+    const M = def.stagger || def.guard;
+    if (M) {   // stagger/guard meter instead of poise: hits never interrupt until the meter fills
       if (unaware) this.setState(ES.CHASE);
-      return { broke: this.fillMeter(def.stagger, strike.attackId), died: false };
+      return { broke: this.fillMeter(M, strike.attackId), died: false };
     }
     const r = applyPoise(this, strike.poise, this.isCommitted(), def.poise);
     if (r === POISE.STAGGER) { this.hitbox = null; this.next = null; this.setState(ES.STAGGER); }
