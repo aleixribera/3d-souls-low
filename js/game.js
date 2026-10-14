@@ -564,7 +564,11 @@ const Game = {
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;
-      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer(); return; }
+      if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
+        this.spawnPlayer(); this.setLock(null);
+        if (!this.isTutorial()) this.respawnEnemies();
+        return;
+      }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
       if (slow > 0) for (const e of this.enemies) e.update(dt * slow, p);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);

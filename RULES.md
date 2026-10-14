@@ -77,7 +77,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Zone enemies stand at their posts from the start, so the player can see them coming.
 - **Optional enemies** (patrol, ambush, slumber) can be placed between zones.
 - **Bonfires** heal, refill flasks and set the respawn point. Resting brings back every enemy except those whose gates are already open. You cannot rest while an enemy is closing in.
-- **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire with full health and full flasks. Dying costs nothing but the ground covered since that bonfire: there are no souls, stats or saves. Enemies keep their state (dying does not reset them; resting does).
+- **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire with full health and full flasks. Dying costs nothing but the ground covered since that bonfire: there are no souls, stats or saves. Enemies reset exactly as when resting: every enemy comes back at full health except those whose gates are already open.
 - **Alert** (opt-in per level): an enemy that notices the player wakes unaware enemies nearby, if nothing blocks the line between them. Those wake others in turn.
 - **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level.
 - **Atmosphere:** each level can set its own fog, light and colours. Optional look fields (all checked at load) add exposure, a sky/ground fill (`hemi`), a colour grade, ash and dust amounts, moss and grime, light shafts, banner colours, falling debris, and for open levels a sky, distant silhouettes and grass. Enemies can set an optional `visual` (skin colour, metalness, bare arms, rim).
