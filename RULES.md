@@ -98,6 +98,21 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Lock-on:** when the locked target dies, the lock moves to the next enemy in reach (the one nearest the centre of the screen), if there is one.
 - **Camera:** follows behind the player and is pushed in so it never passes through walls or closed gates. Locking on frames both the player and the target.
 
+## Coming with Level 3 (planned, see ROADMAP.md)
+
+Not built yet. These rules apply once each part lands; until then the sections above describe the game.
+
+- **Heights:** rooms get a floor height `y` and headroom `height`, and may overlap in x/z at different heights (walkways over a courtyard). Stairs and ramps (`ramps`) join floors. Walls, line of sight, lock-on and the camera work in 3D: you can walk under walkways and over lower walls.
+- **Edges:** each room side is `wall`, `rail` (knee-high: blocks walking, not sight) or `open` (you can walk off). A higher room's edge above a lower one is a drop.
+- **Falling:** drops use the jump/fall states. Landing after more than about 4 m costs health in proportion to the height; about 14 m or more kills. Falling into a pit (no floor below) kills. Jumps and stairs never hurt.
+- **Enemies and edges:** enemies never walk off an open edge or a high drop (circling enemies stop at the brink), but they can be knocked off and take the same falls.
+- **Open sky:** rooms with `open: true` have no ceiling; the level's sky, silhouettes and grass are drawn over them.
+- **Shortcut gates:** a gate with `opensFrom` opens for good when the player reaches that area (the far side), linking back to an earlier bonfire.
+- **Culling:** a fixed pool of real lights follows the nearest light sources (the light count never changes); unaware enemies far away sleep until you come near.
+- **Projectiles** (`projectile` on an attack): bows fire bolts that fly with a slight arc, are stopped by walls and closed gates, can be blocked from the front or rolled through, and cannot be parried.
+- **Shove** (`shove: true`): a long red wind-up and big knockback that can push you off an open edge. Roll, or block to take less push.
+- **New enemies:** Ashen Lancer (spear: dash thrust, roll-only charged thrust), Executioner (greataxe: tracking chop, roll-only spin; stagger meter), Pale Duelist (fast tracking combo, dash cut), Rampart Bowman (bow, kick), Shover (shield, shove). Mini-boss: Bell Warden (posture; tracking sweep, roll-only bell slam, shove, dash charge).
+
 ## Adding things — checklist
 
 - **New enemy:** add an entry with a unique id, stats, attacks (wind-up/active/recovery, damage, poise, hitbox, range), a look, and at most one break system. It appears in the Enemies menu automatically. Make sure it is fair: its attacks should be readable, and at least one approach (flanking, parrying, heavy hits) should beat it.

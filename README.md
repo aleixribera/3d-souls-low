@@ -18,6 +18,14 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
 - **Enemies** — duel a single opponent in the arena.
 
+## Coming next (planned)
+
+- **Level 3: The Tower** — a cliff-top keep, much longer than Level 2 (about 15+ minutes, three bonfires): a gatehouse, a big open courtyard fight under the sky, railed ramparts, a tower hall with a shortcut back down, outer walkways around the tower above a deadly cliff, and a mini-boss on the open bell platform. Optional undercroft below the courtyard.
+- **Heights and falls:** stairs, walkways and drops; high falls hurt and pits kill.
+- **New enemies:** Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman (arrows), Shover (pushes you off edges), and the Bell Warden mini-boss.
+
+See [ROADMAP.md](ROADMAP.md) for the full plan.
+
 ## Controls
 
 | Action | Keys | Gamepad (Xbox / PlayStation) |
