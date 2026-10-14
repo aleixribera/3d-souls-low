@@ -32,6 +32,14 @@ Keyboard and mouse only; there are no touch controls.
 | Zoom | Mouse wheel / = and - |
 | Rest at bonfire | F |
 | Use flask | G |
-| Restart fight / level | R |
+| Restart fight / level | R, twice (once on the death or victory screen) |
 | Pause and options | Escape |
-| Help / hitboxes | F1 |
+| Help / hitboxes | F1 (H toggles hitboxes) |
+
+## Adding content
+
+The game data sits at the top of the script and is checked when the page loads; a broken reference shows a readable error instead of starting.
+
+- **Enemies:** add an entry with a unique `id` to `ENEMY_DEFS` (any position). Animations, weapons and idle styles must exist in `ANIMS`, `WEAPONS` and `IDLE_STYLES`.
+- **Levels:** add a level object to `LEVELS`. Zones, alcoves and enemies refer to each other by id.
+- **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.

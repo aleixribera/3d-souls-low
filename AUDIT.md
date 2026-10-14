@@ -288,3 +288,38 @@ Each item is sized for one step. There are no automated tests, so after each one
 - **Hitbox:** the invisible box an attack uses to decide what it hits.
 - **Index:** a position in a list, counted from 0. "Enemy #2" is the third entry in `ENEMY_DEFS`.
 - **Hit-pause (hitstop):** the brief freeze when a strong hit lands.
+
+---
+
+## Status after the follow-up refactor (2026-10-14)
+
+Line numbers above refer to the audited version and no longer match. Search for the names below instead.
+
+**Done (§9 items 1–9):**
+
+1. **Safety net.** Helpers are at the top of the script (§0). `validateData()` checks every cross-reference, zone ordering and bonfire respawn points at load and shows a readable on-screen list on failure. A load guard also shows a message if Three.js can't be downloaded (F10).
+2. **Names instead of numbers.** Enemies, attacks, alcoves, zones, bonfires and levels have ids, and levels refer to them by id (`ENEMY_BY_ID`). The arena tracks its opponent as `Game.duel` instead of `enemies[0]`.
+3. **One list of states.** `PS`, `ES`, `PHASE` and `POISE` hold every state name, with group sets (`PLAYER_GROUPS`, `ENEMY_GROUPS`) and helpers (`isFree`, `isCommitted`, `in('unaware')` and so on). No state name is typed as text elsewhere.
+4. **Generic levels.** `LEVELS` drives the menu. `loadStage` builds a level's geometry when it starts and tears the previous one down. Gates are built from, and owned by, each zone. Help text and atmosphere (fog, lights) come from the level, and building numbers live in `HALL_STYLE`.
+5. **Player-facing fixes.**
+   - B2: enemies now walk back home (`ES.RETURN`) when they lose you, including ambushers returning to their alcoves.
+   - B3/F5: closed gates block noticing, hits, parries and lock-on.
+   - B4: the click that captures the mouse no longer attacks.
+   - B5: the input buffer clock stops during hit-pauses.
+   - B7: the rest prompt only shows when resting would work.
+   - B8: R asks for a second press mid-fight.
+   - B9: leftovers cleaned up.
+   - F11: H and the help checkbox now save the hitbox setting.
+6. **One attack format.** The player, enemies and jump attacks share one format, including `anim`, `postureDmg` and `riposte` multipliers per attack. `makeStrike` builds hits for both sides, `Player.takeHit` mirrors `Enemy.takeHit`, and `applyPoise` holds the shared "a committed swing isn't interrupted" rule.
+7. **Registries.** `ANIMS`, `WEAPONS`, `OFFHANDS` and `IDLE_STYLES`, with warnings for unknown names. The Undead Knight now carries a shield.
+8. **Player and item data.** `PLAYER_DEF` holds look, base stats, inventory and moveset, and the player has its own max stats. `ITEMS` (flask) and an inventory live on the player, and the HUD flask row follows the inventory.
+9. **Event hooks.** `events.emit` covers strike, parry, posture break, deaths, rest, gates, items, landing and others. Particles and shake, souls and the tutorial each listen in one place (`registerListeners`).
+
+**Decided:** B1 stays as the bonfire spec asked: dying doesn't reset enemies or refill flasks. With B2 fixed, though, enemies walk home instead of camping your bonfire. B6 (re-staggering a staggered enemy) is left as is.
+
+**Still open (§9 item 10 and parts of F1/F9/F12):**
+- Saving progress.
+- Walls other than gates blocking sight and swings.
+- Rooms, corners, height and box collision. Triggers and collision still assume a corridor along X.
+- Keyboard or controller camera turning.
+- Splitting the file.

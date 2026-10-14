@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Combat Arena 3D</title>
 <style>
-  :root { --hud: 1; }
+  :root { --hud: 1; --died-delay: 0.6s; --died-fade: 2.2s; --died-hint-delay: 2.6s; --dying-fade: 1.4s; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #07060a; color: #cfc6ad;
     font-family: Georgia, 'Times New Roman', serif; user-select: none; }
   canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; transition: filter 0.6s; }
-  canvas#view.dying { filter: grayscale(1) brightness(0.75); transition: filter 1.4s; }
+  canvas#view.dying { filter: grayscale(1) brightness(0.75); transition: filter var(--dying-fade); }
 
   #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at 50% 40%, #17131a 0%, #07060a 75%); z-index: 10; }
@@ -20,15 +20,22 @@
   #menuBox h1 { margin: 0 0 6px; text-align: center; letter-spacing: 6px; font-weight: normal;
     font-size: 30px; color: #b79d5c; }
   #menuBox .sub { text-align: center; font-size: 13px; color: #6f6753; margin-bottom: 22px; letter-spacing: 2px; min-height: 1em; }
-  .enemyBtn { display: block; width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px 16px;
+  .menuBtn { display: block; width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px 16px;
     text-align: left; background: #15121a; border: 1px solid #3a3226; color: #cfc6ad; cursor: pointer;
     font-family: inherit; }
-  .enemyBtn .n { font-size: 19px; letter-spacing: 2px; }
-  .enemyBtn .d { font-size: 13px; color: #857c66; margin-top: 3px; }
-  .enemyBtn .d:empty { display: none; }
-  .enemyBtn:hover, .enemyBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
-  .enemyBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
+  .menuBtn .n { font-size: 19px; letter-spacing: 2px; }
+  .menuBtn .d { font-size: 13px; color: #857c66; margin-top: 3px; }
+  .menuBtn .d:empty { display: none; }
+  .menuBtn:hover, .menuBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
+  .menuBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
   #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
+
+  #bootError { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+    background: #07060af0; }
+  #bootError.hidden { display: none; }
+  #bootError .box { border: 2px solid #8a3a2a; background: #120c0d; padding: 26px 34px; max-width: 640px; }
+  #bootError h2 { margin: 0 0 12px; font-weight: normal; letter-spacing: 4px; color: #d0705a; font-size: 20px; }
+  #bootError .msg { white-space: pre-line; font-size: 14px; line-height: 1.55; color: #d9cda8; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
   #hud.hidden { display: none; }
@@ -37,8 +44,6 @@
   #pBars { position: absolute; left: 22px; top: 20px; transform: scale(var(--hud)); transform-origin: top left; }
   #pHp { width: min(320px, 24vw); height: 16px; }
   #pSt { width: min(260px, 20vw); height: 10px; margin-top: 6px; }
-  #pInfo { margin-top: 7px; font-size: 14px; color: #d9cda8; text-shadow: 0 0 5px #000; letter-spacing: 1px; }
-  #pInfo span { margin-right: 16px; }
   #pFlasks { margin-top: 12px; height: 18px; }
   .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
     border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #14110f; }
@@ -47,6 +52,7 @@
   .flask.full { border-color: #c9934a; background: radial-gradient(circle at 50% 70%, #ffd27a, #e3872c 55%, #8a4612);
     box-shadow: 0 0 7px #e8902f99; }
   .flask.full::before { border-color: #c9934a; }
+  #pSouls { margin-top: 4px; font-size: 14px; color: #d9cda8; text-shadow: 0 0 5px #000; letter-spacing: 1px; }
   #pSouls b { color: #e6dcb8; font-weight: normal; }
   .trail { background: #c9b26a; }
   .hp { background: linear-gradient(#a32a22, #6e1612); }
@@ -68,13 +74,14 @@
   #help td:first-child { color: #b79d5c; }
   #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
   #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
+  #help .level:empty, #help .warn:empty { display: none; }
   #help .warn { color: #7a7260; font-size: 11px; margin-top: 6px; max-width: 320px; }
   #died, #won, #complete { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
   #died .big { font-size: 78px; letter-spacing: 12px; color: #7a0f0f; text-shadow: 0 0 30px #000;
     background: linear-gradient(90deg, transparent, #000000b0 30%, #000000b0 70%, transparent); padding: 14px 0; }
   #died .small, #won .small, #complete .small { font-size: 16px; color: #a89f86; margin-top: 16px; opacity: 0; letter-spacing: 2px; }
-  #died.show { opacity: 1; transition: opacity 2.2s ease-in 0.6s; }
-  #died.show .small { opacity: 1; transition: opacity 1s linear 2.6s; }
+  #died.show { opacity: 1; transition: opacity var(--died-fade) ease-in var(--died-delay); }
+  #died.show .small { opacity: 1; transition: opacity 1s linear var(--died-hint-delay); }
   #won .big, #complete .big { font-size: 40px; letter-spacing: 10px; color: #c9b26a; text-shadow: 0 0 20px #000; }
   #complete .big { font-size: 54px; color: #b39a58;
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
@@ -92,10 +99,32 @@
   #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
     color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
   #rested.show { opacity: 1; transition: opacity 0.4s; }
-  #prompt { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 15px; color: #d9cda8;
+  #prompt, #confirm { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 15px; color: #d9cda8;
     text-shadow: 0 0 6px #000; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
-  #prompt.show { opacity: 1; }
+  #confirm { bottom: 24%; color: #e8c080; }
+  #prompt.show, #confirm.show { opacity: 1; }
 </style>
+<script>
+  // Load guard (plain script, runs even if the game module never does): if the game fails to start
+  // (offline CDN, a data error, a crash at load), show a readable message instead of a dead menu.
+  window.__bootError = function (msg) {
+    if (window.__bootShown) return;   // keep the first, most specific message
+    window.__bootShown = true;
+    var show = function () {
+      var box = document.getElementById('bootError');
+      if (!box) return;
+      box.querySelector('.msg').textContent = msg;
+      box.classList.remove('hidden');
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+  };
+  window.addEventListener('error', function (ev) {
+    if (!window.__arenaReady) window.__bootError('The game failed to start:\n' + (ev.message || 'a script error') + '.');
+  });
+  setTimeout(function () {
+    if (!window.__arenaReady) window.__bootError('The game did not load.\nIt needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.');
+  }, 10000);
+</script>
 </head>
 <body>
 <canvas id="view"></canvas>
@@ -105,7 +134,7 @@
     <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
     <div class="bar" id="pSt"><div class="st" id="pStFill"></div></div>
     <div id="pFlasks"></div>
-    <div id="pInfo2" style="margin-top:4px;font-size:14px;color:#d9cda8;text-shadow:0 0 5px #000;letter-spacing:1px"><span id="pSouls">Souls <b id="pSoulsN">0</b></span></div>
+    <div id="pSouls">Souls <b id="pSoulsN">0</b></div>
   </div>
   <div id="eBars">
     <div id="eName"></div>
@@ -115,35 +144,18 @@
   <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span></div>
   <div id="tutDone">TUTORIAL COMPLETE</div>
   <div id="rested">RESTED</div>
-  <div id="prompt">F: Rest at bonfire</div>
+  <div id="prompt"></div>
+  <div id="confirm"></div>
   <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
-  <div id="won"><div class="big">ENEMY FELLED</div><div class="small">R to fight again &middot; Esc to pause</div></div>
-  <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small">R to restart &middot; Esc to pause and leave</div></div>
+  <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
+  <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
   <div id="help" class="hidden">
-    <table>
-      <tr><td>Move</td><td>W A S D / Arrow keys</td></tr>
-      <tr><td>Camera</td><td>Mouse (click the view to capture it)</td></tr>
-      <tr><td>Jump</td><td>Space</td></tr>
-      <tr><td>Roll</td><td>Shift</td></tr>
-      <tr><td>Light attack</td><td>J / Left mouse</td></tr>
-      <tr><td>Heavy attack</td><td>K / Right mouse</td></tr>
-      <tr><td>Jump attack</td><td>Light or heavy while airborne (heavy lands harder, recovers slower)</td></tr>
-      <tr><td>Block (hold)</td><td>L / Ctrl</td></tr>
-      <tr><td>Parry</td><td>E (time it just before the blow lands)</td></tr>
-      <tr><td>Lock-on</td><td>Q (toggle)</td></tr>
-      <tr><td>Switch target</td><td>Tab (while locked on)</td></tr>
-      <tr><td>Zoom in / out</td><td>Mouse wheel / = and -</td></tr>
-      <tr><td>Rest at bonfire</td><td>F</td></tr>
-      <tr><td>Use flask</td><td>G</td></tr>
-      <tr><td>Restart fight / level</td><td>R</td></tr>
-      <tr><td>Pause</td><td>Escape</td></tr>
-      <tr><td>Help</td><td>F1</td></tr>
-    </table>
-    <label><input type="checkbox" id="hbToggle" checked> Show hitboxes (H)</label>
-    <div class="level">Level 1: defeat each gated opponent to open the next gate. Others are optional.</div>
-    <div class="warn">Prefer L for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.</div>
+    <table id="helpTable"></table>
+    <label><input type="checkbox" id="hbToggle" checked> <span id="hbLabel">Show hitboxes</span></label>
+    <div class="level" id="helpLevel"></div>
+    <div class="warn" id="helpWarn"></div>
   </div>
-  <div id="helpHint">F1: help</div>
+  <div id="helpHint"></div>
 </div>
 
 <div id="menu">
@@ -155,18 +167,35 @@
   </div>
 </div>
 
-<script type="module">
+<div id="bootError" class="hidden"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
+
+<script type="module" onerror="window.__bootError('The game did not load.\nIt needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.')">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// ============================================================================
+// 0. Shared helpers
+// ============================================================================
+// Defined before everything else so that any code, including level building, can use them.
+const rand = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+const turnToward = (cur, target, maxStep) => cur + clamp(angDiff(target, cur), -maxStep, maxStep);
+const isInFront = (b, x, z) => (x - b.x) * Math.sin(b.yaw) + (z - b.z) * Math.cos(b.yaw) > 0;
+const BODY_HEIGHT = 1.8;   // a humanoid at scale 1; collision height = BODY_HEIGHT * scale, so it always matches the model
+const warned = new Set();
+const warnOnce = msg => { if (!warned.has(msg)) { warned.add(msg); console.warn(msg); } };
 
 // ============================================================================
 // 1. CONFIG
 // ============================================================================
+// Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
   gravity: 30,
-  arena: { halfX: 18, halfZ: 13, wallHeight: 1.3, wallThickness: 0.9 },
-  input: { buffer: 0.2 },
+  input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {
     fov: 55, lookHeight: 1.35,
     followRate: 7,        // position smoothing (1/s)
@@ -178,41 +207,23 @@ const CONFIG = {
           heightRatio: 0.48 },   // camera height = distance * heightRatio
   mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
   lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
-          slack: 0.42, drift: 0.18,
-          autoRange: 9,               // first-encounter auto lock-on distance   // camera yaw slack (rad) and the slow drift inside it (1/s)
+          slack: 0.42, drift: 0.18,   // camera yaw slack (rad) and the slow drift inside it (1/s)
+          autoRange: 9,               // first-encounter auto lock-on distance
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
-    radius: 0.36, height: 1.8,
-    maxHp: 100, maxStamina: 100, maxPoise: 30, poiseResetTime: 4,
-    staminaRegen: 36, staminaDelay: 0.75,
+    poiseResetTime: 4, staminaRegen: 36, staminaDelay: 0.75,
     walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14,
+    airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
     jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
+    jumpAttackAirControl: 0.6,   // multiplier on air control during a jump attack
+    landKeep: 0.35,              // horizontal speed kept on a jump-attack landing
     rollCost: 27, rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
-    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25,
+    rollExitKeep: 0.3,           // speed kept when a roll ends
+    lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
+    hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
     autoTarget: { range: 3.6, cone: 1.75, angleWeight: 1.5 },
-    attacks: {
-      light: { kind: 'light', startup: 0.22, active: 0.12, recovery: 0.34, cost: 16, damage: 18, poise: 22, knock: 3,
-               lunge: 2.4, hitstop: 0.07, anim: 'sweep',
-               box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
-      heavy: { kind: 'heavy', startup: 0.56, active: 0.16, recovery: 0.64, cost: 40, damage: 44, poise: 52, knock: 7,
-               lunge: 3.2, hitstop: 0.13, anim: 'overhead',
-               box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
-    },
-  },
-  // Attacks started while airborne. The hitbox opens once the wind-up is done and the player is
-  // descending, stays out until landing plus `impactTime`, and sits low so it reaches enemies below.
-  jumpAttacks: {
-    airControl: 0.6,   // multiplier on normal air control during a jump attack
-    light: { kind: 'light', startup: 0.12, cost: 18, damage: 22, poise: 26, knock: 3.5, hitstop: 0.09,
-             box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 }, impactTime: 0.08,
-             landRecovery: 0.75, hitRecoveryMul: 0.85, hop: 3.2,
-             fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } },
-    heavy: { kind: 'heavy', startup: 0.3, cost: 42, damage: 52, poise: 60, knock: 7, hitstop: 0.15,
-             box: { w: 2.2, h: 2.4, d: 2.6, fwd: 1.1, y: 0.0 }, impactTime: 0.1,
-             landRecovery: 1.25, hitRecoveryMul: 0.85, hop: 3.8,
-             fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } },
   },
   // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
   groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
@@ -223,144 +234,460 @@ const CONFIG = {
   // closes `grace` s into it. A press stays armed for `arm` s, so a press succeeds only in
   // [active - lead - arm, active + grace] — about a quarter second.
   parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
-           riposteTime: 1.1, riposteLight: 2.4, riposteHeavy: 2.6, ripostePoise: 2.5, riposteHitstop: 1.6,
-           flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
-  flask: { charges: 4, heal: 45, time: 1.3, healStart: 0.35, healDuration: 0.8 },
-  rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0 },
-  death: { slowTime: 1.4, respawnDelay: 4.8 },
+           riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },
+  // Death: the world slows to a stop, YOU DIED fades in, then the player returns to the last bonfire.
+  // The overlay's CSS timings are set from these numbers at load, so they always line up.
+  death: { slowTime: 1.4, respawnDelay: 4.8, textDelay: 0.6, textFade: 2.2, hintDelay: 2.6 },
+  restartConfirmTime: 2.2,   // R must be pressed twice within this time to restart mid-fight
   bloodstain: { pickupRange: 1.3 },
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
-           deathFade: 2.0, poiseResetTime: 5, startX: 6, startZ: 0,
-           riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5, patrolSpeedMul: 0.42 },
-  level: { aggroGated: 14, aggroAmbush: 7.8, aggroPatrol: 9, aggroSlumber: 5.5, leash: 22,
-           gateLiftTime: 1.6, targetRange: 14 },
+           firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
+           attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
+           deathFade: 2.0, poiseResetTime: 5,
+           riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
+           patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
+  // How far each placement behaviour notices the player. The one place notice ranges are set.
+  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, dummy: 0, sparring: 0 },
+  level: { leash: 22,        // give up the chase when the player is this far away...
+           homeLeash: 30,    // ...or when dragged this far from home; then walk back home
+           gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0 },
-  fx: { tintTime: 0.22, particleLife: 0.5, recoilTime: 0.25 },
+  fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
+        recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
+        trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,
+        bursts: {   // colour, particle count and speed of every combat burst
+          hit: { color: 0xe8d8a0, count: 12, speed: 4.5 },
+          riposte: { color: 0xffffff, count: 22, speed: 6.5 },
+          block: { color: 0xffd070, count: 16, speed: 7 },
+          hurt: { color: 0xb01818, count: 14, speed: 4.5 },
+          parry: { color: 0xfff6d0, count: 26, speed: 7.5 },
+          postureBreak: { color: 0xffc060, count: 30, speed: 8 },
+          stain: { color: 0xffe0a0, count: 20, speed: 4 },
+        },
+        postureBreakShake: { time: 0.22, amp: 0.08 } },
 };
 
 // ============================================================================
-// 2. ENEMY_DEFS
+// 2. Data: player, items, enemies, levels
 // ============================================================================
-// Attack: hits[] = one {startup, active} per strike, then a shared recovery.
-// box = hit volume in the attacker's frame: w (side), h (up), d (forward), centred fwd ahead and y up.
+// Everything here is referenced by id (never by list position) and checked at load by validateData().
+//
+// Attack format, shared by the player and every enemy:
+//   id, anim (a name in ANIMS), hits: [{ startup, active }] (one per strike), recovery,
+//   damage, poise, knock, lunge, box: hit volume in the attacker's frame
+//     (w side, h up, d forward, centred `fwd` ahead and `y` up).
+//   Optional: hitstop (default scales with damage), cost (stamina), range (enemy AI: start the attack
+//   within this distance), postureDmg (fills a boss's posture), riposte: { damage, poise } multipliers
+//   after a parry, air: jump-attack landing data (the active phase lasts until touchdown).
+
+const ITEMS = {
+  flask: { name: 'Flask', action: 'flask', useTime: 1.3, heal: 45, healStart: 0.35, healDuration: 0.8, refillOnRest: true },
+};
+
+const PLAYER_DEF = {
+  name: 'Knight', radius: 0.36,
+  look: { scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4 },
+  stats: { maxHp: 100, maxStamina: 100, maxPoise: 30 },
+  inventory: [{ item: 'flask', count: 4, max: 4 }],
+  moveset: {
+    ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
+    air: { light: 'jumpLight', heavy: 'jumpHeavy' },
+    attacks: {
+      light: { id: 'light', anim: 'sweep', hits: [{ startup: 0.22, active: 0.12 }], recovery: 0.34, cost: 16,
+               damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
+               box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
+      heavy: { id: 'heavy', anim: 'overhead', hits: [{ startup: 0.56, active: 0.16 }], recovery: 0.64, cost: 40,
+               damage: 44, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+               box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
+      // Jump attacks: wind-up in the air, the hitbox opens while descending and lasts until landing
+      // plus impactTime. `recovery` is the landing recovery (shortened by hitRecoveryMul on a hit).
+      jumpLight: { id: 'jumpLight', anim: 'overhead', hits: [{ startup: 0.12, active: Infinity }], recovery: 0.75, cost: 18,
+                   damage: 22, poise: 26, postureDmg: 9, knock: 3.5, lunge: 0, hitstop: 0.09, riposte: { damage: 2.4 },
+                   box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 },
+                   air: { impactTime: 0.08, hitRecoveryMul: 0.85, hop: 3.2, fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } } },
+      jumpHeavy: { id: 'jumpHeavy', anim: 'overhead', hits: [{ startup: 0.3, active: Infinity }], recovery: 1.25, cost: 42,
+                   damage: 52, poise: 60, postureDmg: 24, knock: 7, lunge: 0, hitstop: 0.15, riposte: { damage: 2.6, poise: 2.5 },
+                   box: { w: 2.2, h: 2.4, d: 2.6, fwd: 1.1, y: 0.0 },
+                   air: { impactTime: 0.1, hitRecoveryMul: 0.85, hop: 3.8, fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } } },
+    },
+  },
+};
+
+// Arena menu order. New enemies can go anywhere: levels refer to them by id.
 const ENEMY_DEFS = [
   {
-    name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
-    scale: 1.0, bulk: 1.0, radius: 0.4, height: 1.8, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
-    hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, aggroRange: 30, holdRange: 2.4,
+    id: 'hollow', name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
+    scale: 1.0, bulk: 1.0, radius: 0.4, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
+    hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, holdRange: 2.4,
     cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7, souls: 60,
     attacks: [
-      { name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
+      { id: 'swing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
         box: { w: 2.0, h: 1.4, d: 2.0, fwd: 1.3, y: 1.1 } },
-      { name: 'Overhead Strike', anim: 'overhead', hits: [{ startup: 1.0, active: 0.14 }], recovery: 1.05,
+      { id: 'overhead', name: 'Overhead Strike', anim: 'overhead', hits: [{ startup: 1.0, active: 0.14 }], recovery: 1.05,
         damage: 34, poise: 40, knock: 6, lunge: 2.0, range: 2.0,
         box: { w: 0.9, h: 2.4, d: 2.3, fwd: 1.4, y: 1.2 } },
     ],
   },
   {
-    name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
-    scale: 1.3, bulk: 1.3, radius: 0.6, height: 2.3, color: 0x7b8088, weapon: 'sword', idle: 'still',
-    hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, aggroRange: 30, holdRange: 2.9,
+    id: 'knight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
+    scale: 1.3, bulk: 1.3, radius: 0.6, color: 0x7b8088, weapon: 'sword', offhand: 'shield', idle: 'still',
+    hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, holdRange: 2.9,
     cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8, souls: 220,
     attacks: [
-      { name: 'Greatsword Slam', anim: 'overhead', hits: [{ startup: 1.4, active: 0.18 }], recovery: 1.35,
+      { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', hits: [{ startup: 1.4, active: 0.18 }], recovery: 1.35,
         damage: 58, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
         box: { w: 1.5, h: 3.0, d: 3.2, fwd: 2.0, y: 1.5 } },
-      { name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.5, active: 0.12 }], recovery: 0.7,
+      { id: 'bash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.5, active: 0.12 }], recovery: 0.7,
         damage: 16, poise: 34, knock: 11, lunge: 4.0, range: 1.6,
         box: { w: 1.5, h: 1.6, d: 1.4, fwd: 1.2, y: 1.3 } },
     ],
   },
   {
-    name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
-    scale: 0.85, bulk: 0.8, radius: 0.32, height: 1.5, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
-    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, aggroRange: 30, holdRange: 2.3,
+    id: 'rogue', name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
+    scale: 0.85, bulk: 0.8, radius: 0.32, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
+    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, holdRange: 2.3,
     cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6, souls: 90,
     attacks: [
-      { name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
+      { id: 'stab', name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
         box: { w: 0.7, h: 1.2, d: 2.0, fwd: 1.3, y: 1.0 } },
-      { name: 'Double Slash', anim: 'sweep', hits: [{ startup: 0.42, active: 0.09 }, { startup: 0.26, active: 0.09 }],
+      { id: 'doubleSlash', name: 'Double Slash', anim: 'sweep', hits: [{ startup: 0.42, active: 0.09 }, { startup: 0.26, active: 0.09 }],
         recovery: 0.62, damage: 10, poise: 11, knock: 2.5, lunge: 2.6, range: 1.7,
         box: { w: 1.7, h: 1.2, d: 1.7, fwd: 1.1, y: 1.0 } },
     ],
   },
   {
-    name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
-    scale: 2.3, bulk: 1.2, radius: 0.95, height: 4.1, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
-    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, aggroRange: 30, holdRange: 3.6,
+    id: 'giant', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
+    scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
+    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, holdRange: 3.6,
     cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, souls: 1200,
-    // Boss posture: replaces poise interrupts. Only chained hits build it.
-    posture: { max: 100, light: 9, heavy: 24, parry: 38, chainGap: 1.8, decay: 7, breakTime: 3.2,
-               damageMul: 1.6, hitstop: 0.2 },
+    // Boss posture: replaces poise interrupts (hits never cancel its swings). Only chained hits build it;
+    // each attack's postureDmg says how much. A parry adds `parry`.
+    posture: { max: 100, parry: 38, chainGap: 1.8, decay: 7, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
-      { name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
+      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
         box: { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 } },
-      { name: 'Stomp', anim: 'stomp', hits: [{ startup: 1.3, active: 0.2 }], recovery: 1.25,
+      { id: 'stomp', name: 'Stomp', anim: 'stomp', hits: [{ startup: 1.3, active: 0.2 }], recovery: 1.25,
         damage: 46, poise: 75, knock: 8, lunge: 0, range: 2.4,
         box: { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 } },
     ],
   },
 ];
 
-// Level 1 layout. The hall runs along +X from x = 0 to `length`; z = 0 is its centre line.
+// Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,
+// stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing.
+const TRAINING_DEFS = [
+  { id: 'dummy', name: 'Training Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x7a6440, weapon: 'none',
+    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, attacks: [] },
+  { id: 'sparringDummy', name: 'Sparring Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x6a5446, weapon: 'sword',
+    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, restTime: 1.3,
+    attacks: [
+      { id: 'trainingSwing', name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
+        damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },
+    ] },
+];
+const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS].map(d => [d.id, d]));
+
+// Look of a level: lights and fog. Levels can override any part.
+const DEFAULT_ATMOSPHERE = {
+  background: 0x07060a, fog: 0x07060a, fogDensity: 0.022,
+  moon: { color: 0x9daad0, intensity: 2.2, position: [-6, 14, 8] },
+  ambient: { color: 0x555a70, intensity: 1.3 },   // faint fill so silhouettes stay readable
+};
+// Building numbers for hall-style levels. Levels can override any of them in `style`.
+const HALL_STYLE = {
+  border: 0.6, grid: 4, pillarStart: 5, pillarEvery: 7, pillarSize: 0.5, alcoveHeight: 3.2,
+  exitGate: { width: 4, height: 3.8 },
+  torch: { mountHeight: 2.6, lightHeight: 3.2, flameHeight: 3.05, color: 0xff7a30, intensity: 4.5, range: 26, flameSize: 0.45 },
+  bonfireLight: 10,
+};
+
+// The duel arena (Enemies menu).
+const ARENA = {
+  id: 'arena', layout: 'arena', name: 'Arena',
+  halfX: 18, halfZ: 13, wallHeight: 1.3, wallThickness: 0.9, border: 0.7, grid: 4, outerGround: 160,
+  pillarRing: { inset: 3.5, base: 1.9, size: 1.4 }, bonfireLight: 11,
+  playerStart: { x: -6, z: 0, yaw: Math.PI / 2 }, enemyStart: { x: 6, z: 0, yaw: -Math.PI / 2 },
+  bonfires: [{ id: 'arena-fire', x: 0, z: -10.8 }],
+  help: '',
+};
+
+// Hall-style levels run along +X from x = 0 to `length`; z = 0 is the centre line.
+const TUTORIAL = {
+  id: 'tutorial', layout: 'hall', script: 'tutorial',
+  name: 'Tutorial', description: 'Learn every control on training dummies. No real danger here.',
+  help: 'Tutorial: follow the prompt at the top of the screen.',
+  length: 40, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
+  start: { x: 5, z: 0, yaw: Math.PI / 2 }, bonfires: [{ id: 'tutorial-fire', x: 9, z: -4 }],
+  alcoveWidth: 0, alcoveDepth: 2, alcoves: [], gated: [], dispersed: [],
+  torches: [{ x: 14, side: 1 }, { x: 26, side: -1 }, { x: 36, side: 1 }],
+  training: { dummy: 'dummy', sparring: 'sparringDummy',
+              dummyAhead: 4,          // a single target dummy stands this far ahead of the player
+              attackerAhead: 2.3,     // the sparring dummy stands within its swing range
+              pairAhead: 6, pairSpread: 3 },   // two dummies for the target-switch step
+};
+
 const LEVEL_1 = {
+  id: 'long-hall', layout: 'hall',
   name: 'Level 1: The Long Hall',
   description: 'Four opponents, and others waiting in the dark. Clear the way forward.',
+  help: 'Level 1: defeat each gated opponent to open the next gate. Others are optional.',
   length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
-  start: { x: 5, z: 0 },
-  bonfires: [{ x: 2.6, z: -3.4 }, { x: 110.5, z: -4.2 }],   // start of hall, before the Fast Rogue zone
+  start: { x: 5, z: 0, yaw: Math.PI / 2 },
+  bonfires: [{ id: 'hall-start', x: 2.6, z: -3.4 }, { id: 'before-rogue', x: 109.5, z: -4.2 }],
   alcoveWidth: 2.8, alcoveDepth: 2.2,
-  alcoves: [{ x: 58, side: 1 }, { x: 87, side: -1 }, { x: 141, side: 1 }],
+  alcoves: [{ id: 'west-58', x: 58, side: 1 }, { id: 'east-87', x: 87, side: -1 }, { id: 'west-141', x: 141, side: 1 }],
   // Gated zones in order: entering x > trigger spawns the enemy; its gate at gateX lifts on its death.
+  // The level is complete when every gate is open.
   gated: [
-    { enemy: 0, trigger: 16, spawn: { x: 28, z: 0 }, gateX: 34 },
-    { enemy: 1, trigger: 64, spawn: { x: 75, z: 0 }, gateX: 82 },
-    { enemy: 2, trigger: 112, spawn: { x: 121, z: 0 }, gateX: 128 },
-    { enemy: 3, trigger: 146, spawn: { x: 160, z: 0 }, gateX: 170 },
+    { id: 'zone-hollow', enemy: 'hollow', trigger: 16, spawn: { x: 28, z: 0, yaw: -Math.PI / 2 }, gateX: 34 },
+    { id: 'zone-knight', enemy: 'knight', trigger: 64, spawn: { x: 75, z: 0, yaw: -Math.PI / 2 }, gateX: 82 },
+    { id: 'zone-rogue', enemy: 'rogue', trigger: 112, spawn: { x: 121, z: 0, yaw: -Math.PI / 2 }, gateX: 128 },
+    { id: 'zone-giant', enemy: 'giant', trigger: 146, spawn: { x: 160, z: 0, yaw: -Math.PI / 2 }, gateX: 170 },
   ],
   // Optional enemies scattered between the gated zones.
   dispersed: [
-    { behavior: 'ambush', enemy: 2, alcove: 0 },
-    { behavior: 'ambush', enemy: 2, alcove: 1 },
-    { behavior: 'ambush', enemy: 2, alcove: 2 },
-    { behavior: 'patrol', enemy: 0, z: 1.5, path: [40, 53] },
-    { behavior: 'patrol', enemy: 0, z: -2.5, path: [98, 104] },
-    { behavior: 'patrol', enemy: 0, z: -2, path: [131, 138] },
-    { behavior: 'slumber', enemy: 1, x: 93, z: 2 },
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'west-58' },
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'east-87' },
+    { behavior: 'ambush', enemy: 'rogue', alcove: 'west-141' },
+    { behavior: 'patrol', enemy: 'hollow', z: 1.5, path: [40, 53] },
+    { behavior: 'patrol', enemy: 'hollow', z: -2.5, path: [98, 104] },
+    { behavior: 'patrol', enemy: 'hollow', z: -2, path: [133, 140] },
+    { behavior: 'slumber', enemy: 'knight', x: 93, z: 2, yaw: -Math.PI / 2 },
   ],
   torches: [{ x: 30, side: -1 }, { x: 50, side: 1 }, { x: 79, side: -1 }, { x: 100, side: 1 },
             { x: 125, side: -1 }, { x: 150, side: 1 }, { x: 167, side: -1 }],
 };
 
-// Tutorial: one short room in the same style as the hall, with its own bonfire.
-const TUTORIAL = {
-  name: 'Tutorial', description: 'Learn every control on training dummies. No real danger here.',
-  length: 40, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
-  start: { x: 5, z: 0 }, bonfires: [{ x: 9, z: -4 }],
-  alcoveWidth: 0, alcoveDepth: 2, alcoves: [], gated: [],
-  torches: [{ x: 14, side: 1 }, { x: 26, side: -1 }, { x: 36, side: 1 }],
-  dummyAhead: 4,          // a single target dummy stands this far ahead of the player
-  attackerAhead: 2.3,     // the attacking dummy stands within its swing range
-  pairAhead: 6, pairSpread: 3,   // two dummies for the target-switch step
+// Levels menu order.
+const LEVELS = [TUTORIAL, LEVEL_1];
+
+// ============================================================================
+// 2b. State names
+// ============================================================================
+// Every state name is defined once here, with the groups the game asks about ("which states allow X").
+const PS = Object.freeze({   // player
+  IDLE: 'idle', WALK: 'walk', JUMP: 'jump', FALL: 'fall', ROLL: 'roll', ATTACK: 'attack',
+  JUMP_ATTACK: 'jumpAttack', LAND: 'land', BLOCK: 'block', PARRY: 'parry', USE_ITEM: 'useItem',
+  REST: 'rest', HURT: 'hurt', STAGGER: 'stagger', DEAD: 'dead',
+});
+const ES = Object.freeze({   // enemy
+  IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
+  RETURN: 'return', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
+  HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', BROKEN: 'broken', DEAD: 'dead',
+});
+const PHASE = Object.freeze({ STARTUP: 'startup', ACTIVE: 'active', RECOVERY: 'recovery' });
+const POISE = Object.freeze({ STAGGER: 'poiseStagger', FLINCH: 'poiseFlinch', NONE: 'poiseNone' });   // results of applyPoise
+const PLAYER_GROUPS = {
+  free: new Set([PS.IDLE, PS.WALK]),                                     // may start any action
+  airborne: new Set([PS.JUMP, PS.FALL]),
+  attacking: new Set([PS.ATTACK, PS.JUMP_ATTACK]),
+  noRegen: new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
+  noLockFacing: new Set([PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
+  stunned: new Set([PS.HURT, PS.STAGGER]),
+};
+const ENEMY_GROUPS = {
+  unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player
+  hidden: new Set([ES.LURK, ES.DORMANT]),                               // not a target yet
+  canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.CHASE, ES.RECOVER]),
+  shrugsHits: new Set([ES.PARRIED, ES.RISE, ES.LEAP]),                  // take damage, no state change
+};
+const IDLE_BLEND = { [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25 };
+// Placement behaviours: the state an enemy starts in, and the state it returns to once back home.
+const BEHAVIORS = {
+  arena: { start: ES.IDLE, home: ES.IDLE },
+  gated: { start: ES.IDLE, home: ES.IDLE },
+  ambush: { start: ES.LURK, home: ES.LURK },       // hidden in an alcove, leaps out
+  patrol: { start: ES.PATROL, home: ES.PATROL },   // walks a short path
+  slumber: { start: ES.DORMANT, home: ES.IDLE },   // lying on the floor until the player is close
+  dummy: { start: ES.IDLE, home: ES.IDLE, training: true },
+  sparring: { start: ES.IDLE, home: ES.IDLE, training: true },
 };
 
-// Training dummies: same humanoid primitives as enemies. They never move or aggro, never die,
-// stagger or lose poise. The attacker variant repeats one slow, telegraphed swing.
-const DUMMY_DEF = {
-  name: 'Training Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, height: 1.8, color: 0x7a6440, weapon: 'none',
-  hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, souls: 0, attacks: [],
+// ============================================================================
+// 2c. Registries: animations, weapons, idle styles
+// ============================================================================
+// Each name used in the data must exist here; validateData() checks, and lookups warn and fall back.
+function lookup(registry, name, what, fallback) {
+  if (name in registry) return registry[name];
+  warnOnce(`Unknown ${what} "${name}", using "${fallback}".`);
+  return registry[fallback];
+}
+
+// Attack animations: (rig, phase, p 0..1 through the phase, dir = mirror for alternating swings).
+const ANIMS = {
+  sweep(r, phase, p, dir) {
+    const { armR, spin, tip, weapon } = r;
+    if (phase === PHASE.STARTUP) { armR.rotation.x = lerp(-0.4, -1.7, ease(p)); spin.rotation.y = dir * lerp(0, -1.1, ease(p)); weapon.rotation.x = lerp(0.5, -0.1, ease(p)); }
+    else if (phase === PHASE.ACTIVE) { armR.rotation.x = -1.5; spin.rotation.y = dir * lerp(-1.1, 1.2, p); tip.rotation.x = 0.12; weapon.rotation.x = lerp(-0.1, 0.9, p); }
+    else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = dir * lerp(1.2, 0, ease(p)); tip.rotation.x = lerp(0.12, 0, p); weapon.rotation.x = lerp(0.9, 0.5, ease(p)); }
+  },
+  overhead(r, phase, p) {
+    const { armR, tip, weapon } = r;
+    if (phase === PHASE.STARTUP) { armR.rotation.x = lerp(-0.4, -3.2, ease(p)); tip.rotation.x = lerp(0, -0.2, ease(p)); weapon.rotation.x = lerp(0.5, 0.1, ease(p)); }
+    else if (phase === PHASE.ACTIVE) { armR.rotation.x = lerp(-3.2, -0.7, p); tip.rotation.x = lerp(-0.2, 0.3, p); weapon.rotation.x = lerp(0.1, 0.8, p); }
+    else { armR.rotation.x = lerp(-0.7, -0.4, ease(p)); tip.rotation.x = lerp(0.3, 0, ease(p)); weapon.rotation.x = lerp(0.8, 0.5, ease(p)); }
+  },
+  stab(r, phase, p) {
+    const { armR, spin, tip, weapon } = r;
+    if (phase === PHASE.STARTUP) { armR.rotation.x = lerp(-0.4, -1.0, ease(p)); spin.rotation.y = lerp(0, -0.8, ease(p)); weapon.rotation.x = lerp(0.5, 1.5, ease(p)); }
+    else if (phase === PHASE.ACTIVE) { armR.rotation.x = -1.5; spin.rotation.y = lerp(-0.8, 0.6, p); tip.rotation.x = 0.25; weapon.rotation.x = 1.5; }
+    else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = lerp(0.6, 0, ease(p)); tip.rotation.x = lerp(0.25, 0, p); weapon.rotation.x = lerp(1.5, 0.5, ease(p)); }
+  },
+  bash(r, phase, p) {
+    const { armL, spin, tip } = r;
+    if (phase === PHASE.STARTUP) { armL.rotation.x = lerp(-0.1, -1.4, ease(p)); spin.rotation.y = lerp(0, 0.7, ease(p)); tip.rotation.x = lerp(0, -0.1, p); }
+    else if (phase === PHASE.ACTIVE) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
+    else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
+  },
+  stomp(r, phase, p) {
+    const { armR, armL, tip, legL, kneeL } = r;
+    if (phase === PHASE.STARTUP) { legL.rotation.x = lerp(0, -1.5, ease(p)); kneeL.rotation.x = lerp(0, 1.3, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
+    else if (phase === PHASE.ACTIVE) { legL.rotation.x = lerp(-1.5, 0, p); kneeL.rotation.x = lerp(1.3, 0, p); tip.rotation.x = lerp(-0.16, 0.2, p); armR.rotation.x = armL.rotation.x = lerp(-2.6, -0.6, p); }
+    else { tip.rotation.x = lerp(0.2, 0, ease(p)); armR.rotation.x = lerp(-0.6, -0.4, p); armL.rotation.x = lerp(-0.6, -0.1, p); }
+  },
 };
-const ATTACKER_DUMMY_DEF = {
-  ...DUMMY_DEF, name: 'Sparring Dummy', color: 0x6a5446, weapon: 'sword', restTime: 1.3,
-  attacks: [
-    { name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
-      damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },
-  ],
+
+// Weapons (right hand) and off-hand items: a default colour and a builder (part, material) -> meshes.
+const WEAPONS = {
+  sword: { color: 0x9aa0a8, build(part, mat, dark) {
+    part(new THREE.BoxGeometry(0.045, 0.1, 1.15), mat, 0, 0, 0.62);
+    part(new THREE.BoxGeometry(0.3, 0.06, 0.06), dark, 0, 0, 0.06);
+  } },
+  club: { color: 0x9a927c, build(part, mat) {
+    part(new THREE.BoxGeometry(0.13, 0.13, 1.1), mat, 0, 0, 0.5);
+    part(new THREE.BoxGeometry(0.3, 0.3, 0.6), mat, 0, 0, 1.2);
+  } },
+  none: { color: 0x9aa0a8, build() {} },
 };
+const OFFHANDS = {
+  shield: { color: 0x5b5f66, build(part, mat) {
+    part(new THREE.BoxGeometry(0.09, 0.78, 0.56), mat, 0.07, -0.42, 0.1);
+    part(new THREE.BoxGeometry(0.03, 0.2, 0.2), mat, 0.13, -0.42, 0.1);
+  } },
+};
+
+// Idle personalities, blended in by weight w (0..1). t is a per-enemy time with its own seed and tempo.
+const IDLE_STYLES = {
+  guard(r, t, w) {   // stands guard, shifts weight, now and then checks its weapon
+    const shift = Math.sin(t * 0.9);
+    r.spin.position.x += shift * 0.045 * w; r.tip.rotation.z += shift * 0.03 * w;
+    r.legL.rotation.z += Math.max(0, shift) * 0.08 * w; r.legR.rotation.z -= Math.max(0, -shift) * 0.08 * w;
+    const check = ease(Math.sin(t * 0.21) * 4 - 3);
+    r.armR.rotation.x += -0.9 * check * w; r.weapon.rotation.z += 0.8 * check * w; r.head.rotation.x += 0.35 * check * w;
+  },
+  still(r, t, w) {   // heavy and still, slow breathing
+    const breath = Math.sin(t * 1.1);
+    r.spin.scale.y *= 1 + breath * 0.018 * w; r.spin.scale.x *= 1 + breath * 0.012 * w;
+    r.tip.rotation.z += Math.sin(t * 0.3) * 0.008 * w;
+  },
+  twitch(r, t, w) {   // crouched, restless feet, sudden twitches, small pacing circle (visual offset only)
+    const step = Math.sin(t * 4) * 0.12 * w;
+    r.legL.rotation.x += step; r.legR.rotation.x -= step;
+    r.crouch(0.16 * w); r.tip.rotation.x += 0.12 * w;
+    const tw = Math.pow(Math.max(0, Math.sin(t * 2.3)), 12);
+    r.head.rotation.y += Math.sin(t * 17) * 0.25 * tw * w; r.armR.rotation.x -= 0.4 * tw * w;
+    r.root.position.x += Math.cos(t * 0.8) * 0.22 * w; r.root.position.z += Math.sin(t * 0.8) * 0.22 * w;
+  },
+  sway(r, t, w) {   // slow sway, club resting on the ground and dragging
+    r.tip.rotation.z += Math.sin(t * 0.45) * 0.04 * w; r.tip.rotation.x += Math.sin(t * 0.31) * 0.025 * w;
+    r.armR.rotation.x = lerp(r.armR.rotation.x, -0.05, w);
+    r.weapon.rotation.x = lerp(r.weapon.rotation.x, 1.25, w);
+    r.weapon.rotation.y += Math.sin(t * 0.45) * 0.12 * w;
+  },
+  none() {},
+};
+
+// ============================================================================
+// 2d. Data check
+// ============================================================================
+// Verifies every cross-reference and the level ordering rules. Any problem stops the game at load
+// with a readable list on screen, instead of a frozen screen or a soft-locked level later.
+function validateData() {
+  const errors = [];
+  const need = (ok, msg) => { if (!ok) errors.push(msg); };
+  const num = v => typeof v === 'number' && Number.isFinite(v);
+  const checkAttack = (a, owner) => {
+    const tag = `${owner} attack "${a && a.id}"`;
+    need(a && typeof a.id === 'string', `${owner}: an attack has no id.`);
+    if (!a) return;
+    need(a.anim in ANIMS, `${tag}: unknown animation "${a.anim}" (known: ${Object.keys(ANIMS).join(', ')}).`);
+    need(Array.isArray(a.hits) && a.hits.length > 0 && a.hits.every(h => num(h.startup) && (num(h.active) || h.active === Infinity)),
+      `${tag}: "hits" must list { startup, active } for each strike.`);
+    need(num(a.recovery) && num(a.damage) && num(a.poise) && num(a.knock), `${tag}: recovery, damage, poise and knock must be numbers.`);
+    need(a.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(a.box[k])), `${tag}: box needs w, h, d, fwd and y.`);
+  };
+  // Enemies
+  const ids = new Set();
+  for (const d of [...ENEMY_DEFS, ...TRAINING_DEFS]) {
+    need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
+    ids.add(d.id);
+    need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
+    if (d.offhand) need(d.offhand in OFFHANDS, `Enemy "${d.id}": unknown off-hand "${d.offhand}".`);
+    if (d.idle) need(d.idle in IDLE_STYLES, `Enemy "${d.id}": unknown idle style "${d.idle}".`);
+    need(num(d.hp) && num(d.scale) && num(d.radius), `Enemy "${d.id}": hp, scale and radius must be numbers.`);
+    for (const a of d.attacks) checkAttack(a, `Enemy "${d.id}"`);
+  }
+  // Player and items
+  const M = PLAYER_DEF.moveset;
+  for (const a of Object.values(M.attacks)) checkAttack(a, 'Player');
+  for (const group of ['ground', 'air'])
+    for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
+  for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
+  need(PLAYER_DEF.look.weapon in WEAPONS, `Player: unknown weapon "${PLAYER_DEF.look.weapon}".`);
+  // Levels
+  const levelIds = new Set();
+  for (const L of LEVELS) {
+    const where = `Level "${L.id}"`;
+    need(typeof L.id === 'string' && !levelIds.has(L.id), `${where}: missing or duplicate id.`);
+    levelIds.add(L.id);
+    need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
+    const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
+    need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);
+    const alcoves = new Set(L.alcoves.map(a => a.id));
+    need(alcoves.size === L.alcoves.length, `${where}: duplicate alcove ids.`);
+    for (const a of L.alcoves) need(inX(a.x) && (a.side === 1 || a.side === -1), `${where}: alcove "${a.id}" needs x inside the hall and side 1 or -1.`);
+    let lastGate = 0;
+    for (const g of L.gated) {
+      const tag = `${where} zone "${g.id}"`;
+      need(g.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${g.enemy}" (known: ${Object.keys(ENEMY_BY_ID).join(', ')}).`);
+      need(num(g.trigger) && g.spawn && num(g.spawn.x) && num(g.spawn.z) && num(g.spawn.yaw) && num(g.gateX),
+        `${tag}: needs trigger, spawn { x, z, yaw } and gateX.`);
+      need(g.trigger < g.spawn.x && g.spawn.x < g.gateX, `${tag}: must be ordered trigger < spawn.x < gateX.`);
+      need(g.trigger > lastGate, `${tag}: overlaps the previous zone (zones must be in order along the hall).`);
+      need(g.gateX < L.length, `${tag}: gate is past the end of the hall.`);
+      lastGate = g.gateX;
+    }
+    for (const s of L.dispersed) {
+      const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;
+      need(s.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${s.enemy}".`);
+      need(s.behavior in BEHAVIORS && !BEHAVIORS[s.behavior].training && s.behavior !== 'arena' && s.behavior !== 'gated',
+        `${tag}: unknown or unusable behaviour "${s.behavior}" (use ambush, patrol or slumber).`);
+      if (s.behavior === 'ambush') need(alcoves.has(s.alcove), `${tag}: unknown alcove "${s.alcove}".`);
+      if (s.behavior === 'patrol') need(Array.isArray(s.path) && s.path.length === 2 && s.path.every(inX) && inZ(s.z), `${tag}: patrol needs path [x1, x2] and z inside the hall.`);
+      if (s.behavior === 'slumber') need(inX(s.x) && inZ(s.z) && num(s.yaw), `${tag}: needs x, z and yaw inside the hall.`);
+    }
+    for (const b of L.bonfires) {
+      need(inX(b.x) && inZ(b.z), `${where} bonfire "${b.id}": outside the hall.`);
+      for (const side of [-1, 1]) {
+        const rx = b.x + side * CONFIG.rest.respawnOffset;
+        const z = L.gated.find(g => rx >= g.trigger && rx <= g.gateX);
+        need(!z, `${where} bonfire "${b.id}": its respawn point (x ${rx.toFixed(1)}) is inside zone "${z && z.id}".`);
+      }
+    }
+    for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
+    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
+  }
+  // Arena and timings
+  need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
+  const D = CONFIG.death;
+  need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
+  return errors;
+}
 
 // ============================================================================
 // 3. input
@@ -373,11 +700,14 @@ const ACTIONS = {
   lock: ['KeyQ'], switchTarget: ['Tab'], rest: ['KeyF'], flask: ['KeyG'],
   zoomIn: ['Equal', 'NumpadAdd'], zoomOut: ['Minus', 'NumpadSubtract'],
 };
-// System keys handled directly by the key handler rather than through ACTIONS.
+// Keys handled directly by the key handler rather than through ACTIONS.
 const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1' };
-const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), [SYSTEM_KEYS.restart, SYSTEM_KEYS.hitboxes, SYSTEM_KEYS.pause, 'Enter']));
+// Menu navigation.
+const MENU_KEYS = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'],
+                    right: ['KeyD', 'ArrowRight'], confirm: ['Enter', 'KeyJ'], back: ['Escape'] };
+const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), Object.values(SYSTEM_KEYS)));
 
-// Prompt labels built from the live bindings: "[ j / LMB ]" (keyboard first, then mouse), or "[ Space ]".
+// Labels built from the live bindings: "[ j / LMB ]" (keyboard first, then mouse), or "[ Space ]".
 const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
   Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB' };
@@ -397,6 +727,7 @@ function bindLabel(action, extraMouse) {
 }
 const moveLabel = () => `[ ${['up', 'left', 'down', 'right'].map(a => keyLabel(ACTIONS[a][0])).join(' ')} ]`;
 const systemLabel = name => `[ ${keyLabel(SYSTEM_KEYS[name])} ]`;
+const menuLabel = name => MENU_KEYS[name].map(keyLabel).join('/');
 
 const input = {
   held: new Set(),
@@ -415,6 +746,8 @@ const input = {
     for (const c of ACTIONS[action]) this.pressed.delete(c);
     return true;
   },
+  // During a hit-pause the buffer clock stops: pending presses age by the frozen time, so none expire.
+  hold(dt) { for (const [c, t] of this.pressed) this.pressed.set(c, t + dt); },
   clear() { this.held.clear(); this.pressed.clear(); },
 };
 
@@ -423,6 +756,25 @@ const SETTINGS_KEY = 'combat-arena-3d.settings';
 const settings = { sensitivity: 5, invert: false, hitboxes: true, hudScale: 1 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* defaults */ }
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
+
+// ============================================================================
+// 3b. Events
+// ============================================================================
+// "Something happened" channel. Combat, items, bonfires and menus emit; effects, souls and the
+// tutorial listen (see registerListeners in the bootstrap). Events:
+//   strike {strike, attacker, target, at, blocked}  parry {target}  postureBreak {enemy}
+//   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
+//   itemUsed {item}  land {x, z, fx}  stainRecovered {x, z, souls}  lock  switchTarget  zoom {dir}
+//   pause  resume
+const events = {
+  handlers: {}, anyHandlers: [],
+  on(type, fn) { (this.handlers[type] || (this.handlers[type] = [])).push(fn); },
+  onAny(fn) { this.anyHandlers.push(fn); },
+  emit(type, data = {}) {
+    for (const fn of this.handlers[type] || []) fn(data);
+    for (const fn of this.anyHandlers) fn(type, data);
+  },
+};
 
 // ============================================================================
 // 4. Scene setup
@@ -434,19 +786,20 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07060a);
 scene.fog = new THREE.FogExp2(0x07060a, 0.022);
-
 const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 200);
+const moonLight = new THREE.DirectionalLight(0xffffff, 1);
+const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(moonLight, ambientLight);
+function applyAtmosphere(def) {
+  const A = { ...DEFAULT_ATMOSPHERE, ...(def.atmosphere || {}) };
+  scene.background = new THREE.Color(A.background);
+  scene.fog.color.set(A.fog); scene.fog.density = A.fogDensity;
+  moonLight.color.set(A.moon.color); moonLight.intensity = A.moon.intensity; moonLight.position.set(...A.moon.position);
+  ambientLight.color.set(A.ambient.color); ambientLight.intensity = A.ambient.intensity;
+}
 
-const moonLight = new THREE.DirectionalLight(0x9daad0, 2.2);
-moonLight.position.set(-6, 14, 8);
-scene.add(moonLight);
-scene.add(new THREE.AmbientLight(0x555a70, 1.3));   // faint fill so silhouettes stay readable
-
-const arenaGroup = new THREE.Group(), hallGroup = new THREE.Group(), tutorialGroup = new THREE.Group();
-scene.add(arenaGroup, hallGroup, tutorialGroup);
-const flames = [];   // { mesh, light, base, color } flickered every frame
+const flames = [];   // { group, mesh, light, base, color, seed } flickered every frame
 const dust = [];     // { group, points, origin, seeds } drifting motes near light sources
 
 const MAT = {
@@ -457,11 +810,23 @@ const MAT = {
   ceiling: new THREE.MeshStandardMaterial({ color: 0x0c0b0d, roughness: 1 }),
   iron: new THREE.MeshStandardMaterial({ color: 0x3b3a3c, roughness: 0.6, metalness: 0.5 }),
   log: new THREE.MeshStandardMaterial({ color: 0x241a12, roughness: 1 }),
+  bonfireSword: new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: 0.6, roughness: 0.5 }),
 };
 const addBox = (group, w, h, d, mat, x, y, z) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   m.position.set(x, y, z); group.add(m); return m;
 };
+// Floor with a lighter border strip marking the playable limit, and faint grid seams. Shared by every layout.
+function addFloor(G, cx, cz, sizeX, sizeZ, border, grid) {
+  addBox(G, sizeX, 0.5, sizeZ, MAT.stone, cx, -0.25, cz);
+  const x0 = cx - sizeX / 2, x1 = cx + sizeX / 2, z0 = cz - sizeZ / 2, z1 = cz + sizeZ / 2;
+  addBox(G, sizeX, 0.02, border, MAT.edge, cx, 0.01, z1 - border / 2);
+  addBox(G, sizeX, 0.02, border, MAT.edge, cx, 0.01, z0 + border / 2);
+  addBox(G, border, 0.02, sizeZ - border * 2, MAT.edge, x1 - border / 2, 0.01, cz);
+  addBox(G, border, 0.02, sizeZ - border * 2, MAT.edge, x0 + border / 2, 0.01, cz);
+  for (let x = x0 + grid; x < x1 - 0.01; x += grid) addBox(G, 0.06, 0.012, sizeZ - border * 2, MAT.dark, x, 0.006, cz);
+  for (let z = z0 + grid; z < z1 - 0.01; z += grid) addBox(G, sizeX - border * 2, 0.012, 0.06, MAT.dark, cx, 0.006, z);
+}
 function addDust(group, x, y, z, spread, count) {
   const pos = new Float32Array(count * 3), seeds = [];
   for (let i = 0; i < count; i++) seeds.push({ x: rand(-spread, spread), y: rand(-1, 1.6), z: rand(-spread, spread), s: rand(0, 100), v: rand(0.15, 0.4) });
@@ -475,7 +840,7 @@ function addFlame(group, x, y, z, size, light) {
     new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, fog: false }));
   mesh.position.set(x, y, z); group.add(mesh);
   if (light) group.add(light);
-  flames.push({ mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
+  flames.push({ group, mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
 }
 function addBonfire(group, x, z, intensity) {
   for (let i = 0; i < 5; i++) {
@@ -484,8 +849,7 @@ function addBonfire(group, x, z, intensity) {
   }
   const ash = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.08, 14), MAT.dark);
   ash.position.set(x, 0.04, z); group.add(ash);
-  const sword = addBox(group, 0.05, 1.3, 0.09, new THREE.MeshStandardMaterial({ color: 0x55504a, metalness: 0.6, roughness: 0.5 }), x, 0.7, z);
-  sword.rotation.z = 0.18;
+  addBox(group, 0.05, 1.3, 0.09, MAT.bonfireSword, x, 0.7, z).rotation.z = 0.18;
   const light = new THREE.PointLight(0xff8a3c, intensity, 0, 1.0);
   light.position.set(x, 1.4, z);
   addFlame(group, x, 0.62, z, 1, light);
@@ -502,44 +866,34 @@ function buildPortcullis(group, x, width, height) {
   for (let y = 0.6; y < height; y += 1.1) { const r = new THREE.Mesh(railGeo, MAT.iron); r.position.set(0, y, 0); g.add(r); }
   group.add(g); return g;
 }
-const rand = (a, b) => a + Math.random() * (b - a);
 
-const ARENA_BONFIRE = { x: 0, z: -(CONFIG.arena.halfZ - 2.2) };
-(function buildArena() {
-  const A = CONFIG.arena, G = arenaGroup;
-  addBox(G, A.halfX * 2, 0.5, A.halfZ * 2, MAT.stone, 0, -0.25, 0);
-  const e = 0.7;   // lighter border strip marking the playable limit
-  addBox(G, A.halfX * 2, 0.02, e, MAT.edge, 0, 0.01, A.halfZ - e / 2);
-  addBox(G, A.halfX * 2, 0.02, e, MAT.edge, 0, 0.01, -A.halfZ + e / 2);
-  addBox(G, e, 0.02, A.halfZ * 2 - e * 2, MAT.edge, A.halfX - e / 2, 0.01, 0);
-  addBox(G, e, 0.02, A.halfZ * 2 - e * 2, MAT.edge, -A.halfX + e / 2, 0.01, 0);
-  for (let x = -A.halfX + 4; x < A.halfX; x += 4) addBox(G, 0.06, 0.012, A.halfZ * 2 - e * 2, MAT.dark, x, 0.006, 0);
-  for (let z = -A.halfZ + 4; z < A.halfZ; z += 4) addBox(G, A.halfX * 2 - e * 2, 0.012, 0.06, MAT.dark, 0, 0.006, z);
+// Layout builders: each returns { group, gates: [{ id, x, mesh, liftHeight }] } in the order of the level's gated list.
+function buildArena(A) {
+  const G = new THREE.Group(), R = A.pillarRing;
+  addFloor(G, 0, 0, A.halfX * 2, A.halfZ * 2, A.border, A.grid);
   const t = A.wallThickness, h = A.wallHeight;
   addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, A.halfZ + t / 2);
   addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, -A.halfZ - t / 2);
   addBox(G, t, h, A.halfZ * 2, MAT.wall, A.halfX + t / 2, h / 2, 0);
   addBox(G, t, h, A.halfZ * 2, MAT.wall, -A.halfX - t / 2, h / 2, 0);
-  addBox(G, 160, 0.5, 160, MAT.dark, 0, -0.3, 0);
+  addBox(G, A.outerGround, 0.5, A.outerGround, MAT.dark, 0, -0.3, 0);
   const pillar = (x, z, ph) => {
-    addBox(G, 1.9, 0.5, 1.9, MAT.wall, x, 0.25, z);
-    addBox(G, 1.4, ph, 1.4, MAT.wall, x, ph / 2, z);
-    addBox(G, 1.9, 0.5, 1.9, MAT.wall, x, ph + 0.25, z);
+    addBox(G, R.base, 0.5, R.base, MAT.wall, x, 0.25, z);
+    addBox(G, R.size, ph, R.size, MAT.wall, x, ph / 2, z);
+    addBox(G, R.base, 0.5, R.base, MAT.wall, x, ph + 0.25, z);
   };
-  const px = A.halfX + 3.5, pz = A.halfZ + 3.5;
+  const px = A.halfX + R.inset, pz = A.halfZ + R.inset;
   for (let x = -px; x <= px + 0.1; x += (px * 2) / 5) { pillar(x, -pz, 8 + Math.abs(x) % 3); pillar(x, pz, 7 + Math.abs(x * 1.7) % 4); }
   for (let z = -pz + 6.6; z < pz - 1; z += 6.6) { pillar(-px, z, 9); pillar(px, z, 6.5 + Math.abs(z) % 3); }
-  addBonfire(G, ARENA_BONFIRE.x, ARENA_BONFIRE.z, 11);
-})();
-
-// Builds a hall layout (Level 1, or the tutorial room) into group G. Returns the gate portcullis meshes in order.
-function buildHall(L, G) {
-  const gates = [];
-  const len = L.length, hz = L.halfZ, wh = L.wallHeight, aw = L.alcoveWidth / 2;
-  addBox(G, len + 2, 0.5, (hz + L.alcoveDepth + 1) * 2, MAT.stone, len / 2, -0.25, 0);
-  addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, hz - 0.3);
-  addBox(G, len, 0.02, 0.6, MAT.edge, len / 2, 0.01, -hz + 0.3);
-  for (let x = 4; x < len; x += 4) addBox(G, 0.06, 0.012, hz * 2 - 1.2, MAT.dark, x, 0.006, 0);
+  for (const b of A.bonfires) addBonfire(G, b.x, b.z, A.bonfireLight);
+  return { group: G, gates: [] };
+}
+function buildHall(L) {
+  const S = { ...HALL_STYLE, ...(L.style || {}) };
+  const G = new THREE.Group(), gates = [];
+  const len = L.length, hz = L.halfZ, wh = L.wallHeight, aw = L.alcoveWidth / 2, ah = S.alcoveHeight;
+  addBox(G, len + 2, 0.5, (hz + L.alcoveDepth + 1) * 2, MAT.stone, len / 2, -0.25, 0);   // floor under the alcoves too
+  addFloor(G, len / 2, 0, len, hz * 2, S.border, S.grid);
   addBox(G, len, 0.012, 0.06, MAT.dark, len / 2, 0.006, 0);
   // Side walls, broken by alcoves.
   for (const side of [1, -1]) {
@@ -551,66 +905,75 @@ function buildHall(L, G) {
     }
     for (const [g0, g1] of gaps) {
       const d = L.alcoveDepth;
-      addBox(G, g1 - g0 + 2, 3.2, 1, MAT.wall, (g0 + g1) / 2, 1.6, side * (hz + d + 0.5));
-      addBox(G, 1, 3.2, d, MAT.wall, g0 - 0.5, 1.6, side * (hz + d / 2));
-      addBox(G, 1, 3.2, d, MAT.wall, g1 + 0.5, 1.6, side * (hz + d / 2));
-      addBox(G, g1 - g0 + 2, 0.3, d + 1, MAT.ceiling, (g0 + g1) / 2, 3.2, side * (hz + d / 2));
-      addBox(G, g1 - g0, wh - 3.2, 1, MAT.wall, (g0 + g1) / 2, 3.2 + (wh - 3.2) / 2, side * (hz + 0.5));
+      addBox(G, g1 - g0 + 2, ah, 1, MAT.wall, (g0 + g1) / 2, ah / 2, side * (hz + d + 0.5));
+      addBox(G, 1, ah, d, MAT.wall, g0 - 0.5, ah / 2, side * (hz + d / 2));
+      addBox(G, 1, ah, d, MAT.wall, g1 + 0.5, ah / 2, side * (hz + d / 2));
+      addBox(G, g1 - g0 + 2, 0.3, d + 1, MAT.ceiling, (g0 + g1) / 2, ah, side * (hz + d / 2));
+      addBox(G, g1 - g0, wh - ah, 1, MAT.wall, (g0 + g1) / 2, ah + (wh - ah) / 2, side * (hz + 0.5));
     }
   }
   addBox(G, 1, wh, hz * 2 + 2, MAT.wall, -0.5, wh / 2, 0);
   addBox(G, 1, wh, hz * 2 + 2, MAT.wall, len + 0.5, wh / 2, 0);
   addBox(G, len + 2, 0.5, hz * 2 + 2, MAT.ceiling, len / 2, wh + 0.25, 0);
-  // Thin pillars along both walls for rhythm (no collision).
+  // Thin pillars along both walls for rhythm (decorative, no collision).
   const nearGap = x => L.alcoves.some(a => Math.abs(a.x - x) < aw + 1) || L.gated.some(g => Math.abs(g.gateX - x) < 1.5);
-  for (let x = 5; x < len - 1; x += 7) {
+  for (let x = S.pillarStart; x < len - 1; x += S.pillarEvery) {
     for (const side of [1, -1]) {
       if (nearGap(x)) continue;
-      addBox(G, 0.5, wh, 0.5, MAT.wall, x, wh / 2, side * (hz - 0.25));
+      addBox(G, S.pillarSize, wh, S.pillarSize, MAT.wall, x, wh / 2, side * (hz - 0.25));
       addBox(G, 0.75, 0.3, 0.75, MAT.dark, x, 0.15, side * (hz - 0.25));
       addBox(G, 0.75, 0.3, 0.75, MAT.dark, x, wh - 0.6, side * (hz - 0.25));
     }
   }
-  // Gates: lintel in the wall above, portcullis below.
+  // Gates: lintel in the wall above, portcullis below. Each gate object is built from its zone.
   for (const g of L.gated) {
     addBox(G, 1.2, wh - L.gateHeight, hz * 2, MAT.wall, g.gateX, L.gateHeight + (wh - L.gateHeight) / 2, 0);
-    gates.push(buildPortcullis(G, g.gateX, hz * 2, L.gateHeight));
+    gates.push({ id: g.id, x: g.gateX, mesh: buildPortcullis(G, g.gateX, hz * 2, L.gateHeight),
+                 liftHeight: L.gateHeight - CONFIG.level.gateLiftGap });
   }
   // Far end: solid wall with a closed exit gate.
-  addBox(G, 0.4, 4, 4.6, MAT.ceiling, len - 0.05, 2, 0);
-  buildPortcullis(G, len - 0.3, 4, 3.8);
-  for (const b of L.bonfires) addBonfire(G, b.x, b.z, 10);
+  addBox(G, 0.4, S.exitGate.height + 0.2, S.exitGate.width + 0.6, MAT.ceiling, len - 0.05, (S.exitGate.height + 0.2) / 2, 0);
+  buildPortcullis(G, len - 0.3, S.exitGate.width, S.exitGate.height);
+  for (const b of L.bonfires) addBonfire(G, b.x, b.z, S.bonfireLight);
+  const T = S.torch;
   for (const t of L.torches) {
     const z = t.side * (hz - 0.15);
-    addBox(G, 0.12, 0.5, 0.12, MAT.iron, t.x, 2.6, z);
-    const light = new THREE.PointLight(0xff7a30, 4.5, 26, 1.0);
-    light.position.set(t.x, 3.2, t.side * (hz - 0.7));
-    addFlame(G, t.x, 3.05, z, 0.45, light);
-    addDust(G, t.x, 2.6, t.side * (hz - 1.6), 1.6, 10);
+    addBox(G, 0.12, 0.5, 0.12, MAT.iron, t.x, T.mountHeight, z);
+    const light = new THREE.PointLight(T.color, T.intensity, T.range, 1.0);
+    light.position.set(t.x, T.lightHeight, t.side * (hz - 0.7));
+    addFlame(G, t.x, T.flameHeight, z, T.flameSize, light);
+    addDust(G, t.x, T.mountHeight, t.side * (hz - 1.6), 1.6, 10);
   }
-  return gates;
+  return { group: G, gates };
 }
-const hallGates = buildHall(LEVEL_1, hallGroup);   // portcullis meshes for LEVEL_1.gated, in order
-buildHall(TUTORIAL, tutorialGroup);
+const BUILDERS = { arena: buildArena, hall: buildHall };
 
-// Walkable space for the current mode: a rectangle, side alcoves, and closed gates.
-const WORLDS = {
-  arena: { minX: -CONFIG.arena.halfX, maxX: CONFIG.arena.halfX, halfZ: CONFIG.arena.halfZ, ceiling: Infinity,
-           alcoves: [], gates: [], gateThickness: 0, bonfires: [ARENA_BONFIRE] },
-  hall: { minX: 0, maxX: LEVEL_1.length, halfZ: LEVEL_1.halfZ, ceiling: LEVEL_1.wallHeight,
-          gateThickness: LEVEL_1.gateThickness, gates: [], bonfires: LEVEL_1.bonfires,
-          alcoves: LEVEL_1.alcoves.map(a => ({ x0: a.x - LEVEL_1.alcoveWidth / 2, x1: a.x + LEVEL_1.alcoveWidth / 2, side: a.side, depth: LEVEL_1.alcoveDepth })) },
-  tutorial: { minX: 0, maxX: TUTORIAL.length, halfZ: TUTORIAL.halfZ, ceiling: TUTORIAL.wallHeight,
-              gateThickness: 0, gates: [], bonfires: TUTORIAL.bonfires, alcoves: [] },
-};
-let world = WORLDS.arena;
+// The geometry of the current level. Built when the level starts and torn down when another one does.
+let stage = null;
+function loadStage(def) {
+  if (stage && stage.id === def.id) return stage;
+  if (stage) {
+    scene.remove(stage.group);
+    stage.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.isMesh && o.material && !Object.values(MAT).includes(o.material)) o.material.dispose(); });
+    for (let i = flames.length - 1; i >= 0; i--) if (flames[i].group === stage.group) flames.splice(i, 1);
+    for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group) dust.splice(i, 1);
+  }
+  const built = BUILDERS[def.layout](def);
+  scene.add(built.group);
+  applyAtmosphere(def);
+  stage = { id: def.id, ...built };
+  return stage;
+}
 
-// ---- shared helpers --------------------------------------------------------
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
-const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
-const turnToward = (cur, target, maxStep) => cur + clamp(angDiff(target, cur), -maxStep, maxStep);
+// Walkable space for the current level: a rectangle, side alcoves and closed gates.
+function makeWorld(def, st) {
+  if (def.layout === 'arena')
+    return { minX: -def.halfX, maxX: def.halfX, halfZ: def.halfZ, ceiling: Infinity, alcoves: [], gates: [], gateThickness: 0, bonfires: def.bonfires };
+  return { minX: 0, maxX: def.length, halfZ: def.halfZ, ceiling: def.wallHeight, gateThickness: def.gateThickness, bonfires: def.bonfires,
+           gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })),
+           alcoves: def.alcoves.map(a => ({ x0: a.x - def.alcoveWidth / 2, x1: a.x + def.alcoveWidth / 2, side: a.side, depth: def.alcoveDepth })) };
+}
+let world = null;
 
 const WARN_COLOR = new THREE.Color(0xff3a1a);
 const HURT_COLOR = new THREE.Color(0xff1010);
@@ -622,11 +985,12 @@ const shadowGeo = new THREE.CircleGeometry(1, 20);
 // Humanoid built from primitives. Local +Z is forward; the weapon arm is on -X.
 const HIP = 0.95, LEG_SEG = 0.45;   // hip pivot height; thigh and shin length
 class Rig {
-  constructor({ scale, bulk, color, weapon, weaponColor }) {
+  constructor({ scale, bulk, color, weapon, weaponColor, offhand }) {
+    const W = lookup(WEAPONS, weapon, 'weapon', 'sword');
     const body = new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, transparent: true });
     const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.6), roughness: 0.8, metalness: 0.05, transparent: true });
-    this.weaponBase = new THREE.Color(weaponColor);
-    this.weaponMat = new THREE.MeshStandardMaterial({ color: weaponColor, roughness: 0.4, metalness: 0.2, transparent: true });
+    this.weaponBase = new THREE.Color(weaponColor ?? W.color);
+    this.weaponMat = new THREE.MeshStandardMaterial({ color: this.weaponBase, roughness: 0.4, metalness: 0.2, transparent: true });
     this.bodyMats = [body, dark];
     this.mats = [body, dark, this.weaponMat];
     const part = (parent, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; };
@@ -649,18 +1013,18 @@ class Rig {
     this.armR = pivot(this.spin, -0.37, 0.6, 0);
     for (const arm of [this.armL, this.armR]) part(arm, new THREE.BoxGeometry(0.16, 0.62, 0.16), body, 0, -0.31, 0);
     this.weapon = pivot(this.armR, 0, -0.6, 0);
-    if (weapon === 'club') {
-      part(this.weapon, new THREE.BoxGeometry(0.13, 0.13, 1.1), this.weaponMat, 0, 0, 0.5);
-      part(this.weapon, new THREE.BoxGeometry(0.3, 0.3, 0.6), this.weaponMat, 0, 0, 1.2);
-    } else if (weapon === 'sword') {
-      part(this.weapon, new THREE.BoxGeometry(0.045, 0.1, 1.15), this.weaponMat, 0, 0, 0.62);
-      part(this.weapon, new THREE.BoxGeometry(0.3, 0.06, 0.06), dark, 0, 0, 0.06);
+    W.build((geo, mat, x, y, z) => part(this.weapon, geo, mat, x, y, z), this.weaponMat, dark);
+    if (offhand) {
+      const O = lookup(OFFHANDS, offhand, 'off-hand', 'shield');
+      const mat = new THREE.MeshStandardMaterial({ color: O.color, roughness: 0.5, metalness: 0.4, transparent: true });
+      this.mats.push(mat);
+      O.build((geo, m, x, y, z) => part(this.armL, geo, m, x, y, z), mat);
     }
     this.root.scale.set(scale * bulk, scale, scale * bulk);
     this.shadow = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadowRadius = 0.55 * scale * bulk;
-    // Visual-only state: weapon lag spring and the yaw seen last frame.
+    // Visual-only state: weapon lag spring, the yaw seen last frame, idle blend weight.
     this.lag = 0; this.lagPitch = 0; this.lastYaw = null; this.idleW = 1;
     scene.add(this.root, this.shadow);
   }
@@ -699,32 +1063,6 @@ class Rig {
     this.legL.rotation.x = -1.45 * k; this.kneeL.rotation.x = 1.45 * k;
     this.legR.rotation.x = 0.05 * k; this.kneeR.rotation.x = 1.5 * k;
   }
-  // phase: 'startup' | 'active' | 'recovery', p: 0..1 through that phase, dir: mirror for alternating swings
-  attackPose(anim, phase, p, dir = 1) {
-    const { armR, armL, spin, tip, legL, kneeL, weapon } = this;
-    const S = phase === 'startup', A = phase === 'active';
-    if (anim === 'sweep') {
-      if (S) { armR.rotation.x = lerp(-0.4, -1.7, ease(p)); spin.rotation.y = dir * lerp(0, -1.1, ease(p)); weapon.rotation.x = lerp(0.5, -0.1, ease(p)); }
-      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = dir * lerp(-1.1, 1.2, p); tip.rotation.x = 0.12; weapon.rotation.x = lerp(-0.1, 0.9, p); }
-      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = dir * lerp(1.2, 0, ease(p)); tip.rotation.x = lerp(0.12, 0, p); weapon.rotation.x = lerp(0.9, 0.5, ease(p)); }
-    } else if (anim === 'overhead') {
-      if (S) { armR.rotation.x = lerp(-0.4, -3.2, ease(p)); tip.rotation.x = lerp(0, -0.2, ease(p)); weapon.rotation.x = lerp(0.5, 0.1, ease(p)); }
-      else if (A) { armR.rotation.x = lerp(-3.2, -0.7, p); tip.rotation.x = lerp(-0.2, 0.3, p); weapon.rotation.x = lerp(0.1, 0.8, p); }
-      else { armR.rotation.x = lerp(-0.7, -0.4, ease(p)); tip.rotation.x = lerp(0.3, 0, ease(p)); weapon.rotation.x = lerp(0.8, 0.5, ease(p)); }
-    } else if (anim === 'stab') {
-      if (S) { armR.rotation.x = lerp(-0.4, -1.0, ease(p)); spin.rotation.y = lerp(0, -0.8, ease(p)); weapon.rotation.x = lerp(0.5, 1.5, ease(p)); }
-      else if (A) { armR.rotation.x = -1.5; spin.rotation.y = lerp(-0.8, 0.6, p); tip.rotation.x = 0.25; weapon.rotation.x = 1.5; }
-      else { armR.rotation.x = lerp(-1.5, -0.4, ease(p)); spin.rotation.y = lerp(0.6, 0, ease(p)); tip.rotation.x = lerp(0.25, 0, p); weapon.rotation.x = lerp(1.5, 0.5, ease(p)); }
-    } else if (anim === 'bash') {
-      if (S) { armL.rotation.x = lerp(-0.1, -1.4, ease(p)); spin.rotation.y = lerp(0, 0.7, ease(p)); tip.rotation.x = lerp(0, -0.1, p); }
-      else if (A) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
-      else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
-    } else if (anim === 'stomp') {
-      if (S) { legL.rotation.x = lerp(0, -1.5, ease(p)); kneeL.rotation.x = lerp(0, 1.3, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
-      else if (A) { legL.rotation.x = lerp(-1.5, 0, p); kneeL.rotation.x = lerp(1.3, 0, p); tip.rotation.x = lerp(-0.16, 0.2, p); armR.rotation.x = armL.rotation.x = lerp(-2.6, -0.6, p); }
-      else { tip.rotation.x = lerp(0.2, 0, ease(p)); armR.rotation.x = lerp(-0.6, -0.4, p); armL.rotation.x = lerp(-0.6, -0.1, p); }
-    }
-  }
   // Weapon trails the body's turning and movement slightly (visual only).
   applyLag(yaw, speed, dt) {
     if (this.lastYaw === null || dt <= 0) { this.lastYaw = yaw; return; }
@@ -758,6 +1096,63 @@ class Rig {
   }
 }
 
+// ---- shared character helpers (player and enemies) -----------------------------------------------
+// Where an attack is at time t: { phase, hitIndex, p (0..1 through the phase), done }.
+function attackTimeline(a, t) {
+  for (let i = 0; i < a.hits.length; i++) {
+    const h = a.hits[i];
+    if (t < h.startup) return { phase: PHASE.STARTUP, hitIndex: i, p: t / h.startup };
+    t -= h.startup;
+    if (t < h.active) return { phase: PHASE.ACTIVE, hitIndex: i, p: t / h.active };
+    t -= h.active;
+  }
+  return { phase: PHASE.RECOVERY, hitIndex: a.hits.length - 1, p: Math.min(1, t / a.recovery), done: t >= a.recovery };
+}
+// Attack pose for either side; alternate strikes of a combo mirror.
+function poseAttack(rig, attack, phase, p, hitIndex = 0) {
+  lookup(ANIMS, attack.anim, 'animation', 'sweep')(rig, phase, p, hitIndex % 2 ? -1 : 1);
+}
+// Hurt (short flinch) and stagger (longer, wobbling) poses, shared.
+function flinchPose(r, stagger, p, tt) {
+  const arc = Math.sin(clamp(p, 0, 1) * Math.PI);
+  if (!stagger) { r.tip.rotation.x = -0.17 * arc; return; }
+  r.tip.rotation.x = -0.31 * arc;
+  r.spin.rotation.z = Math.sin(tt * 8.5) * 0.11; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3;
+}
+function deathPose(rig, tt, fade) {
+  rig.tip.rotation.x = -Math.PI / 2 * ease(tt / 0.9);
+  rig.armL.rotation.x = rig.armR.rotation.x = -0.2;
+  rig.setOpacity(1 - clamp((tt - 0.7) / (fade - 0.7), 0, 1));
+}
+// Poise: refills after resetTime without being hit.
+function tickPoise(b, dt, resetTime, max) { b.poiseTimer += dt; if (b.poiseTimer > resetTime) b.poise = max; }
+// One rule for both sides: a swing already out is not interrupted (poise refills instead).
+// Returns POISE.STAGGER (poise broken), POISE.FLINCH, or POISE.NONE (committed).
+function applyPoise(b, amount, committed, max) {
+  b.poise -= amount; b.poiseTimer = 0;
+  if (committed) { if (b.poise <= 0) b.poise = max; return POISE.NONE; }
+  return b.poise <= 0 ? POISE.STAGGER : POISE.FLINCH;
+}
+// True if a closed gate stands between two bodies: no seeing, locking or hitting through it.
+function gateBetween(a, b) {
+  return !!world && world.gates.some(g => !g.open && (a.x - g.x) * (b.x - g.x) < 0);
+}
+// Enemies around `from`, filtered: the one place that decides who can be targeted.
+// opts: range, cone/yaw (angle limit around a heading), surface (measure to the body's edge), deadFor.
+function findEnemies(from, enemies, { range, cone = Infinity, yaw = from.yaw, surface = false, deadFor = 0 }) {
+  const out = [];
+  for (const e of enemies) {
+    const recentlyDead = !e.alive() && e.stateTime < deadFor;
+    if ((!e.alive() && !recentlyDead) || !e.awake() || gateBetween(from, e)) continue;
+    const dx = e.x - from.x, dz = e.z - from.z, dist = Math.hypot(dx, dz), d = surface ? dist - e.radius : dist;
+    if (d > range) continue;
+    const dir = Math.atan2(dx, dz), ang = Math.abs(angDiff(dir, yaw));
+    if (ang > cone) continue;
+    out.push({ e, d, dir, ang });
+  }
+  return out;
+}
+
 // Keep a body inside the current world: walls, closed gates and side alcoves.
 // Uses the body's position from the start of the step (px, pz) to know which side it came from.
 function clampToWorld(b) {
@@ -779,7 +1174,6 @@ function clampToWorld(b) {
     } else b.z = side * zIn;
   }
 }
-
 // Shared body physics: knockback decay, gravity, world bounds.
 function integrateBody(b, dt, knockFriction) {
   b.x += (b.vx + b.kx) * dt; b.z += (b.vz + b.kz) * dt;
@@ -792,281 +1186,305 @@ function approachVel(b, tx, tz, maxDelta) {
   const dx = tx - b.vx, dz = tz - b.vz, d = Math.hypot(dx, dz);
   if (d <= maxDelta || d === 0) { b.vx = tx; b.vz = tz; } else { b.vx += dx / d * maxDelta; b.vz += dz / d * maxDelta; }
 }
-function deathPose(rig, tt, fade) {
-  rig.tip.rotation.x = -Math.PI / 2 * ease(tt / 0.9);
-  rig.armL.rotation.x = rig.armR.rotation.x = -0.2;
-  rig.setOpacity(1 - clamp((tt - 0.7) / (fade - 0.7), 0, 1));
-}
 
 // ============================================================================
 // 5. Player
 // ============================================================================
+// Inventory: { itemId: { count, max } }, created from the player definition.
+const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
+
 class Player {
-  constructor(x, z, yaw) {
-    const C = CONFIG.player;
-    this.rig = new Rig({ scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4 });
-    this.radius = C.radius; this.height = C.height;
+  // carry: { inventory } kept from a previous life (death keeps flask counts).
+  constructor(def, x, z, yaw, carry) {
+    this.def = def;
+    this.rig = new Rig(def.look);
+    this.radius = def.radius; this.height = BODY_HEIGHT * def.look.scale;
+    this.maxHp = def.stats.maxHp; this.maxStamina = def.stats.maxStamina; this.maxPoise = def.stats.maxPoise;
+    this.inventory = carry ? carry.inventory : makeInventory(def.inventory);
+    this.souls = 0;
     this.x = x; this.y = 0; this.z = z; this.yaw = yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
-    this.hp = C.maxHp; this.stamina = C.maxStamina; this.poise = C.maxPoise;
+    this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
-    // idle walk jump fall roll attack jumpAttack land block parry drink rest hurt stagger dead
-    this.state = 'idle'; this.stateTime = 0;
-    this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0;
-    this.activeAt = Infinity; this.landTime = 0; this.landHit = false; this.landEvent = null;
+    this.state = PS.IDLE; this.stateTime = 0;
+    this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0; this.usingItem = null;
+    this.activeAt = Infinity; this.landTime = 0; this.landHit = false;
     this.savePrev();
   }
-  alive() { return this.state !== 'dead'; }
+  alive() { return this.state !== PS.DEAD; }
+  in(group) { return PLAYER_GROUPS[group].has(this.state); }
+  isFree() { return this.in('free'); }
+  isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
   spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
-  attackPhase() {
-    const a = this.attack, t = this.stateTime;
-    return t < a.startup ? 'startup' : t < a.startup + a.active ? 'active' : 'recovery';
+  attackPhase() { return attackTimeline(this.attack, this.stateTime).phase; }
+  invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
+  // A swing already out is not interrupted by hits.
+  isCommitted() {
+    return (this.state === PS.ATTACK && this.attackPhase() === PHASE.ACTIVE) || (this.state === PS.JUMP_ATTACK && !!this.hitbox);
   }
-  invulnerable() { return this.state === 'roll' && this.stateTime < CONFIG.player.rollIFrames; }
-  canDrink() { return this.state === 'idle' || this.state === 'walk'; }
+  item(id) { return this.inventory[id] || { count: 0, max: 0 }; }
+  refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
   startRoll(mv) {
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.spend(CONFIG.player.rollCost);
-    this.hitbox = null; this.setState('roll');
+    this.hitbox = null; this.setState(PS.ROLL);
   }
   // Heading toward the best nearby enemy in the direction the player means to swing, or null.
   autoAim(mv, enemies) {
     const A = CONFIG.player.autoTarget, want = mv.has ? Math.atan2(mv.x, mv.z) : this.yaw;
     let best = null, bestScore = Infinity;
-    for (const e of enemies) {
-      if (!e.alive() || !e.awake()) continue;
-      const dx = e.x - this.x, dz = e.z - this.z, d = Math.hypot(dx, dz) - e.radius;
-      const dir = Math.atan2(dx, dz), ang = Math.abs(angDiff(dir, want));
-      if (d > A.range || ang > A.cone) continue;
-      const score = d + ang * A.angleWeight;
-      if (score < bestScore) { bestScore = score; best = dir; }
+    for (const c of findEnemies(this, enemies, { range: A.range, cone: A.cone, yaw: want, surface: true })) {
+      const score = c.d + c.ang * A.angleWeight;
+      if (score < bestScore) { bestScore = score; best = c.dir; }
     }
     return best;
   }
   // Shared by ground and jump attacks: aim, riposte bonus, stamina.
-  beginAttack(kind, a, mv, face, enemies) {
-    const P = CONFIG.parry, rip = this.riposte > 0;
+  beginAttack(a, mv, face, enemies) {
     const auto = face === null ? this.autoAim(mv, enemies) : null;
     if (face !== null) this.yaw = face;                // locked on: always aim at the target
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    this.attack = a; this.riposte = 0;
-    this.payload = {
-      kind, damage: a.damage * (rip ? (kind === 'light' ? P.riposteLight : P.riposteHeavy) : 1),
-      poise: a.poise * (rip && kind === 'heavy' ? P.ripostePoise : 1),
-      knock: a.knock, hitstop: a.hitstop * (rip ? P.riposteHitstop : 1), riposte: rip, air: a.impactTime !== undefined,
-    };
-    this.spend(a.cost);
+    this.attack = a;
+    this.payload = makeStrike(a, this.riposte > 0);
+    this.riposte = 0;
+    this.spend(a.cost || 0);
     this.hitbox = null;
   }
-  startAttack(kind, mv, face, enemies) {
-    this.beginAttack(kind, CONFIG.player.attacks[kind], mv, face, enemies);
-    this.setState('attack');
+  startParry() { this.spend(CONFIG.parry.cost); this.hitbox = null; this.setState(PS.PARRY); }
+  useItem(id) {
+    this.inventory[id].count--;
+    this.usingItem = ITEMS[id]; this.vx = this.vz = 0;
+    this.setState(PS.USE_ITEM);
+    events.emit('itemUsed', { item: id, player: this });
   }
-  startJumpAttack(kind, mv, face, enemies) {
-    this.beginAttack(kind, CONFIG.jumpAttacks[kind], mv, face, enemies);
-    this.activeAt = Infinity;   // stateTime when the hitbox opened
-    this.setState('jumpAttack');
-  }
-  startParry() { this.spend(CONFIG.parry.cost); this.hitbox = null; this.setState('parry'); }
-  // Grounded, free to act. Returns true if an action started.
+  // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
-    const C = CONFIG.player;
+    const C = CONFIG.player, M = this.def.moveset;
     if (this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); return true; }
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
-    if (this.stamina > 0 && input.consume('heavy')) { this.startAttack('heavy', mv, face, enemies); return true; }
-    if (this.stamina > 0 && input.consume('light')) { this.startAttack('light', mv, face, enemies); return true; }
-    if (this.stamina > 0 && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState('jump'); return true; }
-    if (input.isHeld('block')) { this.setState('block'); return true; }
+    for (const [action, id] of Object.entries(M.ground)) {
+      if (this.stamina > 0 && input.consume(action)) { this.beginAttack(M.attacks[id], mv, face, enemies); this.setState(PS.ATTACK); return true; }
+    }
+    for (const [id, item] of Object.entries(ITEMS)) {
+      if (this.item(id).count > 0 && input.consume(item.action)) { this.useItem(id); return true; }
+    }
+    if (this.stamina > 0 && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
+    if (input.isHeld('block')) { this.setState(PS.BLOCK); return true; }
     return false;
   }
 
   // lock: the locked-on enemy or null.
   update(dt, mv, enemies, lock) {
-    const C = CONFIG.player;
+    const C = CONFIG.player, M = this.def.moveset;
     this.stateTime += dt;
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
-    const s = this.state;
-    if (s !== 'attack' && s !== 'jumpAttack' && s !== 'land' && s !== 'block' && s !== 'roll' && s !== 'parry' &&
-        s !== 'dead' && this.staminaDelay <= 0)
-      this.stamina = Math.min(C.maxStamina, this.stamina + C.staminaRegen * dt);
-    this.poiseTimer += dt;
-    if (this.poiseTimer > C.poiseResetTime) this.poise = C.maxPoise;
+    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * dt);
+    tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
 
     switch (this.state) {
-      case 'idle':
-      case 'walk': {
+      case PS.IDLE:
+      case PS.WALK: {
         if (this.tryGroundAction(mv, face, enemies)) break;
         if (mv.has && face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * dt);
         approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, (mv.has ? C.accel : C.decel) * dt);
-        const next = mv.has ? 'walk' : 'idle';
+        const next = mv.has ? PS.WALK : PS.IDLE;
         if (next !== this.state) this.setState(next);
         break;
       }
-      case 'jump':
-      case 'fall': {
+      case PS.JUMP:
+      case PS.FALL: {
         if (this.stamina > 0) {
-          const kind = input.consume('heavy') ? 'heavy' : input.consume('light') ? 'light' : null;
-          if (kind) { this.startJumpAttack(kind, mv, face, enemies); break; }
+          const action = Object.keys(M.air).find(a => input.consume(a));
+          if (action) {
+            this.beginAttack(M.attacks[M.air[action]], mv, face, enemies);
+            this.activeAt = Infinity;   // stateTime when the hitbox opened
+            this.setState(PS.JUMP_ATTACK);
+            break;
+          }
         }
         if (mv.has) {
-          if (face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * 0.4 * dt);
+          if (face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * C.airTurnMul * dt);
           approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * dt);
         }
-        if (this.state === 'jump' && this.vy <= 0) this.setState('fall');
+        if (this.state === PS.JUMP && this.vy <= 0) this.setState(PS.FALL);
         break;
       }
-      case 'jumpAttack': {
+      case PS.JUMP_ATTACK: {
         // Momentum carries; steering is weaker than a normal jump.
-        if (mv.has) approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * CONFIG.jumpAttacks.airControl * dt);
+        if (mv.has) approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, C.airControl * C.jumpAttackAirControl * dt);
         const a = this.attack;
-        if (!this.hitbox && this.stateTime >= a.startup && this.vy <= 0) {
+        if (!this.hitbox && this.stateTime >= a.hits[0].startup && this.vy <= 0) {
           this.hitbox = new Hitbox(this, a.box, this.payload); this.activeAt = this.stateTime;
         }
         break;
       }
-      case 'land': {
+      case PS.LAND: {
         // Committed landing: no roll, block, parry or attack until it ends.
-        const a = this.attack;
+        const a = this.attack, air = a.air;
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.hitbox && this.hitbox.hit.size > 0 && !this.landHit) {   // connected: hop and recover sooner
-          this.landHit = true; this.vy = a.hop; this.landTime = a.landRecovery * a.hitRecoveryMul;
+        if (this.hitbox && this.hitbox.hit.size > 0 && !this.landHit) {   // connected: hop and recover a bit sooner
+          this.landHit = true; this.vy = air.hop; this.landTime = a.recovery * air.hitRecoveryMul;
         }
-        if (this.hitbox && this.stateTime >= a.impactTime) this.hitbox = null;
-        if (this.stateTime >= this.landTime && this.y <= 0) this.setState('idle');
+        if (this.hitbox && this.stateTime >= air.impactTime) this.hitbox = null;
+        if (this.stateTime >= this.landTime && this.y <= 0) this.setState(PS.IDLE);
         break;
       }
-      case 'roll': {
+      case PS.ROLL: {
         const p = this.stateTime / C.rollTime;
         const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
         this.vx = fx * sp; this.vz = fz * sp;
-        if (this.stateTime >= C.rollTime) { this.vx *= 0.3; this.vz *= 0.3; this.setState('idle'); }
+        if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
       }
-      case 'attack': {
-        const a = this.attack, t = this.stateTime, endActive = a.startup + a.active;
-        if (t - dt < a.startup && t >= a.startup) this.hitbox = new Hitbox(this, a.box, this.payload);
-        if (t >= endActive) this.hitbox = null;
-        const lunging = t > a.startup * 0.55 && t < endActive;
+      case PS.ATTACK: {
+        const a = this.attack, tl = attackTimeline(a, this.stateTime), prev = attackTimeline(a, this.stateTime - dt);
+        // A fresh hitbox (and hit list) for each strike of the attack.
+        if (tl.phase === PHASE.ACTIVE && (prev.phase !== PHASE.ACTIVE || prev.hitIndex !== tl.hitIndex))
+          this.hitbox = new Hitbox(this, a.box, this.payload);
+        if (tl.phase !== PHASE.ACTIVE) this.hitbox = null;
+        const lunging = tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > C.lungeStart);
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
-        if (t >= endActive && this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); break; }
-        if (t >= endActive + a.recovery) this.setState('idle');
+        if (tl.phase === PHASE.RECOVERY && this.stamina >= C.rollCost && input.consume('roll')) { this.startRoll(mv); break; }
+        if (tl.done) this.setState(PS.IDLE);
         break;
       }
-      case 'block': {
+      case PS.BLOCK: {
         const bs = C.walkSpeed * C.blockSpeedMul;
         approachVel(this, mv.x * bs, mv.z * bs, (mv.has ? C.accel : C.decel) * dt);
         // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
         if (input.consume('parry')) {
           if (this.stamina > 0 && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
         }
-        if (!input.isHeld('block')) this.setState('idle');
+        if (!input.isHeld('block')) this.setState(PS.IDLE);
         break;
       }
-      case 'parry': {
+      case PS.PARRY: {
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= CONFIG.parry.time) this.setState('idle');   // whiffed: recovery over
+        if (this.stateTime >= CONFIG.parry.time) this.setState(PS.IDLE);   // whiffed: recovery over
         break;
       }
-      case 'drink': {
-        const F = CONFIG.flask;
+      case PS.USE_ITEM: {
+        const I = this.usingItem;
         approachVel(this, 0, 0, C.decel * dt);
-        const t0 = this.stateTime - dt, t1 = this.stateTime;
-        const healed = clamp(t1 - F.healStart, 0, F.healDuration) - clamp(t0 - F.healStart, 0, F.healDuration);
-        this.hp = Math.min(C.maxHp, this.hp + F.heal * healed / F.healDuration);
-        if (this.stateTime >= F.time) this.setState('idle');
+        if (I.heal) {   // heal spread over [healStart, healStart + healDuration]
+          const t0 = this.stateTime - dt, t1 = this.stateTime;
+          const healed = clamp(t1 - I.healStart, 0, I.healDuration) - clamp(t0 - I.healStart, 0, I.healDuration);
+          this.hp = Math.min(this.maxHp, this.hp + I.heal * healed / I.healDuration);
+        }
+        if (this.stateTime >= I.useTime) this.setState(PS.IDLE);
         break;
       }
-      case 'rest': {
+      case PS.REST: {
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= CONFIG.rest.time) this.setState('idle');
+        if (this.stateTime >= CONFIG.rest.time) this.setState(PS.IDLE);
         break;
       }
-      case 'hurt':
-      case 'stagger': {
+      case PS.HURT:
+      case PS.STAGGER: {
         approachVel(this, 0, 0, C.decel * dt);
         if (this.stateTime >= this.stunTime) {
-          if (this.state === 'stagger') this.poise = C.maxPoise;
-          this.setState('idle');
+          if (this.state === PS.STAGGER) this.poise = this.maxPoise;
+          this.setState(PS.IDLE);
         }
         break;
       }
-      case 'dead': approachVel(this, 0, 0, C.decel * dt); break;
+      case PS.DEAD: approachVel(this, 0, 0, C.decel * dt); break;
     }
     // Locked on: keep facing the target, except while committed to a roll or a swing already released.
-    const st = this.state;
-    if (face !== null && st !== 'roll' && st !== 'dead' && st !== 'stagger' && st !== 'rest' &&
-        st !== 'land' && !(st === 'jumpAttack' && this.hitbox) &&
-        !(st === 'attack' && this.attackPhase() !== 'startup')) {
+    const released = (this.state === PS.ATTACK && this.attackPhase() !== PHASE.STARTUP) || (this.state === PS.JUMP_ATTACK && this.hitbox);
+    if (face !== null && !this.in('noLockFacing') && !released)
       this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), CONFIG.lock.turnRate * dt);
-    }
 
     integrateBody(this, dt, C.knockFriction);
-    if (this.y <= 0 && (this.state === 'jump' || this.state === 'fall') && this.vy <= 0 && this.stateTime > 0) this.setState('idle');
-    if (this.y <= 0 && this.state === 'jumpAttack' && this.vy <= 0 && this.stateTime > 0) {
+    if (this.y <= 0 && this.in('airborne') && this.vy <= 0 && this.stateTime > 0) this.setState(PS.IDLE);
+    if (this.y <= 0 && this.state === PS.JUMP_ATTACK && this.vy <= 0 && this.stateTime > 0) {
       // Touchdown: a swing still in wind-up strikes on impact; the hitbox lingers for impactTime.
       const a = this.attack;
       if (!this.hitbox) this.hitbox = new Hitbox(this, a.box, this.payload);
-      this.landHit = false; this.landTime = a.landRecovery;
-      this.landEvent = { x: this.x, z: this.z, fx: a.fx };   // read once by Game for the ground pound
-      this.vx *= 0.35; this.vz *= 0.35;
-      this.setState('land');
+      this.landHit = false; this.landTime = a.recovery;
+      this.vx *= C.landKeep; this.vz *= C.landKeep;
+      this.setState(PS.LAND);
+      events.emit('land', { x: this.x, z: this.z, fx: a.air.fx });
     }
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
+  }
+
+  // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
+  takeHit(strike, from) {
+    const B = CONFIG.block, C = CONFIG.player;
+    const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
+    let damage = strike.damage, poise = strike.poise, knock = strike.knock, blocked = false, guardBroken = false;
+    if (this.state === PS.BLOCK && isInFront(this, from.x, from.z)) {
+      this.spend(B.staminaBase + strike.damage * B.staminaPerDamage);
+      if (this.stamina <= 0) guardBroken = true;
+      else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
+    }
+    this.hp = Math.max(0, this.hp - damage);
+    this.kx += dx / d * knock; this.kz += dz / d * knock;
+    if (blocked) this.brace = 1; else this.tint = 1;
+    if (this.hp <= 0) { this.hitbox = null; this.setState(PS.DEAD); return { blocked, died: true }; }
+    if (guardBroken) { this.hitbox = null; this.stunTime = B.breakTime; this.poise = this.maxPoise; this.setState(PS.STAGGER); return { blocked: false }; }
+    if (blocked) {
+      if (poise > 0) { this.poise = Math.max(1, this.poise - poise); this.poiseTimer = 0; }
+      return { blocked: true };
+    }
+    const r = applyPoise(this, poise, this.isCommitted(), this.maxPoise);
+    if (r !== POISE.NONE) {   // a jump attack still in its air wind-up is cancelled too
+      this.hitbox = null;
+      this.stunTime = r === POISE.STAGGER ? C.staggerTime : C.hurtTime;
+      this.setState(r === POISE.STAGGER ? PS.STAGGER : PS.HURT);
+    }
+    return { blocked: false };
   }
 
   pose(tt, ctx) {
     const r = this.rig, C = CONFIG.player;
     r.reset(); r.setOpacity(1);
     switch (this.state) {
-      case 'idle': {
-        const b = Math.sin(ctx.t * 1.6) * 0.012;
-        r.spin.scale.y = 1 + b; r.armL.rotation.z = 0.04; break;
-      }
-      case 'walk': r.walk(this.walkPhase, 0.6); break;
-      case 'jump': case 'fall':
+      case PS.IDLE: r.spin.scale.y = 1 + Math.sin(ctx.t * 1.6) * 0.012; r.armL.rotation.z = 0.04; break;
+      case PS.WALK: r.walk(this.walkPhase, 0.6); break;
+      case PS.JUMP: case PS.FALL:
         r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
-      case 'roll': {
+      case PS.ROLL: {
         const p = clamp(tt / C.rollTime, 0, 1), tuck = Math.sin(p * Math.PI);
         r.spin.rotation.x = p * Math.PI * 2;
         r.spin.scale.setScalar(1 - 0.35 * tuck); r.spin.position.y = HIP - 0.4 * tuck;
         r.legL.rotation.x = r.legR.rotation.x = -1.2 * tuck; r.kneeL.rotation.x = r.kneeR.rotation.x = 2.0 * tuck; r.armL.rotation.x = r.armR.rotation.x = -1.2 * tuck;
         break;
       }
-      case 'attack': {
-        const a = this.attack;
-        if (tt < a.startup) r.attackPose(a.anim, 'startup', tt / a.startup);
-        else if (tt < a.startup + a.active) r.attackPose(a.anim, 'active', (tt - a.startup) / a.active);
-        else r.attackPose(a.anim, 'recovery', (tt - a.startup - a.active) / a.recovery);
+      case PS.ATTACK: {
+        const tl = attackTimeline(this.attack, tt);
+        poseAttack(r, this.attack, tl.phase, tl.p, tl.hitIndex);
         break;
       }
-      case 'jumpAttack': {
+      case PS.JUMP_ATTACK: {
         const a = this.attack;
-        if (tt < this.activeAt) r.attackPose('overhead', 'startup', tt / a.startup);   // wind-up over the head
-        else r.attackPose('overhead', 'active', ease((tt - this.activeAt) / 0.2));     // driving down
+        if (tt < this.activeAt) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[0].startup);   // wind-up in the air
+        else poseAttack(r, a, PHASE.ACTIVE, ease((tt - this.activeAt) / 0.2));            // driving down
         r.legL.rotation.x += -0.7; r.kneeL.rotation.x = 1.1; r.legR.rotation.x += 0.15; r.kneeR.rotation.x = 0.9;
         break;
       }
-      case 'land': {
+      case PS.LAND: {
         const k = 1 - ease(tt / Math.max(this.landTime, 0.01));
-        r.attackPose('overhead', 'active', 1);
+        poseAttack(r, this.attack, PHASE.ACTIVE, 1);
         r.crouch(0.08 + 0.3 * k); r.lean(0.3 * k);
         break;
       }
-      case 'block':
+      case PS.BLOCK:
         r.walk(this.walkPhase, 0.3 * clamp(Math.hypot(this.vx, this.vz) / 2, 0, 1));   // short guarded steps
         r.armR.rotation.set(-1.45, 0, -0.5); r.weapon.rotation.set(0.2, 0, 1.2); r.armL.rotation.x = -1.3; r.tip.rotation.x = 0.06; break;
-      case 'parry': {
+      case PS.PARRY: {
         // Quick outward deflection, then an exposed recovery.
         const out = ease(tt / 0.12), back = ease((tt - 0.12) / (CONFIG.parry.time - 0.12));
         const k = out * (1 - back);
@@ -1074,23 +1492,20 @@ class Player {
         r.weapon.rotation.set(lerp(0.5, 0.1, k), 0, 1.0 * k); r.armL.rotation.x = -0.6 * k;
         break;
       }
-      case 'drink': {
-        const k = Math.sin(clamp(tt / CONFIG.flask.time, 0, 1) * Math.PI);
+      case PS.USE_ITEM: {
+        const k = Math.sin(clamp(tt / this.usingItem.useTime, 0, 1) * Math.PI);
         r.armL.rotation.set(-2.3 * k, 0, -0.5 * k); r.head.rotation.x = -0.4 * k; break;
       }
-      case 'rest': {
+      case PS.REST: {
         const k = Math.sin(clamp(tt / CONFIG.rest.time, 0, 1) * Math.PI);
         r.kneel(k); r.lean(0.2 * k); r.head.rotation.x = 0.4 * k; break;
       }
-      case 'hurt': r.tip.rotation.x = -0.18 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI); break;
-      case 'stagger':
-        r.tip.rotation.x = -0.32 * Math.sin(clamp(tt / this.stunTime, 0, 1) * Math.PI);
-        r.spin.rotation.z = Math.sin(tt * 9) * 0.1; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
-      case 'dead': deathPose(r, tt, 3.5); break;
+      case PS.HURT: case PS.STAGGER: flinchPose(r, this.state === PS.STAGGER, tt / this.stunTime, tt); break;
+      case PS.DEAD: deathPose(r, tt, C.deathFade); break;
     }
     if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
-    if (this.state === 'jumpAttack' && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
+    if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
     else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0));
     r.setTint(HURT_COLOR, this.tint * 0.9);
   }
@@ -1099,14 +1514,16 @@ class Player {
 // ============================================================================
 // 6. Enemy
 // ============================================================================
-// opts: x, z, yaw, behavior ('arena' | 'gated' | 'ambush' | 'patrol' | 'slumber' | 'dummy' | 'sparring'), aggro, leash, path
+// opts: x, z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
 class Enemy {
   constructor(def, opts) {
+    const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
     this.def = def;
-    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon,
-      weaponColor: def.weapon === 'club' ? 0x9a927c : 0x9aa0a8 });
-    this.radius = def.radius; this.height = def.height;
-    this.behavior = opts.behavior; this.aggro = opts.aggro; this.leash = opts.leash ?? Infinity;
+    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand });
+    this.radius = def.radius; this.height = BODY_HEIGHT * def.scale;
+    this.behavior = opts.behavior; this.notice = opts.notice;
+    this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
+    this.home = { x: opts.x, z: opts.z, yaw: opts.yaw, state: B.home };
     this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
     this.x = opts.x; this.y = 0; this.z = opts.z; this.yaw = opts.yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
@@ -1115,49 +1532,46 @@ class Enemy {
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
-    this.rewarded = false;                           // souls granted for this kill
-    this.discovered = false;                         // has triggered its one-time auto lock-on
-    this.dummy = this.behavior === 'dummy' || this.behavior === 'sparring';   // tutorial: rooted, never dies
-    this.immovable = this.dummy;
-    if (this.dummy) this.discovered = true;          // dummies never trigger auto lock-on
-    // idle patrol lurk dormant rise leap chase windup active recover hurt stagger parried broken dead
-    this.homeState = this.behavior === 'patrol' ? 'patrol' : 'idle';
-    this.state = { ambush: 'lurk', slumber: 'dormant', patrol: 'patrol' }[this.behavior] || 'idle';
-    this.stateTime = 0;
-    this.cooldown = rand(0.6, 1.0); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
+    this.rewarded = false;                           // death already announced (souls granted)
+    this.training = !!B.training;                    // tutorial dummy: rooted, never dies
+    this.immovable = this.training;
+    this.discovered = this.training;                 // has had its one-time auto lock-on (dummies never do)
+    this.state = B.start; this.stateTime = 0;
+    const fd = def.firstDelay || E.firstDelay;
+    this.cooldown = rand(fd[0], fd[1]); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
     this.savePrev();
   }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
-  alive() { return this.state !== 'dead'; }
-  // Visible and engaged enough to be the HUD target.
-  awake() { return this.state !== 'lurk' && this.state !== 'dormant'; }
+  in(group) { return ENEMY_GROUPS[group].has(this.state); }
+  alive() { return this.state !== ES.DEAD; }
+  awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
+  isCommitted() { return this.state === ES.ACTIVE; }
 
   update(dt, player) {
     const d = this.def, E = CONFIG.enemy;
     this.stateTime += dt;
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
-    this.crack = Math.max(0, this.crack - dt / 0.5);
+    this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
-    this.poiseTimer += dt;
     this.chainTime += dt;
-    if (this.dummy) { this.updateDummy(dt); return; }
-    if (this.poiseTimer > E.poiseResetTime) this.poise = d.poise;
+    if (this.training) { this.updateTraining(dt); return; }
+    tickPoise(this, dt, E.poiseResetTime, d.poise);
     // Posture holds while the boss is open from a parry, so the riposte window can build on it.
-    if (d.posture && this.state !== 'broken' && this.state !== 'parried' && player.state !== 'attack' && player.state !== 'jumpAttack')
+    if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && !player.isAttacking())
       this.posture = Math.max(0, this.posture - d.posture.decay * dt);
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     const toPlayer = Math.atan2(dx, dz);
-    const playerAlive = player.state !== 'dead';
-    const sees = playerAlive && dist < this.aggro;
+    const playerAlive = player.alive();
+    const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
     let tx = 0, tz = 0;
 
     switch (this.state) {
-      case 'idle':
-        if (sees) this.setState('chase');
+      case ES.IDLE:
+        if (sees) this.setState(ES.CHASE);
         break;
-      case 'patrol': {
-        if (sees) { this.setState('chase'); break; }
+      case ES.PATROL: {
+        if (sees) { this.setState(ES.CHASE); break; }
         const goal = this.path[this.pathDir > 0 ? 1 : 0], gx = goal - this.x, gz = this.pathZ - this.z, gd = Math.hypot(gx, gz);
         if (gd < 0.3) this.pathDir *= -1;
         else {
@@ -1167,228 +1581,203 @@ class Enemy {
         }
         break;
       }
-      case 'lurk':   // hidden in an alcove until the player passes close
+      case ES.LURK:   // hidden in an alcove until the player passes close
         if (sees) {
           this.yaw = toPlayer; this.vy = E.leapVelocity;
           this.vx = dx / dist * E.leapSpeed; this.vz = dz / dist * E.leapSpeed;
-          this.setState('leap');
+          this.setState(ES.LEAP);
         }
         break;
-      case 'leap':
+      case ES.LEAP:
         tx = this.vx; tz = this.vz;
-        if (this.stateTime >= E.leapTime && this.y <= 0) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
+        if (this.stateTime >= E.leapTime && this.y <= 0) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
-      case 'dormant':   // lying on the floor
-        if (sees) this.setState('rise');
+      case ES.DORMANT:   // lying on the floor
+        if (sees) this.setState(ES.RISE);
         break;
-      case 'rise':
-        if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState('chase'); }
+      case ES.RISE:
+        if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
-      case 'chase': {
-        if (!playerAlive || dist > this.leash) { this.next = null; this.setState(this.homeState); break; }
+      case ES.RETURN: {   // lost the player: walk back home, then resume the home behaviour
+        if (sees) { this.setState(ES.CHASE); break; }
+        const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
+        if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
+        const sp = d.speed * E.returnSpeedMul;
+        tx = hx / hd * sp; tz = hz / hd * sp;
+        this.yaw = turnToward(this.yaw, Math.atan2(hx, hz), d.turnRate * dt);
+        break;
+      }
+      case ES.CHASE: {
+        const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
+        if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player)) { this.next = null; this.setState(ES.RETURN); break; }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
         if (this.cooldown <= 0 && !this.next) this.next = d.attacks[Math.floor(Math.random() * d.attacks.length)];
         const want = this.next ? this.next.range : d.holdRange;
         if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
-        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < 0.4) {
-          this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState('windup');
+        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) {
+          this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
         }
         break;
       }
-      case 'windup': {
+      case ES.WINDUP: {
         const hit = this.attack.hits[this.hitIndex];
         if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
-        if (this.stateTime >= hit.startup) { this.hitbox = new Hitbox(this, this.attack.box, this.attack); this.setState('active'); }
+        if (this.stateTime >= hit.startup) this.strike();
         break;
       }
-      case 'active': {
-        const hit = this.attack.hits[this.hitIndex];
+      case ES.ACTIVE: {
         tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge;
-        if (this.stateTime >= hit.active) {
-          this.hitbox = null;
-          if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.setState('windup'); }
-          else this.setState('recover');
-        }
+        this.endStrikeWhenDone();
         break;
       }
-      case 'recover':
-        if (this.stateTime >= this.attack.recovery) { this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState('chase'); }
+      case ES.RECOVER:
+        if (this.stateTime >= this.attack.recovery) { this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); }
         break;
-      case 'hurt':
-        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState('chase'); }
+      case ES.HURT:
+        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); }
         break;
-      case 'stagger':
-        if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState('chase'); }
+      case ES.STAGGER:
+        if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
-      case 'parried':
-        if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState('chase'); }
+      case ES.PARRIED:
+        if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
-      case 'broken':
-        if (this.stateTime >= d.posture.breakTime) { this.posture = 0; this.cooldown = d.cooldown[0]; this.setState('chase'); }
+      case ES.BROKEN:
+        if (this.stateTime >= d.posture.breakTime) { this.posture = 0; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
-      case 'dead': break;
+      case ES.DEAD: break;
     }
 
     approachVel(this, tx, tz, E.accel * dt);
     integrateBody(this, dt, E.knockFriction);
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
   }
+  // The strike timeline shared by all enemies: windup -> active (per hit) -> recover.
+  strike() { this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack)); this.setState(ES.ACTIVE); }
+  endStrikeWhenDone() {
+    if (this.stateTime < this.attack.hits[this.hitIndex].active) return;
+    this.hitbox = null;
+    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.setState(ES.WINDUP); }
+    else this.setState(ES.RECOVER);
+  }
+  // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
+  updateTraining() {
+    if (!this.def.attacks.length) return;
+    switch (this.state) {
+      case ES.IDLE: if (this.stateTime >= this.def.restTime) { this.attack = this.def.attacks[0]; this.hitIndex = 0; this.setState(ES.WINDUP); } break;
+      case ES.WINDUP: if (this.stateTime >= this.attack.hits[this.hitIndex].startup) this.strike(); break;
+      case ES.ACTIVE: this.endStrikeWhenDone(); break;
+      case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
+      case ES.PARRIED: if (this.stateTime >= this.def.parriedTime) this.setState(ES.IDLE); break;
+    }
+  }
 
   // Boss posture: add, and break when full. Returns true if this broke the posture.
   addPosture(amount) {
     const P = this.def.posture;
-    if (!P || this.state === 'broken') return false;
+    if (!P || this.state === ES.BROKEN) return false;
     this.posture = Math.min(P.max, this.posture + amount);
     if (this.posture < P.max) return false;
     this.hitbox = null; this.next = null; this.crack = 1;
-    this.setState('broken');
+    this.setState(ES.BROKEN);
     return true;
   }
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
-  // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
-  updateDummy(dt) {
-    if (this.behavior !== 'sparring') return;
-    const a = this.def.attacks[0], hit = a.hits[0];
-    switch (this.state) {
-      case 'idle': if (this.stateTime >= this.def.restTime) { this.attack = a; this.hitIndex = 0; this.setState('windup'); } break;
-      case 'windup': if (this.stateTime >= hit.startup) { this.hitbox = new Hitbox(this, a.box, a); this.setState('active'); } break;
-      case 'active': if (this.stateTime >= hit.active) { this.hitbox = null; this.setState('recover'); } break;
-      case 'recover': if (this.stateTime >= a.recovery) this.setState('idle'); break;
-      case 'parried': if (this.stateTime >= this.def.parriedTime) this.setState('idle'); break;
-    }
-  }
   getParried() {
     this.hitbox = null; this.next = null;
     if (this.def.posture) {
       this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
       if (this.addPosture(this.def.posture.parry)) return true;
     }
-    this.setState('parried');
+    this.setState(ES.PARRIED);
     return false;
   }
 
-  // Returns { broke } so the caller can add break feedback.
-  takeHit(damage, poiseDamage, kx, kz, kind) {
-    if (this.dummy) {   // flash and recoil only: no knockback, poise, stagger or death
-      const kl = Math.hypot(kx, kz) || 1, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
-      this.hp = Math.max(1, this.hp - damage); this.tint = 1;
-      this.recoil = 1; this.recoilF = (kx * s + kz * c) / kl; this.recoilS = (kz * s - kx * c) / kl;
-      return { broke: false };
-    }
-    const d = this.def, P = d.posture;
-    if (P && this.state === 'broken') damage *= P.damageMul;
-    this.hp = Math.max(0, this.hp - damage);
-    this.tint = 1; this.poiseTimer = 0;
+  // One strike from `from`. Returns { broke (posture), died }.
+  takeHit(strike, from) {
+    const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
+    const kx = dx / d * strike.knock, kz = dz / d * strike.knock;
+    const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
+    this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
+    this.tint = 1;
+    if (this.training) { this.hp = Math.max(1, this.hp - strike.damage); return { broke: false, died: false }; }   // flash and recoil only
+    const def = this.def, P = def.posture;
+    this.hp = Math.max(0, this.hp - strike.damage * (P && this.state === ES.BROKEN ? P.damageMul : 1));
     this.kx += kx; this.kz += kz;
-    const kl = Math.hypot(kx, kz) || 1, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
-    this.recoil = 1; this.recoilF = (kx * s + kz * c) / kl; this.recoilS = (kz * s - kx * c) / kl;
-    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState('dead'); return { broke: false }; }
+    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (P) {
       // Bosses ignore interrupts; only chained hits build posture.
       const chained = this.chainTime <= P.chainGap;
       this.chainTime = 0;
-      if (this.state === 'dormant' || this.state === 'idle') this.setState('chase');
-      return { broke: chained && this.addPosture(kind === 'heavy' ? P.heavy : P.light) };
+      if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
+      return { broke: chained && this.addPosture(strike.postureDmg), died: false };
     }
-    if (this.state === 'parried' || this.state === 'rise' || this.state === 'leap') return { broke: false };
-    if (this.state === 'dormant') { this.setState('rise'); return { broke: false }; }
-    this.poise -= poiseDamage;
-    const unaware = this.state === 'idle' || this.state === 'patrol' || this.state === 'lurk';
-    if (this.poise <= 0) {
-      if (this.state === 'active') this.poise = d.poise;          // committed swings are not cancelled
-      else { this.hitbox = null; this.next = null; this.setState('stagger'); }
-    } else if (d.flinchTime > 0 && (unaware || this.state === 'chase' || this.state === 'recover')) {
-      this.setState('hurt');
-    } else if (unaware) this.setState('chase');
-    return { broke: false };
+    if (this.in('shrugsHits')) return { broke: false, died: false };
+    if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }
+    const unaware = this.in('unaware');
+    const r = applyPoise(this, strike.poise, this.isCommitted(), def.poise);
+    if (r === POISE.STAGGER) { this.hitbox = null; this.next = null; this.setState(ES.STAGGER); }
+    else if (r === POISE.FLINCH && def.flinchTime > 0 && this.in('canFlinch')) this.setState(ES.HURT);
+    else if (unaware) this.setState(ES.CHASE);
+    return { broke: false, died: false };
   }
 
   // Idle personality layered on top of the base pose, weighted by how idle the enemy is.
   idleLayer(r, ctx, w) {
     if (w <= 0.001) return;
-    const t = ctx.t * this.tempo + this.seed, d = this.def;
+    const t = ctx.t * this.tempo + this.seed;
     // Head turns toward the player now and then.
     const look = ease((Math.sin(t * 0.37) - 0.2) * 1.5);
     const rel = angDiff(Math.atan2(ctx.px - this.x, ctx.pz - this.z), this.yaw);
     r.head.rotation.y += clamp(rel, -1.0, 1.0) * look * w;
-    if (d.idle === 'guard') {
-      const shift = Math.sin(t * 0.9);
-      r.spin.position.x += shift * 0.045 * w; r.tip.rotation.z += shift * 0.03 * w;
-      r.legL.rotation.z += Math.max(0, shift) * 0.08 * w; r.legR.rotation.z -= Math.max(0, -shift) * 0.08 * w;
-      const check = ease(Math.sin(t * 0.21) * 4 - 3);   // occasional weapon check
-      r.armR.rotation.x += -0.9 * check * w; r.weapon.rotation.z += 0.8 * check * w; r.head.rotation.x += 0.35 * check * w;
-    } else if (d.idle === 'still') {
-      const breath = Math.sin(t * 1.1);
-      r.spin.scale.y *= 1 + breath * 0.018 * w; r.spin.scale.x *= 1 + breath * 0.012 * w;
-      r.tip.rotation.z += Math.sin(t * 0.3) * 0.008 * w;
-    } else if (d.idle === 'twitch') {
-      // Restless footwork, added on top of whatever the legs are doing.
-      const step = Math.sin(t * 4) * 0.12 * w;
-      r.legL.rotation.x += step; r.legR.rotation.x -= step;
-      r.crouch(0.16 * w); r.tip.rotation.x += 0.12 * w;
-      const tw = Math.pow(Math.max(0, Math.sin(t * 2.3)), 12);
-      r.head.rotation.y += Math.sin(t * 17) * 0.25 * tw * w; r.armR.rotation.x -= 0.4 * tw * w;
-      // Small pacing circle (visual offset only).
-      r.root.position.x += Math.cos(t * 0.8) * 0.22 * w; r.root.position.z += Math.sin(t * 0.8) * 0.22 * w;
-    } else if (d.idle === 'sway') {
-      r.tip.rotation.z += Math.sin(t * 0.45) * 0.04 * w; r.tip.rotation.x += Math.sin(t * 0.31) * 0.025 * w;
-      r.armR.rotation.x = lerp(r.armR.rotation.x, -0.05, w);            // club rests on the ground
-      r.weapon.rotation.x = lerp(r.weapon.rotation.x, 1.25, w);
-      r.weapon.rotation.y += Math.sin(t * 0.45) * 0.12 * w;             // and drags as it sways
-    }
+    lookup(IDLE_STYLES, this.def.idle || 'none', 'idle style', 'none')(r, t, w);
   }
 
   pose(tt, ctx) {
     const r = this.rig, d = this.def, E = CONFIG.enemy;
     r.reset(); r.setOpacity(1); r.root.visible = true;
     let warn = 0;
-    const a = this.attack, dir = this.hitIndex % 2 ? -1 : 1;
+    const a = this.attack;
     switch (this.state) {
-      case 'chase': case 'patrol': r.walk(this.walkPhase, 0.5); break;
-      case 'lurk':
+      case ES.CHASE: case ES.PATROL: case ES.RETURN: r.walk(this.walkPhase, 0.5); break;
+      case ES.LURK:
         r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;
-      case 'leap': r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;
-      case 'dormant': r.tip.rotation.x = -Math.PI / 2; r.armL.rotation.x = r.armR.rotation.x = -0.3; break;
-      case 'rise': {
+      case ES.LEAP: r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;
+      case ES.DORMANT: r.tip.rotation.x = -Math.PI / 2; r.armL.rotation.x = r.armR.rotation.x = -0.3; break;
+      case ES.RISE: {
         const p = ease(tt / E.riseTime);
         r.tip.rotation.x = -Math.PI / 2 * (1 - p); r.legL.rotation.x = -1.2 * Math.sin(p * Math.PI);
         r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
       }
-      case 'windup': {
-        const hit = a.hits[this.hitIndex];
-        r.attackPose(a.anim, 'startup', tt / hit.startup, dir);
-        warn = clamp(tt / 0.08, 0, 1);
+      case ES.WINDUP:
+        poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
+        warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);
         break;
-      }
-      case 'active': r.attackPose(a.anim, 'active', tt / a.hits[this.hitIndex].active, dir); break;
-      case 'recover': r.attackPose(a.anim, 'recovery', tt / a.recovery, dir); break;
-      case 'hurt': r.tip.rotation.x = -0.16 * Math.sin(clamp(tt / d.flinchTime, 0, 1) * Math.PI); break;
-      case 'stagger':
-        r.tip.rotation.x = -0.3 * Math.sin(clamp(tt / d.staggerTime, 0, 1) * Math.PI);
-        r.spin.rotation.z = Math.sin(tt * 8) * 0.12; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3; break;
-      case 'parried': {
+      case ES.ACTIVE: poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex); break;
+      case ES.RECOVER: poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex); break;
+      case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt); break;
+      case ES.STAGGER: flinchPose(r, true, tt / d.staggerTime, tt); break;
+      case ES.PARRIED: {
         // Weapon knocked wide, torso thrown back, slow to recover.
         const k = 1 - ease((tt - d.parriedTime * 0.6) / (d.parriedTime * 0.4));
         r.tip.rotation.x = -0.38 * k; r.spin.rotation.y = 0.7 * k; r.spin.rotation.z = Math.sin(tt * 7) * 0.08 * k;
         r.armR.rotation.set(lerp(-0.4, -2.5, k), 0, -0.9 * k); r.armL.rotation.x = lerp(-0.1, 0.5, k); break;
       }
-      case 'broken': {
+      case ES.BROKEN: {
         // Sinks to one knee, club on the floor, then hauls itself back up.
         const T = d.posture.breakTime, k = ease(tt / 0.4) * (1 - ease((tt - T + 0.6) / 0.6));
         r.kneel(k); r.lean(0.3 * k);
         r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
         r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
       }
-      case 'dead': deathPose(r, tt, E.deathFade); r.root.visible = tt < E.deathFade; break;
+      case ES.DEAD: deathPose(r, tt, E.deathFade); r.root.visible = tt < E.deathFade; break;
     }
     // Blend idle personality in and out so aggro never pops.
-    const idling = this.state === 'idle' || this.state === 'patrol' || this.state === 'lurk' || this.state === 'chase';
-    const wTarget = this.state === 'idle' ? 1 : this.state === 'chase' || this.state === 'patrol' || this.state === 'lurk' ? 0.25 : 0;
-    r.idleW += ((idling ? wTarget : 0) - r.idleW) * (1 - Math.exp(-5 * ctx.dt));
-    if (this.state !== 'dead' && this.state !== 'dormant' && !this.dummy) this.idleLayer(r, ctx, r.idleW);
+    r.idleW += ((IDLE_BLEND[this.state] || 0) - r.idleW) * (1 - Math.exp(-CONFIG.fx.idleBlendRate * ctx.dt));
+    if (this.alive() && this.state !== ES.DORMANT && !this.training) this.idleLayer(r, ctx, r.idleW);
     if (this.recoil > 0) {
-      const k = Math.sin(this.recoil * Math.PI) * 0.26;
+      const k = Math.sin(this.recoil * Math.PI) * CONFIG.fx.recoilLean;
       r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
     }
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
@@ -1401,6 +1790,17 @@ class Enemy {
 // ============================================================================
 // 7. Hitbox helper
 // ============================================================================
+// What a landed attack carries, built the same way for both sides.
+function makeStrike(attack, riposte = false) {
+  const E = CONFIG.enemy, R = (riposte && attack.riposte) || {};
+  const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
+  return {
+    attackId: attack.id, air: !!attack.air, riposte,
+    damage: attack.damage * (R.damage || 1), poise: attack.poise * (R.poise || 1),
+    knock: attack.knock, postureDmg: attack.postureDmg || 0,
+    hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1),
+  };
+}
 // An oriented box in the owner's frame, tested against a target's upright body cylinder.
 class Hitbox {
   constructor(owner, box, payload) { this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); }
@@ -1424,110 +1824,69 @@ class Hitbox {
 // ============================================================================
 // 8. resolveCombat
 // ============================================================================
-const isInFront = (p, x, z) => (x - p.x) * Math.sin(p.yaw) + (z - p.z) * Math.cos(p.yaw) > 0;
-
 // Seconds until enemy e's current strike goes active (negative once active) if the player could parry
 // it now, allowing `extra` s of look-ahead; null if the strike is not parryable from here.
 function parryTiming(p, e, extra) {
   const P = CONFIG.parry;
   let rem;
-  if (e.state === 'windup') rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
-  else if (e.state === 'active') rem = -e.stateTime;
+  if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
+  else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
   if (rem > P.lead + extra || rem < -P.grace) return null;
-  if (!isInFront(p, e.x, e.z)) return null;                       // same front rule as blocking
+  if (!isInFront(p, e.x, e.z) || gateBetween(p, e)) return null;   // same front rule as blocking
   const b = e.attack.box;
   if (Math.hypot(e.x - p.x, e.z - p.z) > b.fwd + b.d / 2 + p.radius + P.reach) return null;
   return rem;
 }
 
-function postureBreakFx(game, e) {
-  spawnBurst({ x: e.x, y: e.y + e.height * 0.65, z: e.z }, 0xffc060, 30, 8);
-  game.hitstop = Math.max(game.hitstop, e.def.posture.hitstop);
-  game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp);
-}
-
+// Order each step: parry, then player hitboxes against enemies, then enemy hitboxes against the player.
+// Damage itself lives in Player.takeHit / Enemy.takeHit; effects and souls listen to the events.
 function resolveCombat(game) {
-  const p = game.player, C = CONFIG.player, B = CONFIG.block, P = CONFIG.parry, E = CONFIG.enemy;
+  const p = game.player, P = CONFIG.parry;
   const live = game.enemies.filter(e => e.alive());
-  // 0. Parry, before any damage: only the strike that lands first is parried.
-  if (p.state === 'parry' && p.stateTime <= P.arm) {
-    let target = null, soonest = Infinity;
-    for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
-    if (target) {
-      const broke = target.getParried();
-      game.notify('parry');
-      p.stamina = Math.min(C.maxStamina, p.stamina + P.cost);   // a successful parry is free
-      p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
-      p.setState('idle');
-      spawnBurst({ x: target.x, y: target.y + target.height * 0.6, z: target.z }, 0xfff6d0, 26, 7.5);
-      game.hitstop = Math.max(game.hitstop, P.hitstop);
-      game.addShake(P.shakeTime, P.shakeAmp);
-      if (broke) postureBreakFx(game, target);
-    }
-  }
-  // 1. Player hitboxes against enemy bodies.
-  const playerHits = p.hitbox ? live.filter(e => p.hitbox.overlaps(e)) : [];
-  // 2. Enemy hitboxes against the player's body.
-  const enemyHits = p.state === 'dead' ? [] : live.filter(e => e.hitbox && e.hitbox.overlaps(p)).map(e => e.hitbox);
-  // 3. Apply damage, poise loss, knockback and stagger.
   const contact = (hb, target) => {
     const c = hb.center();
     return { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
   };
+  // 0. Parry, before any damage: only the strike that lands first is parried.
+  if (p.state === PS.PARRY && p.stateTime <= P.arm) {
+    let target = null, soonest = Infinity;
+    for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
+    if (target) {
+      const broke = target.getParried();
+      p.stamina = Math.min(p.maxStamina, p.stamina + P.cost);   // a successful parry is free
+      p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
+      p.setState(PS.IDLE);
+      game.hitstop = Math.max(game.hitstop, P.hitstop);
+      events.emit('parry', { target });
+      if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); }
+    }
+  }
+  // 1. Player hitboxes against enemy bodies.
+  const playerHits = p.hitbox ? live.filter(e => p.hitbox.overlaps(e) && !gateBetween(p, e)) : [];
+  // 2. Enemy hitboxes against the player's body.
+  const enemyHits = p.alive() ? live.filter(e => e.hitbox && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];
+  // 3. Apply damage, poise loss, knockback and stagger.
   for (const e of playerHits) {
-    const a = p.hitbox.payload;
+    const strike = p.hitbox.payload;
     p.hitbox.markHit(e);
-    const dx = e.x - p.x, dz = e.z - p.z, d = Math.hypot(dx, dz) || 1;
-    const res = e.takeHit(a.damage, a.poise, dx / d * a.knock, dz / d * a.knock, a.kind);
-    game.notify('hit', { kind: a.kind, air: a.air, target: e });
-    spawnBurst(contact(p.hitbox, e), a.riposte ? 0xffffff : 0xe8d8a0, a.riposte ? 22 : 12, a.riposte ? 6.5 : 4.5);
-    game.hitstop = Math.max(game.hitstop, a.hitstop);
-    if (res.broke) postureBreakFx(game, e);
+    const res = e.takeHit(strike, p);
+    game.hitstop = Math.max(game.hitstop, strike.hitstop);
+    events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: false });
+    if (res.broke) { game.hitstop = Math.max(game.hitstop, e.def.posture.hitstop); events.emit('postureBreak', { enemy: e }); }
   }
   for (const hb of enemyHits) {
-    if (p.invulnerable() || p.state === 'dead') continue;   // a dodged swing stays live: it can catch the end of a roll
-    const a = hb.payload, e = hb.owner;
+    if (p.invulnerable() || !p.alive()) continue;   // a dodged swing stays live: it can catch the end of a roll
     hb.markHit(p);
-    const dx = p.x - e.x, dz = p.z - e.z, d = Math.hypot(dx, dz) || 1;
-    let damage = a.damage, poise = a.poise, knock = a.knock, blocked = false, broken = false;
-    if (p.state === 'block' && isInFront(p, e.x, e.z)) {
-      p.spend(B.staminaBase + a.damage * B.staminaPerDamage);
-      if (p.stamina <= 0) broken = true;
-      else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
-    }
-    p.hp = Math.max(0, p.hp - damage);
-    p.kx += dx / d * knock; p.kz += dz / d * knock;
-    const at = contact(hb, p);
-    if (blocked) {
-      game.notify('block');
-      p.brace = 1;
-      spawnBurst(at, 0xffd070, 16, 7);
-      game.hitstop = Math.max(game.hitstop, B.hitstop);
-    } else {
-      p.tint = 1;
-      spawnBurst(at, 0xb01818, 14, 4.5);
-      game.hitstop = Math.max(game.hitstop, clamp(E.hitstopBase + a.damage * E.hitstopScale, 0, E.hitstopMax));
-    }
-    if (p.hp <= 0) { p.hitbox = null; p.setState('dead'); }
-    else if (broken) { p.hitbox = null; p.stunTime = B.breakTime; p.poise = C.maxPoise; p.setState('stagger'); }
-    else if (!blocked) {
-      p.poise -= poise; p.poiseTimer = 0;
-      // Swings already out are not interrupted; a jump attack still in its air wind-up is cancelled.
-      const committed = (p.state === 'attack' && p.attackPhase() === 'active') || (p.state === 'jumpAttack' && !!p.hitbox);
-      if (p.poise <= 0 && committed) p.poise = C.maxPoise;
-      else if (!committed) {
-        p.hitbox = null;
-        if (p.poise <= 0) { p.stunTime = C.staggerTime; p.setState('stagger'); }
-        else { p.stunTime = C.hurtTime; p.setState('hurt'); }
-      }
-    } else if (poise > 0) { p.poise = Math.max(1, p.poise - poise); p.poiseTimer = 0; }
+    const res = p.takeHit(hb.payload, hb.owner);
+    game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : hb.payload.hitstop);
+    events.emit('strike', { strike: hb.payload, attacker: hb.owner, target: p, at: contact(hb, p), blocked: res.blocked });
   }
 }
 
-// Bodies cannot overlap; enemies barely give way to the player.
+// Bodies cannot overlap; enemies barely give way to the player, and dummies never do.
 function separatePair(a, b, shareA) {
-  if (b.immovable) shareA = 1; else if (a.immovable) shareA = 0;   // dummies never get pushed
+  if (b.immovable) shareA = 1; else if (a.immovable) shareA = 0;
   if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
   const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.radius + b.radius;
   if (d >= min) return;
@@ -1547,19 +1906,20 @@ function separateBodies(p, enemies) {
 // ============================================================================
 const particles = [];
 const particleGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
-for (let i = 0; i < 180; i++) {
+for (let i = 0; i < CONFIG.fx.particleCount; i++) {
   const mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false }));
   mesh.visible = false; scene.add(mesh);
   particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
 }
 let particleCursor = 0;
-function spawnBurst(pos, color, count, speed) {
-  for (let i = 0; i < count; i++) {
+// burst: { color, count, speed } from CONFIG.fx.bursts
+function spawnBurst(pos, burst) {
+  for (let i = 0; i < burst.count; i++) {
     const p = particles[particleCursor++ % particles.length];
-    const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u), s = speed * rand(0.35, 1);
+    const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u), s = burst.speed * rand(0.35, 1);
     p.vx = Math.cos(a) * r * s; p.vy = u * s + 1.5; p.vz = Math.sin(a) * r * s;
     p.life = CONFIG.fx.particleLife * rand(0.6, 1);
-    p.mesh.position.set(pos.x, pos.y, pos.z); p.mesh.material.color.set(color); p.mesh.visible = true;
+    p.mesh.position.set(pos.x, pos.y, pos.z); p.mesh.material.color.set(burst.color); p.mesh.visible = true;
   }
 }
 function updateParticles(dt) {
@@ -1567,7 +1927,7 @@ function updateParticles(dt) {
     if (p.life <= 0) continue;
     p.life -= dt;
     if (p.life <= 0) { p.mesh.visible = false; continue; }
-    p.vy -= 12 * dt;
+    p.vy -= CONFIG.fx.particleGravity * dt;
     p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
     p.mesh.rotation.x += dt * 9; p.mesh.rotation.y += dt * 7;
     p.mesh.material.opacity = clamp(p.life / CONFIG.fx.particleLife * 1.6, 0, 1);
@@ -1575,7 +1935,6 @@ function updateParticles(dt) {
 }
 function updateDust(t) {
   for (const d of dust) {
-    if (!d.group.visible) continue;
     const pos = d.points.geometry.attributes.position.array;
     d.seeds.forEach((s, i) => {
       const k = t * s.v + s.s;
@@ -1739,40 +2098,73 @@ function updateDebug(game, show, placed) {
 // 10. HUD
 // ============================================================================
 const $ = id => document.getElementById(id);
+// A bar that drops at once but drains its trailing highlight slowly.
+const trailToward = (trail, value, dt) => value > trail ? value : Math.max(value, trail - dt * CONFIG.fx.trailDrain);
 const hud = {
-  root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'),
-  flasks: Array.from({ length: CONFIG.flask.charges }, () => {
-    const f = document.createElement('span'); f.className = 'flask'; $('pFlasks').appendChild(f); return f;
-  }),
+  root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'), flaskRow: $('pFlasks'), flasks: [],
   soulsN: $('pSoulsN'),
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), ePost: $('ePost'), ePostFill: $('ePostFill'),
-  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'),
+  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), confirm: $('confirm'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutDone: $('tutDone'),
   help: $('help'), toggle: $('hbToggle'),
   pTrailV: 1, eTrailV: 1, target: null, restedTimer: 0, lastPosture: 0, postFlash: 0,
-  reset() {
+  // Texts built from the live key bindings and the current level.
+  buildTexts(game) {
+    const rows = [
+      ['Move', moveLabel()], ['Camera', 'Mouse (click the view to capture it)'],
+      ['Jump', bindLabel('jump')], ['Roll', bindLabel('roll')],
+      ['Light attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
+      ['Jump attack', 'Light or heavy while airborne'],
+      ['Block (hold)', `[ ${ACTIONS.block.map(keyLabel).filter((v, i, a) => a.indexOf(v) === i).join(' / ')} ]`],
+      ['Parry', `${bindLabel('parry')} just before the blow lands`],
+      ['Lock-on', bindLabel('lock')], ['Switch target', `${bindLabel('switchTarget')} while locked on`],
+      ['Zoom in / out', `${bindLabel('zoomIn', 'Wheel up')} ${bindLabel('zoomOut', 'Wheel down')}`],
+      ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')],
+      ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', systemLabel('help')],
+    ];
+    const table = $('helpTable'); table.textContent = '';
+    for (const [k, v] of rows) {
+      const tr = table.insertRow(); tr.insertCell().textContent = k; tr.insertCell().textContent = v;
+    }
+    $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
+    $('helpLevel').textContent = game.level ? game.level.help || '' : '';
+    $('helpWarn').textContent = ACTIONS.block.some(c => c.startsWith('Control'))
+      ? `Prefer ${keyLabel(ACTIONS.block[0])} for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.` : '';
+    $('helpHint').textContent = `${keyLabel(SYSTEM_KEYS.help)}: help`;
+    $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
+    $('completeHint').textContent = `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
+    this.prompt.textContent = `${bindLabel('rest')} Rest at bonfire`;
+    this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
+  },
+  reset(game) {
     this.pTrailV = this.eTrailV = 1; this.target = null; this.restedTimer = 0;
     for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
+    this.buildTexts(game);
   },
   showRested() { this.restedTimer = CONFIG.rest.messageTime; },
+  // Flask icons follow the inventory's capacity, so upgrades show.
+  syncFlasks(it) {
+    while (this.flasks.length < it.max) { const f = document.createElement('span'); f.className = 'flask'; this.flaskRow.appendChild(f); this.flasks.push(f); }
+    while (this.flasks.length > it.max) this.flasks.pop().remove();
+    this.flasks.forEach((f, i) => f.classList.toggle('full', i < it.count));
+  },
   update(game, dt) {
     const p = game.player, e = game.target();
-    const ph = p.hp / CONFIG.player.maxHp;
-    // The trailing bar holds, then drains slowly toward the real value.
-    this.pTrailV = ph > this.pTrailV ? ph : Math.max(ph, this.pTrailV - dt * 0.22);
+    const ph = p.hp / p.maxHp;
+    this.pTrailV = trailToward(this.pTrailV, ph, dt);
     this.pHp.style.width = ph * 100 + '%'; this.pTrail.style.width = this.pTrailV * 100 + '%';
-    this.pSt.style.width = p.stamina / CONFIG.player.maxStamina * 100 + '%';
-    this.flasks.forEach((f, i) => f.classList.toggle('full', i < game.flasks));
-    this.soulsN.textContent = game.souls;
+    this.pSt.style.width = p.stamina / p.maxStamina * 100 + '%';
+    this.syncFlasks(p.item('flask'));
+    this.soulsN.textContent = p.souls;
     this.eBars.classList.toggle('hidden', !e);
     if (e) {
       const eh = e.hp / e.def.hp;
       if (e !== this.target) { this.target = e; this.eTrailV = eh; this.eName.textContent = e.def.name; }
-      this.eTrailV = eh > this.eTrailV ? eh : Math.max(eh, this.eTrailV - dt * 0.22);
+      this.eTrailV = trailToward(this.eTrailV, eh, dt);
       this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = this.eTrailV * 100 + '%';
       this.ePost.classList.toggle('hidden', !e.def.posture);
       if (e.def.posture) {
-        if (e.posture > this.lastPosture + 0.5) this.postFlash = 0.35;   // pulse when posture rises
+        if (e.posture > this.lastPosture + 0.5) this.postFlash = CONFIG.fx.postureFlash;   // pulse when posture rises
         this.lastPosture = e.posture;
         this.postFlash = Math.max(0, this.postFlash - dt);
         this.ePostFill.style.width = e.posture / e.def.posture.max * 100 + '%';
@@ -1781,8 +2173,9 @@ const hud = {
     }
     this.restedTimer = Math.max(0, this.restedTimer - dt);
     this.rested.classList.toggle('show', this.restedTimer > 0);
-    this.prompt.classList.toggle('show', p.alive() && (p.state === 'idle' || p.state === 'walk') && !!game.nearBonfire());
-    this.died.classList.toggle('show', p.state === 'dead');
+    this.prompt.classList.toggle('show', p.isFree() && !!game.canRest());   // only when resting would work
+    this.confirm.classList.toggle('show', game.restartArm > 0);
+    this.died.classList.toggle('show', !p.alive());
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
     const tut = game.tut, step = game.currentStep();
     this.tutPrompt.classList.toggle('hidden', !step);
@@ -1792,9 +2185,8 @@ const hud = {
       this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
     }
     this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);
-    const arenaWon = game.kind === 'arena' && !game.enemies[0].alive();
-    this.won.classList.toggle('show', arenaWon && p.state !== 'dead');
-    this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.state !== 'dead');
+    this.won.classList.toggle('show', game.duelWon() && p.alive());
+    this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive());
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
   showHitboxes() { return this.helpOpen() && this.toggle.checked; },
@@ -1810,15 +2202,20 @@ function applySettings() {
 const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
   screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
-  kind: 'arena',         // what is being played: 'arena' (single duel) | 'level' | 'tutorial'
+  kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
+  level: null,           // the level (or ARENA) being played
+  duelId: null, duel: null,   // arena opponent
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer }
-  selected: 0, enemyIndex: 0,
+  selected: 0,
   player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
-  lock: null, lockLost: 0,
-  souls: 0, flasks: 0, spawn: null, stain: null, deathTimer: 0,
+  lock: null, lockLost: 0, restartArm: 0,
+  spawn: null, stain: null, deathTimer: 0,
   zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
+
+  isTutorial() { return this.kind === 'level' && this.level.script === 'tutorial'; },
+  duelWon() { return this.kind === 'arena' && !!this.duel && !this.duel.alive(); },
 
   // ---- menus -----------------------------------------------------------------------------------
   screens() {
@@ -1828,12 +2225,10 @@ const Game = {
         { name: 'Levels', desc: 'Walk the long hall and clear the way forward.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
       ] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
-        { name: TUTORIAL.name, desc: TUTORIAL.description, go: () => this.startTutorial() },
-        { name: LEVEL_1.name, desc: LEVEL_1.description, go: () => this.startLevel() },
-      ] },
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
+        items: LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })) },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
-        items: ENEMY_DEFS.map((d, i) => ({ name: d.name, desc: d.description, go: () => this.startFight(i) })) },
+        items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.startFight(d.id) })) },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => this.showMenu('options') },
@@ -1863,12 +2258,13 @@ const Game = {
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub;
-    $('menuHint').innerHTML = 'W/S or &uarr;/&darr; to select &middot; Enter or J to confirm' +
-      (screen === 'options' ? ' &middot; A/D or &larr;/&rarr; to adjust' : '') + (screen === 'main' ? '' : ' &middot; Esc to go back');
+    $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
+      (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
+      (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
     list.textContent = '';
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
-      b.className = 'enemyBtn';
+      b.className = 'menuBtn';
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
       b.addEventListener('click', () => { this.select(i); it.go ? it.go() : this.adjust(1); });
@@ -1898,87 +2294,81 @@ const Game = {
   pause(fromPointer) {
     if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
-    if (this.kind === 'tutorial' && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
+    if (this.isTutorial() && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
-    this.notify('pause');
+    events.emit('pause');
   },
   resume() {
     this.mode = 'play'; input.clear();
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
-    this.notify('resume');
+    events.emit('resume');
   },
   enterPlay() {
     this.mode = 'play';
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   },
-  startFight(i) { this.kind = 'arena'; this.enemyIndex = i; this.enterPlay(); this.reset(); },
-  startLevel() { this.kind = 'level'; this.enterPlay(); this.reset(); },
-  startTutorial() { this.kind = 'tutorial'; this.enterPlay(); this.reset(); },
+  startFight(id) { this.kind = 'arena'; this.level = ARENA; this.duelId = id; this.enterPlay(); this.reset(); },
+  startLevel(id) { this.kind = 'level'; this.level = LEVELS.find(l => l.id === id); this.enterPlay(); this.reset(); },
   leaveTutorial() { this.reset(); this.showMenu('levels'); },
+  // R: instant on the death, win or level-complete screens; otherwise press twice.
+  requestRestart() {
+    if (!this.player.alive() || this.duelWon() || this.complete || this.restartArm > 0) { this.reset(); return; }
+    this.restartArm = CONFIG.restartConfirmTime;
+  },
 
   // ---- setup -----------------------------------------------------------------------------------
   clearActors() {
     if (this.player) this.player.rig.dispose();
     for (const e of this.enemies) e.rig.dispose();
-    this.player = null; this.enemies = []; this.zones = [];
+    this.player = null; this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     groundFx.clear(); swordTrail.clear();
   },
   dropStain() { if (this.stain) { scene.remove(this.stain.group); this.stain = null; } },
+  // Spawn options for a level entry: the one place placement rules live.
+  spawnSpec(entry, behavior) {
+    const L = this.level, V = CONFIG.level;
+    const base = { behavior, notice: CONFIG.notice[behavior], leash: V.leash, homeLeash: V.homeLeash };
+    if (behavior === 'ambush') {
+      const a = L.alcoves.find(al => al.id === entry.alcove);
+      return { ...base, x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * V.ambushDepth), yaw: a.side > 0 ? Math.PI : 0 };
+    }
+    if (behavior === 'patrol') return { ...base, x: entry.path[0], z: entry.z, yaw: entry.yaw ?? Math.PI / 2, path: entry.path };
+    if (behavior === 'gated') return { ...base, ...entry.spawn };
+    return { ...base, x: entry.x, z: entry.z, yaw: entry.yaw };
+  },
   makeEnemies() {
     if (this.kind === 'arena') {
-      const E = CONFIG.enemy, def = ENEMY_DEFS[this.enemyIndex];
-      return [new Enemy(def, { x: E.startX, z: E.startZ, yaw: -Math.PI / 2, behavior: 'arena', aggro: def.aggroRange })];
+      this.duel = new Enemy(ENEMY_BY_ID[this.duelId], { ...ARENA.enemyStart, behavior: 'arena', notice: CONFIG.notice.arena });
+      return [this.duel];
     }
-    const L = LEVEL_1, V = CONFIG.level, out = [];
-    for (const s of L.dispersed) {
-      const def = ENEMY_DEFS[s.enemy];
-      let o;
-      if (s.behavior === 'ambush') {
-        const a = L.alcoves[s.alcove];
-        o = { x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * 0.55), yaw: a.side > 0 ? Math.PI : 0, aggro: V.aggroAmbush };
-      } else if (s.behavior === 'patrol') o = { x: s.path[0], z: s.z, yaw: Math.PI / 2, aggro: V.aggroPatrol, path: s.path };
-      else o = { x: s.x, z: s.z, yaw: -Math.PI / 2, aggro: V.aggroSlumber };
-      out.push(new Enemy(def, { ...o, behavior: s.behavior, leash: V.leash }));
-    }
-    return out;
+    return this.level.dispersed.map(s => new Enemy(ENEMY_BY_ID[s.enemy], this.spawnSpec(s, s.behavior)));
   },
   // Full restart of the current fight or level.
   reset() {
     this.clearActors(); this.dropStain();
     input.pressed.clear();
-    this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0;
-    this.souls = 0; this.flasks = CONFIG.flask.charges; this.setLock(null);
-    arenaGroup.visible = this.kind === 'arena'; hallGroup.visible = this.kind === 'level';
-    tutorialGroup.visible = this.kind === 'tutorial';
-    this.tut = null;
-    if (this.kind === 'tutorial') {
-      world = WORLDS.tutorial;
-      this.spawn = { x: TUTORIAL.start.x, z: TUTORIAL.start.z };
-      this.spawnPlayer();
-      hud.reset();
+    this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0;
+    this.setLock(null); this.tut = null;
+    const def = this.level;
+    world = makeWorld(def, loadStage(def));
+    const start = def.playerStart || def.start;
+    this.spawn = { x: start.x, z: start.z, yaw: start.yaw };
+    this.zones = (def.gated || []).map(g => ({ ...g, spawned: false, actor: null, gate: world.gates.find(w => w.id === g.id) }));
+    this.spawnPlayer(null);
+    hud.reset(this);
+    if (this.isTutorial()) {
       this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0 };
       this.setupTutorialStep();
       return;
     }
-    if (this.kind === 'arena') {
-      world = WORLDS.arena; world.gates = [];
-      this.spawn = { x: -6, z: 0 };
-    } else {
-      const L = LEVEL_1;
-      world = WORLDS.hall;
-      this.spawn = { x: L.start.x, z: L.start.z };
-      world.gates = L.gated.map((g, i) => ({ x: g.gateX, open: false, lift: 0, mesh: hallGates[i] }));
-      this.zones = L.gated.map((g, i) => ({ ...g, spawned: false, actor: null, gate: world.gates[i], final: i === L.gated.length - 1 }));
-    }
     this.enemies = this.makeEnemies();
-    this.spawnPlayer();
-    hud.reset();
   },
-  spawnPlayer() {
+  // carry: { inventory } from the previous life, or null for a fresh start.
+  spawnPlayer(carry) {
     if (this.player) this.player.rig.dispose();
-    this.player = new Player(this.spawn.x, this.spawn.z, Math.PI / 2);
+    this.player = new Player(PLAYER_DEF, this.spawn.x, this.spawn.z, this.spawn.yaw, carry);
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -1989,21 +2379,26 @@ const Game = {
     const p = this.player;
     return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range) || null;
   },
-  tryRest() {
+  // The bonfire the player could rest at right now, or null (none near, or an enemy is closing in).
+  canRest() {
     const p = this.player, b = this.nearBonfire();
-    if (!b || !(p.state === 'idle' || p.state === 'walk')) return;
-    // Not while an awake enemy is closing in.
-    if (this.enemies.some(e => !e.dummy && e.alive() && e.state !== 'idle' && e.state !== 'patrol' && e.awake() &&
-        Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange)) return;
-    p.hp = CONFIG.player.maxHp; p.stamina = CONFIG.player.maxStamina; p.vx = p.vz = 0;
-    p.setState('rest');
-    this.flasks = CONFIG.flask.charges;
-    const dx = b.x > p.x ? -1.2 : 1.2;
-    this.spawn = { x: b.x + dx, z: b.z };
-    if (this.kind !== 'tutorial') this.respawnEnemies();
-    this.notify('rest');
+    if (!b) return null;
+    const threatened = this.enemies.some(e => !e.training && e.alive() && e.awake() && !e.in('unaware') &&
+      Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange && !gateBetween(e, p));
+    return threatened ? null : b;
+  },
+  tryRest() {
+    const p = this.player, b = this.canRest();
+    if (!b || !p.isFree()) return;
+    p.hp = p.maxHp; p.stamina = p.maxStamina; p.vx = p.vz = 0;
+    p.setState(PS.REST);
+    p.refillItems();
+    const off = CONFIG.rest.respawnOffset;
+    this.spawn = { x: b.x + (b.x > p.x ? -off : off), z: b.z, yaw: this.level.start ? this.level.start.yaw : p.yaw };
+    if (!this.isTutorial()) this.respawnEnemies();
     this.setLock(null);
     hud.showRested();
+    events.emit('rest', { bonfire: b });
   },
   // Rest: every enemy returns at full HP except those whose gates are already open.
   respawnEnemies() {
@@ -2015,16 +2410,17 @@ const Game = {
   onPlayerDeath() {
     const p = this.player;
     this.dropStain();                                   // an unrecovered stain is lost for good
-    if (this.souls > 0) { this.stain = { x: p.x, z: p.z, souls: this.souls, ...makeBloodstain(p.x, p.z) }; }
-    this.souls = 0;
+    if (p.souls > 0) this.stain = { x: p.x, z: p.z, souls: p.souls, ...makeBloodstain(p.x, p.z) };
+    p.souls = 0;
     this.deathTimer = 0; this.setLock(null);
     canvas.classList.add('dying');
+    events.emit('playerDeath', { player: p });
   },
   checkStain() {
     const p = this.player, s = this.stain;
     if (!s || !p.alive() || Math.hypot(s.x - p.x, s.z - p.z) > CONFIG.bloodstain.pickupRange) return;
-    this.souls += s.souls;
-    spawnBurst({ x: s.x, y: 0.6, z: s.z }, 0xffe0a0, 20, 4);
+    p.souls += s.souls;
+    events.emit('stainRecovered', { x: s.x, z: s.z, souls: s.souls });
     this.dropStain();
   },
 
@@ -2040,9 +2436,9 @@ const Game = {
   },
   // Valid targets ordered by closeness to the screen centre, then distance.
   lockCandidates() {
-    const p = this.player, L = CONFIG.lock;
-    return this.enemies.filter(e => e.alive() && e.awake() && Math.hypot(e.x - p.x, e.z - p.z) < L.range)
-      .map(e => { const v = this.inView(e); return { e, v, d: Math.hypot(e.x - p.x, e.z - p.z) }; })
+    const p = this.player;
+    return findEnemies(p, this.enemies, { range: CONFIG.lock.range })
+      .map(c => ({ ...c, v: this.inView(c.e) }))
       .filter(c => c.v || isInFront(p, c.e.x, c.e.z))
       .sort((a, b) => ((a.v ? Math.abs(a.v.x) : 2) - (b.v ? Math.abs(b.v.x) : 2)) || a.d - b.d)
       .map(c => c.e);
@@ -2051,65 +2447,64 @@ const Game = {
     const p = this.player;
     if (input.consume('lock')) {
       if (this.lock) this.setLock(null);
-      else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); this.notify('lock'); } }
+      else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); events.emit('lock'); } }
     }
     if (input.consume('switchTarget') && this.lock) {
       const c = this.lockCandidates();
       if (c.length) {
         const i = c.indexOf(this.lock), prev = this.lock;
         this.setLock(c[(i + 1) % c.length]);
-        if (this.lock !== prev) this.notify('switch');
+        if (this.lock !== prev) events.emit('switchTarget');
       }
     }
     // Auto lock-on: the first time each enemy comes into range (and into view), lock onto it
     // unless already locked. An enemy is only ever auto-locked once.
     if (p.alive()) {
-      for (const e of this.enemies) {
-        if (e.discovered || !e.alive() || !e.awake()) continue;
-        if (Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.lock.autoRange) continue;
-        if (!this.inView(e) && !isInFront(p, e.x, e.z)) continue;
+      for (const { e } of findEnemies(p, this.enemies, { range: CONFIG.lock.autoRange })) {
+        if (e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
         e.discovered = true;
         if (!this.lock) this.setLock(e);
       }
     }
     const t = this.lock;
     if (!t) return;
-    if (!t.alive() || !p.alive() || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
+    if (!t.alive() || !p.alive() || gateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
     this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
     if (this.lockLost > CONFIG.lock.lostTime) this.setLock(null);
   },
 
   // ---- tutorial ---------------------------------------------------------------------------------
   // Each step: prompt text (labels from the live bindings), which dummies it needs, optional setup,
-  // and how it completes: on(type, data, t) for game events and/or check(game, t) polled each step.
+  // and how it completes: on(type, data, t, game) for events and/or check(game, t) polled each step.
   // Returning true from either advances the tutorial.
   tutorialSteps() {
     const B = bindLabel;
+    const byPlayer = (d, g) => d.attacker === g.player;
     return [
       { id: 'move', text: () => `Walk around ${moveLabel()}`, check: (g, t) => t.dist >= 5 },
-      { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === 'jump' },
-      { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === 'roll' },
+      { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === PS.JUMP },
+      { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === PS.ROLL },
       { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}`,
-        on: (type, d) => type === 'hit' && d.kind === 'light' && !d.air },
+        on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'light' },
       { id: 'heavy', dummies: 'one', text: () => `Hit the dummy with a heavy attack ${B('heavy')}: slower, stronger`,
-        on: (type, d) => type === 'hit' && d.kind === 'heavy' && !d.air },
+        on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'heavy' },
       { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
-        on: (type, d, t) => { if (type === 'hit' && d.air) t.flags.airHit = true; },
-        check: (g, t) => t.flags.airHit && g.player.state !== 'jumpAttack' && g.player.state !== 'land' },   // after the landing
+        on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
+        check: (g, t) => t.flags.airHit && g.player.state !== PS.JUMP_ATTACK && g.player.state !== PS.LAND },   // after the landing
       { id: 'block', dummies: 'sparring', text: () => `Hold block ${B('block')} and take the dummy's swing on your guard`,
-        on: type => type === 'block' },
+        on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked },
       { id: 'parry', dummies: 'sparring', text: () => `Parry ${B('parry')} just before the dummy's swing lands`,
         on: type => type === 'parry' },
       { id: 'flask', text: () => `You're hurt. Drink from your flask ${B('flask')}`,
-        setup: g => { g.player.hp = Math.min(g.player.hp, 55); g.flasks = Math.max(g.flasks, 1); },
-        on: (type, d, t) => { if (type === 'flask') t.flags.drank = true; },
-        check: (g, t) => t.flags.drank && g.player.state !== 'drink' },
+        setup: g => { const it = g.player.item('flask'); g.player.hp = Math.min(g.player.hp, 55); if (g.player.inventory.flask) it.count = Math.max(it.count, 1); },
+        on: (type, d, t) => { if (type === 'itemUsed' && d.item === 'flask') t.flags.drank = true; },
+        check: (g, t) => t.flags.drank && g.player.state !== PS.USE_ITEM },
       { id: 'rest', text: () => `Walk to the bonfire and rest ${B('rest')}`, on: type => type === 'rest' },
       { id: 'lock', dummies: 'one', text: () => `Lock on to the dummy ${B('lock')}`, on: type => type === 'lock' },
       { id: 'switch', dummies: 'pair', text: () => `Lock on ${B('lock')}, then switch target ${B('switchTarget')}`,
-        on: type => type === 'switch' },
+        on: type => type === 'switchTarget' },
       { id: 'zoom', text: () => `Zoom the camera in ${B('zoomIn', 'Wheel up')} and out ${B('zoomOut', 'Wheel down')}`,
-        on: (type, d, t) => { if (type === 'zoomIn' || type === 'zoomOut') t.flags[type] = true; return t.flags.zoomIn && t.flags.zoomOut; } },
+        on: (type, d, t) => { if (type === 'zoom') t.flags[d.dir < 0 ? 'zoomIn' : 'zoomOut'] = true; return t.flags.zoomIn && t.flags.zoomOut; } },
       { id: 'pause', text: () => `Open the pause menu ${systemLabel('pause')}, then close it again ${systemLabel('pause')}`,
         on: (type, d, t) => { if (type === 'pause') t.flags.paused = true; return type === 'resume' && t.flags.paused; } },
     ];
@@ -2118,30 +2513,29 @@ const Game = {
   tutorialAllowsPause() { const s = this.currentStep(); return !!s && s.id === 'pause' && this.tut.doneTimer <= 0; },
   // Fresh dummies for the step (this is also how a dummy "resets").
   setupTutorialStep() {
-    const T = TUTORIAL, t = this.tut, s = this.currentStep(), p = this.player;
+    const T = this.level.training, L = this.level, t = this.tut, s = this.currentStep(), p = this.player;
     for (const e of this.enemies) e.rig.dispose();
     this.enemies = []; this.setLock(null);
     t.flags = {}; t.dist = 0;
     if (!s) return;
-    const dir = p.x + T.pairAhead < T.length - 3 ? 1 : -1;   // place ahead, or behind near the far wall
-    const spot = ahead => ({ x: clamp(p.x + dir * ahead, 2, T.length - 2), z: clamp(p.z, -T.halfZ + 2, T.halfZ - 2) });
-    const add = (def, behavior, at) => {
-      const e = new Enemy(def, { x: at.x, z: at.z, yaw: Math.atan2(p.x - at.x, p.z - at.z), behavior, aggro: 0 });
-      this.enemies.push(e);
+    const dir = p.x + T.pairAhead < L.length - 3 ? 1 : -1;   // place ahead, or behind near the far wall
+    const spot = ahead => ({ x: clamp(p.x + dir * ahead, 2, L.length - 2), z: clamp(p.z, -L.halfZ + 2, L.halfZ - 2) });
+    const add = (id, behavior, at) => {
+      this.enemies.push(new Enemy(ENEMY_BY_ID[id], { x: at.x, z: at.z, yaw: Math.atan2(p.x - at.x, p.z - at.z), behavior, notice: CONFIG.notice[behavior] }));
     };
-    if (s.dummies === 'one') add(DUMMY_DEF, 'dummy', spot(T.dummyAhead));
-    else if (s.dummies === 'sparring') add(ATTACKER_DUMMY_DEF, 'sparring', spot(T.attackerAhead));
+    if (s.dummies === 'one') add(T.dummy, 'dummy', spot(T.dummyAhead));
+    else if (s.dummies === 'sparring') add(T.sparring, 'sparring', spot(T.attackerAhead));
     else if (s.dummies === 'pair') {
       const c = spot(T.pairAhead);
-      for (const side of [-1, 1]) add(DUMMY_DEF, 'dummy', { x: c.x, z: clamp(c.z + side * T.pairSpread, -T.halfZ + 1.5, T.halfZ - 1.5) });
+      for (const side of [-1, 1]) add(T.dummy, 'dummy', { x: c.x, z: clamp(c.z + side * T.pairSpread, -L.halfZ + 1.5, L.halfZ - 1.5) });
     }
     if (s.setup) s.setup(this, t);
   },
   completeStep() { this.tut.doneTimer = CONFIG.tutorial.doneTime; },
-  notify(type, data) {
+  onTutorialEvent(type, data) {
     const t = this.tut, s = this.currentStep();
-    if (!t || !s || t.doneTimer > 0 || !s.on) return;
-    if (s.on(type, data || {}, t)) this.completeStep();
+    if (!this.isTutorial() || !t || !s || t.doneTimer > 0 || !s.on) return;
+    if (s.on(type, data, t, this)) this.completeStep();
   },
   updateTutorial(dt) {
     const t = this.tut, p = this.player;
@@ -2161,42 +2555,41 @@ const Game = {
       }
       return;
     }
-    if (p.state === 'walk') t.dist += Math.hypot(p.x - p.px, p.z - p.pz);
+    if (p.state === PS.WALK) t.dist += Math.hypot(p.x - p.px, p.z - p.pz);
     if (s.check && s.check(this, t)) this.completeStep();
   },
 
   // ---- level -------------------------------------------------------------------------------------
-  // Level 1: spawn gated enemies on entry, lift gates when their enemy falls.
+  // Gated zones: spawn on entry, lift the gate when the zone's enemy falls. Complete when all gates are open.
   updateLevel(dt) {
     const p = this.player, V = CONFIG.level;
     for (const z of this.zones) {
-      if (!z.spawned && p.x > z.trigger && p.state !== 'dead') {
+      if (!z.spawned && p.x > z.trigger && p.alive()) {
         z.spawned = true;
-        z.actor = new Enemy(ENEMY_DEFS[z.enemy], { x: z.spawn.x, z: z.spawn.z, yaw: -Math.PI / 2, behavior: 'gated',
-          aggro: V.aggroGated, leash: V.leash });
+        z.actor = new Enemy(ENEMY_BY_ID[z.enemy], this.spawnSpec(z, 'gated'));
         this.enemies.push(z.actor);
       }
       if (z.actor && !z.actor.alive() && !z.gate.open) {
         z.gate.open = true;
-        if (z.final) this.complete = true;
+        events.emit('gateOpened', { gate: z.gate });
       }
       if (z.gate.open) z.gate.lift = Math.min(1, z.gate.lift + dt / V.gateLiftTime);
+    }
+    if (!this.complete && this.zones.length && this.zones.every(z => z.gate.open)) {
+      this.complete = true;
+      events.emit('levelComplete');
     }
   },
 
   // HUD/camera target: the locked target, else the closest awake enemy within range
-  // (the arena duel always shows its enemy).
+  // (the arena duel always shows its opponent).
   target() {
     if (this.lock) return this.lock;
-    if (this.kind === 'arena') return this.enemies[0];
-    const p = this.player;
-    let best = null, bd = CONFIG.level.targetRange;
-    for (const e of this.enemies) {
-      if (!e.awake() || (!e.alive() && e.stateTime > 1.5)) continue;
-      const d = Math.hypot(e.x - p.x, e.z - p.z);
-      if (d < bd) { bd = d; best = e; }
-    }
-    return best;
+    if (this.kind === 'arena') return this.duel;
+    let best = null;
+    for (const c of findEnemies(this.player, this.enemies, { range: CONFIG.level.targetRange, deadFor: CONFIG.fx.deadTargetTime }))
+      if (!best || c.d < best.d) best = c;
+    return best ? best.e : null;
   },
 
   // Movement input: relative to the target when locked on, otherwise to the camera's heading.
@@ -2213,7 +2606,7 @@ const Game = {
   stepZoom(dir) {
     const Z = CONFIG.zoom;
     this.zoomTarget = clamp(this.zoomTarget + dir * Z.step, Z.min, Z.max);
-    this.notify(dir < 0 ? 'zoomIn' : 'zoomOut');
+    events.emit('zoom', { dir });
   },
   updateZoomKeys(dt) {
     const dir = (input.isHeld('zoomOut') ? 1 : 0) - (input.isHeld('zoomIn') ? 1 : 0);
@@ -2285,46 +2678,40 @@ const Game = {
     if (snap) { c.prevPos.copy(c.pos); c.prevLook.copy(c.look); }
   },
 
+  // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
+  // body separation, combat, deaths, bloodstain, level gates or tutorial, camera.
   update(dt) {
     const p = this.player, c = this.cam;
     p.savePrev(); for (const e of this.enemies) e.savePrev();
     c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
+    this.restartArm = Math.max(0, this.restartArm - dt);
     this.updateZoomKeys(dt);
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;
-      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer(); return; }
+      if (this.deathTimer >= CONFIG.death.respawnDelay) { this.spawnPlayer({ inventory: p.inventory }); return; }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
       if (slow > 0) for (const e of this.enemies) e.update(dt * slow, p);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);
       this.updateCamera(dt, false);
       return;
     }
-    if (this.hitstop > 0) { this.hitstop -= dt; return; }   // hit-pause: both sides freeze
+    if (this.hitstop > 0) { this.hitstop -= dt; input.hold(dt); return; }   // hit-pause: both sides freeze
     this.updateLock(dt);
     if (input.consume('rest')) this.tryRest();
-    if (input.peek('flask') && p.canDrink() && this.flasks > 0) {
-      input.consume('flask'); this.flasks--; p.vx = p.vz = 0; p.setState('drink');
-      this.notify('flask');
-    }
     const live = this.enemies.filter(e => e.alive());
     p.update(dt, this.moveInput(), live, this.lock);
     for (const e of this.enemies) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);
-    if (p.landEvent) {   // jump attack touchdown: ground pound visuals only
-      const L = p.landEvent; p.landEvent = null;
-      groundFx.spawn(L.x, L.z, L.fx);
-      this.addShake(CONFIG.groundPound.shakeTime, L.fx.shake);
-    }
-    for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; this.souls += e.def.souls; }
-    if (!p.alive() && this.kind === 'tutorial') {   // nothing can kill you in the tutorial
-      p.hp = 1; p.stunTime = CONFIG.player.hurtTime; p.setState('hurt');
+    for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
+    if (!p.alive() && this.isTutorial()) {   // nothing can kill you in the tutorial
+      p.hp = 1; p.stunTime = CONFIG.player.hurtTime; p.setState(PS.HURT);
     }
     if (!p.alive()) this.onPlayerDeath();
     this.checkStain();
-    if (this.kind === 'level') this.updateLevel(dt);
-    if (this.kind === 'tutorial') this.updateTutorial(dt);
+    if (this.isTutorial()) this.updateTutorial(dt);
+    else if (this.kind === 'level') this.updateLevel(dt);
     this.updateCamera(dt, false);
   },
 
@@ -2356,7 +2743,7 @@ const Game = {
       this.stain.wisp.position.y = 0.45 + Math.sin(t * 2) * 0.08;
       this.stain.wisp.material.opacity = 0.55 + Math.sin(t * 3.1) * 0.25;
     }
-    for (const g of world.gates) g.mesh.position.y = ease(g.lift) * (LEVEL_1.gateHeight - 0.3);
+    for (const g of world.gates) g.mesh.position.y = ease(g.lift) * g.liftHeight;
     // Irregular, subtle flicker in brightness and warmth.
     flames.forEach((f, i) => {
       const s = f.seed;
@@ -2368,7 +2755,7 @@ const Game = {
       f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
     });
     updateDust(t);
-    swordTrail.update(p.state === 'jumpAttack', p.rig);
+    swordTrail.update(p.state === PS.JUMP_ATTACK, p.rig);
     groundFx.update(frameDt);
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);
@@ -2380,6 +2767,25 @@ const Game = {
 // ============================================================================
 // 12. Bootstrap
 // ============================================================================
+// Event listeners: visual effects, souls and the tutorial, each in one place.
+function registerListeners() {
+  const F = CONFIG.fx.bursts, chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
+  events.on('strike', d => {
+    const kind = d.attacker === Game.player ? (d.strike.riposte ? 'riposte' : 'hit') : (d.blocked ? 'block' : 'hurt');
+    spawnBurst(d.at, F[kind]);
+  });
+  events.on('parry', d => { spawnBurst(chest(d.target), F.parry); Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
+  events.on('postureBreak', d => {
+    spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);
+    Game.addShake(CONFIG.fx.postureBreakShake.time, CONFIG.fx.postureBreakShake.amp);
+  });
+  events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
+  events.on('stainRecovered', d => spawnBurst({ x: d.x, y: 0.6, z: d.z }, F.stain));
+  events.on('enemyDeath', d => { if (Game.player) Game.player.souls += d.enemy.def.souls || 0; });
+  events.onAny((type, data) => Game.onTutorialEvent(type, data));
+}
+
+const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   if (code === SYSTEM_KEYS.help) {
@@ -2390,29 +2796,34 @@ window.addEventListener('keydown', ev => {
   if (Game.mode === 'menu' || Game.mode === 'pause') {
     if (code === 'Tab') ev.preventDefault();
     if (ev.repeat) return;
-    if (code === 'ArrowUp' || code === 'KeyW') { ev.preventDefault(); Game.select(Game.selected - 1); }
-    else if (code === 'ArrowDown' || code === 'KeyS') { ev.preventDefault(); Game.select(Game.selected + 1); }
-    else if (code === 'ArrowLeft' || code === 'KeyA') { ev.preventDefault(); Game.adjust(-1); }
-    else if (code === 'ArrowRight' || code === 'KeyD') { ev.preventDefault(); Game.adjust(1); }
-    else if (code === 'Enter' || code === 'KeyJ') { ev.preventDefault(); Game.confirm(); }
-    else if (code === SYSTEM_KEYS.pause) { ev.preventDefault(); Game.menuBack(); }
+    const handled = isKey('up', code) ? Game.select(Game.selected - 1) || true
+      : isKey('down', code) ? Game.select(Game.selected + 1) || true
+      : isKey('left', code) ? Game.adjust(-1) || true
+      : isKey('right', code) ? Game.adjust(1) || true
+      : isKey('confirm', code) ? Game.confirm() || true
+      : isKey('back', code) ? Game.menuBack() || true : false;
+    if (handled) ev.preventDefault();
     return;
   }
   if (!GAME_CODES.has(code)) return;
   ev.preventDefault();
   if (ev.repeat) return;
   if (code === SYSTEM_KEYS.pause) Game.pause(false);
-  else if (code === SYSTEM_KEYS.restart) Game.reset();
-  else if (code === SYSTEM_KEYS.hitboxes) hud.toggle.checked = !hud.toggle.checked;
+  else if (code === SYSTEM_KEYS.restart) Game.requestRestart();
+  else if (code === SYSTEM_KEYS.hitboxes) { settings.hitboxes = !settings.hitboxes; saveSettings(); applySettings(); }
   else input.down(code);
 });
 window.addEventListener('keyup', ev => input.up(ev.code));
 window.addEventListener('blur', () => input.held.clear());
+hud.toggle.addEventListener('change', () => { settings.hitboxes = hud.toggle.checked; saveSettings(); });
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 canvas.addEventListener('mousedown', ev => {
   if (Game.mode !== 'play') return;
   ev.preventDefault();
-  if (!document.pointerLockElement && canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) { /* unsupported */ } }
+  // The click that captures the mouse only captures it; it does not also swing the sword.
+  if (!document.pointerLockElement && canvas.requestPointerLock) {
+    try { canvas.requestPointerLock(); return; } catch (e) { /* unsupported: fall through and attack */ }
+  }
   if (ev.button === 0 || ev.button === 2) input.down('Mouse' + ev.button);
 });
 window.addEventListener('mouseup', ev => input.up('Mouse' + ev.button));
@@ -2433,6 +2844,20 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
+
+// Data check first: a broken reference stops here with a readable message.
+const dataErrors = validateData();
+if (dataErrors.length) {
+  window.__bootError('The game data has problems:\n\n• ' + dataErrors.join('\n• '));
+  throw new Error('Game data check failed: ' + dataErrors.join(' | '));
+}
+// Death overlay timings follow CONFIG.death.
+const rootStyle = document.documentElement.style;
+rootStyle.setProperty('--died-delay', CONFIG.death.textDelay + 's');
+rootStyle.setProperty('--died-fade', CONFIG.death.textFade + 's');
+rootStyle.setProperty('--died-hint-delay', CONFIG.death.hintDelay + 's');
+rootStyle.setProperty('--dying-fade', CONFIG.death.slowTime + 's');
+registerListeners();
 window.addEventListener('resize', resize);
 resize();
 applySettings();
@@ -2453,7 +2878,10 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-window.__arena = { Game, CONFIG, ENEMY_DEFS, LEVEL_1, input, hud, WORLDS, settings, camera };   // console handle for tuning and testing
+// Console handle for tuning and testing.
+window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, LEVEL_1, TUTORIAL, ARENA,
+                   PS, ES, input, hud, settings, camera, events, validateData, get world() { return world; } };
+window.__arenaReady = true;
 </script>
 </body>
 </html>
