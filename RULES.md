@@ -64,7 +64,13 @@ How the systems in `combat-arena-3d.html` behave. Read this before adding mechan
 - **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire. Souls drop as a bloodstain where you died and can be picked up once. Dying again before that loses them.
 - **Alert** (opt-in per level): an enemy that notices the player wakes unaware enemies nearby, if nothing blocks the line between them. Those wake others in turn.
 - **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level, keeping souls.
-- **Atmosphere:** each level can set its own fog, light and colours.
+- **Atmosphere:** each level can set its own fog, light and colours. Optional look fields (all checked at load) add exposure, a sky/ground fill (`hemi`), a colour grade, ash and dust amounts, moss and grime, light shafts, banner colours, falling debris, and for open levels a sky, distant silhouettes and grass. Enemies can set an optional `visual` (skin colour, metalness, bare arms, rim).
+
+## Visuals
+
+- Rendering lives in its own section (9b) with its numbers in `CONFIG.VISUALS`. It only draws: it reacts to events (strike, death, rest, gate opened) and never changes combat, AI, collision or layouts. Dressing (rubble, arches, banners) has no collision.
+- **Graphics: High / Low** (pause → Options). High adds bloom, colour grade, vignette (redder at low health), grain and light shafts. Low skips post-processing and thins the particles.
+- The red wind-up glow is never dimmed: it has its own halo that ignores fog, and the colour grade leaves strong reds saturated.
 - **Camera:** follows behind the player and is pushed in so it never passes through walls or closed gates. Locking on frames both the player and the target.
 
 ## Adding things — checklist

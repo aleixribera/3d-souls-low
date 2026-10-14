@@ -36,7 +36,7 @@ Keyboard and mouse only; there are no touch controls.
 | Rest at bonfire | F |
 | Use flask | G |
 | Restart fight / level | R, twice (once on the death or victory screen) |
-| Pause and options | Escape |
+| Pause and options (incl. Graphics: High / Low) | Escape |
 | Help / hitboxes | F1 (H toggles hitboxes) |
 
 ! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
