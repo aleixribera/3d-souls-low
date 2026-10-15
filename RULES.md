@@ -117,7 +117,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Bonfires** heal, refill flasks and set the respawn point. Resting brings back every enemy except those whose gates are already open. You cannot rest while an enemy is closing in.
 - **Death:** the world slows, YOU DIED shows, and the player returns to the last bonfire with full health and full flasks. Dying costs nothing but the ground covered since that bonfire: there are no souls, stats or saves. Enemies reset exactly as when resting: every enemy comes back at full health except those whose gates are already open.
 - **Alert** (opt-in per level): an enemy that notices the player wakes unaware enemies nearby, if nothing blocks the line between them. Those wake others in turn.
-- **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level.
+- **Next level** (opt-in): a level can name the level that follows. Completing it fades straight into that level (Level 1 into Level 2, Level 2 into Level 3).
 - **Atmosphere:** each level can set its own fog, light and colours. Optional look fields (all checked at load) add exposure, a sky/ground fill (`hemi`), a colour grade, ash and dust amounts, moss and grime, light shafts, banner colours, falling debris, and for open levels a sky, distant silhouettes and grass. Enemies can set an optional `visual` (skin colour, metalness, bare arms, rim).
 
 ## Visuals
@@ -127,11 +127,6 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - The red wind-up glow is never dimmed: it has its own halo that ignores fog, and the colour grade leaves strong reds saturated.
 - **Lock-on:** when the locked target dies, the lock moves to the next enemy in reach (the one nearest the centre of the screen), if there is one.
 - **Camera:** follows behind the player and is pushed in so it never passes through walls, ledges, floors, roofs or closed gates (in 3D; it looks over rails). It follows the floor you stand on up stairs and down drops, but a jump lifts it only half as much. Its ceiling is whatever is overhead where the camera is: a room's roof, a walkway's underside, or nothing under open sky. Locking on frames both the player and the target.
-
-## Coming with Level 3 (planned, see ROADMAPv3.md)
-
-Not built yet. These rules apply once each part lands; until then the sections above describe the game.
-
 
 ## Adding things — checklist
 

@@ -104,10 +104,17 @@ function buildTerrain(L) {
   function edgeSolids(R, k) {
     const E = EDGES[k], O_E = EDGES[E.opp], r = R.rect, at = r[E.at], lo = r[E.lo], hi = r[E.hi];
     const pt = s => E.along === 'x' ? [s, at] : [at, s];
+    const ptOut = s => E.along === 'x' ? [s, at + E.out * T] : [at + E.out * T, s];   // a wall's depth into the neighbour
     const touching = regions.filter(O => O !== R && Math.abs(O.rect[O_E.at] - at) < eps
       && O.rect[O_E.lo] < hi - eps && O.rect[O_E.hi] > lo + eps);
+    // Regions stacked under R along this edge (a walkway under a walkway): a ledge face stops at their top.
+    const [s0, s1] = E.out > 0 ? [at - T, at] : [at, at + T], strip = E.along === 'x' ? [lo, hi, s0, s1] : [s0, s1, lo, hi];
+    const stacked = regions.filter(O => O !== R && O.top <= R.lo - H.slab + eps && O.rect[0] < strip[1] - eps && O.rect[1] > strip[0] + eps
+      && O.rect[2] < strip[3] - eps && O.rect[3] > strip[2] + eps);
+    const span = O => E.along === 'x' ? [O.rect[0], O.rect[1]] : [O.rect[2], O.rect[3]];
     let cuts = [lo, hi];
     for (const O of touching) cuts.push(clamp(O.rect[O_E.lo], lo, hi), clamp(O.rect[O_E.hi], lo, hi));
+    for (const O of stacked) cuts.push(...span(O).map(c => clamp(c, lo, hi)));
     if (R.axis === E.along || touching.some(O => O.axis === E.along))
       for (let s = lo + H.segment; s < hi - eps; s += H.segment) cuts.push(s);
     cuts = cuts.sort((a, b) => a - b).filter((c, i, a) => i === 0 || c - a[i - 1] > eps);
@@ -125,16 +132,19 @@ function buildTerrain(L) {
       for (const O of touching) {
         if (O.rect[O_E.lo] > m || O.rect[O_E.hi] < m) continue;
         const n0 = O.floorAt(...pt(a)), n1 = O.floorAt(...pt(b));
-        if (Math.abs(n0 - hA0) < tol && Math.abs(n1 - hA1) < tol) { if (!same) same = { O, top: Math.max(n0, n1) + O.height }; }
+        if (Math.abs(n0 - hA0) < tol && Math.abs(n1 - hA1) < tol) {   // a doorway; a lintel above it clears the neighbour's floor
+          if (!same) same = { O, top: Math.max(n0, n1, O.floorAt(...ptOut(a)), O.floorAt(...ptOut(b))) + O.height };
+        }
         else if (Math.max(n0, n1) < hA - tol) lowest = Math.min(lowest, n0, n1);
-        else if (Math.min(n0, n1) > hAx + tol) higher = true;
+        else if (Math.max(n0, n1) > hA + tol) higher = true;   // even partly higher (a stair's side): it closes the gap
       }
+      const below = Math.max(-Infinity, ...stacked.filter(O => span(O)[0] <= m && span(O)[1] >= m).map(O => O.top));
       if (same) { if (topA > same.top + eps) piece('lintel', a, b, same.top, topA); }   // doorway
       else if (!higher) {   // a higher neighbour's own ledge face covers this stretch
         if (R.edges[k] === 'wall') piece('wall', a, b, hA, topA);
         else if (R.edges[k] === 'rail') piece('rail', a, b, hA, hAx + H.rail);
       }
-      if (lowest < Infinity) piece('face', a, b, lowest, hA);
+      if (lowest < Infinity) piece('face', a, b, Math.max(lowest, below), hA);
     }
     for (const p of pieces) {
       const inside = p.kind === 'rail' || p.kind === 'face', t = p.kind === 'rail' ? H.railThickness : T;

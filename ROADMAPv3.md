@@ -2,6 +2,8 @@
 
 ## Progress
 
+All five parts are built. In the original roadmap's steps, Level 3 delivers step 6 (new enemies), step 7 (height) and step 8 (open areas with culling). Still to come: step 9 (story and All Levels modes, with title cards) and step 10, now "Levels 4–5 and a final boss".
+
 | Part | Version | Status |
 |---|---|---|
 | 0. Save this plan | — | done (this file) |
@@ -9,7 +11,7 @@
 | 2. Open rooms (sky, grass, silhouettes) and culling; Test: Courtyard | v3.2 | done |
 | 3. Projectiles, shove, shortcut gates | v3.3 | done |
 | 4. New enemies and the Bell Warden | v3.4 | done |
-| 5. Level 3: The Tower | v3.5 | |
+| 5. Level 3: The Tower | v3.5 | done |
 
 Notes on what was built:
 - Part 1 also brings `open: true` rooms (no roof, the camera rises freely) because the walkway-over-a-yard test needs it; Part 2 adds the sky, grass and silhouettes over them.
@@ -17,6 +19,7 @@ Notes on what was built:
 - Part 2: culling is opt-in per level (`cull: true`) so Levels 1 and 2 keep every light exactly as before. Grass grows only on open rooms with `grass: true` (so walkways and ramparts stay bare stone). `lamps` on a room are braziers with a real light. Measured on Test: Courtyard at its centre: 18 real lights and 12 enemies updated unculled, 8 lights and 6 enemies culled, frame time about 20% lower.
 - Part 3: archers (enemies with a projectile attack) shoot without an attack token and at players they can't walk to, so bowmen on ramparts keep shooting during a crowd fight. The knockback cap a shove ignores is new (`CONFIG.player.knockCap` = 12, the largest knockback any existing attack had, so nothing else changes). The bow weapon and the `draw`, `shove` and `kick` animations arrived here because the test enemies need them. Test duels can name a room level to be fought on (`arena`).
 - Part 4: the bowmen of the courtyard ramparts need to see the courtyard without being part of its fight, so there is a new placement, `sentry` (stands at its post, sees 20 m, belongs to no zone). The Bell Warden's ground flash is an opt-in attack field, `impact`. Also in v3.4, at the player's request: 1.2x player health (120), 1.6x stamina (160), heavy attack damage 44 to 38.
+- Part 5: the layout is in `js/levels/the-tower.js` (its header comment walks through it). The tower is a solid core (`blocks`) with the hall inside it at 6 m; the outer walkways spiral round it: the north walk (10 m), the west stair (10 to 14 m, over the courtyard), the south walk (14 m), the east stair (14 to 18 m, over the cliff), the wide north landing (18 m) and the bell stair (18 to 22 m). Walkways stacked 4 m apart share their footprint, so the terrain builder learned two things: a ledge face stops at the top of any walkway stacked beneath it, and a stair that is only partly higher than its neighbour counts as higher. Rampart bowmen are sentries whose sight (`CONFIG.notice.sentry`) is 26 m, just past their bow's range, so they cover the courtyard. Measured: the main path is about 380 m with 22 enemies (about three times Level 2's enemy health), roughly 15 minutes with fights and retries; frame time 1.3 to 1.6 ms with 24 light sources pooled to 8. A scripted run in `tests/suite.js` walks the whole route, opens all six gates and completes the level.
 - Tests: `tests/suite.js` (loaded with `#dev`; run `await __arena.tests.run()`), regression plus one group per part.
 
 ## Context

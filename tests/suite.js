@@ -530,6 +530,87 @@
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman'), 'the bowmen shot'); expect.ok(bowmen.every(b => Math.abs(b.y - 5) < 1e-6), 'from their gallery');
   });
 
+  // ---- v3.5 Level 3: The Tower ---------------------------------------------------------------------------------
+  // The way up, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
+  const TOWER_ROUTE = [
+    [22, 0, 'zone-gatehouse'], [33, 0], [40, 0], [60, 0, 'zone-courtyard'], [42, 0], [38, 18], [38, 24], [48, 24], [60, 24], [68, 24],
+    [80, 24], [92, 24, 'zone-rampart'], [98, 24], [98, 16], [98, 4, 'zone-hall'], [100, -4], [111.5, -4], [112, 0], [112, 9],
+    [112, 11.5], [88, 11.5], [87.5, 8], [87.5, -8], [88, -11.5], [112.5, -11.5], [112.5, -8], [112.5, 8], [112, 14],
+    [100, 14, 'zone-walkway'], [88, 14], [88, 9], [88, -8], [87, -13], [95, -13], [96, -4, 'zone-bell'],
+  ];
+  const tower = () => { Game.startLevel('the-tower'); sim.begin(); log.length = 0; shots.length = 0; return Game.player; };
+  const dropFrom = (x, z, y, dx, dz) => {   // walk off an edge; returns [landing height, damage taken, alive]
+    const p = Game.player; sim.place(x, z, y); p.hp = p.maxHp;
+    sim.move(dx, dz); sim.until(() => !p.grounded, 3); sim.until(() => p.grounded || !p.alive(), 4); sim.move(null);
+    return [p.y, p.maxHp - p.hp, p.alive()];
+  };
+  test('the tower: follows Level 2, and its data, gates and culling are in place', () => {
+    expect.ok(A.LEVEL_2.next === 'the-tower' && A.LEVELS.indexOf(A.LEVEL_3) === A.LEVELS.indexOf(A.LEVEL_2) + 1, 'Level 2 leads into the Tower');
+    tower();
+    expect.ok(Game.zones.length === 6 && Game.zones.every(z => !z.gate.open), 'six zone gates, all shut');
+    expect.ok(world.gates.some(g => g.id === 'postern' && g.opensFrom && !g.open), 'the postern shortcut, shut');
+    expect.ok(world.bonfires.length === 3, 'three bonfires');
+    sim.step(1); Game.render(1, STEP);
+    expect.ok(A.visuals.info().pointLights === CONFIG.cull.maxLights && A.visuals.info().sky && A.visuals.info().grass > 0, 'culled lights, sky and grass');
+    expect.above(Game.enemies.filter(e => e.asleep).length, 10, 'the far enemies sleep at the start');
+  });
+  test('the tower: a scripted run opens every gate in turn and completes the level', () => {
+    const p = tower(); sturdy(p);
+    const opened = [];
+    for (const [x, z, zone] of TOWER_ROUTE) {
+      const reached = sim.until(() => {
+        for (const e of Game.enemies) if (e.alive() && !e.in('unaware') && e.state !== ES.DORMANT) e.die();   // whatever engages falls
+        const dx = x - p.x, dz = z - p.z;
+        if (Math.hypot(dx, dz) < 0.5) return true;
+        sim.move(dx, dz); return false;
+      }, 30) >= 0;
+      sim.move(null);
+      expect.ok(reached && p.alive(), `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+      if (!zone) continue;
+      const Z = Game.zones.find(q => q.id === zone);
+      for (const e of Z.actors) if (e.alive()) e.die();
+      expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, `${zone}: its gate opened`);
+      opened.push(zone);
+    }
+    expect.near(p.y, 22, 1e-6, 'on top of the tower');
+    expect.ok(Game.complete && log.includes('levelComplete'), `LEVEL COMPLETE (${opened.length} gates)`);
+  });
+  test('the tower: the grate drops safely into the undercroft, whose stairs climb back to the gatehouse', () => {
+    const p = tower(); sim.clearEnemies();
+    sim.place(45.5, -13, 0); sim.walkTo(45.5, -16.5, 0.3, 5); sim.until(() => p.grounded && p.y < -1, 4);
+    expect.near(p.y, -4, 1e-6, 'in the undercroft'); expect.near(p.hp, p.maxHp, 1e-9, 'a 4 m drop is free');
+    expect.ok(sim.walkTo(38, -18) && sim.walkTo(22, -18) && sim.walkTo(18, -12) && sim.walkTo(18, -7.5) && sim.walkTo(22, -4), 'back up the stairs');
+    expect.near(p.y, 0, 1e-6, 'in the gatehouse');
+  });
+  test('the tower: the postern opens only from the stair side, back to the courtyard', () => {
+    const p = tower(); sim.clearEnemies();
+    const g = world.gates.find(q => q.id === 'postern');
+    sim.place(80, -13); sim.move(1, 0); sim.seconds(3); sim.move(null);
+    expect.below(p.x, 86, 'shut from the courtyard'); expect.ok(!g.open, 'still shut');
+    sim.place(100, -4, 6);
+    expect.ok(sim.walkTo(106, -12) && sim.walkTo(95, -13) && sim.walkTo(88.5, -13), 'from the hall down the postern stair');
+    sim.step(3); expect.ok(g.open, 'opened from the stair side');
+    sim.seconds(2); expect.ok(sim.walkTo(80, -13), 'through into the courtyard'); expect.near(p.y, 0, 1e-6, 'courtyard floor');
+  });
+  test('the tower: the rampart gap hurts a little, the walks over the courtyard a lot, the cliff kills', () => {
+    tower(); sim.clearEnemies();
+    const gap = dropFrom(68, 24, 6, 0, -1);
+    expect.ok(gap[0] === 0 && gap[2], 'from the rampart gap into the courtyard'); expect.near(gap[1], (6 - F.safe) * F.perMetre, 0.6, 'small damage');
+    const walk = dropFrom(87, 11.5, 10, -1, 0);
+    expect.ok(walk[0] === 0 && walk[2], 'off the north walk into the courtyard'); expect.near(walk[1], (10 - F.safe) * F.perMetre, 0.6, 'heavy damage');
+    const south = dropFrom(87, -11.5, 14, -1, 0);
+    expect.ok(!south[2], 'off the south walk (14 m) is lethal');
+    tower(); sim.clearEnemies();
+    const cliff = dropFrom(113, 11.5, 10, 1, 0);
+    expect.ok(!cliff[2] && log.includes('fell'), 'off the cliff side: a pit');
+  });
+  test('the tower: the rampart bowmen shoot down into the courtyard fight', () => {
+    const p = tower(); sturdy(p);
+    sim.place(62, 6); sim.seconds(12);
+    expect.ok(shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 'a bolt from the rampart');
+    expect.ok(Game.enemies.filter(e => e.token).length <= 2, 'two attack tokens');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;

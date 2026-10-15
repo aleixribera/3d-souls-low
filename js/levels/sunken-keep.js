@@ -5,6 +5,7 @@
 // lifts once every enemy of the zone is dead. `alert`: an enemy that notices the player wakes others nearby.
 const LEVEL_2 = {
   id: 'sunken-keep', layout: 'rooms', alert: true,
+  next: 'the-tower',   // once complete, carry on up to the Tower
   name: 'Level 2: The Sunken Keep',
   description: 'Winding rooms and corridors. Shield Wardens hold the doors, and some foes fight in pairs.',
   help: 'Level 2: win each room\'s fight to open its gate; paired foes open it only when both fall. An enemy that spots you alerts those nearby.',

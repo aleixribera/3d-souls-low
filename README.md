@@ -16,13 +16,15 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Tutorial** — one room of training dummies that teaches every control, step by step.
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
+- **Levels → Level 3: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Three bonfires; an optional undercroft below the courtyard (drop through the broken grate).
 - **Enemies** — duel a single opponent in the arena, including the Tower's Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover and the Bell Warden.
 
 ## Coming next (planned)
 
-- **Level 3: The Tower** — a cliff-top keep, much longer than Level 2 (about 15+ minutes, three bonfires): a gatehouse, a big open courtyard fight under the sky, railed ramparts, a tower hall with a shortcut back down, outer walkways around the tower above a deadly cliff, and a mini-boss on the open bell platform. Optional undercroft below the courtyard.
+- A story, an All Levels mode and title cards.
+- Levels 4 and 5, and a final boss.
 
-See [ROADMAPv3.md](ROADMAPv3.md) for the full plan and what is done.
+See [ROADMAPv3.md](ROADMAPv3.md) for the Level 3 plan and how it was delivered.
 
 ## Versions
 
@@ -32,6 +34,7 @@ Each version is a tagged commit (`git checkout v3.1` to play that one).
 - **v3.2 — Open sky and culling.** Open rooms show the level's sky and distant ruins, and grass grows on open courtyards; lamps are braziers that really light a room. Levels can opt into culling: a fixed pool of real lights follows the nearest light sources (no shader recompiles however many lights a level has), and far, unaware enemies sleep until you come near. New developer room *Test: Courtyard* (twelve enemies, eighteen light sources; culling takes it from 18 real lights to 8).
 - **v3.3 — Bows, shoves and shortcuts.** Enemies can fire arrows: bolts fly with a slight arc, stop at walls and gates, can be blocked or rolled through but never parried, and archers shoot without waiting for an attack token. A shove ignores the knockback cap and can throw you off a ledge (block or roll). Shortcut gates open for good from their far side. Test duels *Test: Bowman* and *Test: Shover* are fought on Test: Heights; Test: Courtyard gains a shortcut.
 - **v3.4 — The Tower's enemies, and a sturdier knight.** Six new enemies in the Enemies menu: Ashen Lancer (spear), Executioner (greataxe), Pale Duelist (sword and dagger), Rampart Bowman, Shover and the Bell Warden mini-boss, with new weapons and animations (thrust, chop, spin). Sentries: lookouts that see far and belong to no zone. New developer room *Test: Mixed Crowd*. The player now has 1.2x health (120), 1.6x stamina (160), and a slightly lighter heavy attack (44 to 38 damage).
+- **v3.5 — Level 3: The Tower.** The new level, after Level 2 (finishing Level 2 carries straight on into it): gatehouse, open courtyard, ramparts, tower hall, three walkway levels round the outside of the tower, and the Bell Warden on the bell platform; three bonfires, a postern shortcut and an optional undercroft. It uses every v3 building block: heights and falls, open sky, culling, archers, shoves and shortcut gates.
 
 ## Controls
 

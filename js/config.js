@@ -74,7 +74,7 @@ const CONFIG = {
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
            patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
-  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 20, dummy: 0, sparring: 0 },
+  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
   // (with a clear line between them), and those pass it on in turn.
   alert: { radius: 10 },

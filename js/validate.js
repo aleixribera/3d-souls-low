@@ -175,10 +175,18 @@ function validateRooms(L, where, need, num) {
     }
   }
   // Walls never cut into another region's walkable space (rails and ledge faces sit inside their own region).
+  // A ramp's walkable band is taken over the wall's own footprint, since its floor rises along it.
+  const bandOver = (R, s) => {
+    if (R.kind !== 'ramp') return [R.lo, R.top];
+    const xs = [clamp(s.x0, R.rect[0], R.rect[1]), clamp(s.x1, R.rect[0], R.rect[1])], zs = [clamp(s.z0, R.rect[2], R.rect[3]), clamp(s.z1, R.rect[2], R.rect[3])];
+    const f = [R.floorAt(xs[0], zs[0]), R.floorAt(xs[1], zs[1])];
+    return [Math.min(...f), Math.max(...f) + R.height];
+  };
   let cuts = 0;
   for (const s of T.solids) for (const R of regions) {
     if (s.region === R || cuts >= 3) continue;
-    if (overlap([s.x0, s.x1, s.z0, s.z1], R.rect) && s.y0 < R.top - eps && s.y1 > R.lo + eps) {
+    const [lo, top] = bandOver(R, s);
+    if (overlap([s.x0, s.x1, s.z0, s.z1], R.rect) && s.y0 < top - eps && s.y1 > lo + eps) {
       cuts++;
       need(false, `${where}: a ${s.kind} near (${s.x0.toFixed(1)}, ${s.z0.toFixed(1)}) cuts into "${R.id}"; rooms must touch edge to edge, not overlap.`);
     }
