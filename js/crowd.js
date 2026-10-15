@@ -2,10 +2,10 @@
 // ============================================================================
 // 6b. Crowds
 // ============================================================================
-// Every enemy may attack: each rolls its own attack chances (Enemy.rollAttack). The crowd keeps a fight both
+// Every enemy may attack: each chooses its own attacks (Enemy.chooseAttack). The crowd keeps a fight both
 // readable and surrounding (numbers in CONFIG.ai):
-//   - an enemy's attack chances are multiplied by `busyMul` for every other enemy mid-attack (wind-up, strike or
-//     recovery), and no enemy starts an attack within `gap` s of another one starting;
+//   - an enemy's chance rolls are multiplied by `busyMul` for every other enemy mid-attack (wind-up, strike or
+//     recovery; its close attacks strike at once), and no enemy starts an attack within `gap` s of another one starting;
 //   - the enemies fighting the player (those that can reach them) get places spread evenly all round the player,
 //     in the order they already stand so that nobody has to cross; Enemy.holdVelocity circles toward them.
 // Runs once per step, before the enemies update.

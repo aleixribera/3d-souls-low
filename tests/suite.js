@@ -637,6 +637,38 @@
     expect.above(starts.length, 5, 'the crowd attacked');
     expect.ok(!bad, `${bad && bad.enemy.def.id} ${bad && bad.attack.id} started at ${bad && bad.dist.toFixed(2)} m`);
   });
+  // Seconds from the end of each attack to the start of the next, for a duel held r m from the player.
+  const waitsAt = (id, r, seconds = 40) => {
+    Game.startFight(id); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, waits = [];
+    let free = null;
+    for (let i = 0; i < seconds / STEP; i++) {
+      const was = e.state;
+      holdAt(e, r); sim.step();
+      if (was === ES.RECOVER && e.state === ES.CHASE) free = 0;
+      else if (free !== null && e.state === ES.CHASE) free += STEP;
+      else if (free !== null && e.state === ES.WINDUP) { waits.push(free); free = null; }
+    }
+    return waits;
+  };
+  test('attack chance: close attacks strike as soon as the cooldown is over', () => {
+    for (const id of ['hollow', 'knight', 'shover']) {
+      const waits = waitsAt(id, 1.5), longest = A.ENEMY_BY_ID[id].cooldown[1];
+      expect.above(waits.length, 5, `${id}: attacks`);
+      expect.below(Math.max(...waits), longest + 0.1, `${id}: longest wait between attacks (cooldown up to ${longest} s)`);
+    }
+  });
+  test('attack chance: gap closers still wait on their chance', () => {
+    const waits = waitsAt('lancer', 6, 60), longest = A.ENEMY_BY_ID.lancer.cooldown[1];
+    expect.above(waits.length, 2, 'dashes');
+    expect.above(Math.max(...waits), longest + 0.5, 'longest wait between dashes');
+  });
+  test('attack chance: stepping in, a boss uses all its close attacks, not only its longest', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); starts.length = 0;
+    sim.seconds(120);
+    const used = new Set(starts.map(s => s.attack.id));
+    expect.ok(['bellSweep', 'bellSlam', 'bellShove'].every(id => used.has(id)), `close attacks used: ${[...used].join(', ')}`);
+  });
   test('attack chance: an attack with a higher chance starts more often', () => {
     const swing = A.ENEMY_BY_ID.hollow.attacks.find(a => a.id === 'swing');
     const def = { ...A.ENEMY_BY_ID.hollow, id: 'testOdds', attacks: [{ ...swing, id: 'often', chance: 2 }, { ...swing, id: 'rarely', chance: 0.4 }] };

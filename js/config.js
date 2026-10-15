@@ -78,12 +78,13 @@ const CONFIG = {
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
   // (with a clear line between them), and those pass it on in turn.
   alert: { radius: 10 },
-  // Enemy attack choice (js/enemy.js). Once its cooldown is over, an enemy facing the player rolls, every step, each
-  // attack whose range window (`minRange`, default 0, to `range`) holds the player's distance: it starts with
-  // probability chance x step length, where chance is the attack's own `chance` per second, else the default for
-  // its kind below (an attack of several kinds takes the lowest). The first success starts.
-  // Crowds (js/crowd.js): every enemy may attack, but its chances are multiplied by `busyMul` for each other enemy
-  // mid-attack, and no enemy starts an attack within `gap` s of another starting one.
+  // Enemy attack choice (js/enemy.js). An attack's chance is its own `chance` per second, else the default for its
+  // kind below (an attack of several kinds takes the lowest). Once its cooldown is over, an enemy facing the player
+  // strikes at once if a basic close attack (no `minRange`, no kind below) reaches, picking among its close attacks in
+  // reach with odds in proportion to their chances. Otherwise, every step, each attack whose range window (`minRange`,
+  // default 0, to `range`) holds the player's distance starts with probability chance x step length.
+  // Crowds (js/crowd.js): every enemy may attack, but its chance rolls are multiplied by `busyMul` for each other
+  // enemy mid-attack, and no enemy starts an attack within `gap` s of another starting one.
   // Holding: an enemy closes in at full speed until its longest-reaching attack can reach, and holds `holdInset` m
   // inside that reach (never more than `holdMax` m away). Once more than `holdBand` m closer it backs off, at
   // `holdSpeedMul` of its speed, all the way out again, and it circles at that speed toward its place around the

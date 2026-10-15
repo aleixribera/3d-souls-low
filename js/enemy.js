@@ -2,11 +2,22 @@
 // ============================================================================
 // 6. Enemy
 // ============================================================================
+const STRONG_KINDS = ['projectile', 'dash', 'rollOnly', 'shove'];   // attack kinds with their own default chance
 // An enemy attack's chance per second: its own `chance`, else CONFIG.ai.chance for its kind (the lowest of its kinds).
 function attackChance(a) {
   if (a.chance !== undefined) return a.chance;
-  const C = CONFIG.ai.chance, kinds = ['projectile', 'dash', 'rollOnly', 'shove'].filter(k => a[k]);
+  const C = CONFIG.ai.chance, kinds = STRONG_KINDS.filter(k => a[k]);
   return kinds.length ? Math.min(...kinds.map(k => C[k])) : C.basic;
+}
+// A close attack reaches from the enemy itself: no `minRange`, not a gap closer or a shot.
+const isClose = a => !a.minRange && !a.dash && !a.projectile;
+// A basic close attack (no strong kind) never waits on its chance: it strikes as soon as the enemy may attack.
+const strikesAtOnce = a => isClose(a) && !STRONG_KINDS.some(k => a[k]);
+// One of `attacks`, with odds in proportion to their chances (null if they are all 0).
+function pickByChance(attacks) {
+  const total = attacks.reduce((s, a) => s + attackChance(a), 0);
+  let r = Math.random() * total;
+  return total > 0 ? attacks.find(a => (r -= attackChance(a)) < 0) || attacks[attacks.length - 1] : null;
 }
 
 // opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
@@ -142,12 +153,12 @@ class Enemy {
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
-          const shot = this.ranged && this.rollAttack(dist, toPlayer, dt, true);
+          const shot = this.ranged && this.chooseAttack(dist, toPlayer, dt, true);
           if (shot) this.beginAttack(shot);
           else if (!this.ranged) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
           break;
         }
-        const a = this.rollAttack(dist, toPlayer, dt);
+        const a = this.chooseAttack(dist, toPlayer, dt);
         if (a) { this.beginAttack(a); break; }
         // Holding, ready to strike: now and then it steps in to its shortest reach.
         if (!this.stepIn && this.cooldown <= 0 && dist <= this.holdReach()
@@ -227,15 +238,21 @@ class Enemy {
     const sp = this.def.speed / Math.max(1, l);
     return [vx * sp, vz * sp];
   }
-  // No attack is chosen in advance. Once the cooldown is over and it faces the player, every attack whose range
-  // window (`minRange`, default 0, to `range`) holds the player's distance rolls its chance per second
-  // (attackChance, times the crowd's damping); the first success is the attack to start now, else null.
-  // Nothing starts within the crowd's gap after another enemy's start. `shotsOnly`: projectiles only.
-  rollAttack(dist, toPlayer, dt, shotsOnly = false) {
+  // No attack is chosen in advance. Once the cooldown is over and it faces the player (and the crowd's gap after
+  // another enemy's start has passed), the attacks whose range window (`minRange`, default 0, to `range`) holds the
+  // player's distance decide, every step:
+  //   - a basic close attack in reach means it strikes now, picking among its close attacks in reach by their
+  //     chances (stepping in, it first gets all the way in, so its longest swing doesn't always win);
+  //   - otherwise each one rolls its chance per second (attackChance, times the crowd's damping): gap closers,
+  //     shots, and a roll-only attack or shove that reaches on its own. The first success starts.
+  // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
+  chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
+    const inReach = this.def.attacks.filter(a => (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range);
+    const close = inReach.filter(isClose);
+    if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.attackReach.short)) return pickByChance(close);
     const mul = crowd.chanceMul(this);
-    for (const a of this.def.attacks)
-      if ((!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range && Math.random() < attackChance(a) * mul * dt) return a;
+    for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * mul * dt) return a;
     return null;
   }
   beginAttack(attack) {
