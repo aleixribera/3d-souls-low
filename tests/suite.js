@@ -706,6 +706,15 @@
     expect.above(alone, 8, 'shots alone');
     expect.above(crowded, 0.6 * alone, `shots with two others mid-attack (alone: ${alone})`);
   });
+  test('crowds: an enemy that gives up the chase walks home instead of flickering back to it', () => {
+    Game.startLevel('test-mixed'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    sim.place(22, 0);
+    const e = sim.spawn('hollow', 30, 0, undefined, -Math.PI / 2);
+    e.leash = 5;   // the player, 8 m off and in sight, is past its leash
+    sim.seconds(3);
+    expect.below(log.filter(t => t === 'alert').length, 2, 'alerts');
+    expect.ok(e.state !== ES.CHASE, `state ${e.state}`);
+  });
   test('attack chance: gap closers still wait on their chance', () => {
     const waits = waitsAt('lancer', 6, 60), longest = A.ENEMY_BY_ID.lancer.cooldown[1];
     expect.above(waits.length, 2, 'dashes');

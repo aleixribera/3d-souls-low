@@ -103,7 +103,8 @@ class Enemy {
     const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
     // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.
     const reach = this.reachable = Math.abs(player.y - this.y) <= CONFIG.height.reach;
-    const engage = sees && (reach || this.ranged);   // an archer takes aim at a player it can't walk to
+    // An archer takes aim at a player it can't walk to. Never one past its leash: it would give up at once and flicker.
+    const engage = sees && (reach || this.ranged) && dist <= this.leash;
     let tx = 0, tz = 0;
 
     switch (this.state) {
@@ -139,8 +140,9 @@ class Enemy {
         if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.RETURN: {   // lost the player: walk back home, then resume the home behaviour
-        if (engage) { this.setState(ES.CHASE); break; }
         const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
+        // Back to the chase only if it wouldn't give up again at once (else it flickers in place, alerting every step).
+        if (engage && hd <= this.homeLeash) { this.setState(ES.CHASE); break; }
         if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
         const sp = d.speed * E.returnSpeedMul;
         tx = hx / hd * sp; tz = hz / hd * sp;
