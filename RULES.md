@@ -10,6 +10,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - A new file must be added to `GAME_FILES`, after everything it needs at load.
 - **Test Grounds:** opening the page with `#dev` at the end of its address adds a Test Grounds menu with developer rooms (`TEST_LEVELS` in `js/data/levels.js`) for trying out mechanics. They are checked at load like every level.
 - **Tests:** with `#dev` the page also loads `tests/suite.js`: stepped simulations of the real game (manual clock, gamepad ignored, scripted movement). Run them from the browser console with `await __arena.tests.run()`, or `run('heights')` for the tests whose name contains a word. Run them before every commit, and add tests for each new mechanic.
+- `js/projectiles.js` flies the bolts that bows loose (a fixed pool), and hits the player through the same `Player.takeHit` as any strike.
 - `js/terrain.js` turns a room level's rooms and ramps into floors at heights, and builds its walls, rails, ledge faces, floors and roofs from them (see Heights below).
 
 ## Golden rules
@@ -46,7 +47,9 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *Gap closer* (`minRange` + `dash: { speed, from }`): picked only when the player is between `minRange` and `range`. From `from` (a fraction of the wind-up) the enemy rushes forward at `speed` until the strike would reach, then strikes. It does not turn while rushing unless it also tracks, so a late sidestep beats it.
   - *Tracking* (`track: rate`): the enemy keeps turning toward the player at `rate` through the whole wind-up and the swing, instead of locking its aim part way through. Roll through it or away late.
   - An enemy picks a random attack that suits the distance; gap closers only at mid range, the rest at any range (it walks in).
-  - Test enemies for each mechanic (`TEST_DEFS`, `js/data/test-enemies.js`) are duels in the `#dev` Test Grounds.
+  - *Projectile* (`projectile: { speed, gravity, size }`, plus a `range`): the active phase looses a bolt instead of opening a hitbox. It flies along the archer's facing with a slight arc aimed to meet the player's chest, so a late sidestep or a roll beats it. Walls, ledges, floors, roofs and closed gates stop it (rails don't). It can be blocked from the front (at block rates), and the roll's invulnerability lets it pass, but it can never be parried: close in on the archer instead. A bolt that hits emits `strike` with `projectile: true`; `shot` and `boltStopped` announce the rest.
+  - *Shove* (`shove: true`): hits are normally capped at `CONFIG.player.knockCap` of knockback; a shove isn't, so a big `knock` can throw you off an open edge. Give it a long wind-up. A block (less knock) or a roll saves you.
+  - Test enemies for each mechanic (`TEST_DEFS`, `js/data/test-enemies.js`) are duels in the `#dev` Test Grounds. A test enemy with `arena` (a room level id), `playerStart` and `enemyStart` is fought on that level instead of the arena (the Bowman and the Shover duel on Test: Heights).
 - **Nothing hits, sees or locks on through a closed gate.** In room levels, walls, pillars, ledges, floors and roofs block too, in 3D (eye to eye): you can see someone on a walkway across an open yard, but not through the walkway's floor from right underneath it. Rails never block sight.
 - **Order each step:** parry first, then the player's hits, then enemy hits.
 
@@ -65,6 +68,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 
 - Every enemy is built from the same humanoid parts, changed by scale, colour, weapon and off-hand.
 - **Basic loop:** notice the player → chase → pick an attack → wind up → strike → recover → cooldown.
+- **Archers** (any enemy with a projectile attack) shoot whenever a shot fits the distance (`minRange` to `range`) rather than walking in, and they shoot without an attack token: they stand where they are and loose bolts while the melee enemies take turns, and they shoot at a player they can't walk to (above or below them). Close in and they fall back on their melee attacks (which do need a token).
 - **Attack tokens:** only a few enemies attack at once (2 unless the level sets `attackTokens`). An enemy needs a token to pick an attack. The others circle the player out of reach, spread over the player's sides and back, facing the player. A token is given back when its attack ends, or when its holder is flinched, staggered, parried, broken or gives up the chase. Free tokens go first to enemies that have waited longest, then to the closest, and an enemy that has waited can take the token of a holder that is still far away. Numbers live in `CONFIG.tokens`; the logic in `js/tokens.js`. A lone enemy (any duel) always holds a token.
 - **Behaviours** decide how an enemy starts and what it returns to:
   - *gated*: stands at its post.
@@ -97,6 +101,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - **Blocks:** `blocks: [{ rect, y0, y1 }]` on the level are solid masses (a tower's core) that are not rooms.
   - **Placements** (start, bonfires and their spawns, zone spawns, patrols, slumberers) stand on the top-most floor under them, or on the highest one at or below their optional `y`. All are checked at load: on a floor, not over a pit.
 - **Culling** (opt-in, a level's `cull: true`; numbers in `CONFIG.cull`): every light the level builds is only a source; a fixed pool of `maxLights` real lights follows the sources nearest the player each frame, each fading out before it is dropped, so the light count never changes and shaders never recompile. Unaware enemies (idle, patrolling, going home, slumbering) more than `enemyRange` m away sleep: no update, not drawn, until the player comes near or an alert wakes them. Enemies that are fighting, reeling or dying always run. Levels without `cull` keep every light and never sleep anyone.
+- **Shortcut gates** (`shortcuts: [{ id, gate, opensFrom }]`, room levels): a gate in a doorway that belongs to no zone. It opens for good the moment the player stands in `opensFrom` (a rect on its far side, on the gate's floor), usually to link back to an earlier bonfire. It stays open through resting and dying, and does not count toward completing the level (`gateOpened` with `shortcut: true`).
 - **Gated zones:** each zone has one or more enemies and a gate. The gate opens only when all of the zone's enemies are dead. The level is complete when every gate is open.
 - Zone enemies stand at their posts from the start, so the player can see them coming.
 - **Optional enemies** (patrol, ambush, slumber) can be placed between zones.
@@ -118,9 +123,6 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 
 Not built yet. These rules apply once each part lands; until then the sections above describe the game.
 
-- **Shortcut gates:** a gate with `opensFrom` opens for good when the player reaches that area (the far side), linking back to an earlier bonfire.
-- **Projectiles** (`projectile` on an attack): bows fire bolts that fly with a slight arc, are stopped by walls and closed gates, can be blocked from the front or rolled through, and cannot be parried.
-- **Shove** (`shove: true`): a long red wind-up and big knockback that can push you off an open edge. Roll, or block to take less push.
 - **New enemies:** Ashen Lancer (spear: dash thrust, roll-only charged thrust), Executioner (greataxe: tracking chop, roll-only spin; stagger meter), Pale Duelist (fast tracking combo, dash cut), Rampart Bowman (bow, kick), Shover (shield, shove). Mini-boss: Bell Warden (posture; tracking sweep, roll-only bell slam, shove, dash charge).
 
 ## Adding things — checklist

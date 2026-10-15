@@ -44,6 +44,7 @@ const CONFIG = {
     rollQueueTime: 1.2,         // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
+    knockCap: 12,                // most knockback a hit gives (a `shove` ignores it)
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
     autoTarget: { range: 3.6, cone: 1.75, angleWeight: 1.5 },
   },
@@ -58,6 +59,9 @@ const CONFIG = {
   parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
            riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
   rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },
+  // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
+  // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
+  projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
   // Death: the world slows to a stop, YOU DIED fades in, then the player returns to the last bonfire.
   // The overlay's CSS timings are set from these numbers at load, so they always line up.
   death: { slowTime: 1.4, respawnDelay: 4.8, textDelay: 0.6, textFade: 2.2, hintDelay: 2.6 },
@@ -117,6 +121,7 @@ const CONFIG = {
           parry: { color: 0xfff6d0, count: 26, speed: 7.5 },
           postureBreak: { color: 0xffc060, count: 30, speed: 8 },
           alert: { color: 0xff6a30, count: 10, speed: 2.5 },
+          bolt: { color: 0xb8a888, count: 6, speed: 2.5 },   // a bolt stopped by a wall
         },
         postureBreakShake: { time: 0.22, amp: 0.08 },
         hardLanding: { ring: 1.4, crack: 0.9, dust: 10, shake: 0.09 } },   // dust and jolt when a fall hurts

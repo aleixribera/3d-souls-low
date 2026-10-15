@@ -2,8 +2,9 @@
 // Test Grounds: a big open courtyard under a dusk sky, for open rooms and culling. Grass, distant ruins and
 // eight lit lamps around the courtyard; long corridors lead to roofed halls far away. Twelve enemies: a crowd
 // of six holds the courtyard (its gate opens on the east hall), six more wait in the halls. With `cull`, a
-// fixed pool of lights follows the nearest of the level's eighteen light sources, and the far, unaware
-// enemies sleep until you come near.
+// fixed pool of lights follows the nearest of the level's light sources, and the far, unaware enemies sleep
+// until you come near. A shortcut gate joins the east hall to a corridor from the south hall: it stays shut
+// until you reach the east hall (through the courtyard fight) and opens it from that side.
 const TEST_COURTYARD = {
   id: 'test-courtyard', layout: 'rooms', cull: true, alert: true,
   name: 'Test: Courtyard',
@@ -29,7 +30,11 @@ const TEST_COURTYARD = {
     { id: 's-hall', rect: [30, 54, -56, -40], height: 7, floor: 0x1f3238, wall: 0x2c434b, light: 0x6fc8c0, pillars: [[34, -52], [50, -44]] },
     { id: 'e-corridor', rect: [72, 80, -2, 2], height: 5, floor: 0x2f3433, wall: 0x3a403f, light: 0xd06050, dim: true },
     { id: 'e-hall', rect: [80, 104, -14, 14], height: 8, floor: 0x37211f, wall: 0x4a2b27, light: 0xff7a50, braziers: [[102, -12], [102, 12]] },
+    { id: 'se-corridor', rect: [54, 100, -44, -40], height: 5, floor: 0x2f3433, wall: 0x3a403f, light: 0x6fc8c0, dim: true },
+    { id: 'se-link', rect: [96, 100, -40, -14], height: 5, floor: 0x2f3433, wall: 0x3a403f, light: 0xd06050, dim: true },
   ],
+  // Opens for good from the east hall (opensFrom), never from the corridor.
+  shortcuts: [{ id: 'shortcut-east', gate: { x: 98, z: -14, along: 'x', width: 4 }, opensFrom: [80, 104, -13, 14] }],
   bonfires: [{ id: 'courtyard-gate', x: 2.5, z: -4, spawn: { x: 5, z: -2, yaw: Math.PI / 2 } },
              { id: 'courtyard-east', x: 90, z: -12, spawn: { x: 90, z: -9, yaw: Math.PI } }],
   gated: [

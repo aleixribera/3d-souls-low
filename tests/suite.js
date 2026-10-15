@@ -334,6 +334,96 @@
     Game.startLevel('test-courtyard');   // leave the real level loaded
   });
 
+  // ---- v3.3 projectiles, shove, shortcut gates -----------------------------------------------------------------
+  const shots = [];   // every bolt loosed: who fired it and whether it held an attack token
+  A.events.on('shot', d => shots.push({ enemy: d.enemy, token: d.enemy.token }));
+  const bowShot = () => A.ENEMY_BY_ID.testBowman.attacks.find(a => a.projectile);
+  const quiet = e => { e.notice = 0; e.next = null; e.setState(ES.IDLE); };   // an enemy that stays put while we aim for it
+  const settleBolts = () => sim.until(() => !A.projectiles.live().length, 4);
+  test('projectiles: the Bowman shoots down from the walkway and the bolt hits', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0; shots.length = 0;
+    const p = Game.player, hp0 = p.hp;
+    expect.ok(sim.until(() => shots.length > 0, 8) >= 0, 'a bolt was loosed at a player 4 m below');
+    expect.ok(sim.until(() => p.hp < hp0, 3) >= 0, 'it hit the player standing still');
+    expect.near(hp0 - p.hp, bowShot().damage, 0.01, 'full damage, unblocked');
+    expect.near(Game.duel.y, 4, 1e-6, 'the archer stayed on its walkway');
+  });
+  test('projectiles: blocked from the front, rolled through, never parried', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0;
+    const p = Game.player, e = Game.duel, shot = bowShot();
+    quiet(e);
+    const fire = () => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); return A.projectiles.fire(e, shot, p); };
+    sim.hold('block'); sim.step(2);
+    let hp0 = p.hp; fire(); settleBolts(); sim.release('block');
+    expect.ok(log.includes('strike'), 'the bolt struck the guard');
+    expect.near(hp0 - p.hp, shot.damage * CONFIG.block.damageMul, 0.01, 'blocked damage');
+    sim.seconds(1.5); hp0 = p.hp;
+    const b = fire(), arrive = Math.hypot(p.x - b.x, p.z - b.z) / shot.projectile.speed;
+    sim.seconds(Math.max(0, arrive - CONFIG.player.rollIFrames * 0.5)); sim.press('roll');
+    settleBolts();
+    expect.near(p.hp, hp0, 1e-9, 'rolled through the bolt');
+    // Close up, in the last instant of the draw: a melee swing could be parried here, the shot never.
+    const kick = e.def.attacks.find(a => !a.projectile);
+    e.x = p.x + Math.sin(p.yaw) * 2; e.z = p.z + Math.cos(p.yaw) * 2; e.y = p.y;
+    const lateInDraw = a => { e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup - 0.05; e.yaw = Math.atan2(p.x - e.x, p.z - e.z); };
+    lateInDraw(kick); expect.ok(parryTiming(p, e, CONFIG.parry.arm) !== null, 'the kick could be parried');
+    lateInDraw(shot); expect.ok(parryTiming(p, e, CONFIG.parry.arm) === null, 'the shot cannot');
+  });
+  test('projectiles: ledges, floors and closed gates stop bolts', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0;
+    const e = Game.duel, shot = bowShot();
+    quiet(e); sim.place(27, -4.5, 0);   // right under the walkway's 4 m ledge
+    const p = Game.player, hp0 = p.hp;
+    e.yaw = Math.atan2(p.x - e.x, p.z - e.z); A.projectiles.fire(e, shot, p); settleBolts();
+    expect.near(p.hp, hp0, 1e-9, 'the walkway stopped it'); expect.ok(log.includes('boltStopped'), 'boltStopped event');
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    sim.place(98, -24);   // in the corridor, behind the closed shortcut gate
+    const q = Game.player, archer = sim.spawn('testBowman', 98, -6, undefined, Math.PI);
+    quiet(archer); A.projectiles.fire(archer, shot, q); settleBolts();
+    expect.near(q.hp, q.maxHp, 1e-9, 'the closed gate stopped it'); expect.ok(log.includes('boltStopped'), 'stopped at the gate');
+  });
+  test('projectiles: an archer shoots while others hold the attack tokens', () => {
+    Game.startLevel('test-crowd'); sim.begin(); shots.length = 0;
+    const bow = sim.spawn('testBowman', 20, 10, undefined, -Math.PI / 2);
+    sim.place(12, 0);
+    sim.until(() => shots.some(s => s.enemy === bow && !s.token), 10);
+    expect.ok(Game.enemies.filter(e => e.token).length <= CONFIG.tokens.default, 'never more token holders than tokens');
+    expect.ok(shots.some(s => s.enemy === bow && !s.token), 'the archer loosed a bolt without a token');
+  });
+  test('shove: throws the player off the open edge; a block keeps them on; others stay capped', () => {
+    const setup = () => {
+      Game.startFight('testShover'); sim.begin(); log.length = 0;
+      const p = Game.player, e = Game.duel, shove = e.def.attacks.find(a => a.shove);
+      sim.place(49, -10); p.yaw = Math.PI / 2;   // facing east, the open edge 3 m behind
+      e.x = e.px = 50.9; e.z = e.pz = -10; e.yaw = -Math.PI / 2; e.attack = shove; e.hitIndex = 0; e.next = null; e.setState(ES.WINDUP);
+      return { p, e };
+    };
+    let { p } = setup();
+    expect.ok(sim.until(() => !p.alive(), 6) >= 0, 'shoved into the trench'); expect.ok(log.includes('fell'), 'fell event');
+    ({ p } = setup());
+    sim.hold('block'); sim.seconds(3); sim.release('block');
+    expect.ok(p.alive() && Math.abs(p.y - 4) < 1e-6, 'blocking kept the player on the terrace');
+    expect.above(p.x, 46, 'still short of the edge');
+    sim.step(3);
+    const from = { x: p.x - 1, z: p.z };   // from behind: no guard
+    p.kx = p.kz = 0; p.takeHit({ damage: 0, poise: 0, knock: 26, shove: false }, from);
+    expect.near(p.kx, CONFIG.player.knockCap, 1e-6, 'an ordinary hit is capped');
+    p.kx = p.kz = 0; p.takeHit({ damage: 0, poise: 0, knock: 26, shove: true }, from);
+    expect.near(p.kx, 26, 1e-6, 'a shove is not');
+  });
+  test('shortcut gates: shut from the near side, open for good from the far side', () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    const g = world.gates.find(g => g.id === 'shortcut-east');
+    sim.place(98, -20); sim.move(0, 1); sim.seconds(3); sim.move(null);
+    expect.below(Game.player.z, -14, 'the closed gate holds from the corridor'); expect.ok(!g.open, 'still shut');
+    sim.place(98, -8); sim.step(2);
+    expect.ok(g.open && log.includes('gateOpened'), 'opened on reaching the east hall');
+    const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(g.open, 'stays open after dying');
+    sim.clearEnemies(); sim.place(98, -20); sim.move(0, 1); sim.seconds(3); sim.move(null);
+    expect.above(Game.player.z, -14, 'now the corridor leads through'); expect.ok(!Game.complete, 'shortcuts do not complete the level');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;

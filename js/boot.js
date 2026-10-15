@@ -20,6 +20,7 @@ function registerListeners() {
     if (d.body === Game.player) Game.addShake(CONFIG.groundPound.shakeTime * 1.5, CONFIG.fx.hardLanding.shake);
   });
   events.on('alert', d => spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, F.alert));
+  events.on('boltStopped', d => spawnBurst({ x: d.bolt.x, y: d.bolt.y, z: d.bolt.z }, F.bolt));
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
@@ -123,6 +124,6 @@ requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
 window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, tokens, LEVEL_1, LEVEL_2, TUTORIAL, ARENA, TEST_HEIGHTS, TEST_COURTYARD,
-                   PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy,
+                   PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles,
                    get world() { return world; } };
 window.__arenaReady = true;

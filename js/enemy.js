@@ -17,6 +17,7 @@ class Enemy {
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.grounded = true; this.peak = this.y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
     this.unreachable = 0; this.reachable = true;    // time the player has been too far above or below to fight
+    this.ranged = def.attacks.some(a => a.projectile);   // an archer: shoots from where it stands (js/projectiles.js)
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
@@ -78,7 +79,7 @@ class Enemy {
     const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
     // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.
     const reach = this.reachable = Math.abs(player.y - this.y) <= CONFIG.height.reach;
-    const engage = sees && reach;
+    const engage = sees && (reach || this.ranged);   // an archer takes aim at a player it can't walk to
     let tx = 0, tz = 0;
 
     switch (this.state) {
@@ -124,21 +125,20 @@ class Enemy {
       }
       case ES.CHASE: {
         const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
-        this.unreachable = reach ? 0 : this.unreachable + dt;
+        this.unreachable = reach || this.ranged ? 0 : this.unreachable + dt;
         if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player) || this.unreachable > CONFIG.height.giveUp) {
           this.next = null; this.unreachable = 0; this.setState(ES.RETURN); break;
         }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
+        // An archer shoots from where it stands while it waits for its turn, or at a player it can't walk to.
+        if (this.ranged && (!this.token || !reach)) { this.shootIfReady(dist, toPlayer); break; }
         if (!reach) { this.next = null; this.token = false; tx = dx / dist * d.speed; tz = dz / dist * d.speed; break; }   // to the brink, no further
         if (!this.token) { this.next = null; [tx, tz] = this.circleVelocity(player, dist); break; }   // not its turn: circle
         if (this.cooldown <= 0 && !this.next) this.next = this.pickAttack(dist);
         const want = this.next ? this.next.range : d.holdRange;
         if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
-        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) {
-          this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
-          if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
-        }
+        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) this.beginAttack();
         break;
       }
       case ES.WINDUP: {
@@ -150,7 +150,7 @@ class Enemy {
         if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
           tx = this.vx = Math.sin(this.yaw) * a.dash.speed; tz = this.vz = Math.cos(this.yaw) * a.dash.speed;   // full speed at once
         }
-        if (this.stateTime >= hit.startup) this.strike();
+        if (this.stateTime >= hit.startup) this.strike(player);
         break;
       }
       case ES.ACTIVE: {
@@ -210,14 +210,37 @@ class Enemy {
     return [vx * sp, vz * sp];
   }
   // A random attack that suits the distance: gap closers (`minRange`) only when the player is between
-  // their minRange and range; the rest at any distance (the enemy walks in to use them).
+  // their minRange and range; the rest at any distance (the enemy walks in to use them). A shot that fits
+  // the distance always wins: an archer shoots rather than walking in to kick.
   pickAttack(dist) {
     const ok = this.def.attacks.filter(a => !a.minRange || (dist >= a.minRange && dist <= a.range));
-    const pool = ok.length ? ok : this.def.attacks;
+    const shots = ok.filter(a => a.projectile && a.minRange);
+    const pool = shots.length ? shots : ok.length ? ok : this.def.attacks;
     return pool[Math.floor(Math.random() * pool.length)];
   }
-  // The strike timeline shared by all enemies: windup -> active (per hit) -> recover.
-  strike() { this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack)); this.setState(ES.ACTIVE); }
+  // A shot that suits the distance, or null.
+  pickShot(dist) {
+    const shots = this.def.attacks.filter(a => a.projectile && dist >= (a.minRange || 0) && dist <= a.range);
+    return shots.length ? shots[Math.floor(Math.random() * shots.length)] : null;
+  }
+  // Archers out of turn (or above or below the player): stand, pick a shot once the cooldown is over, and loose it
+  // when facing the player.
+  shootIfReady(dist, toPlayer) {
+    if (this.next && !this.next.projectile) this.next = null;
+    if (this.cooldown <= 0 && !this.next) this.next = this.pickShot(dist);
+    if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < CONFIG.enemy.attackFacing) this.beginAttack();
+  }
+  beginAttack() {
+    this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
+    if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
+  }
+  // The strike timeline shared by all enemies: windup -> active (per hit) -> recover. A bow looses a bolt
+  // at the target instead of opening a hitbox.
+  strike(target) {
+    if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
+    else this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack));
+    this.setState(ES.ACTIVE);
+  }
   endStrikeWhenDone() {
     if (this.stateTime < this.attack.hits[this.hitIndex].active) return;
     this.hitbox = null;

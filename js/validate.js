@@ -23,6 +23,9 @@ function validateData() {
     if ('dash' in a) need(a.dash && num(a.dash.speed) && a.dash.speed > 0 && num(a.dash.from) && a.dash.from >= 0 && a.dash.from < 1,
       `${tag}: dash needs speed > 0 and from (a fraction of the wind-up, 0 to 1).`);
     if ('track' in a) need(num(a.track) && a.track > 0, `${tag}: track must be a turn rate above 0 (rad/s).`);
+    if ('projectile' in a) need(a.projectile && num(a.projectile.speed) && a.projectile.speed > 0 && num(a.projectile.gravity) && a.projectile.gravity >= 0
+      && num(a.projectile.size) && a.projectile.size > 0 && num(a.range), `${tag}: projectile needs speed > 0, gravity >= 0 and size > 0, and the attack a range.`);
+    if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
   };
   // Enemies
   const ids = new Set();
@@ -36,6 +39,12 @@ function validateData() {
     for (const a of d.attacks) checkAttack(a, `Enemy "${d.id}"`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'damageMul', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime, damageMul and hitstop.`);
+    if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
+      const L = ALL_LEVELS.find(l => l.id === d.arena), ok = p => p && num(p.x) && num(p.z) && num(p.yaw)
+        && L && L.layout === 'rooms' && Number.isFinite(terrainFor(L).floorY(p.x, p.z, p.y));
+      need(!!L && L.layout === 'rooms', `Enemy "${d.id}": arena "${d.arena}" must be a room level.`);
+      need(ok(d.playerStart) && ok(d.enemyStart), `Enemy "${d.id}": playerStart and enemyStart need x, z and yaw on a floor of "${d.arena}".`);
+    }
   }
   // Player and items
   const M = PLAYER_DEF.moveset;
@@ -195,6 +204,16 @@ function validateRooms(L, where, need, num) {
       need(!m.behavior || m.behavior === 'gated' || m.behavior === 'slumber', `${tag}: enemy behaviour must be gated or slumber.`);
       need(m.spawn && onFloor(m.spawn.x, m.spawn.z, m.spawn.y) && num(m.spawn.yaw), `${tag}: enemy "${m.enemy}" spawn does not stand on a floor (or has no yaw).`);
     }
+  }
+  // Shortcut gates: a gate in a doorway that opens for good from its far side (`opensFrom`, a rect).
+  if ('shortcuts' in L) need(Array.isArray(L.shortcuts), `${where}: shortcuts must be a list.`);
+  for (const sc of Array.isArray(L.shortcuts) ? L.shortcuts : []) {
+    const tag = `${where} shortcut "${sc.id}"`;
+    need(typeof sc.id === 'string' && !zoneIds.has(sc.id), `${tag}: missing id, or the same as a zone or another shortcut.`); zoneIds.add(sc.id);
+    need(sc.gate && num(sc.gate.x) && num(sc.gate.z) && num(sc.gate.width) && (sc.gate.along === 'x' || sc.gate.along === 'z'),
+      `${tag}: gate needs x, z, width and along ('x' or 'z').`);
+    if (sc.gate && num(sc.gate.x) && num(sc.gate.z)) need(Number.isFinite(T.floorY(sc.gate.x, sc.gate.z, sc.gate.y)), `${tag}: the gate does not stand on a floor.`);
+    need(rectOk(sc.opensFrom) && !(sc.gate && inRect(sc.opensFrom, sc.gate.x, sc.gate.z)), `${tag}: opensFrom must be a rect on the gate's far side (not over the gate).`);
   }
   for (const s of L.dispersed) {
     const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;

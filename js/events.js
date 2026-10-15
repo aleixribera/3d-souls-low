@@ -6,6 +6,8 @@
 // tutorial listen (see registerListeners in the bootstrap). Events:
 //   strike {strike, attacker, target, at, blocked}  parry {target}  postureBreak {enemy}
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
+//   shot {enemy, bolt}  boltStopped {bolt}  (strike carries projectile: true when a bolt hits)
+//   gateOpened {gate, shortcut} (shortcut: a gate opened from its far side)
 //   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  perilous {enemy, attack} (a roll-only wind-up starts)  lock  switchTarget  zoom {dir}
 //   pause  resume  device {device}
 const events = {

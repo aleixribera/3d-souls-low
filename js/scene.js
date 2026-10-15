@@ -230,15 +230,16 @@ function buildRooms(L) {
     if (s.kind === 'rail') addBox(G, s.x1 - s.x0 + 0.08, 0.08, s.z1 - s.z0 + 0.08, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.04, (s.z0 + s.z1) / 2);
   }
   // Gates: a lintel above, a portcullis below; the closed portcullis is a solid box across the doorway.
+  // Zone gates lift when their zone is won; shortcut gates (`shortcuts`, with `opensFrom`) from their far side.
   const t = L.gateThickness, gh = L.gateHeight;
-  for (const z of L.gated) {
+  for (const z of [...L.gated, ...(L.shortcuts || [])]) {
     const g = z.gate, alongX = g.along === 'x', gy = TR.floorY(g.x, g.z, g.y), wh = gateHeadroom(TR, g.x, g.z, gy);
     if (wh > gh) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
     const mesh = buildPortcullis(G, g.x, g.width, gh);
     mesh.position.set(g.x, gy, g.z); if (alongX) mesh.rotation.y = Math.PI / 2;
     const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - t / 2, z1: g.z + t / 2, y0: gy, y1: gy + gh }
                        : { x0: g.x - t / 2, x1: g.x + t / 2, z0: g.z - g.width / 2, z1: g.z + g.width / 2, y0: gy, y1: gy + gh };
-    gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap });
+    gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null });
   }
   for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y));
   return { group: G, gates, solids: TR.solids, slabs: TR.slabs, terrain: TR };

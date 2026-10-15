@@ -35,6 +35,44 @@ const ANIMS = {
     else if (phase === PHASE.ACTIVE) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
     else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
   },
+  // Bow: the bow arm comes up level and the stance turns side-on while the string hand draws back; the release
+  // snaps the hand open.
+  draw(r, phase, p) {
+    const { armR, armL, spin, weapon, head } = r;
+    if (phase === PHASE.STARTUP) {
+      const k = ease(clamp(p * 1.7, 0, 1)), d = ease(clamp((p - 0.25) / 0.75, 0, 1));
+      armR.rotation.x = lerp(-0.4, -1.55, k); weapon.rotation.x = lerp(0.5, 0, k); spin.rotation.y = lerp(0, 0.35, k);
+      armL.rotation.x = lerp(-0.1, lerp(-1.5, -1.0, d), k); armL.rotation.z = lerp(0, -0.75, k); head.rotation.y = 0.3 * k;
+    } else if (phase === PHASE.ACTIVE) {
+      armR.rotation.x = -1.55; weapon.rotation.x = 0; spin.rotation.y = 0.35; head.rotation.y = 0.3;
+      armL.rotation.x = lerp(-1.0, -0.6, ease(p)); armL.rotation.z = lerp(-0.75, -0.2, ease(p));
+    } else {
+      const k = ease(p);
+      armR.rotation.x = lerp(-1.55, -0.4, k); weapon.rotation.x = lerp(0, 0.5, k); spin.rotation.y = lerp(0.35, 0, k);
+      armL.rotation.x = lerp(-0.6, -0.1, k); armL.rotation.z = lerp(-0.2, 0, k); head.rotation.y = 0.3 * (1 - k);
+    }
+  },
+  // Two-handed push: both arms gathered in with a crouch, then driven forward with the whole body behind them.
+  shove(r, phase, p) {
+    const { armR, armL, tip } = r;
+    if (phase === PHASE.STARTUP) {
+      const k = ease(p);
+      armR.rotation.x = armL.rotation.x = lerp(-0.4, -0.75, k); armR.rotation.z = 0.35 * k; armL.rotation.z = -0.35 * k;
+      tip.rotation.x = -0.16 * k; r.crouch(0.2 * k);
+    } else if (phase === PHASE.ACTIVE) {
+      armR.rotation.x = armL.rotation.x = lerp(-0.75, -1.6, ease(clamp(p * 2, 0, 1))); tip.rotation.x = lerp(-0.16, 0.34, p);
+    } else {
+      const k = ease(p);
+      armR.rotation.x = armL.rotation.x = lerp(-1.6, -0.3, k); tip.rotation.x = lerp(0.34, 0, k);
+    }
+  },
+  // A quick front kick with the right leg.
+  kick(r, phase, p) {
+    const { legR, kneeR, tip, armL } = r;
+    if (phase === PHASE.STARTUP) { const k = ease(p); legR.rotation.x = -0.9 * k; kneeR.rotation.x = 1.5 * k; tip.rotation.x = -0.12 * k; armL.rotation.x = -0.1 - 0.5 * k; }
+    else if (phase === PHASE.ACTIVE) { legR.rotation.x = lerp(-0.9, -1.4, p); kneeR.rotation.x = lerp(1.5, 0.1, ease(clamp(p * 2, 0, 1))); tip.rotation.x = -0.2; armL.rotation.x = -0.6; }
+    else { const k = ease(p); legR.rotation.x = lerp(-1.4, 0, k); kneeR.rotation.x = lerp(0.1, 0, k); tip.rotation.x = lerp(-0.2, 0, k); armL.rotation.x = lerp(-0.6, -0.1, k); }
+  },
   stomp(r, phase, p) {
     const { armR, armL, tip, legL, kneeL } = r;
     if (phase === PHASE.STARTUP) { legL.rotation.x = lerp(0, -1.5, ease(p)); kneeL.rotation.x = lerp(0, 1.3, ease(p)); tip.rotation.x = lerp(0, -0.16, ease(p)); armR.rotation.x = lerp(-0.4, -2.6, ease(p)); armL.rotation.x = lerp(-0.1, -2.6, ease(p)); }
@@ -52,6 +90,12 @@ const WEAPONS = {
   club: { color: 0x9a927c, build(part, mat) {
     part(new THREE.BoxGeometry(0.13, 0.13, 1.1), mat, 0, 0, 0.5);
     part(new THREE.BoxGeometry(0.3, 0.3, 0.6), mat, 0, 0, 1.2);
+  } },
+  bow: { color: 0x6a5238, build(part, mat, dark) {   // a short bow held upright when aimed; the string toward the archer
+    part(new THREE.BoxGeometry(0.07, 0.08, 0.17), dark, 0, 0, 0);
+    part(new THREE.BoxGeometry(0.045, 0.05, 0.52).rotateX(-0.35), mat, 0, 0.08, 0.29);
+    part(new THREE.BoxGeometry(0.045, 0.05, 0.52).rotateX(0.35), mat, 0, 0.08, -0.29);
+    part(new THREE.BoxGeometry(0.012, 0.012, 1.04), dark, 0, 0.17, 0);
   } },
   none: { color: 0x9aa0a8, build() {} },
 };

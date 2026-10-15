@@ -749,7 +749,7 @@ const visuals = (() => {
     }
   }
   function dressRooms(G, L, rnd, pools) {
-    const eps = 1e-6, rocks = [], faces = new Map(), gates = L.gated.map(z => z.gate), TR = terrainFor(L);
+    const eps = 1e-6, rocks = [], faces = new Map(), gates = [...L.gated, ...(L.shortcuts || [])].map(z => z.gate), TR = terrainFor(L);
     const clearOf = (x, z, r) => !gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + r)
       && !L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < r + 0.8)
       && !L.rooms.some(R => (R.braziers || []).some(([bx, bz]) => Math.hypot(bx - x, bz - z) < r));
@@ -815,7 +815,7 @@ const visuals = (() => {
     const area = R => (R.rect[1] - R.rect[0] - 2 * m) * (R.rect[3] - R.rect[2] - 2 * m);
     const total = rooms.reduce((a, R) => a + Math.max(0, area(R)), 0);
     if (!total) return;
-    const count = Math.min(VIS.grass.maxRoom, Math.round(total * VIS.grass.perSquareMetre * A.grass)), gates = L.gated.map(z => z.gate);
+    const count = Math.min(VIS.grass.maxRoom, Math.round(total * VIS.grass.perSquareMetre * A.grass)), gates = [...L.gated, ...(L.shortcuts || [])].map(z => z.gate);
     const near = (x, z) => gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + 1.5) || L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < 2.2)
       || (L.ramps || []).some(r => x > r.rect[0] - 1 && x < r.rect[1] + 1 && z > r.rect[2] - 1 && z < r.rect[3] + 1);
     st.grass = grassMesh(rnd, count, () => {

@@ -7,7 +7,7 @@ function makeStrike(attack, riposte = false) {
   const E = CONFIG.enemy, R = (riposte && attack.riposte) || {};
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
   return {
-    attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly,
+    attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove,
     damage: attack.damage * (R.damage || 1), poise: attack.poise * (R.poise || 1),
     knock: attack.knock, postureDmg: attack.postureDmg || 0,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1),
@@ -41,7 +41,7 @@ class Hitbox {
 function parryTiming(p, e, extra) {
   const P = CONFIG.parry;
   let rem;
-  if (e.attack && e.attack.rollOnly) return null;   // roll-only: cannot be parried
+  if (e.attack && (e.attack.rollOnly || e.attack.projectile)) return null;   // roll-only and bolts: cannot be parried
   if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;

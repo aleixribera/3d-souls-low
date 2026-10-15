@@ -128,7 +128,13 @@ const Game = {
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   },
-  startFight(id) { this.kind = 'arena'; this.level = ARENA; this.duelId = id; this.enterPlay(); this.reset(); },
+  // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
+  startFight(id) {
+    const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
+    this.kind = 'arena'; this.duelId = id;
+    this.level = L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
+    this.enterPlay(); this.reset();
+  },
   startLevel(id) { this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset(); },
   leaveTutorial() { this.reset(); this.showMenu('levels'); },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
@@ -143,7 +149,7 @@ const Game = {
     for (const e of this.enemies) e.rig.dispose();
     this.player = null; this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
-    groundFx.clear(); swordTrail.clear();
+    groundFx.clear(); swordTrail.clear(); projectiles.clear();
   },
   // Spawn options for a level entry: the one place placement rules live. Every placement stands on the
   // floor under it: the top-most one, or the highest at or below its `y` when it gives one.
@@ -164,7 +170,8 @@ const Game = {
   },
   makeEnemies() {
     if (this.kind === 'arena') {
-      this.duel = new Enemy(ENEMY_BY_ID[this.duelId], { ...ARENA.enemyStart, behavior: 'arena', notice: CONFIG.notice.arena });
+      const s = this.level.enemyStart;
+      this.duel = new Enemy(ENEMY_BY_ID[this.duelId], { ...s, y: world.floorY(s.x, s.z, s.y), behavior: 'arena', notice: CONFIG.notice.arena });
       return [this.duel];
     }
     return this.level.dispersed.map(s => new Enemy(ENEMY_BY_ID[s.enemy], this.spawnSpec(s, s.behavior)));
@@ -181,8 +188,8 @@ const Game = {
     const start = def.playerStart || def.start;
     this.spawn = { x: start.x, y: start.y, z: start.z, yaw: start.yaw };
     // A zone fights one enemy (`enemy` + `spawn`) or several (`enemies`); `members` lists them either way.
-    this.zones = (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
-      spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));
+    this.zones = this.kind !== 'level' ? [] : (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
+      spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));   // a duel on a level fights no zones
     this.spawnPlayer();
     hud.reset(this);
     if (this.isTutorial()) {
@@ -407,6 +414,7 @@ const Game = {
 
   // ---- level -------------------------------------------------------------------------------------
   // Gated zones: spawn on entry, lift the gate when all the zone's enemies fall. Complete when all gates are open.
+  // Shortcut gates (`opensFrom`) open for good once the player reaches their far side, on the gate's floor.
   updateLevel(dt) {
     const p = this.player, V = CONFIG.level;
     for (const z of this.zones) {
@@ -416,7 +424,13 @@ const Game = {
         z.gate.open = true;
         events.emit('gateOpened', { gate: z.gate });
       }
-      if (z.gate.open) z.gate.lift = Math.min(1, z.gate.lift + dt / V.gateLiftTime);
+    }
+    for (const g of world.gates) {
+      if (g.opensFrom && !g.open && p.alive() && inRect(g.opensFrom, p.x, p.z) && Math.abs(p.y - g.y) <= CONFIG.height.reach) {
+        g.open = true;
+        events.emit('gateOpened', { gate: g, shortcut: true });
+      }
+      if (g.open) g.lift = Math.min(1, g.lift + dt / V.gateLiftTime);
     }
     if (!this.complete && this.zones.length && this.zones.every(z => z.gate.open)) {
       this.complete = true;
@@ -608,6 +622,7 @@ const Game = {
       }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
       if (slow > 0) for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt * slow, p);
+      if (slow > 0) projectiles.update(this, dt * slow);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);
       this.updateCamera(dt, false);
       return;
@@ -623,6 +638,7 @@ const Game = {
     for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);
+    projectiles.update(this, dt);
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
     if (!p.alive() && this.isTutorial()) {   // nothing can kill you in the tutorial
@@ -652,6 +668,7 @@ const Game = {
       this.shake = Math.max(0, this.shake - frameDt);
     }
     camera.lookAt(new THREE.Vector3().lerpVectors(c.prevLook, c.look, alpha));
+    projectiles.render(frozen ? 1 : alpha);
     const lockAt = this.lock && placed.find(([b]) => b === this.lock);
     lockMarker.visible = !!lockAt;
     if (lockAt) {
