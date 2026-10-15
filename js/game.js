@@ -583,6 +583,13 @@ const Game = {
     if (snap) { c.prevPos.copy(c.pos); c.prevLook.copy(c.look); }
   },
 
+  // Culled levels: an unaware enemy far from the player sleeps (no update, not drawn) until the player comes
+  // near or an alert wakes it. Enemies that are fighting, reeling or dying always run.
+  sleeps(e) {
+    e.asleep = this.kind === 'level' && !!this.level.cull && e.alive() && (e.in('unaware') || e.state === ES.DORMANT)
+      && Math.hypot(e.x - this.player.x, e.z - this.player.z) > CONFIG.cull.enemyRange;
+    return e.asleep;
+  },
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
   // body separation, combat, deaths, level gates or tutorial, camera.
   update(dt) {
@@ -600,7 +607,7 @@ const Game = {
         return;
       }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
-      if (slow > 0) for (const e of this.enemies) e.update(dt * slow, p);
+      if (slow > 0) for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt * slow, p);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);
       this.updateCamera(dt, false);
       return;
@@ -613,7 +620,7 @@ const Game = {
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
     p.update(dt, this.moveInput(), live, this.lock);
     tokens.update(this, dt);
-    for (const e of this.enemies) e.update(dt, p);
+    for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);
     if (alerting) this.spreadAlert(unaware);
@@ -634,6 +641,7 @@ const Game = {
                        yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
     const placed = [p, ...this.enemies].map(b => [b, at(b)]);
     for (const [b, q] of placed) {
+      if (b.asleep) { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       b.rig.place(q.x, q.y, q.z, q.yaw, world.groundAt(q.x, q.z, q.y + 0.05));
       b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: p.x, pz: p.z });
     }

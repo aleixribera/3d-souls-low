@@ -6,7 +6,7 @@
 |---|---|---|
 | 0. Save this plan | — | done (this file) |
 | 1. 2.5D world: heights, ramps, edges, drops, pits, fall damage, enemy edge sense, 3D sight and camera; Test: Heights | v3.1 | done |
-| 2. Open rooms (sky, grass, silhouettes) and culling; Test: Courtyard | v3.2 | |
+| 2. Open rooms (sky, grass, silhouettes) and culling; Test: Courtyard | v3.2 | done |
 | 3. Projectiles, shove, shortcut gates | v3.3 | |
 | 4. New enemies and the Bell Warden | v3.4 | |
 | 5. Level 3: The Tower | v3.5 | |
@@ -14,6 +14,7 @@
 Notes on what was built:
 - Part 1 also brings `open: true` rooms (no roof, the camera rises freely) because the walkway-over-a-yard test needs it; Part 2 adds the sky, grass and silhouettes over them.
 - Solid masses that are not rooms (a tower's core) are a level field `blocks: [{ rect, y0, y1 }]`.
+- Part 2: culling is opt-in per level (`cull: true`) so Levels 1 and 2 keep every light exactly as before. Grass grows only on open rooms with `grass: true` (so walkways and ramparts stay bare stone). `lamps` on a room are braziers with a real light. Measured on Test: Courtyard at its centre: 18 real lights and 12 enemies updated unculled, 8 lights and 6 enemies culled, frame time about 20% lower.
 - Tests: `tests/suite.js` (loaded with `#dev`; run `await __arena.tests.run()`), regression plus one group per part.
 
 ## Context

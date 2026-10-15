@@ -92,9 +92,11 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - **Edges:** each side of a room or ramp (`edges: { n, s, e, w }`, n = +z, e = +x) is `wall` (the default), `rail` (a parapet `CONFIG.height.rail` high: it stops walking and jumping, not sight or the camera) or `open` (you can walk off it). Where another region touches a side at the same floor height it is a doorway, as before; where a lower region touches it, a ledge face fills the drop below the floor, so it can't be walked into from below.
   - **Steps:** a body on the ground walks up onto anything within `stepUp` of its feet, and follows floors that drop by at most `stepDown` per step (stairs, ramps). Anything bigger is a ledge or a fall.
   - **Pits:** `pits: [rect]` on a room are holes in its floor. Below a hole (or past an open edge) is whatever floor lies beneath, or nothing: a pit.
-  - **Open rooms:** `open: true` has no roof; the camera can rise freely over it.
+  - **Open rooms:** `open: true` has no roof; the camera can rise freely over it. A room level with at least one open room shows its atmosphere's `sky` and distant ruins (`silhouettes`, placed around the whole level), and `grass` grows on open rooms that set `grass: true`.
+  - **Lamps:** `lamps: [[x, z]]` on a room are braziers whose fire really lights the room around them (`braziers` are flames only).
   - **Blocks:** `blocks: [{ rect, y0, y1 }]` on the level are solid masses (a tower's core) that are not rooms.
   - **Placements** (start, bonfires and their spawns, zone spawns, patrols, slumberers) stand on the top-most floor under them, or on the highest one at or below their optional `y`. All are checked at load: on a floor, not over a pit.
+- **Culling** (opt-in, a level's `cull: true`; numbers in `CONFIG.cull`): every light the level builds is only a source; a fixed pool of `maxLights` real lights follows the sources nearest the player each frame, each fading out before it is dropped, so the light count never changes and shaders never recompile. Unaware enemies (idle, patrolling, going home, slumbering) more than `enemyRange` m away sleep: no update, not drawn, until the player comes near or an alert wakes them. Enemies that are fighting, reeling or dying always run. Levels without `cull` keep every light and never sleep anyone.
 - **Gated zones:** each zone has one or more enemies and a gate. The gate opens only when all of the zone's enemies are dead. The level is complete when every gate is open.
 - Zone enemies stand at their posts from the start, so the player can see them coming.
 - **Optional enemies** (patrol, ambush, slumber) can be placed between zones.
@@ -116,9 +118,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 
 Not built yet. These rules apply once each part lands; until then the sections above describe the game.
 
-- **Open sky:** the level's sky, silhouettes and grass are drawn over `open` rooms.
 - **Shortcut gates:** a gate with `opensFrom` opens for good when the player reaches that area (the far side), linking back to an earlier bonfire.
-- **Culling:** a fixed pool of real lights follows the nearest light sources (the light count never changes); unaware enemies far away sleep until you come near.
 - **Projectiles** (`projectile` on an attack): bows fire bolts that fly with a slight arc, are stopped by walls and closed gates, can be blocked from the front or rolled through, and cannot be parried.
 - **Shove** (`shove: true`): a long red wind-up and big knockback that can push you off an open edge. Roll, or block to take less push.
 - **New enemies:** Ashen Lancer (spear: dash thrust, roll-only charged thrust), Executioner (greataxe: tracking chop, roll-only spin; stagger meter), Pale Duelist (fast tracking combo, dash cut), Rampart Bowman (bow, kick), Shover (shield, shove). Mini-boss: Bell Warden (posture; tracking sweep, roll-only bell slam, shove, dash charge).

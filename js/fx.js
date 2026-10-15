@@ -180,7 +180,7 @@ function updateDebug(game, show, placed) {
     w.position.set(c.x, c.y, c.z); w.rotation.y = hb.owner.yaw; w.scale.set(hb.box.w, hb.box.h, hb.box.d);
   };
   if (show) {
-    for (const [b, pos] of placed) if (b.alive()) body(b, pos);
+    for (const [b, pos] of placed) if (b.alive() && !b.asleep) body(b, pos);
     if (game.player.hitbox) hit(game.player.hitbox, 0xfff040);
     for (const e of game.enemies) if (e.hitbox) hit(e.hitbox, 0xff3030);
   }

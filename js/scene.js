@@ -23,6 +23,11 @@ function applyAtmosphere(def) {
 }
 
 const flames = [];   // { group, mesh, light, base, color, seed } flickered every frame
+// Lights. In a level with `cull`, a light is only a source: it is collected here instead of joining the
+// scene, and a fixed pool of real lights follows the nearest sources each frame (visuals.render), so the
+// light count never changes and shaders never recompile. Flicker and pulses still set the sources.
+let lightSink = null;
+function addLight(group, light) { if (lightSink) lightSink.push(light); else group.add(light); }
 const dust = [];     // { group, points, origin, seeds } drifting motes near light sources
 
 const MAT = {
@@ -62,7 +67,7 @@ function addFlame(group, x, y, z, size, light, color = 0xffa040) {
   const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.28 * size, 0.95 * size, 7),
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, fog: false }));
   mesh.position.set(x, y, z); group.add(mesh);
-  if (light) group.add(light);
+  if (light) addLight(group, light);
   flames.push({ group, mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
 }
 function addBonfire(group, x, z, intensity, y = 0) {
@@ -196,7 +201,14 @@ function buildRooms(L) {
     if (!R.open) addBox(G, w, H.slab, d, MAT.ceiling, cx, R.top + H.slab / 2, cz);
     if (room.light !== undefined) {
       const light = new THREE.PointLight(room.light, room.dim ? C.dimLight : C.roomLight, Math.max(w, d) * 1.3, 1.0);
-      light.position.set(cx, y + Math.min(R.height, L.wallHeight) - 1.5, cz); G.add(light);
+      light.position.set(cx, y + Math.min(R.height, L.wallHeight) - 1.5, cz); addLight(G, light);
+    }
+    for (const [lx, lz] of room.lamps || []) {   // a brazier whose fire lights the room around it
+      addBox(G, 0.5, 1.0, 0.5, MAT.iron, lx, y + 0.5, lz);
+      addBox(G, 0.8, 0.15, 0.8, MAT.iron, lx, y + 1.05, lz);
+      const light = new THREE.PointLight(new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffa040), 0.5), C.lampLight, C.lampRange, 1.0);
+      light.position.set(lx, y + 2.2, lz);
+      addFlame(G, lx, y + 1.45, lz, C.brazierSize, light);
     }
     for (const [px, pz] of room.pillars || []) {
       const s = C.pillarSize, h = R.height;
@@ -270,7 +282,13 @@ function loadStage(def) {
     for (let i = flames.length - 1; i >= 0; i--) if (flames[i].group === stage.group) flames.splice(i, 1);
     for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group) dust.splice(i, 1);
   }
+  lightSink = def.cull ? [] : null;
   const built = BUILDERS[def.layout](def);
+  if (lightSink) {   // culled level: the sources stay out of the scene; a fixed pool of real lights stands in
+    built.lightSources = lightSink;
+    built.lightPool = Array.from({ length: CONFIG.cull.maxLights }, () => { const l = new THREE.PointLight(0xffffff, 0, 1, 1); built.group.add(l); return l; });
+  }
+  lightSink = null;
   scene.add(built.group);
   applyAtmosphere(def);
   visuals.dressStage(def, built);   // rendering-only dressing and per-level look (section 9b)

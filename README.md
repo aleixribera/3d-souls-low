@@ -30,6 +30,7 @@ See [ROADMAPv3.md](ROADMAPv3.md) for the full plan and what is done.
 Each version is a tagged commit (`git checkout v3.1` to play that one).
 
 - **v3.1 — Heights.** Room levels gain a 2.5D world: floors at heights, ramps and stairs, walls, rails and open edges, ledges you can drop from but not climb, pits, and fall damage (drops over 4.5 m hurt, 14 m kills). Enemies stop at edges and won't chase you up or down, but can be knocked off. Sight, lock-on and the camera work in 3D (the camera stays under walkways). New developer room *Test: Heights* and an automated test suite (see Testing).
+- **v3.2 — Open sky and culling.** Open rooms show the level's sky and distant ruins, and grass grows on open courtyards; lamps are braziers that really light a room. Levels can opt into culling: a fixed pool of real lights follows the nearest light sources (no shader recompiles however many lights a level has), and far, unaware enemies sleep until you come near. New developer room *Test: Courtyard* (twelve enemies, eighteen light sources; culling takes it from 18 real lights to 8).
 
 ## Controls
 

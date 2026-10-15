@@ -53,6 +53,7 @@ function validateData() {
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('attackTokens' in L) need(Number.isInteger(L.attackTokens) && L.attackTokens >= 1, `${where}: attackTokens must be a whole number of at least 1.`);
+    if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
     need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);
@@ -92,6 +93,9 @@ function validateData() {
   }
   // Arena and timings
   need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
+  const Cu = CONFIG.cull;
+  need(Number.isInteger(Cu.maxLights) && Cu.maxLights >= 1 && Cu.lightRange > 0 && Cu.fadeBand > 0 && Cu.enemyRange > Math.max(...Object.values(CONFIG.notice)),
+    'CONFIG.cull: maxLights must be a whole number of at least 1, ranges above 0, and enemyRange beyond every notice range.');
   const K = CONFIG.tokens;
   need(Number.isInteger(K.default) && K.default >= 1 && K.frontCone >= 0 && K.frontCone < Math.PI, 'CONFIG.tokens: default must be a whole number of at least 1, frontCone between 0 and pi.');
   const D = CONFIG.death;
@@ -118,6 +122,9 @@ function validateRooms(L, where, need, num) {
     if ('open' in R) check(typeof R.open === 'boolean', `${tag}: open must be true or false.`);
     check(edgesOk(R.edges), `${tag}: edges must map n, s, e or w to 'wall', 'rail' or 'open'.`);
     if ('pits' in R) check(Array.isArray(R.pits) && rectOk(R.rect) && R.pits.every(p => rectOk(p) && within(p, R.rect)), `${tag}: pits must be rects inside the room.`);
+    if ('grass' in R) check(typeof R.grass === 'boolean' && (!R.grass || R.open === true), `${tag}: grass must be true or false, and grows only in an open room.`);
+    if ('lamps' in R) check(Array.isArray(R.lamps) && rectOk(R.rect) && R.lamps.every(l => Array.isArray(l) && l.length === 2 && l.every(num)
+      && inRect(R.rect, l[0], l[1])), `${tag}: lamps must be a list of [x, z] inside the room.`);
   }
   if ('ramps' in L) check(Array.isArray(L.ramps), `${where}: ramps must be a list.`);
   for (const R of Array.isArray(L.ramps) ? L.ramps : []) {

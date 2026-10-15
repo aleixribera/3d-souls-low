@@ -62,7 +62,7 @@ const hud = {
     camera.updateMatrixWorld();
     let n = 0;
     for (const e of game.enemies) {
-      if (!e.alive() || !e.awake() || e.training || e.def.posture) continue;
+      if (!e.alive() || !e.awake() || e.asleep || e.training || e.def.posture) continue;
       if (e.in('unaware') && e.hp >= e.def.hp && e !== game.lock) continue;   // untouched and unaware: no bar yet
       const q = e.rig.root.position;
       if (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e)) continue;

@@ -261,6 +261,79 @@
     expect.ok(Number.isFinite(Game.cam.pos.y), 'finite');
   });
 
+  // ---- v3.2 open rooms and culling ---------------------------------------------------------------------------
+  const metrics = {};   // numbers worth reading in the report (frame times)
+  test('open rooms: sky, grass and ruins over open rooms only', () => {
+    Game.startLevel('test-courtyard'); sim.begin();
+    const I = A.visuals.info(), yard = A.TEST_COURTYARD.rooms.find(r => r.id === 'courtyard').rect;
+    expect.ok(I.sky, 'sky'); expect.above(I.grass, 500, 'grass clumps');
+    expect.ok(I.grassAt.every(([x, y, z]) => inRect(yard, x, z) && Math.abs(y + 0.05) < 1e-6), 'every clump on the courtyard floor');
+    expect.above(I.far, 200, 'draw distance reaches the ruins around the level');
+    Game.startLevel('test-heights'); sim.begin();
+    const J = A.visuals.info();
+    expect.ok(!J.sky && J.grass === 0, 'no sky or grass where the level sets none');
+    Game.startLevel('sunken-keep'); sim.begin();
+    const K = A.visuals.info();
+    expect.ok(!K.sky && K.grass === 0 && K.far === 200, 'Level 2 unchanged: no sky, no grass, normal draw distance');
+  });
+  test('culling: a fixed pool of lights follows the nearest light sources', () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies();
+    const counts = new Set(), src = stage.lightSources;
+    expect.above(src.length, CONFIG.cull.maxLights, 'more light sources than pool lights');
+    for (const [x, z] of [[4, 0], [40, 0], [42, 48], [92, 0], [42, -48], [20, -20]]) {
+      sim.place(x, z); Game.render(1, STEP);
+      counts.add(A.visuals.info().pointLights);
+      const p = Game.player, dist = l => Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
+      const nearest = src.reduce((a, b) => dist(a) <= dist(b) ? a : b);
+      const lit = stage.lightPool.filter(l => l.intensity > 0);
+      expect.ok(lit.some(l => l.position.distanceTo(nearest.position) < 1e-6), `the nearest source is lit at (${x}, ${z})`);
+    }
+    expect.ok(counts.size === 1 && counts.has(CONFIG.cull.maxLights), `the scene always holds exactly the pool (${[...counts]})`);
+  });
+  test('culling: far unaware enemies sleep; near or fighting ones run', () => {
+    Game.startLevel('test-courtyard'); sim.begin();
+    const p = Game.player;
+    sim.step(2);
+    const far = Game.enemies.filter(e => Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.cull.enemyRange);
+    expect.ok(far.length >= 6 && far.every(e => e.asleep), `${far.length} far enemies, all asleep`);
+    const patrol = Game.enemies.find(e => e.behavior === 'patrol' && e.z > 40), x0 = patrol.x;
+    sim.seconds(2); Game.render(1, STEP);
+    expect.ok(patrol.x === x0, 'a sleeping patrol stays put'); expect.ok(!patrol.rig.root.visible, 'and is not drawn');
+    sim.place(42, 32); sim.seconds(2);
+    expect.ok(!patrol.asleep && patrol.x !== x0, 'woke and moved once the player came near');
+    const e = Game.zones[0].actors[0];
+    e.leash = e.homeLeash = Infinity; e.setState(ES.CHASE);
+    sim.place(4, 0); sim.seconds(1);
+    expect.above(Math.hypot(e.x - Game.player.x, e.z - Game.player.z), CONFIG.cull.enemyRange - 10, 'the chaser was far');
+    expect.ok(!e.asleep && e.state !== ES.IDLE, 'a fighting enemy keeps running');
+  });
+  test('culling: Level 1 and Level 2 keep every light and never sleep anyone', () => {
+    for (const id of ['long-hall', 'sunken-keep']) {
+      Game.startLevel(id); sim.begin(); sim.step(5);
+      expect.ok(!stage.lightPool && Game.enemies.every(e => !e.asleep), `${id}: no pool, nobody asleep`);
+    }
+  });
+  test('culling: frame time on Test: Courtyard, culled and not', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = def => {
+      Game.kind = 'level'; Game.level = def; Game.enterPlay(); Game.reset(); sim.begin();
+      sim.place(42, 0);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
+      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights, awake: Game.enemies.filter(e => !e.asleep).length };
+    };
+    const off = measure({ ...A.TEST_COURTYARD, id: 'test-courtyard-uncull', cull: false });
+    const on = measure(A.TEST_COURTYARD);
+    metrics.courtyardFrame = { culledMs: +on.ms.toFixed(2), unculledMs: +off.ms.toFixed(2), culledLights: on.lights, unculledLights: off.lights,
+                               culledAwake: on.awake, unculledAwake: off.awake };
+    expect.ok(on.lights < off.lights, `fewer real lights when culled (${on.lights} vs ${off.lights})`);
+    expect.below(on.ms, off.ms * 1.25 + 1, `culled frame (${on.ms.toFixed(1)} ms) no slower than unculled (${off.ms.toFixed(1)} ms)`);
+    Game.startLevel('test-courtyard');   // leave the real level loaded
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;
@@ -276,7 +349,8 @@
     const failed = out.filter(r => !r.ok);
     const summary = `${out.length - failed.length}/${out.length} passed in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
     console.log(summary); for (const r of failed) console.warn('FAIL ' + r.name + '\n  ' + r.msg);
-    return { summary, failed: failed.map(r => `${r.name}: ${r.msg}`), passed: out.filter(r => r.ok).map(r => r.name) };
+    if (Object.keys(metrics).length) console.log('metrics', JSON.stringify(metrics));
+    return { summary, failed: failed.map(r => `${r.name}: ${r.msg}`), passed: out.filter(r => r.ok).map(r => r.name), metrics };
   }
   A.tests = { run, sim, expect, test, list: () => tests.map(t => t.name) };
 })();

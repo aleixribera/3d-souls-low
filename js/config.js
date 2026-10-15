@@ -83,7 +83,11 @@ const CONFIG = {
   tokens: { default: 2, ring: 4.6, ringGap: 1.6, speedMul: 0.62, frontCone: 0.9, frontRate: 2.5,
             patience: 3, swapMargin: 3, swapWait: 1.5 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
-  rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7 },
+  rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
+  // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within
+  // `lightRange` of the player, each fading out over `fadeBand` m before it is dropped. Unaware enemies more than
+  // `enemyRange` m away sleep (no update, not drawn); fighting enemies always run.
+  cull: { maxLights: 8, lightRange: 45, fadeBand: 8, enemyRange: 40 },
   // Heights (room levels, js/terrain.js). A body walks up onto anything within `stepUp` of its feet and
   // stays on floors that drop away by at most `stepDown` per step (stairs, ramps); a bigger drop is a fall.
   // `slab`: floor and roof thickness (blocks sight and the camera). `rail`: parapet height and thickness.
@@ -177,7 +181,11 @@ const CONFIG = {
     arches: { spring: 2.6, tube: 0.24, every: 2 },   // hall ribs: spring this far below the ceiling, on every 2nd pillar pair
     banners: { width: 1.15, height: 3.0, topGap: 1.0, every: 2, sway: 0.07, swaySpeed: 1.1, colors: [0x4a1c1a, 0x2a2a30] },
     debris: { max: 36, interval: 2.4, radius: 8, gateBurst: 10 },   // a level's `debris` scales how often pieces fall
-    grass: { count: 3200, extent: 46, height: 0.7, color: 0x8a7a48 },
-    silhouettes: { radii: [135, 100, 70], mix: [0.2, 0.34, 0.5], dark: 0x0c0b0d },
+    // Grass: `count` clumps around the arena; in room levels `perSquareMetre` over open rooms with `grass: true`
+    // (at most `maxRoom`), kept `margin` m from their edges and `roomSize` times as tall (seen up close).
+    grass: { count: 3200, extent: 46, height: 0.7, color: 0x8a7a48, perSquareMetre: 0.45, maxRoom: 9000, margin: 0.8, roomSize: 0.6 },
+    // Distant ruins: rings at `radii` around the arena; around a room level, pushed out by `roomSpread` times its half size.
+    silhouettes: { radii: [135, 100, 70], mix: [0.2, 0.34, 0.5], dark: 0x0c0b0d, roomSpread: 1.0 },
+    farPlane: 200,   // camera draw distance (further when a room level's ruins need it)
   },
 };

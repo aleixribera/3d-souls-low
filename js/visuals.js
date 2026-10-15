@@ -469,7 +469,8 @@ function poolMesh(pools) {   // warm (or pale) pools of light on the floor
   m.renderOrder = 1; m.computeBoundingSphere();
   return m;
 }
-function grassMesh(rnd, count, avoid) {
+// spot(): a place for one clump, [x, y, z], or null to try again. size scales every clump.
+function grassMesh(rnd, count, spot, size = 1) {
   const Gs = VIS.grass, parts = [];
   for (let i = 0; i < 7; i++) {   // one clump: a few leaning blades
     const h = Gs.height * (0.5 + rnd() * 0.7), w = 0.05 + rnd() * 0.04, a = rnd() * Math.PI;
@@ -491,15 +492,16 @@ function grassMesh(rnd, count, avoid) {
   };
   mat.customProgramCacheKey = () => 'grass';
   const m = new THREE.InstancedMesh(mergeGeometries(parts), mat, count), o = new THREE.Object3D(), c = new THREE.Color();
-  for (let n = 0; n < count;) {
-    const x = (rnd() * 2 - 1) * Gs.extent, z = (rnd() * 2 - 1) * Gs.extent;
-    if (avoid(x, z)) continue;
-    o.position.set(x, -0.05, z); o.rotation.set(0, rnd() * 6.28, 0); o.scale.setScalar(0.7 + rnd() * 0.8); o.updateMatrix();
+  let n = 0;
+  for (let tries = 0; n < count && tries < count * 20; tries++) {
+    const at = spot();
+    if (!at) continue;
+    o.position.set(at[0], at[1], at[2]); o.rotation.set(0, rnd() * 6.28, 0); o.scale.setScalar((0.7 + rnd() * 0.8) * size); o.updateMatrix();
     m.setMatrixAt(n, o.matrix);
     m.setColorAt(n, c.set(Gs.color).offsetHSL((rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.15, (rnd() - 0.5) * 0.12));
     n++;
   }
-  m.userData.max = count; m.computeBoundingSphere();
+  m.count = n; m.userData.max = n; m.computeBoundingSphere();
   return m;
 }
 // Distant ruins: towers with broken tops, wall runs and lone arches, merged into one mesh per layer.
@@ -609,6 +611,25 @@ function makeDebris() {   // small stones falling from the ceiling (and from lif
       mesh.count = n; mesh.instanceMatrix.needsUpdate = true;
     },
   };
+}
+
+// Culled levels: give the fixed pool of real lights to the light sources nearest the player (copying position,
+// colour, range and the intensity flicker set this frame). A light fades out over `fadeBand` m before the
+// nearest-N cut-off, so a light swapping out never pops.
+function poolLights(st, p) {
+  const C = CONFIG.cull, pool = st.lightPool, near = [];
+  for (const l of st.lightSources) {
+    const d = Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
+    if (d < C.lightRange && l.intensity > 0) near.push({ d, l });
+  }
+  near.sort((a, b) => a.d - b.d);
+  const cut = near.length > pool.length ? Math.min(C.lightRange, near[pool.length].d) : C.lightRange;
+  pool.forEach((q, i) => {
+    const n = near[i];
+    if (!n) { q.intensity = 0; return; }
+    q.position.copy(n.l.position); q.color.copy(n.l.color); q.distance = n.l.distance; q.decay = n.l.decay;
+    q.intensity = n.l.intensity * clamp((cut - n.d) / C.fadeBand, 0, 1);
+  });
 }
 
 // The floor under a dressing item in level d (flat layouts: 0). Used while the stage is built, before `world` exists.
@@ -780,12 +801,31 @@ const visuals = (() => {
     }
     if (rocks.length) G.add(rubbleMesh(rocks, rnd));
     if (A.grass) {
-      const R = Ar.pillarRing, px = hx + R.inset, pz = hz + R.inset;
+      const R = Ar.pillarRing, px = hx + R.inset, pz = hz + R.inset, E = VIS.grass.extent;
+      const avoid = (x, z) => (Math.abs(x) < hx + 1.6 && Math.abs(z) < hz + 1.6) || (Math.abs(Math.abs(x) - px) < R.base && Math.abs(z) < pz + R.base)
+          || (Math.abs(Math.abs(z) - pz) < R.base && Math.abs(x) < px + R.base);
       st.grass = grassMesh(rnd, Math.round(VIS.grass.count * A.grass),
-        (x, z) => (Math.abs(x) < hx + 1.6 && Math.abs(z) < hz + 1.6) || (Math.abs(Math.abs(x) - px) < R.base && Math.abs(z) < pz + R.base)
-          || (Math.abs(Math.abs(z) - pz) < R.base && Math.abs(x) < px + R.base));
+        () => { const x = (rnd() * 2 - 1) * E, z = (rnd() * 2 - 1) * E; return avoid(x, z) ? null : [x, -0.05, z]; });
       G.add(st.grass);
     }
+  }
+  // Grass on the open rooms that ask for it (`grass: true`), spread by area, clear of edges, pits, gates and fires.
+  function addRoomGrass(G, L, rnd, open) {
+    const rooms = open.filter(R => R.src.grass), m = VIS.grass.margin;
+    const area = R => (R.rect[1] - R.rect[0] - 2 * m) * (R.rect[3] - R.rect[2] - 2 * m);
+    const total = rooms.reduce((a, R) => a + Math.max(0, area(R)), 0);
+    if (!total) return;
+    const count = Math.min(VIS.grass.maxRoom, Math.round(total * VIS.grass.perSquareMetre * A.grass)), gates = L.gated.map(z => z.gate);
+    const near = (x, z) => gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + 1.5) || L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < 2.2)
+      || (L.ramps || []).some(r => x > r.rect[0] - 1 && x < r.rect[1] + 1 && z > r.rect[2] - 1 && z < r.rect[3] + 1);
+    st.grass = grassMesh(rnd, count, () => {
+      let pick = rnd() * total, R = rooms[0];
+      for (const r of rooms) { pick -= Math.max(0, area(r)); if (pick <= 0) { R = r; break; } }
+      const x = R.rect[0] + m + rnd() * (R.rect[1] - R.rect[0] - 2 * m), z = R.rect[2] + m + rnd() * (R.rect[3] - R.rect[2] - 2 * m);
+      if (inPit(R, x, z) || near(x, z) || (R.src.pillars || []).some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.4)) return null;
+      return [x, R.lo - 0.05, z];
+    }, VIS.grass.roomSize);
+    G.add(st.grass);
   }
   function addShafts(G, list, pools) {
     st.shafts = shaftMesh(list, A.shafts); G.add(st.shafts);
@@ -799,10 +839,13 @@ const visuals = (() => {
     m.renderOrder = -1; m.frustumCulled = false; G.add(m);
     return m;
   }
-  function addSilhouettes(G, rnd, layers) {
+  // Rings of distant ruins around (cx, cz), each pushed out by `extra` m (a room level's own size).
+  function addSilhouettes(G, rnd, layers, cx = 0, cz = 0, extra = 0) {
     const S = VIS.silhouettes, dark = new THREE.Color(S.dark);
-    for (let i = 0; i < layers; i++)
-      G.add(new THREE.Mesh(silhouetteGeometry(rnd, S.radii[i]), new THREE.MeshBasicMaterial({ color: scene.fog.color.clone().lerp(dark, S.mix[i]), fog: false })));
+    for (let i = 0; i < layers; i++) {
+      const m = new THREE.Mesh(silhouetteGeometry(rnd, S.radii[i] + extra), new THREE.MeshBasicMaterial({ color: scene.fog.color.clone().lerp(dark, S.mix[i]), fog: false }));
+      m.position.set(cx, 0, cz); G.add(m);
+    }
   }
   // Static level boxes (walls, floor seams, pillars, logs...) merged into one mesh per material: hundreds
   // of draw calls become a handful. Collision never used these meshes (it reads the level data), and
@@ -878,8 +921,18 @@ const visuals = (() => {
       if (d.layout === 'hall') dressHall(G, d, rnd, pools);
       else if (d.layout === 'rooms') dressRooms(G, d, rnd, pools);
       else dressArena(G, d, rnd);
-      if (A.sky) st.sky = addSky(G, A.sky);
-      if (A.silhouettes) addSilhouettes(G, rnd, A.silhouettes);
+      // Room levels: the sky, distant ruins and grass belong to open rooms, so a level without any shows none.
+      const rooms = d.layout === 'rooms', open = rooms ? terrainFor(d).regions.filter(R => R.kind === 'room' && R.open) : [];
+      camera.far = VIS.farPlane; camera.updateProjectionMatrix();
+      if (A.sky && (!rooms || open.length)) st.sky = addSky(G, A.sky);
+      if (A.silhouettes && !rooms) addSilhouettes(G, rnd, A.silhouettes);
+      if (A.silhouettes && open.length) {
+        const all = terrainFor(d).regions.map(R => R.rect), x0 = Math.min(...all.map(r => r[0])), x1 = Math.max(...all.map(r => r[1]));
+        const z0 = Math.min(...all.map(r => r[2])), z1 = Math.max(...all.map(r => r[3])), extra = Math.hypot(x1 - x0, z1 - z0) / 2 * VIS.silhouettes.roomSpread;
+        addSilhouettes(G, rnd, A.silhouettes, (x0 + x1) / 2, (z0 + z1) / 2, extra);
+        camera.far = Math.max(VIS.farPlane, (extra + VIS.silhouettes.radii[A.silhouettes - 1]) * 2 + 20); camera.updateProjectionMatrix();
+      }
+      if (A.grass && open.length) addRoomGrass(G, d, rnd, open);
       if (pools.length) G.add(poolMesh(pools));
       for (const g of built.gates) mergeGate(g.mesh);
       mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...flames.filter(f => f.group === G).map(f => f.mesh),
@@ -912,6 +965,7 @@ const visuals = (() => {
         }
       }
       debris.update(dt);
+      if (stage && stage.lightPool && p) poolLights(stage, p);
       const V = VIS.vignette, want = p && p.alive() ? clamp((V.lowHealthAt - p.hp / p.maxHp) / V.lowHealthAt, 0, 1) : 0;
       lowHp += (want - lowHp) * (1 - Math.exp(-V.lowHealthRate * dt));
       this.draw();
@@ -929,6 +983,15 @@ const visuals = (() => {
       if (ground > -Infinity) decals.splat(x, z, between(Math.random, B.size) * size, ground);
     },
     flare(bonfire) { const f = st.bonfires.find(f => f.b === bonfire); if (f) f.flare = 1; },
+    // What the current stage draws, for tests and tuning.
+    info() {
+      let lights = 0;
+      scene.traverse(o => { if (o.isPointLight) lights++; });
+      const grassAt = [], m4 = new THREE.Matrix4(), v = new THREE.Vector3();
+      if (st.grass) for (let i = 0; i < st.grass.userData.max; i++) { st.grass.getMatrixAt(i, m4); grassAt.push(v.setFromMatrixPosition(m4).toArray()); }
+      return { sky: !!st.sky, grass: st.grass ? st.grass.count : 0, grassAt, pointLights: lights, far: camera.far,
+               pool: stage && stage.lightPool ? stage.lightPool.map(l => l.intensity) : null };
+    },
     gateDust(g) {
       if (!quality.debris || !def || def.layout === 'arena') return;
       for (let i = 0; i < VIS.debris.gateBurst; i++) {
