@@ -43,6 +43,8 @@ class Rig {
     this.weapon = pivot(this.armR, 0, -0.6, 0);
     W.build((geo, mat, x, y, z) => part(this.weapon, geo, mat, x, y, z), this.weaponMat, dark);
     this.warnGlow = makeWarnGlow(); this.weapon.add(this.warnGlow);   // wind-up halo, readable through any fog
+    if (visual && visual.embers) this.embers = addWeaponEmbers(this.weapon, W);   // section 9b
+    if (visual && visual.cloak) part(this.spin, new THREE.BoxGeometry(0.6, 1.15, 0.05), dark, 0, 0.05, -0.19);   // a cloak down the back
     if (offhand) {
       const O = lookup(OFFHANDS, offhand, 'off-hand', 'shield');
       const mat = new THREE.MeshStandardMaterial({ color: O.color, roughness: 0.5, metalness: 0.4, transparent: true });
@@ -116,7 +118,11 @@ class Rig {
     this.setGlow(0);
   }
   setGlow(k) { this.warnGlow.visible = k > 0.002; this.warnGlow.material.opacity = k * CONFIG.VISUALS.windupGlow.opacity; }
-  setOpacity(a) { for (const m of this.mats) m.opacity = a; this.shadow.material.opacity = 0.45 * a; }
+  setOpacity(a) {
+    for (const m of this.mats) m.opacity = a;
+    this.shadow.material.opacity = 0.45 * a;
+    if (this.embers) this.embers.visible = a > 0.5;   // a dying weapon's embers go out
+  }
   // ground: the floor under the body (its shadow lies there and shrinks with height); -Infinity over a pit.
   place(x, y, z, yaw, ground = 0) {
     this.root.position.set(x, y, z); this.root.rotation.y = yaw;

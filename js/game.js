@@ -11,7 +11,8 @@ const Game = {
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
   player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
-  lock: null, lockLost: 0, restartArm: 0,
+  lock: null, lockLost: 0, lockHidden: 0, restartArm: 0,
+  retarget: true,        // always-retarget lock-on (see updateLock): off once Q lets go of a lock
   spawn: null, deathTimer: 0,
   zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
@@ -181,7 +182,9 @@ const Game = {
       this.duel = new Enemy(ENEMY_BY_ID[this.duelId], { ...s, y: world.floorY(s.x, s.z, s.y), behavior: 'arena', notice: CONFIG.notice.arena });
       return [this.duel];
     }
-    return this.level.dispersed.map(s => new Enemy(ENEMY_BY_ID[s.enemy], this.spawnSpec(s, s.behavior)));
+    // A dispersed enemy tied to a zone (`zone`) is not brought back once that zone's gate is open: its area is won.
+    const won = s => s.zone && this.zones.some(z => z.id === s.zone && z.gate.open);
+    return this.level.dispersed.filter(s => !won(s)).map(s => new Enemy(ENEMY_BY_ID[s.enemy], this.spawnSpec(s, s.behavior)));
   },
   // Full restart of the current fight or level.
   reset() {
@@ -189,7 +192,7 @@ const Game = {
     input.pressed.clear();
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
     $('fade').classList.remove('show');   // fades back in after a level transition
-    this.setLock(null); this.tut = null; crowd.reset();
+    this.setLock(null); this.retarget = true; this.tut = null; crowd.reset();
     const def = this.level;
     world = makeWorld(def, loadStage(def));
     const start = def.playerStart || def.start;
@@ -242,7 +245,7 @@ const Game = {
     this.spawn = b.spawn ? { ...b.spawn }
       : { x: b.x + (b.x > p.x ? -off : off), z: b.z, yaw: this.level.start ? this.level.start.yaw : p.yaw };
     if (!this.isTutorial()) this.respawnEnemies();
-    this.setLock(null);
+    this.setLock(null); this.retarget = true;
     hud.showRested();
     events.emit('rest', { bonfire: b });
   },
@@ -268,7 +271,7 @@ const Game = {
   },
 
   // ---- lock-on -----------------------------------------------------------------------------------
-  setLock(e) { this.lock = e; this.lockLost = 0; },
+  setLock(e) { this.lock = e; this.lockLost = 0; this.lockHidden = 0; },
   addShake(time, amp) {
     if (amp * time < this.shakeAmp * this.shake) return;   // keep the stronger shake
     this.shake = this.shakeDur = time; this.shakeAmp = amp;
@@ -300,11 +303,29 @@ const Game = {
     }
     return best;
   },
+  // Always-retarget's pick: the enemy fighting the player (it has noticed the player; never a training dummy) with the
+  // lowest score, its distance from the middle of the screen (0 middle, 1 edge) plus its distance from the player per
+  // `retargetDistance` m. Archers only within `autoRange`, or when nothing else is fighting.
+  retargetPick() {
+    const L = CONFIG.lock;
+    const fighting = this.lockable().filter(({ e }) => e.fightingPlayer());
+    const melee = fighting.filter(c => !c.e.ranged || c.d <= L.autoRange), pool = melee.length ? melee : fighting;
+    const score = c => (c.v ? Math.abs(c.v.x) : L.offScreenScore) + c.d / L.retargetDistance;
+    let best = null;
+    for (const c of pool) if (!best || score(c) < score(best)) best = c;
+    return best ? best.e : null;
+  },
+  // Lock-on. While `retarget` is on (from every level start, rest and death, and each Q lock-on) a lost or dead target
+  // is replaced at once by retargetPick; releasing the lock with Q turns it off, leaving the one-time lock on each
+  // enemy's first encounter and the next target after a kill (nearest the middle of the screen).
   updateLock(dt) {
     const p = this.player;
     if (input.consume('lock')) {
-      if (this.lock) this.setLock(null);
-      else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); events.emit('lock'); } }
+      if (this.lock) { this.setLock(null); this.retarget = false; }
+      else {
+        this.retarget = true;
+        const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); events.emit('lock'); }
+      }
     }
     // Switch target: Tab steps to the next candidate further away, wrapping round (from a target that is not a
     // candidate, to the nearest); a right-stick flick picks the nearest one on that side of the screen.
@@ -318,25 +339,28 @@ const Game = {
       }
       if (this.lock !== prev) events.emit('switchTarget');
     }
-    // Auto lock-on: the first time each enemy comes into range (and into view), lock onto it
+    // Auto lock-on (retarget off): the first time each enemy comes into range (and into view), lock onto it
     // unless already locked. An enemy is only ever auto-locked once.
     if (p.alive()) {
       for (const { e } of findEnemies(p, this.enemies, { range: CONFIG.lock.autoRange })) {
         if (e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
         e.discovered = true;
-        if (!this.lock) this.setLock(e);
+        if (!this.lock && !this.retarget) this.setLock(e);
       }
     }
     const t = this.lock;
-    if (!t) return;
-    if (!t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
-      const next = this.lockCandidates().find(e => e !== t);
-      this.setLock(next || null);
-      return;
+    if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
+      this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t) || null);
+    } else if (t) {
+      if (!t.alive() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
+      else {
+        // Off screen, or hidden behind cover (walls, pillars, props, floors): let go only once it has lasted a while.
+        this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
+        this.lockHidden = gateBetween(p, t) ? this.lockHidden + dt : 0;
+        if (this.lockLost > CONFIG.lock.lostTime || this.lockHidden > CONFIG.lock.coverTime) this.setLock(null);
+      }
     }
-    if (!t.alive() || !p.alive() || gateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) { this.setLock(null); return; }
-    this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
-    if (this.lockLost > CONFIG.lock.lostTime) this.setLock(null);
+    if (this.retarget && !this.lock && p.alive()) { const e = this.retargetPick(); if (e) this.setLock(e); }
   },
 
   // ---- tutorial ---------------------------------------------------------------------------------
@@ -567,11 +591,12 @@ const Game = {
   },
 
   // Room levels: the fraction (0..1) of the segment from (x, y, z) by (dx, dy, dz) that stays clear of walls,
-  // pillars, ledges, floors, roofs and closed gates (rails are low enough to look over).
+  // pillars, ledges, floors, roofs and closed gates (rails are low enough to look over). Props count without the
+  // margin, so a low one (a cart, a well) right behind the player never snaps the camera onto the player's head.
   boomFit(x, y, z, dx, dy, dz) {
     const m = CONFIG.camera.wallMargin;
     let f = 1;
-    for (const s of world.solids) if (!s.low) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s, m));
+    for (const s of world.solids) if (!s.low) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s, s.kind === 'prop' ? 0 : m));
     for (const s of world.slabs) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s, m));
     for (const g of world.gates) if (!g.open) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, g.box, m));
     return f;
@@ -668,7 +693,7 @@ const Game = {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;
       if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
-        this.spawnPlayer(); this.setLock(null);
+        this.spawnPlayer(); this.setLock(null); this.retarget = true;
         if (!this.isTutorial()) this.respawnEnemies();
         return;
       }
@@ -728,7 +753,7 @@ const Game = {
       lockMarker.position.set(q.x, q.y + this.lock.height + CONFIG.lock.markerGap, q.z);
       lockMarker.rotation.y = t * 2.5;
     }
-    for (const g of world.gates) g.mesh.position.y = g.y + ease(g.lift) * g.liftHeight;
+    for (const g of world.gates) placeGate(g);
     for (const t of world.traps) placeTrap(t);
     // Irregular, subtle flicker in brightness and warmth.
     flames.forEach((f, i) => {

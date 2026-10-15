@@ -160,6 +160,14 @@ const WEAPONS = {
     part(new THREE.BoxGeometry(0.045, 0.05, 0.52).rotateX(0.35), mat, 0, 0.08, -0.29);
     part(new THREE.BoxGeometry(0.012, 0.012, 1.04), dark, 0, 0.17, 0);
   } },
+  // A halberd: a long haft, an axe blade with a hook behind it, and a spike on top. `head`: where an ember glow sits
+  // (an enemy whose visual has `embers`), `edge`: the blade's edge, glowing with them ([w, h, d] at [x, y, z]).
+  halberd: { color: 0x7a7470, head: [0, -0.1, 1.95], edge: { size: [0.07, 0.66, 0.05], at: [0, -0.24, 1.6] }, build(part, mat, dark) {
+    part(new THREE.BoxGeometry(0.06, 0.06, 2.5), dark, 0, 0, 0.55);
+    part(new THREE.BoxGeometry(0.05, 0.62, 0.42), mat, 0, -0.2, 1.62);
+    part(new THREE.BoxGeometry(0.05, 0.2, 0.2), mat, 0, 0.2, 1.62);
+    part(new THREE.ConeGeometry(0.06, 0.42, 4).rotateX(Math.PI / 2), mat, 0, 0, 2.0);
+  } },
   none: { color: 0x9aa0a8, build() {} },
 };
 const OFFHANDS = {

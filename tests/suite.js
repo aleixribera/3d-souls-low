@@ -458,7 +458,7 @@
   });
 
   // ---- v3.4 new enemies and the Bell Warden ------------------------------------------------------------------
-  const NEW = ['lancer', 'executioner', 'duelist', 'bowman', 'shover', 'bellWarden'];
+  const NEW = ['lancer', 'executioner', 'duelist', 'bowman', 'shover', 'bellWarden', 'pillagerCaptain'];
   const strikeOf = id => makeStrike(A.PLAYER_DEF.moveset.attacks[id]);
   const behind = e => ({ x: e.x - Math.sin(e.yaw) * 2, z: e.z - Math.cos(e.yaw) * 2 });
   const inFrontOf = e => ({ x: e.x + Math.sin(e.yaw) * 2, z: e.z + Math.cos(e.yaw) * 2 });
@@ -571,7 +571,7 @@
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman'), 'the bowmen shot'); expect.ok(bowmen.every(b => Math.abs(b.y - 5) < 1e-6), 'from their gallery');
   });
 
-  // ---- v3.5 Level 3: The Tower ---------------------------------------------------------------------------------
+  // ---- v3.5 The Tower (Level 4 since v4.0) ---------------------------------------------------------------------------------
   // The way up, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
   // The passage floor gives way under the player at (26, 0): the fight below, then up to the bait bonfire and round the bend.
   const TOWER_ROUTE = [
@@ -588,7 +588,7 @@
     return [p.y, p.maxHp - p.hp, p.alive()];
   };
   test('the tower: follows Level 2, and its data, gates and culling are in place', () => {
-    expect.ok(A.LEVEL_2.next === 'the-tower' && A.LEVELS.indexOf(A.LEVEL_3) === A.LEVELS.indexOf(A.LEVEL_2) + 1, 'Level 2 leads into the Tower');
+    expect.ok(A.LEVEL_3.next === 'the-tower' && A.LEVELS.indexOf(A.LEVEL_4) === A.LEVELS.indexOf(A.LEVEL_3) + 1, 'the town leads into the Tower');
     tower();
     expect.ok(Game.zones.length === 7 && Game.zones.every(z => !z.gate.open), 'seven zone gates, all shut');
     expect.ok(world.gates.some(g => g.id === 'postern' && g.opensFrom && !g.open), 'the postern shortcut, shut');
@@ -1027,9 +1027,9 @@
     }
     expect.above(spots, 8, 'places checked');
     Game.startLevel('the-tower');
-    expect.ok(!A.LEVEL_3.rooms.find(R => R.id === 'courtyard').pits && world.floorY(45.5, -16.5) === 0, "the courtyard's grate is gone");
+    expect.ok(!A.LEVEL_4.rooms.find(R => R.id === 'courtyard').pits && world.floorY(45.5, -16.5) === 0, "the courtyard's grate is gone");
   });
-  // Level 3's trap: every trapWarning and trapSprung, with when and where the player was.
+  // The Tower's trap: every trapWarning and trapSprung, with when and where the player was.
   const traps = [];
   for (const type of ['trapWarning', 'trapSprung']) A.events.on(type, d => traps.push({ type, trap: d.trap.id, t: clock, x: Game.player.x }));
   const zone = id => Game.zones.find(z => z.id === id);
@@ -1051,7 +1051,7 @@
     return p;
   };
   test('the tower: walking up the passage, the floor rumbles, cracks and gives way into the undercroft at no cost', () => {
-    const p = springTrap(), T = A.LEVEL_3.traps[0];
+    const p = springTrap(), T = A.LEVEL_4.traps[0];
     expect.ok(traps.map(t => t.type).join() === 'trapWarning,trapSprung', `warning, then collapse (${traps.map(t => t.type).join(', ')})`);
     expect.ok(traps[0].x >= T.trigger[0] && traps[0].x < T.trigger[0] + 0.2, `the warning as the player stepped onto the trigger (x ${traps[0].x.toFixed(2)})`);
     expect.near(traps[1].t - traps[0].t, T.warning, STEP * 1.01, 'the warning time');
@@ -1100,7 +1100,7 @@
   });
   test('data: traps, sealed gates, zone behaviours and the dodge dummy are checked at load', () => {
     expect.ok(A.validateData().length === 0, 'the shipped data passes');
-    const L = A.LEVEL_3, trap = L.traps[0], exec = L.gated.find(z => z.id === 'zone-undercroft').enemies.find(m => m.enemy === 'executioner');
+    const L = A.LEVEL_4, trap = L.traps[0], exec = L.gated.find(z => z.id === 'zone-undercroft').enemies.find(m => m.enemy === 'executioner');
     const rejects = (obj, key, value, words) => {   // one bad value: a readable error that names the thing and the problem
       const old = obj[key];
       obj[key] = value;
@@ -1153,6 +1153,517 @@
     Game.pause(false); expect.ok(seen(), 'in the pause menu');
     Game.showMenu('options'); expect.ok(seen(), 'in the options');
     Game.resume(); expect.ok(!seen(), 'hidden again on resuming');
+  });
+
+  // ---- v4.0 lock-on: cover grace and always-retarget ------------------------------------------------------------
+  // Test: Courtyard's pillar at (30, -8) stands between the player at (24, -8) and an enemy at (36, -8).
+  const behindPillar = () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies();
+    sim.place(24, -8); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 36, -8, undefined, -Math.PI / 2); quiet(e);
+    return e;
+  };
+  const moveTo = (e, x, z) => { e.x = e.px = x; e.z = e.pz = z; };
+  test('lock-on: cover holds the lock for a moment, then lets go; seeing the target again restarts the wait', () => {
+    const e = behindPillar(), cover = CONFIG.lock.coverTime;
+    expect.near(cover, 1.5, 0.5, 'cover time');
+    expect.ok(gateBetween(Game.player, e), 'the pillar hides the enemy');
+    Game.setLock(e); sim.seconds(cover - 0.2, 6);
+    expect.ok(Game.lock === e, `still locked after ${(cover - 0.2).toFixed(1)} s behind the pillar`);
+    sim.seconds(0.4, 6);
+    expect.ok(!Game.lock, `let go after ${(cover + 0.2).toFixed(1)} s`);
+    Game.setLock(e); sim.seconds(cover - 0.4, 6);
+    moveTo(e, 36, -4); sim.step(2, 1);
+    expect.ok(!gateBetween(Game.player, e) && Game.lock === e, 'stepped out from behind the pillar: seen, still locked');
+    moveTo(e, 36, -8); sim.seconds(cover - 0.4, 6);
+    expect.ok(Game.lock === e, 'hidden again: the wait started over');
+  });
+  test('lock-on: a closed gate between the player and the target breaks the lock at once', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(36, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 43, 0, undefined, -Math.PI / 2); quiet(e);
+    expect.ok(world.gates.some(g => g.id === 'zone-crowd' && !g.open), 'the crowd gate is shut');
+    Game.setLock(e); sim.step(1, 1);
+    expect.ok(!Game.lock, 'the lock broke on the first step');
+  });
+
+  // Test: Crowd with the player at (10, 0) facing east, and rooted enemies (no walking, no attacks) at the given
+  // spots: [name, enemy id, x, z, noticed]. Those `noticed` are fighting the player. Starts unlocked.
+  const rooted = id => ({ ...A.ENEMY_BY_ID[id], speed: 0, firstDelay: [999, 999] });
+  const retargetRange = spots => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const out = {};
+    for (const [name, id, x, z, noticed] of spots) {
+      const e = out[name] = sim.spawn(rooted(id), x, z, undefined, -Math.PI / 2); quiet(e);
+      if (noticed) e.setState(ES.CHASE);
+    }
+    Game.setLock(null);
+    return out;
+  };
+  const nameOf = (e, t) => Object.keys(e).find(k => e[k] === t) || 'nothing';
+  test('lock-on: with no target, the lock goes to the enemy fighting the player that is most centred and closest', () => {
+    let e = retargetRange([['centreNear', 'hollow', 15, 0.3, true], ['sideFar', 'hollow', 22, 7, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.centreNear, `centred and near beats off to the side and far (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['close', 'hollow', 13, 2.6, true], ['farCentre', 'hollow', 25, 0, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.close, `the enemy 4 m away beats one 15 m off in the middle of the screen (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['nearSide', 'hollow', 15, 3.5, true], ['nearCentre', 'hollow', 16, 0.2, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.nearCentre, `about as near: the more centred one (${nameOf(e, Game.lock)})`);
+  });
+  test('lock-on: the automatic pick never takes an enemy that has not noticed the player', () => {
+    const e = retargetRange([['idle', 'hollow', 13, 0, false], ['fighting', 'hollow', 20, 4, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.fighting, `the one fighting, not the idle one in front (${nameOf(e, Game.lock)})`);
+    e.fighting.die(); sim.seconds(2, 6);
+    expect.ok(!Game.lock, `once the fighter is dead, the idle one is not picked either (${nameOf(e, Game.lock)})`);
+  });
+
+  test('lock-on: the automatic pick skips a far archer while a melee enemy fights, but takes a near or lone one; Q and Tab reach any', () => {
+    let e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.melee, `a far archer in the middle of the screen is skipped (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['archer', 'bowman', 16, 0.5, true], ['melee', 'hollow', 21, 5, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.archer, `an archer ${CONFIG.lock.autoRange} m or nearer counts like anyone (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['archer', 'bowman', 24, 0, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.archer, `a lone archer is taken (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
+    sim.step(1, 1); sim.press('lock'); sim.step(1, 1); sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e.archer, `Q locks the archer in the middle of the screen (${nameOf(e, Game.lock)})`);
+    Game.setLock(e.melee); sim.step(1, 1);
+    expect.ok(tab() === e.archer, 'Tab reaches the archer');
+  });
+
+  test('lock-on: Q letting go turns the automatic pick off; a Q lock-on, a rest, a death and a level start turn it back on', () => {
+    // The player at Test: Crowd's bonfire facing east; a rooted enemy fighting it 11 m away (beyond the first-encounter
+    // range, so only the automatic pick ever locks it). `picks()`: with no lock, does a step lock it?
+    const start = () => { Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); log.length = 0; };
+    const atFire = () => { sim.place(4, -11.5); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true); };
+    const fighter = () => { const e = sim.spawn(rooted('hollow'), 15, -8, undefined, -Math.PI / 2); e.setState(ES.CHASE); return e; };
+    const picks = () => { Game.setLock(null); sim.step(1, 1); return !!Game.lock; };
+    const letGo = () => { Game.setLock(Game.enemies.find(e => e.alive())); sim.press('lock'); sim.step(1, 1); expect.ok(!Game.lock, 'Q let go'); };
+    start(); atFire(); fighter();
+    expect.ok(picks(), 'on at the start of a level');
+    letGo(); sim.seconds(1, 6);
+    expect.ok(!Game.lock, 'after Q lets go, losing the target picks nobody');
+    const fresh = sim.spawn(rooted('hollow'), 9, -11, undefined, -Math.PI / 2); quiet(fresh); sim.step(1, 1);
+    expect.ok(Game.lock === fresh, 'off: a first encounter still locks on');
+    fresh.die(); sim.step(1, 1);
+    expect.ok(!!Game.lock && Game.lock !== fresh, 'off: a kill still moves on to the next target');
+    letGo(); sim.press('lock'); sim.step(1, 1);
+    expect.ok(!!Game.lock && picks(), 'a Q lock-on turns it back on');
+    letGo(); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5, 6);
+    expect.ok(log.includes('rest'), 'rested'); sim.clearEnemies(); atFire(); fighter();
+    expect.ok(picks(), 'a rest turns it back on');
+    letGo(); Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2, 6);
+    expect.ok(Game.player.alive(), 'died and came back'); sim.clearEnemies(); atFire(); fighter();
+    expect.ok(picks(), 'a death turns it back on');
+    letGo(); start(); atFire(); fighter();
+    expect.ok(picks(), 'a level start turns it back on');
+  });
+
+  test('lock-on: training dummies are never picked automatically, even swinging at the player', () => {
+    tutorialAt('light'); sim.seconds(3, 6);
+    expect.ok(!Game.lock, 'the dummy in front is not locked');
+    tutorialAt('block'); Game.setLock(null);
+    let swung = false;
+    for (let i = 0; i < 6 * 10; i++) { sim.step(10, 10); if (Game.enemies[0].state === ES.WINDUP) swung = true; }
+    expect.ok(swung && !Game.lock, 'the sparring dummy swung and was never locked');
+  });
+  test('lock-on: when the target dies, the next is the best enemy fighting the player, not an idle one in the middle', () => {
+    const e = retargetRange([['target', 'hollow', 14, 0, true], ['idle', 'hollow', 18, 0.2, false], ['side', 'hollow', 16, 4.5, true]]);
+    Game.setLock(e.target); sim.step(1, 1);
+    e.target.die(); sim.step(1, 1);
+    expect.ok(Game.lock === e.side, `moved on to the one fighting (${nameOf(e, Game.lock)})`);
+  });
+
+  // ---- v4.0 the town's pieces: props, barricades, houses (Test: Town) ---------------------------------------------
+  // Test: Town's square: the fountain at (20, 0), the well at (8, 8), a cart at (28, 9), a stall at (28, -9) facing
+  // north (its back panel to the south), crates at (14, -10). The street east of it ends at a barricade at x 72.
+  const town = () => { Game.startLevel('test-town'); sim.begin(); sim.clearEnemies(); log.length = 0; shots.length = 0; return Game.player; };
+  const propAt = (x, z) => world.solids.find(s => s.kind === 'prop' && x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1);
+  test('props: carts, stalls and the fountain stop the player and enemies; an enemy walks round the fountain to the player', () => {
+    const p = town(); sturdy(p);
+    expect.ok(propAt(28, 9) && propAt(28, -9) && propAt(20, 0) && propAt(8, 8) && propAt(14, -10), 'the cart, stall, fountain, well and crates are solid');
+    sim.place(28, 5); sim.move(0, 1); sim.seconds(2); sim.move(null);
+    expect.below(p.z, propAt(28, 9).z0, `walked into the cart: stopped at z ${p.z.toFixed(2)}`);
+    sim.place(28, -5); sim.move(0, -1); sim.seconds(2); sim.move(null);
+    expect.above(p.z, propAt(28, -9).z1, `walked into the stall: stopped at z ${p.z.toFixed(2)}`);
+    sim.place(20, 7); p.yaw = Math.PI;
+    const e = sim.spawn('hollow', 20, -7, undefined, 0); e.setState(ES.CHASE);
+    let crossed = false;
+    for (let i = 0; i < 8 * 60 && !crossed; i++) { sim.step(); crossed = e.z > propAt(20, 0).z1; }
+    expect.ok(crossed, `the enemy went round the fountain (stuck at ${e.x.toFixed(1)}, ${e.z.toFixed(1)})`);
+  });
+  test('props: they stop bolts; a low well hides nobody, a stall\'s back panel does', () => {
+    const p = town();
+    sim.place(28, -4); p.yaw = Math.PI;
+    const archer = sim.spawn('bowman', 28, -14, undefined, 0); quiet(archer);
+    const hp0 = p.hp, stopped = log.length;
+    A.projectiles.fire(archer, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(stopped).includes('boltStopped'), 'the bolt hit the stall, not the player');
+    expect.ok(gateBetween(p, archer), 'the stall hides the archer');
+    archer.die();
+    sim.place(8, 3); p.yaw = Game.cam.yaw = 0; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 8, 13, undefined, Math.PI); quiet(e);
+    expect.ok(!gateBetween(p, e), 'seen over the well');
+    Game.setLock(null); sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e, 'and locked on over the well');
+    e.die(); Game.setLock(null);
+    sim.place(28, -4); p.yaw = Game.cam.yaw = Math.PI; Game.updateCamera(0, true);
+    const hidden = sim.spawn('hollow', 28, -14, undefined, 0); quiet(hidden);
+    Game.setLock(hidden); sim.seconds(CONFIG.lock.coverTime + 0.2, 6);
+    expect.ok(Game.lock !== hidden, 'an enemy behind the stall cannot be held locked past the cover time');
+  });
+  test('props: a low cart right behind the player leaves the camera behind it, not on the player\'s head', () => {
+    const p = town();
+    sim.place(28, 7.4); p.yaw = Game.cam.yaw = Math.PI; Game.cam.pitch = 0; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default;
+    Game.mouseHold = 99; Game.updateCamera(0, true); sim.seconds(1);
+    const back = Math.hypot(Game.cam.pos.x - p.x, Game.cam.pos.z - p.z);
+    expect.above(back, 4, `the camera stays ${back.toFixed(2)} m behind, over the cart`);
+  });
+  test('props: clutter along the house fronts never stops the player', () => {
+    const p = town();
+    for (const [x0, z, x1] of [[1, 15.3, 39], [1, -15.3, 39], [41, 3.4, 71], [41, -3.4, 71]]) {
+      sim.place(x0, z); sim.move(1, 0);
+      sim.until(() => p.x > x1, 12); sim.move(null);
+      expect.above(p.x, x1, `walked along z ${z} from x ${x0}: reached x ${p.x.toFixed(1)}`);
+    }
+  });
+
+  test('barricades: one holds the player and stops bolts and sight while shut, falls when its street is won, and counts toward completion', () => {
+    Game.startLevel('test-town'); sim.begin(); log.length = 0;
+    const p = Game.player, Z = Game.zones.find(z => z.id === 'zone-street'); sturdy(p);
+    expect.ok(A.TEST_TOWN.gated.find(z => z.id === 'zone-street').gate.style === 'barricade', 'the street gate is a barricade');
+    for (const e of Z.actors) quiet(e);
+    sim.place(68, 0); sim.move(1, 0); sim.seconds(2); sim.move(null);
+    expect.below(p.x, 72, `held at the barricade (x ${p.x.toFixed(2)})`);
+    const beyond = sim.spawn(rooted('bowman'), 78, 0, undefined, -Math.PI / 2); quiet(beyond);
+    expect.ok(gateBetween(p, beyond), 'no sight through it');
+    const hp0 = p.hp, n = log.length;
+    A.projectiles.fire(beyond, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(n).includes('boltStopped'), 'a bolt is stopped');
+    beyond.die();
+    for (const e of Z.actors) e.die();
+    expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0 && log.includes('gateOpened'), 'it fell once the street was won');
+    sim.place(68, 0); sim.move(1, 0); sim.until(() => p.x > 76, 4); sim.move(null);
+    expect.above(p.x, 76, 'walked through where it stood');
+    expect.ok(Game.complete && log.includes('levelComplete'), 'its zone counted: the level is complete');
+  });
+
+  test('houses: solid to the player, bolts and sight; the inn is walked into by its door, and has a roof', () => {
+    const p = town();
+    expect.ok(world.solids.some(s => s.kind === 'house'), 'houses are solid');
+    sim.place(75, 0); sim.move(1, 0); sim.seconds(2); sim.move(null);   // the chapel stands free in the yard at x 78..82
+    expect.below(p.x, 78, `stopped at the chapel (x ${p.x.toFixed(2)})`);
+    const e = sim.spawn(rooted('bowman'), 84, 0, undefined, -Math.PI / 2); quiet(e);
+    expect.ok(gateBetween(p, e), 'no sight through the chapel');
+    const hp0 = p.hp, n = log.length;
+    A.projectiles.fire(e, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(n).includes('boltStopped'), 'a bolt is stopped by it');
+    sim.place(13, 14); sim.move(0, 1); sim.until(() => p.z > 21, 4); sim.move(null);
+    expect.above(p.z, 21, 'through the inn door and inside');
+    expect.below(world.ceilingAt(p.x, p.z, p.y + 1), p.y + 4.5, 'under the inn\'s ceiling');
+    sim.place(10, 14); sim.move(0, 1); sim.seconds(2); sim.move(null);
+    expect.below(p.z, 16, 'beside the door, the inn front stops the player');
+  });
+  test('houses: Levels 2 and 4 and the older test rooms build exactly the same solids and slabs as before', () => {
+    const sig = L => {   // the same fingerprint taken before houses and props existed
+      const T = A.terrainFor(L), f = b => [b.kind, b.x0, b.x1, b.z0, b.z1, b.y0, b.y1].map(v => typeof v === 'number' ? v.toFixed(3) : v).join(',');
+      return [T.solids.length, T.slabs.length, strSeed(T.solids.map(f).join(';') + '|' + T.slabs.map(f).join(';'))];
+    };
+    const want = { 'sunken-keep': [78, 20, 3411835110], 'the-tower': [436, 150, 3494895368], 'test-crowd': [14, 4, 170810182],
+                   'test-heights': [131, 54, 3405753706], 'test-courtyard': [77, 19, 1323673726], 'test-mixed': [29, 6, 3293135696] };
+    for (const [id, w] of Object.entries(want)) {
+      const got = sig(A.ALL_LEVELS.find(l => l.id === id));
+      expect.ok(got.join() === w.join(), `${id}: ${got.join()} (want ${w.join()})`);
+    }
+  });
+
+  test('data: houses, props, gate styles and the landmark are checked at load', () => {
+    expect.ok(A.validateData().length === 0, `the shipped data passes (${A.validateData().join(' | ')})`);
+    const L = A.TEST_TOWN, chapel = L.houses.find(h => h.rect[0] === 78), cart = L.props.find(p => p.kind === 'cart');
+    const rejects = (obj, key, value, words) => {   // one bad value: a readable error that names the thing and the problem
+      const had = key in obj, old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      if (had) obj[key] = old; else delete obj[key];
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(chapel, 'y', 3, ['house', 'floor']);
+    rejects(chapel, 'rect', [68, 76, -2, 2], ['house', 'overlaps', 'street']);
+    rejects(chapel, 'ridge', 'y', ['house', 'ridge']);
+    rejects(chapel, 'eaves', 1, ['house', 'eaves']);
+    rejects(chapel, 'rooms', ['nowhere'], ['house', 'nowhere']);
+    const yardHouse = L.houses.find(h => h.rect[0] === 72 && h.rect[2] === 8);
+    rejects(yardHouse, 'rect', [70, 84, 8, 18], ['house', 'overlaps the house']);
+    rejects(A.LEVEL_1, 'props', [], ['props belong in room levels']);
+    rejects(A.LEVEL_3.dispersed.find(d => d.zone), 'zone', 'zone-nowhere', ['zone "zone-nowhere"']);
+    rejects(cart, 'kind', 'boulder', ['prop', 'boulder']);
+    rejects(cart, 'yaw', 0.3, ['prop', 'yaw']);
+    rejects(cart, 'z', 200, ['prop', 'floor']);
+    const withProp = (P, words) => {   // one more prop, somewhere it must not stand
+      L.props.push(P); const errors = A.validateData(); L.props.pop();
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${JSON.stringify(P)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    withProp({ kind: 'cart', x: 40.5, z: 0 }, ['prop', 'doorway']);
+    withProp({ kind: 'crates', x: 4.5, z: 0 }, ['prop', 'spawn']);
+    withProp({ kind: 'cart', x: 28, z: 15.5 }, ['prop', 'wall']);
+    withProp({ kind: 'well', x: 71, z: 0 }, ['prop', 'gate']);
+    rejects(L.gated[0].gate, 'style', 'wall', ['gate style', 'wall']);
+    rejects(L.atmosphere, 'landmark', { x: 'far', z: 0 }, ['landmark']);
+    rejects(L.atmosphere, 'embers', 5, ['embers']);
+  });
+
+  test('town look: the far castle, smoke over burning houses and embers are drawn where a level asks, and nowhere else', () => {
+    town(); sim.step(1); Game.render(1, STEP);
+    const I = A.visuals.info(), Lm = A.TEST_TOWN.atmosphere.landmark;
+    expect.ok(I.landmark, 'the far castle is drawn');
+    expect.above(I.far, Math.hypot(Lm.x - Game.player.x, Lm.z - Game.player.z), `the camera sees as far as the castle (far ${I.far})`);
+    const burning = A.TEST_TOWN.houses.filter(h => h.burning || h.ruined).length;
+    expect.ok(I.smoke === burning, `a smoke column over each burning or ruined house (${I.smoke} of ${burning})`);
+    expect.above(I.embers, 0, 'embers drift');
+    Game.startLevel('sunken-keep'); sim.begin(); sim.step(1); Game.render(1, STEP);
+    const K = A.visuals.info();
+    expect.ok(!K.landmark && K.smoke === 0 && K.embers === 0, `Level 2 has none of them (${JSON.stringify({ l: K.landmark, s: K.smoke, e: K.embers })})`);
+  });
+  test('town look: frame time on Test: Town against Test: Courtyard', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = (id, x, z) => {
+      Game.startLevel(id); sim.begin(); sim.place(x, z);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
+      return (performance.now() - t0) / 90;
+    };
+    const court = measure('test-courtyard', 42, 0), townMs = measure('test-town', 20, -6);
+    metrics.townFrame = { townMs: +townMs.toFixed(2), courtyardMs: +court.toFixed(2) };
+    expect.below(townMs, court * 2.5 + 3, `Test: Town frame (${townMs.toFixed(1)} ms) against Test: Courtyard (${court.toFixed(1)} ms)`);
+  });
+
+  // ---- v4.0 the Pillager Captain ----------------------------------------------------------------------------------
+  test('Pillager Captain: a posture boss between the throne pair and the Bell Warden, with a halberd that glows with embers', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, B = A.ENEMY_BY_ID;
+    expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'its posture shows on the big bar at the top of the screen');
+    expect.ok(A.hud.eBars.textContent.includes('Pillager Captain'), 'named on the boss bar');
+    expect.near(e.def.hp, 450, 50, 'about 450 HP');
+    expect.above(e.def.hp, Math.max(B.knight.hp, B.warden.hp), 'tougher than either of Level 2\'s throne pair');
+    expect.below(e.def.hp, B.bellWarden.hp, 'less than the Bell Warden');
+    expect.ok(e.def.weapon === 'halberd' && e.def.visual.embers === true && !!e.rig.embers, 'a halberd with embers');
+  });
+  test('Pillager Captain: its three-cut combo can be parried, its overhead only rolled, its thrust comes only from mid range', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), over = e.def.attacks.find(a => a.rollOnly);
+    expect.ok(combo && combo.track > 0 && !makeStrike(combo).rollOnly, 'a tracking three-cut combo, not roll-only');
+    faceOff(e, p, 2); e.beginAttack(combo);
+    sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
+    sim.until(() => log.includes('parry'), 0.5);
+    expect.ok(log.includes('parry') && e.state === ES.PARRIED, 'the combo was parried and left it open');
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const q = Game.player, c = Game.duel; faceOff(c, q, 2); quiet(c); c.notice = 30;
+    sim.hold('block'); sim.step(2); const hp0 = q.hp; c.beginAttack(over);
+    sim.until(() => c.state === ES.RECOVER, 4); sim.release('block');
+    expect.ok(over && makeStrike(over).rollOnly && q.hp < hp0 && log.includes('perilous'), 'the overhead glowed blue and went through the guard');
+    const far = attacksAt('pillagerCaptain', 8), near = attacksAt('pillagerCaptain', 2.2);
+    expect.ok(far.includes('captainThrust') && !near.includes('captainThrust'), `thrust only from range (8 m: ${far.join(', ')}; 2.2 m: ${near.join(', ')})`);
+  });
+  test('Pillager Captain: parries and chained hits break its posture', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    let parries = 0;
+    while (e.state !== ES.BROKEN && parries < 8) {
+      sim.until(() => e.state !== ES.PARRIED && e.state !== ES.WINDUP && e.state !== ES.ACTIVE, 4);
+      faceOff(e, p, 2); e.beginAttack(combo); log.length = 0;
+      sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
+      sim.until(() => log.includes('parry'), 0.5);
+      if (log.includes('parry')) parries++;
+      sim.until(() => e.state === ES.BROKEN || e.state === ES.CHASE, 3);
+    }
+    expect.ok(e.state === ES.BROKEN && parries <= 5, `posture broke after ${parries} parries`);
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const d = Game.duel; let n = 0;
+    while (d.state !== ES.BROKEN && n++ < 30) { d.takeHit(strikeOf('heavy'), behind(d)); sim.step(10); }
+    expect.ok(d.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+  });
+
+  // ---- v4.0 Level 3: The Burning Town ----------------------------------------------------------------------------
+  // The main path, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
+  const TOWN_ROUTE = [
+    [20, 0, 'zone-lower-gate'], [30, 0], [46, 0, 'zone-first-street'], [56, 0], [66, 4, 'zone-market'], [65, 12], [65, 20], [65, 25],
+    [40, 25, 'zone-steep-street'], [24, 25], [18, 24.5], [18, 30], [18, 38, 'zone-alley'], [18, 43], [18, 49], [22, 59.5],
+    [28, 59.5, 'zone-fountain'], [31, 59.5], [38, 59.5], [45, 59.5], [50, 60], [64, 60], [74, 60], [80, 61], [100, 62, 'zone-church'],
+    [114, 62], [120, 62], [130, 62], [140, 62, 'zone-captain'], [151, 62],
+  ];
+  const townLevel = () => { Game.startLevel('burning-town'); sim.begin(); log.length = 0; shots.length = 0; return Game.player; };
+  // Walk to (x, z) through whatever engages (it falls at once); returns true if reached.
+  const walkClear = (x, z, maxSeconds = 30, each = () => {}) => {
+    const p = Game.player;
+    const ok = sim.until(() => {
+      for (const e of Game.enemies) if (e.alive() && !e.in('unaware') && e.state !== ES.DORMANT) e.die();
+      each();
+      const dx = x - p.x, dz = z - p.z;
+      if (Math.hypot(dx, dz) < 0.5) return true;
+      sim.move(dx, dz); return false;
+    }, maxSeconds) >= 0;
+    sim.move(null);
+    return ok;
+  };
+  const insideHouse = c => world.solids.find(s => s.kind === 'house' && c.x > s.x0 + 0.05 && c.x < s.x1 - 0.05 && c.z > s.z0 + 0.05 && c.z < s.z1 - 0.05
+    && c.y > s.y0 + 0.05 && c.y < s.y1 - 0.05);
+  test('the burning town: Level 2 leads into it and it into the Tower; the Levels menu shows it as Level 3, the Tower as Level 4', () => {
+    const names = A.LEVELS.map(l => l.name), at = A.LEVELS.indexOf(A.LEVEL_3);
+    expect.ok(A.LEVEL_3.id === 'burning-town' && A.LEVELS[at - 1] === A.LEVEL_2 && A.LEVELS[at + 1] === A.LEVEL_4, `order: ${names.join(' | ')}`);
+    expect.ok(A.LEVEL_3.name === 'Level 3: The Burning Town' && A.LEVEL_4.name === 'Level 4: The Tower', 'names');
+    expect.ok(A.LEVEL_2.next === 'burning-town' && A.LEVEL_3.next === 'the-tower', 'Level 2 -> the town -> the Tower');
+    Game.showMenu('levels');
+    const shown = [...document.querySelectorAll('#menuList .menuBtn .n')].map(n => n.textContent);
+    expect.ok(shown.indexOf('Level 3: The Burning Town') + 1 === shown.indexOf('Level 4: The Tower'), `menu: ${shown.join(' | ')}`);
+    expect.ok(/sacked|burn/i.test(A.LEVEL_3.description) && /Tower/.test(A.LEVEL_3.completeHint), 'its story: the sacked town, then on to the Tower');
+  });
+  test('the burning town: 17 enemies with the church Bowman (plus an optional Knight), its HP between Level 2\'s and the Tower\'s', () => {
+    const hpOf = L => [...L.gated.flatMap(z => z.enemies || [{ enemy: z.enemy }]), ...L.dispersed].reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0);
+    const L = A.LEVEL_3, main = [...L.gated.flatMap(z => z.enemies), ...L.dispersed.filter(s => s.behavior === 'sentry')];
+    expect.ok(main.length === 17, `${main.length} enemies on the main path`);
+    expect.ok(L.dispersed.some(s => s.enemy === 'knight' && s.behavior === 'slumber'), 'a sleeping Knight off the path');
+    const town = main.reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0), keep = hpOf(A.LEVEL_2), tower = hpOf(A.LEVEL_4);
+    expect.ok(town > keep * 1.8 && town < keep * 2.4 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
+    const debut = id => L.gated.findIndex(z => z.enemies.some(m => m.enemy === id));
+    const alone = id => L.gated.find(z => z.enemies.some(m => m.enemy === id)).enemies.length;
+    expect.ok(alone('lancer') === 1 && alone('duelist') === 1, 'the Lancer and the Duelist are met alone first');
+    expect.ok(debut('lancer') < debut('bowman') && debut('bowman') < debut('duelist'), 'Lancer, then Bowman (with a Lancer), then Duelist');
+  });
+  test('the burning town: a scripted run opens every gate in turn and completes the level; the camera never enters a house', () => {
+    const p = townLevel(); sturdy(p);
+    const opened = [], inHouse = [];
+    const watch = () => { const h = insideHouse(Game.cam.pos); if (h && inHouse.length < 5) inHouse.push(`(${Game.cam.pos.x.toFixed(1)}, ${Game.cam.pos.y.toFixed(1)}, ${Game.cam.pos.z.toFixed(1)})`); };
+    for (const [x, z, zone] of TOWN_ROUTE) {
+      const reached = walkClear(x, z, 30, watch);
+      expect.ok(reached && p.alive(), `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+      if (!zone) continue;
+      const Z = Game.zones.find(q => q.id === zone);
+      for (const e of Z.actors) if (e.alive()) e.die();
+      expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, `${zone}: its gate opened`);
+      opened.push(zone);
+    }
+    expect.near(p.y, 12, 1e-6, 'through the upper town gate, at the top of the town');
+    expect.ok(Game.complete && log.includes('levelComplete') && opened.length === Game.zones.length, `LEVEL COMPLETE (${opened.length} gates)`);
+    expect.ok(!inHouse.length, `the camera went inside a house at ${inHouse.join(', ')}`);
+    sim.seconds(CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime + 0.2);
+    expect.ok(Game.level.id === 'the-tower', `then on into the Tower (${Game.level.id})`);
+  });
+  test('the burning town: the steep street\'s barricade stays shut until the Bowman on the balcony is dead; the stair house leads up to it', () => {
+    const p = townLevel(); sturdy(p);
+    const Z = Game.zones.find(q => q.id === 'zone-steep-street'), bow = Z.actors.find(e => e.def.id === 'bowman');
+    expect.ok(!!bow && Math.abs(bow.y - 8) < 1e-6, 'a Bowman of the zone on the balcony, 4 m up');
+    sim.place(54, 26, 4);
+    for (const e of Z.actors) if (e !== bow) e.die();
+    sim.seconds(2);
+    expect.ok(!Z.gate.open, 'the Lancer is dead, the Bowman lives: still shut');
+    for (const [x, z] of [[54, 28.6], [54, 31], [51, 30.8], [46, 30.8], [43, 30.6]]) {
+      bow.notice = 0; bow.setState(ES.IDLE);
+      expect.ok(sim.walkTo(x, z, 0.4, 8), `walked to (${x}, ${z}); at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+    }
+    expect.near(p.y, 8, 0.01, 'up the stair inside the house and out onto the balcony');
+    bow.die();
+    expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, 'with the Bowman dead, the barricade fell');
+  });
+  test('the burning town: the shortcut is shut from below, opens for good from the fountain square, and leads down to bonfire 1', () => {
+    const p = townLevel(); sturdy(p); sim.clearEnemies();
+    const g = world.gates.find(q => q.id === 'fountain-shortcut');
+    sim.place(6, 5); sim.walkTo(6, 46.6, 0.4, 20);
+    expect.below(p.z, 46.6, `held below the shut gate (z ${p.z.toFixed(2)})`); expect.ok(!g.open, 'still shut from below');
+    sim.place(6, 52, 8); sim.step(2);
+    expect.ok(g.open && log.includes('gateOpened'), 'opened from the fountain square');
+    expect.ok(sim.walkTo(6, 46, 0.4, 6) && sim.walkTo(6, 5.5, 0.4, 30) && sim.walkTo(6, 2, 0.4, 4), `down to the lower gate (at ${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+    expect.near(p.y, 0, 1e-6, 'at the lower gate street');
+    sim.place(4.5, -1); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(world.gates.find(q => q.id === 'fountain-shortcut').open, 'it stays open through resting and dying');
+  });
+  test('the burning town: resting at the tavern is not blocked by the church square, and makes it the respawn point', () => {
+    const p = townLevel(); sim.place(38, 61.4, 8); sim.step(2);
+    expect.ok(!!Game.canRest(), 'the tavern bonfire can be rested at with the church square still held');
+    sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(log.includes('rest'), 'rested');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    const q = Game.player;
+    expect.ok(q.alive() && Math.hypot(q.x - 38, q.z - 60.5) < 0.5 && Math.abs(q.y - 8) < 1e-6, `respawned at the tavern (${q.x.toFixed(1)}, ${q.z.toFixed(1)}, y ${q.y.toFixed(1)})`);
+  });
+  test('the burning town: the gallery Bowman is optional, and once the church square is won it is not brought back', () => {
+    const p = townLevel(); sturdy(p);
+    const onGallery = () => Game.enemies.filter(e => e.def.id === 'bowman' && Math.abs(e.y - 17) < 1e-6);
+    expect.ok(onGallery().length === 1 && !Game.zones.some(z => z.actors.includes(onGallery()[0])), 'a Bowman on the gallery, in no zone');
+    sim.place(38, 61.4, 8); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(onGallery().length === 1, 'resting before the church square is won brings it back');
+    const Z = Game.zones.find(z => z.id === 'zone-church');
+    for (const e of Z.actors) e.die();
+    sim.until(() => Z.gate.open, 2);
+    sim.place(38, 61.4, 8); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(onGallery().length === 0, 'once the church square is won, resting does not bring it back (the run to the Captain is clear)');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(onGallery().length === 0, 'nor does dying');
+  });
+  test('the burning town: the overlook is the one drop that hurts (by the numbers); rails hold elsewhere, and nothing kills', () => {
+    townLevel(); sim.clearEnemies();
+    const open = [...A.LEVEL_3.rooms, ...A.LEVEL_3.ramps].flatMap(R => Object.entries(R.edges || {}).filter(([, v]) => v === 'open').map(([k]) => `${R.id}.${k}`));
+    expect.ok(open.join() === 'overlook.s', `open edges: ${open.join(', ')}`);
+    expect.ok(A.LEVEL_3.rooms.every(R => !R.pits), 'no pits');
+    const [y, dmg, alive] = dropFrom(74, 12, 7.5, 0, -1);
+    expect.near(y, 0, 1e-6, 'landed in the market');
+    expect.near(dmg, (7.5 - CONFIG.fall.safe) * CONFIG.fall.perMetre, 0.5, 'a 7.5 m drop costs its fall damage');
+    expect.ok(alive && dmg >= 25 && dmg <= 30, `about 25 to 30 HP, and the player lives (${dmg.toFixed(1)} HP)`);
+    const p = Game.player;
+    for (const [x, z, yy, dx, dz, what] of [[38, 29.5, 8, 0, -1, 'the balcony'], [96, 81.4, 17, 0, -1, 'the gallery'], [170, 62, 12, 0, 1, 'the cliff road'],
+                                         [170, 62, 12, 0, -1, 'the cliff road, south'], [182, 62, 12, 1, 0, 'the end of the cliff road']]) {
+      sim.place(x, z, yy); sim.move(dx, dz); sim.seconds(2); sim.move(null);
+      expect.near(p.y, yy, 1e-6, `${what}: the rail held`);
+    }
+  });
+  test('the burning town: the far castle is on screen from most of the main path, facing along it', () => {
+    townLevel(); sim.clearEnemies();
+    for (const g of world.gates) g.open = true;
+    const Lm = A.LEVEL_3.atmosphere.landmark, marks = [0.3, 0.5, 0.7, 0.9].map(f => new THREE.Vector3(Lm.x, Lm.y + Lm.height * f, Lm.z));
+    const pts = [[4, 1], ...TOWN_ROUTE.map(([x, z]) => [x, z])], seen = [], hidden = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x0, z0] = pts[i], [x1, z1] = pts[i + 1], n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 5));
+      for (let k = 0; k < n; k++) {
+        const x = lerp(x0, x1, k / n), z = lerp(z0, z1, k / n), yaw = Math.atan2(x1 - x0, z1 - z0);
+        // The player looking ahead along the street: the camera as low as it goes (at rest it looks down at the player).
+        sim.place(x, z); Game.player.yaw = Game.cam.yaw = yaw; Game.cam.pitch = CONFIG.mouse.pitchMin; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default;
+        Game.mouseHold = 99; Game.updateCamera(0, true); camera.position.copy(Game.cam.pos); camera.lookAt(Game.cam.look); camera.updateMatrixWorld();
+        const c = Game.cam.pos, visible = m => {   // some height of the castle on screen, and no wall or house in the way
+          const v = m.clone().project(camera), d = m.clone().sub(c);
+          return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && !world.solids.some(s => !s.low && segBox3(c.x, c.y, c.z, d.x, d.y, d.z, s) <= 1);
+        };
+        (marks.some(visible) ? seen : hidden).push(`(${x.toFixed(0)}, ${z.toFixed(0)})`);
+      }
+    }
+    const share = seen.length / (seen.length + hidden.length);
+    metrics.townCastleSeen = +share.toFixed(2);
+    expect.above(share, 0.5, `the castle seen from ${seen.length} of ${seen.length + hidden.length} points (hidden at ${hidden.slice(0, 12).join(' ')}…)`);
+  });
+  test('the burning town: frame time on the church square, against Test: Courtyard', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = (id, x, z, y) => {
+      Game.startLevel(id); sim.begin(); sim.place(x, z, y);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights };
+    };
+    const court = measure('test-courtyard', 42, 0), town = measure('burning-town', 96, 62, 12);
+    metrics.burningTownFrame = { churchSquareMs: +town.ms.toFixed(2), courtyardMs: +court.ms.toFixed(2), lights: town.lights };
+    expect.ok(town.lights === CONFIG.cull.maxLights, `culled lights (${town.lights})`);
+    expect.below(town.ms, court.ms * 2.5 + 3, `church square frame (${town.ms.toFixed(1)} ms) against Test: Courtyard (${court.ms.toFixed(1)} ms)`);
   });
 
   async function run(filter = '') {

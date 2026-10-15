@@ -221,29 +221,54 @@ function buildRooms(L) {
       addFlame(G, bx, y + 1.45, bz, C.brazierSize, null, new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffffff), 0.35).getHex());
     }
   }
-  for (const s of TR.solids) {
-    if (s.kind === 'pillar') continue;   // drawn with their bases above
-    const M = matsFor(s.region ? s.region.src : s.block);
-    if (s.kind === 'face') boxOf(s, M.wall, 0.02);   // just under the floor above, so the two never flicker
-    else boxOf(s, M.wall);
-    if (s.kind === 'rail') addBox(G, s.x1 - s.x0 + 0.08, 0.08, s.z1 - s.z0 + 0.08, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.04, (s.z0 + s.z1) / 2);
+  // The parts of a wall inside a house (not one of the house's own rooms) aren't drawn: the house stands there instead.
+  const houses = (L.houses || []).map(H => ({ r: H.rect, top: houseBase(H, TR.regions) + H.eaves + 0.5, own: H.rooms || [] }));
+  const shown = s => {
+    if (!houses.length || !(s.kind === 'wall' || s.kind === 'post' || s.kind === 'lintel')) return [s];
+    const hiding = houses.filter(h => s.y1 <= h.top && !(s.region && h.own.includes(s.region.id))).map(h => h.r);
+    return rectMinus([s.x0, s.x1, s.z0, s.z1], hiding).filter(p => p[1] - p[0] > 0.02 && p[3] - p[2] > 0.02)
+      .map(p => ({ ...s, x0: p[0], x1: p[1], z0: p[2], z1: p[3] }));
+  };
+  for (const whole of TR.solids) {
+    if (whole.kind === 'pillar' || whole.kind === 'prop' || whole.kind === 'house') continue;   // pillars above; props, houses: js/town.js
+    const M = matsFor(whole.region ? whole.region.src : whole.block);
+    for (const s of shown(whole)) {
+      if (s.kind === 'face') boxOf(s, M.wall, 0.02);   // just under the floor above, so the two never flicker
+      else boxOf(s, M.wall);
+      if (s.kind === 'rail') addBox(G, s.x1 - s.x0 + 0.08, 0.08, s.z1 - s.z0 + 0.08, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.04, (s.z0 + s.z1) / 2);
+      // In a town (a level with houses), the walls of open rooms are town walls: a coping along the top.
+      if (houses.length && s.kind === 'wall' && s.region && s.region.open)
+        addBox(G, s.x1 - s.x0 + 0.2, 0.22, s.z1 - s.z0 + 0.2, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.11, (s.z0 + s.z1) / 2);
+    }
   }
   // Gates: a lintel above, a portcullis below; the closed portcullis is a solid box across the doorway.
   // Zone gates lift when their zone is won; shortcut gates (`shortcuts`, with `opensFrom`) from their far side;
-  // sealed gates (`sealed`) never.
+  // sealed gates (`sealed`) never. A gate with `style: 'barricade'` is a heap of carts, beams and stakes instead
+  // (`CONFIG.rooms.barricade.depth` m deep, no lintel): it works the same, but topples away from its zone as it opens.
   const t = L.gateThickness, gh = L.gateHeight;
   for (const z of gatedEntries(L)) {
     const g = z.gate, alongX = g.along === 'x', gy = TR.floorY(g.x, g.z, g.y), wh = gateHeadroom(TR, g.x, g.z, gy);
-    if (wh > gh) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
-    const mesh = buildPortcullis(G, g.x, g.width, gh);
+    const barricade = g.style === 'barricade', th = barricade ? C.barricade.depth : t;
+    if (!barricade && wh > gh) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
+    const mesh = barricade ? buildBarricade(G, g.width, gh, th, strSeed(z.id)) : buildPortcullis(G, g.x, g.width, gh);
     mesh.position.set(g.x, gy, g.z); if (alongX) mesh.rotation.y = Math.PI / 2;
-    const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - t / 2, z1: g.z + t / 2, y0: gy, y1: gy + gh }
-                       : { x0: g.x - t / 2, x1: g.x + t / 2, z0: g.z - g.width / 2, z1: g.z + g.width / 2, y0: gy, y1: gy + gh };
-    gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null });
+    const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - th / 2, z1: g.z + th / 2, y0: gy, y1: gy + gh }
+                       : { x0: g.x - th / 2, x1: g.x + th / 2, z0: g.z - g.width / 2, z1: g.z + g.width / 2, y0: gy, y1: gy + gh };
+    // Away from the zone: the side of the gate its trigger is not on, in the gate's own x (rotation.y turns +x to -z).
+    let fall = 0;
+    if (barricade && z.trigger) {
+      const r = Array.isArray(z.trigger[0]) ? z.trigger[0] : z.trigger, cx = (r[0] + r[1]) / 2, cz = (r[2] + r[3]) / 2;
+      fall = alongX ? -Math.sign(g.z - cz) || 1 : Math.sign(g.x - cx) || 1;
+    }
+    gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null,
+                 style: barricade ? 'barricade' : 'portcullis', fall });
   }
   for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y));
+  if (L.props) buildProps(G, L, TR);   // js/town.js
+  const town = { smoke: [] };
+  if (L.houses) buildHouses(G, L, TR, town);
   const trapFloors = traps.map(tr => buildTrapFloor(G, tr, matsFor(tr.region.src).floor, TR));
-  return { group: G, gates, traps: trapFloors, solids: TR.solids, slabs: TR.slabs, terrain: TR };
+  return { group: G, gates, traps: trapFloors, solids: TR.solids, slabs: TR.slabs, terrain: TR, smoke: town.smoke };
 }
 // A room's faint floor seams, every 4 m.
 function floorSeams(R) {
@@ -291,6 +316,16 @@ function placeTrap(t) {
     c.mesh.rotation.set(c.spin[0] * s, 0, c.spin[1] * s);
     c.crack.material.opacity = F.crackOpacity * clamp((warn - c.order * F.crackSpread) / (1 - F.crackSpread), 0, 1);
   }
+}
+// A gate as it stands (`lift` 0 shut .. 1 open): a portcullis rises; a barricade tips over away from its zone and sinks
+// out of sight as it lands.
+function placeGate(g) {
+  const k = ease(g.lift);
+  if (g.style !== 'barricade') { g.mesh.position.y = g.y + k * g.liftHeight; return; }
+  const B = CONFIG.rooms.barricade;
+  g.mesh.rotation.z = -g.fall * k * B.topple;
+  g.mesh.position.y = g.y - clamp((g.lift - B.sinkFrom) / (1 - B.sinkFrom), 0, 1) * B.sink;
+  g.mesh.visible = g.lift < 1;
 }
 // Every entry of a room level with a gate: its zones, shortcuts and sealed gates.
 const gatedEntries = L => [...L.gated, ...(L.shortcuts || []), ...(L.sealed || [])];
@@ -357,6 +392,7 @@ function makeWorld(def, st) {
   if (def.layout === 'rooms') {   // `solids`: walls, rails, ledges and pillars; closed gates are added to them where needed
     const T = st.terrain, holes = [];   // floors opened since the level started (sprung traps)
     return { rooms: def.rooms, regions: T.regions, solids: st.solids, slabs: st.slabs, bonfires: def.bonfires,
+             hasProps: (def.props || []).length > 0,
              groundAt: (x, z, y) => groundIn(T.regions, x, z, y, holes), ceilingAt: (x, z, y) => ceilingIn(T.regions, x, z, y, holes),
              floorY: (x, z, y = Infinity) => groundIn(T.regions, x, z, y, holes), killY: T.killY,
              gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })),

@@ -1,5 +1,5 @@
 'use strict';
-// Level 3: The Tower. A cliff-top keep: the gatehouse (west), a walled courtyard open to the sky, and the tower
+// Level 4: The Tower. A cliff-top keep: the gatehouse (west), a walled courtyard open to the sky, and the tower
 // on its east side with the cliff beyond (a pit). x runs east, z north; heights are floor levels in metres.
 //   Gatehouse (y 0): a warm-up fight, bonfire 1. Past its gate a short passage runs east to a portcullis that never
 //     opens, a bonfire glowing behind it: the bait. Partway along, the passage floor rumbles, cracks and gives way
@@ -16,11 +16,11 @@
 //     the south walk (y 14), the east stair (14 to 18, over the cliff), the wide north landing (y 18, a Duelist
 //     pair), then the bell stair (18 to 22) to bonfire 4 and the bell platform on top of the tower (y 22): the
 //     Bell Warden, railed on the courtyard side and open on the cliff side.
-const LEVEL_3 = {
+const LEVEL_4 = {
   id: 'the-tower', layout: 'rooms', alert: true, cull: true,
-  name: 'Level 3: The Tower',
+  name: 'Level 4: The Tower',
   description: 'A cliff-top keep. Past the gatehouse the floor gives way: fight out of the undercroft, cross the courtyard, take the ramparts, and climb the walkways round the tower to its bell.',
-  help: 'Level 3: win each fight to open the way on. Past the gatehouse the passage floor gives way: fight your way out of the undercroft. Falls from the walkways hurt or kill; the cliff side is a drop to your death. Bowmen shoot whenever they see you.',
+  help: 'Level 4: win each fight to open the way on. Past the gatehouse the passage floor gives way: fight your way out of the undercroft. Falls from the walkways hurt or kill; the cliff side is a drop to your death. Bowmen shoot whenever they see you.',
   wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5,
   // A cold dusk over the cliffs: wind-blown ash, grass in the courtyard, ruins on the skyline.
   atmosphere: { background: 0x23252e, fog: 0x333644, fogDensity: 0.011,

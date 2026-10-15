@@ -99,6 +99,26 @@ function trapRoom(TR, t) {
     && c[0] >= R.rect[0] && c[1] <= R.rect[1] && c[2] >= R.rect[2] && c[3] <= R.rect[3]) || null;
 }
 
+// Houses (a level's `houses`): { rect, eaves, ridge: 'x' | 'z', kind: 'house' | 'tower', y, rooms, ... }. A house's
+// regions are those it faces: the ones (not inside it) within `CONFIG.houses.face` m of its walls. It stands on `y`,
+// else on the lowest floor it faces; it reaches its ridge (a gable roof rising `pitch` m per metre from the eaves to
+// the middle of its narrow side) or the tip of its spire (a tower's pyramid roof, `spire` times its width).
+function houseFaces(H, regions) {
+  const f = CONFIG.houses.face, r = H.rect, grown = [r[0] - f, r[1] + f, r[2] - f, r[3] + f];
+  return regions.filter(R => !(H.rooms || []).includes(R.id) && rectAnd(R.rect, grown));
+}
+function houseBase(H, regions) {
+  if (H.y !== undefined) return H.y;
+  const floors = houseFaces(H, regions).map(R => R.lo);
+  return floors.length ? Math.min(...floors) : 0;
+}
+function houseRoof(H) {
+  const C = CONFIG.houses, w = H.rect[1] - H.rect[0], d = H.rect[3] - H.rect[2];
+  if (H.kind === 'tower') return Math.max(w, d) * C.spire;
+  return (H.ridge === 'x' ? d : w) / 2 * C.pitch;
+}
+const houseHeight = H => H.eaves + houseRoof(H);
+
 // Build the regions, solids and slabs of a room-style level (cached per level).
 const terrainCache = new WeakMap();
 function terrainFor(L) {
@@ -202,6 +222,22 @@ function buildTerrain(L) {
   for (const B of L.blocks || []) {
     const b = box(B.rect[0], B.rect[1], B.rect[2], B.rect[3], B.y0, B.y1);
     if (b) solids.push(Object.assign(b, { kind: 'block', region: null, block: B, low: false }));
+  }
+  // Houses (drawn by js/town.js): solid from their base to the ridge; an enterable house (`rooms`: the regions inside
+  // it) is solid only around those rooms, and above the highest of them.
+  for (const Hs of L.houses || []) {
+    const y = houseBase(Hs, regions), top = y + houseHeight(Hs), inner = regions.filter(R => (Hs.rooms || []).includes(R.id));
+    const solid = { kind: 'house', region: null, house: Hs, low: false };
+    for (const p of rectMinus(Hs.rect, inner.map(R => R.rect))) push(solids, box(p[0], p[1], p[2], p[3], y, top, solid));
+    for (const R of inner) {
+      const hi = Math.max(...inner.filter(O => rectAnd(O.rect, R.rect)).map(O => O.top));
+      push(solids, box(R.rect[0], R.rect[1], R.rect[2], R.rect[3], hi, top, solid));
+    }
+  }
+  // Props (js/data/props.js): their boxes, on the floor under them (the top-most, or the highest at or below their y).
+  for (const P of L.props || []) {
+    const y = groundIn(regions, P.x, P.z, P.y ?? Infinity);
+    if (Number.isFinite(y)) for (const b of propBoxes(P, y)) solids.push(Object.assign(b, { kind: 'prop', region: null, prop: P, low: false }));
   }
   const lowest = Math.min(...regions.map(R => R.lo));
   return {

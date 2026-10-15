@@ -59,6 +59,11 @@ function validateData() {
   for (const group of ['ground', 'air'])
     for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
+  const tri3 = v => Array.isArray(v) && v.length === 3 && v.every(num);
+  for (const [id, W] of Object.entries(WEAPONS)) {   // where a weapon glows with embers (an enemy's visual `embers`)
+    if ('head' in W) need(tri3(W.head), `Weapon "${id}": head must be [x, y, z].`);
+    if ('edge' in W) need(W.edge && tri3(W.edge.size) && tri3(W.edge.at), `Weapon "${id}": edge needs size [w, h, d] and at [x, y, z].`);
+  }
   need(PLAYER_DEF.look.weapon in WEAPONS, `Player: unknown weapon "${PLAYER_DEF.look.weapon}".`);
   // Levels
   const levelIds = new Set();
@@ -68,8 +73,10 @@ function validateData() {
     levelIds.add(L.id);
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
+    if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
+    need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
     need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);
     const alcoves = new Set(L.alcoves.map(a => a.id));
@@ -120,6 +127,8 @@ function validateData() {
   checkVisualData(need, num);   // optional look fields (section 9b)
   return errors;
 }
+const GATE_STYLES = ['portcullis', 'barricade'];
+const HOUSE_KINDS = ['house', 'tower'];
 /// Room-style level checks (see LEVEL_2 and js/terrain.js): shapes first, then the 3D layout built from them.
 function validateRooms(L, where, need, num) {
   const H = CONFIG.height, eps = 1e-6;
@@ -161,6 +170,31 @@ function validateRooms(L, where, need, num) {
   }
   if ('blocks' in L) check(Array.isArray(L.blocks) && L.blocks.every(B => B && rectOk(B.rect) && num(B.y0) && num(B.y1) && B.y0 < B.y1),
     `${where}: blocks must be a list of { rect, y0, y1 } with y0 < y1.`);
+  // Houses (js/terrain.js, drawn by js/town.js) and props (js/data/props.js): their shapes.
+  const houseTag = H => `${where} house at [${H && Array.isArray(H.rect) ? H.rect.join(', ') : '?'}]`;
+  if ('houses' in L) check(Array.isArray(L.houses), `${where}: houses must be a list.`);
+  for (const Hs of Array.isArray(L.houses) ? L.houses : []) {
+    const tag = houseTag(Hs);
+    check(Hs && rectOk(Hs.rect), `${tag}: rect must be [x0, x1, z0, z1] with x0 < x1 and z0 < z1.`);
+    if (!Hs) continue;
+    check(num(Hs.eaves) && Hs.eaves >= 2.5, `${tag}: eaves (its walls' height) must be a number of at least 2.5 m.`);
+    check(Hs.kind === undefined || HOUSE_KINDS.includes(Hs.kind), `${tag}: unknown kind "${Hs.kind}" (use ${HOUSE_KINDS.join(' or ')}).`);
+    if (Hs.kind !== 'tower') check(Hs.ridge === 'x' || Hs.ridge === 'z', `${tag}: ridge must be 'x' or 'z' (the direction its roof's ridge runs).`);
+    if ('y' in Hs) check(num(Hs.y), `${tag}: y (its base) must be a number.`);
+    for (const k of ['stone', 'burning', 'ruined']) if (k in Hs) check(typeof Hs[k] === 'boolean', `${tag}: ${k} must be true or false.`);
+    if ('lit' in Hs) check(num(Hs.lit) && Hs.lit >= 0 && Hs.lit <= 1, `${tag}: lit (the share of glowing windows) must be from 0 to 1.`);
+    if ('rooms' in Hs) check(Array.isArray(Hs.rooms) && Hs.rooms.every(id => ids.has(id)),
+      `${tag}: rooms must list regions of the level (unknown: ${(Array.isArray(Hs.rooms) ? Hs.rooms : []).filter(id => !ids.has(id)).join(', ')}).`);
+  }
+  if ('props' in L) check(Array.isArray(L.props), `${where}: props must be a list.`);
+  for (const P of Array.isArray(L.props) ? L.props : []) {
+    const tag = `${where} prop "${P && P.kind}" at (${P && P.x}, ${P && P.z})`;
+    check(P && P.kind in PROP_KINDS && P.kind in PROP_LOOKS, `${tag}: unknown prop kind "${P && P.kind}" (known: ${Object.keys(PROP_KINDS).join(', ')}).`);
+    if (!P) continue;
+    check(num(P.x) && num(P.z) && (!('y' in P) || num(P.y)), `${tag}: x and z (and y, if given) must be numbers.`);
+    const q = (P.yaw || 0) / (Math.PI / 2);
+    check(num(q) && Math.abs(q - Math.round(q)) < 1e-6, `${tag}: yaw must be a quarter turn (a multiple of Math.PI / 2).`);
+  }
   if (!shapesOk) return;
 
   const T = terrainFor(L), regions = T.regions;
@@ -191,7 +225,7 @@ function validateRooms(L, where, need, num) {
   };
   let cuts = 0;
   for (const s of T.solids) for (const R of regions) {
-    if (s.region === R || cuts >= 3) continue;
+    if (s.region === R || s.kind === 'prop' || s.kind === 'house' || cuts >= 3) continue;   // props and houses: checked below
     const [lo, top] = bandOver(R, s);
     if (overlap([s.x0, s.x1, s.z0, s.z1], R.rect) && s.y0 < top - eps && s.y1 > lo + eps) {
       cuts++;
@@ -211,6 +245,7 @@ function validateRooms(L, where, need, num) {
   const checkGate = (gt, tag) => {
     need(gt && num(gt.x) && num(gt.z) && num(gt.width) && (gt.along === 'x' || gt.along === 'z'), `${tag}: gate needs x, z, width and along ('x' or 'z').`);
     if (gt && num(gt.x) && num(gt.z)) need(Number.isFinite(T.floorY(gt.x, gt.z, gt.y)), `${tag}: the gate does not stand on a floor.`);
+    if (gt && 'style' in gt) need(GATE_STYLES.includes(gt.style), `${tag}: unknown gate style "${gt.style}" (use ${GATE_STYLES.join(' or ')}).`);
   };
   const zoneIds = new Set();
   for (const g of L.gated) {
@@ -264,11 +299,69 @@ function validateRooms(L, where, need, num) {
     need(['patrol', 'slumber', 'sentry'].includes(s.behavior), `${tag}: use patrol, slumber or sentry in a room level.`);
     if (s.behavior === 'patrol') need(Array.isArray(s.path) && s.path.length === 2 && s.path.every(x => onFloor(x, s.z, s.y)), `${tag}: patrol path does not stand on a floor.`);
     if (s.behavior === 'slumber' || s.behavior === 'sentry') need(onFloor(s.x, s.z, s.y) && num(s.yaw), `${tag}: needs x, z and yaw on a floor.`);
+    if ('zone' in s) need(zoneIds.has(s.zone) && L.gated.some(g => g.id === s.zone), `${tag}: zone "${s.zone}" is not a zone of the level.`);
   }
   for (const b of L.bonfires) {
     need(onFloor(b.x, b.z, b.y) && b.spawn && onFloor(b.spawn.x, b.spawn.z, b.spawn.y),
       `${where} bonfire "${b.id}": it and its spawn must stand on a floor (not over a pit).`);
     const z = b.spawn && L.gated.find(g => areaOk(g.trigger) && inArea(g.trigger, b.spawn.x, b.spawn.z));
     need(!z, `${where} bonfire "${b.id}": its spawn is inside zone "${z && z.id}".`);
+  }
+  // Houses stand outside the rooms (or free on an open room's floor), on or below the floors they face; an enterable
+  // house's rooms lie inside it.
+  for (const Hs of L.houses || []) {
+    const tag = houseTag(Hs), inner = regions.filter(R => (Hs.rooms || []).includes(R.id)), y = houseBase(Hs, regions), top = y + houseHeight(Hs);
+    for (const R of inner) need(within(R.rect, Hs.rect), `${tag}: its room "${R.id}" must lie inside it.`);
+    for (const R of regions) {
+      if (inner.includes(R) || !overlap(Hs.rect, R.rect) || R.lo - H.slab >= top || R.top <= y) continue;
+      const free = R.kind === 'room' && R.open && within(Hs.rect, R.rect) && Math.abs(R.lo - y) < 0.05;
+      need(free, `${tag}: overlaps "${R.id}". A house stands outside the rooms, or free on an open room's floor.`);
+    }
+    const other = (L.houses || []).find(O => O !== Hs && overlap(O.rect, Hs.rect));
+    need(!other, `${tag}: overlaps the house at [${other && other.rect.join(', ')}]; houses may touch, not overlap.`);
+    const faces = houseFaces(Hs, regions);
+    need(faces.length > 0 && y <= Math.min(...faces.map(R => R.lo)) + 0.05,
+      `${tag}: is off a floor: it must face a room, and stand at or below the lowest floor it faces (its base is at ${y}).`);
+  }
+  // Props stand on a floor, inside the walls, and out of the way: no doorway, gate, bonfire, ramp end or spawn.
+  const spots = [['the start', L.start], ...L.bonfires.flatMap(b => [[`bonfire "${b.id}"`, b], [`bonfire "${b.id}" spawn`, b.spawn]]),
+    ...L.gated.flatMap(g => (g.enemies || []).map(m => [`zone "${g.id}" spawn`, m.spawn])),
+    ...L.dispersed.flatMap(s => s.behavior === 'patrol' ? s.path.map(x => [`patrol of "${s.enemy}"`, { x, z: s.z }]) : [[`"${s.enemy}" (${s.behavior})`, s]])];
+  const doorways = [];   // a strip across each stretch where two regions meet at the same floor height
+  for (const R of regions) for (const k of ['n', 'e']) {
+    const E = EDGES[k], O_E = EDGES[E.opp], at = R.rect[E.at];
+    for (const O of regions) {
+      const lo = Math.max(R.rect[E.lo], O.rect[O_E.lo]), hi = Math.min(R.rect[E.hi], O.rect[O_E.hi]);
+      if (O === R || Math.abs(O.rect[O_E.at] - at) > eps || hi - lo < eps) continue;
+      const m = (lo + hi) / 2, [x, z] = E.along === 'x' ? [m, at] : [at, m];
+      if (Math.abs(R.floorAt(x, z) - O.floorAt(x, z)) > 0.05) continue;
+      doorways.push({ ids: [R.id, O.id], r: E.along === 'x' ? [lo, hi, at - 1, at + 1] : [at - 1, at + 1, lo, hi] });
+    }
+  }
+  const gateRects = gatedEntries(L).filter(e => e.gate && num(e.gate.x) && num(e.gate.z) && num(e.gate.width)).map(e => {
+    const g = e.gate, w = g.width / 2 + 0.5;
+    return { id: e.id, r: g.along === 'x' ? [g.x - w, g.x + w, g.z - 1.5, g.z + 1.5] : [g.x - 1.5, g.x + 1.5, g.z - w, g.z + w] };
+  });
+  const rampEnds = regions.filter(R => R.kind === 'ramp').flatMap(R => {
+    const r = R.rect;
+    return R.axis === 'x' ? [[r[0] - 1.5, r[0], r[2], r[3]], [r[1], r[1] + 1.5, r[2], r[3]]].map(e => ({ id: R.id, r: e }))
+                          : [[r[0], r[1], r[2] - 1.5, r[2]], [r[0], r[1], r[3], r[3] + 1.5]].map(e => ({ id: R.id, r: e }));
+  });
+  const walls = T.solids.filter(s => ['wall', 'post', 'lintel', 'house', 'block', 'pillar'].includes(s.kind));
+  for (const P of L.props || []) {
+    const tag = `${where} prop "${P.kind}" at (${P.x}, ${P.z})`;
+    if (!onFloor(P.x, P.z, P.y)) { need(false, `${tag}: does not stand on a floor (or stands over a pit).`); continue; }
+    const boxes = propBoxes(P, T.floorY(P.x, P.z, P.y)), flat = boxes.map(b => [b.x0, b.x1, b.z0, b.z1]);
+    const hits = r => flat.some(f => overlap(f, r));
+    const wall = walls.find(s => boxes.some(b => overlap([b.x0, b.x1, b.z0, b.z1], [s.x0, s.x1, s.z0, s.z1]) && b.y0 < s.y1 - eps && b.y1 > s.y0 + eps));
+    need(!wall, `${tag}: cuts into a wall or house (a ${wall && wall.kind} near (${wall && wall.x0.toFixed(1)}, ${wall && wall.z0.toFixed(1)})).`);
+    const door = doorways.find(d => hits(d.r));
+    need(!door, `${tag}: blocks the doorway between "${door && door.ids[0]}" and "${door && door.ids[1]}".`);
+    const gate = gateRects.find(g => hits(g.r));
+    need(!gate, `${tag}: blocks gate "${gate && gate.id}".`);
+    const end = rampEnds.find(e => hits(e.r));
+    need(!end, `${tag}: blocks an end of ramp "${end && end.id}".`);
+    const spot = spots.find(([, s]) => s && num(s.x) && num(s.z) && flat.some(f => s.x > f[0] - 0.8 && s.x < f[1] + 0.8 && s.z > f[2] - 0.8 && s.z < f[3] + 0.8));
+    need(!spot, `${tag}: stands on a spawn (${spot && spot[0]}).`);
   }
 }

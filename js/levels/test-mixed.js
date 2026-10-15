@@ -1,5 +1,5 @@
 'use strict';
-// Test Grounds: the Level 3 enemies together. An open hall holds a Lancer, a Duelist, an Executioner and a
+// Test Grounds: the Tower's enemies together. An open hall holds a Lancer, a Duelist, an Executioner and a
 // Shover, and two Rampart Bowmen keep watch from a railed gallery 5 m above its north side, out of reach: they
 // shoot down whenever they have a line. A preview of the Tower's courtyard.
 const TEST_MIXED = {

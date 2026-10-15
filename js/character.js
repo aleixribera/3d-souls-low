@@ -39,11 +39,18 @@ function applyPoise(b, amount, committed, max) {
 // True if a closed gate stands between two bodies: no seeing, locking or hitting through it.
 // In room-style levels walls, pillars, floors and roofs block the line too (in 3D, eye to eye), but rails don't.
 const EYE = 0.75;   // eye height as a fraction of body height
-function gateBetween(a, b) {
+function gateBetween(a, b) { return lineBlocked(a, b, 'all'); }
+// Only a closed gate between them (walls, pillars, props, floors and roofs ignored): what breaks a lock at once.
+function closedGateBetween(a, b) { return lineBlocked(a, b, 'gates'); }
+// Lost from sight in a fight: as gateBetween, but props never hide one from the other (a chase goes round them).
+function sightLost(a, b) { return lineBlocked(a, b, 'noProps'); }
+function lineBlocked(a, b, what) {
   if (world && world.solids) {
     const ya = a.y + a.height * EYE, dx = b.x - a.x, dy = b.y + b.height * EYE - ya, dz = b.z - a.z;
-    for (const s of world.solids) if (!s.low && segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
-    for (const s of world.slabs) if (segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
+    if (what !== 'gates') {
+      for (const s of world.solids) if (!s.low && (what === 'all' || s.kind !== 'prop') && segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
+      for (const s of world.slabs) if (segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
+    }
     for (const g of world.gates) if (!g.open && segBox3(a.x, ya, a.z, dx, dy, dz, g.box) <= 1) return true;
     return false;
   }
@@ -148,6 +155,33 @@ function edgeStop(b, mx, mz) {
   const okZ = mz !== 0 && ok(0, mz);
   if (okX && okZ) return Math.abs(mx) >= Math.abs(mz) ? [mx, 0] : [0, mz];
   return [okX ? mx : 0, okZ ? mz : 0];
+}
+// Walking round props (a level's `props`): when one stands across the way ahead (within `CONFIG.props.lookahead` m,
+// or `goal` m if that is nearer), head for the corner of it, grown by the body's radius and `clearance`, that turns
+// the course least of its two outermost as seen from the body, so the body walks round it rather than pressing into
+// it. Returns the velocity to use (same speed). Only props: walls and pillars are met as before.
+function steerAroundProps(b, tx, tz, goal = Infinity) {
+  const sp = Math.hypot(tx, tz), C = CONFIG.props;
+  if (sp < 1e-6 || !world.hasProps) return [tx, tz];
+  const ux = tx / sp, uz = tz / sp, look = Math.min(C.lookahead, goal), r = b.radius + C.clearance, rh = b.radius + C.clearance * 0.5;
+  let hit = null, hitT = Infinity;
+  for (const s of world.solids) {
+    if (s.kind !== 'prop' || s.y1 <= b.y + CONFIG.height.stepUp || s.y0 >= b.y + b.height) continue;
+    const near = { x0: s.x0 - rh, x1: s.x1 + rh, z0: s.z0 - rh, z1: s.z1 + rh };
+    if (b.x > near.x0 && b.x < near.x1 && b.z > near.z0 && b.z < near.z1) continue;   // already brushing it: collision slides it on
+    const t = segBox(b.x, b.z, ux * look, uz * look, near);
+    if (t <= 1 && t < hitT) { hitT = t; hit = s; }
+  }
+  if (!hit) return [tx, tz];
+  const heading = Math.atan2(ux, uz);
+  let left = null, right = null;
+  for (const [cx, cz] of [[hit.x0 - r, hit.z0 - r], [hit.x0 - r, hit.z1 + r], [hit.x1 + r, hit.z0 - r], [hit.x1 + r, hit.z1 + r]]) {
+    const a = angDiff(Math.atan2(cx - b.x, cz - b.z), heading);
+    if (!left || a > left.a) left = { a, cx, cz };
+    if (!right || a < right.a) right = { a, cx, cz };
+  }
+  const c = Math.abs(left.a) <= Math.abs(right.a) ? left : right, dx = c.cx - b.x, dz = c.cz - b.z, d = Math.hypot(dx, dz) || 1;
+  return [dx / d * sp, dz / d * sp];
 }
 // Damage for landing after falling h metres: none up to `safe`, then per metre; Infinity from `lethal` on.
 function fallDamage(h) {

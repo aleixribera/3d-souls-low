@@ -35,7 +35,7 @@ const hud = {
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
-    $('completeHint').textContent = next ? `Onward to ${next.name}…`
+    $('completeHint').textContent = game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.prompt.textContent = `${bindLabel('rest')} Rest at bonfire`;
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;

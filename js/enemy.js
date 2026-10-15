@@ -64,6 +64,8 @@ class Enemy {
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD; }
   awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
+  // Has noticed the player and is fighting it (alive, not a training dummy, not unaware or asleep).
+  fightingPlayer() { return this.alive() && !this.training && !this.in('unaware') && this.state !== ES.DORMANT; }
   isCommitted() { return this.state === ES.ACTIVE; }
   // Shield up: guarding enemies hold it whenever they are not attacking, reeling or down.
   // The shield drops as it steps in to strike, once within a step of its shortest reach (and stays down through the swing).
@@ -152,7 +154,7 @@ class Enemy {
       case ES.CHASE: {
         const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
         this.unreachable = reach || this.ranged ? 0 : this.unreachable + dt;
-        if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player) || this.unreachable > CONFIG.height.giveUp) {
+        if (!playerAlive || dist > this.leash || farFromHome || sightLost(this, player) || this.unreachable > CONFIG.height.giveUp) {
           this.unreachable = 0; this.stepIn = false; this.setState(ES.RETURN); break;
         }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
@@ -214,6 +216,8 @@ class Enemy {
       case ES.DEAD: break;
     }
 
+    if (this.state === ES.CHASE) [tx, tz] = steerAroundProps(this, tx, tz, dist);
+    else if (this.state === ES.RETURN) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.home.x - this.x, this.home.z - this.z));
     approachVel(this, tx, tz, E.accel * dt);
     integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
     this.checkFall();

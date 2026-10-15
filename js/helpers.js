@@ -26,6 +26,16 @@ const rectAnd = (a, b) => {
   const r = [Math.max(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.min(a[3], b[3])];
   return r[0] < r[1] && r[2] < r[3] ? r : null;
 };
+// A row of houses filling rect r (a level's `houses`), cut across `along` ('x' or 'z') into lots of the given widths,
+// each with the next eaves height from `eaves` (cycled) and any extra fields; their ridges run along the row.
+const houseRow = (r, along, lots, eaves, extra = {}) => {
+  let a = along === 'x' ? r[0] : r[2];
+  return lots.map((w, i) => {
+    const rect = along === 'x' ? [a, a + w, r[2], r[3]] : [r[0], r[1], a, a + w];
+    a += w;
+    return { rect, eaves: eaves[i % eaves.length], ridge: along, ...extra };
+  });
+};
 const insideRooms = (rooms, x, z, m = 0) => rooms.some(({ rect: r }) => x >= r[0] + m && x <= r[1] - m && z >= r[2] + m && z <= r[3] - m);
 // Fraction (0..1) along the segment from (x, z) by (dx, dz) where it first enters box b grown by m; Infinity if never.
 function segBox(x, z, dx, dz, b, m = 0) {

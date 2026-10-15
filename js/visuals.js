@@ -14,7 +14,7 @@ const PT_SCALE = { value: 500 };                             // point sprites: p
 const FOG_D = { value: 0.02 };                               // current fog density, for custom shaders
 const COLOR_OUT = '#include <tonemapping_fragment>\n#include <colorspace_fragment>';
 const ATMOSPHERE_KEYS = ['background', 'fog', 'fogDensity', 'moon', 'ambient', 'hemi', 'exposure', 'ash', 'dust', 'rim',
-  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass'];
+  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers'];
 
 // Optional look fields, checked at load (called from validateData).
 function checkVisualData(need, num) {
@@ -36,7 +36,10 @@ function checkVisualData(need, num) {
     for (const k of ['background', 'fog', 'rim']) if (k in A) need(isCol(A[k]), `${w}: ${k} must be a colour such as 0x1a2b3c.`);
     if ('fogDensity' in A) need(amount(A.fogDensity, 0.2), `${w}: fogDensity must be between 0 and 0.2.`);
     if ('exposure' in A) need(num(A.exposure) && A.exposure > 0.2 && A.exposure < 3, `${w}: exposure must be between 0.2 and 3.`);
-    for (const k of ['ash', 'dust', 'debris', 'grass']) if (k in A) need(amount(A[k]), `${w}: ${k} must be a number from 0 to 2.`);
+    for (const k of ['ash', 'dust', 'debris', 'grass', 'embers']) if (k in A) need(amount(A[k]), `${w}: ${k} must be a number from 0 to 2.`);
+    if ('landmark' in A) need(A.landmark && num(A.landmark.x) && num(A.landmark.z) && num(A.landmark.height) && A.landmark.height > 0
+      && num(A.landmark.width) && A.landmark.width > 0 && (!('y' in A.landmark) || num(A.landmark.y)),
+      `${w}: landmark needs x, z, height and width (numbers; height and width above 0), and y if given.`);
     if ('hemi' in A) need(A.hemi && isCol(A.hemi.sky) && isCol(A.hemi.ground) && amount(A.hemi.intensity, 5), `${w}: hemi needs sky and ground colours and an intensity (0..5).`);
     if ('grade' in A) {
       for (const k of ['shadowTint', 'highlightTint']) if (k in A.grade) need(tri(A.grade[k]), `${w}: grade.${k} must be [r, g, b].`);
@@ -61,6 +64,9 @@ function checkVisualData(need, num) {
     for (const k of ['metal', 'skinMetal', 'roughness']) if (k in V) need(amount(V[k], 1), `${w}: ${k} must be between 0 and 1.`);
     if ('rim' in V) need(amount(V.rim), `${w}: rim must be between 0 and 2.`);
     if ('bareArms' in V) need(typeof V.bareArms === 'boolean', `${w}: bareArms must be true or false.`);
+    if ('cloak' in V) need(typeof V.cloak === 'boolean', `${w}: cloak must be true or false.`);
+    if ('embers' in V) need(typeof V.embers === 'boolean' && WEAPONS[d.weapon] && !!WEAPONS[d.weapon].head,
+      `${w}: embers must be true or false, on a weapon with a head to glow (such as the halberd).`);
   }
 }
 
@@ -259,6 +265,19 @@ function glowSprite(color, boost, size, opacity, pierce) {
   return s;
 }
 // The wind-up telegraph halo on a blade (driven by Rig.setWarning). Ignores fog so it reads in every level.
+// Embers on a weapon (an enemy's visual `embers`): a flickering warm glow at its head and a glowing edge.
+function addWeaponEmbers(weapon, W) {
+  const E = VIS.weaponEmbers, g = new THREE.Group(), glow = glowSprite(E.color, E.boost, E.size, E.opacity, E.pierce);
+  glow.position.set(...W.head); g.add(glow);
+  const seed = Math.random() * 10;
+  glow.onBeforeRender = () => { glow.scale.setScalar(E.size * (1 + 0.18 * Math.sin(vTime.value * 11 + seed) + 0.1 * Math.sin(vTime.value * 23.7 + seed))); };
+  if (W.edge) {
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(...W.edge.size), new THREE.MeshBasicMaterial({ color: new THREE.Color(E.color).multiplyScalar(E.edge) }));
+    edge.position.set(...W.edge.at); g.add(edge);
+  }
+  weapon.add(g);
+  return g;
+}
 function makeWarnGlow() {
   const G = VIS.windupGlow, s = glowSprite(G.color, G.boost, G.size, 0, null);
   s.position.set(0, 0, G.along); s.visible = false;
@@ -337,6 +356,57 @@ void main() {
   float s = max(dot(d, uSunDir), 0.0);
   c += uSun * (pow(s, 5.0) * 0.35 + pow(s, 48.0) * 0.9 + pow(s, 900.0) * 6.0) * smoothstep(-0.1, 0.05, d.y);
   gl_FragColor = vec4(c, 1.0);
+  ${COLOR_OUT}
+}`;
+// The far castle (atmosphere `landmark`): a dark mass hazed toward the horizon, its edges lit by the sun behind it.
+const LANDMARK_VERT = `varying vec3 vN; varying vec3 vW;
+void main() { vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
+const LANDMARK_FRAG = `uniform vec3 uDark, uHaze, uSun, uSunDir; uniform float uHazeAmt, uRim, uRimPow; varying vec3 vN; varying vec3 vW;
+void main() {
+  vec3 n = normalize(vN), v = normalize(cameraPosition - vW);
+  float rim = pow(1.0 - abs(dot(n, v)), uRimPow) * (0.35 + 0.65 * max(dot(n, normalize(uSunDir)), 0.0));
+  float low = 1.0 - smoothstep(0.0, 60.0, vW.y);   // the foot of its hill sinks into the haze
+  vec3 c = mix(uDark, uHaze, clamp(uHazeAmt + low * 0.35, 0.0, 1.0)) + uSun * rim * uRim;
+  gl_FragColor = vec4(c, 1.0);
+  ${COLOR_OUT}
+}`;
+// Smoke over burning houses: soft puffs rising from each column's base, growing and drifting downwind, lit by the
+// fire at the bottom. `position` is the column's base; seed: phase, speed, swirl angle, size.
+const SMOKE_VERT = `attribute vec4 seed; attribute float strength;
+uniform float uTime, uScale, uRise, uSize0, uSize1, uSpeed; uniform vec3 uWind; varying float vA; varying float vH;
+void main() {
+  float life = fract(uTime * uSpeed * (0.8 + 0.4 * seed.y) + seed.x), h = life * uRise;
+  float a = seed.z * 6.2832 + uTime * 0.2;
+  vec3 p = position + uWind * h + vec3(cos(a), 0.0, sin(a)) * (0.3 + life * 2.6) + vec3(0.0, h, 0.0);
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = mix(uSize0, uSize1, life) * (0.7 + 0.6 * seed.w) * uScale / max(-mv.z, 0.5);
+  vA = smoothstep(0.0, 0.08, life) * (1.0 - life) * strength; vH = life;
+}`;
+const SMOKE_FRAG = `uniform vec3 uColor, uLight; uniform float uOpacity; varying float vA; varying float vH;
+void main() {
+  float a = smoothstep(0.5, 0.12, length(gl_PointCoord - 0.5)) * vA * uOpacity;
+  if (a < 0.004) discard;
+  gl_FragColor = vec4(mix(uLight, uColor, smoothstep(0.0, 0.3, vH)), a);
+  ${COLOR_OUT}
+}`;
+// Embers in the air (atmosphere `embers`): glowing sparks rising and swirling in a box that follows the camera.
+const EMBER_FIELD_VERT = `attribute vec4 seed;
+uniform float uTime, uScale, uSize, uMaxPx; uniform vec3 uCam, uBox; varying float vA;
+void main() {
+  vec3 rise = vec3(sin(uTime * 0.7 + seed.x * 30.0) * 0.7 + uTime * 0.4, uTime * (0.5 + 0.9 * seed.y), cos(uTime * 0.5 + seed.z * 20.0) * 0.7);
+  vec3 w = uCam + (fract((position * uBox + rise - uCam) / uBox) - 0.5) * uBox;
+  vec4 mv = viewMatrix * vec4(w, 1.0);
+  gl_Position = projectionMatrix * mv;
+  float d = -mv.z, flick = 0.5 + 0.5 * sin(uTime * (3.0 + seed.w * 7.0) + seed.x * 40.0);
+  vA = flick * smoothstep(0.3, 1.2, d) * (1.0 - smoothstep(uBox.x * 0.25, uBox.x * 0.5, length(w.xz - uCam.xz)));
+  gl_PointSize = min(uSize * (0.5 + seed.y) * uScale / max(d, 0.1), uMaxPx);
+}`;
+const EMBER_FIELD_FRAG = `uniform vec3 uColor; varying float vA;
+void main() {
+  float a = smoothstep(0.5, 0.0, length(gl_PointCoord - 0.5)) * vA;
+  if (a < 0.004) discard;
+  gl_FragColor = vec4(uColor * a, 1.0);
   ${COLOR_OUT}
 }`;
 // After tone mapping: saturation, split-tone, contrast, vignette (stronger and redder at low health), grain.
@@ -529,6 +599,51 @@ function silhouetteGeometry(rnd, radius) {
   }
   return mergeGeometries(parts);
 }
+// The far castle, `w` wide and `h` tall, standing on y = 0: a hill, a ring of curtain walls and round towers with
+// conical roofs, a great keep and, rising over all of it, one tall tower under a spire. Merged into one geometry.
+function landmarkGeometry(rnd, w, h) {
+  const parts = [], add = (g, x, y, z, ry = 0) => { g.rotateY(ry); g.translate(x, y, z); parts.push(g); };
+  const hill = h * 0.24, wall = h * 0.16, ring = w * 0.27;
+  add(new THREE.CylinderGeometry(w * 0.34, w * 0.62, hill, 9), 0, hill / 2, 0);
+  const n = 7;
+  for (let i = 0; i < n; i++) {   // curtain walls between round towers
+    const a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, x0 = Math.cos(a0) * ring, z0 = Math.sin(a0) * ring;
+    const x1 = Math.cos(a1) * ring, z1 = Math.sin(a1) * ring, len = Math.hypot(x1 - x0, z1 - z0);
+    add(new THREE.BoxGeometry(len, wall, w * 0.025), (x0 + x1) / 2, hill + wall / 2, (z0 + z1) / 2, -Math.atan2(z1 - z0, x1 - x0));
+    for (let k = 0; k < 6; k++) add(new THREE.BoxGeometry(len * 0.06, wall * 0.12, w * 0.03), lerp(x0, x1, (k + 0.5) / 6), hill + wall * 1.06, lerp(z0, z1, (k + 0.5) / 6), -Math.atan2(z1 - z0, x1 - x0));
+    const th = wall * (1.5 + rnd() * 0.5), tr = w * 0.035;
+    add(new THREE.CylinderGeometry(tr, tr * 1.1, th, 10), x0, hill + th / 2, z0);
+    add(new THREE.ConeGeometry(tr * 1.3, th * 0.45, 10), x0, hill + th + th * 0.22, z0);
+  }
+  const kh = h * 0.42, kw = w * 0.2;   // the keep, with towers at its corners
+  add(new THREE.BoxGeometry(kw, kh, kw * 0.8), 0, hill + kh / 2, 0);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const th = kh * (1.1 + rnd() * 0.15);
+    add(new THREE.BoxGeometry(w * 0.045, th, w * 0.045), sx * kw / 2, hill + th / 2, sz * kw * 0.4);
+    add(new THREE.ConeGeometry(w * 0.04, th * 0.25, 4), sx * kw / 2, hill + th + th * 0.12, sz * kw * 0.4, Math.PI / 4);
+  }
+  const tt = h - hill - h * 0.14, tw = w * 0.07;   // the great tower and its spire reach the full height
+  add(new THREE.BoxGeometry(tw, tt, tw), kw * 0.15, hill + tt / 2, -kw * 0.1);
+  add(new THREE.ConeGeometry(tw * 0.8, h * 0.14, 4), kw * 0.15, hill + tt + h * 0.07, -kw * 0.1, Math.PI / 4);
+  return mergeGeometries(parts.map(g => g.index ? g : g.toNonIndexed()).map(g => { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k); return g; }));
+}
+function smokeMesh(columns) {
+  const S = VIS.smoke, n = columns.length * S.puffs, pos = new Float32Array(n * 3), seed = new Float32Array(n * 4), strength = new Float32Array(n);
+  for (let i = 0; i < S.puffs; i++) columns.forEach((c, j) => {   // puff-major, so a shorter draw range thins every column alike
+    const v = i * columns.length + j;
+    pos.set([c.x, c.y, c.z], v * 3); seed.set([Math.random(), Math.random(), Math.random(), Math.random()], v * 4); strength[v] = c.k;
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('seed', new THREE.BufferAttribute(seed, 4));
+  geo.setAttribute('strength', new THREE.BufferAttribute(strength, 1));
+  const m = new THREE.Points(geo, new THREE.ShaderMaterial({
+    uniforms: { uTime: vTime, uScale: PT_SCALE, uRise: { value: S.rise }, uSize0: { value: S.size[0] }, uSize1: { value: S.size[1] },
+                uSpeed: { value: S.speed }, uWind: { value: new THREE.Vector3(...S.wind) }, uColor: { value: new THREE.Color(S.color) },
+                uLight: { value: new THREE.Color(S.light) }, uOpacity: { value: S.opacity } },
+    vertexShader: SMOKE_VERT, fragmentShader: SMOKE_FRAG, transparent: true, depthWrite: false }));
+  m.frustumCulled = false; m.renderOrder = 2; m.userData.columns = columns.length;
+  return m;
+}
 function makeBloodTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d'), rnd = seeded(31);
@@ -556,6 +671,19 @@ function makeAsh() {   // ash (falls) and dust motes (hover) in a box that follo
                 uDustC: { value: new THREE.Color(P.dustColor) }, uOpacity: { value: P.opacity } },
     vertexShader: ASH_VERT, fragmentShader: ASH_FRAG, transparent: true, depthWrite: false });
   const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
+  return pts;
+}
+function makeEmberField() {   // glowing sparks rising round the camera (atmosphere `embers`); animated on the GPU
+  const E = VIS.embers, pos = new Float32Array(E.max * 3), seed = new Float32Array(E.max * 4);
+  for (let i = 0; i < pos.length; i++) pos[i] = Math.random();
+  for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('seed', new THREE.BufferAttribute(seed, 4));
+  const pts = new THREE.Points(geo, new THREE.ShaderMaterial({
+    uniforms: { uTime: vTime, uScale: PT_SCALE, uSize: { value: E.size }, uMaxPx: { value: E.maxPx }, uCam: { value: new THREE.Vector3() },
+                uBox: { value: new THREE.Vector3(...E.box) }, uColor: { value: new THREE.Color(E.color).multiplyScalar(E.boost) } },
+    vertexShader: EMBER_FIELD_VERT, fragmentShader: EMBER_FIELD_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  pts.frustumCulled = false; pts.visible = false; scene.add(pts);
   return pts;
 }
 function makeBloodDecals() {
@@ -648,7 +776,7 @@ const visuals = (() => {
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), VIS.bloom.strength, VIS.bloom.radius, VIS.bloom.threshold);
   const grade = new ShaderPass(GRADE_SHADER);
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
-  const ash = makeAsh(), decals = makeBloodDecals(), debris = makeDebris();
+  const ash = makeAsh(), embers = makeEmberField(), decals = makeBloodDecals(), debris = makeDebris();
   let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [] }, lowHp = 0, debrisTimer = 0;
 
   function applyCounts() {
@@ -656,6 +784,9 @@ const visuals = (() => {
     ash.geometry.setDrawRange(0, Math.round(P.max * amount * quality.particles));
     ash.material.uniforms.uDustRatio.value = a + d > 0 ? d / (a + d) : 0;
     ash.visible = amount > 0;
+    const ne = Math.round(VIS.embers.max * Math.min(1, (A.embers || 0) / 2) * quality.particles);
+    embers.geometry.setDrawRange(0, ne); embers.visible = ne > 0; embers.userData.count = ne;
+    if (st.smoke) st.smoke.geometry.setDrawRange(0, Math.max(1, Math.round(VIS.smoke.puffs * quality.particles)) * st.smoke.userData.columns);
     for (const b of st.bonfires) b.embers.geometry.setDrawRange(0, Math.round(VIS.bonfire.embers * quality.embers));
     if (st.shafts) st.shafts.visible = quality.shafts;
     if (st.grass) st.grass.count = Math.round(st.grass.userData.max * quality.grass);
@@ -779,7 +910,7 @@ const visuals = (() => {
       if (R.src.dim) continue;
       for (const f of list.sort((a, b) => b.len - a.len).slice(0, 2)) {
         if (f.len < 4 || f.top - f.y < B.height + B.topGap + 1) continue;
-        const [x, z] = f.pt((f.a0 + f.a1) / 2, 0.15);
+        const [x, z] = f.pt((f.a0 + f.a1) / 2, L.houses ? VIS.town.bannerOut : 0.15);   // in a town, clear of the jutting upper storeys
         if (!clearOf(x, z, 1.2)) continue;
         const ry = f.alongX ? (f.n > 0 ? 0 : Math.PI) : (f.n > 0 ? Math.PI / 2 : -Math.PI / 2);   // face into the room
         banners.push({ x, y: f.top - B.topGap - B.height / 2, z, ry });
@@ -794,6 +925,7 @@ const visuals = (() => {
     }
     if (banners.length) G.add(bannerMesh(banners, A.banners || B.colors));
     if (shafts.length) addShafts(G, shafts, pools);
+    if (L.houses) dressTownStreets(G, L, TR, rnd, clearOf);   // js/town.js
   }
   function dressArena(G, Ar, rnd) {
     const rocks = [], hx = Ar.halfX, hz = Ar.halfZ;
@@ -829,6 +961,21 @@ const visuals = (() => {
       return [x, R.lo - 0.05, z];
     }, VIS.grass.roomSize);
     G.add(st.grass);
+  }
+  // The far castle, dark against the sky, its edges lit by the sun behind it; the camera's far plane reaches it.
+  function addLandmark(G, Lm, rnd) {
+    const V = VIS.landmark, sky = A.sky || {};
+    const m = new THREE.Mesh(landmarkGeometry(rnd, Lm.width, Lm.height), new THREE.ShaderMaterial({
+      uniforms: { uDark: { value: new THREE.Color(V.dark) }, uHaze: { value: scene.fog.color.clone() }, uHazeAmt: { value: V.haze },
+                  uSun: { value: new THREE.Color(sky.sun ?? 0xffa060) }, uSunDir: { value: new THREE.Vector3(...(sky.sunDir || [0, 1, 0])) },
+                  uRim: { value: V.rim }, uRimPow: { value: V.rimPower } },
+      vertexShader: LANDMARK_VERT, fragmentShader: LANDMARK_FRAG }));
+    m.position.set(Lm.x, Lm.y ?? 0, Lm.z);
+    m.rotation.y = Math.atan2(-Lm.x, -Lm.z);   // its front toward the level
+    G.add(m);
+    const reach = Math.hypot(Lm.x, Lm.z) + Lm.width + VIS.landmark.margin;
+    camera.far = Math.max(camera.far, reach); camera.updateProjectionMatrix();
+    return m;
   }
   function addShafts(G, list, pools) {
     st.shafts = shaftMesh(list, A.shafts); G.add(st.shafts);
@@ -877,14 +1024,26 @@ const visuals = (() => {
     }
     for (const m of merged) G.add(m);
   }
-  // A gate lifts as one piece: merge its bars and rails in the gate's own space.
+  // A gate lifts (or topples) as one piece: merge its parts in the gate's own space, one mesh per material.
   function mergeGate(g) {
-    const list = g.children.filter(o => o.isMesh);
-    if (list.length < 2) return;
-    const geo = mergeGeometries(list.map(o => { o.updateMatrix(); return o.geometry.clone().applyMatrix4(o.matrix); }));
-    if (!geo) return;
-    for (const o of list) { g.remove(o); o.geometry.dispose(); }
-    g.add(new THREE.Mesh(geo, list[0].material));
+    const byMat = new Map();
+    for (const o of g.children) if (o.isMesh && o.geometry.index && o.geometry.attributes.uv) {
+      if (!byMat.has(o.material)) byMat.set(o.material, []);
+      byMat.get(o.material).push(o);
+    }
+    for (const [mat, list] of byMat) {
+      if (list.length < 2) continue;
+      const geos = list.map(o => {
+        o.updateMatrix(); const q = o.geometry.clone().applyMatrix4(o.matrix);
+        for (const k of Object.keys(q.attributes)) if (!['position', 'normal', 'uv'].includes(k)) q.deleteAttribute(k);
+        return q;
+      });
+      const geo = mergeGeometries(geos);
+      geos.forEach(q => q.dispose());
+      if (!geo) continue;
+      for (const o of list) { g.remove(o); o.geometry.dispose(); }
+      g.add(new THREE.Mesh(geo, mat));
+    }
   }
   function insideLevel(x, z) {
     if (def.layout === 'rooms') return insideRooms(def.rooms, x, z, 0.4);
@@ -947,15 +1106,18 @@ const visuals = (() => {
         camera.far = Math.max(VIS.farPlane, (extra + VIS.silhouettes.radii[A.silhouettes - 1]) * 2 + 20); camera.updateProjectionMatrix();
       }
       if (A.grass && open.length) addRoomGrass(G, d, rnd, open);
+      if (A.landmark) st.landmark = addLandmark(G, A.landmark, rnd);
+      if (built.smoke && built.smoke.length) { st.smoke = smokeMesh(built.smoke); G.add(st.smoke); }
       if (pools.length) G.add(poolMesh(pools));
       for (const g of built.gates) mergeGate(g.mesh);
       mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...(built.traps || []).map(t => t.group), ...flames.filter(f => f.group === G).map(f => f.mesh),
-                              ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : [])]));
+                              ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : []), ...(st.landmark ? [st.landmark] : [])]));
       applyLook();
     },
     render(game, t, dt) {
       vTime.value = t;
       ash.material.uniforms.uCam.value.copy(camera.position);
+      embers.material.uniforms.uCam.value.copy(camera.position);
       if (st.sky) st.sky.position.copy(camera.position);
       const B = VIS.bonfire;
       for (const f of st.bonfires) {   // slow breathing glow; a soft flare after resting
@@ -1004,6 +1166,7 @@ const visuals = (() => {
       const grassAt = [], m4 = new THREE.Matrix4(), v = new THREE.Vector3();
       if (st.grass) for (let i = 0; i < st.grass.userData.max; i++) { st.grass.getMatrixAt(i, m4); grassAt.push(v.setFromMatrixPosition(m4).toArray()); }
       return { sky: !!st.sky, grass: st.grass ? st.grass.count : 0, grassAt, pointLights: lights, far: camera.far,
+               landmark: !!st.landmark, smoke: st.smoke ? st.smoke.userData.columns : 0, embers: embers.visible ? embers.userData.count : 0,
                pool: stage && stage.lightPool ? stage.lightPool.map(l => l.intensity) : null };
     },
     gateDust(g) {

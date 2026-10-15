@@ -93,7 +93,7 @@ const ENEMY_DEFS = [
         box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
     ],
   },
-  // ---- Level 3 enemies (the Tower) ----------------------------------------------------------------------------
+  // ---- the Tower's enemies (Level 4; the Lancer, Duelist and Bowman first appear in Level 3, the town) ----------------------------------------------------------------------------
   {
     id: 'lancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
     scale: 1.05, bulk: 0.95, radius: 0.42, color: 0x6a6258, weapon: 'spear', idle: 'guard',
@@ -167,6 +167,28 @@ const ENEMY_DEFS = [
         damage: 8, poise: 30, knock: 26, lunge: 2.4, range: 2.0, box: { w: 1.8, h: 1.8, d: 1.6, fwd: 1.1, y: 1.0 } },
       { id: 'shoverBash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.55, active: 0.12 }], recovery: 0.75,
         damage: 16, poise: 34, knock: 8, lunge: 3.2, range: 1.7, box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
+    ],
+  },
+  {
+    // The invaders' commander, met at the top of the burning town (Level 3). A posture boss, stronger than Level 2's
+    // throne pair and weaker than the Bell Warden: it tests what the town taught (close the gap, parry the combo, roll).
+    id: 'pillagerCaptain', name: 'Pillager Captain',
+    description: 'The commander who put the town to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
+    scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
+    visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
+    hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55,   // a boss: steps in and presses
+    cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
+    posture: { max: 100, parry: 28, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
+    attacks: [
+      { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
+        hits: [{ startup: 1.0, active: 0.16 }], recovery: 1.0, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
+        box: { w: 1.2, h: 1.6, d: 3.0, fwd: 1.8, y: 1.2 } },
+      { id: 'captainCombo', name: 'Three Cuts', anim: 'sweep', track: 2.6,
+        hits: [{ startup: 0.7, active: 0.14 }, { startup: 0.42, active: 0.14 }, { startup: 0.55, active: 0.16 }],
+        recovery: 0.9, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: { w: 3.4, h: 1.6, d: 2.8, fwd: 1.6, y: 1.2 } },
+      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', rollOnly: true, chance: 0.4, hits: [{ startup: 1.4, active: 0.2 }],
+        recovery: 1.3, damage: 48, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
+        impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } },
     ],
   },
   {

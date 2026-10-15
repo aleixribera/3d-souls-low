@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v3.7';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v4.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -27,6 +27,10 @@ const CONFIG = {
   gamepad: { deadzone: 0.2, trigger: 0.35, lookYaw: 2.6, lookPitch: 1.4, flick: 0.75, flickReset: 0.35,
              menuStick: 0.6, menuDelay: 0.35, menuRepeat: 0.12 },
   lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
+          coverTime: 1.5,             // a target hidden behind cover (not a closed gate) stays locked this long
+          // Always-retarget's pick (Game.retargetPick): score = distance from the middle of the screen (0 middle,
+          // 1 edge; `offScreenScore` if off it but in front) + distance from the player / `retargetDistance` m.
+          retargetDistance: 10, offScreenScore: 1.5,
           slack: 0.42, drift: 0.18,   // camera yaw slack (rad) and the slow drift inside it (1/s)
           autoRange: 9,               // first-encounter auto lock-on distance
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
@@ -98,7 +102,16 @@ const CONFIG = {
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
         approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
-  rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
+  rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14,
+           // A barricade gate: `depth` m deep (its collision too); opening, it tips over by `topple` rad, and once `sinkFrom`
+           // of the way open it sinks `sink` m out of sight.
+           barricade: { depth: 1.0, topple: 1.4, sinkFrom: 0.7, sink: 1.5 } },
+  // Houses (a level's `houses`, js/terrain.js): a gable roof rises `pitch` m per metre to its ridge, a tower's spire is
+  // `spire` times its width; a house faces the regions within `face` m of its walls (and stands on the lowest of them).
+  houses: { pitch: 0.85, spire: 1.1, face: 1.2 },
+  // Props (a level's `props`, js/data/props.js): a chasing or homing enemy looks `lookahead` m ahead for one in its
+  // way and heads round it, `clearance` m clear of its corners.
+  props: { lookahead: 4, clearance: 0.3 },
   // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within
   // `lightRange` of the player, each fading out over `fadeBand` m before it is dropped. Unaware enemies more than
   // `enemyRange` m away sleep (no update, not drawn); fighting enemies always run.
@@ -169,6 +182,8 @@ const CONFIG = {
         wall:  { rows: [1 / 6, 1 / 6], slab: [0.22, 0.4], shade: [0.8, 1.14], joint: 2.2, cracks: 10, freq: 10 },
         floor: { rows: [0.17, 0.27], slab: [0.18, 0.36], shade: [0.74, 1.2], joint: 3, cracks: 8, freq: 12 },
         metal: { rows: null, cracks: 0, streaks: 50, freq: 18 },
+        plaster: { rows: null, cracks: 14, freq: 9 },
+        tiles: { rows: [1 / 16, 1 / 16], slab: [0.06, 0.1], shade: [0.72, 1.2], joint: 1.6, cracks: 2, freq: 16 },
       },
       kinds: {
         stone: { side: 'wall', top: 'floor', tileSide: 3, tileTop: 4, detail: 0.85, crack: 0.55, grimeColor: 0x9a9286,
@@ -177,6 +192,10 @@ const CONFIG = {
                  grimeHeight: 1.0, mossColor: 0x000000, moss: 0, roughVar: 0.3, rustColor: 0x5a4030, rust: 0.35 },
         wood:  { side: 'metal', top: 'metal', tileSide: 0.6, tileTop: 0.6, detail: 0.8, crack: 0.3, grimeColor: 0x7a7268,
                  grimeHeight: 0.3, mossColor: 0x000000, moss: 0, roughVar: 0.2, rustColor: 0x000000, rust: 0 },
+        plaster: { side: 'plaster', top: 'plaster', tileSide: 2.5, tileTop: 2.5, detail: 0.55, crack: 0.45, grimeColor: 0x8a7e6c,
+                   grimeHeight: 1.4, mossColor: 0x5a6448, moss: 0.12, roughVar: 0.25, rustColor: 0x000000, rust: 0 },
+        roof:  { side: 'tiles', top: 'tiles', tileSide: 2.2, tileTop: 2.2, detail: 0.9, crack: 0.3, grimeColor: 0x6a6058,
+                 grimeHeight: 0.01, mossColor: 0x4a5438, moss: 0.3, roughVar: 0.3, rustColor: 0x000000, rust: 0 },
       },
       materials: { stone: 'stone', edge: 'stone', wall: 'stone', dark: 'stone', ceiling: 'stone',   // MAT entry -> kind
                    iron: 'metal', bonfireSword: 'metal', log: 'wood' },
@@ -184,6 +203,7 @@ const CONFIG = {
     // Characters: cloth desaturated toward grey, a separate (pale) skin or helmet material.
     enemy: { desaturate: 0.3, darkMul: 0.6, skin: 0xa8a294, skinRoughness: 0.75 },
     windupGlow: { color: 0xff2a10, boost: 2.2, opacity: 0.85, size: 1.5, along: 0.6 },   // additive halo on the blade; ignores fog
+    weaponEmbers: { color: 0xff7a30, boost: 1.6, size: 1.1, opacity: 0.55, pierce: 0.6, edge: 2.2 },   // a weapon glowing with embers
     // Roll-only attacks (cannot be blocked or parried): a cold blue blade instead of red, and a faint ring
     // on the ground under the enemy as the wind-up starts (`ring`: size, `opacity`: its peak).
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
@@ -208,5 +228,28 @@ const CONFIG = {
     // Distant ruins: rings at `radii` around the arena; around a room level, pushed out by `roomSpread` times its half size.
     silhouettes: { radii: [135, 100, 70], mix: [0.2, 0.34, 0.5], dark: 0x0c0b0d, roomSpread: 1.0 },
     farPlane: 200,   // camera draw distance (further when a room level's ruins need it)
+    // Houses (js/town.js): a stone ground storey `groundFloor` m tall, timber-framed storeys of `storey` m above it,
+    // jutting `jetty` m over the street on their fronts, framing posts about every `post` m, roofs overhanging by
+    // `overhang` m; `lit` of the windows glow (unless a house sets its own); a burning house's `fireLight`.
+    town: { groundFloor: 3.0, storey: 2.6, jetty: 0.25, post: 1.5, overhang: 0.45, lit: 0.3,
+            fireLight: { color: 0xff7028, intensity: 7, range: 20 },
+            // Street clutter along the house fronts (no collision): something every `clutter` m, a hanging sign about
+            // every `sign` m and a lantern every `lantern` m; banners hang `bannerOut` m out from the wall.
+            clutter: [3.5, 7], sign: 15, lantern: 11, bannerOut: 0.55, lanternColor: 0xffb060,
+            clutterClear: { flames: 1.6, props: 0.8 },   // clutter stays this far from gates, bonfires and flames; from props and ramps
+            beam: 1.6, table: { area: 30, clear: 3.5 },   // inside an enterable house: a ceiling beam every `beam` m; a table in a room
+                                                          // of `area` m2 or more, unless a bonfire is within `clear` m of it
+            stoneStorey: 3.6, windows: 0.7,   // a stone front's storeys; the share of a timber front's bays with a window
+            // Burning houses: the share of upper windows on fire, flames out of `flames` of them (`windowFlame` big) and one
+            // over the roof (`roofFlame`); a ruin smokes `ruinSmoke` as much as a fire.
+            fireWindows: 0.65, fire: { flames: 3, windowFlame: 1.5, roofFlame: 3.2, ruinSmoke: 0.45 } },
+    // The far castle (atmosphere `landmark`): its dark colour, how far it fades toward the horizon colour, the strength
+    // and tightness of the sunlit rim, and how far past it the camera's far plane reaches.
+    landmark: { dark: 0x120d10, haze: 0.38, rim: 1.6, rimPower: 2.4, margin: 60 },
+    // Smoke over burning houses (js/town.js): `puffs` per column rising `rise` m, growing from size[0] to size[1] m, a
+    // full rise every 1 / `speed` s, drifting `wind` m per metre of rise; dark `color`, fire-lit `light` at the foot.
+    smoke: { puffs: 40, rise: 34, size: [2.5, 11], speed: 0.06, wind: [0.45, 0, 0.18], color: 0x262020, light: 0x9a5434, opacity: 0.55 },
+    // Embers (atmosphere `embers` 0..2): at most `max` sparks in a box round the camera.
+    embers: { max: 700, box: [32, 16, 32], size: 0.06, maxPx: 5, color: 0xff7a30, boost: 2.4 },
   },
 };
