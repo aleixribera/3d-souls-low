@@ -73,9 +73,9 @@
       p.setState(PS.IDLE);
       Game.updateCamera(0, true);
     },
-    // A fresh enemy at (x, z) on the floor there (behaviour `gated`), added to the fight.
+    // A fresh enemy (an id, or a whole definition) at (x, z) on the floor there (behaviour `gated`), added to the fight.
     spawn(id, x, z, y, yaw = 0) {
-      const e = new A.Enemy(A.ENEMY_BY_ID[id], { ...Game.spawnSpec({ spawn: { x, y, z, yaw } }, 'gated') });
+      const e = new A.Enemy(typeof id === 'string' ? A.ENEMY_BY_ID[id] : id, { ...Game.spawnSpec({ spawn: { x, y, z, yaw } }, 'gated') });
       Game.enemies.push(e);
       return e;
     },
@@ -335,10 +335,10 @@
   });
 
   // ---- v3.3 projectiles, shove, shortcut gates -----------------------------------------------------------------
-  const shots = [];   // every bolt loosed: who fired it and whether it held an attack token
-  A.events.on('shot', d => shots.push({ enemy: d.enemy, token: d.enemy.token }));
+  const shots = [];   // every bolt loosed, and who fired it
+  A.events.on('shot', d => shots.push({ enemy: d.enemy }));
   const bowShot = () => A.ENEMY_BY_ID.testBowman.attacks.find(a => a.projectile);
-  const quiet = e => { e.notice = 0; e.next = null; e.setState(ES.IDLE); };   // an enemy that stays put while we aim for it
+  const quiet = e => { e.notice = 0; e.setState(ES.IDLE); };   // an enemy that stays put while we aim for it
   const settleBolts = () => sim.until(() => !A.projectiles.live().length, 4);
   test('projectiles: the Bowman shoots down from the walkway and the bolt hits', () => {
     Game.startFight('testBowman'); sim.begin(); log.length = 0; shots.length = 0;
@@ -382,20 +382,20 @@
     quiet(archer); A.projectiles.fire(archer, shot, q); settleBolts();
     expect.near(q.hp, q.maxHp, 1e-9, 'the closed gate stopped it'); expect.ok(log.includes('boltStopped'), 'stopped at the gate');
   });
-  test('projectiles: an archer shoots while others hold the attack tokens', () => {
-    Game.startLevel('test-crowd'); sim.begin(); shots.length = 0;
+  test('projectiles: an archer shoots in the middle of a crowd fight', () => {
+    Game.startLevel('test-crowd'); sim.begin(); shots.length = 0; starts.length = 0;
     const bow = sim.spawn('testBowman', 20, 10, undefined, -Math.PI / 2);
     sim.place(12, 0);
-    sim.until(() => shots.some(s => s.enemy === bow && !s.token), 10);
-    expect.ok(Game.enemies.filter(e => e.token).length <= CONFIG.tokens.default, 'never more token holders than tokens');
-    expect.ok(shots.some(s => s.enemy === bow && !s.token), 'the archer loosed a bolt without a token');
+    sim.until(() => shots.some(s => s.enemy === bow) && starts.some(s => s.enemy !== bow), 15);
+    expect.ok(shots.some(s => s.enemy === bow), 'the archer loosed a bolt');
+    expect.ok(starts.some(s => s.enemy !== bow), 'while the Hollows attacked');
   });
   test('shove: throws the player off the open edge; a block keeps them on; others stay capped', () => {
     const setup = () => {
       Game.startFight('testShover'); sim.begin(); log.length = 0;
       const p = Game.player, e = Game.duel, shove = e.def.attacks.find(a => a.shove);
       sim.place(49, -10); p.yaw = Math.PI / 2;   // facing east, the open edge 3 m behind
-      e.x = e.px = 50.9; e.z = e.pz = -10; e.yaw = -Math.PI / 2; e.attack = shove; e.hitIndex = 0; e.next = null; e.setState(ES.WINDUP);
+      e.x = e.px = 50.9; e.z = e.pz = -10; e.yaw = -Math.PI / 2; e.attack = shove; e.hitIndex = 0; e.setState(ES.WINDUP);
       return { p, e };
     };
     let { p } = setup();
@@ -433,6 +433,15 @@
   const faceOff = (e, p, d = 2) => {   // the enemy d m in front of the player, facing them
     e.x = e.px = p.x + Math.sin(p.yaw) * d; e.z = e.pz = p.z + Math.cos(p.yaw) * d; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
   };
+  const holdAt = (e, r) => { if (e.state === ES.CHASE) faceOff(e, Game.player, r); };   // r m in front of the player while it chooses
+  const starts = [];   // every attack an enemy started: who, which, when (s) and how far from the player (m)
+  A.events.on('attackStart', d => starts.push({ enemy: d.enemy, attack: d.attack, t: clock,
+                                                dist: Math.hypot(d.enemy.x - Game.player.x, d.enemy.z - Game.player.z) }));
+  const attacksAt = (id, r, seconds = 30) => {   // a duel with the enemy held r m from the player: the attacks it started
+    Game.startFight(id); sim.begin(); sturdy(Game.player); starts.length = 0;
+    for (let i = 0; i < seconds / STEP; i++) { holdAt(Game.duel, r); sim.step(); }
+    return starts.map(s => s.attack.id);
+  };
   test('player: 1.2x health, 1.6x stamina, a lighter heavy attack', () => {
     const S = A.PLAYER_DEF.stats;
     expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
@@ -457,7 +466,7 @@
       for (const a of e.def.attacks) {
         log.length = 0;
         sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 4);
-        e.next = a; e.beginAttack();
+        e.beginAttack(a);
         expect.ok(sim.until(() => e.state === ES.RECOVER, 6) >= 0, `${id} ${a.id}: wound up, struck and recovered`);
         if (a.projectile) expect.ok(shots.some(s => s.enemy === e), `${id} ${a.id}: loosed a bolt`);
         if (a.rollOnly) expect.ok(log.includes('perilous'), `${id} ${a.id}: perilous warning`);
@@ -475,14 +484,14 @@
     Game.startFight('executioner'); sim.begin();
     const p = Game.player, spin = A.ENEMY_BY_ID.executioner.attacks.find(a => a.id === 'execSpin'), hp0 = p.hp;
     e = Game.duel; faceOff(e, p, 2.2); sim.hold('block'); sim.step(2);
-    e.next = spin; e.beginAttack();
+    e.beginAttack(spin);
     sim.until(() => p.hp < hp0, 4); sim.release('block');
     expect.near(hp0 - p.hp, spin.damage, 0.01, 'full damage through the guard');
   });
   test('Pale Duelist: its combo can be parried, and it is fragile', () => {
     Game.startFight('duelist'); sim.begin(); log.length = 0;
     const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length > 1);
-    faceOff(e, p, 2); e.next = combo; e.beginAttack();
+    faceOff(e, p, 2); e.beginAttack(combo);
     sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
     sim.until(() => log.includes('parry'), 0.5);
     expect.ok(log.includes('parry') && e.state === ES.PARRIED, 'parried and left open');
@@ -491,12 +500,11 @@
     while (d.alive() && n++ < 20) { d.takeHit(strikeOf('light'), behind(d)); sim.step(30); }
     expect.ok(!d.alive() && n <= 5, `fragile: ${n} light hits`);
   });
-  test('Ashen Lancer: dashes only from mid range; its jab leaves an opening', () => {
-    Game.startFight('lancer'); sim.begin();
-    const e = Game.duel, picks = d => Array.from({ length: 40 }, () => e.pickAttack(d).id);
-    expect.ok(!picks(2).includes('lancerDash'), 'never dashes from up close');
-    expect.ok(picks(6).includes('lancerDash'), 'dashes from mid range');
-    const jab = e.def.attacks.find(a => a.id === 'lancerJab');
+  test('Ashen Lancer: dashes again and again from mid range, never up close; its jab leaves an opening', () => {
+    const mid = attacksAt('lancer', 6), close = attacksAt('lancer', 2);
+    expect.above(mid.filter(id => id === 'lancerDash').length, 1, `dashes from 6 m (${mid.join(', ')})`);
+    expect.ok(close.length > 3 && !close.includes('lancerDash'), `never dashes from 2 m (${close.join(', ')})`);
+    const jab = A.ENEMY_BY_ID.lancer.attacks.find(a => a.id === 'lancerJab');
     expect.above(jab.recovery, jab.hits[0].startup, 'the jab recovers slower than it strikes');
   });
   test('Shover: its shield blocks frontal hits; flanking does full damage', () => {
@@ -514,18 +522,18 @@
     expect.ok(makeStrike(A2('bellSlam')).rollOnly && !!A2('bellSlam').impact, 'slam: roll-only, with a ground flash');
     expect.ok(makeStrike(A2('bellShove')).shove && A2('bellShove').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
     expect.ok(A2('bellSweep').track > 0, 'sweep: tracks');
-    const picks = d => Array.from({ length: 40 }, () => e.pickAttack(d).id);
-    expect.ok(picks(8).includes('bellCharge') && !picks(2).includes('bellCharge'), 'charge: only from range');
     let n = 0;
     while (e.state !== ES.BROKEN && n++ < 30) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(10); }
     expect.ok(e.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+    const far = attacksAt('bellWarden', 8), near = attacksAt('bellWarden', 2.5);
+    expect.ok(far.includes('bellCharge') && !near.includes('bellCharge'), `charge: only from range (8 m: ${far.join(', ')}; 2.5 m: ${near.join(', ')})`);
   });
-  test('mixed crowd: two attack at a time while the gallery bowmen shoot down', () => {
-    Game.startLevel('test-mixed'); sim.begin(); shots.length = 0;
+  test('mixed crowd: the gallery bowmen shoot down into the fight', () => {
+    Game.startLevel('test-mixed'); sim.begin(); shots.length = 0; starts.length = 0;
     const p = Game.player; sturdy(p); sim.place(24, 0);
-    let most = 0;
-    for (let i = 0; i < 120; i++) { sim.step(10); most = Math.max(most, Game.enemies.filter(e => e.token).length); }
-    expect.ok(most <= 2, `at most two token holders (${most})`);
+    sim.seconds(20);
+    expect.above(new Set(starts.filter(s => s.enemy.def.id !== 'bowman').map(s => s.enemy)).size, 2, 'melee enemies that attacked');
+    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman'), 40);   // the melee swings damp their chance: give them time
     const bowmen = Game.enemies.filter(e => e.def.id === 'bowman');
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman'), 'the bowmen shot'); expect.ok(bowmen.every(b => Math.abs(b.y - 5) < 1e-6), 'from their gallery');
   });
@@ -608,7 +616,112 @@
     const p = tower(); sturdy(p);
     sim.place(62, 6); sim.seconds(12);
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 'a bolt from the rampart');
-    expect.ok(Game.enemies.filter(e => e.token).length <= 2, 'two attack tokens');
+  });
+
+  // ---- v3.6 attack chance, holding and crowds ------------------------------------------------------------------
+  const inWindow = s => s.dist >= (s.attack.minRange || 0) - 1e-6 && s.dist <= s.attack.range + 1e-6;
+  test('attack chance: attacks start only with the player inside their range window', () => {
+    for (const id of ['lancer', 'duelist', 'bowman', 'bellWarden', 'knight']) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player); starts.length = 0;
+      const e = Game.duel;
+      for (let i = 0; i < 60 * 30; i++) { holdAt(e, 1.5 + 12 * ((i / 60 / 8) % 1) ** 2); sim.step(); }   // sweeps 1.5 to 13.5 m every 8 s, slower up close
+      const mine = starts.filter(s => s.enemy === e), bad = mine.find(s => !inWindow(s));
+      expect.above(mine.length, 1, `${id}: attacks started`);
+      expect.ok(!bad, `${id}: ${bad && bad.attack.id} started at ${bad && bad.dist.toFixed(2)} m`);
+    }
+    Game.startLevel('test-mixed'); sim.begin(); sturdy(Game.player); starts.length = 0;   // a crowd, nobody held in place
+    sim.place(24, 0);
+    for (let i = 0; i < 40; i++) { sim.move(Math.cos(i * 2.4), Math.sin(i * 2.4)); sim.seconds(0.6); }
+    sim.move(null);
+    const bad = starts.find(s => !inWindow(s));
+    expect.above(starts.length, 5, 'the crowd attacked');
+    expect.ok(!bad, `${bad && bad.enemy.def.id} ${bad && bad.attack.id} started at ${bad && bad.dist.toFixed(2)} m`);
+  });
+  test('attack chance: an attack with a higher chance starts more often', () => {
+    const swing = A.ENEMY_BY_ID.hollow.attacks.find(a => a.id === 'swing');
+    const def = { ...A.ENEMY_BY_ID.hollow, id: 'testOdds', attacks: [{ ...swing, id: 'often', chance: 2 }, { ...swing, id: 'rarely', chance: 0.4 }] };
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    sim.place(18, 0);
+    const e = sim.spawn(def, 22, 0, undefined, -Math.PI / 2);
+    for (let i = 0; i < 90 / STEP; i++) { holdAt(e, 1.5); sim.step(); }
+    const n = id => starts.filter(s => s.attack.id === id).length;
+    expect.above(n('often') + n('rarely'), 20, 'attacks started');
+    expect.above(n('often'), 2.5 * n('rarely'), `the 2/s attack (${n('often')}) against the 0.4/s one (${n('rarely')})`);
+  });
+  test('crowds: every enemy may attack, but no two attacks start within 0.3 s', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sturdy(Game.player); starts.length = 0;
+    sim.place(18, 0);
+    let most = 0;
+    for (let i = 0; i < 40 / STEP; i++) { sim.step(); most = Math.max(most, Game.enemies.filter(e => e.in('attacking')).length); }
+    const t = starts.map(s => s.t).sort((a, b) => a - b), gap = Math.min(...t.slice(1).map((v, i) => v - t[i]));
+    expect.above(starts.length, 10, 'attacks started');
+    expect.above(gap, 0.3 - 1e-6, 'shortest time between two attack starts');
+    expect.ok(new Set(starts.map(s => s.enemy)).size === 5, 'all five attacked');
+    expect.above(most, 2, 'most enemies mid-attack at once');
+  });
+  test('crowds: a crowd spreads evenly all round the player, in front too', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sturdy(Game.player);
+    const TAU = Math.PI * 2, even = TAU / 5;
+    let widest = 0, front = 0, samples = 0;
+    for (let i = 0; i < 40 / STEP; i++) {
+      sim.place(18, 0); sim.step();   // the player pinned, facing the five Hollows' arc
+      if (i < 10 / STEP || i % 30) continue;   // every half second once they have closed in
+      const p = Game.player, at = Game.enemies.filter(e => e.alive()).map(e => Math.atan2(e.x - p.x, e.z - p.z)).sort((a, b) => a - b);
+      const gaps = at.map((a, k) => (k + 1 < at.length ? at[k + 1] : at[0] + TAU) - a);
+      widest += Math.max(...gaps); samples++;
+      if (at.some(a => Math.abs(angDiff(a, p.yaw)) < even / 2 + 0.2)) front++;
+    }
+    expect.below(widest / samples, even * 1.5, 'widest gap between neighbours, on average (rad)');
+    expect.above(front / samples, 0.8, 'share of the time someone stands in front');
+  });
+  test('data: attack tokens are gone; chance, approach and minRange are checked at load', () => {
+    expect.ok(!('tokens' in CONFIG) && !('tokens' in A), 'no token tuning or module');
+    expect.ok(A.ALL_LEVELS.every(L => !('attackTokens' in L)), 'no level sets attackTokens');
+    expect.ok(A.validateData().length === 0, 'the shipped data passes');
+    const lancer = A.ENEMY_BY_ID.lancer, jab = lancer.attacks.find(a => a.id === 'lancerJab'), dash = lancer.attacks.find(a => a.id === 'lancerDash');
+    const rejects = (obj, key, value) => {   // one bad value: the load-time check names the field
+      const had = key in obj, old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      if (had) obj[key] = old; else delete obj[key];
+      expect.ok(errors.some(m => m.includes(key)), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(jab, 'chance', -1); rejects(jab, 'chance', 'often');
+    rejects(lancer, 'approach', -0.5); rejects(lancer, 'approach', null);
+    rejects(dash, 'minRange', 9); rejects(jab, 'minRange', 3);
+  });
+  test('holding: circling and stepping in never walk off an open walkway', () => {
+    const p = heights(); sturdy(p);   // the open walkway over the trench: 3 m wide, 4 m up, open both sides
+    const walkers = [[33, -4.5, 'hollow'], [43, -4.5, 'hollow'], [45, -5, 'lancer'], [31, -4, 'duelist']].map(([x, z, id]) => sim.spawn(id, x, z));
+    let lowest = Infinity, moved = 0;
+    for (let i = 0; i < 40 / STEP; i++) {
+      sim.place(38, -4.5, 4); sim.step();   // the player pinned in the middle of the walkway
+      for (const e of walkers) { lowest = Math.min(lowest, e.y); moved += Math.hypot(e.x - e.px, e.z - e.pz); }
+    }
+    expect.near(lowest, 4, 1e-6, 'never left the walkway'); expect.ok(walkers.every(e => e.alive()), 'all alive');
+    expect.above(moved, 40, 'metres walked by the crowd');
+    expect.above(starts.filter(s => walkers.includes(s.enemy)).length, 5, 'attacks they started');
+  });
+  test('holding: enemies wait near their longest reach, and now and then step in to their shortest', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+    const ranges = A.ENEMY_BY_ID.lancer.attacks.map(a => a.range), longest = Math.max(...ranges), shortest = Math.min(...ranges);
+    const lancers = [-6, 0, 6].map(z => sim.spawn('lancer', 32, z, undefined, -Math.PI / 2));
+    const settled = [], last = new Map(), held = new Set();   // distances where they stand; lancers seen waiting far out
+    let stepIns = 0;
+    for (let i = 0; i < 60 / STEP; i++) {
+      sim.place(20, 0); sim.step();   // the player pinned in the middle of the yard
+      for (const e of lancers) {
+        const d = Math.hypot(e.x - Game.player.x, e.z - Game.player.z), radial = Math.abs(d - (last.get(e) ?? Infinity)) / STEP;
+        last.set(e, d);
+        if (e.state !== ES.CHASE) { held.delete(e); continue; }   // attacking or reeling: not walking by itself
+        if (radial < 0.5) settled.push(d);   // standing its ground (or circling), not closing in or backing off
+        if (d >= longest - 1.5) held.add(e);
+        else if (d <= shortest && held.has(e)) { stepIns++; held.delete(e); }   // walked all the way in without attacking
+      }
+    }
+    const near = settled.filter(d => d >= longest - 1.5 && d <= longest + 0.5).length / settled.length;
+    expect.above(near, 0.5, `share of the time standing near the longest reach (${longest} m)`);
+    expect.above(stepIns, 0, 'stepped in to the shortest reach');
   });
 
   async function run(filter = '') {
@@ -617,6 +730,7 @@
     for (const t of tests) {
       if (filter && !t.name.includes(filter)) continue;
       let ok = true, msg = '';
+      Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too
       try { t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
       finally { sim.end(); }
       out.push({ name: t.name, ok, msg });

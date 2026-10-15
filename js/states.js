@@ -33,7 +33,8 @@ const ENEMY_GROUPS = {
   canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.CHASE, ES.RECOVER]),
   shrugsHits: new Set([ES.PARRIED, ES.RISE, ES.LEAP]),                  // take damage, no state change
   guarding: new Set([ES.IDLE, ES.PATROL, ES.RETURN, ES.CHASE, ES.HURT]), // a shield enemy blocks from the front
-  fighting: new Set([ES.CHASE, ES.WINDUP, ES.ACTIVE, ES.RECOVER]),       // keeps its attack token (js/tokens.js)
+  fighting: new Set([ES.CHASE, ES.WINDUP, ES.ACTIVE, ES.RECOVER]),       // has a place around the player (js/crowd.js)
+  attacking: new Set([ES.WINDUP, ES.ACTIVE, ES.RECOVER]),                // mid-attack: damps the others' attack chances
 };
 const IDLE_BLEND = { [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25 };
 // Placement behaviours: the state an enemy starts in, and the state it returns to once back home.

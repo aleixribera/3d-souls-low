@@ -1,11 +1,11 @@
 'use strict';
-// Test Grounds: one wide room with a crowd, for attack tokens and surrounding. Five Hollows stand in an
-// arc; with the default two tokens, three of them circle while two attack.
+// Test Grounds: one wide room with a crowd, for surrounding and crowd attacks (js/crowd.js). Five Hollows stand
+// in an arc; they spread all round the player, and each holds back while others are swinging.
 const TEST_CROWD = {
   id: 'test-crowd', layout: 'rooms',
   name: 'Test: Crowd',
-  description: 'Five Hollow Soldiers at once. Only two attack at a time; the rest circle.',
-  help: 'Test: attack tokens. Watch the waiting enemies keep to your sides and back.',
+  description: 'Five Hollow Soldiers at once. They surround you; each holds back while others swing.',
+  help: 'Test: crowds. Watch them spread all round you, and no two swings start at once.',
   wallHeight: 8, gateHeight: 5.6, gateThickness: 0.5,
   start: { x: 6, z: 0, yaw: Math.PI / 2 },
   rooms: [

@@ -20,6 +20,7 @@ function validateData() {
     // Optional mechanics (enemy attacks): roll-only, gap-closing dash, tracking.
     if ('rollOnly' in a) need(typeof a.rollOnly === 'boolean', `${tag}: rollOnly must be true or false.`);
     if ('minRange' in a) need(num(a.minRange) && num(a.range) && a.minRange < a.range, `${tag}: minRange must be a number below range.`);
+    if ('chance' in a) need(num(a.chance) && a.chance >= 0, `${tag}: chance must be a number of 0 or more (per second).`);
     if ('dash' in a) need(a.dash && num(a.dash.speed) && a.dash.speed > 0 && num(a.dash.from) && a.dash.from >= 0 && a.dash.from < 1,
       `${tag}: dash needs speed > 0 and from (a fraction of the wind-up, 0 to 1).`);
     if ('track' in a) need(num(a.track) && a.track > 0, `${tag}: track must be a turn rate above 0 (rad/s).`);
@@ -38,7 +39,11 @@ function validateData() {
     if (d.offhand) need(d.offhand in OFFHANDS, `Enemy "${d.id}": unknown off-hand "${d.offhand}".`);
     if (d.idle) need(d.idle in IDLE_STYLES, `Enemy "${d.id}": unknown idle style "${d.idle}".`);
     need(num(d.hp) && num(d.scale) && num(d.radius), `Enemy "${d.id}": hp, scale and radius must be numbers.`);
-    for (const a of d.attacks) checkAttack(a, `Enemy "${d.id}"`);
+    for (const a of d.attacks) {
+      checkAttack(a, `Enemy "${d.id}"`);
+      need(a && num(a.range) && a.range > 0, `Enemy "${d.id}" attack "${a && a.id}": range must be a number above 0.`);
+    }
+    if ('approach' in d) need(num(d.approach) && d.approach >= 0, `Enemy "${d.id}": approach must be a number of 0 or more (per second).`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'damageMul', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime, damageMul and hitstop.`);
     if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
@@ -63,7 +68,6 @@ function validateData() {
     levelIds.add(L.id);
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
-    if ('attackTokens' in L) need(Number.isInteger(L.attackTokens) && L.attackTokens >= 1, `${where}: attackTokens must be a whole number of at least 1.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
@@ -107,8 +111,10 @@ function validateData() {
   const Cu = CONFIG.cull;
   need(Number.isInteger(Cu.maxLights) && Cu.maxLights >= 1 && Cu.lightRange > 0 && Cu.fadeBand > 0 && Cu.enemyRange > Math.max(...Object.values(CONFIG.notice)),
     'CONFIG.cull: maxLights must be a whole number of at least 1, ranges above 0, and enemyRange beyond every notice range.');
-  const K = CONFIG.tokens;
-  need(Number.isInteger(K.default) && K.default >= 1 && K.frontCone >= 0 && K.frontCone < Math.PI, 'CONFIG.tokens: default must be a whole number of at least 1, frontCone between 0 and pi.');
+  const AI = CONFIG.ai, nonNeg = v => num(v) && v >= 0;
+  need(['basic', 'dash', 'rollOnly', 'shove', 'projectile'].every(k => nonNeg(AI.chance[k])) && nonNeg(AI.approach) && AI.busyMul >= 0 && AI.busyMul <= 1 && nonNeg(AI.gap)
+    && nonNeg(AI.holdInset) && AI.holdMax > 0 && nonNeg(AI.holdBand) && AI.holdSpeedMul > 0,
+    'CONFIG.ai: chance (basic, dash, rollOnly, shove, projectile), approach, gap, holdInset and holdBand must be 0 or more, busyMul between 0 and 1, holdMax and holdSpeedMul above 0.');
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)

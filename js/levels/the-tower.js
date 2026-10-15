@@ -13,7 +13,7 @@
 //     pair), then the bell stair (18 to 22) to bonfire 3 and the bell platform on top of the tower (y 22): the
 //     Bell Warden, railed on the courtyard side and open on the cliff side.
 const LEVEL_3 = {
-  id: 'the-tower', layout: 'rooms', alert: true, attackTokens: 2, cull: true,
+  id: 'the-tower', layout: 'rooms', alert: true, cull: true,
   name: 'Level 3: The Tower',
   description: 'A cliff-top keep. Cross the courtyard, take the ramparts, and climb the walkways round the tower to its bell.',
   help: 'Level 3: win each fight to open the way up. Falls from the walkways hurt or kill; the cliff side is a drop to your death. Bowmen shoot whenever they see you.',

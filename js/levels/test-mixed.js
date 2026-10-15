@@ -1,12 +1,12 @@
 'use strict';
 // Test Grounds: the Level 3 enemies together. An open hall holds a Lancer, a Duelist, an Executioner and a
-// Shover (two attack tokens), and two Rampart Bowmen keep watch from a railed gallery 5 m above its north side,
-// out of reach: they shoot down whenever they have a line, token or not. A preview of the Tower's courtyard.
+// Shover, and two Rampart Bowmen keep watch from a railed gallery 5 m above its north side, out of reach: they
+// shoot down whenever they have a line. A preview of the Tower's courtyard.
 const TEST_MIXED = {
-  id: 'test-mixed', layout: 'rooms', alert: true, attackTokens: 2,
+  id: 'test-mixed', layout: 'rooms', alert: true,
   name: 'Test: Mixed Crowd',
   description: 'Lancer, Duelist, Executioner and Shover at once, with two Bowmen shooting down from a gallery.',
-  help: 'Test: the new enemies together. Two attack at a time; the bowmen above shoot regardless.',
+  help: 'Test: the new enemies together. They surround you while the bowmen above shoot down.',
   wallHeight: 8, gateHeight: 5.6, gateThickness: 0.5,
   atmosphere: { background: 0x2a2a34, fog: 0x3a3a46, fogDensity: 0.016,
                 moon: { color: 0xffc8a0, intensity: 2.0, position: [-20, 12, -14] },

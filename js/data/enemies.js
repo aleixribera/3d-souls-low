@@ -5,8 +5,8 @@ const ENEMY_DEFS = [
     id: 'hollow', name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
     scale: 1.0, bulk: 1.0, radius: 0.4, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },   // ashen, leathery
-    hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2, holdRange: 2.4,
-    cooldown: [0.45, 1.0], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2,
+    cooldown: [0.63, 1.4], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       { id: 'swing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
@@ -20,8 +20,8 @@ const ENEMY_DEFS = [
     id: 'knight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
     scale: 1.3, bulk: 1.3, radius: 0.6, color: 0x7b8088, weapon: 'sword', offhand: 'shield', idle: 'still',
     visual: { skin: 0x6e737a, skinMetal: 0.2, metal: 0.3, roughness: 0.5 },   // worn steel, helmed
-    hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2, holdRange: 2.9,
-    cooldown: [0.7, 1.4], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8,
+    hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2,
+    cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8,
     // Stagger meter (shown under its health bar), replacing poise: hits never interrupt it until the meter
     // fills (about 2 hits: 2 heavy, heavy + light, or 3 light), then it kneels, open, for `breakTime`.
     // Drains at `decay`/s once `decayDelay` s pass without a hit.
@@ -40,8 +40,8 @@ const ENEMY_DEFS = [
     id: 'rogue', name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
     scale: 0.85, bulk: 0.8, radius: 0.32, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
     visual: { skin: 0xbab29e, roughness: 0.8 },   // pale face, dark cloth
-    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4, holdRange: 2.3,
-    cooldown: [0.3, 0.75], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
+    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4,
+    cooldown: [0.42, 1.05], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
       { id: 'stab', name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
@@ -55,8 +55,8 @@ const ENEMY_DEFS = [
     id: 'giant', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
-    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, holdRange: 3.6,
-    cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
+    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
+    cooldown: [1.26, 2.38], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
     // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
     // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit.
@@ -74,10 +74,10 @@ const ENEMY_DEFS = [
     id: 'warden', name: 'Shield Warden', description: 'Hides behind a great shield. Circle it, parry it, or batter its guard down.',
     scale: 1.12, bulk: 1.15, radius: 0.48, color: 0x56636e, weapon: 'sword', offhand: 'kite', idle: 'still',
     visual: { skin: 0x5c6670, skinMetal: 0.15, metal: 0.25, roughness: 0.55 },   // blued steel, helmed
-    hp: 140, poise: 85, speed: 2.2, turnRate: 2.6, trackRate: 1.5, holdRange: 2.5,
-    cooldown: [0.6, 1.2], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
+    hp: 140, poise: 85, speed: 2.2, turnRate: 2.6, trackRate: 1.5,
+    cooldown: [0.84, 1.68], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard: hits from within `arc` (rad) of its facing are blocked (taking `damageMul` of the damage)
-    // while the shield is up: not attacking, and not within `lowerReach` of striking range with an attack chosen.
+    // while the shield is up: not attacking, and not stepping in to strike within `lowerReach` of its shortest reach.
     // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
     // attack, `light` otherwise. At `max` the guard breaks (2 heavy, 1 heavy + 2 light, or 3 light).
     // Hits taken on the shield fill only `blockedMul` of that, so flanking or punishing swings breaks it far faster.
@@ -98,8 +98,8 @@ const ENEMY_DEFS = [
     id: 'lancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
     scale: 1.05, bulk: 0.95, radius: 0.42, color: 0x6a6258, weapon: 'spear', idle: 'guard',
     visual: { skin: 0x9a948a, roughness: 0.8 },   // ashen, hooded
-    hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0, holdRange: 2.8,
-    cooldown: [0.5, 1.1], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0,
+    cooldown: [0.7, 1.54], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', minRange: 4, dash: { speed: 10, from: 0.45 },
         hits: [{ startup: 0.9, active: 0.16 }], recovery: 0.85, damage: 26, poise: 34, knock: 6, lunge: 3, range: 9,
@@ -114,14 +114,14 @@ const ENEMY_DEFS = [
     id: 'executioner', name: 'Executioner', description: 'A hooded giant with a greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
     scale: 1.5, bulk: 1.3, radius: 0.68, color: 0x4a2422, weapon: 'greataxe', idle: 'still',
     visual: { skin: 0x3a2a28, roughness: 0.9, rim: 0.7 },   // a dark hood
-    hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0, holdRange: 3.0,
-    cooldown: [0.8, 1.5], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
+    hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0,
+    cooldown: [1.12, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
     // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or four light hits).
     stagger: { max: 100, heavy: 45, light: 28, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', track: 2.0, hits: [{ startup: 1.35, active: 0.18 }], recovery: 1.3,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
-      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', rollOnly: true, hits: [{ startup: 1.25, active: 0.4 }], recovery: 1.2,
+      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', rollOnly: true, chance: 0.4, hits: [{ startup: 1.25, active: 0.4 }], recovery: 1.2,
         damage: 44, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
     ],
   },
@@ -129,8 +129,8 @@ const ENEMY_DEFS = [
     id: 'duelist', name: 'Pale Duelist', description: 'Fast and fragile, a blade in each hand. Its quick combo can be parried, and it pays dearly.',
     scale: 0.95, bulk: 0.82, radius: 0.34, color: 0xb0aca0, weapon: 'sword', offhand: 'dagger', idle: 'twitch',
     visual: { skin: 0xd8d2c4, roughness: 0.6 },   // pale
-    hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, holdRange: 2.2,
-    cooldown: [0.35, 0.8], flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
+    hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, approach: 0.8,   // presses in for its combo more than it dashes
+    cooldown: [0.49, 1.12], flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
     attacks: [
       { id: 'duelistCombo', name: 'Twin Cuts', anim: 'sweep', track: 4.0, hits: [{ startup: 0.5, active: 0.1 }, { startup: 0.28, active: 0.1 }],
         recovery: 0.6, damage: 14, poise: 14, knock: 3, lunge: 2.6, range: 2.0, box: { w: 1.8, h: 1.3, d: 1.8, fwd: 1.15, y: 1.05 } },
@@ -143,8 +143,8 @@ const ENEMY_DEFS = [
     id: 'bowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
     scale: 0.95, bulk: 0.88, radius: 0.38, color: 0x5a6a3a, weapon: 'bow', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },
-    hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, holdRange: 9,
-    cooldown: [0.6, 1.3], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0,   // keeps its distance: kicks only if you close in
+    cooldown: [0.84, 1.82], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       { id: 'bowShot', name: 'Aimed Shot', anim: 'draw', projectile: { speed: 24, gravity: 6, size: 0.12 }, minRange: 4, range: 24,
         hits: [{ startup: 1.1, active: 0.1 }], recovery: 0.7, damage: 20, poise: 24, knock: 3, lunge: 0,
@@ -157,8 +157,8 @@ const ENEMY_DEFS = [
     id: 'shover', name: 'Shover', description: 'A bulky brute behind a great shield. Its push throws you off ledges: keep away from edges and flank it.',
     scale: 1.15, bulk: 1.3, radius: 0.52, color: 0x5a4a3a, weapon: 'none', offhand: 'kite', idle: 'still',
     visual: { skin: 0x8a8070, roughness: 0.8 },
-    hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4, holdRange: 2.2,
-    cooldown: [0.7, 1.3], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
+    hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4,
+    cooldown: [0.98, 1.82], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard, as the Shield Warden's: frontal hits are blocked and barely fill the meter; flank it or break it with heavies.
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
@@ -173,16 +173,16 @@ const ENEMY_DEFS = [
     id: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
-    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, holdRange: 3.2,
-    cooldown: [0.8, 1.6], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
+    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6,   // a boss: steps in and uses its strong attacks more often
+    cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     posture: { max: 120, parry: 34, chainGap: 1.8, chainMul: 1.5, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', track: 1.6, hits: [{ startup: 1.2, active: 0.24 }], recovery: 1.2,
         damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
-      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', rollOnly: true, hits: [{ startup: 1.5, active: 0.2 }], recovery: 1.4,
+      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', rollOnly: true, chance: 0.45, hits: [{ startup: 1.5, active: 0.2 }], recovery: 1.4,
         damage: 55, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
         impact: { ring: 3.4, crack: 1.9, dust: 16, shake: 0.12 } },
-      { id: 'bellShove', name: 'Bell Push', anim: 'shove', shove: true, hits: [{ startup: 1.3, active: 0.18 }], recovery: 1.0,
+      { id: 'bellShove', name: 'Bell Push', anim: 'shove', shove: true, chance: 0.45, hits: [{ startup: 1.3, active: 0.18 }], recovery: 1.0,
         damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 } },
       { id: 'bellCharge', name: 'Charge', anim: 'thrust', minRange: 5, dash: { speed: 11, from: 0.4 },
         hits: [{ startup: 1.1, active: 0.3 }], recovery: 1.1, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,

@@ -2,6 +2,13 @@
 // ============================================================================
 // 6. Enemy
 // ============================================================================
+// An enemy attack's chance per second: its own `chance`, else CONFIG.ai.chance for its kind (the lowest of its kinds).
+function attackChance(a) {
+  if (a.chance !== undefined) return a.chance;
+  const C = CONFIG.ai.chance, kinds = ['projectile', 'dash', 'rollOnly', 'shove'].filter(k => a[k]);
+  return kinds.length ? Math.min(...kinds.map(k => C[k])) : C.basic;
+}
+
 // opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
 class Enemy {
   constructor(def, opts) {
@@ -30,8 +37,12 @@ class Enemy {
     this.discovered = this.training;                 // has had its one-time auto lock-on (dummies never do)
     this.state = B.start; this.stateTime = 0;
     const fd = def.firstDelay || E.firstDelay;
-    this.cooldown = rand(fd[0], fd[1]); this.next = null; this.attack = null; this.hitIndex = 0; this.hitbox = null;
-    this.token = false; this.tokenWait = 0; this.slot = null;   // attack token, time spent waiting for one, circling slot (js/tokens.js)
+    this.cooldown = rand(fd[0], fd[1]); this.attack = null; this.hitIndex = 0; this.hitbox = null;
+    const ranges = def.attacks.map(a => a.range);
+    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges) };   // its longest and shortest attack range
+    this.stepIn = false;                             // stepping in to its shortest reach, until it attacks
+    this.backingOff = false;                         // too close: backing off to its hold distance
+    this.slot = null;                                // its place around the player (js/crowd.js)
     this.savePrev();
   }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
@@ -41,11 +52,10 @@ class Enemy {
   awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
   isCommitted() { return this.state === ES.ACTIVE; }
   // Shield up: guarding enemies hold it whenever they are not attacking, reeling or down.
-  // The shield drops as soon as it picks an attack and closes in to use it (and stays down through the swing).
+  // The shield drops as it steps in to strike, once within a step of its shortest reach (and stays down through the swing).
   guarding() {
     if (!this.def.guard || !ENEMY_GROUPS.guarding.has(this.state)) return false;
-    // Lowered only in the last stretch before a swing (within reach of the chosen attack, plus a step).
-    return !(this.state === ES.CHASE && this.next && this.playerDist <= this.next.range + this.def.guard.lowerReach);
+    return !(this.state === ES.CHASE && this.stepIn && this.playerDist <= this.attackReach.short + this.def.guard.lowerReach);
   }
   // Woken by another enemy's alert. Returns true if this changed anything.
   wake() {
@@ -127,18 +137,22 @@ class Enemy {
         const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
         this.unreachable = reach || this.ranged ? 0 : this.unreachable + dt;
         if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player) || this.unreachable > CONFIG.height.giveUp) {
-          this.next = null; this.unreachable = 0; this.setState(ES.RETURN); break;
+          this.unreachable = 0; this.stepIn = false; this.setState(ES.RETURN); break;
         }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
-        // An archer shoots from where it stands while it waits for its turn, or at a player it can't walk to.
-        if (this.ranged && (!this.token || !reach)) { this.shootIfReady(dist, toPlayer); break; }
-        if (!reach) { this.next = null; this.token = false; tx = dx / dist * d.speed; tz = dz / dist * d.speed; break; }   // to the brink, no further
-        if (!this.token) { this.next = null; [tx, tz] = this.circleVelocity(player, dist); break; }   // not its turn: circle
-        if (this.cooldown <= 0 && !this.next) this.next = this.pickAttack(dist);
-        const want = this.next ? this.next.range : d.holdRange;
-        if (dist > want) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
-        else if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < E.attackFacing) this.beginAttack();
+        if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
+          const shot = this.ranged && this.rollAttack(dist, toPlayer, dt, true);
+          if (shot) this.beginAttack(shot);
+          else if (!this.ranged) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
+          break;
+        }
+        const a = this.rollAttack(dist, toPlayer, dt);
+        if (a) { this.beginAttack(a); break; }
+        // Holding, ready to strike: now and then it steps in to its shortest reach.
+        if (!this.stepIn && this.cooldown <= 0 && dist <= this.holdReach()
+            && Math.random() < (d.approach ?? CONFIG.ai.approach) * dt) this.stepIn = true;
+        [tx, tz] = this.holdVelocity(player, dist);
         break;
       }
       case ES.WINDUP: {
@@ -160,8 +174,8 @@ class Enemy {
         break;
       }
       case ES.RECOVER:
-        if (this.stateTime >= this.attack.recovery) {   // attack over: give the turn back
-          this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.token = false; this.setState(ES.CHASE);
+        if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
+          this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE);
         }
         break;
       case ES.HURT:
@@ -184,7 +198,7 @@ class Enemy {
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
   }
-  die() { this.hitbox = null; this.next = null; this.setState(ES.DEAD); }
+  die() { this.hitbox = null; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
   checkFall() {
     if (!this.alive()) return;
@@ -195,43 +209,39 @@ class Enemy {
     events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.def.hp) });
     if (this.hp <= 0) this.die();
   }
-  // Without an attack token: keep to a ring around the player (out of reach), sliding along it toward
-  // the slot the token manager gave it, still facing the player. Returns the wanted velocity [x, z].
-  circleVelocity(player, dist) {
-    const T = CONFIG.tokens, d = this.def;
-    const ring = Math.max(T.ring, d.holdRange + T.ringGap);
-    const a = Math.atan2(this.x - player.x, this.z - player.z);
+  // The reach it holds at: its longest attack's, but never more than `holdMax` (an archer stays in the fight).
+  holdReach() { return Math.min(this.attackReach.long, CONFIG.ai.holdMax); }
+  // How far from the player it waits: `holdInset` inside its hold reach, or inside its shortest while stepping in.
+  holdDistance() { return (this.stepIn ? this.attackReach.short : this.holdReach()) - CONFIG.ai.holdInset; }
+  // Close in at full speed to its hold distance; once more than `holdBand` closer, back off (slower) all the way to
+  // it; and circle toward its place around the player (`slot`), still facing the player. Returns the wanted velocity [x, z].
+  holdVelocity(player, dist) {
+    const A = CONFIG.ai, want = this.holdDistance();
+    if (dist < want - A.holdBand) this.backingOff = true; else if (dist >= want) this.backingOff = false;
+    const a = Math.atan2(this.x - player.x, this.z - player.z);   // bearing from the player
     const rx = Math.sin(a), rz = Math.cos(a), ux = Math.cos(a), uz = -Math.sin(a);   // outward and around (+angle)
-    const out = clamp((ring - dist) * 1.2, -1, 1), along = this.slot === null ? 0 : clamp(angDiff(this.slot, a) * ring * 0.6, -1, 1);
-    let vx = rx * out + ux * along, vz = rz * out + uz * along;
-    const l = Math.hypot(vx, vz);
-    if (l < 0.15) return [0, 0];   // in place: stand and watch
-    const sp = d.speed * T.speedMul / Math.max(1, l);
+    const out = dist > want ? -Math.min(1, (dist - want) * 1.2) : this.backingOff ? clamp((want - dist) * 1.2, 0, 1) * A.holdSpeedMul : 0;
+    const along = this.slot === null ? 0 : clamp(angDiff(this.slot, a) * dist * 0.6, -1, 1) * A.holdSpeedMul;
+    const vx = rx * out + ux * along, vz = rz * out + uz * along, l = Math.hypot(vx, vz);
+    if (l < 0.1) return [0, 0];   // in place: stand and watch
+    const sp = this.def.speed / Math.max(1, l);
     return [vx * sp, vz * sp];
   }
-  // A random attack that suits the distance: gap closers (`minRange`) only when the player is between
-  // their minRange and range; the rest at any distance (the enemy walks in to use them). A shot that fits
-  // the distance always wins: an archer shoots rather than walking in to kick.
-  pickAttack(dist) {
-    const ok = this.def.attacks.filter(a => !a.minRange || (dist >= a.minRange && dist <= a.range));
-    const shots = ok.filter(a => a.projectile && a.minRange);
-    const pool = shots.length ? shots : ok.length ? ok : this.def.attacks;
-    return pool[Math.floor(Math.random() * pool.length)];
+  // No attack is chosen in advance. Once the cooldown is over and it faces the player, every attack whose range
+  // window (`minRange`, default 0, to `range`) holds the player's distance rolls its chance per second
+  // (attackChance, times the crowd's damping); the first success is the attack to start now, else null.
+  // Nothing starts within the crowd's gap after another enemy's start. `shotsOnly`: projectiles only.
+  rollAttack(dist, toPlayer, dt, shotsOnly = false) {
+    if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
+    const mul = crowd.chanceMul(this);
+    for (const a of this.def.attacks)
+      if ((!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range && Math.random() < attackChance(a) * mul * dt) return a;
+    return null;
   }
-  // A shot that suits the distance, or null.
-  pickShot(dist) {
-    const shots = this.def.attacks.filter(a => a.projectile && dist >= (a.minRange || 0) && dist <= a.range);
-    return shots.length ? shots[Math.floor(Math.random() * shots.length)] : null;
-  }
-  // Archers out of turn (or above or below the player): stand, pick a shot once the cooldown is over, and loose it
-  // when facing the player.
-  shootIfReady(dist, toPlayer) {
-    if (this.next && !this.next.projectile) this.next = null;
-    if (this.cooldown <= 0 && !this.next) this.next = this.pickShot(dist);
-    if (this.next && Math.abs(angDiff(toPlayer, this.yaw)) < CONFIG.enemy.attackFacing) this.beginAttack();
-  }
-  beginAttack() {
-    this.attack = this.next; this.next = null; this.hitIndex = 0; this.setState(ES.WINDUP);
+  beginAttack(attack) {
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.setState(ES.WINDUP);
+    crowd.started();
+    events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
   }
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover. A bow looses a bolt
@@ -255,7 +265,7 @@ class Enemy {
   updateTraining() {
     if (!this.def.attacks.length) return;
     switch (this.state) {
-      case ES.IDLE: if (this.stateTime >= this.def.restTime) { this.attack = this.def.attacks[0]; this.hitIndex = 0; this.setState(ES.WINDUP); } break;
+      case ES.IDLE: if (this.stateTime >= this.def.restTime) this.beginAttack(this.def.attacks[0]); break;
       case ES.WINDUP: if (this.stateTime >= this.attack.hits[this.hitIndex].startup) this.strike(); break;
       case ES.ACTIVE: this.endStrikeWhenDone(); break;
       case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
@@ -269,13 +279,13 @@ class Enemy {
     if (!P || this.state === ES.BROKEN) return false;
     this.posture = Math.min(P.max, this.posture + amount);
     if (this.posture < P.max) return false;
-    this.hitbox = null; this.next = null; this.crack = 1;
+    this.hitbox = null; this.crack = 1;
     this.setState(ES.BROKEN);
     return true;
   }
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
   getParried() {
-    this.hitbox = null; this.next = null;
+    this.hitbox = null;
     if (this.def.posture) {
       this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
       if (this.addPosture(this.def.posture.parry)) return true;
@@ -297,7 +307,7 @@ class Enemy {
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage * (P && this.state === ES.BROKEN ? P.damageMul : 1));
     this.kx += kx; this.kz += kz;
-    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (P) {
       // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
       const chained = this.chainTime <= P.chainGap;
@@ -314,7 +324,7 @@ class Enemy {
       return { broke: this.fillMeter(M, strike.attackId), died: false };
     }
     const r = applyPoise(this, strike.poise, this.isCommitted(), def.poise);
-    if (r === POISE.STAGGER) { this.hitbox = null; this.next = null; this.setState(ES.STAGGER); }
+    if (r === POISE.STAGGER) { this.hitbox = null; this.setState(ES.STAGGER); }
     else if (r === POISE.FLINCH && def.flinchTime > 0 && this.in('canFlinch')) this.setState(ES.HURT);
     else if (unaware) this.setState(ES.CHASE);
     return { broke: false, died: false };
@@ -327,7 +337,7 @@ class Enemy {
     this.hp = Math.max(0, this.hp - strike.damage * G.damageMul);
     this.kx += kx * G.knockMul; this.kz += kz * G.knockMul;
     this.tint = 0.3;
-    if (this.hp <= 0) { this.hitbox = null; this.next = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (this.in('unaware')) this.setState(ES.CHASE);
     if (this.fillMeter(G, strike.attackId, G.blockedMul)) return { broke: true, died: false };
     return { broke: false, died: false, blocked: true };
@@ -338,7 +348,7 @@ class Enemy {
     this.guardTime = 0;
     this.guardMeter = Math.min(M.max, this.guardMeter + (M.breakers.includes(attackId) ? M.heavy : M.light) * mul);
     if (this.guardMeter < M.max - 1e-6) return false;
-    this.hitbox = null; this.next = null; this.crack = 1;
+    this.hitbox = null; this.crack = 1;
     this.setState(ES.BROKEN);
     return true;
   }

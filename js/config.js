@@ -78,14 +78,19 @@ const CONFIG = {
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
   // (with a clear line between them), and those pass it on in turn.
   alert: { radius: 10 },
-  // Attack tokens (js/tokens.js): how many enemies may attack at once unless a level sets `attackTokens`.
-  // Enemies without a token circle at `ring` m (or `ringGap` beyond their own hold range, if larger),
-  // at `speedMul` of their speed, outside a `frontCone` (rad, each side of the player's facing), which
-  // follows the player's facing at `frontRate` rad/s. `patience`: seconds of waiting that put an enemy
-  // first in line; `swapMargin`: how much closer a waiter (that has waited `swapWait` s) must be to take a token
-  // from a holder still closing in.
-  tokens: { default: 2, ring: 4.6, ringGap: 1.6, speedMul: 0.62, frontCone: 0.9, frontRate: 2.5,
-            patience: 3, swapMargin: 3, swapWait: 1.5 },
+  // Enemy attack choice (js/enemy.js). Once its cooldown is over, an enemy facing the player rolls, every step, each
+  // attack whose range window (`minRange`, default 0, to `range`) holds the player's distance: it starts with
+  // probability chance x step length, where chance is the attack's own `chance` per second, else the default for
+  // its kind below (an attack of several kinds takes the lowest). The first success starts.
+  // Crowds (js/crowd.js): every enemy may attack, but its chances are multiplied by `busyMul` for each other enemy
+  // mid-attack, and no enemy starts an attack within `gap` s of another starting one.
+  // Holding: an enemy closes in at full speed until its longest-reaching attack can reach, and holds `holdInset` m
+  // inside that reach (never more than `holdMax` m away). Once more than `holdBand` m closer it backs off, at
+  // `holdSpeedMul` of its speed, all the way out again, and it circles at that speed toward its place around the
+  // player. While holding with its cooldown over, it rolls its `approach` chance per second (this default unless
+  // it sets its own) to step in to its shortest reach, where it stays until it attacks.
+  ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, gap: 0.3,
+        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
   // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within

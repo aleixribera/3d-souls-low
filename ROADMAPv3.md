@@ -4,6 +4,8 @@
 
 All five parts are built. In the original roadmap's steps, Level 3 delivers step 6 (new enemies), step 7 (height) and step 8 (open areas with culling). Still to come: step 9 (story and All Levels modes, with title cards) and step 10, now "Levels 4–5 and a final boss".
 
+This plan is kept as written. Since v3.6 the turn-taking it describes for crowds is gone: enemies roll attack chances, hold at their reach and surround the player (see RULES.md, Enemies).
+
 | Part | Version | Status |
 |---|---|---|
 | 0. Save this plan | — | done (this file) |

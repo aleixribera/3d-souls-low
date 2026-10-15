@@ -182,7 +182,7 @@ const Game = {
     input.pressed.clear();
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
     $('fade').classList.remove('show');   // fades back in after a level transition
-    this.setLock(null); this.tut = null; tokens.reset();
+    this.setLock(null); this.tut = null; crowd.reset();
     const def = this.level;
     world = makeWorld(def, loadStage(def));
     const start = def.playerStart || def.start;
@@ -634,7 +634,7 @@ const Game = {
     const alerting = this.kind === 'level' && this.level.alert;
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
     p.update(dt, this.moveInput(), live, this.lock);
-    tokens.update(this, dt);
+    crowd.update(this, dt);
     for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);

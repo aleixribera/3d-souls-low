@@ -134,12 +134,18 @@ function integrateBody(b, dt, knockFriction, edgeSense = false) {
   if (b.y < world.killY) { b.y = world.killY; b.vy = 0; b.inPit = true; }
 }
 // Voluntary movement (mx, mz) cut so the body never steps over a drop: slides along the brink if it can.
+// A move is safe when there is floor both where the body ends up and a probe ahead of it (at an inside corner the
+// probe alone can land on the far side while the body itself steps over the drop).
 function edgeStop(b, mx, mz) {
-  const H = CONFIG.height, probe = b.radius * H.edgeProbe, l = Math.hypot(mx, mz);
+  const H = CONFIG.height, probe = b.radius * H.edgeProbe;
   const safe = (x, z) => world.groundAt(x, z, b.y) >= b.y - H.stepDown;
-  if (safe(b.x + mx + mx / l * probe, b.z + mz + mz / l * probe)) return [mx, mz];
-  const okX = mx !== 0 && safe(b.x + mx + Math.sign(mx) * probe, b.z);
-  const okZ = mz !== 0 && safe(b.x, b.z + mz + Math.sign(mz) * probe);
+  const ok = (dx, dz) => {
+    const l = Math.hypot(dx, dz);
+    return safe(b.x + dx, b.z + dz) && safe(b.x + dx + dx / l * probe, b.z + dz + dz / l * probe);
+  };
+  if (ok(mx, mz)) return [mx, mz];
+  const okX = mx !== 0 && ok(mx, 0);
+  const okZ = mz !== 0 && ok(0, mz);
   if (okX && okZ) return Math.abs(mx) >= Math.abs(mz) ? [mx, 0] : [0, mz];
   return [okX ? mx : 0, okZ ? mz : 0];
 }
