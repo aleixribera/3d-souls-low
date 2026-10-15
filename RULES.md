@@ -9,6 +9,8 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - Data lives in `js/data/` (player, items, enemies, shared looks) and `js/levels/` (one file per level). `js/data/levels.js` sets the Levels menu order.
 - A new file must be added to `GAME_FILES`, after everything it needs at load.
 - **Test Grounds:** opening the page with `#dev` at the end of its address adds a Test Grounds menu with developer rooms (`TEST_LEVELS` in `js/data/levels.js`) for trying out mechanics. They are checked at load like every level.
+- **Tests:** with `#dev` the page also loads `tests/suite.js`: stepped simulations of the real game (manual clock, gamepad ignored, scripted movement). Run them from the browser console with `await __arena.tests.run()`, or `run('heights')` for the tests whose name contains a word. Run them before every commit, and add tests for each new mechanic.
+- `js/terrain.js` turns a room level's rooms and ramps into floors at heights, and builds its walls, rails, ledge faces, floors and roofs from them (see Heights below).
 
 ## Golden rules
 
@@ -45,7 +47,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *Tracking* (`track: rate`): the enemy keeps turning toward the player at `rate` through the whole wind-up and the swing, instead of locking its aim part way through. Roll through it or away late.
   - An enemy picks a random attack that suits the distance; gap closers only at mid range, the rest at any range (it walks in).
   - Test enemies for each mechanic (`TEST_DEFS`, `js/data/test-enemies.js`) are duels in the `#dev` Test Grounds.
-- **Nothing hits, sees or locks on through a closed gate.** In room levels, walls and pillars block too.
+- **Nothing hits, sees or locks on through a closed gate.** In room levels, walls, pillars, ledges, floors and roofs block too, in 3D (eye to eye): you can see someone on a walkway across an open yard, but not through the walkway's floor from right underneath it. Rails never block sight.
 - **Order each step:** parry first, then the player's hits, then enemy hits.
 
 ## Player
@@ -57,6 +59,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Jump attacks** strike on landing, then have a short recovery.
 - **Poise**: hits reduce it; at zero the player staggers. A swing already in its active phase is never interrupted.
 - **Flasks** heal over time, and refill at bonfires and on death.
+- **Falling:** walking (or being knocked) off an open edge or a higher floor drops you into the fall state; you can still steer a little and attack on the way down. Landing more than `CONFIG.fall.safe` (4.5 m) below the highest point of the fall costs `(h - safe) * perMetre` HP and a short stumble (`fallDamage` event); `lethal` (14 m) or more kills. A plain jump never reaches `safe`, and stairs and ramps never count as falls. Falling into a pit (no floor below) is death once you drop `CONFIG.height.killDepth` below the level's lowest floor (`fell` event).
 
 ## Enemies
 
@@ -69,6 +72,8 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *ambush*: hides in an alcove and leaps out.
   - *slumber*: lies on the floor and rises when the player comes near.
 - Each behaviour has its own **notice range**. Enemies give up and walk home if the player gets too far away, they are dragged too far from home, or they lose sight of the player.
+- **Heights:** an enemy only comes for a player within `CONFIG.height.reach` (2.5 m) of its own height. If the player is above or below (on a walkway, down a drop), it walks to the brink and waits there facing them, and gives up after `giveUp` seconds. It never takes an attack token while it can't reach.
+- **Edges:** enemies never walk, dash or lunge off an open edge or a drop deeper than `stepDown`; they stop at the brink and slide along it, which also keeps circling enemies on a walkway. Knockback is not stopped: an enemy can be knocked off, and it takes the same fall damage and pit deaths as the player.
 - **How enemies break.** Every enemy uses exactly one of these:
   - *Poise* (default): hits drain a hidden poise value. Small hits make the enemy flinch; at zero it staggers.
   - *Posture* (bosses, e.g. Giant Skeleton): hits never interrupt it. Every landed hit fills a visible posture bar, and hits chained close together fill it faster. It drains only after a pause without hits. Full means it kneels, open, and takes extra damage.
@@ -79,8 +84,17 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 ## Levels
 
 - **Two layouts:**
-  - *Hall*: a straight corridor along one axis, with gates across it and alcoves on the sides.
-  - *Rooms*: rectangles that touch edge to edge. Walls are generated around them automatically, and a shared edge is an open doorway.
+  - *Hall*: a straight corridor along one axis, with gates across it and alcoves on the sides. Always flat.
+  - *Rooms*: rectangles that touch edge to edge. Walls are generated around them automatically, and a shared edge is an open doorway. Rooms can sit at different heights (see Heights).
+- **Heights** (room levels, `js/terrain.js`; every field is optional, so flat levels stay exactly as they were):
+  - A room is a box: `rect` times [`y`, `y + height`] (`y` defaults to 0, `height` to the level's `wallHeight`). Rooms may overlap in x/z only if their height bands are separate (a walkway's floor slab above the yard's top), so you can walk under walkways and over lower walls.
+  - **Ramps and stairs:** `ramps: [{ id, rect, axis: 'x' | 'z', from, to, stairs }]`. The floor rises in a straight line along `axis`, from `from` at the west (or south) end to `to`. Stairs are drawn as steps but walk like the slope. Both ends must meet a room (or ramp) at the matching height, and a ramp rises at most `maxSlope` per metre. Ramps have no roof.
+  - **Edges:** each side of a room or ramp (`edges: { n, s, e, w }`, n = +z, e = +x) is `wall` (the default), `rail` (a parapet `CONFIG.height.rail` high: it stops walking and jumping, not sight or the camera) or `open` (you can walk off it). Where another region touches a side at the same floor height it is a doorway, as before; where a lower region touches it, a ledge face fills the drop below the floor, so it can't be walked into from below.
+  - **Steps:** a body on the ground walks up onto anything within `stepUp` of its feet, and follows floors that drop by at most `stepDown` per step (stairs, ramps). Anything bigger is a ledge or a fall.
+  - **Pits:** `pits: [rect]` on a room are holes in its floor. Below a hole (or past an open edge) is whatever floor lies beneath, or nothing: a pit.
+  - **Open rooms:** `open: true` has no roof; the camera can rise freely over it.
+  - **Blocks:** `blocks: [{ rect, y0, y1 }]` on the level are solid masses (a tower's core) that are not rooms.
+  - **Placements** (start, bonfires and their spawns, zone spawns, patrols, slumberers) stand on the top-most floor under them, or on the highest one at or below their optional `y`. All are checked at load: on a floor, not over a pit.
 - **Gated zones:** each zone has one or more enemies and a gate. The gate opens only when all of the zone's enemies are dead. The level is complete when every gate is open.
 - Zone enemies stand at their posts from the start, so the player can see them coming.
 - **Optional enemies** (patrol, ambush, slumber) can be placed between zones.
@@ -96,17 +110,13 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 - **Graphics: High / Low** (pause → Options). High adds bloom, colour grade, vignette (redder at low health), grain and light shafts. Low skips post-processing and thins the particles.
 - The red wind-up glow is never dimmed: it has its own halo that ignores fog, and the colour grade leaves strong reds saturated.
 - **Lock-on:** when the locked target dies, the lock moves to the next enemy in reach (the one nearest the centre of the screen), if there is one.
-- **Camera:** follows behind the player and is pushed in so it never passes through walls or closed gates. Locking on frames both the player and the target.
+- **Camera:** follows behind the player and is pushed in so it never passes through walls, ledges, floors, roofs or closed gates (in 3D; it looks over rails). It follows the floor you stand on up stairs and down drops, but a jump lifts it only half as much. Its ceiling is whatever is overhead where the camera is: a room's roof, a walkway's underside, or nothing under open sky. Locking on frames both the player and the target.
 
-## Coming with Level 3 (planned, see ROADMAP.md)
+## Coming with Level 3 (planned, see ROADMAPv3.md)
 
 Not built yet. These rules apply once each part lands; until then the sections above describe the game.
 
-- **Heights:** rooms get a floor height `y` and headroom `height`, and may overlap in x/z at different heights (walkways over a courtyard). Stairs and ramps (`ramps`) join floors. Walls, line of sight, lock-on and the camera work in 3D: you can walk under walkways and over lower walls.
-- **Edges:** each room side is `wall`, `rail` (knee-high: blocks walking, not sight) or `open` (you can walk off). A higher room's edge above a lower one is a drop.
-- **Falling:** drops use the jump/fall states. Landing after more than about 4 m costs health in proportion to the height; about 14 m or more kills. Falling into a pit (no floor below) kills. Jumps and stairs never hurt.
-- **Enemies and edges:** enemies never walk off an open edge or a high drop (circling enemies stop at the brink), but they can be knocked off and take the same falls.
-- **Open sky:** rooms with `open: true` have no ceiling; the level's sky, silhouettes and grass are drawn over them.
+- **Open sky:** the level's sky, silhouettes and grass are drawn over `open` rooms.
 - **Shortcut gates:** a gate with `opensFrom` opens for good when the player reaches that area (the far side), linking back to an earlier bonfire.
 - **Culling:** a fixed pool of real lights follows the nearest light sources (the light count never changes); unaware enemies far away sleep until you come near.
 - **Projectiles** (`projectile` on an attack): bows fire bolts that fly with a slight arc, are stopped by walls and closed gates, can be blocked from the front or rolled through, and cannot be parried.
@@ -116,5 +126,5 @@ Not built yet. These rules apply once each part lands; until then the sections a
 ## Adding things — checklist
 
 - **New enemy:** add an entry with a unique id, stats, attacks (wind-up/active/recovery, damage, poise, hitbox, range), a look, and at most one break system. It appears in the Enemies menu automatically. Make sure it is fair: its attacks should be readable, and at least one approach (flanking, parrying, heavy hits) should beat it.
-- **New level:** pick a layout, add rooms or hall size, a start point, bonfires (the respawn point must not be inside a zone), zones with gates, and optional enemies. Add it to the levels list and it appears in the Levels menu.
-- **New mechanic:** add its numbers to CONFIG or the data, make it opt-in, announce it with an event if others should react, extend the load-time checks, and verify that Level 1, Level 2 and every arena duel still play the same.
+- **New level:** pick a layout, add rooms or hall size, a start point, bonfires (the respawn point must not be inside a zone), zones with gates, and optional enemies. Add it to the levels list and it appears in the Levels menu. With heights, check every drop: enemies won't follow you down, and a gated enemy knocked somewhere out of reach must still be killable.
+- **New mechanic:** add its numbers to CONFIG or the data, make it opt-in, announce it with an event if others should react, extend the load-time checks, add tests to `tests/suite.js`, and check with `await __arena.tests.run()` (page opened with `#dev`) that Level 1, Level 2 and every arena duel still play the same.

@@ -117,10 +117,12 @@ class Rig {
   }
   setGlow(k) { this.warnGlow.visible = k > 0.002; this.warnGlow.material.opacity = k * CONFIG.VISUALS.windupGlow.opacity; }
   setOpacity(a) { for (const m of this.mats) m.opacity = a; this.shadow.material.opacity = 0.45 * a; }
-  place(x, y, z, yaw) {
+  // ground: the floor under the body (its shadow lies there and shrinks with height); -Infinity over a pit.
+  place(x, y, z, yaw, ground = 0) {
     this.root.position.set(x, y, z); this.root.rotation.y = yaw;
-    const s = this.shadowRadius * clamp(1 - y * 0.25, 0.4, 1);
-    this.shadow.position.set(x, 0.03, z); this.shadow.scale.set(s, s, 1);
+    this.shadow.visible = ground > -Infinity;
+    const s = this.shadowRadius * clamp(1 - (y - ground) * 0.25, 0.4, 1);
+    this.shadow.position.set(x, ground + 0.03, z); this.shadow.scale.set(s, s, 1);
   }
   dispose() {
     scene.remove(this.root, this.shadow);

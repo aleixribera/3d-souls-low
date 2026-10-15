@@ -23,7 +23,7 @@ const tokens = {
     const live = game.enemies.filter(e => e.alive() && !e.training);
     for (const e of live) if (e.token && !e.in('fighting')) e.token = false;
     const holders = live.filter(e => e.token);
-    const waiters = live.filter(e => !e.token && e.state === ES.CHASE);
+    const waiters = live.filter(e => !e.token && e.state === ES.CHASE && e.reachable);   // not those above or below the player
     for (const e of waiters) e.tokenWait += dt;
     // Free tokens: the patient first, then the closest.
     waiters.sort((a, b) => ((b.tokenWait >= T.patience) - (a.tokenWait >= T.patience)) || dist(a) - dist(b));

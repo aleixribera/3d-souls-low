@@ -17,7 +17,7 @@ const BODY_HEIGHT = 1.8;   // a humanoid at scale 1; collision height = BODY_HEI
 const warned = new Set();
 const warnOnce = msg => { if (!warned.has(msg)) { warned.add(msg); console.warn(msg); } };
 
-// Flat geometry for room-style levels. A rect is [x0, x1, z0, z1]; a box is { x0, x1, z0, z1 }.
+// Geometry for room-style levels. A rect is [x0, x1, z0, z1]; a box is { x0, x1, z0, z1 } plus, in 3D, y0 and y1.
 const inRect = (r, x, z) => x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3];
 const insideRooms = (rooms, x, z, m = 0) => rooms.some(({ rect: r }) => x >= r[0] + m && x <= r[1] - m && z >= r[2] + m && z <= r[3] - m);
 // Fraction (0..1) along the segment from (x, z) by (dx, dz) where it first enters box b grown by m; Infinity if never.
@@ -32,36 +32,20 @@ function segBox(x, z, dx, dz, b, m = 0) {
   }
   return t0;
 }
-// Wall boxes around the union of the rooms: every stretch of a room's edge that no other room touches,
-// plus the outer corners. Each box remembers its room (for its material).
-function roomWalls(rooms) {
-  const T = CONFIG.rooms.wallThickness, eps = 1e-6, out = [];
-  const overlapsRoom = b => rooms.some(({ rect: o }) => b.x0 < o[1] - eps && b.x1 > o[0] + eps && b.z0 < o[3] - eps && b.z1 > o[2] + eps);
-  const subtract = (a, b, cuts) => {   // parts of [a, b] not covered by the cuts
-    let segs = [[a, b]];
-    for (const [c0, c1] of cuts)
-      segs = segs.flatMap(([s0, s1]) => c1 <= s0 || c0 >= s1 ? [[s0, s1]] : [[s0, c0], [c1, s1]].filter(([u, v]) => v - u > eps));
-    return segs;
-  };
-  for (const room of rooms) {
-    const [x0, x1, z0, z1] = room.rect, others = rooms.filter(o => o !== room).map(o => o.rect);
-    const edges = [   // along: the axis the edge runs along; at: its fixed coordinate; out: outward side
-      { along: 'x', at: z1, out: 1, lo: x0, hi: x1, touch: o => Math.abs(o[2] - z1) < eps, span: o => [o[0], o[1]] },
-      { along: 'x', at: z0, out: -1, lo: x0, hi: x1, touch: o => Math.abs(o[3] - z0) < eps, span: o => [o[0], o[1]] },
-      { along: 'z', at: x1, out: 1, lo: z0, hi: z1, touch: o => Math.abs(o[0] - x1) < eps, span: o => [o[2], o[3]] },
-      { along: 'z', at: x0, out: -1, lo: z0, hi: z1, touch: o => Math.abs(o[1] - x0) < eps, span: o => [o[2], o[3]] },
-    ];
-    for (const e of edges) {
-      for (const [a, b] of subtract(e.lo, e.hi, others.filter(e.touch).map(e.span))) {
-        const t0 = e.out > 0 ? e.at : e.at - T;
-        out.push(e.along === 'x' ? { x0: a, x1: b, z0: t0, z1: t0 + T, room } : { x0: t0, x1: t0 + T, z0: a, z1: b, room });
-      }
-    }
-    for (const cx of [x0, x1]) for (const cz of [z0, z1]) {
-      const bx = cx === x0 ? x0 - T : x1, bz = cz === z0 ? z0 - T : z1;
-      const sq = { x0: bx, x1: bx + T, z0: bz, z1: bz + T, room };
-      if (!overlapsRoom(sq)) out.push(sq);
-    }
+// The same in 3D: from (x, y, z) by (dx, dy, dz). A box without y0/y1 spans every height.
+function segBox3(x, y, z, dx, dy, dz, b, m = 0) {
+  let t0 = 0, t1 = 1, lo, hi, a, c;
+  for (let i = 0; i < 3; i++) {
+    let p, d;
+    if (i === 0) { p = x; d = dx; lo = b.x0 - m; hi = b.x1 + m; }
+    else if (i === 1) { p = z; d = dz; lo = b.z0 - m; hi = b.z1 + m; }
+    else { if (b.y0 === undefined) break; p = y; d = dy; lo = b.y0 - m; hi = b.y1 + m; }
+    if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return Infinity; continue; }
+    a = (lo - p) / d; c = (hi - p) / d;
+    if (a > c) { const s = a; a = c; c = s; }
+    if (a > t0) t0 = a;
+    if (c < t1) t1 = c;
+    if (t0 > t1) return Infinity;
   }
-  return out;
+  return t0;
 }

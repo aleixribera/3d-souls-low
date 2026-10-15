@@ -65,18 +65,18 @@ function addFlame(group, x, y, z, size, light, color = 0xffa040) {
   if (light) group.add(light);
   flames.push({ group, mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
 }
-function addBonfire(group, x, z, intensity) {
+function addBonfire(group, x, z, intensity, y = 0) {
   for (let i = 0; i < 5; i++) {
-    const log = addBox(group, 0.14, 0.14, 0.95, MAT.log, x, 0.12, z);
+    const log = addBox(group, 0.14, 0.14, 0.95, MAT.log, x, y + 0.12, z);
     log.rotation.y = i * Math.PI / 2.5; log.rotation.x = 0.25;
   }
   const ash = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.08, 14), MAT.dark);
-  ash.position.set(x, 0.04, z); group.add(ash);
-  addBox(group, 0.05, 1.3, 0.09, MAT.bonfireSword, x, 0.7, z).rotation.z = 0.18;
+  ash.position.set(x, y + 0.04, z); group.add(ash);
+  addBox(group, 0.05, 1.3, 0.09, MAT.bonfireSword, x, y + 0.7, z).rotation.z = 0.18;
   const light = new THREE.PointLight(0xff8a3c, intensity, 0, 1.0);
-  light.position.set(x, 1.4, z);
-  addFlame(group, x, 0.62, z, 1, light);
-  addDust(group, x, 1.4, z, 2.2, 16);
+  light.position.set(x, y + 1.4, z);
+  addFlame(group, x, y + 0.62, z, 1, light);
+  addDust(group, x, y + 1.4, z, 2.2, 16);
 }
 // Iron portcullis spanning the hall at x; returns the group that lifts.
 function buildPortcullis(group, x, width, height) {
@@ -169,56 +169,94 @@ function buildHall(L) {
   }
   return { group: G, gates };
 }
-// Room-style levels: each room gets its own floor, wall and light colours. Pillars are solid.
-// Also returns `solids`: the wall and pillar boxes bodies and the camera collide with.
+// Room-style levels (js/terrain.js): each room gets its own floor, wall and light colours, at its own height.
+// Floors are slabs (with holes for pits), roofed rooms get a ceiling, ramps are a slope or a flight of steps.
+// The terrain's solids (walls, rails, ledge faces, lintels, posts, blocks) are drawn where they collide.
 function buildRooms(L) {
-  const G = new THREE.Group(), gates = [], solids = [], C = CONFIG.rooms, wh = L.wallHeight;
+  const G = new THREE.Group(), gates = [], C = CONFIG.rooms, H = CONFIG.height, TR = terrainFor(L);
   const mats = new Map();
-  const matsFor = room => {
-    if (!mats.has(room)) mats.set(room, {
-      floor: new THREE.MeshStandardMaterial({ color: room.floor, roughness: 0.95 }),
-      wall: new THREE.MeshStandardMaterial({ color: room.wall, roughness: 0.9 }),
+  const matsFor = src => {
+    if (!mats.has(src)) mats.set(src, {
+      floor: new THREE.MeshStandardMaterial({ color: src.floor ?? 0x3a3733, roughness: 0.95 }),
+      wall: new THREE.MeshStandardMaterial({ color: src.wall ?? 0x4a453e, roughness: 0.9 }),
     });
-    return mats.get(room);
+    return mats.get(src);
   };
-  for (const room of L.rooms) {
-    const [x0, x1, z0, z1] = room.rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, M = matsFor(room);
-    addBox(G, w, 0.5, d, M.floor, cx, -0.25, cz);
-    for (let x = x0 + 4; x < x1 - 0.01; x += 4) addBox(G, 0.06, 0.012, d, MAT.dark, x, 0.006, cz);
-    for (let z = z0 + 4; z < z1 - 0.01; z += 4) addBox(G, w, 0.012, 0.06, MAT.dark, cx, 0.006, z);
-    addBox(G, w, 0.5, d, MAT.ceiling, cx, wh + 0.25, cz);
-    const light = new THREE.PointLight(room.light, room.dim ? C.dimLight : C.roomLight, Math.max(w, d) * 1.3, 1.0);
-    light.position.set(cx, wh - 1.5, cz); G.add(light);
+  const boxOf = (b, mat, shrinkTop = 0) =>
+    addBox(G, b.x1 - b.x0, b.y1 - b.y0 - shrinkTop, b.z1 - b.z0, mat, (b.x0 + b.x1) / 2, (b.y0 + b.y1 - shrinkTop) / 2, (b.z0 + b.z1) / 2);
+  for (const R of TR.regions) {
+    const room = R.src, [x0, x1, z0, z1] = R.rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, M = matsFor(room);
+    if (R.kind === 'ramp') { buildRamp(G, R, M.floor); continue; }
+    const y = R.lo;
+    for (const p of rectMinus(R.rect, R.pits)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y - H.slab, y1: y }, M.floor);
+    const seams = [];   // faint grid seams, clipped around pits
+    for (let x = x0 + 4; x < x1 - 0.01; x += 4) seams.push([x - 0.03, x + 0.03, z0, z1]);
+    for (let z = z0 + 4; z < z1 - 0.01; z += 4) seams.push([x0, x1, z - 0.03, z + 0.03]);
+    for (const sm of seams) for (const p of rectMinus(sm, R.pits)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y, y1: y + 0.012 }, MAT.dark);
+    if (!R.open) addBox(G, w, H.slab, d, MAT.ceiling, cx, R.top + H.slab / 2, cz);
+    if (room.light !== undefined) {
+      const light = new THREE.PointLight(room.light, room.dim ? C.dimLight : C.roomLight, Math.max(w, d) * 1.3, 1.0);
+      light.position.set(cx, y + Math.min(R.height, L.wallHeight) - 1.5, cz); G.add(light);
+    }
     for (const [px, pz] of room.pillars || []) {
-      const s = C.pillarSize;
-      addBox(G, s, wh, s, M.wall, px, wh / 2, pz);
-      addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, 0.2, pz);
-      addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, wh - 0.5, pz);
-      solids.push({ x0: px - s / 2, x1: px + s / 2, z0: pz - s / 2, z1: pz + s / 2 });
+      const s = C.pillarSize, h = R.height;
+      addBox(G, s, h, s, M.wall, px, y + h / 2, pz);
+      addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + 0.2, pz);
+      addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + h - 0.5, pz);
     }
     for (const [bx, bz] of room.braziers || []) {
-      addBox(G, 0.5, 1.0, 0.5, MAT.iron, bx, 0.5, bz);
-      addBox(G, 0.8, 0.15, 0.8, MAT.iron, bx, 1.05, bz);
-      addFlame(G, bx, 1.45, bz, C.brazierSize, null, new THREE.Color(room.light).lerp(new THREE.Color(0xffffff), 0.35).getHex());
+      addBox(G, 0.5, 1.0, 0.5, MAT.iron, bx, y + 0.5, bz);
+      addBox(G, 0.8, 0.15, 0.8, MAT.iron, bx, y + 1.05, bz);
+      addFlame(G, bx, y + 1.45, bz, C.brazierSize, null, new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffffff), 0.35).getHex());
     }
   }
-  for (const b of roomWalls(L.rooms)) {
-    addBox(G, b.x1 - b.x0, wh, b.z1 - b.z0, matsFor(b.room).wall, (b.x0 + b.x1) / 2, wh / 2, (b.z0 + b.z1) / 2);
-    solids.push(b);
+  for (const s of TR.solids) {
+    if (s.kind === 'pillar') continue;   // drawn with their bases above
+    const M = matsFor(s.region ? s.region.src : s.block);
+    if (s.kind === 'face') boxOf(s, M.wall, 0.02);   // just under the floor above, so the two never flicker
+    else boxOf(s, M.wall);
+    if (s.kind === 'rail') addBox(G, s.x1 - s.x0 + 0.08, 0.08, s.z1 - s.z0 + 0.08, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.04, (s.z0 + s.z1) / 2);
   }
   // Gates: a lintel above, a portcullis below; the closed portcullis is a solid box across the doorway.
   const t = L.gateThickness, gh = L.gateHeight;
   for (const z of L.gated) {
-    const g = z.gate, alongX = g.along === 'x';
-    addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gh + (wh - gh) / 2, g.z);
+    const g = z.gate, alongX = g.along === 'x', gy = TR.floorY(g.x, g.z, g.y), wh = gateHeadroom(TR, g.x, g.z, gy);
+    if (wh > gh) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
     const mesh = buildPortcullis(G, g.x, g.width, gh);
-    mesh.position.z = g.z; if (alongX) mesh.rotation.y = Math.PI / 2;
-    const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - t / 2, z1: g.z + t / 2 }
-                       : { x0: g.x - t / 2, x1: g.x + t / 2, z0: g.z - g.width / 2, z1: g.z + g.width / 2 };
-    gates.push({ id: z.id, x: g.x, z: g.z, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap });
+    mesh.position.set(g.x, gy, g.z); if (alongX) mesh.rotation.y = Math.PI / 2;
+    const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - t / 2, z1: g.z + t / 2, y0: gy, y1: gy + gh }
+                       : { x0: g.x - t / 2, x1: g.x + t / 2, z0: g.z - g.width / 2, z1: g.z + g.width / 2, y0: gy, y1: gy + gh };
+    gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap });
   }
-  for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight);
-  return { group: G, gates, solids };
+  for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y));
+  return { group: G, gates, solids: TR.solids, slabs: TR.slabs, terrain: TR };
+}
+// Headroom over a gate: the lowest of the regions whose floor it stands on.
+function gateHeadroom(TR, x, z, y) {
+  const hs = TR.regions.filter(R => inRect(R.rect, x, z) && Math.abs(R.floorAt(x, z) - y) < 0.05).map(R => R.height);
+  return hs.length ? Math.min(...hs) : CONFIG.height.rail;
+}
+// A ramp: a sloped slab, or (stairs) a flight of steps; either way it collides as a smooth slope.
+function buildRamp(G, R, mat) {
+  const H = CONFIG.height, [x0, x1, z0, z1] = R.rect, ax = R.axis === 'x';
+  const a0 = ax ? x0 : z0, a1 = ax ? x1 : z1, len = a1 - a0, width = ax ? z1 - z0 : x1 - x0, mid = ax ? (z0 + z1) / 2 : (x0 + x1) / 2;
+  const f = s => ax ? R.floorAt(s) : R.floorAt(0, s), base = R.lo - H.slab;
+  const block = (s0, s1, top) => {   // a box across the ramp from s0 to s1 along it, from the base up to `top`
+    const h = top - base, c = (s0 + s1) / 2;
+    if (h <= 0.02) return;
+    if (ax) addBox(G, s1 - s0, h, width, mat, c, base + h / 2, mid); else addBox(G, width, h, s1 - s0, mat, mid, base + h / 2, c);
+  };
+  if (R.src.stairs) {   // each step reaches the slope's height at its middle, plus half a step
+    const n = Math.max(1, Math.round((R.hi - R.lo) / H.stairStep)), run = len / n, half = (R.hi - R.lo) / n / 2;
+    for (let i = 0; i < n; i++) block(a0 + i * run, a0 + (i + 1) * run, f(a0 + (i + 0.5) * run) + half);
+    return;
+  }
+  const rise = f(a1) - f(a0), slope = Math.hypot(len, rise);
+  const m = ax ? addBox(G, slope, H.slab, width, mat, (a0 + a1) / 2, (f(a0) + f(a1)) / 2 - H.slab / 2, mid)
+               : addBox(G, width, H.slab, slope, mat, mid, (f(a0) + f(a1)) / 2 - H.slab / 2, (a0 + a1) / 2);
+  if (ax) m.rotation.z = Math.atan2(rise, len); else m.rotation.x = -Math.atan2(rise, len);
+  // A stepped wedge underneath, so the slope never shows daylight from the side.
+  for (let s = a0; s < a1 - 1e-6; s += H.segment) { const s1 = Math.min(a1, s + H.segment); block(s, s1, Math.min(f(s), f(s1)) - H.slab * 0.6); }
 }
 const BUILDERS = { arena: buildArena, hall: buildHall, rooms: buildRooms };
 
@@ -240,15 +278,21 @@ function loadStage(def) {
   return stage;
 }
 
-// Walkable space for the current level: a rectangle, side alcoves and closed gates.
+// Walkable space for the current level. Every layout answers the same height questions: groundAt(x, z, y)
+// (the floor a body there stands on), ceilingAt(x, z, y), floorY(x, z, y) for placements, and killY (pits).
+// Hall and arena levels are flat: the floor is y = 0 everywhere.
 function makeWorld(def, st) {
+  const flat = { groundAt: () => 0, floorY: () => 0, killY: -Infinity };
   if (def.layout === 'arena')
-    return { minX: -def.halfX, maxX: def.halfX, halfZ: def.halfZ, ceiling: Infinity, alcoves: [], gates: [], gateThickness: 0, bonfires: def.bonfires };
-  if (def.layout === 'rooms')   // `solids`: walls and pillars; closed gates are added to them where needed
-    return { rooms: def.rooms, solids: st.solids, ceiling: def.wallHeight, bonfires: def.bonfires,
+    return { ...flat, minX: -def.halfX, maxX: def.halfX, halfZ: def.halfZ, ceilingAt: () => Infinity, alcoves: [], gates: [], gateThickness: 0, bonfires: def.bonfires };
+  if (def.layout === 'rooms') {   // `solids`: walls, rails, ledges and pillars; closed gates are added to them where needed
+    const T = st.terrain;
+    return { rooms: def.rooms, regions: T.regions, solids: st.solids, slabs: st.slabs, bonfires: def.bonfires,
+             groundAt: T.groundAt, ceilingAt: T.ceilingAt, floorY: T.floorY, killY: T.killY,
              gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })) };
-  return { minX: 0, maxX: def.length, halfZ: def.halfZ, ceiling: def.wallHeight, gateThickness: def.gateThickness, bonfires: def.bonfires,
-           gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })),
+  }
+  return { ...flat, minX: 0, maxX: def.length, halfZ: def.halfZ, ceilingAt: () => def.wallHeight, gateThickness: def.gateThickness, bonfires: def.bonfires,
+           gates: st.gates.map(g => ({ ...g, y: 0, open: false, lift: 0 })),
            alcoves: def.alcoves.map(a => ({ x0: a.x - def.alcoveWidth / 2, x1: a.x + def.alcoveWidth / 2, side: a.side, depth: def.alcoveDepth })) };
 }
 let world = null;

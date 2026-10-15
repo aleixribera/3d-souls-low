@@ -1,5 +1,21 @@
 # Plan: Level 3 "The Tower" — new building blocks, new enemies, new level style
 
+## Progress
+
+| Part | Version | Status |
+|---|---|---|
+| 0. Save this plan | — | done (this file) |
+| 1. 2.5D world: heights, ramps, edges, drops, pits, fall damage, enemy edge sense, 3D sight and camera; Test: Heights | v3.1 | done |
+| 2. Open rooms (sky, grass, silhouettes) and culling; Test: Courtyard | v3.2 | |
+| 3. Projectiles, shove, shortcut gates | v3.3 | |
+| 4. New enemies and the Bell Warden | v3.4 | |
+| 5. Level 3: The Tower | v3.5 | |
+
+Notes on what was built:
+- Part 1 also brings `open: true` rooms (no roof, the camera rises freely) because the walkway-over-a-yard test needs it; Part 2 adds the sky, grass and silhouettes over them.
+- Solid masses that are not rooms (a tower's core) are a level field `blocks: [{ rect, y0, y1 }]`.
+- Tests: `tests/suite.js` (loaded with `#dev`; run `await __arena.tests.run()`), regression plus one group per part.
+
 ## Context
 Steps 1–5 of ROADMAP.md are done: the game is split into `js/` files, it supports gamepads, death is free, attack tokens are in, and roll-only, dash and tracking attacks exist on test enemies. Roadmap steps 6 (new enemies), 7 (height) and 8 (open areas with culling) all meet in one place: **Level 3**, a single level that combines an open courtyard with a tower climbed by **outer walkways**. It uses every mechanic so far, and it introduces the enemies and building blocks the later levels will reuse. Story comes later; names here are placeholders.
 

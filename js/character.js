@@ -37,21 +37,25 @@ function applyPoise(b, amount, committed, max) {
   return b.poise <= 0 ? POISE.STAGGER : POISE.FLINCH;
 }
 // True if a closed gate stands between two bodies: no seeing, locking or hitting through it.
-// In room-style levels walls and pillars block the line too.
+// In room-style levels walls, pillars, floors and roofs block the line too (in 3D, eye to eye), but rails don't.
+const EYE = 0.75;   // eye height as a fraction of body height
 function gateBetween(a, b) {
   if (world && world.solids) {
-    const dx = b.x - a.x, dz = b.z - a.z;
-    return world.solids.some(s => segBox(a.x, a.z, dx, dz, s) <= 1) ||
-           world.gates.some(g => !g.open && segBox(a.x, a.z, dx, dz, g.box) <= 1);
+    const ya = a.y + a.height * EYE, dx = b.x - a.x, dy = b.y + b.height * EYE - ya, dz = b.z - a.z;
+    for (const s of world.solids) if (!s.low && segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
+    for (const s of world.slabs) if (segBox3(a.x, ya, a.z, dx, dy, dz, s) <= 1) return true;
+    for (const g of world.gates) if (!g.open && segBox3(a.x, ya, a.z, dx, dy, dz, g.box) <= 1) return true;
+    return false;
   }
   return !!world && world.gates.some(g => !g.open && (a.x - g.x) * (b.x - g.x) < 0);
 }
-// Room-style levels: push a body's circle out of every wall, pillar and closed gate.
+// Room-style levels: push a body's circle out of every wall, pillar and closed gate its height span meets.
+// On the ground, anything lower than stepUp above the feet is stepped onto rather than walked into.
 function collideSolids(b) {
-  const r = b.radius;
+  const r = b.radius, lo = b.y + (b.grounded ? CONFIG.height.stepUp : 0.05), hi = b.y + b.height;
   for (let pass = 0; pass < 2; pass++) {
-    for (const s of world.solids) pushOutOfBox(b, s, r);
-    for (const g of world.gates) if (!g.open) pushOutOfBox(b, g.box, r);
+    for (const s of world.solids) if (s.y1 > lo && s.y0 < hi) pushOutOfBox(b, s, r);
+    for (const g of world.gates) if (!g.open && g.box.y1 > lo && g.box.y0 < hi) pushOutOfBox(b, g.box, r);
   }
 }
 function pushOutOfBox(b, s, r) {
@@ -106,13 +110,44 @@ function clampToWorld(b) {
     } else b.z = side * zIn;
   }
 }
-// Shared body physics: knockback decay, gravity, world bounds.
-function integrateBody(b, dt, knockFriction) {
-  b.x += (b.vx + b.kx) * dt; b.z += (b.vz + b.kz) * dt;
+// Shared body physics: voluntary movement (vx, vz), knockback, gravity, floors at heights, world bounds.
+// edgeSense (enemies): voluntary movement stops at the brink of an open edge or a drop deeper than stepDown;
+// knockback can still push the body over. Keeps b.grounded, and sets b.fallHeight (from the highest point of
+// the fall) on the step the body lands, and b.inPit once it falls below the level's kill depth.
+function integrateBody(b, dt, knockFriction, edgeSense = false) {
+  const H = CONFIG.height;
+  let mx = b.vx * dt, mz = b.vz * dt;
+  if (edgeSense && b.grounded && (mx || mz)) [mx, mz] = edgeStop(b, mx, mz);
+  b.x += mx + b.kx * dt; b.z += mz + b.kz * dt;
   const f = Math.exp(-knockFriction * dt); b.kx *= f; b.kz *= f;
-  if (b.y > 0 || b.vy > 0) { b.vy -= CONFIG.gravity * dt; b.y += b.vy * dt; }
-  if (b.y <= 0) { b.y = 0; b.vy = 0; }
   clampToWorld(b);
+  b.fallHeight = 0;
+  const ground = world.groundAt(b.x, b.z, b.y);
+  if (b.grounded && b.vy <= 0 && ground >= b.y - H.stepDown) { b.y = ground; b.vy = 0; return; }   // follows stairs and ramps
+  if (b.grounded) { b.grounded = false; b.peak = b.y; }   // jumped, or walked off an edge
+  b.vy -= CONFIG.gravity * dt; b.y += b.vy * dt;
+  b.peak = Math.max(b.peak, b.y);
+  if (b.y <= ground) {
+    if (b.vy <= 0) { b.fallHeight = b.peak - ground; b.y = ground; b.vy = 0; b.grounded = true; }
+    else b.y = ground;   // rising past a step within reach: lifted onto it
+  }
+  if (b.y < world.killY) { b.y = world.killY; b.vy = 0; b.inPit = true; }
+}
+// Voluntary movement (mx, mz) cut so the body never steps over a drop: slides along the brink if it can.
+function edgeStop(b, mx, mz) {
+  const H = CONFIG.height, probe = b.radius * H.edgeProbe, l = Math.hypot(mx, mz);
+  const safe = (x, z) => world.groundAt(x, z, b.y) >= b.y - H.stepDown;
+  if (safe(b.x + mx + mx / l * probe, b.z + mz + mz / l * probe)) return [mx, mz];
+  const okX = mx !== 0 && safe(b.x + mx + Math.sign(mx) * probe, b.z);
+  const okZ = mz !== 0 && safe(b.x, b.z + mz + Math.sign(mz) * probe);
+  if (okX && okZ) return Math.abs(mx) >= Math.abs(mz) ? [mx, 0] : [0, mz];
+  return [okX ? mx : 0, okZ ? mz : 0];
+}
+// Damage for landing after falling h metres: none up to `safe`, then per metre; Infinity from `lethal` on.
+function fallDamage(h) {
+  const F = CONFIG.fall;
+  if (h >= F.lethal) return Infinity;
+  return h > F.safe ? (h - F.safe) * F.perMetre : 0;
 }
 function approachVel(b, tx, tz, maxDelta) {
   const dx = tx - b.vx, dz = tz - b.vz, d = Math.hypot(dx, dz);

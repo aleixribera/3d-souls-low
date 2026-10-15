@@ -14,6 +14,7 @@ const CONFIG = {
     yawFollow: 0.85,      // how fast the camera swings behind the facing (rad/s at 90 deg off)
     leanRange: 11, leanAmount: 0.38, leanPullback: 1.4, leanRaise: 0.5,
     wallMargin: 0.3, gateMargin: 0.6, closeRaise: 1.6, floor: 0.6, ceilingMargin: 0.7,
+    refRate: 8,           // how fast the camera's ground height follows stairs and drops (1/s)
   },
   zoom: { min: 2.6, max: 12, step: 0.8, default: 6.4, rate: 7, repeatDelay: 0.28, repeat: 0.09,
           heightRatio: 0.48 },   // camera height = distance * heightRatio
@@ -83,6 +84,18 @@ const CONFIG = {
             patience: 3, swapMargin: 3, swapWait: 1.5 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7 },
+  // Heights (room levels, js/terrain.js). A body walks up onto anything within `stepUp` of its feet and
+  // stays on floors that drop away by at most `stepDown` per step (stairs, ramps); a bigger drop is a fall.
+  // `slab`: floor and roof thickness (blocks sight and the camera). `rail`: parapet height and thickness.
+  // `segment`: wall pieces along a slope are this long. `maxSlope`: steepest ramp (rise per metre).
+  // Falling `killDepth` m below the lowest floor of the level is death (a pit).
+  // Enemies: `edgeProbe` (fraction of the radius) is how far ahead they look for a drop; they chase only
+  // within `reach` m of height, and give up after `giveUp` s of a target they cannot reach.
+  height: { stepUp: 0.45, stepDown: 0.6, slab: 0.5, rail: 1.2, railThickness: 0.35, segment: 1, maxSlope: 0.6,
+            stairStep: 0.3, killDepth: 12, edgeProbe: 0.8, reach: 2.5, giveUp: 4 },
+  // Fall damage: a landing more than `safe` m below the highest point of the fall costs (h - safe) *
+  // `perMetre` HP; `lethal` m or more kills. A plain jump never reaches `safe`.
+  fall: { safe: 4.5, perMetre: 9, lethal: 14, hurtTime: 0.5 },
   level: { leash: 22,        // give up the chase when the player is this far away...
            homeLeash: 30,    // ...or when dragged this far from home; then walk back home
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
@@ -101,7 +114,8 @@ const CONFIG = {
           postureBreak: { color: 0xffc060, count: 30, speed: 8 },
           alert: { color: 0xff6a30, count: 10, speed: 2.5 },
         },
-        postureBreakShake: { time: 0.22, amp: 0.08 } },
+        postureBreakShake: { time: 0.22, amp: 0.08 },
+        hardLanding: { ring: 1.4, crack: 0.9, dust: 10, shake: 0.09 } },   // dust and jolt when a fall hurts
   // Rendering only (section 9b). Nothing here changes how the game plays. Per-level looks are optional
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {

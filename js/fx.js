@@ -86,18 +86,19 @@ const groundFx = (() => {
   const next = (pool, key) => pool[cursor[key]++ % pool.length];   // round-robin = oldest first
   return {
     // A lone ring on the ground (no cracks or dust), e.g. the roll-only warning. `peak`: starting opacity.
-    ring(x, z, size, color, peak) {
+    // y: the floor it lies on.
+    ring(x, z, size, color, peak, y = 0) {
       const r = next(rings, 'ring'); r.age = 0; r.size = size; r.peak = peak; r.mesh.material.color.setHex(color);
-      r.mesh.position.x = x; r.mesh.position.z = z; r.mesh.visible = true;
+      r.mesh.position.set(x, y + 0.04, z); r.mesh.visible = true;
     },
-    spawn(x, z, fx) {
-      this.ring(x, z, fx.ring, RING_COLOR, 0.5);
-      const c = next(cracks, 'crack'); c.age = 0; c.mesh.position.x = x; c.mesh.position.z = z;
+    spawn(x, z, fx, y = 0) {
+      this.ring(x, z, fx.ring, RING_COLOR, 0.5, y);
+      const c = next(cracks, 'crack'); c.age = 0; c.mesh.position.set(x, y + 0.02, z);
       c.mesh.scale.set(fx.crack, fx.crack, 1); c.mesh.rotation.z = rand(0, Math.PI * 2); c.mesh.visible = true;
       for (let i = 0; i < fx.dust; i++) {
         const d = next(dusts, 'dust'), a = rand(0, Math.PI * 2), s = rand(0.6, 1.6) * Math.sqrt(fx.ring);
         d.age = 0; d.vx = Math.cos(a) * s; d.vz = Math.sin(a) * s; d.vy = rand(0.6, 1.5);
-        d.mesh.position.set(x + Math.cos(a) * 0.3, 0.1, z + Math.sin(a) * 0.3); d.mesh.visible = true;
+        d.mesh.position.set(x + Math.cos(a) * 0.3, y + 0.1, z + Math.sin(a) * 0.3); d.mesh.visible = true;
       }
     },
     update(dt) {

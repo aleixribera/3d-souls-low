@@ -14,7 +14,11 @@ function registerListeners() {
     spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);
     Game.addShake(CONFIG.fx.postureBreakShake.time, CONFIG.fx.postureBreakShake.amp);
   });
-  events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
+  events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
+  events.on('fallDamage', d => {   // a hard landing: dust, and a jolt if it was the player
+    groundFx.spawn(d.body.x, d.body.z, CONFIG.fx.hardLanding, d.body.y);
+    if (d.body === Game.player) Game.addShake(CONFIG.groundPound.shakeTime * 1.5, CONFIG.fx.hardLanding.shake);
+  });
   events.on('alert', d => spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, F.alert));
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
@@ -108,7 +112,7 @@ function frame(now) {
   const frameDt = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
-  if (Game.mode !== 'play') { accumulator = 0; return; }   // menus and pause: simulation stopped
+  if (Game.mode !== 'play' || Game.manualClock) { accumulator = 0; return; }   // menus, pause, or tests stepping by hand
   accumulator += frameDt;
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
@@ -118,6 +122,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
-window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, TEST_DEFS, tokens, LEVEL_1, LEVEL_2, TUTORIAL, ARENA,
-                   PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, get world() { return world; } };
+window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, tokens, LEVEL_1, LEVEL_2, TUTORIAL, ARENA,
+                   PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy,
+                   get world() { return world; } };
 window.__arenaReady = true;

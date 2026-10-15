@@ -2,7 +2,7 @@
 // ============================================================================
 // 6. Enemy
 // ============================================================================
-// opts: x, z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
+// opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
 class Enemy {
   constructor(def, opts) {
     const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
@@ -13,8 +13,10 @@ class Enemy {
     this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
     this.home = { x: opts.x, z: opts.z, yaw: opts.yaw, state: B.home };
     this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
-    this.x = opts.x; this.y = 0; this.z = opts.z; this.yaw = opts.yaw;
+    this.x = opts.x; this.y = opts.y ?? 0; this.z = opts.z; this.yaw = opts.yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.grounded = true; this.peak = this.y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
+    this.unreachable = 0; this.reachable = true;    // time the player has been too far above or below to fight
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
@@ -74,14 +76,17 @@ class Enemy {
     const toPlayer = Math.atan2(dx, dz);
     const playerAlive = player.alive();
     const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
+    // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.
+    const reach = this.reachable = Math.abs(player.y - this.y) <= CONFIG.height.reach;
+    const engage = sees && reach;
     let tx = 0, tz = 0;
 
     switch (this.state) {
       case ES.IDLE:
-        if (sees) this.setState(ES.CHASE);
+        if (engage) this.setState(ES.CHASE);
         break;
       case ES.PATROL: {
-        if (sees) { this.setState(ES.CHASE); break; }
+        if (engage) { this.setState(ES.CHASE); break; }
         const goal = this.path[this.pathDir > 0 ? 1 : 0], gx = goal - this.x, gz = this.pathZ - this.z, gd = Math.hypot(gx, gz);
         if (gd < 0.3) this.pathDir *= -1;
         else {
@@ -92,7 +97,7 @@ class Enemy {
         break;
       }
       case ES.LURK:   // hidden in an alcove until the player passes close
-        if (sees) {
+        if (engage) {
           this.yaw = toPlayer; this.vy = E.leapVelocity;
           this.vx = dx / dist * E.leapSpeed; this.vz = dz / dist * E.leapSpeed;
           this.setState(ES.LEAP);
@@ -100,16 +105,16 @@ class Enemy {
         break;
       case ES.LEAP:
         tx = this.vx; tz = this.vz;
-        if (this.stateTime >= E.leapTime && this.y <= 0) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        if (this.stateTime >= E.leapTime && this.grounded) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.DORMANT:   // lying on the floor
-        if (sees) this.setState(ES.RISE);
+        if (engage) this.setState(ES.RISE);
         break;
       case ES.RISE:
         if (this.stateTime >= E.riseTime) { this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.RETURN: {   // lost the player: walk back home, then resume the home behaviour
-        if (sees) { this.setState(ES.CHASE); break; }
+        if (engage) { this.setState(ES.CHASE); break; }
         const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
         if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
         const sp = d.speed * E.returnSpeedMul;
@@ -119,9 +124,13 @@ class Enemy {
       }
       case ES.CHASE: {
         const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
-        if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player)) { this.next = null; this.setState(ES.RETURN); break; }
+        this.unreachable = reach ? 0 : this.unreachable + dt;
+        if (!playerAlive || dist > this.leash || farFromHome || gateBetween(this, player) || this.unreachable > CONFIG.height.giveUp) {
+          this.next = null; this.unreachable = 0; this.setState(ES.RETURN); break;
+        }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt;
+        if (!reach) { this.next = null; this.token = false; tx = dx / dist * d.speed; tz = dz / dist * d.speed; break; }   // to the brink, no further
         if (!this.token) { this.next = null; [tx, tz] = this.circleVelocity(player, dist); break; }   // not its turn: circle
         if (this.cooldown <= 0 && !this.next) this.next = this.pickAttack(dist);
         const want = this.next ? this.next.range : d.holdRange;
@@ -171,8 +180,20 @@ class Enemy {
     }
 
     approachVel(this, tx, tz, E.accel * dt);
-    integrateBody(this, dt, E.knockFriction);
+    integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
+    this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+  die() { this.hitbox = null; this.next = null; this.setState(ES.DEAD); }
+  // After moving: death in a pit, or damage from a hard landing (same rule as the player).
+  checkFall() {
+    if (!this.alive()) return;
+    if (this.inPit) { this.hp = 0; this.die(); events.emit('fell', { body: this }); return; }
+    const dmg = this.fallHeight > 0 ? fallDamage(this.fallHeight) : 0;
+    if (dmg <= 0) return;
+    this.hp = Math.max(0, this.hp - dmg); this.tint = 1;
+    events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.def.hp) });
+    if (this.hp <= 0) this.die();
   }
   // Without an attack token: keep to a ring around the player (out of reach), sliding along it toward
   // the slot the token manager gave it, still facing the player. Returns the wanted velocity [x, z].

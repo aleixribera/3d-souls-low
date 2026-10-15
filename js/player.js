@@ -6,14 +6,15 @@
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 
 class Player {
-  constructor(def, x, z, yaw) {
+  constructor(def, x, z, yaw, y = 0) {
     this.def = def;
     this.rig = new Rig(def.look);
     this.radius = def.radius; this.height = BODY_HEIGHT * def.look.scale;
     this.maxHp = def.stats.maxHp; this.maxStamina = def.stats.maxStamina; this.maxPoise = def.stats.maxPoise;
     this.inventory = makeInventory(def.inventory);
-    this.x = x; this.y = 0; this.z = z; this.yaw = yaw;
+    this.x = x; this.y = y; this.z = z; this.yaw = yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.grounded = true; this.peak = y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
@@ -166,8 +167,8 @@ class Player {
           this.landHit = true; this.vy = air.hop; this.landTime = a.recovery * air.hitRecoveryMul;
         }
         if (this.hitbox && this.stateTime >= air.impactTime) this.hitbox = null;
-        if (!this.hitbox && this.y <= 0 && this.wantsRoll()) { this.startRoll(mv); break; }
-        if (this.stateTime >= this.landTime && this.y <= 0) this.setState(PS.IDLE);
+        if (!this.hitbox && this.grounded && this.wantsRoll()) { this.startRoll(mv); break; }
+        if (this.stateTime >= this.landTime && this.grounded) this.setState(PS.IDLE);
         break;
       }
       case PS.ROLL: {
@@ -241,17 +242,30 @@ class Player {
       this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), CONFIG.lock.turnRate * dt);
 
     integrateBody(this, dt, C.knockFriction);
-    if (this.y <= 0 && this.in('airborne') && this.vy <= 0 && this.stateTime > 0) this.setState(PS.IDLE);
-    if (this.y <= 0 && this.state === PS.JUMP_ATTACK && this.vy <= 0 && this.stateTime > 0) {
+    if (!this.grounded && this.in('falls')) this.setState(PS.FALL);   // walked (or was knocked) off an edge
+    if (this.grounded && this.in('airborne') && this.stateTime > 0) this.setState(PS.IDLE);
+    if (this.grounded && this.state === PS.JUMP_ATTACK && this.stateTime > 0) {
       // Touchdown: a swing still in wind-up strikes on impact; the hitbox lingers for impactTime.
       const a = this.attack;
       if (!this.hitbox) this.hitbox = new Hitbox(this, a.box, this.payload);
       this.landHit = false; this.landTime = a.recovery;
       this.vx *= C.landKeep; this.vz *= C.landKeep;
       this.setState(PS.LAND);
-      events.emit('land', { x: this.x, z: this.z, fx: a.air.fx });
+      events.emit('land', { x: this.x, y: this.y, z: this.z, fx: a.air.fx });
     }
+    this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
+  }
+  // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
+  checkFall() {
+    if (!this.alive()) return;
+    if (this.inPit) { this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); events.emit('fell', { body: this }); return; }
+    const dmg = this.fallHeight > 0 ? fallDamage(this.fallHeight) : 0;
+    if (dmg <= 0) return;
+    this.hp = Math.max(0, this.hp - dmg); this.tint = 1; this.hitbox = null;
+    events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.maxHp) });
+    if (this.hp <= 0) { this.setState(PS.DEAD); return; }
+    this.stunTime = CONFIG.fall.hurtTime; this.setState(PS.HURT);
   }
 
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.

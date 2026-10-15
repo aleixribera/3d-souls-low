@@ -145,17 +145,22 @@ const Game = {
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     groundFx.clear(); swordTrail.clear();
   },
-  // Spawn options for a level entry: the one place placement rules live.
+  // Spawn options for a level entry: the one place placement rules live. Every placement stands on the
+  // floor under it: the top-most one, or the highest at or below its `y` when it gives one.
   spawnSpec(entry, behavior) {
+    const spec = this.placement(entry, behavior);
+    return { ...spec, y: world.floorY(spec.x, spec.z, spec.y) };
+  },
+  placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;
     const base = { behavior, notice: CONFIG.notice[behavior], leash: V.leash, homeLeash: V.homeLeash };
     if (behavior === 'ambush') {
       const a = L.alcoves.find(al => al.id === entry.alcove);
       return { ...base, x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * V.ambushDepth), yaw: a.side > 0 ? Math.PI : 0 };
     }
-    if (behavior === 'patrol') return { ...base, x: entry.path[0], z: entry.z, yaw: entry.yaw ?? Math.PI / 2, path: entry.path };
+    if (behavior === 'patrol') return { ...base, x: entry.path[0], y: entry.y, z: entry.z, yaw: entry.yaw ?? Math.PI / 2, path: entry.path };
     if (behavior === 'gated') return { ...base, ...entry.spawn };
-    return { ...base, x: entry.x, z: entry.z, yaw: entry.yaw };
+    return { ...base, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw };
   },
   makeEnemies() {
     if (this.kind === 'arena') {
@@ -174,7 +179,7 @@ const Game = {
     const def = this.level;
     world = makeWorld(def, loadStage(def));
     const start = def.playerStart || def.start;
-    this.spawn = { x: start.x, z: start.z, yaw: start.yaw };
+    this.spawn = { x: start.x, y: start.y, z: start.z, yaw: start.yaw };
     // A zone fights one enemy (`enemy` + `spawn`) or several (`enemies`); `members` lists them either way.
     this.zones = (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
       spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));
@@ -191,7 +196,8 @@ const Game = {
   // A fresh player at the respawn point: full health and full flasks, after a death too.
   spawnPlayer() {
     if (this.player) this.player.rig.dispose();
-    this.player = new Player(PLAYER_DEF, this.spawn.x, this.spawn.z, this.spawn.yaw);
+    const s = this.spawn, y = world.floorY(s.x, s.z, s.y);
+    this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -200,7 +206,8 @@ const Game = {
   // ---- bonfires, death -------------------------------------------------------------------------
   nearBonfire() {
     const p = this.player;
-    return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range) || null;
+    return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range
+      && Math.abs(world.floorY(b.x, b.z, b.y) - p.y) < CONFIG.height.reach) || null;
   },
   // The bonfire the player could rest at right now, or null (none near, or an enemy is closing in).
   canRest() {
@@ -493,20 +500,32 @@ const Game = {
     this.mouseHold = M.holdTime;
   },
 
-  // Room levels: the fraction (0..1) of the boom from (x, z) by (dx, dz) that stays clear of solids and closed gates.
-  boomFit(x, z, dx, dz) {
+  // Room levels: the fraction (0..1) of the segment from (x, y, z) by (dx, dy, dz) that stays clear of walls,
+  // pillars, ledges, floors, roofs and closed gates (rails are low enough to look over).
+  boomFit(x, y, z, dx, dy, dz) {
     const m = CONFIG.camera.wallMargin;
     let f = 1;
-    for (const s of world.solids) f = Math.min(f, segBox(x, z, dx, dz, s, m));
-    for (const g of world.gates) if (!g.open) f = Math.min(f, segBox(x, z, dx, dz, g.box, m));
+    for (const s of world.solids) if (!s.low) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s, m));
+    for (const s of world.slabs) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s, m));
+    for (const g of world.gates) if (!g.open) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, g.box, m));
     return f;
+  },
+  // A camera height at (x, z): above the floor there and under the roof (or walkway) over the player's head.
+  camY(x, z, y, base) {
+    const K = CONFIG.camera, floor = world.groundAt(x, z, y), ceil = world.ceilingAt(x, z, base + K.lookHeight);
+    return Math.min(Math.max(y, (floor > -Infinity ? floor : base) + K.floor), ceil - K.ceilingMargin);
   },
   updateCamera(dt, snap) {
     const K = CONFIG.camera, Z = CONFIG.zoom, Lk = CONFIG.lock, W = world, p = this.player, c = this.cam;
     const k = snap ? 1 : 1 - Math.exp(-K.followRate * dt);
     c.zoom += (this.zoomTarget - c.zoom) * (snap ? 1 : 1 - Math.exp(-Z.rate * dt));
+    // Ground reference: follows the floor the player stands on (stairs, drops) but not the rise of a jump,
+    // which lifts the camera only half as much.
+    const ref = p.grounded ? p.y : Math.min(c.ref ?? p.y, p.y);
+    c.ref = snap || c.ref === undefined ? ref : c.ref + (ref - c.ref) * (1 - Math.exp(-K.refRate * dt));
+    const base = c.ref + (p.y - c.ref) * 0.5;
     let dist = c.zoom, pitch = c.pitch;
-    const look = new THREE.Vector3(p.x, p.y * 0.5 + K.lookHeight, p.z);
+    const look = new THREE.Vector3(p.x, base + K.lookHeight, p.z);
     const lock = this.lock;
     if (lock) {
       // Behind the player, aimed between player and target; pull back for big or distant targets.
@@ -538,11 +557,13 @@ const Game = {
     // Keep the camera inside the walls and on the player's side of closed gates:
     // shorten the boom from the player until it fits.
     const loX = W.minX + K.wallMargin, hiX = W.maxX - K.wallMargin, limZ = W.halfZ - K.wallMargin;
-    const ox = -fx * dist, oz = -fz * dist;
+    const ox = -fx * dist, oz = -fz * dist, head = base + K.lookHeight;
     let t = 1;
     const fit = (from, off, lim, above) => { if (above ? from + off > lim : from + off < lim) t = Math.min(t, (lim - from) / off); };
-    if (W.solids) t = this.boomFit(p.x, p.z, ox, oz);   // room levels: stop short of any wall, pillar or closed gate
-    else {
+    if (W.solids) {   // room levels: stop short of any wall, ledge, floor, roof or closed gate, in 3D
+      const ty = this.camY(p.x + ox, p.z + oz, base + height, base);
+      t = this.boomFit(p.x, head, p.z, ox, ty - head, oz);
+    } else {
       fit(p.x, ox, hiX, true); fit(p.x, ox, loX, false); fit(p.z, oz, limZ, true); fit(p.z, oz, -limZ, false);
       for (const g of W.gates) {
         if (g.open) continue;
@@ -550,15 +571,15 @@ const Game = {
       }
     }
     t = Math.max(0, t);
-    const want = new THREE.Vector3(p.x + ox * t, p.y * 0.5 + height * Math.max(t, 0.5) + (1 - t) * K.closeRaise, p.z + oz * t);
-    want.y = clamp(want.y, K.floor, W.ceiling - K.ceilingMargin);   // never through floor or ceiling
+    const wx = p.x + ox * t, wz = p.z + oz * t;
+    const want = new THREE.Vector3(wx, this.camY(wx, wz, base + height * Math.max(t, 0.5) + (1 - t) * K.closeRaise, base), wz);
     c.pos.lerp(want, k); c.look.lerp(look, k);
     if (W.solids) {
       // The smoothed position can cut a corner: pull it back along the line from the player if it would.
-      const dx = c.pos.x - p.x, dz = c.pos.z - p.z, f = this.boomFit(p.x, p.z, dx, dz);
+      const dx = c.pos.x - p.x, dz = c.pos.z - p.z, f = this.boomFit(p.x, head, p.z, dx, c.pos.y - head, dz);
       if (f < 1) { c.pos.x = p.x + dx * f; c.pos.z = p.z + dz * f; }
     } else { c.pos.x = clamp(c.pos.x, loX, hiX); c.pos.z = clamp(c.pos.z, -limZ, limZ); }
-    c.pos.y = clamp(c.pos.y, K.floor, W.ceiling - K.ceilingMargin);
+    c.pos.y = this.camY(c.pos.x, c.pos.z, c.pos.y, base);   // never through floor or ceiling
     if (snap) { c.prevPos.copy(c.pos); c.prevLook.copy(c.look); }
   },
 
@@ -613,7 +634,7 @@ const Game = {
                        yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
     const placed = [p, ...this.enemies].map(b => [b, at(b)]);
     for (const [b, q] of placed) {
-      b.rig.place(q.x, q.y, q.z, q.yaw);
+      b.rig.place(q.x, q.y, q.z, q.yaw, world.groundAt(q.x, q.z, q.y + 0.05));
       b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: p.x, pz: p.z });
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
@@ -630,7 +651,7 @@ const Game = {
       lockMarker.position.set(q.x, q.y + this.lock.height + CONFIG.lock.markerGap, q.z);
       lockMarker.rotation.y = t * 2.5;
     }
-    for (const g of world.gates) g.mesh.position.y = ease(g.lift) * g.liftHeight;
+    for (const g of world.gates) g.mesh.position.y = g.y + ease(g.lift) * g.liftHeight;
     // Irregular, subtle flicker in brightness and warmth.
     flames.forEach((f, i) => {
       const s = f.seed;

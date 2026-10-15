@@ -387,17 +387,17 @@ function archGeometry(halfSpan, rise, tube) {
   g.computeVertexNormals();
   return g;
 }
-function rubbleCluster(out, rnd, x, z, ax, az, nx, nz) {   // (ax, az): along the wall; (nx, nz): into the room
+function rubbleCluster(out, rnd, x, z, ax, az, nx, nz, y = 0) {   // (ax, az): along the wall; (nx, nz): into the room; y: floor
   const R = VIS.rubble, n = 1 + Math.floor(rnd() * R.cluster);
   for (let i = 0; i < n; i++) {
     const along = (rnd() - 0.5) * 1.2, inward = rnd() * rnd() * 0.7, s = between(rnd, R.size) * (1 - inward * 0.6);
-    out.push({ x: x + ax * along + nx * inward, z: z + az * along + nz * inward, s, ry: rnd() * 6.28, rx: (rnd() - 0.5) * 0.6, w: 0.8 + rnd() * 0.6 });
+    out.push({ x: x + ax * along + nx * inward, y, z: z + az * along + nz * inward, s, ry: rnd() * 6.28, rx: (rnd() - 0.5) * 0.6, w: 0.8 + rnd() * 0.6 });
   }
 }
 function rubbleMesh(rocks, rnd) {
   const m = new THREE.InstancedMesh(rockGeometry(rnd, 1), MAT.edge, rocks.length), o = new THREE.Object3D();
   rocks.forEach((r, i) => {
-    o.position.set(r.x, r.s * 0.25, r.z); o.rotation.set(r.rx, r.ry, 0); o.scale.set(r.s * r.w, r.s, r.s); o.updateMatrix();
+    o.position.set(r.x, r.y + r.s * 0.25, r.z); o.rotation.set(r.rx, r.ry, 0); o.scale.set(r.s * r.w, r.s, r.s); o.updateMatrix();
     m.setMatrixAt(i, o.matrix);
   });
   m.computeBoundingSphere();
@@ -454,7 +454,7 @@ function shaftMesh(list, S) {
     blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
   const m = new THREE.InstancedMesh(geo, mat, list.length), o = new THREE.Object3D();
   list.forEach((s, i) => {
-    o.position.set(s.x, 0, s.z); o.rotation.set(s.tx, 0, s.tz); o.scale.set(s.r, s.h, s.r); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
+    o.position.set(s.x, s.y || 0, s.z); o.rotation.set(s.tx, 0, s.tz); o.scale.set(s.r, s.h, s.r); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
   });
   m.computeBoundingSphere();
   return m;
@@ -463,7 +463,7 @@ function poolMesh(pools) {   // warm (or pale) pools of light on the floor
   const mat = fadeInFog(new THREE.MeshBasicMaterial({ map: GLOW_TEX, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }), 1);
   const m = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, pools.length), o = new THREE.Object3D(), c = new THREE.Color();
   pools.forEach((p, i) => {
-    o.position.set(p.x, 0.03, p.z); o.scale.set(p.r * 2, 1, p.r * 2); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
+    o.position.set(p.x, (p.y || 0) + 0.03, p.z); o.scale.set(p.r * 2, 1, p.r * 2); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
     m.setColorAt(i, c.copy(p.color).multiplyScalar(p.k));
   });
   m.renderOrder = 1; m.computeBoundingSphere();
@@ -567,9 +567,9 @@ function makeBloodDecals() {
   let cursor = 0;
   return {
     clear() { for (const d of pool) { d.m.visible = false; d.age = Infinity; } },
-    splat(x, z, size) {   // oldest reused first
+    splat(x, z, size, y = 0) {   // oldest reused first; y: the floor
       const d = pool[cursor++ % pool.length];
-      d.age = 0; d.m.position.set(x, 0.035 + (cursor % 7) * 0.0015, z); d.m.rotation.y = rand(0, Math.PI * 2);
+      d.age = 0; d.m.position.set(x, y + 0.035 + (cursor % 7) * 0.0015, z); d.m.rotation.y = rand(0, Math.PI * 2);
       d.m.scale.set(size, 1, size * rand(0.7, 1.25)); d.m.visible = true;
     },
     update(dt) {
@@ -588,14 +588,14 @@ function makeDebris() {   // small stones falling from the ceiling (and from lif
   const items = [], o = new THREE.Object3D(), g = CONFIG.fx.particleGravity;
   return {
     clear() { items.length = 0; mesh.count = 0; },
-    drop(x, y, z, s) {
+    drop(x, y, z, s, ground = 0) {   // ground: the floor it lands on
       if (items.length >= D.max) items.shift();
-      items.push({ x, y, z, vy: 0, s, rx: rand(0, 6), ry: rand(0, 6), spin: rand(-6, 6), rest: 0 });
+      items.push({ x, y, z, ground, vy: 0, s, rx: rand(0, 6), ry: rand(0, 6), spin: rand(-6, 6), rest: 0 });
     },
     update(dt) {
       let n = 0;
       for (let i = items.length - 1; i >= 0; i--) {
-        const it = items[i], floor = it.s * 0.3;
+        const it = items[i], floor = it.ground + it.s * 0.3;
         if (it.rest > 0 || it.y <= floor) {
           if (it.rest === 0 && it.vy < -2.5) { it.vy *= -0.25; it.y = floor; it.spin *= 0.5; }   // one small bounce
           else { it.vy = 0; it.y = floor; it.rest += dt; }
@@ -609,6 +609,13 @@ function makeDebris() {   // small stones falling from the ceiling (and from lif
       mesh.count = n; mesh.instanceMatrix.needsUpdate = true;
     },
   };
+}
+
+// The floor under a dressing item in level d (flat layouts: 0). Used while the stage is built, before `world` exists.
+function floorOf(d, x, z, y) {
+  if (d.layout !== 'rooms') return 0;
+  const g = terrainFor(d).floorY(x, z, y);
+  return Number.isFinite(g) ? g : 0;
 }
 
 // ---- the visuals controller --------------------------------------------------------------------------------
@@ -658,25 +665,25 @@ const visuals = (() => {
       glow.position.copy(f.mesh.position); glow.position.y += h * 0.15; G.add(glow);
       if ((d.bonfires || []).some(b => Math.hypot(b.x - f.mesh.position.x, b.z - f.mesh.position.z) < 0.5)) continue;   // bonfires: own pool
       const src = f.light ? f.light.position : f.mesh.position, kind = f.light ? P.torch : P.brazier;
-      pools.push({ x: src.x, z: src.z, r: kind.radius, color: f.light ? f.light.color : base, k: kind.k });
+      pools.push({ x: src.x, y: floorOf(d, src.x, src.z, src.y), z: src.z, r: kind.radius, color: f.light ? f.light.color : base, k: kind.k });
     }
   }
   function dressBonfire(G, b, pools) {
-    const B = VIS.bonfire;
+    const B = VIS.bonfire, y = floorOf(def, b.x, b.z, b.y);
     const core = new THREE.Mesh(new THREE.IcosahedronGeometry(B.coreSize, 1),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(B.coreColor).multiplyScalar(B.coreBoost) }));
-    core.position.set(b.x, 0.16, b.z); G.add(core);
+    core.position.set(b.x, y + 0.16, b.z); G.add(core);
     const n = B.embers, seeds = new Float32Array(n * 4);
     for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random();
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute('seed', new THREE.BufferAttribute(seeds, 4));
     const embers = new THREE.Points(geo, new THREE.ShaderMaterial({
       uniforms: { uTime: vTime, uScale: PT_SCALE, uFlare: { value: 0 }, uRise: { value: B.rise },
-                  uBase: { value: new THREE.Vector3(b.x, 0.35, b.z) }, uColor: { value: new THREE.Color(B.emberColor).multiplyScalar(2.5) } },
+                  uBase: { value: new THREE.Vector3(b.x, y + 0.35, b.z) }, uColor: { value: new THREE.Color(B.emberColor).multiplyScalar(2.5) } },
       vertexShader: EMBER_VERT, fragmentShader: EMBER_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     embers.frustumCulled = false; G.add(embers);
     const f = flames.find(f => f.group === G && f.light && Math.hypot(f.light.position.x - b.x, f.light.position.z - b.z) < 0.1);
-    pools.push({ x: b.x, z: b.z, r: VIS.pools.bonfire.radius, color: new THREE.Color(B.coreColor), k: VIS.pools.bonfire.k });
+    pools.push({ x: b.x, y, z: b.z, r: VIS.pools.bonfire.radius, color: new THREE.Color(B.coreColor), k: VIS.pools.bonfire.k });
     return { b, core, embers, light: f ? f.light : null, flare: 0, coreColor: core.material.color.clone() };
   }
   function dressHall(G, L, rnd, pools) {
@@ -721,41 +728,45 @@ const visuals = (() => {
     }
   }
   function dressRooms(G, L, rnd, pools) {
-    const wh = L.wallHeight, eps = 1e-6, rocks = [], faces = new Map(), gates = L.gated.map(z => z.gate);
+    const eps = 1e-6, rocks = [], faces = new Map(), gates = L.gated.map(z => z.gate), TR = terrainFor(L);
     const clearOf = (x, z, r) => !gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + r)
       && !L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < r + 0.8)
       && !L.rooms.some(R => (R.braziers || []).some(([bx, bz]) => Math.hypot(bx - x, bz - z) < r));
-    for (const w of roomWalls(L.rooms)) {
-      const lx = w.x1 - w.x0, lz = w.z1 - w.z0, r = w.room.rect;
-      if (Math.max(lx, lz) < 1.5) continue;   // corner posts
-      const alongX = lx > lz, hi = alongX ? w.z0 >= r[3] - eps : w.x0 >= r[1] - eps;
+    // Rubble and banners along full walls of rooms (not ramps, rails or ledge faces), on that room's floor.
+    for (const w of TR.solids) {
+      if (w.kind !== 'wall' || !w.region || w.region.kind !== 'room') continue;
+      const lx = w.x1 - w.x0, lz = w.z1 - w.z0, r = w.region.rect, y = w.region.lo;
+      if (Math.max(lx, lz) < 1.5) continue;
+      const alongX = w.edge === 'n' || w.edge === 's', hi = w.edge === 'n' || w.edge === 'e';
       const f = alongX ? { alongX, at: hi ? r[3] : r[2], n: hi ? -1 : 1, a0: w.x0, a1: w.x1 }
                        : { alongX, at: hi ? r[1] : r[0], n: hi ? -1 : 1, a0: w.z0, a1: w.z1 };
       const pt = (a, off) => alongX ? [a, f.at + f.n * off] : [f.at + f.n * off, a];
       for (let a = f.a0 + 0.6; a < f.a1 - 0.6; a += between(rnd, VIS.rubble.spacing)) {
         const [x, z] = pt(a, 0.25);
-        if (!clearOf(x, z, 1.4)) continue;
-        rubbleCluster(rocks, rnd, x, z, alongX ? 1 : 0, alongX ? 0 : 1, alongX ? 0 : f.n, alongX ? f.n : 0);
+        if (!clearOf(x, z, 1.4) || inPit(w.region, x, z)) continue;
+        rubbleCluster(rocks, rnd, x, z, alongX ? 1 : 0, alongX ? 0 : 1, alongX ? 0 : f.n, alongX ? f.n : 0, y);
       }
-      if (!faces.has(w.room)) faces.set(w.room, []);
-      faces.get(w.room).push({ ...f, pt, len: f.a1 - f.a0 });
+      if (!faces.has(w.region)) faces.set(w.region, []);
+      faces.get(w.region).push({ ...f, pt, len: f.a1 - f.a0, y, top: w.y1 });
     }
     if (rocks.length) G.add(rubbleMesh(rocks, rnd));
     const B = VIS.banners, banners = [], shafts = [];
-    for (const [room, list] of faces) {
-      if (room.dim) continue;
+    for (const [R, list] of faces) {
+      if (R.src.dim) continue;
       for (const f of list.sort((a, b) => b.len - a.len).slice(0, 2)) {
-        if (f.len < 4) continue;
+        if (f.len < 4 || f.top - f.y < B.height + B.topGap + 1) continue;
         const [x, z] = f.pt((f.a0 + f.a1) / 2, 0.15);
         if (!clearOf(x, z, 1.2)) continue;
         const ry = f.alongX ? (f.n > 0 ? 0 : Math.PI) : (f.n > 0 ? Math.PI / 2 : -Math.PI / 2);   // face into the room
-        banners.push({ x, y: wh - B.topGap - B.height / 2, z, ry });
+        banners.push({ x, y: f.top - B.topGap - B.height / 2, z, ry });
       }
-      if (A.shafts) {
-        const [x0, x1, z0, z1] = room.rect, w = x1 - x0, d = z1 - z0;
-        shafts.push({ x: (x0 + x1) / 2 + (rnd() - 0.5) * w * 0.3, z: (z0 + z1) / 2 + (rnd() - 0.5) * d * 0.3, h: wh,
-                      r: clamp(Math.min(w, d) * 0.12, 1.2, 2.4), tx: (rnd() - 0.5) * VIS.shafts.tilt * 2, tz: (rnd() - 0.5) * VIS.shafts.tilt * 2 });
-      }
+    }
+    // Light shafts through the roof of each lit, roofed room.
+    if (A.shafts) for (const R of TR.regions) {
+      if (R.kind !== 'room' || R.open || R.src.dim) continue;
+      const [x0, x1, z0, z1] = R.rect, w = x1 - x0, d = z1 - z0;
+      shafts.push({ x: (x0 + x1) / 2 + (rnd() - 0.5) * w * 0.3, y: R.lo, z: (z0 + z1) / 2 + (rnd() - 0.5) * d * 0.3, h: R.height,
+                    r: clamp(Math.min(w, d) * 0.12, 1.2, 2.4), tx: (rnd() - 0.5) * VIS.shafts.tilt * 2, tz: (rnd() - 0.5) * VIS.shafts.tilt * 2 });
     }
     if (banners.length) G.add(bannerMesh(banners, A.banners || B.colors));
     if (shafts.length) addShafts(G, shafts, pools);
@@ -778,7 +789,7 @@ const visuals = (() => {
   }
   function addShafts(G, list, pools) {
     st.shafts = shaftMesh(list, A.shafts); G.add(st.shafts);
-    for (const s of list) pools.push({ x: s.x, z: s.z, r: s.r * 1.5, color: new THREE.Color(A.shafts.color), k: VIS.pools.shaft.k * A.shafts.opacity * 5 });
+    for (const s of list) pools.push({ x: s.x, y: s.y || 0, z: s.z, r: s.r * 1.5, color: new THREE.Color(A.shafts.color), k: VIS.pools.shaft.k * A.shafts.opacity * 5 });
   }
   function addSky(G, S) {
     const m = new THREE.Mesh(new THREE.SphereGeometry(170, 32, 16), new THREE.ShaderMaterial({
@@ -895,8 +906,9 @@ const visuals = (() => {
         if (debrisTimer <= 0) {
           debrisTimer = D.interval / A.debris * rand(0.5, 1.5);
           const a = rand(0, Math.PI * 2), r = rand(2, D.radius), x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
-          if (insideLevel(x, z)) for (let i = 0, n = 1 + Math.floor(rand(0, 3)); i < n; i++)
-            debris.drop(x + rand(-0.4, 0.4), def.wallHeight - 0.3, z + rand(-0.4, 0.4), rand(0.05, 0.14));
+          const roof = world.ceilingAt(x, z, p.y + 1), ground = world.groundAt(x, z, p.y + 1);   // none under open sky
+          if (insideLevel(x, z) && roof < Infinity && ground > -Infinity) for (let i = 0, n = 1 + Math.floor(rand(0, 3)); i < n; i++)
+            debris.drop(x + rand(-0.4, 0.4), roof - 0.3, z + rand(-0.4, 0.4), rand(0.05, 0.14), ground);
         }
       }
       debris.update(dt);
@@ -913,14 +925,15 @@ const visuals = (() => {
     blood(at, size, burst = true) {
       const B = VIS.blood;
       if (burst) spawnBurst(at, B.burst);
-      decals.splat(at.x + rand(-B.spread, B.spread), at.z + rand(-B.spread, B.spread), between(Math.random, B.size) * size);
+      const x = at.x + rand(-B.spread, B.spread), z = at.z + rand(-B.spread, B.spread), ground = world.groundAt(x, z, at.y);
+      if (ground > -Infinity) decals.splat(x, z, between(Math.random, B.size) * size, ground);
     },
     flare(bonfire) { const f = st.bonfires.find(f => f.b === bonfire); if (f) f.flare = 1; },
     gateDust(g) {
       if (!quality.debris || !def || def.layout === 'arena') return;
       for (let i = 0; i < VIS.debris.gateBurst; i++) {
         const x = g.box ? rand(g.box.x0, g.box.x1) : g.x + rand(-0.3, 0.3), z = g.box ? rand(g.box.z0, g.box.z1) : rand(-def.halfZ, def.halfZ) * 0.9;
-        debris.drop(x, def.gateHeight + rand(0, 1.2), z, rand(0.05, 0.12));
+        debris.drop(x, (g.y || 0) + def.gateHeight + rand(0, 1.2), z, rand(0.05, 0.12), g.y || 0);
       }
     },
   };
@@ -930,9 +943,9 @@ const visuals = (() => {
 function registerVisualListeners() {
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.55, z: b.z });
   events.on('strike', d => { if (!d.blocked && !d.target.training) visuals.blood(d.at, 1); });
-  events.on('enemyDeath', d => { if (!d.enemy.training) visuals.blood({ x: d.enemy.x, y: 0.2, z: d.enemy.z }, VIS.blood.deathSize, false); });
+  events.on('enemyDeath', d => { if (!d.enemy.training) visuals.blood({ x: d.enemy.x, y: d.enemy.y + 0.2, z: d.enemy.z }, VIS.blood.deathSize, false); });
   events.on('playerDeath', d => visuals.blood(chest(d.player), VIS.blood.deathSize));
   events.on('rest', d => visuals.flare(d.bonfire));
   events.on('gateOpened', d => visuals.gateDust(d.gate));
-  events.on('perilous', d => groundFx.ring(d.enemy.x, d.enemy.z, VIS.rollOnlyGlow.ring * d.enemy.def.scale, VIS.rollOnlyGlow.color, VIS.rollOnlyGlow.opacity));
+  events.on('perilous', d => groundFx.ring(d.enemy.x, d.enemy.z, VIS.rollOnlyGlow.ring * d.enemy.def.scale, VIS.rollOnlyGlow.color, VIS.rollOnlyGlow.opacity, d.enemy.y));
 }

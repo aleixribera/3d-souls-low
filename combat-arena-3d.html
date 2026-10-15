@@ -214,6 +214,7 @@ window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass,
 const GAME_FILES = [
   'helpers.js',
   'config.js',
+  'terrain.js',
   'data/player.js',
   'data/test-enemies.js',
   'data/enemies.js',
@@ -223,6 +224,7 @@ const GAME_FILES = [
   'levels/long-hall.js',
   'levels/sunken-keep.js',
   'levels/test-crowd.js',
+  'levels/test-heights.js',
   'data/levels.js',
   'states.js',
   'registries.js',
@@ -243,9 +245,9 @@ const GAME_FILES = [
   'game.js',
   'boot.js',
 ];
-const loadScript = file => new Promise(resolve => {
+const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
-  s.src = 'js/' + file;
+  s.src = dir + file;
   s.onload = () => resolve(true);
   s.onerror = () => resolve(false);
   document.body.appendChild(s);
@@ -255,6 +257,8 @@ for (const file of GAME_FILES) {
 Keep the js folder next to this page.`); break; }
   if (window.__bootShown) break;   // the file failed while running: its message is already on screen
 }
+// Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.
+if (location.hash === '#dev' && !window.__bootShown) await loadScript('suite.js', 'tests/');
 </script>
 </body>
 </html>

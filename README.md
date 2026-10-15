@@ -21,10 +21,15 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 ## Coming next (planned)
 
 - **Level 3: The Tower** — a cliff-top keep, much longer than Level 2 (about 15+ minutes, three bonfires): a gatehouse, a big open courtyard fight under the sky, railed ramparts, a tower hall with a shortcut back down, outer walkways around the tower above a deadly cliff, and a mini-boss on the open bell platform. Optional undercroft below the courtyard.
-- **Heights and falls:** stairs, walkways and drops; high falls hurt and pits kill.
 - **New enemies:** Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman (arrows), Shover (pushes you off edges), and the Bell Warden mini-boss.
 
-See [ROADMAP.md](ROADMAP.md) for the full plan.
+See [ROADMAPv3.md](ROADMAPv3.md) for the full plan and what is done.
+
+## Versions
+
+Each version is a tagged commit (`git checkout v3.1` to play that one).
+
+- **v3.1 — Heights.** Room levels gain a 2.5D world: floors at heights, ramps and stairs, walls, rails and open edges, ledges you can drop from but not climb, pits, and fall damage (drops over 4.5 m hurt, 14 m kills). Enemies stop at edges and won't chase you up or down, but can be knocked off. Sight, lock-on and the camera work in 3D (the camera stays under walkways). New developer room *Test: Heights* and an automated test suite (see Testing).
 
 ## Controls
 
@@ -52,6 +57,16 @@ See [ROADMAP.md](ROADMAP.md) for the full plan.
 On-screen prompts show keys or gamepad buttons, whichever you used last.
 
 ! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
+
+## Testing
+
+Open the page with `#dev` at the end of the address (`combat-arena-3d.html#dev`). That adds the Test Grounds menu (developer rooms and test duels) and loads the automated tests. In the browser console (F12), run:
+
+```js
+await __arena.tests.run()
+```
+
+It plays the real game with a manual clock (scripted movement, no rendering delay) and prints `N/N passed`. `__arena.tests.run('heights')` runs only the tests whose name contains a word.
 
 ## Adding content
 
