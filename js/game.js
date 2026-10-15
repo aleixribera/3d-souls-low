@@ -4,11 +4,11 @@
 // ============================================================================
 const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
-  screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
+  screen: 'start',       // menu screen: 'start' (the notice shown once per page load) | 'main' | 'levels' | 'enemies' | 'pause' | 'options'
   kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
-  tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer }
+  tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
   player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0, restartArm: 0,
@@ -24,6 +24,9 @@ const Game = {
   screens() {
     const onOff = v => v ? 'On' : 'Off';
     return {
+      // Shown once, as the page loads: any key, click or gamepad button moves on to the main menu (leaveStartNotice).
+      start: { title: 'COMBAT ARENA 3D', sub: '', items: [], hint: 'Press any key or button to continue',
+        notice: 'Best played with a controller.\nPlug in a gamepad for the full experience.' },
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
@@ -66,7 +69,7 @@ const Game = {
     if (document.pointerLockElement) document.exitPointerLock();
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
-    $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub;
+    $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
     this.showMenuHint();
     list.textContent = '';
     s.items.forEach((it, i) => {
@@ -82,7 +85,8 @@ const Game = {
   },
   // Key or button names follow the device used last, so this is redone when it changes.
   showMenuHint() {
-    const screen = this.screen;
+    const screen = this.screen, own = this.screens()[screen].hint;
+    if (own) { $('menuHint').textContent = own; return; }
     $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
       (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
       (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
@@ -95,7 +99,7 @@ const Game = {
   },
   select(i) {
     const n = $('menuList').children.length;
-    this.selected = (i + n) % n;
+    this.selected = n ? (i + n) % n : 0;
     [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
   },
   confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) it.go(); else this.adjust(1); },
@@ -105,6 +109,9 @@ const Game = {
     it.adjust(d); saveSettings(); applySettings();
     this.showMenu(this.screen, true);
   },
+  // The start notice: any key, click or gamepad button moves on to the main menu (and does nothing else).
+  onStartNotice() { return this.mode === 'menu' && this.screen === 'start'; },
+  leaveStartNotice() { if (this.onStartNotice()) this.showMenu('main'); },
   menuBack() {
     const s = this.screens()[this.screen];
     if (this.screen === 'pause') this.resume();
@@ -192,8 +199,9 @@ const Game = {
       spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));   // a duel on a level fights no zones
     this.spawnPlayer();
     hud.reset(this);
+    visuals.warmUp(this.cam);   // every pooled effect drawn once, so none stalls the first time it shows
     if (this.isTutorial()) {
-      this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0 };
+      this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
       this.setupTutorialStep();
       return;
     }
@@ -269,15 +277,19 @@ const Game = {
     const v = new THREE.Vector3(e.x, e.y + e.height * 0.5, e.z).project(camera);
     return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 ? v : null;
   },
-  // Valid targets ordered by closeness to the screen centre, then distance.
-  lockCandidates() {
+  // Valid targets: in lock range, and on screen or in front of the player. `v`: where on screen (null if off it).
+  lockable() {
     const p = this.player;
     return findEnemies(p, this.enemies, { range: CONFIG.lock.range })
       .map(c => ({ ...c, v: this.inView(c.e) }))
-      .filter(c => c.v || isInFront(p, c.e.x, c.e.z))
-      .sort((a, b) => ((a.v ? Math.abs(a.v.x) : 2) - (b.v ? Math.abs(b.v.x) : 2)) || a.d - b.d)
-      .map(c => c.e);
+      .filter(c => c.v || isInFront(p, c.e.x, c.e.z));
   },
+  // Lock-on: the valid targets ordered by closeness to the screen centre, then distance.
+  lockCandidates() {
+    return this.lockable().sort((a, b) => ((a.v ? Math.abs(a.v.x) : 2) - (b.v ? Math.abs(b.v.x) : 2)) || a.d - b.d).map(c => c.e);
+  },
+  // Tab: the valid targets nearest first (the camera keeps the target centred, so screen order would jump past it).
+  switchCandidates() { return this.lockable().sort((a, b) => a.d - b.d).map(c => c.e); },
   // The on-screen target nearest to the current one in direction `dir` (-1 left, 1 right), or null.
   sideTarget(dir) {
     const cur = this.inView(this.lock), x0 = cur ? cur.x : 0;
@@ -294,13 +306,14 @@ const Game = {
       if (this.lock) this.setLock(null);
       else { const c = this.lockCandidates(); if (c.length) { this.setLock(c[0]); events.emit('lock'); } }
     }
-    // Switch target: Tab cycles through the candidates; a right-stick flick picks the nearest one on that side of the screen.
+    // Switch target: Tab steps to the next candidate further away, wrapping round (from a target that is not a
+    // candidate, to the nearest); a right-stick flick picks the nearest one on that side of the screen.
     const flick = { PadFlickL: -1, PadFlickR: 1 }[input.pressedCode('switchTarget')] || 0;
     if (input.consume('switchTarget') && this.lock) {
       const prev = this.lock;
       if (flick) { const e = this.sideTarget(flick); if (e) this.setLock(e); }
       else {
-        const c = this.lockCandidates();
+        const c = this.switchCandidates();
         if (c.length) this.setLock(c[(c.indexOf(this.lock) + 1) % c.length]);
       }
       if (this.lock !== prev) events.emit('switchTarget');
@@ -327,12 +340,13 @@ const Game = {
   },
 
   // ---- tutorial ---------------------------------------------------------------------------------
-  // Each step: prompt text (labels from the live bindings), which dummies it needs, optional setup,
-  // and how it completes: on(type, data, t, game) for events and/or check(game, t) polled each step.
-  // Returning true from either advances the tutorial.
+  // Each step: prompt text (labels from the live bindings), which dummies it needs, whether it starts locked on
+  // to its dummy (`lockOn`: once, as it starts), optional setup, and how it completes: on(type, data, t, game) for
+  // events and/or check(game, t) polled each step. Returning true from either advances the tutorial.
   tutorialSteps() {
     const B = bindLabel;
     const byPlayer = (d, g) => d.attacker === g.player;
+    const byDummy = (d, g) => d.attacker === g.enemies[0];
     return [
       { id: 'move', text: () => `Walk around ${moveLabel()}`, check: (g, t) => t.dist >= 5 },
       { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === PS.JUMP },
@@ -344,10 +358,30 @@ const Game = {
       { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
         on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
         check: (g, t) => t.flags.airHit && g.player.state !== PS.JUMP_ATTACK && g.player.state !== PS.LAND },   // after the landing
-      { id: 'block', dummies: 'sparring', text: () => `Hold block ${B('block')} and take the dummy's swing on your guard`,
+      { id: 'block', dummies: 'sparring', lockOn: true, text: () => `Hold block ${B('block')} and take the dummy's swing on your guard`,
         on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked },
-      { id: 'parry', dummies: 'sparring', text: () => `Parry ${B('parry')} just before the dummy's swing lands`,
+      { id: 'parry', dummies: 'sparring', lockOn: true, text: () => `Parry ${B('parry')} just before the dummy's swing lands`,
         on: type => type === 'parry' },
+      // Done on one roll through the swing. A swing that ends without one shows why: hit after rolling during it, its
+      // invulnerability over before the swing landed (too early), hit without having rolled (too late), or rolled clear
+      // of it (`swing`: this swing so far; a roll that starts in the step a hit lands is invulnerable, so it never counts).
+      { id: 'dodge', dummies: 'dodge', lockOn: true,
+        text: () => `Blue strikes can't be blocked or parried, only rolled. Roll ${B('roll')} into the dummy's swing just as it lands`,
+        on: (type, d, t, g) => {
+          if (type === 'attackStart' && d.enemy === g.enemies[0]) t.flags.swing = { rolled: false, hit: null };
+          if (type === 'strike' && byDummy(d, g) && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early' : 'Too late';
+          return type === 'dodge' && byDummy(d, g);
+        },
+        check: (g, t) => {
+          const e = g.enemies[0], s = t.flags.swing;
+          if (s && g.player.state === PS.ROLL && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) s.rolled = true;
+          if (s && e.state === ES.RECOVER) {
+            const hint = s.hit || (s.rolled ? 'Roll into the swing' : null);
+            if (hint) g.tutorialHint(hint);
+            t.flags.swing = null;
+          }
+          return false;
+        } },
       { id: 'flask', text: () => `You're hurt. Drink from your flask ${B('flask')}`,
         setup: g => { const it = g.player.item('flask'); g.player.hp = Math.min(g.player.hp, 55); if (g.player.inventory.flask) it.count = Math.max(it.count, 1); },
         on: (type, d, t) => { if (type === 'itemUsed' && d.item === 'flask') t.flags.drank = true; },
@@ -369,7 +403,7 @@ const Game = {
     const T = this.level.training, L = this.level, t = this.tut, s = this.currentStep(), p = this.player;
     for (const e of this.enemies) e.rig.dispose();
     this.enemies = []; this.setLock(null);
-    t.flags = {}; t.dist = 0;
+    t.flags = {}; t.dist = 0; t.hint = ''; t.hintTimer = 0;
     if (!s) return;
     const dir = p.x + T.pairAhead < L.length - 3 ? 1 : -1;   // place ahead, or behind near the far wall
     const spot = ahead => ({ x: clamp(p.x + dir * ahead, 2, L.length - 2), z: clamp(p.z, -L.halfZ + 2, L.halfZ - 2) });
@@ -378,13 +412,17 @@ const Game = {
     };
     if (s.dummies === 'one') add(T.dummy, 'dummy', spot(T.dummyAhead));
     else if (s.dummies === 'sparring') add(T.sparring, 'sparring', spot(T.attackerAhead));
+    else if (s.dummies === 'dodge') add(T.dodge, 'sparring', spot(T.attackerAhead));
     else if (s.dummies === 'pair') {
       const c = spot(T.pairAhead);
       for (const side of [-1, 1]) add(T.dummy, 'dummy', { x: c.x, z: clamp(c.z + side * T.pairSpread, -L.halfZ + 1.5, L.halfZ - 1.5) });
     }
+    if (s.lockOn) this.setLock(this.enemies[0]);   // set once: let go, it stays off (dummies never auto lock-on)
     if (s.setup) s.setup(this, t);
   },
   completeStep() { this.tut.doneTimer = CONFIG.tutorial.doneTime; },
+  // A short hint under the prompt (CONFIG.tutorial.hintTime), replacing any shown.
+  tutorialHint(text) { this.tut.hint = text; this.tut.hintTimer = CONFIG.tutorial.hintTime; },
   onTutorialEvent(type, data) {
     const t = this.tut, s = this.currentStep();
     if (!this.isTutorial() || !t || !s || t.doneTimer > 0 || !s.on) return;
@@ -399,6 +437,7 @@ const Game = {
     }
     const s = this.currentStep();
     if (!s) return;
+    t.hintTimer = Math.max(0, t.hintTimer - dt);
     if (t.doneTimer > 0) {   // brief confirmation before the next prompt replaces this one
       t.doneTimer -= dt;
       if (t.doneTimer <= 0) {
@@ -414,11 +453,13 @@ const Game = {
 
   // ---- level -------------------------------------------------------------------------------------
   // Gated zones: spawn on entry, lift the gate when all the zone's enemies fall. Complete when all gates are open.
-  // Shortcut gates (`opensFrom`) open for good once the player reaches their far side, on the gate's floor.
+  // Shortcut gates (`opensFrom`) open for good once the player reaches their far side, on the gate's floor; sealed
+  // gates never open. Traps: standing on the trap's floor in its trigger starts the warning; when the warning runs
+  // out, its collapse area becomes a hole for good (through resting and dying, like an opened shortcut).
   updateLevel(dt) {
     const p = this.player, V = CONFIG.level;
     for (const z of this.zones) {
-      const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inRect(z.trigger, p.x, p.z);
+      const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inArea(z.trigger, p.x, p.z);
       if (!z.spawned && entered && p.alive()) this.spawnZone(z);   // normally already standing there since the start
       if (z.actors.length && z.actors.every(a => !a.alive()) && !z.gate.open) {
         z.gate.open = true;
@@ -431,6 +472,17 @@ const Game = {
         events.emit('gateOpened', { gate: g, shortcut: true });
       }
       if (g.open) g.lift = Math.min(1, g.lift + dt / V.gateLiftTime);
+    }
+    for (const t of world.traps) {
+      if (t.state === 'set' && p.alive() && p.grounded && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp) {
+        t.state = 'warning'; t.timer = 0;
+        events.emit('trapWarning', { trap: t });
+      } else if (t.state === 'warning') t.timer += dt;
+      else if (t.state === 'sprung') t.dropTime += dt;
+      if (t.state === 'warning' && t.timer >= t.warning - 1e-9) {
+        t.state = 'sprung'; world.openHole(t.region, t.collapse);
+        events.emit('trapSprung', { trap: t });
+      }
     }
     if (!this.complete && this.zones.length && this.zones.every(z => z.gate.open)) {
       this.complete = true;
@@ -677,6 +729,7 @@ const Game = {
       lockMarker.rotation.y = t * 2.5;
     }
     for (const g of world.gates) g.mesh.position.y = g.y + ease(g.lift) * g.liftHeight;
+    for (const t of world.traps) placeTrap(t);
     // Irregular, subtle flicker in brightness and warmth.
     flames.forEach((f, i) => {
       const s = f.seed;

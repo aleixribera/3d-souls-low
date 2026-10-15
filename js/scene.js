@@ -177,8 +177,10 @@ function buildHall(L) {
 // Room-style levels (js/terrain.js): each room gets its own floor, wall and light colours, at its own height.
 // Floors are slabs (with holes for pits), roofed rooms get a ceiling, ramps are a slope or a flight of steps.
 // The terrain's solids (walls, rails, ledge faces, lintels, posts, blocks) are drawn where they collide.
+// A trap's collapse area is drawn apart from its floor (buildTrapFloor), so that it can drop away.
 function buildRooms(L) {
   const G = new THREE.Group(), gates = [], C = CONFIG.rooms, H = CONFIG.height, TR = terrainFor(L);
+  const traps = (L.traps || []).map(t => ({ ...t, region: trapRoom(TR, t) }));
   const mats = new Map();
   const matsFor = src => {
     if (!mats.has(src)) mats.set(src, {
@@ -192,13 +194,10 @@ function buildRooms(L) {
   for (const R of TR.regions) {
     const room = R.src, [x0, x1, z0, z1] = R.rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, M = matsFor(room);
     if (R.kind === 'ramp') { buildRamp(G, R, M.floor); continue; }
-    const y = R.lo;
-    for (const p of rectMinus(R.rect, R.pits)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y - H.slab, y1: y }, M.floor);
-    const seams = [];   // faint grid seams, clipped around pits
-    for (let x = x0 + 4; x < x1 - 0.01; x += 4) seams.push([x - 0.03, x + 0.03, z0, z1]);
-    for (let z = z0 + 4; z < z1 - 0.01; z += 4) seams.push([x0, x1, z - 0.03, z + 0.03]);
-    for (const sm of seams) for (const p of rectMinus(sm, R.pits)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y, y1: y + 0.012 }, MAT.dark);
-    if (!R.open) addBox(G, w, H.slab, d, MAT.ceiling, cx, R.top + H.slab / 2, cz);
+    const y = R.lo, cutOut = [...R.pits, ...traps.filter(t => t.region === R).map(t => t.collapse)];
+    for (const p of rectMinus(R.rect, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y - H.slab, y1: y }, M.floor);
+    for (const sm of floorSeams(R)) for (const p of rectMinus(sm, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y, y1: y + 0.012 }, MAT.dark);
+    for (const p of R.roof) addBox(G, p[1] - p[0], H.slab, p[3] - p[2], MAT.ceiling, (p[0] + p[1]) / 2, R.top + H.slab / 2, (p[2] + p[3]) / 2);
     if (room.light !== undefined) {
       const light = new THREE.PointLight(room.light, room.dim ? C.dimLight : C.roomLight, Math.max(w, d) * 1.3, 1.0);
       light.position.set(cx, y + Math.min(R.height, L.wallHeight) - 1.5, cz); addLight(G, light);
@@ -230,9 +229,10 @@ function buildRooms(L) {
     if (s.kind === 'rail') addBox(G, s.x1 - s.x0 + 0.08, 0.08, s.z1 - s.z0 + 0.08, MAT.edge, (s.x0 + s.x1) / 2, s.y1 + 0.04, (s.z0 + s.z1) / 2);
   }
   // Gates: a lintel above, a portcullis below; the closed portcullis is a solid box across the doorway.
-  // Zone gates lift when their zone is won; shortcut gates (`shortcuts`, with `opensFrom`) from their far side.
+  // Zone gates lift when their zone is won; shortcut gates (`shortcuts`, with `opensFrom`) from their far side;
+  // sealed gates (`sealed`) never.
   const t = L.gateThickness, gh = L.gateHeight;
-  for (const z of [...L.gated, ...(L.shortcuts || [])]) {
+  for (const z of gatedEntries(L)) {
     const g = z.gate, alongX = g.along === 'x', gy = TR.floorY(g.x, g.z, g.y), wh = gateHeadroom(TR, g.x, g.z, gy);
     if (wh > gh) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
     const mesh = buildPortcullis(G, g.x, g.width, gh);
@@ -242,8 +242,58 @@ function buildRooms(L) {
     gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null });
   }
   for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y));
-  return { group: G, gates, solids: TR.solids, slabs: TR.slabs, terrain: TR };
+  const trapFloors = traps.map(tr => buildTrapFloor(G, tr, matsFor(tr.region.src).floor, TR));
+  return { group: G, gates, traps: trapFloors, solids: TR.solids, slabs: TR.slabs, terrain: TR };
 }
+// A room's faint floor seams, every 4 m.
+function floorSeams(R) {
+  const [x0, x1, z0, z1] = R.rect, seams = [];
+  for (let x = x0 + 4; x < x1 - 0.01; x += 4) seams.push([x - 0.03, x + 0.03, z0, z1]);
+  for (let z = z0 + 4; z < z1 - 0.01; z += 4) seams.push([x0, x1, z - 0.03, z + 0.03]);
+  return seams;
+}
+// A trap's collapse area: floor pieces of their own (with the room's seams, and the cracks of its warning, hidden until
+// then), kept out of the merged level geometry so they can drop away when it springs (placeTrap). Each piece knows
+// how far it falls to the floor below, and its `order` (0..1) outward from the trigger: cracks and the drop spread so.
+function buildTrapFloor(G, t, mat, TR) {
+  const F = CONFIG.fx.trap, H = CONFIG.height, R = t.region, [x0, x1, z0, z1] = t.collapse, y = R.lo, seams = floorSeams(R);
+  const nx = Math.max(1, Math.round((x1 - x0) / F.piece)), nz = Math.max(1, Math.round((z1 - z0) / F.piece));
+  const tx = (t.trigger[0] + t.trigger[1]) / 2, tz = (t.trigger[2] + t.trigger[3]) / 2;
+  const group = new THREE.Group(), pieces = [];
+  G.add(group);
+  for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
+    const r = [lerp(x0, x1, i / nx), lerp(x0, x1, (i + 1) / nx), lerp(z0, z1, k / nz), lerp(z0, z1, (k + 1) / nz)];
+    const cx = (r[0] + r[1]) / 2, cz = (r[2] + r[3]) / 2, w = r[1] - r[0], d = r[3] - r[2];
+    const mesh = addBox(group, w, H.slab, d, mat, cx, y - H.slab / 2, cz);
+    for (const sm of seams) {
+      const q = rectAnd(sm, r);
+      if (q) addBox(mesh, q[1] - q[0], 0.012, q[3] - q[2], MAT.dark, (q[0] + q[1]) / 2 - cx, H.slab / 2 + 0.006, (q[2] + q[3]) / 2 - cz);
+    }
+    const crack = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0x050403, alphaMap: CRACK_TEX,
+      transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    crack.rotation.set(-Math.PI / 2, 0, rand(0, Math.PI * 2)); crack.position.y = H.slab / 2 + 0.02; mesh.add(crack);
+    pieces.push({ mesh, crack, y: y - H.slab / 2, depth: y - TR.floorY(cx, cz, y - H.slab - 0.01), spin: [rand(-1, 1) * F.spin, rand(-1, 1) * F.spin],
+                  order: Math.hypot(cx - tx, cz - tz) });
+  }
+  const far = Math.max(...pieces.map(c => c.order)) || 1;
+  for (const c of pieces) c.order /= far;
+  return { id: t.id, collapse: t.collapse, trigger: t.trigger, warning: t.warning, y, region: R, group, pieces };
+}
+// Draw a trap as it stands: whole until it is set off, cracks spreading over it through the warning, then each piece
+// drops (one after another, outward) and is gone once it reaches the floor below.
+function placeTrap(t) {
+  const F = CONFIG.fx.trap, g = CONFIG.gravity;
+  const warn = t.state === 'set' ? 0 : t.state === 'warning' && t.warning > 0 ? t.timer / t.warning : 1;
+  for (const c of t.pieces) {
+    const s = t.state === 'sprung' ? Math.max(0, t.dropTime - c.order * F.dropSpread) : 0, fall = 0.5 * g * s * s;
+    c.mesh.visible = fall < c.depth;
+    c.mesh.position.y = c.y - fall;
+    c.mesh.rotation.set(c.spin[0] * s, 0, c.spin[1] * s);
+    c.crack.material.opacity = F.crackOpacity * clamp((warn - c.order * F.crackSpread) / (1 - F.crackSpread), 0, 1);
+  }
+}
+// Every entry of a room level with a gate: its zones, shortcuts and sealed gates.
+const gatedEntries = L => [...L.gated, ...(L.shortcuts || []), ...(L.sealed || [])];
 // Headroom over a gate: the lowest of the regions whose floor it stands on.
 function gateHeadroom(TR, x, z, y) {
   const hs = TR.regions.filter(R => inRect(R.rect, x, z) && Math.abs(R.floorAt(x, z) - y) < 0.05).map(R => R.height);
@@ -301,14 +351,23 @@ function loadStage(def) {
 // (the floor a body there stands on), ceilingAt(x, z, y), floorY(x, z, y) for placements, and killY (pits).
 // Hall and arena levels are flat: the floor is y = 0 everywhere.
 function makeWorld(def, st) {
-  const flat = { groundAt: () => 0, floorY: () => 0, killY: -Infinity };
+  const flat = { groundAt: () => 0, floorY: () => 0, killY: -Infinity, traps: [] };
   if (def.layout === 'arena')
     return { ...flat, minX: -def.halfX, maxX: def.halfX, halfZ: def.halfZ, ceilingAt: () => Infinity, alcoves: [], gates: [], gateThickness: 0, bonfires: def.bonfires };
   if (def.layout === 'rooms') {   // `solids`: walls, rails, ledges and pillars; closed gates are added to them where needed
-    const T = st.terrain;
+    const T = st.terrain, holes = [];   // floors opened since the level started (sprung traps)
     return { rooms: def.rooms, regions: T.regions, solids: st.solids, slabs: st.slabs, bonfires: def.bonfires,
-             groundAt: T.groundAt, ceilingAt: T.ceilingAt, floorY: T.floorY, killY: T.killY,
-             gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })) };
+             groundAt: (x, z, y) => groundIn(T.regions, x, z, y, holes), ceilingAt: (x, z, y) => ceilingIn(T.regions, x, z, y, holes),
+             floorY: (x, z, y = Infinity) => groundIn(T.regions, x, z, y, holes), killY: T.killY,
+             gates: st.gates.map(g => ({ ...g, open: false, lift: 0 })),
+             // state: 'set' | 'warning' | 'sprung'; timer: into the warning (s); dropTime: since it sprang (s)
+             traps: st.traps.map(t => ({ ...t, state: 'set', timer: 0, dropTime: 0 })),
+             // A hole opens in a floor for good: bodies fall through it, and sight, bolts and the camera pass.
+             openHole(region, rect) {
+               holes.push({ region, rect });
+               this.slabs = this.slabs.flatMap(s => s.kind !== 'floor' || s.region !== region ? [s]
+                 : rectMinus([s.x0, s.x1, s.z0, s.z1], [rect]).map(q => ({ ...s, x0: q[0], x1: q[1], z0: q[2], z1: q[3] })));
+             } };
   }
   return { ...flat, minX: 0, maxX: def.length, halfZ: def.halfZ, ceilingAt: () => def.wallHeight, gateThickness: def.gateThickness, bonfires: def.bonfires,
            gates: st.gates.map(g => ({ ...g, y: 0, open: false, lift: 0 })),

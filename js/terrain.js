@@ -10,8 +10,10 @@
 //   ceilingAt(x, z, y)  the lowest floor underside or roof above y (Infinity under open sky),
 //   solids              boxes bodies collide with: walls, rails, ledge faces, lintels, corner posts, pillars, blocks,
 //   slabs               floors and roofs: they block sight and the camera, never bodies (landing is groundAt's job).
-// Every box is { x0, x1, z0, z1, y0, y1 }; solids also carry `kind` and the `region` that owns them (for its
-// colours), and rails are `low` (they stop walking, not sight or the camera).
+// Every box is { x0, x1, z0, z1, y0, y1 }; solids and slabs also carry `kind` and the `region` that owns them (for
+// its colours), and rails are `low` (they stop walking, not sight or the camera).
+// A region's roof (`roof`, a list of rects) leaves out wherever it would lie inside another room's floor slab: that
+// floor is already the ceiling there (it would only flicker against it), and holes cut in it show the room below.
 // Room edges: n = +z (rect[3]), s = -z (rect[2]), e = +x (rect[1]), w = -x (rect[0]). Each is 'wall' (the
 // default), 'rail' or 'open'. Where another region touches an edge at the same floor height it is a doorway;
 // where a lower region touches it, a ledge face fills the drop below the floor.
@@ -56,33 +58,45 @@ function rectMinus(r, holes) {
   return parts;
 }
 
-const inPit = (R, x, z) => R.pits.length > 0 && R.pits.some(p => x > p[0] && x < p[1] && z > p[2] && z < p[3]);
+// A hole in region R's floor at (x, z): one of its pits, or one opened since the level started (`holes`, a world's
+// list of { region, rect }: sprung traps).
+const NO_HOLES = [];
+const inHole = (r, x, z) => x > r[0] && x < r[1] && z > r[2] && z < r[3];
+const inPit = (R, x, z, holes = NO_HOLES) => (R.pits.length > 0 && R.pits.some(p => inHole(p, x, z)))
+  || (holes.length > 0 && holes.some(h => h.region === R && inHole(h.rect, x, z)));
 
 // The highest floor at (x, z) that a body with its feet at y can stand on (within stepUp above), or -Infinity.
-function groundIn(regions, x, z, y) {
+function groundIn(regions, x, z, y, holes) {
   const lim = y + CONFIG.height.stepUp;
   let best = -Infinity;
   for (const R of regions) {
     const r = R.rect;
     if (x < r[0] || x > r[1] || z < r[2] || z > r[3]) continue;
     const h = R.floorAt(x, z);
-    if (h > lim || h <= best || inPit(R, x, z)) continue;
+    if (h > lim || h <= best || inPit(R, x, z, holes)) continue;
     best = h;
   }
   return best;
 }
 // The lowest floor underside or roof above height y at (x, z), or Infinity.
-function ceilingIn(regions, x, z, y) {
+function ceilingIn(regions, x, z, y, holes) {
   const slab = CONFIG.height.slab;
   let best = Infinity;
   for (const R of regions) {
     const r = R.rect;
     if (x < r[0] || x > r[1] || z < r[2] || z > r[3]) continue;
     const under = R.floorAt(x, z) - slab;
-    if (under >= y && under < best && !inPit(R, x, z)) best = under;
+    if (under >= y && under < best && !inPit(R, x, z, holes)) best = under;
     if (!R.open && R.top >= y && R.top < best) best = R.top;
   }
   return best;
+}
+
+// The room a trap's collapse area lies in, on its floor (the one at the trap's `y`, or the top-most there), or null.
+function trapRoom(TR, t) {
+  const c = t.collapse, y = TR.floorY((c[0] + c[1]) / 2, (c[2] + c[3]) / 2, t.y);
+  return TR.regions.find(R => R.kind === 'room' && Math.abs(R.lo - y) < 1e-6
+    && c[0] >= R.rect[0] && c[1] <= R.rect[1] && c[2] >= R.rect[2] && c[3] <= R.rect[3]) || null;
 }
 
 // Build the regions, solids and slabs of a room-style level (cached per level).
@@ -94,6 +108,10 @@ function terrainFor(L) {
 function buildTerrain(L) {
   const H = CONFIG.height, T = CONFIG.rooms.wallThickness, eps = 1e-6, tol = 0.05;
   const regions = [...L.rooms.map(R => makeRegion(R, 'room', L)), ...(L.ramps || []).map(R => makeRegion(R, 'ramp', L))];
+  for (const R of regions) {
+    const floorsOver = regions.filter(O => O !== R && O.kind === 'room' && Math.abs(O.lo - H.slab - R.top) < eps).map(O => O.rect);
+    R.roof = R.open ? [] : rectMinus(R.rect, floorsOver);
+  }
   const solids = [], slabs = [];
   const box = (x0, x1, z0, z1, y0, y1, extra) => (y1 - y0 > eps && x1 - x0 > eps && z1 - z0 > eps)
     ? { x0, x1, z0, z1, y0, y1, ...extra } : null;
@@ -170,10 +188,11 @@ function buildTerrain(L) {
       const ax = R.axis === 'x', a0 = ax ? x0 : z0, a1 = ax ? x1 : z1;
       for (let s = a0; s < a1 - eps; s += H.segment) {
         const s1 = Math.min(a1, s + H.segment), y = Math.min(ax ? R.floorAt(s) : R.floorAt(0, s), ax ? R.floorAt(s1) : R.floorAt(0, s1));
-        push(slabs, ax ? box(s, s1, z0, z1, y - H.slab, y) : box(x0, x1, s, s1, y - H.slab, y));
+        const floor = { kind: 'floor', region: R };
+        push(slabs, ax ? box(s, s1, z0, z1, y - H.slab, y, floor) : box(x0, x1, s, s1, y - H.slab, y, floor));
       }
-    } else for (const p of rectMinus(R.rect, R.pits)) push(slabs, box(p[0], p[1], p[2], p[3], R.lo - H.slab, R.lo));
-    if (!R.open) push(slabs, box(x0, x1, z0, z1, R.top, R.top + H.slab));
+    } else for (const p of rectMinus(R.rect, R.pits)) push(slabs, box(p[0], p[1], p[2], p[3], R.lo - H.slab, R.lo, { kind: 'floor', region: R }));
+    for (const p of R.roof) push(slabs, box(p[0], p[1], p[2], p[3], R.top, R.top + H.slab, { kind: 'roof', region: R }));
     // Pillars: stone columns from floor to roof.
     const s = CONFIG.rooms.pillarSize / 2;
     for (const [px, pz] of (R.src.pillars || []))

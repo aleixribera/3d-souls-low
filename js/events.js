@@ -8,6 +8,8 @@
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
 //   impact {x, y, z, fx, enemy} (an attack with `impact` hits the ground)  shot {enemy, bolt}  boltStopped {bolt}  (strike carries projectile: true when a bolt hits)
 //   gateOpened {gate, shortcut} (shortcut: a gate opened from its far side)
+//   dodge {attacker, strike, projectile} (a live hitbox or a bolt met the player during the roll's invulnerability; once each)
+//   trapWarning {trap} (the player set a trap off)  trapSprung {trap} (its floor gave way)
 //   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  attackStart {enemy, attack} (an enemy starts an attack)  perilous {enemy, attack} (a roll-only wind-up starts)  lock  switchTarget  zoom {dir}
 //   pause  resume  device {device}
 const events = {

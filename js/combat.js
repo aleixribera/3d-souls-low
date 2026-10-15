@@ -89,7 +89,11 @@ function resolveCombat(game) {
     if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); }
   }
   for (const hb of enemyHits) {
-    if (p.invulnerable() || !p.alive()) continue;   // a dodged swing stays live: it can catch the end of a roll
+    if (!p.alive()) continue;
+    if (p.invulnerable()) {   // rolled through: announced once per hitbox, which stays live (it can catch the end of the roll)
+      if (!hb.dodged) { hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload }); }
+      continue;
+    }
     hb.markHit(p);
     const res = p.takeHit(hb.payload, hb.owner);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : hb.payload.hitstop);

@@ -192,15 +192,19 @@ const ENEMY_DEFS = [
 ];
 
 // Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,
-// stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing.
+// stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
+// dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).
+const SPARRING_DUMMY = { id: 'sparringDummy', name: 'Sparring Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x6a5446, weapon: 'sword',
+  visual: { skin: 0x8a7650, roughness: 0.95 }, hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, restTime: 1.3,
+  attacks: [
+    { id: 'trainingSwing', name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
+      damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },
+  ] };
 const TRAINING_DEFS = [
   { id: 'dummy', name: 'Training Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x7a6440, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
     hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [] },
-  { id: 'sparringDummy', name: 'Sparring Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x6a5446, weapon: 'sword', visual: { skin: 0x8a7650, roughness: 0.95 },
-    hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, restTime: 1.3,
-    attacks: [
-      { id: 'trainingSwing', name: 'Training Swing', anim: 'overhead', hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
-        damage: 8, poise: 10, knock: 2, lunge: 0, range: 3, box: { w: 1.2, h: 2.4, d: 2.4, fwd: 1.4, y: 1.2 } },
-    ] },
+  SPARRING_DUMMY,
+  { ...SPARRING_DUMMY, id: 'dodgeDummy', name: 'Dodge Dummy',
+    attacks: SPARRING_DUMMY.attacks.map(a => ({ ...a, id: 'dodgeSwing', name: 'Dodge Swing', rollOnly: true })) },
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));

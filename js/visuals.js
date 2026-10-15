@@ -563,7 +563,7 @@ function makeBloodDecals() {
   const pool = Array.from({ length: B.decals }, () => {
     const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.3,
       polygonOffset: true, polygonOffsetFactor: -4 }));
-    m.visible = false; m.renderOrder = 1; scene.add(m);
+    m.visible = false; m.renderOrder = 1; scene.add(m); pooledFx.push(m);
     return { m, age: Infinity };
   });
   let cursor = 0;
@@ -748,8 +748,11 @@ const visuals = (() => {
       addShafts(G, list, pools);
     }
   }
+  // Every gate of a room level, and whether (x, z) on the floor at y can drop away (a trap's collapse area).
+  const allGates = L => gatedEntries(L).map(z => z.gate);
+  const onTrap = (L, x, z, y) => (L.traps || []).some(t => inRect(t.collapse, x, z) && trapRoom(terrainFor(L), t).lo === y);
   function dressRooms(G, L, rnd, pools) {
-    const eps = 1e-6, rocks = [], faces = new Map(), gates = [...L.gated, ...(L.shortcuts || [])].map(z => z.gate), TR = terrainFor(L);
+    const eps = 1e-6, rocks = [], faces = new Map(), gates = allGates(L), TR = terrainFor(L);
     const clearOf = (x, z, r) => !gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + r)
       && !L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < r + 0.8)
       && !L.rooms.some(R => (R.braziers || []).some(([bx, bz]) => Math.hypot(bx - x, bz - z) < r));
@@ -764,7 +767,7 @@ const visuals = (() => {
       const pt = (a, off) => alongX ? [a, f.at + f.n * off] : [f.at + f.n * off, a];
       for (let a = f.a0 + 0.6; a < f.a1 - 0.6; a += between(rnd, VIS.rubble.spacing)) {
         const [x, z] = pt(a, 0.25);
-        if (!clearOf(x, z, 1.4) || inPit(w.region, x, z)) continue;
+        if (!clearOf(x, z, 1.4) || inPit(w.region, x, z) || onTrap(L, x, z, y)) continue;
         rubbleCluster(rocks, rnd, x, z, alongX ? 1 : 0, alongX ? 0 : 1, alongX ? 0 : f.n, alongX ? f.n : 0, y);
       }
       if (!faces.has(w.region)) faces.set(w.region, []);
@@ -815,14 +818,14 @@ const visuals = (() => {
     const area = R => (R.rect[1] - R.rect[0] - 2 * m) * (R.rect[3] - R.rect[2] - 2 * m);
     const total = rooms.reduce((a, R) => a + Math.max(0, area(R)), 0);
     if (!total) return;
-    const count = Math.min(VIS.grass.maxRoom, Math.round(total * VIS.grass.perSquareMetre * A.grass)), gates = [...L.gated, ...(L.shortcuts || [])].map(z => z.gate);
+    const count = Math.min(VIS.grass.maxRoom, Math.round(total * VIS.grass.perSquareMetre * A.grass)), gates = allGates(L);
     const near = (x, z) => gates.some(g => Math.hypot(g.x - x, g.z - z) < g.width / 2 + 1.5) || L.bonfires.some(b => Math.hypot(b.x - x, b.z - z) < 2.2)
       || (L.ramps || []).some(r => x > r.rect[0] - 1 && x < r.rect[1] + 1 && z > r.rect[2] - 1 && z < r.rect[3] + 1);
     st.grass = grassMesh(rnd, count, () => {
       let pick = rnd() * total, R = rooms[0];
       for (const r of rooms) { pick -= Math.max(0, area(r)); if (pick <= 0) { R = r; break; } }
       const x = R.rect[0] + m + rnd() * (R.rect[1] - R.rect[0] - 2 * m), z = R.rect[2] + m + rnd() * (R.rect[3] - R.rect[2] - 2 * m);
-      if (inPit(R, x, z) || near(x, z) || (R.src.pillars || []).some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.4)) return null;
+      if (inPit(R, x, z) || near(x, z) || onTrap(L, x, z, R.lo) || (R.src.pillars || []).some(([px, pz]) => Math.hypot(px - x, pz - z) < 1.4)) return null;
       return [x, R.lo - 0.05, z];
     }, VIS.grass.roomSize);
     G.add(st.grass);
@@ -900,7 +903,18 @@ const visuals = (() => {
       grade.uniforms.uGrain.value = quality.grain ? VIS.grain.amount : 0;
       this.resize(window.innerWidth, window.innerHeight);
       applyCounts();
+      if (stage && Game.player) this.warmUp(Game.cam);   // each quality draws through its own path, with its own shaders
       if (Game.mode === 'pause' && stage) this.draw();   // show the change behind the options menu
+    },
+    // Draw every pooled effect once, fully transparent and in front of the camera (cam: { pos, look }), so that its
+    // shader is ready before play starts rather than compiled the moment a first hit, block or landing shows it.
+    warmUp(cam) {
+      camera.position.copy(cam.pos); camera.lookAt(cam.look); camera.updateMatrixWorld();
+      const at = new THREE.Vector3(0, 0, -3).applyMatrix4(camera.matrixWorld);
+      const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity]);
+      for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; }
+      this.draw();
+      for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
     },
     resize(w, h) {
       w = Math.max(1, w); h = Math.max(1, h);
@@ -935,7 +949,7 @@ const visuals = (() => {
       if (A.grass && open.length) addRoomGrass(G, d, rnd, open);
       if (pools.length) G.add(poolMesh(pools));
       for (const g of built.gates) mergeGate(g.mesh);
-      mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...flames.filter(f => f.group === G).map(f => f.mesh),
+      mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...(built.traps || []).map(t => t.group), ...flames.filter(f => f.group === G).map(f => f.mesh),
                               ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : [])]));
       applyLook();
     },

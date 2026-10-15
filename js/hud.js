@@ -9,7 +9,7 @@ const hud = {
   root: $('hud'), pHp: $('pHpFill'), pTrail: $('pHpTrail'), pSt: $('pStFill'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), confirm: $('confirm'),
-  tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutDone: $('tutDone'),
+  tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
   help: $('help'), toggle: $('hbToggle'),
   pTrailV: 1, eTrailV: 1, target: null, restedTimer: 0, lastPosture: 0, postFlash: 0,
   // Texts built from the live key bindings and the current level.
@@ -32,8 +32,6 @@ const hud = {
     }
     $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
-    $('helpWarn').textContent = !usingPad() && ACTIONS.block.some(c => c.startsWith('Control'))
-      ? `Prefer ${keyLabel(ACTIONS.block[0])} for blocking: the browser reserves Ctrl+W (close tab) and it cannot be overridden.` : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
@@ -131,6 +129,7 @@ const hud = {
     if (step) {
       this.tutStep.textContent = `${tut.index + 1} / ${game.tutorialSteps().length}`;
       this.tutText.textContent = step.text();
+      this.tutHint.textContent = tut.hintTimer > 0 ? tut.hint : '';   // a short hint on its own line, replaced, never stacked
       this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
     }
     this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);

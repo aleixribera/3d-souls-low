@@ -19,6 +19,13 @@ const warnOnce = msg => { if (!warned.has(msg)) { warned.add(msg); console.warn(
 
 // Geometry for room-style levels. A rect is [x0, x1, z0, z1]; a box is { x0, x1, z0, z1 } plus, in 3D, y0 and y1.
 const inRect = (r, x, z) => x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3];
+// An area: a rect, or a list of rects (a zone's trigger can be several rooms).
+const inArea = (a, x, z) => Array.isArray(a[0]) ? a.some(r => inRect(r, x, z)) : inRect(a, x, z);
+// The overlap of two rects, or null.
+const rectAnd = (a, b) => {
+  const r = [Math.max(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.min(a[3], b[3])];
+  return r[0] < r[1] && r[2] < r[3] ? r : null;
+};
 const insideRooms = (rooms, x, z, m = 0) => rooms.some(({ rect: r }) => x >= r[0] + m && x <= r[1] - m && z >= r[2] + m && z <= r[3] - m);
 // Fraction (0..1) along the segment from (x, z) by (dx, dz) where it first enters box b grown by m; Infinity if never.
 function segBox(x, z, dx, dz, b, m = 0) {

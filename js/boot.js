@@ -22,6 +22,17 @@ function registerListeners() {
   events.on('alert', d => spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, F.alert));
   events.on('boltStopped', d => spawnBurst({ x: d.bolt.x, y: d.bolt.y, z: d.bolt.z }, F.bolt));
   events.on('impact', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
+  // A trap: a jolt that rumbles on and dust rising from its floor as the warning starts (its cracks spread in
+  // placeTrap); dust from the edges as the floor drops away.
+  const trapDust = (t, edges) => {
+    const T = CONFIG.fx.trap, c = t.collapse;
+    for (let i = 0; i < T.puffs; i++) {
+      const x = rand(c[0], c[1]), z = edges ? c[2 + (i % 2)] : rand(c[2], c[3]);
+      groundFx.puff(x, z, T.dust, t.y);
+    }
+  };
+  events.on('trapWarning', d => { Game.addShake(d.trap.warning + CONFIG.fx.trap.rumble, CONFIG.fx.trap.jolt); trapDust(d.trap, false); });
+  events.on('trapSprung', d => trapDust(d.trap, true));
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
@@ -31,6 +42,7 @@ const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   input.use('keyboard');
+  if (Game.onStartNotice()) { if (!ev.repeat) Game.leaveStartNotice(); return; }   // any key
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
@@ -66,9 +78,14 @@ canvas.addEventListener('mousedown', ev => {
   if (!document.pointerLockElement && canvas.requestPointerLock) {
     try { canvas.requestPointerLock(); return; } catch (e) { /* unsupported: fall through and attack */ }
   }
-  if (ev.button === 0 || ev.button === 2) input.down('Mouse' + ev.button);
+  if (GAME_CODES.has('Mouse' + ev.button)) input.down('Mouse' + ev.button);
 });
 window.addEventListener('mouseup', ev => input.up('Mouse' + ev.button));
+window.addEventListener('mousedown', () => Game.leaveStartNotice());   // any click on the start notice
+// The side buttons (3 back, 4 forward) block: they never send the browser back or forward. Browsers navigate on
+// different ones of these events, so all three are stopped.
+for (const type of ['mousedown', 'mouseup', 'auxclick'])
+  window.addEventListener(type, ev => { if (ev.button === 3 || ev.button === 4) ev.preventDefault(); });
 document.addEventListener('mousemove', ev => {
   if (document.pointerLockElement === canvas) Game.mouseLook(ev.movementX, ev.movementY);
 });
@@ -105,7 +122,8 @@ registerListeners();
 window.addEventListener('resize', resize);
 resize();
 applySettings();
-Game.showMenu('main');
+$('version').textContent = VERSION;
+Game.showMenu('start');
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;
@@ -124,7 +142,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
-window.__arena = { Game, CONFIG, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, TUTORIAL, ARENA, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, makeStrike,
+window.__arena = { Game, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, TUTORIAL, ARENA, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, makeStrike,
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles,
                    get world() { return world; } };
 window.__arenaReady = true;

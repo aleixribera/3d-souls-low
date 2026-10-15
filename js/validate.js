@@ -104,7 +104,7 @@ function validateData() {
       }
     }
     for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
-    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
+    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring', 'dodge']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
   }
   // Arena and timings
   need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
@@ -124,6 +124,7 @@ function validateData() {
 function validateRooms(L, where, need, num) {
   const H = CONFIG.height, eps = 1e-6;
   const rectOk = r => Array.isArray(r) && r.length === 4 && r.every(num) && r[0] < r[1] && r[2] < r[3];
+  const areaOk = a => rectOk(a) || (Array.isArray(a) && a.length > 0 && a.every(rectOk));   // a rect, or a list of them
   const within = (p, r) => p[0] >= r[0] && p[1] <= r[1] && p[2] >= r[2] && p[3] <= r[3];
   const edgesOk = e => e === undefined || (!!e && typeof e === 'object' && Object.entries(e).every(([k, v]) => k in EDGES && EDGE_KINDS.includes(v)));
   let shapesOk = true;
@@ -206,14 +207,17 @@ function validateRooms(L, where, need, num) {
       && Math.abs(R.floorAt(x, z) - f) < 0.01);
   };
   need(onFloor(L.start.x, L.start.z, L.start.y), `${where}: the start point does not stand on a floor.`);
+  // A gate in a doorway: a zone's, a shortcut's or a sealed one.
+  const checkGate = (gt, tag) => {
+    need(gt && num(gt.x) && num(gt.z) && num(gt.width) && (gt.along === 'x' || gt.along === 'z'), `${tag}: gate needs x, z, width and along ('x' or 'z').`);
+    if (gt && num(gt.x) && num(gt.z)) need(Number.isFinite(T.floorY(gt.x, gt.z, gt.y)), `${tag}: the gate does not stand on a floor.`);
+  };
   const zoneIds = new Set();
   for (const g of L.gated) {
     const tag = `${where} zone "${g.id}"`;
     need(!zoneIds.has(g.id), `${tag}: duplicate id.`); zoneIds.add(g.id);
-    need(rectOk(g.trigger), `${tag}: trigger must be a rect [x0, x1, z0, z1].`);
-    need(g.gate && num(g.gate.x) && num(g.gate.z) && num(g.gate.width) && (g.gate.along === 'x' || g.gate.along === 'z'),
-      `${tag}: gate needs x, z, width and along ('x' or 'z').`);
-    if (g.gate && num(g.gate.x) && num(g.gate.z)) need(Number.isFinite(T.floorY(g.gate.x, g.gate.z, g.gate.y)), `${tag}: the gate does not stand on a floor.`);
+    need(areaOk(g.trigger), `${tag}: trigger must be a rect [x0, x1, z0, z1], or a list of them.`);
+    checkGate(g.gate, tag);
     need(Array.isArray(g.enemies) && g.enemies.length > 0, `${tag}: needs at least one enemy.`);
     for (const m of g.enemies || []) {
       need(m.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${m.enemy}".`);
@@ -226,10 +230,33 @@ function validateRooms(L, where, need, num) {
   for (const sc of Array.isArray(L.shortcuts) ? L.shortcuts : []) {
     const tag = `${where} shortcut "${sc.id}"`;
     need(typeof sc.id === 'string' && !zoneIds.has(sc.id), `${tag}: missing id, or the same as a zone or another shortcut.`); zoneIds.add(sc.id);
-    need(sc.gate && num(sc.gate.x) && num(sc.gate.z) && num(sc.gate.width) && (sc.gate.along === 'x' || sc.gate.along === 'z'),
-      `${tag}: gate needs x, z, width and along ('x' or 'z').`);
-    if (sc.gate && num(sc.gate.x) && num(sc.gate.z)) need(Number.isFinite(T.floorY(sc.gate.x, sc.gate.z, sc.gate.y)), `${tag}: the gate does not stand on a floor.`);
+    checkGate(sc.gate, tag);
     need(rectOk(sc.opensFrom) && !(sc.gate && inRect(sc.opensFrom, sc.gate.x, sc.gate.z)), `${tag}: opensFrom must be a rect on the gate's far side (not over the gate).`);
+  }
+  // Sealed gates: always closed, part of no zone (somewhere the player can see but not reach).
+  if ('sealed' in L) need(Array.isArray(L.sealed), `${where}: sealed must be a list.`);
+  for (const sg of Array.isArray(L.sealed) ? L.sealed : []) {
+    const tag = `${where} sealed gate "${sg.id}"`;
+    need(typeof sg.id === 'string' && !zoneIds.has(sg.id), `${tag}: missing id, or the same as a zone, a shortcut or another sealed gate.`); zoneIds.add(sg.id);
+    checkGate(sg.gate, tag);
+  }
+  // Traps: a collapse area on one room's floor, with a floor below it to land on; a trigger on a floor; a warning time.
+  if ('traps' in L) need(Array.isArray(L.traps), `${where}: traps must be a list.`);
+  const trapIds = new Set(), inset = r => [[r[0] + 0.3, r[2] + 0.3], [r[1] - 0.3, r[2] + 0.3], [r[0] + 0.3, r[3] - 0.3], [r[1] - 0.3, r[3] - 0.3],
+    [(r[0] + r[1]) / 2, (r[2] + r[3]) / 2]];
+  for (const t of Array.isArray(L.traps) ? L.traps : []) {
+    const tag = `${where} trap "${t.id}"`;
+    need(typeof t.id === 'string' && !trapIds.has(t.id), `${tag}: missing or duplicate id.`); trapIds.add(t.id);
+    if ('y' in t) need(num(t.y), `${tag}: y (the height of its floor) must be a number.`);
+    need(num(t.warning) && t.warning >= 0, `${tag}: warning must be a number of seconds, 0 or more.`);
+    const R = rectOk(t.collapse) && (!('y' in t) || num(t.y)) ? trapRoom(T, t) : null;
+    need(!!R, `${tag}: its collapse area must be a rect [x0, x1, z0, z1] lying on one room's floor.`);
+    if (R) {
+      const c = t.collapse, nx = Math.ceil(c[1] - c[0]), nz = Math.ceil(c[3] - c[2]), below = [];
+      for (let i = 0; i <= nx; i++) for (let k = 0; k <= nz; k++) below.push(T.floorY(lerp(c[0], c[1], i / nx), lerp(c[2], c[3], k / nz), R.lo - H.slab - 0.01));
+      need(below.every(Number.isFinite), `${tag}: there must be a floor below its collapse area to land on, not a pit.`);
+    }
+    need(rectOk(t.trigger) && inset(t.trigger).every(([x, z]) => onFloor(x, z, R ? R.lo : t.y)), `${tag}: its trigger area must be a rect lying on a floor.`);
   }
   for (const s of L.dispersed) {
     const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;
@@ -241,7 +268,7 @@ function validateRooms(L, where, need, num) {
   for (const b of L.bonfires) {
     need(onFloor(b.x, b.z, b.y) && b.spawn && onFloor(b.spawn.x, b.spawn.z, b.spawn.y),
       `${where} bonfire "${b.id}": it and its spawn must stand on a floor (not over a pit).`);
-    const z = b.spawn && L.gated.find(g => rectOk(g.trigger) && inRect(g.trigger, b.spawn.x, b.spawn.z));
+    const z = b.spawn && L.gated.find(g => areaOk(g.trigger) && inArea(g.trigger, b.spawn.x, b.spawn.z));
     need(!z, `${where} bonfire "${b.id}": its spawn is inside zone "${z && z.id}".`);
   }
 }

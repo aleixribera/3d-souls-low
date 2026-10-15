@@ -97,6 +97,39 @@
     below(a, b, msg) { if (!(a < b)) throw new Fail(`${msg || 'value'}: expected < ${b}, got ${typeof a === 'number' ? a.toFixed(3) : a}`); },
   };
 
+  // ---- first, before any other test draws an effect: frame times around jump-attack landings -------------------
+  // A shader compiles the first time something is drawn with it, which stalls that frame, so this test comes first:
+  // its first landing is the first after the page loaded. Each frame is one step and one render, waiting for the GPU.
+  // The landing frame and the two after it (where the ground ring, crack, dust, burst and blood first show) are held
+  // against the frames before the jump: a stall stands out from them, while the odd slow frame of a busy browser
+  // (up to about 7 ms here) does not.
+  const frames = [];   // ms per frame
+  let landedAt = -1;   // the index of the frame whose step landed
+  A.events.on('land', () => { landedAt = frames.length; });
+  test('jump attack: no landing stalls a frame, the first after loading or later, with a hit or without', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4), margin = { ratio: 2, ms: 6 };
+    const frame = () => { const t0 = performance.now(); sim.step(1); Game.render(1, STEP); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); frames.push(performance.now() - t0); };
+    const median = xs => [...xs].sort((a, b) => a - b)[xs.length >> 1];
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    const p = Game.player, report = [];
+    for (const [when, hit] of [['first', false], ['first', true], ['later', false], ['later', true]]) {
+      sim.place(12, 0); p.yaw = Math.PI / 2; p.stamina = p.maxStamina;
+      const target = hit ? sim.spawn('hollow', 13.6, 0, undefined, -Math.PI / 2) : null;
+      if (target) quiet(target);
+      frames.length = 0; landedAt = -1;
+      for (let i = 0; i < 30; i++) frame();
+      sim.press('jump'); frame(); frame(); frame(); sim.press('heavy');
+      while (landedAt < 0 && frames.length < 150) frame();
+      for (let i = 0; i < 10; i++) frame();
+      expect.ok(landedAt >= 0, `${when}: a jump attack landed`);
+      const base = median(frames.slice(0, 30)), worst = Math.max(...frames.slice(landedAt, landedAt + 3));
+      report.push(`${when}${hit ? ' hit' : ''}: landing ${worst.toFixed(1)} ms, before ${base.toFixed(1)} ms`);
+      if (target) { expect.below(target.hp, target.def.hp, `${when}: the jump attack hit`); sim.clearEnemies(); }
+      expect.below(worst, base * margin.ratio + margin.ms, `${when} landing${hit ? ' with a hit' : ''}: its slowest frame against ${base.toFixed(1)} ms before`);
+    }
+    metrics.jumpLanding = report;
+  });
+
   // ---- regression: every level, duel and test room loads and runs ----------------------------------
   const allLevels = () => [...A.LEVELS, ...A.TEST_LEVELS];
   test('regression: every level loads and runs 10 s with rendering', () => {
@@ -540,8 +573,10 @@
 
   // ---- v3.5 Level 3: The Tower ---------------------------------------------------------------------------------
   // The way up, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
+  // The passage floor gives way under the player at (26, 0): the fight below, then up to the bait bonfire and round the bend.
   const TOWER_ROUTE = [
-    [22, 0, 'zone-gatehouse'], [33, 0], [40, 0], [60, 0, 'zone-courtyard'], [42, 0], [38, 18], [38, 24], [48, 24], [60, 24], [68, 24],
+    [14, 0, 'zone-gatehouse'], [23, 0], [26, 0], [26, -2, 'zone-undercroft'], [26, -13], [32, -13], [32, -9], [32, -1], [32, 5],
+    [35, 5.5], [40, 5.5], [60, 0, 'zone-courtyard'], [42, 0], [38, 18], [38, 24], [48, 24], [60, 24], [68, 24],
     [80, 24], [92, 24, 'zone-rampart'], [98, 24], [98, 16], [98, 4, 'zone-hall'], [100, -4], [111.5, -4], [112, 0], [112, 9],
     [112, 11.5], [88, 11.5], [87.5, 8], [87.5, -8], [88, -11.5], [112.5, -11.5], [112.5, -8], [112.5, 8], [112, 14],
     [100, 14, 'zone-walkway'], [88, 14], [88, 9], [88, -8], [87, -13], [95, -13], [96, -4, 'zone-bell'],
@@ -555,9 +590,10 @@
   test('the tower: follows Level 2, and its data, gates and culling are in place', () => {
     expect.ok(A.LEVEL_2.next === 'the-tower' && A.LEVELS.indexOf(A.LEVEL_3) === A.LEVELS.indexOf(A.LEVEL_2) + 1, 'Level 2 leads into the Tower');
     tower();
-    expect.ok(Game.zones.length === 6 && Game.zones.every(z => !z.gate.open), 'six zone gates, all shut');
+    expect.ok(Game.zones.length === 7 && Game.zones.every(z => !z.gate.open), 'seven zone gates, all shut');
     expect.ok(world.gates.some(g => g.id === 'postern' && g.opensFrom && !g.open), 'the postern shortcut, shut');
-    expect.ok(world.bonfires.length === 3, 'three bonfires');
+    expect.ok(world.gates.some(g => g.id === 'bonfire-portcullis' && !g.open), 'the portcullis before the bait bonfire, shut');
+    expect.ok(world.bonfires.length === 4, 'four bonfires');
     sim.step(1); Game.render(1, STEP);
     expect.ok(A.visuals.info().pointLights === CONFIG.cull.maxLights && A.visuals.info().sky && A.visuals.info().grass > 0, 'culled lights, sky and grass');
     expect.above(Game.enemies.filter(e => e.asleep).length, 10, 'the far enemies sleep at the start');
@@ -582,13 +618,6 @@
     }
     expect.near(p.y, 22, 1e-6, 'on top of the tower');
     expect.ok(Game.complete && log.includes('levelComplete'), `LEVEL COMPLETE (${opened.length} gates)`);
-  });
-  test('the tower: the grate drops safely into the undercroft, whose stairs climb back to the gatehouse', () => {
-    const p = tower(); sim.clearEnemies();
-    sim.place(45.5, -13, 0); sim.walkTo(45.5, -16.5, 0.3, 5); sim.until(() => p.grounded && p.y < -1, 4);
-    expect.near(p.y, -4, 1e-6, 'in the undercroft'); expect.near(p.hp, p.maxHp, 1e-9, 'a 4 m drop is free');
-    expect.ok(sim.walkTo(38, -18) && sim.walkTo(22, -18) && sim.walkTo(18, -12) && sim.walkTo(18, -7.5) && sim.walkTo(22, -4), 'back up the stairs');
-    expect.near(p.y, 0, 1e-6, 'in the gatehouse');
   });
   test('the tower: the postern opens only from the stair side, back to the courtyard', () => {
     const p = tower(); sim.clearEnemies();
@@ -836,6 +865,294 @@
     }
     expect.ok(Number.isFinite(closest), 'watched it for a while before any attack');
     expect.above(closest, longest - 1.5, `closest it came once the player had left (its longest reach is ${longest} m)`);
+  });
+
+  // ---- v3.7 tutorial and tower fixes ---------------------------------------------------------------------------
+  // The tutorial, jumped straight to one step (its dummies set up as the step starts).
+  const tutorialAt = id => {
+    Game.startLevel('tutorial'); sim.begin(); log.length = 0;
+    Game.tut.index = Game.tutorialSteps().findIndex(s => s.id === id);
+    Game.setupTutorialStep(); Game.render(1, STEP);
+    return Game.player;
+  };
+  const shown = id => (document.getElementById(id) || {}).textContent || '';
+  test('block: C, L and both side mouse buttons hold block; Ctrl no longer does', () => {
+    const p = tutorialAt('block');
+    for (const code of ['KeyC', 'KeyL', 'Mouse3', 'Mouse4']) {
+      input.down(code); sim.step(2);
+      expect.ok(p.state === PS.BLOCK, `${code} blocks (state ${p.state})`);
+      input.up(code); sim.step(2);
+      expect.ok(p.state !== PS.BLOCK, `${code} let go`);
+    }
+    for (const code of ['ControlLeft', 'ControlRight']) {
+      input.down(code); sim.step(2);
+      expect.ok(p.state !== PS.BLOCK, `${code} does not block`);
+      input.up(code);
+    }
+    for (const button of [3, 4]) for (const type of ['mousedown', 'mouseup', 'auxclick']) {
+      const ev = new MouseEvent(type, { button, bubbles: true, cancelable: true });
+      document.body.dispatchEvent(ev);
+      expect.ok(ev.defaultPrevented, `side button ${button} ${type}: the browser does not go back or forward`);
+    }
+    Game.render(1, STEP);
+    expect.ok(shown('tutText').includes('[ c / Side mouse ]'), `block prompt: "${shown('tutText')}"`);
+    const row = [...document.querySelectorAll('#helpTable tr')].find(r => r.cells[0].textContent.startsWith('Block'));
+    expect.ok(row && row.cells[1].textContent === '[ c / l / Side mouse ]', `help panel: "${row && row.cells[1].textContent}"`);
+  });
+  test('tutorial: block, parry and dodge start locked on to their dummy; a lock let go stays off', () => {
+    const ids = Game.tutorialSteps().map(s => s.id), at = ids.indexOf('block');
+    expect.ok(ids.slice(at, at + 3).join() === 'block,parry,dodge', `step order: ${ids.join(', ')}`);
+    for (const id of ['block', 'parry', 'dodge']) {
+      tutorialAt(id);
+      expect.ok(Game.enemies.length === 1 && Game.lock === Game.enemies[0], `${id}: locked on to its dummy`);
+      sim.press('lock'); sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: the lock key lets go`);
+      sim.seconds(4, 6);
+      expect.ok(!Game.lock, `${id}: and nothing locks it again`);
+    }
+    tutorialAt('light'); expect.ok(!Game.lock, 'other steps start unlocked');
+    Game.render(1, STEP);
+    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 15, `the step counter counts the new step (${shown('tutStep')})`);
+  });
+  // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
+  const cadence = (stepId, seconds) => {
+    tutorialAt(stepId); const e = Game.enemies[0], out = [];
+    for (let i = 0; i < seconds / STEP; i++) { sim.step(); out.push(e.state); }
+    return out.join();
+  };
+  test('tutorial: the dodge dummy swings exactly like the sparring dummy, but roll-only; a block or a parry does not answer it', () => {
+    expect.ok(cadence('dodge', 12) === cadence('block', 12), 'the same rest, wind-up, strike and recovery, step for step');
+    let p = tutorialAt('dodge');
+    const dummy = Game.enemies[0], swing = dummy.def.attacks[0];
+    expect.ok(sim.until(() => log.includes('perilous'), 4) >= 0, 'its wind-up flashes the blue ring (perilous)');
+    expect.ok(makeStrike(swing).rollOnly, 'its swing is roll-only');
+    sim.hold('block'); let hp0 = p.hp;
+    sim.until(() => dummy.state === ES.RECOVER, 4); sim.release('block');
+    expect.ok(p.hp < hp0 && log.includes('strike'), 'it went through the guard');
+    expect.ok(Game.currentStep().id === 'dodge' && Game.tut.doneTimer === 0, 'blocking does not finish the step');
+    p = tutorialAt('dodge');
+    const d = Game.enemies[0];
+    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.08, 6); sim.press('parry');
+    sim.until(() => d.state === ES.RECOVER, 2);
+    expect.ok(!log.includes('parry') && Game.tut.doneTimer === 0, 'it cannot be parried');
+  });
+  const dodges = [];
+  A.events.on('dodge', d => dodges.push(d));
+  // The dodge step: roll `before` s before the dummy's swing lands (negative: after), toward it or `away` from it.
+  // What the player sees once that swing is over: the step done, or the hint under the prompt.
+  const dodgeRoll = (before, away = false, fresh = true) => {
+    const p = fresh ? tutorialAt('dodge') : Game.player, dummy = Game.enemies[0], swing = dummy.def.attacks[0];
+    dodges.length = 0;
+    sim.until(() => dummy.state === ES.WINDUP, 6); sim.seconds(swing.hits[0].startup - before);
+    if (away) sim.move(p.x - dummy.x, p.z - dummy.z);
+    sim.press('roll');
+    sim.until(() => dummy.state === ES.RECOVER, 3); sim.move(null); sim.step(2); Game.render(1, STEP);
+    return { done: Game.tut.doneTimer > 0, hint: shown('tutHint') };
+  };
+  test('tutorial: a roll through the swing finishes the dodge step; early, late or clear of it shows a hint', () => {
+    const timed = dodgeRoll(0.1);
+    expect.ok(timed.done, `rolled through the swing as it landed: done (hint "${timed.hint}")`);
+    expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === A.TUTORIAL.training.dodge, `one dodge event (${dodges.length})`);
+    for (const [before, away, want] of [[0.45, false, 'Too early'], [0.9, false, 'Too early'], [-0.05, false, 'Too late'], [0.5, true, 'Roll into the swing']]) {
+      const r = dodgeRoll(before, away);
+      expect.ok(!r.done && r.hint === want, `rolled ${before} s before it landed${away ? ', away' : ''}: "${r.hint}" (want "${want}")`);
+    }
+    dodgeRoll(-0.05);
+    sim.seconds(CONFIG.tutorial.hintTime + 0.1); Game.render(1, STEP);
+    expect.ok(shown('tutHint') === '', `the hint goes after a while ("${shown('tutHint')}")`);
+    dodgeRoll(0.45); const next = dodgeRoll(-0.05, false, false);
+    expect.ok(next.hint === 'Too late', `the next hint replaces it ("${next.hint}")`);
+  });
+  test('events: dodge fires once for a swing rolled through, and for a bolt', () => {
+    dodgeRoll(0.1);
+    expect.ok(dodges.length === 1 && !dodges[0].projectile, `one for the dummy's swing (${dodges.length})`);
+    Game.startFight('testBowman'); sim.begin(); dodges.length = 0;
+    const p = Game.player, e = Game.duel, shot = bowShot();
+    quiet(e); e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+    const b = A.projectiles.fire(e, shot, p), arrive = Math.hypot(p.x - b.x, p.z - b.z) / shot.projectile.speed;
+    sim.seconds(Math.max(0, arrive - CONFIG.player.rollIFrames * 0.5)); sim.press('roll'); settleBolts();
+    expect.ok(dodges.length === 1 && dodges[0].projectile && dodges[0].attacker === e, `one for the bolt (${dodges.length})`);
+  });
+  // The player at (10, 0) facing east in Test: Crowd, with enemies that stay put at the given spots.
+  const lockRange = spots => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const out = {};
+    for (const [name, x, z] of spots) { out[name] = sim.spawn('hollow', x, z, undefined, -Math.PI / 2); quiet(out[name]); }
+    sim.step(5, 1); Game.setLock(null);   // the near ones had their one-time auto lock-on: start unlocked
+    return out;
+  };
+  const tab = () => { sim.press('switchTarget'); sim.step(1, 1); return Game.lock; };
+  test('switch target: Tab steps out from the nearest enemy in front to the farthest, and wraps', () => {
+    const e = lockRange([['near', 14, 0], ['far', 24, 0.3], ['side', 16, 3], ['mid', 18, -4], ['behind', 2, 0]]);
+    Game.setLock(e.near); sim.step(1, 1);
+    const order = [tab(), tab(), tab(), tab()];
+    const names = order.map(t => Object.keys(e).find(k => e[k] === t));
+    expect.ok(names.join() === 'side,mid,far,near', `Tab from the nearest: ${names.join(', ')} (want side, mid, far, near)`);
+    Game.setLock(e.behind); sim.step(1, 1);
+    expect.ok(tab() === e.near, 'from a target that is not a candidate, Tab picks the nearest');
+    for (let i = 0; i < 8; i++) expect.ok(tab() !== e.behind, 'never the enemy behind the player');
+  });
+  test('switch target: lock-on still picks the middle of the screen, and a flick still picks by side', () => {
+    const e = lockRange([['centre', 20, 0], ['right', 13, 2.5], ['left', 14, -3]]);
+    sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e.centre, 'lock-on: the enemy in the middle of the screen, not the nearest');
+    input.down('PadFlickR'); input.up('PadFlickR'); sim.step(1, 1);
+    expect.ok(Game.lock === e.right, 'a flick right: the enemy to the right');
+    Game.setLock(e.centre); sim.step(1, 1);
+    input.down('PadFlickL'); input.up('PadFlickL'); sim.step(1, 1);
+    expect.ok(Game.lock === e.left, 'a flick left: the enemy to the left');
+  });
+
+  test('floors and roofs: no roof is drawn inside the floor above it, in any room level; holes show through', () => {
+    const ray = new THREE.Raycaster(), up = new THREE.Vector3(0, 1, 0);
+    ray.camera = A.camera;
+    let spots = 0;
+    for (const L of A.ALL_LEVELS.filter(l => l.layout === 'rooms')) {
+      Game.startLevel(L.id); sim.begin();
+      const rooms = L.rooms.map(R => ({ R, lo: R.y ?? 0, top: (R.y ?? 0) + (R.height ?? L.wallHeight) }));
+      for (const a of rooms) for (const b of rooms) {   // a roofed room right under b's floor slab
+        if (a === b || a.R.open || Math.abs(a.top - (b.lo - H.slab)) > 1e-6) continue;
+        const r = [Math.max(a.R.rect[0], b.R.rect[0]), Math.min(a.R.rect[1], b.R.rect[1]), Math.max(a.R.rect[2], b.R.rect[2]), Math.min(a.R.rect[3], b.R.rect[3])];
+        if (r[0] >= r[1] || r[2] >= r[3]) continue;
+        for (const fx of [0.2, 0.5, 0.8]) for (const fz of [0.2, 0.5, 0.8]) {
+          const x = lerp(r[0], r[1], fx), z = lerp(r[2], r[3], fz), hole = (b.R.pits || []).some(q => inRect(q, x, z));
+          ray.set(new THREE.Vector3(x, a.top - 0.2, z), up);
+          const near = ray.intersectObject(stage.group, true).filter(h => h.distance < 0.5);
+          const n = new Set(near.map(h => h.object.material.uuid + h.point.y.toFixed(3))).size;   // surfaces that would fight: two materials at one height
+          expect.ok(n === (hole ? 0 : 1), `${L.id}: "${a.R.id}" under "${b.R.id}" at (${x.toFixed(1)}, ${z.toFixed(1)}): ${n} surfaces at its ceiling${hole ? ' (a hole)' : ''}`);
+          spots++;
+        }
+      }
+    }
+    expect.above(spots, 8, 'places checked');
+    Game.startLevel('the-tower');
+    expect.ok(!A.LEVEL_3.rooms.find(R => R.id === 'courtyard').pits && world.floorY(45.5, -16.5) === 0, "the courtyard's grate is gone");
+  });
+  // Level 3's trap: every trapWarning and trapSprung, with when and where the player was.
+  const traps = [];
+  for (const type of ['trapWarning', 'trapSprung']) A.events.on(type, d => traps.push({ type, trap: d.trap.id, t: clock, x: Game.player.x }));
+  const zone = id => Game.zones.find(z => z.id === id);
+  const drawn = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  const downTo = (x, z) => {   // the first surface drawn below (x, 5, z)
+    Game.render(1, STEP);
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, 5, z), new THREE.Vector3(0, -1, 0)); ray.camera = A.camera;
+    const h = ray.intersectObject(stage.group, true).find(q => drawn(q.object));
+    return h ? h.point.y : -Infinity;
+  };
+  // Into the passage past the gatehouse gate, and on east until the floor gives way and the player lands below.
+  const springTrap = () => {
+    const p = tower(); sturdy(p); traps.length = 0;
+    for (const e of zone('zone-gatehouse').actors) e.die();
+    sim.until(() => zone('zone-gatehouse').gate.lift >= 1, 4);
+    sim.place(21, 0); sim.move(1, 0);
+    sim.until(() => !p.grounded, 6); sim.move(null);
+    sim.until(() => p.grounded, 3);
+    return p;
+  };
+  test('the tower: walking up the passage, the floor rumbles, cracks and gives way into the undercroft at no cost', () => {
+    const p = springTrap(), T = A.LEVEL_3.traps[0];
+    expect.ok(traps.map(t => t.type).join() === 'trapWarning,trapSprung', `warning, then collapse (${traps.map(t => t.type).join(', ')})`);
+    expect.ok(traps[0].x >= T.trigger[0] && traps[0].x < T.trigger[0] + 0.2, `the warning as the player stepped onto the trigger (x ${traps[0].x.toFixed(2)})`);
+    expect.near(traps[1].t - traps[0].t, T.warning, STEP * 1.01, 'the warning time');
+    expect.near(p.y, -4, 1e-6, 'landed in the undercroft'); expect.ok(p.alive() && p.hp === p.maxHp, `no damage (${p.maxHp - p.hp})`);
+    expect.ok(downTo(26, 0) < -3.9 && downTo(26, 0) > -4.1, `the floor dropped away: looking down, the undercroft floor (${downTo(26, 0).toFixed(2)})`);
+    expect.above(T.collapse[1] - T.collapse[0], 2.3 + 1, 'longer than any jump');
+    tower(); sim.clearEnemies(); traps.length = 0;
+    const e = sim.spawn('hollow', 27, 2, 0); quiet(e);
+    sim.place(24.5, -1.5); sim.seconds(1);
+    expect.ok(e.alive() && Math.abs(e.y + 4) < 1e-6, 'an enemy standing on it falls too');
+  });
+  test('the tower: the ambush below opens its gate only when all three are dead; the stairs lead up to the bait bonfire', () => {
+    const p = springTrap(), Z = zone('zone-undercroft'), ids = Z.actors.map(e => e.def.id).sort().join();
+    expect.ok(ids === 'executioner,hollow,hollow', `two Hollows and the Executioner (${ids})`);
+    sim.seconds(1.5);
+    const exec = Z.actors.find(e => e.def.id === 'executioner'), hollows = Z.actors.filter(e => e !== exec);
+    expect.ok(hollows.every(e => !e.in('unaware')), 'the Hollows noticed the player at once');
+    expect.ok(exec.state !== ES.DORMANT, `the Executioner rose (${exec.state})`);
+    expect.above(Math.hypot(exec.x - p.x, exec.z - p.z), 4, 'a few metres away');
+    for (const e of [exec, hollows[0]]) e.die();
+    sim.seconds(1); expect.ok(!Z.gate.open, 'shut while one is alive');
+    hollows[1].die(); expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, 'open once all three are dead');
+    expect.ok(sim.walkTo(26, -13) && sim.walkTo(32, -13) && sim.walkTo(32, -9) && sim.walkTo(32, -1), 'up the exit stairs');
+    expect.near(p.y, 0, 1e-6, 'in the bait bonfire room');
+    sim.press('rest'); sim.step(2); expect.ok(p.state === PS.REST, 'rested at the bait bonfire');
+    sim.seconds(2); expect.ok(world.floorY(26, 0) === -4 && downTo(26, 0) < -3.9, 'after resting, the hole is still open');
+    p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    const q = Game.player, fire = world.bonfires.find(b => b.id === 'tower-bait');
+    expect.ok(q.alive() && Math.hypot(q.x - fire.x, q.z - fire.z) < 3 && q.y === 0, `respawned at the bait bonfire (${q.x.toFixed(1)}, ${q.z.toFixed(1)})`);
+    expect.ok(world.floorY(26, 0) === -4 && downTo(26, 0) < -3.9, 'after dying, the hole is still open');
+  });
+  test('the tower: the portcullis before the bait bonfire never opens, and nothing in the courtyard sees the bonfire', () => {
+    const p = tower(); sturdy(p);
+    const g = world.gates.find(q => q.id === 'bonfire-portcullis'), fire = world.bonfires.find(b => b.id === 'tower-bait');
+    sim.place(fire.spawn.x, fire.spawn.z);
+    const watchers = [...zone('zone-courtyard').actors, ...Game.enemies.filter(e => e.behavior === 'sentry' && e.def.id === 'bowman' && e.y === 6)];
+    expect.ok(watchers.length === 7 && watchers.every(e => gateBetween(e, p)), 'no courtyard enemy or rampart bowman has a line to it');
+    sim.seconds(5);
+    expect.ok(watchers.every(e => e.in('unaware')) && !shots.length, 'nobody noticed or shot');
+    sim.press('rest'); sim.step(2); expect.ok(p.state === PS.REST, 'resting is not blocked');
+    sim.seconds(2); sim.place(30.5, 1.5); sim.move(-1, 0); sim.seconds(2); sim.move(null);
+    expect.above(p.x, 29, 'the portcullis holds');
+    for (const Z of Game.zones) for (const e of Z.actors) e.die();
+    sim.seconds(3);
+    expect.ok(Game.complete && !g.open, 'still shut once every zone is won, and the level completes without it');
+  });
+  test('data: traps, sealed gates, zone behaviours and the dodge dummy are checked at load', () => {
+    expect.ok(A.validateData().length === 0, 'the shipped data passes');
+    const L = A.LEVEL_3, trap = L.traps[0], exec = L.gated.find(z => z.id === 'zone-undercroft').enemies.find(m => m.enemy === 'executioner');
+    const rejects = (obj, key, value, words) => {   // one bad value: a readable error that names the thing and the problem
+      const old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      obj[key] = old;
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(trap, 'collapse', [200, 205, 0, 4], ['trap "passage-floor"', 'collapse']);
+    rejects(trap, 'collapse', [40, 45, 0, 4], ['trap "passage-floor"', 'below']);
+    rejects(trap, 'trigger', [200, 201, 0, 1], ['trap "passage-floor"', 'trigger']);
+    rejects(trap, 'warning', -1, ['trap "passage-floor"', 'warning']); rejects(trap, 'warning', 'soon', ['trap "passage-floor"', 'warning']);
+    rejects(exec, 'behavior', 'patrol', ['zone-undercroft', 'behaviour']);
+    rejects(L.sealed[0], 'gate', { x: 200, z: 0, along: 'z', width: 6 }, ['sealed gate "bonfire-portcullis"', 'floor']);
+    rejects(L.sealed[0], 'gate', { x: 29, z: 0, along: 'y' }, ['sealed gate "bonfire-portcullis"', 'along']);
+    rejects(A.TUTORIAL.training, 'dodge', 'nobody', ['training.dodge']);
+  });
+  const atLoad = { screen: Game.screen, notice: shown('menuNotice') };   // what the page showed as it finished loading
+  const menuShows = () => !document.getElementById('menu').classList.contains('hidden');
+  test('start screen: a controller notice comes first; any key, click or pad button moves on, once', () => {
+    expect.ok(atLoad.screen === 'start' && atLoad.notice.includes('Best played with a controller'), `at load: ${atLoad.screen}, "${atLoad.notice}"`);
+    const fakePad = { connected: true, axes: [0, 0, 0, 0], buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: i === 0, value: i === 0 ? 1 : 0 })) };   // A: also confirm
+    const presses = {
+      key: () => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter' })); },
+      click: () => document.getElementById('menuBox').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })),
+      pad: () => {
+        const read = gamepad.read;
+        gamepad.read = () => fakePad; real.poll.call(gamepad, STEP);
+        gamepad.read = () => null; real.poll.call(gamepad, STEP);
+        gamepad.read = read; input.use('keyboard');
+      },
+    };
+    for (const [how, press] of Object.entries(presses)) {
+      Game.showMenu('start');
+      expect.ok(menuShows() && shown('menuNotice').includes('controller') && shown('menuList') === '', `${how}: the notice, alone`);
+      press();
+      expect.ok(Game.screen === 'main' && shown('menuNotice') === '' && document.getElementById('menuList').children.length > 0, `${how}: on to the main menu`);
+      expect.ok(document.querySelector('#menuList .sel').textContent.startsWith('Levels'), `${how}: the press only moved on, it chose nothing`);
+    }
+    Game.startLevel('test-crowd'); Game.pause(false);
+    Game.select(Game.screens().pause.items.findIndex(it => it.name === 'Back to Menu')); Game.confirm();
+    expect.ok(Game.screen === 'main' && shown('menuNotice') === '', 'back to the menu: straight to the main menu');
+  });
+  test('version: a tiny label shows the version in every menu and hides during play', () => {
+    const label = document.getElementById('version'), seen = () => label.offsetParent !== null && label.textContent === A.VERSION;
+    expect.ok(/^v\d+\.\d+$/.test(A.VERSION), `one version constant (${A.VERSION})`);
+    Game.showMenu('start'); expect.ok(seen(), 'on the start notice');
+    Game.showMenu('levels'); expect.ok(seen(), 'in the Levels menu');
+    Game.startLevel('test-crowd'); sim.begin(); sim.step(2, 1);
+    expect.ok(!seen(), 'hidden during play');
+    Game.pause(false); expect.ok(seen(), 'in the pause menu');
+    Game.showMenu('options'); expect.ok(seen(), 'in the options');
+    Game.resume(); expect.ok(!seen(), 'hidden again on resuming');
   });
 
   async function run(filter = '') {

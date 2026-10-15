@@ -29,6 +29,9 @@
   .menuBtn:hover, .menuBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
   .menuBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
   #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
+  #menuBox .notice { text-align: center; font-size: 17px; line-height: 1.7; color: #d9cda8; margin: 20px 0 8px; white-space: pre-line; }
+  #menuBox .notice:empty { display: none; }
+  #version { position: absolute; right: 10px; bottom: 6px; font-size: 10px; letter-spacing: 1px; color: #4e473a; pointer-events: none; }
 
   #fade { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity var(--fade-time, 1s); }
   #fade.show { opacity: 1; }
@@ -92,8 +95,7 @@
   #help td:first-child { color: #b79d5c; }
   #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
   #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
-  #help .level:empty, #help .warn:empty { display: none; }
-  #help .warn { color: #7a7260; font-size: 11px; margin-top: 6px; max-width: 320px; }
+  #help .level:empty { display: none; }
   #died, #won, #complete { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
   #died .big { font-size: 78px; letter-spacing: 12px; color: #7a0f0f; text-shadow: 0 0 30px #000;
     background: linear-gradient(90deg, transparent, #000000b0 30%, #000000b0 70%, transparent); padding: 14px 0; }
@@ -107,10 +109,12 @@
   #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
   #tutPrompt { position: absolute; left: 50%; top: 84px; transform: translateX(-50%) scale(var(--hud)); transform-origin: top center;
     padding: 9px 22px; background: #0d0b10d8; border: 1px solid #7d6a3a; color: #e8dcb8; font-size: 18px; letter-spacing: 1px;
-    text-shadow: 0 0 6px #000; white-space: nowrap; transition: border-color 0.2s, color 0.2s; }
+    text-shadow: 0 0 6px #000; width: max-content; max-width: 86vw; text-align: center; transition: border-color 0.2s, color 0.2s; }
   #tutPrompt.hidden { display: none; }
   #tutPrompt.done { border-color: #8fbf6a; color: #c8f0a8; }
   #tutStep { color: #8f866c; font-size: 13px; margin-right: 14px; letter-spacing: 2px; }
+  #tutHint { margin-top: 5px; text-align: center; font-size: 15px; color: #f0b070; }
+  #tutHint:empty { display: none; }
   #tutDone { position: absolute; left: 0; right: 0; top: 36%; text-align: center; font-size: 46px; letter-spacing: 10px;
     color: #c9b26a; text-shadow: 0 0 20px #000; opacity: 0; transition: opacity 0.6s; }
   #tutDone.show { opacity: 1; }
@@ -166,7 +170,7 @@
     <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
     <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
   </div>
-  <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span></div>
+  <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span><div id="tutHint"></div></div>
   <div id="tutDone">TUTORIAL COMPLETE</div>
   <div id="rested">RESTED</div>
   <div id="prompt"></div>
@@ -178,7 +182,6 @@
     <table id="helpTable"></table>
     <label><input type="checkbox" id="hbToggle" checked> <span id="hbLabel">Show hitboxes</span></label>
     <div class="level" id="helpLevel"></div>
-    <div class="warn" id="helpWarn"></div>
   </div>
   <div id="helpHint"></div>
 </div>
@@ -187,9 +190,11 @@
   <div id="menuBox">
     <h1 id="menuTitle">COMBAT ARENA 3D</h1>
     <div class="sub" id="menuSub"></div>
+    <div class="notice" id="menuNotice"></div>
     <div id="menuList"></div>
     <div class="hint" id="menuHint"></div>
   </div>
+  <div id="version"></div>
 </div>
 
 <div id="fade"></div>

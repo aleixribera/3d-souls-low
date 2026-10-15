@@ -2,11 +2,14 @@
 // ============================================================================
 // 9. Particles, dust, markers and debug volumes (tints live on Rig)
 // ============================================================================
+// Every pooled effect mesh (bursts, ground rings, cracks and dust, the sword trail, the lock marker, blood marks):
+// drawn once as a fight or level loads (visuals.warmUp), so no shader compiles the first time one shows.
+const pooledFx = [];
 const particles = [];
 const particleGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
 for (let i = 0; i < CONFIG.fx.particleCount; i++) {
   const mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false }));
-  mesh.visible = false; scene.add(mesh);
+  mesh.visible = false; scene.add(mesh); pooledFx.push(mesh);
   particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
 }
 let particleCursor = 0;
@@ -63,13 +66,14 @@ function makeCrackTexture() {
   g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 9, 0, Math.PI * 2); g.fill();
   return new THREE.CanvasTexture(c);
 }
+const CRACK_TEX = makeCrackTexture();   // also the cracks spreading over a trap's floor (js/scene.js)
 const groundFx = (() => {
   const G = CONFIG.groundPound;
   const flat = (geo, mat, y) => {
     const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.y = y; m.visible = false; m.renderOrder = 1;
-    scene.add(m); return m;
+    scene.add(m); pooledFx.push(m); return m;
   };
-  const ringGeo = new THREE.RingGeometry(0.9, 1, 48), crackGeo = new THREE.PlaneGeometry(2, 2), crackTex = makeCrackTexture();
+  const ringGeo = new THREE.RingGeometry(0.9, 1, 48), crackGeo = new THREE.PlaneGeometry(2, 2), crackTex = CRACK_TEX;
   const dustGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
   const RING_COLOR = 0xe8dcc0;
   const rings = Array.from({ length: G.maxRings }, () => ({ age: Infinity, size: 1, peak: 0.5,
@@ -79,7 +83,7 @@ const groundFx = (() => {
       polygonOffset: true, polygonOffsetFactor: -2 }), 0.02) }));
   const dusts = Array.from({ length: G.maxDust }, () => {
     const mesh = new THREE.Mesh(dustGeo, new THREE.MeshBasicMaterial({ color: 0x8c8270, transparent: true, depthWrite: false }));
-    mesh.visible = false; scene.add(mesh);
+    mesh.visible = false; scene.add(mesh); pooledFx.push(mesh);
     return { mesh, age: Infinity, vx: 0, vy: 0, vz: 0 };
   });
   const cursor = { ring: 0, crack: 0, dust: 0 };
@@ -95,8 +99,12 @@ const groundFx = (() => {
       this.ring(x, z, fx.ring, RING_COLOR, 0.5, y);
       const c = next(cracks, 'crack'); c.age = 0; c.mesh.position.set(x, y + 0.02, z);
       c.mesh.scale.set(fx.crack, fx.crack, 1); c.mesh.rotation.z = rand(0, Math.PI * 2); c.mesh.visible = true;
-      for (let i = 0; i < fx.dust; i++) {
-        const d = next(dusts, 'dust'), a = rand(0, Math.PI * 2), s = rand(0.6, 1.6) * Math.sqrt(fx.ring);
+      this.puff(x, z, fx.dust, y, Math.sqrt(fx.ring));
+    },
+    // n motes of dust kicked up from the floor at y, spreading at `speed`.
+    puff(x, z, n, y = 0, speed = 1) {
+      for (let i = 0; i < n; i++) {
+        const d = next(dusts, 'dust'), a = rand(0, Math.PI * 2), s = rand(0.6, 1.6) * speed;
         d.age = 0; d.vx = Math.cos(a) * s; d.vz = Math.sin(a) * s; d.vy = rand(0.6, 1.5);
         d.mesh.position.set(x + Math.cos(a) * 0.3, y + 0.1, z + Math.sin(a) * 0.3); d.mesh.visible = true;
       }
@@ -138,28 +146,30 @@ const swordTrail = (() => {
   geo.setIndex(idx);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0.3,
     side: THREE.DoubleSide, depthWrite: false }));
-  mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh);
-  const pts = [];
+  mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh); pooledFx.push(mesh);
+  // Blade base/tip pairs, newest first; `free` holds the spare pairs, so a swing allocates nothing.
+  const pts = [], free = Array.from({ length: N }, () => [new THREE.Vector3(), new THREE.Vector3()]);
   return {
     update(active, rig) {
       if (active) {
-        rig.root.updateMatrixWorld(true);
-        pts.unshift([rig.weapon.localToWorld(new THREE.Vector3(0, 0, 0.25)), rig.weapon.localToWorld(new THREE.Vector3(0, 0, 1.2))]);
-        if (pts.length > N) pts.pop();
-      } else if (pts.length) pts.pop();   // fade out by shortening
+        rig.weapon.updateWorldMatrix(true, false);   // the blade and what holds it, not the whole rig
+        const pair = pts.length >= N ? pts.pop() : free.pop(), m = rig.weapon.matrixWorld;
+        pair[0].set(0, 0, 0.25).applyMatrix4(m); pair[1].set(0, 0, 1.2).applyMatrix4(m);
+        pts.unshift(pair);
+      } else if (pts.length) free.push(pts.pop());   // fade out by shortening
       pts.forEach(([a, b], i) => { pos.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6); });
       geo.attributes.position.needsUpdate = true;
       geo.setDrawRange(0, Math.max(0, pts.length - 1) * 6);
       mesh.visible = pts.length > 1;
     },
-    clear() { pts.length = 0; mesh.visible = false; },
+    clear() { free.push(...pts.splice(0)); mesh.visible = false; },
   };
 })();
 
 // Lock-on marker: a small bright diamond above the target.
 const lockMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0),
   new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false, depthTest: false, transparent: true, opacity: 0.9 }));
-lockMarker.renderOrder = 11; lockMarker.visible = false; scene.add(lockMarker);
+lockMarker.renderOrder = 11; lockMarker.visible = false; scene.add(lockMarker); pooledFx.push(lockMarker);
 
 const boxEdges = new THREE.EdgesGeometry(UNIT_BOX);
 const makeWire = color => {

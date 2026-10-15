@@ -3,6 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
+const VERSION = 'v3.7';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -117,7 +118,7 @@ const CONFIG = {
   level: { leash: 22,        // give up the chase when the player is this far away...
            homeLeash: 30,    // ...or when dragged this far from home; then walk back home
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
-  tutorial: { doneTime: 0.9, completeTime: 3.0 },
+  tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
@@ -134,7 +135,12 @@ const CONFIG = {
           bolt: { color: 0xb8a888, count: 6, speed: 2.5 },   // a bolt stopped by a wall
         },
         postureBreakShake: { time: 0.22, amp: 0.08 },
-        hardLanding: { ring: 1.4, crack: 0.9, dust: 10, shake: 0.09 } },   // dust and jolt when a fall hurts
+        hardLanding: { ring: 1.4, crack: 0.9, dust: 10, shake: 0.09 },   // dust and jolt when a fall hurts
+        // Traps (rendering only): the collapse area is cut into pieces about `piece` m across. Through the warning
+        // cracks spread over them (each fully drawn `crackSpread` of the way after its turn, at `crackOpacity`); the
+        // warning starts with a `jolt` that rumbles on for `rumble` s past it, and `puffs` puffs of `dust` rise from the
+        // floor; when it springs the pieces drop, spreading outward over `dropSpread` s, with a little `spin` (rad/s).
+        trap: { piece: 1.6, crackSpread: 0.7, crackOpacity: 0.85, jolt: 0.1, rumble: 0.35, puffs: 6, dust: 4, dropSpread: 0.06, spin: 0.8 } },
   // Rendering only (section 9b). Nothing here changes how the game plays. Per-level looks are optional
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {

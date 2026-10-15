@@ -2,14 +2,15 @@
 // ============================================================================
 // 3. input
 // ============================================================================
-// Keyboard codes, mouse buttons ('Mouse0') and gamepad buttons ('PadRB', see js/gamepad.js).
+// Keyboard codes, mouse buttons ('Mouse0'; 'Mouse3' and 'Mouse4' are the side buttons) and gamepad buttons ('PadRB',
+// see js/gamepad.js).
 // Movement and the camera on a gamepad come from the sticks (Game.moveInput, gamepad.js); a right-stick
 // flick presses 'PadFlickL' or 'PadFlickR'.
 const ACTIONS = {
   up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
   jump: ['Space', 'PadA'], roll: ['ShiftLeft', 'ShiftRight', 'PadB'],
   light: ['KeyJ', 'Mouse0', 'PadRB'], heavy: ['KeyK', 'Mouse2', 'PadRT'],
-  block: ['KeyL', 'ControlLeft', 'ControlRight', 'PadLB'], parry: ['KeyE', 'PadLT'],
+  block: ['KeyC', 'KeyL', 'Mouse3', 'Mouse4', 'PadLB'], parry: ['KeyE', 'PadLT'],   // no Ctrl: the browser keeps Ctrl+W (close tab)
   lock: ['KeyQ', 'PadR3'], switchTarget: ['Tab', 'PadFlickL', 'PadFlickR'], rest: ['KeyF', 'PadY'], flask: ['KeyG', 'PadX'],
   zoomIn: ['Equal', 'NumpadAdd', 'PadUp'], zoomOut: ['Minus', 'NumpadSubtract', 'PadDown'],
 };
@@ -24,9 +25,9 @@ const GAME_CODES = new Set([].concat(...Object.values(ACTIONS), Object.values(SY
 const isPadCode = c => c.startsWith('Pad');
 
 // Labels built from the live bindings: "[ j / LMB ]" (keyboard first, then mouse), or "[ Space ]".
-const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
+const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift',
   Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
-  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB',
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB', Mouse3: 'Side mouse', Mouse4: 'Side mouse',
   // Gamepad buttons: Xbox name / PlayStation name.
   PadA: 'A / ✕', PadB: 'B / ○', PadX: 'X / □', PadY: 'Y / △', PadLB: 'LB / L1', PadRB: 'RB / R1', PadLT: 'LT / L2', PadRT: 'RT / R2',
   PadL3: 'L3', PadR3: 'R3', PadStart: 'Menu / Options', PadBack: 'View / Share', PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →',
