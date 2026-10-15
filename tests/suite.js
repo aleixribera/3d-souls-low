@@ -615,7 +615,7 @@
   test('the tower: the rampart bowmen shoot down into the courtyard fight', () => {
     const p = tower(); sturdy(p);
     sim.place(62, 6);
-    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 30);   // damped while the melee swings
+    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 30);   // their cooldowns run slower while the melee swings
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 'a bolt from the rampart');
   });
 
@@ -675,6 +675,36 @@
     const first = starts[n];
     expect.ok(!!first, `it attacked within 1.5 s (still ${Math.hypot(e.x - p.x, e.z - p.z).toFixed(1)} m away)`);
     expect.ok(!first.attack.dash, `with a close attack (${first.attack.id})`);
+  });
+  // An enemy held r m from the player, with `busy` other enemies kept mid-attack far off: the seconds between its
+  // attacks, and the shots it looses.
+  const withBusy = (id, r, busy, seconds) => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); shots.length = 0;
+    sim.place(12, 0);
+    const e = sim.spawn(id, 14, 0, undefined, -Math.PI / 2), swing = A.ENEMY_BY_ID.hollow.attacks[0];
+    const others = Array.from({ length: busy }, (_, k) => sim.spawn('hollow', 38, k * 6 - 6));
+    const waits = [];
+    let free = null;
+    for (let i = 0; i < seconds / STEP; i++) {
+      for (const o of others) { o.attack = swing; o.hitIndex = 0; o.setState(ES.WINDUP); }   // forever winding up
+      const was = e.state;
+      sim.place(12, 0); holdAt(e, r); sim.step();
+      if (was === ES.RECOVER && e.state === ES.CHASE) free = 0;
+      else if (free !== null && e.state === ES.CHASE) free += STEP;
+      else if (free !== null && e.state === ES.WINDUP) { waits.push(free); free = null; }
+    }
+    return { waits, shots: shots.filter(s => s.enemy === e).length };
+  };
+  const mean = xs => xs.reduce((s, x) => s + x, 0) / xs.length;
+  test('crowds: cooldowns run slower while other enemies are mid-attack', () => {
+    const alone = withBusy('hollow', 1.5, 0, 60).waits, crowded = withBusy('hollow', 1.5, 2, 60).waits;
+    expect.above(crowded.length, 5, 'attacks with two others mid-attack');
+    expect.above(mean(crowded), 1.5 * mean(alone), `mean wait between attacks, against ${mean(alone).toFixed(2)} s alone`);
+  });
+  test('crowds: an archer keeps shooting while others are mid-attack', () => {
+    const alone = withBusy('bowman', 10, 0, 90).shots, crowded = withBusy('bowman', 10, 2, 90).shots;
+    expect.above(alone, 8, 'shots alone');
+    expect.above(crowded, 0.6 * alone, `shots with two others mid-attack (alone: ${alone})`);
   });
   test('attack chance: gap closers still wait on their chance', () => {
     const waits = waitsAt('lancer', 6, 60), longest = A.ENEMY_BY_ID.lancer.cooldown[1];

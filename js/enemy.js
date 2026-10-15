@@ -154,7 +154,7 @@ class Enemy {
           this.unreachable = 0; this.stepIn = false; this.setState(ES.RETURN); break;
         }
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
-        this.cooldown -= dt;
+        this.cooldown -= dt * crowd.cooldownRate(this);   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
           const shot = this.ranged && this.chooseAttack(dist, toPlayer, dt, true);
           if (shot) this.beginAttack(shot);
@@ -252,7 +252,7 @@ class Enemy {
   //   - a basic close attack in reach means it strikes now, picking among its close attacks in reach by their
   //     chances (stepping in, only once the player is within `strikeFrom`: from holding it gets all the way in, so
   //     its longest swing doesn't always win);
-  //   - otherwise each one rolls its chance per second (attackChance, times the crowd's damping): gap closers,
+  //   - otherwise each one rolls its chance per second (attackChance, times the crowd's damping, which shots ignore): gap closers,
   //     shots, and a roll-only attack or shove that reaches on its own. The first success starts.
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
@@ -261,7 +261,7 @@ class Enemy {
     const close = inReach.filter(isClose);
     if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
     const mul = crowd.chanceMul(this);
-    for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * mul * dt) return a;
+    for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * (a.projectile ? 1 : mul) * dt) return a;
     return null;
   }
   beginAttack(attack) {

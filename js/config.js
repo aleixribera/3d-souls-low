@@ -83,8 +83,9 @@ const CONFIG = {
   // strikes at once if a basic close attack (no `minRange`, no kind below) reaches, picking among its close attacks in
   // reach with odds in proportion to their chances. Otherwise, every step, each attack whose range window (`minRange`,
   // default 0, to `range`) holds the player's distance starts with probability chance x step length.
-  // Crowds (js/crowd.js): every enemy may attack, but its chance rolls are multiplied by `busyMul` for each other
-  // enemy mid-attack, and no enemy starts an attack within `gap` s of another starting one.
+  // Crowds (js/crowd.js): every enemy may attack, but for each other enemy mid-attack its cooldown runs slower (at
+  // 1 / (1 + `busyCooldown` x their number)) and its chance rolls, shots aside, are multiplied by `busyMul`; no enemy
+  // starts an attack within `gap` s of another starting one.
   // Holding: an enemy closes in at full speed until its longest-reaching attack can reach, and holds `holdInset` m
   // inside that reach (never more than `holdMax` m away). Once more than `holdBand` m closer it backs off, at
   // `holdSpeedMul` of its speed, all the way out again, and it circles at that speed toward its place around the
@@ -93,7 +94,7 @@ const CONFIG = {
   // `stepOut` m further away than both that reach and the closest it has come: then it goes back to holding.
   // Whatever it was doing, once its cooldown is over a player within `commitReach` m beyond its basic close reach
   // makes it step in and strike as soon as that reaches (no chance roll): hovering just out of reach is not safe.
-  ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, gap: 0.3,
+  ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
         approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
