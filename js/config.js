@@ -89,9 +89,10 @@ const CONFIG = {
   // inside that reach (never more than `holdMax` m away). Once more than `holdBand` m closer it backs off, at
   // `holdSpeedMul` of its speed, all the way out again, and it circles at that speed toward its place around the
   // player. While holding with its cooldown over, it rolls its `approach` chance per second (this default unless
-  // it sets its own) to step in to its shortest reach, where it stays until it attacks.
+  // it sets its own) to step in to its shortest reach, where it stays until it attacks, unless the player gets
+  // `stepOut` m further away than both that reach and the closest it has come: then it goes back to holding.
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, gap: 0.3,
-        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62 },
+        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
   // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within

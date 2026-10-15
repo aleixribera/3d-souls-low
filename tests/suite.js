@@ -755,6 +755,31 @@
     expect.above(near, 0.5, `share of the time standing near the longest reach (${longest} m)`);
     expect.above(stepIns, 0, 'stepped in to the shortest reach');
   });
+  test('holding: an enemy stepping in goes back to its longer range when the player gets well away', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    const longest = Math.max(...A.ENEMY_BY_ID.lancer.attacks.map(a => a.range));
+    const keen = { ...A.ENEMY_BY_ID.lancer, approach: 3 }, e = sim.spawn(keen, 32, 0, undefined, -Math.PI / 2);   // keen to step in
+    let held = false;
+    const caught = sim.until(() => {   // walked in from its longest reach to mid range, without attacking
+      sim.place(20, 0);
+      const d = Math.hypot(e.x - Game.player.x, e.z - Game.player.z);
+      if (e.state !== ES.CHASE) held = false;
+      else if (d >= longest - 1.5) held = true;
+      else if (held && d <= 5) return true;
+      return false;
+    }, 30);
+    expect.ok(caught >= 0, 'caught it stepping in');
+    keen.approach = 0;   // from here on it never chooses to step in again: watch it give up this one
+    const p = Game.player, a = Math.atan2(p.x - e.x, p.z - e.z), to = [e.x + Math.sin(a) * 10, e.z + Math.cos(a) * 10];
+    const n = starts.length;
+    let closest = Infinity;
+    for (let i = 0; i < 1.5 / STEP && starts.length === n; i++) {   // the player 10 m off (past its dash) until it attacks
+      sim.place(to[0], to[1]); sim.step();
+      if (i > 0.6 / STEP) closest = Math.min(closest, Math.hypot(e.x - p.x, e.z - p.z));
+    }
+    expect.ok(Number.isFinite(closest), 'watched it for a while before any attack');
+    expect.above(closest, longest - 1.5, `closest it came once the player had left (its longest reach is ${longest} m)`);
+  });
 
   async function run(filter = '') {
     const out = [], t0 = performance.now();
