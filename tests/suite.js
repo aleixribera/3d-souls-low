@@ -614,7 +614,8 @@
   });
   test('the tower: the rampart bowmen shoot down into the courtyard fight', () => {
     const p = tower(); sturdy(p);
-    sim.place(62, 6); sim.seconds(12);
+    sim.place(62, 6);
+    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 30);   // damped while the melee swings
     expect.ok(shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 'a bolt from the rampart');
   });
 
@@ -657,6 +658,23 @@
       expect.above(waits.length, 5, `${id}: attacks`);
       expect.below(Math.max(...waits), longest + 0.1, `${id}: longest wait between attacks (cooldown up to ${longest} s)`);
     }
+  });
+  test('attack chance: a player hovering just outside close reach gets struck, not stalked', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    const lancer = A.ENEMY_BY_ID.lancer, jab = lancer.attacks.find(a => a.id === 'lancerJab');
+    const e = sim.spawn({ ...lancer, approach: 0 }, 30, 0, undefined, -Math.PI / 2), p = Game.player;   // never steps in by chance
+    let waited = 0;
+    sim.until(() => {   // holding far out, ready: 2 s without attacking is longer than its cooldown
+      sim.place(20, 0);
+      waited = e.state === ES.CHASE && Math.hypot(e.x - p.x, e.z - p.z) > 7 ? waited + STEP : 0;
+      return waited > lancer.cooldown[1] + 0.5;
+    }, 40);
+    const a = Math.atan2(p.x - e.x, p.z - e.z), at = [e.x + Math.sin(a) * (jab.range + 0.6), e.z + Math.cos(a) * (jab.range + 0.6)];
+    const n = starts.length;
+    sim.until(() => { sim.place(at[0], at[1]); return starts.length > n; }, 1.5);   // the player stops just out of its jab's reach
+    const first = starts[n];
+    expect.ok(!!first, `it attacked within 1.5 s (still ${Math.hypot(e.x - p.x, e.z - p.z).toFixed(1)} m away)`);
+    expect.ok(!first.attack.dash, `with a close attack (${first.attack.id})`);
   });
   test('attack chance: gap closers still wait on their chance', () => {
     const waits = waitsAt('lancer', 6, 60), longest = A.ENEMY_BY_ID.lancer.cooldown[1];

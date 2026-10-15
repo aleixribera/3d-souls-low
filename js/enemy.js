@@ -50,9 +50,11 @@ class Enemy {
     const fd = def.firstDelay || E.firstDelay;
     this.cooldown = rand(fd[0], fd[1]); this.attack = null; this.hitIndex = 0; this.hitbox = null;
     const ranges = def.attacks.map(a => a.range);
-    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges) };   // its longest and shortest attack range
+    // Its longest and shortest attack range, and the longest of its basic close attacks (-Infinity if it has none).
+    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges), close: Math.max(...def.attacks.filter(strikesAtOnce).map(a => a.range)) };
     this.stepIn = false;                             // stepping in to its shortest reach, until it attacks
     this.stepInNearest = Infinity;                   // the closest it has come to the player while stepping in
+    this.strikeFrom = 0;                             // stepping in, its close attacks wait until the player is this close
     this.backingOff = false;                         // too close: backing off to its hold distance
     this.slot = null;                                // its place around the player (js/crowd.js)
     this.savePrev();
@@ -164,8 +166,10 @@ class Enemy {
         if (this.stepIn) {   // stepping in: back to holding at its longer range once the player gets well away
           this.stepInNearest = Math.min(this.stepInNearest, dist);
           if (dist > Math.max(this.stepInNearest, this.attackReach.short) + CONFIG.ai.stepOut) this.stepIn = false;
+        } else if (this.cooldown <= 0 && dist <= this.attackReach.close + CONFIG.ai.commitReach) {
+          this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.close;   // the player came just short of its close reach: commit
         } else if (this.cooldown <= 0 && dist <= this.holdReach() && Math.random() < (d.approach ?? CONFIG.ai.approach) * dt) {
-          this.stepIn = true; this.stepInNearest = dist;   // holding, ready to strike: now and then it steps in
+          this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.short;   // holding, ready to strike: now and then it steps in
         }
         [tx, tz] = this.holdVelocity(player, dist);
         break;
@@ -246,7 +250,8 @@ class Enemy {
   // another enemy's start has passed), the attacks whose range window (`minRange`, default 0, to `range`) holds the
   // player's distance decide, every step:
   //   - a basic close attack in reach means it strikes now, picking among its close attacks in reach by their
-  //     chances (stepping in, it first gets all the way in, so its longest swing doesn't always win);
+  //     chances (stepping in, only once the player is within `strikeFrom`: from holding it gets all the way in, so
+  //     its longest swing doesn't always win);
   //   - otherwise each one rolls its chance per second (attackChance, times the crowd's damping): gap closers,
   //     shots, and a roll-only attack or shove that reaches on its own. The first success starts.
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
@@ -254,7 +259,7 @@ class Enemy {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
     const inReach = this.def.attacks.filter(a => (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range);
     const close = inReach.filter(isClose);
-    if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.attackReach.short)) return pickByChance(close);
+    if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
     const mul = crowd.chanceMul(this);
     for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * mul * dt) return a;
     return null;

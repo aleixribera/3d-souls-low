@@ -91,8 +91,10 @@ const CONFIG = {
   // player. While holding with its cooldown over, it rolls its `approach` chance per second (this default unless
   // it sets its own) to step in to its shortest reach, where it stays until it attacks, unless the player gets
   // `stepOut` m further away than both that reach and the closest it has come: then it goes back to holding.
+  // Whatever it was doing, once its cooldown is over a player within `commitReach` m beyond its basic close reach
+  // makes it step in and strike as soon as that reaches (no chance roll): hovering just out of reach is not safe.
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, gap: 0.3,
-        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2 },
+        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1 },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14 },
   // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within
