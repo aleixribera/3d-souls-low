@@ -24,8 +24,6 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - A story, an All Levels mode and title cards.
 - Levels 4 and 5, and a final boss.
 
-See [ROADMAPv3.md](ROADMAPv3.md) for the Level 3 plan and how it was delivered.
-
 ## Versions
 
 Each version is a tagged commit (`git checkout v3.1` to play that one).
