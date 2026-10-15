@@ -20,7 +20,7 @@ const PLAYER_DEF = {
   name: 'Knight', radius: 0.36,
   look: { scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4,
           visual: { skin: 0x8a867c, skinMetal: 0.15, roughness: 0.7 } },   // helmed knight
-  stats: { maxHp: 100, maxStamina: 100, maxPoise: 30 },
+  stats: { maxHp: 120, maxStamina: 160, maxPoise: 30 },
   inventory: [{ item: 'flask', count: 4, max: 4 }],
   moveset: {
     ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
@@ -30,7 +30,7 @@ const PLAYER_DEF = {
                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
       heavy: { id: 'heavy', anim: 'overhead', hits: [{ startup: 0.56, active: 0.16 }], recovery: 0.64, cost: 40,
-               damage: 44, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+               damage: 38, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
       // Jump attacks: wind-up in the air, the hitbox opens while descending and lasts until landing
       // plus impactTime. `recovery` is the landing recovery (shortened by hitRecoveryMul on a hit).

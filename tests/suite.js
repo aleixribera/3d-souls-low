@@ -424,6 +424,112 @@
     expect.above(Game.player.z, -14, 'now the corridor leads through'); expect.ok(!Game.complete, 'shortcuts do not complete the level');
   });
 
+  // ---- v3.4 new enemies and the Bell Warden ------------------------------------------------------------------
+  const NEW = ['lancer', 'executioner', 'duelist', 'bowman', 'shover', 'bellWarden'];
+  const strikeOf = id => makeStrike(A.PLAYER_DEF.moveset.attacks[id]);
+  const behind = e => ({ x: e.x - Math.sin(e.yaw) * 2, z: e.z - Math.cos(e.yaw) * 2 });
+  const inFrontOf = e => ({ x: e.x + Math.sin(e.yaw) * 2, z: e.z + Math.cos(e.yaw) * 2 });
+  const sturdy = p => { p.maxHp = p.hp = 1e9; };   // a player who outlasts any test
+  const faceOff = (e, p, d = 2) => {   // the enemy d m in front of the player, facing them
+    e.x = e.px = p.x + Math.sin(p.yaw) * d; e.z = e.pz = p.z + Math.cos(p.yaw) * d; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+  };
+  test('player: 1.2x health, 1.6x stamina, a lighter heavy attack', () => {
+    const S = A.PLAYER_DEF.stats;
+    expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
+    expect.ok(A.PLAYER_DEF.moveset.attacks.heavy.damage === 38, 'heavy attack damage 38');
+    Game.startLevel('tutorial'); sim.begin();
+    expect.ok(Game.player.hp === 120 && Game.player.stamina === 160, 'a fresh player starts full');
+  });
+  test('new enemies: each duels in the arena, attacks, and can be beaten', () => {
+    for (const id of NEW) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player);
+      const e = Game.duel;
+      expect.ok(sim.until(() => e.state === ES.WINDUP, 12) >= 0, `${id}: attacks`);
+      let n = 0;
+      while (e.alive() && n++ < 80) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(12); }
+      expect.ok(!e.alive(), `${id}: beaten (${n} heavy hits)`);
+    }
+  });
+  test('new enemies: every attack runs its whole course', () => {
+    for (const id of NEW) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player); log.length = 0; shots.length = 0;
+      const e = Game.duel;
+      for (const a of e.def.attacks) {
+        log.length = 0;
+        sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 4);
+        e.next = a; e.beginAttack();
+        expect.ok(sim.until(() => e.state === ES.RECOVER, 6) >= 0, `${id} ${a.id}: wound up, struck and recovered`);
+        if (a.projectile) expect.ok(shots.some(s => s.enemy === e), `${id} ${a.id}: loosed a bolt`);
+        if (a.rollOnly) expect.ok(log.includes('perilous'), `${id} ${a.id}: perilous warning`);
+        if (a.impact) expect.ok(log.includes('impact'), `${id} ${a.id}: ground impact`);
+      }
+    }
+  });
+  test('Executioner: three heavy hits break its stagger meter; its spin goes through a guard', () => {
+    Game.startFight('executioner'); sim.begin();
+    let e = Game.duel;
+    e.takeHit(strikeOf('heavy'), behind(e)); e.takeHit(strikeOf('heavy'), behind(e));
+    expect.ok(e.state !== ES.BROKEN, 'two heavies do not break it');
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.ok(e.state === ES.BROKEN, 'the third does');
+    Game.startFight('executioner'); sim.begin();
+    const p = Game.player, spin = A.ENEMY_BY_ID.executioner.attacks.find(a => a.id === 'execSpin'), hp0 = p.hp;
+    e = Game.duel; faceOff(e, p, 2.2); sim.hold('block'); sim.step(2);
+    e.next = spin; e.beginAttack();
+    sim.until(() => p.hp < hp0, 4); sim.release('block');
+    expect.near(hp0 - p.hp, spin.damage, 0.01, 'full damage through the guard');
+  });
+  test('Pale Duelist: its combo can be parried, and it is fragile', () => {
+    Game.startFight('duelist'); sim.begin(); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length > 1);
+    faceOff(e, p, 2); e.next = combo; e.beginAttack();
+    sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
+    sim.until(() => log.includes('parry'), 0.5);
+    expect.ok(log.includes('parry') && e.state === ES.PARRIED, 'parried and left open');
+    Game.startFight('duelist'); sim.begin();
+    const d = Game.duel; let n = 0;
+    while (d.alive() && n++ < 20) { d.takeHit(strikeOf('light'), behind(d)); sim.step(30); }
+    expect.ok(!d.alive() && n <= 5, `fragile: ${n} light hits`);
+  });
+  test('Ashen Lancer: dashes only from mid range; its jab leaves an opening', () => {
+    Game.startFight('lancer'); sim.begin();
+    const e = Game.duel, picks = d => Array.from({ length: 40 }, () => e.pickAttack(d).id);
+    expect.ok(!picks(2).includes('lancerDash'), 'never dashes from up close');
+    expect.ok(picks(6).includes('lancerDash'), 'dashes from mid range');
+    const jab = e.def.attacks.find(a => a.id === 'lancerJab');
+    expect.above(jab.recovery, jab.hits[0].startup, 'the jab recovers slower than it strikes');
+  });
+  test('Shover: its shield blocks frontal hits; flanking does full damage', () => {
+    Game.startFight('shover'); sim.begin();
+    const e = Game.duel; e.notice = 0; e.setState(ES.IDLE);
+    let hp0 = e.hp; e.takeHit(strikeOf('light'), inFrontOf(e));
+    expect.near(hp0 - e.hp, strikeOf('light').damage * e.def.guard.damageMul, 0.01, 'blocked from the front');
+    hp0 = e.hp; e.takeHit(strikeOf('light'), behind(e));
+    expect.near(hp0 - e.hp, strikeOf('light').damage, 0.01, 'full damage from behind');
+  });
+  test('Bell Warden: a posture boss with a roll-only slam, an uncapped push and a gap-closing charge', () => {
+    Game.startFight('bellWarden'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, A2 = id => e.def.attacks.find(a => a.id === id);
+    expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'posture bar at the top of the screen');
+    expect.ok(makeStrike(A2('bellSlam')).rollOnly && !!A2('bellSlam').impact, 'slam: roll-only, with a ground flash');
+    expect.ok(makeStrike(A2('bellShove')).shove && A2('bellShove').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
+    expect.ok(A2('bellSweep').track > 0, 'sweep: tracks');
+    const picks = d => Array.from({ length: 40 }, () => e.pickAttack(d).id);
+    expect.ok(picks(8).includes('bellCharge') && !picks(2).includes('bellCharge'), 'charge: only from range');
+    let n = 0;
+    while (e.state !== ES.BROKEN && n++ < 30) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(10); }
+    expect.ok(e.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+  });
+  test('mixed crowd: two attack at a time while the gallery bowmen shoot down', () => {
+    Game.startLevel('test-mixed'); sim.begin(); shots.length = 0;
+    const p = Game.player; sturdy(p); sim.place(24, 0);
+    let most = 0;
+    for (let i = 0; i < 120; i++) { sim.step(10); most = Math.max(most, Game.enemies.filter(e => e.token).length); }
+    expect.ok(most <= 2, `at most two token holders (${most})`);
+    const bowmen = Game.enemies.filter(e => e.def.id === 'bowman');
+    expect.ok(shots.some(s => s.enemy.def.id === 'bowman'), 'the bowmen shot'); expect.ok(bowmen.every(b => Math.abs(b.y - 5) < 1e-6), 'from their gallery');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;

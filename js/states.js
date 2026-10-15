@@ -43,6 +43,7 @@ const BEHAVIORS = {
   ambush: { start: ES.LURK, home: ES.LURK },       // hidden in an alcove, leaps out
   patrol: { start: ES.PATROL, home: ES.PATROL },   // walks a short path
   slumber: { start: ES.DORMANT, home: ES.IDLE },   // lying on the floor until the player is close
+  sentry: { start: ES.IDLE, home: ES.IDLE },       // a lookout at its post (a rampart archer): sees far, belongs to no zone
   dummy: { start: ES.IDLE, home: ES.IDLE, training: true },
   sparring: { start: ES.IDLE, home: ES.IDLE, training: true },
 };

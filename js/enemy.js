@@ -239,6 +239,10 @@ class Enemy {
   strike(target) {
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
     else this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack));
+    if (this.attack.impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
+      const f = this.attack.box.fwd;   // where the hitbox is centred
+      events.emit('impact', { x: this.x + Math.sin(this.yaw) * f, y: this.y, z: this.z + Math.cos(this.yaw) * f, fx: this.attack.impact, enemy: this });
+    }
     this.setState(ES.ACTIVE);
   }
   endStrikeWhenDone() {

@@ -93,6 +93,102 @@ const ENEMY_DEFS = [
         box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
     ],
   },
+  // ---- Level 3 enemies (the Tower) ----------------------------------------------------------------------------
+  {
+    id: 'lancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
+    scale: 1.05, bulk: 0.95, radius: 0.42, color: 0x6a6258, weapon: 'spear', idle: 'guard',
+    visual: { skin: 0x9a948a, roughness: 0.8 },   // ashen, hooded
+    hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0, holdRange: 2.8,
+    cooldown: [0.5, 1.1], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    attacks: [
+      { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', minRange: 4, dash: { speed: 10, from: 0.45 },
+        hits: [{ startup: 0.9, active: 0.16 }], recovery: 0.85, damage: 26, poise: 34, knock: 6, lunge: 3, range: 9,
+        box: { w: 0.8, h: 1.2, d: 3.0, fwd: 1.8, y: 1.1 } },
+      { id: 'lancerJab', name: 'Jab', anim: 'stab', hits: [{ startup: 0.45, active: 0.1 }], recovery: 0.8,   // long recovery: the opening
+        damage: 14, poise: 18, knock: 3, lunge: 2.5, range: 2.8, box: { w: 0.7, h: 1.1, d: 2.8, fwd: 1.6, y: 1.1 } },
+      { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', rollOnly: true, hits: [{ startup: 1.35, active: 0.18 }], recovery: 1.1,
+        damage: 40, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
+    ],
+  },
+  {
+    id: 'executioner', name: 'Executioner', description: 'A hooded giant with a greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
+    scale: 1.5, bulk: 1.3, radius: 0.68, color: 0x4a2422, weapon: 'greataxe', idle: 'still',
+    visual: { skin: 0x3a2a28, roughness: 0.9, rim: 0.7 },   // a dark hood
+    hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0, holdRange: 3.0,
+    cooldown: [0.8, 1.5], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
+    // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or four light hits).
+    stagger: { max: 100, heavy: 45, light: 28, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
+    attacks: [
+      { id: 'execChop', name: 'Tracking Chop', anim: 'chop', track: 2.0, hits: [{ startup: 1.35, active: 0.18 }], recovery: 1.3,
+        damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
+      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', rollOnly: true, hits: [{ startup: 1.25, active: 0.4 }], recovery: 1.2,
+        damage: 44, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
+    ],
+  },
+  {
+    id: 'duelist', name: 'Pale Duelist', description: 'Fast and fragile, a blade in each hand. Its quick combo can be parried, and it pays dearly.',
+    scale: 0.95, bulk: 0.82, radius: 0.34, color: 0xb0aca0, weapon: 'sword', offhand: 'dagger', idle: 'twitch',
+    visual: { skin: 0xd8d2c4, roughness: 0.6 },   // pale
+    hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, holdRange: 2.2,
+    cooldown: [0.35, 0.8], flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
+    attacks: [
+      { id: 'duelistCombo', name: 'Twin Cuts', anim: 'sweep', track: 4.0, hits: [{ startup: 0.5, active: 0.1 }, { startup: 0.28, active: 0.1 }],
+        recovery: 0.6, damage: 14, poise: 14, knock: 3, lunge: 2.6, range: 2.0, box: { w: 1.8, h: 1.3, d: 1.8, fwd: 1.15, y: 1.05 } },
+      { id: 'duelistDash', name: 'Dashing Cut', anim: 'stab', minRange: 3.5, dash: { speed: 9.5, from: 0.4 },
+        hits: [{ startup: 0.7, active: 0.12 }], recovery: 0.7, damage: 20, poise: 24, knock: 4, lunge: 3, range: 7.5,
+        box: { w: 1.4, h: 1.3, d: 2.2, fwd: 1.3, y: 1.05 } },
+    ],
+  },
+  {
+    id: 'bowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
+    scale: 0.95, bulk: 0.88, radius: 0.38, color: 0x5a6a3a, weapon: 'bow', idle: 'guard',
+    visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },
+    hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, holdRange: 9,
+    cooldown: [0.6, 1.3], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    attacks: [
+      { id: 'bowShot', name: 'Aimed Shot', anim: 'draw', projectile: { speed: 24, gravity: 6, size: 0.12 }, minRange: 4, range: 24,
+        hits: [{ startup: 1.1, active: 0.1 }], recovery: 0.7, damage: 20, poise: 24, knock: 3, lunge: 0,
+        box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.3 } },
+      { id: 'bowKick', name: 'Kick', anim: 'kick', hits: [{ startup: 0.4, active: 0.12 }], recovery: 0.5,
+        damage: 12, poise: 30, knock: 7, lunge: 2, range: 1.7, box: { w: 1.0, h: 1.0, d: 1.4, fwd: 1.0, y: 0.6 } },
+    ],
+  },
+  {
+    id: 'shover', name: 'Shover', description: 'A bulky brute behind a great shield. Its push throws you off ledges: keep away from edges and flank it.',
+    scale: 1.15, bulk: 1.3, radius: 0.52, color: 0x5a4a3a, weapon: 'none', offhand: 'kite', idle: 'still',
+    visual: { skin: 0x8a8070, roughness: 0.8 },
+    hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4, holdRange: 2.2,
+    cooldown: [0.7, 1.3], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
+    // Shield guard, as the Shield Warden's: frontal hits are blocked and barely fill the meter; flank it or break it with heavies.
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
+             max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
+    attacks: [
+      { id: 'shoverShove', name: 'Shove', anim: 'shove', shove: true, hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
+        damage: 8, poise: 30, knock: 26, lunge: 2.4, range: 2.0, box: { w: 1.8, h: 1.8, d: 1.6, fwd: 1.1, y: 1.0 } },
+      { id: 'shoverBash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.55, active: 0.12 }], recovery: 0.75,
+        damage: 16, poise: 34, knock: 8, lunge: 3.2, range: 1.7, box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
+    ],
+  },
+  {
+    id: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
+    scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
+    visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
+    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, holdRange: 3.2,
+    cooldown: [0.8, 1.6], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
+    posture: { max: 120, parry: 34, chainGap: 1.8, chainMul: 1.5, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
+    attacks: [
+      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', track: 1.6, hits: [{ startup: 1.2, active: 0.24 }], recovery: 1.2,
+        damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
+      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', rollOnly: true, hits: [{ startup: 1.5, active: 0.2 }], recovery: 1.4,
+        damage: 55, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
+        impact: { ring: 3.4, crack: 1.9, dust: 16, shake: 0.12 } },
+      { id: 'bellShove', name: 'Bell Push', anim: 'shove', shove: true, hits: [{ startup: 1.3, active: 0.18 }], recovery: 1.0,
+        damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 } },
+      { id: 'bellCharge', name: 'Charge', anim: 'thrust', minRange: 5, dash: { speed: 11, from: 0.4 },
+        hits: [{ startup: 1.1, active: 0.3 }], recovery: 1.1, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
+        box: { w: 2.4, h: 2.4, d: 2.6, fwd: 1.4, y: 1.2 } },
+    ],
+  },
 ];
 
 // Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,

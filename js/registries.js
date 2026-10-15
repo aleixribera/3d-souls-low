@@ -35,6 +35,55 @@ const ANIMS = {
     else if (phase === PHASE.ACTIVE) { armL.rotation.x = -1.5; spin.rotation.y = lerp(0.7, -0.6, p); tip.rotation.x = lerp(-0.1, 0.35, p); }
     else { armL.rotation.x = lerp(-1.5, -0.1, ease(p)); spin.rotation.y = lerp(-0.6, 0, ease(p)); tip.rotation.x = lerp(0.35, 0, ease(p)); }
   },
+  // Spear lunge: twist back with the spear level, then drive it forward with a long step.
+  thrust(r, phase, p) {
+    const { armR, armL, spin, tip, weapon, legL, legR } = r;
+    if (phase === PHASE.STARTUP) {
+      const k = ease(p);
+      armR.rotation.x = lerp(-0.4, -1.0, k); spin.rotation.y = lerp(0, -0.7, k); weapon.rotation.x = lerp(0.5, 1.55, k);
+      armL.rotation.x = lerp(-0.1, -0.9, k); r.crouch(0.16 * k);
+    } else if (phase === PHASE.ACTIVE) {
+      const k = ease(clamp(p * 2, 0, 1));
+      armR.rotation.x = lerp(-1.0, -1.6, k); spin.rotation.y = lerp(-0.7, 0.45, k); weapon.rotation.x = 1.55;
+      tip.rotation.x = 0.28 * k; armL.rotation.x = -0.6; legL.rotation.x = -0.55 * k; legR.rotation.x = 0.4 * k;
+    } else {
+      const k = ease(p);
+      armR.rotation.x = lerp(-1.6, -0.4, k); spin.rotation.y = lerp(0.45, 0, k); weapon.rotation.x = lerp(1.55, 0.5, k);
+      tip.rotation.x = lerp(0.28, 0, k); armL.rotation.x = lerp(-0.6, -0.1, k); legL.rotation.x = lerp(-0.55, 0, k); legR.rotation.x = lerp(0.4, 0, k);
+    }
+  },
+  // Two-handed overhead chop: both hands high, leaning back, then down with the whole body.
+  chop(r, phase, p) {
+    const { armR, armL, tip, weapon } = r;
+    if (phase === PHASE.STARTUP) {
+      const k = ease(p);
+      armR.rotation.x = lerp(-0.4, -2.9, k); armL.rotation.x = lerp(-0.1, -2.75, k); armL.rotation.z = -0.35 * k;
+      tip.rotation.x = -0.18 * k; weapon.rotation.x = lerp(0.5, 0.25, k);
+    } else if (phase === PHASE.ACTIVE) {
+      const k = ease(clamp(p * 1.4, 0, 1));
+      armR.rotation.x = lerp(-2.9, -0.5, k); armL.rotation.x = lerp(-2.75, -0.55, k); armL.rotation.z = -0.35;
+      tip.rotation.x = lerp(-0.18, 0.38, k); weapon.rotation.x = lerp(0.25, 1.0, k); r.crouch(0.22 * k);
+    } else {
+      const k = ease(p);
+      armR.rotation.x = lerp(-0.5, -0.4, k); armL.rotation.x = lerp(-0.55, -0.1, k); armL.rotation.z = -0.35 * (1 - k);
+      tip.rotation.x = lerp(0.38, 0, k); weapon.rotation.x = lerp(1.0, 0.5, k); r.crouch(0.22 * (1 - k));
+    }
+  },
+  // A full turn with the weapon held out to the side: wind back, spin once, settle.
+  spin(r, phase, p) {
+    const { armR, spin, weapon } = r;
+    if (phase === PHASE.STARTUP) {
+      const k = ease(p);
+      spin.rotation.y = -1.1 * k; armR.rotation.x = lerp(-0.4, -0.3, k); armR.rotation.z = -1.25 * k; weapon.rotation.x = lerp(0.5, 1.4, k);
+      r.crouch(0.18 * k);
+    } else if (phase === PHASE.ACTIVE) {
+      spin.rotation.y = -1.1 + Math.PI * 2 * p; armR.rotation.x = -0.3; armR.rotation.z = -1.25; weapon.rotation.x = 1.4; r.crouch(0.18);
+    } else {
+      const k = ease(p);
+      spin.rotation.y = -1.1 * (1 - k); armR.rotation.x = lerp(-0.3, -0.4, k); armR.rotation.z = -1.25 * (1 - k);
+      weapon.rotation.x = lerp(1.4, 0.5, k); r.crouch(0.18 * (1 - k));
+    }
+  },
   // Bow: the bow arm comes up level and the stance turns side-on while the string hand draws back; the release
   // snaps the hand open.
   draw(r, phase, p) {
@@ -91,6 +140,20 @@ const WEAPONS = {
     part(new THREE.BoxGeometry(0.13, 0.13, 1.1), mat, 0, 0, 0.5);
     part(new THREE.BoxGeometry(0.3, 0.3, 0.6), mat, 0, 0, 1.2);
   } },
+  spear: { color: 0x8a8478, build(part, mat, dark) {   // a long ash shaft, gripped a third of the way up
+    part(new THREE.BoxGeometry(0.05, 0.05, 2.3), dark, 0, 0, 0.45);
+    part(new THREE.ConeGeometry(0.07, 0.36, 4).rotateX(Math.PI / 2), mat, 0, 0, 1.78);
+  } },
+  greataxe: { color: 0x8a8a90, build(part, mat, dark) {   // a heavy two-hander: long haft, a broad crescent of iron
+    part(new THREE.BoxGeometry(0.08, 0.08, 1.75), dark, 0, 0, 0.62);
+    part(new THREE.BoxGeometry(0.06, 0.62, 0.5), mat, 0, -0.2, 1.24);
+    part(new THREE.BoxGeometry(0.05, 0.16, 0.16), mat, 0, 0.14, 1.24);
+  } },
+  bell: { color: 0x7a6a3a, build(part, mat, dark) {   // a temple bell on an iron haft, swung like a maul
+    part(new THREE.BoxGeometry(0.12, 0.12, 1.5), dark, 0, 0, 0.6);
+    part(new THREE.CylinderGeometry(0.28, 0.55, 0.75, 10).rotateX(Math.PI / 2), mat, 0, 0, 1.6);
+    part(new THREE.CylinderGeometry(0.57, 0.57, 0.08, 10).rotateX(Math.PI / 2), dark, 0, 0, 1.95);
+  } },
   bow: { color: 0x6a5238, build(part, mat, dark) {   // a short bow held upright when aimed; the string toward the archer
     part(new THREE.BoxGeometry(0.07, 0.08, 0.17), dark, 0, 0, 0);
     part(new THREE.BoxGeometry(0.045, 0.05, 0.52).rotateX(-0.35), mat, 0, 0.08, 0.29);
@@ -103,6 +166,10 @@ const OFFHANDS = {
   shield: { color: 0x5b5f66, build(part, mat) {
     part(new THREE.BoxGeometry(0.09, 0.78, 0.56), mat, 0.07, -0.42, 0.1);
     part(new THREE.BoxGeometry(0.03, 0.2, 0.2), mat, 0.13, -0.42, 0.1);
+  } },
+  dagger: { color: 0xa8acb4, build(part, mat) {   // a parrying dagger in the left hand, point forward
+    part(new THREE.BoxGeometry(0.035, 0.07, 0.5), mat, 0, -0.6, 0.24);
+    part(new THREE.BoxGeometry(0.2, 0.05, 0.05), mat, 0, -0.6, 0.0);
   } },
   kite: { color: 0x7a6a48, build(part, mat) {   // tall shield faced forward on the left forearm
     part(new THREE.BoxGeometry(0.6, 0.95, 0.07), mat, 0.04, -0.46, 0.19);

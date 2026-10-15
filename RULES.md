@@ -48,6 +48,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *Tracking* (`track: rate`): the enemy keeps turning toward the player at `rate` through the whole wind-up and the swing, instead of locking its aim part way through. Roll through it or away late.
   - An enemy picks a random attack that suits the distance; gap closers only at mid range, the rest at any range (it walks in).
   - *Projectile* (`projectile: { speed, gravity, size }`, plus a `range`): the active phase looses a bolt instead of opening a hitbox. It flies along the archer's facing with a slight arc aimed to meet the player's chest, so a late sidestep or a roll beats it. Walls, ledges, floors, roofs and closed gates stop it (rails don't). It can be blocked from the front (at block rates), and the roll's invulnerability lets it pass, but it can never be parried: close in on the archer instead. A bolt that hits emits `strike` with `projectile: true`; `shot` and `boltStopped` announce the rest.
+  - *Impact* (`impact: { ring, crack, dust, shake }`): the strike hits the ground where its hitbox is centred, with a ring, a crack and a jolt (`impact` event). The Bell Warden's slam uses it as its ground flash.
   - *Shove* (`shove: true`): hits are normally capped at `CONFIG.player.knockCap` of knockback; a shove isn't, so a big `knock` can throw you off an open edge. Give it a long wind-up. A block (less knock) or a roll saves you.
   - Test enemies for each mechanic (`TEST_DEFS`, `js/data/test-enemies.js`) are duels in the `#dev` Test Grounds. A test enemy with `arena` (a room level id), `playerStart` and `enemyStart` is fought on that level instead of the arena (the Bowman and the Shover duel on Test: Heights).
 - **Nothing hits, sees or locks on through a closed gate.** In room levels, walls, pillars, ledges, floors and roofs block too, in 3D (eye to eye): you can see someone on a walkway across an open yard, but not through the walkway's floor from right underneath it. Rails never block sight.
@@ -75,6 +76,7 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *patrol*: walks a short path.
   - *ambush*: hides in an alcove and leaps out.
   - *slumber*: lies on the floor and rises when the player comes near.
+  - *sentry*: stands at its post like a zone enemy but belongs to no zone, and sees far (`CONFIG.notice.sentry`): lookouts such as rampart archers.
 - Each behaviour has its own **notice range**. Enemies give up and walk home if the player gets too far away, they are dragged too far from home, or they lose sight of the player.
 - **Heights:** an enemy only comes for a player within `CONFIG.height.reach` (2.5 m) of its own height. If the player is above or below (on a walkway, down a drop), it walks to the brink and waits there facing them, and gives up after `giveUp` seconds. It never takes an attack token while it can't reach.
 - **Edges:** enemies never walk, dash or lunge off an open edge or a drop deeper than `stepDown`; they stop at the brink and slide along it, which also keeps circling enemies on a walkway. Knockback is not stopped: an enemy can be knocked off, and it takes the same fall damage and pit deaths as the player.
@@ -83,6 +85,13 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
   - *Posture* (bosses, e.g. Giant Skeleton): hits never interrupt it. Every landed hit fills a visible posture bar, and hits chained close together fill it faster. It drains only after a pause without hits. Full means it kneels, open, and takes extra damage.
   - *Stagger meter* (e.g. Undead Knight): hits never interrupt it. Each hit fills a visible meter (heavy hits fill more); full means it kneels, open. The meter drains if left alone.
   - *Shield guard* (e.g. Shield Warden): works like the stagger meter (every hit fills a visible meter; full means the guard breaks and it kneels, open). On top of that, its raised shield cuts damage from hits to the front, and those blocked hits fill the meter much less. The shield is lowered while it attacks and in the last step before a swing. Hits from the side or behind, and ripostes after a parry, do full damage.
+- **The Tower's enemies** (one clear counter each):
+  - *Ashen Lancer* (spear, poise): a dashing thrust from mid range, a quick jab with a slow recovery, and a roll-only charged thrust. Stay close and punish the jab.
+  - *Executioner* (greataxe, large, stagger meter): a slow chop that tracks you, and a roll-only spinning sweep all around it. Roll late through it; three heavy hits break it.
+  - *Pale Duelist* (sword and dagger, fast, fragile): a tracking two-cut combo and a dashing cut. Parry the combo; a handful of hits kill it.
+  - *Rampart Bowman* (bow, light): aimed shots from 4 to 24 m, a kick up close. Block the bolts and close the gap.
+  - *Shover* (great shield, shield guard): a slow shove that ignores the knockback cap, and a shield bash. Keep away from open edges and flank it.
+  - *Bell Warden* (mini-boss, posture, big bar): a tracking sweep, a roll-only bell slam with a ground flash, a shove that throws you off an unrailed edge, and a charge from range.
 - **Visible over enemies:** non-boss enemies show a small health bar over their head once they're fighting or hurt, with the stagger/guard meter under it when they have one. Bosses use the big bar at the top of the screen instead.
 
 ## Levels
@@ -123,7 +132,6 @@ How the systems of the game behave. Read this before adding mechanics, enemies o
 
 Not built yet. These rules apply once each part lands; until then the sections above describe the game.
 
-- **New enemies:** Ashen Lancer (spear: dash thrust, roll-only charged thrust), Executioner (greataxe: tracking chop, roll-only spin; stagger meter), Pale Duelist (fast tracking combo, dash cut), Rampart Bowman (bow, kick), Shover (shield, shove). Mini-boss: Bell Warden (posture; tracking sweep, roll-only bell slam, shove, dash charge).
 
 ## Adding things — checklist
 

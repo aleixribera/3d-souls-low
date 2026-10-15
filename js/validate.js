@@ -26,6 +26,8 @@ function validateData() {
     if ('projectile' in a) need(a.projectile && num(a.projectile.speed) && a.projectile.speed > 0 && num(a.projectile.gravity) && a.projectile.gravity >= 0
       && num(a.projectile.size) && a.projectile.size > 0 && num(a.range), `${tag}: projectile needs speed > 0, gravity >= 0 and size > 0, and the attack a range.`);
     if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
+    if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
+      `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
   };
   // Enemies
   const ids = new Set();
@@ -84,10 +86,10 @@ function validateData() {
       const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;
       need(s.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${s.enemy}".`);
       need(s.behavior in BEHAVIORS && !BEHAVIORS[s.behavior].training && s.behavior !== 'arena' && s.behavior !== 'gated',
-        `${tag}: unknown or unusable behaviour "${s.behavior}" (use ambush, patrol or slumber).`);
+        `${tag}: unknown or unusable behaviour "${s.behavior}" (use ambush, patrol, slumber or sentry).`);
       if (s.behavior === 'ambush') need(alcoves.has(s.alcove), `${tag}: unknown alcove "${s.alcove}".`);
       if (s.behavior === 'patrol') need(Array.isArray(s.path) && s.path.length === 2 && s.path.every(inX) && inZ(s.z), `${tag}: patrol needs path [x1, x2] and z inside the hall.`);
-      if (s.behavior === 'slumber') need(inX(s.x) && inZ(s.z) && num(s.yaw), `${tag}: needs x, z and yaw inside the hall.`);
+      if (s.behavior === 'slumber' || s.behavior === 'sentry') need(inX(s.x) && inZ(s.z) && num(s.yaw), `${tag}: needs x, z and yaw inside the hall.`);
     }
     for (const b of L.bonfires) {
       need(inX(b.x) && inZ(b.z), `${where} bonfire "${b.id}": outside the hall.`);
@@ -218,9 +220,9 @@ function validateRooms(L, where, need, num) {
   for (const s of L.dispersed) {
     const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;
     need(s.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${s.enemy}".`);
-    need(s.behavior === 'patrol' || s.behavior === 'slumber', `${tag}: use patrol or slumber in a room level.`);
+    need(['patrol', 'slumber', 'sentry'].includes(s.behavior), `${tag}: use patrol, slumber or sentry in a room level.`);
     if (s.behavior === 'patrol') need(Array.isArray(s.path) && s.path.length === 2 && s.path.every(x => onFloor(x, s.z, s.y)), `${tag}: patrol path does not stand on a floor.`);
-    if (s.behavior === 'slumber') need(onFloor(s.x, s.z, s.y) && num(s.yaw), `${tag}: needs x, z and yaw on a floor.`);
+    if (s.behavior === 'slumber' || s.behavior === 'sentry') need(onFloor(s.x, s.z, s.y) && num(s.yaw), `${tag}: needs x, z and yaw on a floor.`);
   }
   for (const b of L.bonfires) {
     need(onFloor(b.x, b.z, b.y) && b.spawn && onFloor(b.spawn.x, b.spawn.z, b.spawn.y),
