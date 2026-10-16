@@ -33,9 +33,9 @@ const ENEMY_DEFS = [
     hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2,
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8,
     // Stagger meter (shown under its health bar), replacing poise: hits never interrupt it until the meter
-    // fills (about 2 hits: 2 heavy, heavy + light, or 3 light), then it kneels, open, for `breakTime`.
-    // Drains at `decay`/s once `decayDelay` s pass without a hit.
-    stagger: { max: 100, heavy: 60, light: 45, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 14,
+    // fills (2 heavy, or 3 light; v4.2.1, was heavy 60 / light 45), then it kneels, open, for `breakTime`.
+    // Drains at `decay`/s once `decayDelay` s pass without a hit. A jump attack counts as light.
+    stagger: { max: 100, heavy: 50, light: 38, breakers: ['heavy'], decayDelay: 2.5, decay: 14,
                breakTime: 2.0, hitstop: 0.14 },
     attacks: [
       { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.5, active: 0.18, follow: 0.3, hold: { at: 0.45, time: [0.25, 0.6], chance: 0.4 } }], recovery: 1.15,
@@ -69,8 +69,8 @@ const ENEMY_DEFS = [
     cooldown: [1.26, 2.38], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
     // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
-    // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit.
-    posture: { max: 100, parry: 38, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
+    // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit. (v4.2.1: chainMul 1.5 -> 1.35, parry -15%.)
+    posture: { max: 100, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.24, follow: 0.3 }], recovery: 1.3,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
@@ -89,11 +89,12 @@ const ENEMY_DEFS = [
     // Shield guard: hits from within `arc` (rad) of its facing are blocked (taking `damageMul` of the damage)
     // while the shield is up: not attacking, and not stepping in to strike within `lowerReach` of its shortest reach.
     // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
-    // attack, `light` otherwise. At `max` the guard breaks (2 heavy, 1 heavy + 2 light, or 3 light).
+    // attack, `light` otherwise (a jump attack counts as light). At `max` the guard breaks (3 heavy, 1 heavy + 2 light,
+    // or 4 light; v4.2.1, was heavy 50 / light 34).
     // Hits taken on the shield fill only `blockedMul` of that, so flanking or punishing swings breaks it far faster.
     // The meter drains at `decay`/s once `decayDelay` s pass without a hit.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
-             max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
+             max: 100, heavy: 42, light: 29, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.8, active: 0.12, follow: 0.16 }], recovery: 0.7,
         damage: 26, poise: 30, knock: 5, lunge: 1.8, range: 2.2,
@@ -126,8 +127,9 @@ const ENEMY_DEFS = [
     visual: { skin: 0x3a2a28, roughness: 0.9, rim: 0.7 },   // a dark hood
     hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0,
     cooldown: [1.12, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
-    // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or four light hits).
-    stagger: { max: 100, heavy: 45, light: 28, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
+    // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or five light hits;
+    // v4.2.1, was heavy 45 / light 28).
+    stagger: { max: 100, heavy: 40, light: 24, breakers: ['heavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
@@ -170,8 +172,8 @@ const ENEMY_DEFS = [
     hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4,
     cooldown: [0.98, 1.82], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard, as the Shield Warden's: frontal hits are blocked and barely fill the meter; flank it or break it with heavies.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
-             max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
+             max: 100, heavy: 42, light: 29, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'shoverShove', name: 'Shove', anim: 'shove', pose: 'enemyShove', tracking: { rate: 2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], shove: true, hits: [{ startup: 1.3, active: 0.16, follow: 0.2 }], recovery: 0.75,
         damage: 8, poise: 30, knock: 26, lunge: 2.4, range: 2.0, box: { w: 1.8, h: 1.8, d: 1.6, fwd: 1.1, y: 1.0 } },
@@ -188,7 +190,7 @@ const ENEMY_DEFS = [
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
     hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55,   // a boss: steps in and presses
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
-    posture: { max: 100, parry: 28, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
+    posture: { max: 100, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
         hits: [{ startup: 1.05, active: 0.16, follow: 0.2 }], recovery: 0.85, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
@@ -207,7 +209,7 @@ const ENEMY_DEFS = [
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
     hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6,   // a boss: steps in and uses its strong attacks more often
     cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    posture: { max: 120, parry: 34, chainGap: 1.8, chainMul: 1.5, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
+    posture: { max: 120, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
       { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.24, follow: 0.3 }], recovery: 1,
         damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },

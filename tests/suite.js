@@ -936,18 +936,20 @@
   test('holding: an enemy stepping in goes back to its longer range when the player gets well away', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
     const longest = Math.max(...A.ENEMY_BY_ID.lancer.attacks.map(a => a.range));
-    const keen = { ...A.ENEMY_BY_ID.lancer, approach: 3 }, e = sim.spawn(keen, 32, 0, undefined, -Math.PI / 2);   // keen to step in
-    let held = false;
+    // Its dash (4-9 m) would cut any walk-in short with a lunge, so this one never dashes; it never steps in by chance
+    // either: the test steps it in once it holds at its longest reach (as the approach roll would).
+    const lancer = A.ENEMY_BY_ID.lancer;
+    const keen = { ...lancer, approach: 0, attacks: lancer.attacks.map(a => a.dash ? { ...a, chance: 0 } : a) };
+    const e = sim.spawn(keen, 32, 0, undefined, -Math.PI / 2), p0 = Game.player;
+    sim.until(() => { sim.place(20, 0); return e.state === ES.CHASE && e.cooldown <= 0 && Math.hypot(e.x - p0.x, e.z - p0.z) >= longest - 1.5; }, 10);
+    e.stepIn = true; e.stepInNearest = Math.hypot(e.x - p0.x, e.z - p0.z); e.strikeFrom = e.attackReach.short;
     const caught = sim.until(() => {   // walked in from its longest reach to mid range, without attacking
       sim.place(20, 0);
-      const d = Math.hypot(e.x - Game.player.x, e.z - Game.player.z);
-      if (e.state !== ES.CHASE) held = false;
-      else if (d >= longest - 1.5) held = true;
-      else if (held && d <= 5) return true;
-      return false;
-    }, 30);
-    expect.ok(caught >= 0, 'caught it stepping in');
-    keen.approach = 0;   // from here on it never chooses to step in again: watch it give up this one
+      if (e.state !== ES.CHASE) return false;
+      return Math.hypot(e.x - Game.player.x, e.z - Game.player.z) <= 5;
+    }, 5);
+    expect.ok(caught >= 0 && e.stepIn, 'caught it stepping in');
+    // From here on it never chooses to step in again: watch it give up this one
     const p = Game.player, a = Math.atan2(p.x - e.x, p.z - e.z), to = [e.x + Math.sin(a) * 10, e.z + Math.cos(a) * 10];
     const n = starts.length;
     let closest = Infinity;
@@ -969,6 +971,7 @@
   };
   const shown = id => (document.getElementById(id) || {}).textContent || '';
   test('block: C, L and both side mouse buttons hold block; Ctrl no longer does', () => {
+    input.use('keyboard');   // key labels in the prompt, whatever an earlier gamepad test left
     const p = tutorialAt('block');
     for (const code of ['KeyC', 'KeyL', 'Mouse3', 'Mouse4']) {
       input.down(code); sim.step(2);
@@ -1578,7 +1581,7 @@
       if (log.includes('parry')) parries++;
       sim.until(() => e.state === ES.BROKEN || e.state === ES.CHASE, 3);
     }
-    expect.ok(e.state === ES.BROKEN && parries <= 5, `posture broke after ${parries} parries`);
+    expect.ok(e.state === ES.BROKEN && parries <= 6, `posture broke after ${parries} parries`);   // v4.2.1: parry fills 24 (was 28)
     Game.startFight('pillagerCaptain'); sim.begin();
     const d = Game.duel; let n = 0;
     while (d.state !== ES.BROKEN && n++ < 30) { d.takeHit(strikeOf('heavy'), behind(d)); sim.step(10); }

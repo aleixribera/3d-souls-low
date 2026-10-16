@@ -55,3 +55,5 @@ Player lunge starts at 55% of the wind-up. Input buffer 0.2 s; roll queue 1.2 s.
 | 4.2 buffer | Input | roll queued 1.2 s from any busy state; attacks queued 0.5 s | one slot, latest press wins, kept only within 0.4 s of the cancel point (+0.1 s grace) |
 | 4.2 phases 5-6 | All other enemies and bosses | the table above | new wind-up / active / follow / recovery, tracking and holds in js/data/enemies.js; follow-through added, recoveries shortened by about that much |
 | 4.2 phase 7 | Player walk | accel 34, decel 28 | accel 26, decel 22 |
+| 4.2.1 | Player jumpHeavy | damage 52, poise 60, posture 24, cost 42, landing 0.70 (x0.85 on a hit), box 2.2 x 2.6, a "heavy" for meters | damage 42, poise 50, posture 20, cost 46, landing 0.85 (no hit discount), box 1.7 x 2.1, counts as light for meters |
+| 4.2.1 | Stagger / guard / posture | Knight 60/45, Executioner 45/28, guard 50/34, posture chainMul 1.5, parry 38/28/34 | 50/38, 40/24, 42/29, chainMul 1.35, parry 32/24/29 |
