@@ -915,7 +915,10 @@
   test('holding: enemies wait near their longest reach, and now and then step in to their shortest', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
     const ranges = A.ENEMY_BY_ID.lancer.attacks.map(a => a.range), longest = Math.max(...ranges), shortest = Math.min(...ranges);
-    const lancers = [-6, 0, 6].map(z => sim.spawn('lancer', 32, z, undefined, -Math.PI / 2));
+    // The shared holding behaviour, on lancers with the default pacing (the real Ashen Lancer is tuned to lunge from range).
+    const L = A.ENEMY_BY_ID.lancer, plain = { ...L, approach: undefined, cooldown: [0.7, 1.54], crowd: undefined,
+      attacks: L.attacks.map(({ chance, ...a }) => a) };
+    const lancers = [-6, 0, 6].map(z => sim.spawn(plain, 32, z, undefined, -Math.PI / 2));
     const settled = [], last = new Map(), held = new Set();   // distances where they stand; lancers seen waiting far out
     let stepIns = 0;
     for (let i = 0; i < 60 / STEP; i++) {

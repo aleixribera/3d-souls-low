@@ -29,8 +29,14 @@ const crowd = {
     return n;
   },
   // What the crowd does to an enemy's attack chances (shots aside), and to how fast its cooldown runs.
-  chanceMul(self) { return CONFIG.ai.busyMul ** this.busy(self); },
-  cooldownRate(self) { return 1 / (1 + CONFIG.ai.busyCooldown * this.busy(self)); },
+  // An enemy may set its own `crowd: { busyMul, busyCooldown, groupCooldown }`: the first two replace the defaults;
+  // groupCooldown makes its cooldown last that many times longer whenever any other enemy is fighting the player too
+  // (an enemy that is relentless alone but takes turns in a group).
+  chanceMul(self) { return ((self.def.crowd && self.def.crowd.busyMul) ?? CONFIG.ai.busyMul) ** this.busy(self); },
+  cooldownRate(self) {
+    const C = self.def.crowd || {}, group = C.groupCooldown && this.enemies.some(e => e !== self && e.alive() && e.in('fighting')) ? C.groupCooldown : 1;
+    return 1 / ((1 + (C.busyCooldown ?? CONFIG.ai.busyCooldown) * this.busy(self)) * group);
+  },
   // Evenly spaced places round the player, turned as a whole to sit as close as possible to where the enemies stand.
   spread(p) {
     const ring = [];

@@ -37,6 +37,8 @@ function validateData() {
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
     need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
+    if (d.crowd) need(['busyMul', 'busyCooldown', 'groupCooldown'].every(k => !(k in d.crowd) || (num(d.crowd[k]) && d.crowd[k] >= 0)),
+      `Enemy "${d.id}": crowd may set busyMul, busyCooldown and groupCooldown (numbers, 0 or more).`);
     if (d.model) need(d.model in MODEL_DEFS, `Enemy "${d.id}": unknown model "${d.model}".`);
     if (d.offhand) need(d.offhand in OFFHANDS, `Enemy "${d.id}": unknown off-hand "${d.offhand}".`);
     if (d.idle) need(d.idle in IDLE_STYLES, `Enemy "${d.id}": unknown idle style "${d.idle}".`);

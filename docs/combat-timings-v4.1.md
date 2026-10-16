@@ -57,3 +57,4 @@ Player lunge starts at 55% of the wind-up. Input buffer 0.2 s; roll queue 1.2 s.
 | 4.2 phase 7 | Player walk | accel 34, decel 28 | accel 26, decel 22 |
 | 4.2.1 | Player jumpHeavy | damage 52, poise 60, posture 24, cost 42, landing 0.70 (x0.85 on a hit), box 2.2 x 2.6, a "heavy" for meters | damage 42, poise 50, posture 20, cost 46, landing 0.85 (no hit discount), box 1.7 x 2.1, counts as light for meters |
 | 4.2.1 | Stagger / guard / posture | Knight 60/45, Executioner 45/28, guard 50/34, posture chainMul 1.5, parry 38/28/34 | 50/38, 40/24, 42/29, chainMul 1.35, parry 32/24/29 |
+| 4.2.3 | Ashen Lancer pacing | cooldown [0.7, 1.54]; chances dash 0.3, jab 0.9, charged 0.22; approach 0.3 | cooldown [0.1, 0.4] (x4 with other enemies fighting); dash 2.5, jab 0.35, charged 1.0; approach 0.12 |

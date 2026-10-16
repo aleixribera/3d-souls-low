@@ -106,18 +106,22 @@ const ENEMY_DEFS = [
   },
   // ---- the Tower's enemies (Level 4; the Lancer, Duelist and Bowman first appear in Level 3, the town) ----------------------------------------------------------------------------
   {
-    id: 'lancer', model: 'ashLancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
+    id: 'lancer', model: 'ashLancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge, and up close winds up a charged thrust you can only roll. Its slow jab is the opening.',
     scale: 1.05, bulk: 0.95, radius: 0.42, color: 0x6a6258, weapon: 'spear', idle: 'guard',
     visual: { skin: 0x9a948a, roughness: 0.8 },   // ashen, hooded
-    hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0,
-    cooldown: [0.7, 1.54], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0, approach: 0.12,   // holds at lunge range rather than walking in
+    // v4.2.3: far more aggressive alone (cooldown was [0.7, 1.54]); with other enemies fighting too its cooldown lasts
+    // 4x longer ([0.4, 1.6]), so in a group it attacks only a little more than before.
+    cooldown: [0.1, 0.4], crowd: { groupCooldown: 4 }, flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    // v4.2.3 priorities (`chance`, per second / as weights up close): lunges readily from range (default dash 0.3; this one 2.5/s); up
+    // close it mostly winds up the blue charged thrust (default 0.22) and jabs less (default 0.9).
     attacks: [
-      { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], minRange: 4, dash: { speed: 10, from: 0.45 },
+      { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], minRange: 4, dash: { speed: 10, from: 0.45 }, chance: 2.5,
         hits: [{ startup: 0.95, active: 0.16, follow: 0.2 }], recovery: 0.75, damage: 26, poise: 34, knock: 6, lunge: 3, range: 9,
         box: { w: 0.8, h: 1.2, d: 3.0, fwd: 1.8, y: 1.1 } },
-      { id: 'lancerJab', name: 'Jab', anim: 'stab', pose: 'enemyStab', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.48, active: 0.1, follow: 0.12 }], recovery: 0.72,   // long recovery: the opening
+      { id: 'lancerJab', name: 'Jab', anim: 'stab', chance: 0.35, pose: 'enemyStab', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.48, active: 0.1, follow: 0.12 }], recovery: 0.72,   // long recovery: the opening
         damage: 14, poise: 18, knock: 3, lunge: 2.5, range: 2.8, box: { w: 0.7, h: 1.1, d: 2.8, fwd: 1.6, y: 1.1 } },
-      { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.65 }, poseScale: 1.15, rollOnly: true, hits: [{ startup: 1.4, active: 0.18, follow: 0.22, hold: { at: 0.45, time: [0.3, 0.7], chance: 0.5 } }], recovery: 0.95,
+      { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.65 }, poseScale: 1.15, rollOnly: true, chance: 1.0, hits: [{ startup: 1.4, active: 0.18, follow: 0.22, hold: { at: 0.45, time: [0.3, 0.7], chance: 0.5 } }], recovery: 0.95,
         damage: 40, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
     ],
   },
