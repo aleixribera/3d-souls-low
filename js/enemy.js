@@ -300,6 +300,7 @@ class Enemy {
       events.emit('impact', { x: this.x + Math.sin(this.yaw) * f, y: this.y, z: this.z + Math.cos(this.yaw) * f, fx: this.attack.impact, enemy: this });
     }
     this.setState(ES.ACTIVE);
+    events.emit('attackPhase', { actor: this, attack: this.attack, phase: PHASE.ACTIVE, hitIndex: this.hitIndex });   // the swing sound
   }
   endStrikeWhenDone() {
     const h = this.attack.hits[this.hitIndex];

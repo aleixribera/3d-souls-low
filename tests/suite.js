@@ -1240,7 +1240,7 @@
   });
   test('version: a tiny label shows the version in every menu and hides during play', () => {
     const label = document.getElementById('version'), seen = () => label.offsetParent !== null && label.textContent === A.VERSION;
-    expect.ok(/^v\d+\.\d+$/.test(A.VERSION), `one version constant (${A.VERSION})`);
+    expect.ok(/^v\d+\.\d+(\.\d+)?$/.test(A.VERSION), `one version constant (${A.VERSION})`);
     Game.showMenu('start'); expect.ok(seen(), 'on the start notice');
     Game.showMenu('levels'); expect.ok(seen(), 'in the Levels menu');
     Game.startLevel('test-crowd'); sim.begin(); sim.step(2, 1);

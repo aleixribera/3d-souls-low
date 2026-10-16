@@ -341,12 +341,8 @@ class AudioManager {
   }
   // The player's own moves are states, not events.
   playerMoved(from, to, p, vy) {
-    if (to === PS.ATTACK && p.attack && attackHasMarker(p.attack, 'sound')) return;   // the attack times its own swing (js/attack-anim.js)
-    if (to === PS.ATTACK) {
-      const a = p.attack, heavy = a && a.damage >= 30;
-      this.play(heavy ? 'swingHeavy' : 'swingLight', { vel: clamp(((a && a.damage) || 18) / 45, 0.3, 1), delay: Math.min(0.5, ((a && a.hits[0].startup) || 0.2) * 0.7) });
-    } else if (to === PS.JUMP_ATTACK) this.play('swingHeavy', { vel: 0.8 });
-    else if (to === PS.ROLL) this.play('roll', { vel: 0.6 });
+    // Attack swings are not here: they follow the strike itself (attackMarker / attackPhase listeners below).
+    if (to === PS.ROLL) this.play('roll', { vel: 0.6 });
     else if (to === PS.PARRY) this.play('swingLight', { vel: 0.3, pitch: 1.2 });
     else if (to === PS.BLOCK && (from === PS.IDLE || from === PS.WALK)) this.play('guardUp', { vel: 0.5 });
     else if (to === PS.JUMP && from !== PS.FALL) this.play('jump', { vel: 0.6 });
@@ -414,10 +410,13 @@ function registerAudioListeners() {
   on('alert', d => audio.play('alert', { pos: chest(d.enemy), pitch: big(d.enemy) }));
   on('perilous', d => audio.play('perilous', { pos: chest(d.enemy), pitch: big(d.enemy) }));
   on('attackMarker', d => { if (d.marker.event === 'sound') audio.play(d.marker.sound, { pos: d.actor === Game.player ? null : chest(d.actor), vel: d.marker.vel ?? 0.7, pitch: big(d.actor) }); });
-  on('attackStart', d => {   // the swing, a little before it lands
-    const a = d.attack, s = a.hits && a.hits[0] ? a.hits[0].startup : 0.3;
-    if (a.projectile) return;
-    audio.play(a.damage >= 30 ? 'swingHeavy' : 'swingLight', { pos: chest(d.enemy), vel: clamp(a.damage / 45, 0.3, 1), pitch: big(d.enemy), delay: Math.min(0.9, s * 0.75) });
+  // The swing whoosh, as each strike goes active: every cut of a combo, after any held (delayed) wind-up, and a jump
+  // attack as it drives down. An attack with its own `sound` markers times them itself (the player's ground attacks).
+  on('attackPhase', d => {
+    const a = d.attack;
+    if (d.phase !== PHASE.ACTIVE || a.projectile || attackHasMarker(a, 'sound')) return;
+    const me = d.actor === Game.player;
+    audio.play(a.damage >= 30 ? 'swingHeavy' : 'swingLight', { pos: me ? null : chest(d.actor), vel: clamp(a.damage / 45, 0.3, 1), pitch: big(d.actor) });
   });
   on('itemUsed', d => { if (d.item === 'flask') audio.play('flask'); });
   on('rest', () => audio.play('rest'));

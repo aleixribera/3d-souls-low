@@ -194,6 +194,7 @@ class Player {
         const a = this.attack;
         if (!this.hitbox && this.stateTime >= a.hits[0].startup && this.vy <= 0) {
           this.hitbox = new Hitbox(this, a.box, this.payload); this.activeAt = this.stateTime;
+          events.emit('attackPhase', { actor: this, attack: a, phase: PHASE.ACTIVE, hitIndex: 0 });   // driving down: the swing sound
         }
         break;
       }
