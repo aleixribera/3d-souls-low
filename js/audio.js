@@ -341,6 +341,7 @@ class AudioManager {
   }
   // The player's own moves are states, not events.
   playerMoved(from, to, p, vy) {
+    if (to === PS.ATTACK && p.attack && attackHasMarker(p.attack, 'sound')) return;   // the attack times its own swing (js/attack-anim.js)
     if (to === PS.ATTACK) {
       const a = p.attack, heavy = a && a.damage >= 30;
       this.play(heavy ? 'swingHeavy' : 'swingLight', { vel: clamp(((a && a.damage) || 18) / 45, 0.3, 1), delay: Math.min(0.5, ((a && a.hits[0].startup) || 0.2) * 0.7) });
@@ -412,6 +413,7 @@ function registerAudioListeners() {
   on('boltStopped', d => audio.play('boltStopped', { pos: spot(d.bolt) }));
   on('alert', d => audio.play('alert', { pos: chest(d.enemy), pitch: big(d.enemy) }));
   on('perilous', d => audio.play('perilous', { pos: chest(d.enemy), pitch: big(d.enemy) }));
+  on('attackMarker', d => { if (d.marker.event === 'sound') audio.play(d.marker.sound, { pos: d.actor === Game.player ? null : chest(d.actor), vel: d.marker.vel ?? 0.7, pitch: big(d.actor) }); });
   on('attackStart', d => {   // the swing, a little before it lands
     const a = d.attack, s = a.hits && a.hits[0] ? a.hits[0].startup : 0.3;
     if (a.projectile) return;

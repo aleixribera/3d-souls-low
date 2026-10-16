@@ -32,6 +32,13 @@ const ANIM_SECONDARY = {
 const ANIM_SETTINGS = {
   maxClothDt: 0.04,        // longest physics step of the cloth springs (s)
   clothClamp: 1.1,         // furthest a cloth strip may swing (rad)
+  clothTwist: 0.6,         // how much the body's own twisting (attack coil and unwind) swings the cloth, like turning
+  clothBend: 0.05,         // how much bending forward or back flicks the cloth
+  // Enemies turning to track: the hips and then the chest lag behind the feet by this much per rad/s of turn (max rad).
+  turnLag: { spin: 0.06, chest: 0.09, max: 0.45 },
+  // Walking with weight (Rig.weightLean): rad of lean per m/s2 of acceleration, per m/s of speed, per (rad/s x m/s) of
+  // turning; at most `max` rad, eased in at `rate`/s.
+  weight: { accel: 0.006, speed: 0.012, turn: 0.012, max: 0.14, rate: 8 },
   walkBlendRate: 8,        // how fast the walk layer fades in and out (1/s)
   deathBuckleTime: 0.45,   // s for the knees to give way
   walkStates: ['chase', 'patrol', 'return'],   // enemy states that count as walking

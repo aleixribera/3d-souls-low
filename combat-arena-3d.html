@@ -31,6 +31,8 @@
   #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
   #menuBox .notice { text-align: center; font-size: 17px; line-height: 1.7; color: #d9cda8; margin: 20px 0 8px; white-space: pre-line; }
   #menuBox .notice:empty { display: none; }
+  /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
+  body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
   #version { position: absolute; right: 10px; bottom: 6px; font-size: 10px; letter-spacing: 1px; color: #4e473a; pointer-events: none; }
 
   #fade { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity var(--fade-time, 1s); }
@@ -329,6 +331,7 @@ const GAME_FILES = [
   'data/models-enemies.js',
   'data/models-bosses.js',
   'data/animations.js',
+  'data/attack-poses.js',
   'data/audio.js',
   'levels/arena.js',
   'levels/tutorial.js',
@@ -352,6 +355,7 @@ const GAME_FILES = [
   'rig.js',
   'bodykit.js',
   'animator.js',
+  'attack-anim.js',
   'character.js',
   'player.js',
   'enemy.js',
@@ -365,6 +369,7 @@ const GAME_FILES = [
   'hud.js',
   'audio.js',
   'game.js',
+  'impact.js',
   'boot.js',
 ];
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
@@ -384,6 +389,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite.js', 'tests/');
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
+  await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours (H shows hitboxes anywhere)
 }
 </script>
 </body>

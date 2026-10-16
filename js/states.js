@@ -13,7 +13,9 @@ const ES = Object.freeze({   // enemy
   RETURN: 'return', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
   HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', BROKEN: 'broken', DEAD: 'dead',
 });
-const PHASE = Object.freeze({ STARTUP: 'startup', ACTIVE: 'active', RECOVERY: 'recovery' });
+// The four phases of every attack: wind-up (STARTUP), strike (ACTIVE, the only phase with a hitbox), follow-through
+// (FOLLOW, the blade carries on past the target) and recovery (back to guard; the only one a roll can cancel).
+const PHASE = Object.freeze({ STARTUP: 'startup', ACTIVE: 'active', FOLLOW: 'follow', RECOVERY: 'recovery' });
 const POISE = Object.freeze({ STAGGER: 'poiseStagger', FLINCH: 'poiseFlinch', NONE: 'poiseNone' });   // results of applyPoise
 const PLAYER_GROUPS = {
   free: new Set([PS.IDLE, PS.WALK]),                                     // may start any action
@@ -23,9 +25,8 @@ const PLAYER_GROUPS = {
   noRegen: new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
   noLockFacing: new Set([PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
-  // A roll pressed in these states is remembered and comes out as soon as rolling is allowed again
-  // (attack recovery, after the landing impact, or back on your feet). Attacks queue only before recovery.
-  queuesRoll: new Set([PS.ATTACK, PS.JUMP, PS.FALL, PS.JUMP_ATTACK, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER]),
+  // Busy states whose roll and attack presses go through the Souls-style input buffer (Player.bufferInputs).
+  buffers: new Set([PS.ATTACK, PS.ROLL, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER, PS.USE_ITEM]),
 };
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player

@@ -137,14 +137,14 @@ const groundFx = (() => {
   };
 })();
 
-// Sword trail during a jump attack: a ribbon through the blade's recent base/tip positions.
-const swordTrail = (() => {
+// Weapon trail: a ribbon through the blade's recent base/tip positions, drawn while a swing is active.
+function makeSwordTrail(color = 0xfff0d0, opacity = 0.3) {
   const N = 12, pos = new Float32Array(N * 6), geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const idx = [];
   for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
   geo.setIndex(idx);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0.3,
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity,
     side: THREE.DoubleSide, depthWrite: false }));
   mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh); pooledFx.push(mesh);
   // Blade base/tip pairs, newest first; `free` holds the spare pairs, so a swing allocates nothing.
@@ -162,9 +162,11 @@ const swordTrail = (() => {
       geo.setDrawRange(0, Math.max(0, pts.length - 1) * 6);
       mesh.visible = pts.length > 1;
     },
+    busy() { return pts.length > 0; },
     clear() { free.push(...pts.splice(0)); mesh.visible = false; },
   };
-})();
+}
+const swordTrail = makeSwordTrail();   // the player's
 
 // Lock-on marker: a small bright diamond above the target.
 const lockMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0),

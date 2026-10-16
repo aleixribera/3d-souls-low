@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v4.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v4.2';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -36,7 +36,7 @@ const CONFIG = {
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
     poiseResetTime: 4, staminaRegen: 36, staminaDelay: 0.75,
-    walkSpeed: 4.3, accel: 34, decel: 28, turnRate: 14,
+    walkSpeed: 4.3, accel: 26, decel: 22, turnRate: 14,   // v4.1: accel 34, decel 28 (a little more weight)
     airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
     jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
@@ -45,9 +45,14 @@ const CONFIG = {
     rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
     rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     rollExitKeep: 0.3,           // speed kept when a roll ends
-    rollChainWindow: 0.2,        // a roll pressed this close to the end of a roll is queued as the next roll
-    rollQueueTime: 1.2,         // a roll pressed while busy (see PLAYER_GROUPS.queuesRoll) fires when it's next allowed, within this time
+    // Input buffer (Souls-style, one slot, latest press wins): a roll or attack pressed while busy is kept only if the
+    // action becomes possible within bufferWindow s; it then waits that long plus bufferGrace before being dropped.
+    bufferWindow: 0.4, bufferGrace: 0.1,
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
+    attackSteer: 3.2,            // rad/s the player may turn during an attack's wind-up (none once the strike is out)
+    comboGrace: 0.3,             // after an attack ends, a press this soon still continues its combo
+    chargeTremble: 0.025,        // rad the body shakes at full heavy charge (visual)
+    chargeShake: { time: 0.14, amp: 0.035 },   // camera jolt when a heavy reaches full charge
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
     knockCap: 12,                // most knockback a hit gives (a `shove` ignores it)
     // Soft auto-aim when not locked on: swings snap to a nearby enemy roughly in the intended direction.
@@ -70,6 +75,7 @@ const CONFIG = {
   // Death: the world slows to a stop, YOU DIED fades in, then the player returns to the last bonfire.
   // The overlay's CSS timings are set from these numbers at load, so they always line up.
   death: { slowTime: 1.4, respawnDelay: 4.8, textDelay: 0.6, textFade: 2.2, hintDelay: 2.6 },
+  debug: { slowMo: 0.25 },   // developer builds (#dev): F6 runs the game at this speed
   restartConfirmTime: 2.2,   // R must be pressed twice within this time to restart mid-fight
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
@@ -160,6 +166,13 @@ const CONFIG = {
           bolt: { color: 0xb8a888, count: 6, speed: 2.5 },   // a bolt stopped by a wall
         },
         postureBreakShake: { time: 0.22, amp: 0.08 },
+        // Impact feel (js/impact.js), visual only. A landed hit shakes the camera by its damage: none below `from`, the
+        // full `amp` at `full` (so light cuts stay steady and heavy blows and slams jolt). The struck body shudders
+        // `jitter` m during the hit-pause. Enemies' active swings leave a trail too (at most `trails` at once).
+        strikeShake: { from: 25, full: 70, time: 0.2, amp: 0.1 },
+        hitJitter: { amp: 0.045, rate: 95 },
+        flinchRef: 30,   // damage that gives a full-size flinch (smaller hits flinch less, bigger ones more)
+        enemyTrail: { trails: 6, color: 0xffd0b0, opacity: 0.22 },
         hardLanding: { ring: 1.4, crack: 0.9, dust: 10, shake: 0.09 },   // dust and jolt when a fall hurts
         // Traps (rendering only): the collapse area is cut into pieces about `piece` m across. Through the warning
         // cracks spread over them (each fully drawn `crackSpread` of the way after its turn, at `crackOpacity`); the

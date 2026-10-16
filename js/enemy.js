@@ -181,8 +181,11 @@ class Enemy {
       case ES.WINDUP: {
         const a = this.attack, hit = a.hits[this.hitIndex];
         // Tracking attacks keep turning for the whole wind-up; others stop part way, so a late dodge works.
-        if (a.track) this.yaw = turnToward(this.yaw, toPlayer, a.track * dt);
-        else if (this.stateTime < hit.startup * E.windupTrack) this.yaw = turnToward(this.yaw, toPlayer, d.trackRate * dt);
+        // Delayed attack: at `hold.at` of the wind-up it may freeze, clearly still, for a while before carrying on.
+        if (hit.hold && this.holdLeft === null && this.stateTime >= hit.startup * hit.hold.at)
+          this.holdLeft = Math.random() < hit.hold.chance ? rand(hit.hold.time[0], hit.hold.time[1]) : 0;
+        if (this.holdLeft > 0) { this.holdLeft -= dt; this.stateTime = Math.min(this.stateTime, hit.startup * hit.hold.at); }
+        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, ((a.tracking && a.tracking.rate) || a.track || d.trackRate) * dt);
         // Gap closer: rush forward late in the wind-up, stopping once the strike would reach.
         if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
           tx = this.vx = Math.sin(this.yaw) * a.dash.speed; tz = this.vz = Math.cos(this.yaw) * a.dash.speed;   // full speed at once
@@ -190,9 +193,11 @@ class Enemy {
         if (this.stateTime >= hit.startup) this.strike(player);
         break;
       }
-      case ES.ACTIVE: {
-        if (this.attack.track) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * dt);
-        tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge;
+      case ES.ACTIVE: {   // the strike, then (hitbox closed) its follow-through
+        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * dt);
+        const striking = this.stateTime < this.attack.hits[this.hitIndex].active;
+        if (!striking) this.hitbox = null;
+        if (striking) { tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge; }
         this.endStrikeWhenDone();
         break;
       }
@@ -222,6 +227,15 @@ class Enemy {
     integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+  // Still turning to follow the player (the F7 debug colours show it). With `tracking`, only until its commit point
+  // in each wind-up, then locked: the strike goes where it was aimed. Legacy: the early wind-up, or all of a `track` attack.
+  isTracking() {
+    const a = this.attack;
+    if (!a || (this.state !== ES.WINDUP && this.state !== ES.ACTIVE)) return false;
+    if (a.tracking) return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * a.tracking.commit;
+    if (a.track) return true;
+    return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * CONFIG.enemy.windupTrack;
   }
   die() { this.hitbox = null; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
@@ -271,7 +285,7 @@ class Enemy {
     return null;
   }
   beginAttack(attack) {
-    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.setState(ES.WINDUP);
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.setState(ES.WINDUP);
     crowd.started();
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
@@ -288,9 +302,10 @@ class Enemy {
     this.setState(ES.ACTIVE);
   }
   endStrikeWhenDone() {
-    if (this.stateTime < this.attack.hits[this.hitIndex].active) return;
+    const h = this.attack.hits[this.hitIndex];
+    if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;
-    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.setState(ES.WINDUP); }
+    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.setState(ES.WINDUP); }
     else this.setState(ES.RECOVER);
   }
   // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
@@ -328,6 +343,7 @@ class Enemy {
 
   // One strike from `from`. Returns { broke (posture), died }.
   takeHit(strike, from) {
+    this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     const kx = dx / d * strike.knock, kz = dz / d * strike.knock;
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
@@ -399,10 +415,10 @@ class Enemy {
   pose(tt, ctx) {
     const r = this.rig, d = this.def, E = CONFIG.enemy;
     r.reset(); r.setOpacity(1); r.root.visible = true;
-    let warn = 0;
+    let warn = 0, glint = -1;
     const a = this.attack;
     switch (this.state) {
-      case ES.CHASE: case ES.PATROL: case ES.RETURN: r.walk(this.walkPhase, 0.5); break;
+      case ES.CHASE: case ES.PATROL: case ES.RETURN: r.walk(this.walkPhase, 0.5); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
       case ES.LURK:
         r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;
       case ES.LEAP: r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;
@@ -412,19 +428,25 @@ class Enemy {
         r.tip.rotation.x = -Math.PI / 2 * (1 - p); r.legL.rotation.x = -1.2 * Math.sin(p * Math.PI);
         r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
       }
-      case ES.WINDUP:
-        poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
-        warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);
+      case ES.WINDUP: case ES.ACTIVE: case ES.RECOVER:
+        if (a.pose) {   // four-phase key poses (js/attack-anim.js) on the attack's own clock
+          const still = this.holdLeft > 0 ? this.stateTime : tt;   // a held wind-up is drawn perfectly still
+          const at = phaseSpan(a, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + still;
+          glint = poseAttackKeys(r, a, at);
+        } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
+        else if (this.state === ES.ACTIVE) poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex);
+        else poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex);
+        if (this.state === ES.WINDUP) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);
         break;
-      case ES.ACTIVE: poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex); break;
-      case ES.RECOVER: poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex); break;
-      case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt); break;
+      case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt, this.hitK || 1); break;
       case ES.STAGGER: flinchPose(r, true, tt / d.staggerTime, tt); break;
       case ES.PARRIED: {
-        // Weapon knocked wide, torso thrown back, slow to recover.
-        const k = 1 - ease((tt - d.parriedTime * 0.6) / (d.parriedTime * 0.4));
-        r.tip.rotation.x = -0.38 * k; r.spin.rotation.y = 0.7 * k; r.spin.rotation.z = Math.sin(tt * 7) * 0.08 * k;
-        r.armR.rotation.set(lerp(-0.4, -2.5, k), 0, -0.9 * k); r.armL.rotation.x = lerp(-0.1, 0.5, k); break;
+        // Parried: the weapon flung up and wide, the torso thrown back over a stumbling back foot, wide open (riposte
+        // window), then a slow haul back to guard.
+        const k = ease(clamp(tt / 0.12, 0, 1)) * (1 - ease((tt - d.parriedTime * 0.6) / (d.parriedTime * 0.4)));
+        r.tip.rotation.x = -0.5 * k; r.spin.rotation.y = 0.8 * k; r.spin.rotation.z = Math.sin(tt * 7) * 0.09 * k; r.crouch(0.12 * k);
+        r.legR.rotation.x += 0.55 * k; r.kneeR.rotation.x += 0.4 * k; r.legL.rotation.x -= 0.25 * k;
+        r.armR.rotation.set(lerp(-0.4, -2.8, k), 0, -1.1 * k); r.armL.rotation.set(lerp(-0.1, 0.6, k), 0, 0.6 * k); r.head.rotation.x = -0.4 * k; break;
       }
       case ES.BROKEN: {
         // Sinks to one knee, club on the floor, then hauls itself back up.
@@ -443,7 +465,13 @@ class Enemy {
       const k = Math.sin(this.recoil * Math.PI) * CONFIG.fx.recoilLean;
       r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
     }
-    if (r.anim) r.anim.update(this, tt, ctx);   // a modelled body's secondary motion (js/animator.js), visual only
+    // Turning (tracking the player): the feet lead, the hips and then the chest follow a beat behind.
+    if (r.lastYaw !== null && ctx.dt > 0 && this.alive()) {
+      const L = ANIM_SETTINGS.turnLag, w = angDiff(ctx.yaw, r.lastYaw) / ctx.dt;
+      r.spin.rotation.y -= clamp(w * L.spin, -L.max, L.max);
+      if (r.chest) r.chest.rotation.y -= clamp(w * (L.chest - L.spin), -L.max, L.max);
+    }
+    if (r.anim) r.anim.update(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
     r.setWarning(warn, a && a.rollOnly ? ROLL_ONLY_COLOR : WARN_COLOR);   // roll-only attacks glow their own colour
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);

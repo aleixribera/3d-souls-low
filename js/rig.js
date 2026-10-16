@@ -61,6 +61,7 @@ class Rig {
     this.shadowRadius = 0.55 * scale * bulk;
     // Visual-only state: weapon lag spring, the yaw seen last frame, idle blend weight.
     this.lag = 0; this.lagPitch = 0; this.lastYaw = null; this.idleW = 1;
+    this.leanF = 0; this.leanS = 0; this.leanFwd = null; this.leanYaw = null;   // weightLean's smoothed lean
     scene.add(this.root, this.shadow);
   }
   reset() {
@@ -98,6 +99,17 @@ class Rig {
     this.spin.position.y = HIP - 0.45 * k;
     this.legL.rotation.x = -1.45 * k; this.kneeL.rotation.x = 1.45 * k;
     this.legR.rotation.x = 0.05 * k; this.kneeR.rotation.x = 1.5 * k;
+  }
+  // Moving with weight (visual only): the body tips forward as it speeds up, back as it brakes, and leans into turns.
+  weightLean(vx, vz, yaw, dt) {
+    if (!(dt > 0)) return;
+    const W = ANIM_SETTINGS.weight, fwd = vx * Math.sin(yaw) + vz * Math.cos(yaw);
+    const acc = this.leanFwd === null ? 0 : (fwd - this.leanFwd) / dt, turn = this.leanYaw === null ? 0 : angDiff(yaw, this.leanYaw) / dt;
+    this.leanFwd = fwd; this.leanYaw = yaw;
+    const k = 1 - Math.exp(-W.rate * dt);
+    this.leanF += (clamp(acc * W.accel + fwd * W.speed, -W.max, W.max) - this.leanF) * k;
+    this.leanS += (clamp(turn * Math.abs(fwd) * W.turn, -W.max, W.max) - this.leanS) * k;
+    this.tip.rotation.x += this.leanF; this.tip.rotation.z += this.leanS;
   }
   // Weapon trails the body's turning and movement slightly (visual only).
   applyLag(yaw, speed, dt) {

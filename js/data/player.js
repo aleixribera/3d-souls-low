@@ -11,6 +11,9 @@
 //   Optional: hitstop (default scales with damage), cost (stamina), range (enemy AI: start the attack
 //   within this distance), postureDmg (fills a boss's posture), riposte: { damage, poise } multipliers
 //   after a parry, air: jump-attack landing data (the active phase lasts until touchdown).
+//   Four-phase animation (js/attack-anim.js): a hit may add `follow` (s of follow-through after the active phase, no
+//   hitbox); `pose` (an ATTACK_POSES id, js/data/attack-poses.js) draws it from key poses; markers: [{ at: 'windup' |
+//   'active' | 'follow' | 'recovery', t: 0..1 through that phase, hit?: index, event: 'sound' | 'shake' | 'glint', ... }].
 
 const ITEMS = {
   flask: { name: 'Flask', action: 'flask', useTime: 1.3, heal: 45, healStart: 0.35, healDuration: 0.8, refillOnRest: true },
@@ -26,10 +29,29 @@ const PLAYER_DEF = {
     ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
     air: { light: 'jumpLight', heavy: 'jumpHeavy' },
     attacks: {
-      light: { id: 'light', anim: 'sweep', hits: [{ startup: 0.22, active: 0.12 }], recovery: 0.34, cost: 16,
+      // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery. Was 0.22 / 0.12 / 0.34
+      // (docs/combat-timings-v4.1.md).
+      // Light combo: diagonal -> backhand -> overhead finisher (`next`: the attack a press during this one chains into).
+      light: { id: 'light', anim: 'sweep', pose: 'lightDiagonal', hits: [{ startup: 0.3, active: 0.1, follow: 0.14 }], recovery: 0.26, cost: 16,
+               next: { light: 'light2' },
+               markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
-      heavy: { id: 'heavy', anim: 'overhead', hits: [{ startup: 0.56, active: 0.16 }], recovery: 0.64, cost: 40,
+      light2: { id: 'light2', anim: 'sweep', pose: 'lightBackhand', hits: [{ startup: 0.26, active: 0.1, follow: 0.14 }], recovery: 0.28, cost: 16,
+                next: { light: 'light3' },
+                markers: [{ at: 'windup', t: 0.65, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
+                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.2, hitstop: 0.07, riposte: { damage: 2.4 },
+                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
+      light3: { id: 'light3', anim: 'overhead', pose: 'lightOverhead', hits: [{ startup: 0.38, active: 0.12, follow: 0.18 }], recovery: 0.36, cost: 16,
+                next: { light: 'light' },
+                markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingLight', vel: 0.7 }, { at: 'active', t: 0, event: 'glint' }],
+                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.6, hitstop: 0.08, riposte: { damage: 2.4 },
+                box: { w: 1.4, h: 2.2, d: 2.2, fwd: 1.35, y: 1.2 } },
+      // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage.
+      // Was 0.56 / 0.16, recovery 0.64 (docs/combat-timings-v4.1.md).
+      heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.62, active: 0.14, follow: 0.22 }], recovery: 0.5, cost: 40,
+               charge: { action: 'heavy', at: 0.7, hold: 0.9, mul: 1.5, hitstopMul: 1.4 },
+               markers: [{ at: 'windup', t: 0.8, event: 'sound', sound: 'swingHeavy', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],
                damage: 38, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
       // Jump attacks: wind-up in the air, the hitbox opens while descending and lasts until landing

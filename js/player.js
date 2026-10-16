@@ -18,10 +18,13 @@ class Player {
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
-    this.rollQueue = 0;    // timer: > 0 while a roll pressed during a busy state is waiting to come out
     this.state = PS.IDLE; this.stateTime = 0;
     this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0; this.usingItem = null;
     this.activeAt = Infinity; this.landTime = 0; this.landHit = false;
+    // Ground attacks run on their own clock (attackT), which stops while a heavy is held to charge (chargeT s so far).
+    this.attackT = 0; this.chargeT = 0; this.charge = 0;   // charge: 0 not yet, 1 holding, 2 released (or none)
+    this.buffer = null;   // { action, time }: the one remembered press (Souls-style; see bufferInputs)
+    this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.savePrev();
   }
   alive() { return this.state !== PS.DEAD; }
@@ -31,7 +34,7 @@ class Player {
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
   spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
-  attackPhase() { return attackTimeline(this.attack, this.stateTime).phase; }
+  attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
@@ -49,11 +52,38 @@ class Player {
   // A roll is wanted now: a queued press, or a fresh one (only consumed if a roll is possible).
   // A queued roll that can't happen the moment it's allowed (no stamina, or winded) is dropped, never held.
   wantsRoll() {
-    if (!this.canRoll()) { this.rollQueue = 0; return false; }
-    return this.rollQueue > 0 || input.consume('roll');
+    const buffered = this.buffer && this.buffer.action === 'roll';
+    if (!this.canRoll()) { if (buffered) this.buffer = null; return false; }
+    return buffered || input.consume('roll');
+  }
+  // Seconds until `action` (roll or a ground attack) could come out of the current state; Infinity if it cannot.
+  untilAllowed(action) {
+    const C = CONFIG.player, t = this.stateTime;
+    switch (this.state) {
+      case PS.ATTACK: return this.charge === 1 ? Infinity : Math.max(0, phaseSpan(this.attack, 'recovery')[0] - this.attackT);
+      case PS.ROLL: return C.rollTime - t;
+      case PS.LAND: return action === 'roll' ? Math.max(0, this.attack.air.impactTime - t) : this.landTime - t;
+      case PS.HURT: case PS.STAGGER: return this.stunTime - t;
+      case PS.PARRY: return CONFIG.parry.time - t;
+      case PS.USE_ITEM: return this.usingItem.useTime - t;
+      default: return Infinity;
+    }
+  }
+  // Souls-style input buffer: while busy, a roll or attack press is remembered only if it comes within bufferWindow s
+  // of the moment that action becomes possible (earlier presses, mashing, are dropped). One slot: the latest press
+  // replaces the one before. It comes out at the first frame the action is allowed.
+  bufferInputs() {
+    const C = CONFIG.player;
+    if (this.buffer && (this.buffer.time -= CONFIG.step) <= 0) this.buffer = null;
+    if (!this.in('buffers')) return;
+    for (const action of ['roll', ...Object.keys(this.def.moveset.ground)]) {
+      if (!input.consume(action)) continue;
+      const wait = this.untilAllowed(action);
+      if (wait <= C.bufferWindow) this.buffer = { action, time: wait + C.bufferGrace };
+    }
   }
   startRoll(mv) {
-    this.rollQueue = 0;
+    this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     if (this.stamina - CONFIG.player.rollCost < 1) this.winded = true;   // the bar is (all but) empty after this roll
     this.spend(CONFIG.player.rollCost);
@@ -75,11 +105,20 @@ class Player {
     if (face !== null) this.yaw = face;                // locked on: always aim at the target
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    this.attack = a;
+    this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
     this.payload = makeStrike(a, this.riposte > 0);
     this.riposte = 0;
     this.spend(a.cost || 0);
     this.hitbox = null;
+  }
+  // The attack an input starts: the follow-up of a combo still running (or just ended), else the opener.
+  nextAttack(action) {
+    const M = this.def.moveset, from = this.comboFrom;
+    return M.attacks[(from && from.next && from.next[action]) || M.ground[action]];
+  }
+  startAttack(a, mv, face, enemies) {
+    this.beginAttack(a, mv, face, enemies); this.setState(PS.ATTACK);
+    this.buffer = null; this.comboFrom = null; this.chainPose = null;
   }
   startParry() { this.spend(CONFIG.parry.cost); this.hitbox = null; this.setState(PS.PARRY); }
   useItem(id) {
@@ -93,8 +132,9 @@ class Player {
     const C = CONFIG.player, M = this.def.moveset;
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
     if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
-    for (const [action, id] of Object.entries(M.ground)) {
-      if (this.stamina > 0 && input.consume(action)) { this.beginAttack(M.attacks[id], mv, face, enemies); this.setState(PS.ATTACK); return true; }
+    const queued = this.buffer && this.buffer.action;
+    for (const action of Object.keys(M.ground)) {
+      if (this.stamina > 0 && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
     for (const [id, item] of Object.entries(ITEMS)) {
       if (this.item(id).count > 0 && input.consume(item.action)) { this.useItem(id); return true; }
@@ -112,9 +152,8 @@ class Player {
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
-    this.rollQueue = Math.max(0, this.rollQueue - dt);
-    if (this.in('queuesRoll') && !(this.state === PS.ATTACK && this.attackPhase() === PHASE.RECOVERY) && input.consume('roll'))
-      this.rollQueue = C.rollQueueTime;
+    if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
+    this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
@@ -175,22 +214,41 @@ class Player {
         const p = this.stateTime / C.rollTime;
         const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
         this.vx = fx * sp; this.vz = fz * sp;
-        // Chain rolls: only a press in the last rollChainWindow s is queued; earlier presses (mashing) are dropped.
-        if (input.consume('roll') && this.stateTime >= C.rollTime - C.rollChainWindow) this.rollQueue = C.rollQueueTime;
         if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
       }
       case PS.ATTACK: {
-        const a = this.attack, tl = attackTimeline(a, this.stateTime), prev = attackTimeline(a, this.stateTime - dt);
+        const a = this.attack, t0 = this.attackT, ch = a.charge;
+        // Heavy charge: held at `at` of the wind-up for up to `hold` s while the button stays down; released, it
+        // carries on, harder by how long it was held.
+        if (ch && this.charge === 1) {
+          if (input.isHeld(ch.action) && this.chargeT < ch.hold) {
+            this.chargeT = Math.min(ch.hold, this.chargeT + dt);
+            if (this.chargeT >= ch.hold) events.emit('chargeFull', { actor: this, attack: a });
+          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold); }
+        }
+        if (this.charge !== 1) this.attackT += dt;
+        if (ch && this.charge === 0 && this.attackT >= a.hits[0].startup * ch.at) {
+          if (input.isHeld(ch.action)) { this.attackT = a.hits[0].startup * ch.at; this.charge = 1; } else this.charge = 2;
+        }
+        const tl = attackTimeline(a, this.attackT), prev = attackTimeline(a, t0);
+        emitAttackEvents(this, a, t0, this.attackT);
+        // Commitment: only a slight steer during the wind-up (locked on, it turns as slowly), none once the swing is out.
+        if (tl.phase === PHASE.STARTUP && face === null && mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.attackSteer * dt);
         // A fresh hitbox (and hit list) for each strike of the attack.
         if (tl.phase === PHASE.ACTIVE && (prev.phase !== PHASE.ACTIVE || prev.hitIndex !== tl.hitIndex))
           this.hitbox = new Hitbox(this, a.box, this.payload);
         if (tl.phase !== PHASE.ACTIVE) this.hitbox = null;
-        const lunging = tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > C.lungeStart);
+        // A chargeable swing lunges only after its charge point, and a held charge plants the feet.
+        const lungeFrom = ch ? Math.max(C.lungeStart, ch.at) : C.lungeStart;
+        const lunging = this.charge !== 1 && (tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > lungeFrom));
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
-        // Roll out of a swing: a press during wind-up or strike is kept and fires as recovery begins.
+        // Recovery is the cancel point: a buffered (or fresh) roll, else a buffered attack, which chains the combo.
         if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
-        if (tl.done) this.setState(PS.IDLE);
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.stamina > 0) {
+          this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
+        }
+        if (tl.done) { this.comboFrom = a; this.comboTimer = C.comboGrace; this.setState(PS.IDLE); }
         break;
       }
       case PS.BLOCK: {
@@ -239,7 +297,7 @@ class Player {
     // Locked on: keep facing the target, except while committed to a roll or a swing already released.
     const released = (this.state === PS.ATTACK && this.attackPhase() !== PHASE.STARTUP) || (this.state === PS.JUMP_ATTACK && this.hitbox);
     if (face !== null && !this.in('noLockFacing') && !released)
-      this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), CONFIG.lock.turnRate * dt);
+      this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), (this.state === PS.ATTACK ? C.attackSteer : CONFIG.lock.turnRate) * dt);
 
     integrateBody(this, dt, C.knockFriction);
     if (!this.grounded && this.in('falls')) this.setState(PS.FALL);   // walked (or was knocked) off an edge
@@ -271,6 +329,7 @@ class Player {
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
   takeHit(strike, from) {
     const B = CONFIG.block, C = CONFIG.player;
+    this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     let damage = strike.damage, poise = strike.poise, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
     let blocked = false, guardBroken = false;
@@ -299,10 +358,11 @@ class Player {
 
   pose(tt, ctx) {
     const r = this.rig, C = CONFIG.player;
+    let glint = -1; this.chargeGlow = 0;   // set by a key-posed attack; -1 leaves the animator's own glint
     r.reset(); r.setOpacity(1);
     switch (this.state) {
-      case PS.IDLE: r.spin.scale.y = 1 + Math.sin(ctx.t * 1.6) * 0.012; r.armL.rotation.z = 0.04; break;
-      case PS.WALK: r.walk(this.walkPhase, 0.6); break;
+      case PS.IDLE: r.spin.scale.y = 1 + Math.sin(ctx.t * 1.6) * 0.012; r.armL.rotation.z = 0.04; r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
+      case PS.WALK: r.walk(this.walkPhase, 0.6); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
       case PS.JUMP: case PS.FALL:
         r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
       case PS.ROLL: {
@@ -313,7 +373,17 @@ class Player {
         break;
       }
       case PS.ATTACK: {
-        const tl = attackTimeline(this.attack, tt);
+        const at = this.charge === 1 ? this.attackT : this.attackT + (tt - this.stateTime), ch = this.attack.charge;
+        if (this.attack.pose) {   // four-phase key poses (js/attack-anim.js)
+          const k = ch ? this.chargeT / ch.hold : 0;
+          glint = poseAttackKeys(r, this.attack, at, k, this.chainPose);
+          if (this.charge === 1 && k >= 1) {   // full charge: the coiled body trembles and the blade glows
+            const s = Math.sin(ctx.t * 55) * C.chargeTremble; r.spin.rotation.z += s; r.head.rotation.x += s * 0.6;
+            this.chargeGlow = 0.45 + 0.25 * Math.sin(ctx.t * 18);
+          }
+          break;
+        }
+        const tl = attackTimeline(this.attack, at);
         poseAttack(r, this.attack, tl.phase, tl.p, tl.hitIndex);
         break;
       }
@@ -349,14 +419,14 @@ class Player {
         const k = Math.sin(clamp(tt / CONFIG.rest.time, 0, 1) * Math.PI);
         r.kneel(k); r.lean(0.2 * k); r.head.rotation.x = 0.4 * k; break;
       }
-      case PS.HURT: case PS.STAGGER: flinchPose(r, this.state === PS.STAGGER, tt / this.stunTime, tt); break;
+      case PS.HURT: case PS.STAGGER: flinchPose(r, this.state === PS.STAGGER, tt / this.stunTime, tt, this.hitK || 1); break;
       case PS.DEAD: deathPose(r, tt, C.deathFade); break;
     }
     if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
-    if (r.anim) r.anim.updatePlayer(this, tt, ctx);   // a modelled body's secondary motion (js/animator.js), visual only
+    if (r.anim) r.anim.updatePlayer(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
     if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
-    else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0));
+    else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0, this.chargeGlow));
     r.setTint(HURT_COLOR, this.tint * 0.9);
   }
 }

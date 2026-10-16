@@ -1,5 +1,9 @@
 'use strict';
 // Arena menu order. New enemies can go anywhere: levels refer to them by id.
+// Attacks are four-phase (js/attack-anim.js; format in js/data/player.js): `pose` key poses, `tracking` (turn rate and
+// the share of each wind-up spent turning before the aim locks), parry glints at the window, and optional `hold` on a
+// hit: a delayed attack that freezes, clearly still, at `at` of its wind-up for `time` s with `chance`.
+// Timings before v4.2: docs/combat-timings-v4.1.md.
 const ENEMY_DEFS = [
   {
     id: 'hollow', name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
@@ -8,10 +12,16 @@ const ENEMY_DEFS = [
     hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2,
     cooldown: [0.63, 1.4], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
-      { id: 'swing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.62, active: 0.14 }], recovery: 0.65,
+      // Four-phase (js/attack-anim.js): tracks the player for `tracking.commit` of the wind-up, then locks its aim;
+      // the blade glints as the parry window opens. Was 0.62 / 0.14, recovery 0.65 (docs/combat-timings-v4.1.md).
+      { id: 'swing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', hits: [{ startup: 0.75, active: 0.12, follow: 0.18 }], recovery: 0.55,
+        tracking: { rate: 3.0, commit: 0.7 }, markers: [{ event: 'glint', parry: true }],
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
         box: { w: 2.0, h: 1.4, d: 2.0, fwd: 1.3, y: 1.1 } },
-      { id: 'overhead', name: 'Overhead Strike', anim: 'overhead', hits: [{ startup: 1.0, active: 0.14 }], recovery: 1.05,
+      // The big one: a long, arched wind-up, then the blade buried in the floor for a punishable recovery.
+      // Was 1.0 / 0.14, recovery 1.05.
+      { id: 'overhead', name: 'Overhead Strike', anim: 'overhead', pose: 'hollowOverhead', hits: [{ startup: 1.15, active: 0.14, follow: 0.26 }], recovery: 0.9,
+        tracking: { rate: 2.4, commit: 0.65 }, markers: [{ event: 'glint', parry: true }],
         damage: 34, poise: 40, knock: 6, lunge: 2.0, range: 2.0,
         box: { w: 0.9, h: 2.4, d: 2.3, fwd: 1.4, y: 1.2 } },
     ],
@@ -28,10 +38,10 @@ const ENEMY_DEFS = [
     stagger: { max: 100, heavy: 60, light: 45, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 14,
                breakTime: 2.0, hitstop: 0.14 },
     attacks: [
-      { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', hits: [{ startup: 1.4, active: 0.18 }], recovery: 1.35,
+      { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.5, active: 0.18, follow: 0.3, hold: { at: 0.45, time: [0.25, 0.6], chance: 0.4 } }], recovery: 1.15,
         damage: 58, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
         box: { w: 1.5, h: 3.0, d: 3.2, fwd: 2.0, y: 1.5 } },
-      { id: 'bash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.5, active: 0.12 }], recovery: 0.7,
+      { id: 'bash', name: 'Shield Bash', anim: 'bash', pose: 'enemyBash', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.55, active: 0.12, follow: 0.15 }], recovery: 0.6,
         damage: 16, poise: 34, knock: 11, lunge: 4.0, range: 1.6,
         box: { w: 1.5, h: 1.6, d: 1.4, fwd: 1.2, y: 1.3 } },
     ],
@@ -43,11 +53,11 @@ const ENEMY_DEFS = [
     hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4,
     cooldown: [0.42, 1.05], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
-      { id: 'stab', name: 'Quick Stab', anim: 'stab', hits: [{ startup: 0.38, active: 0.1 }], recovery: 0.45,
+      { id: 'stab', name: 'Quick Stab', anim: 'stab', pose: 'enemyStab', tracking: { rate: 6, commit: 0.75 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.4, active: 0.1, follow: 0.12 }], recovery: 0.4,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
         box: { w: 0.7, h: 1.2, d: 2.0, fwd: 1.3, y: 1.0 } },
-      { id: 'doubleSlash', name: 'Double Slash', anim: 'sweep', hits: [{ startup: 0.42, active: 0.09 }, { startup: 0.26, active: 0.09 }],
-        recovery: 0.62, damage: 10, poise: 11, knock: 2.5, lunge: 2.6, range: 1.7,
+      { id: 'doubleSlash', name: 'Double Slash', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 6, commit: 0.75 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }], hits: [{ startup: 0.42, active: 0.09, follow: 0.08 }, { startup: 0.3, active: 0.09, follow: 0.14 }],
+        recovery: 0.55, damage: 10, poise: 11, knock: 2.5, lunge: 2.6, range: 1.7,
         box: { w: 1.7, h: 1.2, d: 1.7, fwd: 1.1, y: 1.0 } },
     ],
   },
@@ -62,10 +72,10 @@ const ENEMY_DEFS = [
     // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit.
     posture: { max: 100, parry: 38, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
-      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', hits: [{ startup: 1.65, active: 0.24 }], recovery: 1.55,
+      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.24, follow: 0.3 }], recovery: 1.3,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
         box: { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 } },
-      { id: 'stomp', name: 'Stomp', anim: 'stomp', hits: [{ startup: 1.3, active: 0.2 }], recovery: 1.25,
+      { id: 'stomp', name: 'Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.2, commit: 0.5 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.4, active: 0.2, follow: 0.3, hold: { at: 0.55, time: [0.4, 0.9], chance: 0.5 } }], recovery: 1,
         damage: 46, poise: 75, knock: 8, lunge: 0, range: 2.4,
         box: { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 } },
     ],
@@ -85,10 +95,10 @@ const ENEMY_DEFS = [
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
-      { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', hits: [{ startup: 0.75, active: 0.14 }], recovery: 0.8,
+      { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.8, active: 0.12, follow: 0.16 }], recovery: 0.7,
         damage: 26, poise: 30, knock: 5, lunge: 1.8, range: 2.2,
         box: { w: 2.2, h: 1.5, d: 2.2, fwd: 1.4, y: 1.1 } },
-      { id: 'wardenBash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.55, active: 0.12 }], recovery: 0.75,
+      { id: 'wardenBash', name: 'Shield Bash', anim: 'bash', pose: 'enemyBash', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.6, active: 0.12, follow: 0.15 }], recovery: 0.65,
         damage: 18, poise: 40, knock: 10, lunge: 3.6, range: 1.7,
         box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
     ],
@@ -101,12 +111,12 @@ const ENEMY_DEFS = [
     hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0,
     cooldown: [0.7, 1.54], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
-      { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', minRange: 4, dash: { speed: 10, from: 0.45 },
-        hits: [{ startup: 0.9, active: 0.16 }], recovery: 0.85, damage: 26, poise: 34, knock: 6, lunge: 3, range: 9,
+      { id: 'lancerDash', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], minRange: 4, dash: { speed: 10, from: 0.45 },
+        hits: [{ startup: 0.95, active: 0.16, follow: 0.2 }], recovery: 0.75, damage: 26, poise: 34, knock: 6, lunge: 3, range: 9,
         box: { w: 0.8, h: 1.2, d: 3.0, fwd: 1.8, y: 1.1 } },
-      { id: 'lancerJab', name: 'Jab', anim: 'stab', hits: [{ startup: 0.45, active: 0.1 }], recovery: 0.8,   // long recovery: the opening
+      { id: 'lancerJab', name: 'Jab', anim: 'stab', pose: 'enemyStab', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.48, active: 0.1, follow: 0.12 }], recovery: 0.72,   // long recovery: the opening
         damage: 14, poise: 18, knock: 3, lunge: 2.5, range: 2.8, box: { w: 0.7, h: 1.1, d: 2.8, fwd: 1.6, y: 1.1 } },
-      { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', rollOnly: true, hits: [{ startup: 1.35, active: 0.18 }], recovery: 1.1,
+      { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.65 }, poseScale: 1.15, rollOnly: true, hits: [{ startup: 1.4, active: 0.18, follow: 0.22, hold: { at: 0.45, time: [0.3, 0.7], chance: 0.5 } }], recovery: 0.95,
         damage: 40, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
     ],
   },
@@ -119,9 +129,9 @@ const ENEMY_DEFS = [
     // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or four light hits).
     stagger: { max: 100, heavy: 45, light: 28, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
-      { id: 'execChop', name: 'Tracking Chop', anim: 'chop', track: 2.0, hits: [{ startup: 1.35, active: 0.18 }], recovery: 1.3,
+      { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
-      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', rollOnly: true, chance: 0.4, hits: [{ startup: 1.25, active: 0.4 }], recovery: 1.2,
+      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', pose: 'enemySpin', tracking: { rate: 1.5, commit: 0.6 }, rollOnly: true, chance: 0.4, hits: [{ startup: 1.3, active: 0.4, follow: 0.2 }], recovery: 1,
         damage: 44, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
     ],
   },
@@ -132,10 +142,10 @@ const ENEMY_DEFS = [
     hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, approach: 0.8,   // presses in for its combo more than it dashes
     cooldown: [0.49, 1.12], flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
     attacks: [
-      { id: 'duelistCombo', name: 'Twin Cuts', anim: 'sweep', track: 4.0, hits: [{ startup: 0.5, active: 0.1 }, { startup: 0.28, active: 0.1 }],
-        recovery: 0.6, damage: 14, poise: 14, knock: 3, lunge: 2.6, range: 2.0, box: { w: 1.8, h: 1.3, d: 1.8, fwd: 1.15, y: 1.05 } },
-      { id: 'duelistDash', name: 'Dashing Cut', anim: 'stab', minRange: 3.5, dash: { speed: 9.5, from: 0.4 },
-        hits: [{ startup: 0.7, active: 0.12 }], recovery: 0.7, damage: 20, poise: 24, knock: 4, lunge: 3, range: 7.5,
+      { id: 'duelistCombo', name: 'Twin Cuts', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 5, commit: 0.8 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }], hits: [{ startup: 0.52, active: 0.1, follow: 0.08 }, { startup: 0.32, active: 0.1, follow: 0.14 }],
+        recovery: 0.52, damage: 14, poise: 14, knock: 3, lunge: 2.6, range: 2.0, box: { w: 1.8, h: 1.3, d: 1.8, fwd: 1.15, y: 1.05 } },
+      { id: 'duelistDash', name: 'Dashing Cut', anim: 'stab', pose: 'enemyStab', tracking: { rate: 4, commit: 0.38 }, markers: [{ event: 'glint', parry: true }], minRange: 3.5, dash: { speed: 9.5, from: 0.4 },
+        hits: [{ startup: 0.72, active: 0.12, follow: 0.14 }], recovery: 0.6, damage: 20, poise: 24, knock: 4, lunge: 3, range: 7.5,
         box: { w: 1.4, h: 1.3, d: 2.2, fwd: 1.3, y: 1.05 } },
     ],
   },
@@ -146,10 +156,10 @@ const ENEMY_DEFS = [
     hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0,   // keeps its distance: kicks only if you close in
     cooldown: [0.84, 1.82], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
-      { id: 'bowShot', name: 'Aimed Shot', anim: 'draw', projectile: { speed: 24, gravity: 6, size: 0.12 }, minRange: 4, range: 24,
-        hits: [{ startup: 1.1, active: 0.1 }], recovery: 0.7, damage: 20, poise: 24, knock: 3, lunge: 0,
+      { id: 'bowShot', name: 'Aimed Shot', anim: 'draw', pose: 'enemyDraw', tracking: { rate: 2.4, commit: 0.85 }, projectile: { speed: 24, gravity: 6, size: 0.12 }, minRange: 4, range: 24,
+        hits: [{ startup: 1.1, active: 0.1, follow: 0.12 }], recovery: 0.6, damage: 20, poise: 24, knock: 3, lunge: 0,
         box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.3 } },
-      { id: 'bowKick', name: 'Kick', anim: 'kick', hits: [{ startup: 0.4, active: 0.12 }], recovery: 0.5,
+      { id: 'bowKick', name: 'Kick', anim: 'kick', pose: 'enemyKick', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.42, active: 0.12, follow: 0.12 }], recovery: 0.42,
         damage: 12, poise: 30, knock: 7, lunge: 2, range: 1.7, box: { w: 1.0, h: 1.0, d: 1.4, fwd: 1.0, y: 0.6 } },
     ],
   },
@@ -163,9 +173,9 @@ const ENEMY_DEFS = [
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 50, light: 34, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
-      { id: 'shoverShove', name: 'Shove', anim: 'shove', shove: true, hits: [{ startup: 1.3, active: 0.16 }], recovery: 0.9,
+      { id: 'shoverShove', name: 'Shove', anim: 'shove', pose: 'enemyShove', tracking: { rate: 2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], shove: true, hits: [{ startup: 1.3, active: 0.16, follow: 0.2 }], recovery: 0.75,
         damage: 8, poise: 30, knock: 26, lunge: 2.4, range: 2.0, box: { w: 1.8, h: 1.8, d: 1.6, fwd: 1.1, y: 1.0 } },
-      { id: 'shoverBash', name: 'Shield Bash', anim: 'bash', hits: [{ startup: 0.55, active: 0.12 }], recovery: 0.75,
+      { id: 'shoverBash', name: 'Shield Bash', anim: 'bash', pose: 'enemyBash', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.58, active: 0.12, follow: 0.15 }], recovery: 0.62,
         damage: 16, poise: 34, knock: 8, lunge: 3.2, range: 1.7, box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
     ],
   },
@@ -180,14 +190,14 @@ const ENEMY_DEFS = [
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
     posture: { max: 100, parry: 28, chainGap: 1.8, chainMul: 1.5, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
-      { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
-        hits: [{ startup: 1.0, active: 0.16 }], recovery: 1.0, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
+      { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
+        hits: [{ startup: 1.05, active: 0.16, follow: 0.2 }], recovery: 0.85, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
         box: { w: 1.2, h: 1.6, d: 3.0, fwd: 1.8, y: 1.2 } },
-      { id: 'captainCombo', name: 'Three Cuts', anim: 'sweep', track: 2.6,
-        hits: [{ startup: 0.7, active: 0.14 }, { startup: 0.42, active: 0.14 }, { startup: 0.55, active: 0.16 }],
-        recovery: 0.9, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: { w: 3.4, h: 1.6, d: 2.8, fwd: 1.6, y: 1.2 } },
-      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', rollOnly: true, chance: 0.4, hits: [{ startup: 1.4, active: 0.2 }],
-        recovery: 1.3, damage: 48, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
+      { id: 'captainCombo', name: 'Three Cuts', anim: 'sweep', pose: 'enemyTripleCut', tracking: { rate: 3.2, commit: 0.75 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }, { event: 'glint', parry: true, hit: 2 }], poseScale: 1.1,
+        hits: [{ startup: 0.65, active: 0.14, follow: 0.1 }, { startup: 0.42, active: 0.14, follow: 0.1 }, { startup: 0.8, active: 0.16, follow: 0.24 }],
+        recovery: 0.75, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: { w: 3.4, h: 1.6, d: 2.8, fwd: 1.6, y: 1.2 } },
+      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.2, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.4, hits: [{ startup: 1.5, active: 0.2, follow: 0.3, hold: { at: 0.5, time: [0.4, 1], chance: 0.6 } }],
+        recovery: 1.1, damage: 48, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
         impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } },
     ],
   },
@@ -199,15 +209,15 @@ const ENEMY_DEFS = [
     cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     posture: { max: 120, parry: 34, chainGap: 1.8, chainMul: 1.5, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
-      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', track: 1.6, hits: [{ startup: 1.2, active: 0.24 }], recovery: 1.2,
+      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.24, follow: 0.3 }], recovery: 1,
         damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
-      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', rollOnly: true, chance: 0.45, hits: [{ startup: 1.5, active: 0.2 }], recovery: 1.4,
+      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2, commit: 0.5 }, poseScale: 1.35, rollOnly: true, chance: 0.45, hits: [{ startup: 1.7, active: 0.2, follow: 0.35, hold: { at: 0.5, time: [0.5, 1.1], chance: 0.7 } }], recovery: 1.2,
         damage: 55, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
         impact: { ring: 3.4, crack: 1.9, dust: 16, shake: 0.12 } },
-      { id: 'bellShove', name: 'Bell Push', anim: 'shove', shove: true, chance: 0.45, hits: [{ startup: 1.3, active: 0.18 }], recovery: 1.0,
+      { id: 'bellShove', name: 'Bell Push', anim: 'shove', pose: 'enemyShove', tracking: { rate: 1.8, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, shove: true, chance: 0.45, hits: [{ startup: 1.35, active: 0.18, follow: 0.2 }], recovery: 0.85,
         damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 } },
-      { id: 'bellCharge', name: 'Charge', anim: 'thrust', minRange: 5, dash: { speed: 11, from: 0.4 },
-        hits: [{ startup: 1.1, active: 0.3 }], recovery: 1.1, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
+      { id: 'bellCharge', name: 'Charge', anim: 'thrust', pose: 'enemyShove', tracking: { rate: 2, commit: 0.35 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.2, minRange: 5, dash: { speed: 11, from: 0.4 },
+        hits: [{ startup: 1.15, active: 0.3, follow: 0.2 }], recovery: 0.95, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
         box: { w: 2.4, h: 2.4, d: 2.6, fwd: 1.4, y: 1.2 } },
     ],
   },

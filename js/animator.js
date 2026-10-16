@@ -96,11 +96,13 @@ class ModelAnimator {
     this.add('elbowL', [-0.7, 0, 0], b); this.add('elbowR', [-0.5, 0, 0], b);
   }
 
-  update(e, tt, ctx) {   // an enemy
+  // glint: as updatePlayer (a key-posed attack's own blade flash replaces the secondary attack layer).
+  update(e, tt, ctx, glint = -1) {   // an enemy
     const r = this.rig, st = e.state, t = ctx.t + this.seed, dt = Math.min(ctx.dt || 0, 0.1), dead = st === ES.DEAD;
     if (!dead) this.idleLayer(t, r.idleW);
     this.walkLayer(e.walkPhase, ANIM_SETTINGS.walkStates.includes(st), dt);
-    if (e.attack && (st === ES.WINDUP || st === ES.ACTIVE || st === ES.RECOVER)) {
+    if (glint >= 0) this.glintK = glint;
+    else if (e.attack && (st === ES.WINDUP || st === ES.ACTIVE || st === ES.RECOVER)) {
       const a = e.attack, h = a.hits[e.hitIndex];
       if (st === ES.WINDUP) this.attackLayer(a, PHASE.STARTUP, tt / h.startup, e.hitIndex);
       else if (st === ES.ACTIVE) this.attackLayer(a, PHASE.ACTIVE, tt / h.active, e.hitIndex);
@@ -121,11 +123,14 @@ class ModelAnimator {
     this.finish(e, ctx, dt, dead);
   }
 
-  updatePlayer(p, tt, ctx) {   // the player
+  // glint: the blade flash of a key-posed attack (js/attack-anim.js), or -1 for none. Its whole-body pose replaces
+  // the secondary attack layer.
+  updatePlayer(p, tt, ctx, glint = -1) {   // the player
     const st = p.state, t = ctx.t + this.seed, dt = Math.min(ctx.dt || 0, 0.1);
     if (st !== PS.DEAD) this.idleLayer(t, st === PS.IDLE ? 1 : 0.3);
     this.walkLayer(p.walkPhase, st === PS.WALK || st === PS.BLOCK, dt);
-    if (st === PS.ATTACK) { const tl = attackTimeline(p.attack, tt); this.attackLayer(p.attack, tl.phase, tl.p, tl.hitIndex); }
+    if (glint >= 0) this.glintK = glint;
+    else if (st === PS.ATTACK) { const tl = attackTimeline(p.attack, tt); this.attackLayer(p.attack, tl.phase, tl.p, tl.hitIndex); }
     else if (st === PS.JUMP_ATTACK) {
       const a = p.attack;
       if (tt < p.activeAt) this.attackLayer(a, PHASE.STARTUP, tt / a.hits[0].startup, 0); else this.attackLayer(a, PHASE.ACTIVE, (tt - p.activeAt) / 0.2, 0);
@@ -143,12 +148,16 @@ class ModelAnimator {
     if (!this.cloth.length) return;
     const G = ANIM_SETTINGS, yaw = ctx.yaw ?? e.yaw, sn = Math.sin(yaw), cs = Math.cos(yaw);
     const vx = e.vx + (e.kx || 0), vz = e.vz + (e.kz || 0), fwd = vx * sn + vz * cs, side = vx * cs - vz * sn;
-    const turn = this.lastYaw === undefined || dt <= 0 ? 0 : angDiff(yaw, this.lastYaw) / dt; this.lastYaw = yaw;
+    // The body's own twist and bend (an attack's coil and unwind) drive the cloth like turning and moving do.
+    const r = this.rig, tw = r.spin.rotation.y + r.chest.rotation.y, bend = r.chest.rotation.x + r.tip.rotation.x;
+    const twistV = this.lastTwist === undefined || dt <= 0 ? 0 : (tw - this.lastTwist) / dt, bendV = this.lastBend === undefined || dt <= 0 ? 0 : (bend - this.lastBend) / dt;
+    this.lastTwist = tw; this.lastBend = bend;
+    const turn = (this.lastYaw === undefined || dt <= 0 ? 0 : angDiff(yaw, this.lastYaw) / dt) + twistV * G.clothTwist; this.lastYaw = yaw;
     let left = dt;
     while (left > 1e-5) {
       const h = Math.min(left, G.maxClothDt); left -= h;
       for (const c of this.cloth) {
-        const K = c.c, tx = fwd * K.gain + Math.sin(ctx.t * 1.3 + c.seed) * K.flutter, tz = (-side * K.gain + clamp(turn, -4, 4) * 0.08) * (K.sideways ?? 1);
+        const K = c.c, tx = fwd * K.gain - clamp(bendV, -8, 8) * G.clothBend + Math.sin(ctx.t * 1.3 + c.seed) * K.flutter, tz = (-side * K.gain + clamp(turn, -4, 4) * 0.08) * (K.sideways ?? 1);
         c.va += (-K.k * (c.a - tx) - K.damp * c.va) * h; c.a += c.va * h;
         c.vs += (-K.k * (c.s - tz) - K.damp * c.vs) * h; c.s += c.vs * h;
       }

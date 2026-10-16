@@ -9,6 +9,7 @@ function registerListeners() {
     const kind = d.blocked ? 'block' : d.attacker === Game.player ? (d.strike.riposte ? 'riposte' : 'hit') : 'hurt';
     spawnBurst(d.at, F[kind]);
   });
+  events.on('chargeFull', () => Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp));
   events.on('parry', d => { spawnBurst(chest(d.target), F.parry); Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
   events.on('postureBreak', d => {
     spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);
@@ -89,6 +90,8 @@ window.addEventListener('mousedown', () => Game.leaveStartNotice());   // any cl
 for (const type of ['mousedown', 'mouseup', 'auxclick'])
   window.addEventListener(type, ev => { if (ev.button === 3 || ev.button === 4) ev.preventDefault(); });
 document.addEventListener('mousemove', ev => {
+  // Moving the mouse in a menu brings the pointer back (after a gamepad hid it).
+  if (!document.pointerLockElement && Game.mode !== 'play' && Math.abs(ev.movementX) + Math.abs(ev.movementY) > 3) input.use('keyboard');
   if (document.pointerLockElement === canvas) Game.mouseLook(ev.movementX, ev.movementY);
 });
 // Leaving pointer capture (the browser uses Escape for this) opens the pause menu.
@@ -135,8 +138,9 @@ function frame(now) {
   const frameDt = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
+  document.body.classList.toggle('no-cursor', Game.mode === 'play' || input.device === 'pad');   // pointer only for mouse-driven menus
   if (Game.mode !== 'play' || Game.manualClock) { accumulator = 0; return; }   // menus, pause, or tests stepping by hand
-  accumulator += frameDt;
+  accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
   if (accumulator >= CONFIG.step) accumulator = 0;   // stalled tab: drop the backlog instead of catching up

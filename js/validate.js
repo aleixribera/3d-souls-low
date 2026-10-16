@@ -29,6 +29,7 @@ function validateData() {
     if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
     if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
       `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
+    if (Array.isArray(a.hits) && a.hits.length) checkAttackAnim(a, tag, need);   // four-phase fields (js/attack-anim.js)
   };
   // Enemies
   const ids = new Set();
@@ -56,7 +57,10 @@ function validateData() {
   }
   // Player and items
   const M = PLAYER_DEF.moveset;
-  for (const a of Object.values(M.attacks)) checkAttack(a, 'Player');
+  for (const a of Object.values(M.attacks)) {
+    checkAttack(a, 'Player');
+    for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
+  }
   for (const group of ['ground', 'air'])
     for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);

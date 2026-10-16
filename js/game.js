@@ -10,7 +10,7 @@ const Game = {
   duelId: null, duel: null,   // arena opponent
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
-  player: null, enemies: [], zones: [], hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
+  player: null, enemies: [], zones: [], renderHooks: [], timeScale: 1, hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0, lockHidden: 0, restartArm: 0,
   retarget: true,        // always-retarget lock-on (see updateLock): off once Q lets go of a lock
   spawn: null, deathTimer: 0,
@@ -377,9 +377,9 @@ const Game = {
       { id: 'move', text: () => `Walk around ${moveLabel()}`, check: (g, t) => t.dist >= 5 },
       { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === PS.JUMP },
       { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === PS.ROLL },
-      { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}`,
+      { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}. Keep pressing to chain a three-hit combo`,
         on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'light' },
-      { id: 'heavy', dummies: 'one', text: () => `Hit the dummy with a heavy attack ${B('heavy')}: slower, stronger`,
+      { id: 'heavy', dummies: 'one', text: () => `Hit the dummy with a heavy attack ${B('heavy')}. Hold it to charge a stronger blow`,
         on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'heavy' },
       { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
         on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
@@ -768,10 +768,11 @@ const Game = {
       f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
     });
     updateDust(t);
-    swordTrail.update(p.state === PS.JUMP_ATTACK, p.rig);
+    swordTrail.update(p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox), p.rig);   // only while the blade can hit
     groundFx.update(frameDt);
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);
+    for (const hook of this.renderHooks) hook(this, placed);   // developer overlays (js/debug-combat.js)
     hud.update(this, frameDt);
     visuals.render(this, t, frameDt);
   },

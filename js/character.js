@@ -8,6 +8,9 @@ function attackTimeline(a, t) {
     t -= h.startup;
     if (t < h.active) return { phase: PHASE.ACTIVE, hitIndex: i, p: t / h.active };
     t -= h.active;
+    const f = h.follow || 0;
+    if (t < f) return { phase: PHASE.FOLLOW, hitIndex: i, p: t / f };
+    t -= f;
   }
   return { phase: PHASE.RECOVERY, hitIndex: a.hits.length - 1, p: Math.min(1, t / a.recovery), done: t >= a.recovery };
 }
@@ -15,12 +18,15 @@ function attackTimeline(a, t) {
 function poseAttack(rig, attack, phase, p, hitIndex = 0) {
   lookup(ANIMS, attack.anim, 'animation', 'sweep')(rig, phase, p, hitIndex % 2 ? -1 : 1);
 }
-// Hurt (short flinch) and stagger (longer, wobbling) poses, shared.
-function flinchPose(r, stagger, p, tt) {
+// Hurt (short flinch, as big as the hit: k) and stagger (an off-balance stumble back, arms flung wide, wobbling).
+function flinchPose(r, stagger, p, tt, k = 1) {
   const arc = Math.sin(clamp(p, 0, 1) * Math.PI);
-  if (!stagger) { r.tip.rotation.x = -0.17 * arc; return; }
-  r.tip.rotation.x = -0.31 * arc;
-  r.spin.rotation.z = Math.sin(tt * 8.5) * 0.11; r.armL.rotation.x = 0.3; r.armR.rotation.x = 0.3;
+  if (!stagger) { r.tip.rotation.x = -0.17 * arc * k; r.spin.rotation.y = 0.12 * arc * k; return; }
+  const back = Math.sin(clamp(p * 1.6, 0, 1) * Math.PI * 0.5) * (1 - ease(clamp((p - 0.7) / 0.3, 0, 1)));   // out fast, back slowly
+  r.tip.rotation.x = -0.42 * back; r.crouch(0.14 * back);
+  r.legR.rotation.x += 0.45 * back; r.kneeR.rotation.x += 0.35 * back; r.legL.rotation.x -= 0.2 * back;   // a step back to catch the fall
+  r.spin.rotation.z = Math.sin(tt * 8.5) * 0.13 * (0.4 + back);
+  r.armL.rotation.set(-0.5 * back, 0, 0.9 * back); r.armR.rotation.set(-0.7 * back, 0, -0.8 * back); r.head.rotation.x = -0.35 * back;
 }
 function deathPose(rig, tt, fade) {
   rig.tip.rotation.x = -Math.PI / 2 * ease(tt / 0.9);

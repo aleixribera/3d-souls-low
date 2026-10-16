@@ -10,7 +10,7 @@ if (DEV) (() => {
   function open(id) {
     if (lab) return;
     const ids = Object.keys(MODEL_DEFS);
-    const root = document.createElement('div');
+    const root = document.createElement('div'); root.dataset.cursor = '';   // keeps the pointer over the lab
     root.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0d0c0f;color:#cfc8b8;font:12px/1.3 monospace;';
     const canvas = document.createElement('canvas'); canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
     const bar = document.createElement('div'); bar.style.cssText = 'position:absolute;top:8px;left:8px;right:8px;display:flex;gap:8px;align-items:center;z-index:2;';

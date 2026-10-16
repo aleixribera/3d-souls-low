@@ -475,6 +475,99 @@
     for (let i = 0; i < seconds / STEP; i++) { holdAt(Game.duel, r); sim.step(); }
     return starts.map(s => s.attack.id);
   };
+  test('four-phase attacks: the light attack has a hitbox only while its strike is active', () => {
+    const a = A.PLAYER_DEF.moveset.attacks.light, h = a.hits[0];
+    expect.ok(a.pose && h.follow > 0, 'the light attack is key-posed with a follow-through');
+    expect.ok(attackTimeline(a, h.startup + h.active + h.follow * 0.5).phase === PHASE.FOLLOW, 'follow-through sits between strike and recovery');
+    Game.startLevel('tutorial'); sim.begin();
+    const p = Game.player, phases = [], marks = [];
+    A.events.on('attackPhase', d => { if (d.actor === p) phases.push(d.phase); });
+    A.events.on('attackMarker', d => { if (d.actor === p) marks.push(d.marker.event); });
+    p.startAttack(a, { x: 0, z: 0, has: false }, null, []);
+    let wrong = 0, on = 0;
+    while (p.state === PS.ATTACK) {
+      sim.step();
+      const ph = attackTimeline(a, p.stateTime).phase;
+      if (!!p.hitbox !== (ph === PHASE.ACTIVE)) wrong++;
+      if (p.hitbox) on++;
+    }
+    expect.ok(wrong === 0 && on > 0, `hitbox follows the active phase (${on} steps on, ${wrong} wrong)`);
+    expect.ok(phases.join() === [PHASE.STARTUP, PHASE.ACTIVE, PHASE.FOLLOW, PHASE.RECOVERY].join(), `phases in order: ${phases.join()}`);
+    expect.ok(marks.includes('sound'), 'the swing sound marker fired');
+  });
+  test('player combo: light presses chain diagonal -> backhand -> overhead -> diagonal', () => {
+    Game.startLevel('tutorial'); sim.begin();
+    const p = Game.player, seen = [];
+    for (let i = 0; i < 300 && seen.length < 4; i++) {
+      if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
+      if (i % 6 === 0) sim.press('light');
+      sim.step(); p.stamina = p.maxStamina;
+    }
+    expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light', `chain: ${seen.map(a => a.id).join()}`);
+  });
+  test('input buffer: early mashing is dropped; a late press is kept, the latest wins, and fires at the cancel point', () => {
+    Game.startLevel('tutorial'); sim.begin();
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy, cancel = phaseSpan(H, 'recovery')[0];
+    sim.press('heavy'); sim.step(2); sim.press('roll'); sim.step(2);
+    expect.ok(!p.buffer, 'a roll pressed at the start of a heavy is dropped');
+    sim.until(() => p.state === PS.ATTACK && cancel - p.attackT < CONFIG.player.bufferWindow * 0.8, 120);
+    sim.press('roll'); sim.step();
+    expect.ok(p.buffer && p.buffer.action === 'roll', 'a roll pressed near the end is remembered');
+    sim.press('light'); sim.step();
+    expect.ok(p.buffer && p.buffer.action === 'light', 'a later attack press replaces it');
+    for (let i = 0; i < 90 && p.attack.id === 'heavy' && p.state === PS.ATTACK; i++) sim.step();
+    expect.ok(p.state === PS.ATTACK && p.attack.id === 'light' && p.attackT < 0.05, 'the attack came out at the start of recovery');
+    sim.until(() => attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 60); sim.press('roll');
+    sim.until(() => p.state === PS.ROLL, 60);
+    const L = A.PLAYER_DEF.moveset.attacks.light;
+    expect.ok(p.attackT >= phaseSpan(L, 'recovery')[0] - 1e-6, `a roll from the follow-through waits for recovery (${p.attackT.toFixed(2)} s in)`);
+    sim.step(5); sim.press('roll'); sim.step(2);
+    expect.ok(!p.buffer, 'a roll mashed early in a roll is dropped');
+    sim.until(() => CONFIG.player.rollTime - p.stateTime < 0.2, 60); sim.press('roll');
+    sim.until(() => p.state !== PS.ROLL, 60); sim.step();
+    expect.ok(p.state === PS.ROLL, 'one pressed at the end of a roll chains into the next');
+  });
+  test('heavy charge: the feet stay planted while held', () => {
+    Game.startLevel('tutorial'); sim.begin();
+    const p = Game.player;
+    sim.hold('heavy'); sim.until(() => p.charge === 1, 120);
+    const x = p.x, z = p.z; sim.seconds(0.5);
+    expect.ok(Math.hypot(p.x - x, p.z - z) < 0.03, `moved ${Math.hypot(p.x - x, p.z - z).toFixed(3)} m while charging`);
+    sim.release('heavy'); sim.seconds(2);
+  });
+  test('impact: heavy hits shake the camera, light ones do not; trails follow active swings', () => {
+    Game.startFight('hollow'); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, hit = id => { Game.shake = 0; A.events.emit('strike', { strike: makeStrike(A.PLAYER_DEF.moveset.attacks[id]), attacker: Game.player, target: e, at: e, blocked: false }); return Game.shake; };
+    expect.ok(hit('light') === 0 && hit('heavy') > 0, 'light steady, heavy jolts');
+  });
+  test('Hollow Soldier: tracks you through the early wind-up, then commits; glint at the parry window; no hitbox in follow-through', () => {
+    Game.startFight('hollow'); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, p = Game.player;
+    expect.ok(sim.until(() => e.state === ES.WINDUP, 600) >= 0, 'it attacks');
+    const a = e.attack, h = a.hits[0];
+    sim.until(() => !e.isTracking(), 120);
+    expect.near(e.stateTime, h.startup * a.tracking.commit, STEP * 1.5, 'commits at its commit point');
+    const yaw = e.yaw; p.x += Math.cos(e.yaw) * 2.5; p.z -= Math.sin(e.yaw) * 2.5; p.savePrev();   // sidestep
+    sim.until(() => e.state === ES.ACTIVE, 120);
+    expect.near(e.yaw, yaw, 1e-6, 'and no longer turns to follow a sidestep');
+    expect.near(markerTime(a, a.markers[0]), h.startup - CONFIG.parry.lead, 1e-9, 'the glint marks the parry window opening');
+    sim.until(() => e.stateTime >= h.active + STEP, 30);
+    expect.ok(e.state === ES.ACTIVE && !e.hitbox, 'follow-through: still swinging, no hitbox');
+  });
+  test('player heavy: holding charges (frozen wind-up, more damage), a tap does not', () => {
+    Game.startLevel('tutorial'); sim.begin();
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy;
+    sim.release('heavy'); sim.press('heavy'); sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.ACTIVE, 120);
+    const tap = p.payload.damage, tapTime = p.stateTime;
+    sim.seconds(2.5);
+    sim.hold('heavy'); sim.step(2); sim.seconds(H.hits[0].startup * H.charge.at + H.charge.hold * 0.5);
+    expect.ok(p.charge === 1 && p.chargeT > 0, 'still held: coiling, the wind-up frozen');
+    sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.ACTIVE, 120);   // full charge releases itself
+    sim.release('heavy');
+    expect.near(tap, H.damage, 0.01, 'a tap does normal damage');
+    expect.near(p.payload.damage, H.damage * H.charge.mul, 0.01, 'a full charge does charge.mul x damage');
+    expect.ok(p.stateTime > tapTime + H.charge.hold * 0.9, 'the hold lengthened the wind-up');
+  });
   test('player: 1.2x health, 1.6x stamina, a lighter heavy attack', () => {
     const S = A.PLAYER_DEF.stats;
     expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
@@ -554,7 +647,7 @@
     expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'posture bar at the top of the screen');
     expect.ok(makeStrike(A2('bellSlam')).rollOnly && !!A2('bellSlam').impact, 'slam: roll-only, with a ground flash');
     expect.ok(makeStrike(A2('bellShove')).shove && A2('bellShove').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
-    expect.ok(A2('bellSweep').track > 0, 'sweep: tracks');
+    expect.ok(A2('bellSweep').tracking.rate > 0, 'sweep: tracks');
     let n = 0;
     while (e.state !== ES.BROKEN && n++ < 30) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(10); }
     expect.ok(e.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
@@ -692,12 +785,11 @@
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
     const lancer = A.ENEMY_BY_ID.lancer, jab = lancer.attacks.find(a => a.id === 'lancerJab');
     const e = sim.spawn({ ...lancer, approach: 0 }, 30, 0, undefined, -Math.PI / 2), p = Game.player;   // never steps in by chance
-    let waited = 0;
-    sim.until(() => {   // holding far out, ready: 2 s without attacking is longer than its cooldown
+    sim.until(() => {   // holding far out between attacks
       sim.place(20, 0);
-      waited = e.state === ES.CHASE && Math.hypot(e.x - p.x, e.z - p.z) > 7 ? waited + STEP : 0;
-      return waited > lancer.cooldown[1] + 0.5;
+      return e.state === ES.CHASE && !e.stepIn && Math.hypot(e.x - p.x, e.z - p.z) > 7;
     }, 40);
+    e.cooldown = 0;   // and ready to strike
     const a = Math.atan2(p.x - e.x, p.z - e.z), at = [e.x + Math.sin(a) * (jab.range + 0.6), e.z + Math.cos(a) * (jab.range + 0.6)];
     const n = starts.length;
     sim.until(() => { sim.place(at[0], at[1]); return starts.length > n; }, 1.5);   // the player stops just out of its jab's reach
@@ -1461,7 +1553,7 @@
   test('Pillager Captain: its three-cut combo can be parried, its overhead only rolled, its thrust comes only from mid range', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
     const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), over = e.def.attacks.find(a => a.rollOnly);
-    expect.ok(combo && combo.track > 0 && !makeStrike(combo).rollOnly, 'a tracking three-cut combo, not roll-only');
+    expect.ok(combo && combo.tracking.rate > 0 && !makeStrike(combo).rollOnly, 'a tracking three-cut combo, not roll-only');
     faceOff(e, p, 2); e.beginAttack(combo);
     sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
     sim.until(() => log.includes('parry'), 0.5);

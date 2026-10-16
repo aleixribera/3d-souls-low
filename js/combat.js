@@ -3,14 +3,16 @@
 // 7. Hitbox helper
 // ============================================================================
 // What a landed attack carries, built the same way for both sides.
-function makeStrike(attack, riposte = false) {
-  const E = CONFIG.enemy, R = (riposte && attack.riposte) || {};
+// charge: 0..1 of a held heavy's `charge.hold`, scaling damage, poise and posture up to `charge.mul`.
+function makeStrike(attack, riposte = false, charge = 0) {
+  const E = CONFIG.enemy, R = (riposte && attack.riposte) || {}, Ch = attack.charge;
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
+  const mul = Ch ? lerp(1, Ch.mul, charge) : 1, hsMul = Ch ? lerp(1, Ch.hitstopMul, charge) : 1;
   return {
-    attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove,
-    damage: attack.damage * (R.damage || 1), poise: attack.poise * (R.poise || 1),
-    knock: attack.knock, postureDmg: attack.postureDmg || 0,
-    hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1),
+    attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
+    damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
+    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * mul,
+    hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
 }
 // An oriented box in the owner's frame, tested against a target's upright body cylinder.
