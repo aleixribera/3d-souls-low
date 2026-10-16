@@ -43,7 +43,7 @@ const Game = {
       pause: { title: 'PAUSED', sub: '', overlay: true, items: [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => this.showMenu('options') },
-        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', go: () => { this.reset(); this.showMenu('main'); } },
+        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { this.reset(); this.showMenu('main'); } },
       ] },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: true, back: 'pause', items: [
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
@@ -52,9 +52,11 @@ const Game = {
         { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: 'Default for the F1 hitbox display.', adjust: () => { settings.hitboxes = !settings.hitboxes; } },
         { name: `HUD scale: ${Math.round(settings.hudScale * 100)}%`, desc: 'Size of bars and text.',
           adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
+        { name: `Sound volume: ${settings.volume}`, desc: 'Master volume of effects and menu sounds.',
+          adjust: d => { settings.volume = clamp(Math.round(Number(settings.volume)) + d, 0, 10); } },
         { name: `Graphics: ${visuals.qualityLabel(settings.graphics)}`, desc: 'High: bloom, vignette, grain, light shafts. Low: faster, plainer.',
           adjust: d => { settings.graphics = visuals.nextQuality(settings.graphics, d); } },
-        { name: 'Back', desc: '', go: () => this.showMenu('pause') },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('pause') },
       ] },
     };
   },
@@ -78,8 +80,8 @@ const Game = {
       b.className = 'menuBtn';
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
-      b.addEventListener('click', () => { this.select(i); it.go ? it.go() : this.adjust(1); });
-      b.addEventListener('mouseenter', () => this.select(i));
+      b.addEventListener('click', () => { this.select(i); if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); });
+      b.addEventListener('mouseenter', () => { if (this.selected !== i) events.emit('menuMove'); this.select(i); });
       list.appendChild(b);
     });
     this.select(keepSelection ? this.selected : 0);
@@ -94,8 +96,7 @@ const Game = {
   },
   // One step of directional menu input (keys, D-pad or stick).
   menuStep(dir) {
-    if (dir === 'up') this.select(this.selected - 1);
-    else if (dir === 'down') this.select(this.selected + 1);
+    if (dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' ? -1 : 1)); }
     else this.adjust(dir === 'left' ? -1 : 1);
   },
   select(i) {
@@ -103,20 +104,21 @@ const Game = {
     this.selected = n ? (i + n) % n : 0;
     [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
   },
-  confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) it.go(); else this.adjust(1); },
+  confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
   adjust(d) {
     const it = this.screens()[this.screen].items[this.selected];
     if (!it.adjust) return;
     it.adjust(d); saveSettings(); applySettings();
+    events.emit('menuAdjust', { dir: d });
     this.showMenu(this.screen, true);
   },
   // The start notice: any key, click or gamepad button moves on to the main menu (and does nothing else).
   onStartNotice() { return this.mode === 'menu' && this.screen === 'start'; },
-  leaveStartNotice() { if (this.onStartNotice()) this.showMenu('main'); },
+  leaveStartNotice() { if (this.onStartNotice()) { events.emit('menuConfirm'); this.showMenu('main'); } },
   menuBack() {
     const s = this.screens()[this.screen];
     if (this.screen === 'pause') this.resume();
-    else if (s.back) this.showMenu(s.back);
+    else if (s.back) { events.emit('menuBack'); this.showMenu(s.back); }
   },
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
   pause(fromPointer) {

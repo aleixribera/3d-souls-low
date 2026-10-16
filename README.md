@@ -63,5 +63,6 @@ It plays the real game with a manual clock (scripted movement, no rendering dela
 The game data lives in `js/data/` and `js/levels/` and is checked when the page loads; a broken reference shows a readable error instead of starting.
 
 - **Enemies:** add an entry with a unique `id` to `ENEMY_DEFS` (any position). Animations, weapons and idle styles must exist in `ANIMS`, `WEAPONS` and `IDLE_STYLES`.
+- **Sounds:** every sound is a recipe of noise and tone layers in `js/data/audio.js`, built live by the engine in `js/audio.js` (no audio files). Add a recipe, then play it from an event listener at the bottom of `js/audio.js`. Sound volume is in Options.
 - **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see CLAUDE.md.
 - **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.

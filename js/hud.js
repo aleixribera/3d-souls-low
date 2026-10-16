@@ -296,4 +296,5 @@ function applySettings() {
   hud.toggle.checked = settings.hitboxes;
   hud.layout();
   visuals.setQuality(settings.graphics);
+  audio.setVolume(clamp(Number(settings.volume), 0, 10) / 10);
 }

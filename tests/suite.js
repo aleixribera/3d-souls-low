@@ -1698,6 +1698,54 @@
     expect.near(hud.scale, u, 0.001, 'the stage scale fits the window');
   });
 
+
+  // ---- audio: rendered offline, so no speakers or user gesture are needed ---------------------------------------
+  async function renderSound(id, opts) {
+    const sr = 44100, ctx = new OfflineAudioContext(2, sr * 3.6, sr), m = new AudioManager();
+    m.init(ctx); m.play(id, opts || { vel: 1 });
+    const buf = await ctx.startRendering(), L = buf.getChannelData(0), R = buf.getChannelData(1);
+    // Pitch estimate: the ratio of the signal's change per sample to its size is about 2 sin(pi f / sr) for a tone at f,
+    // weighting every frequency by its energy (so a low thud with a little hiss on top still reads low).
+    let peak = 0, e = 0, de = 0, prev = 0;
+    for (let i = 0; i < L.length; i++) {
+      const v = (L[i] + R[i]) / 2; peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+      e += v * v; de += (v - prev) * (v - prev); prev = v;
+    }
+    return { peak, hz: Math.asin(Math.min(1, Math.sqrt(de / Math.max(e, 1e-12)) / 2)) * sr / Math.PI };
+  }
+  test('audio: the sound data is valid and every recipe renders audibly without clipping', async () => {
+    expect.ok(validateAudio().length === 0, 'validateAudio: ' + validateAudio().join(' | '));
+    for (const id of Object.keys(AUDIO.sounds)) {
+      const r = await renderSound(id);
+      expect.above(r.peak, 0.003, `${id} peak`);
+      expect.below(r.peak, 1.0001, `${id} peak (the limiter keeps it under full scale)`);
+    }
+  });
+  test('audio: footsteps are low and sit well under impacts', async () => {
+    const step = await renderSound('footL', { vel: 0.7 }), hit = await renderSound('hitHurt', { vel: 1 }), swing = await renderSound('swingLight', { vel: 0.7 });
+    expect.below(step.peak, 0.3, 'a footstep peak');
+    expect.below(step.peak, hit.peak * 0.4, 'a footstep against a hit');
+    expect.below(step.peak, swing.peak * 0.6, 'a footstep against a sword swing');
+    expect.below(step.hz, 1200, 'footstep pitch (energy-weighted estimate, Hz)');
+  });
+  test('audio: the voice pool never grows past its limits and hands every strip back', async () => {
+    const ctx = new OfflineAudioContext(2, 44100 * 5, 44100), m = new AudioManager(); m.init(ctx);
+    const ids = Object.keys(AUDIO.sounds);
+    for (let i = 0; i < 400; i++) m.play(ids[i % ids.length], { vel: (i % 10) / 10, pos: { x: (i % 7) - 3, y: 0, z: (i % 5) - 2 } });
+    const s = m.stats();
+    expect.ok(s.busy <= AUDIO.strips && s.active <= AUDIO.voices, `busy ${s.busy}/${AUDIO.strips}, active ${s.active}/${AUDIO.voices}`);
+    expect.ok(s.plays > 0 && s.plays + s.dropped >= 400, 'every request is either played or dropped');
+    await ctx.startRendering();
+    await new Promise(r => setTimeout(r, 50));
+    expect.ok(m.stats().busy === 0, 'all strips are released once the sources end: ' + JSON.stringify(m.stats()));
+  });
+  test('audio: the engine leaves the game\'s random numbers alone', () => {
+    const m = new AudioManager();
+    const keep = Math.random; let calls = 0; Math.random = () => { calls++; return keep(); };
+    try { m.init(new OfflineAudioContext(2, 44100, 44100)); m.play('hitFlesh'); m.play('footL'); } finally { Math.random = keep; }
+    expect.ok(calls === 0, 'audio used Math.random ' + calls + ' times');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;
@@ -1705,7 +1753,7 @@
       if (filter && !t.name.includes(filter)) continue;
       let ok = true, msg = '';
       Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too
-      try { t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
+      try { await t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
       finally { sim.end(); }
       out.push({ name: t.name, ok, msg });
       await new Promise(r => setTimeout(r, 0));   // let the page breathe between tests

@@ -37,6 +37,7 @@ function registerListeners() {
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
   registerHudListeners();
+  registerAudioListeners();
 }
 
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
@@ -108,7 +109,7 @@ function resize() {
 }
 
 // Data check first: a broken reference stops here with a readable message.
-const dataErrors = validateData();
+const dataErrors = validateData().concat(validateAudio());
 if (dataErrors.length) {
   window.__bootError('The game data has problems:\n\n• ' + dataErrors.join('\n• '));
   throw new Error('Game data check failed: ' + dataErrors.join(' | '));

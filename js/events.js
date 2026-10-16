@@ -12,6 +12,7 @@
 //   trapWarning {trap} (the player set a trap off)  trapSprung {trap} (its floor gave way)
 //   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  attackStart {enemy, attack} (an enemy starts an attack)  perilous {enemy, attack} (a roll-only wind-up starts)  lock  switchTarget  zoom {dir}
 //   pause  resume  device {device}
+//   menuMove  menuConfirm  menuBack  menuAdjust {dir}  (menus; the audio engine plays their sounds)
 const events = {
   handlers: {}, anyHandlers: [],
   on(type, fn) { (this.handlers[type] || (this.handlers[type] = [])).push(fn); },
