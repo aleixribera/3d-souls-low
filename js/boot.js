@@ -36,6 +36,7 @@ function registerListeners() {
   events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
+  registerHudListeners();
 }
 
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
@@ -102,6 +103,7 @@ window.addEventListener('wheel', ev => {
 function resize() {
   const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
   visuals.resize(w, h);   // renderer, post-processing and particle sizes
+  hud.layout();           // the HUD stage scale and compact mode
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 

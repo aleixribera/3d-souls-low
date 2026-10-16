@@ -133,6 +133,18 @@ const CONFIG = {
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
+  // HUD (js/hud.js): everything is laid out on a stage of design pixels scaled by min(width / refWidth, height / refHeight),
+  // kept within minScale..maxScale, times the player's HUD scale setting. Below `narrowWidth` design px wide it
+  // switches to the compact layout. Times are seconds. Calm: after `calmDelay` s without a threat the vitals dim
+  // (by `calmDim`) over `calmFadeOut` s; any threat brings them back over `calmFadeIn` s.
+  hud: { refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
+         trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, emptyPulse: 0.6, refundPulse: 0.45,
+         lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
+         calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
+         tallyHold: 1.4, postureWarn: 0.8, perilousTime: 1, perilousRange: 12,
+         toastTime: 3.2, maxToasts: 3, objectiveLabel: 'Barricades', objectivePulse: 1.2,
+         text: { restBlocked: 'Enemies too close to rest', perilous: 'Perilous' },
+         toasts: { gateOpened: 'The barricade lifts', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
         trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,

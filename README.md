@@ -2,13 +2,6 @@
 
 A small Souls-like 3D action game that runs straight from one HTML file (Three.js from a CDN, no build step).
 
-! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
-
-## Play
-
-- **Online:** open the GitHub Pages link for this repo (Settings → Pages).
-- **Locally:** download the repository (the HTML file together with the `js` folder) and double-click `combat-arena-3d.html`. It needs internet access once to load Three.js.
-
 Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls. The game plays best with a gamepad: it opens on a short notice saying so, and any key, click or gamepad button carries on to the main menu (once per visit). The version shows in the bottom-right corner of the menus.
 
 ## Modes
@@ -22,21 +15,11 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 
 ## Coming next (planned)
 
+- Texture Update
+- Sound Effects Update
+- Animations Update
 - A story, an All Levels mode and title cards.
 - Level 5 and the final boss, in the castle on the horizon.
-
-## Versions
-
-Each version is a tagged commit (`git checkout v3.1` to play that one).
-
-- **v3.1 — Heights.** Room levels gain a 2.5D world: floors at heights, ramps and stairs, walls, rails and open edges, ledges you can drop from but not climb, pits, and fall damage (drops over 4.5 m hurt, 14 m kills). Enemies stop at edges and won't chase you up or down, but can be knocked off. Sight, lock-on and the camera work in 3D (the camera stays under walkways). New developer room *Test: Heights* and an automated test suite (see Testing).
-- **v3.2 — Open sky and culling.** Open rooms show the level's sky and distant ruins, and grass grows on open courtyards; lamps are braziers that really light a room. Levels can opt into culling: a fixed pool of real lights follows the nearest light sources (no shader recompiles however many lights a level has), and far, unaware enemies sleep until you come near. New developer room *Test: Courtyard* (twelve enemies, eighteen light sources; culling takes it from 18 real lights to 8).
-- **v3.3 — Bows, shoves and shortcuts.** Enemies can fire arrows: bolts fly with a slight arc, stop at walls and gates, can be blocked or rolled through but never parried, and archers keep shooting while the melee enemies fight. A shove ignores the knockback cap and can throw you off a ledge (block or roll). Shortcut gates open for good from their far side. Test duels *Test: Bowman* and *Test: Shover* are fought on Test: Heights; Test: Courtyard gains a shortcut.
-- **v3.4 — The Tower's enemies, and a sturdier knight.** Six new enemies in the Enemies menu: Ashen Lancer (spear), Executioner (greataxe), Pale Duelist (sword and dagger), Rampart Bowman, Shover and the Bell Warden mini-boss, with new weapons and animations (thrust, chop, spin). Sentries: lookouts that see far and belong to no zone. New developer room *Test: Mixed Crowd*. The player now has 1.2x health (120), 1.6x stamina (160), and a slightly lighter heavy attack (44 to 38 damage).
-- **v3.5 — Level 3: The Tower.** The new level, after Level 2 (finishing Level 2 carries straight on into it): gatehouse, open courtyard, ramparts, tower hall, three walkway levels round the outside of the tower, and the Bell Warden on the bell platform; three bonfires, a postern shortcut and an optional undercroft. It uses every v3 building block: heights and falls, open sky, culling, archers, shoves and shortcut gates.
-- **v3.6 — Reading the distance.** Enemies no longer decide on an attack in advance: each attack has a range window and a chance per second, rolled while you stand inside it, so a Lancer lunges when you keep your distance and never once you are close. Enemies hold at the edge of their reach, circling to surround you (in front too), and now and then step in close. Crowds no longer take turns: every enemy may attack, but less eagerly while others are swinging, and no two attacks start within 0.3 s of each other. Attacks come less often (smaller chances, cooldowns 1.4x longer); strong attacks (dashes, roll-only attacks, shoves) are rare on weak enemies, while the Executioner and the Bell Warden use theirs more. Every level plays this way, Levels 1 and 2 included.
-- **v3.7 — Tutorial and tower fixes.** The tutorial locks you on to the dummy for block and parry, and adds a dodge step: a dummy whose swing is roll-only (blue), with hints when a roll comes too early, too late or clear of it. Tab switches to the nearest enemy in front, stepping outward. Block is C, L, either side mouse button or LB (no more Ctrl, which collided with the browser's Ctrl+W), and the side buttons never send the browser back. No more stall on jump-attack landings or first hits: every effect is drawn once as a level loads. A roof no longer flickers inside the floor above it. Level 3: past the gatehouse the passage floor gives way into the undercroft (an ambush, now part of the route), with a new bonfire at the top of its stairs; the courtyard grate is gone. The game opens on a notice recommending a controller, and the menus show the version.
-- **v4.0 — The Burning Town.** A new Level 3 between the Sunken Keep and the Tower (which becomes Level 4): a sacked, burning town at sunset, climbed street by street to its upper gate, with the castle on the horizon. It brings the Tower's Lancer, Bowman and Duelist in one at a time before they meet in crowds, and ends on a new mini-boss, the **Pillager Captain** (a halberd glowing with embers: a dashing thrust, a three-cut combo you can parry, an overhead you can only roll). New building blocks for room levels: **houses** (timber-framed fronts, tiled roofs, towers with spires; some burning, some ruined; some you can walk into), **props** (carts, stalls, a fountain, a well, crates, heaps: solid, they stop arrows, and enemies walk round them), **barricade gates** that topple instead of lifting, a far **landmark** castle, smoke and embers, and street clutter. **Lock-on** holds through cover for a moment instead of dropping at every corner, and always retargets to the enemy fighting you that is most centred and closest (archers only when near or alone); pressing Q to let go turns that off until you lock on again, rest, die or start a level. New developer room *Test: Town*.
 
 ## Controls
 
@@ -49,7 +32,7 @@ Each version is a tagged commit (`git checkout v3.1` to play that one).
 | Light attack | J / Left mouse | RB / R1 |
 | Heavy attack | K / Right mouse | RT / R2 |
 | Jump attack | Light or heavy while airborne | Light or heavy while airborne |
-| Block (hold) | L / C / side mouse buttons | LB / L1 |
+| Block (hold) | L / C | LB / L1 |
 | Parry | E | LT / L2 |
 | Lock-on | Q | Right stick click (R3) |
 | Switch target | Tab (the nearest enemy in front, then the next further away) | Flick the right stick left or right |
@@ -63,7 +46,7 @@ Each version is a tagged commit (`git checkout v3.1` to play that one).
 
 On-screen prompts show keys or gamepad buttons, whichever you used last.
 
-! IMPORTANT ! More controls and features exist, this list was only used for the first version of the game
+! IMPORTANT ! More controls and features exist, this list was only used for the prototyping versions of the game
 
 ## Testing
 
@@ -80,5 +63,5 @@ It plays the real game with a manual clock (scripted movement, no rendering dela
 The game data lives in `js/data/` and `js/levels/` and is checked when the page loads; a broken reference shows a readable error instead of starting.
 
 - **Enemies:** add an entry with a unique `id` to `ENEMY_DEFS` (any position). Animations, weapons and idle styles must exist in `ANIMS`, `WEAPONS` and `IDLE_STYLES`.
-- **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see RULES.md.
+- **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see CLAUDE.md.
 - **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.

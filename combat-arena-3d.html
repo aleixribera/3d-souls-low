@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Combat Arena 3D</title>
 <style>
-  :root { --hud: 1; --died-delay: 0.6s; --died-fade: 2.2s; --died-hint-delay: 2.6s; --dying-fade: 1.4s; }
+  :root { --died-delay: 0.6s; --died-fade: 2.2s; --died-hint-delay: 2.6s; --dying-fade: 1.4s; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #07060a; color: #cfc6ad;
     font-family: Georgia, 'Times New Roman', serif; user-select: none; }
   canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; transition: filter 0.6s; }
@@ -42,53 +42,147 @@
   #bootError h2 { margin: 0 0 12px; font-weight: normal; letter-spacing: 4px; color: #d0705a; font-size: 20px; }
   #bootError .msg { white-space: pre-line; font-size: 14px; line-height: 1.55; color: #d9cda8; }
 
-  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden;
+    --u: 1; --mx: 30px; --my: 24px; --calm: 0; --calm-dim: 0.5; --toast-time: 3.2s;
+    --gilt: #c9a85e; --gilt-dim: #6e5d36; --ink: #e2d6b0; }
   #hud.hidden { display: none; }
-  /* HUD: dark, minimal, gilt hairlines. Every bar sits on a near-black plate with a dark outline, so it reads
-     on bright skies and in black corridors alike. */
-  .bar { position: relative; background: linear-gradient(#060506f0, #120f0ef0); border: 1px solid #6e5d36; overflow: hidden;
-    box-shadow: 0 0 0 1px #000000d0, inset 0 0 0 1px #00000080, 0 2px 8px #000000a0; }
+  /* Layout: everything but the overhead tags and the vignette lives on #stage, a box of "design pixels" scaled by
+     --u (set from the window size by hud.layout) and pinned to the top-left corner, so the anchors below keep
+     their corners and their proportions on any window size or aspect ratio. Each anchor is a flex column: its
+     children stack instead of overlapping, and reserve their room even when invisible, so nothing jumps. */
+  #stage { position: absolute; left: 0; top: 0; width: calc(100% / var(--u)); height: calc(100% / var(--u));
+    transform: scale(var(--u)); transform-origin: 0 0; }
+  .anchor { position: absolute; display: flex; flex-direction: column; gap: 10px; }
+  #aTL { left: var(--mx); top: var(--my); align-items: flex-start; }
+  #aTC { left: 0; right: 0; top: var(--my); align-items: center; }
+  #aTR { right: var(--mx); top: var(--my); align-items: flex-end; }
+  #aBC { left: 0; right: 0; bottom: 13%; align-items: center; gap: 6px; }
+  #aBL { left: var(--mx); bottom: 16px; align-items: flex-start; justify-content: flex-end; }
+
+  /* Meters: a near-black plate in a gilt hairline, bevelled (light edge on top, dark edge below, a shadow cut
+     round the rim), so every bar reads on bright skies and in black corridors alike. */
+  .bar { position: relative; overflow: hidden; background: linear-gradient(#030203f4, #14100ff0); border: 1px solid var(--gilt-dim);
+    box-shadow: 0 0 0 1px #000000d8, inset 0 1px 0 #ffffff14, inset 0 -1px 0 #000000a0, inset 0 0 6px #000000b0, 0 2px 9px #000000a8;
+    transition: border-color 0.2s, box-shadow 0.2s; }
   .bar > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
-  .bar::after { content: ''; position: absolute; inset: 0; pointer-events: none;   /* faint sheen over the fill */
-    background: linear-gradient(#ffffff22, #ffffff00 45%, #00000040); }
-  #pBars { position: absolute; left: 30px; top: 22px; padding-left: 12px; transform: scale(var(--hud)); transform-origin: top left; }
-  #pBars::before { content: ''; position: absolute; left: 0; top: -4px; height: 40px; width: 1px;   /* gilt spine */
-    background: linear-gradient(#c9a85e00, #c9a85e 30%, #c9a85e 70%, #c9a85e00); }
-  #pBars::after { content: ''; position: absolute; left: -3px; top: 9px; width: 6px; height: 6px; transform: rotate(45deg);
-    background: #c9a85e; box-shadow: 0 0 6px #000; }
-  #pHp { width: min(320px, 24vw); height: 13px; }
-  #pSt { width: min(260px, 20vw); height: 8px; margin-top: 5px; }
-  #pFlasks { margin-top: 14px; height: 18px; }
+  .bar::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3;   /* sheen, and a fine tick every tenth */
+    background: linear-gradient(#ffffff2c, #ffffff00 48%, #00000050),
+      repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), #00000070 calc(10% - 1px) 10%); }
+  .bar > .hp::after, .bar > .st::after, .bar > .po::after {   /* a bright, glowing leading edge on each fill */
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 2px; background: #fff6d8c0; box-shadow: 0 0 7px 1px var(--glow, #ffd890); }
+  .trail { background: linear-gradient(#ecd896, #b89a52); z-index: 0; }
+  .hp { background: linear-gradient(#cc4034, #8a1c14 52%, #50100b); --glow: #ff7a60; z-index: 1; }
+  .st { background: linear-gradient(#7cb068, #467a3c 52%, #274c22); --glow: #b8f090; z-index: 1; }
+  .po { background: linear-gradient(#f4d27a, #bc8a30 52%, #7c5a1c); --glow: #ffe49a; z-index: 1; }
+  #pStTrail { background: linear-gradient(#cfe0a8, #8aa466); opacity: 0.8; }
+
+  /* Player vitals, top left. Dims when calm (--calm 0..1), brightens and swells back at the first threat. */
+  #pBars { position: relative; padding: 14px 40px 12px 18px; transform-origin: top left;
+    opacity: calc(1 - var(--calm) * var(--calm-dim)); transform: scale(calc(1 - var(--calm) * 0.06)); }
+  #pBars::before { content: ''; position: absolute; inset: 0 0 0 0; z-index: -1; pointer-events: none;   /* soft plate behind the bars */
+    background: radial-gradient(ellipse at 0 50%, #000000a8, #00000000 72%); }
+  #pBars::after { content: ''; position: absolute; left: 0; top: 10px; bottom: 8px; width: 1px;   /* gilt spine, a diamond at its head */
+    background: linear-gradient(#c9a85e00, var(--gilt) 25%, var(--gilt) 75%, #c9a85e00); }
+  #pHp, #pSt { transform-origin: left center; }
+  #pHp { width: 320px; height: 14px; }
+  #pSt { width: 258px; height: 8px; margin-top: 5px; }
+  #pHp.hit { animation: barShake var(--hit-shake, 0.3s) linear; }
+  #pHp.heal { border-color: #f0dca0; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 2px #ffd88a90, inset 0 0 8px #ffe8b080; }
+  #pHp.heal .hp { filter: brightness(1.45) saturate(0.85); }
+  #pHp.low { animation: lowPulse 0.9s ease-in-out infinite; }
+  #pHp.low .hp { filter: brightness(1.2); }
+  #pSt.refund { border-color: #d8f0b0; box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #b8f09080; }
+  #pSt.waiting .st { filter: saturate(0.55) brightness(0.8); }      /* regeneration paused */
+  #pSt.empty, #pSt.winded { border-color: #c4402e; }
+  #pSt.empty { animation: emptyPulse 0.6s ease-out; }
+  #pSt.winded .st { background: linear-gradient(#b86a50, #7a3a28 52%, #4a2014); --glow: #ff9070; }
+  #pSt.winded { animation: windedPulse 0.7s ease-in-out infinite; }
+  @keyframes barShake { 0% { transform: translateX(0); } 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); }
+    70% { transform: translateX(-2px); } 100% { transform: translateX(0); } }
+  @keyframes lowPulse { 50% { border-color: #e0604a; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 3px #d0301c90, inset 0 0 6px #000000b0; } }
+  @keyframes emptyPulse { 0% { box-shadow: 0 0 0 1px #000000d8, 0 0 16px 4px #ff4a30c0; transform: scaleY(1.9); } 100% { transform: scaleY(1); } }
+  @keyframes windedPulse { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 10px 2px #d0402880; } }
+
+  #pFlasks { margin-top: 12px; height: 18px; transition: opacity 0.3s; opacity: calc(1 - var(--calm) * 0.5); }
   .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
-    border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #0d0b0a; box-shadow: 0 0 0 1px #000c; }
+    border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #0d0b0a; box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12;
+    transition: box-shadow 0.3s, border-color 0.3s; }
   .flask::before { content: ''; position: absolute; left: 3px; top: -5px; width: 3px; height: 4px;
     border: 1px solid #5d5132; border-bottom: none; background: #0d0b0a; }
   .flask.full { border-color: #d9a456; background: radial-gradient(circle at 50% 70%, #ffe09a, #f08a2a 50%, #7a3a0e);
     box-shadow: 0 0 0 1px #000c, 0 0 9px #f0902fb0; }
   .flask.full::before { border-color: #d9a456; }
-  .trail { background: linear-gradient(#e6cf8a, #b89a52); }
-  .hp { background: linear-gradient(#b8342a, #7c1a13 55%, #4c0c08); }
-  .st { background: linear-gradient(#6a9a58, #3c6a34 55%, #22421e); }
-  .po { background: linear-gradient(#f0cc70, #b8862e 55%, #7a561a); }
-  #eBars { position: absolute; left: 50%; top: 22px; transform: translateX(-50%) scale(var(--hud)); transform-origin: top center; text-align: center; }
-  #eBars.hidden { visibility: hidden; }
-  #eName { font-size: 16px; letter-spacing: 4px; color: #e2d6b0; text-shadow: 0 0 3px #000, 0 0 10px #000; margin-bottom: 6px;
-    font-variant: small-caps; }
-  #eName::before, #eName::after { content: '\25C6'; font-size: 8px; color: #c9a85e; vertical-align: middle; margin: 0 12px; }
-  #eHp { width: 46vw; max-width: 620px; height: 10px; }
-  #ePost { width: 46vw; max-width: 620px; height: 5px; margin-top: 3px; }
+  .flask.pop { animation: flaskPop 0.7s ease-out; }
+  @keyframes flaskPop { 0% { transform: translateY(0) scale(1.5); box-shadow: 0 0 0 1px #000c, 0 0 20px 6px #ffc060; }
+    40% { transform: translateY(-4px) scale(1.15); } 100% { transform: none; } }
+  #pFlasks.dry .flask { border-color: #7a3a2c; }
+  #pFlasks.dry { animation: dryNudge 1.6s ease-in-out infinite; }
+  @keyframes dryNudge { 50% { opacity: 1; } }
+
+  /* Boss bar, top centre: fades and settles in, never blinks. Its slot is reserved, so the lines below never move. */
+  #eBars { text-align: center; transition: opacity 0.45s, transform 0.45s; position: relative; min-height: 50px; }
+  #eBars.hidden { opacity: 0; transform: translateY(-8px); visibility: hidden; transition: opacity 0.35s, transform 0.35s, visibility 0s 0.35s; }
+  #eName { font-size: 16px; letter-spacing: 4px; color: var(--ink); text-shadow: 0 0 3px #000, 0 0 10px #000; margin-bottom: 6px;
+    font-variant: small-caps; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  #eName::before, #eName::after { content: '\25C6'; font-size: 8px; color: var(--gilt); vertical-align: middle; margin: 0 12px; }
+  #eHp, #ePost { width: clamp(0px, calc(100vw / var(--u) - 840px), 620px); }   /* clear of the vitals on its left (and the objective on its right) */
+  #eHp { height: 11px; }
+  #ePost { height: 5px; margin-top: 3px; }
   #ePost.hidden { display: none; }
+  #ePost.warn { border-color: #f4d27a; animation: postWarn 0.5s ease-in-out infinite; }
+  @keyframes postWarn { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #ffd060a0; } }
+  #eDmg { position: absolute; right: 0; top: 1px; font-size: 15px; letter-spacing: 1px; color: #f0d890; opacity: 0;
+    text-shadow: 0 0 4px #000, 0 0 10px #000; transition: opacity 0.4s; font-variant-numeric: tabular-nums; }
+  #eDmg.show { opacity: 1; transition: opacity 0.08s; }
+
+  /* Overhead tags, in screen space. */
   #eTags { position: absolute; inset: 0; overflow: hidden; }
-  .eTag { position: absolute; left: 0; top: 0; width: 64px; height: 5px; background: #060506e0; border: 1px solid #6e5d36;
-    box-shadow: 0 0 0 1px #000000c0; overflow: hidden; display: none; }
+  .eTag { position: absolute; left: 0; top: 0; width: 64px; height: 5px; background: #060506e0; border: 1px solid var(--gilt-dim);
+    box-shadow: 0 0 0 1px #000000c0; overflow: hidden; display: none; opacity: 0.72; }
   .eTag > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
-  .eTag.locked { border-color: #f0e0a8; }
+  .eTag.locked { border-color: #f0e0a8; opacity: 1; box-shadow: 0 0 0 1px #000000c0, 0 0 8px #f0e0a860; }
   .eTag.eGuard { height: 3px; }
   .eTag.eGuard.broken .po { filter: brightness(2.2); }
-  #helpHint { position: absolute; left: 22px; bottom: 16px; font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000;
-    transform: scale(var(--hud)); transform-origin: bottom left; }
-  #help { position: absolute; left: 22px; bottom: 40px; background: #0d0b10e8; border: 1px solid #7d6a3a;
-    padding: 12px 16px; font-size: 13px; line-height: 1.5; pointer-events: auto; transform: scale(var(--hud)); transform-origin: bottom left; }
+
+  /* Objective, top right: a row of pips, one per barricade; the lit ones are lifted. */
+  #objective { text-align: right; opacity: calc(1 - var(--calm) * 0.35); transition: opacity 0.4s; padding: 8px 4px 8px 22px; position: relative; }
+  #objective.hidden { display: none; }
+  #objective::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 100% 50%, #000000a0, #00000000 72%); }
+  #objLabel { font-size: 12px; letter-spacing: 4px; color: #a89868; text-transform: uppercase; text-shadow: 0 0 4px #000; }
+  #objPips { margin-top: 6px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 220px; }
+  .pip { width: 11px; height: 11px; transform: rotate(45deg); border: 1px solid var(--gilt-dim); background: #0b090a;
+    box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12; transition: background 0.5s, box-shadow 0.5s, border-color 0.5s; }
+  .pip.done { background: radial-gradient(circle, #ffe9a8, #c9a85e 70%); border-color: #f0dca0; box-shadow: 0 0 0 1px #000c, 0 0 9px #f0c860a0; }
+  #objCount { margin-top: 7px; font-size: 14px; letter-spacing: 2px; color: var(--ink); text-shadow: 0 0 4px #000; font-variant-numeric: tabular-nums; }
+  #objective.pulse .pip.done:last-child, #objective.pulse #objCount { animation: objPulse var(--obj-pulse, 1.2s) ease-out; }
+  @keyframes objPulse { 0% { filter: brightness(2.4); transform: rotate(45deg) scale(1.6); } 100% { filter: none; } }
+  #objective.pulse #objCount { animation-name: objCountPulse; }
+  @keyframes objCountPulse { 0% { color: #fff4c8; text-shadow: 0 0 12px #ffd070; } 100% { } }
+
+  /* Bottom centre: a warning line, short notices, the interaction prompt. */
+  #perilous { height: 30px; font-size: 18px; letter-spacing: 8px; color: #ff6a4c; text-shadow: 0 0 10px #000, 0 0 16px #c02010; opacity: 0;
+    text-transform: uppercase; white-space: nowrap; }
+  #perilous.show { animation: perilousFlash var(--perilous-time, 1s) ease-out; }
+  #perilous::before, #perilous::after { content: '!'; display: inline-block; margin: 0 14px; padding: 0 9px; border: 1px solid #ff6a4c; transform: skewX(-8deg); }
+  @keyframes perilousFlash { 0% { opacity: 1; transform: scale(1.25); } 15% { transform: scale(1); } 60% { opacity: 1; } 100% { opacity: 0; } }
+  #toasts { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 82px; gap: 4px; }
+  .toast { padding: 3px 18px; font-size: 14px; letter-spacing: 3px; color: #e8dcb8; text-shadow: 0 0 6px #000; white-space: nowrap;
+    background: linear-gradient(90deg, #00000000, #000000a8 25%, #000000a8 75%, #00000000);
+    animation: toastLife var(--toast-time) ease-in-out forwards; }
+  @keyframes toastLife { 0% { opacity: 0; transform: translateY(8px); } 8% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  #prompt, #confirm { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
+    text-shadow: 0 0 6px #000; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; white-space: nowrap; }
+  #prompt.show, #confirm.show { opacity: 1; transform: none; }
+  #prompt.blocked { color: #a89f86; }
+  #prompt.blocked .key { opacity: 0.5; }
+  .key { display: inline-block; min-width: 20px; padding: 3px 8px 4px; text-align: center; font-size: 13px; letter-spacing: 1px; color: #f0e3bd;   /* keycap */
+    background: linear-gradient(#2a241a, #14110c); border: 1px solid #8d7a48; border-radius: 4px; text-shadow: none;
+    box-shadow: 0 2px 0 #000, inset 0 1px 0 #ffffff22, 0 0 10px #c9a85e30; }
+  #confirm { color: #e8c080; }
+
+  /* Bottom left: the help hint. */
+  #help { background: #0d0b10ec; border: 1px solid #7d6a3a; padding: 12px 16px; font-size: 13px; line-height: 1.5; pointer-events: auto;
+    box-shadow: inset 0 1px 0 #ffffff10, 0 4px 18px #000000a0; }
   #help.hidden { display: none; }
   #help table { border-collapse: collapse; }
   #help td { padding: 0 14px 0 0; }
@@ -96,6 +190,13 @@
   #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
   #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
   #help .level:empty { display: none; }
+  #helpHint { font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000; transition: opacity 0.4s; opacity: calc(1 - (1 - var(--calm)) * 0.7); }
+
+  /* Edge vignette: red at low health, a flare when hurt. Opacity comes from hud.js. */
+  #vignette { position: absolute; inset: 0; opacity: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, #00000000 52%, #6a0a06b0 100%); }
+
+  /* Banners, over the middle of the view. */
   #died, #won, #complete { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
   #died .big { font-size: 78px; letter-spacing: 12px; color: #7a0f0f; text-shadow: 0 0 30px #000;
     background: linear-gradient(90deg, transparent, #000000b0 30%, #000000b0 70%, transparent); padding: 14px 0; }
@@ -107,9 +208,9 @@
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
   #won.show, #complete.show { opacity: 1; transition: opacity 2s ease-in 1s; }
   #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
-  #tutPrompt { position: absolute; left: 50%; top: 84px; transform: translateX(-50%) scale(var(--hud)); transform-origin: top center;
-    padding: 9px 22px; background: #0d0b10d8; border: 1px solid #7d6a3a; color: #e8dcb8; font-size: 18px; letter-spacing: 1px;
-    text-shadow: 0 0 6px #000; width: max-content; max-width: 86vw; text-align: center; transition: border-color 0.2s, color 0.2s; }
+  #tutPrompt { padding: 9px 22px; background: #0d0b10d8; border: 1px solid #7d6a3a; color: #e8dcb8; font-size: 18px; letter-spacing: 1px;
+    box-shadow: inset 0 1px 0 #ffffff10, 0 3px 14px #000000a0;
+    text-shadow: 0 0 6px #000; width: max-content; max-width: calc(100vw / var(--u) - 2 * var(--mx)); text-align: center; transition: border-color 0.2s, color 0.2s; }
   #tutPrompt.hidden { display: none; }
   #tutPrompt.done { border-color: #8fbf6a; color: #c8f0a8; }
   #tutStep { color: #8f866c; font-size: 13px; margin-right: 14px; letter-spacing: 2px; }
@@ -121,10 +222,16 @@
   #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
     color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
   #rested.show { opacity: 1; transition: opacity 0.4s; }
-  #prompt, #confirm { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font-size: 15px; color: #d9cda8;
-    text-shadow: 0 0 6px #000; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
-  #confirm { bottom: 24%; color: #e8c080; }
-  #prompt.show, #confirm.show { opacity: 1; }
+
+  /* Narrow windows (portrait, small): the vitals shrink and the boss bar moves under them, so nothing overlaps. */
+  #hud.narrow { --mx: 16px; --my: 14px; }
+  #hud.narrow #pHp { width: 220px; } #hud.narrow #pSt { width: 176px; }
+  #hud.narrow #aTC { top: 104px; }
+  #hud.narrow #eHp, #hud.narrow #ePost { width: min(620px, calc(100vw / var(--u) - 2 * var(--mx))); }
+  #hud.narrow #eName { font-size: 14px; letter-spacing: 3px; }
+  #hud.narrow #died .big { font-size: 48px; letter-spacing: 8px; }
+  #hud.narrow #complete .big { font-size: 34px; letter-spacing: 6px; }
+  #hud.narrow #won .big, #hud.narrow #tutDone, #hud.narrow #rested { font-size: 26px; letter-spacing: 6px; }
 </style>
 <script>
   // Load guard (plain script, runs even if the game module never does): if the game fails to start
@@ -159,31 +266,48 @@
 <canvas id="view"></canvas>
 
 <div id="hud" class="hidden">
+  <div id="vignette"></div>
   <div id="eTags"></div>
-  <div id="pBars">
-    <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
-    <div class="bar" id="pSt"><div class="st" id="pStFill"></div></div>
-    <div id="pFlasks"></div>
+  <div id="stage">
+    <div class="anchor" id="aTL">
+      <div id="pBars">
+        <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
+        <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
+        <div id="pFlasks"></div>
+      </div>
+    </div>
+    <div class="anchor" id="aTC">
+      <div id="eBars" class="hidden">
+        <div id="eName"></div>
+        <div id="eDmg"></div>
+        <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
+        <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
+      </div>
+      <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span><div id="tutHint"></div></div>
+    </div>
+    <div class="anchor" id="aTR">
+      <div id="objective" class="hidden"><div id="objLabel"></div><div id="objPips"></div><div id="objCount"></div></div>
+    </div>
+    <div class="anchor" id="aBC">
+      <div id="perilous"></div>
+      <div id="toasts"></div>
+      <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
+      <div id="confirm"></div>
+    </div>
+    <div class="anchor" id="aBL">
+      <div id="help" class="hidden">
+        <table id="helpTable"></table>
+        <label><input type="checkbox" id="hbToggle" checked> <span id="hbLabel">Show hitboxes</span></label>
+        <div class="level" id="helpLevel"></div>
+      </div>
+      <div id="helpHint"></div>
+    </div>
+    <div id="tutDone">TUTORIAL COMPLETE</div>
+    <div id="rested">RESTED</div>
+    <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
+    <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
+    <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
   </div>
-  <div id="eBars">
-    <div id="eName"></div>
-    <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
-    <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
-  </div>
-  <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span><div id="tutHint"></div></div>
-  <div id="tutDone">TUTORIAL COMPLETE</div>
-  <div id="rested">RESTED</div>
-  <div id="prompt"></div>
-  <div id="confirm"></div>
-  <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
-  <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
-  <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
-  <div id="help" class="hidden">
-    <table id="helpTable"></table>
-    <label><input type="checkbox" id="hbToggle" checked> <span id="hbLabel">Show hitboxes</span></label>
-    <div class="level" id="helpLevel"></div>
-  </div>
-  <div id="helpHint"></div>
 </div>
 
 <div id="menu">

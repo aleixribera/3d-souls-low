@@ -1666,6 +1666,38 @@
     expect.below(town.ms, court.ms * 2.5 + 3, `church square frame (${town.ms.toFixed(1)} ms) against Test: Courtyard (${court.ms.toFixed(1)} ms)`);
   });
 
+  // ---- v4.1 the HUD ------------------------------------------------------------------------------------------------
+  test('HUD: a lost health bar keeps its trail, then drains it; the vitals dim when calm and light at a threat', () => {
+    Game.startLevel('burning-town'); sim.begin(); sim.step(0.2); Game.render(1, STEP);
+    const H = CONFIG.hud, p = Game.player, hud = A.hud;
+    p.hp = p.maxHp * 0.5; Game.render(1, STEP);
+    expect.near(parseFloat(hud.pHpFill.style.width), 50, 1, 'the bar drops at once');
+    expect.above(parseFloat(hud.pHpTrail.style.width), 95, 'the trail stays where it was');
+    for (let i = 0; i < Math.ceil(H.trailHold / STEP) + 2; i++) Game.render(1, STEP);
+    expect.above(parseFloat(hud.pHpTrail.style.width), 85, 'the trail waits through its hold');
+    for (let i = 0; i < 60 * 3; i++) Game.render(1, STEP);
+    expect.near(parseFloat(hud.pHpTrail.style.width), 50, 1, 'then it drains down to the bar');
+    p.hp = p.maxHp; Game.enemies.length = 0; hud.idle = H.calmDelay + 1;
+    for (let i = 0; i < 60 * (H.calmFadeOut + 1); i++) { hud.idle = H.calmDelay + 1; Game.render(1, STEP); }
+    expect.above(hud.calm, 0.99, 'dimmed after a quiet spell');
+    A.events.emit('strike', { strike: {}, attacker: null, target: p, at: { x: p.x, y: p.y + 1, z: p.z }, blocked: false });
+    for (let i = 0; i < 60 * (H.calmFadeIn + 0.2); i++) Game.render(1, STEP);
+    expect.below(hud.calm, 0.01, 'a blow brings them back');
+  });
+  test('HUD: the objective counts the barricades, the stage scale follows the window, and the HUD never writes to the game', () => {
+    Game.startLevel('burning-town'); sim.begin(); sim.step(0.2); Game.render(1, STEP);
+    const hud = A.hud, n = Game.zones.length;
+    expect.ok(n > 0 && hud.pips.length === n && !hud.objective.classList.contains('hidden'), 'one pip per barricade');
+    expect.ok(hud.objCount.textContent === `0 / ${n}`, 'none lifted yet');
+    Game.zones[0].gate.open = true; Game.render(1, STEP);
+    expect.ok(hud.objCount.textContent === `1 / ${n}` && hud.pips[0].classList.contains('done'), 'the first lifted lights its pip');
+    const before = JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]);
+    for (let i = 0; i < 30; i++) Game.render(1, STEP);
+    expect.ok(before === JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]), 'rendering the HUD changes nothing in the game');
+    const H = CONFIG.hud, u = Math.max(H.minScale, Math.min(H.maxScale, Math.min(innerWidth / H.refWidth, innerHeight / H.refHeight))) * A.settings.hudScale;
+    expect.near(hud.scale, u, 0.001, 'the stage scale fits the window');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;
