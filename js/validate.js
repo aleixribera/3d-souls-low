@@ -74,7 +74,6 @@ function validateData() {
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
-    if ('objectiveLabel' in L) need(typeof L.objectiveLabel === 'string' && L.objectiveLabel.length > 0, `${where}: objectiveLabel must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);

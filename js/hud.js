@@ -5,7 +5,7 @@
 // Drawing only: the HUD reads the game (player, enemies, zones, target) and listens to events; it never writes to
 // them. Its own state (lag trails, pulse timers, the calm level) lives on `hud`. All numbers are in CONFIG.hud;
 // the layout (anchors, frames, colours) is in the page's stylesheet. Anchors (see #stage): top left, the player's
-// vitals; top centre, the boss bar and the tutorial prompt; top right, the objective; bottom centre, warnings,
+// vitals; top centre, the boss bar and the tutorial prompt; bottom centre, warnings,
 // notices and the interaction prompt; bottom left, help.
 const $ = id => document.getElementById(id);
 const clamp01 = v => Math.max(0, Math.min(1, v));
@@ -30,14 +30,13 @@ const hud = {
   pSt: $('pSt'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'),
-  confirm: $('confirm'), perilous: $('perilous'), toasts: $('toasts'), vignette: $('vignette'),
-  objective: $('objective'), objLabel: $('objLabel'), objPips: $('objPips'), objCount: $('objCount'), pips: [],
+  confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
   help: $('help'), toggle: $('hbToggle'),
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
-  healTimer: 0, hurtTimer: 0, refundTimer: 0, perilousTimer: 0, objTimer: 0, popFlask: -1, wasEmpty: false, toastList: [],
+  healTimer: 0, hurtTimer: 0, refundTimer: 0, popFlask: -1, wasEmpty: false, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const rows = [
@@ -70,7 +69,7 @@ const hud = {
   reset(game) {
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
-    this.healTimer = this.hurtTimer = this.refundTimer = this.perilousTimer = this.objTimer = 0; this.popFlask = -1; this.wasEmpty = false;
+    this.healTimer = this.hurtTimer = this.refundTimer = 0; this.popFlask = -1; this.wasEmpty = false;
     for (const t of this.toastList) t.el.remove();
     this.toastList = [];
     for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
@@ -89,9 +88,7 @@ const hud = {
     st.setProperty('--u', u.toFixed(4));
     st.setProperty('--calm-dim', H.calmDim);
     st.setProperty('--hit-shake', H.hitShake + 's');
-    st.setProperty('--perilous-time', H.perilousTime + 's');
     st.setProperty('--toast-time', H.toastTime + 's');
-    st.setProperty('--obj-pulse', H.objectivePulse + 's');
     this.scale = u;
     this.root.classList.toggle('narrow', w / u < H.narrowWidth);
   },
@@ -213,20 +210,6 @@ const hud = {
       this.ePost.classList.toggle('warn', pr >= H.postureWarn);
     }
   },
-  // Objective, top right: one pip per barricade, lit as each lifts. Only on levels that have them.
-  updateObjective(game, dt) {
-    const H = CONFIG.hud, zones = game.kind === 'level' ? game.zones : [];
-    this.objective.classList.toggle('hidden', !zones.length);
-    if (!zones.length) return;
-    while (this.pips.length < zones.length) { const d = document.createElement('i'); d.className = 'pip'; this.objPips.appendChild(d); this.pips.push(d); }
-    while (this.pips.length > zones.length) this.pips.pop().remove();
-    const done = zones.filter(z => z.gate && z.gate.open).length;
-    this.pips.forEach((d, i) => d.classList.toggle('done', i < done));
-    this.objLabel.textContent = game.level.objectiveLabel || H.objectiveLabel;
-    this.objCount.textContent = `${done} / ${zones.length}`;
-    this.objTimer = Math.max(0, this.objTimer - dt);
-    this.objective.classList.toggle('pulse', this.objTimer > 0);
-  },
   // Short notices above the prompt; each fades on its own (CSS) and is swept away here.
   toast(text) {
     if (!text) return;
@@ -250,16 +233,13 @@ const hud = {
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
     const p = game.player;
     this.clock += dt;
-    for (const k of ['healTimer', 'hurtTimer', 'refundTimer', 'perilousTimer']) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['healTimer', 'hurtTimer', 'refundTimer']) this[k] = Math.max(0, this[k] - dt);
     this.updateTags(game, dt);
     this.updateCalm(game, t, dt);
     this.updateVitals(game, dt);
     this.updateBoss(e, dt);
-    this.updateObjective(game, dt);
     this.updateToasts();
     this.updatePrompt(game);
-    if (this.perilousTimer > 0 && !this.perilous.classList.contains('show')) { this.perilous.textContent = H.text.perilous; restart(this.perilous, 'show'); }
-    if (this.perilousTimer <= 0) this.perilous.classList.remove('show');
     this.restedTimer = Math.max(0, this.restedTimer - dt);
     this.rested.classList.toggle('show', this.restedTimer > 0);
     this.confirm.classList.toggle('show', game.restartArm > 0);
@@ -282,14 +262,13 @@ const hud = {
 };
 // Listeners: they only set the HUD's own timers and notices, from what the event says and what the game shows.
 function registerHudListeners() {
-  const H = CONFIG.hud, near = enemy => Game.player && Math.hypot(enemy.x - Game.player.x, enemy.z - Game.player.z) < H.perilousRange;
+  const H = CONFIG.hud;
   events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked) hud.hurtTimer = H.hurtTime; });
   events.on('parry', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });   // a parry refunds its stamina
   events.on('dodge', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });
-  events.on('perilous', d => { if (near(d.enemy)) hud.perilousTimer = H.perilousTime; });
   events.on('itemUsed', d => { if (d.item === 'flask') { hud.popFlask = d.player.item('flask').count; } });
   events.on('rest', () => { hud.healTimer = H.healFlash; });
-  events.on('gateOpened', d => { hud.objTimer = H.objectivePulse; hud.toast(H.toasts[d.shortcut ? 'shortcut' : 'gateOpened']); });
+  events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
 }
 function applySettings() {

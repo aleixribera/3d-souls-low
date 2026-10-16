@@ -1684,13 +1684,14 @@
     for (let i = 0; i < 60 * (H.calmFadeIn + 0.2); i++) Game.render(1, STEP);
     expect.below(hud.calm, 0.01, 'a blow brings them back');
   });
-  test('HUD: the objective counts the barricades, the stage scale follows the window, and the HUD never writes to the game', () => {
+  test('HUD: gate notices name each gate by its kind, the stage scale follows the window, and the HUD never writes to the game', () => {
     Game.startLevel('burning-town'); sim.begin(); sim.step(0.2); Game.render(1, STEP);
-    const hud = A.hud, n = Game.zones.length;
-    expect.ok(n > 0 && hud.pips.length === n && !hud.objective.classList.contains('hidden'), 'one pip per barricade');
-    expect.ok(hud.objCount.textContent === `0 / ${n}`, 'none lifted yet');
-    Game.zones[0].gate.open = true; Game.render(1, STEP);
-    expect.ok(hud.objCount.textContent === `1 / ${n}` && hud.pips[0].classList.contains('done'), 'the first lifted lights its pip');
+    const hud = A.hud;
+    const toastsFor = (gate, shortcut) => { const n = hud.toastList.length; A.events.emit('gateOpened', { gate, shortcut }); return hud.toastList.slice(n).map(t => t.el.textContent); };
+    expect.ok(toastsFor({ style: 'barricade' })[0] === CONFIG.hud.toasts.barricade, 'a barricade falls');
+    expect.ok(toastsFor({ style: 'portcullis' })[0] === CONFIG.hud.toasts.portcullis, 'a portcullis opens');
+    expect.ok(toastsFor({ style: 'barricade' }, true)[0] === CONFIG.hud.toasts.shortcut, 'a shortcut opens');
+    expect.ok(!document.getElementById('objective'), 'no objective counter on screen');
     const before = JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]);
     for (let i = 0; i < 30; i++) Game.render(1, STEP);
     expect.ok(before === JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]), 'rendering the HUD changes nothing in the game');

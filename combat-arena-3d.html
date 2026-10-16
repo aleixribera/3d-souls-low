@@ -55,7 +55,6 @@
   .anchor { position: absolute; display: flex; flex-direction: column; gap: 10px; }
   #aTL { left: var(--mx); top: var(--my); align-items: flex-start; }
   #aTC { left: 0; right: 0; top: var(--my); align-items: center; }
-  #aTR { right: var(--mx); top: var(--my); align-items: flex-end; }
   #aBC { left: 0; right: 0; bottom: 13%; align-items: center; gap: 6px; }
   #aBL { left: var(--mx); bottom: 16px; align-items: flex-start; justify-content: flex-end; }
 
@@ -125,7 +124,7 @@
   #eName { font-size: 16px; letter-spacing: 4px; color: var(--ink); text-shadow: 0 0 3px #000, 0 0 10px #000; margin-bottom: 6px;
     font-variant: small-caps; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   #eName::before, #eName::after { content: '\25C6'; font-size: 8px; color: var(--gilt); vertical-align: middle; margin: 0 12px; }
-  #eHp, #ePost { width: clamp(0px, calc(100vw / var(--u) - 840px), 620px); }   /* clear of the vitals on its left (and the objective on its right) */
+  #eHp, #ePost { width: clamp(0px, calc(100vw / var(--u) - 840px), 620px); }   /* clear of the vitals on its left */
   #eHp { height: 11px; }
   #ePost { height: 5px; margin-top: 3px; }
   #ePost.hidden { display: none; }
@@ -144,27 +143,7 @@
   .eTag.eGuard { height: 3px; }
   .eTag.eGuard.broken .po { filter: brightness(2.2); }
 
-  /* Objective, top right: a row of pips, one per barricade; the lit ones are lifted. */
-  #objective { text-align: right; opacity: calc(1 - var(--calm) * 0.35); transition: opacity 0.4s; padding: 8px 4px 8px 22px; position: relative; }
-  #objective.hidden { display: none; }
-  #objective::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 100% 50%, #000000a0, #00000000 72%); }
-  #objLabel { font-size: 12px; letter-spacing: 4px; color: #a89868; text-transform: uppercase; text-shadow: 0 0 4px #000; }
-  #objPips { margin-top: 6px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 220px; }
-  .pip { width: 11px; height: 11px; transform: rotate(45deg); border: 1px solid var(--gilt-dim); background: #0b090a;
-    box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12; transition: background 0.5s, box-shadow 0.5s, border-color 0.5s; }
-  .pip.done { background: radial-gradient(circle, #ffe9a8, #c9a85e 70%); border-color: #f0dca0; box-shadow: 0 0 0 1px #000c, 0 0 9px #f0c860a0; }
-  #objCount { margin-top: 7px; font-size: 14px; letter-spacing: 2px; color: var(--ink); text-shadow: 0 0 4px #000; font-variant-numeric: tabular-nums; }
-  #objective.pulse .pip.done:last-child, #objective.pulse #objCount { animation: objPulse var(--obj-pulse, 1.2s) ease-out; }
-  @keyframes objPulse { 0% { filter: brightness(2.4); transform: rotate(45deg) scale(1.6); } 100% { filter: none; } }
-  #objective.pulse #objCount { animation-name: objCountPulse; }
-  @keyframes objCountPulse { 0% { color: #fff4c8; text-shadow: 0 0 12px #ffd070; } 100% { } }
-
-  /* Bottom centre: a warning line, short notices, the interaction prompt. */
-  #perilous { height: 30px; font-size: 18px; letter-spacing: 8px; color: #ff6a4c; text-shadow: 0 0 10px #000, 0 0 16px #c02010; opacity: 0;
-    text-transform: uppercase; white-space: nowrap; }
-  #perilous.show { animation: perilousFlash var(--perilous-time, 1s) ease-out; }
-  #perilous::before, #perilous::after { content: '!'; display: inline-block; margin: 0 14px; padding: 0 9px; border: 1px solid #ff6a4c; transform: skewX(-8deg); }
-  @keyframes perilousFlash { 0% { opacity: 1; transform: scale(1.25); } 15% { transform: scale(1); } 60% { opacity: 1; } 100% { opacity: 0; } }
+  /* Bottom centre: short notices, the interaction prompt. */
   #toasts { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 82px; gap: 4px; }
   .toast { padding: 3px 18px; font-size: 14px; letter-spacing: 3px; color: #e8dcb8; text-shadow: 0 0 6px #000; white-space: nowrap;
     background: linear-gradient(90deg, #00000000, #000000a8 25%, #000000a8 75%, #00000000);
@@ -285,11 +264,7 @@
       </div>
       <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span><div id="tutHint"></div></div>
     </div>
-    <div class="anchor" id="aTR">
-      <div id="objective" class="hidden"><div id="objLabel"></div><div id="objPips"></div><div id="objCount"></div></div>
-    </div>
     <div class="anchor" id="aBC">
-      <div id="perilous"></div>
       <div id="toasts"></div>
       <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
       <div id="confirm"></div>
