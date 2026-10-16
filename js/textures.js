@@ -1,0 +1,216 @@
+'use strict';
+// ============================================================================
+// Procedural texture library (canvas-generated, cached by name + tint + decay + size)
+// ============================================================================
+// TEXLIB.get('rustedIron', { tint: 0x8a8a90, decay: 0.7, size: 256 }) -> { map, rough, bump, def }
+// TEXLIB.material('bone', { tint, decay, size, repeat: [2, 1] })       -> a shared MeshStandardMaterial
+// Recipes live in js/data/textures.js. Every texture is generated once; asking again returns the same object.
+// Layers: base pattern, grime gathering in creases, worn edges, scratches, stains, tint. Decay scales all of it.
+const TEXLIB = (() => {
+  const TAU = Math.PI * 2, S = TEXTURE_SETTINGS;
+  const DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
+  const cache = new Map(), matCache = new Map();
+  const stats = { textures: 0, ms: 0, last: [] };
+
+  // ---- tileable value noise with separate periods per axis (so streaks and ridges can be stretched) ----
+  const hash = (ix, iy, s) => {
+    let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1442695041)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const wrap = (a, p) => ((a % p) + p) % p;
+  const vnoise = (x, y, px, py, s) => {
+    const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const x0 = wrap(ix, px), x1 = wrap(ix + 1, px), y0 = wrap(iy, py), y1 = wrap(iy + 1, py);
+    const a = hash(x0, y0, s), b = hash(x1, y0, s), c = hash(x0, y1, s), d = hash(x1, y1, s);
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+  // u, v in 0..1; fx, fy whole numbers of lattice cells across the texture; result 0..1.
+  const fbm = (u, v, fx, fy, oct, s = 0) => {
+    let sum = 0, amp = 0.5, norm = 0, f = 1;
+    for (let o = 0; o < oct; o++) { sum += vnoise(u * fx * f, v * fy * f, fx * f, fy * f, s + o * 17) * amp; norm += amp; amp *= 0.5; f *= 2; }
+    return sum / norm;
+  };
+  const ridge = (n) => 1 - Math.abs(2 * n - 1);   // 1 along the zero-crossings of the noise: thin winding lines
+  const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const rgb = hex => [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
+
+  // ---- surface patterns -------------------------------------------------------------------------------
+  // Each fills out = { h: height 0..1, mix: base->alt, acc: 0..1 accent weight, a: alpha 0..1 } for a pixel.
+  // k is the density multiplier from the recipe (whole numbers so the texture still tiles).
+  const PATTERNS = {
+    rust(u, v, k, decay, out) {
+      const thr = 0.62 - 0.3 * decay, blot = fbm(u, v, 4 * k, 4 * k, 4, 3), pit = fbm(u, v, 32 * k, 32 * k, 2, 5);
+      out.acc = sstep(thr, thr + 0.12, blot) * (0.55 + 0.45 * pit);
+      out.mix = fbm(u, v, 14 * k, 14 * k, 3, 7);
+      out.h = fbm(u, v, 6 * k, 6 * k, 5, 1) * 0.7 + pit * 0.3 * out.acc + 0.15 * (1 - out.acc);
+    },
+    steel(u, v, k, decay, out) {
+      const dent = fbm(u, v, 3, 3, 3, 1), fine = fbm(u, v, 24 * k, 24 * k, 2, 2), streak = fbm(u, v, 2, 48 * k, 2, 3);
+      out.h = dent * 0.55 + fine * 0.15 + streak * 0.3; out.mix = streak;
+      out.acc = sstep(0.78 - decay * 0.25, 0.92, fbm(u, v, 10 * k, 10 * k, 3, 4)) * decay;
+    },
+    leather(u, v, k, decay, out) {
+      const grain = fbm(u, v, 40 * k, 40 * k, 2, 1), big = fbm(u, v, 5 * k, 5 * k, 3, 2);
+      const thr = 0.97 - 0.04 * decay, crack = sstep(thr, thr + 0.025, ridge(fbm(u, v, 6 * k, 6 * k, 4, 3)));
+      out.h = grain * 0.4 + big * 0.3 + (1 - crack) * 0.3; out.mix = big; out.acc = crack;
+    },
+    cloth(u, v, k, decay, out) {
+      const T = 48 * k, wx = 0.5 + 0.5 * Math.sin(u * TAU * T), wy = 0.5 + 0.5 * Math.sin(v * TAU * T);
+      const over = (Math.floor(u * T) + Math.floor(v * T)) & 1;
+      out.h = over ? wx * 0.6 + wy * 0.4 : wy * 0.6 + wx * 0.4;
+      const fray = fbm(u, v, 5 * k, 5 * k, 4, 4);
+      out.mix = fbm(u, v, 10 * k, 10 * k, 3, 5) * 0.7 + out.h * 0.3;
+      out.acc = sstep(0.6 - 0.25 * decay, 0.82 - 0.2 * decay, fray) * 0.8;
+    },
+    tattered(u, v, k, decay, out) {
+      PATTERNS.cloth(u, v, k, decay, out);
+      // v here is the canvas row (0 = top, the hem is at the bottom): ragged hem, vertical tears, holes.
+      const rag = fbm(u, 0, 14, 1, 3, 11), tear = fbm(u, 0, 22, 1, 2, 12), depth = 0.1 + 0.34 * decay;
+      let edge = 1 - depth * (0.35 + rag * 1.3);
+      if (tear < 0.34 + 0.12 * decay) edge -= depth * 0.9 * sstep(0.55, 1, v);   // shredded strips
+      const hole = fbm(u, v, 7, 7, 3, 9) > 0.8 - 0.14 * decay ? 0 : 1;
+      out.a = v < edge ? hole : 0;
+      if (v > edge - 0.03) out.acc = Math.max(out.acc, 0.9);   // scorched / frayed rim
+    },
+    bone(u, v, k, decay, out) {
+      const streak = fbm(u, v, 3 * k, 16 * k, 3, 1), pore = fbm(u, v, 48 * k, 48 * k, 2, 2);
+      const thr = 0.97 - 0.04 * decay, crack = sstep(thr, thr + 0.025, ridge(fbm(u, v, 5 * k, 5 * k, 4, 3)));
+      out.h = streak * 0.4 + pore * 0.3 + (1 - crack) * 0.3; out.mix = streak;
+      out.acc = Math.max(crack, sstep(0.72, 0.92, pore) * 0.55);
+    },
+    skin(u, v, k, decay, out) {
+      const blotch = fbm(u, v, 4 * k, 4 * k, 3, 1), pore = fbm(u, v, 60 * k, 60 * k, 2, 2);
+      const vein = sstep(0.88, 0.97, ridge(fbm(u, v, 7 * k, 7 * k, 3, 3))) * (0.35 + 0.4 * decay);
+      out.h = pore * 0.5 + blotch * 0.2 + 0.3; out.mix = blotch; out.acc = vein;
+    },
+    bark(u, v, k, decay, out) {
+      const r = ridge(fbm(u, v, 10 * k, 2 * k, 4, 1)), groove = sstep(0.8, 0.96, r);
+      const m = fbm(u, v, 5 * k, 3 * k, 4, 6), thr = 0.72 - 0.3 * decay;
+      out.h = (1 - groove * 0.85) * 0.8 + fbm(u, v, 24 * k, 8 * k, 2, 2) * 0.2;
+      out.mix = fbm(u, v, 12 * k, 12 * k, 3, 3);
+      out.acc = sstep(thr, thr + 0.1, m) * (0.4 + 0.6 * out.h);
+      out.dark = groove;
+    },
+    stone(u, v, k, decay, out) {
+      const grain = fbm(u, v, 24 * k, 24 * k, 2, 1), mass = fbm(u, v, 3 * k, 3 * k, 4, 2);
+      const thr = 0.965 - 0.04 * decay, crack = sstep(thr, thr + 0.025, ridge(fbm(u, v, 4 * k, 4 * k, 5, 3)));
+      out.h = mass * 0.5 + grain * 0.2 + (1 - crack) * 0.3; out.mix = mass;
+      out.acc = Math.max(sstep(0.7 - 0.25 * decay, 0.9, fbm(u, v, 9 * k, 9 * k, 3, 4)) * 0.6, 0);
+      out.dark = crack;
+    },
+    ash(u, v, k, decay, out) {
+      const streak = fbm(u, v, 6 * k, 2 * k, 4, 1), grain = fbm(u, v, 32 * k, 32 * k, 2, 2);
+      out.h = streak * 0.5 + grain * 0.5; out.mix = streak * 0.9;
+      out.acc = sstep(0.93, 0.99, fbm(u, v, 40 * k, 40 * k, 2, 3)) * sstep(0.35, 1, decay);   // ember specks in ruined soot
+    },
+  };
+
+  // ---- baking ---------------------------------------------------------------------------------------------
+  function bake(def, size, tint, decay, seed) {
+    const n = size * size, pat = PATTERNS[def.kind], k = def.scale || 1;
+    const H = new Float32Array(n), C = new Float32Array(n * 3), R = new Float32Array(n), A = def.alpha ? new Float32Array(n).fill(1) : null;
+    const base = rgb(def.base), alt = rgb(def.alt), acc = rgb(def.accent), stain = rgb(def.stain ?? 0x201a14);
+    const out = { h: 0, mix: 0, acc: 0, a: 1, dark: 0 };
+    const [r0, r1] = def.rough, dim = 1 - decay * 0.18;
+    const tn = rgb(tint), tm = Math.max(tn[0], tn[1], tn[2]) || 1, tr = tn[0] / tm, tg = tn[1] / tm, tb = tn[2] / tm;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = y * size + x, u = x / size, v = y / size;
+      out.dark = 0; out.a = 1; out.acc = 0;
+      pat(u, v, k, decay, out);
+      const mix = out.mix, a = out.acc;
+      const shade = (1 + (out.h - 0.5) * 0.4 * (def.contrast ?? 1)) * (1 - out.dark * 0.45);
+      // Stains and grime blotches: more, darker and wider with decay.
+      const sn = fbm(u, v, 3, 3, 3, seed + 99), thr = 0.95 - decay * 0.42;
+      const sw = sstep(thr - 0.09, thr + 0.09, sn) * decay * 0.7;
+      for (let c = 0; c < 3; c++) {
+        let col = base[c] + (alt[c] - base[c]) * mix;
+        col += (acc[c] - col) * a;
+        col *= shade * dim;
+        col += (stain[c] - col) * sw;
+        C[i * 3 + c] = col * (c === 0 ? tr : c === 1 ? tg : tb);
+      }
+      H[i] = out.h * (1 - sw * 0.2); R[i] = r0 + (r1 - r0) * Math.min(1, mix * 0.35 + a * 0.6 + (1 - out.h) * 0.25 + sw * 0.4);
+      if (A) A[i] = out.a;
+    }
+    // Grime in creases, wear on edges: compare each height with the average of its neighbours.
+    const rch = S.cavityReach, cvk = def.cavity ?? 1, metal = def.metal > 0 ? 1 : 0.45;
+    const grimeK = 5 * cvk * (0.25 + 0.65 * decay), wearK = 4.5 * cvk * (1 - decay * 0.55) * metal;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = y * size + x, xm = (x - rch + size) % size, xp = (x + rch) % size, ym = (y - rch + size) % size, yp = (y + rch) % size;
+      const cav = H[i] - (H[y * size + xm] + H[y * size + xp] + H[ym * size + x] + H[yp * size + x]) * 0.25;
+      if (cav < 0) {
+        const g = 1 - Math.min(0.75, -cav * grimeK * 4);
+        C[i * 3] *= g; C[i * 3 + 1] *= g; C[i * 3 + 2] *= g; R[i] = Math.min(1, R[i] + -cav * 2);
+      } else {
+        const w = Math.min(1, cav * wearK * 4) * 32;
+        C[i * 3] += w; C[i * 3 + 1] += w; C[i * 3 + 2] += w; R[i] = Math.max(0.05, R[i] - cav * wearK * 1.5 * metal);
+      }
+    }
+    // Scratches: short light lines (shinier too), more of them the more ruined.
+    const rnd = seeded(seed + 5), count = Math.round(def.scratch * (0.12 + decay)), [l0, l1] = S.scratchLength;
+    for (let s = 0; s < count; s++) {
+      let px = rnd() * size, py = rnd() * size;
+      const ang = rnd() * Math.PI, len = l0 + rnd() * (l1 - l0), dx = Math.cos(ang) * 0.8, dy = Math.sin(ang) * 0.8, amt = 14 + rnd() * 26;
+      for (let t = 0; t < len / 0.8; t++, px += dx, py += dy) {
+        const i = (wrap(Math.floor(py), size)) * size + wrap(Math.floor(px), size);
+        C[i * 3] += amt; C[i * 3 + 1] += amt; C[i * 3 + 2] += amt; R[i] = Math.max(0.05, R[i] - 0.15 * metal);
+      }
+    }
+    return { size, C, R, H, A };
+  }
+
+  const canvasOf = (size, fill) => {
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d'), img = g.createImageData(size, size);
+    fill(img.data); g.putImageData(img, 0, 0); return c;
+  };
+  const texOf = (canvas, srgb) => {
+    const t = new THREE.CanvasTexture(canvas);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = S.anisotropy;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const byte = x => x < 0 ? 0 : x > 255 ? 255 : x | 0;
+  const decayKey = d => Math.round(clamp(d, 0, 1) / S.decayStep) * S.decayStep;
+
+  function get(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
+    const def = DEFS[name];
+    if (!def) throw new Error(`Unknown texture "${name}". Known: ${Object.keys(DEFS).join(', ')}.`);
+    if (size > S.maxSize) throw new Error(`Texture "${name}" asked for size ${size}; the limit is ${S.maxSize}.`);
+    const d = decayKey(decay), key = `${name}|${tint.toString(16)}|${d.toFixed(2)}|${size}`;
+    let entry = cache.get(key);
+    if (entry) return entry;
+    const t0 = performance.now(), b = bake(def, size, tint, d, strSeed(name));
+    const map = texOf(canvasOf(size, px => {
+      for (let i = 0; i < size * size; i++) { px[i * 4] = byte(b.C[i * 3]); px[i * 4 + 1] = byte(b.C[i * 3 + 1]); px[i * 4 + 2] = byte(b.C[i * 3 + 2]); px[i * 4 + 3] = b.A ? (b.A[i] > 0.5 ? 255 : 0) : 255; }
+    }), true);
+    const rough = texOf(canvasOf(size, px => {
+      for (let i = 0; i < size * size; i++) { const v = byte(b.R[i] * 255); px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = v; px[i * 4 + 3] = 255; }
+    }), false);
+    const bump = texOf(canvasOf(size, px => {
+      for (let i = 0; i < size * size; i++) { const v = byte(b.H[i] * 255); px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = v; px[i * 4 + 3] = 255; }
+    }), false);
+    entry = { name, tint, decay: d, size, map, rough, bump, def };
+    cache.set(key, entry);
+    const ms = performance.now() - t0; stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`);
+    return entry;
+  }
+
+  // A shared material for a recipe. `repeat` tiles the texture over the surface (e.g. [2, 1] around a sphere).
+  function material(name, opts = {}) {
+    const key = `${name}|${(opts.tint ?? 0xffffff).toString(16)}|${decayKey(opts.decay ?? 0.5).toFixed(2)}|${opts.size ?? S.size}|${(opts.repeat || [1, 1]).join('x')}`;
+    let m = matCache.get(key);
+    if (m) return m;
+    const t = get(name, opts), rep = opts.repeat || [1, 1];
+    const tile = tex => { if (rep[0] === 1 && rep[1] === 1) return tex; const c = tex.clone(); c.repeat.set(rep[0], rep[1]); c.needsUpdate = true; return c; };
+    m = new THREE.MeshStandardMaterial({
+      map: tile(t.map), roughnessMap: tile(t.rough), roughness: 1, metalness: t.def.metal,
+      bumpMap: tile(t.bump), bumpScale: t.def.bump * 0.02,
+      alphaTest: t.def.alpha ? 0.5 : 0, side: t.def.alpha ? THREE.DoubleSide : THREE.FrontSide,
+    });
+    matCache.set(key, m);
+    return m;
+  }
+
+  return { names: TEXTURE_DEFS.map(d => d.id), defs: DEFS, get, material, stats, count: () => cache.size };
+})();

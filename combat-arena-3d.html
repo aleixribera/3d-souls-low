@@ -324,6 +324,11 @@ const GAME_FILES = [
   'data/enemies.js',
   'data/props.js',
   'data/look.js',
+  'data/textures.js',
+  'data/models.js',
+  'data/models-enemies.js',
+  'data/models-bosses.js',
+  'data/animations.js',
   'data/audio.js',
   'levels/arena.js',
   'levels/tutorial.js',
@@ -345,6 +350,8 @@ const GAME_FILES = [
   'events.js',
   'scene.js',
   'rig.js',
+  'bodykit.js',
+  'animator.js',
   'character.js',
   'player.js',
   'enemy.js',
@@ -353,6 +360,7 @@ const GAME_FILES = [
   'projectiles.js',
   'fx.js',
   'visuals.js',
+  'textures.js',
   'town.js',
   'hud.js',
   'audio.js',
@@ -372,7 +380,11 @@ Keep the js folder next to this page.`); break; }
   if (window.__bootShown) break;   // the file failed while running: its message is already on screen
 }
 // Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.
-if (location.hash === '#dev' && !window.__bootShown) await loadScript('suite.js', 'tests/');
+if (location.hash === '#dev' && !window.__bootShown) {
+  await loadScript('suite.js', 'tests/');
+  // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
+  await loadScript('texture-lab.js'); await loadScript('model-lab.js');
+}
 </script>
 </body>
 </html>

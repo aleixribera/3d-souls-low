@@ -25,7 +25,7 @@ class Enemy {
   constructor(def, opts) {
     const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
     this.def = def;
-    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual });
+    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual, model: def.model, variant: opts.variant });
     this.radius = def.radius; this.height = BODY_HEIGHT * def.scale;
     this.behavior = opts.behavior; this.notice = opts.notice;
     this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
@@ -443,6 +443,7 @@ class Enemy {
       const k = Math.sin(this.recoil * Math.PI) * CONFIG.fx.recoilLean;
       r.tip.rotation.x += this.recoilF * k; r.tip.rotation.z += this.recoilS * k * 0.8;
     }
+    if (r.anim) r.anim.update(this, tt, ctx);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
     r.setWarning(warn, a && a.rollOnly ? ROLL_ONLY_COLOR : WARN_COLOR);   // roll-only attacks glow their own colour
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);

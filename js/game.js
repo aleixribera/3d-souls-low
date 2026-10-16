@@ -169,7 +169,7 @@ const Game = {
   },
   placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;
-    const base = { behavior, notice: CONFIG.notice[behavior], leash: V.leash, homeLeash: V.homeLeash };
+    const base = { behavior, notice: CONFIG.notice[behavior], leash: V.leash, homeLeash: V.homeLeash, variant: entry.variant };
     if (behavior === 'ambush') {
       const a = L.alcoves.find(al => al.id === entry.alcove);
       return { ...base, x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * V.ambushDepth), yaw: a.side > 0 ? Math.PI : 0 };

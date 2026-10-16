@@ -353,6 +353,7 @@ class Player {
       case PS.DEAD: deathPose(r, tt, C.deathFade); break;
     }
     if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
+    if (r.anim) r.anim.updatePlayer(this, tt, ctx);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
     if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
     else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0));

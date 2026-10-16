@@ -18,7 +18,7 @@ const ITEMS = {
 
 const PLAYER_DEF = {
   name: 'Knight', radius: 0.36,
-  look: { scale: 1.0, bulk: 0.88, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4,
+  look: { scale: 1.0, bulk: 1.0, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4, model: 'wanderer',
           visual: { skin: 0x8a867c, skinMetal: 0.15, roughness: 0.7 } },   // helmed knight
   stats: { maxHp: 120, maxStamina: 160, maxPoise: 30 },
   inventory: [{ item: 'flask', count: 4, max: 4 }],

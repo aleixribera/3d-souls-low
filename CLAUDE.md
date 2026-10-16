@@ -22,3 +22,9 @@
 6. **Event-Driven Decoupling:** Combat and physics logic communicate outwards via `js/events.js` (e.g., `strike`, `dodge`, `parry`)[cite: 1]. Visuals, camera effects, HUD, and audio must listen to events rather than injecting into combat loops[cite: 1].
 7. **Fixed Simulation Step:** Combat and physics simulate on a fixed 1/60s step, with rendering handling visual interpolation[cite: 1].
 8. **Render Separation:** `js/visuals.js` and post-processing only handle drawing and cannot alter game state, collisions, or layout coordinates[cite: 1].
+## Character Models (procedural, no asset files)
+- An enemy or the player opts in with `model: '<id>'` (`js/data/enemies.js`, `js/data/player.js`); without it the old box body is used. Definitions live in `js/data/models.js` (format, Hollow Soldier, player), `models-enemies.js` and `models-bosses.js`; a model can `extends` another. Parts and weapons come from `KIT_PARTS` / `KIT_WEAPONS` in `js/bodykit.js`; textures from `js/data/textures.js` via `TEXLIB` (`js/textures.js`).
+- The skeleton is fixed (names in `js/bodykit.js`) so the legacy attack animations keep driving it. Secondary motion (breathing, wind-up weight shifts, flinch, death buckle, cloth springs, weapon glint, death dissolve) is `js/animator.js` + `js/data/animations.js`: visual only, it adds to bone rotations and never touches timings or hitboxes.
+- One skinned mesh per material, geometry shared per model, materials cloned per body. Budgets: ~1,500 triangles normal enemy, ~3,000 player, ~6,000 boss (warned at load). Textures are generated once and cached; `KIT.prewarm()` bakes them while the menus are up.
+- A placement can add `variant: 'elite'` (`MODEL_VARIANTS` in `models.js`): darker, spiked and horned, with an aura. Visual only.
+- Dev viewers (`#dev`): F8 texture lab, F9 model lab (`MODELLAB.open('<model id>')`, `MODELLAB.pose('<mode>', seconds)`).

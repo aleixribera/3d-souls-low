@@ -19,7 +19,7 @@ function spawnBurst(pos, burst) {
     const p = particles[particleCursor++ % particles.length];
     const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u), s = burst.speed * rand(0.35, 1);
     p.vx = Math.cos(a) * r * s; p.vy = u * s + 1.5; p.vz = Math.sin(a) * r * s;
-    p.life = CONFIG.fx.particleLife * rand(0.6, 1);
+    p.life = CONFIG.fx.particleLife * rand(0.6, 1); p.gm = 1;
     p.mesh.position.set(pos.x, pos.y, pos.z); p.mesh.material.color.set(burst.color); p.mesh.visible = true;
   }
 }
@@ -28,7 +28,7 @@ function updateParticles(dt) {
     if (p.life <= 0) continue;
     p.life -= dt;
     if (p.life <= 0) { p.mesh.visible = false; continue; }
-    p.vy -= CONFIG.fx.particleGravity * dt;
+    p.vy -= CONFIG.fx.particleGravity * (p.gm ?? 1) * dt;
     p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
     p.mesh.rotation.x += dt * 9; p.mesh.rotation.y += dt * 7;
     p.mesh.material.opacity = clamp(p.life / CONFIG.fx.particleLife * 1.6, 0, 1);

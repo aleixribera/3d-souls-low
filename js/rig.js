@@ -10,7 +10,10 @@ const shadowGeo = new THREE.CircleGeometry(1, 20);
 // Humanoid built from primitives. Local +Z is forward; the weapon arm is on -X.
 const HIP = 0.95, LEG_SEG = 0.45;   // hip pivot height; thigh and shin length
 class Rig {
-  constructor({ scale, bulk, color, weapon, weaponColor, offhand, visual }) {
+  constructor({ scale, bulk, color, weapon, weaponColor, offhand, visual, model, variant }) {
+    this.fit = 1; this.alphaK = 1;
+    if (model) buildModelRig(this, model, variant);   // a character with a model definition (js/data/models.js)
+    else {
     const W = lookup(WEAPONS, weapon, 'weapon', 'sword');
     // Look (section 9b): desaturated cloth or armour, a pale skin / helmet material, a faint rim light.
     const L = rigLook(color, visual);
@@ -51,7 +54,8 @@ class Rig {
       this.mats.push(mat);
       O.build((geo, m, x, y, z) => part(this.armL, geo, m, x, y, z), mat);
     }
-    this.root.scale.set(scale * bulk, scale, scale * bulk);
+    }
+    this.root.scale.set(scale * bulk, scale * this.fit, scale * bulk);
     this.shadow = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadowRadius = 0.55 * scale * bulk;
@@ -67,6 +71,7 @@ class Rig {
     this.kneeL.rotation.x = this.kneeR.rotation.x = 0; this.crouchDrop = 0;
     this.armL.rotation.set(-0.1, 0, 0); this.armR.rotation.set(-0.4, 0, 0);
     this.weapon.rotation.set(0.5, 0, 0);
+    if (this.rest) for (const [bone, r] of this.rest) bone.rotation.set(r[0], r[1], r[2]);   // a model's resting posture
   }
   walk(phase, amount) {
     const s = Math.sin(phase) * amount;
@@ -119,7 +124,10 @@ class Rig {
   }
   setGlow(k) { this.warnGlow.visible = k > 0.002; this.warnGlow.material.opacity = k * CONFIG.VISUALS.windupGlow.opacity; }
   setOpacity(a) {
-    for (const m of this.mats) m.opacity = a;
+    this.alphaK = a;
+    if (this.dissolve) { this.dissolve.value = 1 - a; for (const m of this.fadeMats) m.opacity = a; }   // a modelled body breaks up into ash instead of fading
+    else for (const m of this.mats) m.opacity = a;
+    if (this.glows) for (const g of this.glows) g.mat.opacity = g.base * a;
     this.shadow.material.opacity = 0.45 * a;
     if (this.embers) this.embers.visible = a > 0.5;   // a dying weapon's embers go out
   }
@@ -132,8 +140,12 @@ class Rig {
   }
   dispose() {
     scene.remove(this.root, this.shadow);
-    this.root.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+    this.root.traverse(o => { if (o.isMesh && !o.geometry.userData.shared) o.geometry.dispose(); });
     for (const m of this.mats) m.dispose();
     this.shadow.material.dispose(); this.warnGlow.material.dispose();
+    if (this.glows) for (const g of this.glows) g.mat.dispose();
+    if (this.skeleton) this.skeleton.dispose();
+    if (this.glint) this.glint.sprite.material.dispose();
+    if (this.aura) this.aura.sprite.material.dispose();
   }
 }

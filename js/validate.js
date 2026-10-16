@@ -36,6 +36,7 @@ function validateData() {
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
     need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
+    if (d.model) need(d.model in MODEL_DEFS, `Enemy "${d.id}": unknown model "${d.model}".`);
     if (d.offhand) need(d.offhand in OFFHANDS, `Enemy "${d.id}": unknown off-hand "${d.offhand}".`);
     if (d.idle) need(d.idle in IDLE_STYLES, `Enemy "${d.id}": unknown idle style "${d.idle}".`);
     need(num(d.hp) && num(d.scale) && num(d.radius), `Enemy "${d.id}": hp, scale and radius must be numbers.`);
@@ -64,6 +65,7 @@ function validateData() {
     if ('head' in W) need(tri3(W.head), `Weapon "${id}": head must be [x, y, z].`);
     if ('edge' in W) need(W.edge && tri3(W.edge.size) && tri3(W.edge.at), `Weapon "${id}": edge needs size [w, h, d] and at [x, y, z].`);
   }
+  if (PLAYER_DEF.look.model) need(PLAYER_DEF.look.model in MODEL_DEFS, `Player: unknown model "${PLAYER_DEF.look.model}".`);
   need(PLAYER_DEF.look.weapon in WEAPONS, `Player: unknown weapon "${PLAYER_DEF.look.weapon}".`);
   // Levels
   const levelIds = new Set();

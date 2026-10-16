@@ -149,3 +149,4 @@ window.__arena = { Game, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_B
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles,
                    get world() { return world; } };
 window.__arenaReady = true;
+KIT.prewarm();   // bake model textures and geometry in the background while the menus are up

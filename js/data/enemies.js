@@ -3,7 +3,7 @@
 const ENEMY_DEFS = [
   {
     id: 'hollow', name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
-    scale: 1.0, bulk: 1.0, radius: 0.4, color: 0x8a6a45, weapon: 'sword', idle: 'guard',
+    scale: 1.0, bulk: 1.0, radius: 0.4, color: 0x8a6a45, weapon: 'sword', idle: 'guard', model: 'hollowSoldier',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },   // ashen, leathery
     hp: 110, poise: 50, speed: 2.7, turnRate: 5, trackRate: 2.2,
     cooldown: [0.63, 1.4], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
@@ -17,7 +17,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'knight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
+    id: 'knight', model: 'ironKnight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
     scale: 1.3, bulk: 1.3, radius: 0.6, color: 0x7b8088, weapon: 'sword', offhand: 'shield', idle: 'still',
     visual: { skin: 0x6e737a, skinMetal: 0.2, metal: 0.3, roughness: 0.5 },   // worn steel, helmed
     hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2,
@@ -37,7 +37,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'rogue', name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
+    id: 'rogue', model: 'rogue', name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
     scale: 0.85, bulk: 0.8, radius: 0.32, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
     visual: { skin: 0xbab29e, roughness: 0.8 },   // pale face, dark cloth
     hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4,
@@ -52,7 +52,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'giant', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
+    id: 'giant', model: 'giantSkeleton', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
     hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
@@ -71,7 +71,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'warden', name: 'Shield Warden', description: 'Hides behind a great shield. Circle it, parry it, or batter its guard down.',
+    id: 'warden', model: 'ironWarden', name: 'Shield Warden', description: 'Hides behind a great shield. Circle it, parry it, or batter its guard down.',
     scale: 1.12, bulk: 1.15, radius: 0.48, color: 0x56636e, weapon: 'sword', offhand: 'kite', idle: 'still',
     visual: { skin: 0x5c6670, skinMetal: 0.15, metal: 0.25, roughness: 0.55 },   // blued steel, helmed
     hp: 140, poise: 85, speed: 2.2, turnRate: 2.6, trackRate: 1.5,
@@ -95,7 +95,7 @@ const ENEMY_DEFS = [
   },
   // ---- the Tower's enemies (Level 4; the Lancer, Duelist and Bowman first appear in Level 3, the town) ----------------------------------------------------------------------------
   {
-    id: 'lancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
+    id: 'lancer', model: 'ashLancer', name: 'Ashen Lancer', description: 'A spearman who closes distance in one lunge. Stay close and punish its slow jab.',
     scale: 1.05, bulk: 0.95, radius: 0.42, color: 0x6a6258, weapon: 'spear', idle: 'guard',
     visual: { skin: 0x9a948a, roughness: 0.8 },   // ashen, hooded
     hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0,
@@ -111,7 +111,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'executioner', name: 'Executioner', description: 'A hooded giant with a greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
+    id: 'executioner', model: 'ashExecutioner', name: 'Executioner', description: 'A hooded giant with a greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
     scale: 1.5, bulk: 1.3, radius: 0.68, color: 0x4a2422, weapon: 'greataxe', idle: 'still',
     visual: { skin: 0x3a2a28, roughness: 0.9, rim: 0.7 },   // a dark hood
     hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0,
@@ -126,7 +126,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'duelist', name: 'Pale Duelist', description: 'Fast and fragile, a blade in each hand. Its quick combo can be parried, and it pays dearly.',
+    id: 'duelist', model: 'paleDuelist', name: 'Pale Duelist', description: 'Fast and fragile, a blade in each hand. Its quick combo can be parried, and it pays dearly.',
     scale: 0.95, bulk: 0.82, radius: 0.34, color: 0xb0aca0, weapon: 'sword', offhand: 'dagger', idle: 'twitch',
     visual: { skin: 0xd8d2c4, roughness: 0.6 },   // pale
     hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, approach: 0.8,   // presses in for its combo more than it dashes
@@ -140,7 +140,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'bowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
+    id: 'bowman', model: 'rampartBowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
     scale: 0.95, bulk: 0.88, radius: 0.38, color: 0x5a6a3a, weapon: 'bow', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },
     hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0,   // keeps its distance: kicks only if you close in
@@ -154,7 +154,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'shover', name: 'Shover', description: 'A bulky brute behind a great shield. Its push throws you off ledges: keep away from edges and flank it.',
+    id: 'shover', model: 'ironShover', name: 'Shover', description: 'A bulky brute behind a great shield. Its push throws you off ledges: keep away from edges and flank it.',
     scale: 1.15, bulk: 1.3, radius: 0.52, color: 0x5a4a3a, weapon: 'none', offhand: 'kite', idle: 'still',
     visual: { skin: 0x8a8070, roughness: 0.8 },
     hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4,
@@ -172,7 +172,7 @@ const ENEMY_DEFS = [
   {
     // The invaders' commander, met at the top of the burning town (Level 3). A posture boss, stronger than Level 2's
     // throne pair and weaker than the Bell Warden: it tests what the town taught (close the gap, parry the combo, roll).
-    id: 'pillagerCaptain', name: 'Pillager Captain',
+    id: 'pillagerCaptain', model: 'pillagerCaptain', name: 'Pillager Captain',
     description: 'The commander who put the town to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
@@ -192,7 +192,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
+    id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
     hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6,   // a boss: steps in and uses its strong attacks more often
