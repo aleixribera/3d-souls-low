@@ -398,6 +398,11 @@ function registerAudioListeners() {
     }
   });
   on('parry', d => audio.play('parry', { pos: chest(d.target) }));
+  on('execution', d => {   // the blade goes in: flesh, the riposte's boom and the break's crack, all at once
+    audio.play('hitFlesh', { vel: 1, pos: d.at, pitch: big(d.enemy) * 0.85 });
+    audio.play('riposteBoom', { vel: 1, pos: d.at });
+    audio.play('postureBreak', { vel: 0.8, pos: d.at, pitch: big(d.enemy) * 0.7, delay: 0.04 });
+  });
   on('postureBreak', d => audio.play('postureBreak', { pos: chest(d.enemy), pitch: big(d.enemy) }));
   on('dodge', () => audio.play('dodge', { vel: 0.6 }));
   on('enemyDeath', d => audio.play('enemyDeath', { pos: chest(d.enemy), pitch: big(d.enemy), vel: clamp(0.5 * ((d.enemy.def && d.enemy.def.scale) || 1), 0.4, 1) }));

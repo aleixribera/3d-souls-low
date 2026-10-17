@@ -91,7 +91,7 @@ const projectiles = (() => {
         const hitT = p.alive() && !b.passed ? meets(p, b.x, b.y, b.z, dx, dy, dz, p.radius + b.size) : null;
         if (hitT !== null && hitT <= wall) {
           const at = { x: b.x + dx * hitT, y: b.y + dy * hitT, z: b.z + dz * hitT };
-          if (p.invulnerable()) { b.passed = true; events.emit('dodge', { attacker: b.owner, strike: b.strike, projectile: true }); }   // rolled through: it flies on
+          if (p.invulnerable()) { b.passed = true; if (p.state === PS.ROLL) events.emit('dodge', { attacker: b.owner, strike: b.strike, projectile: true }); }   // rolled through: it flies on
           else {
             const res = p.takeHit(b.strike, { x: b.x, z: b.z });   // from where the bolt came: blocks need it in front
             game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : b.strike.hitstop);

@@ -4,6 +4,7 @@ const ROLL_ONLY_COLOR = new THREE.Color(CONFIG.VISUALS.rollOnlyGlow.color);   //
 const HURT_COLOR = new THREE.Color(0xff1010);
 const HIT_COLOR = new THREE.Color(0xffffff);
 const CRACK_COLOR = new THREE.Color(0xffc060);
+const EXEC_CUE_COLOR = new THREE.Color(0xff3a20);   // a kneeling enemy the player can execute (js/execution.js)
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 const shadowGeo = new THREE.CircleGeometry(1, 20);
 

@@ -26,6 +26,7 @@ class Player {
     this.attackT = 0; this.chargeT = 0; this.charge = 0;   // charge: 0 not yet, 1 holding, 2 released (or none)
     this.buffer = null;   // { action, time }: the one remembered press (Souls-style; see bufferInputs)
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
+    this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.savePrev();
   }
   alive() { return this.state !== PS.DEAD; }
@@ -51,7 +52,8 @@ class Player {
     events.emit('staminaDenied', { player: this });
   }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
-  invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
+  // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
+  invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
     return (this.state === PS.ATTACK && this.attackPhase() === PHASE.ACTIVE) || (this.state === PS.JUMP_ATTACK && !!this.hitbox);
@@ -144,6 +146,9 @@ class Player {
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
     if (this.canAct() && input.consume('parry')) { this.startParry(); return true; }
     const queued = this.buffer && this.buffer.action;
+    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js).
+    const victim = this.canAct() && execution.target(this, enemies);
+    if (victim && (queued === 'light' || input.consume('light'))) { execution.start(this, victim); return true; }
     for (const action of Object.keys(M.ground)) {
       if (this.canAct() && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
@@ -163,6 +168,7 @@ class Player {
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
+    this.execGrace = Math.max(0, this.execGrace - dt);
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
@@ -258,6 +264,10 @@ class Player {
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         // Recovery is the cancel point: a buffered (or fresh) roll, else a buffered attack, which chains the combo.
         if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light' && this.canAct()) {   // the combo broke its stance
+          const victim = execution.target(this, enemies);
+          if (victim) { execution.start(this, victim); break; }
+        }
         if (tl.phase === PHASE.RECOVERY && this.buffer && this.canAct()) {
           this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
         }
@@ -306,6 +316,7 @@ class Player {
         }
         break;
       }
+      case PS.EXECUTE: execution.update(this, dt); break;
       case PS.DEAD: approachVel(this, 0, 0, C.decel * dt); break;
     }
     // Locked on: keep facing the target, except while committed to a roll or a swing already released.
@@ -313,7 +324,7 @@ class Player {
     if (face !== null && !this.in('noLockFacing') && !released)
       this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), (this.state === PS.ATTACK ? C.attackSteer : CONFIG.lock.turnRate) * dt);
 
-    integrateBody(this, dt, C.knockFriction);
+    integrateBody(this, dt, C.knockFriction, this.state === PS.EXECUTE);   // an execution never slides off a ledge
     if (!this.grounded && this.in('falls')) this.setState(PS.FALL);   // walked (or was knocked) off an edge
     if (this.grounded && this.in('airborne') && this.stateTime > 0) this.setState(PS.IDLE);
     if (this.grounded && this.state === PS.JUMP_ATTACK && this.stateTime > 0) {
@@ -433,6 +444,7 @@ class Player {
         const k = Math.sin(clamp(tt / CONFIG.rest.time, 0, 1) * Math.PI);
         r.kneel(k); r.lean(0.2 * k); r.head.rotation.x = 0.4 * k; break;
       }
+      case PS.EXECUTE: glint = executePose(r, this, this.attackT + (tt - this.stateTime)); break;   // js/execution.js
       case PS.HURT: case PS.STAGGER: flinchPose(r, this.state === PS.STAGGER, tt / this.stunTime, tt, this.hitK || 1); break;
       case PS.DEAD: deathPose(r, tt, C.deathFade); break;
     }

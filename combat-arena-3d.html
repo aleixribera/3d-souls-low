@@ -191,9 +191,9 @@
     background: linear-gradient(90deg, #00000000, #000000a8 25%, #000000a8 75%, #00000000);
     animation: toastLife var(--toast-time) ease-in-out forwards; }
   @keyframes toastLife { 0% { opacity: 0; transform: translateY(8px); } 8% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; } }
-  #prompt, #confirm, #talk { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
+  #prompt, #confirm, #talk, #execCue { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
     text-shadow: 0 0 6px #000; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; white-space: nowrap; }
-  #prompt.show, #confirm.show, #talk.show { opacity: 1; transform: none; }
+  #prompt.show, #confirm.show, #talk.show, #execCue.show { opacity: 1; transform: none; }
   /* Subtitles (js/lore.js): the speaker's name over the line, at the very bottom, never in the way of the fight. */
   #subtitle { max-width: 760px; margin-top: 8px; text-align: center; opacity: 0; transition: opacity 0.45s; pointer-events: none;
     padding: 6px 28px 8px; background: linear-gradient(90deg, #00000000, #000000b0 18%, #000000b0 82%, #00000000); }
@@ -319,6 +319,7 @@
       <div id="toasts"></div>
       <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
       <div id="talk"><span class="key" id="talkKey"></span><span id="talkText"></span></div>
+      <div id="execCue"><span class="key" id="execKey"></span><span>Execute</span></div>
       <div id="confirm"></div>
       <div id="subtitle"><div id="subName"></div><div id="subText"></div></div>
     </div>
@@ -423,6 +424,7 @@ const GAME_FILES = [
   'enemy.js',
   'crowd.js',
   'combat.js',
+  'execution.js',
   'projectiles.js',
   'fx.js',
   'visuals.js',

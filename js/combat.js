@@ -99,7 +99,7 @@ function resolveCombat(game) {
   for (const hb of enemyHits) {
     if (!p.alive()) continue;
     if (p.invulnerable()) {   // rolled through: announced once per hitbox, which stays live (it can catch the end of the roll)
-      if (!hb.dodged) { hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload }); }
+      if (!hb.dodged && p.state === PS.ROLL) { hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload }); }   // an execution's untouchable time is no dodge
       continue;
     }
     hb.markHit(p);
@@ -121,7 +121,7 @@ function separatePair(a, b, shareA) {
 }
 function separateBodies(p, enemies) {
   for (let i = 0; i < enemies.length; i++) {
-    separatePair(p, enemies[i], 0.85);
+    if (enemies[i].state !== ES.EXECUTED) separatePair(p, enemies[i], 0.85);   // the blade's victim: the bodies overlap
     for (let j = i + 1; j < enemies.length; j++) separatePair(enemies[i], enemies[j], 0.5);
   }
 }

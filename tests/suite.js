@@ -1016,7 +1016,7 @@
     }
     tutorialAt('light'); expect.ok(!Game.lock, 'other steps start unlocked');
     Game.render(1, STEP);
-    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 15, `the step counter counts the new step (${shown('tutStep')})`);
+    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 16, `the step counter counts the new step (${shown('tutStep')})`);
   });
   // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
   const cadence = (stepId, seconds) => {
@@ -2229,6 +2229,137 @@
     const z = Game.zones.find(q => q.id === 'zone-hollow');
     expect.ok(z.gate.open && z.actors.length === 1 && z.actors[0].alive(), 'Continue: gate open, the Hollow back at its post');
   }));
+
+  // ---- v5.2: executions (js/execution.js) ---------------------------------------------------------------------
+  const kneel = e => { e.hitbox = null; e.setState(ES.BROKEN); };   // its bar just filled
+  const inFront = (e, p, gap = 0.6) => {   // the player gap m off the enemy's front edge, facing it
+    const d = e.radius + p.radius + gap;
+    sim.place(e.x + Math.sin(e.yaw) * d, e.z + Math.cos(e.yaw) * d, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
+  };
+  const execLog = [];
+  A.events.onAny(type => { if (/^execution/.test(type) || type === 'enemyDeath' || type === 'bossPhase' || type === 'bossRetreat') execLog.push(type); });
+  test('Execution: light attack in front of a kneeling Knight runs it through and kills it; the player is untouchable throughout', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel; execLog.length = 0;
+    kneel(e); inFront(e, p); sim.step(1, 1);
+    expect.ok(e.execReady && A.hud.execCue.classList.contains('show'), 'the cue shows');
+    sim.press('light'); sim.step(1);
+    expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED, `executing (${p.state}, ${e.state})`);
+    let alwaysSafe = true;
+    const hp0 = p.hp;
+    sim.until(() => { if (p.state !== PS.EXECUTE) return true; if (!p.invulnerable()) alwaysSafe = false; sim.press('roll'); sim.press('light'); return false; }, 5);
+    expect.ok(alwaysSafe, 'invulnerable every step of it');
+    expect.ok(!e.alive() && execLog.includes('execution') && execLog.includes('enemyDeath'), `dead (${e.state}, hp ${e.hp})`);
+    expect.ok(p.state !== PS.ROLL && p.invulnerable(), 'the roll presses were ignored, and a short grace follows');
+    sim.seconds(CONFIG.execution.grace + 0.05); expect.ok(!p.invulnerable() && p.hp === hp0, 'grace over, no harm taken');
+  });
+  test('Execution: from behind, too far, or before it kneels, light attack is a plain light cut', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel;
+    for (const [what, set] of [['behind', () => { kneel(e); const b = behind(e); sim.place(b.x, b.z, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z); }],
+                               ['far', () => { kneel(e); inFront(e, p, CONFIG.execution.range + 0.6); }],
+                               ['standing', () => { e.setState(ES.IDLE); e.notice = 0; inFront(e, p); }]]) {
+      set(); sim.step(1); sim.press('light'); sim.step(1);
+      expect.ok(p.state === PS.ATTACK && p.attack.id === 'light' && e.state !== ES.EXECUTED, `${what}: a light attack (${p.state})`);
+      sim.seconds(1.2);
+    }
+  });
+  test('Execution: the kneel gives no damage bonus any more', () => {
+    Game.startFight('giant'); Game.loading = 0; sim.begin();
+    const e = Game.duel, hp0 = e.hp; kneel(e);
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.near(hp0 - e.hp, strikeOf('heavy').damage, 0.01, 'a heavy on the kneeling giant');
+  });
+  test('Execution: normal enemies die outright; the Empty Sentinel is left near death; bosses lose a third of a bar', () => {
+    for (const [id, want] of [['knight', 'dead'], ['executioner', 'dead'], ['warden', 'dead'], ['shover', 'dead'], ['sentinel', 'near'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
+      Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      const p = Game.player, e = Game.duel, max = e.def.hp;
+      kneel(e); inFront(e, p); sim.step(1); sim.press('light');
+      sim.until(() => p.state === PS.EXECUTE, 0.2);
+      expect.ok(p.state === PS.EXECUTE, `${id}: the execution starts`);
+      sim.until(() => p.state !== PS.EXECUTE, 5);
+      if (want === 'dead') expect.ok(!e.alive(), `${id}: killed outright (${e.hp.toFixed(0)} / ${max})`);
+      else if (want === 'near') expect.ok(e.alive() && e.hp > 0 && e.hp < max * 0.2, `${id}: near death (${e.hp.toFixed(0)} / ${max})`);
+      else expect.ok(e.alive() && Math.abs((max - e.hp) / max - CONFIG.execution.damage.bossShare) < 0.01, `${id}: a third of its bar (${e.hp.toFixed(0)} / ${max})`);
+      expect.ok(e.state !== ES.EXECUTED && e.state !== ES.BROKEN, `${id}: let go (${e.state})`);
+    }
+  });
+  test('Execution: other enemies and their bolts cannot hurt the player during it', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel, hp0 = p.hp;
+    kneel(e); inFront(e, p); sim.step(1);
+    const h = sim.spawn('hollow', p.x + Math.sin(p.yaw + Math.PI / 2) * 1.6, p.z + Math.cos(p.yaw + Math.PI / 2) * 1.6);
+    const b = sim.spawn('bowman', p.x - Math.sin(p.yaw) * 9, p.z - Math.cos(p.yaw) * 9);
+    sim.press('light'); sim.step(1);
+    let swung = false, shot = false;
+    sim.until(() => {
+      if (h.state === ES.CHASE && !h.attack) h.beginAttack(h.def.attacks[0]);
+      if (h.state === ES.CHASE && h.cooldown > 0) h.beginAttack(h.def.attacks[0]);
+      if (h.hitbox) swung = true;
+      if (b.state === ES.CHASE) { b.beginAttack(b.def.attacks.find(a => a.projectile)); shot = true; }
+      return p.state !== PS.EXECUTE;
+    }, 5);
+    expect.ok(p.hp === hp0, `no damage taken (${hp0 - p.hp})`);
+    expect.ok(swung, 'the Hollow did swing at the player');
+  });
+  test('Execution: two kneeling enemies: the one most in front is taken', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, a = Game.duel; kneel(a); inFront(a, p, 0.4);
+    const side = sim.spawn('knight', p.x + Math.cos(p.yaw) * 1.8, p.z - Math.sin(p.yaw) * 1.8); kneel(side);
+    sim.step(1); sim.press('light'); sim.step(1);
+    expect.ok(a.state === ES.EXECUTED && side.state !== ES.EXECUTED, 'the one straight ahead');
+  });
+  test('Execution: the enemy dying from something else mid-animation ends it cleanly', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1); sim.press('light'); sim.step(8);
+    e.die(); sim.until(() => p.state !== PS.EXECUTE, 3);
+    expect.ok(p.state === PS.IDLE && !p.exec, `back in control (${p.state})`);
+  });
+  test('Execution: by a ledge or a wall the slide in never takes the player over the edge or through it', () => {
+    Game.startFight('testShover'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const at = { x: Game.duel.x, z: Game.duel.z, y: Game.duel.y };
+    sim.clearEnemies(); let e = sim.spawn('knight', at.x, at.z, at.y);
+    const p = Game.player, y0 = e.y;
+    e.notice = 0; let tried = 0;
+    for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      e.yaw = yaw; e.hp = e.def.hp; kneel(e); inFront(e, p, 1.2);
+      if (Math.abs(p.y - y0) > 0.1) continue;   // nothing to stand on there
+      tried++;
+      sim.step(1); sim.press('light'); sim.step(1);
+      sim.until(() => p.state !== PS.EXECUTE, 4);
+      expect.ok(Math.abs(p.y - y0) < 0.1 && p.grounded && !p.inPit, `yaw ${yaw.toFixed(2)}: still on the terrace (y ${p.y.toFixed(2)})`);
+      sim.clearEnemies(); e = sim.spawn('knight', at.x, at.z, at.y); e.notice = 0;
+    }
+    expect.ok(tried > 0, 'tried at least one side');
+  });
+  test('Execution: Aldric: the field bar retreats, the throne bar turns, the last bar dies, each only after the animation', () => {
+    for (const [phase, after] of [['field', 'bossRetreat'], ['throne', 'bossPhase'], ['knell', 'enemyDeath']]) {
+      Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      const p = Game.player, e = Game.duel;
+      if (phase === 'field') { e.phaseIds = ['field']; e.enterPhase(0); e.boss = { retreat: { to: [e.x + 20, 0, e.z], kneel: 1, hop: 1, wait: 1, fly: 1 } }; }
+      else { e.phaseIds = ['field', 'throne', 'knell']; e.enterPhase(phase === 'throne' ? 1 : 2); }
+      e.hp = 30; kneel(e); inFront(e, p); sim.step(1); execLog.length = 0; sim.press('light'); sim.step(1);
+      expect.ok(p.state === PS.EXECUTE, `${phase}: executing`);
+      sim.until(() => p.state !== PS.EXECUTE, 5); sim.step(1);
+      const i = execLog.indexOf(after), j = execLog.indexOf('executionEnd');
+      expect.ok(j >= 0 && i >= 0 && !execLog.slice(0, j).includes(after), `${phase}: ${after} only after the animation (${execLog.join(', ')})`);
+    }
+  });
+  test('Execution: the tutorial has an execution step, done by one execution', () => {
+    Game.startLevel('tutorial'); Game.loading = 0; sim.begin();
+    const steps = Game.tutorialSteps(), i = steps.findIndex(s => s.id === 'execute');
+    expect.ok(i > 0, 'the step exists');
+    Game.tut.index = i; Game.setupTutorialStep();
+    const p = Game.player, d = Game.enemies[0];
+    expect.ok(!!d.def.stagger && d.training, 'a training dummy with a stagger meter');
+    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p);
+    expect.ok(d.state === ES.BROKEN, 'two heavies break its stance');
+    inFront(d, p); sim.step(1); sim.press('light'); sim.step(1);
+    expect.ok(p.state === PS.EXECUTE, 'executing the dummy');
+    sim.until(() => Game.tut.doneTimer > 0, 5);
+    expect.ok(Game.tut.doneTimer > 0, 'the step completed');
+    expect.ok(d.alive(), 'the dummy never dies');
+  });
 
   async function run(filter = '') {
     const out = [], t0 = performance.now();

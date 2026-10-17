@@ -7,6 +7,7 @@ const PS = Object.freeze({   // player
   IDLE: 'idle', WALK: 'walk', JUMP: 'jump', FALL: 'fall', ROLL: 'roll', ATTACK: 'attack',
   JUMP_ATTACK: 'jumpAttack', LAND: 'land', BLOCK: 'block', PARRY: 'parry', USE_ITEM: 'useItem',
   REST: 'rest', HURT: 'hurt', STAGGER: 'stagger', DEAD: 'dead',
+  EXECUTE: 'execute',   // v5.2: running an execution on a kneeling enemy (js/execution.js); untouchable throughout
 });
 const ES = Object.freeze({   // enemy
   IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
@@ -15,6 +16,7 @@ const ES = Object.freeze({   // enemy
   // Bosses with phases (v4.3): PHASE between two health bars (invulnerable), RETREAT leaping away when a fight ends
   // in a retreat (invulnerable, scripted), GONE once it has left (not alive, never drawn).
   PHASE: 'phase', RETREAT: 'retreat', GONE: 'gone',
+  EXECUTED: 'executed',   // v5.2: run through by the player's execution: held still, harmless and untouchable until it ends
 });
 // The four phases of every attack: wind-up (STARTUP), strike (ACTIVE, the only phase with a hitbox), follow-through
 // (FOLLOW, the blade carries on past the target) and recovery (back to guard; the only one a roll can cancel).
@@ -25,8 +27,8 @@ const PLAYER_GROUPS = {
   airborne: new Set([PS.JUMP, PS.FALL]),
   falls: new Set([PS.IDLE, PS.WALK, PS.BLOCK, PS.PARRY, PS.USE_ITEM, PS.REST, PS.HURT, PS.STAGGER]),   // no floor below: start falling
   attacking: new Set([PS.ATTACK, PS.JUMP_ATTACK]),
-  noRegen: new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
-  noLockFacing: new Set([PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
+  noRegen: new Set([PS.EXECUTE, PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
+  noLockFacing: new Set([PS.EXECUTE, PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
   // Busy states whose roll and attack presses go through the Souls-style input buffer (Player.bufferInputs).
   buffers: new Set([PS.ATTACK, PS.ROLL, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER, PS.USE_ITEM]),
@@ -34,7 +36,7 @@ const PLAYER_GROUPS = {
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player
   hidden: new Set([ES.LURK, ES.DORMANT, ES.RETREAT, ES.GONE]),          // not a target (yet, or any more)
-  invulnerable: new Set([ES.PHASE, ES.RETREAT, ES.GONE]),               // hits pass through (a boss between phases)
+  invulnerable: new Set([ES.PHASE, ES.RETREAT, ES.GONE, ES.EXECUTED]),               // hits pass through (a boss between phases)
   canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.SEARCH, ES.CHASE, ES.RECOVER]),
   narrowSight: new Set([ES.IDLE, ES.PATROL, ES.RETURN]),               // unaware and looking about: sees only in its cone
   shrugsHits: new Set([ES.PARRIED, ES.RISE, ES.LEAP]),                  // take damage, no state change

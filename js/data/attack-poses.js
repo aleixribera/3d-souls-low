@@ -20,6 +20,23 @@ const POSE_SETTINGS = {
 };
 
 const ATTACK_POSES = {
+  // Execution (v5.2): sinks low with the blade drawn back at the hip, point forward; drives the whole body into a
+  // straight thrust at a kneeling chest; holds there, leaning on the hilt; then a wrench back as it rips free.
+  executeThrust: {
+    ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inBack' },
+    lag: { weapon: 0.12, armR: 0.08, elbowR: 0.1 },
+    hits: [{
+      windup: { crouch: 0.32, lean: 0.05, legL: [-0.55, 0, 0], kneeL: [0.5, 0, 0], legR: [0.5, 0, 0], kneeR: [0.45, 0, 0],
+                spin: [0, -0.85, 0], chest: [-0.12, -0.45, 0], neck: [0, 0.4, 0], head: [0.1, 0.45, 0],
+                armR: [0.35, 0, -0.1], elbowR: [-1.6, 0, 0], weapon: [1.3, 0, 0], armL: [-0.9, 0, 0.35], elbowL: [-0.8, 0, 0] },
+      strike: { crouch: 0.26, lean: 0.24, legL: [-0.95, 0, 0], kneeL: [0.7, 0, 0], legR: [0.65, 0, 0], kneeR: [0.2, 0, 0],
+                spin: [0, 0.35, 0], chest: [0.08, 0.3, 0], neck: [0.05, -0.2, 0], head: [0, -0.25, 0],
+                armR: [-1.5, 0, 0.12], elbowR: [0, 0, 0], weapon: [1.0, 0, 0], armL: [-1.15, 0, -0.35], elbowL: [-0.5, 0, 0] },
+      follow: { crouch: 0.28, lean: 0.28, legL: [-0.98, 0, 0], kneeL: [0.75, 0, 0], legR: [0.68, 0, 0], kneeR: [0.22, 0, 0],
+                spin: [0, 0.4, 0], chest: [0.12, 0.32, 0], neck: [0.1, -0.2, 0], head: [0.08, -0.25, 0],
+                armR: [-1.48, 0, 0.12], elbowR: [-0.05, 0, 0], weapon: [1.02, 0, 0], armL: [-1.25, 0, -0.4], elbowL: [-0.35, 0, 0] },
+    }],
+  },
   // Light attack 1: a rising-shoulder diagonal, high on the weapon side down across the body.
   lightDiagonal: {
     hits: [{

@@ -29,7 +29,7 @@ const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
-  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'),
+  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
@@ -66,6 +66,7 @@ const hud = {
     this.pExhaust.textContent = CONFIG.hud.text.exhausted;
     this.promptKey.textContent = keycap(bindLabel('rest'));
     this.talkKey.textContent = keycap(bindLabel('talk'));
+    this.execKey.textContent = keycap(bindLabel('light'));
     this.restText = 'Rest at bonfire';
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
   },
@@ -238,6 +239,8 @@ const hud = {
     const talk = p.alive() ? lore.prompt() : null;
     this.talk.classList.toggle('show', !!talk);
     if (talk && this.talkText.textContent !== talk) this.talkText.textContent = talk;
+    // Execute (js/execution.js): a kneeling enemy is in reach, in front of it.
+    this.execCue.classList.toggle('show', p.alive() && game.enemies.some(e => e.execReady));
   },
   // Subtitles (js/lore.js): { name, text, show } or null. A line fades in and out; null fades everything away.
   subtitle(s) {

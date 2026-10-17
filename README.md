@@ -1,4 +1,4 @@
-# Combat Arena 3D — v5.1.1: What the Ash Remembers
+# Combat Arena 3D — v5.2: The Kneeling Dead
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -11,7 +11,7 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 ## Modes
 
 - **Story** (the first option, and the way to play) — the whole game as one campaign. A new story asks whether to play the tutorial first (it can also be skipped from the pause menu), then runs Level 1 → 5 without stopping: each level fades to black and opens on its title (THE BURNING TOWN) and a line of story while it loads. Aldric's death brings the ending, the credits and STORY COMPLETE. The game saves itself in your browser on every rest at a bonfire, at the start of every level and when you quit to the menu; **Continue** puts you back at the last bonfire you rested at, with everything you had beaten there still beaten and every shortcut still open. **New Game** asks before it overwrites a save. Nothing is downloaded and there is no account; in a private window the story still plays, it just isn't saved. In Story mode there is no restart key: death takes you back to the bonfire.
-- **Levels → Tutorial** — one room of training dummies that teaches every control, step by step. Block, parry and dodge come together, locked on to the dummy: the dodge dummy's swing glows blue, and blue strikes can only be rolled through (a hint says whether the roll came too early, too late or clear of the swing).
+- **Levels → Tutorial** — one room of training dummies that teaches every control, step by step. Block, parry and dodge come together, locked on to the dummy: the dodge dummy's swing glows blue, and blue strikes can only be rolled through (a hint says whether the roll came too early, too late or clear of the swing). Then an execution dummy: break its stance with heavy attacks and execute it. Story mode plays the same tutorial.
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
 - **Levels → Level 3: The Burning Town** — the town below the Tower, sacked and set alight by the invaders, at sunset. About 10 minutes, climbing in terraces from the lower gate (where the Keep comes out) to the upper town gate, with a massive castle on the horizon ahead, the sun setting behind it. Street by street, each fight's barricade falls once it is won: a lone Ashen Lancer, the sacked market, a Lancer below with an optional Rampart Bowman on a balcony above (reached through the stair house; jump its low rail to drop back down), a Pale Duelist round a bend in an alley, the fountain square, and the church square under a Bowman on the church gallery. The Pillager Captain holds the upper square. Two bonfires (the second in the tavern), a shortcut stair from the fountain square down to the first, a sleeping Knight in a yard, and one drop that hurts.
@@ -30,6 +30,23 @@ Every character is now a procedural model built in code (still no downloads): th
 
 Bodies breathe, shift their weight into wind-ups and strikes, flinch, buckle and break up into glowing ash when they die; cloaks, scarves and tabards sway; weapons glint as a strike begins. Gameplay is unchanged: hitboxes, timings and AI are exactly as before. The training dummies and the Test Grounds enemies keep the old plain bodies.
 
+## How to play
+
+Open `combat-arena-3d.html` in any modern browser (Chrome, Edge, Firefox, Safari). Nothing to install and nothing to download: the whole game, its models, textures and sounds are made in code as it loads. Pick **Story** from the main menu and say yes to the tutorial on a first run.
+
+Fight like a Souls game: watch the wind-up, roll through or parry the strike, punish the recovery, and keep an eye on your stamina. Rest at bonfires to refill your health and flasks; they are your checkpoints.
+
+## Executions (v5.2: The Kneeling Dead)
+
+Some enemies carry a meter under their health bar: a **stagger** meter (Undead Knight, Executioner, Empty Sentinel), a **guard** meter (the shield-bearers: Shield Warden, Shover) or, on bosses, **posture** (Giant Skeleton, Pillager Captain, Bell Warden, Aldric). Fill it (heavy attacks fill it fastest; on bosses, parries and quick chains of hits too) and the enemy drops to one knee for a few seconds.
+
+While it kneels, step in front of it: its body glows a faint red and **Execute** shows at the bottom of the screen. Press **light attack** and you drive your sword through its chest and out of its back, hold it there, then rip it free.
+
+- Normal enemies die outright; the toughest (the Empty Sentinel) are left near death.
+- Bosses lose about a third of their current health bar. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
+- You can't be hurt during an execution, by anything, and for a moment after it. Other enemies keep fighting, so look around when you stand up.
+- From behind, from the side or too far away, light attack is just a light attack. If you wait too long, the enemy gets back up.
+
 ## Combat (v4.2: Weight of Steel)
 
 Every attack now has four phases: wind-up, strike (the only moment it can hit), follow-through and recovery, drawn from whole-body key poses.
@@ -37,35 +54,19 @@ Every attack now has four phases: wind-up, strike (the only moment it can hit), 
 - **You:** a three-hit light combo; a heavy you can hold to charge (the body coils, trembles and glows at full charge, up to 1.5x damage); only a slight steer during a wind-up; a roll only cancels a swing in its recovery. One Souls-style input buffer: a press is kept only near the end of what you're doing, and the latest press wins.
 - **Enemies:** they turn to track you early in a wind-up, then lock their aim (the commit point): dodge sideways after that and the blow won't follow. A blade glint marks the exact moment the parry window opens; blue strikes still can't be blocked or parried. Some enemies hold a wind-up still to bait a roll (delayed attacks). Combos end on their biggest wind-up, and big misses leave a punishable recovery. Bosses use larger, slower, more dramatic versions.
 - **Impact:** hit-pause and a shudder on the body you hit, camera shake scaled by the blow, weapon trails during strikes, cloth that swings with the body, flinches sized to the damage, staggers and parries that throw the body open, and walking that leans with acceleration and turns.
-- **Dev keys** (`#dev`): **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase; **H** hitboxes.
+- **Dev keys** (`#dev`): **F4** fills the nearest enemy's stagger, guard or posture meter (it kneels at once, ready to execute), **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase; **H** hitboxes.
 
 Timings before and after are in `docs/combat-timings-v4.1.md`.
 
-## v4.2.4 fixes
-
-- **Bonfires are checkpoints.** Resting keeps every enemy you have beaten dead for the rest of the level; enemies beaten since your last rest come back at full health when you die. Level 1's second bonfire now sits past the Rogue's gate, the reward for that fight.
-- **Stamina exhaustion.** Emptying the stamina bar leaves you exhausted: no roll, attack, parry or jump until it refills to 30, and it waits a little longer before refilling. The bar turns red and a small "Out of stamina" note shows under it, brightening when a press is refused. Deaths show a short tip (the stamina one if you had just run dry).
-- **Enemy senses.** Unaware enemies only see you in a cone in front of them; once fighting they see all round. Losing sight of you, they walk to where they last saw you and look about before going home. One enemy noticing you wakes its whole group (the Tower courtyard, the town's fountain square). Leashes are longer and measured from home to you, so they no longer flicker at the edge.
-- **Fairer fights.** Boss strikes (Giant Skeleton, Executioner spin, Pillager Captain, Bell Warden) are active for a shorter time, so a well-timed roll gets through. Unblockable (blue) strikes hit harder. Ranged enemies and bosses often step in after attacking instead of always backing off. The Fast Rogue and Pale Duelist are a little slower and take turns in groups.
-- **Town and tutorial.** Bowmen never hold a barricade shut, and the balcony and gallery rails are low enough to jump. The tutorial's heavy step wants a fully charged heavy. Boss wind-up glows light only the weapon.
-
 ## Bosses
 
+Every boss can be broken and executed (see Executions).
+
+- **Giant Skeleton** (Level 1, the last of the Long Hall's gated fights) — a towering ruin of bone with a thigh-bone club: slow sweeps and a stomp.
 - **Pillager Captain** (Level 3) — halberd thrusts from afar, a three-cut combo to parry, a burning overhead to roll.
 - **Bell Warden** (Level 4) — a bronze colossus with a temple bell for a hammer: sweeps, an unblockable slam, a push off the tower, a charge.
 - **Aldric, the Gaoler King** (Level 5, outside and in the throne room) — a sweep, a two-step cleave, a delayed overhead, a lunge from range, a shoulder barge, an unblockable stomp, and the **Judgement Leap**: a long crouch, a leap along his locked aim and a crash that rings the ground (then he is open for a while). In the throne room he presses harder.
 - **Aldric, the Ember-Crowned** (his second phase) — faster, longer combos, fiercer tracking in his wind-ups (the commit points are as honest as ever), and four new attacks: the four-cut Tolling Chain, the Ash Wave thrown along the floor, the Burning Ascent into a leaping crash, and **The Last Toll**: the bell rings three times and three rings of fire sweep the room (roll each as it reaches you), then a blast at his feet. His armour cracks and burns, embers stream off him, and the boss drum quickens.
-
-## Changelog
-
-- **v5.1.1:** Bonfires are true checkpoints: dying brings back every enemy killed since your last rest (won gates stay open; beaten bosses stay beaten). The Bell Warden waits in its arena, so the bonfire before it is safe. Story mode also saves the moment a zone is won or a shortcut opens, and when the page is closed. Ysolde moved where she is easy to see (the tavern's front corner in Level 3, the first bonfire past the undercroft in Level 4) and now also waits by Level 5's first bonfire with a new dialogue.
-- **v5.1 — What the Ash Remembers:** the lore of Ashmere (`LORE.md`): the Undying Ember, the Seven and their Bell of Waking, and the king, now named **Aldric** (the Gaoler King; his burning second phase is **Aldric, the Ember-Crowned**). A fellow prisoner, **Ysolde of Corvel**, with one dialogue in every level, played as seamless subtitles while you keep control (Talk: T / D-pad right). Readable inscriptions (two or three per level), wordless scenes (the barred door, the invaders' plunder, the defaced statue in the chapel, the king's empty portraits), new Story mode lines, and a new ending. Dev builds: a jump to Ysolde in each level.
-- **v5.0 — The Unbroken Road:** Story mode: the tutorial (optional) and all five levels as one campaign, with chapter titles and story lines between levels, the ending, credits and STORY COMPLETE. Automatic saving in the browser (bonfires, level starts, quitting), Continue from the last bonfire, New Game with confirmation, a pause menu with Skip tutorial and Quit (saves first). Progress carries between levels (today the flask count; ready for future upgrades). Dev builds: jump to any level in Story mode and clear the save from the main menu.
-- **v4.3.1:** Level 5 fixes: hall enemies and the chapel bonfire on the right floor, two more bonfires (barracks, ramparts), archers, wisps and gargoyles join each area's fight and keep on you (gargoyles pounce from their perches with their own claw attacks), open gates no longer block the view, Aldric's stomps and fire rings can be jumped, the Ash Wave is a flying slash, and the camera follows his retreat.
-- **v4.3 — The Last Toll:** Level 5, The Final Castle: the opening fight and retreat, three sections, four bonfires, the throne room and Aldric's second phase, the ending and credits (a ✦ marks the level once finished). New enemies: Gargoyle (perches and springs; grit falls first), Empty Sentinel, Toll Wisp (rings before it shoots). Bosses can now have several health bars, retreat instead of dying, leap, and strike with expanding rings. Level 4 now carries straight on into Level 5. Dev builds: Level 5 jumps in Test Grounds and F10 to empty a boss bar.
-- **v4.2.4:** checkpoints, exhaustion, smarter enemies, fairer bosses (below).
-- **v4.2 — Weight of Steel:** four-phase combat animation (below).
-- **v4.1 — Bone and Ash:** procedural character models (below).
 
 ## Controls
 
@@ -75,7 +76,7 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 | Camera | Mouse (click the view to capture it) | Right stick |
 | Jump (costs stamina) | Space | A / ✕ |
 | Roll | Shift | B / ○ |
-| Light attack | J / Left mouse | RB / R1 |
+| Light attack (in front of a kneeling enemy: execute) | J / Left mouse | RB / R1 |
 | Heavy attack | K / Right mouse | RT / R2 |
 | Jump attack | Light or heavy while airborne | Light or heavy while airborne |
 | Block (hold) | L / C | LB / L1 |

@@ -58,8 +58,8 @@ function validateData() {
     }
     if ('approach' in d) need(num(d.approach) && d.approach >= 0, `Enemy "${d.id}": approach must be a number of 0 or more (per second).`);
     if ('kite' in d) need(num(d.kite) && d.kite >= 0 && d.kite <= 1, `Enemy "${d.id}": kite must be a number from 0 to 1 (a chance).`);
-    if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'damageMul', 'hitstop'].every(k => num(d.posture[k])),
-      `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime, damageMul and hitstop.`);
+    if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'hitstop'].every(k => num(d.posture[k])),
+      `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime and hitstop.`);
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
     if ('phases' in d) {
@@ -88,6 +88,12 @@ function validateData() {
     checkAttack(a, 'Player');
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
+  // Executions (js/execution.js): the attack they run, and every tuning number.
+  need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
+  const X = CONFIG.execution;
+  need(X && ['range', 'cone', 'facing', 'floor', 'angleWeight', 'snapTime', 'standoff', 'gap', 'chest', 'thrustHeight', 'hitstop', 'grace', 'push', 'cuePulse', 'cueGlow'].every(k => num(X[k]))
+    && ['share', 'toughHp', 'toughShare', 'bossShare', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
+    && X.snapTime < M.attacks.execute.hits[0].startup, 'CONFIG.execution: a number is missing, bossCap is above 0.5, or snapTime outlasts the wind-up.');
   for (const group of ['ground', 'air'])
     for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
@@ -145,7 +151,7 @@ function validateData() {
       }
     }
     for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
-    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring', 'dodge']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
+    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring', 'dodge', 'execution']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
   }
   // Arena and timings
   need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');

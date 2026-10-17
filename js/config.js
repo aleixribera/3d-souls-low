@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.1.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.2';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -73,6 +73,33 @@ const CONFIG = {
   // [active - lead - arm, active + grace] — about a quarter second.
   parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
            riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  // Executions (v5.2, js/execution.js): the reward for a full stagger, guard or posture bar. While an enemy kneels
+  // (ES.BROKEN), light attack from in front of it runs the `execute` attack (js/data/player.js) instead of a light cut.
+  // Every number of the system is here.
+  execution: {
+    range: 1.5,          // m between the two bodies' edges (big bodies reach as far as their radius adds)
+    cone: Math.PI / 4,   // rad either side of the enemy's facing the player must stand in (a 90° cone in front)
+    facing: 1.4,         // rad the player may face away from the enemy (forgiving: off-axis presses still count)
+    floor: 0.8,          // m of height between the two at most (no executing from a ledge above)
+    angleWeight: 1.2,    // choosing between two kneeling enemies: m of distance one rad off the front is worth
+    snapTime: 0.16,      // s of the wind-up the player slides into place (no teleport; walls and ledges stop it)
+    standoff: 0.42,      // where the player ends up: their radius + this share of the enemy's radius + `gap`...
+    gap: 0.3,            // ...m from the enemy's centre, so the blade runs through the chest and out of the back
+    chest: 0.47,         // a kneeling body's chest, as a share of its standing height (where the blade goes in)
+    thrustHeight: 1.1,   // m above the player's feet the thrust runs level; a taller chest tilts it up (bosses)
+    // Damage. Normal enemies: `share` of their full health (kills outright); one with `toughHp` or more health is
+    // left near death (`toughShare`). Bosses (posture or phases): `bossShare` of the current bar, never above `bossCap`.
+    // A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change or retreat follows it.
+    damage: { share: 1, toughHp: 400, toughShare: 0.86, bossShare: 0.34, bossCap: 0.5 },
+    hitstop: 0.24,       // s the world freezes as the blade goes in
+    grace: 0.25,         // s the player stays untouchable after the animation ends
+    push: 5,             // knockback (m/s) on a survivor as the blade comes out
+    shake: { time: 0.32, amp: 0.13 }, pullShake: { time: 0.16, amp: 0.05 },
+    camera: { push: 0.32, lower: 0.25, rate: 6 },   // camera moves in by `push` of its distance and looks `lower` m lower
+    cuePulse: 1.6, cueGlow: 0.16,   // Hz and strength of the soft red glow on a kneeling enemy the player can execute
+    bursts: { enter: { color: 0x8a1010, count: 26, speed: 5 }, exit: { color: 0xff9040, count: 30, speed: 7 },
+              pull: { color: 0x701010, count: 18, speed: 4 } },
+  },
   // Bonfires are checkpoints: resting keeps dead every enemy killed before it (until the level restarts); everything
   // else, including enemies killed since the last rest, comes back at full health on a rest or a death.
   rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },

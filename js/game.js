@@ -473,6 +473,13 @@ const Game = {
           }
           return false;
         } },
+      // v5.2: break the dummy's stance, then execute it. Done on one finished execution.
+      { id: 'execute', dummies: 'execution', lockOn: true,
+        text: () => `Heavy attacks ${B('heavy')} break the dummy's stance. When it kneels, light attack ${B('light')} in front of it to execute. Nothing can hurt you while you execute`,
+        on: (type, d, t, g) => {
+          if (type === 'postureBreak' && d.enemy === g.enemies[0]) g.tutorialHint('It kneels: get in front of it and press light attack');
+          return type === 'executionEnd';
+        } },
       { id: 'flask', text: () => `You're hurt. Drink from your flask ${B('flask')}`,
         setup: g => { const it = g.player.item('flask'); g.player.hp = Math.min(g.player.hp, 55); if (g.player.inventory.flask) it.count = Math.max(it.count, 1); },
         on: (type, d, t) => { if (type === 'itemUsed' && d.item === 'flask') t.flags.drank = true; },
@@ -504,6 +511,7 @@ const Game = {
     if (s.dummies === 'one') add(T.dummy, 'dummy', spot(T.dummyAhead));
     else if (s.dummies === 'sparring') add(T.sparring, 'sparring', spot(T.attackerAhead));
     else if (s.dummies === 'dodge') add(T.dodge, 'sparring', spot(T.attackerAhead));
+    else if (s.dummies === 'execution') add(T.execution, 'dummy', spot(T.dummyAhead));
     else if (s.dummies === 'pair') {
       const c = spot(T.pairAhead);
       for (const side of [-1, 1]) add(T.dummy, 'dummy', { x: c.x, z: clamp(c.z + side * T.pairSpread, -L.halfZ + 1.5, L.halfZ - 1.5) });
@@ -570,7 +578,7 @@ const Game = {
       if (g.open) g.lift = Math.min(1, g.lift + dt / V.gateLiftTime);
     }
     for (const t of world.traps) {
-      if (t.state === 'set' && p.alive() && p.grounded && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp) {
+      if (t.state === 'set' && p.alive() && p.grounded && p.state !== PS.EXECUTE && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp) {
         t.state = 'warning'; t.timer = 0;
         events.emit('trapWarning', { trap: t });
       } else if (t.state === 'warning') t.timer += dt;
@@ -724,6 +732,9 @@ const Game = {
         dist += K.leanPullback * w; pitch += K.leanRaise * w / dist;
       }
     }
+    // An execution: the camera leans in on it, then eases back (CONFIG.execution.camera).
+    const xk = execution.cameraWeight(this, dt, snap);
+    if (xk > 0) { dist *= 1 - CONFIG.execution.camera.push * xk; look.y -= CONFIG.execution.camera.lower * xk; }
     const height = dist * (Z.heightRatio + pitch);
     const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
     // Keep the camera inside the walls and on the player's side of closed gates:
@@ -797,6 +808,7 @@ const Game = {
     for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
     separateBodies(p, this.enemies);
     resolveCombat(this);
+    execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }

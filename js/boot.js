@@ -15,6 +15,10 @@ function registerListeners() {
     spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);
     Game.addShake(CONFIG.fx.postureBreakShake.time, CONFIG.fx.postureBreakShake.amp);
   });
+  // Executions (js/execution.js): blood where the blade goes in, embers where it comes out of the back; a heavy jolt.
+  const X = CONFIG.execution;
+  events.on('execution', d => { spawnBurst(d.at, X.bursts.enter); spawnBurst(d.exit, X.bursts.exit); Game.addShake(X.shake.time, X.shake.amp); });
+  events.on('executionPull', d => { spawnBurst(chest(d.enemy), X.bursts.pull); Game.addShake(X.pullShake.time, X.pullShake.amp); });
   events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
   events.on('fallDamage', d => {   // a hard landing: dust, and a jolt if it was the player
     groundFx.spawn(d.body.x, d.body.z, CONFIG.fx.hardLanding, d.body.y);

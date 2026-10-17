@@ -142,6 +142,7 @@ class Enemy {
     this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
     this.chainTime += dt;
+    if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
     if (this.state === ES.RETREAT) { this.updateRetreat(player); return; }   // scripted flight: no physics
@@ -449,6 +450,7 @@ class Enemy {
       case ES.ACTIVE: this.endStrikeWhenDone(); break;
       case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
       case ES.PARRIED: if (this.stateTime >= this.def.parriedTime) this.setState(ES.IDLE); break;
+      case ES.BROKEN: if (this.stateTime >= this.def.stagger.breakTime) { this.guardMeter = 0; this.setState(ES.IDLE); } break;
     }
   }
 
@@ -481,12 +483,16 @@ class Enemy {
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
     this.tint = 1;
-    if (this.training) { this.hp = Math.max(1, this.hp - strike.damage); return { broke: false, died: false }; }   // flash and recoil only
+    if (this.training) {   // flash and recoil only; a dummy with a stagger meter (the execution dummy) fills it
+      this.hp = Math.max(1, this.hp - strike.damage);
+      const broke = !!this.def.stagger && this.state !== ES.BROKEN && this.state !== ES.EXECUTED && this.fillMeter(this.def.stagger, strike.attackId);
+      return { broke, died: false };
+    }
     if (this.invulnerable()) return { broke: false, died: false };
     const def = this.def, P = def.posture;
     if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
       return this.blockHit(strike, kx, kz);
-    this.hp = Math.max(0, this.hp - strike.damage * (P && this.state === ES.BROKEN ? P.damageMul : 1));
+    this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
     this.kx += kx; this.kz += kz;
     if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
@@ -603,6 +609,7 @@ class Enemy {
         if (tt >= t3) r.setOpacity(1 - clamp((tt - t3) / R.fly, 0, 1));   // fades as it drops out of sight beyond the wall
         break;
       }
+      case ES.EXECUTED: executedPose(r, this, tt); break;   // js/execution.js
       case ES.GONE: r.setOpacity(0); r.root.visible = false; break;
       case ES.DEAD: { const fade = d.deathFade || E.deathFade; deathPose(r, tt, fade); r.root.visible = tt < fade; break; }
     }
@@ -624,6 +631,7 @@ class Enemy {
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
     r.setWarning(warn, a && a.rollOnly ? ROLL_ONLY_COLOR : WARN_COLOR);   // roll-only attacks glow their own colour
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
+    else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
   }
 }
