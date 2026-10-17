@@ -18,7 +18,7 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
 - **Levels → Level 5: The Final Castle** — the longest level and the game's final test, about 30–40 minutes on a first run. It opens straight into the fight with **Aldric, the Gaoler King** on the field before his castle; break him and he leaps onto his walls and is gone, his gate gives way, and the first bonfire lights. Then the outer ward (a courtyard under a wall walk of archers, the barracks and their shortcut, and the **Empty Sentinel** holding the moat bridge), the inner keep (the great hall and its kitchen, the ramparts with Gargoyles on the walk), and the throne approach (an ash bridge under Toll Wisps, then the processional gauntlet). You glimpse Aldric twice on the way. Four bonfires; the last is a short run from the fog at the throne room door. In the throne room he fights again, and when his bar breaks the bell tolls, the glass bursts, the pillars fall and he rises as **Aldric, the Ember-Crowned**: a new bar, new attacks and fire. Beat him for the ending and the credits.
 - **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, Gargoyle, Empty Sentinel, Toll Wisp, the Pillager Captain, the Bell Warden and Aldric (his throne room fight, both bars).
-- **Elden Ring Bosses** (v5.3) — a boss select of fights inspired by Elden Ring, one card each (name, title, difficulty), fought one on one in the Enemies arena. Win (ENEMY FELLED) or die, then choose **Retry** or **Boss select**. Six bosses so far: **Margit, the Fell Omen**, **Godrick the Grafted**, the **Crucible Knight**, **Morgott, the Omen King**, **Radagon of the Golden Order** and **Maliketh, the Black Blade** (see below). Outside the story of Ashmere.
+- **Elden Ring Bosses** (v5.3) — a boss select of fights inspired by Elden Ring, one card each (name, title, difficulty), fought one on one in the Enemies arena. Win (ENEMY FELLED) or die, then choose **Retry** or **Boss select**. Eight bosses so far: **Margit, the Fell Omen**, **Godrick the Grafted**, the **Crucible Knight**, **Morgott, the Omen King**, **Godfrey, First Elden Lord**, **Radagon of the Golden Order**, **Maliketh, the Black Blade** and **Malenia, Blade of Miquella** (see below). Outside the story of Ashmere.
 
 ## Characters (v4.1: Bone and Ash)
 
@@ -116,6 +116,13 @@ The last and hardest of the bosses (difficulty 5): tall and lean, grey skin crac
 - **Golden Grab**: his charge must be rolled sideways; if it misses he is open for a long time.
 - **At 60%** he opens with the **Gold Breaker** (a high leap, a long hang, a slam with a wide shockwave; he stays down after), and adds the **Elden Shattering** (a line of shockwaves, a wide half-circle, then a leap and a blast all round him; the first two can be jumped; punish only after the third), a golden spear thrust whose line bursts a second later, and a teleport slam. He attacks sooner.
 
+## Godfrey, First Elden Lord (v5.9)
+
+A towering lord with a giant axe and the ghostly lion Serosh on his back. One bar of 4400 HP; nothing he does can be parried.
+
+- **Phase 1:** stomps that send cracked rock along the floor (jump or roll them) and go straight into an axe swing, a leap across the arena onto his axe, an axe planted in the earth that splits a long line ahead of him after a pause (step to the side), a three-swing combo with a delayed chop, a smash-spin-smash, and a dashing upward hoist. At 78% his **Regal Roar**: from then on his stomps ring out all round him.
+- **At 40% health** he casts off Serosh, his armour and his axe (untouchable while he does) and fights bare-handed as **Hoarah Loux, Warrior**: running and lunging grabs you cannot block (roll them), an Earthshaker of two shockwaves, a claw flurry, a double stomp. At 20% his Rage makes the stomps reach across the arena.
+
 ## Maliketh, the Black Blade (v5.8)
 
 Two fights on one bar of 4600 HP. First the **Beast Clergyman**: a hooded beast-priest with a broad dagger and the earth in his claws. Nothing he does can be parried.
@@ -177,7 +184,7 @@ Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh
 
 Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Aldric's retreat, his phase change, or his death and the ending).
 
-Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')`, `('godrick')`, `('crucibleKnight')`, `('morgott')`, `('radagon')` `('maliketh')` or `('malenia')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`, `run('Crucible')`, `run('Morgott')`, `run('Radagon')`, `run('Maliketh')`, `run('Malenia')`.
+Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')`, `('godrick')`, `('crucibleKnight')`, `('morgott')`, `('godfrey')`, `('radagon')` `('maliketh')` or `('malenia')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`, `run('Crucible')`, `run('Morgott')`, `run('Godfrey')`, `run('Radagon')`, `run('Maliketh')`, `run('Malenia')`.
 
 Lore shortcuts (`#dev`): **Test Grounds** lists **Lore: Ysolde in ...**, one jump per level that starts it next to her. From the console: `__arena.lore`, `__arena.LORE`.
 

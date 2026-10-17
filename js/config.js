@@ -185,7 +185,8 @@ const CONFIG = {
            spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 },
            flame: { outer: 0xff4a10, color: 0xff8a20, core: 0xffe2a0, opacity: 0.75, flicker: 0.12, fadeIn: 0.08, fadeOut: 0.25,
                     light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },
-                    revealBurst: { color: 0xff6a20, count: 40, speed: 6 } },
+                    revealBurst: { color: 0xff6a20, count: 40, speed: 6 },
+                    concealBurst: { color: 0xc8b890, count: 50, speed: 5 } },   // a phase's `conceal` (v5.5, Godfrey)
            // Scarlet rot (v5.9, Malenia, js/scarlet.js): the crimson burst at her chest when a blow of hers heals her.
            scarlet: { stealBurst: { color: 0xff2a3a, count: 14, speed: 3 } },
            // Holy light (v5.7, Radagon, js/holy.js): `blinkTime` s a teleport (a hit's `blink`) takes unseen; its flash (`burst`,

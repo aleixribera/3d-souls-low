@@ -112,7 +112,7 @@ const GODFREY = {
   defaultPhases: ['lord', 'regal', 'loux', 'rage'],
   phases: {
     // Phase 1: the axe; his stomp sends a cone ahead.
-    lord: { attacks: ['stomp', 'axeDive', 'fissure', 'tripleAxe', 'smashSpin', 'hoist'] },
+    lord: { hp: 4400, attacks: ['stomp', 'axeDive', 'fissure', 'tripleAxe', 'smashSpin', 'hoist'] },
     // From 78 %: the Regal Roar, and every stomp after it is a ring round him.
     regal: { at: 0.78, opener: 'regalRoar', attacks: ['regalRoar', 'stompWide', 'axeDive', 'fissure', 'tripleAxe', 'smashSpin', 'hoist'] },
     // From 40 %: Hoarah Loux. Serosh, the armour and the axe are cast off; he brawls, grabs and closes in faster.

@@ -7,7 +7,8 @@
 // wind-up the jet is not drawn (the arm raising is the telegraph). The hitbox is the attack's own box, as for every attack, and the
 // jet is aimed along it, so what burns is what is drawn.
 // A phase's `reveal: ['<slot>']` shows those material slots of the model (hidden by its `hidden`), from the moment the
-// phase's opener (an `invulnerable` attack, the arm chop) strikes, with a burst of fire.
+// phase's opener (an `invulnerable` attack, the arm chop) strikes, with a burst of fire. A phase's `conceal: ['<slot>' | 'weapon']`
+// hides them the same way (v5.5, Godfrey casting off Serosh, his armour and his axe), with a burst of dust.
 const flame = (() => {
   const F = CONFIG.elden.flame, V3 = THREE.Vector3, from = new V3(), to = new V3(), dir = new V3(), Z = new V3(0, 0, 1);
   const coneGeo = (r, len) => new THREE.ConeGeometry(r, len, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, len / 2);
@@ -47,6 +48,19 @@ const flame = (() => {
           R.revealed = true;
           for (const sl of reveal) if (R.slotMeshes[sl]) R.slotMeshes[sl].visible = true;
           if (R.elbowL) { R.elbowL.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, F.revealBurst); }
+        }
+      }
+      // Cast-off parts (a phase's `conceal`, v5.5): hidden once its invulnerable opener has begun and struck ('weapon' = the weapon).
+      const conceal = e.def.conceal;
+      if (conceal && !R.concealed) {
+        const opening = e.attack && e.attack.invulnerable && e.state === ES.WINDUP && e.hitIndex === 0;
+        if (!opening && !e.opener) {   // not while a phase-1 attack still runs (the opener waits for it)
+          R.concealed = true;
+          for (const sl of conceal) {
+            if (sl === 'weapon') { for (const m of R.weaponMeshes || []) m.visible = false; if (R.glint) R.glint.sprite.visible = false; }
+            else if (R.slotMeshes && R.slotMeshes[sl]) R.slotMeshes[sl].visible = false;
+          }
+          if (R.chest) { R.chest.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, F.concealBurst); }
         }
       }
       const a = e.attack, on = burningNow(e);

@@ -2321,6 +2321,7 @@ const KIT = (() => {
       rig.root.add(mesh); mesh.bind(rig.skeleton, new THREE.Matrix4());
       mesh.boundingSphere = p.geo.boundingSphere;
       if (!p.weapon) (rig.slotMeshes || (rig.slotMeshes = {}))[p.slot] = mesh;
+      else (rig.weaponMeshes || (rig.weaponMeshes = [])).push(mesh);   // hidden by a phase's `conceal: ['weapon']` (js/flame.js)
       if (!p.weapon && M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.

@@ -10,7 +10,7 @@
 //   name, title  the card's name and short title; the health bar shows the def's own name
 //   difficulty   1 to 5 (stars on the card)
 //   description  one line under the card
-const ELDEN_BOSS_DEFS = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, RADAGON, MALIKETH, MALENIA];
+const ELDEN_BOSS_DEFS = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON, MALENIA];
 const ELDEN_BOSSES = [
   { id: 'margit', enemy: 'margit', name: 'Margit, the Fell Omen', title: 'Stormveil\'s gatekeeper', difficulty: 4,
     description: 'Delayed cane swings, thrown golden daggers, and at 60% health a holy hammer and sword. Learn his rhythm; two parries break his stance.' },
@@ -20,10 +20,12 @@ const ELDEN_BOSSES = [
     description: 'Sword and greatshield: blows to his front glance off and earn a shield bash. One parry breaks him. At half health golden wings and a tail join the fight.' },
   { id: 'morgott', enemy: 'morgott', name: 'Morgott, the Omen King', title: 'Lord of Leyndell', difficulty: 5,
     description: 'Margit unmasked: a cursed greatsword, golden spears, hammers, daggers and a rain of swords. At 60% his cursed blood bursts into flame. Three parries break him.' },
-  { id: 'radagon', enemy: 'radagon', name: 'Radagon of the Golden Order', title: 'Consort of the Golden Order', difficulty: 5,
-    description: 'Marika’s hammer, spears of holy lightning, golden runes that erupt where he strikes, and teleports that burst as he leaves and arrives. At 60% the Gold Breaker and the Elden Shattering. Three parries break him.' },
+  { id: 'godfrey', enemy: 'godfrey', name: 'Godfrey, First Elden Lord', title: 'The first Elden Lord', difficulty: 5,
+    description: 'A giant axe and stomps that split the earth (jump the shockwaves). At 40% he casts off Serosh, his armour and his axe and grapples bare-handed as Hoarah Loux: his grabs cannot be blocked. He cannot be parried.' },
   { id: 'maliketh', enemy: 'maliketh', name: 'Maliketh, the Black Blade', title: 'Shadow of the Elden Lord', difficulty: 5,
     description: 'As the Beast Clergyman: a broad dagger, flung stones and shockwaves to jump. At half health he sheds his robes for the Black Blade: every hit cuts your maximum health for a while. Only his golden attacks can be parried.' },
+  { id: 'radagon', enemy: 'radagon', name: 'Radagon of the Golden Order', title: 'Consort of the Golden Order', difficulty: 5,
+    description: 'Marika’s hammer, spears of holy lightning, golden runes that erupt where he strikes, and teleports that burst as he leaves and arrives. At 60% the Gold Breaker and the Elden Shattering. Three parries break him.' },
   { id: 'malenia', enemy: 'malenia', name: 'Malenia, Blade of Miquella', title: 'The undefeated Empyrean', difficulty: 5,
     description: 'Every blow she lands heals her, even on your shield. Below 75% the Waterfowl Dance: run from the first flurry, roll through the rest. Beaten once, she rises as the Goddess of Rot and the Scarlet Aeonia blooms.' },
 ];

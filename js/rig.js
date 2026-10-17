@@ -69,6 +69,7 @@ class Rig {
     this.tip.rotation.set(0, 0, 0);
     this.spin.rotation.set(0, 0, 0); this.spin.scale.setScalar(1); this.spin.position.set(0, HIP, 0);
     this.head.rotation.set(0, 0, 0);
+    if (this.neck) this.neck.rotation.set(0, 0, 0);   // the animator adds to it each frame (breath, nod): without this it winds up
     this.legL.rotation.set(0, 0, 0); this.legR.rotation.set(0, 0, 0);
     this.kneeL.rotation.x = this.kneeR.rotation.x = 0; this.crouchDrop = 0;
     this.armL.rotation.set(-0.1, 0, 0); this.armR.rotation.set(-0.4, 0, 0);

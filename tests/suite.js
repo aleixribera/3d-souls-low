@@ -2453,6 +2453,48 @@
     Game.screens().eldenDeath.items[1].go();
     expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
   });
+  // ---- Elden Ring Bosses: Godfrey, First Elden Lord (v5.5) -------------------------------------------------------
+  const startGodfrey = () => { A.elden.start('godfrey'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Godfrey: on the boss select, loads at full bar with his axe, armour and lion', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Godfrey, First Elden Lord')), 'a card for Godfrey');
+    const { p, e } = startGodfrey();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'godfrey' && e.def.phaseId === 'lord' && e.hp === 4400, `bar ${e.def.phaseId} ${e.hp}`);
+    expect.ok(e.rig.slotMeshes.lion.visible && e.rig.weaponMeshes.every(m => m.visible), 'lion and axe shown');
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Godfrey, First Elden Lord', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Godfrey: nothing parried, the grabs unblockable, stomps along the floor, every strike under the roll', () => {
+    const D = A.ENEMY_BY_ID.godfrey, by = id => D.attacks.find(a => a.id === id);
+    for (const a of D.attacks) {
+      expect.ok(a.noParry, `${a.id}: unparryable`);
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    }
+    for (const id of ['powerBomb', 'louxLunge']) expect.ok(by(id).rollOnly, `${id}: unblockable`);
+    for (const id of ['stomp', 'stompWide', 'regalRoar', 'doubleStomp', 'doubleStompWide', 'louxRage'])
+      for (const h of by(id).hits) expect.ok((h.box || by(id).box).ground, `${id}: a jump clears it`);
+    expect.ok(by('seroshShed').invulnerable, 'the change is untouchable');
+  });
+  test('Godfrey: every attack starts, strikes and ends without errors', () => {
+    for (const a of A.ENEMY_BY_ID.godfrey.attacks) {
+      const { p, e } = startGodfrey(); sturdy(p); faceOff(e, p, 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
+      expect.ok(struck, `${a.id} struck`);
+    }
+  });
+  test('Godfrey: phases at 78 / 40 / 20 %; at 40 % he becomes Hoarah Loux and casts off the axe after the opener', () => {
+    const { p, e } = startGodfrey(); sturdy(p); faceOff(e, p, 3); quiet(e);
+    e.hp = 4400 * 0.77; sim.step(2); expect.ok(e.def.phaseId === 'regal' && e.opener && e.opener.id === 'regalRoar', `78%: ${e.def.phaseId}`);
+    e.hp = 4400 * 0.39; sim.step(2);
+    expect.ok(e.def.phaseId === 'loux' && e.def.name === 'Hoarah Loux, Warrior', `40%: ${e.def.phaseId}`);
+    Game.render(1, STEP); expect.ok(e.rig.weaponMeshes.every(m => m.visible) || !e.opener, 'axe kept until the opener');
+    const o = e.opener; e.opener = null; e.beginAttack(o);   // as the AI starts a phase's opener (Enemy.update)
+    sim.step(2); Game.render(1, STEP); expect.ok(e.rig.weaponMeshes.every(m => m.visible), 'axe kept through the wind-up');
+    sim.until(() => e.state === ES.ACTIVE, 8);
+    sim.step(2); Game.render(1, STEP);
+    expect.ok(!e.rig.slotMeshes.lion.visible && e.rig.weaponMeshes.every(m => !m.visible), 'lion and axe gone');
+    e.hp = 4400 * 0.19; sim.step(2); expect.ok(e.def.phaseId === 'rage' && e.opener && e.opener.id === 'louxRage', `20%: ${e.def.phaseId}`);
+  });
   // ---- Elden Ring Bosses: Radagon of the Golden Order (v5.7) ---------------------------------------------------
   const startRadagon = () => { A.elden.start('radagon'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
   test('Radagon: on the boss select, loads in the arena at full bar with his name', () => {
@@ -2845,7 +2887,7 @@
     sim.until(() => e.attack && e.attack.id === 'aeoniaOpen', 2);
     expect.ok(e.attack && e.attack.id === 'aeoniaOpen' && e.invulnerable(), 'opens with the Aeonia, untouchable');
     sim.until(() => e.state === ES.ACTIVE, 4); Game.render(1, STEP);   // shown as the dive strikes (js/flame.js)
-    expect.ok(e.rig.slotMeshes.wings.visible, 'wings shown');   // the helm comes off through the phase's `conceal` (js/flame.js)
+    expect.ok(e.rig.slotMeshes.wings.visible && !e.rig.slotMeshes.helm.visible, 'wings shown, helm gone');
   });
 
   test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
