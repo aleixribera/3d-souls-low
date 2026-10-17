@@ -58,7 +58,7 @@ const CAPTAIN_MATS = {
   eye: { glow: 0xff7a30 },
 };
 MODEL_DEFS.pillagerCaptain = {
-  extends: 'ashLancer', faction: 'ashen', budget: 'boss', fit: 1.02, limbSides: 8,
+  extends: 'ashBase', faction: 'ashen', budget: 'boss', fit: 1.02, limbSides: 8,
   proportions: { shoulderX: 0.4, torsoW: 0.26, torsoD: 0.18, armR: 0.07, legR: 0.09, headR: 0.13, handR: 0.065, footLen: 0.32 },
   posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0.03], elbowL: [-0.35, 0, 0], elbowR: [-0.4, 0, 0] },
   materials: CAPTAIN_MATS,

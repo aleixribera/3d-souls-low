@@ -87,10 +87,11 @@ const CONFIG = {
     gap: 0.3,            // ...m from the enemy's centre, so the blade runs through the chest and out of the back
     chest: 0.47,         // a kneeling body's chest, as a share of its standing height (where the blade goes in)
     thrustHeight: 1.1,   // m above the player's feet the thrust runs level; a taller chest tilts it up (bosses)
-    // Damage: `lightMul` times the player's light attack damage (18 x 18 = 324: kills the Knight, Executioner and the
-    // shield-bearers, leaves the Sentinel hurt; about a third of a doubled boss bar or less). Never above `bossCap` of a boss's bar.
+    // Damage: `lightMul` times the player's light attack damage for normal enemies (18 x 5 = 90: hurts normal enemies
+    // without one-shotting them from full); `bossLightMul` times light damage for bosses (18 x 18 = 324: about a third
+    // of a doubled boss bar or less), never above `bossCap` of a boss's bar.
     // A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change or retreat follows it.
-    damage: { lightMul: 18, bossCap: 0.5 },
+    damage: { lightMul: 5, bossLightMul: 18, bossCap: 0.5 },
     hitstop: 0.24,       // s the world freezes as the blade goes in
     grace: 0.25,         // s the player stays untouchable after the animation ends
     push: 5,             // knockback (m/s) on a survivor as the blade comes out

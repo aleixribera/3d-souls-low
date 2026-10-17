@@ -1,6 +1,6 @@
 'use strict';
 // Procedural texture recipes (built by js/textures.js, nothing is downloaded).
-//   kind     which surface pattern to draw: rust, steel, leather, cloth, tattered, bone, skin, bark, stone, ash, fur, holy, quilt, spectral, plate, mail
+//   kind     which surface pattern to draw: rust, steel, leather, cloth, tattered, bone, skin, bark, stone, ash, fur, holy, quilt, spectral, plate, mail, scales, feathers
 //   base/alt the two main colours the pattern mixes between; accent: rust, moss, cracks, veins, embers...
 //   rough    [min, max] roughness (worn metal edges go shinier, grime and rust go rougher)
 //   metal    metalness; bump: bump strength; scale: pattern density multiplier (whole numbers keep it tileable)
@@ -40,6 +40,11 @@ const TEXTURE_DEFS = [
   // The Undead Knight (after the reference art): mottled grey plate with rivets, dark mail, worn brown trousers.
   { id: 'knightPlate', kind: 'plate', base: 0x4c4e52, alt: 0x9a9ca0, accent: 0x5a3e2a, rough: [0.28, 0.62], metal: 0.55, bump: 1.1, scratch: 70, stain: 0x26241f, contrast: 0.7 },
   { id: 'knightMail', kind: 'mail', base: 0x2a2a2c, alt: 0x5e5e62, accent: 0x4a3422, rough: [0.4, 0.8], metal: 0.5, bump: 1.4, scratch: 10, stain: 0x18160f },
+  // The Shield Warden (v5.5, after the reference art): pitted dark charcoal steel with bright worn edges, a fire-and-soot
+  // greatshield face with mossy corrosion at the base, and tarnished warm silver-brass filigree for the shield frame.
+  { id: 'wardenPlate', kind: 'plate', base: 0x222428, alt: 0x62666e, accent: 0x4a301e, rough: [0.25, 0.65], metal: 0.65, bump: 1.4, scratch: 95, stain: 0x121210, cavity: 0.9, contrast: 0.85 },
+  { id: 'wardenBrass', kind: 'steel', base: 0x7a6c58, alt: 0xb8a88e, accent: 0x3e2c1a, rough: [0.25, 0.58], metal: 0.65, bump: 1.1, scratch: 55, stain: 0x241c12, contrast: 0.75 },
+  { id: 'wardenShield', kind: 'rust', base: 0x2a1812, alt: 0x9e3a18, accent: 0xd86820, rough: [0.4, 0.88], metal: 0.35, bump: 1.6, scratch: 45, stain: 0x1c2618, contrast: 0.9 },
   // The Rogue (v5.5): blue-black scale leggings and sleeves, dark worn leather, a charcoal hood, blackened steel greaves.
   { id: 'rogueScales', kind: 'scales', base: 0x1a1f2a, alt: 0x4c566a, accent: 0x07080b, rough: [0.35, 0.7], metal: 0.45, bump: 1.6, scratch: 20, stain: 0x0c0e12, cavity: 0.8, contrast: 1.1 },
   { id: 'rogueLeather', kind: 'leather', base: 0x3a2e22, alt: 0x5e4a32, accent: 0x15100b, rough: [0.55, 0.9], metal: 0, bump: 1.4, scratch: 30, stain: 0x1a130c, cavity: 0.8 },
@@ -47,5 +52,18 @@ const TEXTURE_DEFS = [
   { id: 'rogueSteel', kind: 'steel', base: 0x55585e, alt: 0x8a8d94, accent: 0x2a2620, rough: [0.3, 0.7], metal: 0.55, bump: 1.1, scratch: 80, stain: 0x18161a, contrast: 0.8 },
   // The Giant Skeleton (v5.5): pale translucent bone, cold grey shadow, bright white veins running along it.
   { id: 'spectralBone', kind: 'spectral', base: 0x9ca2aa, alt: 0xc8ccd2, accent: 0xffffff, rough: [0.35, 0.7], metal: 0, bump: 1.2, scratch: 4, stain: 0x5a606a, cavity: 0.5, contrast: 1.0 },
+  // The Executioner (v5.5, after the reference art): overlapping silver-grey feather scales with warm amber highlights,
+  // warm ruddy skin, olive-tan embroidered skirt cloth, blood-stained dark iron for the greataxe blade and crimson-corded haft.
+  { id: 'execPlumage', kind: 'feathers', base: 0x484644, alt: 0x9e988e, accent: 0x1c1815, rough: [0.32, 0.72], metal: 0.5, bump: 1.7, scratch: 28, stain: 0x2a1c14, cavity: 0.85, contrast: 1.0 },
+  { id: 'execSkin', kind: 'skin', base: 0xb87654, alt: 0xd4926e, accent: 0x7a3e28, rough: [0.45, 0.7], metal: 0, bump: 0.55, scratch: 6, stain: 0x4a2418, cavity: 0.25 },
+  { id: 'execSkirt', kind: 'cloth', base: 0x5e5238, alt: 0x827452, accent: 0x2e2618, rough: [0.8, 0.98], metal: 0, bump: 1.0, scratch: 6, stain: 0x241d12, cavity: 0.6, contrast: 0.65 },
+  { id: 'execTrim', kind: 'cloth', base: 0x96865c, alt: 0xc2b282, accent: 0x4a3e24, rough: [0.65, 0.9], metal: 0.15, bump: 1.3, scratch: 4, stain: 0x362c18, cavity: 0.7, contrast: 0.85, scale: 2 },
+  { id: 'execBlade', kind: 'rust', base: 0x38363a, alt: 0x78747a, accent: 0x6e2218, rough: [0.3, 0.78], metal: 0.6, bump: 1.5, scratch: 85, stain: 0x22100e, cavity: 0.85, contrast: 0.9 },
   { id: 'ashSoot', kind: 'ash', base: 0x1e1c1b, alt: 0x4a4745, accent: 0xe0701a, rough: [0.8, 1], metal: 0, bump: 0.7, scratch: 4, stain: 0x0c0b0a , cavity: 0.6 },
+  // The Ashen Lancer (v5.5, after the reference art): coarse dark charcoal-brown woven burlap shroud, tattered frayed
+  // cloth rags, aged yellowing-ivory bone with dark joint grime, and tarnished silver-grey glaive steel with rust.
+  { id: 'lancerBurlap', kind: 'cloth', base: 0x201a16, alt: 0x3a3028, accent: 0x0e0b09, rough: [0.88, 1], metal: 0, bump: 1.5, scratch: 12, stain: 0x0d0a08, cavity: 0.85, contrast: 0.9, scale: 2 },
+  { id: 'lancerRags', kind: 'tattered', base: 0x1e1814, alt: 0x362c24, accent: 0x0c0907, rough: [0.9, 1], metal: 0, bump: 1.3, scratch: 10, stain: 0x0a0806, cavity: 0.8, contrast: 0.85 },
+  { id: 'lancerBone', kind: 'bone', base: 0xb6a482, alt: 0xd8c8a6, accent: 0x281e15, rough: [0.42, 0.82], metal: 0, bump: 1.15, scratch: 18, stain: 0x3a2c1e, cavity: 0.88, contrast: 0.95 },
+  { id: 'glaiveSteel', kind: 'steel', base: 0x686a6e, alt: 0xa6aab0, accent: 0x4a2c18, rough: [0.26, 0.68], metal: 0.68, bump: 1.25, scratch: 95, stain: 0x2a1a10, cavity: 0.75, contrast: 0.88 },
 ];

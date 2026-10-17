@@ -200,24 +200,46 @@ MODEL_DEFS.undeadKnight = {
   anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
 
-MODEL_DEFS.ironWarden = {   // a wall of shield: a tall crested helm, a banner on its back
+// The Shield Warden (v5.5, after the reference art): dark pitted charcoal plate with worn silver edges, a cylindrical
+// flat-topped tower helm with a central nasal bar and vertical face grate, a high spiked gorget and shoulder guard,
+// V-ribbed breastplate, fauld and tassets with a heavy bulbous codpiece, banded greaves with winged knee cops, a long
+// slender greatsword carried over the right shoulder, and a towering ornate horned greatshield with gothic brass-silver
+// tracery over a fire-and-soot recessed face. No banner, no tabard.
+MODEL_DEFS.ironWarden = {
   extends: 'ironKnight', fit: 1.0,
-  proportions: { torsoW: 0.23, torsoD: 0.16, armR: 0.062 },
-  materials: { ...IRONBOUND_MATS, plate: { tex: 'dentedSteel', tint: 0x5c6670, decay: 0.6 }, tabard: { tex: 'rottenCloth', tint: 0x4a5a6a, decay: 0.7, double: true } },
-  bones: { ...IRONBOUND_BONES, banner: { parent: 'chest', at: [0, 0.55, -0.2] } },
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.38, torsoW: 0.25, torsoD: 0.18, armR: 0.066, legR: 0.09 },
+  posture: { chest: [0.06, 0, 0], neck: [0.08, 0, 0], head: [0.03, 0, 0.02], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
+  materials: {
+    ...IRONBOUND_MATS,
+    plate: { tex: 'wardenPlate', tint: 0xb8bcc4, decay: 0.65 },
+    mail: { tex: 'knightMail', tint: 0x6a6c72, decay: 0.75 },
+    shieldFace: { tex: 'wardenShield', tint: 0xe8d0c0, decay: 0.65 },
+    shieldTrim: { tex: 'wardenBrass', tint: 0xd0c6b4, decay: 0.5 },
+    grip: { tex: 'crackedLeather', tint: 0x8a4228, decay: 0.55 },
+    blade: { tex: 'knightPlate', tint: 0xb4b8c0, decay: 0.45 },
+    guard: { tex: 'wardenPlate', tint: 0x90949c, decay: 0.55 },
+  },
+  body: { torso: 'mail', pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  bones: {},
   parts: [
-    { use: 'jerkin', slot: 'plate', bone: 'chest' }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.1, crest: 0.2 },
-    { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.15, side: -1 },
-    { use: 'wraps', slot: 'plate', bone: 'elbowR', from: 0.06, to: 0.28, radius: 0.056, count: 3 },
-    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.05, to: 0.32, radius: 0.078, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.05, to: 0.32, radius: 0.078, count: 3 },
-    ...tabardParts(0.26, 0.6),
-    { use: 'clothStrip', slot: 'tabard', bone: 'banner', w: 0.2, len: 0.9, seed: 5 }, { use: 'clothStrip', slot: 'stripe', bone: 'banner', w: 0.05, len: 0.8, seed: 5, dz: -0.01 },
-    { use: 'kiteShield', slot: 'tabard', metal: 'plate', bone: 'elbowL', w: 0.62, h: 1.0, at: [0.06, -0.14, 0.19] },
+    { use: 'breastplate', slot: 'plate', bone: 'chest' },
+    { use: 'neckGuard', slot: 'plate', bone: 'chest' },
+    { use: 'tassets', slot: 'plate', bone: 'spin' },
+    { use: 'codpiece', slot: 'plate', bone: 'spin' },
+    { use: 'towerHelm', slot: 'plate', bone: 'head', size: 1.12 },
+    { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.45, side: -1 },
+    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.25 },
+    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.28, radius: 0.06, count: 3, flare: 0.28, cop: 0.07 },
+    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.28, radius: 0.058, count: 3, flare: 0.22, cop: 0.066 },
+    { use: 'plateBands', slot: 'plate', bone: 'legL', from: 0.1, to: 0.32, radius: 0.095, count: 2 },
+    { use: 'plateBands', slot: 'plate', bone: 'legR', from: 0.1, to: 0.32, radius: 0.095, count: 2 },
+    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.03, to: 0.4, radius: 0.072, count: 3, flare: 0.14, cop: 0.084 },
+    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.03, to: 0.4, radius: 0.072, count: 3, flare: 0.14, cop: 0.084 },
+    { use: 'greatshield', slot: 'shieldFace', metal: 'shieldTrim', bone: 'elbowL', w: 0.74, h: 1.48, at: [0.08, -0.22, 0.22] },
   ],
-  weapon: { use: 'wandererSword', slots: { blade: 'blade', grip: 'leather', guard: 'plate' } },
-  eyes: { color: 0x9ab8ff, size: 0.016, spread: 0.055, at: [0, 0.125, 0.155] },
-  anim: { ...IRONBOUND_ANIM, cloth: [...IRONBOUND_ANIM.cloth, { bone: 'banner', gain: 0.22, k: 40, damp: 3.6, flutter: 0.06 }] },
+  weapon: { use: 'wardenGreatsword', slots: { blade: 'blade', grip: 'grip', guard: 'guard' } },
+  eyes: { color: 0x9ab8ff, size: 0.013, spread: 0.048, at: [0, 0.152, 0.165] },
+  anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
 
 MODEL_DEFS.ironShover = {   // a barrel-chested brute behind a wall-sized shield; no weapon, the shield is the weapon
@@ -251,7 +273,7 @@ const ASHEN_MATS = {
   wood: { tex: 'barkMoss', tint: 0x6a5a50, decay: 0.3 },
   eye: { glow: 0xff7a30 },
 };
-MODEL_DEFS.ashLancer = {   // upright, a peaked hood and long ash cloak, a spear far taller than itself
+MODEL_DEFS.ashBase = {   // base template for the Ashen Pillager faction
   extends: 'hollowBase', faction: 'ashen', fit: 1.03,
   proportions: { shoulderX: 0.32, torsoW: 0.2, torsoD: 0.13, armR: 0.054, legR: 0.075, headR: 0.12 },
   limbs: {},
@@ -283,25 +305,178 @@ MODEL_DEFS.ashLancer = {   // upright, a peaked hood and long ash cloak, a spear
   },
 };
 
-MODEL_DEFS.ashExecutioner = {   // bare shoulders, a closed pointed hood with ember slits, a huge greataxe
-  extends: 'ashLancer', fit: 1.02,
-  proportions: { shoulderX: 0.38, torsoW: 0.26, torsoD: 0.17, armR: 0.08, legR: 0.09, headR: 0.125, handR: 0.065, footLen: 0.3 },
-  posture: { chest: [0.14, 0, 0], neck: [0.08, 0, 0], head: [0.03, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
-  materials: { ...ASHEN_MATS, soot: { tex: 'ashSoot', tint: 0x6a6460, decay: 0.8, double: true } },
-  body: { torso: 'skin', pelvis: 'leather', arms: 'skin', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'leather', feet: 'leather' },
-  bones: { loinF: { parent: 'spin', at: [0.0, -0.02, 0.17] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.17] } },
+// The Ashen Lancer (v5.5, after the reference art): a hunched skeletal militiaman in a coarse dark charcoal-brown
+// burlap hood and tattered poncho shroud that parts over the chest to expose the ribcage and spine, a twisted dark
+// reddish-brown neck cord, bare bleached-ivory skeletal forearms, shins and bony feet with prominent dark-grimed knee
+// condyles and forearm/ankle bindings, frayed cloth tatters hanging around the waist and thighs, and a long curved
+// glaive with three circular perforations at the blade heel, rust encrustation, and hanging shaft streamers.
+MODEL_DEFS.ashLancer = {
+  extends: 'hollowBase', faction: 'ashen', budget: 'enemy', fit: 1.03, limbSides: 4,
+  proportions: { shoulderX: 0.31, torsoW: 0.185, torsoD: 0.12, armR: 0.036, legR: 0.046, headR: 0.116, handR: 0.032, footLen: 0.25 },
+  limbs: {
+    armL: { len: 1.05, thick: 0.9 }, elbowL: { len: 1.04, thick: 0.88 },
+    armR: { len: 1.05, thick: 0.9 }, elbowR: { len: 1.04, thick: 0.88 },
+    legL: { thick: 0.9 }, kneeL: { thick: 0.88 },
+    legR: { thick: 0.9 }, kneeR: { thick: 0.88 },
+  },
+  posture: {
+    chest: [0.22, 0, 0], neck: [0.08, 0, 0], head: [-0.14, 0, 0],
+    armL: [0.18, 0, 0.12], elbowL: [-0.48, 0, 0.18],
+    armR: [-0.12, 0, -0.14], elbowR: [-0.62, 0, -0.05],
+  },
+  materials: {
+    bone: { tex: 'lancerBone', tint: 0xd4c4a4, decay: 0.55 },
+    darkBone: { tex: 'lancerBone', tint: 0x5c4c3a, decay: 0.85 },
+    socket: { tex: 'ashSoot', tint: 0x100c0a, decay: 0.9 },
+    shroud: { tex: 'lancerBurlap', tint: 0x6e5e50, decay: 0.78, double: true },
+    rags: { tex: 'lancerRags', tint: 0x6a5a4c, decay: 0.85, double: true },
+    collar: { tex: 'rottenCloth', tint: 0x683024, decay: 0.65, double: true },
+    leather: { tex: 'crackedLeather', tint: 0x3a2e26, decay: 0.78 },
+    iron: { tex: 'rustedIron', tint: 0x62564e, decay: 0.8 },
+    rust: { tex: 'rustedIron', tint: 0x744226, decay: 0.9 },
+    blade: { tex: 'glaiveSteel', tint: 0xb8bcc2, decay: 0.58 },
+    wood: { tex: 'crackedLeather', tint: 0x38281e, decay: 0.72 },
+    eye: { glow: 0xd8a858 },
+  },
+  body: { torso: null, pelvis: 'darkBone', arms: 'bone', legs: 'bone', head: null, neck: 'darkBone', hands: 'bone', feet: 'bone' },
+  bones: {
+    loinF: { parent: 'spin', at: [0.0, -0.02, 0.13] },
+    loinB: { parent: 'spin', at: [0.0, -0.02, -0.13] },
+    loinL: { parent: 'spin', at: [0.16, -0.03, 0.02] },
+    loinR: { parent: 'spin', at: [-0.16, -0.03, 0.02] },
+    capeA: { parent: 'chest', at: [0, 0.54, -0.16] },
+    capeB: { parent: 'capeA', at: [0, -0.42, 0] },
+  },
   parts: [
-    { use: 'hood', slot: 'soot', bone: 'head', close: 0.65, size: 1.1 }, { use: 'hoodPeak', slot: 'soot', bone: 'head', size: 1.1, height: 1.1 },
-    { use: 'belt', slot: 'leather', bone: 'spin' }, { use: 'pauldron', slot: 'iron', bone: 'armR', size: 1.6, side: -1 },
-    { use: 'clothStrip', slot: 'leather', bone: 'loinF', w: 0.36, len: 0.7, seed: 3 }, { use: 'clothStrip', slot: 'soot', bone: 'loinB', w: 0.3, len: 0.6, seed: 7 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.04, to: 0.28, radius: 0.062, count: 4 }, { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.04, to: 0.28, radius: 0.062, count: 4 },
-    { use: 'wraps', slot: 'leather', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.075, count: 3 }, { use: 'wraps', slot: 'leather', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.075, count: 3 },
+    // Skull face with dark eye sockets, nasal cavity, brow crack and teeth under a deep woven burlap hood.
+    { use: 'skeletalSkull', slot: 'bone', void: 'socket', hood: 'shroud', bone: 'head' },
+    // Exposed skeletal ribcage and sternum inside the open V-front burlap shroud and twisted reddish-brown neck cord.
+    { use: 'shroud', slot: 'shroud', collar: 'collar', ribs: 'bone', void: 'socket', bone: 'chest' },
+    { use: 'belt', slot: 'leather', bone: 'spin' },
+    // Ragged burlap sleeves draping over the upper arms and shoulder joints.
+    { use: 'sleeve', slot: 'shroud', bone: 'armL', y0: 0.06, r0: 0.095, r1: 0.15, len: 0.29, seg: 6, seed: 11 },
+    { use: 'sleeve', slot: 'shroud', bone: 'armR', y0: 0.06, r0: 0.095, r1: 0.15, len: 0.29, seg: 6, seed: 14 },
+    // Prominent bone condyle knobs at elbows and dark-grimed knees, plus skeletal fingers.
+    { use: 'knobs', slot: 'bone', bone: 'armL', at: [[0, -0.3, 0, 0.036]] },
+    { use: 'knobs', slot: 'bone', bone: 'armR', at: [[0, -0.3, 0, 0.036]] },
+    { use: 'knobs', slot: 'darkBone', bone: 'legL', at: [[0, -0.4, 0.015, 0.05]] },
+    { use: 'knobs', slot: 'darkBone', bone: 'legR', at: [[0, -0.4, 0.015, 0.05]] },
+    { use: 'fingers', slot: 'bone', bone: 'elbowL', len: 0.11, r: 0.01, spread: 0.022 },
+    { use: 'fingers', slot: 'bone', bone: 'elbowR', len: 0.11, r: 0.01, spread: 0.022 },
+    // Dark leather/iron bindings on the skeletal forearms and lower shins/ankles.
+    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.07, to: 0.18, radius: 0.036, count: 1 },
+    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.07, to: 0.18, radius: 0.036, count: 1 },
+    { use: 'wraps', slot: 'leather', bone: 'kneeL', from: 0.22, to: 0.34, radius: 0.042, count: 1 },
+    { use: 'wraps', slot: 'leather', bone: 'kneeR', from: 0.22, to: 0.34, radius: 0.042, count: 1 },
+    // Hanging frayed cloth strips around the front, sides, and back of the waist, plus the tattered back cloak.
+    { use: 'clothStrip', slot: 'rags', bone: 'loinF', w: 0.16, len: 0.56, seed: 3, dx: -0.075 },
+    { use: 'clothStrip', slot: 'rags', bone: 'loinF', w: 0.15, len: 0.52, seed: 5, dx: 0.08, dz: 0.01 },
+    { use: 'clothStrip', slot: 'shroud', bone: 'loinL', w: 0.2, len: 0.58, seed: 11, turn: Math.PI / 2 },
+    { use: 'clothStrip', slot: 'shroud', bone: 'loinR', w: 0.2, len: 0.58, seed: 13, turn: -Math.PI / 2 },
+    { use: 'clothStrip', slot: 'rags', bone: 'loinB', w: 0.28, len: 0.62, seed: 7 },
+    { use: 'capeSegment', slot: 'shroud', bone: 'capeA', w0: 0.46, w1: 0.56, len: 0.44, bow: 0.95, ragged: true, seed: 2 },
+    { use: 'capeSegment', slot: 'rags', bone: 'capeB', w0: 0.56, w1: 0.64, len: 0.46, bow: 0.78, ragged: true, seed: 6 },
   ],
-  weapon: { use: 'greatAxe', slots: { blade: 'blade', grip: 'wood', guard: 'iron' } },
-  eyes: { color: 0xff5a20, size: 0.016, spread: 0.05, at: [0, 0.095, 0.15] },
+  weapon: { use: 'glaive', slots: { blade: 'blade', rust: 'rust', hole: 'socket', grip: 'wood', guard: 'iron', wrap: 'rags' } },
+  eyes: { color: 0xd8a858, size: 0.009, spread: 0.036, at: [0, 0.112, 0.105] },
   anim: {
-    idle: { breathRate: 1.0, breath: 0.015, headDrift: 0.03, sway: 0.01, twitch: 0 }, death: { buckle: 1, slump: 0.8 }, flinch: { head: 0.5, chest: 0.5, arms: 0.5 },
-    cloth: [{ bone: 'loinF', gain: 0.12, k: 60, damp: 5, flutter: 0.03 }, { bone: 'loinB', gain: 0.16, k: 50, damp: 4.5, flutter: 0.05 }],
+    idle: { breathRate: 1.2, breath: 0.018, headDrift: 0.06, sway: 0.025, twitch: 0.12 },
+    walk: { twist: 0.15, roll: 0.06, headNod: 0.06, elbow: 0.35, drag: 0.08 },
+    cloth: [
+      { bone: 'loinF', gain: 0.16, k: 58, damp: 4.8, flutter: 0.06 },
+      { bone: 'loinB', gain: 0.2, k: 50, damp: 4.5, flutter: 0.07 },
+      { bone: 'loinL', gain: 0.15, k: 54, damp: 4.6, flutter: 0.06, sideways: 0.9 },
+      { bone: 'loinR', gain: 0.15, k: 54, damp: 4.6, flutter: 0.06, sideways: 0.9 },
+      { bone: 'capeA', gain: 0.09, k: 38, damp: 4.2, flutter: 0.04 },
+      { bone: 'capeB', gain: 0.08, k: 34, damp: 3.6, flutter: 0.06, sideways: 1.1 },
+    ],
+  },
+};
+
+// The Executioner (v5.5, after the reference art): unhelmed with swept-back auburn hair and a black diagonal eyepatch,
+// a silver-grey feathered scale hauberk with layered leaf-scale plumage over the chest, shoulders and hips, an open
+// collar over a dark undertunic, a multi-band amber sash and diagonal strap with red-white cord tassels, a beige-olive
+// skirt bordered in geometric embroidery, a heavy scaled left gauntlet and smooth leather right bracer, dark banded
+// knee-guards and boots, and a blood-stained crescent greataxe on a gnarled, red-wrapped haft.
+MODEL_DEFS.ashExecutioner = {
+  extends: 'ashBase', faction: 'ashen', fit: 1.02,
+  proportions: { shoulderX: 0.37, torsoW: 0.25, torsoD: 0.17, armR: 0.072, legR: 0.088, headR: 0.122, handR: 0.062, footLen: 0.3 },
+  limbs: { armL: { len: 1.04, thick: 1.06 }, armR: { len: 1.02, thick: 1.0 } },
+  posture: { chest: [0.06, 0, 0], neck: [0.04, 0, 0], head: [0.02, -0.05, 0], elbowL: [-0.28, 0, 0.06], elbowR: [-0.38, 0, -0.04] },
+  materials: {
+    skin: { tex: 'execSkin', tint: 0xdca07c, decay: 0.35 },
+    hair: { tex: 'margitFur', tint: 0x9e4828, decay: 0.35 },
+    patch: { tex: 'crackedLeather', tint: 0x201c1a, decay: 0.4 },
+    plumage: { tex: 'execPlumage', tint: 0xd0cac2, decay: 0.45, double: true },
+    sleeve: { tex: 'rottenCloth', tint: 0x9e4224, decay: 0.5, double: true },
+    sash: { tex: 'rottenCloth', tint: 0xc89658, decay: 0.45, double: true },
+    cord: { tex: 'rottenCloth', tint: 0xb83824, decay: 0.4, double: true },
+    skirt: { tex: 'execSkirt', tint: 0x9a8c68, decay: 0.5, double: true },
+    trim: { tex: 'execTrim', tint: 0xd0c294, decay: 0.35, double: true },
+    leather: { tex: 'crackedLeather', tint: 0x5c3828, decay: 0.55 },
+    darkLeather: { tex: 'crackedLeather', tint: 0x282422, decay: 0.6 },
+    gauntlet: { tex: 'rogueScales', tint: 0x7c7e86, decay: 0.45 },
+    iron: { tex: 'dentedSteel', tint: 0x5a5856, decay: 0.65 },
+    blade: { tex: 'execBlade', tint: 0xa89e9a, decay: 0.65 },
+    haft: { tex: 'bone', tint: 0x9a8878, decay: 0.6 },
+    eye: { glow: 0xffe0b8 },
+  },
+  body: { torso: 'plumage', pelvis: 'skirt', arms: 'sleeve', legs: 'darkLeather', head: 'skin', neck: 'skin', hands: 'darkLeather', feet: 'darkLeather' },
+  bones: {
+    tasselL: { parent: 'chest', at: [0.06, 0.38, 0.19] },
+    tasselR: { parent: 'chest', at: [-0.07, 0.36, 0.19] },
+    cloakB: { parent: 'chest', at: [0, 0.52, -0.2] },
+  },
+  parts: [
+    // Head: swept-back auburn hair, black diagonal eyepatch over the left eye, sculpted nose and brow.
+    { use: 'sweptHair', slot: 'hair', bone: 'head', size: 1.02 },
+    { use: 'eyePatch', slot: 'patch', skin: 'skin', hair: 'hair', bone: 'head', side: 1 },
+    // Torso: open V-collar, feathered scale jerkin and cascading rows of pointed feather-scales.
+    { use: 'openCollar', slot: 'plumage', bone: 'chest' },
+    { use: 'jerkin', slot: 'plumage', bone: 'chest' },
+    { use: 'featherMantle', slot: 'plumage', bone: 'chest', rows: [
+      { y: 0.49, r: 0.31, n: 8, w: 0.072, h: 0.16, tilt: 0.26 },
+      { y: 0.35, r: 0.285, n: 8, w: 0.07, h: 0.165, tilt: 0.2 },
+      { y: 0.22, r: 0.255, n: 7, w: 0.068, h: 0.155, tilt: 0.16 },
+    ] },
+    // Lower feather-scale peplum below the waist sash, over the embroidered skirt.
+    { use: 'featherMantle', slot: 'plumage', bone: 'spin', rows: [
+      { y: -0.02, r: 0.235, n: 8, w: 0.07, h: 0.17, tilt: 0.18 },
+      { y: -0.14, r: 0.25, n: 7, w: 0.072, h: 0.17, tilt: 0.14 },
+    ] },
+    // Waist sash, diagonal strap, hanging cord tassels, side pouch, and the embroidered olive-tan skirt.
+    { use: 'waistSash', slot: 'sash', cord: 'cord', bone: 'spin' },
+    { use: 'pouch', slot: 'leather', bone: 'spin', x: -0.22, z: 0.04 },
+    { use: 'borderedSkirt', slot: 'skirt', trim: 'trim', bone: 'spin', top: -0.02, hem: -0.45, border: 0.095 },
+    // Shoulders and arms: feathered pauldrons over rust-orange sleeves, smooth leather right bracer, scaled left gauntlet.
+    { use: 'pauldron', slot: 'plumage', bone: 'armL', size: 1.35 },
+    { use: 'pauldron', slot: 'plumage', bone: 'armR', size: 1.35, side: -1 },
+    { use: 'sleeve', slot: 'sleeve', bone: 'armL', r0: 0.085, r1: 0.115, len: 0.28, seed: 3 },
+    { use: 'sleeve', slot: 'sleeve', bone: 'armR', r0: 0.085, r1: 0.115, len: 0.28, seed: 6 },
+    { use: 'plateBands', slot: 'leather', bone: 'elbowR', from: 0.05, to: 0.27, radius: 0.062, count: 2, flare: 0.12 },
+    { use: 'plateBands', slot: 'gauntlet', bone: 'elbowL', from: 0.03, to: 0.29, radius: 0.068, count: 4, flare: 0.18, cop: 0.072 },
+    { use: 'spikes', slot: 'gauntlet', bone: 'elbowL', size: 0.55, at: [[0.06, -0.08, 0.02], [0.062, -0.16, 0.02], [0.06, -0.24, 0.02]] },
+    // Legs: dark leather cuisses, banded knee-guards with cops, and dark boots.
+    { use: 'plateBands', slot: 'darkLeather', bone: 'kneeL', from: 0.03, to: 0.36, radius: 0.076, count: 3, flare: 0.08, cop: 0.082 },
+    { use: 'plateBands', slot: 'darkLeather', bone: 'kneeR', from: 0.03, to: 0.36, radius: 0.076, count: 3, flare: 0.08, cop: 0.082 },
+    { use: 'boot', slot: 'darkLeather', bone: 'kneeL' },
+    { use: 'boot', slot: 'darkLeather', bone: 'kneeR' },
+    // Hanging red-orange chest cords and short feathered back mantle.
+    { use: 'clothStrip', slot: 'cord', bone: 'tasselL', w: 0.045, len: 0.36, seed: 5 },
+    { use: 'clothStrip', slot: 'cord', bone: 'tasselR', w: 0.05, len: 0.42, seed: 9 },
+    { use: 'capeSegment', slot: 'plumage', bone: 'cloakB', w0: 0.52, w1: 0.62, len: 0.46, bow: 0.85, ragged: true, seed: 4 },
+  ],
+  weapon: { use: 'executionerAxe', slots: { blade: 'blade', grip: 'haft', guard: 'iron', wrap: 'cord' } },
+  eyes: { color: 0xffe0b8, size: 0.011, spread: 0.042, at: [0, 0.12, 0.108] },
+  anim: {
+    idle: { breathRate: 1.1, breath: 0.016, headDrift: 0.04, sway: 0.015, twitch: 0 },
+    walk: { twist: 0.12, roll: 0.04, headNod: 0.04, elbow: 0.3, drag: 0 },
+    death: { buckle: 1, slump: 0.8 }, flinch: { head: 0.5, chest: 0.5, arms: 0.5 },
+    cloth: [
+      { bone: 'tasselL', gain: 0.14, k: 58, damp: 4.8, flutter: 0.05 },
+      { bone: 'tasselR', gain: 0.16, k: 54, damp: 4.5, flutter: 0.06 },
+      { bone: 'cloakB', gain: 0.09, k: 42, damp: 4.2, flutter: 0.04 },
+    ],
   },
 };
 

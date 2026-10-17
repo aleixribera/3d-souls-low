@@ -141,6 +141,19 @@ const TEXLIB = (() => {
       out.h = h * 0.85 + fbm(u, v, 30 * k, 30 * k, 2, 2) * 0.15; out.mix = h * 0.6 + fbm(u, v, 6 * k, 6 * k, 3, 5) * 0.4;
       out.acc = Math.max(1 - sstep(0.0, 0.18, h), sstep(0.75 - 0.2 * decay, 0.92, fbm(u, v, 5 * k, 5 * k, 3, 4)) * 0.4);
     },
+    // Overlapping pointed plumage / leaf-scales (v5.5, the Executioner's feathered hauberk): diamond-tipped vanes with a
+    // central quill ridge and diagonal barb striations, dark crevices between the tips.
+    feathers(u, v, k, decay, out) {
+      const rows = 10 * k, cols = 8 * k, ry = v * rows, row = Math.floor(ry), cu = (u * cols + (row & 1) * 0.5) % 1, cv = ry % 1;
+      const dx = Math.abs(cu - 0.5) * 2, w = 1 - Math.pow(cv, 0.75) * 0.88, inside = Math.max(0, 1 - dx / Math.max(0.08, w));
+      const quill = Math.max(0, 1 - dx * 6.5) * (1 - cv * 0.65);
+      const barbs = 0.5 + 0.5 * Math.sin((dx * 16 - cv * 12) * Math.PI);
+      const vane = Math.pow(inside, 0.45) * (0.78 + 0.22 * barbs) + quill * 0.28;
+      out.h = Math.min(1, vane * 0.85 + fbm(u, v, 16 * k, 16 * k, 2, 3) * 0.15);
+      out.mix = Math.min(1, quill * 0.55 + Math.pow(inside, 0.7) * 0.45 * fbm(u, v, 6 * k, 6 * k, 3, 5));
+      out.acc = Math.max(1 - sstep(0.0, 0.22, inside), sstep(0.72 - 0.2 * decay, 0.9, fbm(u, v, 5 * k, 5 * k, 3, 4)) * 0.45);
+      out.dark = (1 - sstep(0.0, 0.18, inside)) * 0.7;
+    },
     // Spectral bone (v5.5, the Giant Skeleton): long streaks, mottled shadow, and bright veins of light along the grain.
     spectral(u, v, k, decay, out) {
       const streak = fbm(u, v, 3 * k, 14 * k, 4, 1), mottle = fbm(u, v, 6 * k, 6 * k, 3, 6);

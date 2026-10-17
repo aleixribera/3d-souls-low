@@ -2238,10 +2238,10 @@
   };
   const execLog = [];
   A.events.onAny(type => { if (/^execution/.test(type) || type === 'enemyDeath' || type === 'bossPhase' || type === 'bossRetreat') execLog.push(type); });
-  test('Execution: light attack in front of a kneeling Knight runs it through and kills it; the player is untouchable throughout', () => {
+  test('Execution: light attack in front of a kneeling Knight runs it through and kills it when low; the player is untouchable throughout', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
     const p = Game.player, e = Game.duel; execLog.length = 0;
-    kneel(e); inFront(e, p); sim.step(1, 1);
+    e.hp = 80; kneel(e); inFront(e, p); sim.step(1, 1);
     expect.ok(e.execReady && A.hud.execCue.classList.contains('show'), 'the cue shows');
     sim.press('light'); sim.step(1);
     expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED, `executing (${p.state}, ${e.state})`);
@@ -2286,8 +2286,8 @@
     e.takeHit(strikeOf('heavy'), behind(e));
     expect.near(hp0 - e.hp, strikeOf('heavy').damage, 0.01, 'a heavy on the kneeling giant');
   });
-  test('Execution: normal enemies die outright; the Empty Sentinel survives; bosses take light x lightMul', () => {
-    for (const [id, want] of [['knight', 'dead'], ['executioner', 'dead'], ['warden', 'dead'], ['shover', 'dead'], ['sentinel', 'hurt'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
+  test('Execution: normal enemies take light x lightMul and survive at full health; bosses take light x bossLightMul', () => {
+    for (const [id, want] of [['knight', 'hurt'], ['executioner', 'hurt'], ['warden', 'hurt'], ['shover', 'hurt'], ['sentinel', 'hurt'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
       Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
       const p = Game.player, e = Game.duel, max = e.def.hp;
       kneel(e); inFront(e, p); sim.step(1); sim.press('light');
@@ -2296,7 +2296,7 @@
       sim.until(() => p.state !== PS.EXECUTE, 5);
       if (want === 'dead') expect.ok(!e.alive(), `${id}: killed outright (${e.hp.toFixed(0)} / ${max})`);
       else if (want === 'hurt') expect.ok(e.alive() && Math.abs(max - e.hp - 18 * CONFIG.execution.damage.lightMul) < 0.01, `${id}: hurt, alive (${e.hp.toFixed(0)} / ${max})`);
-      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(18 * CONFIG.execution.damage.lightMul, max / 2)) < 0.01, `${id}: light x lightMul off its bar (${e.hp.toFixed(0)} / ${max})`);
+      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(18 * CONFIG.execution.damage.bossLightMul, max / 2)) < 0.01, `${id}: light x bossLightMul off its bar (${e.hp.toFixed(0)} / ${max})`);
       expect.ok(e.state !== ES.EXECUTED && e.state !== ES.BROKEN, `${id}: let go (${e.state})`);
     }
   });

@@ -129,9 +129,9 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'executioner', model: 'ashExecutioner', name: 'Executioner', description: 'A hooded giant with a greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
-    scale: 1.5, bulk: 1.3, radius: 0.68, color: 0x4a2422, weapon: 'greataxe', idle: 'still',
-    visual: { skin: 0x3a2a28, roughness: 0.9, rim: 0.7 },   // a dark hood
+    id: 'executioner', model: 'ashExecutioner', name: 'Executioner', description: 'A towering executioner in feathered scale with a blood-stained greataxe. Its chop follows you; its spin cannot be blocked. Roll late, hit heavy.',
+    scale: 1.5, bulk: 1.3, radius: 0.68, color: 0x6a645c, weapon: 'greataxe', idle: 'still',
+    visual: { skin: 0xb87654, roughness: 0.65, rim: 0.7 },
     hp: 320, poise: 140, speed: 1.8, turnRate: 2.8, trackRate: 1.0,
     cooldown: [1.12, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
     // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or five light hits;
