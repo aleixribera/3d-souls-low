@@ -1,6 +1,6 @@
 # Project Guidelines
 
-Current version: **v5.4.5** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 adds the second, Godrick the Grafted.
+Current version: **v5.4.6** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 adds the second, Godrick the Grafted.
 
 **`LORE.md` is the source of truth for the story.** Every in-game story text (dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards) must agree with it. Change the story in LORE.md first, then in the game, and keep LORE.md updated.
 
@@ -109,3 +109,4 @@ Current version: **v5.4.5** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION
 - Enemy stagger / guard meters (not bosses): light fill x0.4, `decay` x0.8. Player heavy 38 -> 53, jump heavy 42 -> 59 (x1.4).
 - Level 3: the sleeping Knight in the yard has `zone: 'zone-alley'`, so the alley Duelist's ambush wakes it.
 - Camera: with no lock-on, the yaw swing behind the facing and a pitch auto-level (`CONFIG.camera.levelPitch`, `levelRate`) run only while the player moves, scaled by speed (`moveSpeed`); `yawFollow` 0.85 -> 1.15.
+- FPS counter: `settings.fps` (off by default, saved), toggled by **F3** anywhere or in the pause menu's options; `fpsMeter` in `js/hud.js` (its own rAF loop, refresh `CONFIG.hud.fps.interval`).

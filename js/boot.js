@@ -51,6 +51,11 @@ const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   input.use('keyboard');
+  if (code === SYSTEM_KEYS.fps) {   // the FPS counter toggles anywhere, menus included
+    ev.preventDefault();
+    if (!ev.repeat) { settings.fps = !settings.fps; saveSettings(); applySettings(); }
+    return;
+  }
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');

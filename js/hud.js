@@ -297,7 +297,26 @@ function registerHudListeners() {
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
 }
+// FPS counter (settings.fps, F3): its own animation-frame loop, so it also counts in menus; refreshed every
+// CONFIG.hud.fps.interval s. Drawing only.
+const fpsMeter = (() => {
+  const el = document.createElement('div');
+  el.id = 'fpsCounter';
+  el.style.cssText = 'position:fixed;top:6px;right:8px;z-index:50;font:600 13px/1 monospace;color:#e8e0c8;' +
+    'background:rgba(0,0,0,0.45);padding:3px 6px;border-radius:3px;pointer-events:none;display:none';
+  document.body.appendChild(el);
+  let frames = 0, last = performance.now();
+  const tick = now => {
+    frames++;
+    const span = (now - last) / 1000;
+    if (span >= CONFIG.hud.fps.interval) { el.textContent = `${Math.round(frames / span)} FPS`; frames = 0; last = now; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return { show(on) { el.style.display = on ? 'block' : 'none'; } };
+})();
 function applySettings() {
+  fpsMeter.show(settings.fps);
   hud.toggle.checked = settings.hitboxes;
   hud.layout();
   visuals.setQuality(settings.graphics);

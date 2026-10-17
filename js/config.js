@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.4.5';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.4.6';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -230,7 +230,8 @@ const CONFIG = {
   // kept within minScale..maxScale, times the player's HUD scale setting. Below `narrowWidth` design px wide it
   // switches to the compact layout. Times are seconds. Calm: after `calmDelay` s without a threat the vitals dim
   // (by `calmDim`) over `calmFadeOut` s; any threat brings them back over `calmFadeIn` s.
-  hud: { refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
+  hud: { fps: { interval: 0.5 },   // FPS counter refresh (s)
+         refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
          trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, emptyPulse: 0.6, refundPulse: 0.45,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,

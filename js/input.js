@@ -15,7 +15,7 @@ const ACTIONS = {
   zoomIn: ['Equal', 'NumpadAdd', 'PadUp'], zoomOut: ['Minus', 'NumpadSubtract', 'PadDown'],
 };
 // Keys handled directly by the key handler rather than through ACTIONS.
-const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1' };
+const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1', fps: 'F3' };
 const SYSTEM_PAD = { pause: 'PadStart', restart: 'PadBack' };   // gamepad equivalents (handled in gamepad.js)
 // Menu navigation. The gamepad's left stick also moves the selection.
 const MENU_KEYS = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'],
@@ -87,6 +87,6 @@ const input = {
 
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
-const settings = { sensitivity: 5, invert: false, hitboxes: true, hudScale: 1, graphics: CONFIG.VISUALS.defaultQuality, volume: 8 };
+const settings = { sensitivity: 5, invert: false, hitboxes: true, fps: false, hudScale: 1, graphics: CONFIG.VISUALS.defaultQuality, volume: 8 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* defaults */ }
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }

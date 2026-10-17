@@ -61,6 +61,7 @@ const Game = {
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
         { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
+        { name: `FPS counter: ${onOff(settings.fps)}`, desc: `Frames per second in the top right corner (${SYSTEM_KEYS.fps} toggles it anywhere).`, adjust: () => { settings.fps = !settings.fps; } },
         { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: 'Default for the F1 hitbox display.', adjust: () => { settings.hitboxes = !settings.hitboxes; } },
         { name: `HUD scale: ${Math.round(settings.hudScale * 100)}%`, desc: 'Size of bars and text.',
           adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
