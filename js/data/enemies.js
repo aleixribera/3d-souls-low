@@ -236,8 +236,8 @@ const ENEMY_DEFS = [
     // A gargoyle: carved stone that crouches on the castle's ledges (placement `perch`) and springs at whoever passes.
     // Before it moves, grit trickles and stone grinds (js/finale.js), so it never strikes unannounced.
     id: 'gargoyle', model: 'gargoyle', name: 'Gargoyle', description: 'Carved stone that crouches on the ledges and springs when you pass. Grit falls before it moves. Few hits break it, but it hits hard.',
-    scale: 1.05, bulk: 1.1, radius: 0.48, color: 0x6e6c68, weapon: 'none', idle: 'twitch',
-    visual: { skin: 0x7a786f, roughness: 0.95 },
+    scale: 1.05, bulk: 1.1, radius: 0.48, color: 0x262422, weapon: 'none', idle: 'twitch',
+    visual: { skin: 0x2e2b28, roughness: 0.75 },
     hp: 120, poise: 70, speed: 3.6, turnRate: 6, trackRate: 3,
     cooldown: [0.8, 1.6], flinchTime: 0.2, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
@@ -253,8 +253,8 @@ const ENEMY_DEFS = [
   {
     // The Empty Sentinel: a giant suit of armour with nobody inside, cold light in the joints. Section A's bridge guard.
     id: 'sentinel', model: 'emptySentinel', name: 'Empty Sentinel', description: 'A giant suit of armour with nobody inside. Its sweep waits before it falls; its slam can only be rolled. Fill its stagger with heavy blows.',
-    scale: 1.65, bulk: 1.25, radius: 0.72, color: 0x5a6068, weapon: 'halberd', idle: 'still',
-    visual: { skin: 0x4a5058, skinMetal: 0.4, metal: 0.4, roughness: 0.5, rim: 0.9 },
+    scale: 1.65, bulk: 1.25, radius: 0.72, color: 0xb88c42, weapon: 'halberd', idle: 'still',
+    visual: { skin: 0x9e723c, skinMetal: 0.55, metal: 0.65, roughness: 0.38, rim: 0.9 },
     hp: 520, poise: 200, speed: 1.8, turnRate: 2.8, trackRate: 1.2, approach: 0.45,
     cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
     stagger: { max: 100, heavy: 34, light: 22, breakers: ['heavy'], decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.16 },
@@ -274,8 +274,8 @@ const ENEMY_DEFS = [
   {
     // The Toll Wisp: a hooded robe of blue flame round a small bell. It rings before every shot (the cue to move).
     id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: 'A robe of blue flame round a little bell. It rings before it shoots. Fragile: close in and cut it down.',
-    scale: 0.9, bulk: 0.8, radius: 0.36, color: 0x5a7ab0, weapon: 'none', idle: 'sway',
-    visual: { skin: 0x6a8ac0, roughness: 0.6 },
+    scale: 0.9, bulk: 0.96, radius: 0.36, color: 0x8a6432, weapon: 'none', idle: 'sway',
+    visual: { skin: 0x9e9484, roughness: 0.75 },
     hp: 60, poise: 20, speed: 2.4, turnRate: 6, trackRate: 3,
     cooldown: [1.4, 2.4], flinchTime: 0.3, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [

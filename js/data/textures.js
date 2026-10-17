@@ -66,4 +66,29 @@ const TEXTURE_DEFS = [
   { id: 'lancerRags', kind: 'tattered', base: 0x1e1814, alt: 0x362c24, accent: 0x0c0907, rough: [0.9, 1], metal: 0, bump: 1.3, scratch: 10, stain: 0x0a0806, cavity: 0.8, contrast: 0.85 },
   { id: 'lancerBone', kind: 'bone', base: 0xb6a482, alt: 0xd8c8a6, accent: 0x281e15, rough: [0.42, 0.82], metal: 0, bump: 1.15, scratch: 18, stain: 0x3a2c1e, cavity: 0.88, contrast: 0.95 },
   { id: 'glaiveSteel', kind: 'steel', base: 0x686a6e, alt: 0xa6aab0, accent: 0x4a2c18, rough: [0.26, 0.68], metal: 0.68, bump: 1.25, scratch: 95, stain: 0x2a1a10, cavity: 0.75, contrast: 0.88 },
+  // The Gargoyle (v5.5, after the reference art): dark soot-stained obsidian/basalt stone with specular worn edges,
+  // deep carved stone relief with black crevices, layered stone wing feathers, and verdigris-patinated dark bronze brow filigree.
+  { id: 'gargoyleStone', kind: 'stone', base: 0x1e1c1a, alt: 0x423e3a, accent: 0x0a0908, rough: [0.38, 0.82], metal: 0.28, bump: 1.5, scratch: 26, stain: 0x0c0b0a, cavity: 0.9, contrast: 0.95 },
+  { id: 'gargoyleCarved', kind: 'plate', base: 0x1a1816, alt: 0x3e3a36, accent: 0x080706, rough: [0.35, 0.78], metal: 0.32, bump: 1.6, scratch: 32, stain: 0x0a0908, cavity: 0.95, contrast: 1.0 },
+  { id: 'gargoyleWing', kind: 'feathers', base: 0x181615, alt: 0x3a3632, accent: 0x080706, rough: [0.42, 0.86], metal: 0.22, bump: 1.8, scratch: 18, stain: 0x090807, cavity: 0.92, contrast: 1.05 },
+  { id: 'gargoyleBronze', kind: 'rust', base: 0x242822, alt: 0x46584c, accent: 0x527868, rough: [0.35, 0.75], metal: 0.45, bump: 1.4, scratch: 22, stain: 0x121614, cavity: 0.85, contrast: 0.9 },
+  // The Toll Wisp (v5.5, after the reference art): deep espresso-black weathered felt hat, warm chestnut-brown shoulder
+  // mantle and laced sleeves, cream-gold damask brocade front robe, burnt-amber embroidered trim, and dark olive-charcoal outer coat.
+  { id: 'wispHat', kind: 'leather', base: 0x18120e, alt: 0x2e2218, accent: 0x090604, rough: [0.75, 0.96], metal: 0, bump: 1.15, scratch: 14, stain: 0x080604, cavity: 0.85, contrast: 0.85 },
+  { id: 'wispMantle', kind: 'cloth', base: 0x3a2012, alt: 0x62381e, accent: 0x1a0d06, rough: [0.78, 0.96], metal: 0, bump: 1.2, scratch: 10, stain: 0x160a05, cavity: 0.8, contrast: 0.85 },
+  { id: 'wispBrocade', kind: 'holy', base: 0x7a5c2e, alt: 0xd4b678, accent: 0x3a220c, rough: [0.55, 0.88], metal: 0.12, bump: 1.4, scratch: 8, stain: 0x281808, cavity: 0.85, contrast: 0.95, scale: 2 },
+  { id: 'wispTrim', kind: 'cloth', base: 0x683612, alt: 0xc47e24, accent: 0x2a1206, rough: [0.5, 0.85], metal: 0.2, bump: 1.45, scratch: 6, stain: 0x1e0c04, cavity: 0.85, contrast: 0.95, scale: 2 },
+  { id: 'wispCoat', kind: 'cloth', base: 0x1a1c16, alt: 0x32362a, accent: 0x0b0c09, rough: [0.82, 0.98], metal: 0, bump: 1.1, scratch: 8, stain: 0x0c0b08, cavity: 0.8, contrast: 0.8 },
+  // The Empty Sentinel (v5.5, after the reference art): antique burnished gold/brass plate, deeply embossed arabesque
+  // gold filigree, warm amber-bronze chainmail, weathered ash-white surcoat cloth with dark geometric border embroidery
+  // and a tattered hem, and honed silver-gold halberd steel.
+  { id: 'sentinelBrass', kind: 'plate', base: 0x685024, alt: 0xc8a456, accent: 0x34240e, rough: [0.24, 0.58], metal: 0.72, bump: 1.25, scratch: 48, stain: 0x24180a, cavity: 0.85, contrast: 0.85 },
+  { id: 'sentinelFiligree', kind: 'feathers', base: 0x58401a, alt: 0xd8b660, accent: 0x241808, rough: [0.22, 0.56], metal: 0.76, bump: 1.65, scratch: 32, stain: 0x201408, cavity: 0.92, contrast: 0.98, scale: 2 },
+  { id: 'sentinelMail', kind: 'mail', base: 0x462e12, alt: 0x9c7230, accent: 0x221406, rough: [0.36, 0.74], metal: 0.62, bump: 1.45, scratch: 12, stain: 0x1a0e05 },
+  { id: 'sentinelCloth', kind: 'cloth', base: 0x8a8d92, alt: 0xc8ccd2, accent: 0x46484c, rough: [0.82, 0.98], metal: 0, bump: 0.95, scratch: 6, stain: 0x34322e, cavity: 0.65, contrast: 0.65 },
+  { id: 'sentinelRags', kind: 'tattered', base: 0x82858a, alt: 0xbec2c8, accent: 0x383a3e, rough: [0.85, 1], metal: 0, bump: 1.0, scratch: 6, stain: 0x2c2a26, alpha: true, cavity: 0.7 },
+  { id: 'sentinelTrim', kind: 'cloth', base: 0x282522, alt: 0x767068, accent: 0x12100e, rough: [0.78, 0.96], metal: 0, bump: 1.35, scratch: 4, stain: 0x161412, cavity: 0.85, contrast: 0.95, scale: 3 },
+  { id: 'sentinelSteel', kind: 'steel', base: 0x88867e, alt: 0xc8c4b8, accent: 0x5c4824, rough: [0.22, 0.55], metal: 0.74, bump: 1.0, scratch: 60, stain: 0x282014, contrast: 0.75 },
 ];
+
+

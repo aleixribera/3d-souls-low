@@ -481,87 +481,218 @@ MODEL_DEFS.ashExecutioner = {
 };
 
 // ---- Level 5: the castle's own creatures (v4.3). None of them is a living person. ----------------------------------
-// Gargoyle: carved, weathered stone, hunched forward, horned, stone wings spread from the back, clawed hands.
+// Gargoyle (v5.5, after the reference art): dark soot-stained obsidian/basalt stone with specular highlights on worn
+// edges, an ornate verdigris-patinated brow crown over a roaring fanged demon/hound maw, carved gothic scroll relief on
+// the chest and abdomen, long muscular arms spread wide with curved stone talons, four-taloned raptor feet, a hanging
+// stone tail between the legs, and massive gothic stone wings rising high with inward-curling shoulder volutes, hooked
+// wingtip horns, branching skeletal veins, and tiered rows of carved stone covert feathers.
 MODEL_DEFS.gargoyle = {
-  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.12,
-  proportions: { shoulderX: 0.33, torsoW: 0.22, torsoD: 0.16, armR: 0.06, legR: 0.085, headR: 0.13, handR: 0.06, footLen: 0.3 },
-  limbs: { armL: { len: 1.15 }, armR: { len: 1.15 } },
-  posture: { chest: [0.62, 0, 0], neck: [-0.25, 0, 0], head: [-0.2, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0], wingL: [0.35, 0.2, -1.05], wingR: [0.35, -0.2, 1.05] },
-  materials: {
-    stone: { tex: 'stone', tint: 0x8a877e, decay: 0.75 },
-    moss: { tex: 'stone', tint: 0x6a6e5a, decay: 0.9 },
-    wing: { tex: 'stone', tint: 0x75726a, decay: 0.8, double: true },
-    eye: { glow: 0x9ac8ff },
+  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.12, limbSides: 4,
+  proportions: { shoulderX: 0.35, torsoW: 0.23, torsoD: 0.17, armR: 0.064, legR: 0.092, headR: 0.138, handR: 0.056, footLen: 0.28 },
+  limbs: {
+    armL: { len: 1.24, thick: 1.05 }, elbowL: { len: 1.22, thick: 0.96 },
+    armR: { len: 1.24, thick: 1.05 }, elbowR: { len: 1.22, thick: 0.96 },
+    legL: { thick: 1.08 }, kneeL: { thick: 1.02 },
+    legR: { thick: 1.08 }, kneeR: { thick: 1.02 },
   },
-  body: { torso: 'stone', pelvis: 'stone', arms: 'stone', legs: 'stone', head: 'stone', neck: 'stone', hands: 'stone', feet: 'stone' },
-  bones: { wingL: { parent: 'chest', at: [0.12, 0.5, -0.17] }, wingR: { parent: 'chest', at: [-0.12, 0.5, -0.17] } },
+  posture: {
+    chest: [0.46, 0, 0], neck: [-0.28, 0, 0], head: [-0.18, 0, 0],
+    armL: [0.06, 0, 0.56], elbowL: [-0.28, 0, 0.12],
+    armR: [0.06, 0, -0.56], elbowR: [-0.28, 0, -0.12],
+    wingL: [-0.42, -0.12, -0.05], wingR: [-0.42, 0.12, 0.05],
+  },
+  materials: {
+    stone: { tex: 'gargoyleStone', tint: 0x948e88, decay: 0.65 },
+    carved: { tex: 'gargoyleCarved', tint: 0x8c8680, decay: 0.68 },
+    wing: { tex: 'gargoyleWing', tint: 0x88827c, decay: 0.7, double: true },
+    bronze: { tex: 'gargoyleBronze', tint: 0x9ab4a6, decay: 0.55 },
+    teeth: { tex: 'bone', tint: 0x9a9288, decay: 0.6 },
+    void: { tex: 'ashSoot', tint: 0x0c0b0a, decay: 0.9 },
+    eye: { glow: 0x6a7870 },
+  },
+  body: { torso: null, pelvis: 'stone', arms: 'stone', legs: 'carved', head: null, neck: 'carved', hands: 'stone', feet: 'stone' },
+  bones: {
+    wingL: { parent: 'chest', at: [0.14, 0.52, -0.15] },
+    wingR: { parent: 'chest', at: [-0.14, 0.52, -0.15] },
+  },
   parts: [
-    { use: 'spineBumps', slot: 'moss', bone: 'chest' },
-    { use: 'horns', slot: 'stone', bone: 'head', size: 0.75 },
-    { use: 'capeSegment', slot: 'wing', bone: 'wingL', w0: 0.12, w1: 0.55, len: 0.75, bow: 0.4 },
-    { use: 'capeSegment', slot: 'wing', bone: 'wingR', w0: 0.12, w1: 0.55, len: 0.75, bow: 0.4 },
-    { use: 'spikes', slot: 'moss', bone: 'armL', size: 0.9 }, { use: 'spikes', slot: 'moss', bone: 'armR', size: 0.9, side: -1 },
+    // Roaring fanged stone demon head with verdigris-patinated brow crown and deep dark sockets/maw
+    { use: 'gargoyleHead', slot: 'carved', bronze: 'bronze', void: 'void', teeth: 'teeth', bone: 'head' },
+    // Carved gothic chest cuirass and pectoral/abdominal scroll relief + patinated collarbone trim
+    { use: 'gargoyleChest', slot: 'carved', trim: 'bronze', bone: 'chest' },
+    { use: 'spineBumps', slot: 'carved', bone: 'chest' },
+    // Ornate V-shield abdomen/groin plate and hanging stone tail between the legs
+    { use: 'gargoylePelvis', slot: 'carved', bone: 'spin' },
+    { use: 'gargoyleTail', slot: 'stone', bone: 'spin' },
+    // Forearm ridges and long curved stone hand talons
+    { use: 'gargoyleClaws', slot: 'stone', bone: 'elbowL', side: 1 },
+    { use: 'gargoyleClaws', slot: 'stone', bone: 'elbowR', side: -1 },
+    // Pointed knee cops, shin crests, and 4-taloned raptor feet
+    { use: 'gargoyleFoot', slot: 'carved', bone: 'kneeL' },
+    { use: 'gargoyleFoot', slot: 'carved', bone: 'kneeR' },
+    // Massive gothic bat-feathered stone wings with inward shoulder volute hooks, branching stone veins, and tip horns
+    { use: 'gargoyleWing', slot: 'stone', wing: 'wing', bone: 'wingL', side: 1, size: 1.02 },
+    { use: 'gargoyleWing', slot: 'stone', wing: 'wing', bone: 'wingR', side: -1, size: 1.02 },
   ],
   weapon: null,
-  eyes: { color: 0x9ac8ff, size: 0.018, spread: 0.055, at: [0, 0.1, 0.11] },
-  anim: { attackMul: 1, idle: { breathRate: 0.4, breath: 0.004, headDrift: 0.15, sway: 0.0, twitch: 0.8 }, walk: { twist: 0.25, roll: 0.08, headNod: 0.05, elbow: 0.7, drag: 0.2 },
-          flinch: { head: 0.6, chest: 0.6, arms: 0.6 }, death: { buckle: 1, slump: 1 },
-          cloth: [{ bone: 'wingL', gain: 0.05, k: 80, damp: 7, flutter: 0.01 }, { bone: 'wingR', gain: 0.05, k: 80, damp: 7, flutter: 0.01 }] },
+  eyes: { color: 0x6a7870, size: 0.008, spread: 0.052, at: [0, 0.13, 0.11] },
+  anim: {
+    attackMul: 1,
+    idle: { breathRate: 0.4, breath: 0.005, headDrift: 0.12, sway: 0.01, twitch: 0.6 },
+    walk: { twist: 0.22, roll: 0.08, headNod: 0.05, elbow: 0.55, drag: 0.15 },
+    flinch: { head: 0.6, chest: 0.6, arms: 0.6 },
+    death: { buckle: 1, slump: 1 },
+    cloth: [
+      { bone: 'wingL', gain: 0.04, k: 85, damp: 7.5, flutter: 0.008 },
+      { bone: 'wingR', gain: 0.04, k: 85, damp: 7.5, flutter: 0.008 },
+    ],
+  },
 };
-// Empty Sentinel: a giant suit of plate with nothing inside: the gaps between the plates are black, and cold blue light
-// shows through the visor. Tarnished bronze and slate, the castle's colours.
+
+// Empty Sentinel (v5.5, after the reference art): a towering giant suit of ornate golden-brass plate and arabesque
+// filigree over warm bronze-amber chainmail. Features a tall narrow ovoid close-helm with a sharp vertical central keel,
+// crown crest tuft, and two columns of breathing perforations over a wide ringed gorget; wide flared golden pauldrons
+// with upturned outer lips and rerebrace lames; a heavy filigree breastplate and waist fauld crossed by a pale ash-white
+// diagonal surcoat drape from the right shoulder to the left hip with double dark geometric border stripes and a deeply
+// tattered knee-length hem; golden hip tassets, domed knee cops, rivet-studded chevron shin rims, engraved greaves, and
+// laminar sabatons; and a giant spiral-fluted golden/steel halberd held in the right hand. No shield.
 MODEL_DEFS.emptySentinel = {
-  extends: 'ironKnight', faction: 'castle', budget: 'enemy', fit: 1.0,
-  proportions: { shoulderX: 0.4, torsoW: 0.26, torsoD: 0.18, armR: 0.07, legR: 0.09, headR: 0.13, handR: 0.065, footLen: 0.32 },
-  posture: { chest: [0.02, 0, 0], neck: [0.05, 0, 0], head: [0.08, 0, 0.06], elbowL: [-0.3, 0, 0], elbowR: [-0.3, 0, 0] },
-  materials: {
-    plate: { tex: 'dentedSteel', tint: 0x6a6450, decay: 0.75 },
-    void: { tex: 'ashSoot', tint: 0x202024, decay: 0.3 },
-    rust: { tex: 'rustedIron', tint: 0x7a6a5a, decay: 0.85 },
-    tabard: { tex: 'rottenCloth', tint: 0x3e4a58, decay: 0.85, double: true },
-    wood: { tex: 'barkMoss', tint: 0x5a4a3a, decay: 0.4 },
-    blade: { tex: 'rustedIron', tint: 0x8a8680, decay: 0.6 },
-    eye: { glow: 0x9ad0ff },
+  extends: 'ironKnight', faction: 'castle', budget: 'enemy', fit: 1.0, limbSides: 5,
+  proportions: { shoulderX: 0.42, torsoW: 0.27, torsoD: 0.19, armR: 0.072, legR: 0.095, headR: 0.128, handR: 0.066, footLen: 0.33 },
+  limbs: {
+    armL: { len: 1.04, thick: 1.05 }, elbowL: { len: 1.04, thick: 1.02 },
+    armR: { len: 1.04, thick: 1.05 }, elbowR: { len: 1.04, thick: 1.02 },
+    legL: { thick: 1.06 }, kneeL: { thick: 1.04 },
+    legR: { thick: 1.06 }, kneeR: { thick: 1.04 },
   },
-  body: { torso: 'void', pelvis: 'void', arms: 'void', legs: 'void', head: null, neck: 'void', hands: 'plate', feet: 'plate' },
-  bones: IRONBOUND_BONES,
+  posture: {
+    chest: [0.03, 0, 0], neck: [0.04, 0, 0], head: [0.05, 0, 0.02],
+    armL: [0.06, 0, 0.12], elbowL: [-0.28, 0, 0.06],
+    armR: [-0.04, 0, -0.12], elbowR: [-0.34, 0, -0.05],
+  },
+  materials: {
+    plate: { tex: 'sentinelBrass', tint: 0xdcb464, decay: 0.42 },
+    filigree: { tex: 'sentinelFiligree', tint: 0xd8ae5e, decay: 0.44 },
+    mail: { tex: 'sentinelMail', tint: 0x9e723c, decay: 0.58 },
+    plume: { tex: 'sentinelMail', tint: 0x624626, decay: 0.65 },
+    cloth: { tex: 'sentinelCloth', tint: 0xdedad2, decay: 0.45, double: true },
+    rags: { tex: 'sentinelRags', tint: 0xd8d4cc, decay: 0.52, double: true },
+    trim: { tex: 'sentinelTrim', tint: 0xc8c2b8, decay: 0.48, double: true },
+    blade: { tex: 'sentinelSteel', tint: 0xc2c6cc, decay: 0.42 },
+    void: { tex: 'ashSoot', tint: 0x120e0a, decay: 0.85 },
+    eye: { glow: 0xffe29a },
+  },
+  body: { torso: null, pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  bones: {
+    sashF: { parent: 'spin', at: [0.09, -0.02, 0.185] },
+    sashB: { parent: 'spin', at: [0.06, -0.02, -0.185] },
+  },
   parts: [
-    { use: 'jerkin', slot: 'plate', bone: 'chest' }, { use: 'mailSkirt', slot: 'rust', bone: 'spin' },
-    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.25, crest: 0.18 },
-    { use: 'pauldron', slot: 'plate', bone: 'armL', size: 1.6 }, { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.6, side: -1 },
-    { use: 'wraps', slot: 'plate', bone: 'elbowL', from: 0.06, to: 0.28, radius: 0.07, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'elbowR', from: 0.06, to: 0.28, radius: 0.07, count: 2 },
-    { use: 'wraps', slot: 'plate', bone: 'legL', from: 0.04, to: 0.3, radius: 0.1, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'legR', from: 0.04, to: 0.3, radius: 0.1, count: 2 },
-    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.09, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.09, count: 2 },
-    { use: 'clothStrip', slot: 'tabard', bone: 'loinF', w: 0.3, len: 0.7, seed: 4 }, { use: 'clothStrip', slot: 'tabard', bone: 'loinB', w: 0.32, len: 0.8, seed: 8 },
+    // Tall narrow ovoid golden close-helm with vertical faceplate keel, top crest tuft, and breathing perforations
+    { use: 'sentinelHelm', slot: 'plate', filigree: 'filigree', plume: 'plume', void: 'void', bone: 'head', size: 1.12 },
+    // Heavy golden breastplate, arabesque upper chest plackart, collar rim, and 3 horizontal molded waist lames
+    { use: 'sentinelCuirass', slot: 'plate', filigree: 'filigree', bone: 'chest' },
+    // Pale ash-white diagonal surcoat drape from right shoulder to left hip with double dark geometric border stripes
+    { use: 'sentinelSash', slot: 'cloth', trim: 'trim', bone: 'chest' },
+    // Lower hanging front and back surcoat panels with double dark borders and deeply jagged, tattered knee-length hems
+    { use: 'sentinelSashHem', slot: 'cloth', trim: 'trim', rags: 'rags', bone: 'sashF', w: 0.25, len: 0.68, seed: 5 },
+    { use: 'sentinelSashHem', slot: 'cloth', trim: 'trim', rags: 'rags', bone: 'sashB', w: 0.27, len: 0.72, back: true, seed: 9 },
+    // Wide, horizontally flared golden pauldrons with upturned outer lips, filigree crests, and upper-arm rerebrace lames
+    { use: 'sentinelPauldron', slot: 'plate', filigree: 'filigree', bone: 'armL', size: 1.38, side: 1 },
+    { use: 'sentinelPauldron', slot: 'plate', filigree: 'filigree', bone: 'armR', size: 1.38, side: -1 },
+    // Projecting golden elbow couters, barrelled filigree vambraces, wrist cuffs, and articulated gauntlet plates
+    { use: 'sentinelGauntlet', slot: 'plate', filigree: 'filigree', bone: 'elbowL', side: 1 },
+    { use: 'sentinelGauntlet', slot: 'plate', filigree: 'filigree', bone: 'elbowR', side: -1 },
+    // Molded golden waist belt and curved filigree hip/thigh tasset shields over the bronze chainmail
+    { use: 'sentinelTassets', slot: 'plate', filigree: 'filigree', bone: 'spin' },
+    // Domed filigree knee cops, rivet-studded angled chevron shin rims, engraved golden greaves, and laminar sabatons
+    { use: 'sentinelGreave', slot: 'plate', filigree: 'filigree', bone: 'kneeL', side: 1 },
+    { use: 'sentinelGreave', slot: 'plate', filigree: 'filigree', bone: 'kneeR', side: -1 },
   ],
-  weapon: { use: 'halberd', slots: { blade: 'blade', grip: 'wood', guard: 'rust' } },
-  eyes: { color: 0x9ad0ff, size: 0.02, spread: 0.06, at: [0, 0.14, 0.17] },
-  anim: IRONBOUND_ANIM,
-};
-// Toll Wisp: a hooded robe hanging round blue flame, a little bell where a face would be. No body: the arms and the
-// hands are flame. It glides; the robe hides where legs would be.
-MODEL_DEFS.tollWisp = {
-  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.0,
-  proportions: { shoulderX: 0.26, torsoW: 0.16, torsoD: 0.12, armR: 0.04, legR: 0.05, headR: 0.11, handR: 0.045, footLen: 0.2 },
-  limbs: {},
-  posture: { chest: [0.18, 0, 0], neck: [0.15, 0, 0], head: [0.1, 0, 0], elbowL: [-0.6, 0, 0], elbowR: [-0.6, 0, 0] },
-  materials: {
-    flame: { glow: 0x2a5ab8 },
-    robe: { tex: 'rottenCloth', tint: 0x3a4250, decay: 0.85, double: true },
-    bell: { tex: 'dentedSteel', tint: 0x9a8050, decay: 0.6 },
-    eye: { glow: 0xc8e4ff },
+  weapon: { use: 'sentinelHalberd', slots: { blade: 'blade', grip: 'plate', guard: 'filigree' } },
+  eyes: null,
+  anim: {
+    ...IRONBOUND_ANIM,
+    cloth: [
+      { bone: 'sashF', gain: 0.14, k: 56, damp: 4.8, flutter: 0.04 },
+      { bone: 'sashB', gain: 0.16, k: 50, damp: 4.5, flutter: 0.05 },
+    ],
   },
-  body: { torso: 'flame', pelvis: 'flame', arms: 'flame', legs: 'flame', head: null, neck: 'flame', hands: 'flame', feet: 'flame' },
-  bones: { robeF: { parent: 'spin', at: [0, 0.0, 0.12] }, robeB: { parent: 'spin', at: [0, 0.0, -0.12] } },
+};
+// Toll Wisp (v5.5, after the reference art): a weathered wandering sorcerer in an enormous wide-brimmed dark felt
+// wizard hat with a slouching hooked crown, patterned brim border, and twisted pale rope hatband with hanging tassels;
+// a shadowed face with a flowing white beard tumbling over the throat; a draped chestnut-brown shoulder capelet with a
+// knotted cloth cravat, sage-green shoulder caps, and a buckled diagonal leather baldric; wide brown sleeves with
+// crisscross pale X-lacing and golden embroidered cuffs over bony hands; a multi-strand twisted rope waist girdle with
+// long front tassels and an angled leather belt with a hip satchel; and a floor-length dark outer coat over a cream-gold
+// damask brocade front robe bisected by a rust-amber stripe and wide embroidered bottom hem border, over brown boots.
+MODEL_DEFS.tollWisp = {
+  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.04, limbSides: 5,
+  proportions: { shoulderX: 0.30, torsoW: 0.21, torsoD: 0.145, armR: 0.048, legR: 0.068, headR: 0.118, handR: 0.042, footLen: 0.27 },
+  limbs: {
+    armL: { len: 1.04, thick: 0.95 }, elbowL: { len: 1.04, thick: 0.92 },
+    armR: { len: 1.04, thick: 0.95 }, elbowR: { len: 1.04, thick: 0.92 },
+  },
+  posture: {
+    chest: [0.12, 0, 0], neck: [0.08, 0, 0], head: [0.08, 0, -0.02],
+    armL: [0.06, 0, 0.09], elbowL: [-0.26, 0, 0.04],
+    armR: [0.06, 0, -0.09], elbowR: [-0.28, 0, -0.04],
+  },
+  materials: {
+    hat: { tex: 'wispHat', tint: 0x8e7c6e, decay: 0.55, double: true },
+    brimTrim: { tex: 'execTrim', tint: 0x8c7e68, decay: 0.5, double: true },
+    beard: { tex: 'margitFur', tint: 0xe2ded6, decay: 0.25 },
+    mantle: { tex: 'wispMantle', tint: 0xb48462, decay: 0.5, double: true },
+    epaulette: { tex: 'execSkirt', tint: 0x7c8868, decay: 0.45, double: true },
+    brocade: { tex: 'wispBrocade', tint: 0xe2c88e, decay: 0.42, double: true },
+    trim: { tex: 'wispTrim', tint: 0xdca048, decay: 0.38, double: true },
+    coat: { tex: 'wispCoat', tint: 0x747868, decay: 0.6, double: true },
+    rope: { tex: 'execTrim', tint: 0xc8bca2, decay: 0.42 },
+    leather: { tex: 'crackedLeather', tint: 0x684024, decay: 0.55 },
+    buckle: { tex: 'wardenBrass', tint: 0xc4b08a, decay: 0.45 },
+    skin: { tex: 'paleSkin', tint: 0x9e9484, decay: 0.55 },
+    void: { tex: 'ashSoot', tint: 0x0c0a08, decay: 0.9 },
+  },
+  body: { torso: null, pelvis: null, arms: 'mantle', legs: 'coat', head: null, neck: 'void', hands: 'skin', feet: 'leather' },
+  bones: {
+    tasselF: { parent: 'spin', at: [-0.055, 0.02, 0.19] },
+    robeB: { parent: 'chest', at: [0, 0.48, -0.18] },
+  },
   parts: [
-    { use: 'hood', slot: 'robe', bone: 'head', size: 1.15, tail: 0.4, close: 0.2 },
-    { use: 'bellHelm', slot: 'bell', bone: 'head', size: 0.5 },
-    { use: 'bellSkirt', slot: 'robe', bone: 'spin' },
-    { use: 'clothStrip', slot: 'robe', bone: 'robeF', w: 0.32, len: 0.85, seed: 3 }, { use: 'clothStrip', slot: 'robe', bone: 'robeB', w: 0.34, len: 0.9, seed: 7 },
+    // Enormous wide-brimmed wizard hat with slouching hooked crown, brim border band, and rope hatband with hanging tassels
+    { use: 'wispHat', slot: 'hat', brimTrim: 'brimTrim', rope: 'rope', void: 'void', bone: 'head', size: 1.04 },
+    // Shadowed upper face under the brim and flowing white beard cascading over the chin and throat
+    { use: 'wispBeard', slot: 'beard', void: 'void', bone: 'head' },
+    // Chestnut-brown shoulder capelet, knotted cloth cravat, sage-green shoulder caps, brocade surcoat, and buckled baldric
+    { use: 'wispMantle', slot: 'mantle', brocade: 'brocade', trim: 'trim', coat: 'coat', epaulette: 'epaulette', leather: 'leather', buckle: 'buckle', rope: 'rope', bone: 'chest' },
+    // Loose brown sleeves with pale crisscross X-lacing down the outer sides and wide golden-bordered cuffs over bony fingers
+    { use: 'wispSleeve', slot: 'mantle', lace: 'rope', bone: 'armL', upper: true, side: 1 },
+    { use: 'wispSleeve', slot: 'mantle', lace: 'rope', bone: 'armR', upper: true, side: -1 },
+    { use: 'wispSleeve', slot: 'mantle', trim: 'trim', lace: 'rope', void: 'void', bone: 'elbowL', upper: false, side: 1 },
+    { use: 'wispSleeve', slot: 'mantle', trim: 'trim', lace: 'rope', void: 'void', bone: 'elbowR', upper: false, side: -1 },
+    { use: 'fingers', slot: 'skin', bone: 'elbowL', at: 0.31, len: 0.09, r: 0.009, spread: 0.018 },
+    { use: 'fingers', slot: 'skin', bone: 'elbowR', at: 0.31, len: 0.09, r: 0.009, spread: 0.018 },
+    // Full-length dark outer coat, cream-gold damask brocade front skirt, central vertical rust-amber stripe, wide bottom
+    // embroidered border, 4-coil twisted rope waist girdle, angled leather belt, and left hip satchel
+    { use: 'wispRobe', slot: 'brocade', coat: 'coat', brocade: 'brocade', trim: 'trim', rope: 'rope', leather: 'leather', buckle: 'buckle', bone: 'spin' },
+    // Hanging front rope loops and long braided tassels swaying from the waist knot, plus back coat drapery and leather boots
+    { use: 'wispTassels', slot: 'rope', bone: 'tasselF' },
+    { use: 'capeSegment', slot: 'coat', bone: 'robeB', w0: 0.44, w1: 0.58, len: 0.68, bow: 0.85, ragged: true, seed: 7 },
+    { use: 'boot', slot: 'leather', bone: 'kneeL' },
+    { use: 'boot', slot: 'leather', bone: 'kneeR' },
   ],
   weapon: null,
-  eyes: { color: 0xc8e4ff, size: 0.016, spread: 0.04, at: [0, 0.06, 0.1] },
-  anim: { attackMul: 1, idle: { breathRate: 1.8, breath: 0.03, headDrift: 0.2, sway: 0.06, twitch: 0 }, walk: { twist: 0.05, roll: 0.02, headNod: 0.02, elbow: 0.2, drag: 0 },
-          flinch: { head: 1, chest: 1, arms: 1 }, death: { buckle: 0.6, slump: 0.6 },
-          cloth: [{ bone: 'robeF', gain: 0.2, k: 40, damp: 3.5, flutter: 0.1 }, { bone: 'robeB', gain: 0.22, k: 36, damp: 3.2, flutter: 0.12 }] },
+  eyes: null,
+  anim: {
+    attackMul: 1,
+    idle: { breathRate: 1.4, breath: 0.02, headDrift: 0.08, sway: 0.03, twitch: 0 },
+    walk: { twist: 0.1, roll: 0.035, headNod: 0.03, elbow: 0.25, drag: 0 },
+    flinch: { head: 0.8, chest: 0.8, arms: 0.8 },
+    death: { buckle: 0.8, slump: 0.8 },
+    cloth: [
+      { bone: 'tasselF', gain: 0.18, k: 48, damp: 4.0, flutter: 0.06 },
+      { bone: 'robeB', gain: 0.1, k: 40, damp: 4.2, flutter: 0.04 },
+    ],
+  },
 };
+
