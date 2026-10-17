@@ -2076,15 +2076,13 @@ const KIT = (() => {
       const grip = uvScale(xf(new THREE.CylinderGeometry(0.022, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
       return { blade: [blade], grip: [grip], guard: [xf(tube(0.014, 0.014, 0.16, 4), 0, 0, 0.09, 0, 0, Math.PI / 2)] };
     },
-    // A broad scimitar (v5.5, the Rogue) widening toward a curved tip, a tongue of fire licking along it (`flame`, a glow slot).
-    flameScimitar() {
+    // A broad iron scimitar (the Rogue) widening toward a curved tip.
+    scimitar() {
       const bend = v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.3; };
       const blade = plate([[0.1, -0.034], [0.5, -0.048], [0.78, -0.074], [0.95, -0.045], [1.02, 0.02], [0.86, 0.036], [0.5, 0.04], [0.1, 0.034]], 0.014, 0.005);
       blade.rotateY(-Math.PI / 2); blade.translate(0.007, 0, 0); deform(blade, bend); roughen(blade, 0.003, 17);
-      const flame = plate([[0.2, -0.008], [0.38, -0.05], [0.52, -0.03], [0.68, -0.085], [0.84, -0.045], [0.72, -0.004], [0.58, 0.028], [0.42, 0.018], [0.28, 0.036]], 0.03, 0.006);
-      flame.rotateY(-Math.PI / 2); flame.translate(0.015, 0, 0); deform(flame, bend);
       const grip = uvScale(xf(new THREE.CylinderGeometry(0.021, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
-      return { blade: [blade], grip: [grip], guard: [xf(tube(0.015, 0.015, 0.14, 4), 0, 0, 0.09, 0, 0, Math.PI / 2), xf(sphere(0.026, 5, 4), 0, 0, -0.12)], flame: [flame] };
+      return { blade: [blade], grip: [grip], guard: [xf(tube(0.015, 0.015, 0.14, 4), 0, 0, 0.09, 0, 0, Math.PI / 2), xf(sphere(0.026, 5, 4), 0, 0, -0.12)] };
     },
     // A worn arming sword: straight, leather-wrapped grip, plain crossguard.
     wandererSword() {

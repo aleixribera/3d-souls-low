@@ -9,7 +9,7 @@
 const HOLLOWED_CLOTH = { tex: 'rottenCloth', decay: 0.8, double: true };
 
 MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood and black mask, layered belted leather over blue-black
-  // scale, blackened steel greaves, a broad scimitar licked by fire and a dagger in the off hand
+  // scale, blackened steel greaves, a broad iron scimitar and a dagger in the off hand
   extends: 'hollowBase', fit: 1.08,
   proportions: { torsoW: 0.17, torsoD: 0.11, armR: 0.045, legR: 0.065, headR: 0.112, handR: 0.045, footLen: 0.26 },
   limbs: { armL: { len: 1.08, thick: 0.95 } },
@@ -21,8 +21,7 @@ MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood a
     hood: { tex: 'rogueHood', decay: 0.55, double: true },
     mask: { tex: 'rogueHood', tint: 0x2a2a2a, decay: 0.4, double: true },
     steel: { tex: 'rogueSteel', decay: 0.5 },
-    blade: { tex: 'rogueSteel', tint: 0xb8bcc4, decay: 0.35 },
-    flame: { glow: 0xff5a14 },
+    blade: { tex: 'rustedIron', tint: 0xa8a49e, decay: 0.4 },
     eye: { glow: 0x8a5a28 },
   },
   body: { torso: 'leather', pelvis: 'scales', arms: 'scales', legs: 'scales', head: 'mask', neck: 'mask', hands: 'leather', feet: 'steel' },
@@ -44,7 +43,7 @@ MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood a
     { use: 'clothStrip', slot: 'leather', bone: 'loinF', w: 0.18, len: 0.3, seed: 3 }, { use: 'clothStrip', slot: 'leather', bone: 'loinB', w: 0.2, len: 0.34, seed: 7 },
     { use: 'dagger', slot: 'blade', guardSlot: 'steel', bone: 'elbowL' },
   ],
-  weapon: { use: 'flameScimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel', flame: 'flame' } },
+  weapon: { use: 'scimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
   eyes: { color: 0x8a5a28, size: 0.01, spread: 0.044, at: [0, 0.095, 0.1] },   // a dim glint in the mask's slit
   anim: {
     idle: { breathRate: 2.2, breath: 0.03, headDrift: 0.14, sway: 0.03, twitch: 1.0 }, walk: { twist: 0.26, roll: 0.09, headNod: 0.09, elbow: 0.7, drag: 0.2 },
