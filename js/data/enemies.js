@@ -35,7 +35,7 @@ const ENEMY_DEFS = [
     // Stagger meter (shown under its health bar), replacing poise: hits never interrupt it until the meter
     // fills (2 heavy, or 3 light; v4.2.1, was heavy 60 / light 45), then it kneels, open, for `breakTime`.
     // Drains at `decay`/s once `decayDelay` s pass without a hit. A jump attack counts as light.
-    stagger: { max: 100, heavy: 50, light: 38, breakers: ['heavy'], decayDelay: 2.5, decay: 14,
+    stagger: { max: 100, heavy: 50, light: 15, breakers: ['heavy'], decayDelay: 2.5, decay: 11.2,
                breakTime: 2.0, hitstop: 0.14 },
     attacks: [
       { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.5, active: 0.18, follow: 0.3, hold: { at: 0.45, time: [0.25, 0.6], chance: 0.4 } }], recovery: 1.15,
@@ -97,7 +97,7 @@ const ENEMY_DEFS = [
     // Hits taken on the shield fill only `blockedMul` of that, so flanking or punishing swings breaks it far faster.
     // The meter drains at `decay`/s once `decayDelay` s pass without a hit.
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
-             max: 100, heavy: 42, light: 29, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
+             max: 100, heavy: 42, light: 12, decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.8, active: 0.12, follow: 0.16 }], recovery: 0.7,
         damage: 26, poise: 30, knock: 5, lunge: 1.8, range: 2.2,
@@ -136,7 +136,7 @@ const ENEMY_DEFS = [
     cooldown: [1.12, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
     // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or five light hits;
     // v4.2.1, was heavy 45 / light 28).
-    stagger: { max: 100, heavy: 40, light: 24, breakers: ['heavy'], decayDelay: 2.5, decay: 12, breakTime: 2.2, hitstop: 0.14 },
+    stagger: { max: 100, heavy: 40, light: 10, breakers: ['heavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
@@ -181,7 +181,7 @@ const ENEMY_DEFS = [
     cooldown: [0.98, 1.82], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard, as the Shield Warden's: frontal hits are blocked and barely fill the meter; flank it or break it with heavies.
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
-             max: 100, heavy: 42, light: 29, decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.14 },
+             max: 100, heavy: 42, light: 12, decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'shoverShove', name: 'Shove', anim: 'shove', pose: 'enemyShove', tracking: { rate: 2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], shove: true, hits: [{ startup: 1.3, active: 0.16, follow: 0.2 }], recovery: 0.75,
         damage: 8, poise: 30, knock: 26, lunge: 2.4, range: 2.0, box: { w: 1.8, h: 1.8, d: 1.6, fwd: 1.1, y: 1.0 } },
@@ -257,7 +257,7 @@ const ENEMY_DEFS = [
     visual: { skin: 0x9e723c, skinMetal: 0.55, metal: 0.65, roughness: 0.38, rim: 0.9 },
     hp: 520, poise: 200, speed: 1.8, turnRate: 2.8, trackRate: 1.2, approach: 0.45,
     cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
-    stagger: { max: 100, heavy: 34, light: 22, breakers: ['heavy'], decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.16 },
+    stagger: { max: 100, heavy: 34, light: 9, breakers: ['heavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.16 },
     attacks: [
       { id: 'sentinelSweep', name: 'Patient Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.8, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25,
         hits: [{ startup: 1.3, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.4, 1.0], chance: 0.6 } }], recovery: 1.1,
@@ -417,10 +417,10 @@ const TRAINING_DEFS = [
   SPARRING_DUMMY,
   { ...SPARRING_DUMMY, id: 'dodgeDummy', name: 'Dodge Dummy',
     attacks: SPARRING_DUMMY.attacks.map(a => ({ ...a, id: 'dodgeSwing', name: 'Dodge Swing', rollOnly: true })) },
-  // The execution dummy (v5.2): a target dummy with a stagger meter that two heavies (or three lights) fill. It kneels
-  // for a long `breakTime`, so there is time to step in front of it and execute; it never dies.
-  { id: 'executionDummy', name: 'Execution Dummy', scale: 1.0, bulk: 1.1, radius: 0.42, color: 0x6a4a3a, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
+  // The execution dummy (v5.2; large, with its stagger bar shown, v5.4.5): any attack fills its meter (two heavies or
+  // three lights). It kneels for a long `breakTime`, so there is time to step in front of it and execute; it never dies.
+  { id: 'executionDummy', name: 'Execution Dummy', scale: 1.5, bulk: 1.3, radius: 0.6, color: 0x6a4a3a, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
     hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [],
-    stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy'], decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
+    stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy'], showBar: true, decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));

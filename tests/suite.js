@@ -572,7 +572,7 @@
   test('player: 1.2x health, 1.6x stamina, a lighter heavy attack', () => {
     const S = A.PLAYER_DEF.stats;
     expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
-    expect.ok(A.PLAYER_DEF.moveset.attacks.heavy.damage === 38, 'heavy attack damage 38');
+    expect.ok(A.PLAYER_DEF.moveset.attacks.heavy.damage === 53, 'heavy attack damage 53 (38 x 1.4, v5.4.5)');
     Game.startLevel('tutorial'); sim.begin();
     expect.ok(Game.player.hp === 120 && Game.player.stamina === 160, 'a fresh player starts full');
   });

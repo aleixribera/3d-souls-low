@@ -187,7 +187,7 @@ const LEVEL_3 = {
   // Bowmen are optional: a barricade never waits on one. They wake with their zone's fight.
   dispersed: [
     { behavior: 'sentry', enemy: 'bowman', x: 38, y: 8, z: 29.2, yaw: Math.PI, zone: 'zone-steep-street' },   // the balcony, at its rail
-    { behavior: 'slumber', enemy: 'knight', x: 17, y: 4, z: 13, yaw: 0 },                // the yard off the alley
+    { behavior: 'slumber', enemy: 'knight', x: 17, y: 4, z: 13, yaw: 0, zone: 'zone-alley' },   // the yard off the alley: rises with the Duelist's ambush
     { behavior: 'sentry', enemy: 'bowman', x: 98, y: 17, z: 81.5, yaw: Math.PI, zone: 'zone-church' },   // the church gallery
   ],
 };

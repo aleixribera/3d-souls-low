@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.4.4';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.4.5';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -13,7 +13,9 @@ const CONFIG = {
     focusRate: 3.5,   // how fast the camera turns to a scripted moment (Game.camFocus)
     fov: 55, lookHeight: 1.35,
     followRate: 7,        // position smoothing (1/s)
-    yawFollow: 0.85,      // how fast the camera swings behind the facing (rad/s at 90 deg off)
+    yawFollow: 1.15,      // how fast the camera swings behind the facing while the player moves (rad/s at 90 deg off)
+    moveSpeed: 3,         // planar speed (m/s) at which the swing and the auto-levelling reach full strength; none standing still
+    levelPitch: 0, levelRate: 1.4,   // auto-levelling: the camera height eases back to this pitch (1/s) while the player moves
     leanRange: 11, leanAmount: 0.38, leanPullback: 1.4, leanRaise: 0.5,
     wallMargin: 0.3, gateMargin: 0.6, closeRaise: 1.6, floor: 0.6, ceilingMargin: 0.7,
     refRate: 8,           // how fast the camera's ground height follows stairs and drops (1/s)
@@ -205,7 +207,8 @@ const CONFIG = {
   level: { leash: 28,        // give up the chase when the player is this far away (v4.2.4: was 22)...
            homeLeash: 40,    // ...or this far from its home (was 30, and measured from the enemy); then walk back home
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
-  tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
+  tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5,   // hintTime: a dodge hint stays under the prompt this long
+              restArrow: { color: 0xffc860, size: 0.28, height: 2.6, bob: 0.25, bobSpeed: 3 } },   // the arrow over the bonfire in the rest step
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
   // Level 5's script (js/finale.js, v4.3): Aldric's fights, the throne room's transition, the ending.
   finale: {

@@ -314,5 +314,7 @@ const lore = (() => {
   }
 
   Game.renderHooks.push(render);
-  return { reset, update, prompt, devItems, jumpTo, get state() { return st; } };
+  // Distance to what Talk would reach now (Infinity if nothing): the bonfire shares the key (Game.restWins).
+  function nearDist(p) { return st && st.near ? dist(p, st.near) : Infinity; }
+  return { reset, update, prompt, nearDist, devItems, jumpTo, get state() { return st; } };
 })();

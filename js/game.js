@@ -287,6 +287,12 @@ const Game = {
       Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange && !gateBetween(e, p));
     return threatened ? null : b;
   },
+  // Rest and Talk share a key: the bonfire wins when it can be used and is no farther than the speaker or inscription.
+  restWins() {
+    const p = this.player, b = this.canRest();
+    if (!b) return false;
+    return Math.hypot(b.x - p.x, b.z - p.z) <= (this.kind === 'level' ? lore.nearDist(p) : Infinity);
+  },
   tryRest() {
     const p = this.player, b = this.canRest();
     if (!b || !p.isFree()) return;
@@ -477,7 +483,7 @@ const Game = {
         } },
       // v5.2: break the dummy's stance, then execute it. Done on one finished execution.
       { id: 'execute', dummies: 'execution', lockOn: true,
-        text: () => `Heavy attacks ${B('heavy')} break the dummy's stance. When it kneels, light attack ${B('light')} in front of it to execute. Nothing can hurt you while you execute`,
+        text: () => `Attacks ${B('light')} ${B('heavy')} fill the stagger bar under the dummy's health. When it is full the dummy kneels: light attack ${B('light')} in front of it to execute. Nothing can hurt you while you execute`,
         on: (type, d, t, g) => {
           if (type === 'postureBreak' && d.enemy === g.enemies[0]) g.tutorialHint('It kneels: get in front of it and press light attack');
           return type === 'executionEnd';
@@ -522,6 +528,27 @@ const Game = {
     if (s.setup) s.setup(this, t);
   },
   completeStep() { this.tut.doneTimer = CONFIG.tutorial.doneTime; },
+  // Tutorial "rest" step: a glowing arrow bobs over the bonfire so it is easy to find (drawing only).
+  drawRestArrow(t) {
+    const s = this.isTutorial() && this.tut && this.tut.doneTimer <= 0 ? this.currentStep() : null;
+    const b = s && s.id === 'rest' ? world.bonfires[0] : null;
+    if (!this.restArrow) {
+      if (!b) return;
+      const A = CONFIG.tutorial.restArrow, mat = new THREE.MeshBasicMaterial({ color: A.color, transparent: true, opacity: 0.9, depthTest: false });
+      const g = new THREE.Group(), head = new THREE.Mesh(new THREE.ConeGeometry(A.size, A.size * 1.6, 4), mat);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(A.size * 0.35, A.size * 0.35, A.size * 1.4, 6), mat);
+      head.rotation.x = Math.PI; shaft.position.y = A.size * 1.5;
+      g.add(head, shaft); g.renderOrder = 10; head.renderOrder = shaft.renderOrder = 10;
+      scene.add(g); this.restArrow = g;
+    }
+    const g = this.restArrow;
+    g.visible = !!b;
+    if (b && !g.parent) scene.add(g);   // a level rebuild may have cleared the scene
+    if (!b) return;
+    const A = CONFIG.tutorial.restArrow;
+    g.position.set(b.x, world.floorY(b.x, b.z, b.y) + A.height + Math.sin(t * A.bobSpeed) * A.bob, b.z);
+    g.rotation.y = t * 1.5;
+  },
   // A short hint under the prompt (CONFIG.tutorial.hintTime), replacing any shown.
   tutorialHint(text) { this.tut.hint = text; this.tut.hintTimer = CONFIG.tutorial.hintTime; },
   onTutorialEvent(type, data) {
@@ -723,9 +750,15 @@ const Game = {
       look.y = lerp(look.y, f.y + 1.5, clamp(d / 30, 0.3, 0.6)); dist += 2;
       this.mouseHold = 0;
     } else {
-      // Swing behind the player's facing; no pull when the player runs straight at the camera.
+      // While the player moves (never when standing still), swing behind their facing and ease the height back to level;
+      // no pull when the player runs straight at the camera. Mouse or stick input holds both off for a moment.
       this.mouseHold = Math.max(0, this.mouseHold - dt);
-      if (this.mouseHold <= 0) c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.yawFollow * dt;
+      const moving = clamp(Math.hypot(p.vx, p.vz) / K.moveSpeed, 0, 1);
+      if (this.mouseHold <= 0 && moving > 0) {
+        c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.yawFollow * moving * dt;
+        c.pitch += (K.levelPitch - c.pitch) * (1 - Math.exp(-K.levelRate * moving * dt));
+        pitch = c.pitch;
+      }
       const e = this.target();
       if (e && e.alive()) {
         const dx = e.x - p.x, dz = e.z - p.z;
@@ -802,7 +835,7 @@ const Game = {
     }
     if (this.hitstop > 0) { this.hitstop -= dt; input.hold(dt); return; }   // hit-pause: both sides freeze
     this.updateLock(dt);
-    if (input.consume('rest')) this.tryRest();
+    if (input.peek('rest') && this.restWins()) { input.consume('rest'); this.tryRest(); }   // else the press is Talk / Read (same key, js/lore.js)
     const live = this.enemies.filter(e => e.alive());
     const alerting = this.kind === 'level' && this.level.alert;
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
@@ -870,6 +903,7 @@ const Game = {
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);
     for (const hook of this.renderHooks) hook(this, placed);   // developer overlays (js/debug-combat.js)
+    this.drawRestArrow(t);
     hud.update(this, frameDt);
     visuals.render(this, t, frameDt);
   },

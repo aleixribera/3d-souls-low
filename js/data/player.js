@@ -52,7 +52,7 @@ const PLAYER_DEF = {
       heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.62, active: 0.14, follow: 0.22 }], recovery: 0.5, cost: 40,
                charge: { action: 'heavy', at: 0.7, hold: 0.9, mul: 1.5, hitstopMul: 1.4 },
                markers: [{ at: 'windup', t: 0.8, event: 'sound', sound: 'swingHeavy', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],
-               damage: 38, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+               damage: 53, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
       // Execution (v5.2, js/execution.js): light attack in front of a kneeling enemy. No hitbox: the damage is the
       // execution's own (CONFIG.execution.damage), dealt as the active phase opens. Wind-up: slide in and coil low;
@@ -71,7 +71,7 @@ const PLAYER_DEF = {
       // tapped heavy and a full charge, a tighter landing zone, a longer landing to punish a miss that a hit no longer
       // shortens, and it fills stagger and guard meters only as a light hit.
       jumpHeavy: { id: 'jumpHeavy', anim: 'overhead', hits: [{ startup: 0.3, active: Infinity }], recovery: 0.85, cost: 46,
-                   damage: 42, poise: 50, postureDmg: 20, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+                   damage: 59, poise: 50, postureDmg: 20, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                    box: { w: 1.7, h: 2.4, d: 2.1, fwd: 1.1, y: 0.0 },
                    air: { impactTime: 0.1, hitRecoveryMul: 1, hop: 3.8, fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } } },
     },

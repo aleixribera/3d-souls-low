@@ -115,7 +115,7 @@ const hud = {
     camera.updateMatrixWorld();
     let n = 0;
     for (const e of game.enemies) {
-      if (!e.alive() || !e.awake() || e.asleep || e.training || e.def.posture) continue;
+      if (!e.alive() || !e.awake() || e.asleep || (e.training && !(e.def.stagger && e.def.stagger.showBar)) || e.def.posture) continue;
       if (e.in('unaware') && e.hp >= e.def.hp && e !== game.lock) continue;   // untouched and unaware: no bar yet
       const q = e.rig.root.position;
       if (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e)) continue;
@@ -232,11 +232,11 @@ const hud = {
   updatePrompt(game) {
     const p = game.player, ready = p.isFree() && !!game.canRest();
     const blocked = !ready && p.isFree() && p.alive() && !!game.nearBonfire();
-    this.prompt.classList.toggle('show', ready || blocked);
+    this.prompt.classList.toggle('show', (ready && (!lore.prompt() || game.restWins())) || blocked);
     this.prompt.classList.toggle('blocked', blocked);
     this.promptText.textContent = blocked ? CONFIG.hud.text.restBlocked : this.restText;
     // Talk / Read (js/lore.js): its own line, so it never hides the bonfire's.
-    const talk = p.alive() ? lore.prompt() : null;
+    const talk = p.alive() && !(ready && game.restWins()) ? lore.prompt() : null;   // one key: show only the one it would do
     this.talk.classList.toggle('show', !!talk);
     if (talk && this.talkText.textContent !== talk) this.talkText.textContent = talk;
     // Execute (js/execution.js): a kneeling enemy is in reach, in front of it.
