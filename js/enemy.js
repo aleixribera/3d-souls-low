@@ -29,6 +29,7 @@ const REACTIONS = {
   healing: (e, p) => p.state === PS.USE_ITEM,
   staggered: (e, p) => p.state === PS.STAGGER,
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
+  struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
 };
 // Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
 const FOLLOW_IF = {
@@ -69,6 +70,7 @@ class Enemy {
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
+    this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -140,6 +142,15 @@ class Enemy {
     return false;
   }
   // Debug (Level 5 tools): empty the current health bar at once, as if the last blow landed.
+  // Lifesteal (def `lifesteal: { flat, pct }`, v5.9, Malenia): each blow that connects heals `flat` + `pct` of the bar.
+  lifesteal() {
+    const L = this.def.lifesteal;
+    if (!this.alive() || this.state === ES.PHASE || this.state === ES.EXECUTED) return;
+    const heal = Math.min(this.def.hp - this.hp, L.flat + L.pct * this.def.hp);
+    if (heal <= 0) return;
+    this.hp += heal;
+    events.emit('lifesteal', { enemy: this, amount: heal });
+  }
   deplete() { if (this.alive() && !this.invulnerable()) { this.hp = 0; if (!this.outlast()) this.die(); } }
   // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
   invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
@@ -178,7 +189,7 @@ class Enemy {
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
     this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
-    this.chainTime += dt; this.blockTime += dt;
+    this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
@@ -368,9 +379,13 @@ class Enemy {
         break;
       case ES.PHASE: {   // between two health bars: kneels, rises, the new bar fills; nothing it does can hurt
         const T = d.transition || 3;
-        this.hp = d.hp * clamp((this.stateTime - T * 0.35) / (T * 0.5), 0, 1);
+        const top = d.hp * (d.fill ?? 1);   // a phase's `fill` (v5.9, Malenia): the new bar refills only to that fraction
+        this.hp = top * clamp((this.stateTime - T * 0.35) / (T * 0.5), 0, 1);
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * 0.25 * dt);
-        if (this.stateTime >= T) { this.hp = d.hp; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        if (this.stateTime >= T) {
+          this.hp = top; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE);
+          if (d.opener) this.opener = d.attacks.find(a => a.id === d.opener) || null;   // a refilled phase may open with a move too
+        }
         break;
       }
       case ES.DEAD: break;
@@ -468,7 +483,8 @@ class Enemy {
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
-    const inReach = this.def.attacks.filter(a => !a.when && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range);
+    const inReach = this.def.attacks.filter(a => !a.when && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
+      && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
     const close = inReach.filter(isClose);
     if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
     const mul = crowd.chanceMul(this);
@@ -496,7 +512,7 @@ class Enemy {
     // A hit may bring its own `box` (with `ring`: an expanding ring round the owner) and its own `impact`.
     const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box, impact = hit.impact || this.attack.impact;
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
-    else this.hitbox = new Hitbox(this, box, makeStrike(this.attack));
+    else this.hitbox = new Hitbox(this, box, hit.damage ? { ...makeStrike(this.attack), damage: hit.damage } : makeStrike(this.attack));   // a hit's own `damage` (v5.9)
     if (this.leaping) { this.vx = this.vz = 0; }
     if (impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
       const f = box.fwd;   // where the hitbox is centred
@@ -574,6 +590,7 @@ class Enemy {
     if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
+    this.struckTime = 0;   // the `struck` reaction (v5.9)
     this.kx += kx; this.kz += kz;
     if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }

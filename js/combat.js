@@ -104,6 +104,7 @@ function resolveCombat(game) {
     }
     hb.markHit(p);
     const res = p.takeHit(hb.payload, hb.owner);
+    if (hb.owner.def && hb.owner.def.lifesteal) hb.owner.lifesteal();   // v5.9: every blow that connects heals, blocked or not
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : hb.payload.hitstop);
     events.emit('strike', { strike: hb.payload, attacker: hb.owner, target: p, at: contact(hb, p), blocked: res.blocked });
   }

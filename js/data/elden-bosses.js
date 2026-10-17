@@ -10,7 +10,7 @@
 //   name, title  the card's name and short title; the health bar shows the def's own name
 //   difficulty   1 to 5 (stars on the card)
 //   description  one line under the card
-const ELDEN_BOSS_DEFS = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, RADAGON, MALIKETH];
+const ELDEN_BOSS_DEFS = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, RADAGON, MALIKETH, MALENIA];
 const ELDEN_BOSSES = [
   { id: 'margit', enemy: 'margit', name: 'Margit, the Fell Omen', title: 'Stormveil\'s gatekeeper', difficulty: 4,
     description: 'Delayed cane swings, thrown golden daggers, and at 60% health a holy hammer and sword. Learn his rhythm; two parries break his stance.' },
@@ -24,6 +24,8 @@ const ELDEN_BOSSES = [
     description: 'Marika’s hammer, spears of holy lightning, golden runes that erupt where he strikes, and teleports that burst as he leaves and arrives. At 60% the Gold Breaker and the Elden Shattering. Three parries break him.' },
   { id: 'maliketh', enemy: 'maliketh', name: 'Maliketh, the Black Blade', title: 'Shadow of the Elden Lord', difficulty: 5,
     description: 'As the Beast Clergyman: a broad dagger, flung stones and shockwaves to jump. At half health he sheds his robes for the Black Blade: every hit cuts your maximum health for a while. Only his golden attacks can be parried.' },
+  { id: 'malenia', enemy: 'malenia', name: 'Malenia, Blade of Miquella', title: 'The undefeated Empyrean', difficulty: 5,
+    description: 'Every blow she lands heals her, even on your shield. Below 75% the Waterfowl Dance: run from the first flurry, roll through the rest. Beaten once, she rises as the Goddess of Rot and the Scarlet Aeonia blooms.' },
 ];
 // The bosses are fought like any duel, by def id; they are not listed in the Enemies menu.
 for (const d of ELDEN_BOSS_DEFS) ENEMY_BY_ID[d.id] = d;

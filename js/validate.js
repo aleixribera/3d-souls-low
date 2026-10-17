@@ -42,6 +42,7 @@ function validateData() {
     if (a.projectile && 'colors' in a.projectile) need(Array.isArray(a.projectile.colors) && a.projectile.colors.length === 2 && a.projectile.colors.every(num),
       `${tag}: projectile colors must be [core, rim] (hex numbers).`);
     if ('spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
+    if ('hpBelow' in a) need(num(a.hpBelow) && a.hpBelow > 0 && a.hpBelow <= 1, `${tag}: hpBelow must be a fraction of the bar (0 to 1).`);   // v5.9 (Malenia)
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
     if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1
       && (!('if' in f) || f.if in FOLLOW_IF)), `${tag}: followUps must list { attack, chance (0 to 1), if? (${Object.keys(FOLLOW_IF).join(', ')}) }.`);
@@ -90,6 +91,8 @@ function validateData() {
     }
     if ('approach' in d) need(num(d.approach) && d.approach >= 0, `Enemy "${d.id}": approach must be a number of 0 or more (per second).`);
     if ('kite' in d) need(num(d.kite) && d.kite >= 0 && d.kite <= 1, `Enemy "${d.id}": kite must be a number from 0 to 1 (a chance).`);
+    if ('lifesteal' in d) need(d.lifesteal && num(d.lifesteal.flat) && d.lifesteal.flat >= 0 && num(d.lifesteal.pct) && d.lifesteal.pct >= 0 && d.lifesteal.pct < 0.2,
+      `Enemy "${d.id}": lifesteal needs flat (HP, 0 or more) and pct (a fraction of the bar under 0.2).`);   // v5.9 (Malenia)
     if ('critMul' in d) need(num(d.critMul) && d.critMul > 0 && d.critMul <= 1, `Enemy "${d.id}": critMul must be a number in (0, 1].`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime and hitstop.`);
@@ -108,6 +111,7 @@ function validateData() {
         if (ph && 'opener' in ph) need(aids.has(ph.opener), `${tag}: opener "${ph.opener}" is not one of its attacks.`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
+        if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);
         if (ph && 'name' in ph) need(typeof ph.name === 'string' && ph.name.length > 0, `${tag}: name must be text.`);
       }

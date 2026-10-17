@@ -46,6 +46,7 @@ function registerListeners() {
   blackBlade.attach(); // the Destined Death sphere and line blasts drawn (Maliketh, js/blackblade.js)
   flame.attach();      // flame breath and grafted parts drawn (Godrick, js/flame.js)
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (Radagon, js/holy.js)
+  scarlet.attach();    // the lifesteal burst (Malenia, js/scarlet.js; her phantoms and bloom are spectral shapes)
   registerAudioListeners();
 }
 

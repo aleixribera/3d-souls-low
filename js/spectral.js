@@ -69,6 +69,9 @@ const spectral = (() => {
   // 'holy': the marbled holyLight texture lights itself; 'prism': a pale blade whose sheen hue drifts (render, below).
   const material = look => {
     const tex = TEXLIB.get('holyLight', { size: 256 }).map;
+    if (look === 'rot')   // v5.9 (Malenia): scarlet rot, a translucent crimson glow (her phantoms and the Aeonia bloom)
+      return new THREE.MeshStandardMaterial({ color: 0xc02030, emissive: 0xff2a3a, emissiveIntensity: 1.2, roughness: 0.6, side: THREE.DoubleSide,
+        transparent: true, opacity: 0, depthWrite: false });
     return look === 'prism'
       ? new THREE.MeshStandardMaterial({ color: 0xe8e4f0, emissive: 0xb090ff, emissiveIntensity: 0.9, metalness: 0.9, roughness: 0.15, transparent: true, opacity: 0, depthWrite: false })
       : new THREE.MeshStandardMaterial({ color: S.color, map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: S.emissive, metalness: 0.3, roughness: 0.35,

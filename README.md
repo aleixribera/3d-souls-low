@@ -1,4 +1,4 @@
-# Combat Arena 3D — v5.8: The Black Blade
+# Combat Arena 3D — v5.9: Malenia, Blade of Miquella
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -125,6 +125,16 @@ Two fights on one bar of 4600 HP. First the **Beast Clergyman**: a hooded beast-
 - **Destined Death:** every Black Blade hit that you do not block cuts your maximum health by 12% for 15 seconds (shown as a striped crimson end on your health bar; flasks cannot heal past it) and drains a little more. A new hit restarts it; it never stacks.
 - **Parry:** only his **golden** attacks (the corkscrew dive and the spinning sweep, which flash gold) can be parried, and a parry stuns him for a long time.
 
+## Malenia, Blade of Miquella (v5.9)
+
+The hardest fight in the game. A slender knight in a gold winged helm with a long red mane, a crimson cape and a gold prosthetic arm, wielding a long katana. Two bars: 4000 HP, then the Goddess of Rot at 80 % of 4500.
+
+- **Lifesteal:** every blow she lands heals her, **even on your shield**. Roll, don't block.
+- **Phase 1:** a sparking prosthesis into three quick cuts and a delayed fourth sweep, a long lunging thrust (also the moment you drink), an unblockable lunging grab (roll it: a miss leaves her wide open), a leaping slam into a rising sweep, a rising cut into a slam, and a counter-kick if you trade blows with her.
+- **Waterfowl Dance** (from 75 % health): she leaps and hangs in the air for two seconds. **Run** from the first flurry, **roll through** the dash spin and the flip, and punish the long pause after the last bubble bursts. Take every cut and it kills.
+- **The Goddess of Rot:** beaten once, she kneels, sheds her helm and rises with scarlet wings, faster and relentless. **Scarlet Aeonia**: she dives and a scarlet flower blooms around her for a few seconds (get out; strike as it wilts). **Phantom Spirits**: five scarlet phantom blows, then she dives in herself. Her slams burst into rot geysers a beat later: punish from behind.
+- **Parry:** her grounded katana blows glint and can be parried; three parries break her. The dance, the grab, the kick and everything scarlet cannot.
+
 ## Controls
 
 | Action | Keys | Gamepad (Xbox / PlayStation) |
@@ -167,7 +177,7 @@ Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh
 
 Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Aldric's retreat, his phase change, or his death and the ending).
 
-Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')`, `('godrick')`, `('crucibleKnight')`, `('morgott')`, `('radagon')` or `('maliketh')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`, `run('Crucible')`, `run('Morgott')`, `run('Radagon')`, `run('Maliketh')`.
+Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')`, `('godrick')`, `('crucibleKnight')`, `('morgott')`, `('radagon')` `('maliketh')` or `('malenia')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`, `run('Crucible')`, `run('Morgott')`, `run('Radagon')`, `run('Maliketh')`, `run('Malenia')`.
 
 Lore shortcuts (`#dev`): **Test Grounds** lists **Lore: Ysolde in ...**, one jump per level that starts it next to her. From the console: `__arena.lore`, `__arena.LORE`.
 

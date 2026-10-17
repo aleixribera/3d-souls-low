@@ -2794,6 +2794,60 @@
     expect.ok(e.def.ignite && e.def.cooldown[1] < A.ENEMY_BY_ID.morgott.cooldown[1], 'burning, and faster');
   });
 
+  // ---- Elden Ring Bosses: Malenia, Blade of Miquella (v5.9) -------------------------------------------------------
+  const startMalenia = () => { A.elden.start('malenia'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Malenia: on the boss select, loads in the arena at full bar with her name', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Malenia, Blade of Miquella')), 'a card for Malenia');
+    const { e } = startMalenia();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'malenia' && e.def.phaseId === 'blade' && e.hp === MAL.hp1, `bar ${e.def.phaseId} ${e.hp}`);
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Malenia, Blade of Miquella', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Malenia: parry rules, three parries, roll margins; only a full Waterfowl Dance can kill a full-health player', () => {
+    const D = A.ENEMY_BY_ID.malenia, unparry = ['dance', 'dance2', 'grab', 'kick', 'aeoniaOpen', 'aeonia', 'phantoms'];
+    for (const a of D.attacks) {
+      expect.ok(!!a.noParry === unparry.includes(a.id), `${a.id}: noParry ${!!a.noParry}`);
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+      const total = a.hits.reduce((s, h) => s + (h.damage || a.damage), 0);
+      if (a.id.startsWith('dance')) expect.ok(total > 120, `${a.id}: ${total} kills if all land`);
+      else expect.ok(total < 120, `${a.id}: full combo ${total} leaves the player standing`);
+    }
+    expect.ok(D.posture.max / D.posture.parry === 3, 'three parries');
+  });
+  test('Malenia: every attack starts, strikes and ends without errors, inside the arena', () => {
+    for (const a of A.ENEMY_BY_ID.malenia.attacks) {
+      const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 20);
+      Game.render(1, STEP);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+      expect.ok(Math.hypot(e.x, e.z) < 40, `${a.id}: stays in the arena`);
+    }
+  });
+  test('Malenia: a blow that lands heals her, even on a raised guard', () => {
+    for (const guard of [false, true]) {
+      const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, 2.4); quiet(e);
+      e.hp = 3000; if (guard) p.setState(PS.BLOCK);
+      e.beginAttack(e.def.attacks.find(a => a.id === 'sweep'));
+      sim.until(() => e.state === ES.RECOVER, 4);
+      expect.ok(e.hp > 3000, `${guard ? 'blocked' : 'open'}: healed to ${e.hp}`);
+    }
+  });
+  test('Malenia: Waterfowl Dance only below 75% in phase 1; phase 2 refills to 80%, sheds the helm and opens with the Aeonia', () => {
+    const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, 4);
+    const pick = () => e.def.attacks.filter(a => !a.when && (!a.hpBelow || e.hp <= e.def.hp * a.hpBelow)).map(a => a.id);
+    expect.ok(!pick().includes('dance'), 'no dance at full health');
+    e.hp = MAL.hp1 * 0.74; expect.ok(pick().includes('dance'), 'the dance below 75%');
+    e.deplete();
+    expect.ok(e.def.phaseId === 'rot' && e.state === ES.PHASE, `phase ${e.def.phaseId} ${e.state}`);
+    sim.until(() => e.state !== ES.PHASE, MAL.transition + 1);
+    expect.ok(Math.abs(e.hp - MAL.hp2 * MAL.fill2) < 1, `refilled to ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'aeoniaOpen', 2);
+    expect.ok(e.attack && e.attack.id === 'aeoniaOpen' && e.invulnerable(), 'opens with the Aeonia, untouchable');
+    sim.until(() => e.state === ES.ACTIVE, 4); Game.render(1, STEP);   // shown as the dive strikes (js/flame.js)
+    expect.ok(e.rig.slotMeshes.wings.visible, 'wings shown');   // the helm comes off through the phase's `conceal` (js/flame.js)
+  });
+
   test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
     A.elden.start('margit'); Game.startFight('hollow'); Game.loading = 0; sim.begin();
     expect.ok(!Game.eldenBoss && Game.duel.def.id === 'hollow', 'a plain duel');
