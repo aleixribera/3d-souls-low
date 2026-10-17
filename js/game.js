@@ -6,6 +6,7 @@ const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
   screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
   kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
+  story: false,          // Story mode (js/story.js): levels chain through STORY's chapters and progress is saved
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
@@ -26,11 +27,24 @@ const Game = {
   // ---- menus -----------------------------------------------------------------------------------
   screens() {
     const onOff = v => v ? 'On' : 'Off';
+    const S = story.screens(this);
+    const pauseItems = this.story ? [
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Options', desc: '', go: () => this.showMenu('options') },
+        ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Leave the training hall and set out for the Long Hall.', go: () => story.afterTutorial() }] : []),
+        { name: 'Quit to main menu', desc: 'Saves first. Continue returns you to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
+      ] : [
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Options', desc: '', go: () => this.showMenu('options') },
+        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { this.reset(); this.showMenu('main'); } },
+      ];
     return {
+      ...S.screens,
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
+        ...S.main,
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
-        ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
+        ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
         items: [...finale.devItems(),
@@ -40,11 +54,7 @@ const Game = {
         items: LEVELS.map(l => ({ name: l.name + (l.ending && finale.completed() ? '  ✦' : ''), desc: l.description, go: () => this.startLevel(l.id) })) },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
         items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.startFight(d.id) })) },
-      pause: { title: 'PAUSED', sub: '', overlay: true, items: [
-        { name: 'Resume', desc: '', go: () => this.resume() },
-        { name: 'Options', desc: '', go: () => this.showMenu('options') },
-        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { this.reset(); this.showMenu('main'); } },
-      ] },
+      pause: { title: 'PAUSED', sub: '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: true, back: 'pause', items: [
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
@@ -61,6 +71,7 @@ const Game = {
     };
   },
   showMenu(screen, keepSelection) {
+    if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
     const inGame = screen === 'pause' || screen === 'options';
     if (!inGame) {
@@ -125,7 +136,7 @@ const Game = {
   pause(fromPointer) {
     if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
-    if (this.isTutorial() && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
+    if (this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
     events.emit('pause');
   },
@@ -148,8 +159,12 @@ const Game = {
   },
   startLevel(id) {
     this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
-    this.showLoading(this.level.name, this.level.description);
+    const ch = this.story && story.chapter(id);
+    if (ch) { this.showLoading(ch.title, ch.line); this.loading = CONFIG.story.titleTime; story.onLevelStart(); }   // Souls-style title over the load
+    else this.showLoading(this.level.name, this.level.description);
   },
+  // The level that follows this one: the next chapter in Story mode, else the level's own `next`.
+  nextLevelId() { return this.story ? story.nextLevelId(this.level.id) : this.level.next || null; },
   // The loading screen over a fresh level or duel: its name, a line about it, and the controller note. The world
   // waits behind it (boot.js steps nothing while `loading` > 0), then it fades.
   showLoading(name, tip) {
@@ -163,7 +178,7 @@ const Game = {
     this.loading = Math.max(0, this.loading - dt);
     if (this.loading <= 0) $('loading').classList.remove('show');
   },
-  leaveTutorial() { this.reset(); this.showMenu('levels'); },
+  leaveTutorial() { if (this.story) story.afterTutorial(); else { this.reset(); this.showMenu('levels'); } },
   // A placement's checkpoint key: what it is and where it stands (bonfire checkpoints remember enemies by it).
   placementKey(entry, prefix = '') {
     const at = entry.alcove ?? (entry.path ? `${entry.path.join('-')}/${entry.z}` : `${entry.x},${entry.y ?? 0},${entry.z}`);
@@ -171,6 +186,7 @@ const Game = {
   },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
+    if (this.story) return;   // a campaign has no restart: death returns you to the bonfire
     if (!this.player.alive() || this.duelWon() || this.complete || this.restartArm > 0) { this.reset(); return; }
     this.restartArm = CONFIG.restartConfirmTime;
   },
@@ -242,6 +258,7 @@ const Game = {
     if (this.player) this.player.rig.dispose();
     const s = this.spawn, y = world.floorY(s.x, s.z, s.y);
     this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
+    story.applyProgress(this.player);   // Story mode: carried capacities (nothing otherwise)
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -562,11 +579,12 @@ const Game = {
       events.emit('levelComplete');
     }
     // Carry straight on into the next level: wait, fade to black, then load it.
-    if (this.complete && this.level.next && p.alive()) {
+    const next = this.complete && this.nextLevelId();
+    if (next && p.alive()) {
       const N = CONFIG.nextLevel;
       this.nextTimer += dt;
       if (this.nextTimer >= N.delay) $('fade').classList.add('show');
-      if (this.nextTimer >= N.delay + N.fadeTime) this.startLevel(this.level.next);
+      if (this.nextTimer >= N.delay + N.fadeTime) this.startLevel(next);
     }
   },
 

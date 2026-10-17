@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v4.3.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -79,6 +79,9 @@ const CONFIG = {
   // Loading screen (js/game.js): shown for `time` s when a level or duel starts, the world frozen behind it, then
   // fades out over `fade` s. It carries a level tip and the controller note.
   loading: { time: 1.4, fade: 0.6 },
+  // Story mode (js/story.js): the one save slot, its format version (a save of another version is refused), and how
+  // long a chapter's title holds over its loading screen (s).
+  story: { saveKey: 'combatArena.story', saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },

@@ -2036,6 +2036,88 @@
     expect.ok(A.LEVEL_4.next === 'final-castle' && A.LEVELS[A.LEVELS.length - 1].id === 'final-castle', 'the Tower leads to the castle, the last level');
   });
 
+  // ---- Story mode (v4.4) -----------------------------------------------------------------------------------------
+  // Each test keeps the player's real save: it is put back afterwards.
+  const withSave = fn => () => {
+    const key = CONFIG.story.saveKey; let kept = null;
+    try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
+    try { fn(); } finally {
+      Game.story = false;
+      try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
+      A.story.load();
+    }
+  };
+  const S = () => A.story;
+  test('Story: the chapters run tutorial -> Level 1 ... Level 5, and Level 5 ends the road', withSave(() => {
+    expect.ok(S().nextLevelId('tutorial') === 'long-hall', 'the tutorial leads to the Long Hall');
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle'];
+    order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
+    expect.ok(S().nextLevelId('final-castle') === null, 'nothing after the castle');
+  }));
+  test('Story: a new game saves at the level start and the menu offers Continue and New Game', withSave(() => {
+    S().erase(); Game.showMenu('main');
+    expect.ok(Game.screens().main.items[0].name === 'Story', 'no save: Story comes first');
+    S().newGame(false); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'long-hall', 'No to the tutorial: straight to Level 1');
+    expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
+    Game.showMenu('main');
+    const names = Game.screens().main.items.map(i => i.name);
+    expect.ok(names[0] === 'Continue' && names[1] === 'New Game' && names.includes('Levels'), 'Continue, New Game, then the other modes');
+  }));
+  test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
+    S().jumpTo('sunken-keep'); sim.begin();
+    const z = Game.zones[0];
+    for (const a of z.actors) a.deplete();
+    sim.step(2);
+    expect.ok(z.gate.open, 'the first zone is won');
+    const b = Game.level.bonfires[Game.level.bonfires.length - 1];
+    Game.player.x = b.x + 0.5; Game.player.z = b.z; Game.player.y = world.floorY(b.x, b.z, b.y);
+    for (const e of Game.enemies) if (e.alive()) { e.x += 500; }
+    Game.tryRest();
+    const saved = S().data;
+    expect.ok(saved.bonfire === b.id, 'rested bonfire saved');
+    S().quit(); expect.ok(Game.mode === 'menu' && !Game.story, 'quit to the title');
+    S().resume(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'sunken-keep', 'back in the level');
+    expect.ok(Math.hypot(Game.player.x - saved.spawn.x, Game.player.z - saved.spawn.z) < 0.5, 'at the bonfire');
+    expect.ok(Game.zones[0].gate.open && Game.zones[0].actors.length === 0, 'the won zone stays won');
+  }));
+  test('Story: a broken or foreign save never crashes and offers a new story', withSave(() => {
+    for (const bad of ['{not json', JSON.stringify({ v: 1, level: 'nowhere' }), JSON.stringify({ v: 99 }), '"x"']) {
+      localStorage.setItem(CONFIG.story.saveKey, bad);
+      Game.showMenu('main');
+      expect.ok(S().status === 'broken' && Game.screens().main.items[0].name === 'Story', `refused: ${bad}`);
+    }
+  }));
+  test('Story: with storage refused (private window) the story still plays, unsaved', withSave(() => {
+    const real = Object.getOwnPropertyDescriptor(Storage.prototype, 'setItem'), get = Storage.prototype.getItem;
+    Storage.prototype.setItem = () => { throw new Error('denied'); };
+    Storage.prototype.getItem = () => { throw new Error('denied'); };
+    try {
+      Game.showMenu('main');
+      S().newGame(true); sim.begin();
+      expect.ok(Game.isTutorial() && Game.story && !S().storageOk, 'the tutorial runs without saving');
+      S().afterTutorial(); expect.ok(Game.level.id === 'long-hall', 'skipped on to Level 1');
+    } finally { Object.defineProperty(Storage.prototype, 'setItem', real); Storage.prototype.getItem = get; }
+  }));
+  test('Story: the pause menu offers Skip tutorial only in the tutorial, and the flasks carry over', withSave(() => {
+    S().newGame(true); sim.begin(); Game.mode = 'play';
+    Game.pause(false);
+    expect.ok(Game.screens().pause.items.some(i => i.name === 'Skip tutorial'), 'Skip tutorial while training');
+    Game.resume();
+    S().data.progress.inventory.flask.max = 6;   // a future upgrade
+    S().afterTutorial(); Game.mode = 'play'; Game.pause(false);
+    expect.ok(!Game.screens().pause.items.some(i => i.name === 'Skip tutorial') && Game.screens().pause.items.some(i => i.name === 'Quit to main menu'), 'no skip in Level 1; Quit saves');
+    expect.ok(Game.player.item('flask').max === 6 && Game.player.item('flask').count === 6, 'carried capacity, refilled');
+    Game.resume();
+  }));
+  test('Story: the ending marks the story complete and shows its own screen', withSave(() => {
+    S().jumpTo('final-castle'); sim.begin();
+    A.events.emit('endingDone');
+    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, 'STORY COMPLETE, saved as complete');
+    Game.showMenu('main');
+  }));
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;

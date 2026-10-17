@@ -1,4 +1,4 @@
-# Combat Arena 3D — v4.3: The Last Toll
+# Combat Arena 3D — v5.0: The Unbroken Road
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -8,6 +8,7 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 
 ## Modes
 
+- **Story** (the first option, and the way to play) — the whole game as one campaign. A new story asks whether to play the tutorial first (it can also be skipped from the pause menu), then runs Level 1 → 5 without stopping: each level fades to black and opens on its title (THE BURNING TOWN) and a line of story while it loads. Varn's death brings the ending, the credits and STORY COMPLETE. The game saves itself in your browser on every rest at a bonfire, at the start of every level and when you quit to the menu; **Continue** puts you back at the last bonfire you rested at, with everything you had beaten there still beaten and every shortcut still open. **New Game** asks before it overwrites a save. Nothing is downloaded and there is no account; in a private window the story still plays, it just isn't saved. In Story mode there is no restart key: death takes you back to the bonfire.
 - **Levels → Tutorial** — one room of training dummies that teaches every control, step by step. Block, parry and dodge come together, locked on to the dummy: the dodge dummy's swing glows blue, and blue strikes can only be rolled through (a hint says whether the roll came too early, too late or clear of the swing).
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
@@ -55,6 +56,7 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 
 ## Changelog
 
+- **v5.0 — The Unbroken Road:** Story mode: the tutorial (optional) and all five levels as one campaign, with chapter titles and story lines between levels, the ending, credits and STORY COMPLETE. Automatic saving in the browser (bonfires, level starts, quitting), Continue from the last bonfire, New Game with confirmation, a pause menu with Skip tutorial and Quit (saves first). Progress carries between levels (today the flask count; ready for future upgrades). Dev builds: jump to any level in Story mode and clear the save from the main menu.
 - **v4.3.1:** Level 5 fixes: hall enemies and the chapel bonfire on the right floor, two more bonfires (barracks, ramparts), archers, wisps and gargoyles join each area's fight and keep on you (gargoyles pounce from their perches with their own claw attacks), open gates no longer block the view, Varn's stomps and fire rings can be jumped, the Ash Wave is a flying slash, and the camera follows his retreat.
 - **v4.3 — The Last Toll:** Level 5, The Final Castle: the opening fight and retreat, three sections, four bonfires, the throne room and Varn's second phase, the ending and credits (a ✦ marks the level once finished). New enemies: Gargoyle (perches and springs; grit falls first), Empty Sentinel, Toll Wisp (rings before it shoots). Bosses can now have several health bars, retreat instead of dying, leap, and strike with expanding rings. Level 4 now carries straight on into Level 5. Dev builds: Level 5 jumps in Test Grounds and F10 to empty a boss bar.
 - **v4.2.4:** checkpoints, exhaustion, smarter enemies, fairer bosses (below).
@@ -79,7 +81,7 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 | Zoom | Mouse wheel / = and - | D-pad up / down |
 | Rest at bonfire | F | Y / △ |
 | Use flask | G | X / □ |
-| Restart fight / level | R, twice (once on the death or victory screen) | View / Share, twice |
+| Restart fight / level (not in Story mode) | R, twice (once on the death or victory screen) | View / Share, twice |
 | Pause and options (incl. Graphics: High / Low) | Escape | Menu / Options |
 | Help / hitboxes | F1 (H toggles hitboxes) | — |
 | Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A / ✕, B / ○ |
@@ -98,6 +100,8 @@ await __arena.tests.run()
 
 It plays the real game with a manual clock (scripted movement, no rendering delay) and prints `N/N passed`. `__arena.tests.run('heights')` runs only the tests whose name contains a word.
 
+Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh story starting at any level) and **Story: clear the save**. From the console: `__arena.story`.
+
 Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Varn's retreat, his phase change, or his death and the ending).
 
 Developer viewers (open with `#dev`): **F8** shows the texture library, **F9** the model lab (four views and a silhouette test; step through each attack and reaction; toggle the `elite` variant). From the console: `MODELLAB.open('ironKnight')`.
@@ -111,3 +115,4 @@ The game data lives in `js/data/` and `js/levels/` and is checked when the page 
 - **Sounds:** every sound is a recipe of noise and tone layers in `js/data/audio.js`, built live by the engine in `js/audio.js` (no audio files). Add a recipe, then play it from an event listener at the bottom of `js/audio.js`. Sound volume is in Options.
 - **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see CLAUDE.md.
 - **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.
+- **Story mode:** to put a level in the campaign, add a chapter `{ level, title, line }` where it falls in `STORY.chapters` (`js/data/story.js`). See CLAUDE.md for the save format.

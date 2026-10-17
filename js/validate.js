@@ -168,6 +168,17 @@ function validateData() {
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)
+  // Story mode (js/data/story.js): each chapter and the tutorial name a real level, once each, with a title and a line.
+  const storyIds = [STORY.tutorial, ...STORY.chapters].map(c => c && c.level);
+  for (const c of [STORY.tutorial, ...STORY.chapters]) {
+    const tag = `Story chapter "${c && c.level}"`;
+    need(c && LEVELS.some(l => l.id === c.level), `${tag}: no level with that id in LEVELS.`);
+    if (!c) continue;
+    need(typeof c.title === 'string' && c.title && typeof c.line === 'string', `${tag}: needs a title and a line.`);
+    if ('loadout' in c) for (const [id, r] of Object.entries(c.loadout || {}))
+      need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
+  }
+  need(new Set(storyIds).size === storyIds.length && STORY.chapters.length > 0, 'Story: each level may appear only once, and there must be a chapter.');
   return errors;
 }
 const GATE_STYLES = ['portcullis', 'barricade'];

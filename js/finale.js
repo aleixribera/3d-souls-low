@@ -426,7 +426,8 @@ const finale = (() => {
     const leave = () => {
       if (!canLeave || !overlay) return;
       hideEnding(); window.removeEventListener('keydown', onKey, true); window.removeEventListener('pointerdown', onKey, true);
-      Game.reset(); Game.showMenu('main');
+      events.emit('endingDone');   // Story mode (js/story.js) marks the story complete and shows its own screen
+      if (Game.mode === 'ending') { Game.reset(); Game.showMenu('main'); }
     };
     const onKey = ev => { if (canLeave) { ev.preventDefault(); ev.stopPropagation(); leave(); } };
     window.addEventListener('keydown', onKey, true); window.addEventListener('pointerdown', onKey, true);
@@ -448,7 +449,12 @@ const finale = (() => {
     }
     Game.respawnEnemies();
     if (j.at) { const b = lvl.bonfires.find(q => q.id === j.at); Game.spawn = { ...b.spawn }; Game.spawnPlayer(); }
-    if (st) for (const s of st.spectators) if (j.won.includes('zone-hall') || (j.won.includes('zone-upper') && s.def.id === 'sighting-chapel')) { s.state = 'gone'; s.halo.visible = false; if (s.rig) { s.rig.dispose(); s.rig = null; } }
+    if (st) skipSightings(st.spectators.filter(s => j.won.includes('zone-hall') || (j.won.includes('zone-upper') && s.def.id === 'sighting-chapel')).map(s => s.def.id));
+  }
+  // Sightings already seen (Story mode saves them so Continue does not play them again), and putting them away.
+  function seenSightings() { return st ? st.spectators.filter(s => s.state !== 'wait').map(s => s.def.id) : []; }
+  function skipSightings(ids) {
+    if (st) for (const s of st.spectators) if (ids.includes(s.def.id)) { s.state = 'gone'; s.halo.visible = false; if (s.rig) { s.rig.dispose(); s.rig = null; } }
   }
   function devItems() {
     if (!DEV) return [];
@@ -464,7 +470,7 @@ const finale = (() => {
 
   Game.renderHooks.push(render);
   return {
-    reset, update, devItems, jump, depleteBoss,
+    reset, update, devItems, jump, depleteBoss, seenSightings, skipSightings,
     completed() { try { return localStorage.getItem(STORE) === '1'; } catch (err) { return false; } },
     get state() { return st; },
   };
