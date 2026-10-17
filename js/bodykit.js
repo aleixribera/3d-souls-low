@@ -542,6 +542,45 @@ const KIT = (() => {
       }
       return out;
     },
+    // The Crucible Knight's helm (v5.5): a tall closed bucket with a vertical slit, a crest spike on the brow, a flat
+    // cross-guard over the crown and two broad horns sweeping out and up like a lyre (`metal` slot for the horns).
+    crucibleHelm(o) {
+      const s = o.size ?? 1, out = [];
+      const body = lathe([[0.12, -0.06], [0.142, 0.02], [0.15, 0.16], [0.14, 0.27], [0.1, 0.31], [0, 0.32]].map(([r, y]) => [r * s, y * s]), 9, 1.05);
+      deform(body, v => { if (v.z > 0.05 * s) v.z += (0.13 * s - Math.min(0.13 * s, Math.abs(v.x))) * 0.3; });   // a prow down the face
+      roughen(body, 0.005, 61);
+      out.push({ slot: o.slot, geo: uvScale(body, 3, 1) });
+      const ribs = [-0.05, 0, 0.05].map(x => xf(new THREE.BoxGeometry(0.014 * s, 0.24 * s, 0.02 * s), x * s, 0.13 * s, 0.17 * s));
+      const brow = xf(new THREE.TorusGeometry(0.152 * s, 0.012 * s, 3, 9, Math.PI * 1.1), 0, 0.2 * s, 0.006 * s, Math.PI / 2, 0, -0.1, 1, 1.08, 1);
+      const cross = xf(new THREE.BoxGeometry(0.3 * s, 0.035 * s, 0.07 * s), 0, 0.33 * s, 0.02 * s);
+      const crest = xf(new THREE.ConeGeometry(0.025 * s, 0.32 * s, 4), 0, 0.46 * s, 0.03 * s);
+      for (const g of [...ribs, brow, cross, crest]) out.push({ slot: o.metal ?? o.slot, geo: g });
+      for (const sd of [-1, 1]) {
+        const h = new THREE.CylinderGeometry(0.012 * s, 0.05 * s, 0.5 * s, 6, 8).translate(0, 0.25 * s, 0);
+        deform(h, v => { const t = v.y / (0.5 * s); v.x += sd * Math.sin(t * 2.2) * 0.22 * s; v.z -= t * t * 0.06 * s; v.y -= Math.max(0, t - 0.6) * 0.08 * s; });
+        xf(h, sd * 0.13 * s, 0.24 * s, -0.01 * s, 0, 0, -sd * 0.25);
+        roughen(h, 0.004, 17);
+        out.push({ slot: o.metal ?? o.slot, geo: h });
+      }
+      return out;
+    },
+    // A large oval shield on the left forearm, face forward and dished: board (`slot`), rim and boss (`metal`); swirling
+    // raised ribs over its face (the Crucible's tree and vortex reliefs). `w`, `h` in metres.
+    ovalShield(o) {
+      const w = o.w ?? 0.7, h = o.h ?? 1.0, at = o.at ?? [0.06, -0.2, 0.22], seg = 18, pts = [];
+      for (let i = 0; i < seg; i++) { const a = i / seg * Math.PI * 2; pts.push([Math.cos(a) * w / 2, Math.sin(a) * h / 2]); }
+      const dish = g => deform(g, v => { v.z -= ((v.x / (w / 2)) ** 2 + (v.y / (h / 2)) ** 2) * 0.07; });
+      const board = dish(plate(pts, 0.04, 0.012)); roughen(board, 0.006, 23);
+      const rim = dish(xf(new THREE.TorusGeometry(0.5, 0.022, 3, seg * 2), 0, 0, 0.03, 0, 0, 0, w, h, 1));
+      const boss = xf(lathe([[0, 0], [0.07, 0], [0.055, 0.05], [0, 0.065]], 8), 0, 0.05, 0.05, Math.PI / 2, 0, 0);
+      const ribs = [];
+      for (let i = 0; i < 6; i++) {
+        const a = i / 6 * Math.PI * 2, r = new THREE.BoxGeometry(0.022, 0.32, 0.018, 1, 4, 1);
+        deform(r, v => { v.x += Math.sin((v.y / 0.32 + 0.5) * 2.4) * 0.06; });
+        ribs.push(dish(xf(r, Math.sin(a) * w * 0.22, Math.cos(a) * h * 0.22 + 0.03, 0.05, 0, 0, -a)));
+      }
+      return [board, rim, boss, ...ribs].map((g, i) => ({ slot: i ? o.metal : o.slot, geo: xf(g, ...at) }));
+    },
     // Spikes on a shoulder: cones fanning up and out.
     spikes(o) {
       return (o.at ?? [[0.06, 0.1, 0.0], [0.1, 0.06, 0.07], [0.1, 0.06, -0.07]]).map(([x, y, z]) => {

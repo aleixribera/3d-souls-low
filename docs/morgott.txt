@@ -1,0 +1,122 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 10,399 HP (New Game)
+* **Stance / Poise:** 80 (stance breaks open a riposte window at his chest/head; poise begins regenerating after ~6 seconds without incoming stance damage).
+* **Parry Resistance:** Requires **3 successful parries** to trigger a stance break / critical riposte state.
+* **Parry Vulnerability:**
+* **Parriable:** Standard physical swings, thrusts, and running slashes delivered with the Cursed Greatsword.
+* **Unparriable:** All spectral golden conjurations (Golden Spear, Erdsteel Daggers, Golden Great Hammer, Golden Curved Sword), Cursed Bloodflame blade skills, grabbing maneuvers, and rear tail sweeps.
+
+
+* **Damage Types Dealt:** Standard, Slash, Pierce, Holy, Fire, and Hemorrhage (Bleed) buildup.
+* **Base Absorptions / Negations:** Standard 10%, Slash 10%, Strike 10%, Pierce 10%, Magic 40%, Fire 40%, Lightning 40%, Holy 40%.
+* **Status Resistances:**
+* **Hemorrhage (Bleed):** 348 (susceptible)
+* **Frostbite:** 348 (susceptible)
+* **Poison:** 348 (susceptible)
+* **Scarlet Rot:** 348 (susceptible)
+* **Sleep:** 348
+* **Madness / Death Blight:** Immune
+
+
+* **Phase Transition:** Triggers when health drops to **≤60% HP**.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Consumable / Item Input-Reading:**
+* Triggering a flask or consumable animation at medium-to-long range while Morgott is in a neutral state causes him to instantly buffer an Erdsteel Dagger toss (single or double) or execute a leaping gap-closer.
+
+
+* **Positional Traps & Off-Hand Extensions:**
+* **Rear Flank (180° Arc):** Standing behind his hip axis immediately queues a fast, untelegraphed **Tail Swipe**, canceling the normal recovery animation of preceding attacks.
+* **Off-Hand Lateral Proximity:** Lingering at Morgott's left side causes him to dynamically weave instant, untelegraphed golden dagger slashes into standard sword combo recoveries.
+
+
+* **Distance-Dependent Spear Branching:**
+* When Morgott conjures the **Golden Spear**, the AI evaluates target velocity and distance:
+* *Player at Long Range / Moving Away:* Morgott halts, cocks his arm, and executes the **Spear Throw (Javelin)**.
+* *Player at Mid Range / Stationary:* Morgott levels the spear horizontally and initiates the multi-hit **Running Spear Charge**.
+
+
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Golden Spear: Running Charge** | Conjures a glowing spear, lowers his stance, and sprints across the arena with high forward momentum, finishing with an upward thrust. | Standalone sequence; does not chain if the final thrust lands. | **Unparriable**. | **Major Window:** Extended recovery once the final thrust terminates. |
+| **Golden Spear: Javelin Throw** | Winds up spear overhead and hurls it across the arena with high projectile speed and slight tracking. | Often used after a backward leap to punish spacing. | **Unparriable**. | **Minor Window:** Brief recovery after the throw release at long range. |
+| **Golden Great Hammer: Leaping Slam** | Conjures a golden hammer, leaps high into the air, tracks the player, and drives the hammer straight down, generating an outward holy shockwave. | Standalone finisher; locks Morgott into the ground on impact. | **Unparriable**. | **Major Window:** Hammer recovery animation holds him stationary for ~1.5 seconds. |
+| **Golden Great Hammer: Side Sweep** | Conjures hammer on shoulder and performs a low horizontal sweep from his right side. | Weaves directly into a follow-up sword slash or backward leap. | **Unparriable**. | **Trap Window:** Fast reset; almost never safe to punish from the front. |
+| **Cursed Sword Flurry & Curved Blade Spin** | Slashes with Cursed Greatsword while conjuring a golden curved sword in his off-hand, executing an advancing 4-hit spinning sequence. | Fixed 4-strike sequence ending in an overhead cross-chop. | **Parriable** (physical sword hits only; spectral hits cannot be parried). | **Major Window:** Recovery begins only after the final cross-chop contacts the ground. |
+| **Rain of Swords (Holy Blade Rain)** | Raises sword skyward with both hands, channeling a sigil. Golden swords rain down across the arena in a fixed, cardinal cross pattern for ~10 seconds. | Morgott can move, close distance, and attack freely while the swords continue falling. | **Unparriable**. | **Zero Window:** Morgott remains completely active while arena hazard is live. |
+| **Erdsteel Dagger Fan / Flurry** | Materializes 3–4 daggers in off-hand and fans them outward or flings them sequentially at rapid speed. | Cancels standard recovery frames; serves as a defensive retreat or combo connector. | **Unparriable**. | **Zero Window:** Negligible end-lag; resets to neutral immediately. |
+| **Overhead Cane Chop to Thrust** | High-delay overhead vertical chop, followed immediately by a step forward and an advancing thrust. | Can branch into a tail swipe if the target rolls behind during the chop. | **Parriable** (both chop and thrust can be parried). | **Minor Window:** Punishable after the second thrust resolves. |
+| **Tail Swipe** | Sweeps tail 180° across his rear. | Reactionary trigger when player enters his rear quadrant. | **Unparriable**. | **Minor Window:** Quick recovery once the sweep resolves. |
+
+---
+
+### Phase 2 Moveset & Additions (≤60% HP)
+
+At ≤60% HP, Morgott drops to his knees, begins coughing/choking, and detonates an arena-wide defilement burst. His sword cracks open, coating the blade in cursed bloodflame and unlocking geyser hazards across the floor.
+
+* **Phase Transition: Defilement Burst**
+* *Tempo & Mechanics:* Kneels down and channels cursed fluids (~3 seconds), then unleashes a heavy 360° explosive shockwave while erupting bloodflame geysers around the arena floor.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window (Ranged / Free Hits during Kneel):** Vulnerable while kneeling before the burst; must disengage prior to detonation.
+
+
+* **Cursed Blood Slice (Bloodflame Dash & Detonation)**
+* *Tempo & Mechanics:* Winds sword back as it ignites with red bloodflame, dashes forward with extreme speed, executes a horizontal sweep, and triggers a delayed secondary explosion along the strike path.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window:** Once the secondary bloodflame explosion detonates, Morgott has an extensive idle recovery state.
+
+
+* **Bloody Thrust (Impaling Dash)**
+* *Tempo & Mechanics:* Braces with sword pointed forward, dashes linearly at the target, and impales them. If it connects, the player is lifted, burned, and thrown down.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window:** Evading the linear path leaves Morgott exposed for the entire duration of the whiff recovery.
+
+
+* **Arena Hazard: Blood Geysers**
+* *Tempo & Mechanics:* Liquid pools across the floor begin bubbling with dark red fluids, erupting intermittently into vertical geysers dealing fire damage and heavy bleed buildup.
+* *Punish Window:* Passive environmental hazard; restricts available footwork around Morgott during openings.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (Long recovery / Safe for charged R2 & jump attacks)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Golden Great Hammer: Leaping Slam (impact recovery on the ground)    │
+│ • Golden Spear: Running Charge (terminal thrust recovery)             │
+│ • Cursed Blood Slice (after the secondary bloodflame path detonates)   │
+│ • Bloody Thrust (complete linear whiff / miss recovery)                │
+│ • Cursed Sword Flurry (strictly after the 4th strike cross-chop lands) │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Golden Spear: Javelin Throw (at extreme long range post-release)    │
+│ • Overhead Cane Chop to Thrust (only after the thrust fully resolves)  │
+│ • Tail Swipe (following the completion of the 180° sweep)              │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Hitbox hazard)           │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Rain of Swords channel (active area-denial swords falling down)      │
+│ • Erdsteel Dagger tosses (near-instant recovery / combo resets)        │
+│ • Hammer Side Sweep into Sword slash (rapid two-hit cross-branch)      │
+│ • Intermediate hits during the 4-hit Cursed Sword Flurry               │
+│ • Flanking Morgott's left side (triggers instant untelegraphed daggers)│
+│ • Defilement Burst explosion (active 360° damage radius)               │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

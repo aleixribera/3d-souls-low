@@ -1,0 +1,147 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 33,251 HP total (New Game)
+* **Phase 1 (Blade of Miquella):** 18,473 HP
+* **Phase 2 (Goddess of Rot):** 14,778 HP (resets to **80% max HP** after cutscene)
+
+
+* **Defense:** 123
+* **Stance / Poise:** 80 (breaks into a critical riposte window at her chest; regenerates after ~6 seconds without incoming stance damage).
+* **Parry Resistance:** Requires **3 successful parries** to break stance and trigger a critical riposte opening.
+* **Parry Vulnerability:**
+* **Parriable:** Standard katana swings, lunging thrusts, and the majority of her grounded blade combinations.
+* **Unparriable:** Waterfowl Dance (all 3 flurries), Lunging Grab, Counter-Kick, Scarlet Aeonia dive/blast, and all Phase 2 Phantom Spirit clone strikes.
+
+
+* **Damage Types Dealt:**
+* **Phase 1:** Standard, Slash, Pierce.
+* **Phase 2:** Standard, Slash, Pierce, Holy, and Scarlet Rot buildup.
+
+
+* **Base Absorptions / Negations:** Standard 10%, Slash 10%, Strike 10%, Pierce 10%, Magic 20%, Fire 0% (10% in water), Lightning 20% (10% in water), Holy 40%.
+* **Status Resistances:**
+* **Frostbite:** 306 (scaling: 348 / 446 / 736 / 1,193)
+* **Hemorrhage (Bleed):** 421 (scaling: 519 / 809 / 1,266)
+* **Sleep:** 689 (scaling: 979 / 1,436)
+* **Poison / Scarlet Rot:** 1,481 (scaling: 1,938)
+* **Madness / Death Blight:** Immune
+
+
+* **Phase Transition:** Triggers when Phase 1 HP reaches **0**. Note that landing a riposte or critical hit that empties her health will not trigger Phase 2; she survives at 1 HP until hit with standard non-critical damage.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Universal Lifesteal Mechanic:**
+* Every attack that physically connects recovers a flat + percentage amount of Malenia's health (~1.6% to 6.4% of maximum HP per swing).
+* Healing occurs on contact regardless of whether the hit connects with the player, hits a phantom/spirit summon, or is completely absorbed by a **100% physical damage-negation shield**.
+
+
+* **Stagger Nullification & Hyper-Armor Overrides:**
+* Malenia possesses low base poise (80) and standard flinch animations against medium/heavy weapon hits while in neutral.
+* However, numerous offensive startups (e.g., Counter-Kick, Waterfowl Dance, Leaping Overhead, side-step repositioning) possess hyper-armor frames.
+* If incoming stance damage reduces her poise meter to 0 while she is locked in hyper-armor, she cannot enter the stance-broken/riposte animation. Her stance damage resets immediately, skipping the standard 6-second stance recovery delay.
+
+
+* **Ranged Projectile Input-Reading:**
+* Firing an arrow, bolt, throwing knife, or targeted spell at medium-to-long range while Malenia is idle triggers an immediate lateral slide/dash to evade the projectile.
+
+
+* **Consumable / Flask Input-Reading:**
+* Initiating a flask or item animation at neutral range prompts an instant linear **Lunging Thrust** or a rapid dash-in sequence.
+
+
+* **Waterfowl Dance Trigger Thresholds:**
+* **Phase 1:** Becomes active once her health drops to **≤75% HP**. Typically follows an initial cooldown period before it can be queued again.
+* **Phase 2:** Active at all health percentages with decreased cooldown between executions.
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Waterfowl Dance (3 Flurries)** | Leaps high into the air, hovers suspended for ~2 seconds with sword raised, then unleashes 3 distinct flurry bursts:<br>
+
+<br>1. *Burst 1:* Rapid tracking dive into a dense sphere of dozens of slashes.<br>
+
+<br>2. *Burst 2:* Dashing spin forward through the target.<br>
+
+<br>3. *Burst 3:* Airborne flip forward, releasing a circular slice with a stationary delayed residual slash bubble behind her. | Fixed 3-burst sequence. Cannot be interrupted via standard stagger once airborne (Frost/Bleed procs can knock her down out of startup). | **Unparriable**. | **Major Window:** Locked stationary on the ground after the delayed sphere of Burst 3 resolves. |
+| **Rapid Prosthesis Slices (Triple Slash)** | Spark flashes on her prosthetic shoulder ("ping" sound), steps forward rapidly, delivers 3 tight diagonal cuts, and finishes with a delayed 4th horizontal sweep. | 4th strike can be delayed depending on player proximity. | **Parriable** (1st hit and delayed 4th hit can be parried). | **Major Window:** Extended recovery once the delayed 4th sweep completes. |
+| **Lunging Thrust** | Hops slightly off the ground, pulls sword straight back, and thrusts forward across high distance with extreme velocity. | Standalone gap closer or triggered by consumable input-read. | **Parriable** (parry as the blade shoots forward). | **Minor Window:** Brief recovery if evaded laterally at close range. |
+| **Lunging Prosthetic Grab** | Left arm pulls back while sparking gold; dashes forward, scoops target upward, impales them on the blade, and slams them down. Ignores shields. | Standalone command grab. | **Unparriable** (unblockable). | **Major Window:** A lateral dodge or whiff locks her in an extended extraction animation. |
+| **Jumping Overhead Slam to Sweep** | Leaps vertically forward, delivers a heavy downward chop, pauses briefly, and executes an upward diagonal slice. | Downward slam can branch into an upward slash or an evasive hop. | **Downward chop is Parriable**. | **Major Window:** Punishable after the secondary upward slash resolves. |
+| **Counter-Kick** | Leaps slightly with an off-hand front kick. Features immediate hyper-armor frames; deals massive stamina damage against blocking guards. | Frequently used as an untelegraphed combo breaker when hit. | **Unparriable**. | **Minor Window:** Very brief recovery. |
+| **Two-Hit Upward Slice to Slam** | Slashing upward vertical cut followed by an immediate jumping downward slam. | Can branch into a lateral dash or a rapid triple slash follow-up. | **Parriable**. | **Minor Window:** Safe only if she does not queue an immediate side-dash. |
+| **Side-Step / Backstep Reposition** | Rapidly glides laterally or backward. Gains hyper-armor during the movement frames. | Resets spacing; cancels ongoing combo recoveries. | **N/A** (no hitbox). | **Zero Window:** Sets up an immediate next action without recovery frames. |
+
+---
+
+### Phase 2 Moveset & Additions (Malenia, Goddess of Rot)
+
+At Phase 2, Malenia sheds her armor, gains butterfly wings, and begins at 80% HP. She becomes permanently aggressive, eliminating her Phase 1 passive walking states, and appends rot explosions to standard heavy attacks.
+
+* **Scarlet Aeonia (Opening & Periodic)**
+* *Tempo & Mechanics:* Hovers in the air, dives down violently into the arena floor, and detonates into a massive blooming scarlet lotus flower. The petal explosion inflicts rapid Scarlet Rot and continuous physical/holy damage for ~5 seconds.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window (Ranged / Melee at Conclusion):** Malenia remains completely motionless inside the translucent flower center. Once the petals begin wilting and the damage hitbox ceases, she is exposed to free charged attacks.
+
+
+* **Phantom Spirits (Clone Flurry)**
+* *Tempo & Mechanics:* Leaps high into the air surrounded by scarlet butterflies and channels 5 red phantom clones that descend in rapid succession:
+1. *Phantom 1:* Direct vertical thrust.
+2. *Phantom 2:* Sweeping slash.
+3. *Phantom 3:* Upward slash.
+4. *Phantom 4:* Jumping overhead slam.
+5. *Phantom 5:* Thrust from the left.
+
+
+* *Finisher:* Followed immediately by the real Malenia executing a lunging thrust from the air.
+
+
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window:** Extended recovery immediately following the landing of the real Malenia's terminal thrust.
+
+
+* **Rot Geyser Slams & Sweeps**
+* *Tempo & Mechanics:* Jumping overhead slams and heavy sweeps now cause crimson rot geysers to erupt outward from the floor ~1 second after the blade contacts the earth.
+* *Punish Window:* **Trap to Minor Window.** The primary sword strike recovery cannot be punished from the front due to the delayed secondary rot explosion; flanking behind her is required to punish safely.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for charged R2 & heavy hits)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Waterfowl Dance (strictly after Burst 3 delayed sphere detonates)    │
+│ • Scarlet Aeonia (post-bloom dissipation when flower petals wilt)     │
+│ • Phantom Spirits (strictly after the real Malenia's final thrust lands)│
+│ • Lunging Prosthetic Grab (miss/whiff recovery animation)              │
+│ • Rapid Prosthesis Slices (strictly after the delayed 4th horizontal cut)│
+│ • Jumping Overhead Slam to Sweep (only after the secondary sweep lands)│
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Lunging Thrust (evaded laterally at close range)                     │
+│ • Standalone katana horizontal sweeps (if no combo branch is queued)   │
+│ • Counter-Kick (evaded cleanly without getting hit or guard-broken)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Hitbox hazard)          │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Burst 1 and Burst 2 of Waterfowl Dance (continuous multi-hit hitbox) │
+│ • Frontal positioning on Phase 2 Jumping Slams (delayed rot geysers)   │
+│ • Side-step / Backstep repositioning (hyper-armor active; cancels lag) │
+│ • Intermediate pauses during the Rapid Prosthesis Slices sequence      │
+│ • Attacking during hyper-armor startup when poise is depleted (resets) │
+│ • Guarding with shields (triggers boss healing on 100% blocked hits)   │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

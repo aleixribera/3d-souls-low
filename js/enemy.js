@@ -21,12 +21,14 @@ function reachOf(attacks) {
 }
 // Reactions (an attack's `when`, v5.3): the situations an enemy answers at once, whatever its cooldown or facing.
 //   behind: the player stands in its rear arc;  flank: close at its left (off-hand) side;
-//   healing: the player is drinking a flask or using an item;  staggered: the player reels (a broken guard).
+//   healing: the player is drinking a flask or using an item;  staggered: the player reels (a broken guard);
+//   shielded: its shield took a blow within CONFIG.ai.reactions.shielded s (v5.5, the Crucible Knight's counter bash).
 const REACTIONS = {
   behind: (e, p, rel) => Math.abs(rel) > CONFIG.ai.reactions.behind,
   flank: (e, p, rel) => rel > CONFIG.ai.reactions.flank[0] && rel < CONFIG.ai.reactions.flank[1],
   healing: (e, p) => p.state === PS.USE_ITEM,
   staggered: (e, p) => p.state === PS.STAGGER,
+  shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
 };
 // Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
 const FOLLOW_IF = {
@@ -66,6 +68,7 @@ class Enemy {
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
+    this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -175,7 +178,7 @@ class Enemy {
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
     this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
-    this.chainTime += dt;
+    this.chainTime += dt; this.blockTime += dt;
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
@@ -593,7 +596,7 @@ class Enemy {
     const G = this.def.guard;
     this.hp = Math.max(0, this.hp - strike.damage * G.damageMul);
     this.kx += kx * G.knockMul; this.kz += kz * G.knockMul;
-    this.tint = 0.3;
+    this.tint = 0.3; this.blockTime = 0;
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (this.in('unaware')) this.setState(ES.CHASE);
     if (this.fillMeter(G, strike.attackId, G.blockedMul)) return { broke: true, died: false };

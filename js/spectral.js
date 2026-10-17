@@ -7,6 +7,7 @@
 // that the blow is holy and cannot be parried. Drawing only: the hitbox is the attack's own box, as for every attack.
 // Each builder returns { geos, look }: geometry along +z from the hand, like KIT_WEAPONS (js/bodykit.js), in metres at
 // scale 1, and `look`: 'holy' (marbled golden light, the holyLight texture) or 'prism' (a pale blade with a shifting sheen).
+// An optional `bone` (v5.5) mounts it on that rig bone instead of the weapon hand: the Crucible Knight's wings and tails.
 const SPECTRAL_WEAPONS = {
   dagger() {
     return { look: 'holy', geos: [new THREE.BoxGeometry(0.05, 0.012, 0.5).translate(0, 0, 0.35), new THREE.BoxGeometry(0.16, 0.03, 0.03).translate(0, 0, 0.08)] };
@@ -28,7 +29,39 @@ const SPECTRAL_WEAPONS = {
     blade.computeVertexNormals(); blade.translate(0, 0, 1.08);
     return { look: 'prism', geos: [blade, new THREE.BoxGeometry(0.3, 0.05, 0.05).translate(0, 0, 0.12), new THREE.CylinderGeometry(0.025, 0.025, 0.24, 6).rotateX(Math.PI / 2)] };
   },
+  // Morgott's golden spear (v5.5): a long shaft and a broad leaf head, held and thrown.
+  spear() {
+    return { look: 'holy', geos: [new THREE.CylinderGeometry(0.03, 0.03, 2.4, 6).rotateX(Math.PI / 2).translate(0, 0, 0.7),
+      new THREE.ConeGeometry(0.09, 0.55, 4).scale(1, 1, 0.3).rotateX(Math.PI / 2).translate(0, 0, 2.15)] };
+  },
+  // Aspect of the Crucible: Wings (v5.5): two fans of long golden feathers spreading up and out from the shoulder blades.
+  wings() {
+    const geos = [];
+    for (const s of [-1, 1]) for (let i = 0; i < 7; i++) {
+      const a = 0.25 + i * 0.2, len = 0.75 + Math.sin(i / 6 * Math.PI) * 0.45 + (6 - i) * 0.05;
+      const f = new THREE.ConeGeometry(0.07, len, 4, 1).scale(1, 1, 0.25).translate(0, len / 2, 0);
+      f.rotateZ(-s * a); f.rotateY(s * 0.35); f.translate(s * 0.1, 0.5, -0.24);
+      geos.push(f);
+    }
+    return { look: 'holy', bone: 'chest', geos };
+  },
+  // Aspect of the Crucible: Tail (v5.5): a scaled golden tail from the small of the back, sweeping low behind him.
+  tail() { return { look: 'holy', bone: 'spin', geos: crucibleTail(1) }; },
+  // The double sweep's second tail: the same, about two and a half times as long.
+  tailGreat() { return { look: 'holy', bone: 'spin', geos: crucibleTail(2.5) }; },
 };
+// A tapering chain of segments curving back and down, `k` times the base length (about 1.3 m at scale 1).
+function crucibleTail(k) {
+  const geos = [], n = 9;
+  let x = 0, y = -0.05, z = -0.18, a = 0.5;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1), len = 0.16 * k, r = 0.085 * (1 - t * 0.8);
+    const seg = new THREE.CylinderGeometry(r * 0.8, r, len, 6).translate(0, len / 2, 0).rotateX(-Math.PI / 2 - a);
+    seg.translate(x, y, z); geos.push(seg);
+    z -= Math.cos(a) * len; y -= Math.sin(a) * len * 0.5; x += Math.sin(t * 2.4) * 0.02 * k; a = Math.max(-0.2, a - 0.12);
+  }
+  return geos;
+}
 
 const spectral = (() => {
   const S = CONFIG.elden.spectral, geos = {};
@@ -49,7 +82,7 @@ const spectral = (() => {
     for (const geo of W.geos) g.add(new THREE.Mesh(geo, mat));
     const light = new THREE.PointLight(S.glow, 0, S.lightRange); light.position.z = 0.8; g.add(light);
     g.userData = { mat, light, k: 0 }; g.visible = false;
-    R.weapon.add(g);
+    (W.bone ? R.bones[W.bone] : R.weapon).add(g);
     return (set[id] = g);
   }
   let last = performance.now();

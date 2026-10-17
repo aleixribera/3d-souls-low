@@ -1,0 +1,121 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 13,347 HP (New Game)
+* Precedes the Elden Beast encounter immediately upon defeat; health does not carry over.
+
+
+* **Stance / Poise:** 120 (breaks into a critical riposte opening at his chest; poise regenerates after ~6 seconds without incoming stance damage).
+* **Parry Resistance:** Requires **3 successful parries** to break stance and open a riposte window.
+* **Parry Vulnerability:**
+* **Parriable:** Standard physical swings, sweeping strikes, and lunging chops delivered with Marika's Hammer.
+* **Unparriable:** Holy lightning projectiles, holy ground shockwaves, teleportation bursts, grab maneuvers, and the leaping Gold Breaker slam.
+
+
+* **Damage Types Dealt:** Standard, Strike, Pierce, and Holy.
+* **Base Absorptions / Negations:** Standard 10%, Slash 10%, **Strike -10%** (damage vulnerability), Pierce 10%, Magic 20%, Fire 0%, Lightning 20%, **Holy 80%** (extreme resistance).
+* **Status Resistances:**
+* **Hemorrhage (Bleed):** Immune.
+* **Sleep:** Immune.
+* **Madness / Death Blight:** Immune.
+* **Frostbite:** 594 (susceptible).
+* **Poison / Scarlet Rot:** 594 (susceptible).
+
+
+* **Behavioral Threshold:** Begins incorporating **Gold Breaker**, **Elden Shattering (Tri-Slam)**, and rapid combat teleports primarily below **≤60% HP**.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Spell & Projectile Deflection (Golden Retaliation):**
+* When a ranged spell, incantation, or thrown projectile approaches while Radagon is idle or approaching, he raises his left palm. The projectile is neutralized instantly, immediately triggering an untelegraphed counter-cast of **5 homing golden bolts** fired in a tight spread.
+
+
+* **Damaging Teleportation (Spatial Shift):**
+* Radagon can execute instantaneous teleports both defensively (canceling out of hitstun/stagger) and offensively (closing distance).
+* **Hitboxes:** Emits an active Holy/Physical damage hitbox at the departure point, followed immediately by a second damage hitbox upon reappearance at the arrival point.
+
+
+* **Consumable / Item Input-Reading:**
+* Using a flask or consumable at medium-to-long range prompts an immediate single or triple **Golden Lightning Spear** throw, or a forward teleport slam.
+
+
+* **Lingering Rune Detonations:**
+* Heavy hammer slams carve glowing golden sigils into the arena floor. These linger for ~1.5 to 2 seconds before violently detonating upward in holy pillars.
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Hammer Swing Combo (2 to 4 Hits)** | Alternates horizontal sweeping blows from right to left, a backswing, and an optional overhead downward slam. | Fourth hit can chain into a delayed ground rune detonation. | **Parriable** (all hammer strikes can be parried). | **Minor Window:** Punishable after the downward finisher resolves. |
+| **Golden Lightning Spear (Single / Triple)** | Conjures a bolt of holy lightning and hurls it at high velocity. | • At long range: Throws 1 spear.<br>
+
+<br>• Can chain into 2 fast follow-up spears.<br>
+
+<br>• Can lodge spear into the earth to explode. | **Unparriable**. | **Minor Window:** Brief recovery after the final projectile release at long range. |
+| **Golden Grab (Hammer Execution)** | Left hand ignites with brilliant golden light; charges forward with high tracking, grabs the target, lifts them up, and smashes them into the earth twice. | Standalone command grab. Ignores shields. | **Unparriable** (unblockable). | **Major Window:** Evading laterally leaves him locked in the ground-pounding whiff animation. |
+| **Foot Stomp to Overhead Chop** | Stomps forward foot quickly (~25 frames) kicking up rocks, then executes a high-speed downward hammer chop. | Often used as an untelegraphed close-quarters combo interrupter. | **Chop is Parriable** (stomp is unparriable). | **Minor Window:** Brief recovery once the hammer hits the floor. |
+| **Rune Shockwave Slam** | Elevates hammer with both hands, pauses with heavy delay, and drives it into the ground, etching a radial golden rune that erupts ~1.5 seconds later. | Can cancel directly into a backward teleport post-detonation. | **Unparriable**. | **Major Window (Flank/Rear):** Safe to attack his back while outside the frontal rune blast perimeter. |
+| **Teleport Reappearance Strike** | Teleports into melee range, dealing arrival damage, and immediately follows with a horizontal hammer sweep without standard windup. | Transitionary gap closer. | **Hammer sweep is Parriable** (teleport flash is unparriable). | **Minor Window:** Punishable only after the sweeping follow-up completes. |
+
+---
+
+### Phase 2 Additions & High-Threat Attacks (≤60% HP)
+
+* **Gold Breaker (Leaping Aerial Hammer Slam)**
+* *Tempo & Mechanics:* Radagon leaps high into the air, hovers horizontally suspended for ~2 seconds while the Elden Ring sigil illuminates behind him, and drives the hammer straight down, generating an immense outward holy shockwave.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window.** Radagon remains kneeling on the ground with the hammer planted for ~1.5 seconds following the shockwave.
+
+
+* **Elden Shattering (Triple Ground Slam / Tri-Slam)**
+* *Tempo & Mechanics:* A fixed 3-stage slam sequence:
+1. *Slam 1:* Slams hammer forward, projecting a narrow cone of golden shockwaves across the floor.
+2. *Slam 2:* Swings hammer up and slams a second time, projecting a much wider 180° cone with increased delay.
+3. *Slam 3:* Leaps vertically, pauses at peak height, and crashes down with full force, triggering an arena-wide 360° holy explosion.
+
+
+* *Avoidance:* Slams 1 and 2 can be rolled through laterally or jumped; Slam 3 requires rolling inward with precise timing or clearing the radial line of sight.
+* *Punish Window:* **Major Window.** Extended idle recovery strictly follows the detonation of the 3rd final slam. Intermediate pauses are frame traps.
+
+
+* **Spear Thrust into Detonation**
+* *Tempo & Mechanics:* Conjures a golden spear and drives it linearly into the ground, dealing direct pierce damage, followed ~1 second later by an explosive holy burst along the shaft.
+* *Punish Window:* **Minor Window:** Accessible from his rear flank before the delayed spear explosion detonates.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for heavy/charged attacks)  │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Gold Breaker (recovery lag while grounded post-landing shockwave)   │
+│ • Elden Shattering (strictly after the 3rd final ground slam resolves) │
+│ • Golden Grab (miss/whiff recovery animation)                         │
+│ • Rune Shockwave Slam (positioning behind his hips clear of the rune)  │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • 4-Hit Hammer Combo (after the final downward finisher lands)         │
+│ • Foot Stomp to Overhead Chop (immediately following the chop)         │
+│ • Golden Lightning Spear (at close/mid range if rolled through)        │
+│ • Teleport Reappearance Strike (after the follow-up swing completes)   │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Hitbox hazard)          │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Golden Retaliation stance (parries spells; triggers 5-bolt counter)  │
+│ • Teleport departure and arrival points (active damage frames)         │
+│ • Inside active golden floor runes prior to detonation                │
+│ • Pauses between Slams 1, 2, and 3 during Elden Shattering             │
+│ • Neutral consumable/flask usage (buffers instant lightning spear)     │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

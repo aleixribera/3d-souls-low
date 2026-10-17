@@ -35,7 +35,8 @@ const execution = (() => {
   }
   function damageFor(e) {
     const D = CONFIG.execution.damage, boss = isBossLike(e);
-    const dmg = PLAYER_DEF.moveset.attacks.light.damage * (boss ? D.bossLightMul : D.lightMul);
+    // `critMul` (v5.5, opt-in per def): a foe that shrugs off part of a critical blow (the Crucible Knight, 0.7).
+    const dmg = PLAYER_DEF.moveset.attacks.light.damage * (boss ? D.bossLightMul : D.lightMul) * (e.def.critMul ?? 1);
     return boss ? Math.min(dmg, e.def.hp * D.bossCap) : dmg;   // e.def: a boss's current phase, so its current bar
   }
 

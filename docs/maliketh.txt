@@ -1,0 +1,145 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 10,620 HP (New Game, Farum Azula)
+* Health pool is continuous across both forms: Beast Clergyman (100%–50% HP) and Maliketh, the Black Blade (≤50% HP).
+
+
+* **Stance / Poise:** 80 (stance breaks open a riposte window at his head; regenerates after ~6 seconds without incoming stance damage).
+* **Parry Resistance & Mechanics:**
+* **Phase 1 (Beast Clergyman):** Unparryable. Standard parrying tools cannot deflect Cinquedea slashes or Bestial Incantations.
+* **Phase 2 (Maliketh):** Immune to standard shield/weapon parries. Specific aerial and sweeping sword attacks flash with a distinct **golden glow**; only these specific attacks can be parried using the tool **Blasphemous Claw**. A successful Blasphemous Claw deflection stuns Maliketh for **~4.5 seconds**.
+
+
+* **Damage Types Dealt:**
+* **Phase 1:** Standard, Strike, Pierce, and Physical magic (Bestial rocks).
+* **Phase 2:** Standard, Slash, Pierce, Holy, and Destined Death.
+
+
+* **Destined Death Mechanics (Phase 2):**
+* All hits from the Black Blade or its crimson projectiles apply **Destined Death**:
+* Reduces the target's maximum HP ceiling by **10%** for 15 seconds (resets on repeated hits).
+* Applies an immediate damage-over-time (DoT) tick that drains approximately **2% of maximum HP** over several seconds.
+
+
+
+
+* **Base Absorptions / Negations:**
+* **Phase 1 (Beast Clergyman):** Standard 0%, Slash 10%, Strike 0%, Pierce 0%, Magic 20%, Fire 20%, Lightning 20%, Holy 40%.
+* **Phase 2 (Maliketh):** Standard 20%, Slash 35%, Strike 20%, Pierce 20%, Magic 40%, Fire 40%, Lightning 40%, Holy 80%.
+
+
+* **Status Resistances:**
+* **Hemorrhage (Bleed):** 594 (susceptible)
+* **Frostbite:** 594 (susceptible)
+* **Poison / Scarlet Rot:** 594 (resistant)
+* **Sleep:** 594
+* **Madness / Death Blight:** Immune
+
+
+* **Phase Transition:** Triggers when health drops to **≤50% HP** (initiates a cutscene; remaining HP does not regenerate).
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Consumable / Item Input-Reading:**
+* In Phase 1, using an item or flask at medium-to-long range instantly prompts an untelegraphed **Bestial Sling** or a running Cinquedea swipe.
+
+
+* **Dagger Retreat Cancel (Phase 1):**
+* If the player lingers at point-blank range under the Clergyman's chest during a dagger combo, the AI frequently cancels the recovery into a leaping backward somersault while scattering **Bestial Sling** pebbles across the retreat path.
+
+
+* **Pillar & Geometry Interaction (Phase 2):**
+* Maliketh checks for nearby arena pillars when triggering aerial evasions. He can latch onto the side of a pillar mid-leap, push off vertically, and redirect projectile trajectories downward.
+
+
+* **Golden Blade Flare (Blasphemous Claw Trigger):**
+* During the windup of his aerial double-flip projectile follow-up and his leaping corkscrew dive, Maliketh's sword blade emits a bright golden particle flash. The active parry frame of the Blasphemous Claw must intersect with the weapon hitbox during this dive to force the stance break.
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data (Beast Clergyman)
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Cinquedea Multi-Slash** | Delivers 2–4 rapid horizontal and diagonal dagger slashes with short reach. Startup is extremely fast (~15–20 frames). | Can cancel directly into Bestial Sling or backward leap. | **Unparriable**. | **Minor Window:** Punishable only after the 4th strike resolves if no leap cancel occurs. |
+| **Bestial Sling (Rock Spray)** | Scoops hand into ground and flings a cone of jagged rock shards forward like a shotgun blast. Negligible startup. | Frequently buffered out of backwards evasions or flask input-reads. | **Unparriable**. | **Zero Window:** Recovers instantly; combo-starter/neutral reset. |
+| **Stone of Gurranq** | Reaches both hands into the earth, pulls out a massive boulder, holds it overhead, and hurls it forward in a slight arc. | Standalone ranged attack. | **Unparriable**. | **Major Window:** Extended throwing animation; open to heavy melee punishes if close to his hips/rear. |
+| **Beast Claw (Linear Fissure)** | Plunges left hand claws into the ground and violently pulls backward, sending out 5 radiating seismic shockwaves along the floor. | Standard mid-range poke; ground-level hitboxes (can be jumped). | **Unparriable**. | **Minor Window:** Brief recovery after claws are extracted from the floor. |
+| **Gurranq's Beast Claw (Radial 360°)** | Thrusts both hands into the earth with a vocal roar, waits ~30 frames, and pulls outward, detonating a 360° radial wave of shockwaves. | Standalone area-denial attack. Shockwaves can be jumped. | **Unparriable**. | **Major Window:** Locked in place during extraction; safe to jump-attack close to his torso. |
+| **Ground Stab & Uplift** | Drives Cinquedea straight down into the floor, pauses, and wrenches it upward, causing rocks to erupt in a small forward cone. | Often follows a forward lunging sweep. | **Unparriable**. | **Minor Window:** The extraction animation leaves his flank exposed. |
+
+---
+
+### Phase 2 Moveset & Additions (Maliketh, the Black Blade)
+
+At ≤50% HP, the Beast Clergyman sheds his robes to reveal Maliketh, wielding the Destined Death Greatsword. Mobility, reach, and aerial tracking increase dramatically.
+
+* **Black Blade Aerial Projectiles (Destined Death Waves)**
+* *Tempo & Mechanics:* Leaps high into the air (or off an arena pillar), hovers momentarily, and flips, hurling 1 to 3 crimson/gold crescent energy waves toward the target.
+* *Branching:* Almost always chains directly into either the **Leaping Corkscrew Dive** or the **Ground Slam into Destined Death Sphere**.
+* *Punish Window:* **Zero Window.** Active aerial evasion; no melee punish possible during flight.
+
+
+* **Leaping Corkscrew Dive (Gold Flash / Parry Window)**
+* *Tempo & Mechanics:* Follows the aerial wave projectiles. Maliketh's blade flashes gold as he corkscrews forward through the air in a spinning downward dive.
+* *Parryability:* **Blasphemous Claw Only.** Parry triggers when the golden flash descends into melee range.
+* *Punish Window:*
+* *On Parry:* **Major Window (4.5s Stun):** Maliketh falls to his knees, completely inert.
+* *On Whiff/Roll:* **Minor Window:** Slides along the ground, recovering quickly.
+
+
+
+
+* **Destined Death (AoE Slashing Sphere)**
+* *Tempo & Mechanics:* Maliketh plants the tip of the Greatsword into the earth, hops onto the pommel with both feet, pauses, and backflips off. As he leaps away, a dense sphere of thousands of crimson slashes erupts from the blade, followed by an outward detonation.
+* *Hitbox Risk:* Massive multi-hit blender dealing continuous Destined Death ticks.
+* *Punish Window:* **Major Window (Position-Dependent):** The sphere only extends in front and slightly outward from the planted blade. Getting behind Maliketh during the pommel stand allows an uninterrupted punish.
+
+
+* **Slow Overhead Two-Handed Slam & Ground Blast**
+* *Tempo & Mechanics:* Rears back on hind legs, brings the massive blade high overhead with both hands, pauses with heavy tracking, and smashes it vertically down into the floor. A delayed holy explosion erupts along the line of impact after ~1 second.
+* *Branching:* Can transition into a sweeping horizontal escape slash if the target is behind him.
+* *Punish Window:* **Major Window:** Positioning to his lateral flanks avoids both the downward strike and the line explosion, leaving him static during the recovery.
+
+
+* **Spinning Slash into Flip (Ground Sweep)**
+* *Tempo & Mechanics:* Executes a low, wide-angle 360° sweep with the blade while sliding forward, ending with a vertical somersault backward.
+* *Punish Window:* **Minor Window:** Safe to punish briefly if close to the landing point of his backflip.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for charged R2 & heavy hits)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Successful Blasphemous Claw Parry on Gold Flash (~4.5 second stun)   │
+│ • Destined Death Sphere (flanking behind the sword during pommel mount)│
+│ • Phase 1 Stone of Gurranq (close-range flank during the boulder windup)│
+│ • Phase 1 Gurranq's Beast Claw (jumping over radial waves into his chest)│
+│ • Phase 2 Two-Handed Overhead Slam (lateral positioning clear of blast)│
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 Ground Stab & Uplift (after rocks erupt from floor)          │
+│ • Phase 1 Linear Beast Claw (after claws pull out, if closed distance) │
+│ • Phase 2 Leaping Corkscrew Dive (if rolled through without parrying)  │
+│ • Phase 2 Ground Sweep into Backflip (at his landing destination)      │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Lethal hazard)          │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 Bestial Sling (near-instant recovery; cancels into combos)   │
+│ • Phase 2 Black Blade Aerial Projectiles (mid-air invulnerability state)│
+│ • Inside the Destined Death Sphere radius (active multi-hit shred)     │
+│ • Point-blank in front of Beast Clergyman (triggers leap-away pebble trap)│
+│ • Straight in front of Phase 2 Overhead Slam (delayed holy line blast) │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

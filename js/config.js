@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.4.8';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.6';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -166,7 +166,7 @@ const CONFIG = {
         kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 },
         // Reactions (an attack's `when`, v5.3): `behind` past this angle (rad) from its facing; `flank` between these
         // angles at its left (rad, + is left).
-        reactions: { behind: 2.2, flank: [0.6, 1.9] } },
+        reactions: { behind: 2.2, flank: [0.6, 1.9], shielded: 0.8 } },
   // Elden Ring Bosses mode (v5.3, js/elden.js; the boss list is ELDEN_BOSSES in js/data/elden-bosses.js): `victoryTime` s
   // of the victory banner before Retry / Boss select shows (v5.4); `deathMenu` s after the death before the same choice.
   // Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light `intensity`.

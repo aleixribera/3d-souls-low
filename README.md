@@ -1,4 +1,4 @@
-# Combat Arena 3D — v5.4: Godrick the Grafted
+# Combat Arena 3D — v5.6: The Omen King
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -18,7 +18,7 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
 - **Levels → Level 5: The Final Castle** — the longest level and the game's final test, about 30–40 minutes on a first run. It opens straight into the fight with **Aldric, the Gaoler King** on the field before his castle; break him and he leaps onto his walls and is gone, his gate gives way, and the first bonfire lights. Then the outer ward (a courtyard under a wall walk of archers, the barracks and their shortcut, and the **Empty Sentinel** holding the moat bridge), the inner keep (the great hall and its kitchen, the ramparts with Gargoyles on the walk), and the throne approach (an ash bridge under Toll Wisps, then the processional gauntlet). You glimpse Aldric twice on the way. Four bonfires; the last is a short run from the fog at the throne room door. In the throne room he fights again, and when his bar breaks the bell tolls, the glass bursts, the pillars fall and he rises as **Aldric, the Ember-Crowned**: a new bar, new attacks and fire. Beat him for the ending and the credits.
 - **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, Gargoyle, Empty Sentinel, Toll Wisp, the Pillager Captain, the Bell Warden and Aldric (his throne room fight, both bars).
-- **Elden Ring Bosses** (v5.3) — a boss select of fights inspired by Elden Ring, one card each (name, title, difficulty), fought one on one in the Enemies arena. Win (ENEMY FELLED) or die, then choose **Retry** or **Boss select**. Two bosses so far: **Margit, the Fell Omen** and **Godrick the Grafted** (see below). Outside the story of Ashmere.
+- **Elden Ring Bosses** (v5.3) — a boss select of fights inspired by Elden Ring, one card each (name, title, difficulty), fought one on one in the Enemies arena. Win (ENEMY FELLED) or die, then choose **Retry** or **Boss select**. Four bosses so far: **Margit, the Fell Omen**, **Godrick the Grafted**, the **Crucible Knight** and **Morgott, the Omen King** (see below). Outside the story of Ashmere.
 
 ## Characters (v4.1: Bone and Ash)
 
@@ -90,6 +90,23 @@ A hulking, stooped lord in mismatched silver and gilded plate under a teal tabar
 - **At 60% health** he drops to his knees and hacks off his arm (he cannot be hurt while he does), grafts on a dragon's head and bathes the ground ahead in fire. Stand at his sides during the long flame sweep and hit him. From then on he burns: fiery storms, a leaping slam that bursts into a ring of fire, a three-part "Kneel!" whose last blast covers most of the arena, a charging dragon bite, and a fire march that floods the ground ahead.
 - **Stance:** heavy blows fill it; when he kneels, execute him.
 
+## The Crucible Knight (v5.5)
+
+A towering knight in ornate golden-bronze plate, a tall helm with sweeping horns and a crest spike, a great oval shield on his left arm and a long straight greatsword. One bar of 2600 HP.
+
+- **The shield:** while he is not attacking, blows to his front glance off it (little damage) and he may answer at once with a **Shield Counter**. Get round his sides, or hit him in his recoveries. Heavy blows wear the guard down; a broken guard kneels him.
+- **Sword and shield:** a long **Lunging Thrust** (also his answer to drinking a flask at range), the **Earth Stomp** (a cone of rock along the floor: jump it) that always flows straight into an uppercut, an overhead slam (his sword stays planted: a big opening) or a **Double Spin Slash**, a diagonal slash and its backswing, a stepping **Shield Bash** (whiff it and his back is open), and a quick one-handed jab.
+- **Parry:** every sword swing and thrust glints and can be parried, and **one parry breaks his stance**. The shield, the stomp and the golden aspects cannot be parried. He takes 30% less from executions.
+- **At 50% health** the Crucible wakes: golden wings unfold and he dives at you from the air (he skids on landing: punish it), and his sword combos no longer stop: if you stay close a golden **Tail** sweeps round him, and if you back off or swing at once a far larger tail follows. Both run low: jump or roll them.
+
+## Morgott, the Omen King (v5.6)
+
+Margit unmasked: the same hunched omen in darker, kingly rags, now swinging the Cursed Greatsword. One bar of 4800 HP, the hardest boss in the game.
+
+- **Phase 1:** a long-delayed overhead chop into a thrust, a four-cut flurry with a conjured golden curved sword, a golden hammer that leaps and crashes down with a shockwave or sweeps low into a sword slash, a golden spear he charges with at mid range or hurls from afar, a rain of golden swords falling in a line ahead of him, fans of thrown daggers, a dagger slash if you linger at his left, and his tail if you get behind him. Drink a flask at range and he punishes it.
+- **Parry:** only the greatsword's own blows glint and can be parried; **three parries break his stance**. Golden weapons, the tail and the bloodflame can be blocked or rolled, never parried.
+- **At 60% health** he kneels, choking (untouchable), then the cursed blood bursts out all round him and geysers erupt further out: run before it goes off. His sword now burns: a dashing **Cursed Blood Slice** whose path bursts again, a straight **Bloody Thrust** you must roll, and more geysers.
+
 ## Controls
 
 | Action | Keys | Gamepad (Xbox / PlayStation) |
@@ -132,7 +149,7 @@ Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh
 
 Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Aldric's retreat, his phase change, or his death and the ending).
 
-Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')` or `('godrick')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`.
+Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')`, `('godrick')`, `('crucibleKnight')` or `('morgott')` starts a fight from the console; **F10** empties the bar, **F4** breaks the stance. Tests: `run('Elden')`, `run('Godrick')`, `run('Crucible')`, `run('Morgott')`.
 
 Lore shortcuts (`#dev`): **Test Grounds** lists **Lore: Ysolde in ...**, one jump per level that starts it next to her. From the console: `__arena.lore`, `__arena.LORE`.
 

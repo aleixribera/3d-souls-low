@@ -1,0 +1,133 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 21,903 HP (Leyndell, Capital of Ash — New Game)
+* Health pool carries over between Phase 1 (Godfrey, First Elden Lord) and Phase 2 (Hoarah Loux, Warrior).
+
+
+* **Stance / Poise:** 120 (breaks into a critical riposte window at his chest/head; regenerates after ~6 seconds without incoming stance damage).
+* **Parry Resistance:** **Completely Unparryable.** None of Godfrey's axe strikes, stomps, grapples, or barehanded claw strikes can be deflected with standard parries.
+* **Damage Types Dealt:**
+* **Phase 1:** Standard, Strike.
+* **Phase 2:** Standard, Strike, Slash.
+
+
+* **Base Absorptions / Negations:**
+* **Phase 1 (Godfrey):** Standard 10%, Slash 10%, Strike 10%, Pierce 0%, Magic 20%, Fire 20%, Lightning 0%, Holy 40%.
+* **Phase 2 (Hoarah Loux):** Standard 0%, Slash -10%, Strike 0%, Pierce 0%, Magic 0%, Fire 0%, Lightning 0%, Holy 40%.
+
+
+* **Status Resistances:**
+* **Hemorrhage (Bleed):** 601 (scaling to 891 / 1,348)
+* **Frostbite:** 601 (scaling to 891 / 1,348)
+* **Poison:** 367 (scaling to 465 / 755 / 1,212)
+* **Scarlet Rot:** 367 (scaling to 465 / 755 / 1,212)
+* **Sleep:** 367
+* **Madness / Death Blight:** Immune
+
+
+* **Phase Transition:** Triggers when total health drops to **≤40% HP** (dealing 60% of his total health bar initiates the transformation cutscene into Hoarah Loux, Warrior).
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Ground-Level Hitbox Architecture (Vertical Clearance):**
+* All foot stomp shockwaves (directional cones and arena-wide tremors) generate hitboxes strictly restricted to the ground plane. They possess negligible vertical height and are bypassed entirely via player jump states, allowing simultaneous airborne punish attacks.
+
+
+* **Regal Roar Empowerment Thresholds:**
+* **Phase 1 (≤75%–80% HP):** Godfrey channels his first **Regal Roar**. For the remainder of Phase 1, his standard directional stomps are permanently upgraded to 360° arena-wide shockwaves.
+* **Phase 2 (≤20% HP):** Hoarah Loux enters **Hoarah Loux's Rage**, roaring with raised foot and stomping twice sequentially, upgrading his Phase 2 stomps to full-arena radial shockwaves.
+
+
+* **Long-Range Gap Closing:**
+* Retreating to medium-to-long distance causes Godfrey to prioritize either an advancing foot drag stomp or the **Jumping Axe Throw & Dive**, crossing the entire arena in ~1.2 seconds.
+
+
+* **Phase 2 Command Grab Priority (Shield Bypass):**
+* All grapple actions in Phase 2 (Power Bomb, Loux's Lunge) are unblockable. Guarding frames are pierced with 100% effectiveness.
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data (Godfrey, First Elden Lord)
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Earth Stomp (Directional)** | Lifts forward foot high (~35–40 frame windup) and drives it down, sending a forward-spreading cone of cracked rock shockwaves. | Primary combo link; cancels directly into axe sweeps, overhead slams, or forward dashes. | **Unparriable** (ground hitbox; jumpable). | **Zero Window:** Connects instantly into axe swings. |
+| **Regal Roar (Arena-Wide Stomp)** | Raises axe overhead two-handed, lifts right leg with a red aura (~60 frames), and stomps down, detonating a 360° arena-wide shockwave. | Standalone buff animation; upgrades all future Phase 1 stomps to arena-wide range. | **Unparriable** (jumpable). | **Major Window:** Extended roar recovery animation once the shockwave resolves. |
+| **Jumping Axe Throw & Dive** | Leaps 20+ feet into the air, hurls axe downward ahead of him, and dives onto the axe head, causing an impact shockwave. | Standalone gap-closer triggered at long range. | **Unparriable**. | **Major Window:** Godfrey remains crouched over the planted axe for ~1.5 seconds. |
+| **Fissure Slam (Earth Cleaver)** | Swirls axe overhead, drives it into the earth, pauses ~1.5 seconds, then pushes deeper, tearing open an arena-length fissure that erupts with golden energy. | Fixed two-part sequence. Direct line of the fissure detonates vertically. | **Unparriable**. | **Major Window (Flank/Rear):** Safe to punish from lateral flanks while he remains anchored during the secondary push. |
+| **Triple Axe Combo** | Wide right-to-left horizontal slash, left-to-right return slash, concluding in a delayed two-handed downward chop. | Fixed 3-hit sequence; the third hit features slight delay tracking. | **Unparriable**. | **Major Window:** Recovery begins strictly after the third downward chop connects. |
+| **Overhead Smash to 360° Spin** | Fast downward vertical axe chop, followed immediately by a clockwise 360° spin sweep and a secondary downward smash. | Standard close-quarters mixup. Intermediate pauses are frame traps. | **Unparriable**. | **Major Window:** Only accessible after the second overhead smash resolves. |
+| **Plunging Axe (Upward Hoist)** | Drives the axe blade into the floor and forcefully rips it up, launching rocks and debris upward. | Often chained out of a frontal dash or roll. | **Unparriable**. | **Minor Window:** Brief recovery after the upward wrench animation finishes. |
+
+---
+
+### Phase 2 Moveset & Additions (Hoarah Loux, Warrior — ≤40% HP)
+
+Godfrey kills Serosh and discards his armor and axe. Attacks transition to barehanded brawling, wrestling throws, and concussive shockwaves.
+
+* **Power Bomb (Running Command Grab)**
+* *Tempo & Mechanics:* Sprints forward with arms raised high, swings upward to scoop the target into the air, leaps into the stratosphere after them, and pile-drives them headfirst into the ground.
+* *Blockability:* **Unblockable** (ignores shields entirely).
+* *Punish Window:* **Major Window.** A successful dodge or whiff locks Hoarah Loux in an extended ground-recovery animation.
+
+
+* **Loux's Lunge (Advancing Choke Grab)**
+* *Tempo & Mechanics:* Lowers posture and charges horizontally forward with his right hand extended. Upon contact, throttles the target, raises them up, and slams them into the earth.
+* *Blockability:* **Unblockable**.
+* *Punish Window:* **Major Window.** Linear tracking; evading laterally leaves his back completely exposed for the duration of the slide.
+
+
+* **Hoarah Loux's Earthshaker**
+* *Tempo & Mechanics:* Unfurls a close-range concussive roar (staggers player), leaps forward, slams both fists into the ground (Shockwave 1), pauses, and pulls his arms outward, detonating a massive secondary radial explosion (Shockwave 2).
+* *Avoidance:* Both shockwaves are ground-level hitboxes that can be jumped.
+* *Punish Window:* **Major Window.** Substantial recovery lag follows the second radial ground eruption.
+
+
+* **Berserker Flurry (Multi-Claw Swipes)**
+* *Tempo & Mechanics:* Rapid, erratic advancing combo consisting of 4–5 alternating barehanded horizontal claw swipes, terminating with an upward cross-slash or front kick.
+* *Punish Window:* **Minor Window.** Safe to punish only once the final cross-slash completes. Intermediate swipes have near-zero recovery.
+
+
+* **Double Earth Stomp**
+* *Tempo & Mechanics:* Stomps with his right leg (Shockwave 1), followed immediately by both fists smashing down into the floor (Shockwave 2).
+* *Avoidance:* Jump both consecutive shockwaves.
+* *Punish Window:* **Minor to Major Window** depending on spacing during the second fist impact.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for charged R2 & jump attacks)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 Jumping Axe Throw & Dive (impact recovery on planted axe)    │
+│ • Phase 1 Regal Roar activation (extended recovery after foot lands)   │
+│ • Phase 1 Fissure Slam (flank and rear access during secondary push)   │
+│ • Phase 1 Triple Axe Combo (strictly following the 3rd downward chop)  │
+│ • Phase 2 Power Bomb (miss/whiff recovery animation)                   │
+│ • Phase 2 Loux's Lunge (lateral miss recovery)                         │
+│ • Phase 2 Hoarah Loux's Earthshaker (post-second ground explosion)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 Plunging Axe Upward Hoist (after rocks launch from floor)    │
+│ • Phase 2 Berserker Flurry (strictly after the final cross-slash)      │
+│ • Phase 2 Double Earth Stomp (jumping over the 2nd shockwave into torso)│
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Lethal hazard)          │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 standard Earth Stomp (cancels instantly into axe swings)     │
+│ • Intermediate pauses during Phase 1 Overhead Smash to Spin sequence   │
+│ • Inside the linear fissure line during the Earth Cleaver sequence    │
+│ • Mid-combo swings of Phase 2 Berserker Flurry                         │
+│ • Guarding against Phase 2 grabs (unblockable command grab bypass)     │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

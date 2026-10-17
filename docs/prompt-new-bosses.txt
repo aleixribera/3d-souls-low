@@ -3,8 +3,7 @@ You are responsible for creating a prompt for my Opus agent inside the project, 
 
 Always add a final phase to all prompts, which is, commit and push to github, with version = vx.x, and edit CLAUDE.md and README.md accordingly to display the new current main game details.
 
-Now, we are going to implement a boss in Elden Ring Bosses, where a menu with all available bosses will be displayed, and when clicking it, the player will enter a 1v1 arena with that boss, the arena will be the same as the one used in "enemies".
+Now, we are going to implement a boss in Elden Ring Bosses, a menu with all available bosses displayed, that when clicked, the player enters a 1v1 arena with that boss, the arena is same as the one used in "enemies".
 
-The Boss we are adding is [BOSS] from Elden Ring, I already have a file called [BOSS]-stats.txt that shows everything, so just write the prompt for Opus.
-
+The Boss we are adding is BOSS from Elden Ring, I already have a file called BOSS-stats.txt that shows everything, so just write the prompt for Opus.
 Remember, we are only adding the boss into the game, the player already exists, a full playable version of the game exists, with its own values, so this Elden Ring Boss should fit right into that

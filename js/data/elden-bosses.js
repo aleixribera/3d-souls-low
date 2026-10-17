@@ -10,12 +10,16 @@
 //   name, title  the card's name and short title; the health bar shows the def's own name
 //   difficulty   1 to 5 (stars on the card)
 //   description  one line under the card
-const ELDEN_BOSS_DEFS = [MARGIT, GODRICK];
+const ELDEN_BOSS_DEFS = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT];
 const ELDEN_BOSSES = [
   { id: 'margit', enemy: 'margit', name: 'Margit, the Fell Omen', title: 'Stormveil\'s gatekeeper', difficulty: 4,
     description: 'Delayed cane swings, thrown golden daggers, and at 60% health a holy hammer and sword. Learn his rhythm; two parries break his stance.' },
   { id: 'godrick', enemy: 'godrick', name: 'Godrick the Grafted', title: 'Lord of Stormveil', difficulty: 5,
     description: 'A great axe, storm winds and shockwaves you must jump or roll. At 60% he grafts on a dragon’s head that breathes fire. He cannot be parried.' },
+  { id: 'crucibleKnight', enemy: 'crucibleKnight', name: 'Crucible Knight', title: 'Knight of the old Crucible', difficulty: 4,
+    description: 'Sword and greatshield: blows to his front glance off and earn a shield bash. One parry breaks him. At half health golden wings and a tail join the fight.' },
+  { id: 'morgott', enemy: 'morgott', name: 'Morgott, the Omen King', title: 'Lord of Leyndell', difficulty: 5,
+    description: 'Margit unmasked: a cursed greatsword, golden spears, hammers, daggers and a rain of swords. At 60% his cursed blood bursts into flame. Three parries break him.' },
 ];
 // The bosses are fought like any duel, by def id; they are not listed in the Enemies menu.
 for (const d of ELDEN_BOSS_DEFS) ENEMY_BY_ID[d.id] = d;

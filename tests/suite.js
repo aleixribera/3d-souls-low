@@ -2528,6 +2528,122 @@
     expect.ok(p.hp === hp0, 'at his flank: untouched');
   });
 
+  // ---- Elden Ring Bosses: the Crucible Knight (v5.5) --------------------------------------------------------------
+  const startCrucible = () => { A.elden.start('crucibleKnight'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  const ckAttack = (e, id) => e.def.attacks.find(a => a.id === id) || A.ENEMY_BY_ID.crucibleKnight.attacks.find(a => a.id === id);
+  test('Crucible: on the boss select, loads in the arena at full bar with his name', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Crucible Knight')), 'a card for the Crucible Knight');
+    const { e } = startCrucible();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'crucibleKnight' && e.def.phaseId === 'knight' && e.hp === 2600, `bar ${e.def.phaseId} ${e.hp}`);
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Crucible Knight', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Crucible: sword blows parryable, shield, stomp and aspects not; every strike leaves a roll a margin', () => {
+    const D = A.ENEMY_BY_ID.crucibleKnight, unparry = ['stomp', 'stomp2', 'shieldBash', 'counterBash', 'wingsDive', 'tailSwipe', 'tailDouble'];
+    for (const a of D.attacks) {
+      expect.ok(!!a.noParry === unparry.includes(a.id), `${a.id}: noParry ${!!a.noParry}`);
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    }
+    expect.ok(D.posture.parry >= D.posture.max, 'one parry breaks his stance');
+  });
+  test('Crucible: every attack starts, strikes and ends without errors', () => {
+    for (const a of A.ENEMY_BY_ID.crucibleKnight.attacks) {
+      const { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
+      Game.render(1, STEP);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+    }
+  });
+  test('Crucible: the shield blocks frontal blows and draws the counter bash; the flank takes full damage', () => {
+    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 2); quiet(e);
+    let hp = e.hp; const r = e.takeHit(strikeOf('light'), p);
+    expect.ok(r.blocked && hp - e.hp < strikeOf('light').damage * 0.5, `blocked: ${hp - e.hp}`);
+    e.cooldown = 99; sim.until(() => e.attack && e.attack.id === 'counterBash', 1.5);
+    expect.ok(e.attack && e.attack.id === 'counterBash', `answered with ${e.attack && e.attack.id}`);
+    ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 2); quiet(e);
+    const s = e.yaw + Math.PI / 2; p.x = e.x + Math.sin(s) * 2; p.z = e.z + Math.cos(s) * 2;
+    hp = e.hp; e.takeHit(strikeOf('light'), p);
+    expect.ok(hp - e.hp === strikeOf('light').damage, `flank: ${hp - e.hp}`);
+  });
+  test('Crucible: drinking at range draws the lunging thrust; the stomp always chains into a sword blow', () => {
+    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 7); e.setState(ES.CHASE); e.cooldown = 5;
+    sim.step(1); sim.press('flask'); sim.until(() => e.attack && e.attack.id === 'healThrust', 2);
+    expect.ok(e.attack && e.attack.id === 'healThrust', `drinking: ${e.attack && e.attack.id}`);
+    ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 3); quiet(e);
+    e.beginAttack(ckAttack(e, 'stomp'));
+    sim.until(() => e.attack.id !== 'stomp' || e.state === ES.RECOVER, 4);
+    expect.ok(['uppercut', 'overheadSlam', 'doubleSpin'].includes(e.attack.id), `stomp -> ${e.attack.id} (${e.state})`);
+  });
+  test('Crucible: at 50% the wings dive opens phase 2; close finishers end in the tail', () => {
+    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 7);
+    e.hp = 2600 * 0.49; sim.step(2);
+    expect.ok(e.def.phaseId === 'aspect' && Math.abs(e.hp - 2600 * 0.49) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'wingsDive' && e.state === ES.WINDUP && e.stateTime > 0.4, 4);
+    Game.render(1, STEP); Game.render(1, STEP);
+    expect.ok(e.attack && e.attack.id === 'wingsDive', `opener ${e.attack && e.attack.id}`);
+    expect.ok(e.rig.spectral && e.rig.spectral.wings && e.rig.spectral.wings.visible, 'golden wings shown');
+    expect.ok(e.def.cooldown[1] < A.ENEMY_BY_ID.crucibleKnight.cooldown[1], 'faster');
+    let tail = 0;
+    for (let i = 0; i < 6 && !tail; i++) {
+      ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 2.5); e.hp = 2600 * 0.49; sim.step(2); quiet(e);
+      e.beginAttack(ckAttack(e, 'doubleSpin2'));
+      sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 2.5; p.z = e.z + Math.cos(e.yaw) * 2.5; if (e.attack.id === 'tailSwipe') tail++; return tail || e.state === ES.RECOVER; }, 5);
+    }
+    expect.ok(tail, 'the double spin ends in a tail sweep');
+  });
+  test('Crucible: an execution on him deals 0.7 of a boss execution', () => {
+    const { e } = startCrucible();
+    const D = CONFIG.execution.damage, base = PLAYER_DEF.moveset.attacks.light.damage * D.bossLightMul;
+    expect.ok(Math.abs(execution.damageFor(e) - Math.min(base * 0.7, e.def.hp * D.bossCap)) < 1e-6, `${execution.damageFor(e)}`);
+  });
+  test('Crucible: victory offers Retry and Boss select; death retries a fresh fight', () => {
+    let { p, e } = startCrucible();
+    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
+    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.screen}`);
+    ({ p, e } = startCrucible());
+    p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
+    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
+    Game.screens().eldenDeath.items[0].go(); Game.loading = 0; sim.begin();
+    expect.ok(Game.duel.hp === 2600 && Game.eldenBoss === 'crucibleKnight', 'retry: a fresh fight');
+  });
+
+  // ---- Elden Ring Bosses: Morgott, the Omen King (v5.5) -----------------------------------------------------------
+  const startMorgott = () => { A.elden.start('morgott'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Morgott: on the boss select, loads in the arena at full bar with his name', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Morgott, the Omen King')), 'a card for Morgott');
+    const { e } = startMorgott();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'morgott' && e.def.phaseId === 'king' && e.hp === 4800, `bar ${e.def.phaseId} ${e.hp}`);
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Morgott, the Omen King', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Morgott: golden and bloodflame attacks cannot be parried; three parries break him; every strike leaves a roll a margin', () => {
+    const D = A.ENEMY_BY_ID.morgott;
+    for (const a of D.attacks) {
+      if (a.spectral || a.when === 'behind' || ['defilement', 'bloodSlice', 'bloodyThrust', 'geysers'].includes(a.id)) expect.ok(a.noParry || a.projectile, `${a.id}: unparryable`);
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    }
+    expect.ok(D.posture.max / D.posture.parry === 3, 'three parries');
+  });
+  test('Morgott: every attack starts, strikes and ends without errors, inside the arena', () => {
+    for (const a of A.ENEMY_BY_ID.morgott.attacks) {
+      const { p, e } = startMorgott(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
+      Game.render(1, STEP);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+      expect.ok(Math.hypot(e.x, e.z) < 40, `${a.id}: stays in the arena`);
+    }
+  });
+  test('Morgott: at 60% the Defilement Burst (untouchable), then burning and faster', () => {
+    const { p, e } = startMorgott(); sturdy(p); faceOff(e, p, 8);
+    e.hp = 4800 * 0.59; sim.step(2);
+    expect.ok(e.def.phaseId === 'cursed' && Math.abs(e.hp - 4800 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'defilement', 4);
+    expect.ok(e.attack && e.attack.id === 'defilement' && e.invulnerable(), 'the burst, untouchable');
+    expect.ok(e.def.ignite && e.def.cooldown[1] < A.ENEMY_BY_ID.morgott.cooldown[1], 'burning, and faster');
+  });
+
   test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
     A.elden.start('margit'); Game.startFight('hollow'); Game.loading = 0; sim.begin();
     expect.ok(!Game.eldenBoss && Game.duel.def.id === 'hollow', 'a plain duel');

@@ -1,0 +1,118 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:**
+* **Stormhill Evergaol (Baseline):** 2,782 HP
+* **Auriza Hero's Grave (Crucible Knight Ordovis):** 5,460 HP (NG)
+
+
+* **Stance / Poise:** 80 (regenerates after ~6 seconds without incoming stance damage).
+* **Parry Resistance:** **1 parry** immediately breaks posture and opens a riposte / critical hit window.
+* **Critical Hit Modifier:** Takes **30% reduced damage** from ripostes / critical strikes compared to standard humanoid targets.
+* **Parry Vulnerability:** All standard greatsword swings and stabs are parriable. Shield bashes, stomps, and Crucible Aspect incantations (Wings, Tail, Horns) are unparriable.
+* **Damage Types Dealt:** Standard, Strike, Pierce, and Holy (Phase 2).
+* **Base Absorptions / Negations:** Standard 35%, Slash 35%, Strike 35%, Pierce 35%, Magic 40%, Fire 20%, Lightning 20%, Holy 40%.
+* **Status Resistances:**
+* **Hemorrhage (Bleed):** Immune.
+* **Madness:** Immune.
+* **Poison:** 517 (scaling to 807 / 1,264 on successive procs).
+* **Scarlet Rot:** 517 (scaling to 807 / 1,264 on successive procs).
+* **Frostbite:** 517 (scaling to 807 / 1,264 on successive procs).
+* **Sleep:** 517 (scaling to 807 / 1,264 on successive procs).
+
+
+* **Phase Transition:** Triggers when health reaches **≤50% HP**.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Consumable / Flask Input-Reading:**
+* When a consumable or flask use animation begins at medium-to-long range while the knight is in a neutral or walking state, the AI immediately buffers a **Lunging Thrust** or a running diagonal sweep.
+
+
+* **Shield Turtling & Deflection:**
+* When approaching with the Greatshield raised, frontal light weapon strikes bounce off (deflection), immediately queuing a **Shield Bash** counter.
+
+
+* **Phase 2 Tail Extensions:**
+* In Phase 2, standard Phase 1 combo finishers (e.g., Two-Handed Downward Slam, Double Spin Slash, Lunging Thrust) do not enter recovery frames; the AI checks proximity to append an immediate **Aspect of the Crucible: Tail** sweep.
+
+
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Animation Tempo & Mechanics | Branching Logic | Parryability | Punish Window |
+| --- | --- | --- | --- | --- |
+| **Lunging Thrust** | Fast approach; draws sword horizontally back, sprints forward, and executes a long-range piercing thrust. Active hit duration is brief with high forward travel. | Standalone attack or triggered by player item usage. | **Parriable** (parry on the forward thrust release). | **Minor Window:** Moderate recovery if avoided laterally. |
+| **Earth Stomp (Seismic Wave)** | Lifts forward leg high with moderate delay (~35–40 frames), then drives foot down, erupting a cone-shaped rock shockwave along the ground. | • Chains into: Two-Handed Uppercut Swing.<br>
+
+<br>• Chains into: Two-Handed Overhead Slam.<br>
+
+<br>• Chains into: Double Spin Slash. | **Unparriable** (shockwave hitbox registers on ground level; jumpable). | **Zero Window:** Pure combo starter; instantly cancels into weapon strikes. |
+| **Stomp into Two-Handed Overhead Slam** | Follows Earth Stomp; elevates greatsword overhead with two hands and pauses before driving it straight downward. | Finisher in Phase 1; can chain into a Tail Swipe in Phase 2. | **Parriable** (parry as the blade descends). | **Major Window** (Phase 1): Sword blade stays planted momentarily in the earth. |
+| **Stomp into Uppercut Slash** | Follows Earth Stomp; drags the greatsword along the earth to his left and executes a rapid upward vertical slash kicking up dirt. | Can chain into a downward diagonal slash or reset to neutral. | **Parriable** (parry during upward sweep). | **Minor Window:** Punishable only if no downward follow-up is queued. |
+| **Double Spin Slash** | Winds sword back horizontally to the left, spins 360° clockwise for swing one, followed immediately by a second 360° sweep. | Terminal chain in Phase 1; gains tail extension in Phase 2. | **Parriable** (both the 1st and 2nd revolutions can be parried). | **Major Window:** Extended recovery delay after the second rotation completes. |
+| **Diagonal Overhead Slash** | Raises blade vertically over right shoulder with a brief hold, then snaps blade down diagonally from right to left. | Chains into an immediate upward diagonal backswing from left to right. | **Parriable** (parry timing triggers at the apex of the flick). | **Minor Window:** Safe to punish after the second backswing resolves. |
+| **Shield Bash / Scoop** | Lowers stance, braces behind Greatshield, takes 2–3 advancing steps, and thrusts shield upward/forward. Shield retains blocking frames during advance. | Standalone counter or spacing reset. | **Unparriable**. | **Major Window:** Whiffing or dodging around the shield leaves his back exposed through extended end-lag. |
+| **One-Handed Thrust** | Quick, linear jab from behind the shield while in defensive posture. | Low startup; resets back to shield stance. | **Parriable**. | **Minor Window:** Very brief recovery. |
+
+---
+
+### Phase 2 Moveset & Additions (≤50% HP)
+
+At ≤50% HP, the Crucible Knight briefly assumes an empowered state, manifesting golden wings and primal Crucible aspects.
+
+* **Aspect of the Crucible: Wings (Flying Dive)**
+* *Tempo & Mechanics:* Spawns golden ethereal wings, leaps ~15 feet vertically into the air while holding his greatsword pointed forward, hovers for ~45 frames, and dives in a linear trajectory toward the target.
+* *Parryability:* **Unparriable**.
+* *Punish Window:* **Major Window.** Upon landing, the knight slides forward on the ground and takes several recovery frames to stand and turn around.
+
+
+* **Aspect of the Crucible: Tail (Single Tail Swipe)**
+* *Tempo & Mechanics:* Conjures a golden dragon-like tail and executes a rapid 180°–360° horizontal sweep around his torso and rear. Very fast startup (~25 frames).
+* *Branching:* Used dynamically as an untelegraphed combo finisher after any standard greatsword chain when the player is within close melee range.
+* *Parryability:* **Unparriable** (can be jumped or rolled).
+* *Punish Window:* **Minor Window.** Quick reset to neutral unless extended into the Double Sweep.
+
+
+* **Aspect of the Crucible: Tail (Double Sweep / Charged)**
+* *Tempo & Mechanics:* Immediately after the first tail swipe, the knight channels a second, significantly larger spectral tail that sweeps a massive radius (approx. 2.5x the reach of the first swipe).
+* *Branching:* Triggered predominantly if the player attempts to roll backward or punish immediately after the first tail strike.
+* *Parryability:* **Unparriable** (jumpable).
+* *Punish Window:* **Major Window.** The knight is locked in place during the end of the second tail's despawn animation.
+
+
+
+---
+
+### Factual Window & Tempo Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (Long recovery / Safe for charged R2 & jump attacks)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Aspect of the Crucible: Wings (landing skid recovery)                 │
+│ • Aspect of the Crucible: Tail (Double Sweep - post-2nd sweep lag)      │
+│ • Shield Bash (complete whiff - long end-lag recovery)                  │
+│ • Double Spin Slash (after the 2nd 360° spin in Phase 1)               │
+│ • Two-Handed Overhead Slam (after sword lands in Phase 1)               │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single light attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Lunging Thrust (evaded laterally at close range)                     │
+│ • Diagonal Slash Combo (after the 2nd return swing)                    │
+│ • Single Tail Swipe (if Double Sweep follow-up is not buffered)        │
+│ • One-Handed Thrust (from defensive shield stance)                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Hitbox active)           │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Earth Stomp (Seismic Wave) - Never punish; chains immediately into sword combos │
+│ • First rotation of Double Spin Slash - Immediate second rotation hit  │
+│ • Pause between Single Tail and Double Tail - Active frame trap        │
+│ • Frontal Greatshield guard - Attacks deflect and trigger Shield Bash   │
+│ • Consumable / Flask usage in neutral - Buffers Lunging Thrust instantly│
+└────────────────────────────────────────────────────────────────────────┘
+
+```
