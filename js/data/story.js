@@ -9,11 +9,11 @@
 const STORY = {
   tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
   chapters: [
-    { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells. The hall beyond is long, and not empty.' },
-    { level: 'sunken-keep', title: 'THE SUNKEN KEEP', line: 'Below the hall his old keep sinks into the dark. Its wardens still hold the doors.' },
-    { level: 'burning-town', title: 'THE BURNING TOWN', line: 'Out of the keep at last, into a town his men have put to the torch.' },
-    { level: 'the-tower', title: 'THE TOWER', line: 'Above the ashes, on its cliff, the Tower keeps the bell that calls him.' },
-    { level: 'final-castle', title: 'THE FINAL CASTLE', line: 'The bell is rung. Before his gates, the Gaoler King comes out to answer.' },
+    { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells, in the old hall of judgment. The hall beyond is long, and not empty.' },
+    { level: 'sunken-keep', title: 'THE SUNKEN KEEP', line: 'Below the hall the founders\' first keep sinks into the dark. He keeps his prisoners there now, and its wardens hold the doors.' },
+    { level: 'burning-town', title: 'THE BURNING TOWN', line: 'Out of the keep at last, into Corvel, the river town of bells, burning.' },
+    { level: 'the-tower', title: 'THE TOWER', line: 'Above the ashes, on its cliff, the founders\' watchtower keeps the Bell of Waking.' },
+    { level: 'final-castle', title: 'THE FINAL CASTLE', line: 'The bell is rung. By the old law, King Aldric must come out of his gates and answer.' },
   ],
   // What a new story starts with beyond the player's own kit (PLAYER_DEF). Future currencies, upgrades and equipment
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.

@@ -130,7 +130,7 @@ MODEL_DEFS.bellWarden = {
 };
 
 // ---- Level 5 (v4.3) -------------------------------------------------------------------------------------------------
-// Varn, the Gaoler King: the castle's lord. Ironbound plate gone dark bronze, a slate tabard with the castle's tarnished
+// Aldric, the Gaoler King: the castle's lord. Ironbound plate gone dark bronze, a slate tabard with the castle's tarnished
 // gold stripe, a crown of shackles (a ring of chain round the helm and short iron spikes), chains across the chest, a
 // long ash-grey cloak and the great gaoler's blade. Embers along the blade light only in his second phase (js/finale.js).
 MODEL_DEFS.varn = {

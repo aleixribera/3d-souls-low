@@ -47,7 +47,7 @@ const Game = {
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
-        items: [...finale.devItems(),
+        items: [...finale.devItems(), ...lore.devItems(),
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.startFight(d.id) }))] },
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
@@ -244,6 +244,7 @@ const Game = {
     this.spawnPlayer();
     hud.reset(this);
     finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
+    lore.reset(this);     // the NPC, inscriptions and scenes of a story level (js/lore.js)
     visuals.warmUp(this.cam);   // every pooled effect drawn once, so none stalls the first time it shows
     if (this.isTutorial()) {
       this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
@@ -700,7 +701,7 @@ const Game = {
       dist += Math.min(Lk.maxExtra, Math.max(0, lock.height - 1.6) * Lk.sizeDist + sep * Lk.sepDist);
       pitch = Math.max(0, pitch) * 0.5 + Math.max(0, lock.height - 2) * 0.05;
     } else if (this.camFocus) {
-      // A scripted moment to watch (js/finale.js sets `camFocus`, e.g. Varn leaping onto his wall): the camera turns to
+      // A scripted moment to watch (js/finale.js sets `camFocus`, e.g. Aldric leaping onto his wall): the camera turns to
       // it and lifts its gaze; the player keeps moving freely.
       const f = this.camFocus, dx = f.x - p.x, dz = f.z - p.z, d = Math.hypot(dx, dz) || 1;
       c.yaw += angDiff(Math.atan2(dx, dz), c.yaw) * (snap ? 1 : 1 - Math.exp(-CONFIG.camera.focusRate * dt));
@@ -799,7 +800,7 @@ const Game = {
     }
     if (!p.alive()) this.onPlayerDeath();
     if (this.isTutorial()) this.updateTutorial(dt);
-    else if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); }
+    else if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }
     this.updateCamera(dt, false);
   },
 

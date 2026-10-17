@@ -179,6 +179,26 @@ function validateData() {
       need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
   }
   need(new Set(storyIds).size === storyIds.length && STORY.chapters.length > 0, 'Story: each level may appear only once, and there must be a chapter.');
+  // Lore (js/data/lore.js, v5.1): the NPC's model, and per level a dialogue, inscriptions and scenes with readable text.
+  const lines = a => Array.isArray(a) && a.length > 0 && a.every(t => typeof t === 'string' && t.trim().length > 0);
+  need(LORE.npc && typeof LORE.npc.name === 'string' && LORE.npc.model in MODEL_DEFS && num(LORE.npc.scale) && num(LORE.npc.bulk), 'Lore: the NPC needs a name, a model in MODEL_DEFS, scale and bulk.');
+  need(lines(LORE.ending), 'Lore: ending must be a list of cards (text).');
+  const inscIds = new Set();
+  for (const [id, D] of Object.entries(LORE.levels)) {
+    const tag = `Lore "${id}"`;
+    need(LEVELS.some(l => l.id === id), `${tag}: no level with that id in LEVELS.`);
+    if (D.npc) {
+      const N = D.npc;
+      need(num(N.x) && num(N.z) && num(N.yaw) && ['stand', 'sit'].includes(N.pose) && lines(N.lines) && typeof N.idle === 'string', `${tag}: the NPC needs x, z, yaw, pose (stand/sit), lines and an idle line.`);
+      if ('solid' in N) need(Array.isArray(N.solid) && N.solid.length === 4 && N.solid.every(num) && N.solid[0] < N.solid[1] && N.solid[2] < N.solid[3], `${tag}: solid must be [x0, x1, z0, z1].`);
+      if ('bars' in N) need(Array.isArray(N.bars) && N.bars.length === 4 && N.bars.every(num), `${tag}: bars must be [x0, z0, x1, z1].`);
+    }
+    for (const I of D.inscriptions || []) {
+      need(typeof I.id === 'string' && !inscIds.has(I.id), `${tag}: inscription ids must be unique strings ("${I.id}").`); inscIds.add(I.id);
+      need(num(I.x) && num(I.z) && num(I.yaw) && ['wall', 'floor', 'none'].includes(I.mount) && typeof I.label === 'string' && lines(I.lines), `${tag} inscription "${I.id}": needs x, z, yaw, mount, label and lines.`);
+    }
+    for (const S of D.scenes || []) need(LORE_SCENES.includes(S.kind) && num(S.x) && num(S.z), `${tag}: scene "${S.kind}" must be one of ${LORE_SCENES.join(', ')} with x and z.`);
+  }
   return errors;
 }
 const GATE_STYLES = ['portcullis', 'barricade'];

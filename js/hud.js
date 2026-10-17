@@ -29,7 +29,8 @@ const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
-  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'),
+  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'),
+  sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
   help: $('help'), toggle: $('hbToggle'),
@@ -48,7 +49,7 @@ const hud = {
       ['Parry', `${bindLabel('parry')} just before the blow lands`],
       ['Lock-on', bindLabel('lock')], ['Switch target', `${bindLabel('switchTarget')} while locked on`],
       ['Zoom in / out', `${bindLabel('zoomIn', 'Wheel up')} ${bindLabel('zoomOut', 'Wheel down')}`],
-      ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')],
+      ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')], ['Talk / read', bindLabel('talk')],
       ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`],
     ];
     const table = $('helpTable'); table.textContent = '';
@@ -64,6 +65,7 @@ const hud = {
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.pExhaust.textContent = CONFIG.hud.text.exhausted;
     this.promptKey.textContent = keycap(bindLabel('rest'));
+    this.talkKey.textContent = keycap(bindLabel('talk'));
     this.restText = 'Rest at bonfire';
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
   },
@@ -232,6 +234,16 @@ const hud = {
     this.prompt.classList.toggle('show', ready || blocked);
     this.prompt.classList.toggle('blocked', blocked);
     this.promptText.textContent = blocked ? CONFIG.hud.text.restBlocked : this.restText;
+    // Talk / Read (js/lore.js): its own line, so it never hides the bonfire's.
+    const talk = p.alive() ? lore.prompt() : null;
+    this.talk.classList.toggle('show', !!talk);
+    if (talk && this.talkText.textContent !== talk) this.talkText.textContent = talk;
+  },
+  // Subtitles (js/lore.js): { name, text, show } or null. A line fades in and out; null fades everything away.
+  subtitle(s) {
+    if (!this.sub) return;
+    if (s && s.text !== this.subText.textContent) { this.subName.textContent = s.name; this.subText.textContent = s.text; }
+    this.sub.classList.toggle('show', !!s && s.show);
   },
   update(game, dt) {
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only

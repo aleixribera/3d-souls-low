@@ -191,9 +191,15 @@
     background: linear-gradient(90deg, #00000000, #000000a8 25%, #000000a8 75%, #00000000);
     animation: toastLife var(--toast-time) ease-in-out forwards; }
   @keyframes toastLife { 0% { opacity: 0; transform: translateY(8px); } 8% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; } }
-  #prompt, #confirm { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
+  #prompt, #confirm, #talk { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
     text-shadow: 0 0 6px #000; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; white-space: nowrap; }
-  #prompt.show, #confirm.show { opacity: 1; transform: none; }
+  #prompt.show, #confirm.show, #talk.show { opacity: 1; transform: none; }
+  /* Subtitles (js/lore.js): the speaker's name over the line, at the very bottom, never in the way of the fight. */
+  #subtitle { max-width: 760px; margin-top: 8px; text-align: center; opacity: 0; transition: opacity 0.45s; pointer-events: none;
+    padding: 6px 28px 8px; background: linear-gradient(90deg, #00000000, #000000b0 18%, #000000b0 82%, #00000000); }
+  #subtitle.show { opacity: 1; }
+  #subName { font-size: 12px; letter-spacing: 4px; color: #b8a87e; text-transform: uppercase; margin-bottom: 3px; }
+  #subText { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.45; color: #ece2c6; text-shadow: 0 0 6px #000; }
   #prompt.blocked { color: #a89f86; }
   #prompt.blocked .key { opacity: 0.5; }
   .key { display: inline-block; min-width: 20px; padding: 3px 8px 4px; text-align: center; font-size: 13px; letter-spacing: 1px; color: #f0e3bd;   /* keycap */
@@ -312,7 +318,9 @@
     <div class="anchor" id="aBC">
       <div id="toasts"></div>
       <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
+      <div id="talk"><span class="key" id="talkKey"></span><span id="talkText"></span></div>
       <div id="confirm"></div>
+      <div id="subtitle"><div id="subName"></div><div id="subText"></div></div>
     </div>
     <div class="anchor" id="aBL">
       <div id="help" class="hidden">
@@ -398,6 +406,7 @@ const GAME_FILES = [
   'levels/test-town.js',
   'data/levels.js',
   'data/story.js',
+  'data/lore.js',
   'states.js',
   'registries.js',
   'validate.js',
@@ -423,6 +432,7 @@ const GAME_FILES = [
   'audio.js',
   'game.js',
   'finale.js',
+  'lore.js',
   'story.js',
   'impact.js',
   'boot.js',

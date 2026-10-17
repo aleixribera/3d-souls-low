@@ -112,7 +112,7 @@ const story = (() => {
     const e = d.enemy;
     if (!Game.story || !(e.phaseIds || e.baseDef.posture)) return;
     beatenBosses.add(e.baseDef.id);
-    // Varn's last bar: the finale has started the ending (its listener ran first) - the story is complete.
+    // Aldric's last bar: the finale has started the ending (its listener ran first) - the story is complete.
     if (Game.level.ending && finale.state && finale.state.ending) { if (data) data.completed = true; save(); }
   });
   events.on('rest', d => { if (Game.story && !Game.isTutorial()) save(d.bonfire.id); });
@@ -205,7 +205,7 @@ const story = (() => {
         { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => newGame(true) },
         { name: 'No', desc: 'Straight to the Long Hall.', go: () => newGame(false) },
       ] },
-      storyDone: { title: 'STORY COMPLETE', sub: '', notice: 'The bell is silent. The road is walked.', items: [
+      storyDone: { title: 'STORY COMPLETE', sub: '', notice: 'The ash has stopped falling. The road is walked.', items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },
       ] },
       storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'main',

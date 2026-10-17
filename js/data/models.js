@@ -133,6 +133,51 @@ MODEL_DEFS.wanderer = {
   },
 };
 
+// Ysolde of Corvel (v5.1, js/lore.js): the one friendly soul. Unarmed and slight, a long blue-grey shawl worn as a
+// hood and trailing down the back, a bellwright's leather apron, rope still round both wrists. No eyes glow: she is
+// the only figure in the game whose face is just a face. Built on the wanderer so the shawl moves like the cape.
+MODEL_DEFS.ysolde = {
+  extends: 'wanderer', faction: 'wanderer', budget: 'enemy', limbSides: 6,
+  proportions: { shoulderX: 0.27, torsoW: 0.165, torsoD: 0.11, armR: 0.044, legR: 0.066, headR: 0.112, handR: 0.044, footLen: 0.25 },
+  limbs: {},
+  posture: { chest: [0.2, 0, 0], neck: [0.16, 0, 0], head: [0.06, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0] },
+  materials: {
+    skin: { tex: 'paleSkin', tint: 0xb8a690, decay: 0.3 },
+    dress: { tex: 'rottenCloth', tint: 0x5a5048, decay: 0.5 },
+    shawl: { tex: 'rottenCloth', tint: 0x5a6a7a, decay: 0.45, double: true },
+    shawlHem: { tex: 'tatteredFabric', tint: 0x52606e, decay: 0.55, double: true },
+    leather: { tex: 'crackedLeather', tint: 0x7a5a3e, decay: 0.45 },
+    rope: { tex: 'rottenCloth', tint: 0xa89870, decay: 0.6 },
+    iron: { tex: 'rustedIron', tint: 0x8a7a6a, decay: 0.5 },
+  },
+  body: { torso: 'dress', pelvis: 'dress', arms: 'dress', legs: 'dress', head: 'skin', neck: 'skin', hands: 'skin', feet: 'leather' },
+  bones: {
+    capeA: { parent: 'chest', at: [0, 0.5, -0.2] },
+    capeB: { parent: 'capeA', at: [0, -0.38, 0] },
+    capeC: { parent: 'capeB', at: [0, -0.38, 0] },
+  },
+  parts: [
+    { use: 'tunic', slot: 'dress', bone: 'spin' },
+    { use: 'jerkin', slot: 'leather', bone: 'chest' },
+    { use: 'belt', slot: 'leather', bone: 'spin' },
+    { use: 'pouch', slot: 'leather', bone: 'spin', x: 0.18, z: 0.08 },
+    { use: 'flask', slot: 'iron', bone: 'spin', x: -0.19, z: 0.07 },   // a small hand-bell at her belt
+    { use: 'hood', slot: 'shawl', bone: 'head', size: 1.08, tail: 0.5, close: 0.1 },
+    { use: 'scarf', slot: 'shawl', bone: 'neck' },
+    { use: 'wraps', slot: 'rope', bone: 'elbowL', from: 0.2, to: 0.27, radius: 0.04, count: 2 },
+    { use: 'wraps', slot: 'rope', bone: 'elbowR', from: 0.2, to: 0.27, radius: 0.04, count: 2 },
+    { use: 'capeSegment', slot: 'shawl', bone: 'capeA', w0: 0.46, w1: 0.56, len: 0.38, bow: 1.0 },
+    { use: 'capeSegment', slot: 'shawl', bone: 'capeB', w0: 0.56, w1: 0.6, len: 0.38, bow: 0.8 },
+    { use: 'capeSegment', slot: 'shawlHem', bone: 'capeC', w0: 0.6, w1: 0.62, len: 0.3, bow: 0.7, ragged: true, seed: 8 },
+  ],
+  weapon: null,
+  anim: {
+    idle: { breathRate: 1.4, breath: 0.022, headDrift: 0.06, sway: 0.02, twitch: 0 },
+    cloth: [{ bone: 'capeA', gain: 0.08, k: 38, damp: 4.2, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 34, damp: 3.6, flutter: 0.05 },
+            { bone: 'capeC', gain: 0.06, k: 30, damp: 3.2, flutter: 0.07, sideways: 1.0 }],
+  },
+};
+
 // Variants: a stronger version of any model, chosen per placement in a level ({ enemy: 'knight', variant: 'elite', ... }).
 // Visibly different, not just a recolour: darker and more worn materials, spikes on both shoulders and horns on the head
 // (on the model's first metal slot), brighter eyes, a slightly larger frame and a faint pulsing aura.

@@ -1941,7 +1941,7 @@
   test('Level 5: the field fight ends in a retreat over the wall: no death, the gate opens, bonfire 1 lights', () => {
     Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); log.length = 0;
     const b = Game.enemies.find(e => e.def.id === 'varn'), B = A.LEVEL_5.bonfires[0], zone = Game.zones.find(z => z.id === 'zone-field');
-    expect.ok(b.def.phaseId === 'field' && b.hp === b.def.hp, 'Varn starts on his field bar');
+    expect.ok(b.def.phaseId === 'field' && b.hp === b.def.hp, 'Aldric starts on his field bar');
     expect.ok(!Game.bonfireLit(B) && !Game.nearBonfire(), 'bonfire 1 is cold before the fight is won');
     sim.step(30); expect.ok(b.state !== ES.IDLE, `he comes for the player at once (${b.state})`);
     b.deplete(); sim.step(2);
@@ -1959,9 +1959,9 @@
     expect.ok(fog.gate.open, 'the fog door is open from the bonfire side');
     sim.walkTo(330, 0, 0.6, 10); sim.step(10);
     expect.ok(!fog.gate.open, 'it closed behind the player');
-    expect.ok(b.def.phaseId === 'throne' && b.def.name === 'Varn, the Gaoler King', 'first bar: the Gaoler King');
+    expect.ok(b.def.phaseId === 'throne' && b.def.name === 'Aldric, the Gaoler King', 'first bar: the Gaoler King');
     b.deplete(); sim.step(1);
-    expect.ok(b.state === ES.PHASE && b.def.name === 'Varn, Knell of Ash', 'the transition begins: renamed, Knell of Ash');
+    expect.ok(b.state === ES.PHASE && b.def.name === 'Aldric, the Ember-Crowned', 'the transition begins: renamed, the Ember-Crowned');
     sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
     sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
     expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
@@ -1973,7 +1973,7 @@
     expect.ok(A.finale.completed(), 'the game remembers it was finished');
     try { if (wasDone === null) localStorage.removeItem('combatArena.complete'); } catch (err) { /* no storage */ }   // leave the player's own flag as it was
   });
-  test('Level 5: dying in the throne room puts the player back at the final bonfire with the fog open and Varn whole', () => {
+  test('Level 5: dying in the throne room puts the player back at the final bonfire with the fog open and Aldric whole', () => {
     A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin();
     const fog = A.finale.state.fog;
     sim.walkTo(330, 0, 0.6, 10); sim.step(10); expect.ok(!fog.gate.open, 'sealed in');
@@ -1982,18 +1982,18 @@
     sim.seconds(CONFIG.death.respawnDelay + 0.5);
     const v = Game.enemies.find(e => e.def.id === 'varn');
     expect.near(Game.player.x, 315.5, 0.5, 'back at the final bonfire');
-    expect.ok(fog.gate.open && v !== b && v.def.phaseId === 'throne' && v.hp === v.def.hp, 'fog open, Varn back on his first throne bar');
+    expect.ok(fog.gate.open && v !== b && v.def.phaseId === 'throne' && v.hp === v.def.hp, 'fog open, Aldric back on his first throne bar');
     expect.ok(A.finale.state.room.windows.every(w => w.mesh.visible), 'the throne room is whole again');
   });
-  test('Varn: every strike leaves a roll\'s i-frames a margin; each phase fights with its own attacks', () => {
+  test('Aldric: every strike leaves a roll\'s i-frames a margin; each phase fights with its own attacks', () => {
     const D = A.ENEMY_BY_ID.varn;
     for (const a of D.attacks) for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
     expect.ok(Object.keys(D.phases).join() === 'field,throne,knell', 'three phases');
-    expect.ok(D.phases.knell.attacks.length >= D.phases.throne.attacks.length + 3, 'Knell of Ash adds at least three attacks');
-    expect.below(D.phases.knell.cooldown[1], D.phases.throne.cooldown[1], 'Knell of Ash waits less between attacks');
+    expect.ok(D.phases.knell.attacks.length >= D.phases.throne.attacks.length + 3, 'the Ember-Crowned adds at least three attacks');
+    expect.below(D.phases.knell.cooldown[1], D.phases.throne.cooldown[1], 'the Ember-Crowned waits less between attacks');
     expect.below(D.phases.throne.cooldown[1], D.phases.field.cooldown[1], 'the throne bar presses harder than the field');
   });
-  test('Varn: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
+  test('Aldric: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
     const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
     faceOff(e, p, 8); quiet(e); e.notice = 0; const hp0 = p.hp;
@@ -2005,7 +2005,7 @@
     sim.press('roll'); sim.seconds(0.6);
     expect.ok(q.hp === hp1, 'rolled through the ring');
   });
-  test('Varn: the Last Toll rings and his stomps run along the floor: a jump clears them; the Ash Wave is a flying slash', () => {
+  test('Aldric: the Last Toll rings and his stomps run along the floor: a jump clears them; the Ash Wave is a flying slash', () => {
     const D = A.ENEMY_BY_ID.varn;
     for (const id of ['lastToll', 'varnStomp', 'knellStomp']) for (const h of D.attacks.find(a => a.id === id).hits.slice(0, id === 'lastToll' ? 3 : 1)) {
       const b = h.box || D.attacks.find(a => a.id === id).box;
@@ -2023,7 +2023,7 @@
     sim.press('jump'); sim.seconds(0.5);   // an early jump: in the air as the ring passes, though well below its old reach
     expect.ok(p.hp === hp0, `an early jump clears it too (lost ${hp0 - p.hp})`);
   });
-  test('Varn: the Judgement Leap lands along its locked aim and he takes no fall damage', () => {
+  test('Aldric: the Judgement Leap lands along its locked aim and he takes no fall damage', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0;
     const p = Game.player, e = Game.duel, leap = e.baseDef.attacks.find(a => a.id === 'varnLeap');
     e.enterPhase(0); e.hp = e.def.hp;   // throne bar
@@ -2117,6 +2117,78 @@
     expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, 'STORY COMPLETE, saved as complete');
     Game.showMenu('main');
   }));
+
+  // ---- Lore (v5.1): Ysolde, inscriptions, scenes, the seamless subtitles -----------------------------------------
+  const lore = () => A.lore, LS = () => A.lore.state;
+  const atNpc = id => { lore().jumpTo(id); Game.loading = 0; sim.begin(); sim.step(2); };
+  const npcDist = () => Math.hypot(Game.player.x - LS().npc.x, Game.player.z - LS().npc.z);
+  test('Lore: every NPC, inscription and scene of each level stands on a floor, off every zone fight', () => {
+    for (const [id, D] of Object.entries(A.LORE.levels)) {
+      Game.startLevel(id); Game.loading = 0;
+      const pts = [...(D.npc ? [D.npc] : []), ...(D.inscriptions || []), ...(D.scenes || [])];
+      for (const q of pts) expect.near(world.floorY(q.x, q.z, (q.y ?? 0) + 0.1), q.y ?? 0, 0.3, `${id}: (${q.x}, ${q.z}) must stand on a floor at y ${q.y ?? 0}`);
+      if (D.npc) {
+        expect.ok(LS().npc && LS().npc.rig, `${id}: the NPC is built`);
+        const z = Game.zones.find(g => g.trigger && (Array.isArray(g.trigger[0]) ? g.trigger : [g.trigger]).some(r => r.length === 4 && inArea(r, D.npc.x, D.npc.z)));
+        expect.ok(!z, `${id}: the NPC stands inside zone ${z && z.id}`);
+      }
+    }
+  });
+  test('Lore: one press plays the whole dialogue while the player keeps full control', () => {
+    atNpc('long-hall');
+    expect.ok(lore().prompt() === 'Talk to Ysolde', `the Talk prompt shows (${lore().prompt()})`);
+    sim.press('talk'); sim.step();
+    const T = LS().talk;
+    expect.ok(T && T.i === 0 && T.full, 'the first line plays');
+    expect.ok(hud.subText.textContent === T.lines[0] && hud.subName.textContent === 'Ysolde of Corvel', 'subtitle with her name');
+    const x0 = Game.player.x; sim.move(1, 0); sim.seconds(0.6); const moved = Game.player.x - x0; sim.move(-1, 0); sim.seconds(0.6); sim.move(null);
+    expect.above(moved, 1, 'the player walks freely while she speaks');
+    expect.ok(Game.player.state !== PS.DEAD && LS().talk, 'still talking while walking about');
+    const steps = sim.until(() => !LS().talk, 120);
+    expect.ok(steps > 0 && LS().heard, 'it runs to the end on its own, and is heard');
+    expect.ok(!hud.sub.classList.contains('show'), 'the subtitles are gone');
+  });
+  test('Lore: Talk cannot skip a line, walking away fades it, coming back starts over, then an idle line', () => {
+    atNpc('long-hall');
+    sim.press('talk'); sim.step(); sim.press('talk'); sim.step();
+    expect.ok(LS().talk.i === 0 && lore().prompt() === null, 'Talk again does nothing, and no prompt shows while she speaks');
+    sim.place(30, 0); sim.step(2);
+    expect.ok(!LS().talk, 'far away: it fades');
+    sim.place(8, 4.6); sim.step(2);
+    sim.press('talk'); sim.step();
+    expect.ok(LS().talk.i === 0, 'back and Talk: from the beginning');
+    sim.until(() => !LS().talk, 120);
+    sim.place(30, 0); sim.step(2); sim.place(8, 4.6); sim.step(2);
+    expect.ok(LS().talk && !LS().talk.full && LS().talk.lines[0] === A.LORE.levels['long-hall'].npc.idle, 'heard: a short idle line on coming back');
+    sim.until(() => !LS().talk, 30); sim.press('talk'); sim.step();
+    expect.ok(LS().talk.full && LS().talk.i === 0, 'Talk again replays the whole dialogue');
+  });
+  test('Lore: an enemy turning on the player clears the subtitles at once, and Talk is refused', () => {
+    atNpc('long-hall');
+    sim.press('talk'); sim.step();
+    const e = sim.spawn('hollow', Game.player.x + 6, Game.player.z);
+    sim.until(() => e.fightingPlayer(), 5);
+    sim.step();
+    expect.ok(!LS().talk && lore().prompt() === null, 'no subtitles, no prompt while it fights');
+  });
+  test('Lore: the bars of her cell keep the player out, and she cannot be struck', () => {
+    atNpc('long-hall');
+    sim.walkTo(8, 7.5, 0.3, 3);
+    expect.below(Game.player.z, 5.86, 'outside the bars');
+    expect.ok(!Game.enemies.some(e => e.def.id === 'ysolde'), 'she is no enemy: nothing can target or hit her');
+  });
+  test('Lore: an inscription reads the same way, and every level with an NPC has a dev jump', () => {
+    atNpc('long-hall');
+    const I = LS().inscriptions[0]; sim.place(I.x, I.z + 1.2); sim.step(2);
+    expect.ok(lore().prompt() === `Read: ${I.def.label}`, `the Read prompt (${lore().prompt()})`);
+    sim.press('talk'); sim.step();
+    expect.ok(LS().talk && LS().talk.src === I, 'its text plays as subtitles');
+    for (const id of Object.keys(A.LORE.levels)) {
+      atNpc(id);
+      expect.below(npcDist(), CONFIG.lore.talkRange, `${id}: the jump puts the player by her`);
+      expect.ok(lore().prompt() && lore().prompt().startsWith('Talk'), `${id}: Talk prompt at the jump (${lore().prompt()})`);
+    }
+  });
 
   async function run(filter = '') {
     const out = [], t0 = performance.now();

@@ -193,7 +193,7 @@ const ENEMY_DEFS = [
     // The invaders' commander, met at the top of the burning town (Level 3). A posture boss, stronger than Level 2's
     // throne pair and weaker than the Bell Warden: it tests what the town taught (close the gap, parry the combo, roll).
     id: 'pillagerCaptain', model: 'pillagerCaptain', name: 'Pillager Captain',
-    description: 'The commander who put the town to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
+    description: 'The invaders\' commander, who put Corvel to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
     hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
@@ -293,8 +293,8 @@ const ENEMY_DEFS = [
     // who burned the town (Level 3). Ringing the tower bell (Level 4) called him out to answer a challenge, as of old.
     // Three phases (Enemy.enterPhase): `field` outside the castle (ends in a retreat), then `throne` and `knell` in the
     // throne room. Every strike's active time stays well under a roll's i-frames (the boss test).
-    id: 'varn', model: 'varn', name: 'Varn, the Gaoler King',
-    description: 'The lord of the castle and jailer of its prison. The bell you rang has called him out. Learn his sweep, his cleave, his delayed overhead and his leap; in the end he burns.',
+    id: 'varn', model: 'varn', name: 'Aldric, the Gaoler King',
+    description: 'Aldric, king of Ashmere, who took the Undying Ember to cheat death. The bell you rang has called him out. Learn his sweep, his cleave, his delayed overhead and his leap; in the end he burns.',
     scale: 1.75, bulk: 1.25, radius: 0.78, color: 0x5a4a36, weapon: 'sword', idle: 'guard',
     visual: { skin: 0x5a5048, skinMetal: 0.45, metal: 0.4, roughness: 0.45, rim: 0.9 },
     hp: 900, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,
@@ -310,7 +310,7 @@ const ENEMY_DEFS = [
         attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
       // After the transition (15 s, invulnerable): faster, longer, fiercer tracking in the wind-ups (commit points
       // unchanged), and four new attacks.
-      knell: { name: 'Varn, Knell of Ash', hp: 1000, transition: 15, ignite: true, cooldown: [0.55, 1.25], approach: 0.85, kite: 0, speed: 2.7,
+      knell: { name: 'Aldric, the Ember-Crowned', hp: 1000, transition: 15, ignite: true, cooldown: [0.55, 1.25], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7,
         posture: { max: 150, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 10, breakTime: 3.0, damageMul: 1.6, hitstop: 0.22 },
         attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellStomp', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
@@ -342,7 +342,7 @@ const ENEMY_DEFS = [
         hits: [{ startup: 1.9, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 13, short: 1.4 } }], recovery: 2.0,
         damage: 60, poise: 90, knock: 12, lunge: 0, range: 13, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.6, y: 1.0 },
         impact: { ring: 6.0, crack: 2.6, dust: 26, shake: 0.2 } },
-      // ---- Knell of Ash: the same moves, faster and fiercer ----
+      // ---- the Ember-Crowned: the same moves, faster and fiercer ----
       { id: 'knellSweep', name: 'Burning Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 3.2, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.35,
         hits: [{ startup: 0.95, active: 0.14, follow: 0.34 }], recovery: 0.7,
         damage: 42, poise: 60, knock: 8, lunge: 1.4, range: 3.6, box: { w: 5.4, h: 2.0, d: 3.8, fwd: 2.0, y: 1.2 } },
@@ -364,7 +364,7 @@ const ENEMY_DEFS = [
         hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 1.5,
         damage: 64, poise: 90, knock: 12, lunge: 0, range: 14, box: { w: 5.6, h: 2.4, d: 5.6, fwd: 0.6, y: 1.0 },
         impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.22 } },
-      // ---- Knell of Ash: new attacks ----
+      // ---- the Ember-Crowned: new attacks ----
       // Four cuts, the last held a beat before it falls. Every cut can be parried.
       { id: 'tollingChain', name: 'Tolling Chain', anim: 'sweep', pose: 'knellChain', tracking: { rate: 3.4, commit: 0.72 }, poseScale: 1.3, chance: 0.9,
         markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }, { event: 'glint', parry: true, hit: 2 }, { event: 'glint', parry: true, hit: 3 }],

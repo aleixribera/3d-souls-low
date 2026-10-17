@@ -2,23 +2,23 @@
 // Level 5: The Final Castle (v4.3). The castle on the horizon of the burning town: the lord who kept the prison
 // (Levels 1-2) and sent the invaders (Level 3) lives here, and the bell rung on the Tower (Level 4) has called him out.
 // x runs east (toward the throne), z north; heights are floor levels in metres.
-//   Field of Answer (y 0, open): the level starts straight into the first fight with Varn, the Gaoler King. When his bar
+//   Field of Answer (y 0, open): the level starts straight into the first fight with Aldric, the Gaoler King. When his bar
 //     empties he staggers, leaps onto the curtain wall and is gone (his placement's `boss.retreat`); the gate opens and
 //     bonfire 1, inside it, lights (`litBy`). Dying before that starts the fight again from the level start.
 //   Section A, the outer ward (y 0 to 6): the gate yard (bonfire 1), the lower courtyard under a wall walk with two
 //     Bowmen (stairs up its north side) and a Gargoyle, the barracks (a Shield Warden and a sleeping Knight; its back
 //     hall is a shortcut gate back to bonfire 1), the moat bridge held by the Empty Sentinel (the standout), and the upper
-//     courtyard, where Varn watches from the chapel roof. Bonfire 2 is in the chapel.
+//     courtyard, where Aldric watches from the chapel roof. Bonfire 2 is in the chapel.
 //   Section B, the inner keep (y 0 to 16): the great hall (a pack of three; the kitchen beside it is a second way in,
 //     coming out behind them), the hall stair up to the ramparts (a Shover, two Gargoyles on the walk and an Executioner
-//     asleep at the far end; Varn crosses the bridge high above), then the tower stair to bonfire 3 on the tower top.
+//     asleep at the far end; Aldric crosses the bridge high above), then the tower stair to bonfire 3 on the tower top.
 //   Section C, the throne approach (y 16 to 24): the ash bridge over the hall roof under three Toll Wisps, the
 //     processional (the gauntlet: four at once in its first hall, alcoves to split them; two heavies in the second),
 //     the royal stair to the final bonfire, and a short run to the fog at the throne room door.
-//   Throne room (y 24): Varn's second fight, two bars (`throne`, then `knell`), and the ending (js/finale.js).
+//   Throne room (y 24): Aldric's second fight, two bars (`throne`, then `knell`), and the ending (js/finale.js).
 const LEVEL_5 = {
   id: 'final-castle', layout: 'rooms', alert: true, cull: true, wakeZones: true, clearGates: true,
-  ending: true,   // no LEVEL COMPLETE: Varn's death, the ending and the credits instead (js/finale.js)
+  ending: true,   // no LEVEL COMPLETE: Aldric's death, the ending and the credits instead (js/finale.js)
   name: 'Level 5: The Final Castle',
   description: 'The bell has called him out. Face the Gaoler King before his gates, then climb his castle to the throne.',
   help: 'Level 5: the castle of the Gaoler King. Bonfires light as you reach them; the throne room fog seals behind you. Gargoyles grind before they spring; Toll Wisps ring before they shoot.',
@@ -94,7 +94,7 @@ const LEVEL_5 = {
   // Masonry: the tower under its top and its stair, and the bridge piers standing on the hall roof.
   blocks: [{ rect: [200, 212, -6, 6], y0: 7.5, y1: 15.5, wall: 0x4a4a42 }, { rect: [204, 208, 8, 30], y0: 0, y1: 7.5, wall: 0x4a4a42 },
            { rect: [226, 228, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }, { rect: [240, 242, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }],
-  // Bonfire 1 is cold until the field is won (`litBy`): Varn gone, his gate open.
+  // Bonfire 1 is cold until the field is won (`litBy`): Aldric gone, his gate open.
   bonfires: [{ id: 'castle-gate', x: 88, z: -6, litBy: 'zone-field', spawn: { x: 89.5, z: -3.5, yaw: Math.PI / 2 } },
              { id: 'castle-barracks', x: 112, z: -34, spawn: { x: 113.5, z: -32, yaw: Math.PI / 2 } },
              { id: 'castle-chapel', x: 211, y: 0, z: -5, spawn: { x: 209, y: 0, z: -3, yaw: Math.PI / 2 } },
@@ -102,7 +102,7 @@ const LEVEL_5 = {
              { id: 'castle-tower', x: 203, z: -4, y: 16, spawn: { x: 205, y: 16, z: -2, yaw: Math.PI / 2 } },
              { id: 'castle-throne', x: 314, z: -4, y: 24, spawn: { x: 315.5, y: 24, z: -2, yaw: Math.PI / 2 } }],
   gated: [
-    // The opening: Varn's first bar. At its end he retreats over the wall (`boss.retreat`) and the gate opens.
+    // The opening: Aldric's first bar. At its end he retreats over the wall (`boss.retreat`) and the gate opens.
     { id: 'zone-field', trigger: [0, 84, -36, 36], gate: { x: 84, z: 0, along: 'z', width: 8 },
       enemies: [{ enemy: 'varn', spawn: { x: 46, z: 0, yaw: -Math.PI / 2 }, notice: 90, leash: 200, homeLeash: 200,
                   boss: { phases: ['field'], retreat: { kneel: 1.6, to: [84, 10.2, -12], hop: 1.2, wait: 1.4, out: [98, 4, -16], fly: 1.0, height: 6 } } }] },
@@ -137,13 +137,13 @@ const LEVEL_5 = {
     { id: 'zone-heavies', trigger: [272, 292, -8, 8], gate: { x: 292, z: 0, y: 16, along: 'z', width: 6 },
       enemies: [{ enemy: 'executioner', variant: 'elite', spawn: { x: 284, y: 16, z: -3, yaw: -Math.PI / 2 } },
                 { enemy: 'sentinel', variant: 'elite', spawn: { x: 288, y: 16, z: 3, yaw: -Math.PI / 2 } }] },
-    // The throne: Varn's last two bars. The fog seals behind the player (`sealed` throne-fog).
+    // The throne: Aldric's last two bars. The fog seals behind the player (`sealed` throne-fog).
     { id: 'zone-throne', trigger: [320, 364, -20, 20], gate: { x: 364, z: 0, y: 24, along: 'z', width: 4 },
       enemies: [{ enemy: 'varn', spawn: { x: 352, y: 24, z: 0, yaw: -Math.PI / 2 }, notice: 30, leash: 200, homeLeash: 200, boss: { phases: ['throne', 'knell'] } }] },
   ],
   // The barracks' back hall opens onto the gate yard from its far side: back to bonfire 1.
   shortcuts: [{ id: 'barracks-back', gate: { x: 92, z: -12, along: 'x', width: 4 }, opensFrom: [90, 94, -30, -14] }],
-  // The throne room's fog (`fog`: the zone it seals): open, until the player is inside with Varn alive (js/finale.js).
+  // The throne room's fog (`fog`: the zone it seals): open, until the player is inside with Aldric alive (js/finale.js).
   sealed: [{ id: 'throne-fog', gate: { x: 320, z: 0, y: 24, along: 'z', width: 12 }, fog: 'zone-throne' }],
   dispersed: [
     // Section A: the lower courtyard and its wall walk, the barracks.
@@ -162,7 +162,7 @@ const LEVEL_5 = {
     // Section C: the ash bridge under three Toll Wisps and a Gargoyle.
     { behavior: 'perch', enemy: 'gargoyle', x: 244, y: 16, z: -3.5, yaw: -Math.PI / 2, zone: 'zone-ashbridge' },
   ],
-  // Varn seen on the way, out of reach (js/finale.js): he watches from where he stands until the player has seen him
+  // Aldric seen on the way, out of reach (js/finale.js): he watches from where he stands until the player has seen him
   // (`watch` s after entering `trigger`), then turns and walks off along `leave` [dx, dz] and is gone.
   spectators: [
     { id: 'sighting-chapel', enemy: 'varn', x: 199.5, y: 7.3, z: 0, yaw: -Math.PI / 2, trigger: [168, 196, -16, 16], watch: 3.5, leave: [6, 0] },

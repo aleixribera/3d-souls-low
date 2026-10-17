@@ -19,7 +19,8 @@ const LEVEL_1 = {
   start: { x: 5, z: 0, yaw: Math.PI / 2 },
   bonfires: [{ id: 'hall-start', x: 2.6, z: -3.4 }, { id: 'after-rogue', x: 130.5, z: -4.2 }],
   alcoveWidth: 2.8, alcoveDepth: 2.2,
-  alcoves: [{ id: 'west-58', x: 58, side: 1 }, { id: 'east-87', x: 87, side: -1 }, { id: 'west-141', x: 141, side: 1 }],
+  alcoves: [{ id: 'cell-8', x: 8, side: 1 }, { id: 'west-58', x: 58, side: 1 },   // cell-8: Ysolde's cell (js/data/lore.js)
+             { id: 'east-87', x: 87, side: -1 }, { id: 'west-141', x: 141, side: 1 }],
   // Gated zones in order: entering x > trigger spawns the enemy; its gate at gateX lifts on its death.
   // The level is complete when every gate is open.
   gated: [

@@ -58,7 +58,7 @@ const projectiles = (() => {
       const dy = target.y + target.height * P.aimAt - b.y;
       b.vx = s * A.speed; b.vz = c * A.speed; b.vy = dy / t + 0.5 * A.gravity * t;
       b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed = false; b.live = true;
-      // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Varn's Ash Wave).
+      // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
       const slash = A.look === 'slash';
       if (slash && !b.slash) {
         const geo = new THREE.RingGeometry(0.75, 1, 24, 1, 0, Math.PI);

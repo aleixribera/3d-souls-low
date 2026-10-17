@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -81,6 +81,10 @@ const CONFIG = {
   loading: { time: 1.4, fade: 0.6 },
   // Story mode (js/story.js): the one save slot, its format version (a save of another version is refused), and how
   // long a chapter's title holds over its loading screen (s).
+  // Lore (js/lore.js, js/data/lore.js, v5.1): the NPC and inscriptions. Ranges in m, times in s. A line stays on
+  // screen lineBase + perChar per character (clamped to lineMin..lineMax), then lineGap of empty screen.
+  lore: { talkRange: 3.2, readRange: 2.2, leaveRange: 9, faceRange: 8, floorGap: 2.5, threatRange: 25, sceneRange: 38, glowRange: 8,
+          lineBase: 1.6, perChar: 0.058, lineMin: 2.4, lineMax: 8.5, lineGap: 0.45, turnRate: 4, solidPad: 0.45 },
   story: { saveKey: 'combatArena.story', saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
@@ -162,12 +166,12 @@ const CONFIG = {
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
-  // Level 5's script (js/finale.js, v4.3): Varn's fights, the throne room's transition, the ending.
+  // Level 5's script (js/finale.js, v4.3): Aldric's fights, the throne room's transition, the ending.
   finale: {
-    pulse: { calm: 2.4, hot: 1.2 },          // s between beats of the boss pulse: his first bars / Knell of Ash
+    pulse: { calm: 2.4, hot: 1.2 },          // s between beats of the boss pulse: his first bars / the Ember-Crowned
     grit: { range: 4, every: 0.7, dust: 6 },  // a perched enemy's warning: within its notice + `range` m, grit and a grind every `every` s
     fogClose: 0.7,                            // s for the throne room portcullis to drop behind the player
-    // The transition into Knell of Ash (s into it; the phase's own `transition` is its length). Nothing here can hurt.
+    // The transition into the Ember-Crowned (s into it; the phase's own `transition` is its length). Nothing here can hurt.
     timeline: [{ at: 0.3, act: 'toll' }, { at: 1.8, act: 'shatter' }, { at: 3.8, act: 'toll' }, { at: 5.0, act: 'pillar', i: 0 },
                { at: 6.4, act: 'pillar', i: 1 }, { at: 7.8, act: 'toll' }, { at: 9.0, act: 'ignite' }, { at: 10.4, act: 'roar' }],
     igniteAt: 9.0,                            // when his armour catches (the visual change)

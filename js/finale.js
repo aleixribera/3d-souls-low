@@ -3,7 +3,7 @@
 // 11b. Finale: Level 5's own script (v4.3)
 // ============================================================================
 // Everything here reads the level's data (js/levels/final-castle.js) and the game's events; none of it decides a fight.
-// It only opens and closes the throne room's fog gate, and draws: the sightings of Varn on the way (`spectators`), the
+// It only opens and closes the throne room's fog gate, and draws: the sightings of Aldric on the way (`spectators`), the
 // ambush hints (`hints`), the throne room and its transition (`finaleRoom`), the burning look of a boss phase with
 // `ignite`, the boss pulse, the perched enemies' warning grit, and the ending with its credits. Developer builds (#dev)
 // get the Level 5 jumps (Test Grounds) and F10, which empties the current boss bar.
@@ -164,11 +164,11 @@ const finale = (() => {
       }
       st.grit.set(e, t <= 0 ? F.grit.every : t);
     }
-    // Varn's retreat: the camera follows his leap onto the wall and over it, then lets go a moment after he is gone.
+    // Aldric's retreat: the camera follows his leap onto the wall and over it, then lets go a moment after he is gone.
     const fleeing = game.enemies.find(e => isBoss(e) && (e.state === ES.RETREAT || (e.state === ES.GONE && e.stateTime < 0.8)));
     game.camFocus = fleeing ? { x: fleeing.x, y: fleeing.y, z: fleeing.z } : null;
     if (fleeing && game.lock) game.setLock(null);
-    // The boss pulse while Varn fights, quicker and hotter once he burns.
+    // The boss pulse while Aldric fights, quicker and hotter once he burns.
     const boss = game.enemies.find(e => isBoss(e) && e.alive() && (e.fightingPlayer() || e.state === ES.PHASE));
     if (boss && p.alive()) {
       st.pulse -= dt;
@@ -320,7 +320,7 @@ const finale = (() => {
     if (b.fire) b.fire.visible = hot;
   });
   events.on('respawn', () => restoreRoom());
-  // Varn's last bar is gone: his death, then the ending.
+  // Aldric's last bar is gone: his death, then the ending.
   events.on('enemyDeath', d => {
     const e = d.enemy;
     if (!st || !isBoss(e) || !e.lastPhase() || !L.ending) return;
@@ -378,11 +378,7 @@ const finale = (() => {
     Game.mode = 'ending'; input.clear();
     if (document.pointerLockElement) document.exitPointerLock();
     const E = F.ending;
-    const cards = [
-      'The Gaoler King is ash. The bell that called him out tolls once more, and then falls silent.',
-      'His keys lie in the cinders: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.',
-      'Dawn comes up grey over the burnt town and the Tower on its cliff. No one rings for him now.',
-    ];
+    const cards = LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
     overlay = document.createElement('div');
     overlay.id = 'ending';
     overlay.innerHTML = `<style>
@@ -403,7 +399,8 @@ const finale = (() => {
     </style>` + cards.map(c => `<div class="card">${c}</div>`).join('') +
       `<div class="roll"><h1>COMBAT ARENA 3D</h1>
         <h2>THE ROAD</h2><p>The Long Hall</p><p>The Sunken Keep</p><p>The Burning Town</p><p>The Tower</p><p>The Final Castle</p>
-        <h2>THOSE WHO STOOD IN THE WAY</h2><p>The Pillager Captain</p><p>The Bell Warden</p><p>Varn, the Gaoler King</p><p>Varn, Knell of Ash</p>
+        <h2>WHO WALKED BESIDE YOU</h2><p>Ysolde of Corvel</p>
+        <h2>THOSE WHO STOOD IN THE WAY</h2><p>The Pillager Captain</p><p>The Bell Warden</p><p>Aldric, the Gaoler King</p><p>Aldric, the Ember-Crowned</p>
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
       <div class="thanks">THANK YOU FOR PLAYING</div>
