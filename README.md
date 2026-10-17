@@ -2,14 +2,14 @@
 
 A small Souls-like 3D action game that runs straight from one HTML file (Three.js from a CDN, no build step).
 
-Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls. The game plays best with a gamepad: it opens on a short notice saying so, and any key, click or gamepad button carries on to the main menu (once per visit). The version shows in the bottom-right corner of the menus.
+Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls. The game plays best with a gamepad: every level and duel opens on a short loading screen that says so, with a small controller icon. The version shows in the bottom-right corner of the menus.
 
 ## Modes
 
 - **Levels → Tutorial** — one room of training dummies that teaches every control, step by step. Block, parry and dodge come together, locked on to the dummy: the dodge dummy's swing glows blue, and blue strikes can only be rolled through (a hint says whether the roll came too early, too late or clear of the swing).
 - **Levels → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
-- **Levels → Level 3: The Burning Town** — the town below the Tower, sacked and set alight by the invaders, at sunset. About 10 minutes, climbing in terraces from the lower gate (where the Keep comes out) to the upper town gate, with a massive castle on the horizon ahead, the sun setting behind it. Street by street, each fight's barricade falls once it is won: a lone Ashen Lancer, the sacked market, a Lancer below with a Rampart Bowman on a balcony above (reached through the stair house), a Pale Duelist round a bend in an alley, the fountain square, and the church square under a Bowman on the church gallery. The Pillager Captain holds the upper square. Two bonfires (the second in the tavern), a shortcut stair from the fountain square down to the first, a sleeping Knight in a yard, and one drop that hurts.
+- **Levels → Level 3: The Burning Town** — the town below the Tower, sacked and set alight by the invaders, at sunset. About 10 minutes, climbing in terraces from the lower gate (where the Keep comes out) to the upper town gate, with a massive castle on the horizon ahead, the sun setting behind it. Street by street, each fight's barricade falls once it is won: a lone Ashen Lancer, the sacked market, a Lancer below with an optional Rampart Bowman on a balcony above (reached through the stair house; jump its low rail to drop back down), a Pale Duelist round a bend in an alley, the fountain square, and the church square under a Bowman on the church gallery. The Pillager Captain holds the upper square. Two bonfires (the second in the tavern), a shortcut stair from the fountain square down to the first, a sleeping Knight in a yard, and one drop that hurts.
 - **Levels → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
 - **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, the Pillager Captain and the Bell Warden.
 
@@ -34,6 +34,14 @@ Every attack now has four phases: wind-up, strike (the only moment it can hit), 
 - **Dev keys** (`#dev`): **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase; **H** hitboxes.
 
 Timings before and after are in `docs/combat-timings-v4.1.md`.
+
+## v4.2.4 fixes
+
+- **Bonfires are checkpoints.** Resting keeps every enemy you have beaten dead for the rest of the level; enemies beaten since your last rest come back at full health when you die. Level 1's second bonfire now sits past the Rogue's gate, the reward for that fight.
+- **Stamina exhaustion.** Emptying the stamina bar leaves you exhausted: no roll, attack, parry or jump until it refills to 30, and it waits a little longer before refilling. The bar turns red and a small "Out of stamina" note shows under it, brightening when a press is refused. Deaths show a short tip (the stamina one if you had just run dry).
+- **Enemy senses.** Unaware enemies only see you in a cone in front of them; once fighting they see all round. Losing sight of you, they walk to where they last saw you and look about before going home. One enemy noticing you wakes its whole group (the Tower courtyard, the town's fountain square). Leashes are longer and measured from home to you, so they no longer flicker at the edge.
+- **Fairer fights.** Boss strikes (Giant Skeleton, Executioner spin, Pillager Captain, Bell Warden) are active for a shorter time, so a well-timed roll gets through. Unblockable (blue) strikes hit harder. Ranged enemies and bosses often step in after attacking instead of always backing off. The Fast Rogue and Pale Duelist are a little slower and take turns in groups.
+- **Town and tutorial.** Bowmen never hold a barricade shut, and the balcony and gallery rails are low enough to jump. The tutorial's heavy step wants a fully charged heavy. Boss wind-up glows light only the weapon.
 
 ## Coming next (planned)
 

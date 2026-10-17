@@ -16,6 +16,7 @@ class Player {
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.grounded = true; this.peak = y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
+    this.exhausted = false; this.sinceExhausted = Infinity;   // see spend and canAct
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
     this.state = PS.IDLE; this.stateTime = 0;
@@ -33,7 +34,22 @@ class Player {
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; }
-  spend(amount) { this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay; }
+  // Emptying the bar exhausts the player (CONFIG.player.exhaustDelay, exhaustRecover): a longer wait before it refills,
+  // and no stamina action until it is back to exhaustRecover.
+  spend(amount) {
+    this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay;
+    if (amount > 0 && this.stamina <= 0) { this.exhausted = true; this.staminaDelay = CONFIG.player.exhaustDelay; }
+  }
+  // May start a roll, attack, parry or jump: any stamina at all (one emergency roll or swing), unless exhausted.
+  canAct() {
+    if (this.exhausted && this.stamina >= CONFIG.player.exhaustRecover) this.exhausted = false;
+    return this.stamina > 0 && !this.exhausted;
+  }
+  // A stamina action pressed while exhausted: swallowed, and announced so the HUD can say why nothing happened.
+  refuseIfExhausted(actions) {
+    if (this.canAct() || !actions.some(a => input.consume(a))) return;
+    events.emit('staminaDenied', { player: this });
+  }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   invulnerable() { return this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; }
   // A swing already out is not interrupted by hits.
@@ -43,14 +59,9 @@ class Player {
   item(id) { return this.inventory[id] || { count: 0, max: 0 }; }
   refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
-  // Any stamina allows one emergency roll; a roll that empties the bar leaves the player winded:
-  // no more rolls until stamina is back to a full roll's cost.
-  canRoll() {
-    if (this.winded && this.stamina >= CONFIG.player.rollCost) this.winded = false;
-    return this.stamina > 0 && !this.winded;
-  }
+  canRoll() { return this.canAct(); }
   // A roll is wanted now: a queued press, or a fresh one (only consumed if a roll is possible).
-  // A queued roll that can't happen the moment it's allowed (no stamina, or winded) is dropped, never held.
+  // A queued roll that can't happen the moment it's allowed (no stamina, or exhausted) is dropped, never held.
   wantsRoll() {
     const buffered = this.buffer && this.buffer.action === 'roll';
     if (!this.canRoll()) { if (buffered) this.buffer = null; return false; }
@@ -85,8 +96,7 @@ class Player {
   startRoll(mv) {
     this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    if (this.stamina - CONFIG.player.rollCost < 1) this.winded = true;   // the bar is (all but) empty after this roll
-    this.spend(CONFIG.player.rollCost);
+    this.spend(Math.max(CONFIG.player.rollCost, this.stamina - CONFIG.player.rollCost < 1 ? this.stamina : 0));   // (all but) empty: exhausted
     this.hitbox = null; this.setState(PS.ROLL);
   }
   // Heading toward the best nearby enemy in the direction the player means to swing, or null.
@@ -130,16 +140,17 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
+    this.refuseIfExhausted(['roll', 'parry', 'jump', ...Object.keys(M.ground)]);
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
-    if (this.stamina > 0 && input.consume('parry')) { this.startParry(); return true; }
+    if (this.canAct() && input.consume('parry')) { this.startParry(); return true; }
     const queued = this.buffer && this.buffer.action;
     for (const action of Object.keys(M.ground)) {
-      if (this.stamina > 0 && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
+      if (this.canAct() && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
     for (const [id, item] of Object.entries(ITEMS)) {
       if (this.item(id).count > 0 && input.consume(item.action)) { this.useItem(id); return true; }
     }
-    if (this.stamina > 0 && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
+    if (this.canAct() && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
     if (input.isHeld('block')) { this.setState(PS.BLOCK); return true; }
     return false;
   }
@@ -155,6 +166,7 @@ class Player {
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
+    this.canAct(); this.sinceExhausted = this.exhausted ? 0 : this.sinceExhausted + dt;
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
@@ -172,7 +184,7 @@ class Player {
       }
       case PS.JUMP:
       case PS.FALL: {
-        if (this.stamina > 0) {
+        if (this.canAct()) {
           const action = Object.keys(M.air).find(a => input.consume(a));
           if (action) {
             this.beginAttack(M.attacks[M.air[action]], mv, face, enemies);
@@ -246,7 +258,7 @@ class Player {
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         // Recovery is the cancel point: a buffered (or fresh) roll, else a buffered attack, which chains the combo.
         if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
-        if (tl.phase === PHASE.RECOVERY && this.buffer && this.stamina > 0) {
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.canAct()) {
           this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
         }
         if (tl.done) { this.comboFrom = a; this.comboTimer = C.comboGrace; this.setState(PS.IDLE); }
@@ -255,10 +267,11 @@ class Player {
       case PS.BLOCK: {
         const bs = C.walkSpeed * C.blockSpeedMul;
         approachVel(this, mv.x * bs, mv.z * bs, (mv.has ? C.accel : C.decel) * dt);
+        this.refuseIfExhausted(['roll']);
         if (this.wantsRoll()) { this.startRoll(mv); break; }   // roll straight out of a guard
         // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
         if (input.consume('parry')) {
-          if (this.stamina > 0 && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
+          if (this.canAct() && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
         }
         if (!input.isHeld('block')) this.setState(PS.IDLE);
         break;

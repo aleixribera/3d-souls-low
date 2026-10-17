@@ -20,7 +20,8 @@ function pickByChance(attacks) {
   return total > 0 ? attacks.find(a => (r -= attackChance(a)) < 0) || attacks[attacks.length - 1] : null;
 }
 
-// opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path
+// opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path,
+// zone (the gated zone it belongs to: an alert wakes the whole zone), key (its placement, for bonfire checkpoints)
 class Enemy {
   constructor(def, opts) {
     const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
@@ -31,6 +32,8 @@ class Enemy {
     this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
     this.home = { x: opts.x, z: opts.z, yaw: opts.yaw, state: B.home };
     this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
+    this.zone = opts.zone ?? null; this.key = opts.key ?? null;
+    this.lastSeen = null;                            // where it last saw the player: searching, it walks there
     this.x = opts.x; this.y = opts.y ?? 0; this.z = opts.z; this.yaw = opts.yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.grounded = true; this.peak = this.y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
@@ -73,9 +76,10 @@ class Enemy {
     if (!this.def.guard || !ENEMY_GROUPS.guarding.has(this.state)) return false;
     return !(this.state === ES.CHASE && this.stepIn && this.playerDist <= this.attackReach.short + this.def.guard.lowerReach);
   }
-  // Woken by another enemy's alert. Returns true if this changed anything.
-  wake() {
+  // Woken by another enemy's alert (told where the player is). Returns true if this changed anything.
+  wake(player) {
     if (this.training || !this.alive()) return false;
+    if (player) this.lastSeen = { x: player.x, z: player.z };
     if (this.state === ES.DORMANT) this.setState(ES.RISE);
     else if (this.in('unaware')) this.setState(ES.CHASE);
     else return false;
@@ -102,7 +106,11 @@ class Enemy {
     this.playerDist = dist;
     const toPlayer = Math.atan2(dx, dz);
     const playerAlive = player.alive();
-    const sees = playerAlive && dist < this.notice && !gateBetween(this, player);
+    // Unaware, it sees only in a cone ahead (CONFIG.vision); fighting or searching, all round.
+    const V = CONFIG.vision, inCone = !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
+    const sees = playerAlive && dist < this.notice && inCone && !gateBetween(this, player);
+    // Its leash is measured from home to the player, so chasing toward the line never flickers.
+    const playerFromHome = Math.hypot(player.x - this.home.x, player.z - this.home.z);
     // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.
     const reach = this.reachable = Math.abs(player.y - this.y) <= CONFIG.height.reach;
     // An archer takes aim at a player it can't walk to. Never one past its leash: it would give up at once and flicker.
@@ -143,20 +151,37 @@ class Enemy {
         break;
       case ES.RETURN: {   // lost the player: walk back home, then resume the home behaviour
         const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
-        // Back to the chase only if it wouldn't give up again at once (else it flickers in place, alerting every step).
-        if (engage && hd <= this.homeLeash) { this.setState(ES.CHASE); break; }
+        // Back to the chase only well inside its leash (else it flickers in place, alerting every step).
+        if (engage && playerFromHome <= this.homeLeash * CONFIG.ai.leashResume) { this.setState(ES.CHASE); break; }
         if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
         const sp = d.speed * E.returnSpeedMul;
         tx = hx / hd * sp; tz = hz / hd * sp;
         this.yaw = turnToward(this.yaw, Math.atan2(hx, hz), d.turnRate * dt);
         break;
       }
+      case ES.SEARCH: {   // lost sight of the player: walk to where it was last seen, look round, then go home
+        const S = CONFIG.ai.search;
+        if (!playerAlive || playerFromHome > this.homeLeash || this.stateTime > S.max) { this.setState(ES.RETURN); break; }
+        if (!sightLost(this, player) && dist <= this.leash && (reach || this.ranged)) { this.setState(ES.CHASE); break; }
+        const g = this.lastSeen || this.home, gx = g.x - this.x, gz = g.z - this.z, gd = Math.hypot(gx, gz);
+        if (gd < S.arrive || this.searchLook > 0) {   // there: look about a while
+          this.searchLook += dt;
+          this.yaw += Math.sin(this.searchLook * 1.6) * d.turnRate * 0.25 * dt;
+          if (this.searchLook > S.look) this.setState(ES.RETURN);
+          break;
+        }
+        const sp = d.speed * S.speedMul;
+        tx = gx / gd * sp; tz = gz / gd * sp;
+        this.yaw = turnToward(this.yaw, Math.atan2(gx, gz), d.turnRate * dt);
+        break;
+      }
       case ES.CHASE: {
-        const farFromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z) > this.homeLeash;
         this.unreachable = reach || this.ranged ? 0 : this.unreachable + dt;
-        if (!playerAlive || dist > this.leash || farFromHome || sightLost(this, player) || this.unreachable > CONFIG.height.giveUp) {
+        if (!playerAlive || dist > this.leash || playerFromHome > this.homeLeash || this.unreachable > CONFIG.height.giveUp) {
           this.unreachable = 0; this.stepIn = false; this.setState(ES.RETURN); break;
         }
+        if (sightLost(this, player)) { this.stepIn = false; this.searchLook = 0; this.setState(ES.SEARCH); break; }
+        this.lastSeen = { x: player.x, z: player.z };
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt * crowd.cooldownRate(this);   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
@@ -203,11 +228,11 @@ class Enemy {
       }
       case ES.RECOVER:
         if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
-          this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE);
+          this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); this.regroup(dist);
         }
         break;
       case ES.HURT:
-        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); }
+        if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); this.regroup(dist); }
         break;
       case ES.STAGGER:
         if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
@@ -223,6 +248,7 @@ class Enemy {
 
     if (this.state === ES.CHASE) [tx, tz] = steerAroundProps(this, tx, tz, dist);
     else if (this.state === ES.RETURN) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.home.x - this.x, this.home.z - this.z));
+    else if (this.state === ES.SEARCH && this.lastSeen) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.lastSeen.x - this.x, this.lastSeen.z - this.z));
     approachVel(this, tx, tz, E.accel * dt);
     integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
     this.checkFall();
@@ -247,6 +273,12 @@ class Enemy {
     this.hp = Math.max(0, this.hp - dmg); this.tint = 1;
     events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.def.hp) });
     if (this.hp <= 0) this.die();
+  }
+  // Back in the fight after an attack or a flinch with the player within its hold reach: keep its distance with chance
+  // `kite` (CONFIG.ai), else step in to its shortest reach, so a ranged enemy or a boss doesn't always back away.
+  regroup(dist) {
+    if (dist > this.holdReach() || dist <= this.attackReach.short || Math.random() < (this.def.kite ?? CONFIG.ai.kite)) return;
+    this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.short;
   }
   // The reach it holds at: its longest attack's, but never more than `holdMax` (an archer stays in the fight).
   holdReach() { return Math.min(this.attackReach.long, CONFIG.ai.holdMax); }
@@ -419,7 +451,7 @@ class Enemy {
     let warn = 0, glint = -1;
     const a = this.attack;
     switch (this.state) {
-      case ES.CHASE: case ES.PATROL: case ES.RETURN: r.walk(this.walkPhase, 0.5); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
+      case ES.CHASE: case ES.PATROL: case ES.RETURN: case ES.SEARCH: r.walk(this.walkPhase, 0.5); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
       case ES.LURK:
         r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;
       case ES.LEAP: r.legL.rotation.x = -0.9; r.kneeL.rotation.x = 1.2; r.legR.rotation.x = 0.4; r.kneeR.rotation.x = 0.6; r.armR.rotation.x = -2.2; r.armL.rotation.x = -1.2; r.tip.rotation.x = 0.3; break;

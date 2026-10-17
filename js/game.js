@@ -4,7 +4,7 @@
 // ============================================================================
 const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
-  screen: 'start',       // menu screen: 'start' (the notice shown once per page load) | 'main' | 'levels' | 'enemies' | 'pause' | 'options'
+  screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
   kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
@@ -14,6 +14,8 @@ const Game = {
   lock: null, lockLost: 0, lockHidden: 0, restartArm: 0,
   retarget: true,        // always-retarget lock-on (see updateLock): off once Q lets go of a lock
   spawn: null, deathTimer: 0,
+  cleared: new Set(),    // checkpoints: keys of the enemies killed before the last rest (they stay dead until a restart)
+  loading: 0,            // s the loading screen still holds the world (CONFIG.loading)
   zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
@@ -25,9 +27,6 @@ const Game = {
   screens() {
     const onOff = v => v ? 'On' : 'Off';
     return {
-      // Shown once, as the page loads: any key, click or gamepad button moves on to the main menu (leaveStartNotice).
-      start: { title: 'COMBAT ARENA 3D', sub: '', items: [], hint: 'Press any key or button to continue',
-        notice: 'Best played with a controller.\nPlug in a gamepad for the full experience.' },
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
@@ -103,6 +102,10 @@ const Game = {
     const n = $('menuList').children.length;
     this.selected = n ? (i + n) % n : 0;
     [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
+    const cur = $('menuList').children[this.selected]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+    const it = (this.screens()[this.screen] || { items: [] }).items[this.selected];
+    $('menuDesc').textContent = it ? it.desc || '' : '';
+    $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
   confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
   adjust(d) {
@@ -112,9 +115,6 @@ const Game = {
     events.emit('menuAdjust', { dir: d });
     this.showMenu(this.screen, true);
   },
-  // The start notice: any key, click or gamepad button moves on to the main menu (and does nothing else).
-  onStartNotice() { return this.mode === 'menu' && this.screen === 'start'; },
-  leaveStartNotice() { if (this.onStartNotice()) { events.emit('menuConfirm'); this.showMenu('main'); } },
   menuBack() {
     const s = this.screens()[this.screen];
     if (this.screen === 'pause') this.resume();
@@ -143,10 +143,31 @@ const Game = {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
     this.kind = 'arena'; this.duelId = id;
     this.level = L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
-    this.enterPlay(); this.reset();
+    this.enterPlay(); this.reset(); this.showLoading(`Duel: ${d.name}`, d.description);
   },
-  startLevel(id) { this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset(); },
+  startLevel(id) {
+    this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
+    this.showLoading(this.level.name, this.level.description);
+  },
+  // The loading screen over a fresh level or duel: its name, a line about it, and the controller note. The world
+  // waits behind it (boot.js steps nothing while `loading` > 0), then it fades.
+  showLoading(name, tip) {
+    $('loadName').textContent = name; $('loadTip').textContent = tip || ''; $('loadPadText').textContent = CONFIG.hud.text.controller;
+    document.documentElement.style.setProperty('--load-fade', CONFIG.loading.fade + 's');
+    $('loading').classList.add('show');
+    this.loading = CONFIG.loading.time;
+  },
+  tickLoading(dt) {
+    if (this.loading <= 0) return;
+    this.loading = Math.max(0, this.loading - dt);
+    if (this.loading <= 0) $('loading').classList.remove('show');
+  },
   leaveTutorial() { this.reset(); this.showMenu('levels'); },
+  // A placement's checkpoint key: what it is and where it stands (bonfire checkpoints remember enemies by it).
+  placementKey(entry, prefix = '') {
+    const at = entry.alcove ?? (entry.path ? `${entry.path.join('-')}/${entry.z}` : `${entry.x},${entry.y ?? 0},${entry.z}`);
+    return `${prefix}${entry.behavior || ''}:${entry.enemy}@${at}`;
+  },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
     if (!this.player.alive() || this.duelWon() || this.complete || this.restartArm > 0) { this.reset(); return; }
@@ -186,7 +207,8 @@ const Game = {
     }
     // A dispersed enemy tied to a zone (`zone`) is not brought back once that zone's gate is open: its area is won.
     const won = s => s.zone && this.zones.some(z => z.id === s.zone && z.gate.open);
-    return this.level.dispersed.filter(s => !won(s)).map(s => new Enemy(ENEMY_BY_ID[s.enemy], this.spawnSpec(s, s.behavior)));
+    return this.level.dispersed.map(s => [s, this.placementKey(s)]).filter(([s, key]) => !won(s) && !this.cleared.has(key))
+      .map(([s, key]) => new Enemy(ENEMY_BY_ID[s.enemy], { ...this.spawnSpec(s, s.behavior), zone: s.zone, key }));
   },
   // Full restart of the current fight or level.
   reset() {
@@ -194,7 +216,7 @@ const Game = {
     input.pressed.clear();
     this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
     $('fade').classList.remove('show');   // fades back in after a level transition
-    this.setLock(null); this.retarget = true; this.tut = null; crowd.reset();
+    this.setLock(null); this.retarget = true; this.tut = null; crowd.reset(); this.cleared = new Set();
     const def = this.level;
     world = makeWorld(def, loadStage(def));
     const start = def.playerStart || def.start;
@@ -246,12 +268,16 @@ const Game = {
     const off = CONFIG.rest.respawnOffset;
     this.spawn = b.spawn ? { ...b.spawn }
       : { x: b.x + (b.x > p.x ? -off : off), z: b.z, yaw: this.level.start ? this.level.start.yaw : p.yaw };
-    if (!this.isTutorial()) this.respawnEnemies();
+    if (!this.isTutorial()) {   // a checkpoint: everything beaten so far stays beaten
+      for (const e of this.enemies) if (!e.alive() && e.key) this.cleared.add(e.key);
+      this.respawnEnemies();
+    }
     this.setLock(null); this.retarget = true;
     hud.showRested();
     events.emit('rest', { bonfire: b });
   },
-  // Rest: every enemy returns at full HP except those whose gates are already open.
+  // Rest or death: every enemy returns at full HP except those whose gates are already open and those killed before
+  // the last rest (`cleared`).
   respawnEnemies() {
     const keep = new Set(this.zones.filter(z => z.gate.open).flatMap(z => z.actors));
     for (const e of this.enemies) if (!keep.has(e)) e.rig.dispose();
@@ -262,7 +288,9 @@ const Game = {
   // Zone enemies stand at their posts from the start (visible down the hall), and wait there until they notice the player.
   spawnZone(z) {
     z.spawned = true;
-    z.actors = z.members.map(m => new Enemy(ENEMY_BY_ID[m.enemy], this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated')));
+    z.actors = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')]).filter(([, key]) => !this.cleared.has(key))
+      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key }));
+    z.beaten = z.members.length > 0 && z.actors.length === 0;   // every member beaten before a rest: its gate opens
     this.enemies.push(...z.actors);
   },
   onPlayerDeath() {
@@ -379,8 +407,14 @@ const Game = {
       { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === PS.ROLL },
       { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}. Keep pressing to chain a three-hit combo`,
         on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'light' },
-      { id: 'heavy', dummies: 'one', text: () => `Hit the dummy with a heavy attack ${B('heavy')}. Hold it to charge a stronger blow`,
-        on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'heavy' },
+      // Done on a fully charged heavy; a lighter one shows how.
+      { id: 'heavy', dummies: 'one', text: () => `Hold heavy attack ${B('heavy')} until it is fully charged, then let go to hit the dummy`,
+        on: (type, d, t, g) => {
+          if (type !== 'strike' || !byPlayer(d, g) || d.strike.attackId !== 'heavy') return false;
+          if (d.strike.charge >= 1 - 1e-6) return true;
+          g.tutorialHint('Hold it longer: let go once the blade glows');
+          return false;
+        } },
       { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
         on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
         check: (g, t) => t.flags.airHit && g.player.state !== PS.JUMP_ATTACK && g.player.state !== PS.LAND },   // after the landing
@@ -487,7 +521,7 @@ const Game = {
     for (const z of this.zones) {
       const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inArea(z.trigger, p.x, p.z);
       if (!z.spawned && entered && p.alive()) this.spawnZone(z);   // normally already standing there since the start
-      if (z.actors.length && z.actors.every(a => !a.alive()) && !z.gate.open) {
+      if (((z.actors.length && z.actors.every(a => !a.alive())) || z.beaten) && !z.gate.open) {
         z.gate.open = true;
         events.emit('gateOpened', { gate: z.gate });
       }
@@ -523,17 +557,18 @@ const Game = {
     }
   },
 
-  // Alert (levels with `alert`): each enemy that just noticed the player wakes unaware enemies near it
-  // with a clear line between them; the woken pass it on. `was`: enemies unaware before this step.
+  // Alert (levels with `alert`): each enemy that just noticed the player wakes unaware enemies near it with a clear
+  // line between them (props aside), and every enemy of its zone; the woken pass it on. `was`: enemies unaware before this step.
   spreadAlert(was) {
-    const R = CONFIG.alert.radius;
+    const R = CONFIG.alert.radius, p = this.player;
     const queue = this.enemies.filter(e => was.has(e) && e.alive() && !e.in('unaware') && e.state !== ES.DORMANT);
     for (const e of queue) events.emit('alert', { enemy: e });
     while (queue.length) {
       const a = queue.shift();
       for (const e of this.enemies) {
-        if (e === a || Math.hypot(e.x - a.x, e.z - a.z) > R || gateBetween(a, e)) continue;
-        if (e.wake()) { events.emit('alert', { enemy: e, by: a }); queue.push(e); }
+        const mate = !!a.zone && e.zone === a.zone;
+        if (e === a || (!mate && (Math.hypot(e.x - a.x, e.z - a.z) > R || sightLost(a, e)))) continue;
+        if (e.wake(p)) { events.emit('alert', { enemy: e, by: a }); queue.push(e); }
       }
     }
   },

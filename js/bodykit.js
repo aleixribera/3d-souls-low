@@ -522,25 +522,28 @@ const KIT = (() => {
     const spec = boneSpec(M), index = {}, bind = {};
     spec.forEach((b, i) => { index[b.name] = i; const t = new THREE.Matrix4().makeTranslation(...b.at); bind[b.name] = b.parent ? bind[b.parent].clone().multiply(t) : t; });
     const weaponBox = new THREE.Box3();
-    const push = (bone, slot, geo) => {
+    // The weapon's pieces merge apart from the body's, even where they share a material slot, so the weapon gets its
+    // own material: its wind-up glow and hit flash light the weapon only, never the armour.
+    const push = (bone, slot, geo, weapon = false) => {
       if (bone === 'weapon') { geo.computeBoundingBox(); weaponBox.union(geo.boundingBox); }
       geo.applyMatrix4(bind[bone]);
       const n = geo.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
       for (let i = 0; i < n; i++) { si[i * 4] = index[bone]; sw[i * 4] = 1; }
       geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
-      (groups.get(slot) || groups.set(slot, { slot, list: [] }).get(slot)).list.push(geo);
+      const key = weapon ? 'weapon:' + slot : slot;
+      (groups.get(key) || groups.set(key, { slot, weapon, list: [] }).get(key)).list.push(geo);
     };
     for (const p of bodyParts(M)) push(p.bone, p.slot, p.geo);
     for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M)) { if (g.geo) push(o.bone, g.slot, g.geo); else push(o.bone, o.slot, g); }
     if (M.weapon) {
       const W = KIT_WEAPONS[M.weapon.use]();
-      for (const key of Object.keys(W)) for (const g of W[key]) push('weapon', M.weapon.slots[key], g);
+      for (const key of Object.keys(W)) for (const g of W[key]) push('weapon', M.weapon.slots[key], g, true);
     }
     const parts = []; let tris = 0;
-    for (const { slot, list } of groups.values()) {
+    for (const { slot, weapon, list } of groups.values()) {
       const geo = mergeGeos(list); geo.userData.shared = true;
       geo.boundingSphere = new THREE.Sphere(new V3(0, 1, 0), 3.4);   // generous: a swung weapon must not be culled with its body
-      parts.push({ slot, geo }); tris += geo.attributes.position.count / 3;
+      parts.push({ slot, weapon, geo }); tris += geo.attributes.position.count / 3;
     }
     const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1);   // a stronger variant may carry a quarter more
     if (tris > budget) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
@@ -570,21 +573,26 @@ const KIT = (() => {
     const built = modelParts(id, variant), rim = M.rim ?? 1, P = M.proportions;
     rig.dissolve = { value: 0 };   // death: the body breaks up into ash (see addDissolve)
     // Materials: cloned per rig (own flash and fade), sharing the cached textures.
-    const mats = {};
+    const mats = {}, weaponMats = {};
     rig.bodyMats = []; rig.mats = []; rig.glows = []; rig.fadeMats = [];
-    for (const [slot, spec] of Object.entries(M.materials)) {
+    const makeMat = spec => {
       let m;
       if ('glow' in spec) m = new THREE.MeshBasicMaterial({ color: new THREE.Color(spec.glow).multiplyScalar(1.6), transparent: true });
       else {
         m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: spec.size ?? MS.texSize }).clone();
         m.side = spec.double ? THREE.DoubleSide : THREE.FrontSide; addDissolve(m, rim, rig.dissolve);
       }
-      mats[slot] = m; rig.mats.push(m);
+      rig.mats.push(m);
       if ('glow' in spec) rig.fadeMats.push(m);   // eyes are plain materials: they fade instead of dissolving
+      return m;
+    };
+    for (const [slot, spec] of Object.entries(M.materials)) {
+      mats[slot] = makeMat(spec);
+      if (!('glow' in spec)) rig.bodyMats.push(mats[slot]);   // hit tint: the body, never the weapon
     }
-    const weaponSlots = M.weapon ? Object.values(M.weapon.slots) : [];
-    for (const [slot, m] of Object.entries(mats)) if (!weaponSlots.includes(slot) && !('glow' in M.materials[slot])) rig.bodyMats.push(m);
-    rig.weaponMat = M.weapon ? mats[M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0]] : new THREE.MeshStandardMaterial();
+    // The weapon's own copies of its slots' materials (see modelParts).
+    if (M.weapon) for (const slot of new Set(Object.values(M.weapon.slots))) weaponMats[slot] = makeMat(M.materials[slot]);
+    rig.weaponMat = M.weapon ? weaponMats[M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0]] : new THREE.MeshStandardMaterial();
     if (!M.weapon) rig.mats.push(rig.weaponMat);
     rig.weaponBase = new THREE.Color(0xffffff);
     // Bones (THREE.Bone, one skeleton per body) and the shared skinned geometry: one mesh per material.
@@ -598,7 +606,7 @@ const KIT = (() => {
     rig.root.updateMatrixWorld(true);
     rig.skeleton = new THREE.Skeleton(list);
     for (const p of built.parts) {
-      const mesh = new THREE.SkinnedMesh(p.geo, mats[p.slot]);
+      const mesh = new THREE.SkinnedMesh(p.geo, (p.weapon ? weaponMats : mats)[p.slot]);
       rig.root.add(mesh); mesh.bind(rig.skeleton, new THREE.Matrix4());
       mesh.boundingSphere = p.geo.boundingSphere;
     }

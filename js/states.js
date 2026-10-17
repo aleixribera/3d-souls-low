@@ -10,7 +10,7 @@ const PS = Object.freeze({   // player
 });
 const ES = Object.freeze({   // enemy
   IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
-  RETURN: 'return', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
+  RETURN: 'return', SEARCH: 'search', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
   HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', BROKEN: 'broken', DEAD: 'dead',
 });
 // The four phases of every attack: wind-up (STARTUP), strike (ACTIVE, the only phase with a hitbox), follow-through
@@ -31,13 +31,14 @@ const PLAYER_GROUPS = {
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player
   hidden: new Set([ES.LURK, ES.DORMANT]),                               // not a target yet
-  canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.CHASE, ES.RECOVER]),
+  canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.SEARCH, ES.CHASE, ES.RECOVER]),
+  narrowSight: new Set([ES.IDLE, ES.PATROL, ES.RETURN]),               // unaware and looking about: sees only in its cone
   shrugsHits: new Set([ES.PARRIED, ES.RISE, ES.LEAP]),                  // take damage, no state change
-  guarding: new Set([ES.IDLE, ES.PATROL, ES.RETURN, ES.CHASE, ES.HURT]), // a shield enemy blocks from the front
+  guarding: new Set([ES.IDLE, ES.PATROL, ES.RETURN, ES.SEARCH, ES.CHASE, ES.HURT]), // a shield enemy blocks from the front
   fighting: new Set([ES.CHASE, ES.WINDUP, ES.ACTIVE, ES.RECOVER]),       // has a place around the player (js/crowd.js)
   attacking: new Set([ES.WINDUP, ES.ACTIVE, ES.RECOVER]),                // mid-attack: damps the others' attack chances
 };
-const IDLE_BLEND = { [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25 };
+const IDLE_BLEND = { [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25, [ES.SEARCH]: 0.25 };
 // Placement behaviours: the state an enemy starts in, and the state it returns to once back home.
 const BEHAVIORS = {
   arena: { start: ES.IDLE, home: ES.IDLE },

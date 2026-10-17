@@ -50,8 +50,9 @@ const ENEMY_DEFS = [
     id: 'rogue', model: 'rogue', name: 'Fast Rogue', description: 'Quick and fragile. Blink and it has already cut you twice.',
     scale: 0.85, bulk: 0.8, radius: 0.32, color: 0x2f5234, weapon: 'sword', idle: 'twitch',
     visual: { skin: 0xbab29e, roughness: 0.8 },   // pale face, dark cloth
-    hp: 65, poise: 25, speed: 4.7, turnRate: 9, trackRate: 4,
-    cooldown: [0.42, 1.05], flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
+    // v4.2.4: speed 4.7 -> 4.2, cooldown [0.42, 1.05] -> [0.55, 1.2], and it takes turns when others fight the player too.
+    hp: 65, poise: 25, speed: 4.2, turnRate: 9, trackRate: 4,
+    cooldown: [0.55, 1.2], crowd: { groupCooldown: 1.8 }, flinchTime: 0.26, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
       { id: 'stab', name: 'Quick Stab', anim: 'stab', pose: 'enemyStab', tracking: { rate: 6, commit: 0.75 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.4, active: 0.1, follow: 0.12 }], recovery: 0.4,
         damage: 13, poise: 12, knock: 3, lunge: 5.0, range: 2.1,
@@ -71,11 +72,13 @@ const ENEMY_DEFS = [
     // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
     // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit. (v4.2.1: chainMul 1.5 -> 1.35, parry -15%.)
     posture: { max: 100, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
+    // v4.2.4: its sweep and stomp were active 0.24 / 0.2 s over boxes too wide to roll out of, so a roll's 0.3 s of
+    // invulnerability had almost no margin; now 0.12 s, the rest added to the follow-through (docs/combat-timings-v4.1.md).
     attacks: [
-      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.24, follow: 0.3 }], recovery: 1.3,
+      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.12, follow: 0.42 }], recovery: 1.3,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
         box: { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 } },
-      { id: 'stomp', name: 'Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.2, commit: 0.5 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.4, active: 0.2, follow: 0.3, hold: { at: 0.55, time: [0.4, 0.9], chance: 0.5 } }], recovery: 1,
+      { id: 'stomp', name: 'Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.2, commit: 0.5 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.4, active: 0.12, follow: 0.38, hold: { at: 0.55, time: [0.4, 0.9], chance: 0.5 } }], recovery: 1,
         damage: 46, poise: 75, knock: 8, lunge: 0, range: 2.4,
         box: { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 } },
     ],
@@ -112,7 +115,7 @@ const ENEMY_DEFS = [
     hp: 150, poise: 55, speed: 3.0, turnRate: 5, trackRate: 2.0, approach: 0.12,   // holds at lunge range rather than walking in
     // v4.2.3: far more aggressive alone (cooldown was [0.7, 1.54]); with other enemies fighting too its cooldown lasts
     // 4x longer ([0.4, 1.6]), so in a group it attacks only a little more than before.
-    cooldown: [0.1, 0.4], crowd: { groupCooldown: 4 }, flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
+    cooldown: [0.1, 0.4], crowd: { groupCooldown: 4 }, kite: 0.5, flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     // v4.2.3 priorities (`chance`, per second / as weights up close): lunges readily from range (default dash 0.3; this one 2.5/s); up
     // close it mostly winds up the blue charged thrust (default 0.22) and jabs less (default 0.9).
     attacks: [
@@ -122,7 +125,7 @@ const ENEMY_DEFS = [
       { id: 'lancerJab', name: 'Jab', anim: 'stab', chance: 0.35, pose: 'enemyStab', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.48, active: 0.1, follow: 0.12 }], recovery: 0.72,   // long recovery: the opening
         damage: 14, poise: 18, knock: 3, lunge: 2.5, range: 2.8, box: { w: 0.7, h: 1.1, d: 2.8, fwd: 1.6, y: 1.1 } },
       { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.65 }, poseScale: 1.15, rollOnly: true, chance: 1.0, hits: [{ startup: 1.4, active: 0.18, follow: 0.22, hold: { at: 0.45, time: [0.3, 0.7], chance: 0.5 } }], recovery: 0.95,
-        damage: 40, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
+        damage: 48, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
     ],
   },
   {
@@ -137,16 +140,17 @@ const ENEMY_DEFS = [
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
-      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', pose: 'enemySpin', tracking: { rate: 1.5, commit: 0.6 }, rollOnly: true, chance: 0.4, hits: [{ startup: 1.3, active: 0.4, follow: 0.2 }], recovery: 1,
-        damage: 44, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
+      { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', pose: 'enemySpin', tracking: { rate: 1.5, commit: 0.6 }, rollOnly: true, chance: 0.4, hits: [{ startup: 1.3, active: 0.2, follow: 0.4 }], recovery: 1,
+        damage: 58, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
     ],
   },
   {
     id: 'duelist', model: 'paleDuelist', name: 'Pale Duelist', description: 'Fast and fragile, a blade in each hand. Its quick combo can be parried, and it pays dearly.',
     scale: 0.95, bulk: 0.82, radius: 0.34, color: 0xb0aca0, weapon: 'sword', offhand: 'dagger', idle: 'twitch',
     visual: { skin: 0xd8d2c4, roughness: 0.6 },   // pale
-    hp: 85, poise: 28, speed: 4.4, turnRate: 8, trackRate: 3.5, approach: 0.8,   // presses in for its combo more than it dashes
-    cooldown: [0.49, 1.12], flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
+    // v4.2.4: speed 4.4 -> 4.0, and it takes turns when others fight the player too.
+    hp: 85, poise: 28, speed: 4.0, turnRate: 8, trackRate: 3.5, approach: 0.8,   // presses in for its combo more than it dashes
+    cooldown: [0.49, 1.12], crowd: { groupCooldown: 1.6 }, flinchTime: 0.24, staggerTime: 1.0, parriedTime: 1.9,
     attacks: [
       { id: 'duelistCombo', name: 'Twin Cuts', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 5, commit: 0.8 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }], hits: [{ startup: 0.52, active: 0.1, follow: 0.08 }, { startup: 0.32, active: 0.1, follow: 0.14 }],
         recovery: 0.52, damage: 14, poise: 14, knock: 3, lunge: 2.6, range: 2.0, box: { w: 1.8, h: 1.3, d: 1.8, fwd: 1.15, y: 1.05 } },
@@ -159,7 +163,7 @@ const ENEMY_DEFS = [
     id: 'bowman', model: 'rampartBowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
     scale: 0.95, bulk: 0.88, radius: 0.38, color: 0x5a6a3a, weapon: 'bow', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },
-    hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0,   // keeps its distance: kicks only if you close in
+    hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0, kite: 0.6,   // keeps its distance, but now and then kicks out at a player close by
     cooldown: [0.84, 1.82], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       { id: 'bowShot', name: 'Aimed Shot', anim: 'draw', pose: 'enemyDraw', tracking: { rate: 2.4, commit: 0.85 }, projectile: { speed: 24, gravity: 6, size: 0.12 }, minRange: 4, range: 24,
@@ -192,7 +196,7 @@ const ENEMY_DEFS = [
     description: 'The commander who put the town to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
-    hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55,   // a boss: steps in and presses
+    hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
     posture: { max: 100, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
@@ -202,8 +206,8 @@ const ENEMY_DEFS = [
       { id: 'captainCombo', name: 'Three Cuts', anim: 'sweep', pose: 'enemyTripleCut', tracking: { rate: 3.2, commit: 0.75 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }, { event: 'glint', parry: true, hit: 2 }], poseScale: 1.1,
         hits: [{ startup: 0.65, active: 0.14, follow: 0.1 }, { startup: 0.42, active: 0.14, follow: 0.1 }, { startup: 0.8, active: 0.16, follow: 0.24 }],
         recovery: 0.75, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: { w: 3.4, h: 1.6, d: 2.8, fwd: 1.6, y: 1.2 } },
-      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.2, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.4, hits: [{ startup: 1.5, active: 0.2, follow: 0.3, hold: { at: 0.5, time: [0.4, 1], chance: 0.6 } }],
-        recovery: 1.1, damage: 48, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
+      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.2, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.4, hits: [{ startup: 1.5, active: 0.14, follow: 0.36, hold: { at: 0.5, time: [0.4, 1], chance: 0.6 } }],
+        recovery: 1.1, damage: 62, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
         impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } },
     ],
   },
@@ -211,19 +215,19 @@ const ENEMY_DEFS = [
     id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
-    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6,   // a boss: steps in and uses its strong attacks more often
+    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
     cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     posture: { max: 120, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.2 },
     attacks: [
-      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.24, follow: 0.3 }], recovery: 1,
+      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.14, follow: 0.4 }], recovery: 1,
         damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
-      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2, commit: 0.5 }, poseScale: 1.35, rollOnly: true, chance: 0.45, hits: [{ startup: 1.7, active: 0.2, follow: 0.35, hold: { at: 0.5, time: [0.5, 1.1], chance: 0.7 } }], recovery: 1.2,
-        damage: 55, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
+      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2, commit: 0.5 }, poseScale: 1.35, rollOnly: true, chance: 0.45, hits: [{ startup: 1.7, active: 0.14, follow: 0.41, hold: { at: 0.5, time: [0.5, 1.1], chance: 0.7 } }], recovery: 1.2,
+        damage: 72, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
         impact: { ring: 3.4, crack: 1.9, dust: 16, shake: 0.12 } },
       { id: 'bellShove', name: 'Bell Push', anim: 'shove', pose: 'enemyShove', tracking: { rate: 1.8, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, shove: true, chance: 0.45, hits: [{ startup: 1.35, active: 0.18, follow: 0.2 }], recovery: 0.85,
         damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 } },
       { id: 'bellCharge', name: 'Charge', anim: 'thrust', pose: 'enemyShove', tracking: { rate: 2, commit: 0.35 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.2, minRange: 5, dash: { speed: 11, from: 0.4 },
-        hits: [{ startup: 1.15, active: 0.3, follow: 0.2 }], recovery: 0.95, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
+        hits: [{ startup: 1.15, active: 0.16, follow: 0.34 }], recovery: 0.95, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
         box: { w: 2.4, h: 2.4, d: 2.6, fwd: 1.4, y: 1.2 } },
     ],
   },

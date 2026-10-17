@@ -41,7 +41,8 @@ const LEVEL_3 = {
     { id: 'market', rect: [52, 80, -12, 10], open: true, floor: 0x4c4640, wall: 0x6a6258, light: 0xffa060 },
     // The steep street (y 4), its balcony (y 8) and the stair house; the overlook over the market (y 8).
     { id: 'steep-street', rect: [22, 68, 22, 28], y: 4, open: true, floor: 0x4a4440, wall: 0x6a6258 },
-    { id: 'balcony', rect: [32, 45, 28, 33], y: 8, open: true, height: 4, edges: { s: 'rail' }, floor: 0x4a4030, wall: 0x6a6258 },
+    // Low rails (v4.2.4): a jump clears them, so the player can drop back to the street.
+    { id: 'balcony', rect: [32, 45, 28, 33], y: 8, open: true, height: 4, edges: { s: 'rail' }, railHeight: 0.7, floor: 0x4a4030, wall: 0x6a6258 },
     { id: 'sh-door', rect: [53, 55, 28, 29], y: 4, height: 3.2, floor: 0x3a3028, wall: 0x8a7a60, dim: true },
     { id: 'sh-hall', rect: [52, 59, 29, 37], y: 4, height: 3.4, floor: 0x3a3028, wall: 0x8a7a60, light: 0xffa050, dim: true },
     { id: 'overlook-walk', rect: [75, 80, 16, 26], y: 7.5, open: true, floor: 0x46403a, wall: 0x6a6258 },
@@ -60,7 +61,7 @@ const LEVEL_3 = {
     // The church square (y 12), the church (porch, gallery, and the stair up to it inside), the upper square, the gate.
     { id: 'church-square', rect: [76, 116, 44, 80], y: 12, open: true, height: 4.5, floor: 0x4c4640, wall: 0x6a6258, light: 0xffa868 },
     { id: 'church-porch', rect: [92, 94, 80, 83], y: 12, height: 3.4, floor: 0x3a3733, wall: 0x7a7266, dim: true },
-    { id: 'gallery', rect: [82, 106, 80, 83], y: 17, open: true, height: 4, edges: { s: 'rail' }, floor: 0x4a4436, wall: 0x7a7266 },
+    { id: 'gallery', rect: [82, 106, 80, 83], y: 17, open: true, height: 4, edges: { s: 'rail' }, railHeight: 0.7, floor: 0x4a4436, wall: 0x7a7266 },
     { id: 'church-door', rect: [92, 94, 83, 84], y: 12, height: 3.4, floor: 0x3a3733, wall: 0x7a7266, dim: true },
     { id: 'church-aisle', rect: [83, 107, 84, 88], y: 12, height: 4.5, floor: 0x3a3733, wall: 0x7a7266, light: 0xffc080, dim: true },
     { id: 'church-loft', rect: [83, 107, 84, 88], y: 17, height: 3.5, floor: 0x3a3428, wall: 0x7a7266, dim: true },
@@ -167,8 +168,7 @@ const LEVEL_3 = {
       enemies: [{ enemy: 'hollow', spawn: { x: 66, z: -5, yaw: -Math.PI / 2 } }, { enemy: 'hollow', spawn: { x: 64, z: 5, yaw: -Math.PI / 2 } },
                 { enemy: 'lancer', spawn: { x: 73, z: 0, yaw: -Math.PI / 2 } }] },
     { id: 'zone-steep-street', trigger: [22, 68, 22, 28], gate: { x: 22, z: 25, along: 'z', width: 7, style: 'barricade' },
-      enemies: [{ enemy: 'lancer', spawn: { x: 40, y: 4, z: 25, yaw: Math.PI / 2 } },
-                { enemy: 'bowman', spawn: { x: 38, y: 8, z: 31, yaw: Math.PI } }] },
+      enemies: [{ enemy: 'lancer', spawn: { x: 40, y: 4, z: 25, yaw: Math.PI / 2 } }] },   // its Bowman is optional (dispersed)
     { id: 'zone-alley', trigger: [[14, 22, 22, 27], [16, 20, 27, 40]], gate: { x: 18, z: 40, along: 'x', width: 5, style: 'barricade' },
       enemies: [{ enemy: 'duelist', spawn: { x: 18, y: 4, z: 37, yaw: Math.PI } }] },
     { id: 'zone-fountain', trigger: [0, 30, 47, 71], gate: { x: 30, z: 59.5, along: 'z', width: 4, style: 'barricade' },
@@ -184,7 +184,9 @@ const LEVEL_3 = {
   shortcuts: [{ id: 'fountain-shortcut', gate: { x: 6, z: 47, along: 'x', width: 5 }, opensFrom: [0, 12, 48, 54] }],
   // The way back into the Keep, shut behind the player.
   sealed: [{ id: 'keep-gate', gate: { x: -0.6, z: 0, along: 'z', width: 6 } }],
+  // Bowmen are optional: a barricade never waits on one. They wake with their zone's fight.
   dispersed: [
+    { behavior: 'sentry', enemy: 'bowman', x: 38, y: 8, z: 29.2, yaw: Math.PI, zone: 'zone-steep-street' },   // the balcony, at its rail
     { behavior: 'slumber', enemy: 'knight', x: 17, y: 4, z: 13, yaw: 0 },                // the yard off the alley
     { behavior: 'sentry', enemy: 'bowman', x: 98, y: 17, z: 81.5, yaw: Math.PI, zone: 'zone-church' },   // the church gallery
   ],

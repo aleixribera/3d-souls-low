@@ -28,7 +28,12 @@
 - Enemies: `tracking: { rate, commit }` turns only for `commit` of each wind-up, then locks. A hit's `hold: { at, time, chance }` is a delayed attack, frozen still. No `pose` keeps the legacy `ANIMS` path (the training dummies).
 - Player input: one Souls-style buffer slot (`Player.bufferInputs`, `CONFIG.player.bufferWindow`); combos chain through `next` on an attack.
 - Feel, all visual: `js/impact.js` (strike shake, hit shudder, enemy trails), cloth and turn lag in `js/animator.js` / `ANIM_SETTINGS`, `Rig.weightLean`. Dev: `js/debug-combat.js` (F6 slow motion, F7 tracking colours).
-- Changing a timing? Log old and new in `docs/combat-timings-v4.1.md`.
+- Changing a timing? Log old and new in `docs/combat-timings-v4.1.md`. Keep an enemy hit's `active` under the roll's i-frames (`CONFIG.player.rollIFrames`, 0.3 s) by a margin; move extra time into `follow` (a test checks the bosses).
+## AI, checkpoints and stamina (v4.2.4)
+- Enemy states add `SEARCH` (lost sight: walks to `lastSeen`, looks about, goes home; `CONFIG.ai.search`). Unaware states in `ENEMY_GROUPS.narrowSight` see only in `CONFIG.vision.cone`. Alerts wake every enemy with the same `zone` (zone members, and dispersed entries with `zone`). Optional per-enemy `kite` (0..1): chance it keeps its distance after an attack or flinch instead of stepping in.
+- Bonfires are checkpoints: `Game.cleared` holds the placement keys (`Game.placementKey`) of enemies dead at the last rest; they never respawn until a level restart.
+- Player exhaustion: `Player.spend` to 0 sets `exhausted`; `canAct()` gates every stamina action (`CONFIG.player.exhaustDelay`, `exhaustRecover`); refused presses emit `staminaDenied`.
+- A room may set `railHeight` (lower rails the player can jump). Levels and duels start behind a loading screen (`Game.showLoading`, `CONFIG.loading`); there is no start notice screen.
 ## Character Models (procedural, no asset files)
 - An enemy or the player opts in with `model: '<id>'` (`js/data/enemies.js`, `js/data/player.js`); without it the old box body is used. Definitions live in `js/data/models.js` (format, Hollow Soldier, player), `models-enemies.js` and `models-bosses.js`; a model can `extends` another. Parts and weapons come from `KIT_PARTS` / `KIT_WEAPONS` in `js/bodykit.js`; textures from `js/data/textures.js` via `TEXLIB` (`js/textures.js`).
 - The skeleton is fixed (names in `js/bodykit.js`) so key poses and the legacy attack animations keep driving it. Secondary motion (breathing, flinch, death buckle, cloth springs, weapon glint, death dissolve) is `js/animator.js` + `js/data/animations.js`: visual only.

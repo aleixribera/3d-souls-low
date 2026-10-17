@@ -27,7 +27,7 @@ const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el
 const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'),
-  pSt: $('pSt'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
+  pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
@@ -36,7 +36,7 @@ const hud = {
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
-  healTimer: 0, hurtTimer: 0, refundTimer: 0, popFlask: -1, wasEmpty: false, toastList: [],
+  healTimer: 0, hurtTimer: 0, refundTimer: 0, deniedTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const rows = [
@@ -62,6 +62,7 @@ const hud = {
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
     $('completeHint').textContent = game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
+    this.pExhaust.textContent = CONFIG.hud.text.exhausted;
     this.promptKey.textContent = keycap(bindLabel('rest'));
     this.restText = 'Rest at bonfire';
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
@@ -69,7 +70,7 @@ const hud = {
   reset(game) {
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
-    this.healTimer = this.hurtTimer = this.refundTimer = 0; this.popFlask = -1; this.wasEmpty = false;
+    this.healTimer = this.hurtTimer = this.refundTimer = this.deniedTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
     for (const t of this.toastList) t.el.remove();
     this.toastList = [];
     for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
@@ -164,7 +165,9 @@ const hud = {
     this.wasEmpty = empty;
     const stTrail = this.stLag.update(sp, dt * 4);   // spent stamina trails away faster than health
     this.pStFill.style.width = sp * 100 + '%'; this.pStTrail.style.width = stTrail * 100 + '%';
-    this.pSt.classList.toggle('winded', !!p.winded);
+    this.pSt.classList.toggle('exhausted', !!p.exhausted);
+    this.pExhaust.classList.toggle('show', !!p.exhausted && p.alive());
+    this.pExhaust.classList.toggle('flash', this.deniedTimer > 0 && !!p.exhausted);
     this.pSt.classList.toggle('waiting', p.staminaDelay > 0 && sp < 1);
     this.pSt.classList.toggle('refund', this.refundTimer > 0);
     this.syncFlasks(p.item('flask'));
@@ -233,7 +236,7 @@ const hud = {
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
     const p = game.player;
     this.clock += dt;
-    for (const k of ['healTimer', 'hurtTimer', 'refundTimer']) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['healTimer', 'hurtTimer', 'refundTimer', 'deniedTimer']) this[k] = Math.max(0, this[k] - dt);
     this.updateTags(game, dt);
     this.updateCalm(game, t, dt);
     this.updateVitals(game, dt);
@@ -244,6 +247,11 @@ const hud = {
     this.rested.classList.toggle('show', this.restedTimer > 0);
     this.confirm.classList.toggle('show', game.restartArm > 0);
     this.died.classList.toggle('show', !p.alive());
+    if (!p.alive() && this.wasAlive) {   // a tip under YOU DIED: the stamina one if the player had just run dry
+      const T = H.text, tips = T.deathTips;
+      this.diedTip.textContent = p.sinceExhausted <= T.staminaTipTime ? tips[0] : tips[Math.floor(Math.random() * tips.length)];
+    }
+    this.wasAlive = p.alive();
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
     const tut = game.tut, step = game.currentStep();
     this.tutPrompt.classList.toggle('hidden', !step);
@@ -268,6 +276,8 @@ function registerHudListeners() {
   events.on('dodge', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });
   events.on('itemUsed', d => { if (d.item === 'flask') { hud.popFlask = d.player.item('flask').count; } });
   events.on('rest', () => { hud.healTimer = H.healFlash; });
+  events.on('staminaDenied', () => { hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
+    hud.pSt.addEventListener('animationend', () => hud.pSt.classList.remove('empty'), { once: true }); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
 }

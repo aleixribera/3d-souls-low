@@ -79,11 +79,6 @@ const gamepad = {
     const mx = this.move.x, my = this.move.y, S = C.menuStick;
     const dir = this.down.has(MENU_PAD.up) || my > S ? 'up' : this.down.has(MENU_PAD.down) || my < -S ? 'down'
       : this.down.has(MENU_PAD.left) || mx < -S ? 'left' : this.down.has(MENU_PAD.right) || mx > S ? 'right' : null;
-    if (Game.onStartNotice()) {   // any button only moves on (a direction held now does not step later)
-      if (pressed.length) Game.leaveStartNotice();
-      this.menuDir = dir; this.menuTimer = C.menuDelay;
-      return;
-    }
     for (const c of pressed) {
       if (c === MENU_PAD.confirm) Game.confirm();
       else if (c === MENU_PAD.back) Game.menuBack();

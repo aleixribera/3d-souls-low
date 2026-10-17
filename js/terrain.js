@@ -180,7 +180,7 @@ function buildTerrain(L) {
       if (same) { if (topA > same.top + eps) piece('lintel', a, b, same.top, topA); }   // doorway
       else if (!higher) {   // a higher neighbour's own ledge face covers this stretch
         if (R.edges[k] === 'wall') piece('wall', a, b, hA, topA);
-        else if (R.edges[k] === 'rail') piece('rail', a, b, hA, hAx + H.rail);
+        else if (R.edges[k] === 'rail') piece('rail', a, b, hA, hAx + (R.src.railHeight ?? H.rail));   // a room may set a lower rail
       }
       if (lowest < Infinity) piece('face', a, b, Math.max(lowest, below), hA);
     }

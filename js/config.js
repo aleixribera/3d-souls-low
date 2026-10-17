@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v4.2.3';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v4.2.4';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -43,6 +43,10 @@ const CONFIG = {
     jumpAttackAirControl: 0.6,   // multiplier on air control during a jump attack
     landKeep: 0.35,              // horizontal speed kept on a jump-attack landing
     rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
+    // Exhaustion (Souls-style penalty): emptying the stamina bar, by any action, leaves the player exhausted: no roll,
+    // attack, parry or jump until it has refilled to `exhaustRecover`, and it starts refilling only after `exhaustDelay`
+    // s (instead of staminaDelay). The bar shows it, and a press while exhausted says why (js/hud.js).
+    exhaustDelay: 1.3, exhaustRecover: 30,
     rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
     rollExitKeep: 0.3,           // speed kept when a roll ends
     // Input buffer (Souls-style, one slot, latest press wins): a roll or attack pressed while busy is kept only if the
@@ -68,7 +72,12 @@ const CONFIG = {
   // [active - lead - arm, active + grace] — about a quarter second.
   parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
            riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  // Bonfires are checkpoints: resting keeps dead every enemy killed before it (until the level restarts); everything
+  // else, including enemies killed since the last rest, comes back at full health on a rest or a death.
   rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },
+  // Loading screen (js/game.js): shown for `time` s when a level or duel starts, the world frozen behind it, then
+  // fades out over `fade` s. It carries a level tip and the controller note.
+  loading: { time: 1.4, fade: 0.6 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -86,9 +95,12 @@ const CONFIG = {
            patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
   notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, dummy: 0, sparring: 0 },
-  // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius`
-  // (with a clear line between them), and those pass it on in turn.
-  alert: { radius: 10 },
+  // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line
+  // between them; props don't block it) and every other enemy of its zone, and those pass it on in turn.
+  alert: { radius: 14 },
+  // Unaware enemies (idle, patrolling or walking home) see the player only within `cone` rad either side of their
+  // facing (or within `near` m, bumping into them). Once fighting, or searching, they see all round.
+  vision: { cone: 1.1, near: 1.2 },
   // Enemy attack choice (js/enemy.js). An attack's chance is its own `chance` per second, else the default for its
   // kind below (an attack of several kinds takes the lowest). Once its cooldown is over, an enemy facing the player
   // strikes at once if a basic close attack (no `minRange`, no kind below) reaches, picking among its close attacks in
@@ -105,8 +117,15 @@ const CONFIG = {
   // `stepOut` m further away than both that reach and the closest it has come: then it goes back to holding.
   // Whatever it was doing, once its cooldown is over a player within `commitReach` m beyond its basic close reach
   // makes it step in and strike as soon as that reaches (no chance roll): hovering just out of reach is not safe.
+  // After an attack or a flinch, an enemy with the player within its hold reach keeps its distance with chance `kite`
+  // (its own `kite` if set), else steps in to its shortest reach: ranged enemies and bosses no longer always back off.
+  // Losing sight of the player, a fighting enemy searches: it walks to where it last saw the player at `search.speedMul`
+  // of its speed, looks round for `search.look` s once within `search.arrive` m, and gives up after `search.max` s.
+  // Leashes: it gives up once the player is more than its homeLeash from its home, and takes the chase up again on
+  // the way home only once the player is within `leashResume` of that (no flicker at the line).
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
-        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1 },
+        approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1,
+        kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 } },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14,
            // A barricade gate: `depth` m deep (its collision too); opening, it tips over by `topple` rad, and once `sinkFrom`
@@ -134,8 +153,8 @@ const CONFIG = {
   // Fall damage: a landing more than `safe` m below the highest point of the fall costs (h - safe) *
   // `perMetre` HP; `lethal` m or more kills. A plain jump never reaches `safe`.
   fall: { safe: 4.5, perMetre: 9, lethal: 14, hurtTime: 0.5 },
-  level: { leash: 22,        // give up the chase when the player is this far away...
-           homeLeash: 30,    // ...or when dragged this far from home; then walk back home
+  level: { leash: 28,        // give up the chase when the player is this far away (v4.2.4: was 22)...
+           homeLeash: 40,    // ...or this far from its home (was 30, and measured from the enemy); then walk back home
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
@@ -149,7 +168,14 @@ const CONFIG = {
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8,
          toastTime: 3.2, maxToasts: 3,
-         text: { restBlocked: 'Enemies too close to rest' },
+         exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
+         text: { restBlocked: 'Enemies too close to rest', exhausted: 'Out of stamina', controller: 'Best played with a controller',
+                 // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.
+                 deathTips: ['Tip: watch your stamina. Empty it and you can’t roll until it refills.',
+                             'Tip: roll through a strike as it lands, not before.',
+                             'Tip: blue strikes can’t be blocked. Roll them.',
+                             'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
+                 staminaTipTime: 6 },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,

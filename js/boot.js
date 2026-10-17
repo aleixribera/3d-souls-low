@@ -45,7 +45,6 @@ const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   input.use('keyboard');
-  if (Game.onStartNotice()) { if (!ev.repeat) Game.leaveStartNotice(); return; }   // any key
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
@@ -84,7 +83,6 @@ canvas.addEventListener('mousedown', ev => {
   if (GAME_CODES.has('Mouse' + ev.button)) input.down('Mouse' + ev.button);
 });
 window.addEventListener('mouseup', ev => input.up('Mouse' + ev.button));
-window.addEventListener('mousedown', () => Game.leaveStartNotice());   // any click on the start notice
 // The side buttons (3 back, 4 forward) block: they never send the browser back or forward. Browsers navigate on
 // different ones of these events, so all three are stopped.
 for (const type of ['mousedown', 'mouseup', 'auxclick'])
@@ -129,7 +127,7 @@ window.addEventListener('resize', resize);
 resize();
 applySettings();
 $('version').textContent = VERSION;
-Game.showMenu('start');
+Game.showMenu('main');
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;
@@ -140,6 +138,7 @@ function frame(now) {
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   document.body.classList.toggle('no-cursor', Game.mode === 'play' || input.device === 'pad');   // pointer only for mouse-driven menus
   if (Game.mode !== 'play' || Game.manualClock) { accumulator = 0; return; }   // menus, pause, or tests stepping by hand
+  if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }

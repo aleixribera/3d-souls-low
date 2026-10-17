@@ -11,32 +11,67 @@
   canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; transition: filter 0.6s; }
   canvas#view.dying { filter: grayscale(1) brightness(0.75); transition: filter var(--dying-fade); }
 
-  #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at 50% 40%, #17131a 0%, #07060a 75%); z-index: 10; }
-  #menu.overlay { background: #07060ab8; }
+  /* Menus (Dark Souls III title screen): pure black, a big cracked white title with a thin broken line through its middle,
+     and a short centred list low on the screen with chevrons above and below. The selected line sits in a gold horizontal
+     glow; its description is shown under the list. */
+  #menu { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: #000; }
+  #menu.overlay { background: #000000d0; }
   #menu.hidden { display: none; }
-  #menuBox { border: 2px solid #7d6a3a; padding: 34px 44px 26px; background: #0d0b10; min-width: 420px;
-    max-width: 90vw; box-shadow: 0 0 60px #000; }
-  #menuBox h1 { margin: 0 0 6px; text-align: center; letter-spacing: 6px; font-weight: normal;
-    font-size: 30px; color: #b79d5c; }
-  #menuBox .sub { text-align: center; font-size: 13px; color: #6f6753; margin-bottom: 22px; letter-spacing: 2px; min-height: 1em; }
-  .menuBtn { display: block; width: 100%; box-sizing: border-box; margin: 10px 0; padding: 12px 16px;
-    text-align: left; background: #15121a; border: 1px solid #3a3226; color: #cfc6ad; cursor: pointer;
-    font-family: inherit; }
-  .menuBtn .n { font-size: 19px; letter-spacing: 2px; }
-  .menuBtn .d { font-size: 13px; color: #857c66; margin-top: 3px; }
-  .menuBtn .d:empty { display: none; }
-  .menuBtn:hover, .menuBtn.sel { background: #262017; border-color: #b79d5c; color: #f0e3bd; }
-  .menuBtn.sel .n::before { content: '\25B8  '; color: #b79d5c; }
-  #menuBox .hint { text-align: center; font-size: 12px; color: #6f6753; margin-top: 18px; }
-  #menuBox .notice { text-align: center; font-size: 17px; line-height: 1.7; color: #d9cda8; margin: 20px 0 8px; white-space: pre-line; }
+  #menuBox { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
+    padding: 26vh 5vw 5vh; background: none; border: none; box-shadow: none; }
+  #menuBox h1 { position: relative; z-index: 0; margin: 0; padding: 0 0.04em; text-align: center; font-weight: bold; white-space: nowrap;
+    font-family: 'Trajan Pro', 'Cinzel', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+    font-size: clamp(34px, 7.6vw, 124px); letter-spacing: 0.01em; line-height: 1.05; color: #f4f2ee;
+    filter: url(#menuCrack) drop-shadow(0 0 1px #fff4); }
+  /* the thin horizontal line through the title, a little wider than the lettering, broken in places */
+  #menuBox h1::before { content: ''; position: absolute; z-index: 1; left: -6%; right: -6%; top: 50%; height: 2px; margin-top: -1px;
+    background: linear-gradient(90deg, #fff0 0, #ffffffb0 6%, #ffffffe0 50%, #ffffffb0 94%, #fff0 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 0 12%, #0000 12% 12.6%, #000 12.6% 46%, #0000 46% 46.4%, #000 46.4% 71%, #0000 71% 72%, #000 72% 100%);
+            mask-image: linear-gradient(90deg, #000 0 12%, #0000 12% 12.6%, #000 12.6% 46%, #0000 46% 46.4%, #000 46.4% 71%, #0000 71% 72%, #000 72% 100%);
+    pointer-events: none; }
+  #menuBox h1::after { content: none; }
+  #menuBox .sub { margin-top: 0.4em; text-align: center; font-size: 15px; color: #9a968c; letter-spacing: 6px; min-height: 1em; }
+  #menu.overlay #menuBox h1 { font-size: clamp(30px, 5.2vw, 84px); }
+  #menu.overlay #menuBox { padding-top: 18vh; }
+  .menuArrow { flex: none; width: 9px; height: 9px; margin: 4vh 0 4px; border-top: 1px solid #c9c5bb; border-left: 1px solid #c9c5bb;
+    transform: translateY(3px) rotate(45deg); opacity: 0.8; transition: opacity 0.25s; pointer-events: none; }
+  .menuArrow.down { margin: 4px 0 0; transform: translateY(-3px) rotate(225deg); }
+  .menuArrow.off { opacity: 0.15; }
+  #menuList { margin-top: 0; display: flex; flex-direction: column; align-items: center; width: 100%; max-height: 190px;
+    overflow-y: auto; scrollbar-width: none; padding: 6px 0;
+    -webkit-mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 22px), transparent);
+            mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 22px), transparent); }
+  #menuList::-webkit-scrollbar { display: none; }
+  #menuList:empty { display: none; }
+  .menuBtn { position: relative; flex: none; display: block; width: min(760px, 92vw); box-sizing: border-box; margin: 0; padding: 5px 16px;
+    text-align: center; background: none; border: none; color: #d6d3cb; cursor: pointer; font-family: inherit; outline: none;
+    transition: color 0.25s; }
+  .menuBtn::before { content: ''; position: absolute; left: 50%; top: 50%; width: 300px; height: 40px; margin: -20px 0 0 -150px; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+    background: radial-gradient(ellipse 50% 50% at 50% 50%, #b8892a99 0%, #b8892a55 45%, #b8892a00 100%); }
+  .menuBtn .n { position: relative; font-size: 19px; letter-spacing: 0.5px; line-height: 1.2; }
+  .menuBtn .d { display: none; }
+  .menuBtn:hover, .menuBtn.sel { color: #fff; }
+  .menuBtn.sel::before { opacity: 1; }
+  #menuDesc { flex: none; max-width: min(640px, 90vw); min-height: 1.4em; margin-top: 14px; text-align: center; font-size: 13px; letter-spacing: 0.5px; color: #8d897d; }
+  #menuBox .hint { position: absolute; left: 0; right: 0; bottom: 4vh; margin: 0; text-align: center; font-size: 12px; letter-spacing: 1.5px; color: #6a675e; }
+  #menuBox .notice { margin-top: 12vh; text-align: center; font-size: 17px; line-height: 1.8; letter-spacing: 1px; color: #bdb9ad; white-space: pre-line; }
   #menuBox .notice:empty { display: none; }
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
   body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
-  #version { position: absolute; right: 10px; bottom: 6px; font-size: 10px; letter-spacing: 1px; color: #4e473a; pointer-events: none; }
+  #version { position: absolute; right: 10px; bottom: 6px; font-size: 11px; letter-spacing: 1px; color: #6f6753; text-align: right; pointer-events: none; }
 
   #fade { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity var(--fade-time, 1s); }
   #fade.show { opacity: 1; }
+  /* Loading screen (Game.loading): the level's name and a tip, the controller note with a small pad icon at the foot. */
+  #loading { position: fixed; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 45%, #100d0c 0%, #020202 75%); opacity: 0; pointer-events: none; transition: opacity var(--load-fade, 0.6s); }
+  #loading.show { opacity: 1; transition: none; }
+  #loadName { font-size: clamp(22px, 3.4vw, 44px); letter-spacing: 6px; color: #d9bd7c; text-shadow: 0 0 18px #b8903c50; text-align: center; padding: 0 5vw; }
+  #loadTip { margin-top: 18px; font-size: 15px; color: #8f866c; letter-spacing: 1px; text-align: center; max-width: 80vw; }
+  #loadTip:empty { display: none; }
+  #loadPad { position: absolute; bottom: 7vh; display: flex; align-items: center; gap: 10px; font-size: 13px; letter-spacing: 2px; color: #7a7058; }
+  #loadPad svg { width: 30px; height: 20px; }
   #bootError { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
     background: #07060af0; }
   #bootError.hidden { display: none; }
@@ -94,14 +129,19 @@
   #pHp.low .hp { filter: brightness(1.2); }
   #pSt.refund { border-color: #d8f0b0; box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #b8f09080; }
   #pSt.waiting .st { filter: saturate(0.55) brightness(0.8); }      /* regeneration paused */
-  #pSt.empty, #pSt.winded { border-color: #c4402e; }
+  #pSt.empty, #pSt.exhausted { border-color: #c4402e; }
   #pSt.empty { animation: emptyPulse 0.6s ease-out; }
-  #pSt.winded .st { background: linear-gradient(#b86a50, #7a3a28 52%, #4a2014); --glow: #ff9070; }
-  #pSt.winded { animation: windedPulse 0.7s ease-in-out infinite; }
+  #pSt.exhausted .st { background: linear-gradient(#b86a50, #7a3a28 52%, #4a2014); --glow: #ff9070; }
+  #pSt.exhausted { animation: windedPulse 0.7s ease-in-out infinite; }
   @keyframes barShake { 0% { transform: translateX(0); } 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); }
     70% { transform: translateX(-2px); } 100% { transform: translateX(0); } }
   @keyframes lowPulse { 50% { border-color: #e0604a; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 3px #d0301c90, inset 0 0 6px #000000b0; } }
   @keyframes emptyPulse { 0% { box-shadow: 0 0 0 1px #000000d8, 0 0 16px 4px #ff4a30c0; transform: scaleY(1.9); } 100% { transform: scaleY(1); } }
+  /* Exhausted: a small note under the stamina bar, faint while it lasts, bright for a moment after a refused press. */
+  #pExhaust { height: 14px; margin-top: 3px; font-size: 11px; letter-spacing: 2px; color: #e07a5c; text-shadow: 0 0 4px #000;
+    opacity: 0; transition: opacity 0.25s; font-variant: small-caps; }
+  #pExhaust.show { opacity: 0.55; }
+  #pExhaust.flash { opacity: 1; color: #ff9a76; }
   @keyframes windedPulse { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 10px 2px #d0402880; } }
 
   #pFlasks { margin-top: 12px; height: 18px; transition: opacity 0.3s; opacity: calc(1 - var(--calm) * 0.5); }
@@ -184,6 +224,8 @@
   #died .small, #won .small, #complete .small { font-size: 16px; color: #a89f86; margin-top: 16px; opacity: 0; letter-spacing: 2px; }
   #died.show { opacity: 1; transition: opacity var(--died-fade) ease-in var(--died-delay); }
   #died.show .small { opacity: 1; transition: opacity 1s linear var(--died-hint-delay); }
+  #died .tip { font-size: 14px; color: #c9b26a; margin-top: 10px; letter-spacing: 1px; }
+  #died .tip:empty { display: none; }
   #won .big, #complete .big { font-size: 40px; letter-spacing: 10px; color: #c9b26a; text-shadow: 0 0 20px #000; }
   #complete .big { font-size: 54px; color: #b39a58;
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
@@ -254,6 +296,7 @@
       <div id="pBars">
         <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
         <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
+        <div id="pExhaust"></div>
         <div id="pFlasks"></div>
       </div>
     </div>
@@ -281,24 +324,32 @@
     </div>
     <div id="tutDone">TUTORIAL COMPLETE</div>
     <div id="rested">RESTED</div>
-    <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div></div>
+    <div id="died"><div class="big">YOU DIED</div><div class="small">Returning to the last bonfire&hellip;</div><div class="small tip" id="diedTip"></div></div>
     <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
     <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
   </div>
 </div>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="menuCrack" x="-5%" y="-10%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 9 -6.1" result="holes"/><feComposite in="SourceGraphic" in2="holes" operator="out" result="speck"/><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="w"/><feDisplacementMap in="speck" in2="w" scale="3"/></filter></svg>
 <div id="menu">
   <div id="menuBox">
     <h1 id="menuTitle">COMBAT ARENA 3D</h1>
     <div class="sub" id="menuSub"></div>
     <div class="notice" id="menuNotice"></div>
+    <div class="menuArrow up" id="menuUp"></div>
     <div id="menuList"></div>
+    <div class="menuArrow down" id="menuDown"></div>
+    <div id="menuDesc"></div>
     <div class="hint" id="menuHint"></div>
   </div>
   <div id="version"></div>
 </div>
 
 <div id="fade"></div>
+<div id="loading"><div id="loadName"></div><div id="loadTip"></div>
+  <div id="loadPad"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+    <path d="M8 3h14c4 0 6 3 7 8s0 8-3 8c-2 0-3-2-5-4H9c-2 2-3 4-5 4-3 0-4-3-3-8s3-8 7-8z"/>
+    <path d="M8 7v5M5.5 9.5h5"/><circle cx="21" cy="8" r="1"/><circle cx="23.5" cy="11" r="1"/></svg><span id="loadPadText"></span></div></div>
 <div id="bootError" class="hidden"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
 
 <script type="module" onerror="window.__bootError('The game did not load.

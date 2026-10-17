@@ -48,6 +48,7 @@ function validateData() {
       need(a && num(a.range) && a.range > 0, `Enemy "${d.id}" attack "${a && a.id}": range must be a number above 0.`);
     }
     if ('approach' in d) need(num(d.approach) && d.approach >= 0, `Enemy "${d.id}": approach must be a number of 0 or more (per second).`);
+    if ('kite' in d) need(num(d.kite) && d.kite >= 0 && d.kite <= 1, `Enemy "${d.id}": kite must be a number from 0 to 1 (a chance).`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'damageMul', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime, damageMul and hitstop.`);
     if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
@@ -130,6 +131,15 @@ function validateData() {
   need(['basic', 'dash', 'rollOnly', 'shove', 'projectile'].every(k => nonNeg(AI.chance[k])) && nonNeg(AI.approach) && AI.busyMul >= 0 && AI.busyMul <= 1 && nonNeg(AI.gap)
     && nonNeg(AI.holdInset) && AI.holdMax > 0 && nonNeg(AI.holdBand) && AI.holdSpeedMul > 0 && nonNeg(AI.stepOut) && nonNeg(AI.commitReach) && nonNeg(AI.busyCooldown),
     'CONFIG.ai: chance (basic, dash, rollOnly, shove, projectile), approach, gap, holdInset, holdBand, stepOut, commitReach and busyCooldown must be 0 or more, busyMul between 0 and 1, holdMax and holdSpeedMul above 0.');
+  const Se = AI.search, Vi = CONFIG.vision;
+  need(AI.kite >= 0 && AI.kite <= 1 && AI.leashResume > 0 && AI.leashResume <= 1 && Se.speedMul > 0 && nonNeg(Se.arrive) && nonNeg(Se.look) && Se.max > 0,
+    'CONFIG.ai: kite must be 0..1, leashResume above 0 and at most 1, search.speedMul and search.max above 0, search.arrive and search.look 0 or more.');
+  need(Vi.cone > 0 && Vi.cone <= Math.PI && nonNeg(Vi.near), 'CONFIG.vision: cone must be above 0 and at most pi (rad), near 0 or more.');
+  const Pl = CONFIG.player;
+  need(nonNeg(Pl.exhaustDelay) && Pl.exhaustRecover > 0 && Pl.exhaustRecover <= PLAYER_DEF.stats.maxStamina,
+    'CONFIG.player: exhaustDelay must be 0 or more, exhaustRecover above 0 and at most the player maxStamina.');
+  need(Array.isArray(CONFIG.hud.text.deathTips) && CONFIG.hud.text.deathTips.length > 0 && CONFIG.hud.text.deathTips.every(t => typeof t === 'string' && t),
+    'CONFIG.hud.text.deathTips must be a list of tips (text).');
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)
@@ -156,6 +166,7 @@ function validateRooms(L, where, need, num) {
     if ('height' in R) check(num(R.height) && R.height >= 2.5, `${tag}: height (headroom) must be at least 2.5 m.`);
     if ('open' in R) check(typeof R.open === 'boolean', `${tag}: open must be true or false.`);
     check(edgesOk(R.edges), `${tag}: edges must map n, s, e or w to 'wall', 'rail' or 'open'.`);
+    if ('railHeight' in R) check(num(R.railHeight) && R.railHeight > H.stepUp, `${tag}: railHeight must be a number above CONFIG.height.stepUp (${H.stepUp} m), or a rail could be walked over.`);
     if ('pits' in R) check(Array.isArray(R.pits) && rectOk(R.rect) && R.pits.every(p => rectOk(p) && within(p, R.rect)), `${tag}: pits must be rects inside the room.`);
     if ('grass' in R) check(typeof R.grass === 'boolean' && (!R.grass || R.open === true), `${tag}: grass must be true or false, and grows only in an open room.`);
     if ('lamps' in R) check(Array.isArray(R.lamps) && rectOk(R.rect) && R.lamps.every(l => Array.isArray(l) && l.length === 2 && l.every(num)
