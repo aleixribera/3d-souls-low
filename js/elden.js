@@ -32,6 +32,8 @@ const elden = (() => {
       const b = ELDEN_BOSSES.find(e => e.id === id);
       Game.startFight(b.enemy);
       Game.eldenBoss = b.id; won = 0;
+      const flask = Game.player.inventory.flask;   // more flasks than the story's 4 (CONFIG.elden.flasks)
+      if (flask) flask.count = flask.max = C.flasks;
       $('loadName').textContent = b.name; $('loadTip').textContent = b.description;
       hud.buildTexts(Game);
     },

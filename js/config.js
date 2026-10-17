@@ -169,7 +169,7 @@ const CONFIG = {
   // Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light `intensity`.
   // Flame breath (v5.4, js/flame.js, drawing only): jet colours (outer, middle, core), `opacity`, `flicker` (0..1 of the
   // width), fades (s), the light, embers per second along it, and the bursts as the jet burns and the grafted head appears.
-  elden: { victoryTime: 5, deathMenu: 3.6, victoryHint: 'Retry or choose another boss…',
+  elden: { flasks: 8, victoryTime: 5, deathMenu: 3.6, victoryHint: 'Retry or choose another boss…',
            spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 },
            flame: { outer: 0xff4a10, color: 0xff8a20, core: 0xffe2a0, opacity: 0.75, flicker: 0.12, fadeIn: 0.08, fadeOut: 0.25,
                     light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },
