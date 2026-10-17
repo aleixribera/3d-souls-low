@@ -2598,6 +2598,86 @@
     expect.ok(p.hp === hp0, 'at his flank: untouched');
   });
 
+  // ---- Elden Ring Bosses: Maliketh, the Black Blade (v5.8) --------------------------------------------------------
+  const startMaliketh = () => { A.elden.start('maliketh'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  const mkAttack = (e, id) => e.def.attacks.find(a => a.id === id) || A.ENEMY_BY_ID.maliketh.attacks.find(a => a.id === id);
+  test('Maliketh: on the boss select, loads as the robed Beast Clergyman at full bar', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Maliketh')), 'a card for Maliketh');
+    const { e } = startMaliketh();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'maliketh' && e.def.phaseId === 'clergyman' && e.hp === 4600, `bar ${e.def.phaseId} ${e.hp}`);
+    const S = e.rig.slotMeshes;
+    expect.ok(S.robe.visible && S.cinq.visible && !S.blackBlade.visible && !S.mane.visible, 'robes and dagger, no Black Blade yet');
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Beast Clergyman', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Maliketh: only his golden attacks parry; every strike leaves a roll a margin; the Black Blade carries Destined Death', () => {
+    const D = A.ENEMY_BY_ID.maliketh, P2 = new Set(D.phases.blackBlade.attacks);
+    for (const a of D.attacks) {
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+      const golden = a.id === 'corkscrew' || a.id === 'spinFlip';
+      expect.ok(!!a.noParry === !golden, `${a.id}: ${golden ? 'parryable (gold)' : 'unparryable'}`);
+      if (golden) expect.ok(a.markers && a.markers.some(m => m.parry), `${a.id}: glints as the parry opens`);
+      if (P2.has(a.id) && a.id !== 'shedRobes') expect.ok(a.destined, `${a.id}: Destined Death`);
+      if (!P2.has(a.id)) expect.ok(!a.destined, `${a.id}: none in phase 1`);
+    }
+  });
+  test('Maliketh: every attack starts, strikes and ends without errors', () => {
+    for (const a of A.ENEMY_BY_ID.maliketh.attacks) {
+      const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
+      Game.render(1, STEP);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+    }
+  });
+  test('Maliketh: the sling fans five pebbles; the boulder arcs', () => {
+    const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 8); quiet(e); projectiles.clear();
+    e.beginAttack(mkAttack(e, 'sling')); sim.until(() => e.state === ES.ACTIVE, 3);
+    expect.ok(projectiles.live().length === 5, `${projectiles.live().length} pebbles`);
+    projectiles.clear(); e.beginAttack(mkAttack(e, 'gurranqStone')); sim.until(() => e.state === ES.ACTIVE, 4);
+    const b = projectiles.live()[0];
+    expect.ok(b && b.rock && b.rock.visible && b.g > 0 && b.vy > 0, 'a stone thrown upward in an arc');
+  });
+  test('Maliketh: at 50% he sheds the robes (untouchable), is renamed, then opens with the waves', () => {
+    const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 6);
+    e.hp = 4600 * 0.49; sim.step(2);
+    expect.ok(e.def.phaseId === 'blackBlade' && Math.abs(e.hp - 4600 * 0.49) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'shedRobes', 4);
+    expect.ok(e.attack && e.attack.id === 'shedRobes' && e.invulnerable(), 'the robe shed, untouchable');
+    const hp = e.hp; e.takeHit(strikeOf('heavy'), p); expect.ok(e.hp === hp, 'blows pass through the shed');
+    sim.until(() => e.attack.id === 'bladeWaves', 5); Game.render(1, STEP);
+    const S = e.rig.slotMeshes;
+    expect.ok(e.attack.id === 'bladeWaves' && !e.invulnerable(), `then ${e.attack.id}`);
+    expect.ok(S.blackBlade.visible && S.mane.visible && S.armor.visible && !S.robe.visible && !S.cinq.visible, 'the Black Blade and armour, the robes gone');
+    sim.step(2); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Maliketh, the Black Blade', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Maliketh: Destined Death cuts the health ceiling, drains, caps flasks, and a retry starts clean', () => {
+    let { p, e } = startMaliketh(); quiet(e);
+    const D = CONFIG.elden.destined, combo = mkAttack(e, 'bladeCombo');
+    p.takeHit(makeStrike(mkAttack(e, 'multiSlash')), e);
+    expect.ok(p.doomTime === 0 && p.hpCap() === p.maxHp, 'the Clergyman\'s dagger: no curse');
+    p.hp = p.maxHp; p.takeHit({ ...makeStrike(combo), damage: 1 }, e);
+    expect.ok(p.doomTime === D.time && Math.abs(p.hpCap() - p.maxHp * (1 - D.cut)) < 1e-6 && p.hp <= p.hpCap(), `cap ${p.hpCap()}, hp ${p.hp}`);
+    const before = p.hp; sim.step(Math.round(D.drainTime / STEP) + 5);
+    expect.ok(Math.abs(before - p.hp - p.maxHp * D.drain) < 0.5, `drained ${(before - p.hp).toFixed(2)}`);
+    p.takeHit({ ...makeStrike(combo), damage: 1 }, e);
+    expect.ok(Math.abs(p.hpCap() - p.maxHp * (1 - D.cut)) < 1e-6, 'a second hit does not stack');
+    p.hp = p.hpCap() - 1; p.usingItem = { heal: 999, healStart: 0, healDuration: 0.1, useTime: 0.2 }; p.setState(PS.USE_ITEM); sim.step(20);
+    expect.ok(p.hp <= p.hpCap() + 1e-6, `a flask heals to the ceiling only (${p.hp.toFixed(1)} / ${p.hpCap().toFixed(1)})`);
+    ({ p, e } = startMaliketh());
+    expect.ok(p.doomTime === 0 && p.hpCap() === p.maxHp && p.hp === p.maxHp, 'retry: a clean player');
+  });
+  test('Maliketh: the Destined Death sphere shreds in front of the planted blade, never behind him', () => {
+    let { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 3); quiet(e);
+    const sphere = mkAttack(e, 'deathSphere'); let hp0 = p.hp; e.beginAttack(sphere);
+    sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 3; p.z = e.z + Math.cos(e.yaw) * 3; return e.state === ES.RECOVER; }, 6);
+    expect.ok(p.hp < hp0, 'in front: shredded');
+    ({ p, e } = startMaliketh()); sturdy(p); faceOff(e, p, 3); quiet(e); hp0 = p.hp; e.beginAttack(sphere);
+    sim.until(() => { p.x = e.x - Math.sin(e.yaw) * 2.2; p.z = e.z - Math.cos(e.yaw) * 2.2; return e.state === ES.RECOVER; }, 6);
+    expect.ok(p.hp === hp0, 'behind him: untouched');
+  });
+
   // ---- Elden Ring Bosses: the Crucible Knight (v5.5) --------------------------------------------------------------
   const startCrucible = () => { A.elden.start('crucibleKnight'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
   const ckAttack = (e, id) => e.def.attacks.find(a => a.id === id) || A.ENEMY_BY_ID.crucibleKnight.attacks.find(a => a.id === id);

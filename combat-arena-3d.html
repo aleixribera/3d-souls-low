@@ -127,6 +127,7 @@
   #pHp.heal .hp { filter: brightness(1.45) saturate(0.85); }
   #pHp.low { animation: lowPulse 0.9s ease-in-out infinite; }
   #pHp.low .hp { filter: brightness(1.2); }
+  #pHpCut { position: absolute; right: 0; top: 0; bottom: 0; width: 0; background: repeating-linear-gradient(135deg, #1a0306 0 4px, #4a0a12 4px 7px); box-shadow: inset 2px 0 0 #c01828; }
   #pSt.refund { border-color: #d8f0b0; box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #b8f09080; }
   #pSt.waiting .st { filter: saturate(0.55) brightness(0.8); }      /* regeneration paused */
   #pSt.empty, #pSt.exhausted { border-color: #c4402e; }
@@ -300,7 +301,7 @@
   <div id="stage">
     <div class="anchor" id="aTL">
       <div id="pBars">
-        <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div></div>
+        <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
         <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
         <div id="pExhaust"></div>
         <div id="pFlasks"></div>
@@ -398,6 +399,7 @@ const GAME_FILES = [
   'data/bosses/crucible-knight.js',
   'data/bosses/morgott.js',
   'data/bosses/radagon.js',
+  'data/bosses/maliketh.js',
   'data/elden-bosses.js',
   'levels/arena.js',
   'levels/tutorial.js',
@@ -445,6 +447,7 @@ const GAME_FILES = [
   'impact.js',
   'spectral.js',
   'flame.js',
+  'blackblade.js',
   'holy.js',
   'elden.js',
   'boot.js',

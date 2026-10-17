@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.7';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.8';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -173,6 +173,15 @@ const CONFIG = {
   // Flame breath (v5.4, js/flame.js, drawing only): jet colours (outer, middle, core), `opacity`, `flicker` (0..1 of the
   // width), fades (s), the light, embers per second along it, and the bursts as the jet burns and the grafted head appears.
   elden: { flasks: 8, victoryTime: 5, deathMenu: 3.6, victoryHint: 'Retry or choose another boss…',
+           // Destined Death (v5.8, Maliketh; an attack's `destined`, js/player.js): an unblocked hit cuts the player's maximum
+           // health by `cut` for `time` s (a new hit restarts it, never stacks) and drains `drain` of the maximum over `drainTime` s.
+           destined: { cut: 0.12, time: 15, drain: 0.04, drainTime: 3 },
+           // Maliketh's drawing (js/blackblade.js): the Destined Death sphere (`color`, `core`, `opacity`, `spin` rad/s)
+           // and the blasts along a hit's box (`line`: `bursts` bursts of `burst`, or `rock` for a stone one); `doom` off a cursed
+           // player, `shed` as the robes tear away.
+           blackBlade: { color: 0xc01828, core: 0xff6070, opacity: 0.55, spin: 7,
+                         line: { bursts: 7, burst: { color: 0xffd36a, count: 10, speed: 5 }, rock: { color: 0x6a5a48, count: 8, speed: 4 } },
+                         doom: { color: 0xc01828, count: 18, speed: 3 }, shed: { color: 0x2a2420, count: 50, speed: 6 } },
            spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 },
            flame: { outer: 0xff4a10, color: 0xff8a20, core: 0xffe2a0, opacity: 0.75, flicker: 0.12, fadeIn: 0.08, fadeOut: 0.25,
                     light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },

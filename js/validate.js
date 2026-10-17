@@ -33,6 +33,14 @@ function validateData() {
     if ('invulnerable' in a) need(typeof a.invulnerable === 'boolean', `${tag}: invulnerable must be true or false.`);
     if ('breath' in a) need(a.breath && num(a.breath.len) && a.breath.len > 0 && num(a.breath.width) && a.breath.width > 0 && (!('from' in a.breath) || num(a.breath.from)),
       `${tag}: breath needs len and width (m, above 0), optionally from (the first hit it burns on).`);
+    // v5.8 (Maliketh): Destined Death on the player, the sphere drawn, a golden blast drawn along a hit's box, fanned or stone bolts.
+    if ('destined' in a) need(typeof a.destined === 'boolean', `${tag}: destined must be true or false.`);
+    if ('sphere' in a) need(a.sphere && num(a.sphere.fwd) && num(a.sphere.r) && a.sphere.r > 0, `${tag}: sphere needs fwd (m) and r (m, above 0).`);
+    if (a.hits) need(a.hits.every(h => !('line' in h) || typeof h.line === 'boolean'), `${tag}: a hit's line must be true or false.`);
+    if (a.projectile && 'spread' in a.projectile) need(Array.isArray(a.projectile.spread) && a.projectile.spread.length > 0 && a.projectile.spread.every(num),
+      `${tag}: projectile spread must list angles (rad).`);
+    if (a.projectile && 'colors' in a.projectile) need(Array.isArray(a.projectile.colors) && a.projectile.colors.length === 2 && a.projectile.colors.every(num),
+      `${tag}: projectile colors must be [core, rim] (hex numbers).`);
     if ('spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
     if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1

@@ -27,6 +27,7 @@ class Player {
     this.buffer = null;   // { action, time }: the one remembered press (Souls-style; see bufferInputs)
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
+    this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
     this.savePrev();
   }
   alive() { return this.state !== PS.DEAD; }
@@ -53,6 +54,8 @@ class Player {
   }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
+  // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.elden.destined).
+  hpCap() { return this.doomTime > 0 ? this.maxHp * (1 - CONFIG.elden.destined.cut) : this.maxHp; }
   invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
@@ -170,6 +173,7 @@ class Player {
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
     this.execGrace = Math.max(0, this.execGrace - dt);
+    if (this.doomTime > 0) this.updateDoom(dt);
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
@@ -298,7 +302,7 @@ class Player {
         if (I.heal) {   // heal spread over [healStart, healStart + healDuration]
           const t0 = this.stateTime - dt, t1 = this.stateTime;
           const healed = clamp(t1 - I.healStart, 0, I.healDuration) - clamp(t0 - I.healStart, 0, I.healDuration);
-          this.hp = Math.min(this.maxHp, this.hp + I.heal * healed / I.healDuration);
+          this.hp = Math.min(this.hpCap(), this.hp + I.heal * healed / I.healDuration);
         }
         if (this.stateTime >= I.useTime) this.setState(PS.IDLE);
         break;
@@ -352,6 +356,18 @@ class Player {
     this.stunTime = CONFIG.fall.hurtTime; this.setState(PS.HURT);
   }
 
+  // Destined Death (v5.8): the health ceiling stays cut while it lasts, and the drain runs out over `drainTime`.
+  updateDoom(dt) {
+    const D = CONFIG.elden.destined;
+    this.doomTime = Math.max(0, this.doomTime - dt);
+    if (!this.alive()) return;
+    if (this.doomDrain > 0) {
+      const d = Math.min(this.doomDrain, this.maxHp * D.drain / D.drainTime * dt);
+      this.doomDrain -= d; this.hp -= d;
+    }
+    this.hp = Math.min(this.hp, this.hpCap());
+    if (this.hp <= 0) { this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+  }
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
   takeHit(strike, from) {
     const B = CONFIG.block, C = CONFIG.player;
@@ -368,6 +384,11 @@ class Player {
     this.kx += dx / d * knock; this.kz += dz / d * knock;
     if (blocked) this.brace = 1; else this.tint = 1;
     if (this.hp <= 0) { this.hitbox = null; this.setState(PS.DEAD); return { blocked, died: true }; }
+    if (strike.destined && !blocked) {   // a new hit restarts the cut (it never stacks) and the drain
+      const D = CONFIG.elden.destined;
+      this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());
+      events.emit('destinedDeath', { body: this });
+    }
     if (guardBroken) { this.hitbox = null; this.stunTime = B.breakTime; this.poise = this.maxPoise; this.setState(PS.STAGGER); return { blocked: false }; }
     if (blocked) {
       if (poise > 0) { this.poise = Math.max(1, this.poise - poise); this.poiseTimer = 0; }

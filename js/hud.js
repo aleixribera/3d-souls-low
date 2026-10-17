@@ -26,7 +26,7 @@ class LagMeter {
 const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
-  root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'),
+  root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
@@ -159,6 +159,7 @@ const hud = {
     if (ph < this.hpLag.last - 0.004) { restart(this.pHp, 'hit'); this.pHp.addEventListener('animationend', () => this.pHp.classList.remove('hit'), { once: true }); }
     const hpTrail = this.hpLag.update(ph, dt);
     this.pHpFill.style.width = ph * 100 + '%'; this.pHpTrail.style.width = hpTrail * 100 + '%';
+    this.pHpCut.style.width = (1 - p.hpCap() / p.maxHp) * 100 + '%';   // Destined Death's cut, at the right end (v5.8)
     const low = p.alive() && ph <= H.lowHp;
     this.pHp.classList.toggle('low', low);
     this.pHp.classList.toggle('heal', this.healTimer > 0);

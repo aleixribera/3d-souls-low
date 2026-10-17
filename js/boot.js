@@ -43,6 +43,7 @@ function registerListeners() {
   registerVisualListeners();
   registerHudListeners();
   spectral.attach();   // golden weapons drawn for `spectral` attacks (Elden Ring bosses)
+  blackBlade.attach(); // the Destined Death sphere and line blasts drawn (Maliketh, js/blackblade.js)
   flame.attach();      // flame breath and grafted parts drawn (Godrick, js/flame.js)
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (Radagon, js/holy.js)
   registerAudioListeners();

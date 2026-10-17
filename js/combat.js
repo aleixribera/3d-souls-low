@@ -11,7 +11,7 @@ function makeStrike(attack, riposte = false, charge = 0) {
   return {
     attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
     damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
-    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * mul,
+    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * mul, destined: !!attack.destined,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
 }
