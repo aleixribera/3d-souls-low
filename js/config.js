@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.4.7';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.4.8';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -280,10 +280,14 @@ const CONFIG = {
     defaultQuality: 'high',
     // Graphics option presets. Both must list the same keys (checked at load).
     quality: {
-      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4,
-              particles: 1, shafts: true, debris: true, grass: 1, embers: 1 },
-      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0,
-              particles: 0.35, shafts: false, debris: false, grass: 0.35, embers: 0.5 },
+      // renderScale: fraction of the pixel ratio actually drawn (the canvas is stretched to fit). antialias: the
+      // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
+      // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
+      // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
+      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
+              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1 },
+      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 0.75, antialias: false, bloomScale: 1,
+              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5 },
     },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`

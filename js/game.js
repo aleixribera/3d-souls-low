@@ -67,7 +67,7 @@ const Game = {
           adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
         { name: `Sound volume: ${settings.volume}`, desc: 'Master volume of effects and menu sounds.',
           adjust: d => { settings.volume = clamp(Math.round(Number(settings.volume)) + d, 0, 10); } },
-        { name: `Graphics: ${visuals.qualityLabel(settings.graphics)}`, desc: 'High: bloom, vignette, grain, light shafts. Low: faster, plainer.',
+        { name: `Graphics: ${visuals.qualityLabel(settings.graphics)}`, desc: 'High: bloom, vignette, grain, light shafts. Low: for integrated graphics, plainer.',
           adjust: d => { settings.graphics = visuals.nextQuality(settings.graphics, d); } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('pause') },
       ] },

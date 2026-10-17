@@ -1,6 +1,6 @@
 # Project Guidelines
 
-Current version: **v5.4.7** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 adds the second, Godrick the Grafted.
+Current version: **v5.4.8** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 adds the second, Godrick the Grafted.
 
 **`LORE.md` is the source of truth for the story.** Every in-game story text (dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards) must agree with it. Change the story in LORE.md first, then in the game, and keep LORE.md updated.
 
@@ -111,3 +111,5 @@ Current version: **v5.4.7** (v5.4 — Godrick the Grafted, plus fixes) (`VERSION
 - Camera: with no lock-on, the yaw swing behind the facing and a pitch auto-level (`CONFIG.camera.levelPitch`, `levelRate`) run only while the player moves, scaled by speed (`moveSpeed`); `yawFollow` 0.85 -> 1.15.
 - FPS counter: `settings.fps` (off by default, saved), toggled by **F3** anywhere or in the pause menu's options; `fpsMeter` in `js/hud.js` (its own rAF loop, refresh `CONFIG.hud.fps.interval`).
 - v5.4.7: `combat-arena-3d.html` loads every script with a per-load `?v=` stamp (never a stale cached file mixed with new ones), all downloaded in parallel (`async = false` keeps the run order).
+- v5.4.8: the Low preset targets integrated graphics (`CONFIG.VISUALS.quality.low`). New preset keys (both presets, validated): `renderScale` (Low draws at 0.75 of the pixel ratio), `antialias` (canvas MSAA, read from the saved setting when the page loads, `js/scene.js`), `lights` (only the nearest N point lights stay `visible`, a fixed count so shaders never recompile; `limitLights` in `js/visuals.js`, culled pools light only the first N), `simpleSurfaces` (the weathered stone reads one texture instead of three, `W_SIMPLE`), `glows` (flame halos and floor light pools hidden). Low particles and grass 0.25.
+- v5.4.8 High, lighter at the same look: no canvas MSAA (`antialias: false`; its edges come from the post target's `msaa` 4, so the canvas's own was wasted), `maxPixelRatio` 2 -> 1.5, `lights` 8 (only Level 1 and Level 2, unculled, had more), new key `bloomScale` 0.5 (bloom drawn at half size, then its own internal half: a soft glow either way).

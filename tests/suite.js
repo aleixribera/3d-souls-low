@@ -300,7 +300,7 @@
   test('open rooms: sky, grass and ruins over open rooms only', () => {
     Game.startLevel('test-courtyard'); sim.begin();
     const I = A.visuals.info(), yard = A.TEST_COURTYARD.rooms.find(r => r.id === 'courtyard').rect;
-    expect.ok(I.sky, 'sky'); expect.above(I.grass, 500, 'grass clumps');
+    expect.ok(I.sky, 'sky'); expect.above(I.grassAt.length, 500, 'grass clumps'); expect.ok(I.grass > 0, 'grass drawn');
     expect.ok(I.grassAt.every(([x, y, z]) => inRect(yard, x, z) && Math.abs(y + 0.05) < 1e-6), 'every clump on the courtyard floor');
     expect.above(I.far, 200, 'draw distance reaches the ruins around the level');
     Game.startLevel('test-heights'); sim.begin();

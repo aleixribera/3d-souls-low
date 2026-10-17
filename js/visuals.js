@@ -24,6 +24,10 @@ function checkVisualData(need, num) {
   const Q = VIS.quality;
   need(Q && Q.high && Q.low, 'CONFIG.VISUALS.quality needs "high" and "low" presets.');
   if (Q && Q.high && Q.low) for (const k of Object.keys(Q.high)) need(k in Q.low, `CONFIG.VISUALS.quality.low is missing "${k}".`);
+  for (const [n, q] of Object.entries(Q || {}))
+    need(num(q.renderScale) && q.renderScale > 0.25 && q.renderScale <= 1 && num(q.bloomScale) && q.bloomScale > 0 && q.bloomScale <= 1 && Number.isInteger(q.lights) && q.lights >= 1
+      && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean',
+      `CONFIG.VISUALS.quality.${n}: renderScale (0.25..1], bloomScale (0..1], lights (whole, >= 1), antialias, simpleSurfaces and glows (true / false).`);
   need(VIS.defaultQuality in Q, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a quality preset.`);
   for (const [m, kind] of Object.entries(VIS.surfaces.materials))
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
@@ -177,11 +181,20 @@ uniform sampler2D wSide, wTop;
 uniform float wScaleSide, wScaleTop, wGrimeH, wMossAmt, wCrack, wRough, wRustAmt, wDetailAmt, wLevelMoss, wLevelGrime;
 uniform vec3 wGrime, wMoss, wRust;
 vec3 wTri() {
+#ifdef W_SIMPLE
+  vec3 a = abs(vWNrm);   // low quality: one read, from the side the surface faces most
+  if (a.y >= a.x && a.y >= a.z) return texture2D(wTop, vWPos.xz * wScaleTop).rgb;
+  return texture2D(wSide, (a.x > a.z ? vWPos.zy : vWPos.xy) * wScaleSide).rgb;
+#else
   vec3 n = pow(abs(normalize(vWNrm)), vec3(6.0)); n /= n.x + n.y + n.z;
   return texture2D(wSide, vWPos.zy * wScaleSide).rgb * n.x + texture2D(wTop, vWPos.xz * wScaleTop).rgb * n.y
        + texture2D(wSide, vWPos.xy * wScaleSide).rgb * n.z;
+#endif
 }
 `;
+// Weathered materials, so a quality change can rebuild them with the cheap or the full surface (simpleSurfaces).
+const WEATHERED = [];
+const WEATHER_MODE = { simple: false };
 const WEATHER_FRAG = `vec3 wT = wTri(); float wD = wT.r, wC = wT.g, wB = wT.b;
   float wUp = smoothstep(0.5, 0.95, normalize(vWNrm).y);
   diffuseColor.rgb *= mix(1.0, 0.45 + wD * 1.1, wDetailAmt);
@@ -205,13 +218,14 @@ function weather(mat, kindName) {
       wRust: { value: new THREE.Color(K.rustColor) }, wRustAmt: { value: K.rust }, wLevelMoss: SURF.moss, wLevelGrime: SURF.grime,
     });
     sh.vertexShader = 'varying vec3 vWPos; varying vec3 vWNrm;\n' + sh.vertexShader.replace('#include <begin_vertex>', WEATHER_VERT);
-    sh.fragmentShader = WEATHER_HEAD + sh.fragmentShader
+    sh.fragmentShader = (WEATHER_MODE.simple ? '#define W_SIMPLE\n' : '') + WEATHER_HEAD + sh.fragmentShader
       .replace('#include <map_fragment>', WEATHER_FRAG)
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp(roughness + (0.5 - wD) * wRough + wRustM * 0.25, 0.05, 1.0);')
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * (1.0 - wRustM) * (0.7 + 0.6 * wD);');
   };
-  mat.customProgramCacheKey = () => 'weather';
+  mat.customProgramCacheKey = () => WEATHER_MODE.simple ? 'weatherSimple' : 'weather';
   mat.needsUpdate = true;
+  WEATHERED.push(mat);
   return mat;
 }
 for (const [m, kind] of Object.entries(VIS.surfaces.materials)) if (MAT[m] && VIS.surfaces.kinds[kind]) weather(MAT[m], kind);
@@ -744,8 +758,8 @@ function makeDebris() {   // small stones falling from the ceiling (and from lif
 // Culled levels: give the fixed pool of real lights to the light sources nearest the player (copying position,
 // colour, range and the intensity flicker set this frame). A light fades out over `fadeBand` m before the
 // nearest-N cut-off, so a light swapping out never pops.
-function poolLights(st, p) {
-  const C = CONFIG.cull, pool = st.lightPool, near = [];
+function poolLights(st, p, used = st.lightPool.length) {   // used: how many of the pool are lit (quality.lights)
+  const C = CONFIG.cull, pool = st.lightPool.slice(0, used), near = [];
   for (const l of st.lightSources) {
     const d = Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
     if (d < C.lightRange && l.intensity > 0) near.push({ d, l });
@@ -777,7 +791,7 @@ const visuals = (() => {
   const grade = new ShaderPass(GRADE_SHADER);
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
   const ash = makeAsh(), embers = makeEmberField(), decals = makeBloodDecals(), debris = makeDebris();
-  let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [] }, lowHp = 0, debrisTimer = 0;
+  let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [], glows: [], lights: [] }, lowHp = 0, debrisTimer = 0;
 
   function applyCounts() {
     const P = VIS.particles, a = A.ash || 0, d = A.dust || 0, amount = Math.min(1, a + d);
@@ -790,6 +804,21 @@ const visuals = (() => {
     for (const b of st.bonfires) b.embers.geometry.setDrawRange(0, Math.round(VIS.bonfire.embers * quality.embers));
     if (st.shafts) st.shafts.visible = quality.shafts;
     if (st.grass) st.grass.count = Math.round(st.grass.userData.max * quality.grass);
+    for (const g of st.glows) g.visible = quality.glows;
+    if (WEATHER_MODE.simple !== quality.simpleSurfaces) {   // rebuild the stone shaders once
+      WEATHER_MODE.simple = quality.simpleSurfaces;
+      for (const m of WEATHERED) m.needsUpdate = true;
+    }
+    limitLights(true);
+  }
+  // Only the quality.lights nearest point lights are on; the number lit stays fixed, so shaders never recompile.
+  // A culled level's pool is already nearest first (poolLights); an unculled level's lights are sorted here.
+  function limitLights(all = false) {
+    const L = st.lights, n = Math.min(quality.lights, L.length);
+    if (n >= L.length) { if (all) for (const l of L) l.visible = true; return; }
+    if (st.pooled) { L.forEach((l, i) => { l.visible = i < n; }); return; }
+    const at = Game.player || camera.position, d = l => (l.position.x - at.x) ** 2 + (l.position.y - at.y) ** 2 + (l.position.z - at.z) ** 2;
+    L.slice().sort((a, b) => d(a) - d(b)).forEach((l, i) => { l.visible = i < n; });
   }
   // Per-level look on top of applyAtmosphere (fog, moon, ambient): exposure, fill, rim, grade, weathering.
   function applyLook() {
@@ -814,7 +843,7 @@ const visuals = (() => {
       const base = f.mesh.material.color.clone(), h = f.mesh.geometry.parameters.height;
       f.mesh.material.color.multiplyScalar(F.hdr);   // brighter than white, so bloom catches it
       const glow = glowSprite(base, 1, h * F.size, F.opacity, F.pierce);
-      glow.position.copy(f.mesh.position); glow.position.y += h * 0.15; G.add(glow);
+      glow.position.copy(f.mesh.position); glow.position.y += h * 0.15; G.add(glow); st.glows.push(glow);
       if ((d.bonfires || []).some(b => Math.hypot(b.x - f.mesh.position.x, b.z - f.mesh.position.z) < 0.5)) continue;   // bonfires: own pool
       const src = f.light ? f.light.position : f.mesh.position, kind = f.light ? P.torch : P.brazier;
       pools.push({ x: src.x, y: floorOf(d, src.x, src.z, src.y), z: src.z, r: kind.radius, color: f.light ? f.light.color : base, k: kind.k });
@@ -1077,15 +1106,16 @@ const visuals = (() => {
     },
     resize(w, h) {
       w = Math.max(1, w); h = Math.max(1, h);
-      const pr = Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio);
+      const pr = Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio) * quality.renderScale;
       renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
       composer.setPixelRatio(pr); composer.setSize(w, h);
+      bloom.setSize(Math.max(1, Math.round(w * pr * quality.bloomScale)), Math.max(1, Math.round(h * pr * quality.bloomScale)));   // a soft glow: drawn smaller
       grade.uniforms.uRes.value.set(w * pr, h * pr);
       PT_SCALE.value = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.camera.fov) / 2));
     },
     // Called once per stage build (loadStage), after applyAtmosphere. Everything added goes in the stage group.
     dressStage(d, built) {
-      def = d; A = d.atmosphere || {}; st = { bonfires: [] };
+      def = d; A = d.atmosphere || {}; st = { bonfires: [], glows: [], lights: [] };
       decals.clear(); debris.clear();
       const G = built.group, rnd = seeded(strSeed(d.id)), pools = [];
       G.traverse(o => { if (o.isMesh && o.material && o.material.isMeshStandardMaterial) weather(o.material, 'stone'); });   // room materials
@@ -1108,7 +1138,9 @@ const visuals = (() => {
       if (A.grass && open.length) addRoomGrass(G, d, rnd, open);
       if (A.landmark) st.landmark = addLandmark(G, A.landmark, rnd);
       if (built.smoke && built.smoke.length) { st.smoke = smokeMesh(built.smoke); G.add(st.smoke); }
-      if (pools.length) G.add(poolMesh(pools));
+      if (pools.length) { const m = poolMesh(pools); G.add(m); st.glows.push(m); }
+      st.lights = built.lightPool || []; st.pooled = !!built.lightPool;   // the lights quality.lights limits: the pool, or every light of an unculled level
+      if (!built.lightPool) G.traverse(o => { if (o.isPointLight) st.lights.push(o); });
       for (const g of built.gates) mergeGate(g.mesh);
       mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...(built.traps || []).map(t => t.group), ...flames.filter(f => f.group === G).map(f => f.mesh),
                               ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : []), ...(st.landmark ? [st.landmark] : [])]));
@@ -1141,7 +1173,8 @@ const visuals = (() => {
         }
       }
       debris.update(dt);
-      if (stage && stage.lightPool && p) poolLights(stage, p);
+      if (stage && stage.lightPool && p) poolLights(stage, p, Math.min(quality.lights, stage.lightPool.length));
+      limitLights();
       const V = VIS.vignette, want = p && p.alive() ? clamp((V.lowHealthAt - p.hp / p.maxHp) / V.lowHealthAt, 0, 1) : 0;
       lowHp += (want - lowHp) * (1 - Math.exp(-V.lowHealthRate * dt));
       this.draw();
