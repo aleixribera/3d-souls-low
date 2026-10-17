@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.6';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.7';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -176,7 +176,12 @@ const CONFIG = {
            spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 },
            flame: { outer: 0xff4a10, color: 0xff8a20, core: 0xffe2a0, opacity: 0.75, flicker: 0.12, fadeIn: 0.08, fadeOut: 0.25,
                     light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },
-                    revealBurst: { color: 0xff6a20, count: 40, speed: 6 } } },
+                    revealBurst: { color: 0xff6a20, count: 40, speed: 6 } },
+           // Holy light (v5.7, Radagon, js/holy.js): `blinkTime` s a teleport (a hit's `blink`) takes unseen; its flash (`burst`,
+           // a ring `ring` m wide that fades in `ringTime` s); a hit's `sigil` rune glows on the floor through its wind-up,
+           // brightening to `sigilPeak` as it nears the strike, then erupts in a pillar `pillar` m tall for `pillarTime` s.
+           holy: { blinkTime: 0.16, color: 0xffd36a, core: 0xfff4c8, burst: { color: 0xffd36a, count: 26, speed: 6 }, ring: 2.6, ringTime: 0.45,
+                   sigilBase: 0.25, sigilPeak: 0.9, pillar: 7, pillarTime: 0.5, light: 5, lightRange: 10 } },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14,
            // A barricade gate: `depth` m deep (its collision too); opening, it tips over by `topple` rad, and once `sinkFrom`

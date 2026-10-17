@@ -2453,6 +2453,76 @@
     Game.screens().eldenDeath.items[1].go();
     expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
   });
+  // ---- Elden Ring Bosses: Radagon of the Golden Order (v5.7) ---------------------------------------------------
+  const startRadagon = () => { A.elden.start('radagon'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Radagon: on the boss select, loads in the arena at full bar with his name', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Radagon of the Golden Order')), 'a card for Radagon');
+    const { e } = startRadagon();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'radagon' && e.def.phaseId === 'order' && e.hp === 5200, `bar ${e.def.phaseId} ${e.hp}`);
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Radagon of the Golden Order', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Radagon: hammer swings glint and parry, holy attacks do not; three parries break him; strikes leave a roll a margin', () => {
+    const D = A.ENEMY_BY_ID.radagon, by = id => D.attacks.find(a => a.id === id);
+    for (const id of ['hammerCombo', 'hammerTwo', 'stompChop']) expect.ok(!by(id).noParry && !by(id).rollOnly, `${id} parryable`);
+    for (const id of ['runeSlam', 'runeBurst', 'goldenGrab', 'teleportStrike', 'teleportAway', 'goldBreaker', 'eldenShattering', 'spearThrust', 'blinkPunish'])
+      expect.ok(by(id).noParry || by(id).rollOnly, `${id} not parryable`);
+    expect.ok(by('goldenGrab').rollOnly, 'the grab cannot be blocked');
+    expect.ok(Math.ceil(D.posture.max / D.posture.parry) === 3, 'three parries');
+    for (const a of D.attacks) for (const h of a.hits) {
+      expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+      if (h.blink) expect.ok(h.startup * h.blink.from + (h.blink.time ?? CONFIG.elden.holy.blinkTime) < h.startup, `${a.id}: the teleport ends before the strike`);
+    }
+  });
+  test('Radagon: every attack starts, strikes and ends without errors, inside the arena', () => {
+    for (const a of A.ENEMY_BY_ID.radagon.attacks) {
+      const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 2 : 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; Game.render(1, STEP); return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+      expect.ok(world.groundAt(e.x, e.z, e.y + 1) > -Infinity, `${a.id}: still on the arena floor`);
+    }
+  });
+  test('Radagon: the teleport strike vanishes, reappears before the player (untouchable meanwhile) and sweeps', () => {
+    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 10); quiet(e);
+    e.beginAttack(e.def.attacks.find(a => a.id === 'teleportStrike'));
+    let hidden = false, untouchable = false;
+    sim.until(() => { Game.render(1, STEP); if (e.blinkLeft > 0) { hidden = hidden || !e.rig.root.visible; untouchable = untouchable || e.invulnerable(); } return e.hitIndex === 2; }, 4);
+    const d = Math.hypot(p.x - e.x, p.z - e.z);
+    expect.ok(hidden && untouchable, `hidden ${hidden}, untouchable ${untouchable}`);
+    expect.ok(d < 4, `reappeared ${d.toFixed(2)} m from the player`);
+    sim.step(5); Game.render(1, STEP); expect.ok(e.rig.root.visible, 'seen again');
+  });
+  test('Radagon: the rune slam etches a glowing rune that erupts later where it was etched', () => {
+    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 3); quiet(e);
+    e.beginAttack(e.def.attacks.find(a => a.id === 'runeSlam'));
+    sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP, 4); sim.step(5); Game.render(1, STEP);
+    const S = e.rig.holySigil;
+    expect.ok(S && S.g.visible && !S.pillar.visible, 'the rune glows, no pillar yet');
+    sim.until(() => e.state === ES.ACTIVE, 3); Game.render(1, STEP);
+    expect.ok(S.pillar.visible, 'then the pillar');
+  });
+  test('Radagon: at 60% the Gold Breaker opens phase 2, faster, with the Elden Shattering', () => {
+    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 6);
+    e.hp = 5200 * 0.59; sim.step(2);
+    expect.ok(e.def.phaseId === 'shattering' && Math.abs(e.hp - 5200 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'goldBreaker', 4);
+    expect.ok(e.attack && e.attack.id === 'goldBreaker', 'the Gold Breaker');
+    expect.ok(e.def.attacks.some(a => a.id === 'eldenShattering') && e.def.cooldown[1] < A.ENEMY_BY_ID.radagon.cooldown[1], 'the Shattering, and faster');
+  });
+  test('Radagon: victory offers Retry and Boss select; leaving drops his runes from the scene', () => {
+    let { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 3); quiet(e);
+    e.beginAttack(e.def.attacks.find(a => a.id === 'runeBurst')); sim.step(10); Game.render(1, STEP);
+    const g = e.rig.holySigil.g;
+    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
+    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.screen}`);
+    Game.screens().eldenWon.items[0].go(); Game.loading = 0; sim.begin(); Game.render(1, STEP);
+    expect.ok(Game.duel.hp === 5200 && Game.eldenBoss === 'radagon' && !g.parent, 'retry: a fresh fight, the old rune gone');
+    p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
+    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
+    Game.screens().eldenDeath.items[1].go();
+    expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
+  });
   // ---- Elden Ring Bosses: Godrick the Grafted (v5.4) --------------------------------------------------------------
   const startGodrick = () => { A.elden.start('godrick'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
   test('Godrick: on the boss select, loads in the arena at full bar, bigger than anyone', () => {

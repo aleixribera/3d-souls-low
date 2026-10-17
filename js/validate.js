@@ -47,6 +47,10 @@ function validateData() {
       if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0), `${tag}: a hit's impact needs ring, crack, dust and shake.`);
       if ('step' in h) need(h.step && num(h.step.from) && h.step.from >= 0 && h.step.from < 1 && num(h.step.speed) && h.step.speed >= 0 && num(h.step.side),
         `${tag}: a hit's step needs from (0 to 1 of its wind-up), speed (m/s, 0 or more) and side (m/s, + to its left).`);
+      if ('blink' in h) need(h.blink && num(h.blink.from) && h.blink.from >= 0 && h.blink.from < 1 && (num(h.blink.dist) || num(h.blink.back)) && (!('time' in h.blink) || (num(h.blink.time) && h.blink.time > 0)) && !h.leap,
+        `${tag}: a hit's blink needs from (0 to 1 of its wind-up) and dist (m before the player) or back (m away), optionally time (s); not with a leap.`);
+      if ('damage' in h) need(num(h.damage) && h.damage > 0, `${tag}: a hit's damage must be a number above 0.`);   // v5.7: overrides the attack's
+      if ('sigil' in h) need(num(h.sigil) && h.sigil > 0, `${tag}: a hit's sigil is the radius (m) of the rune drawn where it strikes.`);
       if (h.leap && 'back' in h.leap) need(num(h.leap.back) && h.leap.back > 0, `${tag}: a hit's leap.back must be metres above 0.`);
       if ('abort' in h) need(h.abort && num(h.abort.at) && h.abort.at > 0 && h.abort.at < 1 && num(h.abort.beyond) && typeof h.abort.into === 'string',
         `${tag}: a hit's abort needs at (0 to 1 of its wind-up), beyond (m) and into (an attack id).`);

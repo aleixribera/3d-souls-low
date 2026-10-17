@@ -464,6 +464,14 @@ const KIT = (() => {
       return [xf(new THREE.CylinderGeometry(r, r, 0.02, 12), x, y, z, Math.PI / 2, 0, 0), xf(new THREE.TorusGeometry(r * 0.75, 0.01, 3, 12), x, y, z + 0.012),
               ...[0, 1, 2, 3].map(i => xf(new THREE.BoxGeometry(0.012, r * 1.5, 0.012), x, y, z + 0.014, 0, 0, i * Math.PI / 4))];
     },
+    // Radagon's Elden Ring sigil (v5.7): a glowing rune burned into the chest (chest frame), the Ring's crossing arcs
+    // over a vertical stroke and a crossbar, a hair proud of the skin; `glow` slot, `size` scales it.
+    eldenRune(o) {
+      const s = o.size ?? 1, [x, y, z] = o.at ?? [0.04, 0.4, 0.22], arc = (r, a0, a1, cy) => xf(new THREE.TorusGeometry(r * s, 0.008 * s, 3, 16, a1 - a0), x, y + cy * s, z, 0, 0, a0);
+      return [arc(0.1, 0.3, Math.PI * 2 - 0.3, 0.02), arc(0.065, Math.PI * 0.1, Math.PI * 1.1, 0.07), arc(0.065, Math.PI * 1.1, Math.PI * 2.1, -0.04),
+              xf(new THREE.BoxGeometry(0.012 * s, 0.34 * s, 0.01), x, y - 0.03 * s, z), xf(new THREE.BoxGeometry(0.16 * s, 0.01 * s, 0.01), x, y + 0.1 * s, z),
+              ...[-1, 1].map(k => xf(new THREE.BoxGeometry(0.008 * s, 0.09 * s, 0.01), x + k * 0.03 * s, y - 0.17 * s, z, 0, 0, k * 0.5))];
+    },
     // The gold border of a cape section: two bands (`trim` m wide) down its edges, curved exactly as capeSegment,
     // a hair behind its outer face. Same fields as capeSegment.
     capeTrim(o) {
@@ -2010,6 +2018,17 @@ const KIT = (() => {
       const ferrule = xf(new THREE.ConeGeometry(0.03, 0.16, 5), 0, 0, 1.56, Math.PI / 2, 0, 0);
       const crook = deform(tube(0.032, 0.03, 0.3, 5), v => { v.z -= v.y * v.y * 2.4; }); xf(crook, 0, 0.05, -0.32, Math.PI / 2, 0, 0);
       return { grip: [shaft, ...knots], blade: [ferrule], guard: [crook] };
+    },
+    // Marika's Hammer (v5.7, Radagon): a long haft of stacked, knotted stone, a rough rock head set crosswise at the end,
+    // a blunt spike behind it and a golden band where head meets haft.
+    marikaHammer() {
+      const haft = roughen(xf(tube(0.04, 0.034, 1.5, 6), 0, 0, 0.5, Math.PI / 2, 0, 0), 0.008, 41);
+      const knots = [-0.1, 0.22, 0.52, 0.8, 1.05].map((z, i) => roughen(xf(sphere(0.06, 6, 4), 0, 0, z, 0, i, 0, 1, 1, 1.3), 0.012, 50 + i));
+      const head = roughen(xf(new THREE.BoxGeometry(0.42, 0.2, 0.22, 3, 2, 2), 0, 0, 1.36), 0.025, 77);
+      const face = roughen(xf(sphere(0.13, 6, 4), 0.21, 0, 1.36, 0, 0, 0, 0.6, 1, 1), 0.02, 78);
+      const spike = xf(new THREE.ConeGeometry(0.07, 0.24, 5), -0.32, 0, 1.36, 0, 0, Math.PI / 2);
+      const band = xf(new THREE.TorusGeometry(0.06, 0.02, 4, 10), 0, 0, 1.2);
+      return { blade: [head, face, spike], grip: [haft, ...knots], guard: [band] };
     },
     // A heavy two-handed sword: broad blade, long grip.
     greatSword() {

@@ -142,9 +142,9 @@ class Enemy {
   // Debug (Level 5 tools): empty the current health bar at once, as if the last blow landed.
   deplete() { if (this.alive() && !this.invulnerable()) { this.hp = 0; if (!this.outlast()) this.die(); } }
   // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
-  invulnerable() { return this.in('invulnerable') || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
+  invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; }
+  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
@@ -325,6 +325,19 @@ class Enemy {
         if (hit.leap && !this.leaping && this.leapHit !== this.hitIndex && this.stateTime >= hit.startup * hit.leap.from) this.launchLeap(hit, dist);
         if (this.leaping && this.grounded && this.vy <= 0 && this.stateTime > hit.startup * hit.leap.from + 0.1) { this.leaping = false; this.vx = this.vz = 0; }   // landed early
         if (this.leaping) { tx = this.vx; tz = this.vz; }
+        // A hit's `blink` (v5.7, Radagon's teleport): at `from` of its wind-up it vanishes and rushes, unseen and untouchable,
+        // in `time` s to `dist` m in front of the player (or `back` m away from them), facing them as it reappears.
+        // A fast move, not a jump cut, so walls and ledges stop it like any step (integrateBody).
+        if (hit.blink && this.blinkHit !== this.hitIndex && this.stateTime >= hit.startup * hit.blink.from) {
+          const B = hit.blink, T = B.time ?? CONFIG.elden.holy.blinkTime, far = B.back ? -B.back : Math.max(0, dist - B.dist);
+          this.yaw = toPlayer; this.blinkHit = this.hitIndex; this.blinkLeft = T;
+          this.vx = Math.sin(toPlayer) * far / T; this.vz = Math.cos(toPlayer) * far / T;
+          events.emit('enemyBlink', { enemy: this, out: true });
+        }
+        if (this.blinkLeft > 0) {
+          tx = this.vx; tz = this.vz; this.blinkLeft -= dt;
+          if (this.blinkLeft <= 0) { this.blinkLeft = 0; this.vx = this.vz = 0; this.yaw = toPlayer; events.emit('enemyBlink', { enemy: this, out: false }); }
+        }
         if (this.stateTime >= hit.startup) this.strike(player);
         break;
       }
@@ -472,7 +485,7 @@ class Enemy {
     return null;
   }
   beginAttack(attack) {
-    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.setState(ES.WINDUP);
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
     crowd.started();
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
