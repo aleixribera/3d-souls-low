@@ -138,7 +138,8 @@ class Enemy {
   }
   // Debug (Level 5 tools): empty the current health bar at once, as if the last blow landed.
   deplete() { if (this.alive() && !this.invulnerable()) { this.hp = 0; if (!this.outlast()) this.die(); } }
-  invulnerable() { return this.in('invulnerable'); }
+  // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
+  invulnerable() { return this.in('invulnerable') || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
@@ -302,6 +303,12 @@ class Enemy {
           this.holdLeft = Math.random() < hit.hold.chance ? rand(hit.hold.time[0], hit.hold.time[1]) : 0;
         if (this.holdLeft > 0) { this.holdLeft -= dt; this.stateTime = Math.min(this.stateTime, hit.startup * hit.hold.at); }
         if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, ((a.tracking && a.tracking.rate) || a.track || d.trackRate) * dt);
+        // A hit's `step` (v5.4, Godrick's rampage): from `from` of its wind-up (not while held) it closes in at `speed` m/s
+        // (stopping once the strike would reach) and drifts `side` m/s sideways (+ to its left): a stride into each cut.
+        if (hit.step && this.stateTime >= hit.startup * hit.step.from && !(this.holdLeft > 0)) {
+          const S = hit.step, fwd = dist > a.box.fwd + a.box.d * 0.25 + player.radius ? S.speed : 0;
+          tx = Math.sin(this.yaw) * fwd + Math.cos(this.yaw) * S.side; tz = Math.cos(this.yaw) * fwd - Math.sin(this.yaw) * S.side;
+        }
         // A hit's `abort` (v5.3): at `at` of the wind-up, a player who backed beyond `beyond` m turns it into `into`.
         if (hit.abort && this.stateTime >= hit.startup * hit.abort.at && !(this.holdLeft > 0) && dist > hit.abort.beyond) {
           this.beginAttack(d.attacks.find(o => o.id === hit.abort.into)); break;

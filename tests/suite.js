@@ -2435,10 +2435,13 @@
     sim.until(() => e.attack.id !== 'caneOverhead', 4);
     expect.ok(e.attack.id === 'runningSweep', `became ${e.attack.id}`);
   });
-  test('Elden: victory returns to the boss select; death offers Retry and Boss select', () => {
+  test('Elden: victory and death both offer Retry and Boss select', () => {
     let { p, e } = startMargit();
     e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
-    expect.ok(Game.mode === 'menu' && Game.screen === 'elden' && !Game.eldenBoss, `after the win: ${Game.mode} ${Game.screen}`);
+    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.mode} ${Game.screen}`);
+    expect.ok(Game.screens().eldenWon.items.map(i => i.name).join() === 'Retry,Boss select', 'win choices');
+    Game.screens().eldenWon.items[1].go();
+    expect.ok(Game.mode === 'menu' && Game.screen === 'elden' && !Game.eldenBoss, `back at the select: ${Game.screen}`);
     ({ p, e } = startMargit());
     p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
     expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
@@ -2450,6 +2453,81 @@
     Game.screens().eldenDeath.items[1].go();
     expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
   });
+  // ---- Elden Ring Bosses: Godrick the Grafted (v5.4) --------------------------------------------------------------
+  const startGodrick = () => { A.elden.start('godrick'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Godrick: on the boss select, loads in the arena at full bar, bigger than anyone', () => {
+    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Godrick the Grafted')), 'a card for Godrick');
+    const { p, e } = startGodrick();
+    expect.ok(Game.level === A.ARENA && e.def.id === 'godrick' && e.def.phaseId === 'grafted' && e.hp === 4000, `bar ${e.def.phaseId} ${e.hp}`);
+    expect.ok(e.def.scale > A.ENEMY_BY_ID.margit.scale && e.radius >= 0.9, 'the biggest body');
+    expect.ok(e.rig.slotMeshes.dragon && !e.rig.slotMeshes.dragon.visible, 'no dragon head in phase 1');
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Godrick the Grafted', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Godrick: no attack can be parried; every strike leaves a roll a margin', () => {
+    const D = A.ENEMY_BY_ID.godrick;
+    for (const a of D.attacks) {
+      expect.ok(a.noParry, `${a.id}: unparryable`);
+      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    }
+    const ids = new Set(D.attacks.map(a => a.id));
+    for (const id of ['stormcaller', 'stormBlade', 'stormLeap', 'jumpSlam', 'kneel', 'dragSlash', 'rampage', 'doubleStep', 'backhand', 'armChop',
+                      'flameSweep', 'dragonGrab', 'flameKneel', 'flameStorm', 'flameBlade', 'flameLeap', 'fireMarch']) expect.ok(ids.has(id), `has ${id}`);
+  });
+  test('Godrick: every attack starts, strikes and ends without errors', () => {
+    for (const a of A.ENEMY_BY_ID.godrick.attacks) {
+      const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 3); quiet(e);
+      e.beginAttack(a); let struck = false;
+      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
+      Game.render(1, STEP);
+      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
+    }
+  });
+  test('Godrick: the stormcaller branches: close into the leap slam, far into the storm blades', () => {
+    let { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 2.5); quiet(e);
+    e.beginAttack(e.def.attacks.find(a => a.id === 'stormcaller'));
+    const seen = new Set(); sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 2.5; p.z = e.z + Math.cos(e.yaw) * 2.5; seen.add(e.attack && e.attack.id); return seen.has('stormLeap') || seen.has('stormBlade') || e.state === ES.RECOVER; }, 5);   // the player stays close (the spins knock them back)
+    expect.ok(seen.has('stormLeap') || e.state === ES.RECOVER, `close: ${[...seen].join(',')}`);
+    ({ p, e } = startGodrick()); sturdy(p); faceOff(e, p, 3); quiet(e);
+    e.beginAttack(e.def.attacks.find(a => a.id === 'stormcaller'));
+    sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 12; p.z = e.z + Math.cos(e.yaw) * 12; return e.attack.id !== 'stormcaller' || e.state === ES.RECOVER; }, 5);
+    expect.ok(e.attack.id === 'stormBlade' || e.state === ES.RECOVER, `far: ${e.attack.id}`);
+  });
+  test('Godrick: the rampage strides in at the player, swinging from side to side', () => {
+    const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 7); quiet(e);
+    const x0 = e.x, z0 = e.z, d0 = Math.hypot(p.x - e.x, p.z - e.z), sides = [];
+    e.beginAttack(e.def.attacks.find(a => a.id === 'rampage'));
+    let last = -1, px = e.x, pz = e.z;
+    sim.until(() => {
+      if (e.state === ES.WINDUP && e.hitIndex !== last) { last = e.hitIndex; px = e.x; pz = e.z; }
+      if (e.state === ES.ACTIVE && sides.length === e.hitIndex) { const s = e.yaw + Math.PI / 2; sides.push(Math.sign((e.x - px) * Math.sin(s) + (e.z - pz) * Math.cos(s))); }
+      return e.state === ES.RECOVER;
+    }, 8);
+    expect.ok(Math.hypot(e.x - x0, e.z - z0) > 2 && Math.hypot(p.x - e.x, p.z - e.z) < d0 - 1.5, `moved ${Math.hypot(e.x - x0, e.z - z0).toFixed(2)} m toward the player`);
+    expect.ok(sides.length === 5 && sides.every((v, i) => i === 0 || v === -sides[i - 1]), `side to side: ${sides.join(',')}`);
+  });
+  test('Godrick: at 60% the arm chop (untouchable), the dragon head, then the flame sweep', () => {
+    const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 6);
+    e.hp = 4000 * 0.59; sim.step(2);
+    expect.ok(e.def.phaseId === 'dragon' && Math.abs(e.hp - 4000 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    sim.until(() => e.attack && e.attack.id === 'armChop', 4);
+    expect.ok(e.attack && e.attack.id === 'armChop' && e.invulnerable(), 'the arm chop, untouchable');
+    const hp = e.hp; e.takeHit(strikeOf('heavy'), p); expect.ok(e.hp === hp, 'blows pass through the chop');
+    sim.until(() => e.attack.id === 'flameSweep', 5); Game.render(1, STEP);
+    expect.ok(e.attack.id === 'flameSweep' && !e.invulnerable(), `then ${e.attack.id}`);
+    expect.ok(e.rig.slotMeshes.dragon.visible, 'the dragon head shows');
+    expect.ok(e.def.ignite && e.def.cooldown[1] < A.ENEMY_BY_ID.godrick.cooldown[1], 'burning, and faster');
+  });
+  test('Godrick: the flame sweep burns ahead, not at his side', () => {
+    let { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 4); quiet(e);
+    const sweep = e.def.attacks.find(a => a.id === 'flameSweep') || A.ENEMY_BY_ID.godrick.attacks.find(a => a.id === 'flameSweep');
+    let hp0 = p.hp; e.beginAttack(sweep); sim.until(() => e.state === ES.RECOVER, 5);
+    expect.ok(p.hp < hp0, 'ahead: burned');
+    ({ p, e } = startGodrick()); sturdy(p); faceOff(e, p, 4); quiet(e); hp0 = p.hp; e.beginAttack(sweep);
+    sim.until(() => { const s = e.yaw + Math.PI / 2; p.x = e.x + Math.sin(s) * 3.5; p.z = e.z + Math.cos(s) * 3.5; return e.state === ES.RECOVER; }, 5);
+    expect.ok(p.hp === hp0, 'at his flank: untouched');
+  });
+
   test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
     A.elden.start('margit'); Game.startFight('hollow'); Game.loading = 0; sim.begin();
     expect.ok(!Game.eldenBoss && Game.duel.def.id === 'hollow', 'a plain duel');

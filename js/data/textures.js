@@ -1,6 +1,6 @@
 'use strict';
 // Procedural texture recipes (built by js/textures.js, nothing is downloaded).
-//   kind     which surface pattern to draw: rust, steel, leather, cloth, tattered, bone, skin, bark, stone, ash
+//   kind     which surface pattern to draw: rust, steel, leather, cloth, tattered, bone, skin, bark, stone, ash, fur, holy
 //   base/alt the two main colours the pattern mixes between; accent: rust, moss, cracks, veins, embers...
 //   rough    [min, max] roughness (worn metal edges go shinier, grime and rust go rougher)
 //   metal    metalness; bump: bump strength; scale: pattern density multiplier (whole numbers keep it tileable)
@@ -27,5 +27,12 @@ const TEXTURE_DEFS = [
   { id: 'paleSkin', kind: 'skin', base: 0xb4aa9c, alt: 0xc6bcae, accent: 0x7a8590, rough: [0.5, 0.7], metal: 0, bump: 0.5, scratch: 6, stain: 0x4a3c44 , cavity: 0.2 },
   { id: 'barkMoss', kind: 'bark', base: 0x3e3228, alt: 0x54463a, accent: 0x56633a, rough: [0.8, 1], metal: 0, bump: 2.0, scratch: 0, stain: 0x1a1612 },
   { id: 'stone', kind: 'stone', base: 0x6e6c68, alt: 0x8a8780, accent: 0x66704a, rough: [0.75, 1], metal: 0, bump: 1.4, scratch: 8, stain: 0x26241f },
+  // Margit, the Fell Omen (v5.3): burlap robes faded red-brown, rags torn to strips, grey wrinkled skin, a matted tail, horn.
+  { id: 'margitBurlap', kind: 'cloth', base: 0x6a4a34, alt: 0x8a6444, accent: 0x3a2418, rough: [0.85, 1], metal: 0, bump: 1.1, scratch: 4, stain: 0x2a1a12, cavity: 0.6, contrast: 0.6, scale: 3 },
+  { id: 'margitRags', kind: 'tattered', base: 0x5a2a22, alt: 0x7a4030, accent: 0x2a1410, rough: [0.85, 1], metal: 0, bump: 1.0, scratch: 4, stain: 0x1e100c, alpha: true, cavity: 0.6 },
+  { id: 'margitSkin', kind: 'skin', base: 0x8e8a86, alt: 0xa49e98, accent: 0x5a5460, rough: [0.55, 0.8], metal: 0, bump: 1.1, scratch: 8, stain: 0x3a3438, cavity: 0.5 },
+  { id: 'margitFur', kind: 'fur', base: 0x4a3c30, alt: 0x7a6a56, accent: 0x5a2a1e, rough: [0.85, 1], metal: 0, bump: 1.6, scratch: 0, stain: 0x1a140e },
+  { id: 'margitHorn', kind: 'bone', base: 0xa07a5a, alt: 0xc8a888, accent: 0x5a3a28, rough: [0.5, 0.8], metal: 0, bump: 1.3, scratch: 20, stain: 0x5a3a2a },
+  { id: 'holyLight', kind: 'holy', base: 0xd8b860, alt: 0xfff4d0, accent: 0xffffff, rough: [0.2, 0.4], metal: 0, bump: 0.3, scratch: 0, stain: 0xb08a40 },
   { id: 'ashSoot', kind: 'ash', base: 0x1e1c1b, alt: 0x4a4745, accent: 0xe0701a, rough: [0.8, 1], metal: 0, bump: 0.7, scratch: 4, stain: 0x0c0b0a , cavity: 0.6 },
 ];

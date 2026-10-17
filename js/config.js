@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.3';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.4';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -165,10 +165,15 @@ const CONFIG = {
         // angles at its left (rad, + is left).
         reactions: { behind: 2.2, flank: [0.6, 1.9] } },
   // Elden Ring Bosses mode (v5.3, js/elden.js; the boss list is ELDEN_BOSSES in js/data/elden-bosses.js): `victoryTime` s
-  // of the victory banner before the boss select returns; `deathMenu` s after the death before Retry / Boss select shows.
+  // of the victory banner before Retry / Boss select shows (v5.4); `deathMenu` s after the death before the same choice.
   // Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light `intensity`.
-  elden: { victoryTime: 6, deathMenu: 3.6, victoryHint: 'Returning to the boss select…',
-           spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 } },
+  // Flame breath (v5.4, js/flame.js, drawing only): jet colours (outer, middle, core), `opacity`, `flicker` (0..1 of the
+  // width), fades (s), the light, embers per second along it, and the bursts as the jet burns and the grafted head appears.
+  elden: { victoryTime: 5, deathMenu: 3.6, victoryHint: 'Retry or choose another boss…',
+           spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 },
+           flame: { outer: 0xff4a10, color: 0xff8a20, core: 0xffe2a0, opacity: 0.75, flicker: 0.12, fadeIn: 0.08, fadeOut: 0.25,
+                    light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },
+                    revealBurst: { color: 0xff6a20, count: 40, speed: 6 } } },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14,
            // A barricade gate: `depth` m deep (its collision too); opening, it tips over by `topple` rad, and once `sinkFrom`

@@ -43,6 +43,7 @@ function registerListeners() {
   registerVisualListeners();
   registerHudListeners();
   spectral.attach();   // golden weapons drawn for `spectral` attacks (Elden Ring bosses)
+  flame.attach();      // flame breath and grafted parts drawn (Godrick, js/flame.js)
   registerAudioListeners();
 }
 

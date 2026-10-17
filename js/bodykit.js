@@ -262,6 +262,166 @@ const KIT = (() => {
       const tip = xf(new THREE.ConeGeometry(0.045 * s, 0.2 * s, 5), 0.29 * s, -1.08 * s, -0.2 * s, Math.PI / 2, 0, 0);
       return [uvScale(a, 3, 1), uvScale(b, 3, 1), tip];
     },
+    // Grafted limbs (Godrick, v5.4): extra arms sprouting from the back and flanks, in the chest's frame. Each entry of
+    // `arms` is [root, elbow, hand] points; a lumpy socket at the root, two tapering bones and a clawed hand.
+    graftedArms(o) {
+      const out = [], q = new THREE.Quaternion(), up = new V3(0, 1, 0);
+      const seg = (a, b, r0, r1) => {
+        const A = new V3(...a), B = new V3(...b), d = B.clone().sub(A), g = tube(r1, r0, d.length(), 5);
+        g.applyQuaternion(q.setFromUnitVectors(up, d.normalize())); const m = A.add(B).multiplyScalar(0.5); return g.translate(m.x, m.y, m.z);
+      };
+      // `hand` (m): a broad palm with four long hooked claws (Godrick's grafts); without it, three short fingers.
+      for (const [root, elbow, hand] of o.arms) {
+        const r = o.r ?? 0.05, H = o.hand ?? 0;
+        out.push(roughen(xf(sphere(r * 1.6, 6, 4), ...root), r * 0.4, 13));
+        out.push(roughen(seg(root, elbow, r, r * 0.85), r * 0.15, 17), xf(sphere(r * 0.95, 5, 4), ...elbow), seg(elbow, hand, r * 0.85, r * 0.6));
+        const h = new V3(...hand), dir = h.clone().sub(new V3(...elbow)).normalize();
+        const side = new V3().crossVectors(dir, up).normalize(); if (side.lengthSq() < 0.1) side.set(1, 0, 0);
+        if (H) {
+          out.push(roughen(xf(sphere(H * 0.45, 6, 4), h.x, h.y, h.z, 0, 0, 0, 1.2, 1, 0.7), H * 0.06, 23));
+          for (let i = -1.5; i <= 1.5; i++) {
+            const base = h.clone().add(side.clone().multiplyScalar(i * H * 0.22)).add(dir.clone().multiplyScalar(H * 0.3));
+            const mid = base.clone().add(dir.clone().multiplyScalar(H * 0.55)).add(side.clone().multiplyScalar(i * H * 0.12));
+            const tip = mid.clone().add(dir.clone().multiplyScalar(H * 0.35)).add(new V3(0, -H * 0.3, 0));
+            out.push(seg(base.toArray(), mid.toArray(), r * 0.32, r * 0.26), seg(mid.toArray(), tip.toArray(), r * 0.26, r * 0.04));
+          }
+          continue;
+        }
+        for (let i = -1; i <= 1; i++) {
+          const tip = h.clone().add(dir.clone().multiplyScalar(0.12)).add(new V3(i * 0.04, 0, i * 0.03));
+          out.push(seg(hand, tip.toArray(), r * 0.35, r * 0.12));
+        }
+      }
+      return out.map(geo => uvScale(geo, 1.5, 1));
+    },
+    // A grafted dragon's head on the end of the left forearm (Godrick's second phase), jaws along the arm (-y): skull,
+    // snout, open lower jaw, teeth, swept horns (all `o.slot`) and glowing eyes and a fire-lit throat (`o.glow`).
+    dragonHead(o) {
+      const s = o.size ?? 1, Y = -0.3 * s, out = [];
+      const skull = roughen(xf(sphere(0.13 * s, 8, 6), 0, Y - 0.08 * s, 0.02 * s, 0, 0, 0, 1, 1.25, 0.9), 0.02 * s, 7);
+      const snout = roughen(xf(new THREE.BoxGeometry(0.15 * s, 0.26 * s, 0.11 * s), 0, Y - 0.3 * s, 0.05 * s, 0.25, 0, 0), 0.015 * s, 9);
+      const jaw = xf(new THREE.BoxGeometry(0.12 * s, 0.24 * s, 0.05 * s), 0, Y - 0.27 * s, -0.08 * s, -0.45, 0, 0);
+      out.push(skull, snout, jaw);
+      for (let i = -2; i <= 2; i++) out.push(xf(new THREE.ConeGeometry(0.012 * s, 0.05 * s, 3), i * 0.028 * s, Y - 0.38 * s, 0.0, 0, 0, Math.PI));
+      for (const sd of [-1, 1]) {
+        const horn = new THREE.ConeGeometry(0.035 * s, 0.32 * s, 5, 3);
+        deform(horn, v => { const t = (v.y + 0.16 * s) / (0.32 * s); v.z += t * t * 0.12 * s; });
+        out.push(xf(horn, sd * 0.08 * s, Y + 0.08 * s, 0.07 * s, -0.5, 0, sd * 0.35));
+      }
+      const glow = [xf(sphere(0.022 * s, 5, 3), -0.06 * s, Y - 0.18 * s, 0.1 * s), xf(sphere(0.022 * s, 5, 3), 0.06 * s, Y - 0.18 * s, 0.1 * s),
+                    xf(sphere(0.05 * s, 6, 4), 0, Y - 0.36 * s, -0.02 * s, 0, 0, 0, 1, 0.6, 1)];
+      return [...out.map(geo => ({ slot: o.slot, geo: uvScale(geo, 2, 1) })), ...glow.map(geo => ({ slot: o.glow, geo }))];
+    },
+    // A crown of twisted horn tendrils rising from the brow and temples (Margit): `count` curling spikes round the head.
+    hornCrown(o) {
+      const s = o.size ?? 1, n = o.count ?? 9, out = [];
+      for (let i = 0; i < n; i++) {
+        const a = -1.5 + 3.0 * i / (n - 1), len = (0.16 + 0.1 * hash3(i, 2, 3, 41)) * s;
+        const g = new THREE.ConeGeometry(0.03 * s, len, 5, 3);
+        deform(g, v => { const t = (v.y + len / 2) / len; v.z += t * t * 0.08 * s; v.x += Math.sin(t * 5 + i) * 0.015 * s; });
+        xf(g, Math.sin(a) * 0.13 * s, 0.17 * s + len * 0.4, Math.cos(a) * 0.1 * s, -0.35, 0, -Math.sin(a) * 0.55);
+        out.push(roughen(g, 0.006, 40 + i));
+      }
+      out.push(roughen(xf(new THREE.TorusGeometry(0.135 * s, 0.022 * s, 4, 12, Math.PI * 1.3), 0, 0.17 * s, 0.01, Math.PI / 2, 0, Math.PI * 0.85), 0.008, 49));
+      return out;
+    },
+    // A ram's spiral horn of growth on the back of a shoulder (Margit): a tube coiling out flat, tapering.
+    ramHorn(o) {
+      const s = o.size ?? 1, sd = o.side ?? 1, pts = [];
+      for (let i = 0; i <= 16; i++) { const t = i / 16, a = t * Math.PI * 3.2, r = (0.17 - 0.12 * t) * s; pts.push(new V3(sd * (0.02 + t * 0.05) * s, Math.cos(a) * r, -Math.sin(a) * r - 0.05 * s)); }
+      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.045 * s, 6, false);
+      const ribs = [];
+      for (let i = 1; i < 12; i++) { const p = pts[i]; ribs.push(xf(new THREE.TorusGeometry((0.05 - i * 0.002) * s, 0.008 * s, 3, 7), p.x, p.y, p.z, 0, Math.PI / 2, 0)); }
+      return [uvScale(g, 4, 1), ...ribs];
+    },
+    // A thick furred tail curling round from the spine up toward the shoulder (Margit), with tufts along it.
+    furTail(o) {
+      const s = o.size ?? 1, sd = o.side ?? 1, V = (x, y, z) => new V3(x * s * sd, y * s, z * s);
+      const curve = new THREE.CatmullRomCurve3([V(0, 0, -0.05), V(0.1, -0.2, -0.32), V(0.38, -0.32, -0.5), V(0.62, -0.1, -0.5), V(0.7, 0.25, -0.38), V(0.62, 0.55, -0.25), V(0.48, 0.72, -0.18)]);
+      const g = new THREE.TubeGeometry(curve, 24, 0.13 * s, 8, false);
+      const pos = g.attributes.position, c = new V3();   // taper toward the tip
+      for (let i = 0; i < pos.count; i++) {
+        const t = Math.floor(i / 9) / 24, p = curve.getPointAt(clamp01(t)), k = 1 - 0.65 * t;
+        c.fromBufferAttribute(pos, i).sub(p).multiplyScalar(k).add(p); pos.setXYZ(i, c.x, c.y, c.z);
+      }
+      g.computeVertexNormals();
+      const tufts = [];
+      for (let i = 0; i < 14; i++) {
+        const t = 0.05 + 0.9 * i / 13, p = curve.getPointAt(t), tan = curve.getTangentAt(t), r = 0.13 * s * (1 - 0.65 * t);
+        const cone = new THREE.ConeGeometry(0.05 * s, 0.16 * s, 4); cone.rotateZ(Math.PI / 2 * (i % 2 ? 1 : -1)); cone.translate((i % 2 ? -1 : 1) * r, 0, 0);
+        cone.lookAt(tan); cone.translate(p.x, p.y, p.z); tufts.push(cone);
+      }
+      return [uvScale(roughen(g, 0.02, 53), 2, 4), ...tufts];
+    },
+    // A long robe from the waist to the floor (Margit): flared, hanging in folds, its hem torn ragged; `len` m long.
+    robeSkirt(o) {
+      const L = o.len ?? 0.95, r0 = o.top ?? 0.22, r1 = o.hem ?? 0.42;
+      const g = lathe([[r0, 0.04], [r0 + 0.02, -L * 0.25], [r0 + (r1 - r0) * 0.6, -L * 0.6], [r1, -L * 0.9], [r1 + 0.02, -L]], 16, o.oval ?? 0.85);
+      deform(g, v => {
+        const a = Math.atan2(v.z, v.x), t = clamp01(-v.y / L), fold = Math.sin(a * 9 + (o.seed ?? 0)) * 0.035 * t;
+        v.x += Math.cos(a) * fold; v.z += Math.sin(a) * fold;
+        if (t > 0.85) v.y -= (hash3(Math.round(a * 20), 3, 7, o.seed ?? 1) + 0.5) * 0.09 * t;
+      });
+      return [uvScale(roughen(g, 0.01, 61), 4, 2)];
+    },
+    // A hunched mound of back and shoulders under the cloth (Margit): a lumpy dome over the upper back.
+    hunch(o) {
+      const s = o.size ?? 1, g = sphere(0.3 * s, 10, 7);
+      xf(g, 0, o.y ?? 0.42, o.z ?? -0.08, 0, 0, 0, 1.15, 0.85, 0.95); roughen(g, 0.025, 67);
+      return [uvScale(g, 3, 2)];
+    },
+    // A loose cloth sleeve round a bone (upper arm): a flared tube, torn at the cuff.
+    sleeve(o) {
+      const L = o.len ?? 0.36, g = lathe([[o.r0 ?? 0.09, 0.02], [o.r1 ?? 0.13, -L]], 9);
+      deform(g, v => { if (v.y < -L * 0.8) v.y -= (hash3(Math.round(v.x * 70), Math.round(v.z * 70), 5, o.seed ?? 2) + 0.5) * 0.08; });
+      return [uvScale(g, 2, 1.5)];
+    },
+    // A knotted rope sash across the body with two hanging ends (Margit's cord).
+    ropeSash(o) {
+      const s = o.size ?? 1, band = xf(new THREE.TorusGeometry(0.24 * s, 0.018, 4, 14), 0, o.y ?? 0.05, 0, Math.PI / 2 + 0.25, 0, 0.2, 1, 1, 0.8);
+      const ends = [-1, 1].map(i => xf(tube(0.016, 0.012, 0.42, 4), 0.06 * i, (o.y ?? 0.05) - 0.24, 0.2, 0.15, 0, i * 0.1));
+      return [band, ...ends, xf(sphere(0.04, 5, 4), 0, (o.y ?? 0.05) - 0.02, 0.2)];
+    },
+    // A low gold circlet round the brow (head frame), a ring of short points on top (Godrick).
+    circlet(o) {
+      const r = o.r ?? 0.14, y = o.y ?? 0.2, out = [xf(new THREE.TorusGeometry(r, 0.016, 4, 14), 0, y, 0.01, Math.PI / 2 + 0.12, 0, 0, 1, 1, 1)];
+      out.push(xf(new THREE.CylinderGeometry(r * 1.02, r * 1.05, 0.05, 14, 1, true), 0, y + 0.02, 0.01, 0.12, 0, 0));
+      for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU; out.push(xf(new THREE.ConeGeometry(0.016, 0.07, 4), Math.sin(a) * r, y + 0.07, Math.cos(a) * r + 0.01, 0.12, 0, 0)); }
+      return out.map(g => uvScale(g, 3, 1));
+    },
+    // A wild mane of white hair: `count` tapering locks bursting out round the back, sides and top of the head.
+    mane(o) {
+      const n = o.count ?? 16, L = o.len ?? 0.4, out = [];
+      for (let i = 0; i < n; i++) {
+        const a = -2.0 + (i / (n - 1)) * 4.0, up = -1.05 + 0.5 * (hash3(i, 7, 3, 2) + 0.5), len = L * (0.7 + 0.6 * (hash3(i, 1, 9, 4) + 0.5));   // a = 0: straight back
+        const g = plate([[-0.09, 0], [0.09, 0], [0.05, len * 0.6], [0, len]], 0.008, 0.003);
+        deform(g, v => { const t = v.y / len; v.z += t * t * 0.14; v.x += Math.sin(t * 3 + i) * 0.03; });   // each lock curls down at the end
+        xf(g, 0, 0, 0, -Math.PI / 2 + up, 0, 0);   // lie the lock backward (-z), tilted by `up`
+        g.rotateY(a); xf(g, -Math.sin(a) * 0.09, 0.14 + 0.04 * Math.cos(i * 1.7), -Math.cos(a) * 0.09 - 0.02);
+        out.push(g);
+      }
+      return out.map(g => uvScale(g, 1, 2));
+    },
+    // A round gold medallion pinned on the chest (chest frame).
+    medallion(o) {
+      const [x, y, z] = o.at ?? [0.12, 0.45, 0.2], r = o.r ?? 0.07;
+      return [xf(new THREE.CylinderGeometry(r, r, 0.02, 12), x, y, z, Math.PI / 2, 0, 0), xf(new THREE.TorusGeometry(r * 0.75, 0.01, 3, 12), x, y, z + 0.012),
+              ...[0, 1, 2, 3].map(i => xf(new THREE.BoxGeometry(0.012, r * 1.5, 0.012), x, y, z + 0.014, 0, 0, i * Math.PI / 4))];
+    },
+    // The gold border of a cape section: two bands (`trim` m wide) down its edges, curved exactly as capeSegment,
+    // a hair behind its outer face. Same fields as capeSegment.
+    capeTrim(o) {
+      const out = [], tw = o.trim ?? 0.05;
+      for (const s of [-1, 1]) {
+        const g = new THREE.PlaneGeometry(1, 1, 1, 2);
+        deform(g, v => {
+          const t = 0.5 - v.y, w = o.w0 + (o.w1 - o.w0) * t, x = s * (w / 2 - tw * (v.x + 0.5));
+          v.x = x; v.z = x * x * (o.bow ?? 1.4) - 0.008; v.y = -t * o.len;
+        });
+        out.push(uvScale(g, 1, o.len / MS.texMeters));
+      }
+      return out;
+    },
     // A parrying dagger in the left hand (blade forward), in the forearm's frame.
     dagger(o) {
       const blade = plate([[0.05, -0.022], [0.4, -0.02], [0.52, 0], [0.4, 0.02], [0.05, 0.022]], 0.012, 0.004);
@@ -418,6 +578,17 @@ const KIT = (() => {
       return { grip: [shaft], blade: [head], guard: [xf(tube(0.034, 0.03, 0.1, 5), 0, 0, 1.62, Math.PI / 2, 0, 0)] };
     },
     // A greataxe: long haft, a broad bearded crescent of iron and a spike on top.
+    // Godrick's great axe: a long gilded haft, two broad crescent bits back to back round an ornate square block, a
+    // spike on top and a heavy square pommel.
+    twinAxe() {
+      const haft = xf(tube(0.034, 0.03, 1.62, 6), 0, 0, 0.56, Math.PI / 2, 0, 0);
+      const pts = [[0.86, 0.05], [0.95, 0.1], [0.8, 0.28], [0.73, 0.42], [0.88, 0.5], [1.05, 0.54], [1.22, 0.5], [1.37, 0.42], [1.3, 0.28], [1.15, 0.1], [1.24, 0.05]];   // a convex crescent edge
+      const bits = [1, -1].map(s => { const g = plate(pts.map(([z, y]) => [z, y * s]), 0.035, 0.01); g.rotateY(-Math.PI / 2); xf(g, 0.018, 0, 0); return roughen(g, 0.008, 27 + s); });
+      const block = xf(new THREE.BoxGeometry(0.13, 0.15, 0.2), 0, 0, 1.05), boss = xf(new THREE.CylinderGeometry(0.05, 0.05, 0.16, 8), 0, 0, 1.05, 0, 0, Math.PI / 2);
+      const spike = xf(new THREE.ConeGeometry(0.04, 0.24, 4), 0, 0, 1.48, Math.PI / 2, 0, 0);
+      const pommel = xf(new THREE.BoxGeometry(0.09, 0.09, 0.12), 0, 0, -0.3), collars = [0.8, 1.3, -0.18].map(z => xf(tube(0.048, 0.048, 0.05, 6), 0, 0, z, Math.PI / 2, 0, 0));
+      return { blade: [...bits.map(g => uvScale(g, 0.5, 0.5)), spike], grip: [haft], guard: [block, boss, pommel, ...collars] };
+    },
     greatAxe() {
       const haft = xf(tube(0.036, 0.036, 1.75, 5), 0, 0, 0.62, Math.PI / 2, 0, 0);
       const head = plate([[1.05, 0.16], [1.4, 0.18], [1.52, -0.05], [1.56, -0.45], [1.3, -0.52], [1.08, -0.28]], 0.05, 0.01);
@@ -625,6 +796,8 @@ const KIT = (() => {
       const mesh = new THREE.SkinnedMesh(p.geo, (p.weapon ? weaponMats : mats)[p.slot]);
       rig.root.add(mesh); mesh.bind(rig.skeleton, new THREE.Matrix4());
       mesh.boundingSphere = p.geo.boundingSphere;
+      if (!p.weapon) (rig.slotMeshes || (rig.slotMeshes = {}))[p.slot] = mesh;
+      if (!p.weapon && M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
     if (M.eyes) {

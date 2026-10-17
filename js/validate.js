@@ -29,6 +29,10 @@ function validateData() {
     if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
     // v5.3 (Elden Ring bosses): blockable but not parryable, a spectral weapon drawn, a reaction, branching follow-ups.
     if ('noParry' in a) need(typeof a.noParry === 'boolean', `${tag}: noParry must be true or false.`);
+    // v5.4 (Godrick): untouchable through its wind-ups and strikes; a flame breath drawn from the off hand.
+    if ('invulnerable' in a) need(typeof a.invulnerable === 'boolean', `${tag}: invulnerable must be true or false.`);
+    if ('breath' in a) need(a.breath && num(a.breath.len) && a.breath.len > 0 && num(a.breath.width) && a.breath.width > 0 && (!('from' in a.breath) || num(a.breath.from)),
+      `${tag}: breath needs len and width (m, above 0), optionally from (the first hit it burns on).`);
     if ('spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
     if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1
@@ -41,6 +45,8 @@ function validateData() {
       if (h.box && 'ring' in h.box) need(h.box.ring && ['from', 'to', 'width', 'time'].every(k => num(h.box.ring[k]) && h.box.ring[k] >= 0) && h.box.ring.time > 0,
         `${tag}: a hit's ring needs from, to, width and time (numbers; time above 0).`);
       if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0), `${tag}: a hit's impact needs ring, crack, dust and shake.`);
+      if ('step' in h) need(h.step && num(h.step.from) && h.step.from >= 0 && h.step.from < 1 && num(h.step.speed) && h.step.speed >= 0 && num(h.step.side),
+        `${tag}: a hit's step needs from (0 to 1 of its wind-up), speed (m/s, 0 or more) and side (m/s, + to its left).`);
       if (h.leap && 'back' in h.leap) need(num(h.leap.back) && h.leap.back > 0, `${tag}: a hit's leap.back must be metres above 0.`);
       if ('abort' in h) need(h.abort && num(h.abort.at) && h.abort.at > 0 && h.abort.at < 1 && num(h.abort.beyond) && typeof h.abort.into === 'string',
         `${tag}: a hit's abort needs at (0 to 1 of its wind-up), beyond (m) and into (an attack id).`);
@@ -84,6 +90,8 @@ function validateData() {
         // A mid-bar phase (`at`, v5.3) shares the bar it starts on; any other phase is a full bar of its own.
         if (ph && 'at' in ph) need(num(ph.at) && ph.at > 0 && ph.at < 1 && !('hp' in ph), `${tag}: at must be a fraction of the bar (0 to 1), with no hp of its own.`);
         else need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
+        if (ph && 'reveal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.reveal) && !!M && ph.reveal.every(sl => (M.hidden || []).includes(sl)),
+          `${tag}: reveal must list material slots its model hides (its "hidden").`); }
         if (ph && 'opener' in ph) need(aids.has(ph.opener), `${tag}: opener "${ph.opener}" is not one of its attacks.`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);

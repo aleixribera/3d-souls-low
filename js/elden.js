@@ -3,7 +3,7 @@
 // Elden Ring Bosses mode (v5.3)
 // ============================================================================
 // Main menu -> Elden Ring Bosses -> a card per boss in ELDEN_BOSSES (js/data/elden-bosses.js) -> a duel in the Enemies
-// arena (Game.startFight, ARENA). Victory: ENEMY FELLED, then back to the boss select. Death: YOU DIED, then a choice of
+// arena (Game.startFight, ARENA). Victory: ENEMY FELLED, then Retry or Boss select (v5.4). Death: YOU DIED, then a choice of
 // Retry or Boss select. This file holds only the flow; the bosses are data, and the menu reads the list.
 const elden = (() => {
   const C = CONFIG.elden;
@@ -19,6 +19,9 @@ const elden = (() => {
           items: [...ELDEN_BOSSES.map(e => ({ name: e.difficulty ? `${e.name}   ${stars(e.difficulty)}` : e.name,
             desc: `${e.title}. ${e.description}`, go: () => this.start(e.id) })),
             { name: 'Back', desc: 'Return to the main menu.', cue: 'menuBack', go: () => game.showMenu('main') }] },
+        eldenWon: { title: 'ENEMY FELLED', sub: b ? b.name.toUpperCase() : '', overlay: true, items: [
+          { name: 'Retry', desc: 'Fight again from the start.', go: () => this.start(b.id) },
+          { name: 'Boss select', desc: 'Choose another boss.', cue: 'menuBack', go: () => this.leave() }] },
         eldenDeath: { title: 'YOU DIED', sub: b ? b.name.toUpperCase() : '', overlay: true, items: [
           { name: 'Retry', desc: 'Fight again from the start.', go: () => this.start(b.id) },
           { name: 'Boss select', desc: 'Choose another boss.', cue: 'menuBack', go: () => this.leave() }] },
@@ -38,7 +41,7 @@ const elden = (() => {
     update(game, dt) {
       if (!game.duelWon() || !game.player.alive()) return;
       won += dt;
-      if (won >= C.victoryTime) this.leave();
+      if (won >= C.victoryTime) game.showMenu('eldenWon');
     },
     // During the death sequence (Game.update): at `deathMenu` s, the Retry / Boss select choice instead of the respawn.
     onDeath(game) {

@@ -10,10 +10,12 @@
 //   name, title  the card's name and short title; the health bar shows the def's own name
 //   difficulty   1 to 5 (stars on the card)
 //   description  one line under the card
-const ELDEN_BOSS_DEFS = [MARGIT];
+const ELDEN_BOSS_DEFS = [MARGIT, GODRICK];
 const ELDEN_BOSSES = [
   { id: 'margit', enemy: 'margit', name: 'Margit, the Fell Omen', title: 'Stormveil\'s gatekeeper', difficulty: 4,
     description: 'Delayed cane swings, thrown golden daggers, and at 60% health a holy hammer and sword. Learn his rhythm; two parries break his stance.' },
+  { id: 'godrick', enemy: 'godrick', name: 'Godrick the Grafted', title: 'Lord of Stormveil', difficulty: 5,
+    description: 'A great axe, storm winds and shockwaves you must jump or roll. At 60% he grafts on a dragon’s head that breathes fire. He cannot be parried.' },
 ];
 // The bosses are fought like any duel, by def id; they are not listed in the Enemies menu.
 for (const d of ELDEN_BOSS_DEFS) ENEMY_BY_ID[d.id] = d;

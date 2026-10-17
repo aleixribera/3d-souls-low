@@ -98,6 +98,17 @@ const TEXLIB = (() => {
       out.acc = Math.max(sstep(0.7 - 0.25 * decay, 0.9, fbm(u, v, 9 * k, 9 * k, 3, 4)) * 0.6, 0);
       out.dark = crack;
     },
+    // Matted fur (v5.3, Margit's tail): long strands along v in clumps, darker roots between them.
+    fur(u, v, k, decay, out) {
+      const strand = fbm(u, v, 64 * k, 4 * k, 3, 1), clump = fbm(u, v, 9 * k, 3 * k, 3, 2);
+      out.h = strand * 0.6 + clump * 0.4; out.mix = clump * 0.7 + strand * 0.3;
+      out.acc = sstep(0.62 - 0.2 * decay, 0.85, fbm(u, v, 6 * k, 6 * k, 3, 4)) * 0.6;   // dried blood and grime
+    },
+    // Holy light (v5.3, the spectral weapons): bright marbled gold, swirling veins of white.
+    holy(u, v, k, decay, out) {
+      const swirl = fbm(u + fbm(u, v, 3 * k, 3 * k, 3, 7) * 0.4, v, 5 * k, 5 * k, 4, 8);
+      out.h = swirl; out.mix = swirl; out.acc = sstep(0.9, 0.98, ridge(fbm(u, v, 6 * k, 6 * k, 4, 9)));
+    },
     ash(u, v, k, decay, out) {
       const streak = fbm(u, v, 6 * k, 2 * k, 4, 1), grain = fbm(u, v, 32 * k, 32 * k, 2, 2);
       out.h = streak * 0.5 + grain * 0.5; out.mix = streak * 0.9;
