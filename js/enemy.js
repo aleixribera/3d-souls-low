@@ -60,12 +60,56 @@ class Enemy {
     this.strikeFrom = 0;                             // stepping in, its close attacks wait until the player is this close
     this.backingOff = false;                         // too close: backing off to its hold distance
     this.slot = null;                                // its place around the player (js/crowd.js)
+    this.leaping = false;                            // airborne in a leaping strike (a hit's `leap`)
+    // Boss phases (v4.3): an enemy def with `phases` fights through the phase ids its placement lists (`boss.phases`,
+    // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
+    // away instead of dying (the opening of Level 5).
+    this.baseDef = def; this.boss = opts.boss || null;
+    this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
+    this.phase = -1;
+    if (this.phaseIds) this.enterPhase(0);
     this.savePrev();
   }
+  // A phase's definition: the base def with the phase's own fields over it (name, hp, cooldown, speed...) and its
+  // attacks picked by id. Everything that reads `this.def` (AI, HUD, timings) sees the phase.
+  enterPhase(i) {
+    const base = this.baseDef, P = base.phases[this.phaseIds[i]];
+    this.phase = i;
+    this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
+    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
+    this.ranged = this.def.attacks.some(a => a.projectile);
+    const ranges = this.def.attacks.map(a => a.range);
+    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges), close: Math.max(...this.def.attacks.filter(strikesAtOnce).map(a => a.range)) };
+  }
+  lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
+  // Its health ran out: a boss with another phase kneels into the transition, one set to retreat leaps away; both
+  // stay alive (and untouchable). Returns true if it lives on.
+  outlast() {
+    this.hp = 0; this.hitbox = null;
+    if (!this.lastPhase()) {
+      const from = this.phase;
+      this.enterPhase(this.phase + 1); this.hp = 0;   // the new bar fills through the transition
+      this.setState(ES.PHASE);
+      events.emit('bossPhase', { enemy: this, from, to: this.phase });
+      return true;
+    }
+    if (this.boss && this.boss.retreat) {
+      this.retreatFrom = { x: this.x, y: this.y, z: this.z };
+      const R = this.boss.retreat;   // a far leap takes longer: at most `speed` m/s (default 24)
+      this.retreatHop = Math.max(R.hop, Math.hypot(R.to[0] - this.x, R.to[2] - this.z) / (R.speed || 24));
+      this.setState(ES.RETREAT);
+      events.emit('bossRetreat', { enemy: this });
+      return true;
+    }
+    return false;
+  }
+  // Debug (Level 5 tools): empty the current health bar at once, as if the last blow landed.
+  deplete() { if (this.alive() && !this.invulnerable()) { this.hp = 0; if (!this.outlast()) this.die(); } }
+  invulnerable() { return this.in('invulnerable'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; }
+  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
-  alive() { return this.state !== ES.DEAD; }
+  alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
   // Has noticed the player and is fighting it (alive, not a training dummy, not unaware or asleep).
   fightingPlayer() { return this.alive() && !this.training && !this.in('unaware') && this.state !== ES.DORMANT; }
@@ -94,6 +138,8 @@ class Enemy {
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
     this.chainTime += dt;
     if (this.training) { this.updateTraining(dt); return; }
+    if (this.state === ES.GONE) return;
+    if (this.state === ES.RETREAT) { this.updateRetreat(player); return; }   // scripted flight: no physics
     const M = d.guard || d.stagger;
     if (M && this.state !== ES.BROKEN && (this.guardTime += dt) > M.decayDelay)
       this.guardMeter = Math.max(0, this.guardMeter - M.decay * dt);
@@ -215,6 +261,11 @@ class Enemy {
         if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
           tx = this.vx = Math.sin(this.yaw) * a.dash.speed; tz = this.vz = Math.cos(this.yaw) * a.dash.speed;   // full speed at once
         }
+        // Leaping strike (a hit's `leap`): at `from` of the wind-up (after its aim has locked) it jumps along its facing
+        // toward where the player stands then (at most `max` m, stopping `short` m short), landing as the strike opens.
+        if (hit.leap && !this.leaping && this.leapHit !== this.hitIndex && this.stateTime >= hit.startup * hit.leap.from) this.launchLeap(hit, dist);
+        if (this.leaping && this.grounded && this.vy <= 0 && this.stateTime > hit.startup * hit.leap.from + 0.1) { this.leaping = false; this.vx = this.vz = 0; }   // landed early
+        if (this.leaping) { tx = this.vx; tz = this.vz; }
         if (this.stateTime >= hit.startup) this.strike(player);
         break;
       }
@@ -243,6 +294,13 @@ class Enemy {
       case ES.BROKEN:
         if (this.stateTime >= (d.posture || d.guard || d.stagger).breakTime) { this.posture = 0; this.guardMeter = 0; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
+      case ES.PHASE: {   // between two health bars: kneels, rises, the new bar fills; nothing it does can hurt
+        const T = d.transition || 3;
+        this.hp = d.hp * clamp((this.stateTime - T * 0.35) / (T * 0.5), 0, 1);
+        this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * 0.25 * dt);
+        if (this.stateTime >= T) { this.hp = d.hp; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        break;
+      }
       case ES.DEAD: break;
     }
 
@@ -263,12 +321,41 @@ class Enemy {
     if (a.track) return true;
     return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * CONFIG.enemy.windupTrack;
   }
+  // A leaping strike leaves the ground: the speed that covers the distance in the rest of the wind-up, and the upward
+  // speed that brings it down just as the strike opens.
+  launchLeap(hit, dist) {
+    const L = hit.leap, T = Math.max(0.2, hit.startup * (1 - L.from)), far = clamp(dist - (L.short || 0), 0, L.max);
+    this.vx = Math.sin(this.yaw) * far / T; this.vz = Math.cos(this.yaw) * far / T; this.vy = CONFIG.gravity * T / 2;
+    this.leaping = true; this.leapHit = this.hitIndex;
+    events.emit('bossLeap', { enemy: this, time: T });
+  }
+  // The retreat (`boss.retreat`): kneels for `kneel` s, leaps in an arc onto `to` [x, y, z] (`hop` s), stands there
+  // `wait` s facing the player, then leaps on to `out` (`fly` s) and is gone. Positions are set outright, like a cutscene
+  // the player keeps control through; it cannot be hit.
+  updateRetreat(player) {
+    const R = this.boss.retreat, t = this.stateTime, F = this.retreatFrom, top = { x: R.to[0], y: R.to[1], z: R.to[2] };
+    const arc = (a, b, k, h) => {
+      const e = ease(k);
+      this.x = lerp(a.x, b.x, e); this.z = lerp(a.z, b.z, e); this.y = lerp(a.y, b.y, k) + h * 4 * k * (1 - k);
+      if (Math.hypot(b.x - a.x, b.z - a.z) > 0.1) this.yaw = turnToward(this.yaw, Math.atan2(b.x - a.x, b.z - a.z), 0.3);
+    };
+    this.vx = this.vy = this.vz = this.kx = this.kz = 0; this.hitbox = null;
+    const hop = this.retreatHop, t1 = R.kneel, t2 = t1 + hop, t3 = t2 + R.wait, t4 = t3 + R.fly;
+    if (t < t1) return;
+    if (t < t2) { arc(F, top, (t - t1) / hop, R.height + hop * 2); this.grounded = false; return; }
+    if (t < t3) { this.x = top.x; this.y = top.y; this.z = top.z; this.grounded = true; this.yaw = turnToward(this.yaw, Math.atan2(player.x - this.x, player.z - this.z), 0.08); return; }
+    if (t < t4) { arc(top, { x: R.out[0], y: R.out[1], z: R.out[2] }, (t - t3) / R.fly, R.height * 0.6); this.grounded = false; return; }
+    this.rewarded = true;   // gone, not killed: no death to announce
+    this.setState(ES.GONE);
+    events.emit('bossGone', { enemy: this });
+  }
   die() { this.hitbox = null; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
   checkFall() {
     if (!this.alive()) return;
     if (this.inPit) { this.hp = 0; this.die(); events.emit('fell', { body: this }); return; }
-    const dmg = this.fallHeight > 0 ? fallDamage(this.fallHeight) : 0;
+    const leapt = this.attack && this.in('attacking') && this.attack.hits.some(h => h.leap);   // a leaping strike lands on purpose
+    const dmg = this.fallHeight > 0 && !leapt ? fallDamage(this.fallHeight) : 0;
     if (dmg <= 0) return;
     this.hp = Math.max(0, this.hp - dmg); this.tint = 1;
     events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.def.hp) });
@@ -317,7 +404,7 @@ class Enemy {
     return null;
   }
   beginAttack(attack) {
-    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.setState(ES.WINDUP);
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.setState(ES.WINDUP);
     crowd.started();
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
@@ -325,11 +412,14 @@ class Enemy {
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover. A bow looses a bolt
   // at the target instead of opening a hitbox.
   strike(target) {
+    // A hit may bring its own `box` (with `ring`: an expanding ring round the owner) and its own `impact`.
+    const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box, impact = hit.impact || this.attack.impact;
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
-    else this.hitbox = new Hitbox(this, this.attack.box, makeStrike(this.attack));
-    if (this.attack.impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
-      const f = this.attack.box.fwd;   // where the hitbox is centred
-      events.emit('impact', { x: this.x + Math.sin(this.yaw) * f, y: this.y, z: this.z + Math.cos(this.yaw) * f, fx: this.attack.impact, enemy: this });
+    else this.hitbox = new Hitbox(this, box, makeStrike(this.attack));
+    if (this.leaping) { this.vx = this.vz = 0; }
+    if (impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
+      const f = box.fwd;   // where the hitbox is centred
+      events.emit('impact', { x: this.x + Math.sin(this.yaw) * f, y: this.y, z: this.z + Math.cos(this.yaw) * f, fx: impact, enemy: this });
     }
     this.setState(ES.ACTIVE);
     events.emit('attackPhase', { actor: this, attack: this.attack, phase: PHASE.ACTIVE, hitIndex: this.hitIndex });   // the swing sound
@@ -383,11 +473,13 @@ class Enemy {
     this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
     this.tint = 1;
     if (this.training) { this.hp = Math.max(1, this.hp - strike.damage); return { broke: false, died: false }; }   // flash and recoil only
+    if (this.invulnerable()) return { broke: false, died: false };
     const def = this.def, P = def.posture;
     if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage * (P && this.state === ES.BROKEN ? P.damageMul : 1));
     this.kx += kx; this.kz += kz;
+    if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (P) {
       // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
@@ -488,7 +580,22 @@ class Enemy {
         r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
         r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
       }
-      case ES.DEAD: deathPose(r, tt, E.deathFade); r.root.visible = tt < E.deathFade; break;
+      case ES.PHASE: {   // sinks to a knee, head bowed, then rises as the new bar fills
+        const T = d.transition || 3, k = ease(clamp(tt / 0.6, 0, 1)) * (1 - ease(clamp((tt - T * 0.62) / (T * 0.3), 0, 1)));
+        r.kneel(k); r.lean(0.35 * k); r.head.rotation.x = 0.55 * k;
+        r.armR.rotation.x = lerp(-0.4, 0.25, k); r.weapon.rotation.x = lerp(0.5, 1.5, k);
+        r.spin.rotation.z = Math.sin(tt * 3) * 0.03 * k; break;
+      }
+      case ES.RETREAT: {   // staggers to a knee, then crouches and springs; airborne it tucks; on the wall it stands tall
+        const R = this.boss.retreat, t1 = R.kneel, t2 = t1 + this.retreatHop, t3 = t2 + R.wait;
+        if (tt < t1) { const k = ease(clamp(tt / 0.4, 0, 1)); r.kneel(k * (1 - ease(clamp((tt - t1 + 0.35) / 0.35, 0, 1)) * 0.5)); r.lean(0.4 * k); r.head.rotation.x = 0.5 * k; r.armR.rotation.x = lerp(-0.4, 0.1, k); }
+        else if (tt < t2 || tt >= t3) { r.legL.rotation.x = -1.1; r.kneeL.rotation.x = 1.4; r.legR.rotation.x = 0.5; r.kneeR.rotation.x = 0.9; r.armR.rotation.x = -1.6; r.armL.rotation.x = -1.0; r.tip.rotation.x = 0.35; }
+        else { r.head.rotation.x = -0.15; r.armR.rotation.x = -0.25; r.weapon.rotation.x = 0.9; }
+        if (tt >= t3) r.setOpacity(1 - clamp((tt - t3) / R.fly, 0, 1));   // fades as it drops out of sight beyond the wall
+        break;
+      }
+      case ES.GONE: r.setOpacity(0); r.root.visible = false; break;
+      case ES.DEAD: { const fade = d.deathFade || E.deathFade; deathPose(r, tt, fade); r.root.visible = tt < fade; break; }
     }
     if (this.guarding()) { r.armL.rotation.x = -0.75; r.armL.rotation.z = -0.25; }   // shield held up in front
     // Blend idle personality in and out so aggro never pops.

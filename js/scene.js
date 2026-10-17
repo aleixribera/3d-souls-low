@@ -70,7 +70,8 @@ function addFlame(group, x, y, z, size, light, color = 0xffa040) {
   if (light) addLight(group, light);
   flames.push({ group, mesh, light, base: light ? light.intensity : 0, color: light ? light.color.clone() : null, seed: rand(0, 50) });
 }
-function addBonfire(group, x, z, intensity, y = 0) {
+// `fire`: a group of its own for the flame and its glow, so a bonfire that is not lit yet (`litBy`) can hide them.
+function addBonfire(group, x, z, intensity, y = 0, fire = group) {
   for (let i = 0; i < 5; i++) {
     const log = addBox(group, 0.14, 0.14, 0.95, MAT.log, x, y + 0.12, z);
     log.rotation.y = i * Math.PI / 2.5; log.rotation.x = 0.25;
@@ -80,8 +81,13 @@ function addBonfire(group, x, z, intensity, y = 0) {
   addBox(group, 0.05, 1.3, 0.09, MAT.bonfireSword, x, y + 0.7, z).rotation.z = 0.18;
   const light = new THREE.PointLight(0xff8a3c, intensity, 0, 1.0);
   light.position.set(x, y + 1.4, z);
-  addFlame(group, x, y + 0.62, z, 1, light);
-  addDust(group, x, y + 1.4, z, 2.2, 16);
+  addLight(group, light);
+  const mesh = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.95, 7), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, fog: false }));
+  mesh.position.set(x, y + 0.62, z); fire.add(mesh);
+  const flame = { group, mesh, light, base: intensity, color: light.color.clone(), seed: rand(0, 50) };
+  flames.push(flame);
+  addDust(fire, x, y + 1.4, z, 2.2, 16);
+  return flame;
 }
 // Iron portcullis spanning the hall at x; returns the group that lifts.
 function buildPortcullis(group, x, width, height) {
@@ -263,12 +269,18 @@ function buildRooms(L) {
     gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null,
                  style: barricade ? 'barricade' : 'portcullis', fall });
   }
-  for (const b of L.bonfires) addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y));
+  const bonfireFires = [];   // bonfires lit later (`litBy`): their flames, hidden until then (Game.render)
+  for (const b of L.bonfires) {
+    const fire = b.litBy ? new THREE.Group() : G;
+    if (b.litBy) G.add(fire);
+    const flame = addBonfire(G, b.x, b.z, HALL_STYLE.bonfireLight, TR.floorY(b.x, b.z, b.y), fire);
+    if (b.litBy) bonfireFires.push({ bonfire: b, group: fire, flame, base: flame.base });
+  }
   if (L.props) buildProps(G, L, TR);   // js/town.js
   const town = { smoke: [] };
   if (L.houses) buildHouses(G, L, TR, town);
   const trapFloors = traps.map(tr => buildTrapFloor(G, tr, matsFor(tr.region.src).floor, TR));
-  return { group: G, gates, traps: trapFloors, solids: TR.solids, slabs: TR.slabs, terrain: TR, smoke: town.smoke };
+  return { group: G, gates, traps: trapFloors, solids: TR.solids, slabs: TR.slabs, terrain: TR, smoke: town.smoke, bonfireFires };
 }
 // A room's faint floor seams, every 4 m.
 function floorSeams(R) {
@@ -366,7 +378,7 @@ function loadStage(def) {
     scene.remove(stage.group);
     stage.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.isMesh && o.material && !Object.values(MAT).includes(o.material)) o.material.dispose(); });
     for (let i = flames.length - 1; i >= 0; i--) if (flames[i].group === stage.group) flames.splice(i, 1);
-    for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group) dust.splice(i, 1);
+    for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group || dust[i].group.parent === stage.group) dust.splice(i, 1);
   }
   lightSink = def.cull ? [] : null;
   const built = BUILDERS[def.layout](def);

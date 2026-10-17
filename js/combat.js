@@ -27,8 +27,13 @@ class Hitbox {
     const o = this.owner, b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
     const dx = target.x - o.x, dz = target.z - o.z;
     const lz = dx * s + dz * c - b.fwd, lx = dz * s - dx * c;
-    const ex = lx - clamp(lx, -b.w / 2, b.w / 2), ez = lz - clamp(lz, -b.d / 2, b.d / 2);
-    if (ex * ex + ez * ez > target.radius * target.radius) return false;
+    if (b.ring) {   // an expanding ring round the box's centre: from `from` to `to` m over `time` s of the strike, `width` m thick
+      const R = b.ring, r = lerp(R.from, R.to, clamp(o.stateTime / R.time, 0, 1));
+      if (Math.abs(Math.hypot(lx, lz) - r) > R.width / 2 + target.radius) return false;
+    } else {
+      const ex = lx - clamp(lx, -b.w / 2, b.w / 2), ez = lz - clamp(lz, -b.d / 2, b.d / 2);
+      if (ex * ex + ez * ez > target.radius * target.radius) return false;
+    }
     const y0 = o.y + b.y - b.h / 2, y1 = o.y + b.y + b.h / 2;
     return y1 > target.y && y0 < target.y + target.height;
   }
@@ -78,7 +83,7 @@ function resolveCombat(game) {
     }
   }
   // 1. Player hitboxes against enemy bodies.
-  const playerHits = p.hitbox ? live.filter(e => p.hitbox.overlaps(e) && !gateBetween(p, e)) : [];
+  const playerHits = p.hitbox ? live.filter(e => !e.invulnerable() && p.hitbox.overlaps(e) && !gateBetween(p, e)) : [];   // a boss between phases: blows pass through
   // 2. Enemy hitboxes against the player's body.
   const enemyHits = p.alive() ? live.filter(e => e.hitbox && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];
   // 3. Apply damage, poise loss, knockback and stagger.

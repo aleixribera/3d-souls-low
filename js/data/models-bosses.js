@@ -128,3 +128,59 @@ MODEL_DEFS.bellWarden = {
     cloth: [{ bone: 'loinF', gain: 0.1, k: 70, damp: 6, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 60, damp: 5.5, flutter: 0.04 }],
   },
 };
+
+// ---- Level 5 (v4.3) -------------------------------------------------------------------------------------------------
+// Varn, the Gaoler King: the castle's lord. Ironbound plate gone dark bronze, a slate tabard with the castle's tarnished
+// gold stripe, a crown of shackles (a ring of chain round the helm and short iron spikes), chains across the chest, a
+// long ash-grey cloak and the great gaoler's blade. Embers along the blade light only in his second phase (js/finale.js).
+MODEL_DEFS.varn = {
+  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8,
+  proportions: { shoulderX: 0.42, torsoW: 0.28, torsoD: 0.19, armR: 0.078, legR: 0.095, headR: 0.135, handR: 0.07, footLen: 0.33 },
+  posture: { chest: [0.06, 0, 0], neck: [0.04, 0, 0], head: [-0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
+  materials: {
+    skin: { tex: 'paleSkin', tint: 0x6a6258, decay: 0.8 },
+    plate: { tex: 'dentedSteel', tint: 0x6a5a44, decay: 0.7, size: 512 },
+    dark: { tex: 'dentedSteel', tint: 0x3a3836, decay: 0.8 },
+    iron: { tex: 'rustedIron', tint: 0x5a5048, decay: 0.8 },
+    mail: { tex: 'dentedSteel', tint: 0x4a4c50, decay: 0.85 },
+    tabard: { tex: 'rottenCloth', tint: 0x3e4a58, decay: 0.75, double: true },
+    stripe: { tex: 'rottenCloth', tint: 0x9a7a3a, decay: 0.6, double: true },
+    cloak: { tex: 'rottenCloth', tint: 0x4a4644, decay: 0.7, size: 512, double: true },
+    cloakHem: { tex: 'tatteredFabric', tint: 0x4a4644, decay: 0.7, size: 512, double: true },
+    leather: { tex: 'crackedLeather', tint: 0x4e4a44, decay: 0.75 },
+    blade: { tex: 'dentedSteel', tint: 0x8a8a8e, decay: 0.55, size: 512 },
+    eye: { glow: 0xffc070 },
+  },
+  body: { torso: 'mail', pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  bones: {
+    loinF: { parent: 'spin', at: [0.0, -0.02, 0.19] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.19] },
+    capeA: { parent: 'chest', at: [0, 0.58, -0.25] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] }, capeD: { parent: 'capeC', at: [0, -0.36, 0] },
+  },
+  parts: [
+    { use: 'jerkin', slot: 'plate', bone: 'chest' }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
+    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.22, crest: 0.12 },
+    { use: 'chain', slot: 'iron', bone: 'head', from: [-0.2, 0.3, 0.05], to: [0.2, 0.3, 0.05], links: 9, sag: -0.04 },
+    { use: 'spikes', slot: 'iron', bone: 'head', size: 1.4, at: [[0, 0.36, 0.08], [0.1, 0.34, 0.05], [-0.1, 0.34, 0.05], [0.16, 0.32, -0.02], [-0.16, 0.32, -0.02]] },
+    { use: 'pauldron', slot: 'plate', bone: 'armL', size: 1.7 }, { use: 'spikes', slot: 'dark', bone: 'armL', size: 1.2 },
+    { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.7, side: -1 }, { use: 'spikes', slot: 'dark', bone: 'armR', size: 1.2, side: -1 },
+    { use: 'chain', slot: 'iron', bone: 'chest', from: [-0.24, 0.54, 0.12], to: [0.22, 0.2, 0.2], links: 10, sag: 0.04 },
+    { use: 'chain', slot: 'iron', bone: 'chest', from: [0.24, 0.54, 0.12], to: [-0.22, 0.2, 0.2], links: 10, sag: 0.04 },
+    { use: 'wraps', slot: 'dark', bone: 'elbowL', from: 0.05, to: 0.28, radius: 0.08, count: 3 }, { use: 'wraps', slot: 'dark', bone: 'elbowR', from: 0.05, to: 0.28, radius: 0.08, count: 3 },
+    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.095, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.095, count: 3 },
+    { use: 'clothStrip', slot: 'tabard', bone: 'loinF', w: 0.32, len: 0.72, seed: 3 }, { use: 'clothStrip', slot: 'stripe', bone: 'loinF', w: 0.06, len: 0.66, seed: 3, dz: 0.012 },
+    { use: 'clothStrip', slot: 'tabard', bone: 'loinB', w: 0.34, len: 0.8, seed: 6 },
+    { use: 'capeSegment', slot: 'cloak', bone: 'capeA', w0: 0.6, w1: 0.72, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'cloak', bone: 'capeB', w0: 0.72, w1: 0.86, len: 0.42, bow: 0.8 },
+    { use: 'capeSegment', slot: 'cloak', bone: 'capeC', w0: 0.86, w1: 0.96, len: 0.36, bow: 0.6 },
+    { use: 'capeSegment', slot: 'cloakHem', bone: 'capeD', w0: 0.96, w1: 1.0, len: 0.34, bow: 0.5, ragged: true, seed: 9 },
+  ],
+  weapon: { use: 'greatSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
+  embers: { head: [0, 0, 1.5], edge: { size: [0.04, 0.16, 1.2], at: [0, 0, 0.85] } },
+  eyes: { color: 0xffc070, size: 0.022, spread: 0.065, at: [0, 0.14, 0.19] },
+  anim: {
+    idle: { breathRate: 0.95, breath: 0.014, headDrift: 0.03, sway: 0.01, twitch: 0 }, walk: { twist: 0.08, roll: 0.03, headNod: 0.03, elbow: 0.25, drag: 0 },
+    flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1, slump: 0.6 },
+    cloth: [{ bone: 'loinF', gain: 0.1, k: 66, damp: 5.6, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 56, damp: 5, flutter: 0.04 },
+            { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 36, damp: 3.8, flutter: 0.045 },
+            { bone: 'capeC', gain: 0.07, k: 32, damp: 3.4, flutter: 0.06, sideways: 1.2 }, { bone: 'capeD', gain: 0.1, k: 24, damp: 2.8, flutter: 0.09, sideways: 1.4 }],
+  },
+};

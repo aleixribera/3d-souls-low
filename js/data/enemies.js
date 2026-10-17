@@ -231,6 +231,168 @@ const ENEMY_DEFS = [
         box: { w: 2.4, h: 2.4, d: 2.6, fwd: 1.4, y: 1.2 } },
     ],
   },
+  // ---- Level 5: the castle (v4.3) ---------------------------------------------------------------------------------
+  {
+    // A gargoyle: carved stone that crouches on the castle's ledges (placement `perch`) and springs at whoever passes.
+    // Before it moves, grit trickles and stone grinds (js/finale.js), so it never strikes unannounced.
+    id: 'gargoyle', model: 'gargoyle', name: 'Gargoyle', description: 'Carved stone that crouches on the ledges and springs when you pass. Grit falls before it moves. Few hits break it, but it hits hard.',
+    scale: 1.05, bulk: 1.1, radius: 0.48, color: 0x6e6c68, weapon: 'none', idle: 'twitch',
+    visual: { skin: 0x7a786f, roughness: 0.95 },
+    hp: 120, poise: 70, speed: 3.6, turnRate: 6, trackRate: 3,
+    cooldown: [0.8, 1.6], flinchTime: 0.2, staggerTime: 1.0, parriedTime: 1.6,
+    attacks: [
+      { id: 'gargoyleClaw', name: 'Raking Claws', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }],
+        hits: [{ startup: 0.55, active: 0.1, follow: 0.1 }, { startup: 0.38, active: 0.1, follow: 0.18 }], recovery: 0.7,
+        damage: 18, poise: 20, knock: 3, lunge: 2.4, range: 1.8, box: { w: 1.8, h: 1.4, d: 1.8, fwd: 1.1, y: 1.0 } },
+      { id: 'gargoyleDive', name: 'Diving Pounce', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 3, commit: 0.45 }, rollOnly: true, minRange: 3.5, chance: 0.5,
+        hits: [{ startup: 1.0, active: 0.14, follow: 0.3, leap: { from: 0.5, max: 8, short: 1.0 } }], recovery: 1.0,
+        damage: 34, poise: 50, knock: 7, lunge: 0, range: 9, box: { w: 2.4, h: 1.8, d: 2.4, fwd: 0.6, y: 0.9 },
+        impact: { ring: 2.2, crack: 1.0, dust: 10, shake: 0.06 } },
+    ],
+  },
+  {
+    // The Empty Sentinel: a giant suit of armour with nobody inside, cold light in the joints. Section A's bridge guard.
+    id: 'sentinel', model: 'emptySentinel', name: 'Empty Sentinel', description: 'A giant suit of armour with nobody inside. Its sweep waits before it falls; its slam can only be rolled. Fill its stagger with heavy blows.',
+    scale: 1.65, bulk: 1.25, radius: 0.72, color: 0x5a6068, weapon: 'halberd', idle: 'still',
+    visual: { skin: 0x4a5058, skinMetal: 0.4, metal: 0.4, roughness: 0.5, rim: 0.9 },
+    hp: 520, poise: 200, speed: 1.8, turnRate: 2.8, trackRate: 1.2, approach: 0.45,
+    cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
+    stagger: { max: 100, heavy: 34, light: 22, breakers: ['heavy'], decayDelay: 2.5, decay: 12, breakTime: 2.4, hitstop: 0.16 },
+    attacks: [
+      { id: 'sentinelSweep', name: 'Patient Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.8, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25,
+        hits: [{ startup: 1.3, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.4, 1.0], chance: 0.6 } }], recovery: 1.1,
+        damage: 44, poise: 70, knock: 9, lunge: 1.0, range: 3.6, box: { w: 5.4, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
+      { id: 'sentinelSlam', name: 'Hollow Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.5 }, poseScale: 1.3, rollOnly: true, chance: 0.45,
+        hits: [{ startup: 1.6, active: 0.14, follow: 0.45 }], recovery: 1.3,
+        damage: 62, poise: 90, knock: 8, lunge: 1.0, range: 3.4, box: { w: 2.2, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
+        impact: { ring: 3.0, crack: 1.6, dust: 14, shake: 0.1 } },
+      { id: 'sentinelThrust', name: 'Halberd Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.55 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, minRange: 3, chance: 0.6,
+        hits: [{ startup: 1.0, active: 0.14, follow: 0.25 }], recovery: 0.9,
+        damage: 32, poise: 50, knock: 7, lunge: 1.6, range: 5.2, box: { w: 1.2, h: 1.6, d: 3.6, fwd: 3.0, y: 1.2 } },
+    ],
+  },
+  {
+    // The Toll Wisp: a hooded robe of blue flame round a small bell. It rings before every shot (the cue to move).
+    id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: 'A robe of blue flame round a little bell. It rings before it shoots. Fragile: close in and cut it down.',
+    scale: 0.9, bulk: 0.8, radius: 0.36, color: 0x5a7ab0, weapon: 'none', idle: 'sway',
+    visual: { skin: 0x6a8ac0, roughness: 0.6 },
+    hp: 60, poise: 20, speed: 2.4, turnRate: 6, trackRate: 3,
+    cooldown: [1.4, 2.4], flinchTime: 0.3, staggerTime: 1.0, parriedTime: 1.6,
+    attacks: [
+      { id: 'wispBolt', name: 'Tolling Flame', anim: 'overhead', pose: 'enemyDraw', tracking: { rate: 2.4, commit: 0.85 }, markers: [{ at: 'windup', t: 0, event: 'sound', sound: 'wispToll', vel: 0.8 }],
+        projectile: { speed: 15, gravity: 0, size: 0.22 }, minRange: 3, range: 22,
+        hits: [{ startup: 1.1, active: 0.05, follow: 0.1 }], recovery: 0.9,
+        damage: 22, poise: 18, knock: 3, lunge: 0, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.2 } },
+      { id: 'wispPulse', name: 'Cold Pulse', anim: 'bash', pose: 'enemyBash', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }],
+        hits: [{ startup: 0.6, active: 0.12, follow: 0.15 }], recovery: 0.7,
+        damage: 12, poise: 20, knock: 8, lunge: 1.0, range: 1.6, box: { w: 1.6, h: 1.6, d: 1.6, fwd: 0.9, y: 1.0 } },
+    ],
+  },
+  {
+    // The final boss. The castle's lord, the jailer of the prison the player escaped (Levels 1-2), master of the invaders
+    // who burned the town (Level 3). Ringing the tower bell (Level 4) called him out to answer a challenge, as of old.
+    // Three phases (Enemy.enterPhase): `field` outside the castle (ends in a retreat), then `throne` and `knell` in the
+    // throne room. Every strike's active time stays well under a roll's i-frames (the boss test).
+    id: 'varn', model: 'varn', name: 'Varn, the Gaoler King',
+    description: 'The lord of the castle and jailer of its prison. The bell you rang has called him out. Learn his sweep, his cleave, his delayed overhead and his leap; in the end he burns.',
+    scale: 1.75, bulk: 1.25, radius: 0.78, color: 0x5a4a36, weapon: 'sword', idle: 'guard',
+    visual: { skin: 0x5a5048, skinMetal: 0.45, metal: 0.4, roughness: 0.45, rim: 0.9 },
+    hp: 900, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,
+    cooldown: [1.4, 2.6], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, deathFade: 7,
+    posture: { max: 130, parry: 26, chainGap: 1.8, chainMul: 1.35, decay: 9, breakTime: 3.4, damageMul: 1.6, hitstop: 0.22 },
+    defaultPhases: ['throne', 'knell'],   // a duel from the Enemies menu fights the throne room's two bars
+    phases: {
+      // Outside: slower and readable, teaching his style. Ends in a retreat (the placement's `boss.retreat`).
+      field: { hp: 800, cooldown: [1.5, 2.8], approach: 0.35, kite: 0.25, speed: 2.0,
+        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
+      // The throne room's first bar: the same moves, pressed harder.
+      throne: { hp: 900, cooldown: [1.05, 2.0], approach: 0.6, kite: 0, speed: 2.2,
+        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
+      // After the transition (15 s, invulnerable): faster, longer, fiercer tracking in the wind-ups (commit points
+      // unchanged), and four new attacks.
+      knell: { name: 'Varn, Knell of Ash', hp: 1000, transition: 15, ignite: true, cooldown: [0.55, 1.25], approach: 0.85, kite: 0, speed: 2.7,
+        turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7,
+        posture: { max: 150, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 10, breakTime: 3.0, damageMul: 1.6, hitstop: 0.22 },
+        attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellStomp', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
+    },
+    attacks: [
+      // ---- the field and throne moves ----
+      { id: 'varnSweep', name: 'Gaol Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3,
+        hits: [{ startup: 1.2, active: 0.14, follow: 0.38 }], recovery: 1.0,
+        damage: 38, poise: 60, knock: 8, lunge: 1.2, range: 3.4, box: { w: 5.0, h: 2.0, d: 3.6, fwd: 2.0, y: 1.2 } },
+      { id: 'varnCleave', name: 'Two-Step Cleave', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 2.6, commit: 0.7 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }], poseScale: 1.25,
+        hits: [{ startup: 0.9, active: 0.13, follow: 0.14 }, { startup: 0.62, active: 0.13, follow: 0.3 }], recovery: 0.95,
+        damage: 30, poise: 45, knock: 6, lunge: 2.2, range: 3.0, box: { w: 3.6, h: 1.8, d: 3.2, fwd: 1.8, y: 1.2 } },
+      { id: 'varnDelay', name: "Warden's Delay", anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.2, commit: 0.55 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.35,
+        hits: [{ startup: 1.5, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.5, 1.2], chance: 0.75 } }], recovery: 1.15,
+        damage: 52, poise: 80, knock: 9, lunge: 1.6, range: 3.2, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.2, y: 1.2 },
+        impact: { ring: 2.8, crack: 1.6, dust: 14, shake: 0.1 } },
+      { id: 'varnLunge', name: 'Shackle Lunge', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, minRange: 5, dash: { speed: 11, from: 0.45 }, chance: 0.7,
+        hits: [{ startup: 1.1, active: 0.16, follow: 0.26 }], recovery: 0.95,
+        damage: 36, poise: 55, knock: 8, lunge: 2.6, range: 12, box: { w: 1.4, h: 1.8, d: 3.2, fwd: 2.0, y: 1.2 } },
+      { id: 'varnShoulder', name: 'Iron Shoulder', anim: 'shove', pose: 'enemyShove', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.2, shove: true, chance: 0.35,
+        hits: [{ startup: 0.85, active: 0.14, follow: 0.2 }], recovery: 0.75,
+        damage: 16, poise: 40, knock: 18, lunge: 2.4, range: 2.2, box: { w: 2.6, h: 2.2, d: 2.0, fwd: 1.4, y: 1.2 } },
+      { id: 'varnStomp', name: 'Key-Ring Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.4, commit: 0.5 }, poseScale: 1.2, rollOnly: true, chance: 0.4,
+        hits: [{ startup: 1.35, active: 0.14, follow: 0.4 }], recovery: 1.2,
+        damage: 44, poise: 70, knock: 10, lunge: 0, range: 2.6, box: { w: 5.6, h: 1.4, d: 5.6, fwd: 0.3, y: 0.6 },
+        impact: { ring: 4.0, crack: 2.0, dust: 18, shake: 0.12 } },
+      // The signature: a long crouch, a leap high along his locked aim, a crash that rings the ground. Long recovery.
+      { id: 'varnLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 1.8, commit: 0.45 }, poseScale: 1.4, rollOnly: true, minRange: 4, chance: 0.35,
+        hits: [{ startup: 1.9, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 13, short: 1.4 } }], recovery: 2.0,
+        damage: 60, poise: 90, knock: 12, lunge: 0, range: 13, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.6, y: 1.0 },
+        impact: { ring: 6.0, crack: 2.6, dust: 26, shake: 0.2 } },
+      // ---- Knell of Ash: the same moves, faster and fiercer ----
+      { id: 'knellSweep', name: 'Burning Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 3.2, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.35,
+        hits: [{ startup: 0.95, active: 0.14, follow: 0.34 }], recovery: 0.7,
+        damage: 42, poise: 60, knock: 8, lunge: 1.4, range: 3.6, box: { w: 5.4, h: 2.0, d: 3.8, fwd: 2.0, y: 1.2 } },
+      { id: 'knellCleave', name: 'Two-Step Cleave', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 3.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }], poseScale: 1.3,
+        hits: [{ startup: 0.75, active: 0.13, follow: 0.12 }, { startup: 0.5, active: 0.13, follow: 0.26 }], recovery: 0.7,
+        damage: 32, poise: 45, knock: 6, lunge: 2.4, range: 3.1, box: { w: 3.8, h: 1.8, d: 3.4, fwd: 1.8, y: 1.2 } },
+      { id: 'knellDelay', name: "Warden's Delay", anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 3.0, commit: 0.55 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.4,
+        hits: [{ startup: 1.3, active: 0.14, follow: 0.36, hold: { at: 0.5, time: [0.6, 1.4], chance: 0.8 } }], recovery: 0.9,
+        damage: 56, poise: 80, knock: 9, lunge: 1.8, range: 3.3, box: { w: 1.9, h: 3.0, d: 4.0, fwd: 2.2, y: 1.2 },
+        impact: { ring: 3.4, crack: 1.8, dust: 18, shake: 0.12 } },
+      { id: 'knellLunge', name: 'Shackle Lunge', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 3.4, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.2, minRange: 5, dash: { speed: 12.5, from: 0.45 }, chance: 0.8,
+        hits: [{ startup: 0.95, active: 0.16, follow: 0.24 }], recovery: 0.75,
+        damage: 38, poise: 55, knock: 8, lunge: 2.8, range: 13, box: { w: 1.5, h: 1.8, d: 3.4, fwd: 2.0, y: 1.2 } },
+      { id: 'knellStomp', name: 'Key-Ring Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 2.0, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.45,
+        hits: [{ startup: 1.15, active: 0.14, follow: 0.36 }], recovery: 1.0,
+        damage: 46, poise: 70, knock: 10, lunge: 0, range: 2.8, box: { w: 6.4, h: 1.4, d: 6.4, fwd: 0.3, y: 0.6 },
+        impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.14 } },
+      { id: 'knellLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.45 }, poseScale: 1.45, rollOnly: true, minRange: 4, chance: 0.45,
+        hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 1.5,
+        damage: 64, poise: 90, knock: 12, lunge: 0, range: 14, box: { w: 5.6, h: 2.4, d: 5.6, fwd: 0.6, y: 1.0 },
+        impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.22 } },
+      // ---- Knell of Ash: new attacks ----
+      // Four cuts, the last held a beat before it falls. Every cut can be parried.
+      { id: 'tollingChain', name: 'Tolling Chain', anim: 'sweep', pose: 'knellChain', tracking: { rate: 3.4, commit: 0.72 }, poseScale: 1.3, chance: 0.9,
+        markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }, { event: 'glint', parry: true, hit: 2 }, { event: 'glint', parry: true, hit: 3 }],
+        hits: [{ startup: 0.72, active: 0.13, follow: 0.1 }, { startup: 0.45, active: 0.13, follow: 0.1 }, { startup: 0.45, active: 0.13, follow: 0.1 },
+               { startup: 0.95, active: 0.15, follow: 0.36, hold: { at: 0.5, time: [0.3, 0.8], chance: 0.6 } }], recovery: 1.0,
+        damage: 28, poise: 40, knock: 6, lunge: 1.8, range: 3.0, box: { w: 3.6, h: 1.8, d: 3.2, fwd: 1.8, y: 1.2 } },
+      // A ground slash that throws a burning wave along the floor: sidestep or roll it.
+      { id: 'ashWave', name: 'Ash Wave', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.6, commit: 0.8 }, poseScale: 1.3, minRange: 4, chance: 0.5,
+        projectile: { speed: 15, gravity: 0, size: 0.6 },
+        hits: [{ startup: 1.15, active: 0.05, follow: 0.3 }], recovery: 0.9,
+        damage: 34, poise: 45, knock: 7, lunge: 0, range: 20, box: { w: 1, h: 1, d: 1, fwd: 1, y: 0.8 } },
+      // A rising cut that throws him into a short leap and a burning crash.
+      { id: 'burningAscent', name: 'Burning Ascent', anim: 'chop', pose: 'risingCrash', tracking: { rate: 2.6, commit: 0.6 }, poseScale: 1.35, rollOnly: true, chance: 0.4,
+        hits: [{ startup: 0.85, active: 0.14, follow: 0.12 }, { startup: 1.1, active: 0.16, follow: 0.45, leap: { from: 0.3, max: 9, short: 1.4 },
+          box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.6, y: 1.0 }, impact: { ring: 5.0, crack: 2.2, dust: 22, shake: 0.16 } }], recovery: 1.5,
+        damage: 40, poise: 70, knock: 9, lunge: 1.6, range: 3.2, box: { w: 2.6, h: 2.8, d: 3.0, fwd: 1.8, y: 1.3 } },
+      // The big one: he plants the blade; three tolls send three rings of fire out across the room (roll each as it
+      // reaches you), then a blast close round him. Long recovery after.
+      { id: 'lastToll', name: 'The Last Toll', anim: 'stomp', pose: 'tollingStamp', tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.3, rollOnly: true, chance: 0.25,
+        markers: [{ at: 'windup', t: 0, event: 'sound', sound: 'bellToll', vel: 1 }, { at: 'windup', t: 0, hit: 1, event: 'sound', sound: 'bellToll', vel: 0.9 },
+                  { at: 'windup', t: 0, hit: 2, event: 'sound', sound: 'bellToll', vel: 0.9 }],
+        hits: [{ startup: 1.6, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+               { startup: 1.0, active: 0.16, follow: 0.6, box: { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0 }, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.22 } }],
+        recovery: 2.2, damage: 40, poise: 60, knock: 10, lunge: 0, range: 9, box: { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0 } },
+    ],
+  },
 ];
 
 // Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,

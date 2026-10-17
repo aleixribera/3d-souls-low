@@ -694,7 +694,9 @@
   });
   test('the tower: a scripted run opens every gate in turn and completes the level', () => {
     const p = tower(); sturdy(p);
-    const opened = [];
+    const opened = [], next = A.LEVEL_4.next;
+    A.LEVEL_4.next = undefined;   // v4.3: the Tower carries on into Level 5; stay here to check the end of this one
+    try {
     for (const [x, z, zone] of TOWER_ROUTE) {
       const reached = sim.until(() => {
         for (const e of Game.enemies) if (e.alive() && !e.in('unaware') && e.state !== ES.DORMANT) e.die();   // whatever engages falls
@@ -712,6 +714,7 @@
     }
     expect.near(p.y, 22, 1e-6, 'on top of the tower');
     expect.ok(Game.complete && log.includes('levelComplete'), `LEVEL COMPLETE (${opened.length} gates)`);
+    } finally { A.LEVEL_4.next = next; }
   });
   test('the tower: the postern opens only from the stair side, back to the courtyard', () => {
     const p = tower(); sim.clearEnemies();
@@ -1900,6 +1903,97 @@
     const keep = Math.random; let calls = 0; Math.random = () => { calls++; return keep(); };
     try { m.init(new OfflineAudioContext(2, 44100, 44100)); m.play('hitFlesh'); m.play('footL'); } finally { Math.random = keep; }
     expect.ok(calls === 0, 'audio used Math.random ' + calls + ' times');
+  });
+
+  // ---- v4.3 Level 5: the Final Castle ------------------------------------------------------------------------------
+  const L5_WAY = [[60, 0], [86, 0], [100, 0], [98, 21], [114, 22], [129, 22], [114, 22], [98, 21], [100, -4], [120, -15], [120, -28], [108, -30],
+    [92, -30], [92, -10], [100, 0], [134, 0], [150, 0], [166, 0], [194, 0], [205, 0], [215, 0], [227.5, -9], [227.5, -14], [236, -16], [247.5, -14],
+    [247.5, -9], [254, 8], [254, 20], [254, 31], [230, 32], [208, 33], [206, 28], [206, 4], [206, 0], [250, 0], [262, 9.5], [262, 0], [282, 0],
+    [300, 0], [314, 0], [325, 0], [350, 0], [366, 0]];
+  test('Level 5: every room is walkable from the field to the throne, with the gates open', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    for (const g of world.gates) { g.open = true; g.lift = 1; }
+    for (const [x, z] of L5_WAY) expect.ok(sim.walkTo(x, z, 0.6, 25), `walked to (${x}, ${z}); stuck at (${Game.player.x.toFixed(1)}, ${Game.player.y.toFixed(1)}, ${Game.player.z.toFixed(1)})`);
+    expect.near(Game.player.y, 24, 0.1, 'up at the throne room floor');
+  });
+  test('Level 5: the field fight ends in a retreat over the wall: no death, the gate opens, bonfire 1 lights', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); log.length = 0;
+    const b = Game.enemies.find(e => e.def.id === 'varn'), B = A.LEVEL_5.bonfires[0], zone = Game.zones.find(z => z.id === 'zone-field');
+    expect.ok(b.def.phaseId === 'field' && b.hp === b.def.hp, 'Varn starts on his field bar');
+    expect.ok(!Game.bonfireLit(B) && !Game.nearBonfire(), 'bonfire 1 is cold before the fight is won');
+    sim.step(30); expect.ok(b.state !== ES.IDLE, `he comes for the player at once (${b.state})`);
+    b.deplete(); sim.step(2);
+    expect.ok(b.state === ES.RETREAT && b.invulnerable() && !log.includes('enemyDeath'), 'he retreats, untouchable, not dead');
+    sim.seconds(8);
+    expect.ok(b.state === ES.GONE && !b.alive() && !log.includes('enemyDeath'), `gone over the wall (${b.state}), never killed`);
+    expect.ok(zone.gate.open && Game.bonfireLit(B), 'the gate opened and bonfire 1 is lit');
+    expect.ok(!Game.target(), 'nothing left to show on the boss bar');
+    sim.place(B.x + 1, B.z); sim.step(2); expect.ok(!!Game.canRest(), 'bonfire 1 can be rested at');
+  });
+  test('Level 5: the throne fight: the fog seals, the transition hurts nobody, a new bar and name, death brings the ending', () => {
+    let wasDone = null; try { wasDone = localStorage.getItem('combatArena.complete'); } catch (err) { /* no storage */ }
+    A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, F = A.finale.state, fog = F.fog, b = Game.enemies.find(e => e.def.id === 'varn');
+    expect.ok(fog.gate.open, 'the fog door is open from the bonfire side');
+    sim.walkTo(330, 0, 0.6, 10); sim.step(10);
+    expect.ok(!fog.gate.open, 'it closed behind the player');
+    expect.ok(b.def.phaseId === 'throne' && b.def.name === 'Varn, the Gaoler King', 'first bar: the Gaoler King');
+    b.deplete(); sim.step(1);
+    expect.ok(b.state === ES.PHASE && b.def.name === 'Varn, Knell of Ash', 'the transition begins: renamed, Knell of Ash');
+    sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
+    sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
+    expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
+    expect.ok(b.hp === b.def.hp && b.def.hp === 1000, 'a fresh full bar');
+    expect.ok(!F.room.windows[0].mesh.visible && F.room.pillars.every(P => P.t > 0), 'the glass burst and the pillars fell');
+    b.deplete(); sim.step(2);
+    expect.ok(!b.alive() && Game.zones.find(z => z.id === 'zone-throne').gate.open && !!F.ending, 'his last bar: dead, the ending runs');
+    expect.ok(!A.hud.complete.classList.contains('show'), 'no LEVEL COMPLETE banner: the ending takes over');
+    expect.ok(A.finale.completed(), 'the game remembers it was finished');
+    try { if (wasDone === null) localStorage.removeItem('combatArena.complete'); } catch (err) { /* no storage */ }   // leave the player's own flag as it was
+  });
+  test('Level 5: dying in the throne room puts the player back at the final bonfire with the fog open and Varn whole', () => {
+    A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin();
+    const fog = A.finale.state.fog;
+    sim.walkTo(330, 0, 0.6, 10); sim.step(10); expect.ok(!fog.gate.open, 'sealed in');
+    const b = Game.enemies.find(e => e.def.id === 'varn'); b.deplete(); sim.step(2);
+    Game.player.hp = 0; Game.onPlayerDeath(); Game.player.setState(PS.DEAD);
+    sim.seconds(CONFIG.death.respawnDelay + 0.5);
+    const v = Game.enemies.find(e => e.def.id === 'varn');
+    expect.near(Game.player.x, 315.5, 0.5, 'back at the final bonfire');
+    expect.ok(fog.gate.open && v !== b && v.def.phaseId === 'throne' && v.hp === v.def.hp, 'fog open, Varn back on his first throne bar');
+    expect.ok(A.finale.state.room.windows.every(w => w.mesh.visible), 'the throne room is whole again');
+  });
+  test('Varn: every strike leaves a roll\'s i-frames a margin; each phase fights with its own attacks', () => {
+    const D = A.ENEMY_BY_ID.varn;
+    for (const a of D.attacks) for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    expect.ok(Object.keys(D.phases).join() === 'field,throne,knell', 'three phases');
+    expect.ok(D.phases.knell.attacks.length >= D.phases.throne.attacks.length + 3, 'Knell of Ash adds at least three attacks');
+    expect.below(D.phases.knell.cooldown[1], D.phases.throne.cooldown[1], 'Knell of Ash waits less between attacks');
+    expect.below(D.phases.throne.cooldown[1], D.phases.field.cooldown[1], 'the throne bar presses harder than the field');
+  });
+  test('Varn: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
+    faceOff(e, p, 8); quiet(e); e.notice = 0; const hp0 = p.hp;
+    e.beginAttack(toll); sim.until(() => e.state === ES.ACTIVE, 3); sim.seconds(0.3);
+    expect.below(p.hp, hp0, 'the first ring reached the player 8 m out');
+    Game.startFight('varn'); sim.begin(); sturdy(Game.player);
+    const q = Game.player, f = Game.duel; faceOff(f, q, 8); quiet(f); f.notice = 0; const hp1 = q.hp;
+    f.beginAttack(toll); sim.until(() => f.state === ES.WINDUP && f.stateTime >= toll.hits[0].startup + 0.08 - CONFIG.player.rollIFrames * 0.5, 3);
+    sim.press('roll'); sim.seconds(0.6);
+    expect.ok(q.hp === hp1, 'rolled through the ring');
+  });
+  test('Varn: the Judgement Leap lands along its locked aim and he takes no fall damage', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, leap = e.baseDef.attacks.find(a => a.id === 'varnLeap');
+    e.enterPhase(0); e.hp = e.def.hp;   // throne bar
+    faceOff(e, p, 9); quiet(e); e.notice = 0; const x0 = e.x, z0 = e.z;
+    e.beginAttack(leap); sim.until(() => e.state === ES.ACTIVE, 4);
+    expect.above(Math.hypot(e.x - x0, e.z - z0), 6, 'it leapt most of the way to the player');
+    expect.ok(e.hp === e.def.hp && !log.includes('fallDamage'), 'no fall damage from his own leap');
+  });
+  test('Level 4 now carries on into Level 5', () => {
+    expect.ok(A.LEVEL_4.next === 'final-castle' && A.LEVELS[A.LEVELS.length - 1].id === 'final-castle', 'the Tower leads to the castle, the last level');
   });
 
   async function run(filter = '') {

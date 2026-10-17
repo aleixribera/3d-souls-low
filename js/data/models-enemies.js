@@ -256,3 +256,89 @@ MODEL_DEFS.ashExecutioner = {   // bare shoulders, a closed pointed hood with em
     cloth: [{ bone: 'loinF', gain: 0.12, k: 60, damp: 5, flutter: 0.03 }, { bone: 'loinB', gain: 0.16, k: 50, damp: 4.5, flutter: 0.05 }],
   },
 };
+
+// ---- Level 5: the castle's own creatures (v4.3). None of them is a living person. ----------------------------------
+// Gargoyle: carved, weathered stone, hunched forward, horned, stone wings spread from the back, clawed hands.
+MODEL_DEFS.gargoyle = {
+  extends: 'hollowSoldier', faction: 'castle', budget: 'enemy', fit: 1.12,
+  proportions: { shoulderX: 0.33, torsoW: 0.22, torsoD: 0.16, armR: 0.06, legR: 0.085, headR: 0.13, handR: 0.06, footLen: 0.3 },
+  limbs: { armL: { len: 1.15 }, armR: { len: 1.15 } },
+  posture: { chest: [0.62, 0, 0], neck: [-0.25, 0, 0], head: [-0.2, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0], wingL: [0.35, 0.2, -1.05], wingR: [0.35, -0.2, 1.05] },
+  materials: {
+    stone: { tex: 'stone', tint: 0x8a877e, decay: 0.75 },
+    moss: { tex: 'stone', tint: 0x6a6e5a, decay: 0.9 },
+    wing: { tex: 'stone', tint: 0x75726a, decay: 0.8, double: true },
+    eye: { glow: 0x9ac8ff },
+  },
+  body: { torso: 'stone', pelvis: 'stone', arms: 'stone', legs: 'stone', head: 'stone', neck: 'stone', hands: 'stone', feet: 'stone' },
+  bones: { wingL: { parent: 'chest', at: [0.12, 0.5, -0.17] }, wingR: { parent: 'chest', at: [-0.12, 0.5, -0.17] } },
+  parts: [
+    { use: 'spineBumps', slot: 'moss', bone: 'chest' },
+    { use: 'horns', slot: 'stone', bone: 'head', size: 0.75 },
+    { use: 'capeSegment', slot: 'wing', bone: 'wingL', w0: 0.12, w1: 0.55, len: 0.75, bow: 0.4 },
+    { use: 'capeSegment', slot: 'wing', bone: 'wingR', w0: 0.12, w1: 0.55, len: 0.75, bow: 0.4 },
+    { use: 'spikes', slot: 'moss', bone: 'armL', size: 0.9 }, { use: 'spikes', slot: 'moss', bone: 'armR', size: 0.9, side: -1 },
+  ],
+  weapon: null,
+  eyes: { color: 0x9ac8ff, size: 0.018, spread: 0.055, at: [0, 0.1, 0.11] },
+  anim: { attackMul: 1, idle: { breathRate: 0.4, breath: 0.004, headDrift: 0.15, sway: 0.0, twitch: 0.8 }, walk: { twist: 0.25, roll: 0.08, headNod: 0.05, elbow: 0.7, drag: 0.2 },
+          flinch: { head: 0.6, chest: 0.6, arms: 0.6 }, death: { buckle: 1, slump: 1 },
+          cloth: [{ bone: 'wingL', gain: 0.05, k: 80, damp: 7, flutter: 0.01 }, { bone: 'wingR', gain: 0.05, k: 80, damp: 7, flutter: 0.01 }] },
+};
+// Empty Sentinel: a giant suit of plate with nothing inside: the gaps between the plates are black, and cold blue light
+// shows through the visor. Tarnished bronze and slate, the castle's colours.
+MODEL_DEFS.emptySentinel = {
+  extends: 'ironKnight', faction: 'castle', budget: 'enemy', fit: 1.0,
+  proportions: { shoulderX: 0.4, torsoW: 0.26, torsoD: 0.18, armR: 0.07, legR: 0.09, headR: 0.13, handR: 0.065, footLen: 0.32 },
+  posture: { chest: [0.02, 0, 0], neck: [0.05, 0, 0], head: [0.08, 0, 0.06], elbowL: [-0.3, 0, 0], elbowR: [-0.3, 0, 0] },
+  materials: {
+    plate: { tex: 'dentedSteel', tint: 0x6a6450, decay: 0.75 },
+    void: { tex: 'ashSoot', tint: 0x202024, decay: 0.3 },
+    rust: { tex: 'rustedIron', tint: 0x7a6a5a, decay: 0.85 },
+    tabard: { tex: 'rottenCloth', tint: 0x3e4a58, decay: 0.85, double: true },
+    wood: { tex: 'barkMoss', tint: 0x5a4a3a, decay: 0.4 },
+    blade: { tex: 'rustedIron', tint: 0x8a8680, decay: 0.6 },
+    eye: { glow: 0x9ad0ff },
+  },
+  body: { torso: 'void', pelvis: 'void', arms: 'void', legs: 'void', head: null, neck: 'void', hands: 'plate', feet: 'plate' },
+  bones: IRONBOUND_BONES,
+  parts: [
+    { use: 'jerkin', slot: 'plate', bone: 'chest' }, { use: 'mailSkirt', slot: 'rust', bone: 'spin' },
+    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.25, crest: 0.18 },
+    { use: 'pauldron', slot: 'plate', bone: 'armL', size: 1.6 }, { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.6, side: -1 },
+    { use: 'wraps', slot: 'plate', bone: 'elbowL', from: 0.06, to: 0.28, radius: 0.07, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'elbowR', from: 0.06, to: 0.28, radius: 0.07, count: 2 },
+    { use: 'wraps', slot: 'plate', bone: 'legL', from: 0.04, to: 0.3, radius: 0.1, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'legR', from: 0.04, to: 0.3, radius: 0.1, count: 2 },
+    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.09, count: 2 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.09, count: 2 },
+    { use: 'clothStrip', slot: 'tabard', bone: 'loinF', w: 0.3, len: 0.7, seed: 4 }, { use: 'clothStrip', slot: 'tabard', bone: 'loinB', w: 0.32, len: 0.8, seed: 8 },
+  ],
+  weapon: { use: 'halberd', slots: { blade: 'blade', grip: 'wood', guard: 'rust' } },
+  eyes: { color: 0x9ad0ff, size: 0.02, spread: 0.06, at: [0, 0.14, 0.17] },
+  anim: IRONBOUND_ANIM,
+};
+// Toll Wisp: a hooded robe hanging round blue flame, a little bell where a face would be. No body: the arms and the
+// hands are flame. It glides; the robe hides where legs would be.
+MODEL_DEFS.tollWisp = {
+  extends: 'hollowSoldier', faction: 'castle', budget: 'enemy', fit: 1.0,
+  proportions: { shoulderX: 0.26, torsoW: 0.16, torsoD: 0.12, armR: 0.04, legR: 0.05, headR: 0.11, handR: 0.045, footLen: 0.2 },
+  limbs: {},
+  posture: { chest: [0.18, 0, 0], neck: [0.15, 0, 0], head: [0.1, 0, 0], elbowL: [-0.6, 0, 0], elbowR: [-0.6, 0, 0] },
+  materials: {
+    flame: { glow: 0x2a5ab8 },
+    robe: { tex: 'rottenCloth', tint: 0x3a4250, decay: 0.85, double: true },
+    bell: { tex: 'dentedSteel', tint: 0x9a8050, decay: 0.6 },
+    eye: { glow: 0xc8e4ff },
+  },
+  body: { torso: 'flame', pelvis: 'flame', arms: 'flame', legs: 'flame', head: null, neck: 'flame', hands: 'flame', feet: 'flame' },
+  bones: { robeF: { parent: 'spin', at: [0, 0.0, 0.12] }, robeB: { parent: 'spin', at: [0, 0.0, -0.12] } },
+  parts: [
+    { use: 'hood', slot: 'robe', bone: 'head', size: 1.15, tail: 0.4, close: 0.2 },
+    { use: 'bellHelm', slot: 'bell', bone: 'head', size: 0.5 },
+    { use: 'bellSkirt', slot: 'robe', bone: 'spin' },
+    { use: 'clothStrip', slot: 'robe', bone: 'robeF', w: 0.32, len: 0.85, seed: 3 }, { use: 'clothStrip', slot: 'robe', bone: 'robeB', w: 0.34, len: 0.9, seed: 7 },
+  ],
+  weapon: null,
+  eyes: { color: 0xc8e4ff, size: 0.016, spread: 0.04, at: [0, 0.06, 0.1] },
+  anim: { attackMul: 1, idle: { breathRate: 1.8, breath: 0.03, headDrift: 0.2, sway: 0.06, twitch: 0 }, walk: { twist: 0.05, roll: 0.02, headNod: 0.02, elbow: 0.2, drag: 0 },
+          flinch: { head: 1, chest: 1, arms: 1 }, death: { buckle: 0.6, slump: 0.6 },
+          cloth: [{ bone: 'robeF', gain: 0.2, k: 40, damp: 3.5, flutter: 0.1 }, { bone: 'robeB', gain: 0.22, k: 36, damp: 3.2, flutter: 0.12 }] },
+};

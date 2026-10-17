@@ -33,10 +33,11 @@ const Game = {
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
-        items: [...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })),
+        items: [...finale.devItems(),
+                ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.startFight(d.id) }))] },
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
-        items: LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })) },
+        items: LEVELS.map(l => ({ name: l.name + (l.ending && finale.completed() ? '  ✦' : ''), desc: l.description, go: () => this.startLevel(l.id) })) },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
         items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.startFight(d.id) })) },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: [
@@ -190,7 +191,7 @@ const Game = {
   },
   placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;
-    const base = { behavior, notice: CONFIG.notice[behavior], leash: V.leash, homeLeash: V.homeLeash, variant: entry.variant };
+    const base = { behavior, notice: entry.notice ?? CONFIG.notice[behavior], leash: entry.leash ?? V.leash, homeLeash: entry.homeLeash ?? V.homeLeash, variant: entry.variant };   // a placement may set its own notice and leashes (a boss)
     if (behavior === 'ambush') {
       const a = L.alcoves.find(al => al.id === entry.alcove);
       return { ...base, x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * V.ambushDepth), yaw: a.side > 0 ? Math.PI : 0 };
@@ -226,6 +227,7 @@ const Game = {
       spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));   // a duel on a level fights no zones
     this.spawnPlayer();
     hud.reset(this);
+    finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
     visuals.warmUp(this.cam);   // every pooled effect drawn once, so none stalls the first time it shows
     if (this.isTutorial()) {
       this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
@@ -246,9 +248,15 @@ const Game = {
   },
 
   // ---- bonfires, death -------------------------------------------------------------------------
+  // A bonfire with `litBy` (a zone id) is cold and unusable until that zone is won.
+  bonfireLit(b) {
+    if (!b.litBy) return true;
+    const z = this.zones.find(q => q.id === b.litBy);
+    return !!z && z.gate.open;
+  },
   nearBonfire() {
     const p = this.player;
-    return world.bonfires.find(b => Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range
+    return world.bonfires.find(b => this.bonfireLit(b) && Math.hypot(b.x - p.x, b.z - p.z) < CONFIG.rest.range
       && Math.abs(world.floorY(b.x, b.z, b.y) - p.y) < CONFIG.height.reach) || null;
   },
   // The bonfire the player could rest at right now, or null (none near, or an enemy is closing in).
@@ -289,7 +297,7 @@ const Game = {
   spawnZone(z) {
     z.spawned = true;
     z.actors = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')]).filter(([, key]) => !this.cleared.has(key))
-      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key }));
+      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss }));
     z.beaten = z.members.length > 0 && z.actors.length === 0;   // every member beaten before a rest: its gate opens
     this.enemies.push(...z.actors);
   },
@@ -382,7 +390,7 @@ const Game = {
     if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
       this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t) || null);
     } else if (t) {
-      if (!t.alive() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
+      if (!t.alive() || !t.awake() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
       else {
         // Off screen, or hidden behind cover (walls, pillars, props, floors): let go only once it has lasted a while.
         this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
@@ -714,7 +722,7 @@ const Game = {
   // Culled levels: an unaware enemy far from the player sleeps (no update, not drawn) until the player comes
   // near or an alert wakes it. Enemies that are fighting, reeling or dying always run.
   sleeps(e) {
-    e.asleep = this.kind === 'level' && !!this.level.cull && e.alive() && (e.in('unaware') || e.state === ES.DORMANT)
+    e.asleep = this.kind === 'level' && !!this.level.cull && !e.boss && e.alive() && (e.in('unaware') || e.state === ES.DORMANT)   // a boss placement never sleeps
       && Math.hypot(e.x - this.player.x, e.z - this.player.z) > CONFIG.cull.enemyRange;
     return e.asleep;
   },
@@ -732,6 +740,7 @@ const Game = {
       if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
         this.spawnPlayer(); this.setLock(null); this.retarget = true;
         if (!this.isTutorial()) this.respawnEnemies();
+        events.emit('respawn', { player: this.player });
         return;
       }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
@@ -760,7 +769,7 @@ const Game = {
     }
     if (!p.alive()) this.onPlayerDeath();
     if (this.isTutorial()) this.updateTutorial(dt);
-    else if (this.kind === 'level') this.updateLevel(dt);
+    else if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); }
     this.updateCamera(dt, false);
   },
 
@@ -791,6 +800,7 @@ const Game = {
       lockMarker.rotation.y = t * 2.5;
     }
     for (const g of world.gates) placeGate(g);
+    for (const f of stage.bonfireFires || []) { const lit = this.bonfireLit(f.bonfire); f.group.visible = lit; f.flame.base = lit ? f.base : 0; }   // cold until lit
     for (const t of world.traps) placeTrap(t);
     // Irregular, subtle flicker in brightness and warmth.
     flames.forEach((f, i) => {

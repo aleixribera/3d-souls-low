@@ -29,6 +29,15 @@ function validateData() {
     if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
     if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
       `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
+    // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
+    for (const h of Array.isArray(a.hits) ? a.hits : []) {
+      if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);
+      if (h.box && 'ring' in h.box) need(h.box.ring && ['from', 'to', 'width', 'time'].every(k => num(h.box.ring[k]) && h.box.ring[k] >= 0) && h.box.ring.time > 0,
+        `${tag}: a hit's ring needs from, to, width and time (numbers; time above 0).`);
+      if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0), `${tag}: a hit's impact needs ring, crack, dust and shake.`);
+      if ('leap' in h) need(h.leap && num(h.leap.from) && h.leap.from > 0 && h.leap.from < 1 && num(h.leap.max) && h.leap.max > 0 && (!('short' in h.leap) || num(h.leap.short)) && !a.dash,
+        `${tag}: a hit's leap needs from (0 to 1 of its wind-up) and max (m), optionally short (m); not on a dashing attack.`);
+    }
     if (Array.isArray(a.hits) && a.hits.length) checkAttackAnim(a, tag, need);   // four-phase fields (js/attack-anim.js)
   };
   // Enemies
@@ -51,6 +60,21 @@ function validateData() {
     if ('kite' in d) need(num(d.kite) && d.kite >= 0 && d.kite <= 1, `Enemy "${d.id}": kite must be a number from 0 to 1 (a chance).`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'damageMul', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime, damageMul and hitstop.`);
+    if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
+    // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
+    if ('phases' in d) {
+      const P = d.phases, aids = new Set(d.attacks.map(a => a && a.id));
+      need(P && typeof P === 'object' && Object.keys(P).length > 0, `Enemy "${d.id}": phases must name at least one phase.`);
+      for (const [pid, ph] of Object.entries(P || {})) {
+        const tag = `Enemy "${d.id}" phase "${pid}"`;
+        need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
+        if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
+          `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
+        if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);
+        if (ph && 'name' in ph) need(typeof ph.name === 'string' && ph.name.length > 0, `${tag}: name must be text.`);
+      }
+      if ('defaultPhases' in d) need(Array.isArray(d.defaultPhases) && d.defaultPhases.length > 0 && d.defaultPhases.every(id => P && id in P), `Enemy "${d.id}": defaultPhases must list its phase ids.`);
+    }
     if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
       const L = ALL_LEVELS.find(l => l.id === d.arena), ok = p => p && num(p.x) && num(p.z) && num(p.yaw)
         && L && L.layout === 'rooms' && Number.isFinite(terrainFor(L).floorY(p.x, p.z, p.y));
@@ -277,6 +301,13 @@ function validateRooms(L, where, need, num) {
       need(m.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${m.enemy}".`);
       need(!m.behavior || m.behavior === 'gated' || m.behavior === 'slumber', `${tag}: enemy behaviour must be gated or slumber.`);
       need(m.spawn && onFloor(m.spawn.x, m.spawn.z, m.spawn.y) && num(m.spawn.yaw), `${tag}: enemy "${m.enemy}" spawn does not stand on a floor (or has no yaw).`);
+      if ('boss' in m) {   // a boss placement: which phases it fights, and an optional retreat when the last one ends
+        const D = ENEMY_BY_ID[m.enemy], B = m.boss, R = B && B.retreat, tri = v => Array.isArray(v) && v.length === 3 && v.every(num);
+        need(D && D.phases && B && Array.isArray(B.phases) && B.phases.length > 0 && B.phases.every(id => id in D.phases),
+          `${tag}: boss.phases must list phase ids of "${m.enemy}".`);
+        if (B && 'retreat' in B) need(R && ['kneel', 'hop', 'wait', 'fly', 'height'].every(k => num(R[k]) && R[k] >= 0) && R.hop > 0 && R.fly > 0 && tri(R.to) && tri(R.out),
+          `${tag}: boss.retreat needs kneel, hop, wait, fly and height (s and m) and to, out ([x, y, z]).`);
+      }
     }
   }
   // Shortcut gates: a gate in a doorway that opens for good from its far side (`opensFrom`, a rect).
@@ -293,6 +324,7 @@ function validateRooms(L, where, need, num) {
     const tag = `${where} sealed gate "${sg.id}"`;
     need(typeof sg.id === 'string' && !zoneIds.has(sg.id), `${tag}: missing id, or the same as a zone, a shortcut or another sealed gate.`); zoneIds.add(sg.id);
     checkGate(sg.gate, tag);
+    if ('fog' in sg) need(L.gated.some(g => g.id === sg.fog), `${tag}: fog must name the zone it seals (a zone of the level).`);
   }
   // Traps: a collapse area on one room's floor, with a floor below it to land on; a trigger on a floor; a warning time.
   if ('traps' in L) need(Array.isArray(L.traps), `${where}: traps must be a list.`);
@@ -315,9 +347,9 @@ function validateRooms(L, where, need, num) {
   for (const s of L.dispersed) {
     const tag = `${where} enemy "${s.enemy}" (${s.behavior})`;
     need(s.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${s.enemy}".`);
-    need(['patrol', 'slumber', 'sentry'].includes(s.behavior), `${tag}: use patrol, slumber or sentry in a room level.`);
+    need(['patrol', 'slumber', 'sentry', 'perch'].includes(s.behavior), `${tag}: use patrol, slumber, sentry or perch in a room level.`);
     if (s.behavior === 'patrol') need(Array.isArray(s.path) && s.path.length === 2 && s.path.every(x => onFloor(x, s.z, s.y)), `${tag}: patrol path does not stand on a floor.`);
-    if (s.behavior === 'slumber' || s.behavior === 'sentry') need(onFloor(s.x, s.z, s.y) && num(s.yaw), `${tag}: needs x, z and yaw on a floor.`);
+    if (s.behavior === 'slumber' || s.behavior === 'sentry' || s.behavior === 'perch') need(onFloor(s.x, s.z, s.y) && num(s.yaw), `${tag}: needs x, z and yaw on a floor.`);
     if ('zone' in s) need(zoneIds.has(s.zone) && L.gated.some(g => g.id === s.zone), `${tag}: zone "${s.zone}" is not a zone of the level.`);
   }
   for (const b of L.bonfires) {
@@ -325,7 +357,19 @@ function validateRooms(L, where, need, num) {
       `${where} bonfire "${b.id}": it and its spawn must stand on a floor (not over a pit).`);
     const z = b.spawn && L.gated.find(g => areaOk(g.trigger) && inArea(g.trigger, b.spawn.x, b.spawn.z));
     need(!z, `${where} bonfire "${b.id}": its spawn is inside zone "${z && z.id}".`);
+    if ('litBy' in b) need(L.gated.some(g => g.id === b.litBy), `${where} bonfire "${b.id}": litBy must name a zone of the level.`);
   }
+  // The last level's extras (v4.3, js/finale.js): out-of-reach sightings, ambush hints, developer jumps.
+  if ('ending' in L) need(typeof L.ending === 'boolean', `${where}: ending must be true or false.`);
+  for (const sp of L.spectators || []) {
+    const tag = `${where} spectator "${sp.id}"`, D = ENEMY_BY_ID[sp.enemy];
+    need(!!D && !!D.model, `${tag}: enemy "${sp.enemy}" must exist and have a model.`);
+    need(['x', 'y', 'z', 'yaw', 'watch'].every(k => num(sp[k])) && rectOk(sp.trigger) && Array.isArray(sp.leave) && sp.leave.length === 2 && sp.leave.every(num),
+      `${tag}: needs x, y, z, yaw, watch (s), trigger (a rect) and leave [dx, dz].`);
+  }
+  for (const h of L.hints || []) need(h.kind === 'corpse' && onFloor(h.x, h.z, h.y) && num(h.yaw), `${where}: a hint must be { kind: 'corpse', x, z, yaw } on a floor.`);
+  for (const j of L.devJumps || []) need(typeof j.name === 'string' && (j.at === null || L.bonfires.some(b => b.id === j.at)) && Array.isArray(j.won) && j.won.every(id => L.gated.some(g => g.id === id)),
+    `${where}: dev jump "${j.name}" needs at (a bonfire id or null) and won (zone ids).`);
   // Houses stand outside the rooms (or free on an open room's floor), on or below the floors they face; an enterable
   // house's rooms lie inside it.
   for (const Hs of L.houses || []) {

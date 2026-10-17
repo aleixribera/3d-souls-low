@@ -12,6 +12,9 @@ const ES = Object.freeze({   // enemy
   IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
   RETURN: 'return', SEARCH: 'search', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
   HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', BROKEN: 'broken', DEAD: 'dead',
+  // Bosses with phases (v4.3): PHASE between two health bars (invulnerable), RETREAT leaping away when a fight ends
+  // in a retreat (invulnerable, scripted), GONE once it has left (not alive, never drawn).
+  PHASE: 'phase', RETREAT: 'retreat', GONE: 'gone',
 });
 // The four phases of every attack: wind-up (STARTUP), strike (ACTIVE, the only phase with a hitbox), follow-through
 // (FOLLOW, the blade carries on past the target) and recovery (back to guard; the only one a roll can cancel).
@@ -30,7 +33,8 @@ const PLAYER_GROUPS = {
 };
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player
-  hidden: new Set([ES.LURK, ES.DORMANT]),                               // not a target yet
+  hidden: new Set([ES.LURK, ES.DORMANT, ES.RETREAT, ES.GONE]),          // not a target (yet, or any more)
+  invulnerable: new Set([ES.PHASE, ES.RETREAT, ES.GONE]),               // hits pass through (a boss between phases)
   canFlinch: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN, ES.SEARCH, ES.CHASE, ES.RECOVER]),
   narrowSight: new Set([ES.IDLE, ES.PATROL, ES.RETURN]),               // unaware and looking about: sees only in its cone
   shrugsHits: new Set([ES.PARRIED, ES.RISE, ES.LEAP]),                  // take damage, no state change
@@ -47,6 +51,7 @@ const BEHAVIORS = {
   patrol: { start: ES.PATROL, home: ES.PATROL },   // walks a short path
   slumber: { start: ES.DORMANT, home: ES.IDLE },   // lying on the floor until the player is close
   sentry: { start: ES.IDLE, home: ES.IDLE },       // a lookout at its post (a rampart archer): sees far, belongs to no zone
+  perch: { start: ES.LURK, home: ES.IDLE },        // crouched still on a ledge (a gargoyle) until the player comes close, then leaps
   dummy: { start: ES.IDLE, home: ES.IDLE, training: true },
   sparring: { start: ES.IDLE, home: ES.IDLE, training: true },
 };

@@ -18,8 +18,10 @@
 //     Bell Warden, railed on the courtyard side and open on the cliff side.
 const LEVEL_4 = {
   id: 'the-tower', layout: 'rooms', alert: true, cull: true,
+  next: 'final-castle',   // the bell is rung: on to the castle, where its lord answers (v4.3)
   name: 'Level 4: The Tower',
   description: 'A cliff-top keep. Past the gatehouse the floor gives way: fight out of the undercroft, cross the courtyard, take the ramparts, and climb the walkways round the tower to its bell.',
+  completeHint: 'The bell has rung. By the old law, the lord of the castle must come out and answer…',
   help: 'Level 4: win each fight to open the way on. Past the gatehouse the passage floor gives way: fight your way out of the undercroft. Falls from the walkways hurt or kill; the cliff side is a drop to your death. Bowmen shoot whenever they see you.',
   wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5,
   // A cold dusk over the cliffs: wind-blown ash, grass in the courtyard, ruins on the skyline.

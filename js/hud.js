@@ -200,6 +200,7 @@ const hud = {
     if (e !== this.target) { this.target = e; this.bossLag.set(eh); this.eName.textContent = e.def.name; this.lastBossHp = e.hp; this.tally = this.tallyTimer = 0; this.lastPosture = e.posture || 0; }
     if (e.hp < this.lastBossHp - 1e-6) { this.tally += this.lastBossHp - e.hp; this.tallyTimer = H.tallyHold; this.eDmg.textContent = `−${Math.round(this.tally)}`; }
     this.lastBossHp = e.hp;
+    if (this.eName.textContent !== e.def.name) this.eName.textContent = e.def.name;   // a boss's next phase renames it
     const trail = this.bossLag.update(eh, dt);
     this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = trail * 100 + '%';
     this.ePost.classList.toggle('hidden', !e.def.posture);
@@ -263,7 +264,7 @@ const hud = {
     }
     this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);
     this.won.classList.toggle('show', game.duelWon() && p.alive());
-    this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive());
+    this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
   showHitboxes() { return this.helpOpen() && this.toggle.checked; },

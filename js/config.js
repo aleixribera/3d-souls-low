@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v4.2.4';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v4.3';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -94,7 +94,7 @@ const CONFIG = {
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
            patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
-  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, dummy: 0, sparring: 0 },
+  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 7.5, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line
   // between them; props don't block it) and every other enemy of its zone, and those pass it on in turn.
   alert: { radius: 14 },
@@ -158,6 +158,22 @@ const CONFIG = {
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5 },   // hintTime: a dodge hint stays under the prompt this long
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
+  // Level 5's script (js/finale.js, v4.3): Varn's fights, the throne room's transition, the ending.
+  finale: {
+    pulse: { calm: 2.4, hot: 1.2 },          // s between beats of the boss pulse: his first bars / Knell of Ash
+    grit: { range: 4, every: 0.7, dust: 6 },  // a perched enemy's warning: within its notice + `range` m, grit and a grind every `every` s
+    fogClose: 0.7,                            // s for the throne room portcullis to drop behind the player
+    // The transition into Knell of Ash (s into it; the phase's own `transition` is its length). Nothing here can hurt.
+    timeline: [{ at: 0.3, act: 'toll' }, { at: 1.8, act: 'shatter' }, { at: 3.8, act: 'toll' }, { at: 5.0, act: 'pillar', i: 0 },
+               { at: 6.4, act: 'pillar', i: 1 }, { at: 7.8, act: 'toll' }, { at: 9.0, act: 'ignite' }, { at: 10.4, act: 'roar' }],
+    igniteAt: 9.0,                            // when his armour catches (the visual change)
+    glow: { color: 0xff5a18, base: 0.1, pulse: 0.06, rate: 3.2 },   // the burning armour's emissive glow
+    embers: 30,                               // embers rising off him per second, burning
+    pillarFall: 1.6,                          // s a toppling pillar takes to land
+    roomLight: 3.2,                           // the throne room's fire light once he burns
+    death: { stagger: 1.2, kneel: 2.6, blaze: 4.4, fade: 9.5, overlay: 11.5 },   // s after the killing blow
+    ending: { card: 6, credits: 24, hold: 5 },   // s per ending card, the credits' roll, then the way back to the title
+  },
   // HUD (js/hud.js): everything is laid out on a stage of design pixels scaled by min(width / refWidth, height / refHeight),
   // kept within minScale..maxScale, times the player's HUD scale setting. Below `narrowWidth` design px wide it
   // switches to the compact layout. Times are seconds. Calm: after `calmDelay` s without a threat the vitals dim

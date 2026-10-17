@@ -1,6 +1,8 @@
-# Combat Arena 3D
+# Combat Arena 3D — v4.3: The Last Toll
 
-A small Souls-like 3D action game that runs straight from one HTML file (Three.js from a CDN, no build step).
+A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**The story.** You wake in the prison of the castle's lord. You break out of the Long Hall and the Sunken Keep, fight through the town his invaders burned, and climb the Tower to ring its bell: by the old law, whoever rings it calls the lord out to answer. In the last level he answers. Five levels, a tutorial, three bosses before the last, and an ending.
 
 Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls. The game plays best with a gamepad: every level and duel opens on a short loading screen that says so, with a small controller icon. The version shows in the bottom-right corner of the menus.
 
@@ -11,7 +13,8 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
 - **Levels → Level 3: The Burning Town** — the town below the Tower, sacked and set alight by the invaders, at sunset. About 10 minutes, climbing in terraces from the lower gate (where the Keep comes out) to the upper town gate, with a massive castle on the horizon ahead, the sun setting behind it. Street by street, each fight's barricade falls once it is won: a lone Ashen Lancer, the sacked market, a Lancer below with an optional Rampart Bowman on a balcony above (reached through the stair house; jump its low rail to drop back down), a Pale Duelist round a bend in an alley, the fountain square, and the church square under a Bowman on the church gallery. The Pillager Captain holds the upper square. Two bonfires (the second in the tavern), a shortcut stair from the fountain square down to the first, a sleeping Knight in a yard, and one drop that hurts.
 - **Levels → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
-- **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, the Pillager Captain and the Bell Warden.
+- **Levels → Level 5: The Final Castle** — the longest level and the game's final test, about 30–40 minutes on a first run. It opens straight into the fight with **Varn, the Gaoler King** on the field before his castle; break him and he leaps onto his walls and is gone, his gate gives way, and the first bonfire lights. Then the outer ward (a courtyard under a wall walk of archers, the barracks and their shortcut, and the **Empty Sentinel** holding the moat bridge), the inner keep (the great hall and its kitchen, the ramparts with Gargoyles on the walk), and the throne approach (an ash bridge under Toll Wisps, then the processional gauntlet). You glimpse Varn twice on the way. Four bonfires; the last is a short run from the fog at the throne room door. In the throne room he fights again, and when his bar breaks the bell tolls, the glass bursts, the pillars fall and he rises as **Varn, Knell of Ash**: a new bar, new attacks and fire. Beat him for the ending and the credits.
+- **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, Gargoyle, Empty Sentinel, Toll Wisp, the Pillager Captain, the Bell Warden and Varn (his throne room fight, both bars).
 
 ## Characters (v4.1: Bone and Ash)
 
@@ -43,10 +46,19 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 - **Fairer fights.** Boss strikes (Giant Skeleton, Executioner spin, Pillager Captain, Bell Warden) are active for a shorter time, so a well-timed roll gets through. Unblockable (blue) strikes hit harder. Ranged enemies and bosses often step in after attacking instead of always backing off. The Fast Rogue and Pale Duelist are a little slower and take turns in groups.
 - **Town and tutorial.** Bowmen never hold a barricade shut, and the balcony and gallery rails are low enough to jump. The tutorial's heavy step wants a fully charged heavy. Boss wind-up glows light only the weapon.
 
-## Coming next (planned)
+## Bosses
 
-- A story, an All Levels mode and title cards.
-- Level 5 and the final boss, in the castle on the horizon.
+- **Pillager Captain** (Level 3) — halberd thrusts from afar, a three-cut combo to parry, a burning overhead to roll.
+- **Bell Warden** (Level 4) — a bronze colossus with a temple bell for a hammer: sweeps, an unblockable slam, a push off the tower, a charge.
+- **Varn, the Gaoler King** (Level 5, outside and in the throne room) — a sweep, a two-step cleave, a delayed overhead, a lunge from range, a shoulder barge, an unblockable stomp, and the **Judgement Leap**: a long crouch, a leap along his locked aim and a crash that rings the ground (then he is open for a while). In the throne room he presses harder.
+- **Varn, Knell of Ash** (his second phase) — faster, longer combos, fiercer tracking in his wind-ups (the commit points are as honest as ever), and four new attacks: the four-cut Tolling Chain, the Ash Wave thrown along the floor, the Burning Ascent into a leaping crash, and **The Last Toll**: the bell rings three times and three rings of fire sweep the room (roll each as it reaches you), then a blast at his feet. His armour cracks and burns, embers stream off him, and the boss drum quickens.
+
+## Changelog
+
+- **v4.3 — The Last Toll:** Level 5, The Final Castle: the opening fight and retreat, three sections, four bonfires, the throne room and Varn's second phase, the ending and credits (a ✦ marks the level once finished). New enemies: Gargoyle (perches and springs; grit falls first), Empty Sentinel, Toll Wisp (rings before it shoots). Bosses can now have several health bars, retreat instead of dying, leap, and strike with expanding rings. Level 4 now carries straight on into Level 5. Dev builds: Level 5 jumps in Test Grounds and F10 to empty a boss bar.
+- **v4.2.4:** checkpoints, exhaustion, smarter enemies, fairer bosses (below).
+- **v4.2 — Weight of Steel:** four-phase combat animation (below).
+- **v4.1 — Bone and Ash:** procedural character models (below).
 
 ## Controls
 
@@ -84,6 +96,8 @@ await __arena.tests.run()
 ```
 
 It plays the real game with a manual clock (scripted movement, no rendering delay) and prints `N/N passed`. `__arena.tests.run('heights')` runs only the tests whose name contains a word.
+
+Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Varn's retreat, his phase change, or his death and the ending).
 
 Developer viewers (open with `#dev`): **F8** shows the texture library, **F9** the model lab (four views and a silhouette test; step through each attack and reaction; toggle the `elite` variant). From the console: `MODELLAB.open('ironKnight')`.
 

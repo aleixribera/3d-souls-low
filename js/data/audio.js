@@ -216,6 +216,60 @@ const AUDIO = {
       { wave: 'sine', freq: 440, partials: [[1, 0.6, 1], [2.76, 0.12, 0.4]], at: 0.15, a: 0.001, d: 2.4, gain: 0.07 },
     ] },
 
+    // ---- Level 5: the castle (v4.3) ----
+    // The great bell tolling far off: a deep strike with inharmonic partials and a very long ring.
+    bellToll: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 2, verb: 0.8, heat: 0.5, jitter: 0, layers: [
+      { wave: 'sine', freq: 82, partials: [[1, 1, 1], [2.0, 0.6, 0.8], [2.76, 0.45, 0.6], [5.4, 0.2, 0.35], [8.9, 0.08, 0.2]], a: 0.004, d: 6.5, gain: 0.5 },
+      { wave: 'sine', freq: 41, a: 0.01, d: 5, gain: 0.35 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, q: 1.2 }, a: 0.001, d: 0.12, gain: 0.25 },
+    ] },
+    // A Toll Wisp's little bell before it shoots: bright, short, clear.
+    wispToll: { bus: 'sfx', priority: 2, cooldown: 0.2, verb: 0.5, heat: 0.1, jitter: 60, layers: [
+      { wave: 'sine', freq: [980, 1060], partials: [[1, 1, 1], [2.76, 0.4, 0.5], [5.4, 0.15, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },
+    ] },
+    // The boss pulse: a low drum and drone beat that runs under a boss fight; the second phase adds the hotter one.
+    bossPulse: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 2, verb: 0.35, heat: 0, jitter: 0, layers: [
+      { wave: 'sine', freq: 55, to: 38, a: 0.01, d: 0.9, gain: 0.45 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 220 }, a: 0.005, d: 0.5, gain: 0.35 },
+      { wave: 'triangle', freq: 110, a: 0.3, d: 1.6, gain: 0.06 },
+    ] },
+    bossPulseHot: { bus: 'sfx', priority: 1, cooldown: 0.2, max: 2, verb: 0.4, heat: 0, jitter: 0, layers: [
+      { wave: 'sine', freq: 62, to: 40, a: 0.008, d: 0.7, gain: 0.5 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300 }, a: 0.004, d: 0.45, gain: 0.4 },
+      { wave: 'sawtooth', freq: 124, filter: { type: 'lowpass', freq: 600 }, a: 0.2, d: 1.2, gain: 0.05 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 2400, q: 0.8 }, a: 0.3, d: 0.8, gain: 0.04 },
+    ] },
+    // Stained glass bursting.
+    glassShatter: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.5, heat: 0.4, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, a: 0.001, d: 0.9, gain: 0.5 },
+      { wave: 'sine', freq: [2600, 3400], partials: [[1, 1, 0.4], [1.7, 0.6, 0.3], [2.9, 0.4, 0.2]], a: 0.001, d: 0.6, gain: 0.12 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1200, q: 0.7 }, a: 0.002, d: 0.3, gain: 0.3 },
+    ] },
+    // A pillar breaking and falling: a crack, then a long low crash.
+    stoneFall: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 2, verb: 0.45, heat: 0.9, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, q: 0.6 }, a: 0.001, d: 0.15, gain: 0.5 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 500, to: 120 }, at: 0.35, a: 0.02, d: 1.6, gain: 1 },
+      { wave: 'sine', freq: 50, to: 26, at: 0.35, a: 0.004, d: 1.3, gain: 0.8 },
+    ] },
+    // Fire catching all at once: a roaring whoosh.
+    fireRoar: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.7, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1400, q: 0.6 }, a: 0.3, d: 1.8, gain: 0.8 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300 }, a: 0.2, d: 2.2, gain: 0.6 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, q: 1 }, a: 0.4, d: 1.2, gain: 0.12 },
+    ] },
+    // Stone grinding on stone: a gargoyle shifting before it springs (the ambush cue).
+    stoneGrind: { bus: 'sfx', priority: 2, cooldown: 0.8, max: 2, verb: 0.3, heat: 0.2, layers: [
+      { noise: 'brown', filter: { type: 'bandpass', freq: 260, q: 2 }, a: 0.08, d: 0.6, gain: 0.7, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1600, q: 3 }, a: 0.05, d: 0.5, gain: 0.15 },
+    ] },
+    // The gate breaking open.
+    gateBreak: { bus: 'sfx', priority: 3, cooldown: 1, max: 1, verb: 0.5, heat: 1, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1400, q: 0.5 }, a: 0.001, d: 0.3, gain: 0.6 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 100 }, a: 0.01, d: 2.0, gain: 1 },
+      { wave: 'sine', freq: 46, to: 24, a: 0.004, d: 1.6, gain: 0.9 },
+      { wave: 'sine', freq: 300, partials: [[1, 1, 1], [2.3, 0.5, 0.6]], at: 0.05, a: 0.002, d: 1.2, gain: 0.08 },
+    ] },
+
     // ---- menus ----
     uiMove: { bus: 'ui', priority: 1, cooldown: 0.04, jitter: 6, heat: 0, layers: [
       { wave: 'sine', freq: 320, to: 290, a: 0.001, d: 0.055, gain: 0.34 },
