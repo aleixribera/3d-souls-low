@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v5.3';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -160,7 +160,15 @@ const CONFIG = {
   // the way home only once the player is within `leashResume` of that (no flicker at the line).
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
         approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1,
-        kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 } },
+        kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 },
+        // Reactions (an attack's `when`, v5.3): `behind` past this angle (rad) from its facing; `flank` between these
+        // angles at its left (rad, + is left).
+        reactions: { behind: 2.2, flank: [0.6, 1.9] } },
+  // Elden Ring Bosses mode (v5.3, js/elden.js; the boss list is ELDEN_BOSSES in js/data/elden-bosses.js): `victoryTime` s
+  // of the victory banner before the boss select returns; `deathMenu` s after the death before Retry / Boss select shows.
+  // Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light `intensity`.
+  elden: { victoryTime: 6, deathMenu: 3.6, victoryHint: 'Returning to the boss select…',
+           spectral: { fadeIn: 0.22, fadeOut: 0.35, color: 0xffd36a, glow: 0xffc040, emissive: 1.6, light: 2.2, lightRange: 5 } },
   // Room-style levels: wall thickness, and the size of the stone pillars (solid) and braziers.
   rooms: { wallThickness: 1, pillarSize: 1.2, roomLight: 9, dimLight: 3.5, brazierSize: 0.7, lampLight: 5, lampRange: 14,
            // A barricade gate: `depth` m deep (its collision too); opening, it tips over by `topple` rad, and once `sinkFrom`

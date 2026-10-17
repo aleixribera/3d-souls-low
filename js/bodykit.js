@@ -254,6 +254,14 @@ const KIT = (() => {
       const plume = xf(new THREE.ConeGeometry(0.02, 0.4, 4), -0.13, 0.27, -0.1, 0.7, 0, 0.9);
       return [{ slot: o.slot, geo: uvScale(cap, 2, 1) }, { slot: o.plumeSlot, geo: plume }];
     },
+    // A long beast's tail from the base of the spine, curving back and down to the floor, tapering in two lengths (Margit).
+    tail(o) {
+      const s = o.size ?? 1, V = (x, y, z) => new V3(x * s, y * s, z * s);
+      const a = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0, 0, 0), V(0, -0.12, -0.22), V(0.02, -0.36, -0.42), V(0.05, -0.62, -0.55)]), 8, 0.075 * s, 6, false);
+      const b = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0.05, -0.6, -0.54), V(0.09, -0.86, -0.6), V(0.16, -1.02, -0.48), V(0.24, -1.08, -0.3)]), 8, 0.045 * s, 5, false);
+      const tip = xf(new THREE.ConeGeometry(0.045 * s, 0.2 * s, 5), 0.29 * s, -1.08 * s, -0.2 * s, Math.PI / 2, 0, 0);
+      return [uvScale(a, 3, 1), uvScale(b, 3, 1), tip];
+    },
     // A parrying dagger in the left hand (blade forward), in the forearm's frame.
     dagger(o) {
       const blade = plate([[0.05, -0.022], [0.4, -0.02], [0.52, 0], [0.4, 0.02], [0.05, 0.022]], 0.012, 0.004);
@@ -386,6 +394,14 @@ const KIT = (() => {
       const clapper = xf(sphere(0.12, 6, 4), 0, 0, 1.75);
       const haft = xf(tube(0.05, 0.05, 1.5, 6), 0, 0, 0.55, Math.PI / 2, 0, 0);
       return { blade: [bell], guard: [lip, clapper], grip: [haft] };
+    },
+    // A long gnarled walking cane (Margit): a knotted shaft, an iron ferrule at the striking end, a crook at the hand.
+    cane() {
+      const shaft = roughen(xf(tube(0.03, 0.022, 1.75, 6), 0, 0, 0.62, Math.PI / 2, 0, 0), 0.006, 31);
+      const knots = [0.25, 0.7, 1.1].map((z, i) => xf(sphere(0.04, 5, 4), 0, 0, z, 0, 0, 0, 1, 1, 1.5 + i * 0.2));
+      const ferrule = xf(new THREE.ConeGeometry(0.03, 0.16, 5), 0, 0, 1.56, Math.PI / 2, 0, 0);
+      const crook = deform(tube(0.032, 0.03, 0.3, 5), v => { v.z -= v.y * v.y * 2.4; }); xf(crook, 0, 0.05, -0.32, Math.PI / 2, 0, 0);
+      return { grip: [shaft, ...knots], blade: [ferrule], guard: [crook] };
     },
     // A heavy two-handed sword: broad blade, long grip.
     greatSword() {

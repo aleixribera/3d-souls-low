@@ -13,6 +13,29 @@ function attackChance(a) {
 const isClose = a => !a.minRange && !a.dash && !a.projectile;
 // A basic close attack (no strong kind) never waits on its chance: it strikes as soon as the enemy may attack.
 const strikesAtOnce = a => isClose(a) && !STRONG_KINDS.some(k => a[k]);
+// Its attack reach: longest and shortest range, and the longest basic close attack. Reactions (`when`) don't count:
+// they answer a situation, not a distance.
+function reachOf(attacks) {
+  const list = attacks.filter(a => !a.when), ranges = list.map(a => a.range);
+  return { long: Math.max(...ranges), short: Math.min(...ranges), close: Math.max(...list.filter(strikesAtOnce).map(a => a.range)) };
+}
+// Reactions (an attack's `when`, v5.3): the situations an enemy answers at once, whatever its cooldown or facing.
+//   behind: the player stands in its rear arc;  flank: close at its left (off-hand) side;
+//   healing: the player is drinking a flask or using an item;  staggered: the player reels (a broken guard).
+const REACTIONS = {
+  behind: (e, p, rel) => Math.abs(rel) > CONFIG.ai.reactions.behind,
+  flank: (e, p, rel) => rel > CONFIG.ai.reactions.flank[0] && rel < CONFIG.ai.reactions.flank[1],
+  healing: (e, p) => p.state === PS.USE_ITEM,
+  staggered: (e, p) => p.state === PS.STAGGER,
+};
+// Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
+const FOLLOW_IF = {
+  any: () => true,
+  far: (e, dist) => dist > e.attack.range,
+  near: (e, dist) => dist <= e.attack.range,
+  flank: (e, dist, rel) => REACTIONS.flank(e, null, rel) && dist <= e.attack.range + 1,
+  behind: (e, dist, rel) => REACTIONS.behind(e, null, rel) && dist <= e.attack.range + 1,
+};
 // One of `attacks`, with odds in proportion to their chances (null if they are all 0).
 function pickByChance(attacks) {
   const total = attacks.reduce((s, a) => s + attackChance(a), 0);
@@ -53,9 +76,8 @@ class Enemy {
     this.state = B.start; this.stateTime = 0;
     const fd = def.firstDelay || E.firstDelay;
     this.cooldown = rand(fd[0], fd[1]); this.attack = null; this.hitIndex = 0; this.hitbox = null;
-    const ranges = def.attacks.map(a => a.range);
     // Its longest and shortest attack range, and the longest of its basic close attacks (-Infinity if it has none).
-    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges), close: Math.max(...def.attacks.filter(strikesAtOnce).map(a => a.range)) };
+    this.attackReach = reachOf(def.attacks);
     this.stepIn = false;                             // stepping in to its shortest reach, until it attacks
     this.stepInNearest = Infinity;                   // the closest it has come to the player while stepping in
     this.strikeFrom = 0;                             // stepping in, its close attacks wait until the player is this close
@@ -79,15 +101,25 @@ class Enemy {
     this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
     this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
     this.ranged = this.def.attacks.some(a => a.projectile);
-    const ranges = this.def.attacks.map(a => a.range);
-    this.attackReach = { long: Math.max(...ranges), short: Math.min(...ranges), close: Math.max(...this.def.attacks.filter(strikesAtOnce).map(a => a.range)) };
+    this.attackReach = reachOf(this.def.attacks);
   }
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
+  // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
+  // on the same bar (no kneel, no refill). Its `opener` (an attack id) is the first thing it does.
+  checkPhaseAt() {
+    if (!this.phaseIds || this.lastPhase() || !this.alive() || this.state === ES.PHASE) return;
+    const next = this.baseDef.phases[this.phaseIds[this.phase + 1]];
+    if (!next.at || this.hp > this.def.hp * next.at) return;
+    const hp = this.hp, posture = this.posture, from = this.phase;
+    this.enterPhase(this.phase + 1); this.hp = hp; this.posture = posture;
+    this.opener = next.opener ? this.def.attacks.find(a => a.id === next.opener) : null;
+    events.emit('bossPhase', { enemy: this, from, to: this.phase, seamless: true });
+  }
   // Its health ran out: a boss with another phase kneels into the transition, one set to retreat leaps away; both
   // stay alive (and untouchable). Returns true if it lives on.
   outlast() {
     this.hp = 0; this.hitbox = null;
-    if (!this.lastPhase()) {
+    if (!this.lastPhase() && !this.baseDef.phases[this.phaseIds[this.phase + 1]].at) {   // a mid-bar phase never refills an empty bar
       const from = this.phase;
       this.enterPhase(this.phase + 1); this.hp = 0;   // the new bar fills through the transition
       this.setState(ES.PHASE);
@@ -136,6 +168,7 @@ class Enemy {
   }
 
   update(dt, player) {
+    this.checkPhaseAt();
     const d = this.def, E = CONFIG.enemy;
     this.stateTime += dt;
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
@@ -157,6 +190,7 @@ class Enemy {
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     this.playerDist = dist;
     const toPlayer = Math.atan2(dx, dz);
+    this.playerRel = angDiff(toPlayer, this.yaw);   // where the player stands round it (rad, + at its left)
     const playerAlive = player.alive();
     // Unaware, it sees only in a cone ahead (CONFIG.vision); fighting or searching, all round.
     const V = CONFIG.vision, inCone = this.wide || !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
@@ -246,7 +280,8 @@ class Enemy {
           else if (!this.ranged) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
           break;
         }
-        const a = this.chooseAttack(dist, toPlayer, dt);
+        if (this.opener) { const o = this.opener; this.opener = null; this.yaw = toPlayer; this.beginAttack(o); break; }   // a mid-bar phase's first move
+        const a = this.react(player, dist, toPlayer, dt) || this.chooseAttack(dist, toPlayer, dt);
         if (a) { this.beginAttack(a); break; }
         if (this.stepIn) {   // stepping in: back to holding at its longer range once the player gets well away
           this.stepInNearest = Math.min(this.stepInNearest, dist);
@@ -267,6 +302,10 @@ class Enemy {
           this.holdLeft = Math.random() < hit.hold.chance ? rand(hit.hold.time[0], hit.hold.time[1]) : 0;
         if (this.holdLeft > 0) { this.holdLeft -= dt; this.stateTime = Math.min(this.stateTime, hit.startup * hit.hold.at); }
         if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, ((a.tracking && a.tracking.rate) || a.track || d.trackRate) * dt);
+        // A hit's `abort` (v5.3): at `at` of the wind-up, a player who backed beyond `beyond` m turns it into `into`.
+        if (hit.abort && this.stateTime >= hit.startup * hit.abort.at && !(this.holdLeft > 0) && dist > hit.abort.beyond) {
+          this.beginAttack(d.attacks.find(o => o.id === hit.abort.into)); break;
+        }
         // Gap closer: rush forward late in the wind-up, stopping once the strike would reach.
         if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
           tx = this.vx = Math.sin(this.yaw) * a.dash.speed; tz = this.vz = Math.cos(this.yaw) * a.dash.speed;   // full speed at once
@@ -334,7 +373,7 @@ class Enemy {
   // A leaping strike leaves the ground: the speed that covers the distance in the rest of the wind-up, and the upward
   // speed that brings it down just as the strike opens.
   launchLeap(hit, dist) {
-    const L = hit.leap, T = Math.max(0.2, hit.startup * (1 - L.from)), far = clamp(dist - (L.short || 0), 0, L.max);
+    const L = hit.leap, T = Math.max(0.2, hit.startup * (1 - L.from)), far = L.back ? -L.back : clamp(dist - (L.short || 0), 0, L.max);   // `back`: a leap away (m)
     this.vx = Math.sin(this.yaw) * far / T; this.vz = Math.cos(this.yaw) * far / T; this.vy = CONFIG.gravity * T / 2;
     this.leaping = true; this.leapHit = this.hitIndex;
     events.emit('bossLeap', { enemy: this, time: T });
@@ -406,11 +445,20 @@ class Enemy {
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
-    const inReach = this.def.attacks.filter(a => (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range);
+    const inReach = this.def.attacks.filter(a => !a.when && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range);
     const close = inReach.filter(isClose);
     if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
     const mul = crowd.chanceMul(this);
     for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * (a.projectile ? 1 : mul) * dt) return a;
+    return null;
+  }
+  // Reactions (`when`, v5.3): an attack whose situation holds and whose range window holds the player rolls its chance
+  // per second, cooldown and facing aside (a tail swipe at someone behind, a dagger at someone drinking). Null if none.
+  react(player, dist, toPlayer, dt) {
+    if (!crowd.mayStart()) return null;
+    const rel = angDiff(toPlayer, this.yaw);
+    for (const a of this.def.attacks) if (a.when && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
+      && Math.random() < attackChance(a) * dt) return a;
     return null;
   }
   beginAttack(attack) {
@@ -439,7 +487,17 @@ class Enemy {
     if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;
     if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.setState(ES.WINDUP); }
-    else this.setState(ES.RECOVER);
+    else if (!this.followUp()) this.setState(ES.RECOVER);
+  }
+  // Follow-ups (an attack's `followUps`, v5.3): as the last hit's follow-through ends, the first entry whose condition
+  // (`if`, FOLLOW_IF) holds and whose `chance` rolls starts at once instead of the recovery: a combo that branches.
+  followUp() {
+    for (const f of this.attack.followUps || []) {
+      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || Math.random() >= f.chance) continue;
+      this.beginAttack(this.def.attacks.find(a => a.id === f.attack) || this.baseDef.attacks.find(a => a.id === f.attack));
+      return true;
+    }
+    return false;
   }
   // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
   updateTraining() {

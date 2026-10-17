@@ -27,6 +27,12 @@ function validateData() {
     if ('projectile' in a) need(a.projectile && num(a.projectile.speed) && a.projectile.speed > 0 && num(a.projectile.gravity) && a.projectile.gravity >= 0
       && num(a.projectile.size) && a.projectile.size > 0 && num(a.range), `${tag}: projectile needs speed > 0, gravity >= 0 and size > 0, and the attack a range.`);
     if ('shove' in a) need(typeof a.shove === 'boolean', `${tag}: shove must be true or false.`);
+    // v5.3 (Elden Ring bosses): blockable but not parryable, a spectral weapon drawn, a reaction, branching follow-ups.
+    if ('noParry' in a) need(typeof a.noParry === 'boolean', `${tag}: noParry must be true or false.`);
+    if ('spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
+    if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
+    if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1
+      && (!('if' in f) || f.if in FOLLOW_IF)), `${tag}: followUps must list { attack, chance (0 to 1), if? (${Object.keys(FOLLOW_IF).join(', ')}) }.`);
     if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
       `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
@@ -35,6 +41,9 @@ function validateData() {
       if (h.box && 'ring' in h.box) need(h.box.ring && ['from', 'to', 'width', 'time'].every(k => num(h.box.ring[k]) && h.box.ring[k] >= 0) && h.box.ring.time > 0,
         `${tag}: a hit's ring needs from, to, width and time (numbers; time above 0).`);
       if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0), `${tag}: a hit's impact needs ring, crack, dust and shake.`);
+      if (h.leap && 'back' in h.leap) need(num(h.leap.back) && h.leap.back > 0, `${tag}: a hit's leap.back must be metres above 0.`);
+      if ('abort' in h) need(h.abort && num(h.abort.at) && h.abort.at > 0 && h.abort.at < 1 && num(h.abort.beyond) && typeof h.abort.into === 'string',
+        `${tag}: a hit's abort needs at (0 to 1 of its wind-up), beyond (m) and into (an attack id).`);
       if ('leap' in h) need(h.leap && num(h.leap.from) && h.leap.from > 0 && h.leap.from < 1 && num(h.leap.max) && h.leap.max > 0 && (!('short' in h.leap) || num(h.leap.short)) && !a.dash,
         `${tag}: a hit's leap needs from (0 to 1 of its wind-up) and max (m), optionally short (m); not on a dashing attack.`);
     }
@@ -42,7 +51,12 @@ function validateData() {
   };
   // Enemies
   const ids = new Set();
-  for (const d of [...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS]) {
+  for (const d of [...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS, ...ELDEN_BOSS_DEFS]) {
+    const aidList = new Set(d.attacks.map(a => a && a.id));   // follow-ups and aborts name attacks of the same enemy
+    for (const a of d.attacks) if (a) {
+      for (const f of a.followUps || []) need(aidList.has(f.attack), `Enemy "${d.id}" attack "${a.id}": follow-up "${f.attack}" is not one of its attacks.`);
+      for (const h of a.hits || []) if (h.abort) need(aidList.has(h.abort.into), `Enemy "${d.id}" attack "${a.id}": abort into "${h.abort.into}" is not one of its attacks.`);
+    }
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
     need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
@@ -67,7 +81,10 @@ function validateData() {
       need(P && typeof P === 'object' && Object.keys(P).length > 0, `Enemy "${d.id}": phases must name at least one phase.`);
       for (const [pid, ph] of Object.entries(P || {})) {
         const tag = `Enemy "${d.id}" phase "${pid}"`;
-        need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
+        // A mid-bar phase (`at`, v5.3) shares the bar it starts on; any other phase is a full bar of its own.
+        if (ph && 'at' in ph) need(num(ph.at) && ph.at > 0 && ph.at < 1 && !('hp' in ph), `${tag}: at must be a fraction of the bar (0 to 1), with no hp of its own.`);
+        else need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
+        if (ph && 'opener' in ph) need(aids.has(ph.opener), `${tag}: opener "${ph.opener}" is not one of its attacks.`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);
@@ -81,6 +98,15 @@ function validateData() {
       need(!!L && L.layout === 'rooms', `Enemy "${d.id}": arena "${d.arena}" must be a room level.`);
       need(ok(d.playerStart) && ok(d.enemyStart), `Enemy "${d.id}": playerStart and enemyStart need x, z and yaw on a floor of "${d.arena}".`);
     }
+  }
+  // Elden Ring Bosses (v5.3): every entry names a boss def and carries the text of its card.
+  const ebIds = new Set();
+  for (const b of ELDEN_BOSSES) {
+    const tag = `Elden Ring boss "${b.id}"`;
+    need(typeof b.id === 'string' && !ebIds.has(b.id), `${tag}: missing or duplicate id.`); ebIds.add(b.id);
+    need(ELDEN_BOSS_DEFS.some(d => d.id === b.enemy), `${tag}: enemy "${b.enemy}" is not in ELDEN_BOSS_DEFS.`);
+    need(['name', 'title', 'description'].every(k => typeof b[k] === 'string' && b[k].length > 0), `${tag}: needs a name, title and description.`);
+    if ('difficulty' in b) need(Number.isInteger(b.difficulty) && b.difficulty >= 1 && b.difficulty <= 5, `${tag}: difficulty must be a whole number from 1 to 5.`);
   }
   // Player and items
   const M = PLAYER_DEF.moveset;

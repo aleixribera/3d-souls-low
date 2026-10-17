@@ -59,7 +59,7 @@ const hud = {
     $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
-    $('wonHint').textContent = `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
+    $('wonHint').textContent = game.eldenBoss ? CONFIG.elden.victoryHint : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
     $('completeHint').textContent = game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;

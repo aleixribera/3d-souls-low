@@ -2377,6 +2377,87 @@
     expect.ok(d.alive(), 'the dummy never dies');
   });
 
+  // ---- Elden Ring Bosses: Margit, the Fell Omen (v5.3) ------------------------------------------------------------
+  const startMargit = () => { A.elden.start('margit'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
+  test('Elden: the main menu leads to the boss select, built from the boss list, with a way back', () => {
+    const main = Game.screens().main.items.map(i => i.name);
+    expect.ok(main.includes('Elden Ring Bosses') && main.includes('Enemies'), `main menu: ${main.join(', ')}`);
+    const sel = Game.screens().elden.items;
+    expect.ok(sel.length === A.ELDEN_BOSSES.length + 1 && sel[0].name.startsWith('Margit, the Fell Omen') && sel[sel.length - 1].name === 'Back', 'one card per boss, then Back');
+    expect.ok(!A.ENEMY_DEFS.some(d => d.id === 'margit'), 'Margit is not in the Enemies list');
+  });
+  test('Elden: Margit loads in the Enemies arena with his name on the bar', () => {
+    const { e } = startMargit();
+    expect.ok(Game.kind === 'arena' && Game.level === A.ARENA && Game.eldenBoss === 'margit', 'a duel in ARENA');
+    expect.ok(e.def.name === 'Margit, the Fell Omen' && e.def.phaseId === 'omen' && e.hp === 3200, `bar: ${e.def.name}, ${e.hp}`);
+    sim.step(30); Game.render(1, STEP);
+    expect.ok(A.hud.eName.textContent === 'Margit, the Fell Omen', `boss bar: "${A.hud.eName.textContent}"`);
+  });
+  test('Elden: every Margit strike leaves a roll\'s i-frames a margin; golden attacks cannot be parried', () => {
+    const D = A.ENEMY_BY_ID.margit;
+    for (const a of D.attacks) for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    for (const a of D.attacks.filter(a => a.spectral && !a.projectile)) expect.ok(a.noParry, `${a.id}: golden, so not parryable`);
+    expect.ok(D.posture.parry * 2 >= D.posture.max && D.posture.parry < D.posture.max, 'two parries break his stance, one does not');
+  });
+  test('Elden: Margit\'s hits land and deal scaled damage; a roll goes through them', () => {
+    let { p, e } = startMargit(); faceOff(e, p, 2.5); quiet(e);
+    const hp0 = p.hp, thrust = e.def.attacks.find(a => a.id === 'caneThrust');
+    e.beginAttack(thrust); sim.until(() => e.state === ES.RECOVER || p.hp < hp0, 3);
+    expect.ok(hp0 - p.hp > 0 && hp0 - p.hp <= 30, `the staff stab hit for ${hp0 - p.hp}`);
+    ({ p, e } = startMargit()); faceOff(e, p, 2.5); quiet(e);
+    const hp1 = p.hp; e.beginAttack(thrust);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= thrust.hits[0].startup - CONFIG.player.rollIFrames * 0.5, 3);
+    sim.press('roll'); sim.seconds(0.6);
+    expect.ok(p.hp === hp1, 'rolled through the stab');
+  });
+  test('Elden: at 60% Margit turns golden on the same bar and opens with the hammer', () => {
+    const { p, e } = startMargit(); sturdy(p); faceOff(e, p, 3);
+    e.hp = e.def.hp * 0.59; sim.step(2);
+    expect.ok(e.def.phaseId === 'golden' && Math.abs(e.hp - 3200 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
+    expect.ok(log.includes('bossPhase'), 'bossPhase event');
+    sim.until(() => e.attack && e.attack.id === 'hammerOpener', 4);
+    expect.ok(e.attack && e.attack.id === 'hammerOpener', 'the hammer opener came first');
+    expect.below(e.def.cooldown[1], A.ENEMY_BY_ID.margit.cooldown[1], 'shorter waits in phase 2');
+  });
+  test('Elden: standing behind Margit draws the tail; drinking at range draws a dagger', () => {
+    let { p, e } = startMargit(); sturdy(p); faceOff(e, p, 2);
+    e.setState(ES.CHASE); e.cooldown = 5;   // in the fight, and in no hurry to attack otherwise
+    sim.until(() => { p.x = e.x - Math.sin(e.yaw) * 2; p.z = e.z - Math.cos(e.yaw) * 2; return e.attack && e.attack.id === 'tailSwipe'; }, 4);   // the player keeps to his back
+    expect.ok(e.attack && e.attack.id === 'tailSwipe', 'tail swipe at the player behind');
+    ({ p, e } = startMargit()); sturdy(p); faceOff(e, p, 9); e.setState(ES.CHASE); e.cooldown = 5;
+    sim.step(1); sim.press('flask'); sim.until(() => e.attack && e.attack.id === 'daggerPunish', 2);
+    expect.ok(e.attack && e.attack.id === 'daggerPunish', `a dagger at the drinking player (player ${p.state})`);
+  });
+  test('Elden: backing off the charged overhead turns it into the running sweep', () => {
+    const { p, e } = startMargit(); sturdy(p); faceOff(e, p, 3); quiet(e);
+    const oh = e.def.attacks.find(a => a.id === 'caneOverhead'); e.beginAttack(oh); sim.step(2);
+    p.x = e.x + Math.sin(e.yaw) * 8; p.z = e.z + Math.cos(e.yaw) * 8;
+    sim.until(() => e.attack.id !== 'caneOverhead', 4);
+    expect.ok(e.attack.id === 'runningSweep', `became ${e.attack.id}`);
+  });
+  test('Elden: victory returns to the boss select; death offers Retry and Boss select', () => {
+    let { p, e } = startMargit();
+    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
+    expect.ok(Game.mode === 'menu' && Game.screen === 'elden' && !Game.eldenBoss, `after the win: ${Game.mode} ${Game.screen}`);
+    ({ p, e } = startMargit());
+    p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
+    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
+    const items = Game.screens().eldenDeath.items.map(i => i.name);
+    expect.ok(items.join() === 'Retry,Boss select', items.join());
+    Game.screens().eldenDeath.items[0].go(); Game.loading = 0; sim.begin();
+    expect.ok(Game.mode === 'play' && Game.player.alive() && Game.duel.hp === 3200 && Game.eldenBoss === 'margit', 'retry: a fresh fight');
+    p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
+    Game.screens().eldenDeath.items[1].go();
+    expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
+  });
+  test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
+    A.elden.start('margit'); Game.startFight('hollow'); Game.loading = 0; sim.begin();
+    expect.ok(!Game.eldenBoss && Game.duel.def.id === 'hollow', 'a plain duel');
+    expect.ok(!document.getElementById('wonHint').textContent.includes('boss select'), 'the old win hint');
+    const p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.3);
+    expect.ok(Game.mode === 'play' && Game.player.alive(), 'death respawns in the arena as before');
+  });
+
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;

@@ -1,0 +1,109 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 4,174 HP (New Game)
+* **Stance / Poise:** 80 (regenerates after ~6 seconds without incoming stance damage)
+* **Parry Resistance:** Requires **2 successful parries** to trigger a stance break / critical hit opening.
+* **Parry Vulnerability:** Only wooden cane/staff melee strikes can be parried. Spectral golden weapons (Erdsteel Dagger, Golden Hammer, Carian-style Straight Sword) and tail swipes cannot be parried.
+* **Damage Types Dealt:** Standard, Strike, Pierce, and Holy.
+* **Phase Transition:** Triggers when health drops to **≤60% HP**.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Consumable / Heal Input-Reading:** When the player initiates an item or flask animation at medium-to-long range while Margit is in a neutral state, he immediately triggers a single or double **Dagger Toss**.
+* **Positional Proximity Branching:**
+* **Rear Flank:** Standing directly behind Margit or at his rear flank triggers an immediate **Tail Swipe**, canceling his normal post-attack idle animation.
+* **Left Flank:** Lingering close to Margit's off-hand side triggers a rapid, untelegraphed **Spectral Dagger Slash** as a combo extension.
+
+
+* **Dynamic Overhead Tracking / Spacing Extension:** During the startup of the **Charged Overhead Cane Strike**, if the target retreats outside melee range before the swing descends, Margit aborts the stationary slam and transitions into a sprinting, gap-closing double horizontal sweep.
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Description & Active Hitboxes | Branching / Follow-up Logic | Recovery / Punish Window |
+| --- | --- | --- | --- |
+| **Leaping Cane Plunge** | Margit jumps vertically, hovers at peak elevation, and plunges his cane into the ground. | Standalone action. Does not chain into follow-ups. | **Major Window:** Cane lodges in the ground, locking Margit in recovery for approximately 1.5 seconds. |
+| **Charged Overhead Cane Strike** | Raises cane two-handed overhead with variable delay tracking. Slams cane down directly in front. | • If target stays in range: Executes stationary slam.<br>
+
+<br>• If target moves away: Converts into a running double diagonal slash. | **Major Window** (stationary slam): Long windup and significant end-lag.<br>
+
+<br>**Minor Window** (running version): Only punishable after the second swing. |
+| **Double Slash Combo** | Horizontal cane swing from right-to-left, followed by a backswing from left-to-right. | Chains into an optional forward ground thrust. | **Trap / Minor Window:** Pausing after swing two is punishable only if the ground thrust finisher is baited and avoided. |
+| **Staff Stab (Thrust)** | Fast, linear thrust forward with the cane tip. | Frequently branches into an Erdsteel Dagger swipe if the player circles toward his left. | **Trap Window:** Recovery can be canceled into dagger slashes. |
+| **Upward Slash to Overhead Strike** | Fast upward vertical cane flick, followed by a delayed one-handed downward slash. | Can chain into off-hand dagger slashes if interrupted or flanked. | **Minor Window:** Moderate recovery following the downward overhead swing. |
+| **Dagger Toss (Single / Double)** | Summons and throws 1 or 2 Erdsteel Daggers (Holy damage) at range. | Often serves as an opener or follows a backward jump; can chain into a leaping gap-closer. | **Zero Window:** Low recovery; Margit resets to neutral or charges instantly. |
+| **Dagger Leap & Thrust** | Throws one dagger, immediately performs a leaping horizontal cane slash, ending with a ground thrust. | Static 3-hit sequence. | **Minor Window:** Recovery occurs only after the final downward thrust lands. |
+| **Dagger Retreat** | Executes a single horizontal dagger slash while leaping backward, simultaneously throwing a dagger. | Defensive repositioning tool. | **Zero Window:** Creates distance; no close-range punish possible. |
+| **Tail Swipe** | 180° sweep with tail across his rear arc. | Reactionary move triggered solely by player presence behind his hip axis. | **Minor Window:** Moderate recovery once the tail completes its arc. |
+| **Unguarded Cross Slash** | Performs a simultaneous scissor slash with staff and summoned spectral sword. | Triggered exclusively when the target's stamina bar is depleted while blocking. | **N/A:** Occurs during target's guard-break animation. |
+
+---
+
+### Phase 2 Moveset & Additions (≤60% HP)
+
+Phase 2 begins with the **Hammer Sweep and Leap Slam** sequence. Margit incorporates a golden great hammer and a straight sword into his existing repertoire.
+
+* **Phase Transition: Hammer Sweep to Aerial Slam**
+* *Pattern:* Materializes a golden hammer on his right shoulder, swings it horizontally in a wide arc, leaps high into the air, and slams it downward, creating an outward holy shockwave.
+* *Punish Window:* **Major Window.** Margit is anchored in place during the hammer recovery animation.
+
+
+* **Hammer Leap Slam (Standalone)**
+* *Pattern:* Replaces the phase 1 cane leap. Margit jumps high into the air, tracks the player, and crashes down with the hammer, triggering an AoE holy shockwave on impact.
+* *Punish Window:* **Major Window.** Guarantees combo termination with extended recovery lag.
+
+
+* **Hammer Stomp & Overhead Slam**
+* *Pattern:* Raises his left leg, winds the golden hammer overhead, and slams it directly down.
+* *Punish Window:* **Major Window.** Functions strictly as a heavy combo finisher with zero branching follow-ups.
+
+
+* **Staff-to-Hammer Spin Sweep**
+* *Pattern:* Manifests the hammer on his shoulder, spins 360° clockwise, striking with the cane first and following immediately with the hammer.
+* *Branching:* If the player backs away during the spin, he can chain this directly into a leaping horizontal sweep and ground thrust.
+* *Punish Window:* **Minor Window** (if standing close and the leaping extension is not triggered).
+
+
+* **Quintuple Sword Spin (Carian Flurry)**
+* *Pattern:* Draws a spectral golden straight sword across his shoulder and performs an advancing sequence of up to 4 to 5 alternating spins between sword and cane, culminating in a downward strike.
+* *Punish Window:* **Minor Window.** All swings must fully resolve before recovery frames begin. Intermediate pauses between spins are frame traps.
+
+
+* **Sword Combo into Ground Stab**
+* *Pattern:* Rapid thrust with spectral straight sword -> horizontal swipe -> ground staff plunge.
+* *Punish Window:* **Minor Window** following the ground plunge recovery.
+
+
+
+---
+
+### Factual Window Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for heavy/charged attacks)  │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Phase 1 Leaping Cane Plunge (recovery on stuck cane)                 │
+│ • Phase 1 Charged Overhead Cane Strike (stationary version only)       │
+│ • Phase 2 Hammer Leap Slam (shockwave landing recovery)                │
+│ • Phase 2 Hammer Stomp & Overhead Slam (combo finisher)                │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single fast attack)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Tail Swipe (rear arc completion)                                     │
+│ • Double Slash Combo -> Ground Thrust Finisher                         │
+│ • Dagger Leap & Thrust (post-thrust landing)                           │
+│ • Quintuple Sword Spin (only upon final downward strike resolution)    │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Combo-branching active / Cancels recovery)        │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Standalone Staff Thrusts (cancels into Erdsteel Dagger swipes)       │
+│ • First hit of Staff-to-Hammer spin                                    │
+│ • Single/Double Dagger Toss (instant recovery / gap closer initiation) │
+│ • Mid-combo pauses during the Sword Flurry sequence                    │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

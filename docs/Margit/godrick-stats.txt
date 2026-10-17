@@ -1,0 +1,109 @@
+### Boss Attributes & Combat Parameters
+
+* **Base Health:** 6,080 HP (New Game)
+* **Stance / Poise:** 105 (stance breaks trigger a riposte/critical hit window at his head)
+* **Parry Resistance:** **Unparryable.** None of Godrick's melee axe swings or dragon attacks can be parried.
+* **Damage Types Dealt:**
+* **Phase 1:** Standard, Strike.
+* **Phase 2:** Standard, Strike, Fire.
+
+
+* **Base Absorptions / Negations:** Standard 10%, Strike 10%, Slash 10%, Pierce 10%, Magic 20%, Fire 20%, Lightning 20%, Holy 40%.
+* **Status Resistances:** Poison 318, Scarlet Rot 318, Hemorrhage (Bleed) 318, Frostbite 318, Sleep 318.
+* **Phase Transition:** Triggers when health reaches **≤60% HP**.
+
+---
+
+### Behavioral Triggers & AI Branching
+
+* **Stormcaller Deflection:** The spinning wind cyclone active hitbox physically deflects standard physical arrows, bolts, and throwable pots.
+* **Stormcaller Spacing Check:**
+* **Player at Close/Medium Range:** Chains into a rolling reposition followed immediately by a **Leaping Overhead Slam**.
+* **Player at Long Range:** Chains into **Storm Blade**, launching two curved, homing wind projectiles in succession.
+
+
+* **Flank & Rear Counter (Two-Hit Chop Extension):** If the player circles behind Godrick during his primary axe chops, he can append a swift, backhanded swipe with his left grafted arm to clear the rear arc.
+* **Repositioning Rolls:** Godrick executes ground rolls to the left, right, or rear. The roll has no damaging hitbox, but it cancels standard attack end-lag and immediately initiates his next offensive chain.
+
+---
+
+### Phase 1 Moveset & Attack Data
+
+| Attack Name | Description & Active Hitboxes | Branching / Follow-up Logic | Recovery / Punish Window |
+| --- | --- | --- | --- |
+| **Stormcaller (Whirlwind)** | Swings axe around his body 2–3 times, forming a damaging vortex of localized wind. | • If target is close/mid: Transitions to Roll + Leaping Slam.<br>
+
+<br>• If target is far: Transitions to Storm Blade. | **Zero Window:** Active spinning hitbox and immediate follow-up cancel. |
+| **Storm Blade** | Slashes axe horizontally outward following Stormcaller, sending out 2 sequential homing wind projectiles. | Concludes the Stormcaller sequence at range. | **Minor Window:** Moderate recovery at distance; no immediate gap-closer follows. |
+| **Storm Leap Slam** | Rolls in an arc following Stormcaller, leaps airborne, and drives the greataxe straight down. | Terminal combo finisher. | **Major Window:** Axe lodges into the earth upon landing, creating an extended recovery state. |
+| **Jumping Axe Slam (Standalone)** | Grips axe with both hands, leaps vertically, and slams the axe down in front without a prior whirlwind. | Standalone action; does not combo. | **Major Window:** Long landing recovery. |
+| **"I Command Thee, Kneel!" (2 Hits)** | Raises leg and inverts axe, slamming it into the ground for a small shockwave, followed by a second, much wider shockwave. | 2-hit static sequence. Shockwaves register as ground-based hitboxes (can be jumped). | **Major Window:** Substantial idle recovery frames after the second shockwave detonates. |
+| **Dragging Slash (Ground Grind)** | Sprints forward dragging the axe blade along his right side (sparks appear), finishing with an upward vertical scoop. | Can trigger an untelegraphed step-back or roll if the scoop whiffs. | **Minor Window:** Brief pause after the vertical scoop completes. |
+| **Five-Strike Rampage** | Raises axe over shoulder with a vocal roar, executing 3 advancing slashes, a slight delay, and 2 wide sweeping finishing cuts. | Fixed 5-hit chain. The pause between hits 3 and 4 is a frame trap. | **Major Window:** Only accessible after the 5th strike fully resolves. |
+| **Double-Step Strike** | Brings axe over left shoulder, takes two deliberate heavy steps, then swings axe downward followed by an off-hand sweep. | Can append a rearward backhand arm swipe if flanked. | **Minor Window:** Safe to punish only from the front/side after the off-hand sweep lands. |
+| **Arm Chop (Phase Transition Trigger)** | Screams, drops to his knees, and hacks off his left forearm with his axe. Triggers at ≤60% HP. | Direct active damage hitbox immediately surrounding his severed limb during the chop. | **Major Window:** Extended animation, though Godrick gains increased damage absorption during the transition. |
+
+---
+
+### Phase 2 Moveset & Additions (≤60% HP)
+
+Godrick equips the grafted dragon head on his left arm, adding fire damage and altering several baseline attacks.
+
+* **Opening Flame Sweep (Phase 2 Start)**
+* *Pattern:* Immediately following the cutscene, Godrick braces and discharges a continuous horizontal jet of fire from right to left in a sweeping arc.
+* *Punish Window:* **Major Window.** The frontal flame has extensive reach, but Godrick's flanks and rear are completely hitbox-free for the entire multi-second channeling duration.
+
+
+* **Dragon Grab (Maw Scoop)**
+* *Pattern:* Charges forward with the dragon's jaws agape scraping the floor. If it connects, the target is clamped in the maw, elevated, blasted with flame, and slammed to the floor.
+* *Punish Window:* **Major Window.** If avoided or whiffed, the dragon head remains grounded while Godrick resets his posture.
+
+
+* **Flaming "I Command Thee, Kneel!" (3 Hits)**
+* *Pattern:* The two-hit earth slam is expanded into a 3-hit sequence: slam 1 (small radius) -> slam 2 (medium radius) -> slam 3 (massive area-wide explosion erupting upward).
+* *Punish Window:* **Major Window.** Recovery frames only initiate following the 3rd eruption; intermediate pauses between slams 1, 2, and 3 are lethal damage windows.
+
+
+* **Flaming Stormcaller & Flaming Storm Blade**
+* *Pattern:* The wind aura is infused with flame. The leaping slam leaves behind fire on impact, and the Storm Blade follow-up fires two high-velocity spinning fire vortices.
+* *Punish Window:* **Major Window** remains on the landing of the Leaping Slam; **Zero Window** during the cyclone startup.
+
+
+* **Fire March (Advancing Flamethrower)**
+* *Pattern:* Godrick steadily walks forward while aiming the dragon mouth downward, blanketing the ground ahead in fire before ending with an upward flame flick.
+* *Punish Window:* **Minor to Major Window** depending on proximity—moving around his sides bypasses the frontal stream entirely.
+
+
+
+---
+
+### Factual Window Classification
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ MAJOR PUNISH WINDOWS (High recovery / Safe for charged R2 & jump attacks)│
+├────────────────────────────────────────────────────────────────────────┤
+│ • Storm Leap Slam landing (both Phase 1 wind and Phase 2 fire versions)│
+│ • Jumping Axe Slam (standalone landing impact)                         │
+│ • "I Command Thee, Kneel!" (strictly after 2nd quake in P1, 3rd in P2) │
+│ • Phase 2 Opening Flame Sweep (flank and rear zones during channel)    │
+│ • Phase 2 Dragon Grab (miss/whiff recovery animation)                  │
+│ • Five-Strike Rampage (only after the 5th final sweep fully resolves)  │
+├────────────────────────────────────────────────────────────────────────┤
+│ MINOR PUNISH WINDOWS (Short recovery / Safe for single fast R1/light)  │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Dragging Slash (after upward vertical axe scoop)                     │
+│ • Double-Step Strike (after second hit resolves, if positioned away)   │
+│ • Storm Blade (at extreme range once both projectiles clear)           │
+│ • Fire March (lateral flank access while Godrick moves forward)        │
+├────────────────────────────────────────────────────────────────────────┤
+│ ZERO / TRAP WINDOWS (Active combo-branching / Hitbox hazard)          │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Stormcaller startup & spin cycle (deflects projectiles; combo ready) │
+│ • Pause between Hit 3 and Hit 4 of the Five-Strike Rampage             │
+│ • Intervals between Shockwave Slams 1, 2, and 3                        │
+│ • Direct combat rolls (cancels recovery directly into follow-up attacks)│
+│ • Arm Chop transition (close-range proximity hitbox active)            │
+└────────────────────────────────────────────────────────────────────────┘
+
+```

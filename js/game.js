@@ -9,6 +9,7 @@ const Game = {
   story: false,          // Story mode (js/story.js): levels chain through STORY's chapters and progress is saved
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
+  eldenBoss: null,       // Elden Ring Bosses mode (js/elden.js): the ELDEN_BOSSES entry being fought, else null
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
   player: null, enemies: [], zones: [], renderHooks: [], timeScale: 1, hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
@@ -36,14 +37,15 @@ const Game = {
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => this.showMenu('options') },
-        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { this.reset(); this.showMenu('main'); } },
+        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { const er = !!this.eldenBoss; this.eldenBoss = null; this.reset(); this.showMenu(er ? 'elden' : 'main'); } },
       ];
     return {
-      ...S.screens,
+      ...S.screens, ...elden.screens(this),
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         ...S.main,
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
+        elden.mainItem(this),
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
@@ -153,12 +155,12 @@ const Game = {
   // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
   startFight(id) {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    this.kind = 'arena'; this.duelId = id;
+    this.kind = 'arena'; this.duelId = id; this.eldenBoss = null;   // js/elden.js sets it again for its own fights
     this.level = L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     this.enterPlay(); this.reset(); this.showLoading(`Duel: ${d.name}`, d.description);
   },
   startLevel(id) {
-    this.kind = 'level'; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
+    this.kind = 'level'; this.eldenBoss = null; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
     const ch = this.story && story.chapter(id);
     if (ch) { this.showLoading(ch.title, ch.line); this.loading = CONFIG.story.titleTime; story.onLevelStart(); }   // Souls-style title over the load
     else this.showLoading(this.level.name, this.level.description);
@@ -784,6 +786,7 @@ const Game = {
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;
+      if (this.eldenBoss && elden.onDeath(this)) return;   // Elden Ring Bosses: Retry / Boss select instead of the respawn
       if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
         this.spawnPlayer(); this.setLock(null); this.retarget = true;
         if (!this.isTutorial()) this.respawnEnemies();
@@ -818,6 +821,7 @@ const Game = {
     if (!p.alive()) this.onPlayerDeath();
     if (this.isTutorial()) this.updateTutorial(dt);
     else if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }
+    else if (this.eldenBoss) elden.update(this, dt);
     this.updateCamera(dt, false);
   },
 

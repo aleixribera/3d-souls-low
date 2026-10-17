@@ -59,7 +59,10 @@ const projectiles = (() => {
       b.vx = s * A.speed; b.vz = c * A.speed; b.vy = dy / t + 0.5 * A.gravity * t;
       b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed = false; b.live = true;
       // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
-      const slash = A.look === 'slash';
+      // `look: 'dagger'` (v5.3): a spinning golden dagger (Margit's, js/spectral.js).
+      const slash = A.look === 'slash', dagger = A.look === 'dagger';
+      if (dagger && !b.dagger) { b.dagger = spectral.thrownDagger(); b.mesh.add(b.dagger); }
+      if (b.dagger) b.dagger.visible = dagger;
       if (slash && !b.slash) {
         const geo = new THREE.RingGeometry(0.75, 1, 24, 1, 0, Math.PI);
         b.slash = new THREE.Group();
@@ -70,7 +73,7 @@ const projectiles = (() => {
         b.mesh.add(b.slash);
       }
       if (b.slash) { b.slash.visible = slash; if (slash) b.slash.scale.setScalar(A.size * 2.4); }
-      for (const c of b.mesh.children) if (c !== b.slash) c.visible = !slash;
+      for (const c of b.mesh.children) if (c !== b.slash && c !== b.dagger) c.visible = !slash && !dagger;
       if (!b.glow) {   // a soft glint on the head so a bolt reads in the dark (made on first use: glowSprite lives in visuals)
         b.glow = glowSprite(P.glow, 1.4, P.glowSize, 0.7, 0.6); b.glow.position.z = P.length / 2 + 0.06; b.mesh.add(b.glow);
       }

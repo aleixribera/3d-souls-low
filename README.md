@@ -1,4 +1,4 @@
-# Combat Arena 3D — v5.2: The Kneeling Dead
+# Combat Arena 3D — v5.3: Margit, the Fell Omen
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -18,6 +18,7 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 - **Levels → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
 - **Levels → Level 5: The Final Castle** — the longest level and the game's final test, about 30–40 minutes on a first run. It opens straight into the fight with **Aldric, the Gaoler King** on the field before his castle; break him and he leaps onto his walls and is gone, his gate gives way, and the first bonfire lights. Then the outer ward (a courtyard under a wall walk of archers, the barracks and their shortcut, and the **Empty Sentinel** holding the moat bridge), the inner keep (the great hall and its kitchen, the ramparts with Gargoyles on the walk), and the throne approach (an ash bridge under Toll Wisps, then the processional gauntlet). You glimpse Aldric twice on the way. Four bonfires; the last is a short run from the fog at the throne room door. In the throne room he fights again, and when his bar breaks the bell tolls, the glass bursts, the pillars fall and he rises as **Aldric, the Ember-Crowned**: a new bar, new attacks and fire. Beat him for the ending and the credits.
 - **Enemies** — duel a single opponent in the arena, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, Gargoyle, Empty Sentinel, Toll Wisp, the Pillager Captain, the Bell Warden and Aldric (his throne room fight, both bars).
+- **Elden Ring Bosses** (v5.3) — a boss select of fights inspired by Elden Ring, one card each (name, title, difficulty), fought one on one in the Enemies arena. Win and ENEMY FELLED brings you back to the boss select; die and choose **Retry** or **Boss select**. The first boss is **Margit, the Fell Omen** (see below). Outside the story of Ashmere.
 
 ## Characters (v4.1: Bone and Ash)
 
@@ -68,6 +69,16 @@ Every boss can be broken and executed (see Executions).
 - **Aldric, the Gaoler King** (Level 5, outside and in the throne room) — a sweep, a two-step cleave, a delayed overhead, a lunge from range, a shoulder barge, an unblockable stomp, and the **Judgement Leap**: a long crouch, a leap along his locked aim and a crash that rings the ground (then he is open for a while). In the throne room he presses harder.
 - **Aldric, the Ember-Crowned** (his second phase) — faster, longer combos, fiercer tracking in his wind-ups (the commit points are as honest as ever), and four new attacks: the four-cut Tolling Chain, the Ash Wave thrown along the floor, the Burning Ascent into a leaping crash, and **The Last Toll**: the bell rings three times and three rings of fire sweep the room (roll each as it reaches you), then a blast at his feet. His armour cracks and burns, embers stream off him, and the boss drum quickens.
 
+## Margit, the Fell Omen (v5.3)
+
+A towering, hunched figure in a dark cloak, a white beard under his hood, a long tail and a gnarled cane. One long health bar, scaled to this game (a little tougher than Aldric):
+
+- **The cane** (can be parried; it glints as the window opens): a double slash that may end in a baited ground thrust, a fast staff stab, an upward flick into a one-handed overhead held a beat too long, and a **charged overhead** held high before it falls (back away during it and he turns it into a running double sweep). From range he leaps and plunges the cane into the ground: a long opening.
+- **Golden daggers** (holy): thrown singly or in pairs (blockable, never parried), a leaping slash and thrust after a toss, a backward leap with a dagger thrown on the way, a quick dagger slash at his off-hand side. Drink a flask at range and a dagger comes for you.
+- **His tail** sweeps behind him: don't linger at his back. If your guard breaks, a scissor slash of cane and golden sword follows.
+- **At 60% health** a golden hammer appears on his shoulder: a wide sweep, a leap and a slam with a shockwave (jump or roll it). From then on he presses harder and adds the hammer leap slam, the hammer stomp, a cane-to-hammer spin, a five-spin golden sword flurry and a sword combo into a ground stab. Golden weapons can be blocked but not parried.
+- **Stance:** two parries break it (or heavy blows and chains of hits); then execute him.
+
 ## Controls
 
 | Action | Keys | Gamepad (Xbox / PlayStation) |
@@ -109,6 +120,8 @@ It plays the real game with a manual clock (scripted movement, no rendering dela
 Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh story starting at any level) and **Story: clear the save**. From the console: `__arena.story`.
 
 Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Aldric's retreat, his phase change, or his death and the ending).
+
+Elden Ring Bosses (`#dev`): `__arena.elden.start('margit')` starts the fight from the console; **F10** empties his bar, **F4** breaks his stance. Tests: `run('Elden')`.
 
 Lore shortcuts (`#dev`): **Test Grounds** lists **Lore: Ysolde in ...**, one jump per level that starts it next to her. From the console: `__arena.lore`, `__arena.LORE`.
 

@@ -49,7 +49,7 @@ class Hitbox {
 function parryTiming(p, e, extra) {
   const P = CONFIG.parry;
   let rem;
-  if (e.attack && (e.attack.rollOnly || e.attack.projectile)) return null;   // roll-only and bolts: cannot be parried
+  if (e.attack && (e.attack.rollOnly || e.attack.projectile || e.attack.noParry)) return null;   // roll-only, bolts and `noParry` (blockable): cannot be parried
   if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
