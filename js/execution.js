@@ -34,9 +34,8 @@ const execution = (() => {
     return best;
   }
   function damageFor(e) {
-    const D = CONFIG.execution.damage, hp = e.def.hp;   // e.def: a boss's current phase, so its current bar
-    if (isBossLike(e)) return hp * Math.min(D.bossShare, D.bossCap);
-    return hp * (hp >= D.toughHp ? D.toughShare : D.share);
+    const D = CONFIG.execution.damage, dmg = PLAYER_DEF.moveset.attacks.light.damage * D.lightMul;
+    return isBossLike(e) ? Math.min(dmg, e.def.hp * D.bossCap) : dmg;   // e.def: a boss's current phase, so its current bar
   }
 
   function start(p, e) {

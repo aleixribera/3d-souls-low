@@ -92,7 +92,7 @@ function validateData() {
   need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
   const X = CONFIG.execution;
   need(X && ['range', 'cone', 'facing', 'floor', 'angleWeight', 'snapTime', 'standoff', 'gap', 'chest', 'thrustHeight', 'hitstop', 'grace', 'push', 'cuePulse', 'cueGlow'].every(k => num(X[k]))
-    && ['share', 'toughHp', 'toughShare', 'bossShare', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
+    && ['lightMul', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
     && X.snapTime < M.attacks.execute.hits[0].startup, 'CONFIG.execution: a number is missing, bossCap is above 0.5, or snapTime outlasts the wind-up.');
   for (const group of ['ground', 'air'])
     for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);

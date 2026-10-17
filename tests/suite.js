@@ -1609,7 +1609,7 @@
     const e = Game.duel, B = A.ENEMY_BY_ID;
     expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'its posture shows on the big bar at the top of the screen');
     expect.ok(A.hud.eBars.textContent.includes('Pillager Captain'), 'named on the boss bar');
-    expect.near(e.def.hp, 450, 50, 'about 450 HP');
+    expect.near(e.def.hp, 900, 50, 'about 900 HP (v5.2: boss bars doubled)');
     expect.above(e.def.hp, Math.max(B.knight.hp, B.warden.hp), 'tougher than either of Level 2\'s throne pair');
     expect.below(e.def.hp, B.bellWarden.hp, 'less than the Bell Warden');
     expect.ok(e.def.weapon === 'halberd' && e.def.visual.embers === true && !!e.rig.embers, 'a halberd with embers');
@@ -1689,7 +1689,7 @@
     expect.ok(main.length === 17, `${main.length} enemies on the main path`);
     expect.ok(L.dispersed.some(s => s.enemy === 'knight' && s.behavior === 'slumber'), 'a sleeping Knight off the path');
     const town = main.reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0), keep = hpOf(A.LEVEL_2), tower = hpOf(A.LEVEL_4);
-    expect.ok(town > keep * 1.8 && town < keep * 2.4 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
+    expect.ok(town > keep * 1.8 && town < keep * 2.7 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
     const debut = id => L.gated.findIndex(z => z.enemies.some(m => m.enemy === id));
     const alone = id => L.gated.find(z => z.enemies.some(m => m.enemy === id)).enemies.length;
     expect.ok(alone('lancer') === 1 && alone('duelist') === 1, 'the Lancer and the Duelist are met alone first');
@@ -1965,7 +1965,7 @@
     sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
     sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
     expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
-    expect.ok(b.hp === b.def.hp && b.def.hp === 1000, 'a fresh full bar');
+    expect.ok(b.hp === b.def.hp && b.def.hp === 2000, 'a fresh full bar');
     expect.ok(!F.room.windows[0].mesh.visible && F.room.pillars.every(P => P.t > 0), 'the glass burst and the pillars fell');
     b.deplete(); sim.step(2);
     expect.ok(!b.alive() && Game.zones.find(z => z.id === 'zone-throne').gate.open && !!F.ending, 'his last bar: dead, the ending runs');
@@ -2264,14 +2264,22 @@
       sim.seconds(1.2);
     }
   });
+  test('Execution: a riposte after a parry fills the stagger and guard meters', () => {
+    for (const id of ['knight', 'warden']) {
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const e = Game.duel; e.setState(ES.PARRIED); const m0 = e.guardMeter;
+      e.takeHit(makeStrike(A.PLAYER_DEF.moveset.attacks.light, true), Game.player);
+      expect.above(e.guardMeter, m0, `${id}: the meter grew`);
+    }
+  });
   test('Execution: the kneel gives no damage bonus any more', () => {
     Game.startFight('giant'); Game.loading = 0; sim.begin();
     const e = Game.duel, hp0 = e.hp; kneel(e);
     e.takeHit(strikeOf('heavy'), behind(e));
     expect.near(hp0 - e.hp, strikeOf('heavy').damage, 0.01, 'a heavy on the kneeling giant');
   });
-  test('Execution: normal enemies die outright; the Empty Sentinel is left near death; bosses lose a third of a bar', () => {
-    for (const [id, want] of [['knight', 'dead'], ['executioner', 'dead'], ['warden', 'dead'], ['shover', 'dead'], ['sentinel', 'near'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
+  test('Execution: normal enemies die outright; the Empty Sentinel survives; bosses take light x lightMul', () => {
+    for (const [id, want] of [['knight', 'dead'], ['executioner', 'dead'], ['warden', 'dead'], ['shover', 'dead'], ['sentinel', 'hurt'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
       Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
       const p = Game.player, e = Game.duel, max = e.def.hp;
       kneel(e); inFront(e, p); sim.step(1); sim.press('light');
@@ -2279,8 +2287,8 @@
       expect.ok(p.state === PS.EXECUTE, `${id}: the execution starts`);
       sim.until(() => p.state !== PS.EXECUTE, 5);
       if (want === 'dead') expect.ok(!e.alive(), `${id}: killed outright (${e.hp.toFixed(0)} / ${max})`);
-      else if (want === 'near') expect.ok(e.alive() && e.hp > 0 && e.hp < max * 0.2, `${id}: near death (${e.hp.toFixed(0)} / ${max})`);
-      else expect.ok(e.alive() && Math.abs((max - e.hp) / max - CONFIG.execution.damage.bossShare) < 0.01, `${id}: a third of its bar (${e.hp.toFixed(0)} / ${max})`);
+      else if (want === 'hurt') expect.ok(e.alive() && Math.abs(max - e.hp - 18 * CONFIG.execution.damage.lightMul) < 0.01, `${id}: hurt, alive (${e.hp.toFixed(0)} / ${max})`);
+      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(18 * CONFIG.execution.damage.lightMul, max / 2)) < 0.01, `${id}: light x lightMul off its bar (${e.hp.toFixed(0)} / ${max})`);
       expect.ok(e.state !== ES.EXECUTED && e.state !== ES.BROKEN, `${id}: let go (${e.state})`);
     }
   });

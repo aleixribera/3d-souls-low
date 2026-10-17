@@ -503,11 +503,15 @@ class Enemy {
       if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
       return { broke: this.addPosture(strike.postureDmg * (chained ? P.chainMul : 1)), died: false };
     }
-    if (this.in('shrugsHits') || this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
+    if (this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
+    const M = def.stagger || def.guard;
+    // Stagger/guard meter instead of poise: hits never interrupt until the meter fills. A riposte on a parried enemy
+    // fills it too (v5.2: it used to be shrugged off with the other no-reaction states).
+    if (M && this.state === ES.PARRIED) return { broke: this.fillMeter(M, strike.attackId), died: false };
+    if (this.in('shrugsHits')) return { broke: false, died: false };
     if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }
     const unaware = this.in('unaware');
-    const M = def.stagger || def.guard;
-    if (M) {   // stagger/guard meter instead of poise: hits never interrupt until the meter fills
+    if (M) {
       if (unaware) this.setState(ES.CHASE);
       return { broke: this.fillMeter(M, strike.attackId), died: false };
     }

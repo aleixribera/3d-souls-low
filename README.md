@@ -42,8 +42,8 @@ Some enemies carry a meter under their health bar: a **stagger** meter (Undead K
 
 While it kneels, step in front of it: its body glows a faint red and **Execute** shows at the bottom of the screen. Press **light attack** and you drive your sword through its chest and out of its back, hold it there, then rip it free.
 
-- Normal enemies die outright; the toughest (the Empty Sentinel) are left near death.
-- Bosses lose about a third of their current health bar. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
+- An execution deals 18 times a light attack's damage: most enemies die outright; the Empty Sentinel survives it.
+- Bosses take the same blow (never more than half a bar). Boss health bars are twice as long as before and their posture drains half as fast, so a boss fight is a long, hard duel; a bonfire always waits before it. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
 - You can't be hurt during an execution, by anything, and for a moment after it. Other enemies keep fighting, so look around when you stand up.
 - From behind, from the side or too far away, light attack is just a light attack. If you wait too long, the enemy gets back up.
 

@@ -66,12 +66,12 @@ const ENEMY_DEFS = [
     id: 'giant', model: 'giantSkeleton', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
-    hp: 480, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
+    hp: 960, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
     cooldown: [1.26, 2.38], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
     // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
     // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit. (v4.2.1: chainMul 1.5 -> 1.35, parry -15%.)
-    posture: { max: 100, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, hitstop: 0.2 },
+    posture: { max: 100, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     // v4.2.4: its sweep and stomp were active 0.24 / 0.2 s over boxes too wide to roll out of, so a roll's 0.3 s of
     // invulnerability had almost no margin; now 0.12 s, the rest added to the follow-through (docs/combat-timings-v4.1.md).
     attacks: [
@@ -196,9 +196,9 @@ const ENEMY_DEFS = [
     description: 'The invaders\' commander, who put Corvel to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
-    hp: 450, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
+    hp: 900, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
-    posture: { max: 100, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 10, breakTime: 3.2, hitstop: 0.2 },
+    posture: { max: 100, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     attacks: [
       { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
         hits: [{ startup: 1.05, active: 0.16, follow: 0.2 }], recovery: 0.85, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
@@ -215,9 +215,9 @@ const ENEMY_DEFS = [
     id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
-    hp: 650, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
+    hp: 1300, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
     cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    posture: { max: 120, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 9, breakTime: 3.4, hitstop: 0.2 },
+    posture: { max: 120, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.2 },
     attacks: [
       { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.14, follow: 0.4 }], recovery: 1,
         damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
@@ -297,22 +297,22 @@ const ENEMY_DEFS = [
     description: 'Aldric, king of Ashmere, who took the Undying Ember to cheat death. The bell you rang has called him out. Learn his sweep, his cleave, his delayed overhead and his leap; in the end he burns.',
     scale: 1.75, bulk: 1.25, radius: 0.78, color: 0x5a4a36, weapon: 'sword', idle: 'guard',
     visual: { skin: 0x5a5048, skinMetal: 0.45, metal: 0.4, roughness: 0.45, rim: 0.9 },
-    hp: 900, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,
+    hp: 1800, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,
     cooldown: [1.4, 2.6], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, deathFade: 7,
-    posture: { max: 130, parry: 26, chainGap: 1.8, chainMul: 1.35, decay: 9, breakTime: 3.4, hitstop: 0.22 },
+    posture: { max: 130, parry: 26, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.22 },
     defaultPhases: ['throne', 'knell'],   // a duel from the Enemies menu fights the throne room's two bars
     phases: {
       // Outside: slower and readable, teaching his style. Ends in a retreat (the placement's `boss.retreat`).
-      field: { hp: 800, cooldown: [1.5, 2.8], approach: 0.35, kite: 0.25, speed: 2.0,
+      field: { hp: 1600, cooldown: [1.5, 2.8], approach: 0.35, kite: 0.25, speed: 2.0,
         attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
       // The throne room's first bar: the same moves, pressed harder.
-      throne: { hp: 900, cooldown: [1.05, 2.0], approach: 0.6, kite: 0, speed: 2.2,
+      throne: { hp: 1800, cooldown: [1.05, 2.0], approach: 0.6, kite: 0, speed: 2.2,
         attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
       // After the transition (15 s, invulnerable): faster, longer, fiercer tracking in the wind-ups (commit points
       // unchanged), and four new attacks.
-      knell: { name: 'Aldric, the Ember-Crowned', hp: 1000, transition: 15, ignite: true, cooldown: [0.55, 1.25], approach: 0.85, kite: 0, speed: 2.7,
+      knell: { name: 'Aldric, the Ember-Crowned', hp: 2000, transition: 15, ignite: true, cooldown: [0.55, 1.25], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7,
-        posture: { max: 150, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 10, breakTime: 3.0, hitstop: 0.22 },
+        posture: { max: 150, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 5, breakTime: 3.0, hitstop: 0.22 },
         attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellStomp', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
     },
     attacks: [
