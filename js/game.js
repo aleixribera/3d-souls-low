@@ -302,22 +302,27 @@ const Game = {
     hud.showRested();
     events.emit('rest', { bonfire: b });
   },
-  // Rest or death: every enemy returns at full HP except those whose gates are already open and those killed before
-  // the last rest (`cleared`).
+  // Rest or death: every enemy returns at full HP except those killed before the last rest (`cleared`: confirmed at a
+  // bonfire) and beaten bosses (a boss stays beaten; v5.1). A won zone's gate stays open, but its other fighters killed
+  // since the last rest stand at their posts again: a bonfire is a checkpoint, not a pile of accumulated kills.
   respawnEnemies() {
-    const keep = new Set(this.zones.filter(z => z.gate.open).flatMap(z => z.actors));
+    const beatenBoss = a => !a.alive() && !!(a.boss || a.phaseIds || (a.baseDef || a.def).posture);
+    const keep = new Set(this.zones.filter(z => z.gate.open).flatMap(z => z.actors.filter(beatenBoss)));
     for (const e of this.enemies) if (!keep.has(e)) e.rig.dispose();
-    for (const z of this.zones) if (!z.gate.open) { z.spawned = false; z.actors = []; }
     this.enemies = [...keep, ...this.makeEnemies()];
-    for (const z of this.zones) if (!z.gate.open) this.spawnZone(z);
+    for (const z of this.zones) { const kept = z.actors.filter(a => keep.has(a)); z.actors = []; this.spawnZone(z, kept); }
   },
   // Zone enemies stand at their posts from the start (visible down the hall), and wait there until they notice the player.
-  spawnZone(z) {
+  // kept: beaten bosses of the zone that stay as they are (respawnEnemies).
+  spawnZone(z, kept = []) {
     z.spawned = true;
-    z.actors = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')]).filter(([, key]) => !this.cleared.has(key))
-      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss }));
-    z.beaten = z.members.length > 0 && z.actors.length === 0;   // every member beaten before a rest: its gate opens
-    this.enemies.push(...z.actors);
+    const fresh = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')])
+      .filter(([, key]) => !this.cleared.has(key) && !kept.some(a => a.key === key))
+      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss,
+        arena: m.arena ? z.trigger : null }));
+    z.actors = [...kept, ...fresh];
+    z.beaten = z.members.length > 0 && fresh.length === 0;   // every member beaten (before a rest, or a boss): its gate opens
+    this.enemies.push(...fresh);
   },
   onPlayerDeath() {
     const p = this.player;

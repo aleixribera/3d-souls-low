@@ -122,7 +122,7 @@ const lore = (() => {
 
   function clear() {
     if (group) { scene.remove(group); group.traverse(o => { if (o.isMesh && o.geometry !== UNIT) o.geometry.dispose(); }); }
-    if (st) { if (st.npc) st.npc.rig.dispose(); for (const s of st.scenes) if (s.rig) s.rig.dispose(); }
+    if (st) { for (const N of st.npcs) N.rig.dispose(); for (const s of st.scenes) if (s.rig) s.rig.dispose(); }
     group = null; st = null; L = null;
     hud.subtitle(null);
   }
@@ -133,23 +133,22 @@ const lore = (() => {
     const data = game.kind === 'level' && LORE.levels[game.level.id];
     if (!data) return;
     L = data; group = new THREE.Group(); scene.add(group);
-    st = { npc: null, inscriptions: [], scenes: [], talk: null, near: null, heard: false, wasNear: false, gesture: 0, clock: 0 };
-    if (L.npc) {
-      const N = LORE.npc, D = MODEL_DEFS[N.model] ? N : null;
-      const rig = new Rig({ scale: N.scale, bulk: N.bulk, color: 0x5a6a7a, weapon: 'sword', model: D && N.model });
+    st = { npcs: [], inscriptions: [], scenes: [], talk: null, near: null, clock: 0 };
+    for (const D of L.npcs || []) {   // one or more places she waits in this level (Level 5 has two)
+      const N = LORE.npc;
+      const rig = new Rig({ scale: N.scale, bulk: N.bulk, color: 0x5a6a7a, weapon: 'sword', model: N.model });
       if (rig.weapon) rig.weapon.visible = false;
-      if (L.npc.bars) {   // the bars of her cell, floor to lintel
-        const [x0, z0, x1, z1] = L.npc.bars, n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.22), y = floor(x0, z0, L.npc.y), iron = mat(0x2e2c2a, 0.5);
-        for (let i = 0; i <= n; i++) box(group, 0.05, 2.9, 0.05, iron, lerp(x0, x1, i / n), y + 1.45, lerp(z0, z1, i / n));
-        for (const h of [0.15, 1.5, 2.85]) box(group, Math.hypot(x1 - x0, z1 - z0), 0.06, 0.06, iron, (x0 + x1) / 2, y + h, (z0 + z1) / 2, Math.atan2(z1 - z0, x1 - x0) * -1);
+      const ny = floor(D.x, D.z, D.y), g = new THREE.Group(); group.add(g);
+      if (D.bars) {   // the bars of her cell, floor to lintel
+        const [x0, z0, x1, z1] = D.bars, n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.22), y = floor(x0, z0, D.y), iron = mat(0x2e2c2a, 0.5);
+        for (let i = 0; i <= n; i++) box(g, 0.05, 2.9, 0.05, iron, lerp(x0, x1, i / n), y + 1.45, lerp(z0, z1, i / n));
+        for (const h of [0.15, 1.5, 2.85]) box(g, Math.hypot(x1 - x0, z1 - z0), 0.06, 0.06, iron, (x0 + x1) / 2, y + h, (z0 + z1) / 2, Math.atan2(z1 - z0, x1 - x0) * -1);
       }
       // A dim pool of candlelight behind her, so her shape reads against the dark (the sightings of Level 5 do the same).
-      const ny = floor(L.npc.x, L.npc.z, L.npc.y), halo = glowSprite(0xffc890, 1.3, 3.2, 0.32, null);
-      halo.position.set(L.npc.x - Math.sin(L.npc.yaw) * 0.7, ny + (L.npc.pose === 'sit' ? 1.0 : 1.5), L.npc.z - Math.cos(L.npc.yaw) * 0.7); group.add(halo);
-      if (L.npc.pose === 'sit') {   // she sits on an upturned crate
-        box(group, 0.5, 0.42, 0.42, mat(0x4a3826), L.npc.x - Math.sin(L.npc.yaw) * 0.12, ny + 0.21, L.npc.z - Math.cos(L.npc.yaw) * 0.12, L.npc.yaw);
-      }
-      st.npc = { def: L.npc, rig, x: L.npc.x, z: L.npc.z, y: floor(L.npc.x, L.npc.z, L.npc.y), yaw: L.npc.yaw, name: N.name, kind: 'npc' };
+      const halo = glowSprite(0xffc890, 1.3, 3.2, 0.32, null);
+      halo.position.set(D.x - Math.sin(D.yaw) * 0.7, ny + (D.pose === 'sit' ? 1.0 : 1.5), D.z - Math.cos(D.yaw) * 0.7); g.add(halo);
+      if (D.pose === 'sit') box(g, 0.5, 0.42, 0.42, mat(0x4a3826), D.x - Math.sin(D.yaw) * 0.12, ny + 0.21, D.z - Math.cos(D.yaw) * 0.12, D.yaw);   // an upturned crate
+      st.npcs.push({ def: D, rig, props: g, x: D.x, z: D.z, y: ny, yaw: D.yaw, name: N.name, kind: 'npc', heard: false, wasNear: false, gesture: 0 });
     }
     for (const I of L.inscriptions || []) {
       const y = floor(I.x, I.z, I.y), g = new THREE.Group(); g.position.set(I.x, y, I.z); g.rotation.y = I.yaw; group.add(g);
@@ -171,20 +170,22 @@ const lore = (() => {
   const threatened = game => game.enemies.some(e => e.fightingPlayer() && Math.hypot(e.x - game.player.x, e.z - game.player.z) < C.threatRange);
   const dist = (p, s) => Math.hypot(p.x - s.x, p.z - s.z);
   const sameFloor = (p, s) => Math.abs(p.y - s.y) < C.floorGap;
-  function nearest(p) {
+  // `after: '<zone id>'`: she waits there only once that zone is won (Level 5: past Aldric's first retreat).
+  const present = (game, N) => !N.def.after || game.zones.some(z => z.id === N.def.after && z.gate.open);
+  function nearest(game, p) {
     let best = null, bd = Infinity;
-    for (const s of [st.npc, ...st.inscriptions]) {
-      if (!s || !sameFloor(p, s)) continue;
+    for (const s of [...st.npcs.filter(N => present(game, N)), ...st.inscriptions]) {
+      if (!sameFloor(p, s)) continue;
       const d = dist(p, s), r = s.kind === 'npc' ? C.talkRange : C.readRange;
       if (d < r && d < bd) { best = s; bd = d; }
     }
     return best;
   }
-  function begin(src, lines, full = true) { st.talk = { src, lines, i: 0, t: 0, gap: false, full }; if (src.kind === 'npc') st.gesture = 1; }
+  function begin(src, lines, full = true) { st.talk = { src, lines, i: 0, t: 0, gap: false, full }; if (src.kind === 'npc') src.gesture = 1; }
   function fade() { st.talk = null; }
   function next() {
     const T = st.talk; T.i++; T.t = 0; T.gap = false;
-    if (T.i >= T.lines.length) { if (T.full && T.src.kind === 'npc') st.heard = true; st.talk = null; }
+    if (T.i >= T.lines.length) { if (T.full && T.src.kind === 'npc') T.src.heard = true; st.talk = null; }
   }
 
   // Every fixed step of a level.
@@ -194,8 +195,9 @@ const lore = (() => {
     st.clock += dt;
     const p = game.player;
     // The bars of a cell: the player is kept outside the rect.
-    const solid = st.npc && st.npc.def.solid;
-    if (solid && p.alive()) {
+    for (const N of st.npcs) {
+      const solid = N.def.solid;
+      if (!solid || !p.alive()) continue;
       const [x0, x1, z0, z1] = solid, r = C.solidPad;
       if (p.x > x0 - r && p.x < x1 + r && p.z > z0 - r && p.z < z1 + r) {
         const out = [[p.x - (x0 - r), 'x', x0 - r], [(x1 + r) - p.x, 'x', x1 + r], [p.z - (z0 - r), 'z', z0 - r], [(z1 + r) - p.z, 'z', z1 + r]].sort((a, b) => a[0] - b[0])[0];
@@ -203,12 +205,14 @@ const lore = (() => {
       }
     }
     const busy = !p.alive() || threatened(game);
-    const near = busy ? null : nearest(p);
+    const near = busy ? null : nearest(game, p);
     st.near = near;
     // Coming back to her after hearing it all: a short idle line, once per approach.
-    const npcNear = !!near && near === st.npc;
-    if (npcNear && !st.wasNear && st.heard && !st.talk && st.npc.def.idle) begin(st.npc, [st.npc.def.idle], false);
-    st.wasNear = npcNear || (st.wasNear && !!st.npc && dist(p, st.npc) < C.leaveRange);   // until she is left behind
+    for (const N of st.npcs) {
+      const here = near === N;
+      if (here && !N.wasNear && N.heard && !st.talk && N.def.idle) begin(N, [N.def.idle], false);
+      N.wasNear = here || (N.wasNear && dist(p, N) < C.leaveRange);   // until she is left behind
+    }
     if (pressed && near && !busy) {
       if (!(st.talk && st.talk.src === near && st.talk.full)) begin(near, near.def.lines);   // no skipping: it plays at its own pace
     }
@@ -226,7 +230,7 @@ const lore = (() => {
     if (!st || !st.near) return null;
     const s = st.near;
     if (st.talk && st.talk.src === s && st.talk.full) return null;   // already speaking: nothing to press
-    return s.kind === 'npc' ? `Talk to ${st.npc.name.split(' ')[0]}` : `Read: ${s.name}`;
+    return s.kind === 'npc' ? `Talk to ${s.name.split(' ')[0]}` : `Read: ${s.name}`;
   }
 
   // ---- drawing, every frame --------------------------------------------------------------------------------------------
@@ -262,10 +266,11 @@ const lore = (() => {
       const d = Math.hypot(p.x - I.x, p.z - I.z), k = clamp(1 - d / C.glowRange, 0, 1);
       I.glow.material.opacity = (st.near === I ? 0.55 : 0.18 * k) * (0.85 + 0.15 * Math.sin(t * 2 + I.x));
     }
-    const N = st.npc;
-    if (!N) return;
-    const r = N.rig, near = Math.hypot(p.x - N.x, p.z - N.z), on = near < C.sceneRange * 1.5;
-    r.root.visible = r.shadow.visible = on;
+    for (const N of st.npcs) drawNpc(game, N, p, t, dt);
+  }
+  function drawNpc(game, N, p, t, dt) {
+    const r = N.rig, near = Math.hypot(p.x - N.x, p.z - N.z), on = near < C.sceneRange * 1.5 && present(game, N);
+    r.root.visible = r.shadow.visible = N.props.visible = on;
     if (!on) return;
     // Turn to face the player while they are near; back to her own way otherwise.
     const want = near < C.faceRange && p.alive() ? Math.atan2(p.x - N.x, p.z - N.z) : N.def.yaw;
@@ -283,28 +288,29 @@ const lore = (() => {
       r.armR.rotation.x -= 0.7 * lift; if (r.elbowR) r.elbowR.rotation.x -= 0.6 * lift;
     }
     // A greeting (a bow of the head) when she starts or is heard again.
-    st.gesture = Math.max(0, st.gesture - dt * 0.8);
-    if (st.gesture > 0) r.head.rotation.x += 0.35 * Math.sin(st.gesture * Math.PI);
+    N.gesture = Math.max(0, N.gesture - dt * 0.8);
+    if (N.gesture > 0) r.head.rotation.x += 0.35 * Math.sin(N.gesture * Math.PI);
     if (!sit && !talking) r.armL.rotation.x -= 0.25;   // hands held together before her
     if (r.anim) r.anim.updateCloth({ vx: 0, vz: 0, yaw: N.yaw }, { t, dt, yaw: N.yaw }, dt);
     r.place(N.x, N.y, N.z, N.yaw, N.y);
   }
 
   // ---- developer jumps (#dev): the level, at the NPC ----------------------------------------------------------------
-  function jumpTo(id) {
-    const lvl = LEVELS.find(l => l.id === id), N = LORE.levels[id].npc;
-    if (lvl.devJumps) { const j = lvl.devJumps.find(q => q.at === N.bonfire) || lvl.devJumps[lvl.devJumps.length - 1]; finale.jump(j); }
+  // i: which of the level's places (Level 5 has two). A level with dev jumps (Level 5) starts at her bonfire with the
+  // zones before it won.
+  function jumpTo(id, i = 0) {
+    const lvl = LEVELS.find(l => l.id === id), N = LORE.levels[id].npcs[i];
+    if (lvl.devJumps) finale.jump(lvl.devJumps.find(q => q.at === N.bonfire) || lvl.devJumps[lvl.devJumps.length - 1]);
     else Game.startLevel(id);
-    const a = N.yaw + Math.PI;   // a couple of metres in front of her (outside the cell)
-    Game.spawn = { x: N.x + Math.sin(N.yaw) * 2.6, y: N.y, z: N.z + Math.cos(N.yaw) * 2.6, yaw: a };
+    Game.spawn = { x: N.x + Math.sin(N.yaw) * 2.6, y: N.y, z: N.z + Math.cos(N.yaw) * 2.6, yaw: N.yaw + Math.PI };   // a few steps in front of her
     Game.spawnPlayer();
   }
   function devItems() {
     if (!DEV) return [];
-    return Object.keys(LORE.levels).filter(id => LORE.levels[id].npc).map(id => {
+    return Object.keys(LORE.levels).flatMap(id => (LORE.levels[id].npcs || []).map((N, i, all) => {
       const lvl = LEVELS.find(l => l.id === id);
-      return { name: `Lore: ${LORE.npc.name.split(' ')[0]} in ${lvl.name}`, desc: 'Developer jump: start the level next to the NPC.', go: () => jumpTo(id) };
-    });
+      return { name: `Lore: ${LORE.npc.name.split(' ')[0]} in ${lvl.name}${all.length > 1 ? ` (${i + 1})` : ''}`, desc: 'Developer jump: start the level next to the NPC.', go: () => jumpTo(id, i) };
+    }));
   }
 
   Game.renderHooks.push(render);

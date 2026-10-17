@@ -2121,15 +2121,15 @@
   // ---- Lore (v5.1): Ysolde, inscriptions, scenes, the seamless subtitles -----------------------------------------
   const lore = () => A.lore, LS = () => A.lore.state;
   const atNpc = id => { lore().jumpTo(id); Game.loading = 0; sim.begin(); sim.step(2); };
-  const npcDist = () => Math.hypot(Game.player.x - LS().npc.x, Game.player.z - LS().npc.z);
+  const npcDist = (i = 0) => Math.hypot(Game.player.x - LS().npcs[i].x, Game.player.z - LS().npcs[i].z);
   test('Lore: every NPC, inscription and scene of each level stands on a floor, off every zone fight', () => {
     for (const [id, D] of Object.entries(A.LORE.levels)) {
       Game.startLevel(id); Game.loading = 0;
-      const pts = [...(D.npc ? [D.npc] : []), ...(D.inscriptions || []), ...(D.scenes || [])];
+      const pts = [...(D.npcs || []), ...(D.inscriptions || []), ...(D.scenes || [])];
       for (const q of pts) expect.near(world.floorY(q.x, q.z, (q.y ?? 0) + 0.1), q.y ?? 0, 0.3, `${id}: (${q.x}, ${q.z}) must stand on a floor at y ${q.y ?? 0}`);
-      if (D.npc) {
-        expect.ok(LS().npc && LS().npc.rig, `${id}: the NPC is built`);
-        const z = Game.zones.find(g => g.trigger && (Array.isArray(g.trigger[0]) ? g.trigger : [g.trigger]).some(r => r.length === 4 && inArea(r, D.npc.x, D.npc.z)));
+      for (const [i, N] of (D.npcs || []).entries()) {
+        expect.ok(LS().npcs[i] && LS().npcs[i].rig, `${id}: the NPC is built`);
+        const z = Game.zones.find(g => g.trigger && (Array.isArray(g.trigger[0]) ? g.trigger : [g.trigger]).some(r => r.length === 4 && inArea(r, N.x, N.z)));
         expect.ok(!z, `${id}: the NPC stands inside zone ${z && z.id}`);
       }
     }
@@ -2145,7 +2145,7 @@
     expect.above(moved, 1, 'the player walks freely while she speaks');
     expect.ok(Game.player.state !== PS.DEAD && LS().talk, 'still talking while walking about');
     const steps = sim.until(() => !LS().talk, 120);
-    expect.ok(steps > 0 && LS().heard, 'it runs to the end on its own, and is heard');
+    expect.ok(steps > 0 && LS().npcs[0].heard, 'it runs to the end on its own, and is heard');
     expect.ok(!hud.sub.classList.contains('show'), 'the subtitles are gone');
   });
   test('Lore: Talk cannot skip a line, walking away fades it, coming back starts over, then an idle line', () => {
@@ -2159,7 +2159,7 @@
     expect.ok(LS().talk.i === 0, 'back and Talk: from the beginning');
     sim.until(() => !LS().talk, 120);
     sim.place(30, 0); sim.step(2); sim.place(8, 4.6); sim.step(2);
-    expect.ok(LS().talk && !LS().talk.full && LS().talk.lines[0] === A.LORE.levels['long-hall'].npc.idle, 'heard: a short idle line on coming back');
+    expect.ok(LS().talk && !LS().talk.full && LS().talk.lines[0] === A.LORE.levels['long-hall'].npcs[0].idle, 'heard: a short idle line on coming back');
     sim.until(() => !LS().talk, 30); sim.press('talk'); sim.step();
     expect.ok(LS().talk.full && LS().talk.i === 0, 'Talk again replays the whole dialogue');
   });
@@ -2183,12 +2183,52 @@
     expect.ok(lore().prompt() === `Read: ${I.def.label}`, `the Read prompt (${lore().prompt()})`);
     sim.press('talk'); sim.step();
     expect.ok(LS().talk && LS().talk.src === I, 'its text plays as subtitles');
-    for (const id of Object.keys(A.LORE.levels)) {
-      atNpc(id);
-      expect.below(npcDist(), CONFIG.lore.talkRange, `${id}: the jump puts the player by her`);
-      expect.ok(lore().prompt() && lore().prompt().startsWith('Talk'), `${id}: Talk prompt at the jump (${lore().prompt()})`);
+    for (const [id, D] of Object.entries(A.LORE.levels)) for (let i = 0; i < (D.npcs || []).length; i++) {
+      lore().jumpTo(id, i); Game.loading = 0; sim.begin(); sim.step(2);
+      expect.below(npcDist(i), CONFIG.lore.talkRange, `${id} (${i + 1}): the jump puts the player by her`);
+      expect.ok(lore().prompt() && lore().prompt().startsWith('Talk'), `${id} (${i + 1}): Talk prompt at the jump (${lore().prompt()})`);
     }
   });
+
+  // ---- v5.1 fixes: checkpoints, the Bell Warden's arena, Story autosave ------------------------------------------
+  const dieAndRespawn = () => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); sim.step(); sim.until(() => Game.player.alive(), CONFIG.death.respawnDelay + 2); sim.step(); };
+  const killZone = id => { const z = Game.zones.find(q => q.id === id); for (const a of z.actors) a.deplete(); sim.until(() => z.gate.open, 5); return z; };
+  test('Checkpoints: kills since the last rest come back after a death (gates stay open); rested kills stay dead', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.step(2);
+    let z = killZone('zone-hollow');
+    expect.ok(z.gate.open && z.actors.every(a => !a.alive()), 'the Hollow is beaten and its gate opens');
+    dieAndRespawn();
+    z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open, 'the gate stays open');
+    expect.ok(z.actors.length === 1 && z.actors[0].alive() && Game.enemies.includes(z.actors[0]), 'the unconfirmed kill stands again');
+    killZone('zone-hollow');
+    sim.place(4, -2.4); sim.step(2); sim.press('rest'); sim.step(120);
+    dieAndRespawn();
+    z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open && z.actors.length === 0, 'rested after the kill: it stays dead');
+  });
+  test('Checkpoints: a beaten boss stays beaten after a death, even before a rest', () => {
+    Game.startLevel('the-tower'); Game.loading = 0; sim.begin(); sim.step(2);
+    const z = killZone('zone-bell');
+    dieAndRespawn();
+    expect.ok(z.gate.open && !z.actors.some(a => a.alive()), 'the Bell Warden does not come back');
+  });
+  test('Level 4: the Bell Warden ignores the player at the bell bonfire, and fights once they enter its arena', () => {
+    Game.startLevel('the-tower'); Game.loading = 0; sim.begin(); sim.step(2);
+    const b = Game.level.bonfires.find(q => q.id === 'tower-bell'), w = Game.enemies.find(e => e.def.id === 'bellWarden');
+    sim.place(b.x + 1.2, b.z + 0.6, b.y); sim.seconds(5);
+    expect.ok(!w.fightingPlayer() && Game.canRest(), 'the bonfire before the arena is safe to rest at');
+    sim.place(96, 0, 22); sim.until(() => w.fightingPlayer(), 6);
+    expect.ok(w.fightingPlayer(), 'inside the arena it comes for the player');
+  });
+  test('Story: a won zone is saved at once, and Continue opens its gate with its unconfirmed fighters back', withSave(() => {
+    S().jumpTo('long-hall'); Game.loading = 0; sim.begin(); sim.step(2);
+    killZone('zone-hollow'); sim.step();
+    expect.ok(S().data.zones.includes('zone-hollow'), 'saved the moment the gate opened');
+    S().load(); S().resume(); Game.loading = 0; sim.step(2);
+    const z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open && z.actors.length === 1 && z.actors[0].alive(), 'Continue: gate open, the Hollow back at its post');
+  }));
 
   async function run(filter = '') {
     const out = [], t0 = performance.now();

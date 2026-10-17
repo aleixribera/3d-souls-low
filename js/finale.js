@@ -441,6 +441,7 @@ const finale = (() => {
     Game.startLevel(lvl.id);
     for (const z of Game.zones) if (j.won.includes(z.id)) {
       z.gate.open = true; z.gate.lift = 1; z.beaten = true;
+      for (const m of z.members) Game.cleared.add(Game.placementKey({ ...m, ...m.spawn }, z.id + '/'));   // as if rested past them
       for (const a of z.actors) a.rig.dispose();
       Game.enemies = Game.enemies.filter(e => !z.actors.includes(e)); z.actors = [];
     }

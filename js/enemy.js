@@ -33,6 +33,7 @@ class Enemy {
     this.home = { x: opts.x, y: opts.y ?? 0, z: opts.z, yaw: opts.yaw, state: B.home };
     this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
     this.zone = opts.zone ?? null; this.key = opts.key ?? null;
+    this.arena = opts.arena ?? null;   // a zone member with `arena: true` (v5.1): sees the player only inside its zone's trigger
     this.lastSeen = null;                            // where it last saw the player: searching, it walks there
     this.x = opts.x; this.y = opts.y ?? 0; this.z = opts.z; this.yaw = opts.yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
@@ -123,6 +124,7 @@ class Enemy {
   // Woken by another enemy's alert (told where the player is). Returns true if this changed anything.
   wake(player) {
     if (this.training || !this.alive()) return false;
+    if (this.arena && player && !inArea(this.arena, player.x, player.z)) return false;   // an alert never draws it out of its arena
     if (player) this.lastSeen = { x: player.x, z: player.z };
     const pounce = this.state === ES.LURK && this.behavior === 'perch' && this.def.attacks.find(a => a.hits[0].leap);
     if (pounce && player) { this.yaw = Math.atan2(player.x - this.x, player.z - this.z); this.beginAttack(pounce); return true; }   // a percher springs straight at them
@@ -157,7 +159,8 @@ class Enemy {
     const playerAlive = player.alive();
     // Unaware, it sees only in a cone ahead (CONFIG.vision); fighting or searching, all round.
     const V = CONFIG.vision, inCone = this.wide || !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
-    const sees = playerAlive && dist < this.notice && inCone && !gateBetween(this, player);
+    const inArena = !this.arena || inArea(this.arena, player.x, player.z);   // e.g. the Bell Warden: the bonfire before its arena is safe
+    const sees = playerAlive && inArena && dist < this.notice && inCone && !gateBetween(this, player);
     // Its leash is measured from home to the player, so chasing toward the line never flickers.
     const playerFromHome = Math.hypot(player.x - this.home.x, player.z - this.home.z);
     // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.

@@ -1,4 +1,4 @@
-# Combat Arena 3D — v5.1: What the Ash Remembers
+# Combat Arena 3D — v5.1.1: What the Ash Remembers
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
@@ -58,6 +58,7 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 
 ## Changelog
 
+- **v5.1.1:** Bonfires are true checkpoints: dying brings back every enemy killed since your last rest (won gates stay open; beaten bosses stay beaten). The Bell Warden waits in its arena, so the bonfire before it is safe. Story mode also saves the moment a zone is won or a shortcut opens, and when the page is closed. Ysolde moved where she is easy to see (the tavern's front corner in Level 3, the first bonfire past the undercroft in Level 4) and now also waits by Level 5's first bonfire with a new dialogue.
 - **v5.1 — What the Ash Remembers:** the lore of Ashmere (`LORE.md`): the Undying Ember, the Seven and their Bell of Waking, and the king, now named **Aldric** (the Gaoler King; his burning second phase is **Aldric, the Ember-Crowned**). A fellow prisoner, **Ysolde of Corvel**, with one dialogue in every level, played as seamless subtitles while you keep control (Talk: T / D-pad right). Readable inscriptions (two or three per level), wordless scenes (the barred door, the invaders' plunder, the defaced statue in the chapel, the king's empty portraits), new Story mode lines, and a new ending. Dev builds: a jump to Ysolde in each level.
 - **v5.0 — The Unbroken Road:** Story mode: the tutorial (optional) and all five levels as one campaign, with chapter titles and story lines between levels, the ending, credits and STORY COMPLETE. Automatic saving in the browser (bonfires, level starts, quitting), Continue from the last bonfire, New Game with confirmation, a pause menu with Skip tutorial and Quit (saves first). Progress carries between levels (today the flask count; ready for future upgrades). Dev builds: jump to any level in Story mode and clear the save from the main menu.
 - **v4.3.1:** Level 5 fixes: hall enemies and the chapel bonfire on the right floor, two more bonfires (barracks, ramparts), archers, wisps and gargoyles join each area's fight and keep on you (gargoyles pounce from their perches with their own claw attacks), open gates no longer block the view, Aldric's stomps and fire rings can be jumped, the Ash Wave is a flying slash, and the camera follows his retreat.

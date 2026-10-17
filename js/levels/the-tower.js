@@ -120,7 +120,7 @@ const LEVEL_4 = {
     { id: 'zone-walkway', trigger: [86, 114, 13, 17], gate: { x: 88, z: 10, y: 18, along: 'x', width: 4 },
       enemies: [{ enemy: 'duelist', spawn: { x: 98, y: 18, z: 14.5, yaw: Math.PI / 2 } }, { enemy: 'duelist', spawn: { x: 105, y: 18, z: 14.5, yaw: Math.PI / 2 } }] },
     { id: 'zone-bell', trigger: [90, 110, -9, 10], gate: { x: 100, z: -14, y: 22, along: 'x', width: 4 },
-      enemies: [{ enemy: 'bellWarden', spawn: { x: 101, y: 22, z: -2, yaw: -Math.PI / 2 } }] },
+      enemies: [{ enemy: 'bellWarden', arena: true, spawn: { x: 101, y: 22, z: -2, yaw: -Math.PI / 2 } }] },   // arena: the bell bonfire before it is safe
   ],
   // The postern gate opens only from the stair side, linking bonfire 3 back to the courtyard.
   shortcuts: [{ id: 'postern', gate: { x: 86, z: -13, y: 0, along: 'z', width: 4 }, opensFrom: [87, 92, -15, -11] }],

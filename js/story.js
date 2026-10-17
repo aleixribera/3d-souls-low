@@ -9,7 +9,7 @@
 // Save (version CONFIG.story.saveVersion):
 //   { v, level: <level id>, bonfire: <bonfire id> | null, spawn: { x, y?, z, yaw } | null (null: the level start),
 //     cleared: [placement keys of enemies beaten at the checkpoint, Game.placementKey], shortcuts: [gate ids opened],
-//     traps: [trap ids sprung], seen: [Level 5 sightings already gone], bosses: [enemy def ids beaten, ever],
+//     zones: [won zone ids, v5.1, optional], traps: [trap ids sprung], seen: [Level 5 sightings already gone], bosses: [enemy def ids beaten, ever],
 //     progress: { inventory: { <item id>: { max } }, currency, equipment, upgrades }, completed: bool, savedAt: ms }
 // A save that is missing, unreadable or names something that no longer exists is treated as no save (New Game).
 const story = (() => {
@@ -43,6 +43,7 @@ const story = (() => {
     if (d.bonfire !== null && !(L.bonfires || []).some(b => b.id === d.bonfire)) return null;
     if (d.spawn !== null && !(d.spawn && finite(d.spawn.x) && finite(d.spawn.z) && finite(d.spawn.yaw) && (d.spawn.y === undefined || finite(d.spawn.y)))) return null;
     if (![d.cleared, d.shortcuts, d.traps, d.seen, d.bosses].every(strs)) return null;
+    if ('zones' in d && !strs(d.zones)) return null;   // v5.1: optional (older saves derive won zones from `cleared`)
     if (!d.progress || typeof d.progress !== 'object' || !d.progress.inventory || typeof d.progress.inventory !== 'object') return null;
     return { ...d, completed: !!d.completed };
   }
@@ -81,11 +82,11 @@ const story = (() => {
   }
 
   // ---- the checkpoint -----------------------------------------------------------------------------------------------
-  // Beaten at the checkpoint: the enemies killed before the last rest, and every member of a zone already won (a won
-  // zone stays won after a death, so it stays won after a quit too).
+  // Beaten at the checkpoint: the enemies killed before the last rest, plus beaten bosses (they stay beaten). Kills since
+  // the last rest come back, as after a death (v5.1). Won zones are saved by id (`zones`): their gates stay open.
   function checkpointCleared() {
     const keys = new Set(Game.cleared);
-    for (const z of Game.zones) if (z.gate.open) for (const a of z.actors) if (a.key) keys.add(a.key);
+    for (const z of Game.zones) if (z.gate.open) for (const a of z.actors) if (a.key && !a.alive() && (a.boss || a.phaseIds || a.baseDef.posture)) keys.add(a.key);
     return [...keys];
   }
   function save(bonfire) {
@@ -96,6 +97,7 @@ const story = (() => {
       bonfire: tut ? null : bonfire !== undefined ? bonfire : prev ? prev.bonfire : null,
       spawn: tut || (bonfire === undefined && !(prev && prev.bonfire)) ? null : { ...Game.spawn },
       cleared: tut ? [] : checkpointCleared(),
+      zones: tut ? [] : Game.zones.filter(z => z.gate.open).map(z => z.id),
       shortcuts: tut ? [] : world.gates.filter(g => g.opensFrom && g.open).map(g => g.id),
       traps: tut ? [] : world.traps.filter(t => t.state === 'sprung').map(t => t.id),
       seen: tut ? [] : finale.seenSightings(),
@@ -116,6 +118,12 @@ const story = (() => {
     if (Game.level.ending && finale.state && finale.state.ending) { if (data) data.completed = true; save(); }
   });
   events.on('rest', d => { if (Game.story && !Game.isTutorial()) save(d.bonfire.id); });
+  // Autosaves (v5.1): a zone won or a shortcut opened is kept at once (its gate stays open on Continue; the kills since
+  // the last rest still come back, as after a death), and so is everything when the page is hidden or closed.
+  const autosave = () => { if (Game.story && !restoring && Game.kind === 'level' && !Game.isTutorial() && Game.player && Game.player.alive()) save(); };
+  events.on('gateOpened', autosave);
+  window.addEventListener('pagehide', autosave);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(); });
   events.on('endingDone', () => {
     if (!Game.story) return;
     if (data) { data.completed = true; write(data); }
@@ -154,7 +162,7 @@ const story = (() => {
         // Zones whose every member was beaten are won: their gates stand open (silently) and their fighters are gone.
         for (const z of Game.zones) {
           const keys = z.members.map(m => Game.placementKey({ ...m, ...m.spawn }, z.id + '/'));
-          if (!keys.length || !keys.every(k => Game.cleared.has(k))) continue;
+          if (!(d.zones || []).includes(z.id) && (!keys.length || !keys.every(k => Game.cleared.has(k)))) continue;
           z.gate.open = true; z.gate.lift = 1; z.beaten = true;
           for (const a of z.actors) a.rig.dispose();
           Game.enemies = Game.enemies.filter(e => !z.actors.includes(e)); z.actors = [];

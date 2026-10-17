@@ -4,7 +4,9 @@
 //   npc         who the recurring NPC is: name on the subtitles, model (js/data/models.js), size
 //   levels      per level id:
 //     (y: the floor height, 0 if left out; give it on any upper floor)
-//     npc         { x, y?, z, yaw, pose: 'stand'|'sit', solid?: [x0, x1, z0, z1], lines: [...], idle: '...' }
+//     npcs        [{ x, y?, z, yaw, pose: 'stand'|'sit', solid?: [x0, x1, z0, z1], bars?, after?: '<zone id>',
+//                   bonfire?: '<id>' (dev jumps), lines: [...], idle: '...' }]: each place she waits; `after`: only
+//                 once that zone is won.
 //                 `solid`: a rect the player cannot enter, `bars` [x0, z0, x1, z1]: iron bars drawn along a line (a cell);
 //                 `idle`: said when the player comes
 //                 back after hearing the dialogue. One press of Talk plays every line as subtitles.
@@ -26,7 +28,7 @@ const LORE = {
   npc: { id: 'ysolde', name: 'Ysolde of Corvel', model: 'ysolde', scale: 0.96, bulk: 0.94 },
   levels: {
     'long-hall': {
-      npc: { x: 8, z: 7.2, yaw: Math.PI, pose: 'stand', solid: [6.5, 9.5, 5.85, 8.6], bars: [6.6, 5.95, 9.4, 5.95],
+      npcs: [{ x: 8, z: 7.2, yaw: Math.PI, pose: 'stand', solid: [6.5, 9.5, 5.85, 8.6], bars: [6.6, 5.95, 9.4, 5.95],
         lines: [
           'Ah. You\'re awake. I\'d begun to think you never would.',
           'They carried you in a fortnight past. You didn\'t stir, not once. Most who come in that way never do.',
@@ -37,7 +39,7 @@ const LORE = {
           'That scarf you wear... no. Never mind. Red was a common enough colour, once.',
           'Go on. If you find the keys, think of me. And if you don\'t... well. Go on regardless.',
         ],
-        idle: 'Still here. The bars haven\'t grown any kinder.' },
+        idle: 'Still here. The bars haven\'t grown any kinder.' }],
       inscriptions: [
         { id: 'l1-tally', x: 13, z: -5.9, yaw: 0, mount: 'wall', label: 'Scratched wall',
           lines: ['"Forty days. Then I stopped counting. Then I started again, for the child in the next cell."', '"She has stopped answering."'] },
@@ -51,7 +53,7 @@ const LORE = {
       ],
     },
     'sunken-keep': {
-      npc: { x: 84.5, z: 38.3, yaw: -0.76, pose: 'stand',
+      npcs: [{ x: 84.5, z: 38.3, yaw: -0.76, pose: 'stand',
         lines: [
           'You found the keys, then. Or something found me. Either way, I\'m out, and I\'m not going back.',
           'Do you know what this place was? Before the cells? It was the founders\' keep. Their first stone.',
@@ -62,7 +64,7 @@ const LORE = {
           'You fight like someone taught you. Properly taught. Not like a farmer with a stolen sword.',
           '...Forgive me. I talk when I\'m frightened. Go ahead. I\'ll follow when it\'s quiet.',
         ],
-        idle: 'Quiet now. Quiet is a good sound, down here.' },
+        idle: 'Quiet now. Quiet is a good sound, down here.' }],
       inscriptions: [
         { id: 'l2-shrine', x: 72, z: 46.85, yaw: Math.PI, mount: 'wall', label: 'Founders\' shrine',
           lines: ['"Here the Seven swore it: no one of us shall rule alone."', '"The crown is held, not owned."'] },
@@ -77,7 +79,7 @@ const LORE = {
       ],
     },
     'burning-town': {
-      npc: { x: 33.3, y: 8, z: 64.5, yaw: 2.3, pose: 'sit',
+      npcs: [{ x: 42.6, y: 8, z: 55.3, yaw: -1.2, pose: 'sit',
         lines: [
           'This was the Lantern and Last. My father drank here every feast-day. He sang badly and was proud of it.',
           'Corvel. They called the ones who did this invaders. Men from over the mountains, they said.',
@@ -88,7 +90,7 @@ const LORE = {
           'They took the champion to the castle in chains. No one in Corvel ever learned their name. We only knew the red they wore.',
           'I\'m going to sit here a while. By the fire that isn\'t burning anything. Go on. The gate\'s at the top of the town.',
         ],
-        idle: 'My father\'s chair. I won\'t sit in it. I\'ll just keep it company.' },
+        idle: 'My father\'s chair. I won\'t sit in it. I\'ll just keep it company.' }],
       inscriptions: [
         { id: 'l3-church', x: 88, y: 12, z: 79.85, yaw: Math.PI, mount: 'wall', label: 'Parish stone',
           lines: ['"Corvel, town of bells."', '"Cast for the tower by the hands of this parish, in the founders\' faith."'] },
@@ -96,13 +98,13 @@ const LORE = {
           lines: ['"By order of the crown: all who shelter the disloyal shall be counted among them."'] },
       ],
       scenes: [
-        { kind: 'hearth', x: 32.5, y: 8, z: 65.4, yaw: 2.36 }, { kind: 'chair', x: 34.6, y: 8, z: 65.2, yaw: Math.PI },
+        { kind: 'hearth', x: 40.6, y: 8, z: 54.45, yaw: 0 }, { kind: 'chair', x: 38.8, y: 8, z: 55.3, yaw: -0.5 },
         { kind: 'sacks', x: 76.5, z: -10.5, yaw: 0.3 }, { kind: 'crates', x: 78.4, z: -9.4, yaw: -0.2 }, { kind: 'bell', x: 74.8, z: -10.9 },
         { kind: 'corpse', pose: 'lying', x: 41.5, z: -3.2, yaw: 1.2 }, { kind: 'corpse', pose: 'child', x: 41.9, z: -3.4, yaw: 1.4 },
       ],
     },
     'the-tower': {
-      npc: { x: -7, z: 4.6, yaw: 2.0, pose: 'stand',
+      npcs: [{ x: 29.7, z: 2.3, yaw: 2.72, pose: 'stand', bonfire: 'tower-bait',
         lines: [
           'There it is. The watchtower. My family cast bells for it for six generations.',
           'Not the great one, though. No living hand made the great one.',
@@ -113,7 +115,7 @@ const LORE = {
           'The ringers are still up there. What\'s left of them. Don\'t let their little bells frighten you. They were kind, once.',
           'Ring it. Please. I\'d do it myself, but I think it needs someone who has already said no to him once.',
         ],
-        idle: 'I\'ll be here. Listening. I\'d know that bell\'s voice anywhere.' },
+        idle: 'I\'ll be here. Listening. I\'d know that bell\'s voice anywhere.' }],
       inscriptions: [
         { id: 'l4-stone', x: 14, z: -8.85, yaw: 0, mount: 'wall', label: 'Founding stone',
           lines: ['"Who rings me calls the crown to answer."', '"Let the crown come out."'] },
@@ -126,7 +128,18 @@ const LORE = {
       ],
     },
     'final-castle': {
-      npc: { x: 313.2, y: 24, z: 4.8, yaw: 3.0, pose: 'sit',
+      npcs: [{ x: 94.6, z: 6.4, yaw: -2.49, pose: 'stand', after: 'zone-field', bonfire: 'castle-gate',
+        lines: [
+          'You saw him. Out there on the field. You saw what he has become.',
+          'He came out because the bell made him. The old law still holds him, a little. Enough to drag him to his own gate.',
+          'And he ran from you. I didn\'t think he could still be afraid of anything but dying.',
+          'I came up the cliff road behind you. I wasn\'t brave. I only couldn\'t bear to wait below and not know.',
+          'His castle is above us now. Gargoyles on the walls, and the old guard still at their posts. Empty, some of them. Only the armour, keeping its watch.',
+          'There\'s a chapel inside. My grandmother prayed in it once, when the castle still opened its doors to the river towns.',
+          'Rest here. Then go up. I\'ll find my own way, and I\'ll find you again before the end.',
+        ],
+        idle: 'Rest. The fire here is honest, at least.' },
+      { x: 313.2, y: 24, z: 4.8, yaw: 3.0, pose: 'sit', bonfire: 'castle-throne',
         lines: [
           'You came through all of it. I followed the quiet you left behind you.',
           'In the chapel. Did you see the statue? The one with its face struck off?',
@@ -138,7 +151,7 @@ const LORE = {
           'Whatever you were, you are the one who came back. That\'s enough for me.',
           'Go on, then. And when it\'s done... come down to the river. I\'ll be the one ringing something small.',
         ],
-        idle: 'Go on. I\'m not going anywhere. Not any more.' },
+        idle: 'Go on. I\'m not going anywhere. Not any more.' }],
       inscriptions: [
         { id: 'l5-plinth', x: 206, z: 5.3, yaw: Math.PI, mount: 'none', label: 'Statue plinth',
           lines: ['(The name has been chiselled away.)', '"...the King\'s Blade, who kept the river towns. By the king\'s own love."'] },

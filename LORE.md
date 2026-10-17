@@ -130,7 +130,7 @@ Her arc: hope (Level 1), dread (Level 2), grief (Level 3), resolve (Level 4), fa
 
 ## 6. The dialogues
 
-One dialogue per level, played as subtitles while the player keeps control. After it has been heard once, she has
+One dialogue per level (two in Level 5), played as subtitles while the player keeps control. After it has been heard once, she has
 a short idle line when the player comes near again; talking again replays the full dialogue.
 
 ### Level 1 — The Long Hall (through the bars of the next cell, by the first bonfire)
@@ -157,7 +157,7 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* Quiet now. Quiet is a good sound, down here.
 
-### Level 3 — The Burning Town (at the tavern hearth, by the second bonfire)
+### Level 3 — The Burning Town (at the tavern hearth, in its front corner, by the second bonfire)
 1. This was the Lantern and Last. My father drank here every feast-day. He sang badly and was proud of it.
 2. Corvel. They called the ones who did this invaders. Men from over the mountains, they said.
 3. But I saw their boots. Ashmere's boots. Ashmere's buckles. Our own army, with the colours torn off.
@@ -169,7 +169,7 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* My father's chair. I won't sit in it. I'll just keep it company.
 
-### Level 4 — The Tower (at the foot of the tower, by the gate bonfire)
+### Level 4 — The Tower (inside the gate, by the first bonfire reached past the undercroft)
 1. There it is. The watchtower. My family cast bells for it for six generations.
 2. Not the great one, though. No living hand made the great one.
 3. The founders melted their own crowns to cast it. *Who rings me calls the crown to answer.* That's what's written on its stone.
@@ -181,7 +181,18 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* I'll be here. Listening. I'd know that bell's voice anywhere.
 
-### Level 5 — The Final Castle (at the throne room door, by the last bonfire)
+### Level 5a — The Final Castle (in the gate yard, by the first bonfire, once Aldric has fled the field)
+1. You saw him. Out there on the field. You saw what he has become.
+2. He came out because the bell made him. The old law still holds him, a little. Enough to drag him to his own gate.
+3. And he ran from you. I didn't think he could still be afraid of anything but dying.
+4. I came up the cliff road behind you. I wasn't brave. I only couldn't bear to wait below and not know.
+5. His castle is above us now. Gargoyles on the walls, and the old guard still at their posts. Empty, some of them. Only the armour, keeping its watch.
+6. There's a chapel inside. My grandmother prayed in it once, when the castle still opened its doors to the river towns.
+7. Rest here. Then go up. I'll find my own way, and I'll find you again before the end.
+
+*Idle:* Rest. The fire here is honest, at least.
+
+### Level 5b — The Final Castle (at the throne room door, by the last bonfire)
 1. You came through all of it. I followed the quiet you left behind you.
 2. In the chapel. Did you see the statue? The one with its face struck off?
 3. A hood. A round shield. Someone painted the scarf red, after.

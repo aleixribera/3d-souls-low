@@ -187,10 +187,12 @@ function validateData() {
   for (const [id, D] of Object.entries(LORE.levels)) {
     const tag = `Lore "${id}"`;
     need(LEVELS.some(l => l.id === id), `${tag}: no level with that id in LEVELS.`);
-    if (D.npc) {
-      const N = D.npc;
+    for (const N of D.npcs || []) {
+      const L = LEVELS.find(l => l.id === id);
       need(num(N.x) && num(N.z) && num(N.yaw) && ['stand', 'sit'].includes(N.pose) && lines(N.lines) && typeof N.idle === 'string', `${tag}: the NPC needs x, z, yaw, pose (stand/sit), lines and an idle line.`);
       if ('solid' in N) need(Array.isArray(N.solid) && N.solid.length === 4 && N.solid.every(num) && N.solid[0] < N.solid[1] && N.solid[2] < N.solid[3], `${tag}: solid must be [x0, x1, z0, z1].`);
+      if ('after' in N) need(L && (L.gated || []).some(g => g.id === N.after), `${tag}: the NPC's after must name a zone of the level.`);
+      if ('bonfire' in N) need(L && L.bonfires.some(b => b.id === N.bonfire), `${tag}: the NPC's bonfire must name a bonfire of the level.`);
       if ('bars' in N) need(Array.isArray(N.bars) && N.bars.length === 4 && N.bars.every(num), `${tag}: bars must be [x0, z0, x1, z1].`);
     }
     for (const I of D.inscriptions || []) {
@@ -333,6 +335,7 @@ function validateRooms(L, where, need, num) {
       need(m.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${m.enemy}".`);
       need(!m.behavior || m.behavior === 'gated' || m.behavior === 'slumber', `${tag}: enemy behaviour must be gated or slumber.`);
       need(m.spawn && onFloor(m.spawn.x, m.spawn.z, m.spawn.y) && num(m.spawn.yaw), `${tag}: enemy "${m.enemy}" spawn does not stand on a floor (or has no yaw).`);
+      if ('arena' in m) need(typeof m.arena === 'boolean', `${tag}: arena must be true or false.`);
       if ('boss' in m) {   // a boss placement: which phases it fights, and an optional retreat when the last one ends
         const D = ENEMY_BY_ID[m.enemy], B = m.boss, R = B && B.retreat, tri = v => Array.isArray(v) && v.length === 3 && v.every(num);
         need(D && D.phases && B && Array.isArray(B.phases) && B.phases.length > 0 && B.phases.every(id => id in D.phases),
