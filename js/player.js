@@ -142,13 +142,14 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
+    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js). It costs
+    // no stamina, so it comes before the exhaustion check: even an exhausted player can execute.
+    const victim = execution.target(this, enemies);
+    if (victim && ((this.buffer && this.buffer.action === 'light') || input.consume('light'))) { execution.start(this, victim); return true; }
     this.refuseIfExhausted(['roll', 'parry', 'jump', ...Object.keys(M.ground)]);
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
     if (this.canAct() && input.consume('parry')) { this.startParry(); return true; }
     const queued = this.buffer && this.buffer.action;
-    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js).
-    const victim = this.canAct() && execution.target(this, enemies);
-    if (victim && (queued === 'light' || input.consume('light'))) { execution.start(this, victim); return true; }
     for (const action of Object.keys(M.ground)) {
       if (this.canAct() && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
@@ -264,7 +265,7 @@ class Player {
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
         // Recovery is the cancel point: a buffered (or fresh) roll, else a buffered attack, which chains the combo.
         if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
-        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light' && this.canAct()) {   // the combo broke its stance
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light') {   // the combo broke its stance
           const victim = execution.target(this, enemies);
           if (victim) { execution.start(this, victim); break; }
         }

@@ -2272,6 +2272,14 @@
       expect.above(e.guardMeter, m0, `${id}: the meter grew`);
     }
   });
+  test('Execution: needs no stamina: an exhausted player can still execute', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1);
+    p.spend(p.stamina); sim.step(1);
+    expect.ok(p.exhausted && p.stamina < 1, 'exhausted');
+    sim.press('light'); sim.step(1);
+    expect.ok(p.state === PS.EXECUTE, `executing (${p.state})`);
+  });
   test('Execution: the kneel gives no damage bonus any more', () => {
     Game.startFight('giant'); Game.loading = 0; sim.begin();
     const e = Game.duel, hp0 = e.hp; kneel(e);
