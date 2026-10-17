@@ -24,7 +24,8 @@ const MODEL_SETTINGS = {
   triBudget: { enemy: 1500, player: 3000, boss: 6000 },   // checked by the model lab; the builder warns when over
 };
 const MODEL_DEFS = {
-  hollowSoldier: {
+  // The original Hollow Soldier look (before v5.5): the hollowed models in models-enemies.js / models-bosses.js start from it.
+  hollowBase: {
     faction: 'hollowed', budget: 'enemy', fit: 1.07,
     proportions: { shoulderX: 0.31, torsoW: 0.2, torsoD: 0.13, armR: 0.052, legR: 0.08, headR: 0.125, handR: 0.05, footLen: 0.27 },
     limbs: { armL: { len: 1.14, thick: 0.9 }, armR: { thick: 1.0 }, legL: { thick: 0.95 } },   // the left arm hangs too long
@@ -73,6 +74,51 @@ const MODEL_DEFS = {
     eyes: { color: 0xd89a50, size: 0.016, spread: 0.05, at: [0, 0.085, 0.105] },
   },
 };
+// The Hollow Soldier (v5.5, after the reference art): a dead conscript still in his kit. A quilted, ochre-olive padded
+// gambeson to mid-thigh with puffed quilted sleeves, two leather straps crossed over the chest, a big pouch at the
+// right hip, rust-red trousers, leather gloves and forearm cuffs, iron knee cops over turned-down boot cuffs, a dented
+// morion helmet (crested, brim up front and back) over a sunken, rotted face. Upright but slack.
+MODEL_DEFS.hollowSoldier = {
+  faction: 'hollowed', budget: 'enemy', fit: 1.04,
+  proportions: { shoulderX: 0.32, torsoW: 0.21, torsoD: 0.14, armR: 0.06, legR: 0.092, headR: 0.118, handR: 0.052, footLen: 0.28 },
+  limbs: { armL: { len: 1.04 }, legL: { thick: 0.97 } },
+  posture: { chest: [0.16, 0, 0.03], neck: [0.22, 0, -0.04], head: [0.0, 0, 0.08], elbowL: [-0.14, 0, 0], elbowR: [-0.3, 0, 0] },
+  materials: {
+    skin: { tex: 'rotSkin', tint: 0x9a7a58, decay: 0.8 },
+    quilt: { tex: 'quiltedGambeson', tint: 0xa08a4e, decay: 0.75 },
+    trousers: { tex: 'rottenCloth', tint: 0x9a4a30, decay: 0.75 },
+    leather: { tex: 'crackedLeather', tint: 0x6e5440, decay: 0.75 },
+    strap: { tex: 'crackedLeather', tint: 0x7a6650, decay: 0.85 },
+    iron: { tex: 'dentedSteel', tint: 0x7c7e82, decay: 0.8, double: true },
+    mail: { tex: 'rustedIron', tint: 0x7a746c, decay: 0.6 },
+    blade: { tex: 'rustedIron', tint: 0x9a9a98, decay: 0.55 },
+    eye: { glow: 0xd89a50 },
+  },
+  body: { torso: 'quilt', pelvis: 'trousers', arms: 'quilt', legs: 'trousers', head: 'skin', neck: 'skin', hands: 'leather', feet: 'leather' },
+  parts: [
+    { use: 'gambeson', slot: 'quilt', bone: 'chest' },
+    { use: 'quiltSkirt', slot: 'quilt', bone: 'spin', mail: 'mail' },
+    { use: 'crossStraps', slot: 'strap', bone: 'chest' },
+    { use: 'satchel', slot: 'strap', bone: 'spin', x: 0.13 },
+    { use: 'morion', slot: 'iron', bone: 'head' },
+    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.0, to: 0.07, radius: 0.064, count: 1 },
+    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.0, to: 0.07, radius: 0.064, count: 1 },
+    { use: 'kneeCop', slot: 'iron', bone: 'kneeL' },
+    { use: 'kneeCop', slot: 'iron', bone: 'kneeR' },
+    { use: 'boot', slot: 'leather', bone: 'kneeL' },
+    { use: 'boot', slot: 'leather', bone: 'kneeR' },
+  ],
+  weapon: { use: 'ruinedSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
+  anim: {
+    attackMul: 1,
+    idle: { breathRate: 1.3, breath: 0.025, headDrift: 0.1, sway: 0.03, twitch: 0.4 },
+    walk: { twist: 0.18, roll: 0.06, headNod: 0.06, elbow: 0.5, drag: 0.35 },
+    flinch: { head: 1, chest: 1, arms: 1 },
+    death: { buckle: 1, slump: 1 },
+  },
+  eyes: { color: 0xd89a50, size: 0.013, spread: 0.048, at: [0, 0.095, 0.1] },
+};
+
 // The player: a worn wanderer, not a hero. Practical layers (cloth, leather jerkin, a mail skirt, one steel pauldron),
 // a hood, a long cape that reacts to movement, a round shield slung on the back, and one faded-red scarf as the accent.
 // The back view matters most: hood, cape and the round shield make the silhouette from behind.

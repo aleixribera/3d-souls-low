@@ -8,41 +8,53 @@
 //   ASHEN HOST  soot mail, peaked hoods, scorched cloth, one red sash, ember eyes          (Lancer, Executioner)
 const HOLLOWED_CLOTH = { tex: 'rottenCloth', decay: 0.8, double: true };
 
-MODEL_DEFS.rogue = {   // low and coiled, a ragged scarf streaming behind, a hooked knife
-  extends: 'hollowSoldier', fit: 1.08,
+MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood and black mask, layered belted leather over blue-black
+  // scale, blackened steel greaves, a broad scimitar licked by fire and a dagger in the off hand
+  extends: 'hollowBase', fit: 1.08,
   proportions: { torsoW: 0.17, torsoD: 0.11, armR: 0.045, legR: 0.065, headR: 0.112, handR: 0.045, footLen: 0.26 },
-  limbs: { armL: { len: 1.12, thick: 0.9 } },
-  posture: { chest: [0.55, 0, 0.08], neck: [0.4, 0, -0.1], head: [0.1, 0, 0.1], elbowL: [-0.4, 0, 0], elbowR: [-0.5, 0, 0] },
+  limbs: { armL: { len: 1.08, thick: 0.95 } },
+  posture: { chest: [0.4, 0, 0.06], neck: [0.3, 0, -0.08], head: [0.12, 0, 0.1], elbowL: [-0.4, 0, 0], elbowR: [-0.5, 0, 0] },
   materials: {
-    skin: { tex: 'paleSkin', tint: 0xbab29e, decay: 0.55 },
-    cloth: { ...HOLLOWED_CLOTH, tint: 0x4a5a48 },
-    hood: { ...HOLLOWED_CLOTH, tint: 0x384a3c, decay: 0.85 },
-    wrap: { ...HOLLOWED_CLOTH, tint: 0x8a8a70, decay: 0.9 },
-    leather: { tex: 'crackedLeather', tint: 0x5e6860, decay: 0.7 },
-    blade: { tex: 'rustedIron', tint: 0x9a9a98, decay: 0.45 },
-    eye: { glow: 0xd8b060 },
+    skin: { tex: 'paleSkin', tint: 0x8a8274, decay: 0.55 },
+    scales: { tex: 'rogueScales', decay: 0.4 },
+    leather: { tex: 'rogueLeather', decay: 0.6 },
+    hood: { tex: 'rogueHood', decay: 0.55, double: true },
+    mask: { tex: 'rogueHood', tint: 0x2a2a2a, decay: 0.4, double: true },
+    steel: { tex: 'rogueSteel', decay: 0.5 },
+    blade: { tex: 'rogueSteel', tint: 0xb8bcc4, decay: 0.35 },
+    flame: { glow: 0xff5a14 },
+    eye: { glow: 0x8a5a28 },
   },
-  body: { torso: 'cloth', pelvis: 'cloth', arms: 'cloth', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'skin', feet: 'leather' },
-  bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.12] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.12] }, scarfTail: { parent: 'neck', at: [0.03, 0.02, -0.09] } },
+  body: { torso: 'leather', pelvis: 'scales', arms: 'scales', legs: 'scales', head: 'mask', neck: 'mask', hands: 'leather', feet: 'steel' },
+  bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.12] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.12] }, hoodTail: { parent: 'neck', at: [0, 0.04, -0.1] } },
   parts: [
-    { use: 'tunic', slot: 'cloth', bone: 'spin' }, { use: 'hood', slot: 'hood', bone: 'head', tail: 0.9 },
-    { use: 'scarf', slot: 'hood', bone: 'neck' }, { use: 'clothStrip', slot: 'hood', bone: 'scarfTail', w: 0.12, len: 0.8, seed: 9 },
+    { use: 'hood', slot: 'hood', bone: 'head', size: 1.15, tail: 0.6, close: 0.35 }, { use: 'faceWrap', slot: 'mask', bone: 'head' },
+    { use: 'clothStrip', slot: 'hood', bone: 'hoodTail', w: 0.2, len: 0.3, seed: 4 },
+    { use: 'jerkin', slot: 'leather', bone: 'chest' },
+    { use: 'strap', slot: 'leather', buckle: 'steel', bone: 'chest', y: 0.2, r: 0.215, tilt: 0.06 },
+    { use: 'strap', slot: 'leather', buckle: 'steel', bone: 'chest', y: 0.32, r: 0.25, tilt: -0.05, bx: 0.07 },
+    { use: 'pauldron', slot: 'leather', bone: 'armR', size: 1.2 },
+    { use: 'tunic', slot: 'leather', bone: 'spin' },
     { use: 'belt', slot: 'leather', bone: 'spin' }, { use: 'pouch', slot: 'leather', bone: 'spin', x: 0.2, z: 0.08 },
-    { use: 'wraps', slot: 'wrap', bone: 'elbowL', from: 0.04, to: 0.26, radius: 0.04, count: 3 },
-    { use: 'wraps', slot: 'wrap', bone: 'kneeL', from: 0.05, to: 0.34, radius: 0.058, count: 3 },
-    { use: 'wraps', slot: 'wrap', bone: 'kneeR', from: 0.05, to: 0.34, radius: 0.058, count: 3 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.16, len: 0.4, seed: 3 }, { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.18, len: 0.5, seed: 7 },
+    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.08, to: 0.3, radius: 0.042, count: 3 },
+    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.08, to: 0.3, radius: 0.042, count: 3 },
+    { use: 'spikes', slot: 'leather', bone: 'elbowL', size: 0.7, at: [[0.035, -0.1, -0.01], [0.035, -0.17, -0.01], [0.035, -0.24, -0.01]] },
+    { use: 'kneeCop', slot: 'steel', bone: 'kneeL' }, { use: 'kneeCop', slot: 'steel', bone: 'kneeR' },
+    { use: 'boot', slot: 'steel', bone: 'kneeL' }, { use: 'boot', slot: 'steel', bone: 'kneeR' },
+    { use: 'clothStrip', slot: 'leather', bone: 'loinF', w: 0.18, len: 0.3, seed: 3 }, { use: 'clothStrip', slot: 'leather', bone: 'loinB', w: 0.2, len: 0.34, seed: 7 },
+    { use: 'dagger', slot: 'blade', guardSlot: 'steel', bone: 'elbowL' },
   ],
-  weapon: { use: 'curvedKnife', slots: { blade: 'blade', grip: 'leather', guard: 'leather' } },
+  weapon: { use: 'flameScimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel', flame: 'flame' } },
+  eyes: { color: 0x8a5a28, size: 0.01, spread: 0.044, at: [0, 0.095, 0.1] },   // a dim glint in the mask's slit
   anim: {
     idle: { breathRate: 2.2, breath: 0.03, headDrift: 0.14, sway: 0.03, twitch: 1.0 }, walk: { twist: 0.26, roll: 0.09, headNod: 0.09, elbow: 0.7, drag: 0.2 },
-    cloth: [{ bone: 'loinF', gain: 0.18, k: 60, damp: 5, flutter: 0.05 }, { bone: 'loinB', gain: 0.22, k: 50, damp: 4.5, flutter: 0.07 },
-            { bone: 'scarfTail', gain: 0.32, k: 28, damp: 2.6, flutter: 0.12 }],
+    cloth: [{ bone: 'loinF', gain: 0.14, k: 60, damp: 5, flutter: 0.04 }, { bone: 'loinB', gain: 0.18, k: 50, damp: 4.5, flutter: 0.05 },
+            { bone: 'hoodTail', gain: 0.2, k: 40, damp: 3.5, flutter: 0.06 }],
   },
 };
 
 MODEL_DEFS.paleDuelist = {   // a gaunt fallen noble: upright and thin, a plumed cap, rapier and dagger
-  extends: 'hollowSoldier', fit: 1.03,
+  extends: 'hollowBase', fit: 1.03,
   proportions: { shoulderX: 0.28, torsoW: 0.16, torsoD: 0.1, armR: 0.042, legR: 0.06, headR: 0.11, handR: 0.043, footLen: 0.26 },
   limbs: { armL: { len: 1.05, thick: 1 } },
   posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [-0.04, 0, 0.12], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0] },
@@ -79,7 +91,7 @@ MODEL_DEFS.paleDuelist = {   // a gaunt fallen noble: upright and thin, a plumed
 };
 
 MODEL_DEFS.rampartBowman = {   // hunched, a bow taller than its body, a quiver bristling with arrows
-  extends: 'hollowSoldier', fit: 1.06,
+  extends: 'hollowBase', fit: 1.06,
   proportions: { torsoW: 0.18, torsoD: 0.12, armR: 0.048, legR: 0.07, headR: 0.118 },
   limbs: { armL: { len: 1.08, thick: 0.9 } },
   posture: { chest: [0.36, 0, 0.04], neck: [0.3, 0, -0.08], head: [0.08, 0, 0.1], elbowL: [-0.2, 0, 0], elbowR: [-0.35, 0, 0] },
@@ -134,7 +146,7 @@ const tabardParts = (w, len) => [
 ];
 
 MODEL_DEFS.ironKnight = {   // broad, upright, heavy: a cracked great helm, one pauldron gone, a greatsword
-  extends: 'hollowSoldier', faction: 'ironbound', fit: 1.0,
+  extends: 'hollowBase', faction: 'ironbound', fit: 1.0,
   proportions: IRONBOUND_PROPS, limbs: {},
   posture: { chest: [0.04, 0, 0], neck: [0.05, 0, 0], head: [0, 0, 0.04], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },
   materials: IRONBOUND_MATS, body: IRONBOUND_BODY, bones: IRONBOUND_BONES,
@@ -150,6 +162,42 @@ MODEL_DEFS.ironKnight = {   // broad, upright, heavy: a cracked great helm, one 
   weapon: { use: 'greatSword', slots: { blade: 'blade', grip: 'leather', guard: 'rust' } },
   eyes: { color: 0x9ab8ff, size: 0.017, spread: 0.06, at: [0, 0.135, 0.17] },
   anim: IRONBOUND_ANIM,
+};
+
+// The Undead Knight (after the reference art): full worn plate, mottled grey with rivets. A rounded close helm with a
+// beaked visor over a broad gorget, a swelling breastplate, great three-lamed pauldrons (the left the larger), mail at
+// the joints, banded vambraces, gauntlets and greaves, tassets over dark brown trousers, and a long greatsword whose
+// blade hooks up into a cleaver tip. No shield, no tabard. ironKnight stays as the base of the other Ironbound.
+MODEL_DEFS.undeadKnight = {
+  extends: 'ironKnight', fit: 1.0,
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.39, torsoW: 0.27, torsoD: 0.19, armR: 0.07, legR: 0.092 },
+  posture: { chest: [0.06, 0, 0], neck: [0.1, 0, 0], head: [0.04, 0, 0.03], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
+  materials: {
+    ...IRONBOUND_MATS,
+    plate: { tex: 'knightPlate', tint: 0xc4c6cc, decay: 0.55 },
+    mail: { tex: 'knightMail', tint: 0x8a8a8e, decay: 0.7 },
+    trousers: { tex: 'rottenCloth', tint: 0x5a4434, decay: 0.75 },
+    leather: { tex: 'crackedLeather', tint: 0x5a3e2c, decay: 0.7 },
+    blade: { tex: 'knightPlate', tint: 0xa8aaae, decay: 0.5 },
+    guard: { tex: 'knightPlate', tint: 0x8a8c90, decay: 0.6 },
+  },
+  body: { torso: 'mail', pelvis: 'trousers', arms: 'mail', legs: 'trousers', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  parts: [
+    { use: 'breastplate', slot: 'plate', bone: 'chest' },
+    { use: 'tassets', slot: 'plate', bone: 'spin' },
+    { use: 'closeHelm', slot: 'plate', bone: 'head', size: 1.12 },
+    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.55 }, { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.3, side: -1 },
+    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.27, radius: 0.058, count: 3, flare: 0.25, cop: 0.068 },
+    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.27, radius: 0.058, count: 3, flare: 0.25, cop: 0.068 },
+    { use: 'plateBands', slot: 'plate', bone: 'legL', from: 0.12, to: 0.3, radius: 0.098, count: 1 },
+    { use: 'plateBands', slot: 'plate', bone: 'legR', from: 0.12, to: 0.3, radius: 0.098, count: 1 },
+    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.4, radius: 0.072, count: 3, flare: 0.12, cop: 0.08 },
+    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.4, radius: 0.072, count: 3, flare: 0.12, cop: 0.08 },
+    { use: 'belt', slot: 'leather', bone: 'spin' },
+  ],
+  weapon: { use: 'knightGreatsword', slots: { blade: 'blade', grip: 'leather', guard: 'guard' } },
+  eyes: { color: 0x9ab8ff, size: 0.014, spread: 0.055, at: [0, 0.183, 0.18] },
+  anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
 
 MODEL_DEFS.ironWarden = {   // a wall of shield: a tall crested helm, a banner on its back
@@ -204,7 +252,7 @@ const ASHEN_MATS = {
   eye: { glow: 0xff7a30 },
 };
 MODEL_DEFS.ashLancer = {   // upright, a peaked hood and long ash cloak, a spear far taller than itself
-  extends: 'hollowSoldier', faction: 'ashen', fit: 1.03,
+  extends: 'hollowBase', faction: 'ashen', fit: 1.03,
   proportions: { shoulderX: 0.32, torsoW: 0.2, torsoD: 0.13, armR: 0.054, legR: 0.075, headR: 0.12 },
   limbs: {},
   posture: { chest: [0.2, 0, 0], neck: [0.1, 0, 0], head: [0.04, 0, 0], elbowL: [-0.4, 0, 0], elbowR: [-0.4, 0, 0] },
@@ -260,7 +308,7 @@ MODEL_DEFS.ashExecutioner = {   // bare shoulders, a closed pointed hood with em
 // ---- Level 5: the castle's own creatures (v4.3). None of them is a living person. ----------------------------------
 // Gargoyle: carved, weathered stone, hunched forward, horned, stone wings spread from the back, clawed hands.
 MODEL_DEFS.gargoyle = {
-  extends: 'hollowSoldier', faction: 'castle', budget: 'enemy', fit: 1.12,
+  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.12,
   proportions: { shoulderX: 0.33, torsoW: 0.22, torsoD: 0.16, armR: 0.06, legR: 0.085, headR: 0.13, handR: 0.06, footLen: 0.3 },
   limbs: { armL: { len: 1.15 }, armR: { len: 1.15 } },
   posture: { chest: [0.62, 0, 0], neck: [-0.25, 0, 0], head: [-0.2, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0], wingL: [0.35, 0.2, -1.05], wingR: [0.35, -0.2, 1.05] },
@@ -318,7 +366,7 @@ MODEL_DEFS.emptySentinel = {
 // Toll Wisp: a hooded robe hanging round blue flame, a little bell where a face would be. No body: the arms and the
 // hands are flame. It glides; the robe hides where legs would be.
 MODEL_DEFS.tollWisp = {
-  extends: 'hollowSoldier', faction: 'castle', budget: 'enemy', fit: 1.0,
+  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.0,
   proportions: { shoulderX: 0.26, torsoW: 0.16, torsoD: 0.12, armR: 0.04, legR: 0.05, headR: 0.11, handR: 0.045, footLen: 0.2 },
   limbs: {},
   posture: { chest: [0.18, 0, 0], neck: [0.15, 0, 0], head: [0.1, 0, 0], elbowL: [-0.6, 0, 0], elbowR: [-0.6, 0, 0] },

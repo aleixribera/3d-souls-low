@@ -1,47 +1,45 @@
 'use strict';
 // Phase 6: boss models (the format is explained in js/data/models.js; texture size up to 512, budget 6000 triangles).
 // Each boss has one focal point you could draw from memory:
-//   Giant Skeleton   (OLD BONES)  an oversized cracked skull, a spine bent forward, ribs open on one side, a thigh-bone club
+//   Giant Skeleton   (OLD BONES)  a spectral giant: a huge domed skull hung low, pale glowing bone, a white-hot spine
 //   Pillager Captain (ASHEN HOST) a horned helm, a cloak torn into strips, a halberd whose edge glows
 //   Bell Warden      (IRONBOUND)  a verdigris bronze colossus: bell helm, bell skirt, a temple bell for a hammer
 
 MODEL_DEFS.giantSkeleton = {
-  extends: 'hollowSoldier', faction: 'oldbones', budget: 'boss', fit: 1.04, limbSides: 8,
-  proportions: { shoulderX: 0.3, torsoW: 0.2, torsoD: 0.14, armR: 0.034, legR: 0.048, headR: 0.2, handR: 0.04, footLen: 0.3 },
-  limbs: { armL: { len: 1.12, thick: 1 }, legL: { thick: 1.1 } },
-  posture: { chest: [0.5, 0, 0.06], neck: [0.34, 0, -0.1], head: [0.1, 0, 0.12], elbowL: [-0.2, 0, 0], elbowR: [-0.3, 0, 0] },
+  // v5.5, after the reference art: a spectral giant. Pale translucent bone lit from within (strong rim, bright
+  // vein texture, a cold aura), a huge domed skull hung low before the chest on a long neck, a deep rib cage,
+  // long femur-thick limbs with heavy knuckled joints, and a spine that burns white down to the pelvis.
+  extends: 'hollowBase', faction: 'oldbones', budget: 'boss', fit: 1.04, limbSides: 8, rim: 2.4,
+  proportions: { shoulderX: 0.34, torsoW: 0.16, torsoD: 0.12, armR: 0.072, legR: 0.08, headR: 0.29, handR: 0.06, footLen: 0.32 },
+  limbs: { armL: { len: 1.3, thick: 1.15 }, legL: { thick: 1.15 } },
+  posture: { chest: [0.55, 0, 0.04], neck: [0.9, 0, -0.06], head: [-0.45, 0, 0.1], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },
   materials: {
-    bone: { tex: 'bone', tint: 0xcfc8b2, decay: 0.65, size: 512 },
-    dark: { tex: 'bone', tint: 0x8a8068, decay: 0.95 },
-    void: { tex: 'ashSoot', tint: 0x3a3430, decay: 0.4 },
-    shroud: { tex: 'rottenCloth', tint: 0x6a6252, decay: 0.9, double: true },
-    shroudHem: { tex: 'tatteredFabric', tint: 0x6a6252, decay: 0.9, double: true },
-    eye: { glow: 0x9be8c0 },
+    bone: { tex: 'spectralBone', tint: 0xd8dde6, decay: 0.55, size: 512 },
+    dark: { tex: 'spectralBone', tint: 0xaab0bc, decay: 0.8 },
+    void: { tex: 'ashSoot', tint: 0x181a20, decay: 0.4 },
+    core: { glow: 0xe8eeff },
+    eye: { glow: 0xc8d8ff },
   },
   body: { torso: null, pelvis: 'bone', arms: 'bone', legs: 'bone', head: 'bone', neck: 'bone', hands: 'bone', feet: 'bone' },
-  bones: {
-    capeA: { parent: 'chest', at: [0, 0.55, -0.2] }, capeB: { parent: 'capeA', at: [0, -0.4, 0] },
-    loinF: { parent: 'spin', at: [0.0, -0.02, 0.1] },
-  },
   parts: [
-    { use: 'ribcage', slot: 'bone', bone: 'chest', full: 7, broken: 4, size: 1.1, spine: 0.14 },
+    { use: 'ribcage', slot: 'bone', bone: 'chest', full: 8, broken: 8, whole: true, size: 1.3, spine: 0.16 },
     { use: 'skullFace', slot: 'bone', void: 'void', bone: 'head' },
-    { use: 'knobs', slot: 'dark', bone: 'armL', at: [[0, 0, 0, 0.07]] }, { use: 'knobs', slot: 'dark', bone: 'armR', at: [[0, 0, 0, 0.08]] },
-    { use: 'knobs', slot: 'dark', bone: 'elbowL', at: [[0, 0, 0, 0.05]] }, { use: 'knobs', slot: 'dark', bone: 'elbowR', at: [[0, 0, 0, 0.055]] },
-    { use: 'knobs', slot: 'dark', bone: 'kneeL', at: [[0, 0, 0.01, 0.065]] }, { use: 'knobs', slot: 'dark', bone: 'kneeR', at: [[0, 0, 0.01, 0.07]] },
-    { use: 'knobs', slot: 'dark', bone: 'legL', at: [[0, 0, 0, 0.075]] }, { use: 'knobs', slot: 'dark', bone: 'legR', at: [[0, 0, 0, 0.075]] },
-    { use: 'fingers', slot: 'bone', bone: 'elbowL', at: 0.34 }, { use: 'fingers', slot: 'bone', bone: 'elbowR', at: 0.31 },
-    { use: 'capeSegment', slot: 'shroud', bone: 'capeA', w0: 0.4, w1: 0.46, len: 0.4, bow: 1.0 },
-    { use: 'capeSegment', slot: 'shroudHem', bone: 'capeB', w0: 0.46, w1: 0.5, len: 0.42, bow: 0.8, ragged: true, seed: 6 },
-    { use: 'clothStrip', slot: 'shroud', bone: 'loinF', w: 0.2, len: 0.45, seed: 4 },
+    // the burning spine: white-hot vertebrae from the ribs down into the pelvis
+    { use: 'knobs', slot: 'core', bone: 'chest', at: [[0, 0.04, -0.16, 0.032], [0, 0.11, -0.165, 0.03], [0, 0.18, -0.17, 0.028], [0, 0.25, -0.17, 0.026], [0, 0.32, -0.17, 0.024]] },
+    { use: 'knobs', slot: 'core', bone: 'spin', at: [[0, 0.0, -0.08, 0.036], [0, 0.07, -0.095, 0.036], [0, 0.14, -0.11, 0.035], [0, 0.21, -0.125, 0.034], [0, 0.28, -0.14, 0.033]] },
+    // heavy knuckled joints: femur heads at the shoulders and hips, thick condyles at elbows, wrists and knees
+    { use: 'knobs', slot: 'dark', bone: 'armL', at: [[0, 0, 0, 0.11], [0.03, -0.05, 0.03, 0.07]] }, { use: 'knobs', slot: 'dark', bone: 'armR', at: [[0, 0, 0, 0.11], [-0.03, -0.05, 0.03, 0.07]] },
+    { use: 'knobs', slot: 'dark', bone: 'elbowL', at: [[0.03, 0, 0, 0.08], [-0.03, 0, 0, 0.07], [0, -0.36, 0, 0.07]] }, { use: 'knobs', slot: 'dark', bone: 'elbowR', at: [[0.03, 0, 0, 0.08], [-0.03, 0, 0, 0.07], [0, -0.34, 0, 0.07]] },
+    { use: 'knobs', slot: 'dark', bone: 'kneeL', at: [[0.03, 0, 0.01, 0.085], [-0.03, 0, 0.01, 0.08]] }, { use: 'knobs', slot: 'dark', bone: 'kneeR', at: [[0.03, 0, 0.01, 0.085], [-0.03, 0, 0.01, 0.08]] },
+    { use: 'knobs', slot: 'dark', bone: 'legL', at: [[0, 0, 0, 0.1]] }, { use: 'knobs', slot: 'dark', bone: 'legR', at: [[0, 0, 0, 0.1]] },
+    { use: 'fingers', slot: 'bone', bone: 'elbowL', at: 0.4, r: 0.022, len: 0.24, spread: 0.045 }, { use: 'fingers', slot: 'bone', bone: 'elbowR', at: 0.38, r: 0.022, len: 0.24, spread: 0.045 },
   ],
   weapon: { use: 'boneClub', slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },
-  eyes: { color: 0x9be8c0, size: 0.028, spread: 0.084, at: [0, 0.21, 0.172] },
+  eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.11, at: [0, 0.28, 0.21] },
+  aura: { color: 0xcfdcff, size: 3.6, opacity: 0.16 },
   anim: {
-    idle: { breathRate: 0.8, breath: 0.02, headDrift: 0.08, sway: 0.02, twitch: 0 }, walk: { twist: 0.12, roll: 0.05, headNod: 0.05, elbow: 0.3, drag: 0.35 },
+    idle: { breathRate: 0.6, breath: 0.02, headDrift: 0.1, sway: 0.025, twitch: 0 }, walk: { twist: 0.12, roll: 0.06, headNod: 0.07, elbow: 0.3, drag: 0.35 },
     flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1.2, slump: 1 },
-    cloth: [{ bone: 'capeA', gain: 0.07, k: 34, damp: 3.8, flutter: 0.04 }, { bone: 'capeB', gain: 0.07, k: 30, damp: 3.2, flutter: 0.06, sideways: 1.2 },
-            { bone: 'loinF', gain: 0.12, k: 55, damp: 5, flutter: 0.05 }],
   },
 };
 

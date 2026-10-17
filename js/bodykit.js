@@ -127,6 +127,8 @@ const KIT = (() => {
   }
 
   // ---- accessories: name -> (options, model) => geometry list, in the bone's own frame ------------------------
+  // The Hollow Soldier's gambeson profile [[radius, y]] (chest frame), shared by the coat and the straps laid on it.
+  const GAMBESON = [[0.2, -0.08], [0.25, 0.22], [0.295, 0.4], [0.32, 0.5], [0.255, 0.57], [0.13, 0.625], [0.115, 0.66]];
   const KIT_PARTS = {
     // A ragged tunic around the waist: uneven hem.
     tunic(o) {
@@ -238,6 +240,60 @@ const KIT = (() => {
         fin.rotateY(-Math.PI / 2); xf(fin, 0.01, 0.235 * s, 0.0); out.push(fin);
       }
       if (o.nose) out.push(xf(plate([[-0.02, 0], [0.02, 0], [0.025, -0.11], [-0.025, -0.11]], 0.012, 0.004), 0, 0.12 * s, 0.15 * s));
+      return out;
+    },
+    // A rounded close helm (Undead Knight): a domed skull, a brow ridge over the eye slit, a beaked visor below it,
+    // and a broad flared gorget sitting on the shoulders. Eyes glow in the slit (y ≈ 0.16 × size).
+    closeHelm(o) {
+      const s = o.size ?? 1;
+      const dome = lathe([[0.125, 0.12], [0.148, 0.16], [0.147, 0.21], [0.125, 0.26], [0.075, 0.293], [0, 0.302]].map(([r, y]) => [r * s, y * s]), 8, 1.06);
+      const skull = lathe([[0.13, -0.04], [0.14, 0.02], [0.145, 0.12]].map(([r, y]) => [r * s, y * s]), 8, 1.0);
+      const visor = deform(sphere(0.1 * s, 8, 5), v => { if (v.z > 0) v.z *= 1 + 0.35 * Math.max(0, 1 - Math.abs(v.x) / (0.07 * s)); });
+      xf(visor, 0, 0.08 * s, 0.03 * s, 0, 0, 0, 1.35, 0.95, 1.12);
+      const brow = xf(new THREE.TorusGeometry(0.15 * s, 0.014 * s, 3, 9, Math.PI), 0, 0.165 * s, 0, Math.PI / 2, 0, 0, 1, 1.08, 1);
+      const comb = xf(plate([[-0.13, 0], [0.13, 0], [0.1, 0.03], [-0.12, 0.03]], 0.014, 0.004), 0, 0.28 * s, 0.0, 0, Math.PI / 2, 0, s);
+      const gorget = lathe([[0.25, -0.2], [0.23, -0.15], [0.18, -0.09], [0.145, -0.04]].map(([r, y]) => [r * s, y * s]), 8, 0.9);
+      for (const g of [dome, skull, visor, gorget]) roughen(g, 0.006, 33);
+      return [uvScale(dome, 3, 1), uvScale(skull, 3, 1), uvScale(visor, 2, 1), brow, comb, uvScale(gorget, 3, 1)];
+    },
+    // A swelling, rounded breastplate with a waist plackart (Undead Knight).
+    breastplate(o, M) {
+      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
+      const g = lathe([[0.2, -0.04], [0.215, 0.07], [0.26, 0.2], [0.3, 0.34], [0.322, 0.45], [0.29, 0.53], [0.2, 0.6]].map(([r, y]) => [r * tw, y]), 9, oz * 1.12);
+      deform(g, v => { if (v.z > 0) v.z += 0.03 * Math.max(0, 1 - Math.abs(v.x) / (0.12 * tw)) * Math.sin(Math.PI * Math.min(1, Math.max(0, (v.y + 0.04) / 0.64))); });   // a soft centre ridge
+      const plackart = lathe([[0.225, 0.0], [0.24, 0.07], [0.235, 0.14]].map(([r, y]) => [r * tw, y]), 9, oz * 1.15);
+      return [uvScale(roughen(g, 0.006, 41), 2, 1.2), uvScale(plackart, 2, 0.5)];
+    },
+    // A great rounded pauldron in three lames: a big dome and two curved plates below it (side: 1 left, -1 right).
+    roundPauldron(o) {
+      const s = o.size ?? 1, sd = o.side ?? 1, out = [];
+      const dome = new THREE.SphereGeometry(0.12 * s, 8, 4, 0, TAU, 0, Math.PI * 0.58);   // dips past the equator: it hugs the shoulder
+      xf(dome, 0.015 * sd * s, -0.005 * s, 0, 0, 0, -0.42 * sd, 1.05, 1.0, 1.1); out.push(uvScale(roughen(dome, 0.008, 5), 3, 1.5));
+      for (let i = 0; i < 2; i++) {   // two lames down the outside of the upper arm
+        const r = 0.098 * s * (1 - i * 0.08), g = new THREE.CylinderGeometry(r, r * 1.06, 0.055 * s, 7, 1, true, sd > 0 ? 0.25 : Math.PI + 0.25, 2.6);
+        out.push(uvScale(xf(g, 0.03 * sd * s, (-0.055 - i * 0.045) * s, 0, 0, 0, -0.18 * sd, 1, 1, 1.05), 2, 0.5));
+      }
+      return out;
+    },
+    // Straight plate bands down a limb (vambrace, greave, gauntlet cuff), with an optional cop at the joint.
+    plateBands(o) {
+      const n = o.count ?? 3, step = (o.to - o.from) / n, out = [];
+      for (let i = 0; i < n; i++) {
+        const r = o.radius * (1 + (o.flare ?? 0) * i / Math.max(1, n - 1));
+        out.push(uvScale(xf(tube(r, r * 1.06, step * 1.05, 7, true), 0, -(o.from + step * (i + 0.5)), 0), 1, 0.4));
+      }
+      if (o.cop) out.push(xf(sphere(o.cop, 6, 4), 0, 0, 0.02, 0, 0, 0, 1, 1, 1.05));
+      return out;
+    },
+    // Banded tassets on the hips: curved lames over each thigh and the seat; the front is open over the trousers.
+    tassets(o, M) {
+      const tw = M.proportions.torsoW / 0.2, out = [];
+      for (const [mid, span] of [[1.0, 1.35], [-1.0, 1.35], [Math.PI, 1.9]])
+        for (let i = 0; i < 3; i++) {
+          const r = (0.2 + i * 0.022) * tw, g = new THREE.CylinderGeometry(r, r + 0.02 * tw, 0.11, 6, 1, true, mid - span / 2, span);
+          out.push(uvScale(xf(g, 0, -0.02 - i * 0.095, 0, 0, 0, 0, 1, 1, 0.82), 2, 0.5));
+        }
+      out.push(uvScale(xf(new THREE.TorusGeometry(0.2 * tw, 0.024, 3, 12), 0, 0.05, 0, Math.PI / 2, 0, 0, 1, 1, 0.8), 6, 1));   // the fauld at the waist
       return out;
     },
     // A cloth peak on top of a hood (executioner, lancer): leans back.
@@ -429,18 +485,24 @@ const KIT = (() => {
       const guard = xf(tube(0.012, 0.012, 0.2, 4), 0, -0.32, 0.05, 0, 0, Math.PI / 2);
       return [{ slot: o.slot, geo: blade }, { slot: o.guardSlot ?? 'iron', geo: xf(guard, 0, 0, 0) }];
     },
-    // A rib cage on a hunched spine: `full` ribs wrap all the way round on one side, `broken` stop short on the other.
+    // A rib cage on a hunched spine: `full` ribs wrap all the way round on one side, `broken` stop short on the other
+    // (`whole: true`: both sides wrap round).
     ribcage(o) {
       const out = [], full = o.full ?? 6, broken = o.broken ?? 3, n = Math.max(full, broken), sp = o.spine ?? 0.12;
       for (let i = 0; i < n; i++) {
         const y = 0.06 + i * 0.075, rad = (0.2 + 0.07 * Math.sin(i / (n - 1) * Math.PI)) * (o.size ?? 1);
         for (const side of [1, -1]) {
-          const len = side === 1 ? Math.PI * 0.78 : (i < broken ? Math.PI * (0.35 + 0.1 * (i % 2)) : 0);
+          const len = side === 1 || o.whole ? Math.PI * 0.78 : (i < broken ? Math.PI * (0.35 + 0.1 * (i % 2)) : 0);
           if (side === 1 && i >= full) continue;
           if (len <= 0) continue;
           const g = new THREE.TorusGeometry(rad, 0.017, 3, 7, len);
-          // The torus arc starts at +x, curving toward +y; lay it flat and swing it so it starts at the spine (back).
-          g.rotateX(Math.PI / 2); g.rotateY(side === 1 ? Math.PI / 2 : -Math.PI / 2 - len + Math.PI); xf(g, 0, y, -sp + rad * 0.0, 0, 0, 0, 1, 1, 0.8);
+          // The torus arc starts at +x, curving toward +y; lay it flat and swing it so it starts at the spine (back) and
+          // curves forward round a chest centred `rad` in front of it. The other side is the same arc turned over
+          // (rotateZ(PI) mirrors x; the tube is round, so it stays the right way out). Ribs droop toward the front.
+          g.rotateX(Math.PI / 2); g.rotateY(Math.PI / 2); xf(g, 0, 0, rad, 0, 0, 0, 1, 1, 0.8);
+          if (side === -1) g.rotateZ(Math.PI);
+          deform(g, v => { v.y -= Math.max(0, v.z) * 0.35; });
+          xf(g, 0, y, -sp);
           out.push(g);
         }
       }
@@ -510,12 +572,76 @@ const KIT = (() => {
       roughen(g, 0.012, 71);
       return [uvScale(g, 3, 1), uvScale(xf(new THREE.TorusGeometry(0.31, 0.02, 3, 10), 0, -0.5, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), 4, 1)];
     },
+    // ---- the Hollow Soldier (v5.5) ----
+    // A padded gambeson over the torso (chest frame), a little bulkier than the body, high collar.
+    gambeson(o, M) {
+      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
+      return [uvScale(lathe(GAMBESON.map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2)];
+    },
+    // Its quilted skirt to mid-thigh (spin frame), a band of mail peeking under the hem when `mail` names a slot.
+    quiltSkirt(o, M) {
+      const tw = M.proportions.torsoW / 0.2, h = o.hem ?? -0.27;
+      const g = lathe([[0.245, h], [0.225, -0.12], [0.205, 0.0], [0.195, 0.1]].map(([r, y]) => [r * tw, y]), 8, 0.78);
+      deform(g, v => { if (v.y < h + 0.05) v.y += hash3(Math.round(v.x * 60), Math.round(v.z * 60), 7, 3) * 0.04; });
+      const out = [uvScale(g, 2, 0.8)];
+      if (o.mail) out.push({ slot: o.mail, geo: uvScale(lathe([[0.25 * tw, h - 0.06], [0.245 * tw, h + 0.03]], 8, 0.8), 3, 0.3) });
+      return out;
+    },
+    // Two leather straps crossed over the chest, laid on the gambeson's front (chest frame).
+    crossStraps(o, M) {
+      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
+      const rAt = y => { const P = GAMBESON; for (let i = 1; i < P.length; i++) if (y <= P[i][1]) { const t = (y - P[i - 1][1]) / (P[i][1] - P[i - 1][1]); return (P[i - 1][0] + (P[i][0] - P[i - 1][0]) * t) * tw; } return P[P.length - 1][0] * tw; };
+      return [-1, 1].map(s => {
+        const a = new V2(-0.19 * s, 0.53), b = new V2(0.16 * s, 0.1), d = b.clone().sub(a), len = d.length();
+        const g = new THREE.BoxGeometry(len, o.w ?? 0.045, 0.014, 4, 1, 1);
+        xf(g, (a.x + b.x) / 2, (a.y + b.y) / 2, 0, 0, 0, Math.atan2(d.y, d.x));
+        deform(g, v => { const r = rAt(v.y), x = Math.min(Math.abs(v.x), r * 0.97); v.z += r * oz * Math.sqrt(1 - (x / r) ** 2) + 0.012 + (s > 0 ? 0.006 : 0); });
+        return uvScale(g, 1.5, 0.3);
+      });
+    },
+    // A big square pouch with a flap at the front hip (spin frame).
+    satchel(o) {
+      const x = o.x ?? 0.13, z = o.z ?? 0.17;
+      const bag = xf(plate([[-0.065, 0], [0.065, 0], [0.07, 0.13], [-0.07, 0.13]], 0.055, 0.014), x, -0.2, z - 0.03, 0.08, 0.35, 0.05);
+      const flap = xf(new THREE.BoxGeometry(0.15, 0.075, 0.012), x + 0.02, -0.1, z + 0.045, -0.25, 0.35, 0.05);
+      return [bag, flap];
+    },
+    // A morion helmet (head frame): a dome with a raised crest and a brim swept up at front and back.
+    morion(o, M) {
+      const s = (o.size ?? 1) * M.proportions.headR / 0.118;
+      const dome = lathe([[0.152, 0.14], [0.145, 0.21], [0.1, 0.285], [0.0, 0.305]].map(([r, y]) => [r * s, y * s]), 8);
+      const brim = lathe([[0.15 * s, 0.142 * s], [0.2 * s, 0.15 * s]], 8);
+      deform(brim, v => { const f = (v.z * v.z) / (v.x * v.x + v.z * v.z + 1e-6); v.y += 0.09 * f * Math.hypot(v.x, v.z) / 0.2; if (v.z > 0.1) v.z *= 1.15; });
+      const comb = xf(new THREE.SphereGeometry(0.13 * s, 6, 2, 0, TAU, 0, Math.PI / 2), 0, 0.245 * s, 0, 0, 0, 0, 0.05, 0.55, 1);
+      roughen(dome, 0.008, 81); roughen(brim, 0.008, 82);
+      return [uvScale(xf(dome, 0, -0.01, -0.005), 3, 1), uvScale(xf(brim, 0, -0.01, -0.005), 3, 1), comb];
+    },
+    // A round iron cop over the knee (knee frame).
+    kneeCop(o) {
+      const r = o.r ?? 0.068, cup = new THREE.SphereGeometry(r, 6, 3, 0, TAU, 0, Math.PI / 2);
+      xf(cup, 0, -0.01, 0.045, Math.PI / 2, 0, 0, 1, 0.7, 1.15); roughen(cup, 0.006, 83);
+      return [uvScale(cup, 2, 1)];
+    },
+    // A boot shaft up the shin with a loose turned-down cuff (knee frame).
+    boot(o) {
+      const shaft = tube(0.06, 0.056, 0.22, 6, true); xf(shaft, 0, -0.34, 0);
+      const cuff = lathe([[0.066, -0.26], [0.08, -0.215], [0.084, -0.17]], 6); roughen(cuff, 0.008, 84);
+      return [shaft, uvScale(cuff, 2, 0.5)];
+    },
     // A broken arrow still stuck in the back
     // A cloth wrap over the lower face with eye sockets left dark: the face is hidden but readable.
     faceWrap(o, M) {
       const r = M.proportions.headR, band = uvScale(xf(tube(r * 0.97, r * 0.9, 0.085, 8, true), 0, r * 0.62, 0.012, 0.12, 0, 0, 1, 1, 1.05), 2, 0.5);
       const eye = s => xf(sphere(0.02, 5, 3), s * r * 0.4, r * 1.12, r * 0.84, 0, 0, 0, 1.3, 0.8, 0.6);
       return [band, { slot: 'leather', geo: eye(-1) }, { slot: 'leather', geo: eye(1) }];
+    },
+    // ---- the Rogue (v5.5) ----
+    // A strap round the torso at height y (chest frame), its buckle at the front in `buckle`'s slot.
+    strap(o, M) {
+      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW, r = (o.r ?? 0.22) * tw;
+      const band = uvScale(xf(new THREE.TorusGeometry(r, 0.016, 3, 12), 0, o.y, 0, Math.PI / 2, 0, o.tilt ?? 0, 1, 1, oz), 6, 1);
+      const buckle = xf(plate([[-0.025, -0.022], [0.025, -0.022], [0.025, 0.022], [-0.025, 0.022]], 0.008, 0.004), o.bx ?? 0.05, o.y, r * oz + 0.004);
+      return [band, { slot: o.buckle, geo: buckle }];
     },
     // A small flask on the belt.
     flask(o) { return [xf(lathe([[0, 0], [0.03, 0], [0.036, 0.02], [0.03, 0.07], [0.016, 0.09], [0.018, 0.115], [0, 0.115]], 6), o.x ?? 0.2, -0.04, o.z ?? 0.06, 0.1, 0, -0.12)]; },
@@ -571,6 +697,17 @@ const KIT = (() => {
       const guard = deform(tube(0.02, 0.02, 0.5, 5), v => { v.z += v.y * v.y * 1.6; }); xf(guard, 0, 0, 0.1);
       return { blade: [blade], grip: [grip], guard: [guard, xf(sphere(0.045, 5, 4), 0, 0, -0.25)] };
     },
+    // The Undead Knight's greatsword: a broad straight blade that swells and hooks upward into a cleaver tip, a
+    // straight bar guard with square ends, a long two-hand grip and a square pommel.
+    knightGreatsword() {
+      const blade = plate([[0.12, -0.075], [1.05, -0.08], [1.38, -0.055], [1.6, 0.03], [1.68, 0.17], [1.56, 0.12], [1.36, 0.095], [1.05, 0.08], [0.12, 0.072]], 0.034, 0.008);
+      blade.rotateY(-Math.PI / 2); blade.translate(0.017, 0, 0); roughen(blade, 0.004, 18);
+      const ricasso = xf(new THREE.BoxGeometry(0.05, 0.12, 0.08), 0, 0, 0.14);
+      const bar = xf(new THREE.BoxGeometry(0.05, 0.4, 0.05), 0, 0, 0.08), ends = [-1, 1].map(s => xf(new THREE.BoxGeometry(0.07, 0.05, 0.08), 0, s * 0.2, 0.08));
+      const grip = uvScale(xf(new THREE.CylinderGeometry(0.026, 0.028, 0.42, 6), 0, 0, -0.14, Math.PI / 2, 0, 0), 1, 1);
+      const pommel = xf(new THREE.BoxGeometry(0.075, 0.075, 0.06), 0, 0, -0.38), cap = xf(sphere(0.03, 5, 4), 0, 0, -0.42);
+      return { blade: [uvScale(blade, 0.6, 0.6)], grip: [grip], guard: [ricasso, bar, ...ends, pommel, cap] };
+    },
     // A long ash-wood spear, gripped a third of the way up, with a leaf head.
     spear() {
       const shaft = xf(tube(0.022, 0.022, 2.35, 5), 0, 0, 0.45, Math.PI / 2, 0, 0);
@@ -617,6 +754,16 @@ const KIT = (() => {
       deform(blade, v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.22; });
       const grip = uvScale(xf(new THREE.CylinderGeometry(0.022, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
       return { blade: [blade], grip: [grip], guard: [xf(tube(0.014, 0.014, 0.16, 4), 0, 0, 0.09, 0, 0, Math.PI / 2)] };
+    },
+    // A broad scimitar (v5.5, the Rogue) widening toward a curved tip, a tongue of fire licking along it (`flame`, a glow slot).
+    flameScimitar() {
+      const bend = v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.3; };
+      const blade = plate([[0.1, -0.034], [0.5, -0.048], [0.78, -0.074], [0.95, -0.045], [1.02, 0.02], [0.86, 0.036], [0.5, 0.04], [0.1, 0.034]], 0.014, 0.005);
+      blade.rotateY(-Math.PI / 2); blade.translate(0.007, 0, 0); deform(blade, bend); roughen(blade, 0.003, 17);
+      const flame = plate([[0.2, -0.008], [0.38, -0.05], [0.52, -0.03], [0.68, -0.085], [0.84, -0.045], [0.72, -0.004], [0.58, 0.028], [0.42, 0.018], [0.28, 0.036]], 0.03, 0.006);
+      flame.rotateY(-Math.PI / 2); flame.translate(0.015, 0, 0); deform(flame, bend);
+      const grip = uvScale(xf(new THREE.CylinderGeometry(0.021, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
+      return { blade: [blade], grip: [grip], guard: [xf(tube(0.015, 0.015, 0.14, 4), 0, 0, 0.09, 0, 0, Math.PI / 2), xf(sphere(0.026, 5, 4), 0, 0, -0.12)], flame: [flame] };
     },
     // A worn arming sword: straight, leather-wrapped grip, plain crossguard.
     wandererSword() {

@@ -27,7 +27,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'knight', model: 'ironKnight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
+    id: 'knight', model: 'undeadKnight', name: 'Undead Knight', description: 'Slow, armored, patient. Its greatsword ends careless fights.',
     scale: 1.3, bulk: 1.3, radius: 0.6, color: 0x7b8088, weapon: 'sword', offhand: 'shield', idle: 'still',
     visual: { skin: 0x6e737a, skinMetal: 0.2, metal: 0.3, roughness: 0.5 },   // worn steel, helmed
     hp: 240, poise: 120, speed: 1.9, turnRate: 3.2, trackRate: 1.2,

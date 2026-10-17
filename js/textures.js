@@ -109,6 +109,44 @@ const TEXLIB = (() => {
       const swirl = fbm(u + fbm(u, v, 3 * k, 3 * k, 3, 7) * 0.4, v, 5 * k, 5 * k, 4, 8);
       out.h = swirl; out.mix = swirl; out.acc = sstep(0.9, 0.98, ridge(fbm(u, v, 6 * k, 6 * k, 4, 9)));
     },
+    // Quilted padding (v5.5, the Hollow Soldier's gambeson): rows of stitched puffs, dark seams, grime in the stitches.
+    quilt(u, v, k, decay, out) {
+      const cu = (u * 10 * k) % 1, cv = (v * 12 * k) % 1;
+      const puff = Math.pow(Math.sin(Math.PI * cu) * Math.sin(Math.PI * cv), 0.45), lump = fbm(u, v, 20 * k, 20 * k, 2, 2);
+      out.h = puff * 0.8 + lump * 0.2; out.mix = fbm(u, v, 6 * k, 6 * k, 3, 5) * 0.6 + puff * 0.4;
+      out.acc = Math.max(1 - sstep(0.0, 0.35, puff), sstep(0.7 - 0.2 * decay, 0.9, fbm(u, v, 5 * k, 5 * k, 3, 4)) * 0.5);
+    },
+    // Worn plate armour (Undead Knight): painterly mottled steel, soft hammer dents, rows of rivets along the edges.
+    plate(u, v, k, decay, out) {
+      const mott = fbm(u, v, 5 * k, 5 * k, 4, 1), dent = fbm(u, v, 9 * k, 9 * k, 2, 2), fine = fbm(u, v, 40 * k, 40 * k, 2, 3);
+      const rv = Math.min(v * 2 * k % 1, 1 - v * 2 * k % 1), ru = (u * 8 * k) % 1, rw = v * 2 * k % 1, d = Math.hypot((ru - 0.5) / 8, (rw - 0.05) / 2) * 8;
+      const rivet = rw < 0.1 ? 1 - sstep(0.06, 0.12, d) : 0;
+      out.h = 0.45 + dent * 0.3 + fine * 0.1 + rivet * 0.5;
+      out.mix = mott * 0.8 + fine * 0.2;
+      out.acc = sstep(0.7 - 0.2 * decay, 0.9, fbm(u, v, 8 * k, 8 * k, 3, 4)) * decay * 0.8;
+      out.dark = (1 - sstep(0.0, 0.012, rv)) * 0.5;   // the seam between plates
+    },
+    // Riveted chainmail: staggered rows of small rings, dark gaps between them.
+    mail(u, v, k, decay, out) {
+      const R = 28 * k, row = Math.floor(v * R), cu = (u * R + (row & 1) * 0.5) % 1, cv = v * R % 1;
+      const ring = 1 - Math.abs(Math.hypot(cu - 0.5, cv - 0.5) - 0.3) / 0.12;
+      out.h = Math.max(0, ring); out.mix = fbm(u, v, 6 * k, 6 * k, 3, 5);
+      out.acc = sstep(0.65 - 0.2 * decay, 0.85, fbm(u, v, 5 * k, 5 * k, 3, 4)) * decay;
+      out.dark = 1 - sstep(0, 0.4, ring);
+    },
+    // Overlapping scales (v5.5, the Rogue's leggings and sleeves): offset rows of rounded scales, dark gaps between.
+    scales(u, v, k, decay, out) {
+      const rows = 12 * k, ry = v * rows, row = Math.floor(ry), cu = (u * 9 * k + (row % 2) * 0.5) % 1, cv = ry % 1;
+      const dome = Math.max(0, 1 - Math.hypot((cu - 0.5) * 2, cv * 1.15)), h = Math.pow(dome, 0.55);
+      out.h = h * 0.85 + fbm(u, v, 30 * k, 30 * k, 2, 2) * 0.15; out.mix = h * 0.6 + fbm(u, v, 6 * k, 6 * k, 3, 5) * 0.4;
+      out.acc = Math.max(1 - sstep(0.0, 0.18, h), sstep(0.75 - 0.2 * decay, 0.92, fbm(u, v, 5 * k, 5 * k, 3, 4)) * 0.4);
+    },
+    // Spectral bone (v5.5, the Giant Skeleton): long streaks, mottled shadow, and bright veins of light along the grain.
+    spectral(u, v, k, decay, out) {
+      const streak = fbm(u, v, 3 * k, 14 * k, 4, 1), mottle = fbm(u, v, 6 * k, 6 * k, 3, 6);
+      const vein = Math.max(sstep(0.95, 0.985, ridge(fbm(u, v, 3 * k, 8 * k, 4, 3))), sstep(0.965, 0.99, ridge(fbm(u, v, 8 * k, 4 * k, 3, 8))) * 0.7);
+      out.h = streak * 0.5 + mottle * 0.3 + vein * 0.2; out.mix = streak * 0.7 + mottle * 0.3; out.acc = vein;
+    },
     ash(u, v, k, decay, out) {
       const streak = fbm(u, v, 6 * k, 2 * k, 4, 1), grain = fbm(u, v, 32 * k, 32 * k, 2, 2);
       out.h = streak * 0.5 + grain * 0.5; out.mix = streak * 0.9;
