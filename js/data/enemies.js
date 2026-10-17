@@ -241,12 +241,12 @@ const ENEMY_DEFS = [
     hp: 120, poise: 70, speed: 3.6, turnRate: 6, trackRate: 3,
     cooldown: [0.8, 1.6], flinchTime: 0.2, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
-      { id: 'gargoyleClaw', name: 'Raking Claws', anim: 'sweep', pose: 'enemyDoubleSlash', tracking: { rate: 4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }],
+      { id: 'gargoyleClaw', name: 'Raking Claws', anim: 'sweep', pose: 'clawRake', tracking: { rate: 4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }],
         hits: [{ startup: 0.55, active: 0.1, follow: 0.1 }, { startup: 0.38, active: 0.1, follow: 0.18 }], recovery: 0.7,
         damage: 18, poise: 20, knock: 3, lunge: 2.4, range: 1.8, box: { w: 1.8, h: 1.4, d: 1.8, fwd: 1.1, y: 1.0 } },
-      { id: 'gargoyleDive', name: 'Diving Pounce', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 3, commit: 0.45 }, rollOnly: true, minRange: 3.5, chance: 0.5,
-        hits: [{ startup: 1.0, active: 0.14, follow: 0.3, leap: { from: 0.5, max: 8, short: 1.0 } }], recovery: 1.0,
-        damage: 34, poise: 50, knock: 7, lunge: 0, range: 9, box: { w: 2.4, h: 1.8, d: 2.4, fwd: 0.6, y: 0.9 },
+      { id: 'gargoyleDive', name: 'Diving Pounce', anim: 'overhead', pose: 'clawPounce', tracking: { rate: 3, commit: 0.45 }, rollOnly: true, minRange: 3.5, chance: 0.5,
+        hits: [{ startup: 1.0, active: 0.14, follow: 0.3, leap: { from: 0.5, max: 16, short: 1.0 } }], recovery: 1.0,
+        damage: 34, poise: 50, knock: 7, lunge: 0, range: 16, box: { w: 2.4, h: 1.8, d: 2.4, fwd: 0.6, y: 0.9 },
         impact: { ring: 2.2, crack: 1.0, dust: 10, shake: 0.06 } },
     ],
   },
@@ -280,7 +280,7 @@ const ENEMY_DEFS = [
     cooldown: [1.4, 2.4], flinchTime: 0.3, staggerTime: 1.0, parriedTime: 1.6,
     attacks: [
       { id: 'wispBolt', name: 'Tolling Flame', anim: 'overhead', pose: 'enemyDraw', tracking: { rate: 2.4, commit: 0.85 }, markers: [{ at: 'windup', t: 0, event: 'sound', sound: 'wispToll', vel: 0.8 }],
-        projectile: { speed: 15, gravity: 0, size: 0.22 }, minRange: 3, range: 22,
+        projectile: { speed: 17, gravity: 0, size: 0.22 }, minRange: 3, range: 32,
         hits: [{ startup: 1.1, active: 0.05, follow: 0.1 }], recovery: 0.9,
         damage: 22, poise: 18, knock: 3, lunge: 0, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.2 } },
       { id: 'wispPulse', name: 'Cold Pulse', anim: 'bash', pose: 'enemyBash', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }],
@@ -335,7 +335,7 @@ const ENEMY_DEFS = [
         damage: 16, poise: 40, knock: 18, lunge: 2.4, range: 2.2, box: { w: 2.6, h: 2.2, d: 2.0, fwd: 1.4, y: 1.2 } },
       { id: 'varnStomp', name: 'Key-Ring Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.4, commit: 0.5 }, poseScale: 1.2, rollOnly: true, chance: 0.4,
         hits: [{ startup: 1.35, active: 0.14, follow: 0.4 }], recovery: 1.2,
-        damage: 44, poise: 70, knock: 10, lunge: 0, range: 2.6, box: { w: 5.6, h: 1.4, d: 5.6, fwd: 0.3, y: 0.6 },
+        damage: 44, poise: 70, knock: 10, lunge: 0, range: 2.6, box: { w: 5.6, h: 0.6, d: 5.6, fwd: 0.3, y: 0.3, ground: true },
         impact: { ring: 4.0, crack: 2.0, dust: 18, shake: 0.12 } },
       // The signature: a long crouch, a leap high along his locked aim, a crash that rings the ground. Long recovery.
       { id: 'varnLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 1.8, commit: 0.45 }, poseScale: 1.4, rollOnly: true, minRange: 4, chance: 0.35,
@@ -358,7 +358,7 @@ const ENEMY_DEFS = [
         damage: 38, poise: 55, knock: 8, lunge: 2.8, range: 13, box: { w: 1.5, h: 1.8, d: 3.4, fwd: 2.0, y: 1.2 } },
       { id: 'knellStomp', name: 'Key-Ring Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 2.0, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.45,
         hits: [{ startup: 1.15, active: 0.14, follow: 0.36 }], recovery: 1.0,
-        damage: 46, poise: 70, knock: 10, lunge: 0, range: 2.8, box: { w: 6.4, h: 1.4, d: 6.4, fwd: 0.3, y: 0.6 },
+        damage: 46, poise: 70, knock: 10, lunge: 0, range: 2.8, box: { w: 6.4, h: 0.6, d: 6.4, fwd: 0.3, y: 0.3, ground: true },
         impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.14 } },
       { id: 'knellLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.45 }, poseScale: 1.45, rollOnly: true, minRange: 4, chance: 0.45,
         hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 1.5,
@@ -373,7 +373,7 @@ const ENEMY_DEFS = [
         damage: 28, poise: 40, knock: 6, lunge: 1.8, range: 3.0, box: { w: 3.6, h: 1.8, d: 3.2, fwd: 1.8, y: 1.2 } },
       // A ground slash that throws a burning wave along the floor: sidestep or roll it.
       { id: 'ashWave', name: 'Ash Wave', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.6, commit: 0.8 }, poseScale: 1.3, minRange: 4, chance: 0.5,
-        projectile: { speed: 15, gravity: 0, size: 0.6 },
+        projectile: { speed: 15, gravity: 0, size: 0.6, look: 'slash' },
         hits: [{ startup: 1.15, active: 0.05, follow: 0.3 }], recovery: 0.9,
         damage: 34, poise: 45, knock: 7, lunge: 0, range: 20, box: { w: 1, h: 1, d: 1, fwd: 1, y: 0.8 } },
       // A rising cut that throws him into a short leap and a burning crash.
@@ -386,14 +386,21 @@ const ENEMY_DEFS = [
       { id: 'lastToll', name: 'The Last Toll', anim: 'stomp', pose: 'tollingStamp', tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.3, rollOnly: true, chance: 0.25,
         markers: [{ at: 'windup', t: 0, event: 'sound', sound: 'bellToll', vel: 1 }, { at: 'windup', t: 0, hit: 1, event: 'sound', sound: 'bellToll', vel: 0.9 },
                   { at: 'windup', t: 0, hit: 2, event: 'sound', sound: 'bellToll', vel: 0.9 }],
-        hits: [{ startup: 1.6, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
-               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
-               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 1.3, d: 1, fwd: 0, y: 0.65, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+        hits: [{ startup: 1.6, active: 0.2, follow: 0.25, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
+               { startup: 0.8, active: 0.2, follow: 0.25, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } } },
                { startup: 1.0, active: 0.16, follow: 0.6, box: { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0 }, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.22 } }],
         recovery: 2.2, damage: 40, poise: 60, knock: 10, lunge: 0, range: 9, box: { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0 } },
     ],
   },
 ];
+
+// The castle's archers (Level 5, v4.3.1): Rampart Bowmen with a longer reach, so they cover the courtyard and the walks.
+{
+  const B = ENEMY_DEFS.find(d => d.id === 'bowman');
+  ENEMY_DEFS.push({ ...B, id: 'castleBowman', name: 'Castle Bowman', description: 'A rampart archer of the castle. Shoots from far across the courtyard and kicks up close. Block the bolts and close the gap.',
+    attacks: B.attacks.map(a => a.id === 'bowShot' ? { ...a, id: 'castleShot', projectile: { ...a.projectile, speed: 28 }, range: 34 } : a) });
+}
 
 // Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same

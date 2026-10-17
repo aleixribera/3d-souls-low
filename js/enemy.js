@@ -28,9 +28,9 @@ class Enemy {
     this.def = def;
     this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual, model: def.model, variant: opts.variant });
     this.radius = def.radius; this.height = BODY_HEIGHT * def.scale;
-    this.behavior = opts.behavior; this.notice = opts.notice;
+    this.behavior = opts.behavior; this.notice = opts.notice; this.wide = !!opts.wide;   // wide: sees all round even unaware (a lookout)
     this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
-    this.home = { x: opts.x, z: opts.z, yaw: opts.yaw, state: B.home };
+    this.home = { x: opts.x, y: opts.y ?? 0, z: opts.z, yaw: opts.yaw, state: B.home };
     this.path = opts.path || null; this.pathZ = opts.z; this.pathDir = 1;
     this.zone = opts.zone ?? null; this.key = opts.key ?? null;
     this.lastSeen = null;                            // where it last saw the player: searching, it walks there
@@ -124,6 +124,9 @@ class Enemy {
   wake(player) {
     if (this.training || !this.alive()) return false;
     if (player) this.lastSeen = { x: player.x, z: player.z };
+    const pounce = this.state === ES.LURK && this.behavior === 'perch' && this.def.attacks.find(a => a.hits[0].leap);
+    if (pounce && player) { this.yaw = Math.atan2(player.x - this.x, player.z - this.z); this.beginAttack(pounce); return true; }   // a percher springs straight at them
+    if (this.state === ES.SEARCH) { this.setState(ES.CHASE); return true; }
     if (this.state === ES.DORMANT) this.setState(ES.RISE);
     else if (this.in('unaware')) this.setState(ES.CHASE);
     else return false;
@@ -153,7 +156,7 @@ class Enemy {
     const toPlayer = Math.atan2(dx, dz);
     const playerAlive = player.alive();
     // Unaware, it sees only in a cone ahead (CONFIG.vision); fighting or searching, all round.
-    const V = CONFIG.vision, inCone = !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
+    const V = CONFIG.vision, inCone = this.wide || !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
     const sees = playerAlive && dist < this.notice && inCone && !gateBetween(this, player);
     // Its leash is measured from home to the player, so chasing toward the line never flickers.
     const playerFromHome = Math.hypot(player.x - this.home.x, player.z - this.home.z);
@@ -178,7 +181,10 @@ class Enemy {
         }
         break;
       }
-      case ES.LURK:   // hidden in an alcove until the player passes close
+      case ES.LURK:   // hidden in an alcove (or perched) until the player passes close
+        if (sees && dist <= this.leash && this.behavior === 'perch' && d.attacks.some(a => a.hits[0].leap)) {   // even down off its ledge   // a percher pounces with its leaping attack
+          this.yaw = toPlayer; this.cooldown = 0; this.beginAttack(d.attacks.find(a => a.hits[0].leap)); break;
+        }
         if (engage) {
           this.yaw = toPlayer; this.vy = E.leapVelocity;
           this.vx = dx / dist * E.leapSpeed; this.vz = dz / dist * E.leapSpeed;

@@ -3,13 +3,14 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v4.3';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v4.3.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
   gravity: 30,
   input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {
+    focusRate: 3.5,   // how fast the camera turns to a scripted moment (Game.camFocus)
     fov: 55, lookHeight: 1.35,
     followRate: 7,        // position smoothing (1/s)
     yawFollow: 0.85,      // how fast the camera swings behind the facing (rad/s at 90 deg off)
@@ -94,7 +95,7 @@ const CONFIG = {
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
            patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
-  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 7.5, dummy: 0, sparring: 0 },
+  notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 15, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line
   // between them; props don't block it) and every other enemy of its zone, and those pass it on in turn.
   alert: { radius: 14 },

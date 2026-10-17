@@ -1,6 +1,6 @@
 # Project Guidelines
 
-Current version: **v4.3 — The Last Toll** (`VERSION` in `js/config.js`). The game is complete: Tutorial, Levels 1–5, and the ending.
+Current version: **v4.3.1 — The Last Toll** (`VERSION` in `js/config.js`). The game is complete: Tutorial, Levels 1–5, and the ending.
 
 ## Tech Stack
 - **Engine / Core:** Vanilla JavaScript (ES6+), Three.js r160[cite: 1].
@@ -50,3 +50,4 @@ Current version: **v4.3 — The Last Toll** (`VERSION` in `js/config.js`). The g
 - **Level 5** (`js/levels/final-castle.js`): the field fight (Varn's `field` bar ends in a retreat), Section A (outer ward, bridge Sentinel), Section B (great hall, ramparts), Section C (ash bridge, the processional gauntlet), the throne (`throne` then `knell`). New enemies: Gargoyle, Empty Sentinel, Toll Wisp; boss Varn (`js/data/enemies.js`, models in `models-bosses.js` / `models-enemies.js`). Level 4 carries on into it (`next`).
 - **Rules:** a transition must never deal damage; boss strikes keep `active` ≤ 0.22 s (tests check Varn too); content stays in data, the finale only reads it.
 - **Known gaps:** the throne room's falling pillars, glass and fire are drawn only (no collision). Tolling Chain's four cuts are all parryable (parry is per attack, not per hit). The Ash Wave is a projectile and can be blocked at block rates. Varn's name on the bar changes as the transition starts, not when the bar refills.
+- **v4.3.1 additions:** level flags `wakeZones` (while the player stands in a zone on its floor, its members and dispersed enemies with that `zone` stay awake and on them; a percher pounces) and `clearGates` (no lintel over gate doorways, open portcullises rise out of sight). Placement `wide: true` (sees all round when unaware); far-sighted placements are not culled within their notice. Projectile `look: 'slash'` (a flying crescent). `Game.camFocus` turns the camera to a scripted moment (Varn's retreat). Ground shockwaves (Varn's stomps and rings) top out at 0.6 m so a jump clears them. Gargoyles use their own claw poses (`clawRake`, `clawPounce`). Always give a placement `y` where floors overlap (a spawn without it stands on the top-most floor).

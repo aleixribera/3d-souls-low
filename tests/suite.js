@@ -1916,6 +1916,28 @@
     for (const [x, z] of L5_WAY) expect.ok(sim.walkTo(x, z, 0.6, 25), `walked to (${x}, ${z}); stuck at (${Game.player.x.toFixed(1)}, ${Game.player.y.toFixed(1)}, ${Game.player.z.toFixed(1)})`);
     expect.near(Game.player.y, 24, 0.1, 'up at the throne room floor');
   });
+  test('Level 5: a scripted run wakes every zone it enters, opens every gate in turn, and every archer and gargoyle engages', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); const p = Game.player; sturdy(p);
+    for (const z of Game.zones) for (const e of z.actors) expect.ok(inArea(z.trigger, e.x, e.z) && Math.abs(world.floorY(e.x, e.z, e.y + 0.1) - e.y) < 0.1 && (z.id !== 'zone-hall' || e.y === 0), `${z.id}: ${e.def.id} stands in its zone (y ${e.y})`);
+    for (const b of A.LEVEL_5.bonfires) expect.ok(Math.abs(world.floorY(b.x, b.z, b.y ?? 0) - (b.y ?? 0)) < 0.1, `bonfire ${b.id} on its own floor`);
+    Game.enemies.find(e => e.def.id === 'varn').deplete(); sim.seconds(7);
+    const route = [[86, 0], [100, 0], [98, 21], [114, 22], [129, 22], [114, 22], [98, 21], [100, -4], [120, -15], [120, -28], [112, -32], [120, -15], [134, 0],
+      [150, 0], [166, 0], [180, 0], [194, 0], [205, 0], [215, 0], [240, 0], [254, 8], [254, 20], [254, 31], [230, 32], [210, 34], [206, 28], [206, 4], [206, 0],
+      [250, 0], [262, 0], [282, 0], [300, 0], [314, 0]], engaged = new Set();
+    for (const [x, z] of route) {
+      const ok = sim.until(() => {
+        for (const e of Game.enemies) if (e.alive() && !e.phaseIds && !e.in('unaware') && e.state !== ES.DORMANT) { engaged.add(e); e.die(); }
+        const dx = x - p.x, dz = z - p.z; if (Math.hypot(dx, dz) < 0.6) return true; sim.move(dx, dz); return false;
+      }, 40) >= 0;
+      sim.move(null);
+      expect.ok(ok, `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)})`);
+    }
+    expect.ok(Game.zones.filter(z => z.id !== 'zone-throne').every(z => z.gate.open), 'every gate before the throne opened');
+    for (const id of ['castleBowman', 'gargoyle', 'wisp']) {
+      const all = [...A.LEVEL_5.dispersed, ...A.LEVEL_5.gated.flatMap(g => g.enemies)].filter(s => s.enemy === id).length, n = [...engaged].filter(e => e.def.id === id).length;
+      expect.ok(n === all, `${id}: ${n} of ${all} came for the player`);
+    }
+  });
   test('Level 5: the field fight ends in a retreat over the wall: no death, the gate opens, bonfire 1 lights', () => {
     Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); log.length = 0;
     const b = Game.enemies.find(e => e.def.id === 'varn'), B = A.LEVEL_5.bonfires[0], zone = Game.zones.find(z => z.id === 'zone-field');
@@ -1982,6 +2004,24 @@
     f.beginAttack(toll); sim.until(() => f.state === ES.WINDUP && f.stateTime >= toll.hits[0].startup + 0.08 - CONFIG.player.rollIFrames * 0.5, 3);
     sim.press('roll'); sim.seconds(0.6);
     expect.ok(q.hp === hp1, 'rolled through the ring');
+  });
+  test('Varn: the Last Toll rings and his stomps run along the floor: a jump clears them; the Ash Wave is a flying slash', () => {
+    const D = A.ENEMY_BY_ID.varn;
+    for (const id of ['lastToll', 'varnStomp', 'knellStomp']) for (const h of D.attacks.find(a => a.id === id).hits.slice(0, id === 'lastToll' ? 3 : 1)) {
+      const b = h.box || D.attacks.find(a => a.id === id).box;
+      expect.ok(b.y + b.h / 2 <= 0.6 + 1e-6, `${id}: low enough to jump (top ${b.y + b.h / 2} m)`);
+    }
+    expect.ok(D.attacks.find(a => a.id === 'ashWave').projectile.look === 'slash', 'the Ash Wave is drawn as a slash');
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
+    faceOff(e, p, 8); quiet(e); const hp0 = p.hp;
+    e.beginAttack(toll); sim.until(() => e.state === ES.WINDUP && e.stateTime >= toll.hits[0].startup - 0.12, 3);
+    sim.press('jump'); sim.seconds(0.5);
+    expect.ok(p.hp === hp0, `jumped over the ring (lost ${hp0 - p.hp})`);
+    expect.ok(D.attacks.find(a => a.id === 'varnStomp').box.ground, 'stomps are ground shockwaves: any time in the air clears them');
+    sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP && e.stateTime >= toll.hits[1].startup - 0.42, 3);
+    sim.press('jump'); sim.seconds(0.5);   // an early jump: in the air as the ring passes, though well below its old reach
+    expect.ok(p.hp === hp0, `an early jump clears it too (lost ${hp0 - p.hp})`);
   });
   test('Varn: the Judgement Leap lands along its locked aim and he takes no fall damage', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0;

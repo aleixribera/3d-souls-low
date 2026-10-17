@@ -213,3 +213,18 @@ ATTACK_POSES.enemyTripleCut = { hits: [ATTACK_POSES.lightDiagonal.hits[0], ATTAC
 ATTACK_POSES.knellChain = { hits: [ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.lightBackhand.hits[0], ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
 ATTACK_POSES.risingCrash = { hits: [ATTACK_POSES.lightBackhand.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
 ATTACK_POSES.tollingStamp = { hits: [ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
+// The Gargoyle's own (v4.3.1): it has no weapon, so its blows are claws and its whole body. A rake with the right claw,
+// then the left; and a pounce, crouched low with both arms back, then both claws driven down as it lands.
+ATTACK_POSES.clawRake = { hits: [
+  { windup: { crouch: 0.15, spin: [0, -0.6, 0], chest: [0.1, -0.35, 0], armR: [-1.9, 0, -0.9], elbowR: [-0.9, 0, 0], armL: [-0.4, 0, 0.3], head: [0.1, 0.2, 0] },
+    strike: { crouch: 0.2, lean: 0.2, spin: [0, 0.7, 0], chest: [0.35, 0.4, 0], armR: [-0.7, 0, 0.6], elbowR: [-0.2, 0, 0], armL: [-0.5, 0, 0.3] },
+    follow: { crouch: 0.22, lean: 0.25, spin: [0, 0.85, 0], chest: [0.4, 0.45, 0], armR: [-0.3, 0, 0.8], elbowR: [-0.3, 0, 0], armL: [-0.6, 0, 0.2] } },
+  { windup: { crouch: 0.15, spin: [0, 0.6, 0], chest: [0.1, 0.35, 0], armL: [-1.9, 0, 0.9], elbowL: [-0.9, 0, 0], armR: [-0.4, 0, -0.3], head: [0.1, -0.2, 0] },
+    strike: { crouch: 0.2, lean: 0.2, spin: [0, -0.7, 0], chest: [0.35, -0.4, 0], armL: [-0.7, 0, -0.6], elbowL: [-0.2, 0, 0], armR: [-0.5, 0, -0.3] },
+    follow: { crouch: 0.22, lean: 0.25, spin: [0, -0.85, 0], chest: [0.4, -0.45, 0], armL: [-0.3, 0, -0.8], elbowL: [-0.3, 0, 0], armR: [-0.6, 0, -0.2] } },
+] };
+ATTACK_POSES.clawPounce = { hits: [
+  { windup: { crouch: 0.4, lean: 0.35, chest: [0.3, 0, 0], armR: [0.6, 0, -0.5], armL: [0.6, 0, 0.5], elbowR: [-0.6, 0, 0], elbowL: [-0.6, 0, 0], head: [-0.4, 0, 0], legL: [-0.5, 0, 0], legR: [-0.5, 0, 0] },
+    strike: { crouch: 0.3, lean: 0.45, chest: [0.6, 0, 0], armR: [-1.2, 0, 0.3], armL: [-1.2, 0, -0.3], elbowR: [-0.1, 0, 0], elbowL: [-0.1, 0, 0], head: [0.2, 0, 0] },
+    follow: { crouch: 0.35, lean: 0.5, chest: [0.7, 0, 0], armR: [-0.6, 0, 0.3], armL: [-0.6, 0, -0.3], elbowR: [-0.2, 0, 0], elbowL: [-0.2, 0, 0] } },
+] };

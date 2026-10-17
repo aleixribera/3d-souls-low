@@ -55,6 +55,7 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 
 ## Changelog
 
+- **v4.3.1:** Level 5 fixes: hall enemies and the chapel bonfire on the right floor, two more bonfires (barracks, ramparts), archers, wisps and gargoyles join each area's fight and keep on you (gargoyles pounce from their perches with their own claw attacks), open gates no longer block the view, Varn's stomps and fire rings can be jumped, the Ash Wave is a flying slash, and the camera follows his retreat.
 - **v4.3 — The Last Toll:** Level 5, The Final Castle: the opening fight and retreat, three sections, four bonfires, the throne room and Varn's second phase, the ending and credits (a ✦ marks the level once finished). New enemies: Gargoyle (perches and springs; grit falls first), Empty Sentinel, Toll Wisp (rings before it shoots). Bosses can now have several health bars, retreat instead of dying, leap, and strike with expanding rings. Level 4 now carries straight on into Level 5. Dev builds: Level 5 jumps in Test Grounds and F10 to empty a boss bar.
 - **v4.2.4:** checkpoints, exhaustion, smarter enemies, fairer bosses (below).
 - **v4.2 — Weight of Steel:** four-phase combat animation (below).

@@ -24,6 +24,7 @@ class Hitbox {
   }
   overlaps(target) {
     if (this.hit.has(target)) return false;
+    if (this.box.ground && !target.grounded) return false;   // a shockwave along the floor (`ground`): anyone in the air is clear of it
     const o = this.owner, b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
     const dx = target.x - o.x, dz = target.z - o.z;
     const lz = dx * s + dz * c - b.fwd, lx = dz * s - dx * c;

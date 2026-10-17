@@ -17,7 +17,7 @@
 //     the royal stair to the final bonfire, and a short run to the fog at the throne room door.
 //   Throne room (y 24): Varn's second fight, two bars (`throne`, then `knell`), and the ending (js/finale.js).
 const LEVEL_5 = {
-  id: 'final-castle', layout: 'rooms', alert: true, cull: true,
+  id: 'final-castle', layout: 'rooms', alert: true, cull: true, wakeZones: true, clearGates: true,
   ending: true,   // no LEVEL COMPLETE: Varn's death, the ending and the credits instead (js/finale.js)
   name: 'Level 5: The Final Castle',
   description: 'The bell has called him out. Face the Gaoler King before his gates, then climb his castle to the throne.',
@@ -96,7 +96,9 @@ const LEVEL_5 = {
            { rect: [226, 228, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }, { rect: [240, 242, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }],
   // Bonfire 1 is cold until the field is won (`litBy`): Varn gone, his gate open.
   bonfires: [{ id: 'castle-gate', x: 88, z: -6, litBy: 'zone-field', spawn: { x: 89.5, z: -3.5, yaw: Math.PI / 2 } },
-             { id: 'castle-chapel', x: 211, z: -5, spawn: { x: 209, z: -3, yaw: Math.PI / 2 } },
+             { id: 'castle-barracks', x: 112, z: -34, spawn: { x: 113.5, z: -32, yaw: Math.PI / 2 } },
+             { id: 'castle-chapel', x: 211, y: 0, z: -5, spawn: { x: 209, y: 0, z: -3, yaw: Math.PI / 2 } },
+             { id: 'castle-rampart', x: 256.5, z: 32.5, y: 8, spawn: { x: 254.5, y: 8, z: 32, yaw: -Math.PI / 2 } },
              { id: 'castle-tower', x: 203, z: -4, y: 16, spawn: { x: 205, y: 16, z: -2, yaw: Math.PI / 2 } },
              { id: 'castle-throne', x: 314, z: -4, y: 24, spawn: { x: 315.5, y: 24, z: -2, yaw: Math.PI / 2 } }],
   gated: [
@@ -104,6 +106,10 @@ const LEVEL_5 = {
     { id: 'zone-field', trigger: [0, 84, -36, 36], gate: { x: 84, z: 0, along: 'z', width: 8 },
       enemies: [{ enemy: 'varn', spawn: { x: 46, z: 0, yaw: -Math.PI / 2 }, notice: 90, leash: 200, homeLeash: 200,
                   boss: { phases: ['field'], retreat: { kneel: 1.6, to: [84, 10.2, -12], hop: 1.2, wait: 1.4, out: [98, 4, -16], fly: 1.0, height: 6 } } }] },
+    // Section A's courtyard fight: the archers on the wall walk and the Gargoyle are tied to it (`zone`), so they join in.
+    { id: 'zone-court', trigger: [[96, 136, -20, 20], [96, 100, 20, 24]], gate: { x: 136, z: 0, along: 'z', width: 6 },
+      enemies: [{ enemy: 'hollow', spawn: { x: 112, z: -4, yaw: -Math.PI / 2 } }, { enemy: 'hollow', spawn: { x: 128, z: 10, yaw: -Math.PI / 2 } },
+                { enemy: 'lancer', spawn: { x: 131, z: -12, yaw: -Math.PI / 2 } }] },
     // Section A's standout: the Empty Sentinel on the moat bridge. Wide enough to circle it, nowhere to fall.
     { id: 'zone-bridge', trigger: [136, 164, -3, 3], gate: { x: 164, z: 0, along: 'z', width: 6 },
       enemies: [{ enemy: 'sentinel', spawn: { x: 152, z: 0, yaw: -Math.PI / 2 } }] },
@@ -112,13 +118,18 @@ const LEVEL_5 = {
                 { enemy: 'duelist', spawn: { x: 190, z: 2, yaw: -Math.PI / 2 } }] },
     // Section B: the hall pack. The kitchen's east door lets the player come in behind them.
     { id: 'zone-hall', trigger: [216, 256, -10, 10], gate: { x: 254, z: 10, along: 'x', width: 4 },
-      enemies: [{ enemy: 'lancer', spawn: { x: 236, z: -3, yaw: -Math.PI / 2 } }, { enemy: 'lancer', spawn: { x: 244, z: 3, yaw: -Math.PI / 2 } },
-                { enemy: 'duelist', spawn: { x: 250, z: 0, yaw: -Math.PI / 2 } }] },
+      enemies: [{ enemy: 'lancer', spawn: { x: 236, y: 0, z: -3, yaw: -Math.PI / 2 } }, { enemy: 'lancer', spawn: { x: 244, y: 0, z: 3, yaw: -Math.PI / 2 } },
+                { enemy: 'duelist', spawn: { x: 250, y: 0, z: 0, yaw: -Math.PI / 2 } }] },
     // Section B's standout: the ramparts. A Shover mid-walk, the Executioner asleep at the far end (two Gargoyles perch
     // near the stair top, see `dispersed`). Rails all along: the danger is the pressure, not a fall.
-    { id: 'zone-rampart', trigger: [[212, 258, 30, 34], [204, 212, 30, 38]], gate: { x: 206, z: 30, y: 8, along: 'x', width: 4 },
+    { id: 'zone-rampart', trigger: [[212, 252, 30, 34], [204, 212, 30, 38]], gate: { x: 206, z: 30, y: 8, along: 'x', width: 4 },
       enemies: [{ enemy: 'shover', spawn: { x: 230, y: 8, z: 32, yaw: Math.PI / 2 } },
                 { enemy: 'executioner', behavior: 'slumber', spawn: { x: 208, y: 8, z: 35, yaw: Math.PI / 2 } }] },
+    // Section C: the ash bridge under three Toll Wisps (a Gargoyle perched among them, tied to this fight).
+    { id: 'zone-ashbridge', trigger: [212, 252, -5, 5], gate: { x: 252, z: 0, y: 16, along: 'z', width: 10 },
+      enemies: [{ enemy: 'wisp', notice: 32, leash: 44, wide: true, spawn: { x: 226, y: 16, z: 3.5, yaw: -Math.PI / 2 } },
+                { enemy: 'wisp', notice: 32, leash: 44, wide: true, spawn: { x: 237, y: 16, z: -3.5, yaw: -Math.PI / 2 } },
+                { enemy: 'wisp', notice: 32, leash: 44, wide: true, spawn: { x: 249, y: 16, z: 3.5, yaw: -Math.PI / 2 } }] },
     // Section C: the gauntlet. Four at once in the first hall (alcoves on both sides to split them), two heavies in the second.
     { id: 'zone-gauntlet', trigger: [252, 272, -8, 8], gate: { x: 272, z: 0, y: 16, along: 'z', width: 16 },
       enemies: [{ enemy: 'duelist', spawn: { x: 262, y: 16, z: 0, yaw: -Math.PI / 2 } }, { enemy: 'lancer', spawn: { x: 266, y: 16, z: -4, yaw: -Math.PI / 2 } },
@@ -136,25 +147,20 @@ const LEVEL_5 = {
   sealed: [{ id: 'throne-fog', gate: { x: 320, z: 0, y: 24, along: 'z', width: 12 }, fog: 'zone-throne' }],
   dispersed: [
     // Section A: the lower courtyard and its wall walk, the barracks.
-    { behavior: 'patrol', enemy: 'hollow', z: -4, path: [102, 128] },
-    { behavior: 'sentry', enemy: 'hollow', x: 128, z: 10, yaw: -Math.PI / 2 },
-    { behavior: 'sentry', enemy: 'lancer', x: 131, z: -12, yaw: -Math.PI / 2 },
-    { behavior: 'sentry', enemy: 'bowman', x: 121, y: 6, z: 22.5, yaw: Math.PI },
-    { behavior: 'sentry', enemy: 'bowman', x: 128, y: 6, z: 22.5, yaw: Math.PI },
-    { behavior: 'perch', enemy: 'gargoyle', x: 116.5, y: 6, z: 22, yaw: -Math.PI / 2 },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 32, leash: 44, wide: true, zone: 'zone-court', x: 121, y: 6, z: 22.5, yaw: Math.PI },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 32, leash: 44, wide: true, zone: 'zone-court', x: 128, y: 6, z: 22.5, yaw: Math.PI },
+    { behavior: 'perch', enemy: 'gargoyle', x: 116.5, y: 6, z: 22, yaw: -Math.PI / 2, zone: 'zone-court' },
     { behavior: 'sentry', enemy: 'warden', x: 120, z: -28, yaw: 0 },
+    { behavior: 'patrol', enemy: 'hollow', z: -30, path: [97, 107] },
     { behavior: 'slumber', enemy: 'knight', x: 126, z: -33, yaw: Math.PI / 2 },
     // Section B: the kitchen (a Rogue at the stove, another asleep in the larder: a corpse marks the door) and the ramparts.
     { behavior: 'sentry', enemy: 'rogue', x: 236, z: -16, yaw: Math.PI / 2 },
     { behavior: 'slumber', enemy: 'rogue', x: 249, z: -18, yaw: Math.PI },
     { behavior: 'perch', enemy: 'gargoyle', x: 248, y: 8, z: 33, yaw: Math.PI / 2, zone: 'zone-rampart' },
     { behavior: 'perch', enemy: 'gargoyle', x: 240, y: 8, z: 31, yaw: Math.PI / 2, zone: 'zone-rampart' },
-    { behavior: 'sentry', enemy: 'bowman', x: 205.5, y: 8, z: 36.5, yaw: Math.PI / 2 },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 32, leash: 44, wide: true, zone: 'zone-rampart', x: 205.5, y: 8, z: 36.5, yaw: Math.PI / 2 },
     // Section C: the ash bridge under three Toll Wisps and a Gargoyle.
-    { behavior: 'sentry', enemy: 'wisp', x: 226, y: 16, z: 3.5, yaw: -Math.PI / 2 },
-    { behavior: 'sentry', enemy: 'wisp', x: 237, y: 16, z: -3.5, yaw: -Math.PI / 2 },
-    { behavior: 'sentry', enemy: 'wisp', x: 249, y: 16, z: 3.5, yaw: -Math.PI / 2 },
-    { behavior: 'perch', enemy: 'gargoyle', x: 244, y: 16, z: -3.5, yaw: -Math.PI / 2 },
+    { behavior: 'perch', enemy: 'gargoyle', x: 244, y: 16, z: -3.5, yaw: -Math.PI / 2, zone: 'zone-ashbridge' },
   ],
   // Varn seen on the way, out of reach (js/finale.js): he watches from where he stands until the player has seen him
   // (`watch` s after entering `trigger`), then turns and walks off along `leave` [dx, dz] and is gone.
@@ -173,8 +179,8 @@ const LEVEL_5 = {
   devJumps: [
     { name: 'L5: Field (boss phase 1)', at: null, won: [] },
     { name: 'L5: Bonfire 1 (castle gate)', at: 'castle-gate', won: ['zone-field'] },
-    { name: 'L5: Bonfire 2 (chapel)', at: 'castle-chapel', won: ['zone-field', 'zone-bridge', 'zone-upper'] },
-    { name: 'L5: Bonfire 3 (tower top)', at: 'castle-tower', won: ['zone-field', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart'] },
-    { name: 'L5: Final bonfire (throne door)', at: 'castle-throne', won: ['zone-field', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart', 'zone-gauntlet', 'zone-heavies'] },
+    { name: 'L5: Bonfire 2 (chapel)', at: 'castle-chapel', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper'] },
+    { name: 'L5: Bonfire 3 (tower top)', at: 'castle-tower', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart'] },
+    { name: 'L5: Final bonfire (throne door)', at: 'castle-throne', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart', 'zone-ashbridge', 'zone-gauntlet', 'zone-heavies'] },
   ],
 };

@@ -191,7 +191,7 @@ const Game = {
   },
   placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;
-    const base = { behavior, notice: entry.notice ?? CONFIG.notice[behavior], leash: entry.leash ?? V.leash, homeLeash: entry.homeLeash ?? V.homeLeash, variant: entry.variant };   // a placement may set its own notice and leashes (a boss)
+    const base = { behavior, notice: entry.notice ?? CONFIG.notice[behavior], leash: entry.leash ?? V.leash, homeLeash: entry.homeLeash ?? V.homeLeash, variant: entry.variant, wide: entry.wide };   // a placement may set its own notice and leashes (a boss)
     if (behavior === 'ambush') {
       const a = L.alcoves.find(al => al.id === entry.alcove);
       return { ...base, x: a.x, z: a.side * (L.halfZ + L.alcoveDepth * V.ambushDepth), yaw: a.side > 0 ? Math.PI : 0 };
@@ -529,6 +529,11 @@ const Game = {
     for (const z of this.zones) {
       const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inArea(z.trigger, p.x, p.z);
       if (!z.spawned && entered && p.alive()) this.spawnZone(z);   // normally already standing there since the start
+      // `wakeZones` levels (v4.3.1): while the player is in a zone (on its floor), every member and every dispersed enemy
+      // tied to it (`zone`: its archers, its gargoyles) is awake and on them, so none sleeps in a corner holding the gate shut.
+      const floor = z.actors.length ? z.actors[0].home.y : p.y;
+      if (this.level.wakeZones && entered && p.alive() && !z.gate.open && Math.abs(p.y - floor) <= CONFIG.height.reach + 1)
+        for (const e of this.enemies) if (e.zone === z.id && e.alive() && (e.in('unaware') || e.state === ES.DORMANT || e.state === ES.SEARCH)) e.wake(p);
       if (((z.actors.length && z.actors.every(a => !a.alive())) || z.beaten) && !z.gate.open) {
         z.gate.open = true;
         events.emit('gateOpened', { gate: z.gate });
@@ -676,6 +681,13 @@ const Game = {
       look.y = lerp(look.y, lock.y + lock.height * 0.55, Lk.frame);
       dist += Math.min(Lk.maxExtra, Math.max(0, lock.height - 1.6) * Lk.sizeDist + sep * Lk.sepDist);
       pitch = Math.max(0, pitch) * 0.5 + Math.max(0, lock.height - 2) * 0.05;
+    } else if (this.camFocus) {
+      // A scripted moment to watch (js/finale.js sets `camFocus`, e.g. Varn leaping onto his wall): the camera turns to
+      // it and lifts its gaze; the player keeps moving freely.
+      const f = this.camFocus, dx = f.x - p.x, dz = f.z - p.z, d = Math.hypot(dx, dz) || 1;
+      c.yaw += angDiff(Math.atan2(dx, dz), c.yaw) * (snap ? 1 : 1 - Math.exp(-CONFIG.camera.focusRate * dt));
+      look.y = lerp(look.y, f.y + 1.5, clamp(d / 30, 0.3, 0.6)); dist += 2;
+      this.mouseHold = 0;
     } else {
       // Swing behind the player's facing; no pull when the player runs straight at the camera.
       this.mouseHold = Math.max(0, this.mouseHold - dt);
@@ -723,7 +735,7 @@ const Game = {
   // near or an alert wakes it. Enemies that are fighting, reeling or dying always run.
   sleeps(e) {
     e.asleep = this.kind === 'level' && !!this.level.cull && !e.boss && e.alive() && (e.in('unaware') || e.state === ES.DORMANT)   // a boss placement never sleeps
-      && Math.hypot(e.x - this.player.x, e.z - this.player.z) > CONFIG.cull.enemyRange;
+      && Math.hypot(e.x - this.player.x, e.z - this.player.z) > Math.max(CONFIG.cull.enemyRange, e.notice + 6);   // a far-sighted placement stays awake to see
     return e.asleep;
   },
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,

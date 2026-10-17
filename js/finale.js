@@ -104,6 +104,7 @@ const finale = (() => {
   function reset(game) {
     clear();
     hideEnding();
+    game.camFocus = null;
     L = game.kind === 'level' && game.level.ending ? game.level : null;
     if (!L) return;
     group = new THREE.Group(); scene.add(group);
@@ -163,6 +164,10 @@ const finale = (() => {
       }
       st.grit.set(e, t <= 0 ? F.grit.every : t);
     }
+    // Varn's retreat: the camera follows his leap onto the wall and over it, then lets go a moment after he is gone.
+    const fleeing = game.enemies.find(e => isBoss(e) && (e.state === ES.RETREAT || (e.state === ES.GONE && e.stateTime < 0.8)));
+    game.camFocus = fleeing ? { x: fleeing.x, y: fleeing.y, z: fleeing.z } : null;
+    if (fleeing && game.lock) game.setLock(null);
     // The boss pulse while Varn fights, quicker and hotter once he burns.
     const boss = game.enemies.find(e => isBoss(e) && e.alive() && (e.fightingPlayer() || e.state === ES.PHASE));
     if (boss && p.alive()) {
@@ -233,6 +238,10 @@ const finale = (() => {
       if (r.t >= r.time + 0.5) r.mesh.visible = false;
     }
     if (!st) return;
+    // The retreating boss stands against a glow of firelight, so the camera's subject reads against the dark walls.
+    const fl = game.enemies.find(e => isBoss(e) && e.state === ES.RETREAT);
+    if (fl && !st.fleeHalo) { st.fleeHalo = glowSprite(0xff9a50, 1.6, 7, 0.45, null); group.add(st.fleeHalo); }
+    if (st.fleeHalo) { st.fleeHalo.visible = !!fl; if (fl) st.fleeHalo.position.set(fl.x + 1, fl.y + 2.4, fl.z); }
     // Sightings and corpses.
     for (const s of st.spectators) {
       if (!s.rig) continue;
