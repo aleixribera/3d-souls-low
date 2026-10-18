@@ -310,6 +310,33 @@
     expect.ok(Game.screen === 'levelsLands' && Game.screens().levelsLands.back === 'levels', 'Lands list returns to the groups');
     expect.ok(Game.screens().elden.back === 'arena' && Game.screens().levelsLands.items.length === A.LANDS_LEVELS.length + 1, 'Elden Ring Bosses back to the Arena; the Lands in Levels');
   });
+  test('Menus: scrolling beneath a stationary mouse preserves directional selection', () => {
+    const from = Game.optionsFrom;
+    try {
+      Game.optionsFrom = 'main'; Game.showMenu('options');
+      const list = document.getElementById('menuList'), buttons = [...list.children];
+      const hover = (button, moving = false) => {
+        button.dispatchEvent(new MouseEvent('mouseenter'));
+        button.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementY: moving ? 1 : 0 }));
+      };
+      for (let i = 1; i < buttons.length; i++) {
+        Game.menuStep('down');
+        hover(buttons[i - 1]);
+        expect.ok(Game.selected === i && buttons[i].classList.contains('sel'), `down: keeps row ${i}`);
+      }
+      expect.ok(list.scrollTop > 0, 'the list scrolls to reveal lower options');
+      Game.menuStep('down');
+      expect.ok(Game.selected === 0, 'wraps from the bottom to the first row');
+      Game.menuStep('up');
+      expect.ok(Game.selected === buttons.length - 1, 'wraps from the top to the last row');
+      Game.menuStep('up'); hover(buttons[buttons.length - 1]);
+      expect.ok(Game.selected === buttons.length - 2, 'up: keeps the intended row');
+      hover(buttons[buttons.length - 1], true);
+      expect.ok(Game.selected === buttons.length - 1, 'moving the mouse still selects a row');
+      buttons[buttons.length - 1].click();
+      expect.ok(Game.screen === 'main', 'clicking Back still opens the main menu');
+    } finally { Game.optionsFrom = from; Game.showMenu('main'); }
+  });
   test('Story: the two roads keep separate saves; Continue on one never touches the other', () => {
     const keys = CONFIG.story.saveKeys, kept = {};
     for (const k of Object.values(keys)) { try { kept[k] = localStorage.getItem(k); } catch (e) { kept[k] = null; } }

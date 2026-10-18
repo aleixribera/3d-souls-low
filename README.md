@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.0.2: Arrival and Rendering Fixes
+# Combat Arena 3D — v7.0.3: Menu Navigation Fix
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.0.3:** keyboard and controller menu selection stays on the intended option when the list scrolls beneath a stationary mouse pointer. Mouse movement and clicks still select options normally.
 
 **v7.0.2:** arrival guides stand visibly along the route; archers and mages require manual lock-on; tree glow no longer blacks out High or Ultra views; Stormveil corridor walls and the Ashen Capital cellar walls are restored. Levels now groups Ashmere and the Lands Between separately, without the tutorial.
 

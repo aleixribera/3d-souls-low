@@ -120,7 +120,11 @@ const Game = {
         b.appendChild(a);
       }
       b.addEventListener('click', () => { this.select(i); if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); });
-      b.addEventListener('mouseenter', () => { if (this.selected !== i) events.emit('menuMove'); this.select(i); });
+      // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it.
+      b.addEventListener('mousemove', ev => {
+        if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
+        events.emit('menuMove'); this.select(i);
+      });
       list.appendChild(b);
     });
     this.select(keepSelection ? this.selected : 0);
