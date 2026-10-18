@@ -2984,7 +2984,7 @@
   test('Auto quality: higher presets need stricter timings and account for display resolution', () => {
     const ready = { name: 'NVIDIA GeForce RTX 3060', width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
     const cases = [
-      [{ ms: 2 }, 'ultra'], [{ ms: 4 }, 'high'], [{ ms: 9 }, 'low'],
+      [{ ms: 2 }, 'ultra'], [{ ms: 7.5 }, 'high'], [{ ms: 9 }, 'low'],
       [{ ms: 2, pixelRatio: 2 }, 'high'],
       [{ ms: 2, pixelRatio: 2, width: 1920, height: 1080 }, 'low'],
       [{ name: 'Intel Iris Xe Graphics', ms: 2 }, 'high'],
@@ -3005,6 +3005,20 @@
         expect.ok(autoQuality.effective() === preset, `${preset}: manual choice preserved`);
       }
     } finally { settings.graphics = saved; }
+  });
+  test('Auto quality: RTX 5060 class desktops earn Ultra at 4K without relaxing laptop caps', () => {
+    const desktop = { name: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 5060, D3D11)', ms: 0.4, cores: 12, memory: 32 };
+    for (const screen of [
+      { width: 1920, height: 1080, pixelRatio: 1 },
+      { width: 2560, height: 1440, pixelRatio: 1 },
+      { width: 3840, height: 2160, pixelRatio: 1 },
+      { width: 1920, height: 1080, pixelRatio: 2 },
+    ]) expect.ok(autoQuality.recommend({ ...desktop, ...screen }).pick === 'ultra', `${JSON.stringify(screen)}: desktop Ultra`);
+    const screen = { width: 1920, height: 1080, pixelRatio: 2 };
+    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Intel UHD Graphics 620' }).pick === 'low', 'older laptop stays Low');
+    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Intel Iris Xe Graphics' }).pick === 'high', 'modern integrated stays capped at High');
+    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Unknown GPU' }).pick === 'high', 'unknown renderer never earns Ultra');
+    expect.ok(autoQuality.recommend({ ...desktop, ...screen, ms: 1 }).pick === 'high', 'strong GPUs still need sufficient resolution-adjusted headroom');
   });
   test('Ultra: the presets share their keys and reserve the lighting extras for Ultra', () => {
     const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();

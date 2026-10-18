@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.0.3';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.0.4';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -316,7 +316,8 @@ const CONFIG = {
     // Auto is conservative: older integrated GPUs and limited CPU/RAM start on Low. Modern integrated chips may
     // earn High; only recognized strong GPUs may earn Ultra. Time the slowest benchmark round and scale its cost
     // by each preset's actual pixel load relative to the reference viewport. Manual choices always remain available.
-    autoQuality: { size: 1024, loops: 48, passes: 6, rounds: 3, ultraMs: 3, highMs: 8, showTime: 7,
+    // Ultra's 7 ms budget is reachable only by recognized strong GPUs; integrated/unknown caps remain unchanged.
+    autoQuality: { size: 1024, loops: 48, passes: 6, rounds: 3, ultraMs: 7, highMs: 8, showTime: 7,
                    referenceWidth: 1280, referenceHeight: 720, minHighCores: 6, minHighMemory: 8, minUltraCores: 8, phoneWidth: 820,
                    software: 'swiftshader|llvmpipe|softpipe|basic render|software',
                    integrated: 'intel|iris|uhd graphics|hd graphics|radeon\\(tm\\) graphics|radeon graphics|vega [0-9]+ graphics|mali|adreno|powervr|apple gpu',

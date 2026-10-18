@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.0.3: Menu Navigation Fix
+# Combat Arena 3D — v7.0.4: Desktop Auto Graphics Calibration
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.0.4:** Auto's Ultra cutoff is recalibrated for recognized strong GPUs after the RTX 5060 was incorrectly assigned High at high pixel density. The conservative laptop rules and High cutoff are unchanged. See [the desktop calibration](docs/auto-quality-v7.0.4.md).
 
 **v7.0.3:** keyboard and controller menu selection stays on the intended option when the list scrolls beneath a stationary mouse pointer. Mouse movement and clicks still select options normally.
 
