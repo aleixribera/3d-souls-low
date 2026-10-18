@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.2.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -32,7 +32,7 @@ const CONFIG = {
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6 },
   },
   zoom: { min: 2.6, max: 12, step: 0.8, default: 4.9, rate: 7, repeatDelay: 0.28, repeat: 0.09,
-          heightRatio: 0.4 },   // camera height = distance * heightRatio
+          heightRatio: 0.44 },   // camera height = distance * heightRatio
   mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
   // Gamepad (standard layout). Sticks: dead zone, then rescaled to 0..1. Camera speeds are rad/s at full
   // tilt and sensitivity 5 (the Options value scales them like the mouse). A flick switches lock-on target
