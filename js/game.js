@@ -87,7 +87,15 @@ const Game = {
         { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Small camera movements with your swings, rolls and the blows you take.',
           adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
         { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
-          adjust: d => { const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics)); settings.graphics = c[(i + d + c.length) % c.length]; } },
+          adjust: d => {
+            const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
+            settings.graphics = c[(i + d + c.length) % c.length];
+            if (settings.graphics === 'auto') autoQuality.recheck();
+          } },
+        { name: 'Check graphics again', desc: 'Runs a fresh check and applies Auto. A saved manual graphics choice is replaced only when you select this.',
+          go: () => {
+            settings.graphics = 'auto'; autoQuality.recheck(); saveSettings(); applySettings(); this.showMenu('options', true);
+          } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.optionsFrom === 'main' ? 'main' : 'pause') },
       ] },
     };

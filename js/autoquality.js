@@ -74,15 +74,17 @@ void main() {
     const device = { name, width: window.innerWidth, height: window.innerHeight, pixelRatio: window.devicePixelRatio || 1,
       cores: navigator.hardwareConcurrency || 0, memory: navigator.deviceMemory || 0,
       touch: (navigator.maxTouchPoints || 0) > 1 && Math.min(screen.width, screen.height) < A.phoneWidth };
-    let ms = Infinity;
+    let ms = Infinity, benchmarked = false;
     if (capFor(name, device) !== 'low') {
+      benchmarked = true;
       try { ms = bench(); } catch (e) { /* failed timing: safely recommend Low */ }
     }
-    detected = recommend({ ...device, ms });
+    detected = { ...recommend({ ...device, ms }), version: VERSION, checkedAt: Date.now(), benchmarked };
     return detected;
   }
   return {
     recommend,
+    recheck() { detected = null; return detect(); },
     // Called by boot.js before applySettings(). On the first launch (no graphics choice saved) the setting becomes
     // Auto and the title screen says what it picked; returns that preset, or null when the player already chose.
     firstRun() {
@@ -107,6 +109,7 @@ void main() {
       setTimeout(() => el.classList.add('out'), A.showTime * 1000);
       setTimeout(() => el.remove(), (A.showTime + 1.5) * 1000);
     },
-    result: () => note,
+    // Available for saved Auto as well as first launch. Results live only in this page, never in localStorage.
+    result: () => detected,
   };
 })();

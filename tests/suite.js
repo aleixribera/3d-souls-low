@@ -2974,6 +2974,25 @@
   // Quality changes made here go back to the player's own setting afterwards.
   const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
   const ultraWarnings = () => [...warned].filter(w => w.startsWith('Ultra'));
+  test('Auto quality: loaded game scripts use the current release cache key', () => {
+    const scripts = [...document.scripts].filter(s => s.src && new URL(s.src).pathname.includes('/js/'));
+    expect.ok(scripts.length > 0, 'game scripts loaded');
+    for (const script of scripts) expect.ok(new URL(script.src).searchParams.get('v') === VERSION.slice(1), `${script.src}: current release`);
+  });
+  test('Auto quality: explicit menu recheck replaces cached detection and applies Auto', () => {
+    const saved = settings.graphics, from = Game.optionsFrom;
+    try {
+      const before = autoQuality.result(); settings.graphics = 'high';
+      Game.optionsFrom = 'main'; Game.showMenu('options');
+      const item = Game.menuItems.find(i => i.name === 'Check graphics again');
+      expect.ok(!!item && typeof item.go === 'function', 'fresh-check action exists');
+      item.go();
+      expect.ok(settings.graphics === 'auto', 'explicit action selects Auto');
+      const after = autoQuality.result();
+      expect.ok(after && after !== before && after.checkedAt > 0 && after.version === VERSION, 'new result belongs to this release');
+      expect.ok(visuals.quality() === CONFIG.VISUALS.quality[after.pick], 'new recommendation is applied');
+    } finally { settings.graphics = saved; saveSettings(); Game.optionsFrom = from; restoreQuality(); }
+  });
   test('Auto quality: older integrated laptops and limited hardware start on Low even with a fast shader result', () => {
     const ready = { ms: 1, width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
     for (const name of ['ANGLE (Intel, Intel(R) UHD Graphics 620)', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])

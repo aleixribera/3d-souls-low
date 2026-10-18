@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.0.4: Desktop Auto Graphics Calibration
+# Combat Arena 3D — v7.0.5: Fresh Auto Graphics Checks
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.0.5:** refreshed script cache keys ensure the desktop Auto correction actually reaches existing browsers. Options now offers **Check graphics again**; returning to Auto also runs a fresh check. Benchmark results are kept only for the current page.
 
 **v7.0.4:** Auto's Ultra cutoff is recalibrated for recognized strong GPUs after the RTX 5060 was incorrectly assigned High at high pixel density. The conservative laptop rules and High cutoff are unchanged. See [the desktop calibration](docs/auto-quality-v7.0.4.md).
 

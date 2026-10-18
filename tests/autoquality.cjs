@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
 
-function launch({ gpu, cores = 8, memory = 8, saved = null }) {
+function launch({ gpu, cores = 8, memory = 8, saved = null, recheck = false }) {
   let stored = JSON.stringify(saved || {}), benchmarks = 0, saves = 0;
   const settings = { graphics: saved?.graphics || 'high' };
   const context = vm.createContext({
@@ -23,6 +23,14 @@ function launch({ gpu, cores = 8, memory = 8, saved = null }) {
   const effective = vm.runInContext('autoQuality.effective()', context);
   // A second application must reuse the result, with no extra benchmark or settings write.
   vm.runInContext('autoQuality.effective(); autoQuality.firstRun()', context);
+  if (settings.graphics === 'auto') {
+    const before = vm.runInContext('autoQuality.result()', context);
+    assert.ok(before && before.checkedAt > 0, 'saved Auto exposes the current check');
+    if (recheck) {
+      const after = vm.runInContext('autoQuality.recheck()', context);
+      assert.notEqual(before, after, 'explicit check replaces the in-page cached result');
+    }
+  }
   return { first, effective, benchmarks, saves, saved: JSON.parse(stored).graphics };
 }
 
@@ -31,6 +39,7 @@ const cases = [
   ['existing Auto laptop', { gpu: 'Intel(R) UHD Graphics 620', saved: { graphics: 'auto' } }, { first: null, effective: 'low', benchmarks: 0, saves: 0, saved: 'auto' }],
   ['limited CPU', { gpu: 'NVIDIA GeForce RTX 3060', cores: 4 }, { first: 'low', effective: 'low', benchmarks: 0, saves: 1, saved: 'auto' }],
   ['limited RAM', { gpu: 'Intel Iris Xe Graphics', memory: 4 }, { first: 'low', effective: 'low', benchmarks: 0, saves: 1, saved: 'auto' }],
+  ['explicit recheck', { gpu: 'NVIDIA GeForce RTX 5060', recheck: true }, { first: 'low', effective: 'low', benchmarks: 2, saves: 1, saved: 'auto' }],
   ['failed timing', { gpu: 'NVIDIA GeForce RTX 5060' }, { first: 'low', effective: 'low', benchmarks: 1, saves: 1, saved: 'auto' }],
 ];
 for (const graphics of ['low', 'high', 'ultra']) cases.push([
@@ -38,4 +47,7 @@ for (const graphics of ['low', 'high', 'ultra']) cases.push([
   { first: null, effective: graphics, benchmarks: 0, saves: 0, saved: graphics },
 ]);
 for (const [label, input, expected] of cases) assert.deepEqual(launch(input), expected, label);
+const version = fs.readFileSync(path.join(root, 'js/config.js'), 'utf8').match(/const VERSION = 'v([^']+)'/)[1];
+const stamp = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8').match(/const LOAD_STAMP = '([^']+)'/)[1];
+assert.equal(stamp, version, 'script cache key must match the release version');
 console.log(`${cases.length}/${cases.length} first-launch fixtures passed`);
