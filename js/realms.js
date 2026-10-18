@@ -34,6 +34,11 @@ const REALM_POOLS = ['rot', 'gold', 'water'];
 function checkRealmData(need, num) {
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff, pair = v => Array.isArray(v) && v.length === 2 && v.every(num);
   const tri = v => Array.isArray(v) && v.length === 3 && v.every(num), rect = r => Array.isArray(r) && r.length === 4 && r.every(num) && r[0] < r[1] && r[2] < r[3];
+  for (const kind of REALM_TREES) {
+    const T = CONFIG.VISUALS.realms.tree[kind];
+    need(T && ['glow', 'glowAmt', 'vein', 'haze'].every(k => num(T[k]) && T[k] >= 0),
+      `CONFIG.VISUALS.realms.tree.${kind}: glow, glowAmt, vein and haze must be finite nonnegative numbers.`);
+  }
   for (const L of ALL_LEVELS) {
     const R = L.realm, w = `Level "${L.id}" realm`;
     if (!R) continue;
@@ -77,7 +82,7 @@ void main() { vC = color; vG = glow; vec4 w = modelMatrix * vec4(position, 1.0);
   const FAR_FRAG = `uniform vec3 uHaze, uSun, uSunDir, uGlowC; uniform float uHazeAmt, uGlow, uTime, uRim; varying vec3 vC; varying vec3 vW; varying vec3 vN; varying float vG;
 void main() {
   vec3 n = normalize(vN), v = normalize(cameraPosition - vW);
-  float rim = pow(1.0 - abs(dot(n, v)), 2.4), sun = max(dot(n, normalize(uSunDir)), 0.0);
+  float rim = pow(clamp(1.0 - abs(dot(n, v)), 0.0, 1.0), 2.4), sun = max(dot(n, normalize(uSunDir)), 0.0);
   float pulse = 0.75 + 0.25 * sin(uTime * 0.5 + vW.y * 0.015 + vW.x * 0.01);
   vec3 c = vC * (0.32 + 0.68 * sun) + uSun * rim * uRim + uGlowC * vG * uGlow * pulse;
   float low = 1.0 - smoothstep(0.0, 140.0, vW.y);

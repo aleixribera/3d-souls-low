@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.0.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.0.2';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -441,9 +441,9 @@ const CONFIG = {
       ultraBoost: 1.4, lowShare: 0.6, coverRate: 3, hazardPuff: 6,
       tree: {
         rim: 0.5,
-        golden: { bark: 0x8a6a34, crown: 0xffc24a, crown2: 0xffe6a0, mix: 0.3, glowColor: 0xffb030, glowAmt: 1.5, haze: 0.26, trunk: 0.5, boughs: 16, crownBlobs: 9, cap: 40, vein: 0.6, halo: 0.22 },
-        burnt: { bark: 0x1c1614, crown: 0, crown2: 0, mix: 0, glowColor: 0xff5a10, glowAmt: 2.4, haze: 0.3, trunk: 0.62, boughs: 14, crownBlobs: 0, cap: 0, vein: 0.35, embers: 10, emberColor: 0xff6a20, halo: 0.1, droop: true },
-        haligtree: { bark: 0xd2cabc, crown: 0xffd890, crown2: 0xd84030, mix: 0.25, glowColor: 0xffc070, glowAmt: 0.85, haze: 0.3, trunk: 0.55, boughs: 18, crownBlobs: 8, cap: 34, vein: 0.2, halo: 0.12 },
+        golden: { bark: 0x8a6a34, crown: 0xffc24a, crown2: 0xffe6a0, mix: 0.3, glowColor: 0xffb030, glowAmt: 1.5, glow: 0.65, haze: 0.26, trunk: 0.5, boughs: 16, crownBlobs: 9, cap: 40, vein: 0.6, halo: 0.22 },
+        burnt: { bark: 0x1c1614, crown: 0, crown2: 0, mix: 0, glowColor: 0xff5a10, glowAmt: 2.4, glow: 0, haze: 0.3, trunk: 0.62, boughs: 14, crownBlobs: 0, cap: 0, vein: 0.35, embers: 10, emberColor: 0xff6a20, halo: 0.1, droop: true },
+        haligtree: { bark: 0xd2cabc, crown: 0xffd890, crown2: 0xd84030, mix: 0.25, glowColor: 0xffc070, glowAmt: 0.85, glow: 0.4, haze: 0.3, trunk: 0.55, boughs: 18, crownBlobs: 8, cap: 34, vein: 0.2, halo: 0.12 },
       },
       pillarHaze: 0.35,
       stars: { count: 1800, band: 600, radius: 160 },

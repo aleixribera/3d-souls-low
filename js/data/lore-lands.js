@@ -15,7 +15,7 @@ LORE.endings = { ...(LORE.endings || {}),
 };
 Object.assign(LORE.levels, {
   stormhill: {
-    npcs: [{ who: 'seren', x: 2.0, z: -2.6, yaw: 1.2, pose: 'stand', bonfire: 'storm-chapel',
+    npcs: [{ who: 'seren', x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'storm-chapel',
       lines: [
         'So grace has called you back. I wondered which of you it would choose.',
         'I am Seren. I carry what is left of the grace, in this lantern, and I can see where it points.',
@@ -41,13 +41,13 @@ Object.assign(LORE.levels, {
     ],
   },
   stormveil: {
-    npcs: [{ who: 'seren', x: 13.6, z: 4.3, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'veil-gate',
+    npcs: [{ who: 'seren', x: 11.5, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'veil-gate',
       lines: [
         'You passed the Omen. I did not think anyone would, truly.',
         'Godrick holds the castle. He sews the limbs of the fallen onto his own body, and thinks it makes him greater.',
         'He has a Great Rune, his grandmother\'s. He has never earned it.',
         'The main gate is barred. Take the side passage, along the cliffs. Things wait on the walls there.',
-        'And on the rampart the sea is very close. Do not let anything push you to it.',
+        'The sea beats against the rampart walls. Within them, grafted things wait for you.',
       ],
       idle: 'The side passage is south of the yard. The sea is louder than it looks.' }],
     inscriptions: [
@@ -63,7 +63,7 @@ Object.assign(LORE.levels, {
     ],
   },
   evergaol: {
-    npcs: [{ who: 'seren', x: 3.5, z: 4.5, yaw: 2.4, pose: 'stand', bonfire: 'gaol-landing',
+    npcs: [{ who: 'seren', x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'gaol-landing',
       lines: [
         'This is an evergaol: a prison made of a piece of sky. The Golden Order sealed what it feared in places like this.',
         'There is a knight here, of the Crucible, from before the Order. The old life still runs in him. It shows as gold, as wings, as a tail.',
@@ -84,7 +84,7 @@ Object.assign(LORE.levels, {
     ],
   },
   leyndell: {
-    npcs: [{ who: 'seren', x: 13.6, z: 4.5, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'ley-gate',
+    npcs: [{ who: 'seren', x: 11.5, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'ley-gate',
       lines: [
         'Leyndell. The golden city. I was born under that tree, though you would not guess it.',
         'Morgott keeps it now: an Omen, like the one at Stormveil. Those horned things were his brothers.',
@@ -105,7 +105,7 @@ Object.assign(LORE.levels, {
     ],
   },
   'ashen-capital': {
-    npcs: [{ who: 'seren', spirit: true, x: 11.6, z: 3.6, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'ash-gate',
+    npcs: [{ who: 'seren', spirit: true, x: 10, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'ash-gate',
       lines: [
         'You are still here. Good. I hoped you would be.',
         'I gave the Erdtree my flame, as I always knew I would. It burned. The city burned with it.',
@@ -124,7 +124,7 @@ Object.assign(LORE.levels, {
     ],
   },
   'farum-azula': {
-    npcs: [{ who: 'seren', spirit: true, x: 3.5, z: 4.5, yaw: 2.4, pose: 'stand', bonfire: 'farum-arrival',
+    npcs: [{ who: 'seren', spirit: true, x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'farum-arrival',
       lines: [
         'This is Farum Azula, the city of the dragons. It has been falling apart, very slowly, since before the Order.',
         'The throne\'s doors are sealed with Death itself. Destined Death, which the Order locked away.',
@@ -144,7 +144,7 @@ Object.assign(LORE.levels, {
     ],
   },
   erdtree: {
-    npcs: [{ who: 'seren', spirit: true, x: 3.5, z: 5.5, yaw: 2.4, pose: 'stand', bonfire: 'tree-hollow',
+    npcs: [{ who: 'seren', spirit: true, x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'tree-hollow',
       lines: [
         'We are inside the tree. Even burnt, its heart still shines.',
         'At the foot of the throne stands Radagon. He was the queen\'s husband, and he was the queen. The Order made them one.',
@@ -163,7 +163,7 @@ Object.assign(LORE.levels, {
     ],
   },
   haligtree: {
-    npcs: [{ who: 'seren', spirit: true, x: 3.5, y: 24, z: 4.5, yaw: 2.4, pose: 'stand', bonfire: 'halig-ledge',
+    npcs: [{ who: 'seren', spirit: true, x: 8, y: 24, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'halig-ledge',
       lines: [
         'The Ring will not mend. One shard is missing, the last.',
         'Malenia took it here, to the Haligtree, her brother\'s tree. She has never lost a fight.',

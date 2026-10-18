@@ -133,7 +133,7 @@ Her arc: hope (Level 1), dread (Level 2), grief (Level 3), resolve (Level 4), fa
 One dialogue per level (two in Level 5), played as subtitles while the player keeps control. After it has been heard once, she has
 a short idle line when the player comes near again; talking again replays the full dialogue.
 
-### Level 1 — The Long Hall (through the bars of the next cell, by the first bonfire)
+### Level 1 — The Long Hall (through the bars of the next cell, extended to the hall beside the first bonfire)
 1. Ah. You're awake. I'd begun to think you never would.
 2. They carried you in a fortnight past. You didn't stir, not once. Most who come in that way never do.
 3. I am Ysolde. Of Corvel, down by the river, if Corvel still stands.
@@ -319,7 +319,7 @@ Like Ysolde, she is never hostile, cannot be attacked and cannot die. Her look i
 | Land | Title (loading screen) | Boss | New enemy | Its place |
 |---|---|---|---|---|
 | 1 | STORMHILL | Margit, the Fell Omen | Omenkin | A storm-lashed heath, the Stormgate gorge, a cliff path with no rail, Stormveil's gate bridge. |
-| 2 | STORMVEIL CASTLE | Godrick the Grafted | Grafted Scion | The castle in the rain: a barred main gate, the cliff walk, the open rampart, the grafting hall, the tower roof. |
+| 2 | STORMVEIL CASTLE | Godrick the Grafted | Grafted Scion | The castle in the rain: a barred main gate, the walled cliff walk and rampart, the grafting hall, the tower roof. |
 | 3 | THE STORMHILL EVERGAOL | The Crucible Knight | Crucible Squire | A prison of stars: stone cells in a night sky, bridges with no rail, the great evergaol ring. |
 | 4 | LEYNDELL, ROYAL CAPITAL | Morgott, the Omen King | Leyndell Knight | The golden city under the Erdtree: the avenue, the fountain plaza, the great root over the chasm, the Elden Throne's court. |
 | 5 | LEYNDELL, ASHEN CAPITAL | Godfrey, First Elden Lord | Ashen Warrior | The same city burned: a lane that gives way into the cellars, cinders, the throne in ash. |
@@ -355,7 +355,7 @@ The chapter lines (one per land, over its loading screen) are in `js/data/story.
 - Godrick holds the castle. He sews the limbs of the fallen onto his own body, and thinks it makes him greater.
 - He has a Great Rune, his grandmother's. He has never earned it.
 - The main gate is barred. Take the side passage, along the cliffs. Things wait on the walls there.
-- And on the rampart the sea is very close. Do not let anything push you to it.
+- The sea beats against the rampart walls. Within them, grafted things wait for you.
 - *Idle:* The side passage is south of the yard. The sea is louder than it looks.
 
 ### Land 3 — The Stormhill Evergaol (on the landing, by the first bonfire)
@@ -452,3 +452,5 @@ Story mode's last screen for this road: *The Elden Ring is whole. Somewhere, a m
 | The guide | Seren, the Grace-Bearer |
 | The player | a Tarnished, nameless |
 | The new foes | Omenkin; Grafted Scion; Crucible Squire; Leyndell Knight; Ashen Warrior; Beastman of Farum Azula; Golden Zealot; Cleanrot Knight |
+
+Entry staging: Ysolde stands at the front of her barred cell, within speaking distance of the hall. Seren waits ahead of each land's arrival, beside the route to its first exit and within speaking distance of that route, by the first bonfire.

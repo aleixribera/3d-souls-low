@@ -237,11 +237,11 @@ function buildRooms(L) {
       addFlame(G, bx, y + 1.45, bz, C.brazierSize, null, new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffffff), 0.35).getHex());
     }
   }
-  // The parts of a wall inside a house (not one of the house's own rooms) aren't drawn: the house stands there instead.
-  const houses = (L.houses || []).map(H => ({ r: H.rect, top: houseBase(H, TR.regions) + H.eaves + 0.5, own: H.rooms || [] }));
+  // Hide walls only inside a house's vertical band. Cellar walls beneath an elevated house must remain drawn.
+  const houses = (L.houses || []).map(H => ({ r: H.rect, base: houseBase(H, TR.regions), top: houseBase(H, TR.regions) + H.eaves + 0.5, own: H.rooms || [] }));
   const shown = s => {
     if (!houses.length || !(s.kind === 'wall' || s.kind === 'post' || s.kind === 'lintel')) return [s];
-    const hiding = houses.filter(h => s.y1 <= h.top && !(s.region && h.own.includes(s.region.id))).map(h => h.r);
+    const hiding = houses.filter(h => s.y0 >= h.base && s.y1 <= h.top && !(s.region && h.own.includes(s.region.id))).map(h => h.r);
     return rectMinus([s.x0, s.x1, s.z0, s.z1], hiding).filter(p => p[1] - p[0] > 0.02 && p[3] - p[2] > 0.02)
       .map(p => ({ ...s, x0: p[0], x1: p[1], z0: p[2], z1: p[3] }));
   };

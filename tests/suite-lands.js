@@ -74,6 +74,11 @@
           start(L.id);
           const p = Game.player, y0 = p.y;
           sim.seconds(5, 10);
+          // A NaN in the tree's glow attribute contaminates HDR bloom and blacks out the whole view.
+          scene.traverse(o => {
+            const glow = o.geometry?.attributes.glow;
+            if (glow) expect.ok(glow.array.every(Number.isFinite), `${L.id} (${q}): scenery glow is finite`);
+          });
           const info = A.realms.info();
           expect.ok(p.alive() && Math.abs(p.y - y0) < 0.01, `${L.id} (${q}): the player stands at the start`);
           expect.ok(info && info.beams === L.bonfires.length, `${L.id} (${q}): a grace beam over each bonfire`);
@@ -103,6 +108,22 @@
       expect.ok(Game.player.alive(), `${L.id}: alive at the end`);
     }
   });
+  test('Lands: Stormveil corridor walls stop falls; the trap cellar walls remain visible below the houses', () => {
+    start('stormveil'); sim.clearEnemies();
+    for (const [x, y] of [[56, 0], [78, 4], [108, 8]]) {
+      sim.place(x, -25, y); sim.move(0, -1); sim.seconds(2, 6); sim.move(null);
+      expect.ok(Game.player.alive() && Game.player.z > -28 && Game.player.y >= y - 0.5, `corridor at x ${x}: outer wall stops a fall`);
+    }
+    start('ashen-capital'); sim.clearEnemies();
+    scene.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster(new THREE.Vector3(75, -3, 0), new THREE.Vector3(0, 0, 1), 0, 8);
+    ray.camera = A.camera;
+    const hit = ray.intersectObject(stage.group, true)[0];
+    expect.ok(hit && Math.abs(hit.point.z - 6) < 0.1, 'the north cellar wall is drawn below the street houses');
+    sim.place(75, 0, -5); sim.move(0, 1); sim.seconds(2, 6); sim.move(null);
+    expect.ok(Game.player.alive() && Game.player.z < 6 && Game.player.y === -5, 'the cellar wall keeps the player on its floor');
+  });
+
   test('Lands: a scripted run wakes every fight, opens every gate in turn, and every enemy comes for the player', () => {
     for (const L of A.LANDS_LEVELS) {
       start(L.id); const p = Game.player; sturdy(p);
@@ -223,6 +244,16 @@
   });
 
   // ---- the rot, the ending ---------------------------------------------------------------------------------------------
+  test('Lore: arrival guides are ahead and within talking distance of the natural exit route', () => {
+    for (const L of [A.LEVEL_1, ...A.LANDS_LEVELS]) {
+      start(L.id); sim.clearEnemies();
+      const N = A.LORE.levels[L.id].npcs[0], S = L.start;
+      expect.ok(N.x > S.x && Math.abs(N.z - S.z) < CONFIG.lore.talkRange, `${L.id}: guide ahead, beside the route`);
+      expect.ok(walk(N.x, S.z, null, 8), `${L.id}: walk along the arrival route`);
+      expect.ok(A.lore.prompt()?.startsWith('Talk'), `${L.id}: the route offers Talk`);
+    }
+  });
+
   test('Lands: the scarlet rot hurts only while stood in, on its floor; bonfires and the arena are clear of it', () => {
     start('haligtree'); const p = Game.player; sim.clearEnemies();
     const h = world.hazards[0], cx = (h.rect[0] + h.rect[1]) / 2, cz = (h.rect[2] + h.rect[3]) / 2;
@@ -267,6 +298,16 @@
     const enemies = Game.screens().enemies.items.map(i => i.name), bosses = Game.screens().bosses.items.map(i => i.name);
     expect.ok(!enemies.includes('Aldric, the Gaoler King') && bosses.includes('Aldric, the Gaoler King') && bosses.includes('Giant Skeleton'), 'the Ashmere bosses apart');
     expect.ok(['Omenkin', 'Cleanrot Knight', 'Golden Zealot'].every(n => enemies.includes(n)), 'the new enemies are in the Enemies list');
+    const levels = Game.screens().levels.items;
+    expect.ok(levels.map(i => i.name).join() === 'Ashmere  ›,The Lands Between  ›,Back', 'Levels groups both roads');
+    levels[0].go();
+    expect.ok(Game.screen === 'levelsAshmere', 'Ashmere opens its own list');
+    const ash = Game.screens().levelsAshmere;
+    expect.ok(ash.back === 'levels' && ash.items.length === A.STORY.chapters.length + 1, 'only Ashmere chapters and Back');
+    expect.ok(!ash.items.some(i => i.name === A.TUTORIAL.name), 'tutorial omitted');
+    ash.items[ash.items.length - 1].go();
+    levels[1].go();
+    expect.ok(Game.screen === 'levelsLands' && Game.screens().levelsLands.back === 'levels', 'Lands list returns to the groups');
     expect.ok(Game.screens().elden.back === 'arena' && Game.screens().levelsLands.items.length === A.LANDS_LEVELS.length + 1, 'Elden Ring Bosses back to the Arena; the Lands in Levels');
   });
   test('Story: the two roads keep separate saves; Continue on one never touches the other', () => {

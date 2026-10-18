@@ -1379,21 +1379,36 @@
     expect.ok(!Game.lock, `once the fighter is dead, the idle one is not picked either (${nameOf(e, Game.lock)})`);
   });
 
-  test('lock-on: the automatic pick skips a far archer while a melee enemy fights, but takes a near or lone one; Q and Tab reach any', () => {
+  test('lock-on: automatic picks never take archers or mages; Q and Tab still reach them', () => {
     let e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
     sim.step(1, 1);
     expect.ok(Game.lock === e.melee, `a far archer in the middle of the screen is skipped (${nameOf(e, Game.lock)})`);
     e = retargetRange([['archer', 'bowman', 16, 0.5, true], ['melee', 'hollow', 21, 5, true]]);
     sim.step(1, 1);
-    expect.ok(Game.lock === e.archer, `an archer ${CONFIG.lock.autoRange} m or nearer counts like anyone (${nameOf(e, Game.lock)})`);
+    expect.ok(Game.lock === e.melee, 'a nearby archer is skipped too');
     e = retargetRange([['archer', 'bowman', 24, 0, true]]);
     sim.step(1, 1);
-    expect.ok(Game.lock === e.archer, `a lone archer is taken (${nameOf(e, Game.lock)})`);
+    expect.ok(!Game.lock, 'a lone archer is never taken automatically');
     e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
     sim.step(1, 1); sim.press('lock'); sim.step(1, 1); sim.press('lock'); sim.step(1, 1);
     expect.ok(Game.lock === e.archer, `Q locks the archer in the middle of the screen (${nameOf(e, Game.lock)})`);
     Game.setLock(e.melee); sim.step(1, 1);
     expect.ok(tab() === e.archer, 'Tab reaches the archer');
+  });
+
+  test('lock-on: first encounters and kill handoffs also skip ranged enemies', () => {
+    for (const id of ['bowman', 'castleBowman', 'wisp']) {
+      const e = retargetRange([['ranged', id, 16, 0, true]]);
+      sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: automatic retarget skipped`);
+      Game.retarget = false; sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: first encounter skipped`);
+      const melee = sim.spawn(rooted('hollow'), 14, 1, undefined, -Math.PI / 2); quiet(melee);
+      Game.setLock(melee); melee.die(); sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: kill handoff skipped`);
+      sim.press('lock'); sim.step(1, 1);
+      expect.ok(Game.lock === e.ranged, `${id}: explicit input still locks`);
+    }
   });
 
   test('lock-on: Q letting go turns the automatic pick off; a Q lock-on, a rest, a death and a level start turn it back on', () => {
@@ -1734,7 +1749,7 @@
     expect.ok(A.LEVEL_3.id === 'burning-town' && A.LEVELS[at - 1] === A.LEVEL_2 && A.LEVELS[at + 1] === A.LEVEL_4, `order: ${names.join(' | ')}`);
     expect.ok(A.LEVEL_3.name === 'Level 3: The Burning Town' && A.LEVEL_4.name === 'Level 4: The Tower', 'names');
     expect.ok(A.LEVEL_2.next === 'burning-town' && A.LEVEL_3.next === 'the-tower', 'Level 2 -> the town -> the Tower');
-    Game.showMenu('levels');
+    Game.showMenu('levelsAshmere');
     const shown = [...document.querySelectorAll('#menuList .menuBtn .n')].map(n => n.textContent);
     expect.ok(shown.indexOf('Level 3: The Burning Town') + 1 === shown.indexOf('Level 4: The Tower'), `menu: ${shown.join(' | ')}`);
     expect.ok(/sacked|burn/i.test(A.LEVEL_3.description) && /Tower/.test(A.LEVEL_3.completeHint), 'its story: the sacked town, then on to the Tower');

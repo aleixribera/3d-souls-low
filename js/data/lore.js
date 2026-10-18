@@ -28,7 +28,7 @@ const LORE = {
   npc: { id: 'ysolde', name: 'Ysolde of Corvel', model: 'ysolde', scale: 0.96, bulk: 0.94 },
   levels: {
     'long-hall': {
-      npcs: [{ x: 8, z: 7.2, yaw: Math.PI, pose: 'stand', solid: [6.5, 9.5, 5.85, 8.6], bars: [6.6, 5.95, 9.4, 5.95],
+      npcs: [{ x: 8, z: 2.8, yaw: Math.PI, pose: 'stand', solid: [6.5, 9.5, 1.45, 8.6], bars: [[6.6, 1.55, 9.4, 1.55], [6.6, 1.55, 6.6, 5.95], [9.4, 1.55, 9.4, 5.95]],
         lines: [
           'Ah. You\'re awake. I\'d begun to think you never would.',
           'They carried you in a fortnight past. You didn\'t stir, not once. Most who come in that way never do.',

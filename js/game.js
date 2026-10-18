@@ -48,7 +48,7 @@ const Game = {
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         ...S.main,
         { name: '1v1 Arena', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
-        { name: 'Levels', desc: 'Play any level on its own, outside the story: learn the controls, then fight your way through.', go: () => this.showMenu('levels') },
+        { name: 'Levels', desc: 'Play a level on its own from either story.', go: () => this.showMenu('levels') },
         { name: 'Options', desc: 'Graphics, camera, sound and controls.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
@@ -56,9 +56,12 @@ const Game = {
         items: [...finale.devItems(), ...lore.devItems(),
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'main', items: [...LEVELS.map(levelItem),
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
+        { name: 'Ashmere  ›', desc: 'The five levels of Ashmere, from the Long Hall to the Final Castle.', go: () => this.showMenu('levelsAshmere') },
         { name: 'The Lands Between  ›', desc: 'The levels of the second road, from Stormhill to the Haligtree.', go: () => this.showMenu('levelsLands') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      levelsAshmere: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'levels', items: [...STORY.chapters.map(c => levelItem(ALL_LEVELS.find(l => l.id === c.level))),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       arena: { title: 'COMBAT ARENA 3D', sub: '1V1 ARENA', back: 'main', items: [
@@ -434,11 +437,10 @@ const Game = {
   },
   // Always-retarget's pick: the enemy fighting the player (it has noticed the player; never a training dummy) with the
   // lowest score, its distance from the middle of the screen (0 middle, 1 edge) plus its distance from the player per
-  // `retargetDistance` m. Archers only within `autoRange`, or when nothing else is fighting.
+  // `retargetDistance` m. Ranged enemies require an explicit lock or target-switch input.
   retargetPick() {
     const L = CONFIG.lock;
-    const fighting = this.lockable().filter(({ e }) => e.fightingPlayer());
-    const melee = fighting.filter(c => !c.e.ranged || c.d <= L.autoRange), pool = melee.length ? melee : fighting;
+    const pool = this.lockable().filter(({ e }) => !e.ranged && e.fightingPlayer());
     const score = c => (c.v ? Math.abs(c.v.x) : L.offScreenScore) + c.d / L.retargetDistance;
     let best = null;
     for (const c of pool) if (!best || score(c) < score(best)) best = c;
@@ -472,14 +474,14 @@ const Game = {
     // unless already locked. An enemy is only ever auto-locked once.
     if (p.alive()) {
       for (const { e } of findEnemies(p, this.enemies, { range: CONFIG.lock.autoRange })) {
-        if (e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
+        if (e.ranged || e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
         e.discovered = true;
         if (!this.lock && !this.retarget) this.setLock(e);
       }
     }
     const t = this.lock;
     if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
-      this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t) || null);
+      this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t && !e.ranged) || null);
     } else if (t) {
       if (!t.alive() || !t.awake() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
       else {

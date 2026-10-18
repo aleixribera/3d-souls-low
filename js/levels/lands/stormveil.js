@@ -1,9 +1,8 @@
 'use strict';
 // The Lands Between, 2: Stormveil Castle (v7.0). Boss: Godrick the Grafted. x runs east, z north.
 //   The gatehouse (bonfire 1, Seren) opens on the main yard, under rain, archers on the north rampart. The main gate east
-//     is barred for good; the way is the side passage south, out onto the cliff walk above the sea (no rail: the sea
-//     side is open), where two Grafted Scions crouch on the castle wall ledge and spring when you pass (corpses lie below).
-//   The walk climbs to the outer rampart (y 8), open to the sea: a Shover pushes, a Scion cuts. Bonfire 2 in the tower.
+//     is barred for good; the way is the side passage south, out onto the walled cliff walk above the sea, where two Grafted Scions crouch on the castle wall ledge and spring when you pass (corpses lie below).
+//   The walk climbs to the outer rampart (y 8), enclosed by castle walls: a Shover pushes, a Scion cuts. Bonfire 2 in the tower.
 //   Down the tower stair into the cloister (y 0, the inner garden): the big fight, archers on the east gallery.
 //   The grafting hall (red, a heavy and two of Godrick's things), the liftside chamber (bonfire 3), and the long stair up
 //   to the roof of the tower (y 10): Godrick, in the storm.
@@ -11,7 +10,7 @@ const LANDS_2 = {
   id: 'stormveil', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
   name: 'Lands 2: Stormveil Castle',
   description: 'Godrick\'s castle in the storm. The main gate is barred: take the side path along the cliffs, the outer rampart and the grafting hall to the tower roof.',
-  help: 'Lands 2: the main gate is barred, so take the side passage south. Things crouch on the walls over the cliff walk. On the rampart the sea side is open: a Shover\'s push is a fall.',
+  help: 'Lands 2: the main gate is barred, so take the side passage south. Things crouch on the walls over the cliff walk. Castle walls enclose the cliff corridor and rampart: keep an eye on the ledges above.',
   completeHint: 'Godrick is fallen, and his Great Rune is yours. But one rune will not open the capital…',
   wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5, flasks: 6,
   // Night, a storm off the sea: heavy rain, lightning, wet blue-grey stone, green and gold banners.
@@ -39,9 +38,9 @@ const LANDS_2 = {
     { id: 'yard-rampart', rect: [24, 48, 14, 18], y: 7, open: true, height: 4, edges: { s: 'rail' }, floor: 0x44464a, wall: 0x54585e },
     { id: 'sealed-hall', rect: [52, 58, -3, 3], height: 5, floor: 0x343638, wall: 0x4a4e54, dim: true },
     { id: 'side-passage', rect: [30, 36, -22, -14], open: true, height: 8, floor: 0x383a3c, wall: 0x4e5258 },
-    { id: 'cliff-walk', rect: [30, 70, -28, -22], open: true, height: 10, edges: { s: 'open' }, floor: 0x3a3c3c, wall: 0x50545a },
+    { id: 'cliff-walk', rect: [30, 70, -28, -22], open: true, height: 10, edges: { s: 'wall' }, floor: 0x3a3c3c, wall: 0x50545a },
     { id: 'wall-ledge', rect: [44, 66, -22, -19], y: 4, open: true, height: 4, edges: { s: 'open' }, floor: 0x44464a, wall: 0x54585e },
-    { id: 'rampart', rect: [86, 130, -28, -22], y: 8, open: true, height: 5, edges: { s: 'open' }, floor: 0x46484a, wall: 0x56585e, light: 0xc8d0e0,
+    { id: 'rampart', rect: [86, 130, -28, -22], y: 8, open: true, height: 5, edges: { s: 'wall' }, floor: 0x46484a, wall: 0x56585e, light: 0xc8d0e0,
       lamps: [[100, -23], [118, -23]] },
     { id: 'tower', rect: [130, 142, -30, -16], y: 8, height: 5, floor: 0x3a3a38, wall: 0x52524e, light: 0xffa060, braziers: [[131.5, -17.5], [140.5, -17.5]] },
     { id: 'cloister', rect: [120, 160, 4, 34], open: true, height: 10, grass: true, floor: 0x3c3e3a, wall: 0x52564e, light: 0xc8d0c0,
@@ -58,7 +57,7 @@ const LANDS_2 = {
     { id: 'roof-exit', rect: [137, 143, 134, 138], y: 10, height: 4.5, floor: 0x3a3a38, wall: 0x52524e, light: 0xffd090, dim: true },
   ],
   ramps: [
-    { id: 'walk-stair', rect: [70, 86, -28, -22], axis: 'x', from: 0, to: 8, stairs: true, height: 6, edges: { s: 'open' }, floor: 0x3e4042, wall: 0x50545a },
+    { id: 'walk-stair', rect: [70, 86, -28, -22], axis: 'x', from: 0, to: 8, stairs: true, height: 6, edges: { s: 'wall' }, floor: 0x3e4042, wall: 0x50545a },
     { id: 'tower-stair', rect: [134, 140, -16, 4], axis: 'z', from: 8, to: 0, stairs: true, height: 5, floor: 0x3a3a38, wall: 0x52524e },
     { id: 'godrick-stair', rect: [137, 143, 72, 90], axis: 'z', from: 0, to: 10, stairs: true, height: 6, floor: 0x3a3a38, wall: 0x52524e },
   ],

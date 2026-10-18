@@ -299,7 +299,9 @@ function validateData() {
       if ('solid' in N) need(Array.isArray(N.solid) && N.solid.length === 4 && N.solid.every(num) && N.solid[0] < N.solid[1] && N.solid[2] < N.solid[3], `${tag}: solid must be [x0, x1, z0, z1].`);
       if ('after' in N) need(L && (L.gated || []).some(g => g.id === N.after), `${tag}: the NPC's after must name a zone of the level.`);
       if ('bonfire' in N) need(L && L.bonfires.some(b => b.id === N.bonfire), `${tag}: the NPC's bonfire must name a bonfire of the level.`);
-      if ('bars' in N) need(Array.isArray(N.bars) && N.bars.length === 4 && N.bars.every(num), `${tag}: bars must be [x0, z0, x1, z1].`);
+      if ('bars' in N) need(Array.isArray(N.bars) && N.bars.length > 0
+        && (Array.isArray(N.bars[0]) ? N.bars : [N.bars]).every(b => Array.isArray(b) && b.length === 4 && b.every(num) && Math.hypot(b[2] - b[0], b[3] - b[1]) > 0),
+        `${tag}: bars must be [x0, z0, x1, z1] or a list of those segments.`);
     }
     for (const I of D.inscriptions || []) {
       need(typeof I.id === 'string' && !inscIds.has(I.id), `${tag}: inscription ids must be unique strings ("${I.id}").`); inscIds.add(I.id);

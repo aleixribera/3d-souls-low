@@ -148,8 +148,8 @@ const lore = (() => {
       if (rig.weapon) rig.weapon.visible = false;
       if (D.spirit) ghost(rig, C.spirit.opacity);   // only her grace is left: a translucent, faintly golden shape
       const ny = floor(D.x, D.z, D.y), g = new THREE.Group(); group.add(g);
-      if (D.bars) {   // the bars of her cell, floor to lintel
-        const [x0, z0, x1, z1] = D.bars, n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.22), y = floor(x0, z0, D.y), iron = mat(0x2e2c2a, 0.5);
+      for (const segment of D.bars ? (Array.isArray(D.bars[0]) ? D.bars : [D.bars]) : []) {   // one or more barred sides, floor to lintel
+        const [x0, z0, x1, z1] = segment, n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.22), y = floor(x0, z0, D.y), iron = mat(0x2e2c2a, 0.5);
         for (let i = 0; i <= n; i++) box(g, 0.05, 2.9, 0.05, iron, lerp(x0, x1, i / n), y + 1.45, lerp(z0, z1, i / n));
         for (const h of [0.15, 1.5, 2.85]) box(g, Math.hypot(x1 - x0, z1 - z0), 0.06, 0.06, iron, (x0 + x1) / 2, y + h, (z0 + z1) / 2, Math.atan2(z1 - z0, x1 - x0) * -1);
       }
