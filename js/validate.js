@@ -7,6 +7,12 @@
 function validateData() {
   const errors = [];
   const need = (ok, msg) => { if (!ok) errors.push(msg); };
+  need(QUALITY_CHOICES.length === 3 && new Set(QUALITY_CHOICES.map(c => c.id)).size === 3, 'Quality choices must list three distinct presets.');
+  for (const c of QUALITY_CHOICES) {
+    need(c.id in CONFIG.VISUALS.quality, `Quality choice: unknown preset "${c.id}".`);
+    need(typeof c.systems === 'string' && c.systems.trim().split(/\s+/).length === 3, `Quality choice ${c.id}: system guidance needs three words.`);
+    need([c.name, c.image, c.alt, c.look].every(v => typeof v === 'string' && v.length), `Quality choice ${c.id}: missing preview or label.`);
+  }
   const num = v => typeof v === 'number' && Number.isFinite(v);
   const checkAttack = (a, owner) => {
     const tag = `${owner} attack "${a && a.id}"`;

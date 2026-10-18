@@ -62,6 +62,36 @@
   #menuBox .hint { position: absolute; left: 0; right: 0; bottom: 4vh; margin: 0; text-align: center; font-size: 12px; letter-spacing: 1.5px; color: #6a675e; }
   #menuBox .notice { margin-top: 12vh; text-align: center; font-size: 17px; line-height: 1.8; letter-spacing: 1px; color: #bdb9ad; white-space: pre-line; }
   #menuBox .notice:empty { display: none; }
+
+  /* Tutorial quality comparison: static captures keep this page cheap even on older laptops. */
+  #menu.quality-choice #menuBox { padding: 11vh 4vw 9vh; justify-content: center; }
+  #menu.quality-choice h1 { font-size: clamp(25px, 4vw, 58px); white-space: normal; }
+  #menu.quality-choice h1::before { display: none; }
+  #menu.quality-choice .sub { margin-top: 16px; font-size: clamp(12px, 1.2vw, 16px); letter-spacing: 1px; line-height: 1.5; }
+  #menu.quality-choice #menuList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 2vw, 28px);
+    width: min(1320px, 100%); max-height: none; overflow: visible; margin-top: 5vh; padding: 5px; mask-image: none; -webkit-mask-image: none; }
+  #menu.quality-choice .menuBtn { width: 100%; padding: 0; display: flex; flex-direction: column; align-items: stretch; }
+  #menu.quality-choice .menuBtn::before { display: none; }
+  #menu.quality-choice .quality-image { position: relative; display: block; border: 1px solid #51483a; overflow: hidden; }
+  #menu.quality-choice img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+  #menu.quality-choice .quality-recommended { position: absolute; top: 10px; left: 8px; right: 8px; width: fit-content; margin: 0 auto; padding: 6px 10px; background: #d9ba78; color: #211a0f; font-size: clamp(10px, 1.1vw, 14px); box-shadow: 0 2px 10px #0008; }
+  #menu.quality-choice .quality-look { position: absolute; bottom: 0; left: 0; right: 0; padding: 22px 8px 10px;
+    background: linear-gradient(transparent, #000d); color: #e0dacd; font-size: clamp(10px, 1.1vw, 14px); letter-spacing: .4px; }
+  #menu.quality-choice .n { margin-top: 16px; padding: 12px 8px; border: 1px solid #65573d; background: #18150f;
+    font-size: clamp(16px, 2vw, 24px); letter-spacing: 3px; text-transform: uppercase; }
+  #menu.quality-choice .d { display: block; margin-top: 12px; font-size: clamp(10px, 1.2vw, 16px); color: #aaa294; line-height: 1.5; }
+  #menu.quality-choice .sel .quality-image, #menu.quality-choice .menuBtn:focus-visible .quality-image { border-color: #e8c67b; box-shadow: 0 0 0 2px #c49a4855; }
+  #menu.quality-choice .sel .n { border-color: #e8c67b; background: #493820; color: #fff1d1; }
+  #menu.quality-choice .menuArrow, #menu.quality-choice #menuDesc { display: none; }
+  #menu.quality-choice .hint { padding: 0 4vw; line-height: 1.7; }
+  @media (max-height: 600px) {
+    #menu.quality-choice #menuBox { padding-top: 4vh; }
+    #menu.quality-choice #menuList { margin-top: 2vh; max-width: 900px; }
+    #menu.quality-choice img { aspect-ratio: 16 / 9; }
+    #menu.quality-choice .n { margin-top: 8px; padding: 8px; }
+    #menu.quality-choice .d { margin-top: 6px; }
+  }
+
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
   body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
   #qualityNote { position: fixed; left: 50%; top: 7vh; z-index: 12; transform: translateX(-50%); padding: 8px 22px; max-width: 86vw; text-align: center;
@@ -401,6 +431,7 @@ const GAME_FILES = [
   'data/models-enemies.js',
   'data/models-bosses.js',
   'data/auto-quality.js',
+  'data/quality-choice.js',
   'data/animations.js',
   'data/attack-poses.js',
   'data/audio.js',
@@ -486,7 +517,7 @@ const GAME_FILES = [
   'autoquality.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.1';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.2';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

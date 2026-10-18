@@ -245,7 +245,7 @@ const story = (() => {
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('storyRoad') },
       ] },
       storyTutorial: { title: 'PLAY THE TUTORIAL?', sub: '', back: 'storyRoad', items: [
-        { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => Game.loadingFirst(...A().card(C.tutorial.level), () => A().newGame(true)) },
+        { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => game.chooseTutorialQuality(() => Game.loadingFirst(...A().card(C.tutorial.level), () => A().newGame(true))) },
         { name: 'No', desc: `Straight to ${A().levelName(first)}.`, go: () => Game.loadingFirst(...A().card(first), () => A().newGame(false)) },
       ] },
       storyBegin: { title: C.menuTitle, sub: C.menuSub, back: 'storyRoad', items: [
@@ -258,7 +258,7 @@ const story = (() => {
       storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'main',
         items: STORIES.flatMap(S => { const c = campaigns[S.id];
           return c.storyLevels().map(id => ({ name: `${S.short}: ${c.levelName(id)}`, desc: 'Developer: starts a fresh story here (that road\'s save is replaced).',
-            go: () => { story.use(S.id); if (S.tutorial && id === S.tutorial.level) c.newGame(true); else c.jumpTo(id); } })); }) },
+            go: () => { story.use(S.id); if (S.tutorial && id === S.tutorial.level) game.chooseTutorialQuality(() => c.newGame(true), 'storyJump'); else c.jumpTo(id); } })); }) },
     } };
   }
 

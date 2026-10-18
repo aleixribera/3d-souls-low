@@ -45,6 +45,15 @@ const Game = {
     const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
     return {
       ...S.screens, ...elden.screens(this),
+      tutorialQuality: { title: 'CHOOSE YOUR QUALITY', sub: 'Pick the look you prefer. You can change it later in Options.',
+        back: this.tutorialQualityBack || 'storyTutorial',
+        items: QUALITY_CHOICES.map(choice => ({ ...choice, desc: choice.systems, go: () => {
+          const start = this.tutorialQualityStart;
+          if (!start) return;
+          settings.graphics = choice.id; saveSettings(); applySettings();
+          this.tutorialQualityStart = null;
+          start();
+        } })) },
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         ...S.main,
         { name: '1v1 Arena', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
@@ -100,7 +109,18 @@ const Game = {
       ] },
     };
   },
+  chooseTutorialQuality(start, back = 'storyTutorial') {
+    const measured = autoQuality.result();
+    const recommendation = measured && measured.width === innerWidth && measured.height === innerHeight && measured.pixelRatio === (devicePixelRatio || 1)
+      ? measured : autoQuality.recheck();
+    this.tutorialQualityRecommendation = recommendation.pick;
+    this.tutorialQualityStart = start; this.tutorialQualityBack = back;
+    this.showMenu('tutorialQuality');
+    const selected = QUALITY_CHOICES.findIndex(c => c.id === autoQuality.effective());
+    this.select(Math.max(0, selected));
+  },
   showMenu(screen, keepSelection) {
+    if (screen !== 'tutorialQuality') this.tutorialQualityStart = null;
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
     const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main');   // options open from the title or from a pause
@@ -111,6 +131,7 @@ const Game = {
     } else this.mode = 'pause';
     this.screen = screen; input.clear(); this.setLock(null);
     if (document.pointerLockElement) document.exitPointerLock();
+    $('menu').classList.toggle('quality-choice', screen === 'tutorialQuality');
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
@@ -119,9 +140,22 @@ const Game = {
     this.menuItems = s.items;   // what select() and adjust() read, so a key press never rebuilds every screen
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
+      b.type = 'button';
       b.className = 'menuBtn' + (it.adjust ? ' adj' : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
+      if (screen === 'tutorialQuality') {
+        const frame = document.createElement('span'); frame.className = 'quality-image';
+        const img = document.createElement('img'); img.src = it.image; img.alt = it.alt; img.width = 800; img.height = 600;
+        const look = document.createElement('span'); look.className = 'quality-look'; look.textContent = it.look;
+        frame.append(img, look); b.prepend(frame);
+        if (it.id === this.tutorialQualityRecommendation) {
+          const badge = document.createElement('span'); badge.className = 'quality-recommended'; badge.textContent = 'System recommended';
+          frame.appendChild(badge);
+        }
+        b.setAttribute('aria-label', `${it.name} quality. ${it.systems}. ${it.look}.${it.id === this.tutorialQualityRecommendation ? ' System recommended.' : ''}`);
+      }
+      b.addEventListener('focus', () => this.select(i));
       if (it.adjust) for (const [cls, d] of [['al', -1], ['ar', 1]]) {   // ‹ › : the setting can be stepped either way (clickable)
         const a = document.createElement('span'); a.className = cls; a.textContent = d < 0 ? '‹' : '›';
         a.addEventListener('click', ev => { ev.stopPropagation(); this.select(i); this.adjust(d); });
@@ -141,13 +175,17 @@ const Game = {
   showMenuHint() {
     const screen = this.screen, own = this.screens()[screen].hint;
     if (own) { $('menuHint').textContent = own; return; }
+    if (screen === 'tutorialQuality') {
+      $('menuHint').textContent = `${menuLabel('left')} · ${menuLabel('right')} to select · ${menuLabel('confirm')} to start tutorial · ${menuLabel('back')} to go back`;
+      return;
+    }
     $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
       (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
       (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
   },
   // One step of directional menu input (keys, D-pad or stick).
   menuStep(dir) {
-    if (dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' ? -1 : 1)); }
+    if (this.screen === 'tutorialQuality' || dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1)); }
     else this.adjust(dir === 'left' ? -1 : 1);
   },
   select(i) {
