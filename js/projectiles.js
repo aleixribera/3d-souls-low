@@ -47,7 +47,48 @@ const projectiles = (() => {
     return cx * cx + cz * cz <= reach * reach && cy >= b.y && cy <= b.y + b.height ? t : null;
   }
 
+  // Build the complete visual pool during loading as well as configuring a fired bolt.
+  function prepareLook(b, A) {
+    // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
+    // `look: 'dagger'` (v5.3): a spinning golden dagger (Margit's, js/spectral.js).
+    // `look: 'rock'` (v5.8): a tumbling stone of `size` (Maliketh's pebbles and boulder).
+    const slash = A.look === 'slash', dagger = A.look === 'dagger', rock = A.look === 'rock';
+    if (rock && !b.rock) {
+      b.rock = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x5a5048, roughness: 0.95, flatShading: true }));
+      b.mesh.add(b.rock);
+    }
+    if (b.rock) { b.rock.visible = rock; if (rock) b.rock.scale.set(A.size, A.size * 0.8, A.size * 1.1); }
+    if (dagger && !b.dagger) { b.dagger = spectral.thrownDagger(); b.mesh.add(b.dagger); }
+    if (b.dagger) b.dagger.visible = dagger;
+    if (slash && !b.slash) {
+      const geo = new THREE.RingGeometry(0.75, 1, 24, 1, 0, Math.PI);
+      b.slash = new THREE.Group();
+      for (const [r, op, col] of [[1, 0.95, 0xffd8a0], [1.15, 0.5, 0xff6a20]]) {
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+        m.scale.setScalar(r); b.slash.add(m);
+      }
+      b.mesh.add(b.slash);
+    }
+    if (b.slash) {
+      b.slash.visible = slash;
+      // `colors: [core, rim]` (v5.8): a slash of another light (Maliketh's crimson waves).
+      if (slash) { b.slash.scale.setScalar(A.size * 2.4); const [core, rim] = A.colors || [0xffd8a0, 0xff6a20]; b.slash.children[0].material.color.set(core); b.slash.children[1].material.color.set(rim); }
+    }
+    for (const c of b.mesh.children) if (c !== b.slash && c !== b.dagger && c !== b.rock) c.visible = !slash && !dagger && !rock;
+    if (!b.glow) {   // a soft glint on the head so a bolt reads in the dark (made on first use: glowSprite lives in visuals)
+      b.glow = glowSprite(P.glow, 1.4, P.glowSize, 0.7, 0.6); b.glow.position.z = P.length / 2 + 0.06; b.mesh.add(b.glow);
+    }
+    b.mesh.userData.warmUp = true;
+    for (const child of b.mesh.children) if (child.isGroup) child.userData.warmUp = true;
+  }
+
   return {
+    prepare(enemies) {
+      const looks = new Map();
+      for (const e of enemies) for (const a of e.baseDef.attacks) if (a.projectile) looks.set(a.projectile.look || 'arrow', a.projectile);
+      // Every slot may be used in a barrage. Prepare all looks for this level, including later phases.
+      for (const b of pool) for (const A of looks.values()) prepareLook(b, A);
+    },
     // Loose a bolt from `owner` (an enemy mid-attack) at the target body.
     // `spread: [rad, ...]` (v5.8): one bolt per angle, fanned off the facing (Maliketh's sling).
     fire(owner, attack, target) {
@@ -66,35 +107,7 @@ const projectiles = (() => {
       const dy = target.y + target.height * P.aimAt - b.y;
       b.vx = s * A.speed; b.vz = c * A.speed; b.vy = dy / t + 0.5 * A.gravity * t;
       b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed = false; b.live = true;
-      // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
-      // `look: 'dagger'` (v5.3): a spinning golden dagger (Margit's, js/spectral.js).
-      // `look: 'rock'` (v5.8): a tumbling stone of `size` (Maliketh's pebbles and boulder).
-      const slash = A.look === 'slash', dagger = A.look === 'dagger', rock = A.look === 'rock';
-      if (rock && !b.rock) {
-        b.rock = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x5a5048, roughness: 0.95, flatShading: true }));
-        b.mesh.add(b.rock);
-      }
-      if (b.rock) { b.rock.visible = rock; if (rock) b.rock.scale.set(A.size, A.size * 0.8, A.size * 1.1); }
-      if (dagger && !b.dagger) { b.dagger = spectral.thrownDagger(); b.mesh.add(b.dagger); }
-      if (b.dagger) b.dagger.visible = dagger;
-      if (slash && !b.slash) {
-        const geo = new THREE.RingGeometry(0.75, 1, 24, 1, 0, Math.PI);
-        b.slash = new THREE.Group();
-        for (const [r, op, col] of [[1, 0.95, 0xffd8a0], [1.15, 0.5, 0xff6a20]]) {
-          const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
-          m.scale.setScalar(r); b.slash.add(m);
-        }
-        b.mesh.add(b.slash);
-      }
-      if (b.slash) {
-        b.slash.visible = slash;
-        // `colors: [core, rim]` (v5.8): a slash of another light (Maliketh's crimson waves).
-        if (slash) { b.slash.scale.setScalar(A.size * 2.4); const [core, rim] = A.colors || [0xffd8a0, 0xff6a20]; b.slash.children[0].material.color.set(core); b.slash.children[1].material.color.set(rim); }
-      }
-      for (const c of b.mesh.children) if (c !== b.slash && c !== b.dagger && c !== b.rock) c.visible = !slash && !dagger && !rock;
-      if (!b.glow) {   // a soft glint on the head so a bolt reads in the dark (made on first use: glowSprite lives in visuals)
-        b.glow = glowSprite(P.glow, 1.4, P.glowSize, 0.7, 0.6); b.glow.position.z = P.length / 2 + 0.06; b.mesh.add(b.glow);
-      }
+      prepareLook(b, A);
       b.mesh.visible = true;
       events.emit('shot', { enemy: owner, bolt: b });
       return b;

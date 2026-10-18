@@ -1,0 +1,25 @@
+{
+  "summary": "10/10 passed in 8.2 s",
+  "failed": [],
+  "passed": [
+    "the burning town: Level 2 leads into it and it into the Tower; the Levels menu shows it as Level 3, the Tower as Level 4",
+    "the burning town: 17 enemies with the church Bowman (plus an optional Knight), its HP between Level 2's and the Tower's",
+    "the burning town: a scripted run opens every gate in turn and completes the level; the camera never enters a house",
+    "the burning town: the steep street's barricade falls with its Lancer, the balcony Bowman optional; up through the stair house, and a jump over its low rail back down",
+    "the burning town: the shortcut is shut from below, opens for good from the fountain square, and leads down to bonfire 1",
+    "the burning town: resting at the tavern is not blocked by the church square, and makes it the respawn point",
+    "the burning town: the gallery Bowman is optional, and once the church square is won it is not brought back",
+    "the burning town: the overlook is the one drop that hurts (by the numbers); rails hold elsewhere, and nothing kills",
+    "the burning town: the far castle is on screen from most of the main path, facing along it",
+    "the burning town: frame time on the church square, against Test: Courtyard"
+  ],
+  "metrics": {
+    "townCastleSeen": 0.62,
+    "burningTownFrame": {
+      "churchSquareMs": 1.8,
+      "courtyardMs": 1.42,
+      "lights": 8
+    }
+  },
+  "errors": []
+}

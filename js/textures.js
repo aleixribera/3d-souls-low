@@ -11,15 +11,19 @@
 function TEXCORE_FACTORY(S, seeded) {
   const TAU = Math.PI * 2;
   // ---- tileable value noise with separate periods per axis (so streaks and ridges can be stretched) ----
-  const hash = (ix, iy, s) => {
-    let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1442695041)) | 0;
+  const hash = value => {
+    let h = value | 0;
     h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   };
   const wrap = (a, p) => ((a % p) + p) % p;
   const vnoise = (x, y, px, py, s) => {
     const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-    const x0 = wrap(ix, px), x1 = wrap(ix + 1, px), y0 = wrap(iy, py), y1 = wrap(iy + 1, py);
-    const a = hash(x0, y0, s), b = hash(x1, y0, s), c = hash(x0, y1, s), d = hash(x1, y1, s);
+    // Grid samples already lie inside their period; only warped coordinates need modulo. Each axis and seed
+    // contributes to two corners, so calculate those integer products once rather than four times.
+    const x0 = ix >= 0 && ix < px ? ix : wrap(ix, px), x1 = x0 + 1 === px ? 0 : x0 + 1;
+    const y0 = iy >= 0 && iy < py ? iy : wrap(iy, py), y1 = y0 + 1 === py ? 0 : y0 + 1;
+    const ax = Math.imul(x0, 374761393), bx = Math.imul(x1, 374761393), ay = Math.imul(y0, 668265263), by = Math.imul(y1, 668265263), seed = Math.imul(s, 1442695041);
+    const a = hash(ax + ay + seed), b = hash(bx + ay + seed), c = hash(ax + by + seed), d = hash(bx + by + seed);
     return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
   };
   // u, v in 0..1; fx, fy whole numbers of lattice cells across the texture; result 0..1.
@@ -170,13 +174,19 @@ function TEXCORE_FACTORY(S, seeded) {
   };
 
   // ---- baking ---------------------------------------------------------------------------------------------
-  function bake(def, size, tint, decay, seed) {
+  const surfaces = new Map();
+  let surfaceBytes = 0;
+  function surface(def, size, decay, seed) {
+    const key = `${def.id}|${size}|${decay}|${seed}`;
+    if (surfaces.has(key)) {
+      const hit = surfaces.get(key); surfaces.delete(key); surfaces.set(key, hit); return hit;
+    }
     const n = size * size, pat = PATTERNS[def.kind], k = def.scale || 1;
-    const H = new Float32Array(n), C = new Float32Array(n * 3), R = new Float32Array(n), A = def.alpha ? new Float32Array(n).fill(1) : null;
+    // Keep colour at JS precision until tinting: the original baker rounded to float32 AFTER multiplying by tint.
+    const H = new Float32Array(n), C = new Float64Array(n * 3), R = new Float32Array(n), A = def.alpha ? new Float32Array(n).fill(1) : null;
     const base = rgb(def.base), alt = rgb(def.alt), acc = rgb(def.accent), stain = rgb(def.stain ?? 0x201a14);
     const out = { h: 0, mix: 0, acc: 0, a: 1, dark: 0 };
     const [r0, r1] = def.rough, dim = 1 - decay * 0.18;
-    const tn = rgb(tint), tm = Math.max(tn[0], tn[1], tn[2]) || 1, tr = tn[0] / tm, tg = tn[1] / tm, tb = tn[2] / tm;
     for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
       const i = y * size + x, u = x / size, v = y / size;
       out.dark = 0; out.a = 1; out.acc = 0;
@@ -191,10 +201,29 @@ function TEXCORE_FACTORY(S, seeded) {
         col += (acc[c] - col) * a;
         col *= shade * dim;
         col += (stain[c] - col) * sw;
-        C[i * 3 + c] = col * (c === 0 ? tr : c === 1 ? tg : tb);
+        C[i * 3 + c] = col;
       }
       H[i] = out.h * (1 - sw * 0.2); R[i] = r0 + (r1 - r0) * Math.min(1, mix * 0.35 + a * 0.6 + (1 - out.h) * 0.25 + sw * 0.4);
       if (A) A[i] = out.a;
+    }
+    const result = { size, H, C, R, A }, bytes = H.byteLength + C.byteLength + R.byteLength + (A ? A.byteLength : 0);
+    const limit = S.surfaceCacheBytes || 0;
+    if (bytes <= limit) {
+      while (surfaceBytes + bytes > limit && surfaces.size) {
+        const oldest = surfaces.keys().next().value, old = surfaces.get(oldest);
+        surfaceBytes -= old.H.byteLength + old.C.byteLength + old.R.byteLength + (old.A ? old.A.byteLength : 0);
+        surfaces.delete(oldest);
+      }
+      surfaces.set(key, result); surfaceBytes += bytes;
+    }
+    return result;
+  }
+  function bake(def, size, tint, decay, seed) {
+    const src = surface(def, size, decay, seed), n = size * size;
+    const H = src.H, A = src.A, R = src.R.slice(), C = new Float32Array(n * 3);
+    const tn = rgb(tint), tm = Math.max(tn[0], tn[1], tn[2]) || 1, tr = tn[0] / tm, tg = tn[1] / tm, tb = tn[2] / tm;
+    for (let i = 0; i < n; i++) {
+      C[i * 3] = src.C[i * 3] * tr; C[i * 3 + 1] = src.C[i * 3 + 1] * tg; C[i * 3 + 2] = src.C[i * 3 + 2] * tb;
     }
     // Grime in creases, wear on edges: compare each height with the average of its neighbours.
     const rch = S.cavityReach, cvk = def.cavity ?? 1, metal = def.metal > 0 ? 1 : 0.45;
@@ -239,7 +268,7 @@ function TEXCORE_FACTORY(S, seeded) {
 const TEXLIB = (() => {
   const S = TEXTURE_SETTINGS, CORE = TEXCORE_FACTORY(S, seeded);
   const DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
-  const cache = new Map(), matCache = new Map();
+  const cache = new Map(), matCache = new Map(), surfaceMaps = new Map();
   const stats = { textures: 0, ms: 0, last: [] };
 
   const canvasOf = (size, px) => {
@@ -256,8 +285,16 @@ const TEXLIB = (() => {
   const keyOf = (name, tint, d, size) => `${name}|${tint.toString(16)}|${d.toFixed(2)}|${size}`;
   // A finished entry from packed pixels (made here or in the worker).
   const store = (key, name, tint, d, size, P, ms) => {
-    const entry = { name, tint, decay: d, size, map: texOf(canvasOf(size, P.map), true), rough: texOf(canvasOf(size, P.rough), false),
-                    bump: texOf(canvasOf(size, P.bump), false), def: DEFS[name] };
+    // Roughness (green) and bump height (red) have identical UVs and never depend on tint. One shared map retains
+    // the original bytes in the channels Three reads, replacing two RGBA textures for EVERY colour variant.
+    const surfaceKey = `${name}|${d.toFixed(2)}|${size}`;
+    let packed = surfaceMaps.get(surfaceKey);
+    if (!packed) {
+      for (let i = 0; i < P.rough.length; i += 4) P.rough[i] = P.bump[i];
+      packed = texOf(canvasOf(size, P.rough), false); surfaceMaps.set(surfaceKey, packed);
+    }
+    const entry = { name, tint, decay: d, size, map: texOf(canvasOf(size, P.map), true), rough: packed,
+                    bump: packed, def: DEFS[name] };
     cache.set(key, entry); stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`);
     return entry;
   };

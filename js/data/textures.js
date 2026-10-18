@@ -17,6 +17,7 @@ const TEXTURE_SETTINGS = {
   decayStep: 0.1,     // decay is rounded to this so near-equal requests share one texture
   scratchLength: [10, 48],
   cavityReach: 2,     // px: how far the crease / edge test looks
+  surfaceCacheBytes: 4 * 1024 * 1024, // bounded CPU cache of untinted surfaces, shared by colour variants
 };
 const TEXTURE_DEFS = [
   { id: 'rustedIron', kind: 'rust', base: 0x4a4540, alt: 0x6a625a, accent: 0x8a4a22, rough: [0.45, 0.95], metal: 0.3, bump: 1.4, scratch: 30, stain: 0x2a1c12 },

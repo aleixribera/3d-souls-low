@@ -1611,7 +1611,7 @@
     const e = Game.duel, B = A.ENEMY_BY_ID;
     expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'its posture shows on the big bar at the top of the screen');
     expect.ok(A.hud.eBars.textContent.includes('Pillager Captain'), 'named on the boss bar');
-    expect.near(e.def.hp, 900, 50, 'about 900 HP (v5.2: boss bars doubled)');
+    expect.near(e.def.hp, 1800, 0, '1800 HP (doubled from 900)');
     expect.above(e.def.hp, Math.max(B.knight.hp, B.warden.hp), 'tougher than either of Level 2\'s throne pair');
     expect.below(e.def.hp, B.bellWarden.hp, 'less than the Bell Warden');
     expect.ok(e.def.weapon === 'halberd' && e.def.visual.embers === true && !!e.rig.embers, 'a halberd with embers');
@@ -1649,6 +1649,60 @@
     const d = Game.duel; let n = 0;
     while (d.state !== ES.BROKEN && n++ < 30) { d.takeHit(strikeOf('heavy'), behind(d)); sim.step(10); }
     expect.ok(d.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+  });
+
+  // ---- Story boss moves borrowed from the existing Elden Ring bosses -------------------------------------------
+  const STORY_BOSS_MOVES = [
+    { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
+    { id: 'pillagerCaptain', level: 'burning-town', hp: 1800, total: 5, added: 2 },
+    { id: 'bellWarden', level: 'the-tower', hp: 2600, total: 6, added: 2 },
+  ];
+  test('Story boss moves: exactly 1 / 2 / 2 additions and doubled health in levels and duels', () => {
+    for (const b of STORY_BOSS_MOVES) {
+      const d = A.ENEMY_BY_ID[b.id];
+      expect.ok(d.attacks.length === b.total && d.attacks.filter(a => a.origin).length === b.added, `${b.id}: exact move counts`);
+      Game.startFight(b.id); sim.begin();
+      expect.ok(Game.duel.hp === b.hp && Game.duel.def.hp === b.hp, `${b.id}: doubled duel health`);
+      Game.startLevel(b.level); sim.begin();
+      const e = Game.enemies.find(e => e.def.id === b.id);
+      expect.ok(e && e.hp === b.hp && e.def.hp === b.hp, `${b.id}: doubled level health`);
+    }
+    expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave');
+    const aldric = A.ENEMY_BY_ID.varn;
+    expect.ok(aldric.hp === 1800 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1800 && aldric.phases.knell.hp === 2000, 'Aldric health unchanged');
+    expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');
+  });
+  test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
+    for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
+      const source = A.ENEMY_BY_ID[a.origin.enemy].attacks.find(s => s.id === a.origin.attack);
+      expect.ok(source && a !== source && a.hits !== source.hits && a.box !== source.box && a.tracking !== source.tracking, `${a.id}: independent copy`);
+      expect.ok(a.pose === source.pose && JSON.stringify(a.tracking) === JSON.stringify(source.tracking) && a.recovery === source.recovery, `${a.id}: source animation and timing`);
+      expect.ok(!a.followUps, `${a.id}: no branches into the source boss's other moves`);
+      for (let i = 0; i < a.hits.length; i++) {
+        const h = a.hits[i], s = source.hits[i];
+        expect.ok(h !== s && h.startup === s.startup && h.active === s.active && h.follow === s.follow, `${a.id}/${i}: source hit timing`);
+        expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}/${i}: roll margin`);
+      }
+    }
+  });
+  test('Story boss moves: every borrowed attack strikes, deals damage and recovers with rendering', () => {
+    for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
+      Game.startFight(b.id); sim.begin();
+      const p = Game.player, e = Game.duel;
+      sturdy(p); faceOff(e, p, 2); quiet(e);
+      const hp = p.hp, seen = new Set();
+      e.beginAttack(a);
+      Game.render(1, STEP);
+      const done = sim.until(() => {
+        if (e.state === ES.ACTIVE && !seen.has(e.hitIndex)) { seen.add(e.hitIndex); Game.render(1, STEP); }
+        return e.state === ES.RECOVER;
+      }, 15);
+      Game.render(1, STEP);
+      expect.ok(done >= 0 && seen.size === a.hits.length, `${a.id}: every hit and a recovery`);
+      expect.below(p.hp, hp, `${a.id}: can damage the player`);
+      sim.until(() => e.state !== ES.RECOVER, 5);
+      expect.ok(e.state === ES.CHASE && e.cooldown > 0 && Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.z), `${a.id}: completes at a finite position`);
+    }
   });
 
   // ---- v4.0 Level 3: The Burning Town ----------------------------------------------------------------------------
@@ -1691,7 +1745,8 @@
     expect.ok(main.length === 17, `${main.length} enemies on the main path`);
     expect.ok(L.dispersed.some(s => s.enemy === 'knight' && s.behavior === 'slumber'), 'a sleeping Knight off the path');
     const town = main.reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0), keep = hpOf(A.LEVEL_2), tower = hpOf(A.LEVEL_4);
-    expect.ok(town > keep * 1.8 && town < keep * 2.7 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
+    // The Captain's doubled boss bar lifts the town above the old 2.7x cap; it still sits below the Tower.
+    expect.ok(town > keep * 1.8 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
     const debut = id => L.gated.findIndex(z => z.enemies.some(m => m.enemy === id));
     const alone = id => L.gated.find(z => z.enemies.some(m => m.enemy === id)).enemies.length;
     expect.ok(alone('lancer') === 1 && alone('duelist') === 1, 'the Lancer and the Duelist are met alone first');
@@ -3080,6 +3135,68 @@
       settings.cameraMotion = false; Game.render(1, STEP);
       expect.ok(camera.fov === CONFIG.camera.fov, 'off: the plain field of view');
     } finally { settings.cameraMotion = saved; }
+  });
+  test('Low performance: native resolution and dormant post targets stay small', () => {
+    try {
+      A.visuals.setQuality('low');
+      const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+      expect.ok(size.x === Math.floor(innerWidth * Math.min(devicePixelRatio, 1)) && size.y === Math.floor(innerHeight * Math.min(devicePixelRatio, 1)), '100% rendering, capped at one pixel per CSS pixel');
+      for (const target of [A.visuals.composer.renderTarget1, A.visuals.composer.renderTarget2]) expect.ok(target.width === 1 && target.height === 1, 'unused HDR targets stay at 1x1');
+    } finally { restoreQuality(); }
+  });
+  test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
+    try {
+      A.visuals.setQuality('low'); sim.begin();
+      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
+        A.elden.start(id);
+        expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
+        const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;
+        const enemy = Game.enemies[0], shot = enemy.baseDef.attacks.find(a => a.projectile);
+        if (shot) {
+          for (let i = 0; i < CONFIG.projectile.max; i++) projectiles.fireOne(enemy, shot, Game.player, 0);
+          Game.render(1, STEP);
+          expect.ok(TEXLIB.count() === textures, `${id}: firing needs no texture baking`);
+          expect.ok(renderer.info.memory.geometries === geometry, `${id}: every bolt's geometry is already uploaded`);
+          projectiles.clear();
+        }
+        const viewport = renderer.getViewport(new THREE.Vector4());
+        expect.ok(viewport.z === innerWidth && viewport.w === innerHeight && !renderer.getScissorTest(), 'warm-up restores the full viewport');
+      }
+      Game.startLevel('final-castle');
+      expect.ok(Game.enemies.length > 30 && Game.zones.every(z => z.spawned), 'the whole level cast is instantiated before play');
+    } finally { projectiles.clear(); restoreQuality(); }
+  });
+  test('Low performance: packed surface channels preserve height and roughness across tints', () => {
+    const opts = { size: 64, decay: 0.5 }, a = TEXLIB.get('rustedIron', opts), b = TEXLIB.get('rustedIron', { ...opts, tint: 0x5a3020 });
+    expect.ok(a.rough === a.bump && a.rough === b.rough && a.map !== b.map, 'tints share one packed surface map and keep separate colours');
+    const core = TEXCORE_FACTORY(TEXTURE_SETTINGS, seeded), def = TEXTURE_DEFS.find(d => d.id === 'rustedIron');
+    const raw = core.pack(core.bake(def, 64, 0xffffff, 0.5, strSeed('rustedIron')));
+    const packed = a.rough.image.getContext('2d').getImageData(0, 0, 64, 64).data;
+    let same = true;
+    for (let i = 0; i < packed.length; i += 4) if (packed[i] !== raw.bump[i] || packed[i + 1] !== raw.rough[i + 1]) { same = false; break; }
+    expect.ok(same, 'Three reads the exact original height from red and roughness from green');
+  });
+  test('Low performance: every model vertex uses exactly one bone', () => {
+    const was = KIT.detail();
+    try {
+      KIT.setDetail({ geo: 1, tex: 1 });
+      for (const id of Object.keys(MODEL_DEFS)) {
+        let valid = true;
+        for (const p of KIT.modelParts(id).parts) {
+          const weights = p.geo.attributes.skinWeight.array;
+          for (let i = 0; i < weights.length; i += 4) if (weights[i] !== 1 || weights[i + 1] || weights[i + 2] || weights[i + 3]) { valid = false; break; }
+        }
+        expect.ok(valid, `${id}: rigid shader matches its skin weights`);
+      }
+    } finally { KIT.setDetail(was); }
+  });
+  test('Loading: time spent building counts toward the title hold', () => {
+    try {
+      Game.loadStarted = performance.now() - 3000; Game.showLoading('Ready', '');
+      expect.ok(Game.loading === CONFIG.loading.readyTime, 'a long build does not add another full title delay');
+      Game.loadStarted = null; Game.showLoading('Fresh', '');
+      expect.ok(Game.loading === CONFIG.loading.time, 'a direct start keeps the normal title hold');
+    } finally { Game.loadStarted = null; }
   });
   test('Loading: the title card waits for nothing under the test clock', () => {
     sim.begin();

@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v6.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v6.2';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -117,9 +117,9 @@ const CONFIG = {
   // Bonfires are checkpoints: resting keeps dead every enemy killed before it (until the level restarts); everything
   // else, including enemies killed since the last rest, comes back at full health on a rest or a death.
   rest: { range: 2.4, time: 1.6, blockRange: 10, messageTime: 2.0, respawnOffset: 1.2 },
-  // Loading screen (js/game.js): shown for `time` s when a level or duel starts, the world frozen behind it, then
+  // Loading screen (js/game.js): `time` includes work behind the title card, with at least `readyTime` after preparation,
   // fades out over `fade` s. It carries a level tip and the controller note.
-  loading: { time: 1.4, fade: 0.6 },
+  loading: { time: 1.4, readyTime: 0.1, fade: 0.6 },
   // Story mode (js/story.js): the one save slot, its format version (a save of another version is refused), and how
   // long a chapter's title holds over its loading screen (s).
   // Lore (js/lore.js, js/data/lore.js, v5.1): the NPC and inscriptions. Ranges in m, times in s. A line stays on
@@ -322,7 +322,7 @@ const CONFIG = {
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
       // ultra: every extra of VISUALS.ultra (moon shadows, ambient occlusion, volumetric light, reflections and
       // the Ultra effects of js/ultra-fx.js). The order here is the order of the Graphics option.
-      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 0.75, antialias: false, bloomScale: 1,
+      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 1, antialias: false, bloomScale: 1,
               lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false },
       high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false },

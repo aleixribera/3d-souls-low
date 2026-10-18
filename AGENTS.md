@@ -1,6 +1,6 @@
 # Project Guidelines
 
-Current version: **v6.1** (v6.1 — Performance and Loading) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 added the second, Godrick the Grafted; v5.5 added the third, the Crucible Knight; v5.6 added the fourth, Morgott, the Omen King; v5.7 added Radagon of the Golden Order; v6.0 added the Ultra graphics preset, remade models, boss attack effects and a visual overhaul of the levels. v6.1 reduces rendering overhead, model subdivision and loading time while preserving the main Ultra effects.
+Current version: **v6.2** (v6.2 — Story Bosses and Low Graphics Optimizations) (`VERSION` in `js/config.js`). The game is complete: Story mode (Tutorial, Levels 1–5, the ending), plus Levels, Enemies (duels) and Elden Ring Bosses, with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 added the second, Godrick the Grafted; v5.5 added the third, the Crucible Knight; v5.6 added the fourth, Morgott, the Omen King; v5.7 added Radagon of the Golden Order; v6.0 added the Ultra graphics preset, remade models, boss attack effects and a visual overhaul of the levels. v6.1 reduces rendering overhead, model subdivision and loading time while preserving the main Ultra effects. v6.2 doubles the three pre-Aldric story bosses' health, adds borrowed Elden Ring moves, and optimizes Low graphics at native resolution with shared texture maps and improved loading.
 
 **`LORE.md` is the source of truth for the story.** Every in-game story text (dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards) must agree with it. Change the story in LORE.md first, then in the game, and keep LORE.md updated.
 
@@ -18,6 +18,8 @@ Current version: **v6.1** (v6.1 — Performance and Loading) (`VERSION` in `js/c
   - Run tests before every commit when modifying core combat, terrain, or movement logic[cite: 1].
 
 ## Architectural Rules
+Story boss additions live in `js/data/story-boss-moves.js`, loaded after `data/elden-bosses.js`: one cloned move for Giant Skeleton (Godfrey), two for Pillager Captain (Godrick/Crucible Knight), and two for Bell Warden (Radagon; Skyfall Toll's area shockwave was removed for balance). Their HP in `enemies.js` is doubled to 1920 / 1800 / 2600. The clones keep source timings, poses and movement, with story damage tuning and no foreign follow-up references; `origin: { enemy, attack }` records each source. Level 2's throne pair are regular enemies. Aldric and the Elden Ring source bosses are unchanged. Tests: `run('Story boss moves')`.
+
 1. **Content is Data:** All game entities (enemies, levels, items, attacks) must reside as plain data objects in `js/data/` or `js/levels/`[cite: 1]. Do not hardcode content into engine logic[cite: 1].
 2. **ID Referencing:** All entities, objects, and assets must be referenced strictly by string `id`, never by array index[cite: 1].
 3. **Fail-Fast Validation:** Validate data schemas and references on initialization[cite: 1]. Broken references must throw an explicit, readable error at load[cite: 1].

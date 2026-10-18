@@ -377,7 +377,12 @@ void main() {
 
   visuals.hooks.quality.push(q => setOn(!!q.ultra));
   visuals.hooks.resize.push((w, h) => {
-    W = w; H = h; makeTargets();
+    W = w; H = h;
+    if (on) makeTargets();
+    else if (gbuf) {
+      for (const t of [gbuf, lightA, lightB]) { t.dispose(); if (t.depthTexture) t.depthTexture.dispose(); }
+      gbuf = lightA = lightB = null;
+    }
     compMat.uniforms.uAspect.value = visMat.uniforms.uAspect.value = w / h;
   });
   visuals.hooks.stage.push(def => {

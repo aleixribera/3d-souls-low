@@ -66,7 +66,7 @@ const ENEMY_DEFS = [
     id: 'giant', model: 'giantSkeleton', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
-    hp: 960, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
+    hp: 1920, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
     cooldown: [1.26, 2.38], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
     // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
@@ -196,7 +196,7 @@ const ENEMY_DEFS = [
     description: 'The invaders\' commander, who put Corvel to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
-    hp: 900, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
+    hp: 1800, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
     posture: { max: 100, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     attacks: [
@@ -215,7 +215,7 @@ const ENEMY_DEFS = [
     id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
-    hp: 1300, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
+    hp: 2600, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
     cooldown: [1.12, 2.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     posture: { max: 120, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.2 },
     attacks: [

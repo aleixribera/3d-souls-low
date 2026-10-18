@@ -1,0 +1,11 @@
+{
+  "summary": "3/3 passed in 10.6 s",
+  "failed": [],
+  "passed": [
+    "Story boss moves: exactly 1 / 2 / 3 additions and doubled health in levels and duels",
+    "Story boss moves: source animations and hit data are preserved without shared objects or foreign branches",
+    "Story boss moves: every borrowed attack strikes, deals damage and recovers with rendering"
+  ],
+  "metrics": {},
+  "errors": []
+}

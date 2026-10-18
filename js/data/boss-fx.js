@@ -61,9 +61,11 @@ const BOSS_FX = {
     dance: { element: 'rot', impact: 'bloom' }, dance2: { element: 'rot', impact: 'bloom' }, slamRot: { element: 'rot', impact: 'bloom' },
     aeoniaOpen: { element: 'rot', impact: 'bloom', windup: 'gather' }, aeonia: { element: 'rot', impact: 'bloom', windup: 'gather' }, phantoms: { element: 'rot' } } },
   // The story's bosses.
-  giant: { element: 'bone', aura: 0xd8d0c0, attacks: { stomp: { impact: 'shatter', windup: 'gather' } } },
+  giant: { element: 'bone', aura: 0xd8d0c0, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
+    giantBonebreaker: { impact: 'shatter' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, attacks: { captainOverhead: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
-  bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { bellSlam: { impact: 'toll', windup: 'gather' } } },
+  bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { bellSlam: { impact: 'toll', windup: 'gather' },
+    bellHammerChain: { impact: 'toll' }, bellStompChop: { impact: 'toll' } } },
   varn: { element: 'steel', aura: 0xff8040, phases: { throne: 'fire', knell: 'fire' }, attacks: {
     varnStomp: { impact: 'shatter' }, varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     knellStomp: { impact: 'blaze' }, tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },

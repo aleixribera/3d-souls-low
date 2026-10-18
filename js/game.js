@@ -187,7 +187,8 @@ const Game = {
     $('loadName').textContent = name; $('loadTip').textContent = tip || ''; $('loadPadText').textContent = CONFIG.hud.text.controller;
     document.documentElement.style.setProperty('--load-fade', CONFIG.loading.fade + 's');
     $('loading').classList.add('show');
-    this.loading = CONFIG.loading.time;
+    const elapsed = this.loadStarted == null ? 0 : (performance.now() - this.loadStarted) / 1000;
+    this.loading = Math.max(CONFIG.loading.readyTime, CONFIG.loading.time - elapsed);
   },
   // The title card first, the work after: shows the loading screen (a level's name and line) and waits until it is on
   // screen before `fn` builds the level, so a long build never looks like a freeze. Under a hand-stepped clock (tests)
@@ -196,9 +197,13 @@ const Game = {
     if (this.pendingLoad) return;
     if (this.manualClock) { fn(); return; }
     this.pendingLoad = true; this.mode = 'loading'; input.clear();
+    this.loadStarted = performance.now();
     $('loadName').textContent = name; $('loadTip').textContent = tip || ''; $('loadPadText').textContent = CONFIG.hud.text.controller;
     $('loading').classList.add('show'); $('menu').classList.add('hidden');
-    requestAnimationFrame(() => requestAnimationFrame(() => { this.pendingLoad = false; fn(); }));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      this.pendingLoad = false;
+      try { fn(); } finally { this.loadStarted = null; }
+    }));
   },
   // What a level's loading screen says: its chapter title and line in Story mode, else its name and description.
   levelCard(id) {

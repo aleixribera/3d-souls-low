@@ -1,6 +1,8 @@
-# Combat Arena 3D — v6.1: Performance and Loading
+# Combat Arena 3D — v6.2: Story Bosses and Low Graphics Optimizations
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v6.2:** doubled health and borrowed Elden Ring moves for the three story bosses before Aldric, with the Bell Warden's Skyfall area shockwave removed for balance. Low graphics now render at native resolution, with shared texture maps, simpler character shaders and improved loading.
 
 **The story.** Ashmere was green once. Now ash falls on it from a sky that never clears, and its king keeps a prison under his castle. You wake in one of its cells with no memory of how you came there. You break out of the Long Hall and the Sunken Keep, fight through Corvel, the river town the invaders burned, and climb the old watchtower to ring the Bell of Waking: by the old law, whoever rings it calls the king out to answer. In the last level he answers. Five levels, a tutorial, three bosses before the last, and an ending.
 
@@ -23,6 +25,8 @@ Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touc
 ## Graphics: Ultra (v6.0)
 
 **Options → Graphics** offers **Auto**, Low, High and **Ultra**. On the very first launch the game tests your graphics card for a moment and picks a preset for you (Auto), and says so on the title screen; you can change it at any time in Options (on the title screen or in the pause menu). Options with ‹ › arrows can be stepped either way.
+
+**Low** renders at 100% resolution with a pixel ratio capped at 1. Shared surface maps, simpler character shader work and faster loading preserve its existing model and texture detail. Enemies, hidden boss phases and required attack effects are prepared before gameplay. See [the LOW performance audit](docs/low-performance-audit.md) for measurements and limits.
 
 **Ultra** is for a dedicated graphics card: real moon shadows; ambient occlusion in every corner; light that glows in the fog round torches and braziers, and shafts of moonlight through the ruins outdoors; reflections on armour and steel; smooth, sculpted character models. Combat gets its own effects: steel sparks off a guard, blood that sprays and stains the floor, shockwaves that bend the air on heavy blows, star flares on parries, flashes of light, dust and flying stone from slams, smooth glowing weapon trails, souls rising from the fallen. Every boss has its own element (holy light, fire, blood, scarlet rot, the Black Blade's crimson, storm winds, earth), and each attack shows it: power gathering in the weapon before a heavy blow, light pillars, rings of fire, blood geysers, rot blooming, whirlwinds and roars that shake the arena. Gates grind and throw sparks, barricades burst into splinters, collapsing floors rain stone, and bonfires flare up as they catch.
 
@@ -73,9 +77,9 @@ Timings before and after are in `docs/combat-timings-v4.1.md`.
 
 Every boss can be broken and executed (see Executions).
 
-- **Giant Skeleton** (Level 1, the last of the Long Hall's gated fights) — a towering ruin of bone with a thigh-bone club: slow sweeps and a stomp.
-- **Pillager Captain** (Level 3) — halberd thrusts from afar, a three-cut combo to parry, a burning overhead to roll.
-- **Bell Warden** (Level 4) — a bronze colossus with a temple bell for a hammer: sweeps, an unblockable slam, a push off the tower, a charge.
+- **Giant Skeleton** (Level 1, the last of the Long Hall's gated fights) — **1920 HP** (doubled). A towering ruin of bone with a thigh-bone club: slow sweeps and a stomp, plus one new move, **Bonebreaker Chain** (Godfrey's Triple Axe Combo). Block or roll the chain's two sweeps and delayed chop; punish after the last blow.
+- **Pillager Captain** (Level 3) — **1800 HP** (doubled). Halberd thrusts from afar, a three-cut combo to parry, a burning overhead to roll, plus two new moves: **Dragging Halberd** (Godrick's Dragging Slash) and **Double Halberd Spin** (the Crucible Knight's Double Spin Slash). Block or roll the drag; the double spin can also be parried. Punish after the last cut.
+- **Bell Warden** (Level 4) — **2600 HP** (doubled). A bronze colossus with a temple bell for a hammer: sweeps, an unblockable slam, a push off the tower, a charge, plus two new moves: **Bell Hammer Chain** and **Stomp and Toll**, taken from Radagon's Hammer Combo and Foot Stomp/Overhead Chop. Both can be parried. The Skyfall Toll area shockwave has been removed.
 - **Aldric, the Gaoler King** (Level 5, outside and in the throne room) — a sweep, a two-step cleave, a delayed overhead, a lunge from range, a shoulder barge, an unblockable stomp, and the **Judgement Leap**: a long crouch, a leap along his locked aim and a crash that rings the ground (then he is open for a while). In the throne room he presses harder.
 - **Aldric, the Ember-Crowned** (his second phase) — faster, longer combos, fiercer tracking in his wind-ups (the commit points are as honest as ever), and four new attacks: the four-cut Tolling Chain, the Ash Wave thrown along the floor, the Burning Ascent into a leaping crash, and **The Last Toll**: the bell rings three times and three rings of fire sweep the room (roll each as it reaches you), then a blast at his feet. His armour cracks and burns, embers stream off him, and the boss drum quickens.
 

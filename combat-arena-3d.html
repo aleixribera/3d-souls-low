@@ -412,6 +412,7 @@ const GAME_FILES = [
   'data/bosses/radagon.js',
   'data/bosses/malenia.js',
   'data/elden-bosses.js',
+  'data/story-boss-moves.js',
   'data/boss-fx.js',
   'levels/arena.js',
   'levels/tutorial.js',
@@ -471,7 +472,7 @@ const GAME_FILES = [
   'autoquality.js',
   'boot.js',
 ];
-const LOAD_STAMP = Date.now();   // a fresh copy of every script on each page load: never a cached file mixed with new ones
+const LOAD_STAMP = '6.2';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

@@ -25,9 +25,64 @@ const server = http.createServer((req, res) => {
     const errors = [];
     page.on('pageerror', e => { errors.push(e.message); console.error('PAGE ERROR:', e.message); });
     page.on('console', m => { if (m.type() === 'error') { errors.push(m.text()); console.error(m.text().slice(0, 300)); } });
+    if (process.env.AUDIT_QUALITY) await page.addInitScript(quality => {
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: quality }));
+    }, process.env.AUDIT_QUALITY);
     await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; });
+    if (process.argv[3] === 'LOW') {
+      const hardware = await page.evaluate(() => {
+        const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
+        return { gpu: ext && gl.getParameter(ext.UNMASKED_RENDERER_WEBGL), dpr: devicePixelRatio };
+      });
+      if (process.env.AUDIT_NATIVE) await page.evaluate(() => { CONFIG.VISUALS.quality.low.renderScale = 1; });
+      const results = [];
+      for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'final-castle', 'margit', 'godrick', 'radagon', 'maliketh', 'malenia']) {
+        const row = await page.evaluate(async id => {
+          Game.manualClock = true; visuals.setQuality('low');
+          let seed = 12345;
+          Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+          const phases = {}, originals = [];
+          for (const [obj, key] of [[visuals, 'warmUp'], [visuals, 'dressStage'], [TEXLIB, 'get'], [TEXLIB, 'material']]) {
+            const fn = obj[key]; originals.push([obj, key, fn]);
+            obj[key] = function (...args) { const t = performance.now(); try { return fn.apply(this, args); } finally { phases[key] = (phases[key] || 0) + performance.now() - t; } };
+          }
+          const t = performance.now(), textures = TEXLIB.count();
+          if (ELDEN_BOSSES.some(b => b.id === id)) elden.start(id); else Game.startLevel(id);
+          const loadMs = performance.now() - t;
+          for (const [obj, key, fn] of originals) obj[key] = fn;
+          const t1 = performance.now(); Game.reset(); const retryMs = performance.now() - t1;
+          Game.loading = 0; document.getElementById('loading').classList.remove('show');
+          const cpu = [], gpu = [], calls = [], triangles = [], pending = [];
+          const gl = renderer.getContext(), timer = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+          for (let i = 0; i < 36; i++) {
+            await new Promise(requestAnimationFrame);
+            const query = timer ? gl.createQuery() : null;
+            if (query) gl.beginQuery(timer.TIME_ELAPSED_EXT, query);
+            Game.update(CONFIG.step); const t = performance.now(); Game.render(1, CONFIG.step);
+            if (query) { gl.endQuery(timer.TIME_ELAPSED_EXT); pending.push(query); }
+            cpu.push(performance.now() - t); calls.push(renderer.info.render.calls); triangles.push(renderer.info.render.triangles);
+          }
+          for (let i = 0; pending.length && i < 120; i++) {
+            await new Promise(requestAnimationFrame);
+            for (let j = pending.length - 1; j >= 0; j--) if (gl.getQueryParameter(pending[j], gl.QUERY_RESULT_AVAILABLE)) {
+              if (!gl.getParameter(timer.GPU_DISJOINT_EXT)) gpu.push(gl.getQueryParameter(pending[j], gl.QUERY_RESULT) / 1e6);
+              gl.deleteQuery(pending[j]); pending.splice(j, 1);
+            }
+          }
+          for (const query of pending) gl.deleteQuery(query);
+          const median = a => a.sort((a, b) => a - b)[Math.floor(a.length / 2)];
+          return { id, loadMs, retryMs, phases, newTextures: TEXLIB.count() - textures, textureBakeMs: TEXLIB.stats.ms,
+            cpuMs: median(cpu), gpuMs: median(gpu), calls: median(calls), triangles: median(triangles), size: [canvas.width, canvas.height],
+            enemies: Game.enemies.length, memory: { ...renderer.info.memory }, programs: renderer.info.programs.length };
+        }, id);
+        results.push(row); console.log(JSON.stringify(row));
+        await page.screenshot({ path: path.join(output, id + '.png') });
+      }
+      fs.writeFileSync(path.join(output, 'low.json'), JSON.stringify({ hardware, results, errors }, null, 2));
+      return;
+    }
     if (process.argv[3] === 'MODELS') {
       await page.waitForFunction(() => typeof MODELLAB !== 'undefined' && MODELLAB.open);
       const rows = [];

@@ -26,10 +26,25 @@ function addDissolve(mat, rim, uniform) {
     sh.uniforms.uDissolve = uniform;
     sh.vertexShader = 'varying vec3 vDPos;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vDPos = position;');
     sh.fragmentShader = 'uniform float uDissolve; varying vec3 vDPos;\n' + DISSOLVE_NOISE + sh.fragmentShader
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n float dThr = uDissolve * 1.2 - 0.1; float dn = dissolveNoise(vDPos * 14.0); if (uDissolve > 0.001 && dn < dThr) discard;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n float dThr = uDissolve * 1.2 - 0.1; float dn = 1.0; if (uDissolve > 0.001) { dn = dissolveNoise(vDPos * 14.0); if (dn < dThr) discard; }')
       .replace('#include <opaque_fragment>', 'if (uDissolve > 0.001) outgoingLight += vec3(1.6, 0.55, 0.12) * smoothstep(dThr + 0.1, dThr, dn) * 2.2;\n#include <opaque_fragment>');
   };
-  mat.customProgramCacheKey = () => 'rimDissolve';
+  mat.customProgramCacheKey = () => 'rimDissolve2';
+  return mat;
+}
+// KIT binds every vertex rigidly to one bone (weight 1,0,0,0). Skip the three unused bone-texture fetches,
+// preserving the same geometry, pose and lighting. Other rigs and Three's shadow materials keep their own shaders.
+function rigidSkinning(mat) {
+  const patch = mat.onBeforeCompile, key = mat.customProgramCacheKey.bind(mat);
+  mat.onBeforeCompile = sh => {
+    patch(sh);
+    sh.vertexShader = sh.vertexShader.replace('#include <skinbase_vertex>', `
+      #ifdef USE_SKINNING
+        mat4 boneMatX = getBoneMatrix(skinIndex.x);
+        mat4 boneMatY = mat4(0.0), boneMatZ = mat4(0.0), boneMatW = mat4(0.0);
+      #endif`);
+  };
+  const baseKey = key(); mat.customProgramCacheKey = () => baseKey + '|rigidSkin';
   return mat;
 }
 // Model detail (the Ultra preset): while a model is built, every round primitive takes `k` times its segments, so limbs,
@@ -2405,7 +2420,7 @@ const KIT = (() => {
         m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: texSize(spec) }).clone();
         m.side = spec.double ? THREE.DoubleSide : THREE.FrontSide; addDissolve(m, rim, rig.dissolve);
       }
-      rig.mats.push(m);
+      rigidSkinning(m); rig.mats.push(m);
       if ('glow' in spec) rig.fadeMats.push(m);   // eyes are plain materials: they fade instead of dissolving
       return m;
     };
@@ -2472,7 +2487,11 @@ const KIT = (() => {
   function prewarm() {
     const generation = ++prewarmGeneration;   // a new quality replaces pending work for the old detail
     const jobs = [];
-    for (const id of Object.keys(MODEL_DEFS)) {
+    // On integrated GPUs, spending menu time on every unselected boss competes with starting a level.
+    // The level's complete cast is still built synchronously in Game.reset, before warm-up and gameplay.
+    const ids = typeof visuals !== 'undefined' && visuals.quality() === CONFIG.VISUALS.quality.low
+      ? [PLAYER_DEF.model] : Object.keys(MODEL_DEFS);
+    for (const id of ids) {
       jobs.push(() => {
         const M = resolve(id), built = modelParts(id), slots = new Set(built.parts.map(p => p.slot));
         for (const slot of slots) {

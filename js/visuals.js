@@ -1120,11 +1120,13 @@ const visuals = (() => {
     qualityLabel: name => (Q[name] || Q[VIS.defaultQuality]).label,
     nextQuality(name, d) { const k = Object.keys(Q), i = Math.max(0, k.indexOf(name)); return k[(i + d + k.length * 2) % k.length]; },
     setQuality(name) {
+      const previous = quality;
       quality = Q[name] || Q[VIS.defaultQuality];
       bloom.enabled = quality.bloom;
       const samples = Math.min(quality.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
       for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
       for (const h of hooks.quality) h(quality);
+      if (quality !== previous && !quality.ultra) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low
       grade.uniforms.uVig.value = quality.vignette ? VIS.vignette.strength : 0;
       grade.uniforms.uVigSoft.value = VIS.vignette.softness;
       grade.uniforms.uGrain.value = quality.grain ? (quality.ultra ? VIS.grain.ultra : VIS.grain.amount) : 0;
@@ -1136,9 +1138,8 @@ const visuals = (() => {
     // Draw every pooled effect once, fully transparent and in front of the camera (cam: { pos, look }), so that its
     // shader is ready before play starts rather than compiled the moment a first hit, block or landing shows it.
     warmUp(cam) {
-      if (quality.ultra) {
-        spectral.prepare(Game.enemies); flame.prepare(Game.enemies); holy.prepare(Game.enemies); blackBlade.prepare(Game.enemies);
-      }
+      spectral.prepare(Game.enemies); flame.prepare(Game.enemies); holy.prepare(Game.enemies); blackBlade.prepare(Game.enemies);
+      projectiles.prepare(Game.enemies);
       camera.position.copy(cam.pos); camera.lookAt(cam.look); camera.updateMatrixWorld();
       const at = new THREE.Vector3(0, 0, -3).applyMatrix4(camera.matrixWorld);
       const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity]);
@@ -1154,6 +1155,11 @@ const visuals = (() => {
         }
       });
       for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; }
+      // LOW uses the default framebuffer: keep its exact output shader, but rasterize only a tiny viewport.
+      // All actors still issue draws and upload full geometry/textures, even when far away or in a hidden phase.
+      const viewport = renderer.getViewport(new THREE.Vector4()), scissor = renderer.getScissor(new THREE.Vector4());
+      const scissorTest = renderer.getScissorTest();
+      if (!quality.post) { renderer.setViewport(0, 0, 32, 32); renderer.setScissor(0, 0, 32, 32); renderer.setScissorTest(true); }
       try {
         this.draw();
         // The same stage's hidden static materials are already compiled. New actors / phases were all drawn above;
@@ -1164,14 +1170,20 @@ const visuals = (() => {
         for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
         for (const [m, visible, culled] of bodies) { m.visible = visible; m.frustumCulled = culled; }
         for (const [p, visible] of parents) p.visible = visible;
+        // Hidden legacy attack lights have a different light count from the warm-up frame. Compile the normal
+        // idle scene too, before the first playable frame, without another full-size draw.
+        try { if (!quality.ultra) renderer.compile(scene, camera); }
+        finally { renderer.setViewport(viewport); renderer.setScissor(scissor); renderer.setScissorTest(scissorTest); }
       }
     },
     resize(w, h) {
       w = Math.max(1, w); h = Math.max(1, h);
       const pr = Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio) * quality.renderScale;
       renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
-      composer.setPixelRatio(pr); composer.setSize(w, h);
-      bloom.setSize(Math.max(1, Math.round(w * pr * quality.bloomScale)), Math.max(1, Math.round(h * pr * quality.bloomScale)));   // a soft glow: drawn smaller
+      // LOW never draws these passes. Keep dormant targets tiny, including after switching down from Ultra.
+      const pw = quality.post ? w : 1, ph = quality.post ? h : 1, ppr = quality.post ? pr : 1;
+      composer.setPixelRatio(ppr); composer.setSize(pw, ph);
+      bloom.setSize(Math.max(1, Math.round(pw * ppr * quality.bloomScale)), Math.max(1, Math.round(ph * ppr * quality.bloomScale)));   // a soft glow: drawn smaller
       grade.uniforms.uRes.value.set(w * pr, h * pr);
       PT_SCALE.value = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.camera.fov) / 2));
       for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr));
