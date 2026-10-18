@@ -424,3 +424,5 @@ const TRAINING_DEFS = [
     stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy'], showBar: true, decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));
+// A boss (the big bar at the top, no overhead bar): posture or phases. The 1v1 Arena lists them apart from the enemies.
+const isBossDef = d => !!d && !!(d.posture || d.phases);

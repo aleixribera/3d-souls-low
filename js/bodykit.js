@@ -131,7 +131,7 @@ const KIT = (() => {
   // ---- core body pieces (built from the definition's proportions) ----------------------------------------
   const sideOf = bone => bone.endsWith('L') ? 'L' : 'R';
   const limbTweak = (M, bone) => ({ len: 1, thick: 1, ...(M.limbs && M.limbs[bone]) });
-  // Ultra anatomy (detail.geo > 1): the same bones and the same outer envelope (armour still fits), but sculpted:
+  // Sculpted anatomy (detail.anatomy): the same bones and outer envelope (armour still fits), but sculpted:
   // muscled limbs (deltoid, biceps, forearm, quadriceps, calf), caps over the joints instead of balls, fists with
   // fingers closed round the grip, a torso with chest and shoulder blades, boots with a heel.
   function ultraBody(M) {
@@ -207,7 +207,7 @@ const KIT = (() => {
     return out;
   }
   function bodyParts(M) {
-    if (geoK > 1) return ultraBody(M);
+    if (anatomy) return ultraBody(M);
     const P = M.proportions, B = M.body, out = [];
     const add = (bone, slot, geo) => out.push({ bone, slot, geo });
     const tw = P.torsoW / 0.2, oz = P.torsoD / P.torsoW;
@@ -2343,14 +2343,16 @@ const KIT = (() => {
   // Everything one model is made of, built once per id (and variant) and shared by every body of that type: the
   // parts are moved into the skeleton's rest pose and merged into ONE geometry per material, each vertex bound to
   // the bone its part hangs from. So a body costs a handful of draw calls, however many pieces it has.
+  let anatomy = false;
   let geoK = 1;   // the segment multiplier of the model being built (detail.geo, by its budget class)
   function modelParts(id, variant) {
     const g = typeof detail.geo === 'object' ? detail.geo[resolve(id).budget] ?? 1 : detail.geo;
-    const ckey = (variant ? id + '|' + variant : id) + (g !== 1 ? '@' + g : '');
+    const sculpted = detail.anatomy ?? (g > 1);
+    const ckey = (variant ? id + '|' + variant : id) + '@' + g + (sculpted ? '|anatomy' : '|base');
     let m = modelCache.get(ckey);
     if (m) return m;
-    KIT_GEO.set(g); geoK = g;
-    try { m = buildParts(id, variant, ckey); } finally { KIT_GEO.set(1); geoK = 1; }
+    KIT_GEO.set(g); geoK = g; anatomy = sculpted;
+    try { m = buildParts(id, variant, ckey); } finally { KIT_GEO.set(1); geoK = 1; anatomy = false; }
     return m;
   }
   function buildParts(id, variant, ckey) {
@@ -2481,16 +2483,13 @@ const KIT = (() => {
     rig.modelInfo = { id, variant: variant ?? null, tris: built.tris, meshes: built.meshes };
   }
 
-  // Bakes every model's textures and geometry a little at a time while the menus are up, so a fight or level never
-  // stalls to generate them. Pauses during play; whatever is not ready yet is simply built on demand.
+  // Prepare the player while menus are up. The selected level's complete cast is built before gameplay;
+  // unselected models never compete with starting it. No geometry or texture streaming during play.
   let prewarmGeneration = 0;
   function prewarm() {
     const generation = ++prewarmGeneration;   // a new quality replaces pending work for the old detail
     const jobs = [];
-    // On integrated GPUs, spending menu time on every unselected boss competes with starting a level.
-    // The level's complete cast is still built synchronously in Game.reset, before warm-up and gameplay.
-    const ids = typeof visuals !== 'undefined' && visuals.quality() === CONFIG.VISUALS.quality.low
-      ? [PLAYER_DEF.model] : Object.keys(MODEL_DEFS);
+    const ids = [PLAYER_DEF.look.model];
     for (const id of ids) {
       jobs.push(() => {
         const M = resolve(id), built = modelParts(id), slots = new Set(built.parts.map(p => p.slot));
@@ -2511,8 +2510,8 @@ const KIT = (() => {
     setTimeout(step, 800);
   }
 
-  // The detail of models built from now on: { geo, tex } multipliers (1, 1 normally; the Ultra preset's VISUALS.ultra.models).
-  const setDetail = d => { const was = JSON.stringify(detail); detail = { geo: d.geo ?? 1, tex: d.tex ?? 1 }; if (JSON.stringify(detail) !== was) prewarm(); };   // the new detail baked in the background
+  // Detail of models built from now on: geo/tex multipliers and explicit anatomy. Omitted anatomy retains the old API.
+  const setDetail = d => { const was = JSON.stringify(detail); detail = { geo: d.geo ?? 1, tex: d.tex ?? 1, anatomy: d.anatomy }; if (JSON.stringify(detail) !== was) prewarm(); };   // the new detail baked in the background
   // The geometry helpers, for parts defined outside the kit (js/kit-premium.js).
   const helpers = { xf, uvScale, hash3, roughen, deform, lathe, limb, shape, plate, sphere, tube, texMeters: MS.texMeters };
   return { buildModelRig, modelParts, resolve, resolveVariant, prewarm, setDetail, detail: () => detail, parts: KIT_PARTS, weapons: KIT_WEAPONS, cache: modelCache, helpers };

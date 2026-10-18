@@ -166,6 +166,7 @@ requestAnimationFrame(frame);
 // Console handle for tuning and testing.
 window.__arena = { Game, story, elden, spectral, ELDEN_BOSSES, ELDEN_BOSS_DEFS, STORY, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, TUTORIAL, ARENA, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, makeStrike,
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles, finale, LEVEL_5, lore, LORE,
+                   STORIES, LANDS_STORY, LANDS_LEVELS, LANDS_ENEMY_DEFS, realms, LANDS_1, LANDS_2, LANDS_3, LANDS_4, LANDS_5, LANDS_6, LANDS_7, LANDS_8,
                    get world() { return world; } };
 window.__arenaReady = true;
 KIT.prewarm();   // bake model textures and geometry in the background while the menus are up

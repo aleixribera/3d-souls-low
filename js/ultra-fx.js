@@ -1,13 +1,21 @@
 'use strict';
 // ============================================================================
-// 9d. The Ultra preset, effects (quality.ultra): sparks, blood, souls, auras, smoke, rock chunks, impact lights,
+// 9d. Modern effects (quality.combatFx): sparks, blood, souls, auras, smoke, rock chunks, impact lights,
 // flares, weapon ribbons and procedural fire
 // ============================================================================
 // Drawing only: it listens to combat events and reads bodies each frame (a render hook), never changing the fight.
 // Every pool is built once at load and drawn once by visuals.warmUp (pooledFx), so nothing compiles mid-fight.
-// Off (any preset but Ultra) it spawns nothing, and the old trails and flame cones show again.
+// High uses smaller decorative budgets. Low retains legacy effects; ambient fire has its own preset switch.
 const ultraFx = (() => {
-  const U = VIS.ultra, H = U.hits, on = () => ultraPost.on();
+  const U = VIS.ultra, H = U.hits, on = () => visuals.quality().combatFx;
+  const budget = () => VIS.fxBudgets[visuals.quality().fxBudget];
+  const emission = new Map();
+  function count(kind, n) {
+    if (!on()) return 0;
+    const total = (emission.get(kind) || 0) + n * budget().density;
+    const whole = Math.floor(total); emission.set(kind, total - whole); return whole;
+  }
+  const capacity = max => Math.max(1, Math.floor(max * budget().capacity));
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), col = new THREE.Color(), col2 = new THREE.Color();
   // Reuse fixed GPU buffers and upload only their live prefix, never the unused pool capacity.
   const written = (attribute, count) => {
@@ -54,7 +62,7 @@ void main() {
     const list = [];
     return {
       mesh,
-      spawn(p) { if (list.length >= max) list.shift(); list.push(p); return p; },
+      spawn(p) { if (!on()) return p; if (list.length >= capacity(max)) list.shift(); list.push(p); return p; },
       clear() { list.length = 0; mesh.visible = false; },
       count: () => list.length,
       update(dt, cam, land) {
@@ -135,7 +143,7 @@ void main() {
     const list = [];
     return {
       mesh,
-      spawn(p) { if (list.length >= max) list.shift(); list.push(p); return p; },
+      spawn(p) { if (!on()) return p; if (list.length >= capacity(max)) list.shift(); list.push(p); return p; },
       clear() { list.length = 0; mesh.visible = false; },
       count: () => list.length,
       update(dt) {
@@ -278,8 +286,9 @@ void main() {
         let n = 0;
         for (let i = 0; i < pts.length - 1; i++) {
           const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
-          for (let s = 0; s < T.sub && n < SEG - 1; s++) {
-            const t = s / T.sub;
+          const sub = budget().ribbonSub;
+          for (let s = 0; s < sub && n < SEG - 1; s++) {
+            const t = s / sub;
             cr(p0.b, p1.b, p2.b, p3.b, t, v1); cr(p0.t, p1.t, p2.t, p3.t, t, v2);
             put(n, v1, v2);
             const age = clamp((now - lerp(p1.time, p2.time, t)) / T.life, 0, 1); aT[n * 2] = aT[n * 2 + 1] = age;
@@ -340,14 +349,14 @@ void main() {
   const fireGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);
   function dressFires() {
     for (const f of flames) {
-      if (on() && !f.ultraFire) {
+      if (visuals.quality().proceduralFire && !f.ultraFire) {
         const P = f.mesh.geometry.parameters || { radius: 0.28, height: 0.95 }, m = new THREE.Mesh(fireGeo, fireMat(Math.random() * 40));
         m.material.uniforms.uW.value = P.radius * 2 * F.width; m.material.uniforms.uH.value = P.height * F.height;
         m.position.y = -P.height * 0.42; m.frustumCulled = false; m.renderOrder = 3;
         f.mesh.add(m); f.ultraFire = m;
       }
-      if (f.ultraFire) f.ultraFire.visible = on();
-      f.mesh.material.visible = !on();
+      if (f.ultraFire) f.ultraFire.visible = visuals.quality().proceduralFire;
+      f.mesh.material.visible = !visuals.quality().proceduralFire;
     }
   }
 
@@ -356,7 +365,8 @@ void main() {
   // n sparks from `at`; `dir` biases them (a unit [x, y, z]) by `bias` 0..1.
   function sparkBurst(at, n, kind = 'clash', dir = null, bias = 0, speed = 1) {
     const S = U.sparks, [hot, cool] = S.colors[kind] || S.colors.clash, ground = groundBelow(at.x, at.y, at.z);
-    for (let i = 0; i < n; i++) {
+    const total = count('sparks', n);
+    for (let i = 0; i < total; i++) {
       const u = unit(), d = dir ? [lerp(u[0], dir[0], bias), lerp(u[1], dir[1], bias) + 0.25, lerp(u[2], dir[2], bias)] : [u[0], u[1] * 0.8 + 0.35, u[2]];
       const l = Math.hypot(...d) || 1, s = between(Math.random, S.speed) * speed * rand(0.5, 1);
       col.set(hot).lerp(col2.set(cool), Math.random()).multiplyScalar(S.boost * rand(0.6, 1.3));
@@ -367,7 +377,8 @@ void main() {
   }
   function bloodSpray(at, dir, n, size = 1, color = U.blood.color) {
     const B = U.blood, ground = groundBelow(at.x, at.y, at.z);
-    for (let i = 0; i < n; i++) {
+    const total = count('blood', n);
+    for (let i = 0; i < total; i++) {
       const u = unit(), d = [dir[0] * 1.1 + u[0] * 0.55, dir[1] + 0.45 + u[1] * 0.4, dir[2] * 1.1 + u[2] * 0.55], l = Math.hypot(...d) || 1;
       const s = between(Math.random, B.speed) * rand(0.4, 1) * Math.sqrt(size), life = between(Math.random, B.life);
       col.set(color).lerp(col2.set(B.dark), Math.random() * 0.6);
@@ -378,6 +389,7 @@ void main() {
     for (let i = 0; i < B.mist * size; i++) puff(at.x, at.y, at.z, B.mistColor, 0.5 * size, 1.4 * size, 0.7, [dir[0] * 1.5, 0.6, dir[2] * 1.5], 0.55);
   }
   function puff(x, y, z, color, s0, s1, life, vel = null, a = 0.5) {
+    if (!count('puffs', 1)) return;
     const v = vel || [rand(-0.6, 0.6), rand(0.2, 0.8), rand(-0.6, 0.6)];
     col.set(color);
     puffs.spawn({ x, y, z, vx: v[0] + rand(-0.3, 0.3), vy: v[1], vz: v[2] + rand(-0.3, 0.3), drag: 2.2, lift: 0.15, life: life * rand(0.8, 1.2), max: life,
@@ -391,7 +403,8 @@ void main() {
   }
   // Glowing motes: n of them round `at` (within `r` m), drifting up (`lift`), optionally swirling round it.
   function moteBurst(at, n, color, { r = 0.4, speed = 1.5, lift = 0.6, life = [0.8, 1.8], size = 1, swirl = 0, up = 0.6, drag = 1.2, boost = 2.2, pulse = 0 } = {}) {
-    for (let i = 0; i < n; i++) {
+    const total = count('motes', n);
+    for (let i = 0; i < total; i++) {
       const u = unit(), s = speed * rand(0.3, 1), L = between(Math.random, life);
       col.set(color).multiplyScalar(boost * rand(0.7, 1.3));
       motes.spawn({ x: at.x + u[0] * r * Math.random(), y: at.y + u[1] * r * Math.random(), z: at.z + u[2] * r * Math.random(),
@@ -400,6 +413,8 @@ void main() {
     }
   }
   function flashAt(at, color, intensity, range = U.flash.range) {
+    if (!on() || !flashes.length) return;
+    intensity *= budget().light;
     const l = pick(flashes);
     l.position.set(at.x, at.y + 0.3, at.z); l.color.set(color); l.intensity = Math.max(l.intensity, intensity); l.distance = range;
   }
@@ -414,8 +429,9 @@ void main() {
   }
   function chunkBurst(x, y, z, n, speed = 1, kind = 'stone') {
     const C = U.chunks, ground = groundBelow(x, y, z);
-    for (let i = 0; i < n; i++) {
-      if (chunks.length >= C.max) chunks.shift();
+    const total = count('chunks', n);
+    for (let i = 0; i < total; i++) {
+      if (chunks.length >= capacity(C.max)) chunks.shift();
       const a = rand(0, Math.PI * 2), s = between(Math.random, C.speed) * speed * rand(0.4, 1);
       chunks.push({ x: x + Math.cos(a) * 0.3, y: y + 0.1, z: z + Math.sin(a) * 0.3, vx: Math.cos(a) * s * 0.6, vy: s * rand(0.6, 1.2), vz: Math.sin(a) * s * 0.6,
                     s: between(Math.random, C.size), rx: rand(0, 6), ry: rand(0, 6), spin: rand(-12, 12), ground, age: rand(0, 0.4), rest: false, kind });
@@ -592,14 +608,14 @@ void main() {
     for (const p of [sparks, drops, motes, puffs]) p.clear();
     chunks.length = grinding.length = 0;
     for (const r of ribbons) r.clear();
-    ribbonOf.clear();
+    ribbonOf.clear(); emission.clear();
     for (const l of flashes) l.intensity = 0;
     for (const f of flares) f.s.visible = false;
     for (const m of marks) m.m.visible = false;
     updateChunks(0);
     last = performance.now();
   }
-  visuals.hooks.quality.push(() => { if (!on()) clearEffects(); dressFires(); });
+  visuals.hooks.quality.push(() => { clearEffects(); dressFires(); });
   visuals.hooks.stage.push(() => { clearEffects(); dressFires(); });   // fire ready before shader warm-up
   function frameUpdate(game, placed) {
     const now = performance.now(), real = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;   // stepped by hand (tests): one 60th a frame
@@ -617,7 +633,7 @@ void main() {
       const isP = b === game.player;
       const act = isP ? (b.state === PS.JUMP_ATTACK || (b.state === PS.ATTACK && !!b.hitbox)) : b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
       let r = ribbonOf.get(b);
-      if (!r && act) { r = ribbons.find(x => !x.owner); if (r) { r.owner = b; ribbonOf.set(b, r); } }
+      if (!r && act) { r = ribbons.slice(0, budget().ribbons).find(x => !x.owner); if (r) { r.owner = b; ribbonOf.set(b, r); } }
       if (r) { const [c, k] = trailColor(b); if (!r.update(act, b.rig, now / 1000, c, k)) { r.owner = null; ribbonOf.delete(b); } }
     }
     // living bosses: an aura of motes; burning phases shed embers; big bodies kick up dust; dying bodies crumble to ash
@@ -706,7 +722,7 @@ void main() {
   Game.renderHooks.push(frameUpdate);
 
   return {
-    on, hooks, isBoss, chest, dirOf, groundBelow, auraColor,
+    on, count, hooks, isBoss, chest, dirOf, groundBelow, auraColor,
     sparkBurst, bloodSpray, moteBurst, puff, dustRing, flashAt, flare, mark, chunkBurst, motes, sparks, drops, fireMat, fireGeo,
     info: () => ({ sparks: sparks.count(), drops: drops.count(), motes: motes.count(), puffs: puffs.count(), chunks: chunks.length,
                    ribbons: ribbons.filter(r => r.owner).length, flashes: flashes.map(l => l.intensity),

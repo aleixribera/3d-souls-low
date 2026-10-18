@@ -12,6 +12,7 @@
 //   -> bloom -> tone mapping -> grade (also flash and hurt feedback; no extra lens pass).
 const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
+  const quality = () => visuals.quality();
   let on = false, lastT = performance.now(), W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
   const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
@@ -214,17 +215,17 @@ void main() {
       if (o.isSprite || o.isPoints || o.isLine || o.userData.noDepth || !m || (m.transparent && !m.depthWrite) || m.blending === THREE.AdditiveBlending) {
         noDepth.push(o); return;
       }
-      if (!lit(m) || o.userData.ultraShadow) { if (lit(m)) reflect(m); return; }
+      if (!lit(m)) return;
       o.userData.ultraShadow = true;
-      o.receiveShadow = true;
-      o.castShadow = m !== MAT.ceiling && !(o.isInstancedMesh && m.side === THREE.DoubleSide && !m.alphaTest);   // ceilings and grass cast none
+      o.receiveShadow = quality().shadows;
+      o.castShadow = quality().shadows && m !== MAT.ceiling && !(o.isInstancedMesh && m.side === THREE.DoubleSide && !m.alphaTest);
       reflect(m);
     });
   }
   // Metal reflections: the level's environment on every metallic material (armour, weapons, iron).
   const reflected = new Set();
   function reflect(m) {
-    if (!m.isMeshStandardMaterial || m.metalness < U.env.metalFrom || !envTex) return;
+    if (!quality().reflections || !m.isMeshStandardMaterial || m.metalness < U.env.metalFrom || !envTex) return;
     reflected.add(m);
     if (m.envMap === envTex) return;
     if (!m.envMap) m.needsUpdate = true;
@@ -311,7 +312,7 @@ void main() {
     for (const l of extraLights) consider(l);
     for (const l of owned) if (l.isPointLight && l.userData.flash) consider(l);
     lightList.sort((a, b) => b.score - a.score);
-    const n = Math.min(MAXL, lightList.length), view = camera.matrixWorldInverse;
+    const n = quality().volumetrics ? Math.min(MAXL, lightList.length) : 0, view = camera.matrixWorldInverse;
     for (const M of [lightMat, visMat]) M.uniforms.uLCount.value = n;
     for (let i = 0; i < n; i++) {
       const L = lightList[i];
@@ -354,28 +355,31 @@ void main() {
     }
   }
 
-  function setOn(want) {
-    if (want === on) return;
-    on = want;
+  function setQuality(q) {
+    on = q.ao || q.volumetrics || q.refraction;
     lightPass.enabled = on;
+    lightMat.uniforms.uAoRadius.value = q.ao ? U.ao.radius : 0;
+    compMat.uniforms.uAoStr.value = q.ao ? U.ao.strength : 0;
+    waves.length = 0;
     pulse.flash = pulse.hurt = 0;
     visuals.passes.grade.uniforms.uFlash.value = visuals.passes.grade.uniforms.uHurt.value = 0;
-    renderer.shadowMap.enabled = on; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = !on;
-    RIM.strength.value = VIS.rim.strength * (on ? U.rim : 1);
-    KIT.setDetail(on ? U.models : { geo: 1, tex: 1 });   // bodies spawned from now on
-    for (const l of owned) { if (on) scene.add(l); else scene.remove(l); }
-    if (!on) { if (moonBase !== null) moonLight.intensity = moonBase; unreflect(); for (const e of [...(Game.enemies || []), Game.player]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
-    const aniso = on ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    renderer.shadowMap.enabled = q.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = !q.shadows;
+    RIM.strength.value = VIS.rim.strength * (q.shadows ? U.rim : 1);
+    for (const l of owned) { if (l.isPointLight ? q.combatFx : q.shadows) scene.add(l); else scene.remove(l); }
+    if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase; for (const e of [...(Game.enemies || []), Game.player]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
+    if (!q.reflections) unreflect();
+    const aniso = q.shadows ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
     scene.traverse(o => {
-      if (o.userData.legacyEffectLight) o.visible = !on;   // Ultra's fixed impact light replaces legacy per-attack lights
+      if (o.userData.legacyEffectLight) o.visible = !q.combatFx;
       const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
       for (const m of ms) m.needsUpdate = true;
     });   // shadows in or out of every shader
-    if (on) { if (lastDef && !envTex) buildEnv(lastDef); sweep(); }
+    if (q.reflections && lastDef && !envTex) buildEnv(lastDef);
+    sweep();
   }
 
-  visuals.hooks.quality.push(q => setOn(!!q.ultra));
+  visuals.hooks.quality.push(setQuality);
   visuals.hooks.resize.push((w, h) => {
     W = w; H = h;
     if (on) makeTargets();
@@ -387,16 +391,18 @@ void main() {
   });
   visuals.hooks.stage.push(def => {
     moonBase = moonLight.intensity; open = !!(def.atmosphere && def.atmosphere.sky);
+    if (lastDef !== def) { if (envTarget) envTarget.dispose(); envTarget = envTex = null; }
     lastDef = def;
     reflected.clear();   // release materials belonging to disposed stages and rigs
-    if (on) { buildEnv(def); sweep(); }
-    else envTex = null;
+    if (quality().reflections && !envTex) buildEnv(def);
+    sweep();
     waves.length = 0;
   });
   visuals.hooks.beforeDraw.push(() => {
     const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - lastT) / 1000); lastT = now;
-    if (!on) return;
-    if (!envTex && lastDef) buildEnv(lastDef);
+    const q = quality();
+    if (!on && !q.reflections && !q.shadows && !q.combatFx) return;
+    if (q.reflections && !envTex && lastDef) buildEnv(lastDef);
     let changed = sceneRoots.length !== scene.children.length || scene.children.some((o, i) => o !== sceneRoots[i] || o.children.length !== rootCounts[i]);
     // Spectral weapons attach inside a rig. Track that small socket too so new glows / lights are classified once.
     for (const b of [Game.player, ...Game.enemies]) if (b && b.rig) {
@@ -404,40 +410,42 @@ void main() {
       if (R.ultraWeaponChildren !== count) { R.ultraWeaponChildren = count; changed = true; }
     }
     if (changed) sweep();
-    placeSun();
-    gatherLights();
+    if (q.combatFx) decay(dt);
+    if (!q.shadows && !on) return;
+    if (q.shadows) placeSun();
+    if (q.volumetrics) gatherLights();
     // dissolving bodies cast no shadow (the shadow pass cannot see the dissolve); the blob shadow keeps a little contact
     for (const b of [Game.player, ...Game.enemies]) {
       if (!b || !b.rig) continue;
       const R = b.rig, castNow = R.alphaK > 0.99;
-      if (R.ultraCast !== castNow) { R.root.traverse(o => { if (o.isMesh && o.userData.ultraShadow) o.castShadow = castNow; }); R.ultraCast = castNow; }
-      R.shadow.material.opacity = 0.45 * R.alphaK * S.blob;
+      if (R.ultraCast !== castNow) { R.root.traverse(o => { if (o.isMesh && o.userData.ultraShadow) o.castShadow = q.shadows && castNow; }); R.ultraCast = castNow; }
+      R.shadow.material.opacity = 0.45 * R.alphaK * (q.shadows ? S.blob : 1);
     }
     // the moon's rays: on open-sky levels, through its shadow map
     const L = lightMat.uniforms, map = sun.shadow.map;
-    L.uMoonOn.value = open && map ? 1 : 0;
+    L.uMoonOn.value = q.volumetrics && q.shadows && open && map ? 1 : 0;
     if (map) L.tShadow.value = map.texture;
     L.uMoonDir.value.copy(moonLight.position).normalize().transformDirection(camera.matrixWorldInverse);
     const mk = SC.moon * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef * moonBase;
     L.uMoonCol.value.set(sun.color.r * mk, sun.color.g * mk, sun.color.b * mk);
     L.uFog.value = scene.fog ? scene.fog.density : 0;
-    renderer.shadowMap.needsUpdate = true;
-    decay(dt);
+    renderer.shadowMap.needsUpdate = q.shadows;
   });
 
   return {
     on: () => on,
     // A light of js/ultra-fx.js: in the scene only while Ultra is on (`flash` lights also glow in the fog).
-    own(light) { light.userData.ultra = true; owned.push(light); if (on) scene.add(light); },
+    own(light) { light.userData.ultra = true; owned.push(light); if (quality().combatFx) scene.add(light); },
     // A shockwave from world point p: k its strength (1 = a heavy blow), size its reach on screen.
-    wave(p, k = 1, size = 1) { if (!on) return; waves.push({ x: p.x, y: p.y, z: p.z, age: 0, k, size }); if (waves.length > MAXW) waves.shift(); },
+    wave(p, k = 1, size = 1) { if (!quality().refraction) return; waves.push({ x: p.x, y: p.y, z: p.z, age: 0, k, size }); if (waves.length > MAXW) waves.shift(); },
     // Flash / hurt remain. Legacy ca / punch requests are intentionally ignored (camera feel supplies motion).
     pulse({ flash = 0, color = 0xffffff, hurt = 0 } = {}) {
-      if (!on) return;
+      if (!quality().combatFx) return;
       pulse.hurt = Math.min(1, Math.max(pulse.hurt, hurt));
       if (flash > pulse.flash) { pulse.flash = flash; pulse.flashColor.set(color); }
     },
     info: () => ({ on, lights: lightList.length, noDepth: noDepth.length, reflected: reflected.size, waves: waves.length,
-                   sweeps, sun: sun.intensity, shadows: renderer.shadowMap.enabled }),
+                   sweeps, sun: quality().shadows ? sun.intensity : 0, shadows: renderer.shadowMap.enabled,
+                   ao: quality().ao, volumetrics: quality().volumetrics, reflections: quality().reflections }),
   };
 })();

@@ -2118,8 +2118,8 @@
     expect.ok(Game.story && Game.level.id === 'long-hall', 'No to the tutorial: straight to Level 1');
     expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
     Game.showMenu('main');
-    const names = Game.screens().main.items.map(i => i.name);
-    expect.ok(names[0] === 'Continue' && names[1] === 'New Game' && names.includes('Levels'), 'Continue, New Game, then the other modes');
+    const names = Game.screens().main.items.map(i => i.name), road = Game.screens().storyRoad.items.map(i => i.name);   // v7.0: Story holds both roads
+    expect.ok(names[0] === 'Story' && names.includes('Levels') && road[0] === 'Continue' && road[1] === 'New Game', `Story first, then the other modes; the road offers Continue and New Game (${road})`);
   }));
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
@@ -2437,8 +2437,8 @@
   // ---- Elden Ring Bosses: Margit, the Fell Omen (v5.3) ------------------------------------------------------------
   const startMargit = () => { A.elden.start('margit'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
   test('Elden: the main menu leads to the boss select, built from the boss list, with a way back', () => {
-    const main = Game.screens().main.items.map(i => i.name);
-    expect.ok(main.includes('Elden Ring Bosses') && main.includes('Enemies'), `main menu: ${main.join(', ')}`);
+    const main = Game.screens().arena.items.map(i => i.name);   // v7.0: inside the 1v1 Arena
+    expect.ok(main.includes('Elden Ring Bosses') && main.includes('Enemies'), `1v1 Arena menu: ${main.join(', ')}`);
     const sel = Game.screens().elden.items;
     expect.ok(sel.length === A.ELDEN_BOSSES.length + 1 && sel[0].name.startsWith('Margit, the Fell Omen') && sel[sel.length - 1].name === 'Back', 'one card per boss, then Back');
     expect.ok(!A.ENEMY_DEFS.some(d => d.id === 'margit'), 'Margit is not in the Enemies list');
@@ -2959,7 +2959,7 @@
   // Quality changes made here go back to the player's own setting afterwards.
   const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
   const ultraWarnings = () => [...warned].filter(w => w.startsWith('Ultra'));
-  test('Ultra: the presets share their keys and only Ultra turns the extras on', () => {
+  test('Ultra: the presets share their keys and reserve the lighting extras for Ultra', () => {
     const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();
     for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as high`);
     expect.ok(Q.ultra && Q.ultra.ultra === true && !Q.high.ultra && !Q.low.ultra, 'ultra on Ultra only');
@@ -2968,6 +2968,122 @@
     settings.graphics = 'auto';
     expect.ok(autoQuality.effective() in Q && autoQuality.label('auto').startsWith('Auto ('), 'Auto resolves to a real preset and names it');
     settings.graphics = saved;
+  });
+  test('High: modern presentation is independent from expensive lighting and keeps native resolution', () => {
+    const { low, high, ultra } = CONFIG.VISUALS.quality;
+    expect.ok(high.combatFx && high.reflections && !low.combatFx && !low.reflections, 'High adds modern effects and cached metal');
+    for (const key of ['shadows', 'ao', 'volumetrics', 'refraction']) expect.ok(!high[key] && ultra[key], `${key} stays Ultra only`);
+    expect.ok(high.renderScale === 1 && high.maxPixelRatio === 1.5 && high.msaa === 4 && high.lights === 8, 'High keeps resolution, AA and lights');
+    expect.ok(!high.proceduralFire && ultra.proceduralFire && high.modelDetail.tex === 1, 'native textures; ambient procedural fire stays Ultra');
+    expect.ok(CONFIG.VISUALS.grain.amount === CONFIG.VISUALS.grain.ultra, 'same fine grain');
+  });
+  test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
+    const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
+    try {
+      for (const id of [PLAYER_DEF.look.model, 'godrick', 'margit']) {
+        KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
+        KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
+        KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
+        expect.ok(low.tris < high.tris && high.tris < ultra.tris, `${id}: intermediate triangle count`);
+        KIT.setDetail({ ...Q.high.modelDetail, anatomy: true });
+        expect.ok(KIT.modelParts(id) !== high, `${id}: anatomy has its own cache entry`);
+      }
+      KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts('hollowSoldier');
+      KIT.setDetail(Q.high.modelDetail);
+      expect.ok(KIT.modelParts('hollowSoldier') === low, 'ordinary enemies reuse base geometry');
+    } finally { KIT.setDetail(was); }
+  });
+  test('High loading: small scene warm-up keeps live targets full-size and restores hidden phase visibility', () => {
+    const render = renderer.render, sizes = [];
+    try {
+      A.visuals.setQuality('high'); A.elden.start('maliketh'); sim.begin();
+      const roots = [];
+      scene.traverse(o => { if (o.isSkinnedMesh) roots.push([o, o.visible, o.frustumCulled]); });
+      const rt = A.visuals.composer.renderTarget1, size = [rt.width, rt.height];
+      renderer.render = function (s, c) {
+        if (s === scene) { const target = renderer.getRenderTarget(); sizes.push(target ? [target.width, target.height] : [canvas.width, canvas.height]); }
+        return render.call(this, s, c);
+      };
+      A.visuals.warmUp(Game.cam);
+      expect.ok(sizes.length > 0 && sizes.every(([w, h]) => w === 32 && h === 32), 'scene rasterizes at 32x32');
+      expect.ok(rt.width === size[0] && rt.height === size[1] && size[0] === canvas.width, 'live target never resized');
+      for (const [o, visible, culled] of roots) {
+        expect.ok(o.visible === visible && o.frustumCulled === culled, 'hidden phases and culling restored');
+        expect.ok(!!o.skeleton.boneTexture, 'every phase uploaded its skeleton');
+      }
+    } finally { renderer.render = render; restoreQuality(); }
+  });
+  test('High effects: decorative budgets reduce density while impacts remain visual only', () => {
+    try {
+      A.visuals.setQuality('high'); A.elden.start('godrick'); sim.begin();
+      const p = Game.player, e = Game.duel, state = [p.hp, e.hp, e.posture, p.x, e.x];
+      const at = { x: p.x, y: p.y + 1, z: p.z };
+      ultraFx.sparkBurst(at, 100); ultraFx.bloodSpray(at, [1, 0, 0], 100);
+      expect.ok(ultraFx.info().sparks === 55 && ultraFx.info().drops === 55, '55% burst density');
+      ultraFx.sparkBurst(at, 10000);
+      expect.ok(ultraFx.info().sparks === Math.floor(CONFIG.VISUALS.ultra.sparks.max * 0.55), 'bounded live capacity');
+      ultraBoss.IMPACT.blaze(e.x, e.y, e.z, 3, { el: FX_ELEMENTS.fire, scale: 1 }, e);
+      const warnings = ultraWarnings().length;
+      for (let i = 0; i < 12; i++) Game.render(1, STEP);
+      expect.ok(ultraWarnings().length === warnings, 'no effect failures');
+      expect.ok([p.hp, e.hp, e.posture, p.x, e.x].every((v, i) => v === state[i]), 'drawing preserves the fight');
+      expect.ok(!ultraPost.info().on && !renderer.shadowMap.enabled && ultraPost.info().waves === 0, 'no Ultra scene passes or refraction');
+      A.visuals.setQuality('low');
+      expect.ok(!ultraFx.on() && ultraFx.info().sparks === 0 && ultraFx.info().drops === 0 && ultraBoss.info().fires === 0, 'Low releases modern effects');
+      expect.ok(ultraPost.info().reflected === 0, 'Low removes metal reflections');
+    } finally { restoreQuality(); }
+  });
+  test('High loading: selected boss assets and all phase meshes are ready before play', () => {
+    try {
+      A.visuals.setQuality('high'); sim.begin();
+      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
+        A.elden.start(id);
+        expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
+        let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
+        expect.ok(legacy === 0, `${id}: fixed light count`);
+      }
+    } finally { restoreQuality(); }
+  });
+  test('High output: combined tone mapping and grade match the former two-pass colour order', () => {
+    const grade = A.visuals.passes.grade, composer = A.visuals.composer, shader = grade.material.fragmentShader;
+    const output = new OutputPass(), gl = renderer.getContext();
+    let worst = 0, total = 0, count = 0;
+    try {
+      A.visuals.setQuality('high'); sim.begin();
+      for (const id of ['long-hall', 'burning-town', 'final-castle']) {
+        Game.startLevel(id); Game.render(1, STEP);
+        grade.uniforms.uGrain.value = 0;
+        const read = () => {
+          A.visuals.draw(); const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+          gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels); return pixels;
+        };
+        const combined = read();
+        grade.material.fragmentShader = shader.replace(GRADE_OUTPUT, ''); grade.material.needsUpdate = true;
+        composer.insertPass(output, composer.passes.indexOf(grade));
+        const split = read();
+        for (let i = 0; i < split.length; i++) {
+          const delta = Math.abs(split[i] - combined[i]); worst = Math.max(worst, delta); total += delta; count++;
+        }
+        composer.removePass(output); grade.material.fragmentShader = shader; grade.material.needsUpdate = true;
+      }
+      expect.ok(worst <= 2 && total / count < 0.1, `colour difference: max ${worst}/255, mean ${(total / count).toFixed(4)}/255`);
+    } finally {
+      composer.removePass(output); output.dispose();
+      grade.material.fragmentShader = shader; grade.material.needsUpdate = true; restoreQuality();
+    }
+  });
+  test('High effects: delayed boss decorations cannot cross a level or quality change', () => {
+    const schedule = window.setTimeout, callbacks = [];
+    try {
+      A.visuals.setQuality('high'); A.elden.start('godrick'); sim.begin();
+      window.setTimeout = fn => { callbacks.push(fn); return 0; };
+      ultraBoss.IMPACT.toll(Game.duel.x, Game.duel.y, Game.duel.z, 2, { el: FX_ELEMENTS.toll, scale: 1 });
+      window.setTimeout = schedule;
+      A.visuals.setQuality('ultra');
+      const rings = ultraBoss.info().rings;
+      for (const callback of callbacks) callback();
+      expect.ok(callbacks.length === 3 && ultraBoss.info().rings === rings, 'stale delayed rings are discarded');
+    } finally { window.setTimeout = schedule; restoreQuality(); }
   });
   test('Ultra: switching it on and off leaves the scene as it was', () => {
     Game.startLevel('long-hall'); Game.loading = 0; sim.begin();
@@ -2982,7 +3098,8 @@
       expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on, 'shadows off again');
       expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'the moon gets its whole strength back');
       let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
-      expect.ok(extra === 0, `no Ultra light left in the scene (${extra})`);
+      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights, `High keeps only its fixed impact light (${extra})`);
+      expect.above(ultraPost.info().reflected, 0, 'High retains cached metal reflections');
       expect.ok(ultraFx.info().fires === 0 && flames.every(f => f.mesh.material.visible), 'the old flame cones are back');
     } finally { restoreQuality(); }
   });
@@ -3115,10 +3232,10 @@
         scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabled++; });
         expect.ok(enabled === 0, `${id}: no legacy light can change Ultra's shader light count`);
       }
-      A.visuals.setQuality('high');
+      A.visuals.setQuality('low');
       let hidden = 0;
       scene.traverse(o => { if (o.userData.legacyEffectLight && !o.visible) hidden++; });
-      expect.ok(hidden === 0, 'High restores legacy light visibility');
+      expect.ok(hidden === 0, 'Low restores legacy light visibility');
     } finally { restoreQuality(); }
   });
   test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {

@@ -4,7 +4,7 @@
 // ============================================================================
 const Game = {
   mode: 'menu',          // 'menu' | 'play' | 'pause'
-  screen: 'main',        // menu screen: 'main' | 'levels' | 'enemies' | 'pause' | 'options'
+  screen: 'main',        // menu screen: 'main' | 'story' | 'arena' | 'levels' | 'enemies' | 'bosses' | 'pause' | 'options' | ...
   kind: 'arena',         // what is being played: 'arena' (single duel) | 'level'
   story: false,          // Story mode (js/story.js): levels chain through STORY's chapters and progress is saved
   level: null,           // the level (or ARENA) being played
@@ -37,15 +37,18 @@ const Game = {
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
-        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { const er = !!this.eldenBoss; this.eldenBoss = null; this.reset(); this.showMenu(er ? 'elden' : 'main'); } },
+        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
+          const back = this.eldenBoss ? 'elden' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
+          this.eldenBoss = null; this.reset(); this.showMenu(back); } },
       ];
+    const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
+    const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
     return {
       ...S.screens, ...elden.screens(this),
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         ...S.main,
-        { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
-        { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
-        elden.mainItem(this),
+        { name: '1v1 Arena', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
+        { name: 'Levels', desc: 'Play any level on its own, outside the story: learn the controls, then fight your way through.', go: () => this.showMenu('levels') },
         { name: 'Options', desc: 'Graphics, camera, sound and controls.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
@@ -53,10 +56,20 @@ const Game = {
         items: [...finale.devItems(), ...lore.devItems(),
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
-        items: LEVELS.map(l => ({ name: l.name + (l.ending && finale.completed() ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })) },
-      enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
-        items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) })) },
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'main', items: [...LEVELS.map(levelItem),
+        { name: 'The Lands Between  ›', desc: 'The levels of the second road, from Stormhill to the Haligtree.', go: () => this.showMenu('levelsLands') },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
+      arena: { title: 'COMBAT ARENA 3D', sub: '1V1 ARENA', back: 'main', items: [
+        { name: 'Enemies', desc: 'The common foes of both roads, one at a time.', go: () => this.showMenu('enemies') },
+        { name: 'Bosses', desc: 'The bosses of Ashmere: the Giant Skeleton, the Pillager Captain, the Bell Warden and Aldric.', go: () => this.showMenu('bosses') },
+        elden.mainItem(this),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'arena',
+        items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
+      bosses: { title: 'COMBAT ARENA 3D', sub: 'THE BOSSES OF ASHMERE', back: 'arena',
+        items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main', back: this.optionsFrom === 'main' ? 'main' : 'pause', items: [
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
@@ -306,6 +319,9 @@ const Game = {
     const s = this.spawn, y = world.floorY(s.x, s.z, s.y);
     this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
     story.applyProgress(this.player);   // Story mode: carried capacities (nothing otherwise)
+    // v7.0: a level may grant more flasks (`flasks`: at least this many, the Lands Between's ramp); a carried larger stock stays.
+    const fl = this.kind === 'level' && this.level.flasks, it = fl && this.player.inventory.flask;
+    if (it && it.max < fl) it.max = it.count = fl;
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -636,8 +652,15 @@ const Game = {
       // `wakeZones` levels (v4.3.1): while the player is in a zone (on its floor), every member and every dispersed enemy
       // tied to it (`zone`: its archers, its gargoyles) is awake and on them, so none sleeps in a corner holding the gate shut.
       const floor = z.actors.length ? z.actors[0].home.y : p.y;
+      // v7.0: one that lost sight of the player (round a house, a pillar) keeps hunting toward where they are now, instead of
+      // being flipped back to the chase every step (that froze it in place: the chase loses sight and searches again).
       if (this.level.wakeZones && entered && p.alive() && !z.gate.open && Math.abs(p.y - floor) <= CONFIG.height.reach + 1)
-        for (const e of this.enemies) if (e.zone === z.id && e.alive() && (e.in('unaware') || e.state === ES.DORMANT || e.state === ES.SEARCH)) e.wake(p);
+        for (const e of this.enemies) {
+          if (e.zone !== z.id || !e.alive()) continue;
+          e.huntTime = CONFIG.ai.huntTime;   // its own fight: no leash pulls it home while the player stands in it
+          if (e.state === ES.SEARCH) { e.lastSeen = { x: p.x, z: p.z }; e.searchLook = 0; e.stateTime = 0; }
+          else if (e.in('unaware') || e.state === ES.DORMANT) e.wake(p);
+        }
       if (((z.actors.length && z.actors.every(a => !a.alive())) || z.beaten) && !z.gate.open) {
         z.gate.open = true;
         events.emit('gateOpened', { gate: z.gate });
@@ -649,6 +672,16 @@ const Game = {
         events.emit('gateOpened', { gate: g, shortcut: true });
       }
       if (g.open) g.lift = Math.min(1, g.lift + dt / V.gateLiftTime);
+    }
+    // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps` health
+    // a second; an execution's untouchable frames keep it off. Enemies are of the rot and wade through it unharmed.
+    for (const h of world.hazards) {
+      const on = p.alive() && p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) < CONFIG.height.stepUp && !p.invulnerable();
+      h.timer = on ? h.timer + dt : 0;
+      if (!on) continue;
+      p.hp = Math.max(0, p.hp - h.dps * dt);
+      if (h.timer >= CONFIG.hazards.tick) { h.timer -= CONFIG.hazards.tick; p.tint = Math.max(p.tint, 0.5); events.emit('hazard', { hazard: h, player: p }); }
+      if (p.hp <= 0) { p.hitbox = null; p.setState(PS.DEAD); events.emit('hazardDeath', { hazard: h, player: p }); }
     }
     for (const t of world.traps) {
       if (t.state === 'set' && p.alive() && p.grounded && p.state !== PS.EXECUTE && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp) {
@@ -943,7 +976,7 @@ const Game = {
       f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
     });
     updateDust(t);
-    swordTrail.update(!visuals.quality().ultra && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox)), p.rig);
+    swordTrail.update(!visuals.quality().combatFx && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox)), p.rig);
     groundFx.update(frameDt);
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);

@@ -167,7 +167,7 @@ function validateData() {
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
-    for (const k of ['wakeZones', 'clearGates']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
+    for (const k of ['wakeZones', 'clearGates', 'steer']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
@@ -228,6 +228,7 @@ function validateData() {
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)
+  checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
   for (const [n, E] of Object.entries(FX_ELEMENTS))
@@ -250,28 +251,51 @@ function validateData() {
       if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
     }
   }
-  // Story mode (js/data/story.js): each chapter and the tutorial name a real level, once each, with a title and a line.
-  const storyIds = [STORY.tutorial, ...STORY.chapters].map(c => c && c.level);
-  for (const c of [STORY.tutorial, ...STORY.chapters]) {
-    const tag = `Story chapter "${c && c.level}"`;
-    need(c && LEVELS.some(l => l.id === c.level), `${tag}: no level with that id in LEVELS.`);
-    if (!c) continue;
-    need(typeof c.title === 'string' && c.title && typeof c.line === 'string', `${tag}: needs a title and a line.`);
-    if ('loadout' in c) for (const [id, r] of Object.entries(c.loadout || {}))
-      need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
+  // Story mode (js/data/story.js): each campaign's chapters and tutorial name a real level, once each, with a title and
+  // a line; every campaign has its own id, save slot and texts, and no level belongs to two campaigns' chapters.
+  const storyIdsAll = [], campaignIds = new Set();
+  for (const C of STORIES) {
+    const w = `Story "${C && C.id}"`;
+    need(C && typeof C.id === 'string' && !campaignIds.has(C.id) && typeof CONFIG.story.saveKeys[C.id] === 'string', `${w}: needs a unique id with a save key in CONFIG.story.saveKeys.`);
+    if (!C) continue;
+    campaignIds.add(C.id);
+    for (const k of ['name', 'short', 'menuTitle', 'menuSub', 'description', 'done']) need(typeof C[k] === 'string' && C[k].length > 0, `${w}: ${k} must be a line of text.`);
+    need(C.credits && typeof C.credits.companion === 'string' && Array.isArray(C.credits.foes) && C.credits.foes.every(f => typeof f === 'string'), `${w}: credits need a companion and a list of foes.`);
+    need(C.progress && typeof C.progress === 'object', `${w}: progress must be an object.`);
+    const list = [...(C.tutorial ? [C.tutorial] : []), ...(C.chapters || [])], storyIds = list.map(c => c && c.level);
+    for (const c of list) {
+      const tag = `${w} chapter "${c && c.level}"`;
+      need(c && ALL_LEVELS.some(l => l.id === c.level), `${tag}: no level with that id.`);
+      if (!c) continue;
+      need(typeof c.title === 'string' && c.title && typeof c.line === 'string', `${tag}: needs a title and a line.`);
+      if ('loadout' in c) for (const [id, r] of Object.entries(c.loadout || {}))
+        need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
+    }
+    need(new Set(storyIds).size === storyIds.length && (C.chapters || []).length > 0, `${w}: each level may appear only once, and there must be a chapter.`);
+    storyIdsAll.push(...(C.chapters || []).map(c => c && c.level));
   }
-  need(new Set(storyIds).size === storyIds.length && STORY.chapters.length > 0, 'Story: each level may appear only once, and there must be a chapter.');
+  need(new Set(storyIdsAll).size === storyIdsAll.length, 'Story: a level may be a chapter of only one campaign.');
   // Lore (js/data/lore.js, v5.1): the NPC's model, and per level a dialogue, inscriptions and scenes with readable text.
   const lines = a => Array.isArray(a) && a.length > 0 && a.every(t => typeof t === 'string' && t.trim().length > 0);
   need(LORE.npc && typeof LORE.npc.name === 'string' && LORE.npc.model in MODEL_DEFS && num(LORE.npc.scale) && num(LORE.npc.bulk), 'Lore: the NPC needs a name, a model in MODEL_DEFS, scale and bulk.');
   need(lines(LORE.ending), 'Lore: ending must be a list of cards (text).');
+  // v7.0: the rest of the cast (a level's NPC may name one with `who`) and each road's own ending cards (by level id).
+  for (const [id, W] of Object.entries(LORE.cast || {}))
+    need(W && typeof W.name === 'string' && W.model in MODEL_DEFS && num(W.scale) && num(W.bulk) && (!('halo' in W) || Number.isInteger(W.halo)),
+      `Lore cast "${id}": needs a name, a model in MODEL_DEFS, scale and bulk (and halo, a colour, if given).`);
+  for (const [id, cards] of Object.entries(LORE.endings || {})) {
+    const L = ALL_LEVELS.find(l => l.id === id);
+    need(L && L.ending === true && lines(cards), `Lore ending "${id}": must name a level with ending: true, and list its cards (text).`);
+  }
   const inscIds = new Set();
   for (const [id, D] of Object.entries(LORE.levels)) {
     const tag = `Lore "${id}"`;
-    need(LEVELS.some(l => l.id === id), `${tag}: no level with that id in LEVELS.`);
+    need(ALL_LEVELS.some(l => l.id === id), `${tag}: no level with that id.`);
     for (const N of D.npcs || []) {
-      const L = LEVELS.find(l => l.id === id);
+      const L = ALL_LEVELS.find(l => l.id === id);
       need(num(N.x) && num(N.z) && num(N.yaw) && ['stand', 'sit'].includes(N.pose) && lines(N.lines) && typeof N.idle === 'string', `${tag}: the NPC needs x, z, yaw, pose (stand/sit), lines and an idle line.`);
+      if ('who' in N) need(!!(LORE.cast && LORE.cast[N.who]), `${tag}: the NPC's who "${N.who}" is not in LORE.cast.`);
+      if ('spirit' in N) need(typeof N.spirit === 'boolean', `${tag}: spirit must be true or false.`);
       if ('solid' in N) need(Array.isArray(N.solid) && N.solid.length === 4 && N.solid.every(num) && N.solid[0] < N.solid[1] && N.solid[2] < N.solid[3], `${tag}: solid must be [x0, x1, z0, z1].`);
       if ('after' in N) need(L && (L.gated || []).some(g => g.id === N.after), `${tag}: the NPC's after must name a zone of the level.`);
       if ('bonfire' in N) need(L && L.bonfires.some(b => b.id === N.bonfire), `${tag}: the NPC's bonfire must name a bonfire of the level.`);
@@ -478,6 +502,16 @@ function validateRooms(L, where, need, num) {
   }
   // The last level's extras (v4.3, js/finale.js): out-of-reach sightings, ambush hints, developer jumps.
   if ('ending' in L) need(typeof L.ending === 'boolean', `${where}: ending must be true or false.`);
+  // v7.0: a level may grant more flasks, and may lay hazard floors (rot) that hurt while stood in.
+  if ('flasks' in L) need(Number.isInteger(L.flasks) && L.flasks >= 1 && L.flasks <= 12, `${where}: flasks must be a whole number from 1 to 12.`);
+  if ('hazards' in L) need(Array.isArray(L.hazards), `${where}: hazards must be a list.`);
+  for (const h of Array.isArray(L.hazards) ? L.hazards : []) {
+    const tag = `${where} hazard "${h && h.id}"`;
+    need(h && typeof h.id === 'string' && rectOk(h.rect) && num(h.dps) && h.dps > 0 && ['rot'].includes(h.kind) && (!('y' in h) || num(h.y)),
+      `${tag}: needs an id, a rect, a kind ('rot') and dps above 0 (and y, if given, a number).`);
+    if (h && rectOk(h.rect)) need(inset(h.rect).every(([x, z]) => onFloor(x, z, h.y ?? 0)), `${tag}: its rect must lie on the floor at y ${h.y ?? 0}.`);
+    if (h && rectOk(h.rect)) need(!L.bonfires.some(b => inRect(h.rect, b.spawn.x, b.spawn.z) && Math.abs((b.spawn.y ?? 0) - (h.y ?? 0)) < 1), `${tag}: covers a bonfire's spawn.`);
+  }
   for (const sp of L.spectators || []) {
     const tag = `${where} spectator "${sp.id}"`, D = ENEMY_BY_ID[sp.enemy];
     need(!!D && !!D.model, `${tag}: enemy "${sp.enemy}" must exist and have a model.`);
@@ -499,7 +533,8 @@ function validateRooms(L, where, need, num) {
     }
     const other = (L.houses || []).find(O => O !== Hs && overlap(O.rect, Hs.rect));
     need(!other, `${tag}: overlaps the house at [${other && other.rect.join(', ')}]; houses may touch, not overlap.`);
-    const faces = houseFaces(Hs, regions);
+    // v7.0: a house given its own `y` may stand over a room that lies wholly beneath it (a cellar under a street).
+    const faces = houseFaces(Hs, regions).filter(R => !(Hs.y !== undefined && R.top <= y + 0.05));
     need(faces.length > 0 && y <= Math.min(...faces.map(R => R.lo)) + 0.05,
       `${tag}: is off a floor: it must face a room, and stand at or below the lowest floor it faces (its base is at ${y}).`);
   }

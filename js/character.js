@@ -165,14 +165,14 @@ function edgeStop(b, mx, mz) {
 // Walking round props (a level's `props`): when one stands across the way ahead (within `CONFIG.props.lookahead` m,
 // or `goal` m if that is nearer), head for the corner of it, grown by the body's radius and `clearance`, that turns
 // the course least of its two outermost as seen from the body, so the body walks round it rather than pressing into
-// it. Returns the velocity to use (same speed). Only props: walls and pillars are met as before.
+// it. Returns the velocity to use (same speed). Props; with a level's `steer` (v7.0) houses, pillars and blocks too.
 function steerAroundProps(b, tx, tz, goal = Infinity) {
   const sp = Math.hypot(tx, tz), C = CONFIG.props;
   if (sp < 1e-6 || !world.hasProps) return [tx, tz];
   const ux = tx / sp, uz = tz / sp, look = Math.min(C.lookahead, goal), r = b.radius + C.clearance, rh = b.radius + C.clearance * 0.5;
   let hit = null, hitT = Infinity;
   for (const s of world.solids) {
-    if (s.kind !== 'prop' || s.y1 <= b.y + CONFIG.height.stepUp || s.y0 >= b.y + b.height) continue;
+    if (!(world.steerKinds || STEER_PROPS).has(s.kind) || s.y1 <= b.y + CONFIG.height.stepUp || s.y0 >= b.y + b.height) continue;
     const near = { x0: s.x0 - rh, x1: s.x1 + rh, z0: s.z0 - rh, z1: s.z1 + rh };
     if (b.x > near.x0 && b.x < near.x1 && b.z > near.z0 && b.z < near.z1) continue;   // already brushing it: collision slides it on
     const t = segBox(b.x, b.z, ux * look, uz * look, near);

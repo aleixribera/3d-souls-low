@@ -1,4 +1,4 @@
-# LORE — the source of truth for the story of Ashmere
+# LORE — the source of truth for the story of Ashmere (Part II: the Lands Between)
 
 Every line of story in the game (Story mode titles and lines, boss names, level descriptions, the NPC's dialogues,
 the inscriptions, the ending) must agree with this file. Change the story here first, then in the game.
@@ -283,3 +283,172 @@ Story mode's last screen: *The ash has stopped falling. The road is walked.*
 | The town of Level 3 | Corvel |
 | The NPC | Ysolde of Corvel |
 | The player | nameless; once the King's Blade, the champion |
+
+---
+---
+
+# PART II — The Lands Between: the Elden Throne (the second road, v7.0)
+
+The second Story road (`LANDS_STORY` in `js/data/story.js`) is a different tale in a different world, told the same
+way: a chapter title and line over each loading screen, a guide who waits by the first bonfire of every land (Talk:
+the bonfire key), messages and tablets that glow and can be read, and an ending. It borrows the names of Elden Ring:
+the eight lands end in the eight bosses of the Elden Ring Bosses mode, in that mode's order. Nothing here touches
+Ashmere's story above. Same voice: archaic, understated, melancholic, tender in places.
+
+## II.1 The world
+
+The **Elden Ring** is shattered. Its shards, the **Great Runes**, went to the demigods, who warred over them and went
+mad with them. The **Tarnished**, exiles who lost the grace of gold, are called back by **grace** to gather the runes,
+mend the Ring and sit the **Elden Throne** at the foot of the **Erdtree**.
+
+The player is a Tarnished, nameless, called back from death on **Stormhill**.
+
+## II.2 The guide — Seren, the Grace-Bearer
+
+**Seren** is a slight maiden in pale robes and a deep grey hood who carries a lantern lit with the last of the grace.
+She sees where grace points, and goes ahead to every site of grace (the bonfires) to wait there. She cannot fight.
+She was born under the Erdtree, in Leyndell. She has always known that the Erdtree's thorns, when they close, can only
+be burned, and that her flame is what will burn them.
+
+Her arc: welcome (1), warning (2-3), foreboding (4), sacrifice — after Leyndell she has given the Erdtree her flame, and
+from the ashen capital on she appears as **a spirit of grace**, translucent and glowing (5-8) — and promise (8).
+Like Ysolde, she is never hostile, cannot be attacked and cannot die. Her look in the game: `MODEL_DEFS.seren`.
+
+## II.3 The road
+
+| Land | Title (loading screen) | Boss | New enemy | Its place |
+|---|---|---|---|---|
+| 1 | STORMHILL | Margit, the Fell Omen | Omenkin | A storm-lashed heath, the Stormgate gorge, a cliff path with no rail, Stormveil's gate bridge. |
+| 2 | STORMVEIL CASTLE | Godrick the Grafted | Grafted Scion | The castle in the rain: a barred main gate, the cliff walk, the open rampart, the grafting hall, the tower roof. |
+| 3 | THE STORMHILL EVERGAOL | The Crucible Knight | Crucible Squire | A prison of stars: stone cells in a night sky, bridges with no rail, the great evergaol ring. |
+| 4 | LEYNDELL, ROYAL CAPITAL | Morgott, the Omen King | Leyndell Knight | The golden city under the Erdtree: the avenue, the fountain plaza, the great root over the chasm, the Elden Throne's court. |
+| 5 | LEYNDELL, ASHEN CAPITAL | Godfrey, First Elden Lord | Ashen Warrior | The same city burned: a lane that gives way into the cellars, cinders, the throne in ash. |
+| 6 | CRUMBLING FARUM AZULA | Maliketh, the Black Blade | Beastman of Farum Azula | Ruins adrift in an endless storm over a sea of cloud; a colonnade that crumbles; a dragon in the sky. |
+| 7 | THE ELDEN THRONE | Radagon of the Golden Order | Golden Zealot | Inside the burnt Erdtree, still shining: hollows of golden wood, roots over a golden abyss. |
+| 8 | THE HALIGTREE | Malenia, Blade of Miquella | Cleanrot Knight | The frozen boughs of Miquella's tree, Elphael, the scarlet rot, the lake. |
+
+The chapter lines (one per land, over its loading screen) are in `js/data/story.js` and read, in order:
+
+1. The Elden Ring lies shattered, and the demigods who took its shards have gone mad with them. Grace has called you back from death, Tarnished. The road to the throne begins at Stormveil, and the Fell Omen keeps its gate.
+2. Past the Omen stands the castle of Godrick the Grafted, who sews the limbs of the fallen onto his own body, and keeps a Great Rune he never earned.
+3. One Great Rune will not open the capital. The second lies sealed in an evergaol, a prison of stars, with the last knight of the Crucible set to guard it for ever.
+4. Two runes, and the capital's gate opens. Under the Erdtree the golden city waits, and its last defender: Morgott, the Omen King.
+5. The Erdtree's thorns would let no one in, so Seren gave it her flame. The tree burned, and the city with it. In the ash, the first Elden Lord has come home to his throne.
+6. The ash has cleared the way, but the throne's doors hold: Death itself is sealed behind them. Its keeper, the Black Blade, waits in Farum Azula, the dragons' city torn loose from time.
+7. Destined Death is free. Inside the burnt Erdtree, at the foot of the throne, the Golden Order still has a body, and its name is Radagon.
+8. The Ring will not mend: one shard is missing. Malenia, Blade of Miquella, carried it to the Haligtree in the frozen north, where the scarlet rot blooms.
+
+## II.4 Seren's words
+
+### Land 1 — Stormhill (in the Chapel of Anticipation, by the first bonfire)
+- So grace has called you back. I wondered which of you it would choose.
+- I am Seren. I carry what is left of the grace, in this lantern, and I can see where it points.
+- The Elden Ring was broken. Its shards, the Great Runes, went to the demigods, and the demigods went to war, and then to madness.
+- Gather the runes, mend the Ring, and sit the Elden Throne. That is what grace wants of you. Of all of you.
+- The road begins at Stormveil. Its gate is kept by an Omen, a cursed thing with gold in its hands. He has turned back every Tarnished before you.
+- Wherever you see the light rise from a site of grace, I will have been there. Rest at each one. You will need them.
+- Go on. I cannot fight for you. I can only show you the way.
+- *Idle:* The gate is east, past the heath and the gorge. Mind the cliff path.
+
+### Land 2 — Stormveil Castle (in the gatehouse, by the first bonfire)
+- You passed the Omen. I did not think anyone would, truly.
+- Godrick holds the castle. He sews the limbs of the fallen onto his own body, and thinks it makes him greater.
+- He has a Great Rune, his grandmother's. He has never earned it.
+- The main gate is barred. Take the side passage, along the cliffs. Things wait on the walls there.
+- And on the rampart the sea is very close. Do not let anything push you to it.
+- *Idle:* The side passage is south of the yard. The sea is louder than it looks.
+
+### Land 3 — The Stormhill Evergaol (on the landing, by the first bonfire)
+- This is an evergaol: a prison made of a piece of sky. The Golden Order sealed what it feared in places like this.
+- There is a knight here, of the Crucible, from before the Order. The old life still runs in him. It shows as gold, as wings, as a tail.
+- He guards a second rune. With two, the capital's gate will open to you.
+- The bridges have no rail, and under them there is only sky. Do not look down too long.
+- I am sorry I cannot carry your sword. I can only carry the light.
+- *Idle:* The knight waits in the great ring, beyond the last cell.
+
+### Land 4 — Leyndell, Royal Capital (inside the capital gate, by the first bonfire)
+- Leyndell. The golden city. I was born under that tree, though you would not guess it.
+- Morgott keeps it now: an Omen, like the one at Stormveil. Those horned things were his brothers.
+- He is the last who still defends the Erdtree. He does it out of love, I think. That is the cruelest part.
+- When he falls, the tree will close itself in thorns. It does not want anyone to reach the throne.
+- There is only one way through thorns like those. Fire. I have known that for a long time.
+- Do not worry for me. Go.
+- *Idle:* The throne is north, at the foot of the tree, past the plaza and the great root.
+
+### Land 5 — Leyndell, Ashen Capital (her spirit, inside the ash gate)
+- You are still here. Good. I hoped you would be.
+- I gave the Erdtree my flame, as I always knew I would. It burned. The city burned with it.
+- What you see is only grace now. It is enough to light the way, I think.
+- But the fire woke someone. The first Elden Lord, Godfrey, has come back to the throne he left long ago.
+- Beware the market lane. The fire ate the ground beneath it.
+- *Idle:* The throne is north of the plaza. He is waiting for you there.
+
+### Land 6 — Crumbling Farum Azula (her spirit, on the arrival)
+- This is Farum Azula, the city of the dragons. It has been falling apart, very slowly, since before the Order.
+- The throne's doors are sealed with Death itself. Destined Death, which the Order locked away.
+- Its keeper is Maliketh, the Black Blade, the queen's shadow. He will not give it up.
+- Free it, and nothing will stand between you and the throne.
+- The floors here are old. The colonnade will not hold you. Fall, and fight, and climb.
+- *Idle:* The great bridge is at the top of the spire. He waits on it.
+
+### Land 7 — The Elden Throne (her spirit, in the root hollow)
+- We are inside the tree. Even burnt, its heart still shines.
+- At the foot of the throne stands Radagon. He was the queen's husband, and he was the queen. The Order made them one.
+- He is the Golden Order's body, and the Order will not let the Ring be made anew without a fight.
+- His zealots vanish and appear where you stand. When the floor glows beneath you, move.
+- *Idle:* Marika's hall is east, past the chapel of the Order.
+
+### Land 8 — The Haligtree (her spirit, on the frozen ledge; then by the last bonfire, at the lake shore)
+- The Ring will not mend. One shard is missing, the last.
+- Malenia took it here, to the Haligtree, her brother's tree. She has never lost a fight.
+- Below the boughs the scarlet rot has taken everything. Do not stand in it. It eats.
+- Her knights still keep her, in gold and crimson. Every blow they land feeds them a little.
+- When it is done, bring the rune to me. I will be there. I promise.
+- *Idle:* She waits by the lake, below the rot.
+- (At the lake shore) She is beyond the fog. I can feel the rot from here.
+- (At the lake shore) Whatever happens, the light came this far with you. That was not nothing.
+- *Idle (lake shore):* Go on. I will wait.
+
+## II.5 Messages and tablets
+
+Messages are words left on the ground by other Tarnished (a glowing mark: **Message**); tablets are older.
+
+| Land | Label | Text |
+|---|---|---|
+| 1 | Chapel tablet | "Here the Tarnished waited for the call of grace. Few were called. Fewer came back." |
+| 1 | Message (the heath) | "Omen ahead. Patience." |
+| 1 | Message (the bridge yard) | "His swings wait. Do not." |
+| 2 | Message (the side passage) | "Look up." |
+| 2 | Bloodstained plaque (the grafting hall) | "Lord Godrick, by the grace of the grafts, the Golden Lineage made whole." Scratched below: "made of us." |
+| 3 | Evergaol seal (the landing) | "Sealed by the Golden Order: a knight of the Crucible, who would not kneel. Let the stars keep him." |
+| 3 | Message (the isle) | "Ahead, a tail. Then wings." |
+| 4 | Message (the avenue) | "Gold, everywhere. Still, knights." |
+| 4 | Throne inscription (the throne gate) | "The Elden Throne, at the foot of the Erdtree. None but the Lord shall sit." |
+| 5 | Message (the ash street) | "The lane ahead. No way round." |
+| 5 | Epitaph (the burnt yard) | "Here burned the capital, that the way might open. Forgive us." |
+| 6 | Message (the colonnade's head) | "The floor is lying." |
+| 6 | Dragon script (the wind terrace) | Weathered marks you cannot read, and one you can: a sword over a closed eye. |
+| 7 | Message (the root hollow) | "When the floor glows, move." |
+| 7 | Golden tablet (the chapel of the Order) | "The Golden Order is eternal. All that lives returns to the Erdtree." |
+| 8 | Message (the frozen ledge) | "Do not let them land a blow. They drink it." |
+| 8 | Elphael inscription (Elphael's yard) | "Here all are welcome, the cursed and the cast out. So swore Miquella." |
+| 8 | Message (the lake shore) | "Her dance. Run from the first; roll the rest." |
+
+## II.6 The ending
+
+1. Malenia sinks to her knees in the lake, and the scarlet blossoms close, one by one.
+2. The last Great Rune is warm in your hand. Around it the others turn, and find their places.
+3. At the foot of the burnt Erdtree, a lantern's light gathers the shards into a ring of gold.
+4. The Elden Ring is whole. The throne is yours, Tarnished, if you will sit.
+5. Somewhere, a maiden's lantern is lit again.
+
+Then the credits, which name the eight lands under *The road*, Seren under *Who walked beside you* and the eight bosses.
+Story mode's last screen for this road: *The Elden Ring is whole. Somewhere, a maiden's lantern is lit again.*
+
+## II.7 Names (fixed)
+
+| Thing | Name |
+|---|---|
+| The guide | Seren, the Grace-Bearer |
+| The player | a Tarnished, nameless |
+| The new foes | Omenkin; Grafted Scion; Crucible Squire; Leyndell Knight; Ashen Warrior; Beastman of Farum Azula; Golden Zealot; Cleanrot Knight |

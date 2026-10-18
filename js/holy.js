@@ -39,7 +39,7 @@ const holy = (() => {
     if (e.rig.holySigil) return e.rig.holySigil;
     const g = new THREE.Group(), rune = new THREE.Mesh(RUNE, add(H.color)), pillar = new THREE.Mesh(PILLAR, add(H.core));
     const light = new THREE.PointLight(H.color, 0, H.lightRange); light.position.y = 1;
-    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().ultra;
+    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().combatFx;
     g.userData.warmUp = true;
     g.add(rune, pillar, light); g.visible = false; scene.add(g);
     sigils.push({ e, g });

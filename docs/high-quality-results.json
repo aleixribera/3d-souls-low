@@ -1,0 +1,1894 @@
+{
+  "date": "2026-10-18",
+  "viewport": [
+    1280,
+    720
+  ],
+  "errors": [],
+  "rows": [
+    {
+      "quality": "low",
+      "dpr": 1,
+      "id": "long-hall",
+      "buildMs": 3078.7000000029802,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 1.8999999985098839,
+        "p95": 2.3000000044703484
+      },
+      "gpuMs": {
+        "median": 3.541248,
+        "p95": 4.729376
+      },
+      "calls": {
+        "median": 255,
+        "p95": 255
+      },
+      "triangles": {
+        "median": 109825,
+        "p95": 109825
+      },
+      "memory": {
+        "geometries": 150,
+        "textures": 103
+      },
+      "programs": 34,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 1,
+      "id": "burning-town",
+      "buildMs": 1705.8999999985099,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 1.7999999970197678,
+        "p95": 2.2000000029802322
+      },
+      "gpuMs": {
+        "median": 3.5872,
+        "p95": 4.502208
+      },
+      "calls": {
+        "median": 209,
+        "p95": 209
+      },
+      "triangles": {
+        "median": 177651,
+        "p95": 177651
+      },
+      "memory": {
+        "geometries": 272,
+        "textures": 176
+      },
+      "programs": 36,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 1,
+      "id": "final-castle",
+      "buildMs": 3839.0999999940395,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2.600000001490116,
+        "p95": 3.100000001490116
+      },
+      "gpuMs": {
+        "median": 3.784896,
+        "p95": 4.498784
+      },
+      "calls": {
+        "median": 331,
+        "p95": 341
+      },
+      "triangles": {
+        "median": 147420,
+        "p95": 147540
+      },
+      "memory": {
+        "geometries": 486,
+        "textures": 349
+      },
+      "programs": 63,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 1,
+      "id": "godrick",
+      "buildMs": 1527.8999999985099,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 0.8999999985098839,
+        "p95": 1.1000000014901161
+      },
+      "gpuMs": {
+        "median": 2.94016,
+        "p95": 4.045504
+      },
+      "calls": {
+        "median": 51,
+        "p95": 51
+      },
+      "triangles": {
+        "median": 41243,
+        "p95": 41243
+      },
+      "memory": {
+        "geometries": 330,
+        "textures": 326
+      },
+      "programs": 117,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 1,
+      "id": "long-hall",
+      "buildMs": 3321.8000000044703,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2.2000000029802322,
+        "p95": 2.8000000044703484
+      },
+      "gpuMs": {
+        "median": 4.403168,
+        "p95": 5.458816
+      },
+      "calls": {
+        "median": 302,
+        "p95": 302
+      },
+      "triangles": {
+        "median": 110360,
+        "p95": 110360
+      },
+      "memory": {
+        "geometries": 153,
+        "textures": 116
+      },
+      "programs": 76,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 1,
+      "id": "burning-town",
+      "buildMs": 1700.3000000044703,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2,
+        "p95": 2.4000000059604645
+      },
+      "gpuMs": {
+        "median": 4.034176,
+        "p95": 4.687424
+      },
+      "calls": {
+        "median": 247,
+        "p95": 247
+      },
+      "triangles": {
+        "median": 177764,
+        "p95": 177764
+      },
+      "memory": {
+        "geometries": 274,
+        "textures": 189
+      },
+      "programs": 81,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 1,
+      "id": "final-castle",
+      "buildMs": 4359.89999999851,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2.899999998509884,
+        "p95": 4.199999995529652
+      },
+      "gpuMs": {
+        "median": 4.649792,
+        "p95": 5.351456
+      },
+      "calls": {
+        "median": 393,
+        "p95": 403
+      },
+      "triangles": {
+        "median": 159639,
+        "p95": 159759
+      },
+      "memory": {
+        "geometries": 489,
+        "textures": 362
+      },
+      "programs": 133,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 1,
+      "id": "godrick",
+      "buildMs": 1498.1000000014901,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 0.8999999985098839,
+        "p95": 1.2999999970197678
+      },
+      "gpuMs": {
+        "median": 3.5968,
+        "p95": 4.447296
+      },
+      "calls": {
+        "median": 68,
+        "p95": 68
+      },
+      "triangles": {
+        "median": 58062,
+        "p95": 58062
+      },
+      "memory": {
+        "geometries": 332,
+        "textures": 339
+      },
+      "programs": 224,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 1,
+      "id": "long-hall",
+      "buildMs": 4686.79999999702,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 4,
+        "p95": 5.4000000059604645
+      },
+      "gpuMs": {
+        "median": 4.674752,
+        "p95": 5.383648
+      },
+      "calls": {
+        "median": 590,
+        "p95": 590
+      },
+      "triangles": {
+        "median": 485454,
+        "p95": 485454
+      },
+      "memory": {
+        "geometries": 162,
+        "textures": 124
+      },
+      "programs": 95,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 8,
+        "noDepth": 335,
+        "reflected": 59,
+        "waves": 0,
+        "sweeps": 3,
+        "sun": 0.95,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 1,
+      "id": "burning-town",
+      "buildMs": 1810.1000000014901,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 3.600000001490116,
+        "p95": 4.799999997019768
+      },
+      "gpuMs": {
+        "median": 5.299008,
+        "p95": 5.72304
+      },
+      "calls": {
+        "median": 497,
+        "p95": 497
+      },
+      "triangles": {
+        "median": 604628,
+        "p95": 604628
+      },
+      "memory": {
+        "geometries": 289,
+        "textures": 197
+      },
+      "programs": 101,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 3,
+        "noDepth": 412,
+        "reflected": 80,
+        "waves": 0,
+        "sweeps": 5,
+        "sun": 1.4,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 1,
+      "id": "final-castle",
+      "buildMs": 5194.39999999851,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 4.799999997019768,
+        "p95": 6.899999998509884
+      },
+      "gpuMs": {
+        "median": 5.262336,
+        "p95": 6.103008
+      },
+      "calls": {
+        "median": 683,
+        "p95": 683
+      },
+      "triangles": {
+        "median": 558248,
+        "p95": 558248
+      },
+      "memory": {
+        "geometries": 498,
+        "textures": 370
+      },
+      "programs": 160,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 7,
+        "noDepth": 549,
+        "reflected": 161,
+        "waves": 0,
+        "sweeps": 7,
+        "sun": 1.68,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 1,
+      "id": "godrick",
+      "buildMs": 2221.2999999970198,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 1.5,
+        "p95": 2.0999999940395355
+      },
+      "gpuMs": {
+        "median": 4.351488,
+        "p95": 6.684256
+      },
+      "calls": {
+        "median": 153,
+        "p95": 153
+      },
+      "triangles": {
+        "median": 229484,
+        "p95": 229484
+      },
+      "memory": {
+        "geometries": 341,
+        "textures": 347
+      },
+      "programs": 210,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1280,
+        720,
+        4
+      ],
+      "bloomFirstTarget": [
+        320,
+        180
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 1,
+        "noDepth": 276,
+        "reflected": 11,
+        "waves": 0,
+        "sweeps": 9,
+        "sun": 1.6099999999999999,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 2,
+      "id": "long-hall",
+      "buildMs": 2269.5999999940395,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2.100000001490116,
+        "p95": 3.100000001490116
+      },
+      "gpuMs": {
+        "median": 3.758688,
+        "p95": 4.803328
+      },
+      "calls": {
+        "median": 255,
+        "p95": 255
+      },
+      "triangles": {
+        "median": 109825,
+        "p95": 109825
+      },
+      "memory": {
+        "geometries": 150,
+        "textures": 103
+      },
+      "programs": 34,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 2,
+      "id": "burning-town",
+      "buildMs": 1602.3999999985099,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 1.7000000029802322,
+        "p95": 2.1999999955296516
+      },
+      "gpuMs": {
+        "median": 3.556128,
+        "p95": 4.588992
+      },
+      "calls": {
+        "median": 209,
+        "p95": 209
+      },
+      "triangles": {
+        "median": 177651,
+        "p95": 177651
+      },
+      "memory": {
+        "geometries": 272,
+        "textures": 176
+      },
+      "programs": 36,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 2,
+      "id": "final-castle",
+      "buildMs": 3209.6999999955297,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 2.6999999955296516,
+        "p95": 3.2000000029802322
+      },
+      "gpuMs": {
+        "median": 3.984672,
+        "p95": 4.86288
+      },
+      "calls": {
+        "median": 331,
+        "p95": 341
+      },
+      "triangles": {
+        "median": 147420,
+        "p95": 147540
+      },
+      "memory": {
+        "geometries": 486,
+        "textures": 349
+      },
+      "programs": 63,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "low",
+      "dpr": 2,
+      "id": "godrick",
+      "buildMs": 1067,
+      "renderSize": [
+        1280,
+        720
+      ],
+      "cpuMs": {
+        "median": 1,
+        "p95": 1.2999999970197678
+      },
+      "gpuMs": {
+        "median": 2.565056,
+        "p95": 3.524928
+      },
+      "calls": {
+        "median": 51,
+        "p95": 51
+      },
+      "triangles": {
+        "median": 41243,
+        "p95": 41243
+      },
+      "memory": {
+        "geometries": 330,
+        "textures": 326
+      },
+      "programs": 117,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": false
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1,
+        1,
+        0
+      ],
+      "bloomFirstTarget": [
+        1,
+        1
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 2,
+      "id": "long-hall",
+      "buildMs": 2299.89999999851,
+      "renderSize": [
+        1920,
+        1080
+      ],
+      "cpuMs": {
+        "median": 2.3000000044703484,
+        "p95": 2.8000000044703484
+      },
+      "gpuMs": {
+        "median": 4.88784,
+        "p95": 5.739616
+      },
+      "calls": {
+        "median": 302,
+        "p95": 302
+      },
+      "triangles": {
+        "median": 110360,
+        "p95": 110360
+      },
+      "memory": {
+        "geometries": 153,
+        "textures": 116
+      },
+      "programs": 76,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1920,
+        1080,
+        4
+      ],
+      "bloomFirstTarget": [
+        480,
+        270
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 2,
+      "id": "burning-town",
+      "buildMs": 1588,
+      "renderSize": [
+        1920,
+        1080
+      ],
+      "cpuMs": {
+        "median": 2,
+        "p95": 2.6999999955296516
+      },
+      "gpuMs": {
+        "median": 4.560032,
+        "p95": 5.669792
+      },
+      "calls": {
+        "median": 247,
+        "p95": 247
+      },
+      "triangles": {
+        "median": 177764,
+        "p95": 177764
+      },
+      "memory": {
+        "geometries": 274,
+        "textures": 189
+      },
+      "programs": 81,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1920,
+        1080,
+        4
+      ],
+      "bloomFirstTarget": [
+        480,
+        270
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 2,
+      "id": "final-castle",
+      "buildMs": 3096.2000000029802,
+      "renderSize": [
+        1920,
+        1080
+      ],
+      "cpuMs": {
+        "median": 2.9000000059604645,
+        "p95": 3.7999999970197678
+      },
+      "gpuMs": {
+        "median": 5.273568,
+        "p95": 5.904928
+      },
+      "calls": {
+        "median": 393,
+        "p95": 403
+      },
+      "triangles": {
+        "median": 159639,
+        "p95": 159759
+      },
+      "memory": {
+        "geometries": 489,
+        "textures": 362
+      },
+      "programs": 133,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1920,
+        1080,
+        4
+      ],
+      "bloomFirstTarget": [
+        480,
+        270
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "high",
+      "dpr": 2,
+      "id": "godrick",
+      "buildMs": 1066,
+      "renderSize": [
+        1920,
+        1080
+      ],
+      "cpuMs": {
+        "median": 1.0999999940395355,
+        "p95": 1.5
+      },
+      "gpuMs": {
+        "median": 3.973216,
+        "p95": 4.874464
+      },
+      "calls": {
+        "median": 68,
+        "p95": 68
+      },
+      "triangles": {
+        "median": 58062,
+        "p95": 58062
+      },
+      "memory": {
+        "geometries": 332,
+        "textures": 339
+      },
+      "programs": 224,
+      "models": {
+        "geo": 1,
+        "tex": 1
+      },
+      "playerTriangles": 10018,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": false
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        1920,
+        1080,
+        4
+      ],
+      "bloomFirstTarget": [
+        480,
+        270
+      ],
+      "ultra": {
+        "on": false,
+        "lights": 0,
+        "noDepth": 0,
+        "reflected": 0,
+        "waves": 0,
+        "sweeps": 0,
+        "sun": 0,
+        "shadows": false
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 2,
+      "id": "long-hall",
+      "buildMs": 2358.5,
+      "renderSize": [
+        2560,
+        1440
+      ],
+      "cpuMs": {
+        "median": 3.4000000059604645,
+        "p95": 4.200000002980232
+      },
+      "gpuMs": {
+        "median": 5.786816,
+        "p95": 6.39648
+      },
+      "calls": {
+        "median": 590,
+        "p95": 590
+      },
+      "triangles": {
+        "median": 485454,
+        "p95": 485454
+      },
+      "memory": {
+        "geometries": 162,
+        "textures": 124
+      },
+      "programs": 95,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        2560,
+        1440,
+        4
+      ],
+      "bloomFirstTarget": [
+        640,
+        360
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 8,
+        "noDepth": 335,
+        "reflected": 59,
+        "waves": 0,
+        "sweeps": 3,
+        "sun": 0.95,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 2,
+      "id": "burning-town",
+      "buildMs": 1596.3000000044703,
+      "renderSize": [
+        2560,
+        1440
+      ],
+      "cpuMs": {
+        "median": 3.2999999970197678,
+        "p95": 4.200000002980232
+      },
+      "gpuMs": {
+        "median": 6.787104,
+        "p95": 7.678208
+      },
+      "calls": {
+        "median": 497,
+        "p95": 497
+      },
+      "triangles": {
+        "median": 604628,
+        "p95": 604628
+      },
+      "memory": {
+        "geometries": 289,
+        "textures": 197
+      },
+      "programs": 101,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        2560,
+        1440,
+        4
+      ],
+      "bloomFirstTarget": [
+        640,
+        360
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 3,
+        "noDepth": 412,
+        "reflected": 80,
+        "waves": 0,
+        "sweeps": 5,
+        "sun": 1.4,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 2,
+      "id": "final-castle",
+      "buildMs": 3167.10000000149,
+      "renderSize": [
+        2560,
+        1440
+      ],
+      "cpuMs": {
+        "median": 4.5,
+        "p95": 5.700000002980232
+      },
+      "gpuMs": {
+        "median": 6.77408,
+        "p95": 7.358848
+      },
+      "calls": {
+        "median": 683,
+        "p95": 683
+      },
+      "triangles": {
+        "median": 558248,
+        "p95": 558248
+      },
+      "memory": {
+        "geometries": 498,
+        "textures": 370
+      },
+      "programs": 160,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        2560,
+        1440,
+        4
+      ],
+      "bloomFirstTarget": [
+        640,
+        360
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 7,
+        "noDepth": 549,
+        "reflected": 161,
+        "waves": 0,
+        "sweeps": 7,
+        "sun": 1.68,
+        "shadows": true
+      }
+    },
+    {
+      "quality": "ultra",
+      "dpr": 2,
+      "id": "godrick",
+      "buildMs": 1097.2999999970198,
+      "renderSize": [
+        2560,
+        1440
+      ],
+      "cpuMs": {
+        "median": 1.7999999970197678,
+        "p95": 2.3000000044703484
+      },
+      "gpuMs": {
+        "median": 6.308832,
+        "p95": 7.42672
+      },
+      "calls": {
+        "median": 153,
+        "p95": 153
+      },
+      "triangles": {
+        "median": 229484,
+        "p95": 229484
+      },
+      "memory": {
+        "geometries": 341,
+        "textures": 347
+      },
+      "programs": 210,
+      "models": {
+        "geo": {
+          "enemy": 1.25,
+          "player": 1.6,
+          "boss": 1.6
+        },
+        "tex": 1
+      },
+      "playerTriangles": 24084,
+      "post": [
+        {
+          "name": "RenderPass",
+          "enabled": true
+        },
+        {
+          "name": "UltraLightPass",
+          "enabled": true
+        },
+        {
+          "name": "UnrealBloomPass",
+          "enabled": true
+        },
+        {
+          "name": "OutputPass",
+          "enabled": true
+        },
+        {
+          "name": "ShaderPass",
+          "enabled": true
+        }
+      ],
+      "mainTarget": [
+        2560,
+        1440,
+        4
+      ],
+      "bloomFirstTarget": [
+        640,
+        360
+      ],
+      "ultra": {
+        "on": true,
+        "lights": 1,
+        "noDepth": 276,
+        "reflected": 11,
+        "waves": 0,
+        "sweeps": 9,
+        "sun": 1.6099999999999999,
+        "shadows": true
+      }
+    }
+  ],
+  "hardware": {
+    "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 (0x00002D05) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "maxSamples": 8
+  }
+}

@@ -204,6 +204,8 @@ class Enemy {
       this.posture = Math.max(0, this.posture - d.posture.decay * dt);
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     this.playerDist = dist;
+    this.huntTime = Math.max(0, (this.huntTime || 0) - dt);   // v7.0: woken into its own zone's fight (wakeZones): leashes wait
+    const hunting = this.huntTime > 0;
     const toPlayer = Math.atan2(dx, dz);
     this.playerRel = angDiff(toPlayer, this.yaw);   // where the player stands round it (rad, + at its left)
     const playerAlive = player.alive();
@@ -266,7 +268,7 @@ class Enemy {
       }
       case ES.SEARCH: {   // lost sight of the player: walk to where it was last seen, look round, then go home
         const S = CONFIG.ai.search;
-        if (!playerAlive || playerFromHome > this.homeLeash || this.stateTime > S.max) { this.setState(ES.RETURN); break; }
+        if (!playerAlive || (!hunting && playerFromHome > this.homeLeash) || this.stateTime > S.max) { this.setState(ES.RETURN); break; }
         if (!sightLost(this, player) && dist <= this.leash && (reach || this.ranged)) { this.setState(ES.CHASE); break; }
         const g = this.lastSeen || this.home, gx = g.x - this.x, gz = g.z - this.z, gd = Math.hypot(gx, gz);
         if (gd < S.arrive || this.searchLook > 0) {   // there: look about a while
@@ -275,14 +277,14 @@ class Enemy {
           if (this.searchLook > S.look) this.setState(ES.RETURN);
           break;
         }
-        const sp = d.speed * S.speedMul;
+        const sp = d.speed * (hunting ? 1 : S.speedMul);   // hunting in its own fight: at full pace, not a wary prowl
         tx = gx / gd * sp; tz = gz / gd * sp;
         this.yaw = turnToward(this.yaw, Math.atan2(gx, gz), d.turnRate * dt);
         break;
       }
       case ES.CHASE: {
         this.unreachable = reach || this.ranged ? 0 : this.unreachable + dt;
-        if (!playerAlive || dist > this.leash || playerFromHome > this.homeLeash || this.unreachable > CONFIG.height.giveUp) {
+        if (!playerAlive || (!hunting && (dist > this.leash || playerFromHome > this.homeLeash)) || this.unreachable > CONFIG.height.giveUp) {
           this.unreachable = 0; this.stepIn = false; this.setState(ES.RETURN); break;
         }
         if (sightLost(this, player)) { this.stepIn = false; this.searchLook = 0; this.setState(ES.SEARCH); break; }

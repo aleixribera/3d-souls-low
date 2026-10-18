@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v6.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -125,8 +125,13 @@ const CONFIG = {
   // Lore (js/lore.js, js/data/lore.js, v5.1): the NPC and inscriptions. Ranges in m, times in s. A line stays on
   // screen lineBase + perChar per character (clamped to lineMin..lineMax), then lineGap of empty screen.
   lore: { talkRange: 3.2, readRange: 2.2, leaveRange: 9, faceRange: 8, floorGap: 2.5, threatRange: 25, sceneRange: 38, glowRange: 8,
-          lineBase: 1.6, perChar: 0.058, lineMin: 2.4, lineMax: 8.5, lineGap: 0.45, turnRate: 4, solidPad: 0.45 },
-  story: { saveKey: 'combatArena.story', saveVersion: 1, titleTime: 3.2 },
+          lineBase: 1.6, perChar: 0.058, lineMin: 2.4, lineMax: 8.5, lineGap: 0.45, turnRate: 4, solidPad: 0.45,
+          // v7.0: an NPC placed as a `spirit` (Seren after the Erdtree burns): translucent, hovering, a pale gold glow behind her.
+          spirit: { opacity: 0.5, halo: 0xffe2a0, haloSize: 4.2, haloOpacity: 0.5, hover: 0.08 } },
+  // Hazard floors (v7.0, a level's `hazards`, js/game.js): the `hazard` event (sound, a flash of the health bar) every `tick` s.
+  hazards: { tick: 0.5 },
+  // saveKeys: one save slot per campaign of STORIES (js/data/story.js); saveKey is Ashmere's, kept for old saves.
+  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands' }, saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -175,6 +180,8 @@ const CONFIG = {
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
         approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1,
         kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 },
+        // v7.0: while the player stands in a woken zone (wakeZones), its members hunt: no leash for `huntTime` s, renewed each step.
+        huntTime: 0.25,
         // Reactions (an attack's `when`, v5.3): `behind` past this angle (rad) from its facing; `flank` between these
         // angles at its left (rad, + is left).
         reactions: { behind: 2.2, flank: [0.6, 1.9], shielded: 0.8, struck: 0.6 } },
@@ -320,14 +327,21 @@ const CONFIG = {
       // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
-      // ultra: every extra of VISUALS.ultra (moon shadows, ambient occlusion, volumetric light, reflections and
-      // the Ultra effects of js/ultra-fx.js). The order here is the order of the Graphics option.
+      // Presentation and lighting are independent: High uses modern combat effects and cached metal reflections;
+      // Ultra adds sculpted anatomy, shadows, AO, volumetrics, ambient procedural fire and refraction.
+      // `ultra` identifies the preset for compatibility; features read their own flags. Graphics cycles in this order.
       low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 1, antialias: false, bloomScale: 1,
-              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false },
+              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
+              modelDetail: { geo: 1, tex: 1, anatomy: false }, combatFx: false, fxBudget: 'low', proceduralFire: false,
+              reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
       high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
-              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false },
+              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
+              modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'high', proceduralFire: false,
+              reflections: true, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
       ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
-               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true },
+               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true,
+               modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
+               reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 0 },
     },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
@@ -336,7 +350,7 @@ const CONFIG = {
     // Strongly red pixels skip the desaturation so the wind-up telegraph never dulls.
     grade: { shadowTint: [0.9, 0.96, 1.08], highlightTint: [1.07, 1.0, 0.9], saturation: 0.8, contrast: 1.05 },
     vignette: { strength: 0.5, softness: 0.55, lowHealthAt: 0.3, lowHealthRate: 3 },   // darker, redder edges below lowHealthAt
-    grain: { amount: 0.03, ultra: 0.015 },   // Ultra: finer grain (the image is already rich)
+    grain: { amount: 0.015, ultra: 0.015 },   // the same fine grain on both post-processed presets
     rim: { strength: 0.32, power: 3.0, mixWhite: 0.45 },     // silhouette light on characters; colour from the level
     // Procedural surfaces. Patterns build the canvas textures (fractions of the texture size); kinds say how
     // each material family weathers (tile sizes in metres; colours multiply the base colour; `relief`: how deep joints
@@ -417,6 +431,55 @@ const CONFIG = {
     // Embers (atmosphere `embers` 0..2): at most `max` sparks in a box round the camera.
     embers: { max: 700, box: [32, 16, 32], size: 0.06, maxPx: 5, color: 0xff7a30, boost: 2.4 },
     // The Ultra preset (quality.ultra). Rendering (js/ultra-post.js) and effects (js/ultra-fx.js), drawing only.
+    // The Lands Between's set pieces (v7.0, a level's `realm`, js/realms.js; drawing only). Counts follow the preset:
+    // particles x `particles` (x `ultraBoost` on Ultra), scenery x `lowShare` on Low and x `ultraBoost` on Ultra.
+    // `coverRate`: how fast weather fades under a roof. tree: per kind its bark, crown and glow colours, its haze, the
+    // trunk's share of the height, boughs and crown blobs per bough, the cap over the top, veins of light in the bark.
+    realms: {
+      ultraBoost: 1.4, lowShare: 0.6, coverRate: 3, hazardPuff: 6,
+      tree: {
+        rim: 0.5,
+        golden: { bark: 0x8a6a34, crown: 0xffc24a, crown2: 0xffe6a0, mix: 0.3, glowColor: 0xffb030, glowAmt: 1.5, haze: 0.26, trunk: 0.5, boughs: 16, crownBlobs: 9, cap: 40, vein: 0.6, halo: 0.22 },
+        burnt: { bark: 0x1c1614, crown: 0, crown2: 0, mix: 0, glowColor: 0xff5a10, glowAmt: 2.4, haze: 0.3, trunk: 0.62, boughs: 14, crownBlobs: 0, cap: 0, vein: 0.35, embers: 10, emberColor: 0xff6a20, halo: 0.1, droop: true },
+        haligtree: { bark: 0xd2cabc, crown: 0xffd890, crown2: 0xd84030, mix: 0.25, glowColor: 0xffc070, glowAmt: 0.85, haze: 0.3, trunk: 0.55, boughs: 18, crownBlobs: 8, cap: 34, vein: 0.2, halo: 0.12 },
+      },
+      pillarHaze: 0.35,
+      stars: { count: 1800, band: 600, radius: 160 },
+      weather: {
+        rain: { count: 1400, box: [36, 22, 36], size: [0.022, 0.95], fall: 16, sway: 0.2, spin: 0, wind: [2, 0, 0.6], opacity: 0.32, shape: 0, color: 0xa8b8c8 },
+        snow: { count: 1100, box: [34, 20, 34], size: [0.07, 0.07], fall: 0.9, sway: 0.8, spin: 0, wind: [0.4, 0, 0.2], opacity: 0.8, shape: 1, color: 0xf0f4ff },
+        leaves: { count: 520, box: [36, 22, 36], size: [0.12, 0.2], fall: 0.9, sway: 1.4, spin: 1.6, wind: [0.5, 0, 0.3], opacity: 0.9, shape: 2, color: 0xffc040 },
+        motes: { count: 600, box: [30, 14, 30], size: [0.06, 0.06], fall: -0.25, sway: 0.6, spin: 0, wind: [0, 0, 0], opacity: 0.9, shape: 1, additive: true, grow: 1, color: 0xffd880 },
+        spores: { count: 700, box: [30, 14, 30], size: [0.05, 0.05], fall: -0.15, sway: 0.5, spin: 0, wind: [0.1, 0, 0.1], opacity: 0.75, shape: 1, additive: true, grow: 1, color: 0xff5a40 },
+        ash: { count: 1200, box: [34, 20, 34], size: [0.06, 0.06], fall: 0.7, sway: 0.9, spin: 0, wind: [0.6, 0, 0.2], opacity: 0.85, shape: 1, color: 0x3a3634 },
+        petals: { count: 400, box: [34, 20, 34], size: [0.09, 0.14], fall: 0.8, sway: 1.2, spin: 2.0, wind: [0.4, 0, 0.2], opacity: 0.95, shape: 2, color: 0xd8302a },
+      },
+      clouds: { scale: 0.004, opacity: 0.95, gap: 14 },
+      dragon: { scale: 2.4 },
+      halo: { thick: 0.012, boost: 1.6, opacity: 0.55, spin: 0.05 },
+      rune: { opacity: 0.85 },
+      beam: { r0: 0.6, r1: 1.4, height: 70, opacity: 0.45, hideNear: 6 },
+      pool: { lift: 0.04, rot: { deep: 0x3a0606, bright: 0xff4a2a, glow: 0.25 }, gold: { deep: 0x5a3a08, bright: 0xffd860, glow: 0.3 }, water: { deep: 0x0a1418, bright: 0x4a6a78, glow: 0 } },
+      bloom: { count: 40 },
+      // Natural ground over a room's floor (a realm's `grounds`): painted once per kind at `size` px, tiling every `tile` m,
+      // laid `lift` m over the floor (over its seams, under blood and cracks). `grain`: bark rings across the long way;
+      // `ember`: glowing specks in the ash (emissive).
+      ground: { lift: 0.014,
+        earth: { size: 256, tile: 7, base: 0x74684e, alt: 0x7e8c50, accent: 0x9a9486, accentMix: 0.7, rough: 1 },
+        snow: { size: 256, tile: 6, base: 0xc8ced8, alt: 0xe4e8ee, accent: 0x9aa2b0, accentMix: 0.35, rough: 0.85 },
+        bark: { size: 256, tile: 5, base: 0x6e5840, alt: 0x957a5a, accent: 0x3a2e22, accentMix: 0.5, rough: 0.95, grain: 9 },
+        goldbark: { size: 256, tile: 5, base: 0x8a6628, alt: 0xb08a42, accent: 0xe8bc64, accentMix: 0.25, rough: 0.7, grain: 9 },
+        palebark: { size: 256, tile: 5, base: 0x9a8e7e, alt: 0xd0c4b0, accent: 0x6a5e50, accentMix: 0.45, rough: 0.9, grain: 9 },
+        ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 } },
+      // A bolt `dist` m from the camera, `height` m tall; the flash's ambient `light` falls away at `decay`/s.
+      lightning: { dist: 150, height: 120, width: 0.9, boost: 3, glow: 120, life: 0.45, decay: 2.6, light: 2.4 },
+    },
+    // Decorative budgets never reduce attack rings, sigils, flame jets or warning shapes.
+    fxBudgets: {
+      low: { density: 0, capacity: 0, ribbons: 0, ribbonSub: 1, light: 0 },
+      high: { density: 0.55, capacity: 0.55, ribbons: 4, ribbonSub: 2, light: 0.65 },
+      ultra: { density: 1, capacity: 1, ribbons: 8, ribbonSub: 4, light: 1 },
+    },
     ultra: {
       // Real-time shadows. The moon is split in two: `share` of it (open sky / roofed levels) becomes a shadow-casting
       // light whose `moonMap` px map covers `moonBox` m either side of the player; ceilings never block it. The
@@ -431,7 +494,7 @@ const CONFIG = {
       // size (js/bodykit.js); bodies spawned after the switch get it.
       // Keep sculpted anatomy (> 1) and silhouette detail without multiplying tiny round parts by ~7x triangles.
       // High's 256/512px textures already cover their size on screen; doubling them mostly adds uploads and memory.
-      models: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1 },
+      models: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true },
       // Volumetric light in the fog, analytic: the nearest `lights` point lights glow in the air out to `reach` of their
       // range (`light` scales it, by the level's fog density over `fogRef`); on open-sky levels the moon's light is
       // ray-marched through its shadow map (`moonSteps` steps out to `moonDist` m, forward-scattering `moonG`).

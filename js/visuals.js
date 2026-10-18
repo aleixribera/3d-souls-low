@@ -32,6 +32,23 @@ function checkVisualData(need, num) {
       && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean' && typeof q.ultra === 'boolean'
       && Number.isInteger(q.msaa) && q.msaa >= 0 && num(q.particles) && q.particles >= 0 && num(q.embers) && q.embers >= 0,
       `CONFIG.VISUALS.quality.${n}: renderScale (0.25..1], bloomScale (0..1], lights (whole, >= 1), msaa (whole, >= 0), particles and embers (>= 0), antialias, simpleSurfaces, glows and ultra (true / false).`);
+  for (const [name, q] of Object.entries(Q)) {
+    const prefix = `CONFIG.VISUALS.quality.${name}`;
+    for (const key of ['combatFx', 'proceduralFire', 'reflections', 'shadows', 'ao', 'volumetrics', 'refraction'])
+      need(typeof q[key] === 'boolean', `${prefix}.${key} must be true / false.`);
+    const d = q.modelDetail, gs = d && (typeof d.geo === 'object' ? ['enemy', 'player', 'boss'].map(k => d.geo[k]) : [d.geo]);
+    need(d && gs.every(g => num(g) && g >= 1 && g <= 3) && num(d.tex) && d.tex > 0 && typeof d.anatomy === 'boolean', `${prefix}.modelDetail needs geometry, texture scale and anatomy.`);
+    need(q.fxBudget in VIS.fxBudgets, `${prefix}.fxBudget names an unknown effect budget.`);
+    need(Number.isInteger(q.warmupSize) && q.warmupSize >= 0, `${prefix}.warmupSize must be a nonnegative integer.`);
+    need(!(q.ao || q.volumetrics || q.refraction) || q.post, `${prefix}: screen lighting requires post-processing.`);
+    need(!q.combatFx || q.post, `${prefix}: modern effects require post-processing.`);
+  }
+  for (const [name, b] of Object.entries(VIS.fxBudgets)) {
+    need(['density', 'capacity', 'light'].every(k => num(b[k]) && b[k] >= 0 && b[k] <= 1)
+      && Number.isInteger(b.ribbons) && b.ribbons >= 0 && b.ribbons <= VIS.ultra.trails.max
+      && Number.isInteger(b.ribbonSub) && b.ribbonSub >= 1 && b.ribbonSub <= VIS.ultra.trails.sub,
+      `CONFIG.VISUALS.fxBudgets.${name}: invalid density, capacity, light or ribbon budget.`);
+  }
   need(VIS.defaultQuality in Q, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a quality preset.`);
   for (const [m, kind] of Object.entries(VIS.surfaces.materials))
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
@@ -444,6 +461,7 @@ void main() {
   ${COLOR_OUT}
 }`;
 // After tone mapping: saturation, split-tone, contrast, vignette (stronger and redder at low health), grain.
+const GRADE_OUTPUT = 'gl_FragColor = vec4(c, 1.0);\n' + COLOR_OUT + '\n  c = gl_FragColor.rgb;';
 const GRADE_SHADER = {
   uniforms: {
     tDiffuse: { value: null }, uShadow: { value: new THREE.Vector3(1, 1, 1) }, uHigh: { value: new THREE.Vector3(1, 1, 1) },
@@ -457,6 +475,8 @@ uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow, uFlash, uHur
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 void main() {
   vec3 c = texture2D(tDiffuse, vUv).rgb;
+  // Preserve the old order: HDR -> tone mapping -> output colour space -> artistic grade.
+  ${GRADE_OUTPUT}
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
   float red = smoothstep(0.25, 0.6, c.r - max(c.g, c.b));   // the red wind-up telegraph keeps full saturation
   c = mix(vec3(l), c, mix(uSat, 1.0, red));
@@ -811,14 +831,37 @@ function floorOf(d, x, z, y) {
 const visuals = (() => {
   const Q = VIS.quality;
   const hemi = new THREE.HemisphereLight(0x000000, 0x000000, 0); scene.add(hemi);
-  // High: scene -> bloom -> tone mapping + sRGB -> grade, vignette and grain. Low: one plain render.
+  // High: scene -> bloom -> combined output/grade. Low: one plain render.
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: Q.high.msaa }));
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), VIS.bloom.strength, VIS.bloom.radius, VIS.bloom.threshold);
   const grade = new ShaderPass(GRADE_SHADER);
-  composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
+  composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(grade);
   const ash = makeAsh(), embers = makeEmberField(), decals = makeBloodDecals(), debris = makeDebris();
   let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [], glows: [], lights: [] }, lowHp = 0, debrisTimer = 0;
   let warmedStage = null, warmedQuality = null;
+  let warmComposer = null, warmBloom = null, warming = false, warmSize = 0;
+  // A separate small pipeline shares the exact grade and scene shaders. Live post targets keep their size.
+  function prepareWarmPipeline() {
+    if (!warmComposer) {
+      warmComposer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }));
+      warmBloom = new UnrealBloomPass(new THREE.Vector2(1, 1), VIS.bloom.strength, VIS.bloom.radius, VIS.bloom.threshold);
+      warmComposer.addPass(new RenderPass(scene, camera)); warmComposer.addPass(warmBloom);
+      warmComposer.addPass(grade);
+      warmComposer.setPixelRatio(1); warmComposer.setSize(quality.warmupSize, quality.warmupSize);
+    }
+    const size = quality.warmupSize;
+    if (warmSize !== size) { warmComposer.setSize(size, size); warmSize = size; }
+    const samples = composer.renderTarget1.samples;
+    for (const rt of [warmComposer.renderTarget1, warmComposer.renderTarget2])
+      if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
+    warmBloom.enabled = quality.bloom;
+    // Allocate the live framebuffer storage now too, so the first playable frame does not allocate it.
+    const target = renderer.getRenderTarget();
+    try {
+      for (const rt of [composer.renderTarget1, composer.renderTarget2, bloom.renderTargetBright,
+        ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical]) renderer.setRenderTarget(rt);
+    } finally { renderer.setRenderTarget(target); }
+  }
   // Extensions (the Ultra preset, js/ultra-post.js): called on a quality change, after a stage is dressed, around each draw
   // and on a resize (with the drawn size in pixels).
   const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
@@ -1126,7 +1169,8 @@ const visuals = (() => {
       const samples = Math.min(quality.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
       for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
       for (const h of hooks.quality) h(quality);
-      if (quality !== previous && !quality.ultra) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low
+      KIT.setDetail(quality.modelDetail);
+      if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low
       grade.uniforms.uVig.value = quality.vignette ? VIS.vignette.strength : 0;
       grade.uniforms.uVigSoft.value = VIS.vignette.softness;
       grade.uniforms.uGrain.value = quality.grain ? (quality.ultra ? VIS.grain.ultra : VIS.grain.amount) : 0;
@@ -1155,24 +1199,29 @@ const visuals = (() => {
         }
       });
       for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; }
-      // LOW uses the default framebuffer: keep its exact output shader, but rasterize only a tiny viewport.
+      // LOW uses a tiny default viewport; HIGH uses a small separate post pipeline with the same output shader.
       // All actors still issue draws and upload full geometry/textures, even when far away or in a hidden phase.
       const viewport = renderer.getViewport(new THREE.Vector4()), scissor = renderer.getScissor(new THREE.Vector4());
       const scissorTest = renderer.getScissorTest();
-      if (!quality.post) { renderer.setViewport(0, 0, 32, 32); renderer.setScissor(0, 0, 32, 32); renderer.setScissorTest(true); }
+      const feedback = [grade.uniforms.uFlash.value, grade.uniforms.uHurt.value];
       try {
+        const size = quality.warmupSize;
+        if (quality.post && size) { prepareWarmPipeline(); warming = true; }
+        if (size) { renderer.setViewport(0, 0, size, size); renderer.setScissor(0, 0, size, size); renderer.setScissorTest(true); }
         this.draw();
         // The same stage's hidden static materials are already compiled. New actors / phases were all drawn above;
         // walking the full scene through compile again on every retry adds work without preparing anything new.
         if (warmedStage !== stage || warmedQuality !== quality) renderer.compile(scene, camera);
         warmedStage = stage; warmedQuality = quality;
       } finally {
+        warming = false;
+        [grade.uniforms.uFlash.value, grade.uniforms.uHurt.value] = feedback;
         for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
         for (const [m, visible, culled] of bodies) { m.visible = visible; m.frustumCulled = culled; }
         for (const [p, visible] of parents) p.visible = visible;
         // Hidden legacy attack lights have a different light count from the warm-up frame. Compile the normal
         // idle scene too, before the first playable frame, without another full-size draw.
-        try { if (!quality.ultra) renderer.compile(scene, camera); }
+        try { if (!quality.combatFx) renderer.compile(scene, camera); }
         finally { renderer.setViewport(viewport); renderer.setScissor(scissor); renderer.setScissorTest(scissorTest); }
       }
     },
@@ -1260,7 +1309,7 @@ const visuals = (() => {
       if (!quality.post) renderer.render(scene, camera);
       else {
         grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
-        composer.render();
+        (warming ? warmComposer : composer).render();
       }
       for (const h of hooks.afterDraw) h(quality);
     },

@@ -120,6 +120,14 @@ const lore = (() => {
     },
   };
 
+  // A spirit's body: every material see-through and lit from within (set once; the shaders rebuild for it).
+  function ghost(rig, a) {
+    for (const m of rig.mats) {
+      m.transparent = true; m.opacity = a; m.depthWrite = false;
+      if (m.emissive) m.emissive.setHex(C.spirit.halo).multiplyScalar(0.35);
+      m.needsUpdate = true;
+    }
+  }
   function clear() {
     if (group) { scene.remove(group); group.traverse(o => { if (o.isMesh && o.geometry !== UNIT) o.geometry.dispose(); }); }
     if (st) { for (const N of st.npcs) N.rig.dispose(); for (const s of st.scenes) if (s.rig) s.rig.dispose(); }
@@ -135,9 +143,10 @@ const lore = (() => {
     L = data; group = new THREE.Group(); scene.add(group);
     st = { npcs: [], inscriptions: [], scenes: [], talk: null, near: null, clock: 0 };
     for (const D of L.npcs || []) {   // one or more places she waits in this level (Level 5 has two)
-      const N = LORE.npc;
+      const N = D.who ? LORE.cast[D.who] : LORE.npc;   // v7.0: a level's NPC may be another of the cast (Seren, in the Lands Between)
       const rig = new Rig({ scale: N.scale, bulk: N.bulk, color: 0x5a6a7a, weapon: 'sword', model: N.model });
       if (rig.weapon) rig.weapon.visible = false;
+      if (D.spirit) ghost(rig, C.spirit.opacity);   // only her grace is left: a translucent, faintly golden shape
       const ny = floor(D.x, D.z, D.y), g = new THREE.Group(); group.add(g);
       if (D.bars) {   // the bars of her cell, floor to lintel
         const [x0, z0, x1, z1] = D.bars, n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.22), y = floor(x0, z0, D.y), iron = mat(0x2e2c2a, 0.5);
@@ -145,10 +154,10 @@ const lore = (() => {
         for (const h of [0.15, 1.5, 2.85]) box(g, Math.hypot(x1 - x0, z1 - z0), 0.06, 0.06, iron, (x0 + x1) / 2, y + h, (z0 + z1) / 2, Math.atan2(z1 - z0, x1 - x0) * -1);
       }
       // A dim pool of candlelight behind her, so her shape reads against the dark (the sightings of Level 5 do the same).
-      const halo = glowSprite(0xffc890, 1.3, 3.2, 0.32, null);
+      const halo = glowSprite(D.spirit ? C.spirit.halo : N.halo ?? 0xffc890, 1.3, D.spirit ? C.spirit.haloSize : 3.2, D.spirit ? C.spirit.haloOpacity : 0.32, null);
       halo.position.set(D.x - Math.sin(D.yaw) * 0.7, ny + (D.pose === 'sit' ? 1.0 : 1.5), D.z - Math.cos(D.yaw) * 0.7); g.add(halo);
       if (D.pose === 'sit') box(g, 0.5, 0.42, 0.42, mat(0x4a3826), D.x - Math.sin(D.yaw) * 0.12, ny + 0.21, D.z - Math.cos(D.yaw) * 0.12, D.yaw);   // an upturned crate
-      st.npcs.push({ def: D, rig, props: g, x: D.x, z: D.z, y: ny, yaw: D.yaw, name: N.name, kind: 'npc', heard: false, wasNear: false, gesture: 0 });
+      st.npcs.push({ def: D, rig, props: g, halo, x: D.x, z: D.z, y: ny, yaw: D.yaw, name: N.name, kind: 'npc', heard: false, wasNear: false, gesture: 0 });
     }
     for (const I of L.inscriptions || []) {
       const y = floor(I.x, I.z, I.y), g = new THREE.Group(); g.position.set(I.x, y, I.z); g.rotation.y = I.yaw; group.add(g);
@@ -230,7 +239,7 @@ const lore = (() => {
     if (!st || !st.near) return null;
     const s = st.near;
     if (st.talk && st.talk.src === s && st.talk.full) return null;   // already speaking: nothing to press
-    return s.kind === 'npc' ? `Talk to ${s.name.split(' ')[0]}` : `Read: ${s.name}`;
+    return s.kind === 'npc' ? `Talk to ${s.name.split(/[ ,]/)[0]}` : `Read: ${s.name}`;
   }
 
   // ---- drawing, every frame --------------------------------------------------------------------------------------------
@@ -276,6 +285,11 @@ const lore = (() => {
     const want = near < C.faceRange && p.alive() ? Math.atan2(p.x - N.x, p.z - N.z) : N.def.yaw;
     N.yaw += angDiff(want, N.yaw) * (1 - Math.exp(-C.turnRate * dt));
     r.reset();
+    if (N.def.spirit) {   // a spirit: translucent, drifting a hand's breadth over the floor, her glow breathing
+      const a = C.spirit.opacity * (0.85 + 0.15 * Math.sin(t * 1.3 + N.x));
+      for (const m of r.mats) m.opacity = a;
+      N.halo.material.opacity = C.spirit.haloOpacity * (0.8 + 0.2 * Math.sin(t * 1.1));
+    }
     const sit = N.def.pose === 'sit';
     if (sit) { r.spin.position.y = 0.45; r.legL.rotation.x = r.legR.rotation.x = -1.5; r.kneeL.rotation.x = r.kneeR.rotation.x = 1.4; r.lean(0.12); }
     if (r.anim) { r.anim.idleLayer(t + 3, 1); }
@@ -292,14 +306,16 @@ const lore = (() => {
     if (N.gesture > 0) r.head.rotation.x += 0.35 * Math.sin(N.gesture * Math.PI);
     if (!sit && !talking) r.armL.rotation.x -= 0.25;   // hands held together before her
     if (r.anim) r.anim.updateCloth({ vx: 0, vz: 0, yaw: N.yaw }, { t, dt, yaw: N.yaw }, dt);
-    r.place(N.x, N.y, N.z, N.yaw, N.y);
+    const hover = N.def.spirit ? C.spirit.hover * (1 + 0.3 * Math.sin(t * 0.9)) : 0;
+    r.place(N.x, N.y + hover, N.z, N.yaw, N.y);
+    if (N.def.spirit) r.shadow.visible = false;
   }
 
   // ---- developer jumps (#dev): the level, at the NPC ----------------------------------------------------------------
   // i: which of the level's places (Level 5 has two). A level with dev jumps (Level 5) starts at her bonfire with the
   // zones before it won.
   function jumpTo(id, i = 0) {
-    const lvl = LEVELS.find(l => l.id === id), N = LORE.levels[id].npcs[i];
+    const lvl = ALL_LEVELS.find(l => l.id === id), N = LORE.levels[id].npcs[i];
     if (lvl.devJumps) finale.jump(lvl.devJumps.find(q => q.at === N.bonfire) || lvl.devJumps[lvl.devJumps.length - 1]);
     else Game.startLevel(id);
     Game.spawn = { x: N.x + Math.sin(N.yaw) * 2.6, y: N.y, z: N.z + Math.cos(N.yaw) * 2.6, yaw: N.yaw + Math.PI };   // a few steps in front of her
@@ -308,8 +324,8 @@ const lore = (() => {
   function devItems() {
     if (!DEV) return [];
     return Object.keys(LORE.levels).flatMap(id => (LORE.levels[id].npcs || []).map((N, i, all) => {
-      const lvl = LEVELS.find(l => l.id === id);
-      return { name: `Lore: ${LORE.npc.name.split(' ')[0]} in ${lvl.name}${all.length > 1 ? ` (${i + 1})` : ''}`, desc: 'Developer jump: start the level next to the NPC.', go: () => jumpTo(id, i) };
+      const lvl = ALL_LEVELS.find(l => l.id === id), who = N.who ? LORE.cast[N.who] : LORE.npc;
+      return { name: `Lore: ${who.name.split(/[ ,]/)[0]} in ${lvl.name}${all.length > 1 ? ` (${i + 1})` : ''}`, desc: 'Developer jump: start the level next to the NPC.', go: () => jumpTo(id, i) };
     }));
   }
 

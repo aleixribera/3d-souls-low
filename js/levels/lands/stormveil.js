@@ -1,0 +1,102 @@
+'use strict';
+// The Lands Between, 2: Stormveil Castle (v7.0). Boss: Godrick the Grafted. x runs east, z north.
+//   The gatehouse (bonfire 1, Seren) opens on the main yard, under rain, archers on the north rampart. The main gate east
+//     is barred for good; the way is the side passage south, out onto the cliff walk above the sea (no rail: the sea
+//     side is open), where two Grafted Scions crouch on the castle wall ledge and spring when you pass (corpses lie below).
+//   The walk climbs to the outer rampart (y 8), open to the sea: a Shover pushes, a Scion cuts. Bonfire 2 in the tower.
+//   Down the tower stair into the cloister (y 0, the inner garden): the big fight, archers on the east gallery.
+//   The grafting hall (red, a heavy and two of Godrick's things), the liftside chamber (bonfire 3), and the long stair up
+//   to the roof of the tower (y 10): Godrick, in the storm.
+const LANDS_2 = {
+  id: 'stormveil', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  name: 'Lands 2: Stormveil Castle',
+  description: 'Godrick\'s castle in the storm. The main gate is barred: take the side path along the cliffs, the outer rampart and the grafting hall to the tower roof.',
+  help: 'Lands 2: the main gate is barred, so take the side passage south. Things crouch on the walls over the cliff walk. On the rampart the sea side is open: a Shover\'s push is a fall.',
+  completeHint: 'Godrick is fallen, and his Great Rune is yours. But one rune will not open the capital…',
+  wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5, flasks: 6,
+  // Night, a storm off the sea: heavy rain, lightning, wet blue-grey stone, green and gold banners.
+  atmosphere: { background: 0x1e252e, fog: 0x34404c, fogDensity: 0.0145,
+                moon: { color: 0xb8c8e0, intensity: 2.2, position: [10, 30, -20] },
+                ambient: { color: 0x4a5464, intensity: 1.65 },
+                hemi: { sky: 0x7a88a0, ground: 0x22242a, intensity: 0.75 },
+                exposure: 1.16, dust: 0.1, rim: 0xb8c8e0,
+                grade: { shadowTint: [0.88, 0.95, 1.1], highlightTint: [1.04, 1.0, 0.92], saturation: 0.66 },
+                surface: { moss: 0.9, grime: 1.25 }, banners: [0x2a4a32, 0x6a5420], debris: 0.25,
+                shafts: { rooms: true, color: 0xc8d8e8, opacity: 0.12 },
+                sky: { zenith: 0x0e1218, sun: 0x8a98b0, sunDir: [0.4, 0.3, -0.6] }, silhouettes: 2, grass: 0.5 },
+  realm: {
+    tree: { kind: 'golden', x: 380, z: 620, y: -60, height: 720, width: 400 },
+    lightning: { every: [4, 10], color: 0xd8e4ff },
+    weather: [{ kind: 'rain', amount: 1.0 }],
+    beams: 0xffd890,
+    grounds: [{ kind: 'earth', rooms: ['cliff-walk', 'cloister', 'side-passage'] }],
+  },
+  start: { x: 3, z: 0, yaw: Math.PI / 2 },
+  rooms: [
+    { id: 'gatehouse', rect: [0, 16, -6, 6], height: 6, floor: 0x3a3a38, wall: 0x52524e, light: 0xffb070, braziers: [[1.5, -4.5], [1.5, 4.5]] },
+    { id: 'main-yard', rect: [16, 52, -14, 14], open: true, height: 10, floor: 0x3a3c3e, wall: 0x50545a, light: 0xb8c4d8,
+      lamps: [[18, -12.5], [18, 12.5], [50, 12.5], [50, -12.5]] },
+    { id: 'yard-rampart', rect: [24, 48, 14, 18], y: 7, open: true, height: 4, edges: { s: 'rail' }, floor: 0x44464a, wall: 0x54585e },
+    { id: 'sealed-hall', rect: [52, 58, -3, 3], height: 5, floor: 0x343638, wall: 0x4a4e54, dim: true },
+    { id: 'side-passage', rect: [30, 36, -22, -14], open: true, height: 8, floor: 0x383a3c, wall: 0x4e5258 },
+    { id: 'cliff-walk', rect: [30, 70, -28, -22], open: true, height: 10, edges: { s: 'open' }, floor: 0x3a3c3c, wall: 0x50545a },
+    { id: 'wall-ledge', rect: [44, 66, -22, -19], y: 4, open: true, height: 4, edges: { s: 'open' }, floor: 0x44464a, wall: 0x54585e },
+    { id: 'rampart', rect: [86, 130, -28, -22], y: 8, open: true, height: 5, edges: { s: 'open' }, floor: 0x46484a, wall: 0x56585e, light: 0xc8d0e0,
+      lamps: [[100, -23], [118, -23]] },
+    { id: 'tower', rect: [130, 142, -30, -16], y: 8, height: 5, floor: 0x3a3a38, wall: 0x52524e, light: 0xffa060, braziers: [[131.5, -17.5], [140.5, -17.5]] },
+    { id: 'cloister', rect: [120, 160, 4, 34], open: true, height: 10, grass: true, floor: 0x3c3e3a, wall: 0x52564e, light: 0xc8d0c0,
+      pillars: [[126, 12], [154, 12], [126, 26], [154, 26]], lamps: [[122, 6], [158, 6], [122, 32], [158, 32]] },
+    { id: 'east-gallery', rect: [160, 164, 8, 30], y: 6, open: true, height: 4, edges: { w: 'rail' }, floor: 0x44464a, wall: 0x54585e },
+    { id: 'hall-door', rect: [137, 143, 34, 38], height: 4.5, floor: 0x3a2e2a, wall: 0x4a3a34, dim: true },
+    { id: 'grafting-hall', rect: [128, 152, 38, 58], height: 7, floor: 0x3a2a26, wall: 0x4a3430, light: 0xd05040,
+      pillars: [[134, 48], [146, 48]], braziers: [[129.5, 39.5], [150.5, 39.5], [129.5, 56.5], [150.5, 56.5]] },
+    { id: 'liftside-door', rect: [137, 143, 58, 62], height: 4.5, floor: 0x3a3a38, wall: 0x52524e, dim: true },
+    { id: 'liftside', rect: [132, 148, 62, 72], height: 6, floor: 0x3a3a38, wall: 0x52524e, light: 0xffb070, braziers: [[146.5, 63.5], [146.5, 70.5]] },
+    { id: 'fog-landing', rect: [137, 143, 90, 94], y: 10, height: 6, floor: 0x3a3a38, wall: 0x52524e, dim: true },
+    { id: 'tower-roof', rect: [118, 162, 94, 134], y: 10, open: true, height: 14, edges: { e: 'rail', w: 'rail', n: 'rail' }, floor: 0x40424a, wall: 0x54585e, light: 0xd8e0f0,
+      lamps: [[120, 96], [160, 96], [120, 132], [160, 132]] },
+    { id: 'roof-exit', rect: [137, 143, 134, 138], y: 10, height: 4.5, floor: 0x3a3a38, wall: 0x52524e, light: 0xffd090, dim: true },
+  ],
+  ramps: [
+    { id: 'walk-stair', rect: [70, 86, -28, -22], axis: 'x', from: 0, to: 8, stairs: true, height: 6, edges: { s: 'open' }, floor: 0x3e4042, wall: 0x50545a },
+    { id: 'tower-stair', rect: [134, 140, -16, 4], axis: 'z', from: 8, to: 0, stairs: true, height: 5, floor: 0x3a3a38, wall: 0x52524e },
+    { id: 'godrick-stair', rect: [137, 143, 72, 90], axis: 'z', from: 0, to: 10, stairs: true, height: 6, floor: 0x3a3a38, wall: 0x52524e },
+  ],
+  // The castle's mass: the keep between the yard and the cloister, the tower under its roof.
+  blocks: [{ rect: [118, 162, 94, 134], y0: 0, y1: 9.5, wall: 0x50545a }],
+  bonfires: [{ id: 'veil-gate', x: 13.5, z: -4.3, spawn: { x: 11.5, z: -3, yaw: Math.PI / 2 } },
+             { id: 'veil-tower', x: 140, y: 8, z: -28.5, spawn: { x: 138, y: 8, z: -26.5, yaw: 0 } },
+             { id: 'veil-liftside', x: 133.5, z: 70.5, spawn: { x: 135.5, z: 69, yaw: 0 } }],
+  gated: [
+    { id: 'zone-yard', trigger: [18, 52, -14, 14], gate: { x: 33, z: -14, along: 'x', width: 6 },
+      enemies: [{ enemy: 'hollow', variant: 'elite', spawn: { x: 34, z: -6, yaw: -Math.PI / 2 } }, { enemy: 'hollow', variant: 'elite', spawn: { x: 40, z: 6, yaw: -Math.PI / 2 } },
+                { enemy: 'warden', spawn: { x: 46, z: 0, yaw: -Math.PI / 2 } }, { enemy: 'knight', spawn: { x: 30, z: 8, yaw: Math.PI } }] },
+    { id: 'zone-rampart', trigger: [86, 130, -28, -22], gate: { x: 130, z: -25, y: 8, along: 'z', width: 6 },
+      enemies: [{ enemy: 'shover', spawn: { x: 108, y: 8, z: -25, yaw: -Math.PI / 2 } }, { enemy: 'graftedScion', spawn: { x: 122, y: 8, z: -25, yaw: -Math.PI / 2 } }] },
+    { id: 'zone-cloister', trigger: [122, 160, 6, 34], gate: { x: 140, z: 34, along: 'x', width: 6 },
+      enemies: [{ enemy: 'graftedScion', spawn: { x: 140, z: 18, yaw: Math.PI } }, { enemy: 'duelist', spawn: { x: 130, z: 24, yaw: Math.PI } },
+                { enemy: 'duelist', spawn: { x: 150, z: 24, yaw: Math.PI } }, { enemy: 'knight', variant: 'elite', spawn: { x: 140, z: 29, yaw: Math.PI } }] },
+    { id: 'zone-grafting', trigger: [128, 152, 38, 58], gate: { x: 140, z: 58, along: 'x', width: 6 },
+      enemies: [{ enemy: 'executioner', spawn: { x: 140, z: 53, yaw: Math.PI } }, { enemy: 'graftedScion', variant: 'elite', spawn: { x: 132, z: 46, yaw: Math.PI } },
+                { enemy: 'omenkin', spawn: { x: 148, z: 44, yaw: Math.PI } }] },
+    { id: 'zone-godrick', trigger: [118, 162, 95, 134], gate: { x: 140, z: 134, y: 10, along: 'x', width: 6 },
+      enemies: [{ enemy: 'godrick', arena: true, notice: 60, leash: 200, homeLeash: 200, boss: { phases: ['grafted', 'dragon'] }, spawn: { x: 140, y: 10, z: 120, yaw: Math.PI } }] },
+  ],
+  sealed: [{ id: 'main-gate', gate: { x: 52, z: 0, along: 'z', width: 6 } },
+           { id: 'godrick-fog', gate: { x: 140, z: 94, y: 10, along: 'x', width: 6 }, fog: 'zone-godrick' }],
+  dispersed: [
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 21, leash: 34, wide: true, zone: 'zone-yard', x: 32, y: 7, z: 16.5, yaw: Math.PI },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 21, leash: 34, wide: true, zone: 'zone-yard', x: 44, y: 7, z: 16.5, yaw: Math.PI },
+    { behavior: 'perch', enemy: 'graftedScion', x: 50, y: 4, z: -20.5, yaw: Math.PI },
+    { behavior: 'perch', enemy: 'graftedScion', x: 61, y: 4, z: -20.5, yaw: Math.PI },
+    { behavior: 'patrol', enemy: 'hollow', z: -25.5, path: [38, 64] },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 30, leash: 40, wide: true, zone: 'zone-rampart', x: 127, y: 8, z: -23.5, yaw: -Math.PI / 2 },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 30, leash: 40, wide: true, zone: 'zone-cloister', x: 162, y: 6, z: 14, yaw: -Math.PI / 2 },
+    { behavior: 'sentry', enemy: 'castleBowman', notice: 30, leash: 40, wide: true, zone: 'zone-cloister', x: 162, y: 6, z: 24, yaw: -Math.PI / 2 },
+  ],
+  hints: [{ kind: 'corpse', x: 47, z: -24.5, yaw: 0.8 }, { kind: 'corpse', x: 58.5, z: -26, yaw: 2.1 }],
+  devJumps: [
+    { name: 'Lands 2: Bonfire 2 (tower)', at: 'veil-tower', won: ['zone-yard', 'zone-rampart'] },
+    { name: 'Lands 2: Bonfire 3 (Godrick\'s fog)', at: 'veil-liftside', won: ['zone-yard', 'zone-rampart', 'zone-cloister', 'zone-grafting'] },
+  ],
+};

@@ -15,6 +15,7 @@ const finale = (() => {
   const sprites = [];   // a small pool of rising embers (additive glows)
   const rings = [];     // fire rings drawn over a ring hit (exactly its radius)
   const STORE = 'combatArena.complete';
+  const storeKey = id => id === 'final-castle' ? STORE : `${STORE}.${id}`;   // the road's last level (Ashmere's keeps the old key)
 
   // ---- helpers ------------------------------------------------------------------------------------------------
   const isBoss = e => !!e && !!e.phaseIds;
@@ -105,7 +106,10 @@ const finale = (() => {
     clear();
     hideEnding();
     game.camFocus = null;
-    L = game.kind === 'level' && game.level.ending ? game.level : null;
+    // v7.0: any level with a fog gate, sightings or ambush hints is scripted too (the Lands Between's boss lands), not only
+    // the one with the `ending`; the throne room dressing and its transition stay Level 5's (`finaleRoom`).
+    const lv = game.kind === 'level' ? game.level : null;
+    L = lv && (lv.ending || (lv.sealed || []).some(s => s.fog) || (lv.spectators || []).length || (lv.hints || []).length) ? lv : null;
     if (!L) return;
     group = new THREE.Group(); scene.add(group);
     const rigOf = (id, variant) => { const d = ENEMY_BY_ID[id]; return new Rig({ scale: d.scale, bulk: d.bulk, color: d.color, weapon: d.weapon, offhand: d.offhand, visual: d.visual, model: d.model, variant }); };
@@ -118,7 +122,7 @@ const finale = (() => {
     // Each sighting stands against a dim glow of firelight behind him, so his silhouette reads against the dark stone.
     for (const s of st.spectators) {
       s.rig.root.visible = true;
-      s.halo = glowSprite(0xff9a50, 1.4, 5.5, 0.4, null); s.halo.position.set(s.def.x - Math.sin(s.def.yaw) * 1.2, s.def.y + 2.2, s.def.z - Math.cos(s.def.yaw) * 1.2); group.add(s.halo);
+      s.halo = glowSprite(s.def.halo ?? 0xff9a50, 1.4, 5.5, 0.4, null); s.halo.position.set(s.def.x - Math.sin(s.def.yaw) * 1.2, s.def.y + 2.2, s.def.z - Math.cos(s.def.yaw) * 1.2); group.add(s.halo);
     }
     const fogEntry = (L.sealed || []).find(s => s.fog);
     if (fogEntry) {
@@ -136,7 +140,9 @@ const finale = (() => {
     // stays down until they win or die (the respawn puts them back at the bonfire outside, the gate open again).
     if (st.fog) {
       const f = st.fog, zone = game.zones.find(z => z.id === f.zoneId), won = zone.gate.open;
-      const inside = p.alive() && inArea(zone.trigger, p.x, p.z) && Math.abs(p.y - f.gate.y) < 3 && p.x > f.gate.box.x1 + 0.3;
+      // Inside: in the zone, on the gate's floor and clear of the gate's own doorway (on whichever side the room lies).
+      const b = f.gate.box, pad = 0.3, clear = p.x < b.x0 - pad || p.x > b.x1 + pad || p.z < b.z0 - pad || p.z > b.z1 + pad;
+      const inside = p.alive() && inArea(zone.trigger, p.x, p.z) && Math.abs(p.y - f.gate.y) < 3 && clear;
       const fight = zone.actors.some(a => a.alive());
       if (won || !p.alive()) f.sealed = false;
       else if (inside && fight) f.sealed = true;
@@ -175,7 +181,7 @@ const finale = (() => {
       if (st.pulse <= 0) { const hot = burning(boss); play(hot ? 'bossPulseHot' : 'bossPulse', null, 0.8); st.pulse = hot ? F.pulse.hot : F.pulse.calm; }
     } else st.pulse = 0.4;
     // The transition into the next phase: the room's timeline, once per transition, keyed to his clock.
-    if (boss && boss.state === ES.PHASE) {
+    if (boss && boss.state === ES.PHASE && st.room) {
       if (!st.trans || st.trans.boss !== boss) st.trans = { boss, done: new Set() };
       F.timeline.forEach((ev, i) => { if (!st.trans.done.has(i) && boss.stateTime >= ev.at) { st.trans.done.add(i); act(ev, boss); } });
     }
@@ -220,8 +226,11 @@ const finale = (() => {
       if (!hot) continue;
       const G = F.glow, k = G.base + G.pulse * Math.sin(t * G.rate);
       for (const m of e.rig.bodyMats) m.emissive.r += ((G.color >> 16) & 255) / 255 * k, m.emissive.g += ((G.color >> 8) & 255) / 255 * k, m.emissive.b += (G.color & 255) / 255 * k;
-      if (Math.random() < F.embers * dt) ember(e.x + rand(-0.6, 0.6), e.y + rand(0.6, 2.8), e.z + rand(-0.6, 0.6));
-      if (e.rig.weapon && Math.random() < F.embers * 0.5 * dt) { e.rig.weapon.getWorldPosition(tmp); ember(tmp.x, tmp.y, tmp.z, 0xffa040, 1.2, 0.9, 0.16); }
+      // Modern presets already supply pooled ignition embers; avoid creating duplicate sprite roots during combat.
+      if (!visuals.quality().combatFx) {
+        if (Math.random() < F.embers * dt) ember(e.x + rand(-0.6, 0.6), e.y + rand(0.6, 2.8), e.z + rand(-0.6, 0.6));
+        if (e.rig.weapon && Math.random() < F.embers * 0.5 * dt) { e.rig.weapon.getWorldPosition(tmp); ember(tmp.x, tmp.y, tmp.z, 0xffa040, 1.2, 0.9, 0.16); }
+      }
     }
     for (const s of sprites) {
       if (s.life <= 0) continue;
@@ -325,7 +334,7 @@ const finale = (() => {
     const e = d.enemy;
     if (!st || !isBoss(e) || !e.lastPhase() || !L.ending) return;
     st.ending = { boss: e, t: 0, stage: 0 };
-    try { localStorage.setItem(STORE, '1'); } catch (err) { /* private window: the flag is just not kept */ }
+    try { localStorage.setItem(storeKey(L.id), '1'); } catch (err) { /* private window: the flag is just not kept */ }
   });
 
   // ---- the ending ------------------------------------------------------------------------------------------------------
@@ -378,7 +387,12 @@ const finale = (() => {
     Game.mode = 'ending'; input.clear();
     if (document.pointerLockElement) document.exitPointerLock();
     const E = F.ending;
-    const cards = LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
+    const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
+    // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
+    const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
+    const credits = `<h2>THE ROAD</h2>${road.chapterIds().map(id => `<p>${road.levelName(id)}</p>`).join('')}
+        <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>
+        <h2>THOSE WHO STOOD IN THE WAY</h2>${R.credits.foes.map(f => `<p>${f}</p>`).join('')}`;
     overlay = document.createElement('div');
     overlay.id = 'ending';
     overlay.innerHTML = `<style>
@@ -398,9 +412,7 @@ const finale = (() => {
       #ending button:hover, #ending button:focus { border-color: #c9b88a; outline: none; }
     </style>` + cards.map(c => `<div class="card">${c}</div>`).join('') +
       `<div class="roll"><h1>COMBAT ARENA 3D</h1>
-        <h2>THE ROAD</h2><p>The Long Hall</p><p>The Sunken Keep</p><p>The Burning Town</p><p>The Tower</p><p>The Final Castle</p>
-        <h2>WHO WALKED BESIDE YOU</h2><p>Ysolde of Corvel</p>
-        <h2>THOSE WHO STOOD IN THE WAY</h2><p>The Pillager Captain</p><p>The Bell Warden</p><p>Aldric, the Gaoler King</p><p>Aldric, the Ember-Crowned</p>
+        ${credits}
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
       <div class="thanks">THANK YOU FOR PLAYING</div>
@@ -437,7 +449,7 @@ const finale = (() => {
   // ---- developer tools (#dev) --------------------------------------------------------------------------------------
   // Start the level at a bonfire with the zones before it already won (dispersed enemies of won zones stay away).
   function jump(j) {
-    const lvl = LEVELS.find(l => l.devJumps && l.devJumps.includes(j));
+    const lvl = ALL_LEVELS.find(l => l.devJumps && l.devJumps.includes(j));
     Game.startLevel(lvl.id);
     for (const z of Game.zones) if (j.won.includes(z.id)) {
       z.gate.open = true; z.gate.lift = 1; z.beaten = true;
@@ -447,7 +459,8 @@ const finale = (() => {
     }
     Game.respawnEnemies();
     if (j.at) { const b = lvl.bonfires.find(q => q.id === j.at); Game.spawn = { ...b.spawn }; Game.spawnPlayer(); }
-    if (st) skipSightings(st.spectators.filter(s => j.won.includes('zone-hall') || (j.won.includes('zone-upper') && s.def.id === 'sighting-chapel')).map(s => s.def.id));
+    if (st && j.seen) skipSightings(j.seen);   // a jump may name the sightings already passed
+    else if (st) skipSightings(st.spectators.filter(s => j.won.includes('zone-hall') || (j.won.includes('zone-upper') && s.def.id === 'sighting-chapel')).map(s => s.def.id));
   }
   // Sightings already seen (Story mode saves them so Continue does not play them again), and putting them away.
   function seenSightings() { return st ? st.spectators.filter(s => s.state !== 'wait').map(s => s.def.id) : []; }
@@ -456,7 +469,7 @@ const finale = (() => {
   }
   function devItems() {
     if (!DEV) return [];
-    return LEVELS.filter(l => l.devJumps).flatMap(l => l.devJumps.map(j => ({ name: j.name, desc: 'Developer jump. In game, F10 empties the current boss bar (phase change, retreat or death).', go: () => jump(j) })));
+    return ALL_LEVELS.filter(l => l.devJumps).flatMap(l => l.devJumps.map(j => ({ name: j.name, desc: 'Developer jump. In game, F10 empties the current boss bar (phase change, retreat or death).', go: () => jump(j) })));
   }
   // F10: the boss in the fight loses its current bar at once.
   function depleteBoss() {
@@ -469,7 +482,7 @@ const finale = (() => {
   Game.renderHooks.push(render);
   return {
     reset, update, devItems, jump, depleteBoss, seenSightings, skipSightings,
-    completed() { try { return localStorage.getItem(STORE) === '1'; } catch (err) { return false; } },
+    completed(id = 'final-castle') { try { return localStorage.getItem(storeKey(id)) === '1'; } catch (err) { return false; } },
     get state() { return st; },
   };
 })();

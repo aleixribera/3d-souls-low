@@ -251,6 +251,18 @@ const AUDIO = {
       { noise: 'brown', filter: { type: 'lowpass', freq: 500, to: 120 }, at: 0.35, a: 0.02, d: 1.6, gain: 1 },
       { wave: 'sine', freq: 50, to: 26, at: 0.35, a: 0.004, d: 1.3, gain: 0.8 },
     ] },
+    // v7.0, the Lands Between: thunder far off over Stormhill and Farum Azula (a crack, then a long rolling rumble), and the
+    // scarlet rot eating at the feet (a wet hiss under a low burn).
+    thunder: { bus: 'sfx', priority: 1, cooldown: 1.5, max: 2, verb: 0.7, heat: 0.2, jitter: 300, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2400, to: 600, q: 0.5 }, a: 0.002, d: 0.35, gain: 0.25 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 380, to: 90 }, at: 0.05, a: 0.25, h: 0.6, d: 3.4, gain: 0.9 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 900, to: 160 }, at: 0.3, a: 0.4, d: 2.6, gain: 0.35 },
+      { wave: 'sine', freq: 42, to: 30, at: 0.1, a: 0.3, d: 3.0, gain: 0.35 },
+    ] },
+    rotSizzle: { bus: 'sfx', priority: 1, cooldown: 0.4, max: 1, verb: 0.15, heat: 0.05, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: [2800, 4200], q: 1.2 }, a: 0.02, d: 0.35, gain: 0.18 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 260 }, a: 0.05, d: 0.4, gain: 0.25 },
+    ] },
     // Fire catching all at once: a roaring whoosh.
     fireRoar: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.7, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1400, q: 0.6 }, a: 0.3, d: 1.8, gain: 0.8 },

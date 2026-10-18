@@ -12,9 +12,14 @@
 //             black void, storm gale, roar, bell toll
 //   breath, sphere, bolts: embers along the flame jet, a vortex into Destined Death, element trails on projectiles
 const ultraBoss = (() => {
-  const U = VIS.ultra, BB = U.boss, fx = ultraFx, on = () => ultraPost.on();
+  const U = VIS.ultra, BB = U.boss, fx = ultraFx, on = () => fx.on();
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), col = new THREE.Color();
   const STEEL = FX_ELEMENTS.steel;
+  let generation = 0;
+  function later(fn, ms) {
+    const owner = generation;
+    setTimeout(() => { if (owner === generation && on()) fn(); }, ms);
+  }
 
   // ---- what a boss looks like right now ------------------------------------------------------------------------------
   function look(e) {
@@ -188,14 +193,14 @@ void main() {
     roar(x, y, z, s, L, e) {   // the air itself is struck: two great shockwaves and the dust of the whole arena
       const c = e ? fx.chest(e) : P(x, y + 1.5, z);
       base(x, y, z, s, L, 1.4);
-      ultraPost.wave(c, 2, 2.4); setTimeout(() => ultraPost.wave(c, 1.4, 3), 140);
+      ultraPost.wave(c, 2, 2.4); later(() => ultraPost.wave(c, 1.4, 3), 140);
       fx.dustRing(x, y, z, 28, s * 1.8, U.puffs.dust, 1.6);
       groundRing(x, y, z, 0.5, s * 2.6, 0.7, L.el.glow, 0.7, 0.9);
       ultraPost.pulse({ punch: 0.5, ca: 0.9, at: c });
     },
     toll(x, y, z, s, L) {   // the bell's note: rings of pale sound, one after another
       base(x, y, z, s, L, 0.5);
-      for (let i = 0; i < 3; i++) setTimeout(() => { if (on()) groundRing(x, y, z, 0.3, s * (1.4 + i * 0.6), 0.8 + i * 0.15, L.el.glow, 0.45, 1 - i * 0.2); }, i * 130);
+      for (let i = 0; i < 3; i++) later(() => groundRing(x, y, z, 0.3, s * (1.4 + i * 0.6), 0.8 + i * 0.15, L.el.glow, 0.45, 1 - i * 0.2), i * 130);
       fx.moteBurst(P(x, y + 0.5, z), 60, L.el.mote, { r: s * 0.5, speed: 3, lift: 0.6, life: [0.6, 1.4], size: 0.9 });
       ultraPost.wave(P(x, y + 1, z), 1.4, 2); fx.flashAt(P(x, y + 1, z), L.el.glow, 10, 10);
     },
@@ -215,7 +220,7 @@ void main() {
     if (box && box.ring) {   // the ring hitbox, drawn as it spreads, its edge throwing the element outward
       const R = box.ring, t = R.time || 0.2;
       groundRing(e.x, y, e.z, R.from, R.to, t * 2.2, L.el.glow, Math.max(BB.ringWidth, (R.width || 0.5) * 0.8), 1);
-      const n = Math.round(24 + R.to * 6);
+      const n = fx.count('ring', Math.round(24 + R.to * 6));
       for (let i = 0; i < n; i++) {
         const ang = i / n * Math.PI * 2, sp = (R.to - R.from) / t * rand(0.5, 0.9), life = t * rand(1.2, 2);
         col.set(L.el.mote).multiplyScalar(2.4);
@@ -239,13 +244,14 @@ void main() {
   let last = performance.now();
   const rate = new WeakMap();
   function clearEffects() {
+    generation++;
     for (const g of glows.values()) { g.visible = false; glowPool.push(g); }
     glows.clear();
     for (const pool of [rings, pillars, fires]) for (const o of pool) { o.m.visible = false; o.age = Infinity; }
     last = performance.now();
   }
   visuals.hooks.stage.push(clearEffects);
-  visuals.hooks.quality.push(q => { if (!q.ultra) clearEffects(); });
+  visuals.hooks.quality.push(clearEffects);
   Game.renderHooks.push(game => {
     const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;
     if (!on()) return;
@@ -259,7 +265,7 @@ void main() {
       if (e.state === ES.WINDUP && isHeavy(L, a, h)) {   // gather: motes pulled into the blade, a glow swelling on it
         const k = clamp(e.stateTime / Math.max(0.1, h.startup), 0, 1);
         tip(e, 1.0, v1);
-        acc += BB.gather * dt * sc * (0.4 + k);
+        acc += BB.gather * dt * sc * (0.4 + k) * VIS.fxBudgets[visuals.quality().fxBudget].density;
         for (; acc >= 1; acc--) {
           const u = [rand(-1, 1), rand(-0.6, 1), rand(-1, 1)], l = Math.hypot(...u) || 1, r = rand(0.9, 1.7) * L.scale * 0.8, life = rand(0.25, 0.45);
           const sx = v1.x + u[0] / l * r, sy = v1.y + u[1] / l * r, sz = v1.z + u[2] / l * r;
@@ -298,7 +304,8 @@ void main() {
       }
       if (a.sphere && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) {   // Destined Death: a vortex pulled into the sphere
         const S = a.sphere, cx = e.x + Math.sin(e.yaw) * S.fwd, cz = e.z + Math.cos(e.yaw) * S.fwd, cy = e.y + 1.2;
-        for (let i = 0; i < 3; i++) {
+        const n = fx.count('sphere', 3);
+        for (let i = 0; i < n; i++) {
           const ang = rand(0, Math.PI * 2), r = S.r * rand(0.9, 1.4), life = rand(0.4, 0.7), sx = cx + Math.cos(ang) * r, sz = cz + Math.sin(ang) * r, sy = cy + rand(-1, 1.2);
           col.set(L.el.mote).multiplyScalar(2.2);
           fx.motes.spawn({ x: sx, y: sy, z: sz, vx: (cx - sx) / life, vy: (cy - sy) / life, vz: (cz - sz) / life, drag: 0, lift: 0, life, max: life,

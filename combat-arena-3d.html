@@ -414,6 +414,7 @@ const GAME_FILES = [
   'data/elden-bosses.js',
   'data/story-boss-moves.js',
   'data/boss-fx.js',
+  'data/lands-enemies.js',
   'levels/arena.js',
   'levels/tutorial.js',
   'levels/long-hall.js',
@@ -421,6 +422,14 @@ const GAME_FILES = [
   'levels/burning-town.js',
   'levels/the-tower.js',
   'levels/final-castle.js',
+  'levels/lands/stormhill.js',
+  'levels/lands/stormveil.js',
+  'levels/lands/evergaol.js',
+  'levels/lands/leyndell.js',
+  'levels/lands/ashen-capital.js',
+  'levels/lands/farum-azula.js',
+  'levels/lands/erdtree.js',
+  'levels/lands/haligtree.js',
   'levels/test-crowd.js',
   'levels/test-heights.js',
   'levels/test-courtyard.js',
@@ -429,6 +438,7 @@ const GAME_FILES = [
   'data/levels.js',
   'data/story.js',
   'data/lore.js',
+  'data/lore-lands.js',
   'states.js',
   'registries.js',
   'validate.js',
@@ -439,6 +449,7 @@ const GAME_FILES = [
   'rig.js',
   'bodykit.js',
   'kit-premium.js',
+  'kit-realms.js',
   'animator.js',
   'attack-anim.js',
   'character.js',
@@ -465,6 +476,7 @@ const GAME_FILES = [
   'blackblade.js',
   'holy.js',
   'scarlet.js',
+  'realms.js',
   'ultra-post.js',
   'ultra-fx.js',
   'ultra-boss.js',
@@ -490,6 +502,7 @@ Keep the js folder next to this page.`); break; }
 // Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.
 if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite.js', 'tests/');
+  await loadScript('suite-lands.js', 'tests/');   // v7.0: the Lands Between
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours (H shows hitboxes anywhere)

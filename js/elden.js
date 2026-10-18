@@ -15,10 +15,10 @@ const elden = (() => {
     screens(game) {
       const b = entry();
       return {
-        elden: { title: 'COMBAT ARENA 3D', sub: 'ELDEN RING BOSSES', back: 'main',
+        elden: { title: 'COMBAT ARENA 3D', sub: 'ELDEN RING BOSSES', back: 'arena',
           items: [...ELDEN_BOSSES.map(e => ({ name: e.difficulty ? `${e.name}   ${stars(e.difficulty)}` : e.name,
             desc: `${e.title}. ${e.description}`, go: () => Game.loadingFirst(e.name, e.description, () => this.start(e.id)) })),
-            { name: 'Back', desc: 'Return to the main menu.', cue: 'menuBack', go: () => game.showMenu('main') }] },
+            { name: 'Back', desc: 'Return to the 1v1 Arena.', cue: 'menuBack', go: () => game.showMenu('arena') }] },
         eldenWon: { title: 'ENEMY FELLED', sub: b ? b.name.toUpperCase() : '', overlay: true, items: [
           { name: 'Retry', desc: 'Fight again from the start.', go: () => Game.loadingFirst(b.name, b.description, () => this.start(b.id)) },
           { name: 'Boss select', desc: 'Choose another boss.', cue: 'menuBack', go: () => this.leave() }] },

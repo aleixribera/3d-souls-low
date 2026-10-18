@@ -21,7 +21,7 @@ const impactFx = (() => {
     if (roster !== game.enemies) { roster = game.enemies; for (const t of trails.values()) { t.clear(); spare.push(t); } trails.clear(); struck = null; }
     for (const [b] of placed) {
       if (b === game.player) continue;
-      const on = !visuals.quality().ultra && b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
+      const on = !visuals.quality().combatFx && b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
       const t = on ? trailFor(b) : trails.get(b);
       if (!t) continue;
       t.update(on, b.rig);

@@ -377,7 +377,7 @@ function validateAudio() {
 // Every sound id the listeners below ask for (checked at load by validateAudio).
 const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', 'postureBreak', 'dodge', 'enemyDeath', 'playerDeath', 'groundPound',
   'hardLanding', 'shot', 'boltStopped', 'alert', 'perilous', 'swingLight', 'swingHeavy', 'hurtGrunt', 'hurtMoan', 'flask', 'rest', 'gateOpened', 'trapWarning', 'trapSprung',
-  'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust'];
+  'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle'];
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.
   const on = (type, fn) => events.on(type, d => { try { fn(d); } catch (e) { if (!audio.warned.has(type)) { audio.warned.add(type); console.warn(`audio: the "${type}" sound failed:`, e); } } });
@@ -398,6 +398,7 @@ function registerAudioListeners() {
     }
   });
   on('parry', d => audio.play('parry', { pos: chest(d.target) }));
+  on('hazard', d => audio.play('rotSizzle', { pos: spot(d.player), vel: 0.8 }));   // v7.0: the scarlet rot eating at the feet
   on('execution', d => {   // the blade goes in: flesh, the riposte's boom and the break's crack, all at once
     audio.play('hitFlesh', { vel: 1, pos: d.at, pitch: big(d.enemy) * 0.85 });
     audio.play('riposteBoom', { vel: 1, pos: d.at });
