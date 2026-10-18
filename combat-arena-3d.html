@@ -400,6 +400,7 @@ const GAME_FILES = [
   'data/models.js',
   'data/models-enemies.js',
   'data/models-bosses.js',
+  'data/auto-quality.js',
   'data/animations.js',
   'data/attack-poses.js',
   'data/audio.js',
@@ -481,10 +482,11 @@ const GAME_FILES = [
   'ultra-fx.js',
   'ultra-boss.js',
   'elden.js',
+  'quality-benchmark.js',
   'autoquality.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.0.5';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.1';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

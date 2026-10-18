@@ -23,10 +23,14 @@ function checkVisualData(need, num) {
   const amount = (v, max = 2) => num(v) && v >= 0 && v <= max;
   const Q = VIS.quality;
   const auto = VIS.autoQuality;
-  need(auto && ['size', 'loops', 'passes', 'rounds', 'referenceWidth', 'referenceHeight', 'minHighCores', 'minHighMemory', 'minUltraCores', 'phoneWidth']
+  need(auto && ['passes', 'rounds', 'warmFrames', 'referenceWidth', 'referenceHeight', 'phoneWidth']
     .every(k => Number.isInteger(auto[k]) && auto[k] > 0)
-    && num(auto.ultraMs) && auto.ultraMs > 0 && num(auto.highMs) && auto.highMs > auto.ultraMs
-    && auto.minUltraCores >= auto.minHighCores, 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
+    && auto.frameMs && ['high', 'ultra'].every(k => num(auto.frameMs[k]) && auto.frameMs[k] > 0), 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
+  need(auto.stage && Object.values(auto.stage).every(v => num(v) && v > 0) && auto.stage.aoScale <= 1
+    && auto.camera && tri(auto.camera.position) && tri(auto.camera.look) && auto.camera.near > 0 && auto.camera.far > auto.camera.near,
+    'CONFIG.VISUALS.autoQuality: invalid 3D scene or camera tuning.');
+  need(Array.isArray(AUTO_QUALITY_SCENE.actors) && AUTO_QUALITY_SCENE.actors.every(a => a.model in MODEL_DEFS && num(a.scale) && a.scale > 0 && num(a.bulk) && a.bulk > 0 && num(a.x) && num(a.z)),
+    'AUTO_QUALITY_SCENE: invalid benchmark actor or model reference.');
   for (const key of ['software', 'integrated', 'capableIntegrated', 'strong']) {
     let valid = typeof auto[key] === 'string' && auto[key].length > 0;
     try { new RegExp(auto[key]); } catch (e) { valid = false; }

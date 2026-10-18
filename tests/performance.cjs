@@ -31,6 +31,20 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; });
+    if (process.argv[3] === 'AUTO') {
+      const results = [];
+      for (const viewport of [{ width: 1280, height: 720 }, { width: 1920, height: 1080 }]) {
+        await page.setViewportSize(viewport);
+        const row = await page.evaluate(() => {
+          const result = autoQuality.recheck();
+          return { ...result, summary: autoQuality.summary() };
+        });
+        results.push(row); console.log(JSON.stringify(row));
+      }
+      fs.writeFileSync(path.join(output, 'auto.json'), JSON.stringify({ results, errors }, null, 2));
+      if (errors.length) throw new Error(JSON.stringify(errors));
+      return;
+    }
     if (process.argv[3] === 'LOW') {
       const hardware = await page.evaluate(() => {
         const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');

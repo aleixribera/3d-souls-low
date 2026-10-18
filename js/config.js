@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.0.5';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -313,12 +313,14 @@ const CONFIG = {
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {
     defaultQuality: 'high',
-    // Auto is conservative: older integrated GPUs and limited CPU/RAM start on Low. Modern integrated chips may
-    // earn High; only recognized strong GPUs may earn Ultra. Time the slowest benchmark round and scale its cost
-    // by each preset's actual pixel load relative to the reference viewport. Manual choices always remain available.
-    // Ultra's 7 ms budget is reachable only by recognized strong GPUs; integrated/unknown caps remain unchanged.
-    autoQuality: { size: 1024, loops: 48, passes: 6, rounds: 3, ultraMs: 7, highMs: 8, showTime: 7,
-                   referenceWidth: 1280, referenceHeight: 720, minHighCores: 6, minHighMemory: 8, minUltraCores: 8, phoneWidth: 820,
+    // Measure actual-resolution 3D frames, including characters, lights, MSAA, shadows and post-processing.
+    // CPU/RAM browser hints cannot hard-cap a recognized dedicated GPU; rendered cost determines its preset.
+    autoQuality: { passes: 4, rounds: 5, warmFrames: 3, frameMs: { high: 14, ultra: 14 }, showTime: 7,
+                   referenceWidth: 1280, referenceHeight: 720, phoneWidth: 820,
+                   camera: { fov: 55, near: 0.1, far: 70, position: [10, 7, 13], look: [0, 1.5, 0] },
+                   stage: { halfSize: 14, propCount: 72, propRadius: 10, propHeight: 2.4, lights: 8, lightRadius: 8,
+                     lightHeight: 3, lightPower: 16, lightRange: 14, ambient: 0.7, moon: 2, shadowBox: 20,
+                     particles: 600, particleHeight: 4, particleSize: 0.08, aoScale: 0.5, aoSamples: 12 },
                    software: 'swiftshader|llvmpipe|softpipe|basic render|software',
                    integrated: 'intel|iris|uhd graphics|hd graphics|radeon\\(tm\\) graphics|radeon graphics|vega [0-9]+ graphics|mali|adreno|powervr|apple gpu',
                    capableIntegrated: 'iris.*(xe|plus)|arc.*graphics|radeon.*(680m|780m|880m|890m|8060s)|apple m[0-9]',

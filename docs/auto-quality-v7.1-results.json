@@ -1,0 +1,77 @@
+{
+  "results": [
+    {
+      "pick": "ultra",
+      "name": "angle (nvidia, nvidia geforce rtx 5060 (0x00002d05) direct3d11 vs_5_0 ps_5_0, d3d11)",
+      "cap": "ultra",
+      "frames": {
+        "ultra": {
+          "ms": 2.199999999254942,
+          "worstMs": 2.875,
+          "times": [
+            1.925000000745058,
+            2.050000000745058,
+            2.199999999254942,
+            2.300000000745058,
+            2.875
+          ],
+          "width": 2560,
+          "height": 1440,
+          "frames": 20,
+          "drawCalls": 502,
+          "triangles": 276126,
+          "method": "synchronized-3d-frames"
+        }
+      },
+      "reason": "measured-ultra",
+      "ms": 2.199999999254942,
+      "width": 1280,
+      "height": 720,
+      "pixelRatio": 2,
+      "cores": 12,
+      "memory": 32,
+      "errors": {},
+      "version": "v7.1",
+      "checkedAt": 1792354968952,
+      "benchmarked": true,
+      "summary": "Detected GPU: angle (nvidia, nvidia geforce rtx 5060 (0x00002d05) direct3d11 vs_5_0 ps_5_0, d3d11). Ultra passed the 3D test. Ultra: 2.2 ms/frame (budget 14 ms). Select to test again and apply Auto."
+    },
+    {
+      "pick": "ultra",
+      "name": "angle (nvidia, nvidia geforce rtx 5060 (0x00002d05) direct3d11 vs_5_0 ps_5_0, d3d11)",
+      "cap": "ultra",
+      "frames": {
+        "ultra": {
+          "ms": 2.099999999627471,
+          "worstMs": 3.099999999627471,
+          "times": [
+            1.974999999627471,
+            1.974999999627471,
+            2.099999999627471,
+            2.575000001117587,
+            3.099999999627471
+          ],
+          "width": 3840,
+          "height": 2160,
+          "frames": 20,
+          "drawCalls": 502,
+          "triangles": 276126,
+          "method": "synchronized-3d-frames"
+        }
+      },
+      "reason": "measured-ultra",
+      "ms": 2.099999999627471,
+      "width": 1920,
+      "height": 1080,
+      "pixelRatio": 2,
+      "cores": 12,
+      "memory": 32,
+      "errors": {},
+      "version": "v7.1",
+      "checkedAt": 1792354969117,
+      "benchmarked": true,
+      "summary": "Detected GPU: angle (nvidia, nvidia geforce rtx 5060 (0x00002d05) direct3d11 vs_5_0 ps_5_0, d3d11). Ultra passed the 3D test. Ultra: 2.1 ms/frame (budget 14 ms). Select to test again and apply Auto."
+    }
+  ],
+  "errors": []
+}

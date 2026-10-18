@@ -92,7 +92,7 @@ const Game = {
             settings.graphics = c[(i + d + c.length) % c.length];
             if (settings.graphics === 'auto') autoQuality.recheck();
           } },
-        { name: 'Check graphics again', desc: 'Runs a fresh check and applies Auto. A saved manual graphics choice is replaced only when you select this.',
+        { name: 'Check graphics again', desc: autoQuality.summary(),
           go: () => {
             settings.graphics = 'auto'; autoQuality.recheck(); saveSettings(); applySettings(); this.showMenu('options', true);
           } },

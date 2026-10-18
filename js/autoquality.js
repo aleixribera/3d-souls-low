@@ -2,8 +2,8 @@
 // ============================================================================
 // First launch: pick the graphics preset this machine should start on
 // ============================================================================
-// Auto combines GPU family, available CPU/RAM hints and a synchronized shader benchmark. Older integrated chips
-// start on Low. High and Ultra need stricter timings, adjusted for their real resolution and pixel-density caps.
+// Auto measures a detached 3D scene at each candidate preset's actual resolution. Older integrated chips start on
+// Low; dedicated GPUs qualify by measured frames rather than browser CPU hints or extrapolated shader scores.
 // Runs once per page when Auto is needed; a manually saved preset never runs the benchmark or gets overwritten.
 const autoQuality = (() => {
   const A = CONFIG.VISUALS.autoQuality, ORDER = ['low', 'high', 'ultra'];
@@ -18,53 +18,26 @@ const autoQuality = (() => {
     } catch (e) { return ''; }
   }
   // The highest preset a GPU of this name should get.
-  function capFor(name, { touch, cores, memory }) {
+  function capFor(name, { touch }) {
     if (touch || new RegExp(A.software).test(name)) return 'low';
-    if ((cores > 0 && cores < A.minHighCores) || (memory > 0 && memory < A.minHighMemory)) return 'low';
-    if (new RegExp(A.strong).test(name)) return cores > 0 && cores < A.minUltraCores ? 'high' : 'ultra';
+    if (new RegExp(A.strong).test(name)) return 'ultra';
     if (new RegExp(A.capableIntegrated).test(name)) return 'high';
     if (new RegExp(A.integrated).test(name)) return 'low';
-    return 'high';   // an unknown renderer must not earn Ultra from a synthetic shader alone
+    return 'ultra';   // masked/unrecognized adapters must prove themselves in the same actual-frame test
   }
-  // Pure policy, also used by regression tests; absent browser hardware hints do not imply weak hardware.
-  function recommend({ name = '', ms = Infinity, width = A.referenceWidth, height = A.referenceHeight,
+  // Compare measured native-resolution frame costs directly; no shader-to-resolution extrapolation.
+  function recommend({ name = '', frames = {}, width = A.referenceWidth, height = A.referenceHeight,
                        pixelRatio = 1, cores = 0, memory = 0, touch = false } = {}) {
     name = String(name).toLowerCase();
     const cap = capFor(name, { touch, cores, memory });
-    const cost = preset => {
-      const q = CONFIG.VISUALS.quality[preset], ratio = Math.min(Math.max(1, pixelRatio), q.maxPixelRatio) * q.renderScale;
-      const pixels = Math.max(1, width) * Math.max(1, height) * ratio * ratio;
-      return ms * Math.max(1, pixels / (A.referenceWidth * A.referenceHeight));
-    };
-    let pick = 'low';
-    if (Number.isFinite(ms) && ms >= 0) {
-      if (cap === 'ultra' && cost('ultra') <= A.ultraMs) pick = 'ultra';
-      else if (ORDER.indexOf(cap) >= ORDER.indexOf('high') && cost('high') <= A.highMs) pick = 'high';
-    }
-    return { pick, ms, name, cap, adjustedMs: cost(pick), width, height, pixelRatio, cores, memory };
-  }
-  // ms per pass of a heavy shader over a `size` px target (the finish forced by reading one pixel back).
-  function bench() {
-    const T = new THREE.WebGLRenderTarget(A.size, A.size, { depthBuffer: false });
-    const quad = new FullScreenQuad(new THREE.ShaderMaterial({
-      uniforms: { uT: { value: 0 } },
-      vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-      fragmentShader: `uniform float uT; varying vec2 vUv;
-void main() {
-  vec3 c = vec3(vUv, uT);
-  for (int i = 0; i < ${A.loops}; i++) c = fract(sin(c.yzx * 12.9898 + c.zxy * 78.233 + float(i)) * 43758.5453) * 0.999 + c * 0.001;
-  gl_FragColor = vec4(c, 1.0);
-}` }));
-    const px = new Uint8Array(4), run = n => { for (let i = 0; i < n; i++) { quad.material.uniforms.uT.value = i; renderer.setRenderTarget(T); quad.render(renderer); } renderer.readRenderTargetPixels(T, 0, 0, 1, 1, px); };
-    try {
-      run(1);   // compile and warm up
-      let slowest = 0;
-      for (let round = 0; round < A.rounds; round++) {
-        const t0 = performance.now(); run(A.passes);
-        slowest = Math.max(slowest, (performance.now() - t0) / A.passes);
-      }
-      return slowest;   // one unusually fast round must not recommend a preset the laptop cannot sustain
-    } finally { renderer.setRenderTarget(null); quad.material.dispose(); quad.dispose(); T.dispose(); }
+    const cost = preset => typeof frames[preset] === 'number' ? frames[preset] : frames[preset]?.ms;
+    const passes = preset => Number.isFinite(cost(preset)) && cost(preset) >= 0 && cost(preset) <= A.frameMs[preset];
+    let pick = 'low', reason = 'hardware-low';
+    if (cap === 'ultra' && passes('ultra')) { pick = 'ultra'; reason = 'measured-ultra'; }
+    else if (ORDER.indexOf(cap) >= ORDER.indexOf('high') && passes('high')) {
+      pick = 'high'; reason = cap === 'high' ? 'hardware-high' : Number.isFinite(cost('ultra')) ? 'ultra-over-budget' : 'ultra-test-failed';
+    } else if (cap !== 'low') reason = Number.isFinite(cost('high')) ? 'high-over-budget' : 'test-failed';
+    return { pick, name, cap, frames, reason, ms: cost(pick), width, height, pixelRatio, cores, memory };
   }
   let detected = null;
   // The preset this machine should run (worked out once per page load: the GPU's name and a short benchmark).
@@ -74,16 +47,27 @@ void main() {
     const device = { name, width: window.innerWidth, height: window.innerHeight, pixelRatio: window.devicePixelRatio || 1,
       cores: navigator.hardwareConcurrency || 0, memory: navigator.deviceMemory || 0,
       touch: (navigator.maxTouchPoints || 0) > 1 && Math.min(screen.width, screen.height) < A.phoneWidth };
-    let ms = Infinity, benchmarked = false;
-    if (capFor(name, device) !== 'low') {
-      benchmarked = true;
-      try { ms = bench(); } catch (e) { /* failed timing: safely recommend Low */ }
+    const frames = {}, errors = {};
+    const cap = capFor(name, device);
+    for (const preset of cap === 'ultra' ? ['ultra', 'high'] : cap === 'high' ? ['high'] : []) {
+      try { frames[preset] = qualityBenchmark.measure(preset, device); }
+      catch (e) { errors[preset] = String(e.message || e); }
+      if (preset === 'ultra' && Number.isFinite(frames.ultra?.ms) && frames.ultra.ms <= A.frameMs.ultra) break;
     }
-    detected = { ...recommend({ ...device, ms }), version: VERSION, checkedAt: Date.now(), benchmarked };
+    detected = { ...recommend({ ...device, frames }), errors, version: VERSION, checkedAt: Date.now(), benchmarked: cap !== 'low' };
     return detected;
   }
   return {
     recommend,
+    summary() {
+      const r = detected;
+      if (!r) return 'Select to run a fresh 3D graphics test and apply Auto.';
+      const detail = ['ultra', 'high'].filter(k => r.frames[k]).map(k => `${CONFIG.VISUALS.quality[k].label}: ${r.frames[k].ms.toFixed(1)} ms/frame (budget ${A.frameMs[k]} ms)`).join('; ');
+      const why = { 'hardware-low': 'Conservative hardware limit', 'hardware-high': 'Integrated GPU is limited to High',
+        'measured-ultra': 'Ultra passed the 3D test', 'ultra-over-budget': 'Ultra exceeded the frame budget',
+        'ultra-test-failed': 'Ultra test could not complete', 'high-over-budget': 'High exceeded the frame budget', 'test-failed': 'Graphics test could not complete' }[r.reason];
+      return `Detected GPU: ${r.name || 'unavailable'}. ${why}.${detail ? ' ' + detail + '.' : ''} Select to test again and apply Auto.`;
+    },
     recheck() { detected = null; return detect(); },
     // Called by boot.js before applySettings(). On the first launch (no graphics choice saved) the setting becomes
     // Auto and the title screen says what it picked; returns that preset, or null when the player already chose.

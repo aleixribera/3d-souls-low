@@ -2993,51 +2993,52 @@
       expect.ok(visuals.quality() === CONFIG.VISUALS.quality[after.pick], 'new recommendation is applied');
     } finally { settings.graphics = saved; saveSettings(); Game.optionsFrom = from; restoreQuality(); }
   });
-  test('Auto quality: older integrated laptops and limited hardware start on Low even with a fast shader result', () => {
-    const ready = { ms: 1, width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
-    for (const name of ['ANGLE (Intel, Intel(R) UHD Graphics 620)', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])
-      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'low', `${name}: conservative Low`);
-    for (const limits of [{ cores: 4 }, { memory: 4 }, { touch: true }])
-      expect.ok(autoQuality.recommend({ ...ready, name: 'NVIDIA GeForce RTX 3060 Laptop GPU', ...limits }).pick === 'low', 'limited CPU/RAM or phone: Low');
+  test('Auto quality: old integrated GPUs remain Low while modern integrated GPUs cap at High', () => {
+    const ready = { frames: { ultra: 3, high: 2 }, cores: 8, memory: 8 };
+    for (const name of ['Intel UHD Graphics 620', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'low', `${name}: Low`);
+    for (const name of ['Intel Iris Xe Graphics', 'AMD Radeon 780M'])
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'high', `${name}: capped at High`);
+    expect.ok(autoQuality.recommend({ ...ready, name: 'WebKit WebGL', cores: 4, memory: 4 }).pick === 'ultra', 'a masked fast adapter qualifies by measured frames, despite privacy-limited hints');
   });
-  test('Auto quality: higher presets need stricter timings and account for display resolution', () => {
-    const ready = { name: 'NVIDIA GeForce RTX 3060', width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
-    const cases = [
-      [{ ms: 2 }, 'ultra'], [{ ms: 7.5 }, 'high'], [{ ms: 9 }, 'low'],
-      [{ ms: 2, pixelRatio: 2 }, 'high'],
-      [{ ms: 2, pixelRatio: 2, width: 1920, height: 1080 }, 'low'],
-      [{ name: 'Intel Iris Xe Graphics', ms: 2 }, 'high'],
-      [{ name: 'Intel Iris Xe Graphics', ms: 4, pixelRatio: 2 }, 'low'],
-      [{ name: 'AMD Radeon 780M', ms: 2 }, 'high'],
-      [{ name: 'Unknown GPU', ms: 1 }, 'high'],
-      [{ ms: Infinity }, 'low'], [{ ms: NaN }, 'low'],
-    ];
-    for (const [sample, expected] of cases)
-      expect.ok(autoQuality.recommend({ ...ready, ...sample }).pick === expected, `${JSON.stringify(sample)} -> ${expected}`);
+  test('Auto quality: dedicated GPUs qualify by real frame cost instead of browser CPU hints', () => {
+    const ready = { name: 'NVIDIA GeForce RTX 5060', frames: { ultra: 6, high: 4 }, cores: 4, memory: 4 };
+    for (const screen of [{ width: 1280, height: 720, pixelRatio: 1 }, { width: 1920, height: 1080, pixelRatio: 2 }, { width: 3840, height: 2160, pixelRatio: 1 }])
+      expect.ok(autoQuality.recommend({ ...ready, ...screen }).pick === 'ultra', 'already measured frame costs are never scaled a second time');
+    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24, high: 8 } }).pick === 'high', 'a slow Ultra test falls back to measured High');
+    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24, high: 25 } }).pick === 'low', 'both over budget: Low');
+    expect.ok(autoQuality.recommend({ ...ready, frames: {} }).pick === 'low', 'failed measurements remain safe');
   });
-  test('Auto quality: hardware hints may be unavailable and explicit graphics choices always win', () => {
+  test('Auto quality: recommendation reasons identify measured limits and failures', () => {
+    const r = autoQuality.recommend({ name: 'RTX 5060', frames: { ultra: 24, high: 8 } });
+    expect.ok(r.reason === 'ultra-over-budget', 'High reason names the Ultra frame limit');
+    expect.ok(autoQuality.recommend({ name: 'RTX 5060', frames: { high: 8 } }).reason === 'ultra-test-failed', 'failed Ultra is distinguishable');
+    expect.ok(autoQuality.summary().includes('Detected GPU:'), 'Options exposes the actual detected adapter');
     const saved = settings.graphics;
-    try {
-      expect.ok(autoQuality.recommend({ name: 'RTX 5060', ms: 1 }).pick === 'ultra', 'missing CPU/RAM hints do not imply a weak machine');
-      for (const preset of ['low', 'high', 'ultra']) {
-        settings.graphics = preset;
-        expect.ok(autoQuality.effective() === preset, `${preset}: manual choice preserved`);
-      }
-    } finally { settings.graphics = saved; }
+    try { for (const preset of ['low', 'high', 'ultra']) { settings.graphics = preset; expect.ok(autoQuality.effective() === preset, 'manual choice remains authoritative'); } }
+    finally { settings.graphics = saved; }
   });
-  test('Auto quality: RTX 5060 class desktops earn Ultra at 4K without relaxing laptop caps', () => {
-    const desktop = { name: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 5060, D3D11)', ms: 0.4, cores: 12, memory: 32 };
-    for (const screen of [
-      { width: 1920, height: 1080, pixelRatio: 1 },
-      { width: 2560, height: 1440, pixelRatio: 1 },
-      { width: 3840, height: 2160, pixelRatio: 1 },
-      { width: 1920, height: 1080, pixelRatio: 2 },
-    ]) expect.ok(autoQuality.recommend({ ...desktop, ...screen }).pick === 'ultra', `${JSON.stringify(screen)}: desktop Ultra`);
-    const screen = { width: 1920, height: 1080, pixelRatio: 2 };
-    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Intel UHD Graphics 620' }).pick === 'low', 'older laptop stays Low');
-    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Intel Iris Xe Graphics' }).pick === 'high', 'modern integrated stays capped at High');
-    expect.ok(autoQuality.recommend({ ...desktop, ...screen, name: 'Unknown GPU' }).pick === 'high', 'unknown renderer never earns Ultra');
-    expect.ok(autoQuality.recommend({ ...desktop, ...screen, ms: 1 }).pick === 'high', 'strong GPUs still need sufficient resolution-adjusted headroom');
+  test('Auto quality: 3D benchmark restores the renderer and leaves every live actor untouched', () => {
+    const roots = [...scene.children], player = Game.player, enemies = Game.enemies, detail = KIT.detail();
+    const target = renderer.getRenderTarget(), viewport = renderer.getViewport(new THREE.Vector4()), shadows = renderer.shadowMap.enabled;
+    const result = qualityBenchmark.measure('high', { width: 640, height: 360, pixelRatio: 1 });
+    expect.ok(Number.isFinite(result.ms) && result.frames > 0 && result.method === 'synchronized-3d-frames', 'real frames were measured');
+    expect.ok(result.width === 640 && result.height === 360, 'actual candidate resolution is measured');
+    expect.ok(result.drawCalls > 20 && result.triangles > 10000, 'characters and 3D geometry actually issue draws, rather than an empty target');
+    expect.ok(Game.player === player && Game.enemies === enemies, 'live actors unchanged');
+    expect.ok(scene.children.length === roots.length && scene.children.every((o, i) => o === roots[i]), 'no benchmark roots left in the live scene');
+    expect.ok(renderer.getRenderTarget() === target && renderer.getViewport(new THREE.Vector4()).equals(viewport), 'render target and viewport restored');
+    expect.ok(renderer.shadowMap.enabled === shadows && JSON.stringify(KIT.detail()) === JSON.stringify(detail), 'shadows and model detail restored');
+    const draw = renderer.render; let failed = false;
+    try {
+      renderer.render = function(s, c) {
+        if (s.children.length > CONFIG.VISUALS.autoQuality.stage.propCount) throw new Error('injected benchmark failure');
+        return draw.call(this, s, c);
+      };
+      try { qualityBenchmark.measure('high', { width: 640, height: 360, pixelRatio: 1 }); } catch (e) { failed = true; }
+    } finally { renderer.render = draw; }
+    expect.ok(failed && scene.children.length === roots.length && scene.children.every((o, i) => o === roots[i]), 'failed rendering also releases all temporary roots');
+    expect.ok(renderer.getRenderTarget() === target && renderer.shadowMap.enabled === shadows, 'failure restores the renderer');
   });
   test('Ultra: the presets share their keys and reserve the lighting extras for Ultra', () => {
     const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();

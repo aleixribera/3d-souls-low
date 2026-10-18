@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.0.5: Fresh Auto Graphics Checks
+# Combat Arena 3D — v7.1: Measured Auto Graphics
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.1:** Auto now tests real game character models and lit 3D scenery at each preset’s actual resolution, including MSAA, bloom and Ultra shadow/depth work. It no longer extrapolates from a tiny shader score or rejects dedicated GPUs because of browser CPU/RAM hints. Check graphics again shows the detected GPU, measured frame cost and reason for the result. See [the benchmark notes](docs/auto-quality-v7.1.md).
 
 **v7.0.5:** refreshed script cache keys ensure the desktop Auto correction actually reaches existing browsers. Options now offers **Check graphics again**; returning to Auto also runs a fresh check. Benchmark results are kept only for the current page.
 
@@ -58,7 +60,7 @@ Every land also mixes in Ashmere's foes (often in their stronger **elite** form)
 
 **Options → Graphics** offers **Auto**, Low, High and **Ultra**. On the very first launch the game tests your graphics card for a moment and picks a preset for you (Auto), and says so on the title screen; you can change it at any time in Options (on the title screen or in the pause menu). Options with ‹ › arrows can be stepped either way.
 
-Auto now favors smooth play on weaker laptops. Older integrated graphics start on Low, modern integrated graphics can earn High, and recognized stronger GPUs can earn Ultra only with enough benchmark headroom. A saved Auto choice is reassessed when the page reloads; an explicit Low, High or Ultra choice stays as you set it.
+Auto now favors smooth play on weaker laptops. Older integrated graphics start on Low, modern integrated graphics can earn High, and dedicated or unrecognized GPUs can earn Ultra by passing the 3D frame test. A saved Auto choice is reassessed when the page reloads; an explicit Low, High or Ultra choice stays as you set it.
 
 **Low** renders at 100% resolution with a pixel ratio capped at 1. Shared surface maps, simpler character shader work and faster loading preserve its existing model and texture detail. Enemies, hidden boss phases and required attack effects are prepared before gameplay. See [the LOW performance audit](docs/low-performance-audit.md) for measurements and limits.
 
