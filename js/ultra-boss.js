@@ -238,9 +238,18 @@ void main() {
   // ---- each frame: gathering, shedding, trails, breath, the sphere ----------------------------------------------------------
   let last = performance.now();
   const rate = new WeakMap();
+  function clearEffects() {
+    for (const g of glows.values()) { g.visible = false; glowPool.push(g); }
+    glows.clear();
+    for (const pool of [rings, pillars, fires]) for (const o of pool) { o.m.visible = false; o.age = Infinity; }
+    last = performance.now();
+  }
+  visuals.hooks.stage.push(clearEffects);
+  visuals.hooks.quality.push(q => { if (!q.ultra) clearEffects(); });
   Game.renderHooks.push(game => {
     const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;
-    if (!on()) { for (const [e, g] of glows) { g.visible = false; glowPool.push(g); } glows.clear(); for (const o of [...rings, ...pillars, ...fires]) o.m.visible = false; return; }
+    if (!on()) return;
+    for (const [e, g] of glows) if (!game.enemies.includes(e) || !e.alive()) { g.visible = false; glowPool.push(g); glows.delete(e); }
     for (const e of game.enemies) {
       if (!e.alive() || e.asleep || !e.rig.root.visible || !e.attack) continue;
       const L = look(e);

@@ -84,7 +84,10 @@ const spectral = (() => {
     const g = new THREE.Group(), W = shape(id), mat = material(W.look);
     for (const geo of W.geos) g.add(new THREE.Mesh(geo, mat));
     const light = new THREE.PointLight(S.glow, 0, S.lightRange); light.position.z = 0.8; g.add(light);
-    g.userData = { mat, light, k: 0 }; g.visible = false;
+    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().ultra;
+    R.mats.push(mat);   // disposed with its rig, rather than retained after every retry
+    for (const geo of W.geos) geo.userData.shared = true;
+    g.userData = { mat, light, k: 0, warmUp: true }; g.visible = false;
     (W.bone ? R.bones[W.bone] : R.weapon).add(g);
     return (set[id] = g);
   }
@@ -105,6 +108,9 @@ const spectral = (() => {
   }
   return {
     attach() { Game.renderHooks.push(render); },
+    prepare(enemies) {
+      for (const e of enemies) for (const a of e.baseDef.attacks) if (a.spectral) weaponFor(e, a.spectral);
+    },
     // A thrown golden dagger (a projectile's `look: 'dagger'`), pointing along +z of the bolt.
     thrownDagger() {
       const W = shape('dagger'), g = new THREE.Group(), mat = material(W.look); mat.opacity = 1;

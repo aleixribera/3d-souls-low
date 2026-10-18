@@ -449,10 +449,11 @@ const GRADE_SHADER = {
     tDiffuse: { value: null }, uShadow: { value: new THREE.Vector3(1, 1, 1) }, uHigh: { value: new THREE.Vector3(1, 1, 1) },
     uSat: { value: 1 }, uContrast: { value: 1 }, uVig: { value: 0 }, uVigSoft: { value: 0.5 }, uGrain: { value: 0 },
     uTime: { value: 0 }, uLow: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
+    uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color() }, uHurt: { value: 0 },
   },
   vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 uShadow, uHigh;
-uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow; uniform vec2 uRes; varying vec2 vUv;
+uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow, uFlash, uHurt; uniform vec3 uFlashCol; uniform vec2 uRes; varying vec2 vUv;
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 void main() {
   vec3 c = texture2D(tDiffuse, vUv).rgb;
@@ -466,6 +467,9 @@ void main() {
   c *= 1.0 - v * clamp(uVig + uLow * 0.35, 0.0, 1.0);
   c = mix(c, c * vec3(1.0, 0.35, 0.3), v * uLow * 0.7);
   c += (hash(vUv * uRes + fract(uTime * 7.13) * 91.7) - 0.5) * uGrain;
+  float edge = smoothstep(0.3, 1.0, length(q) / 0.8);
+  c = mix(c, c * vec3(1.25, 0.3, 0.25) + vec3(0.1, 0.0, 0.0), clamp(edge * uHurt, 0.0, 1.0));
+  c += uFlashCol * uFlash;
   gl_FragColor = vec4(c, 1.0);
 }`,
 };
@@ -814,6 +818,7 @@ const visuals = (() => {
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
   const ash = makeAsh(), embers = makeEmberField(), decals = makeBloodDecals(), debris = makeDebris();
   let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [], glows: [], lights: [] }, lowHp = 0, debrisTimer = 0;
+  let warmedStage = null, warmedQuality = null;
   // Extensions (the Ultra preset, js/ultra-post.js): called on a quality change, after a stage is dressed, around each draw
   // and on a resize (with the drawn size in pixels).
   const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
@@ -1131,12 +1136,35 @@ const visuals = (() => {
     // Draw every pooled effect once, fully transparent and in front of the camera (cam: { pos, look }), so that its
     // shader is ready before play starts rather than compiled the moment a first hit, block or landing shows it.
     warmUp(cam) {
+      if (quality.ultra) {
+        spectral.prepare(Game.enemies); flame.prepare(Game.enemies); holy.prepare(Game.enemies); blackBlade.prepare(Game.enemies);
+      }
       camera.position.copy(cam.pos); camera.lookAt(cam.look); camera.updateMatrixWorld();
       const at = new THREE.Vector3(0, 0, -3).applyMatrix4(camera.matrixWorld);
       const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity]);
+      const bodies = [], parents = new Map();
+      // Upload every character mesh, including distant enemies, lore rigs and hidden boss phases, while loading.
+      // Merely compiling their shaders would still leave geometry and textures to upload at their first encounter.
+      scene.traverse(o => {
+        if (!o.isSkinnedMesh && !(o.isMesh && o.parent && o.parent.userData.warmUp)) return;
+        bodies.push([o, o.visible, o.frustumCulled]); o.visible = true; o.frustumCulled = false;
+        for (let p = o.parent; p && p !== scene; p = p.parent) {
+          if (!parents.has(p)) parents.set(p, p.visible);
+          p.visible = true;
+        }
+      });
       for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; }
-      this.draw();
-      for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
+      try {
+        this.draw();
+        // The same stage's hidden static materials are already compiled. New actors / phases were all drawn above;
+        // walking the full scene through compile again on every retry adds work without preparing anything new.
+        if (warmedStage !== stage || warmedQuality !== quality) renderer.compile(scene, camera);
+        warmedStage = stage; warmedQuality = quality;
+      } finally {
+        for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
+        for (const [m, visible, culled] of bodies) { m.visible = visible; m.frustumCulled = culled; }
+        for (const [p, visible] of parents) p.visible = visible;
+      }
     },
     resize(w, h) {
       w = Math.max(1, w); h = Math.max(1, h);

@@ -39,21 +39,26 @@ const holy = (() => {
     if (e.rig.holySigil) return e.rig.holySigil;
     const g = new THREE.Group(), rune = new THREE.Mesh(RUNE, add(H.color)), pillar = new THREE.Mesh(PILLAR, add(H.core));
     const light = new THREE.PointLight(H.color, 0, H.lightRange); light.position.y = 1;
+    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().ultra;
+    g.userData.warmUp = true;
     g.add(rune, pillar, light); g.visible = false; scene.add(g);
     sigils.push({ e, g });
     return (e.rig.holySigil = { g, rune, pillar, light, at: null, k: 0 });
   }
 
   let last = performance.now();
+  function clean(enemies) {
+    for (let i = sigils.length - 1; i >= 0; i--) if (!enemies.includes(sigils[i].e)) {
+      scene.remove(sigils[i].g); for (const m of sigils[i].g.children) if (m.material) m.material.dispose(); sigils.splice(i, 1);
+    }
+  }
   function render(game) {
     const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
     for (const f of flashes) if (f.mesh.visible) {
       f.t += dt; const k = Math.min(1, f.t / H.ringTime), s = 0.4 + k * H.ring;
       f.mesh.scale.set(s, 1, s); f.mesh.material.opacity = 0.9 * (1 - k); f.mesh.visible = k < 1;
     }
-    for (let i = sigils.length - 1; i >= 0; i--) if (!game.enemies.includes(sigils[i].e)) {
-      scene.remove(sigils[i].g); for (const m of sigils[i].g.children) if (m.material) m.material.dispose(); sigils.splice(i, 1);
-    }
+    clean(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig;
       // Unseen while it rushes (restored the frame it reappears).
@@ -81,5 +86,8 @@ const holy = (() => {
       }
     }
   }
-  return { attach() { Game.renderHooks.push(render); } };
+  return {
+    attach() { Game.renderHooks.push(render); },
+    prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.hits.some(h => h.sigil))) sigilFor(e); },
+  };
 })();

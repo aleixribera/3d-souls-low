@@ -1,20 +1,20 @@
 'use strict';
 // ============================================================================
-// 9c. The Ultra preset, rendering (quality.ultra): real-time shadows, ambient occlusion, volumetric light in the fog,
-// reflections on metal, shockwave refraction and a final lens pass
+// 9c. The Ultra preset: moon shadows, ambient occlusion, volumetric light, metal reflections and shockwaves.
 // ============================================================================
 // Drawing only, like section 9b: it reads the scene, the camera and the player's position and never changes the game.
 // Plugged into visuals through its hooks (quality, stage, beforeDraw, afterDraw, resize); off, it costs nothing.
 //
-// Each Ultra frame:   shadow maps (the moon's share + the nearest point lights)  ->  scene (HDR, MSAA)
+// Each Ultra frame:   one moon shadow map -> scene (HDR, MSAA)
 //   -> a depth + normal pre-pass at `ao.scale` of the screen (no glows, sprites or particles)  ->  light buffer:
 //      ambient occlusion (alpha) + in-scattered light (rgb: every near point light, analytically; the moon, ray-marched
 //      through its shadow map on open-sky levels)  ->  depth-aware blur  ->  composite (shockwaves bend the image)
-//   -> bloom -> tone mapping -> grade -> lens (chromatic aberration, sharpen, radial punch, flash, hurt edges).
+//   -> bloom -> tone mapping -> grade (also flash and hurt feedback; no extra lens pass).
 const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
-  let on = false, frame = 0, lastT = performance.now(), W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null;
+  let on = false, lastT = performance.now(), W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
+  const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
 
   // ---- lights ------------------------------------------------------------------------------------------------------
   // The moon's shadowed share: a second directional light that follows the player (its map covers `moonBox` m round them).
@@ -24,16 +24,7 @@ const ultraPost = (() => {
   Object.assign(sun.shadow.camera, { left: -S.moonBox, right: S.moonBox, top: S.moonBox, bottom: -S.moonBox, near: 1, far: S.moonDist * 2 });
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.bias = S.bias; sun.shadow.normalBias = S.normalBias; sun.shadow.radius = S.radius;
-  // Point-light shadows: proxies that take over the nearest lights each frame (those are dimmed to 0 while drawing).
-  const proxies = Array.from({ length: S.points }, () => {
-    const l = new THREE.PointLight(0xffffff, 0, 1, 1);
-    l.castShadow = true; l.userData.ultra = true;
-    l.shadow.mapSize.set(S.pointMap, S.pointMap); l.shadow.camera.near = 0.1; l.shadow.camera.far = S.pointFar;
-    l.shadow.bias = S.pointBias; l.shadow.normalBias = S.pointNormalBias; l.shadow.radius = S.radius;
-    return l;
-  });
-  const owned = [sun, sun.target, ...proxies];   // in the scene only while Ultra is on (js/ultra-fx.js adds its flash lights)
-  const dimmed = [];                             // [light, intensity] put back after the draw
+  const owned = [sun, sun.target];   // js/ultra-fx.js adds its fixed impact light
 
   // ---- render targets ----------------------------------------------------------------------------------------------
   const rt = (w, h, opts = {}) => new THREE.WebGLRenderTarget(w, h, { depthBuffer: false, ...opts });
@@ -205,9 +196,16 @@ void main() {
   // ---- the depth pre-pass: what it leaves out (glows, sprites, particles, swaying grass and banners) ---------------
   const normalMat = new THREE.MeshNormalMaterial();
   let noDepth = [], extraLights = [];
+  const sceneRoots = [];   // rigs and pooled effects attach at the scene root; compare references, not only their count
+  const rootCounts = [];   // projectile looks / glows can also be added inside their pooled root
+  const hidden = [], clearColor = new THREE.Color();
   const lit = m => m && (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial);
-  function sweep() {   // every few frames: shadow flags, metal reflections, the pre-pass's leave-outs, lights not of the stage
+  function sweep() {   // only when scene membership changes or a stage / quality change explicitly requests it
+    sweeps++;
     noDepth = []; extraLights = [];
+    reflected.clear();
+    sceneRoots.length = rootCounts.length = 0;
+    for (const o of scene.children) { sceneRoots.push(o); rootCounts.push(o.children.length); }
     const stageLights = new Set(visuals.lights());
     scene.traverse(o => {
       if (o.isPointLight) { if (!o.userData.ultra && !stageLights.has(o)) extraLights.push(o); return; }
@@ -226,9 +224,11 @@ void main() {
   // Metal reflections: the level's environment on every metallic material (armour, weapons, iron).
   const reflected = new Set();
   function reflect(m) {
-    if (!m.isMeshStandardMaterial || m.metalness < U.env.metalFrom || !envTex || m.envMap === envTex) return;
+    if (!m.isMeshStandardMaterial || m.metalness < U.env.metalFrom || !envTex) return;
+    reflected.add(m);
+    if (m.envMap === envTex) return;
     if (!m.envMap) m.needsUpdate = true;
-    m.envMap = envTex; m.envMapIntensity = U.env.intensity; reflected.add(m);
+    m.envMap = envTex; m.envMapIntensity = U.env.intensity;
   }
   function unreflect() { for (const m of reflected) { m.envMap = null; m.needsUpdate = true; } reflected.clear(); }
   // The environment: a dim sphere of the level's fog and moonlight, with warm fire low round the horizon (and the sun).
@@ -262,48 +262,24 @@ void main() {
 
   // ---- screen pulses: shockwaves, chromatic aberration, punch, flash, hurt -------------------------------------------
   const waves = [];   // { x, y, z, age, k, size }
-  const pulse = { ca: 0, punch: 0, flash: 0, hurt: 0, flashColor: new THREE.Color(1, 1, 1), punchAt: new THREE.Vector2(0.5, 0.5) };
-  const LENS = {
-    uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uCA: { value: U.lens.ca }, uCAPulse: { value: 0 },
-                uPunch: { value: 0 }, uPunchC: { value: new THREE.Vector2(0.5, 0.5) }, uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color() },
-                uHurt: { value: 0 }, uSharp: { value: U.lens.sharpen } },
-    vertexShader: QUAD_VERT,
-    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uRes, uPunchC; uniform float uCA, uCAPulse, uPunch, uFlash, uHurt, uSharp;
-uniform vec3 uFlashCol; varying vec2 vUv;
-vec3 tap(vec2 uv, vec2 o) { return vec3(texture2D(tDiffuse, uv + o).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - o).b); }
-void main() {
-  vec2 q = vUv - 0.5, o = q * (uCA * dot(q, q) * 4.0 + uCAPulse);
-  vec3 c;
-  if (uPunch > 0.0005) {
-    c = vec3(0.0);
-    for (int i = 0; i < ${U.lens.punchTaps}; i++) c += tap(uPunchC + (vUv - uPunchC) * (1.0 - uPunch * float(i) / ${U.lens.punchTaps - 1}.0), o);
-    c /= ${U.lens.punchTaps}.0;
-  } else {
-    vec2 px = 1.0 / uRes;
-    c = tap(vUv, o);
-    vec3 n = texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb + texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb
-           + texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb + texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb;
-    c += (c - n * 0.25) * uSharp;
-  }
-  float e = smoothstep(0.3, 1.0, length(q * vec2(uRes.x / uRes.y, 1.0)) / 0.8);
-  c = mix(c, c * vec3(1.25, 0.3, 0.25) + vec3(0.1, 0.0, 0.0), clamp(e * uHurt, 0.0, 1.0));
-  c += uFlashCol * uFlash;
-  gl_FragColor = vec4(max(c, 0.0), 1.0);
-}` };
+  const pulse = { flash: 0, hurt: 0, flashColor: new THREE.Color(1, 1, 1) };
 
-  // ---- the passes: one after the scene render, one at the very end ----------------------------------------------------
+  // ---- the light pass, after the scene render ------------------------------------------------------------------------
   class UltraLightPass extends Pass {
     constructor() { super(); this.needsSwap = true; }
     render(r, writeBuffer, readBuffer) {
       // 1. depth + normals, without what glows or sways; a dissolving body leaves no occlusion behind
-      const hidden = [];
+      hidden.length = 0;
       for (const o of noDepth) if (o.visible) { o.visible = false; hidden.push(o); }
       for (const e of Game.enemies) if (e.rig.root.visible && e.rig.alphaK < 0.99) { e.rig.root.visible = false; hidden.push(e.rig.root); }
-      const bg = scene.background, clearCol = r.getClearColor(new THREE.Color()), clearA = r.getClearAlpha();
+      const bg = scene.background, override = scene.overrideMaterial, clearA = r.getClearAlpha();
+      r.getClearColor(clearColor);
       scene.background = null; scene.overrideMaterial = normalMat;
-      r.setRenderTarget(gbuf); r.setClearColor(0x8080ff, 1); r.clear(); r.render(scene, camera);
-      scene.overrideMaterial = null; scene.background = bg; r.setClearColor(clearCol, clearA);
-      for (const o of hidden) o.visible = true;
+      try { r.setRenderTarget(gbuf); r.setClearColor(0x8080ff, 1); r.clear(); r.render(scene, camera); }
+      finally {
+        scene.overrideMaterial = override; scene.background = bg; r.setClearColor(clearColor, clearA);
+        for (const o of hidden) o.visible = true;
+      }
       // 2. light visibility, 3. occlusion + scattered light, 4. blur, 5. composite
       pass(visMat, visRT);
       pass(lightMat, lightA);
@@ -313,10 +289,9 @@ void main() {
       pass(compMat, this.renderToScreen ? null : writeBuffer);
     }
   }
-  const lightPass = new UltraLightPass(), lensPass = new ShaderPass(LENS);
-  lightPass.enabled = lensPass.enabled = false;
+  const lightPass = new UltraLightPass();
+  lightPass.enabled = false;
   visuals.composer.insertPass(lightPass, 1);   // right after the scene render, before bloom
-  visuals.composer.addPass(lensPass);          // last: after the grade
 
   // ---- per frame ------------------------------------------------------------------------------------------------------
   const lightList = [];
@@ -346,33 +321,15 @@ void main() {
       lightMat.uniforms.uLRange.value[i] = L.R;
     }
   }
-  // The nearest stage lights cast shadows: their proxies take them over for this draw.
-  function assignProxies() {
-    const p = Game.player || camera.position, near = [];
-    for (const l of visuals.lights()) {
-      if (!l.visible || !(l.intensity > 0)) continue;
-      const d = Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
-      if (d < S.pointRange) near.push({ d, l });
-    }
-    near.sort((a, b) => a.d - b.d);
-    proxies.forEach((q, i) => {
-      const n = near[i];
-      q.shadow.autoUpdate = !!n;
-      if (!n) { q.intensity = 0; return; }
-      q.position.copy(n.l.position); q.color.copy(n.l.color); q.intensity = n.l.intensity; q.distance = n.l.distance; q.decay = n.l.decay;
-      q.shadow.camera.far = Math.min(S.pointFar, n.l.distance > 0 ? n.l.distance : S.pointFar); q.shadow.camera.updateProjectionMatrix();
-      dimmed.push([n.l, n.l.intensity]); n.l.intensity = 0;
-    });
-  }
   // The moon's shadowed share follows the player, snapped to whole shadow texels so its edges never crawl.
   function placeSun() {
     if (moonBase === null) moonBase = moonLight.intensity;
     const share = open ? S.share.open : S.share.roofed;
     sun.color.copy(moonLight.color); sun.intensity = moonBase * share; moonLight.intensity = moonBase * (1 - share);
     const p = Game.player || camera.position, dir = v3b.copy(moonLight.position).normalize();
-    const texel = 2 * S.moonBox / S.moonMap, up = Math.abs(dir.y) > 0.99 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-    const right = new THREE.Vector3().crossVectors(up, dir).normalize(), up2 = new THREE.Vector3().crossVectors(dir, right);
-    const c = new THREE.Vector3(p.x, p.y + 1, p.z);
+    const texel = 2 * S.moonBox / S.moonMap, up = Math.abs(dir.y) > 0.99 ? sunUp.set(1, 0, 0) : sunUp.set(0, 1, 0);
+    const right = sunRight.crossVectors(up, dir).normalize(), up2 = sunUp2.crossVectors(dir, right);
+    const c = sunCenter.set(p.x, p.y + 1, p.z);
     const a = Math.round(c.dot(right) / texel) * texel, b = Math.round(c.dot(up2) / texel) * texel, f = c.dot(dir);
     c.copy(right).multiplyScalar(a).addScaledVector(up2, b).addScaledVector(dir, f);
     sun.target.position.copy(c); sun.position.copy(c).addScaledVector(dir, S.moonDist);
@@ -380,12 +337,9 @@ void main() {
   }
   function decay(dt) {
     const D = U.lens.decay;
-    pulse.ca = Math.max(0, pulse.ca - pulse.ca * D.ca * dt - 0.0005 * dt);
-    pulse.punch = Math.max(0, pulse.punch - pulse.punch * D.punch * dt - 0.002 * dt);
     pulse.flash = Math.max(0, pulse.flash - pulse.flash * D.flash * dt - 0.01 * dt);
     pulse.hurt = Math.max(0, pulse.hurt - pulse.hurt * D.hurt * dt - 0.01 * dt);
-    const L = lensPass.uniforms;
-    L.uCAPulse.value = pulse.ca; L.uPunch.value = pulse.punch; L.uPunchC.value.copy(pulse.punchAt);
+    const L = visuals.passes.grade.uniforms;
     L.uFlash.value = pulse.flash; L.uFlashCol.value.copy(pulse.flashColor); L.uHurt.value = Math.max(pulse.hurt, visuals.lowHealth() * 0.35);
     // shockwaves: each frame re-projected, so they stay on the spot they started from
     const Wv = U.waves, list = compMat.uniforms.uWaves.value;
@@ -403,7 +357,9 @@ void main() {
   function setOn(want) {
     if (want === on) return;
     on = want;
-    lightPass.enabled = lensPass.enabled = on;
+    lightPass.enabled = on;
+    pulse.flash = pulse.hurt = 0;
+    visuals.passes.grade.uniforms.uFlash.value = visuals.passes.grade.uniforms.uHurt.value = 0;
     renderer.shadowMap.enabled = on; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = !on;
     RIM.strength.value = VIS.rim.strength * (on ? U.rim : 1);
     KIT.setDetail(on ? U.models : { geo: 1, tex: 1 });   // bodies spawned from now on
@@ -411,7 +367,11 @@ void main() {
     if (!on) { if (moonBase !== null) moonLight.intensity = moonBase; unreflect(); for (const e of [...(Game.enemies || []), Game.player]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
     const aniso = on ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
-    scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) m.needsUpdate = true; });   // shadows in or out of every shader
+    scene.traverse(o => {
+      if (o.userData.legacyEffectLight) o.visible = !on;   // Ultra's fixed impact light replaces legacy per-attack lights
+      const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of ms) m.needsUpdate = true;
+    });   // shadows in or out of every shader
     if (on) { if (lastDef && !envTex) buildEnv(lastDef); sweep(); }
   }
 
@@ -419,12 +379,11 @@ void main() {
   visuals.hooks.resize.push((w, h) => {
     W = w; H = h; makeTargets();
     compMat.uniforms.uAspect.value = visMat.uniforms.uAspect.value = w / h;
-    lensPass.uniforms.uRes.value.set(w, h);
   });
   visuals.hooks.stage.push(def => {
     moonBase = moonLight.intensity; open = !!(def.atmosphere && def.atmosphere.sky);
-    frame = 0;   // the next draw (the level's warm-up) sweeps at once: bodies spawned with the level get their shadows and reflections before play
     lastDef = def;
+    reflected.clear();   // release materials belonging to disposed stages and rigs
     if (on) { buildEnv(def); sweep(); }
     else envTex = null;
     waves.length = 0;
@@ -433,10 +392,15 @@ void main() {
     const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - lastT) / 1000); lastT = now;
     if (!on) return;
     if (!envTex && lastDef) buildEnv(lastDef);
-    if (frame++ % 4 === 0) sweep();
+    let changed = sceneRoots.length !== scene.children.length || scene.children.some((o, i) => o !== sceneRoots[i] || o.children.length !== rootCounts[i]);
+    // Spectral weapons attach inside a rig. Track that small socket too so new glows / lights are classified once.
+    for (const b of [Game.player, ...Game.enemies]) if (b && b.rig) {
+      const R = b.rig, count = R.weapon.children.length;
+      if (R.ultraWeaponChildren !== count) { R.ultraWeaponChildren = count; changed = true; }
+    }
+    if (changed) sweep();
     placeSun();
-    gatherLights();   // before the proxies dim their lights
-    assignProxies();
+    gatherLights();
     // dissolving bodies cast no shadow (the shadow pass cannot see the dissolve); the blob shadow keeps a little contact
     for (const b of [Game.player, ...Game.enemies]) {
       if (!b || !b.rig) continue;
@@ -455,10 +419,6 @@ void main() {
     renderer.shadowMap.needsUpdate = true;
     decay(dt);
   });
-  visuals.hooks.afterDraw.push(() => {
-    for (const [l, i] of dimmed) l.intensity = i;
-    dimmed.length = 0;
-  });
 
   return {
     on: () => on,
@@ -466,18 +426,13 @@ void main() {
     own(light) { light.userData.ultra = true; owned.push(light); if (on) scene.add(light); },
     // A shockwave from world point p: k its strength (1 = a heavy blow), size its reach on screen.
     wave(p, k = 1, size = 1) { if (!on) return; waves.push({ x: p.x, y: p.y, z: p.z, age: 0, k, size }); if (waves.length > MAXW) waves.shift(); },
-    // Screen pulses (each 0..1): chromatic aberration, radial punch toward world point `at`, a flash of `color`, red edges.
-    pulse({ ca = 0, punch = 0, flash = 0, color = 0xffffff, hurt = 0, at = null } = {}) {
+    // Flash / hurt remain. Legacy ca / punch requests are intentionally ignored (camera feel supplies motion).
+    pulse({ flash = 0, color = 0xffffff, hurt = 0 } = {}) {
       if (!on) return;
-      pulse.ca = Math.max(pulse.ca, ca * 0.02); pulse.hurt = Math.min(1, Math.max(pulse.hurt, hurt));
-      if (punch > 0) {
-        pulse.punch = Math.max(pulse.punch, punch * 0.12);
-        if (at) { v3.set(at.x, at.y, at.z).project(camera); if (v3.z < 1) pulse.punchAt.set(clamp(v3.x * 0.5 + 0.5, 0, 1), clamp(v3.y * 0.5 + 0.5, 0, 1)); }
-        else pulse.punchAt.set(0.5, 0.5);
-      }
+      pulse.hurt = Math.min(1, Math.max(pulse.hurt, hurt));
       if (flash > pulse.flash) { pulse.flash = flash; pulse.flashColor.set(color); }
     },
     info: () => ({ on, lights: lightList.length, noDepth: noDepth.length, reflected: reflected.size, waves: waves.length,
-                   proxies: proxies.map(q => q.intensity), sun: sun.intensity, shadows: renderer.shadowMap.enabled }),
+                   sweeps, sun: sun.intensity, shadows: renderer.shadowMap.enabled }),
   };
 })();

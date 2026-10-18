@@ -9,6 +9,12 @@
 const ultraFx = (() => {
   const U = VIS.ultra, H = U.hits, on = () => ultraPost.on();
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), col = new THREE.Color(), col2 = new THREE.Color();
+  // Reuse fixed GPU buffers and upload only their live prefix, never the unused pool capacity.
+  const written = (attribute, count) => {
+    if (!count) return;
+    attribute.clearUpdateRanges(); attribute.addUpdateRange(0, count); attribute.needsUpdate = true;
+  };
+  const remove = (list, i) => { list[i] = list[list.length - 1]; list.pop(); };   // unordered particles: O(1) expiry
   const FOG_UNIFORMS = () => ({ uFogC: { value: new THREE.Color() }, uFogD: FOG_D });
   const fogged = [];   // materials whose fog colour follows the level's (non-additive pools)
   const groundBelow = (x, y, z) => { const g = world ? world.groundAt(x, z, y + 0.4) : 0; return g > -Infinity ? g : y - 30; };
@@ -56,13 +62,13 @@ void main() {
         for (let i = list.length - 1; i >= 0; i--) {
           const p = list[i];
           p.life -= dt;
-          if (p.life <= 0) { list.splice(i, 1); continue; }
+          if (p.life <= 0) { remove(list, i); continue; }
           const drag = Math.exp(-p.drag * dt);
           p.vx *= drag; p.vz *= drag; p.vy = p.vy * drag - p.gr * dt;
           p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
           if (p.y < p.ground) {
             if (p.bounce > 0 && p.vy < -1.5) { p.y = p.ground; p.vy *= -p.bounce; p.vx *= 0.55; p.vz *= 0.55; p.bounce *= 0.6; }
-            else { if (land) land(p); list.splice(i, 1); continue; }
+            else { if (land) land(p); remove(list, i); continue; }
           }
           // the quad: from a tail behind it (along its velocity) to its head, turned to face the camera
           const st = p.str, tx = p.x - p.vx * st, ty = p.y - p.vy * st, tz = p.z - p.vz * st;
@@ -79,10 +85,13 @@ void main() {
           pos[o + 6] = hx - sx; pos[o + 7] = hy - sy; pos[o + 8] = hz - sz;
           pos[o + 9] = hx + sx; pos[o + 10] = hy + sy; pos[o + 11] = hz + sz;
           const f = p.life / p.max, a = p.fade ? f : Math.min(1, f * 2.5), b = p.cool ? 0.35 + 0.65 * f : 1;
-          for (let k = 0; k < 4; k++) tint.set([p.r * b, p.g * b * (p.cool ? f : 1), p.b * b * (p.cool ? f * f : 1), a], n * 16 + k * 4);
+          for (let k = 0; k < 4; k++) {
+            const t = n * 16 + k * 4;
+            tint[t] = p.r * b; tint[t + 1] = p.g * b * (p.cool ? f : 1); tint[t + 2] = p.b * b * (p.cool ? f * f : 1); tint[t + 3] = a;
+          }
           n++;
         }
-        geo.attributes.position.needsUpdate = true; geo.attributes.tint.needsUpdate = true;
+        written(geo.attributes.position, n * 12); written(geo.attributes.tint, n * 16);
         geo.setDrawRange(0, n * 6); mesh.visible = n > 0;
       },
     };
@@ -134,7 +143,7 @@ void main() {
         for (let i = list.length - 1; i >= 0; i--) {
           const p = list[i];
           p.life -= dt;
-          if (p.life <= 0) { list.splice(i, 1); continue; }
+          if (p.life <= 0) { remove(list, i); continue; }
           const drag = Math.exp(-p.drag * dt);
           p.vx *= drag; p.vy = p.vy * drag + (p.lift || 0) * dt; p.vz *= drag;
           if (p.swirl) {   // turn round a vertical axis through (cx, cz)
@@ -148,7 +157,7 @@ void main() {
           size[n] = lerp(p.s0, p.s1 ?? p.s0, p.grow ? Math.sqrt(f) : f);
           n++;
         }
-        for (const k of ['position', 'tint', 'size']) geo.attributes[k].needsUpdate = true;
+        written(geo.attributes.position, n * 3); written(geo.attributes.tint, n * 4); written(geo.attributes.size, n);
         geo.setDrawRange(0, n); mesh.visible = n > 0;
       },
     };
@@ -159,14 +168,17 @@ void main() {
   // Stone (rock shards) and wood (splinters, for barricades); one instanced mesh each.
   const chunkMeshes = { stone: new THREE.InstancedMesh(rockGeometry(seeded(17), 0), MAT.edge, U.chunks.max),
                         wood: new THREE.InstancedMesh(new THREE.BoxGeometry(0.35, 0.5, 2.2), MAT.log, U.chunks.max) };
-  for (const m of Object.values(chunkMeshes)) { m.count = 0; m.frustumCulled = false; m.visible = false; scene.add(m); pooledFx.push(m); }   // warmed up with the rest
+  for (const m of Object.values(chunkMeshes)) {
+    m.count = 0; m.frustumCulled = false; m.visible = false; m.userData.noDepth = true;
+    scene.add(m); pooledFx.push(m);
+  }   // tiny flying splinters need neither shadows nor ambient occlusion
   const chunks = [], o3 = new THREE.Object3D();
   function updateChunks(dt) {
     const n = { stone: 0, wood: 0 };
     for (let i = chunks.length - 1; i >= 0; i--) {
       const c = chunks[i];
       c.age += dt;
-      if (c.age > U.chunks.life) { chunks.splice(i, 1); continue; }
+      if (c.age > U.chunks.life) { remove(chunks, i); continue; }
       if (!c.rest) {
         c.vy -= CONFIG.gravity * dt; c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt; c.rx += c.spin * dt; c.ry += c.spin * 0.7 * dt;
         if (c.y < c.ground + c.s * 0.4) { c.y = c.ground + c.s * 0.4; if (c.vy < -2) { c.vy *= -0.3; c.vx *= 0.5; c.vz *= 0.5; c.spin *= 0.5; } else c.rest = true; }
@@ -175,7 +187,7 @@ void main() {
       o3.scale.setScalar(c.s * clamp((U.chunks.life - c.age) / 0.6, 0, 1)); o3.updateMatrix();
       chunkMeshes[c.kind].setMatrixAt(n[c.kind]++, o3.matrix);
     }
-    for (const [k, m] of Object.entries(chunkMeshes)) { m.count = n[k]; m.instanceMatrix.needsUpdate = true; m.visible = n[k] > 0; }
+    for (const [k, m] of Object.entries(chunkMeshes)) { m.count = n[k]; written(m.instanceMatrix, n[k] * 16); m.visible = n[k] > 0; }
   }
 
   // ---- impact lights, star flares and glowing ground marks -----------------------------------------------------------------
@@ -236,7 +248,12 @@ void main() {
 }` });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = false; mesh.visible = false; mesh.renderOrder = 5; scene.add(mesh); pooledFx.push(mesh);
-    const pts = [];   // { b, t, time } newest first
+    const pts = [], spare = [];   // reuse samples and their vectors across swings
+    const put = (i, b, t) => {
+      const o = i * 6;
+      pos[o] = b.x; pos[o + 1] = b.y; pos[o + 2] = b.z;
+      pos[o + 3] = t.x; pos[o + 4] = t.y; pos[o + 5] = t.z;
+    };
     const cr = (p0, p1, p2, p3, t, out) => {
       const t2 = t * t, t3 = t2 * t;
       return out.set(
@@ -250,10 +267,12 @@ void main() {
         if (active) {
           rig.weapon.updateWorldMatrix(true, false);
           const m = rig.weapon.matrixWorld;
-          pts.unshift({ b: new THREE.Vector3(0, 0, 0.25).applyMatrix4(m), t: new THREE.Vector3(0, 0, 1.2).applyMatrix4(m), time: now });
-          if (pts.length > T.samples) pts.pop();
+          const p = spare.pop() || { b: new THREE.Vector3(), t: new THREE.Vector3(), time: 0 };
+          p.b.set(0, 0, 0.25).applyMatrix4(m); p.t.set(0, 0, 1.2).applyMatrix4(m); p.time = now;
+          pts.unshift(p);
+          if (pts.length > T.samples) spare.push(pts.pop());
         }
-        while (pts.length && now - pts[pts.length - 1].time > T.life) pts.pop();
+        while (pts.length && now - pts[pts.length - 1].time > T.life) spare.push(pts.pop());
         if (pts.length < 2) { mesh.visible = false; return pts.length > 0; }
         mat.uniforms.uColor.value.set(color).multiplyScalar(boost);
         let n = 0;
@@ -262,18 +281,18 @@ void main() {
           for (let s = 0; s < T.sub && n < SEG - 1; s++) {
             const t = s / T.sub;
             cr(p0.b, p1.b, p2.b, p3.b, t, v1); cr(p0.t, p1.t, p2.t, p3.t, t, v2);
-            pos.set([v1.x, v1.y, v1.z, v2.x, v2.y, v2.z], n * 6);
+            put(n, v1, v2);
             const age = clamp((now - lerp(p1.time, p2.time, t)) / T.life, 0, 1); aT[n * 2] = aT[n * 2 + 1] = age;
             n++;
           }
         }
         const last = pts[pts.length - 1];
-        pos.set([last.b.x, last.b.y, last.b.z, last.t.x, last.t.y, last.t.z], n * 6); aT[n * 2] = aT[n * 2 + 1] = 1; n++;
-        geo.attributes.position.needsUpdate = true; geo.attributes.aT.needsUpdate = true;
+        put(n, last.b, last.t); aT[n * 2] = aT[n * 2 + 1] = 1; n++;
+        written(geo.attributes.position, n * 6); written(geo.attributes.aT, n * 2);
         geo.setDrawRange(0, (n - 1) * 6); mesh.visible = true;
         return true;
       },
-      clear() { pts.length = 0; mesh.visible = false; },
+      clear() { while (pts.length) spare.push(pts.pop()); mesh.visible = false; this.owner = null; },
     };
   }
   const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map();
@@ -321,13 +340,14 @@ void main() {
   const fireGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);
   function dressFires() {
     for (const f of flames) {
-      if (!f.ultraFire) {
+      if (on() && !f.ultraFire) {
         const P = f.mesh.geometry.parameters || { radius: 0.28, height: 0.95 }, m = new THREE.Mesh(fireGeo, fireMat(Math.random() * 40));
         m.material.uniforms.uW.value = P.radius * 2 * F.width; m.material.uniforms.uH.value = P.height * F.height;
         m.position.y = -P.height * 0.42; m.frustumCulled = false; m.renderOrder = 3;
         f.mesh.add(m); f.ultraFire = m;
       }
-      f.ultraFire.visible = on(); f.mesh.material.visible = !on();
+      if (f.ultraFire) f.ultraFire.visible = on();
+      f.mesh.material.visible = !on();
     }
   }
 
@@ -566,22 +586,30 @@ void main() {
   const grinding = [];
 
   // ---- each frame ------------------------------------------------------------------------------------------------------------
-  let last = performance.now(), wasOn = false;
+  let last = performance.now();
   const bodyFx = new WeakMap();   // per body: aura and dust timers, last state
+  function clearEffects() {
+    for (const p of [sparks, drops, motes, puffs]) p.clear();
+    chunks.length = grinding.length = 0;
+    for (const r of ribbons) r.clear();
+    ribbonOf.clear();
+    for (const l of flashes) l.intensity = 0;
+    for (const f of flares) f.s.visible = false;
+    for (const m of marks) m.m.visible = false;
+    updateChunks(0);
+    last = performance.now();
+  }
+  visuals.hooks.quality.push(() => { if (!on()) clearEffects(); dressFires(); });
+  visuals.hooks.stage.push(() => { clearEffects(); dressFires(); });   // fire ready before shader warm-up
   function frameUpdate(game, placed) {
     const now = performance.now(), real = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;   // stepped by hand (tests): one 60th a frame
     const active = on();
-    if (active !== wasOn) {   // switching away from Ultra: everything of ours goes, the old trails and cones come back
-      wasOn = active;
-      if (!active) { for (const p of [sparks, drops, motes, puffs]) p.clear(); chunks.length = 0; for (const r of ribbons) r.clear(); ribbonOf.clear(); for (const f of flashes) f.intensity = 0; }
-      dressFires();
-    }
-    if (!active) { updateChunks(0); for (const f of flares) f.s.visible = false; for (const m of marks) m.m.visible = false; return; }
+    if (!active) return;
     const dt = game.hitstop > 0 ? real * 0.12 : real;   // a blow's hit-pause freezes the flying sparks and drops too
     const fogC = scene.fog ? scene.fog.color : col.set(0);
     for (const m of fogged) m.uniforms.uFogC.value.copy(fogC);
     const cam = camera.position;
-    if (flames.some(f => !f.ultraFire)) dressFires();
+    for (const [b, r] of ribbonOf) if (b !== game.player && !game.enemies.includes(b)) { r.clear(); ribbonOf.delete(b); }
     // the old ribbons and cones stay hidden; ours follow every blade that can hit
     swordTrail.mesh.visible = false;
     for (const t of impactFx.trails.values()) t.mesh.visible = false;
@@ -625,9 +653,10 @@ void main() {
         }
       }
       // dust: big bodies at speed, and the player's roll
-      const speed = Math.hypot(b.vx || 0, b.vz || 0), grounded = Math.abs(b.y - groundBelow(b.x, b.y, b.z)) < 0.12;
       const D = U.stepDust;
-      if (grounded && ((sc >= D.from && speed > D.speed) || (isP && b.state === PS.ROLL))) {
+      const wantsDust = (sc >= D.from && Math.hypot(b.vx || 0, b.vz || 0) > D.speed) || (isP && b.state === PS.ROLL);
+      const grounded = wantsDust && Math.abs(b.y - groundBelow(b.x, b.y, b.z)) < 0.12;
+      if (grounded) {
         F2.step -= dt;
         if (F2.step <= 0) { F2.step = D.every * (isP ? 0.6 : 1); puff(b.x + rand(-0.2, 0.2), b.y + 0.1, b.z + rand(-0.2, 0.2), U.puffs.dust, 0.3 * sc, 1.1 * sc, 0.9, null, 0.28); }
       }

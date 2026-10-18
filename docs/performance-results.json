@@ -1,0 +1,2411 @@
+{
+  "date": "2026-10-18",
+  "render": {
+    "before": {
+      "hardware": {
+        "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 (0x00002D05) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "dpr": 2,
+        "maxSamples": 8
+      },
+      "results": [
+        {
+          "id": "tutorial",
+          "cpuMs": {
+            "median": 3.300000000745058,
+            "p95": 4.100000001490116
+          },
+          "gpuMs": {
+            "median": 7.256672,
+            "p95": 9.814784
+          },
+          "calls": {
+            "median": 319,
+            "p95": 319
+          },
+          "triangles": {
+            "median": 619521,
+            "p95": 619521
+          },
+          "programs": {
+            "median": 62,
+            "p95": 62
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 10,
+            "noDepth": 220,
+            "reflected": 6,
+            "waves": 0,
+            "proxies": [
+              9.81921738363836,
+              4.461607627763749
+            ],
+            "sun": 1.25,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 10
+          },
+          "memory": {
+            "geometries": 86,
+            "textures": 72
+          }
+        },
+        {
+          "id": "long-hall",
+          "cpuMs": {
+            "median": 7.299999997019768,
+            "p95": 11
+          },
+          "gpuMs": {
+            "median": 8.653024,
+            "p95": 11.419744
+          },
+          "calls": {
+            "median": 957,
+            "p95": 957
+          },
+          "triangles": {
+            "median": 1598925,
+            "p95": 1598925
+          },
+          "programs": {
+            "median": 86,
+            "p95": 86
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 12,
+            "noDepth": 333,
+            "reflected": 63,
+            "waves": 0,
+            "proxies": [
+              9.900810237233213,
+              4.425750062639096
+            ],
+            "sun": 0.95,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 50,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 30
+          },
+          "memory": {
+            "geometries": 162,
+            "textures": 177
+          }
+        },
+        {
+          "id": "sunken-keep",
+          "cpuMs": {
+            "median": 6.399999998509884,
+            "p95": 7.699999999254942
+          },
+          "gpuMs": {
+            "median": 7.036512,
+            "p95": 7.930432
+          },
+          "calls": {
+            "median": 823,
+            "p95": 823
+          },
+          "triangles": {
+            "median": 1513167,
+            "p95": 1513167
+          },
+          "programs": {
+            "median": 84,
+            "p95": 84
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 12,
+            "noDepth": 291,
+            "reflected": 113,
+            "waves": 0,
+            "proxies": [
+              10.62118925323983,
+              9
+            ],
+            "sun": 0.675,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 39,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 25
+          },
+          "memory": {
+            "geometries": 188,
+            "textures": 196
+          }
+        },
+        {
+          "id": "burning-town",
+          "cpuMs": {
+            "median": 5.399999998509884,
+            "p95": 7.699999999254942
+          },
+          "gpuMs": {
+            "median": 7.190816,
+            "p95": 8.23936
+          },
+          "calls": {
+            "median": 868,
+            "p95": 868
+          },
+          "triangles": {
+            "median": 2761497,
+            "p95": 2761497
+          },
+          "programs": {
+            "median": 108,
+            "p95": 108
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 3,
+            "noDepth": 386,
+            "reflected": 191,
+            "waves": 0,
+            "proxies": [
+              9.931491276610716,
+              3.5
+            ],
+            "sun": 1.4,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 3,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 27
+          },
+          "memory": {
+            "geometries": 257,
+            "textures": 193
+          }
+        },
+        {
+          "id": "the-tower",
+          "cpuMs": {
+            "median": 7.400000002235174,
+            "p95": 9.199999999254942
+          },
+          "gpuMs": {
+            "median": 7.947136,
+            "p95": 12.470688
+          },
+          "calls": {
+            "median": 1100,
+            "p95": 1100
+          },
+          "triangles": {
+            "median": 1584286,
+            "p95": 1584286
+          },
+          "programs": {
+            "median": 110,
+            "p95": 110
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 8,
+            "noDepth": 373,
+            "reflected": 274,
+            "waves": 0,
+            "proxies": [
+              9.27945451974109,
+              9
+            ],
+            "sun": 1.47,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 26
+          },
+          "memory": {
+            "geometries": 334,
+            "textures": 275
+          }
+        },
+        {
+          "id": "final-castle",
+          "cpuMs": {
+            "median": 7.299999997019768,
+            "p95": 11.100000001490116
+          },
+          "gpuMs": {
+            "median": 7.695424,
+            "p95": 11.56352
+          },
+          "calls": {
+            "median": 798,
+            "p95": 798
+          },
+          "triangles": {
+            "median": 1942151,
+            "p95": 1942151
+          },
+          "programs": {
+            "median": 131,
+            "p95": 131
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 7,
+            "noDepth": 475,
+            "reflected": 433,
+            "waves": 0,
+            "proxies": [
+              4.945440843456616,
+              4.993723884716265
+            ],
+            "sun": 1.68,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 76,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 47
+          },
+          "memory": {
+            "geometries": 381,
+            "textures": 308
+          }
+        },
+        {
+          "id": "godrick",
+          "cpuMs": {
+            "median": 2.300000000745058,
+            "p95": 3.300000000745058
+          },
+          "gpuMs": {
+            "median": 6.105216,
+            "p95": 7.850944
+          },
+          "calls": {
+            "median": 272,
+            "p95": 272
+          },
+          "triangles": {
+            "median": 928379,
+            "p95": 928379
+          },
+          "programs": {
+            "median": 148,
+            "p95": 148
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 1,
+            "noDepth": 199,
+            "reflected": 443,
+            "waves": 0,
+            "proxies": [
+              11.308843811768082,
+              0
+            ],
+            "sun": 1.6099999999999999,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 104,
+            "puffs": 2,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 1
+          },
+          "memory": {
+            "geometries": 220,
+            "textures": 335
+          }
+        },
+        {
+          "id": "malenia",
+          "cpuMs": {
+            "median": 2.199999999254942,
+            "p95": 3
+          },
+          "gpuMs": {
+            "median": 5.831776,
+            "p95": 8.493376
+          },
+          "calls": {
+            "median": 221,
+            "p95": 231
+          },
+          "triangles": {
+            "median": 509225,
+            "p95": 544188
+          },
+          "programs": {
+            "median": 146,
+            "p95": 146
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 1,
+            "noDepth": 198,
+            "reflected": 452,
+            "waves": 0,
+            "proxies": [
+              9.697369760768101,
+              0
+            ],
+            "sun": 1.6099999999999999,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 61,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0,
+              0,
+              0
+            ],
+            "fires": 1
+          },
+          "memory": {
+            "geometries": 231,
+            "textures": 362
+          }
+        }
+      ],
+      "errors": []
+    },
+    "after": {
+      "hardware": {
+        "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 (0x00002D05) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "dpr": 2,
+        "maxSamples": 8
+      },
+      "results": [
+        {
+          "id": "tutorial",
+          "cpuMs": {
+            "median": 1.3999999985098839,
+            "p95": 2.400000002235174
+          },
+          "gpuMs": {
+            "median": 6.261504,
+            "p95": 7.612544
+          },
+          "calls": {
+            "median": 121,
+            "p95": 121
+          },
+          "triangles": {
+            "median": 94092,
+            "p95": 94092
+          },
+          "programs": {
+            "median": 86,
+            "p95": 86
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 8,
+            "noDepth": 222,
+            "reflected": 6,
+            "waves": 0,
+            "sweeps": 3,
+            "sun": 1.25,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 10
+          },
+          "memory": {
+            "geometries": 86,
+            "textures": 70
+          }
+        },
+        {
+          "id": "long-hall",
+          "cpuMs": {
+            "median": 3.699999999254942,
+            "p95": 4.5
+          },
+          "gpuMs": {
+            "median": 5.980928,
+            "p95": 7.207424
+          },
+          "calls": {
+            "median": 592,
+            "p95": 592
+          },
+          "triangles": {
+            "median": 485478,
+            "p95": 485478
+          },
+          "programs": {
+            "median": 93,
+            "p95": 93
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 8,
+            "noDepth": 335,
+            "reflected": 59,
+            "waves": 0,
+            "sweeps": 5,
+            "sun": 0.95,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 50,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 30
+          },
+          "memory": {
+            "geometries": 162,
+            "textures": 175
+          }
+        },
+        {
+          "id": "sunken-keep",
+          "cpuMs": {
+            "median": 2.7000000029802322,
+            "p95": 3.600000001490116
+          },
+          "gpuMs": {
+            "median": 6.522848,
+            "p95": 7.369248
+          },
+          "calls": {
+            "median": 503,
+            "p95": 503
+          },
+          "triangles": {
+            "median": 437984,
+            "p95": 437984
+          },
+          "programs": {
+            "median": 89,
+            "p95": 89
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 8,
+            "noDepth": 293,
+            "reflected": 52,
+            "waves": 0,
+            "sweeps": 7,
+            "sun": 0.675,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 25
+          },
+          "memory": {
+            "geometries": 188,
+            "textures": 194
+          }
+        },
+        {
+          "id": "burning-town",
+          "cpuMs": {
+            "median": 3.199999999254942,
+            "p95": 4.100000001490116
+          },
+          "gpuMs": {
+            "median": 6.698656,
+            "p95": 7.112864
+          },
+          "calls": {
+            "median": 497,
+            "p95": 497
+          },
+          "triangles": {
+            "median": 604628,
+            "p95": 604628
+          },
+          "programs": {
+            "median": 99,
+            "p95": 99
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 3,
+            "noDepth": 388,
+            "reflected": 80,
+            "waves": 0,
+            "sweeps": 9,
+            "sun": 1.4,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 27
+          },
+          "memory": {
+            "geometries": 297,
+            "textures": 303
+          }
+        },
+        {
+          "id": "the-tower",
+          "cpuMs": {
+            "median": 3.7000000029802322,
+            "p95": 4.600000001490116
+          },
+          "gpuMs": {
+            "median": 6.84,
+            "p95": 7.255872
+          },
+          "calls": {
+            "median": 737,
+            "p95": 737
+          },
+          "triangles": {
+            "median": 424336,
+            "p95": 424336
+          },
+          "programs": {
+            "median": 99,
+            "p95": 99
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 8,
+            "noDepth": 375,
+            "reflected": 85,
+            "waves": 0,
+            "sweeps": 11,
+            "sun": 1.47,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 0,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 26
+          },
+          "memory": {
+            "geometries": 393,
+            "textures": 385
+          }
+        },
+        {
+          "id": "final-castle",
+          "cpuMs": {
+            "median": 4.800000000745058,
+            "p95": 7
+          },
+          "gpuMs": {
+            "median": 6.554432,
+            "p95": 8.001792
+          },
+          "calls": {
+            "median": 683,
+            "p95": 683
+          },
+          "triangles": {
+            "median": 558248,
+            "p95": 558248
+          },
+          "programs": {
+            "median": 158,
+            "p95": 158
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 7,
+            "noDepth": 477,
+            "reflected": 161,
+            "waves": 0,
+            "sweeps": 13,
+            "sun": 1.68,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 76,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 47
+          },
+          "memory": {
+            "geometries": 515,
+            "textures": 630
+          }
+        },
+        {
+          "id": "godrick",
+          "cpuMs": {
+            "median": 1.5,
+            "p95": 2.100000001490116
+          },
+          "gpuMs": {
+            "median": 6.239072,
+            "p95": 7.31536
+          },
+          "calls": {
+            "median": 153,
+            "p95": 153
+          },
+          "triangles": {
+            "median": 229484,
+            "p95": 229484
+          },
+          "programs": {
+            "median": 207,
+            "p95": 207
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 1,
+            "noDepth": 204,
+            "reflected": 11,
+            "waves": 0,
+            "sweeps": 15,
+            "sun": 1.6099999999999999,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 46,
+            "puffs": 3,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 1
+          },
+          "memory": {
+            "geometries": 358,
+            "textures": 627
+          }
+        },
+        {
+          "id": "malenia",
+          "cpuMs": {
+            "median": 1.5,
+            "p95": 1.9000000022351742
+          },
+          "gpuMs": {
+            "median": 6.156992,
+            "p95": 7.464544
+          },
+          "calls": {
+            "median": 144,
+            "p95": 144
+          },
+          "triangles": {
+            "median": 179729,
+            "p95": 179729
+          },
+          "programs": {
+            "median": 207,
+            "p95": 207
+          },
+          "renderSize": [
+            2560,
+            1440
+          ],
+          "ultra": {
+            "on": true,
+            "lights": 1,
+            "noDepth": 215,
+            "reflected": 10,
+            "waves": 0,
+            "sweeps": 16,
+            "sun": 1.6099999999999999,
+            "shadows": true
+          },
+          "effects": {
+            "sparks": 0,
+            "drops": 0,
+            "motes": 62,
+            "puffs": 0,
+            "chunks": 0,
+            "ribbons": 0,
+            "flashes": [
+              0
+            ],
+            "fires": 1
+          },
+          "memory": {
+            "geometries": 384,
+            "textures": 657
+          }
+        }
+      ],
+      "errors": []
+    }
+  },
+  "loading": {
+    "before": {
+      "results": [
+        {
+          "kind": "level",
+          "id": "tutorial",
+          "pass": "first",
+          "ms": 9910.800000000745,
+          "stage": 76.5,
+          "finale": 0.09999999776482582,
+          "lore": 0.19999999925494194,
+          "warmup": 4599.400000002235,
+          "textures": 13,
+          "models": 1
+        },
+        {
+          "kind": "level",
+          "id": "tutorial",
+          "pass": "repeat",
+          "ms": 41.100000001490116,
+          "finale": 0.09999999776482582,
+          "lore": 0,
+          "warmup": 39.80000000074506,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "long-hall",
+          "pass": "first",
+          "ms": 10174.39999999851,
+          "stage": 18.199999999254942,
+          "finale": 0,
+          "lore": 1995,
+          "warmup": 5017.300000000745,
+          "textures": 36,
+          "models": 5
+        },
+        {
+          "kind": "level",
+          "id": "long-hall",
+          "pass": "repeat",
+          "ms": 49.5,
+          "finale": 0,
+          "lore": 1,
+          "warmup": 45.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "sunken-keep",
+          "pass": "first",
+          "ms": 958,
+          "stage": 13.100000001490116,
+          "finale": 0,
+          "lore": 1.199999999254942,
+          "warmup": 83.80000000074506,
+          "textures": 8,
+          "models": 1
+        },
+        {
+          "kind": "level",
+          "id": "sunken-keep",
+          "pass": "repeat",
+          "ms": 36.5,
+          "finale": 0,
+          "lore": 1.199999999254942,
+          "warmup": 33.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "burning-town",
+          "pass": "first",
+          "ms": 11629.900000002235,
+          "stage": 133,
+          "finale": 0,
+          "lore": 1.199999999254942,
+          "warmup": 4701.699999999255,
+          "textures": 34,
+          "models": 4
+        },
+        {
+          "kind": "level",
+          "id": "burning-town",
+          "pass": "repeat",
+          "ms": 52.399999998509884,
+          "finale": 0,
+          "lore": 1.3999999985098839,
+          "warmup": 45.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "the-tower",
+          "pass": "first",
+          "ms": 3620.10000000149,
+          "stage": 28,
+          "finale": 0,
+          "lore": 0.9000000022351742,
+          "warmup": 408.3999999985099,
+          "textures": 22,
+          "models": 3
+        },
+        {
+          "kind": "level",
+          "id": "the-tower",
+          "pass": "repeat",
+          "ms": 39,
+          "finale": 0,
+          "lore": 0.5999999977648258,
+          "warmup": 34.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "final-castle",
+          "pass": "first",
+          "ms": 15284.599999997765,
+          "stage": 33,
+          "finale": 3444.5,
+          "lore": 1.1000000014901161,
+          "warmup": 2507.5,
+          "textures": 82,
+          "models": 8
+        },
+        {
+          "kind": "level",
+          "id": "final-castle",
+          "pass": "repeat",
+          "ms": 29.900000002235174,
+          "finale": 2.5,
+          "lore": 0.8999999985098839,
+          "warmup": 19.700000002980232,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "hollow",
+          "pass": "first",
+          "ms": 2612.300000000745,
+          "stage": 11,
+          "finale": 0.4000000022351742,
+          "lore": 0,
+          "warmup": 2597.599999997765,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "hollow",
+          "pass": "repeat",
+          "ms": 35.29999999701977,
+          "finale": 0.10000000149011612,
+          "lore": 0,
+          "warmup": 34.29999999701977,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "knight",
+          "pass": "first",
+          "ms": 25.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.599999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "knight",
+          "pass": "repeat",
+          "ms": 27.199999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 26.399999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "rogue",
+          "pass": "first",
+          "ms": 41.600000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 40.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "rogue",
+          "pass": "repeat",
+          "ms": 25.799999997019768,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "giant",
+          "pass": "first",
+          "ms": 25.900000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "giant",
+          "pass": "repeat",
+          "ms": 26.300000000745058,
+          "finale": 0.10000000149011612,
+          "lore": 0,
+          "warmup": 25.399999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "warden",
+          "pass": "first",
+          "ms": 39.79999999701977,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 39,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "warden",
+          "pass": "repeat",
+          "ms": 26.700000002980232,
+          "finale": 0,
+          "lore": 0.10000000149011612,
+          "warmup": 25.699999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "lancer",
+          "pass": "first",
+          "ms": 26.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.900000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "lancer",
+          "pass": "repeat",
+          "ms": 26,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "executioner",
+          "pass": "first",
+          "ms": 38.100000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 37.100000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "executioner",
+          "pass": "repeat",
+          "ms": 27,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 26.299999997019768,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "duelist",
+          "pass": "first",
+          "ms": 28.199999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 27.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "duelist",
+          "pass": "repeat",
+          "ms": 27.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 26.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bowman",
+          "pass": "first",
+          "ms": 39.099999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 38.30000000074506,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bowman",
+          "pass": "repeat",
+          "ms": 26.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "shover",
+          "pass": "first",
+          "ms": 27.199999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 26.299999997019768,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "shover",
+          "pass": "repeat",
+          "ms": 28.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 27.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "pillagerCaptain",
+          "pass": "first",
+          "ms": 40.600000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 39.79999999701977,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "pillagerCaptain",
+          "pass": "repeat",
+          "ms": 27.699999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 26.800000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bellWarden",
+          "pass": "first",
+          "ms": 25.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bellWarden",
+          "pass": "repeat",
+          "ms": 24.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 23.699999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "gargoyle",
+          "pass": "first",
+          "ms": 37.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 37.30000000074506,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "gargoyle",
+          "pass": "repeat",
+          "ms": 25,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.200000002980232,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "sentinel",
+          "pass": "first",
+          "ms": 26.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "sentinel",
+          "pass": "repeat",
+          "ms": 26,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.300000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "wisp",
+          "pass": "first",
+          "ms": 37.400000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 36.399999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "wisp",
+          "pass": "repeat",
+          "ms": 25.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "varn",
+          "pass": "first",
+          "ms": 25.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.099999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "varn",
+          "pass": "repeat",
+          "ms": 26.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "castleBowman",
+          "pass": "first",
+          "ms": 38.80000000074506,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 37.80000000074506,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "castleBowman",
+          "pass": "repeat",
+          "ms": 25.099999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "margit",
+          "pass": "first",
+          "ms": 4693.20000000298,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 25.599999997764826,
+          "textures": 11,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "margit",
+          "pass": "repeat",
+          "ms": 32.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 31.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "godrick",
+          "pass": "first",
+          "ms": 4449.800000000745,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 43.19999999925494,
+          "textures": 13,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "godrick",
+          "pass": "repeat",
+          "ms": 35.899999998509884,
+          "finale": 0.10000000149011612,
+          "lore": 0,
+          "warmup": 34.80000000074506,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "crucibleKnight",
+          "pass": "first",
+          "ms": 1917.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24.5,
+          "textures": 9,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "crucibleKnight",
+          "pass": "repeat",
+          "ms": 32,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 30.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "morgott",
+          "pass": "first",
+          "ms": 3533.400000002235,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 35.600000001490116,
+          "textures": 6,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "morgott",
+          "pass": "repeat",
+          "ms": 32.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 31.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "godfrey",
+          "pass": "first",
+          "ms": 2934.900000002235,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24,
+          "textures": 11,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "godfrey",
+          "pass": "repeat",
+          "ms": 30,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 29.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "maliketh",
+          "pass": "first",
+          "ms": 2857.400000002235,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 36.599999997764826,
+          "textures": 8,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "maliketh",
+          "pass": "repeat",
+          "ms": 29.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 28.099999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "radagon",
+          "pass": "first",
+          "ms": 2557.199999999255,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 24,
+          "textures": 6,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "radagon",
+          "pass": "repeat",
+          "ms": 29.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 28.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "malenia",
+          "pass": "first",
+          "ms": 2606.099999997765,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 39.100000001490116,
+          "textures": 10,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "malenia",
+          "pass": "repeat",
+          "ms": 30.200000002980232,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 29.300000000745058,
+          "textures": 0,
+          "models": 0
+        }
+      ],
+      "errors": []
+    },
+    "after": {
+      "results": [
+        {
+          "kind": "level",
+          "id": "tutorial",
+          "pass": "first",
+          "ms": 3518.60000000149,
+          "stage": 81.5,
+          "finale": 0.09999999776482582,
+          "lore": 0.19999999925494194,
+          "warmup": 2114.7999999970198,
+          "textures": 13,
+          "models": 1
+        },
+        {
+          "kind": "level",
+          "id": "tutorial",
+          "pass": "repeat",
+          "ms": 189.29999999701977,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 187.20000000298023,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "long-hall",
+          "pass": "first",
+          "ms": 1840.3999999985099,
+          "stage": 184.90000000223517,
+          "finale": 0,
+          "lore": 488.1000000014901,
+          "warmup": 595.8000000007451,
+          "textures": 30,
+          "models": 5
+        },
+        {
+          "kind": "level",
+          "id": "long-hall",
+          "pass": "repeat",
+          "ms": 23.300000000745058,
+          "finale": 0.09999999776482582,
+          "lore": 1.1000000014901161,
+          "warmup": 18.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "sunken-keep",
+          "pass": "first",
+          "ms": 464.6000000014901,
+          "stage": 211,
+          "finale": 0,
+          "lore": 0.9000000022351742,
+          "warmup": 58.899999998509884,
+          "textures": 7,
+          "models": 1
+        },
+        {
+          "kind": "level",
+          "id": "sunken-keep",
+          "pass": "repeat",
+          "ms": 16.800000000745058,
+          "finale": 0,
+          "lore": 1.300000000745058,
+          "warmup": 12.900000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "burning-town",
+          "pass": "first",
+          "ms": 1937,
+          "stage": 123.29999999701977,
+          "finale": 0.10000000149011612,
+          "lore": 0.7999999970197678,
+          "warmup": 351.80000000074506,
+          "textures": 32,
+          "models": 4
+        },
+        {
+          "kind": "level",
+          "id": "burning-town",
+          "pass": "repeat",
+          "ms": 27.899999998509884,
+          "finale": 0.10000000149011612,
+          "lore": 0.6999999992549419,
+          "warmup": 22.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "the-tower",
+          "pass": "first",
+          "ms": 1286.3999999985099,
+          "stage": 130.69999999925494,
+          "finale": 0,
+          "lore": 0.6000000014901161,
+          "warmup": 279.4000000022352,
+          "textures": 25,
+          "models": 3
+        },
+        {
+          "kind": "level",
+          "id": "the-tower",
+          "pass": "repeat",
+          "ms": 28.100000001490116,
+          "finale": 0.10000000149011612,
+          "lore": 0.5,
+          "warmup": 23.099999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "level",
+          "id": "final-castle",
+          "pass": "first",
+          "ms": 5436.800000000745,
+          "stage": 69.79999999701977,
+          "finale": 766.5999999977648,
+          "lore": 1.1000000014901161,
+          "warmup": 2554.10000000149,
+          "textures": 76,
+          "models": 8
+        },
+        {
+          "kind": "level",
+          "id": "final-castle",
+          "pass": "repeat",
+          "ms": 267,
+          "finale": 2.800000000745058,
+          "lore": 1.699999999254942,
+          "warmup": 251.39999999850988,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "hollow",
+          "pass": "first",
+          "ms": 1346.7000000029802,
+          "stage": 178.39999999850988,
+          "finale": 0.5,
+          "lore": 0,
+          "warmup": 1162.699999999255,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "hollow",
+          "pass": "repeat",
+          "ms": 149.29999999701977,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 147.70000000298023,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "knight",
+          "pass": "first",
+          "ms": 4.100000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.300000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "knight",
+          "pass": "repeat",
+          "ms": 4.699999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "rogue",
+          "pass": "first",
+          "ms": 3.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "rogue",
+          "pass": "repeat",
+          "ms": 4.199999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.300000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "giant",
+          "pass": "first",
+          "ms": 108.80000000074506,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 108.19999999925494,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "giant",
+          "pass": "repeat",
+          "ms": 3.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.600000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "warden",
+          "pass": "first",
+          "ms": 3.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.800000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "warden",
+          "pass": "repeat",
+          "ms": 3.100000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "lancer",
+          "pass": "first",
+          "ms": 4.199999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.699999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "lancer",
+          "pass": "repeat",
+          "ms": 4.100000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "executioner",
+          "pass": "first",
+          "ms": 11.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 10.599999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "executioner",
+          "pass": "repeat",
+          "ms": 4.299999997019768,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.800000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "duelist",
+          "pass": "first",
+          "ms": 6.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 5.299999997019768,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "duelist",
+          "pass": "repeat",
+          "ms": 4.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bowman",
+          "pass": "first",
+          "ms": 4.599999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.899999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bowman",
+          "pass": "repeat",
+          "ms": 3.300000000745058,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.800000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "shover",
+          "pass": "first",
+          "ms": 4.599999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "shover",
+          "pass": "repeat",
+          "ms": 4.700000002980232,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4.100000001490116,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "pillagerCaptain",
+          "pass": "first",
+          "ms": 6.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 5.900000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "pillagerCaptain",
+          "pass": "repeat",
+          "ms": 4.699999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bellWarden",
+          "pass": "first",
+          "ms": 11,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 10.399999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "bellWarden",
+          "pass": "repeat",
+          "ms": 2.900000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "gargoyle",
+          "pass": "first",
+          "ms": 3.400000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.800000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "gargoyle",
+          "pass": "repeat",
+          "ms": 3.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.900000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "sentinel",
+          "pass": "first",
+          "ms": 3.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.900000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "sentinel",
+          "pass": "repeat",
+          "ms": 3.600000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "wisp",
+          "pass": "first",
+          "ms": 4.099999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.300000000745058,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "wisp",
+          "pass": "repeat",
+          "ms": 3.900000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.399999998509884,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "varn",
+          "pass": "first",
+          "ms": 3.600000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "varn",
+          "pass": "repeat",
+          "ms": 3.399999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.7999999970197678,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "castleBowman",
+          "pass": "first",
+          "ms": 2.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.400000002235174,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "enemy",
+          "id": "castleBowman",
+          "pass": "repeat",
+          "ms": 3,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 2.5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "margit",
+          "pass": "first",
+          "ms": 1461.6000000014901,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 212.80000000074506,
+          "textures": 12,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "margit",
+          "pass": "repeat",
+          "ms": 6.600000001490116,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 5,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "godrick",
+          "pass": "first",
+          "ms": 1219.7999999970198,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 68.29999999701977,
+          "textures": 13,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "godrick",
+          "pass": "repeat",
+          "ms": 4.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.699999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "crucibleKnight",
+          "pass": "first",
+          "ms": 556.1999999992549,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 42.19999999925494,
+          "textures": 9,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "crucibleKnight",
+          "pass": "repeat",
+          "ms": 3.900000002235174,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "morgott",
+          "pass": "first",
+          "ms": 964.7999999970198,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 49.69999999925494,
+          "textures": 6,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "morgott",
+          "pass": "repeat",
+          "ms": 4.699999999254942,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "godfrey",
+          "pass": "first",
+          "ms": 808.1999999992549,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 5.399999998509884,
+          "textures": 11,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "godfrey",
+          "pass": "repeat",
+          "ms": 3.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.199999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "maliketh",
+          "pass": "first",
+          "ms": 804.5,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 43.899999998509884,
+          "textures": 8,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "maliketh",
+          "pass": "repeat",
+          "ms": 5.899999998509884,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 5.099999997764826,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "radagon",
+          "pass": "first",
+          "ms": 663.2000000029802,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 37.099999997764826,
+          "textures": 6,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "radagon",
+          "pass": "repeat",
+          "ms": 4.599999997764826,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 3.699999999254942,
+          "textures": 0,
+          "models": 0
+        },
+        {
+          "kind": "boss",
+          "id": "malenia",
+          "pass": "first",
+          "ms": 778.6999999992549,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 110,
+          "textures": 10,
+          "models": 1
+        },
+        {
+          "kind": "boss",
+          "id": "malenia",
+          "pass": "repeat",
+          "ms": 6,
+          "finale": 0,
+          "lore": 0,
+          "warmup": 4.899999998509884,
+          "textures": 0,
+          "models": 0
+        }
+      ],
+      "errors": []
+    }
+  },
+  "models": {
+    "results": [
+      {
+        "id": "hollowSoldier",
+        "detail": "before",
+        "triangles": 13516,
+        "vertices": 9622,
+        "bytes": 619928
+      },
+      {
+        "id": "hollowSoldier",
+        "detail": "after",
+        "triangles": 8200,
+        "vertices": 6487,
+        "bytes": 412472
+      },
+      {
+        "id": "undeadKnight",
+        "detail": "before",
+        "triangles": 20208,
+        "vertices": 14446,
+        "bytes": 930224
+      },
+      {
+        "id": "undeadKnight",
+        "detail": "after",
+        "triangles": 12856,
+        "vertices": 10126,
+        "bytes": 644192
+      },
+      {
+        "id": "ashExecutioner",
+        "detail": "before",
+        "triangles": 22410,
+        "vertices": 16687,
+        "bytes": 1068932
+      },
+      {
+        "id": "ashExecutioner",
+        "detail": "after",
+        "triangles": 13992,
+        "vertices": 11459,
+        "bytes": 725656
+      },
+      {
+        "id": "giantSkeleton",
+        "detail": "before",
+        "triangles": 73794,
+        "vertices": 43442,
+        "bytes": 2875516
+      },
+      {
+        "id": "giantSkeleton",
+        "detail": "after",
+        "triangles": 27684,
+        "vertices": 17979,
+        "bytes": 1172928
+      },
+      {
+        "id": "margit",
+        "detail": "before",
+        "triangles": 47676,
+        "vertices": 29765,
+        "bytes": 1952896
+      },
+      {
+        "id": "margit",
+        "detail": "after",
+        "triangles": 21086,
+        "vertices": 14843,
+        "bytes": 957724
+      },
+      {
+        "id": "godrick",
+        "detail": "before",
+        "triangles": 81466,
+        "vertices": 50968,
+        "bytes": 3343004
+      },
+      {
+        "id": "godrick",
+        "detail": "after",
+        "triangles": 33981,
+        "vertices": 24675,
+        "bytes": 1585686
+      },
+      {
+        "id": "malenia",
+        "detail": "before",
+        "triangles": 35003,
+        "vertices": 22298,
+        "bytes": 1458706
+      },
+      {
+        "id": "malenia",
+        "detail": "after",
+        "triangles": 16763,
+        "vertices": 11931,
+        "bytes": 768714
+      }
+    ],
+    "errors": []
+  },
+  "tests": {
+    "summary": "222/222 passed in 85.4 s",
+    "failed": [],
+    "errors": []
+  }
+}

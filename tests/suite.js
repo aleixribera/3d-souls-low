@@ -2982,6 +2982,90 @@
       for (const id of Object.keys(MODEL_DEFS)) expect.ok(KIT.modelParts(id).tris > base[id], `${id}: more triangles at Ultra detail`);
     } finally { KIT.setDetail(was); }
   });
+  test('Ultra performance: stable scenes are not rescanned and new actors are prepared on their first draw', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); Game.loading = 0; sim.begin();
+      Game.render(1, STEP);
+      const sweeps = ultraPost.info().sweeps;
+      for (let i = 0; i < 16; i++) Game.render(1, STEP);
+      expect.ok(ultraPost.info().sweeps === sweeps, 'no periodic whole-scene scan');
+      const e = sim.spawn('knight', Game.player.x + 3, Game.player.z);
+      Game.render(1, STEP);
+      expect.ok(ultraPost.info().sweeps > sweeps, 'new scene membership refreshes the cache');
+      let casters = 0; e.rig.root.traverse(o => { if (o.isMesh && o.castShadow) casters++; });
+      expect.above(casters, 0, 'the new actor casts shadows immediately');
+      let cubeShadows = 0; scene.traverse(o => { if (o.isPointLight && o.castShadow) cubeShadows++; });
+      expect.ok(cubeShadows === 0, 'no six-face point-light shadow renders');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra performance: model indices stay in bounds and compact vertex data preserves every triangle', () => {
+    const was = KIT.detail();
+    try {
+      KIT.setDetail(CONFIG.VISUALS.ultra.models);
+      for (const id of Object.keys(MODEL_DEFS)) {
+        const built = KIT.modelParts(id); let triangles = 0, vertices = 0, indices = 0;
+        for (const { geo } of built.parts) {
+          const count = geo.attributes.position.count;
+          expect.ok(!!geo.index && geo.index.count % 3 === 0, `${id}: indexed triangles`);
+          for (const index of geo.index.array) expect.ok(index < count, `${id}: index in bounds`);
+          for (const name of ['normal', 'uv', 'skinIndex', 'skinWeight']) expect.ok(geo.attributes[name].count === count, `${id}: ${name} matches its vertices`);
+          triangles += geo.index.count / 3; vertices += count; indices += geo.index.count;
+        }
+        expect.ok(triangles === built.tris, `${id}: triangle accounting is unchanged`);
+        expect.below(vertices, indices, `${id}: shared vertices avoid duplicate skinning`);
+      }
+    } finally { KIT.setDetail(was); }
+  });
+  test('Ultra performance: particle uploads cover only live data and empty pools upload nothing', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); sim.begin();
+      const pool = ultraFx.sparks, pos = pool.mesh.geometry.attributes.position;
+      pool.clear(); const version = pos.version;
+      pool.update(STEP, camera.position);
+      expect.ok(pos.version === version, 'empty pool does not dirty the GPU buffer');
+      ultraFx.sparkBurst({ x: Game.player.x, y: 2, z: Game.player.z }, 10);
+      pool.update(STEP, camera.position);
+      expect.ok(pos.updateRanges.length === 1 && pos.updateRanges[0].count === pool.count() * 12, 'only the live streak prefix is uploaded');
+      expect.below(pos.updateRanges[0].count, pos.array.length, 'unused capacity is not uploaded');
+      pool.update(10, camera.position);
+      expect.ok(pool.count() === 0 && !pool.mesh.visible, 'mass expiry empties the pool');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra performance: flash feedback shares the grade and effects clear on quality and level changes', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); sim.begin();
+      const grade = A.visuals.passes.grade;
+      expect.ok(A.visuals.composer.passes[A.visuals.composer.passes.length - 1] === grade, 'no extra full-screen lens pass');
+      ultraPost.pulse({ flash: 0.4, hurt: 0.7, color: 0xff0000 });
+      ultraFx.test('souls'); ultraFx.flashAt(Game.player, 0xffffff, 10);
+      Game.render(1, STEP);
+      expect.above(grade.uniforms.uFlash.value, 0, 'flash still draws');
+      expect.above(grade.uniforms.uHurt.value, 0, 'hurt feedback still draws');
+      A.visuals.setQuality('high');
+      expect.ok(grade.uniforms.uFlash.value === 0 && grade.uniforms.uHurt.value === 0, 'feedback restored without waiting for a frame');
+      expect.ok(ultraFx.info().motes === 0 && ultraFx.info().ribbons === 0, 'old particles and owners released');
+      A.visuals.setQuality('ultra'); ultraFx.test('souls');
+      Game.startLevel('sunken-keep');
+      expect.ok(ultraFx.info().motes === 0, 'particles from the old level do not carry over');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
+    try {
+      A.visuals.setQuality('ultra'); sim.begin();
+      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
+        A.elden.start(id);
+        const e = Game.enemies[0];
+        expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
+        let enabled = 0;
+        scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabled++; });
+        expect.ok(enabled === 0, `${id}: no legacy light can change Ultra's shader light count`);
+      }
+      A.visuals.setQuality('high');
+      let hidden = 0;
+      scene.traverse(o => { if (o.userData.legacyEffectLight && !o.visible) hidden++; });
+      expect.ok(hidden === 0, 'High restores legacy light visibility');
+    } finally { restoreQuality(); }
+  });
   test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {
     A.elden.start('margit'); Game.loading = 0; sim.begin();
     const saved = settings.cameraMotion;

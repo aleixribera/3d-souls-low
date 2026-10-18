@@ -22,6 +22,8 @@ const flame = (() => {
       m.userData = { op, w }; g.add(m); layers.push(m);
     }
     const light = new THREE.PointLight(F.color, 0, F.lightRange); g.add(light);
+    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().ultra;
+    g.userData.warmUp = true;
     g.visible = false; scene.add(g);
     jets.push({ e, g });
     return (R.flameJet = { g, layers, light, k: 0 });
@@ -32,12 +34,15 @@ const flame = (() => {
     if (e.state === ES.ACTIVE) return e.hitIndex >= (B.from ?? 0);
     return e.state === ES.WINDUP && e.hitIndex > (B.from ?? 0);
   };
+  function clean(enemies) {
+    for (let i = jets.length - 1; i >= 0; i--) if (!enemies.includes(jets[i].e)) {
+      scene.remove(jets[i].g); for (const m of jets[i].g.children) if (m.material) m.material.dispose(); jets.splice(i, 1);
+    }
+  }
   let last = performance.now();
   function render(game) {
     const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), t = now / 1000; last = now;
-    for (let i = jets.length - 1; i >= 0; i--) if (!game.enemies.includes(jets[i].e)) {
-      scene.remove(jets[i].g); for (const m of jets[i].g.children) if (m.material) m.material.dispose(); jets.splice(i, 1);
-    }
+    clean(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig; if (!R) continue;
       // Grafted parts: hidden until the phase that reveals them has struck its opener.
@@ -87,5 +92,8 @@ const flame = (() => {
       }
     }
   }
-  return { attach() { Game.renderHooks.push(render); } };
+  return {
+    attach() { Game.renderHooks.push(render); },
+    prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.breath)) jetFor(e); },
+  };
 })();

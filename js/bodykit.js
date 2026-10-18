@@ -87,18 +87,26 @@ const KIT = (() => {
     const g = new THREE.ExtrudeGeometry(shape(pts), { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1, curveSegments: 3 });
     return uvScale(g, 1 / MS.texMeters);
   };
-  // Merges geometries into one (non-indexed). Carries position, normal, uv and, when present, skinIndex / skinWeight.
+  // Preserve each part's indices: expanding every triangle duplicated vertex data and skinning work for no visual gain.
   const mergeGeos = list => {
-    const gs = list.map(g => g.index ? g.toNonIndexed() : g);
-    let n = 0; for (const g of gs) n += g.attributes.position.count;
+    let n = 0, indices = 0;
+    for (const g of list) { n += g.attributes.position.count; indices += g.index ? g.index.count : g.attributes.position.count; }
     const out = new THREE.BufferGeometry();
     for (const name of ['position', 'normal', 'uv', 'skinIndex', 'skinWeight']) {
-      const ref = gs.find(g => g.attributes[name]);
+      const ref = list.find(g => g.attributes[name]);
       if (!ref) continue;
       const size = ref.attributes[name].itemSize, arr = new ref.attributes[name].array.constructor(n * size); let o = 0;
-      for (const g of gs) { if (g.attributes[name]) arr.set(g.attributes[name].array, o * size); o += g.attributes.position.count; }
+      for (const g of list) { if (g.attributes[name]) arr.set(g.attributes[name].array, o * size); o += g.attributes.position.count; }
       out.setAttribute(name, new THREE.BufferAttribute(arr, size));
     }
+    const idx = n > 65535 ? new Uint32Array(indices) : new Uint16Array(indices);
+    let vertex = 0, at = 0;
+    for (const g of list) {
+      const count = g.index ? g.index.count : g.attributes.position.count;
+      for (let i = 0; i < count; i++) idx[at++] = vertex + (g.index ? g.index.getX(i) : i);
+      vertex += g.attributes.position.count;
+    }
+    out.setIndex(new THREE.BufferAttribute(idx, 1));
     for (const g of list) g.dispose();
     return out;
   };
@@ -2358,7 +2366,7 @@ const KIT = (() => {
     for (const { slot, weapon, list } of groups.values()) {
       const geo = mergeGeos(list); geo.userData.shared = true;
       geo.boundingSphere = new THREE.Sphere(new V3(0, 1, 0), 3.4);   // generous: a swung weapon must not be culled with its body
-      parts.push({ slot, weapon, geo }); tris += geo.attributes.position.count / 3;
+      parts.push({ slot, weapon, geo }); tris += geo.index.count / 3;
     }
     const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1) * geoK * geoK;   // a stronger variant may carry a quarter more; Ultra's detail its square
     if (tris > budget && geoK === 1) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
@@ -2401,7 +2409,10 @@ const KIT = (() => {
       if ('glow' in spec) rig.fadeMats.push(m);   // eyes are plain materials: they fade instead of dissolving
       return m;
     };
+    const usedSlots = new Set(built.parts.map(p => p.slot));
+    if (M.eyes) usedSlots.add('eye');
     for (const [slot, spec] of Object.entries(M.materials)) {
+      if (!usedSlots.has(slot)) continue;   // unused inherited slots need no textures or material clones
       mats[slot] = makeMat(spec);
       if (!('glow' in spec)) rig.bodyMats.push(mats[slot]);   // hit tint: the body, never the weapon
     }
@@ -2457,18 +2468,23 @@ const KIT = (() => {
 
   // Bakes every model's textures and geometry a little at a time while the menus are up, so a fight or level never
   // stalls to generate them. Pauses during play; whatever is not ready yet is simply built on demand.
+  let prewarmGeneration = 0;
   function prewarm() {
+    const generation = ++prewarmGeneration;   // a new quality replaces pending work for the old detail
     const jobs = [];
     for (const id of Object.keys(MODEL_DEFS)) {
-      const M = resolve(id);
-      for (const spec of Object.values(M.materials)) if (spec.tex) {   // to the worker when there is one (no stall), else baked here a piece at a time
-        const opts = { tint: spec.tint, decay: spec.decay, size: texSize(spec) };
-        if (!TEXLIB.prefetch(spec.tex, opts)) jobs.push(() => TEXLIB.get(spec.tex, opts));
-      }
-      jobs.push(() => modelParts(id));
+      jobs.push(() => {
+        const M = resolve(id), built = modelParts(id), slots = new Set(built.parts.map(p => p.slot));
+        for (const slot of slots) {
+          const spec = M.materials[slot];
+          if (!spec.tex) continue;
+          const opts = { tint: spec.tint, decay: spec.decay, size: texSize(spec) };
+          if (!TEXLIB.prefetch(spec.tex, opts)) TEXLIB.get(spec.tex, opts);
+        }
+      });
     }
     const step = () => {
-      if (!jobs.length) return;
+      if (generation !== prewarmGeneration || !jobs.length) return;
       if (typeof Game !== 'undefined' && Game.mode === 'play') { setTimeout(step, 1500); return; }
       try { jobs.shift()(); } catch (e) { console.warn('prewarm:', e); }
       if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 400 }); else setTimeout(step, 40);   // only between frames

@@ -71,13 +71,20 @@ MODEL_DEFS.pillagerCaptain = {
     loinF: { parent: 'spin', at: [0.0, -0.02, 0.17] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.17] },
     capeA: { parent: 'chest', at: [0, 0.58, -0.24] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] }, capeD: { parent: 'capeC', at: [0, -0.34, 0] },
   },
+  // v6.0 remake: a warlord in blackened plate (js/kit-premium.js): a full breastplate and fauld over mail, a gorget, a
+  // sallet war-helm crowned with great swept ram horns, layered spiked pauldrons, couters, vambraces and articulated
+  // gauntlets, greaves with knee cops, the scorched loincloths and the torn cloak.
   parts: [
-    { use: 'jerkin', slot: 'plate', bone: 'chest' }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.2 }, { use: 'horns', slot: 'iron', bone: 'head', size: 1.5 },
-    { use: 'pauldron', slot: 'plate', bone: 'armL', size: 1.6 }, { use: 'spikes', slot: 'iron', bone: 'armL', size: 1.3 },
-    { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.6, side: -1 }, { use: 'spikes', slot: 'iron', bone: 'armR', size: 1.3, side: -1 },
-    { use: 'wraps', slot: 'plate', bone: 'elbowL', from: 0.05, to: 0.28, radius: 0.07, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'elbowR', from: 0.05, to: 0.28, radius: 0.07, count: 3 },
-    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.085, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.085, count: 3 },
+    { use: 'breastplate', slot: 'plate', bone: 'chest', rivet: 'iron' }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
+    { use: 'gorget', slot: 'plate', bone: 'neck', size: 1.2 },
+    { use: 'warHelm', slot: 'plate', bone: 'head', size: 1.15, dark: 'leather' }, { use: 'ramHorns', slot: 'iron', bone: 'head', size: 1.35 },
+    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.45 }, { use: 'spikes', slot: 'iron', bone: 'armL', size: 1.3 },
+    { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.45, side: -1 }, { use: 'spikes', slot: 'iron', bone: 'armR', size: 1.3, side: -1 },
+    { use: 'couter', slot: 'plate', bone: 'elbowL', size: 1.25, side: 1 }, { use: 'couter', slot: 'plate', bone: 'elbowR', size: 1.25, side: -1 },
+    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.06, to: 0.27, radius: 0.066, count: 3, flare: 0.1 }, { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.06, to: 0.27, radius: 0.066, count: 3, flare: 0.1 },
+    { use: 'gauntlet', slot: 'plate', bone: 'elbowL', at: 0.33, size: 1.3 }, { use: 'gauntlet', slot: 'plate', bone: 'elbowR', at: 0.33, size: 1.3 },
+    { use: 'kneeCop', slot: 'plate', bone: 'kneeL', r: 0.085 }, { use: 'kneeCop', slot: 'plate', bone: 'kneeR', r: 0.085 },
+    { use: 'greave', slot: 'plate', bone: 'kneeL', size: 1.25 }, { use: 'greave', slot: 'plate', bone: 'kneeR', size: 1.25 },
     { use: 'clothStrip', slot: 'scorch', bone: 'loinF', w: 0.3, len: 0.6, seed: 3 }, { use: 'clothStrip', slot: 'sash', bone: 'loinF', w: 0.08, len: 0.55, seed: 3, dz: 0.012 },
     { use: 'clothStrip', slot: 'scorch', bone: 'loinB', w: 0.3, len: 0.6, seed: 7 },
     { use: 'capeSegment', slot: 'cloak', bone: 'capeA', w0: 0.56, w1: 0.68, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'cloak', bone: 'capeB', w0: 0.68, w1: 0.82, len: 0.42, bow: 0.8 },

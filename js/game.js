@@ -224,12 +224,16 @@ const Game = {
   },
 
   // ---- setup -----------------------------------------------------------------------------------
-  clearActors() {
-    if (this.player) this.player.rig.dispose();
-    for (const e of this.enemies) e.rig.dispose();
+  clearActors(retainPrograms = false) {
+    const retired = [this.player, ...this.enemies].filter(Boolean);
+    for (const b of retired) {
+      if (retainPrograms) scene.remove(b.rig.root, b.rig.shadow);
+      else b.rig.dispose();
+    }
     this.player = null; this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     groundFx.clear(); swordTrail.clear(); projectiles.clear();
+    return retired;
   },
   // Spawn options for a level entry: the one place placement rules live. Every placement stands on the
   // floor under it: the top-most one, or the highest at or below its `y` when it gives one.
@@ -261,30 +265,35 @@ const Game = {
   },
   // Full restart of the current fight or level.
   reset() {
-    this.clearActors();
-    input.pressed.clear();
-    this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
-    $('fade').classList.remove('show');   // fades back in after a level transition
-    this.setLock(null); this.retarget = true; this.tut = null; crowd.reset(); this.cleared = new Set();
-    const def = this.level;
-    world = makeWorld(def, loadStage(def));
-    const start = def.playerStart || def.start;
-    this.spawn = { x: start.x, y: start.y, z: start.z, yaw: start.yaw };
-    // A zone fights one enemy (`enemy` + `spawn`) or several (`enemies`); `members` lists them either way.
-    this.zones = this.kind !== 'level' ? [] : (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
-      spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));   // a duel on a level fights no zones
-    this.spawnPlayer();
-    hud.reset(this);
-    finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
-    lore.reset(this);     // the NPC, inscriptions and scenes of a story level (js/lore.js)
-    visuals.warmUp(this.cam);   // every pooled effect drawn once, so none stalls the first time it shows
-    if (this.isTutorial()) {
-      this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
-      this.setupTutorialStep();
-      return;
-    }
-    this.enemies = this.makeEnemies();
-    if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
+    // Keep the old materials alive only until the replacement rigs are prepared: disposing them first evicts
+    // their shared WebGL programs and makes retries compile the same shaders again. Nothing survives this load.
+    const retired = this.clearActors(true);
+    try {
+      input.pressed.clear();
+      this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
+      $('fade').classList.remove('show');   // fades back in after a level transition
+      this.setLock(null); this.retarget = true; this.tut = null; crowd.reset(); this.cleared = new Set();
+      const def = this.level;
+      world = makeWorld(def, loadStage(def));
+      const start = def.playerStart || def.start;
+      this.spawn = { x: start.x, y: start.y, z: start.z, yaw: start.yaw };
+      // A zone fights one enemy (`enemy` + `spawn`) or several (`enemies`); `members` lists them either way.
+      this.zones = this.kind !== 'level' ? [] : (def.gated || []).map(g => ({ ...g, members: g.enemies || [{ enemy: g.enemy, spawn: g.spawn }],
+        spawned: false, actors: [], gate: world.gates.find(w => w.id === g.id) }));   // a duel on a level fights no zones
+      this.spawnPlayer();
+      hud.reset(this);
+      finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
+      lore.reset(this);     // the NPC, inscriptions and scenes of a story level (js/lore.js)
+      if (this.isTutorial()) {
+        this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
+        this.setupTutorialStep();
+        visuals.warmUp(this.cam);
+        return;
+      }
+      this.enemies = this.makeEnemies();
+      if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
+      visuals.warmUp(this.cam);   // include enemies: prepare their shadows and materials behind the loading screen
+    } finally { for (const b of retired) b.rig.dispose(); }
   },
   // A fresh player at the respawn point: full health and full flasks, after a death too.
   spawnPlayer() {
@@ -929,7 +938,7 @@ const Game = {
       f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
     });
     updateDust(t);
-    swordTrail.update(p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox), p.rig);   // only while the blade can hit
+    swordTrail.update(!visuals.quality().ultra && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox)), p.rig);
     groundFx.update(frameDt);
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);

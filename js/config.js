@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v6.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v6.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -320,14 +320,14 @@ const CONFIG = {
       // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
-      // ultra: every extra of VISUALS.ultra (shadows, ambient occlusion, volumetric light, reflections, the lens pass and
+      // ultra: every extra of VISUALS.ultra (moon shadows, ambient occlusion, volumetric light, reflections and
       // the Ultra effects of js/ultra-fx.js). The order here is the order of the Graphics option.
       low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 0.75, antialias: false, bloomScale: 1,
               lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false },
       high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false },
-      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 8, renderScale: 1, antialias: false, bloomScale: 1,
-               lights: 12, simpleSurfaces: false, glows: true, particles: 1.15, shafts: true, debris: true, grass: 1, embers: 1.6, ultra: true },
+      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
+               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true },
     },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
@@ -420,26 +420,27 @@ const CONFIG = {
     ultra: {
       // Real-time shadows. The moon is split in two: `share` of it (open sky / roofed levels) becomes a shadow-casting
       // light whose `moonMap` px map covers `moonBox` m either side of the player; ceilings never block it. The
-      // `points` nearest point lights within `pointRange` m cast soft shadows too (`pointMap` px per cube face).
+      // Torch cube shadows are deliberately omitted: each would render the scene six more times.
       // The old blob shadow under each body stays at `blob` of its strength (contact darkening).
-      shadows: { moonMap: 4096, moonBox: 24, moonDist: 70, share: { open: 0.7, roofed: 0.5 }, bias: -0.0005, normalBias: 0.035,
-                 points: 2, pointMap: 1024, pointFar: 26, pointRange: 24, pointBias: -0.003, pointNormalBias: 0.04, radius: 2.5, blob: 0.35 },
+      shadows: { moonMap: 2048, moonBox: 24, moonDist: 70, share: { open: 0.7, roofed: 0.5 }, bias: -0.0005, normalBias: 0.035,
+                 radius: 2.5, blob: 0.35 },
       // Screen-space ambient occlusion, worked out at `scale` of the screen: `samples` taps within `radius` m.
-      ao: { scale: 0.5, samples: 16, radius: 0.85, bias: 0.035, strength: 0.85, power: 1.5, keepBright: [1.2, 3.5] },
+      ao: { scale: 0.5, samples: 12, radius: 0.85, bias: 0.035, strength: 0.85, power: 1.5, keepBright: [1.2, 3.5] },
       rim: 1.35,   // character rim light x this, so bodies in shadow still read against the fog
       // Models built at Ultra detail: `geo` x every round primitive's segments (Ultra anatomy too), `tex` x model texture
       // size (js/bodykit.js); bodies spawned after the switch get it.
-      models: { geo: { enemy: 1.8, player: 2.6, boss: 2.6 }, tex: 2 },   // geo by the model's budget class
+      // Keep sculpted anatomy (> 1) and silhouette detail without multiplying tiny round parts by ~7x triangles.
+      // High's 256/512px textures already cover their size on screen; doubling them mostly adds uploads and memory.
+      models: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1 },
       // Volumetric light in the fog, analytic: the nearest `lights` point lights glow in the air out to `reach` of their
       // range (`light` scales it, by the level's fog density over `fogRef`); on open-sky levels the moon's light is
       // ray-marched through its shadow map (`moonSteps` steps out to `moonDist` m, forward-scattering `moonG`).
       // `offscreen`: the glow of a light out of view; `minH`: closest approach (m) used, so no light burns white.
-      scatter: { lights: 8, light: 0.0035, reach: 0.75, minH: 0.6, fogRef: 0.022, offscreen: 0.55, moon: 0.004, moonSteps: 20, moonDist: 48, moonG: 0.6, maxDist: 80 },
+      scatter: { lights: 4, light: 0.0035, reach: 0.75, minH: 0.6, fogRef: 0.022, offscreen: 0.55, moon: 0.004, moonSteps: 12, moonDist: 48, moonG: 0.6, maxDist: 80 },
       // Reflections on metal (metalness >= `metalFrom`): a small environment built per level from its fog, moon and fire light.
       env: { intensity: 1.0, metalFrom: 0.25, fire: 0xff8a3c },
-      // The final lens pass: chromatic aberration at the edges (`ca`, plus pulses), a light sharpen, radial zoom blur
-      // on big blows (`punch`, `punchTaps`), a white or red screen flash, red edges when hurt. Pulses decay at `decay`/s.
-      lens: { ca: 0.0012, sharpen: 0, punchTaps: 12, decay: { ca: 4, punch: 5, flash: 6, hurt: 2.2 } },
+      // Flash and hurt feedback share the existing colour grade. No full-screen chromatic aberration / zoom blur.
+      lens: { decay: { flash: 6, hurt: 2.2 } },
       // Shockwaves: rings of refraction spreading over the screen from a blow (`max` at once).
       waves: { max: 6, time: 0.6, size: 0.42, width: 0.05, strength: 0.03 },
       // ---- effects (js/ultra-fx.js) ----
@@ -455,7 +456,7 @@ const CONFIG = {
       puffs: { max: 360, size: [0.6, 2.2], life: 1.3, dust: 0x8a8070, smoke: 0x2a2624 },
       chunks: { max: 120, size: [0.06, 0.2], speed: [3, 8], life: 2.6 },
       // Impact lights: `lights` point lights flashed by clashes, parries, executions and boss moments (fixed count).
-      flash: { lights: 3, decay: 7, range: 9 },
+      flash: { lights: 1, decay: 7, range: 9 },
       flares: { max: 10, time: 0.28 },
       // Weapon trails: a smooth ribbon (Catmull-Rom, `sub` points between samples) that fades over `life` s; HDR so bloom
       // catches it. Enemy trails take their boss colour from `trailColors` (by enemy id), else `enemy` / roll-only blue.

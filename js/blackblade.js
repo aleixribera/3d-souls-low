@@ -22,18 +22,21 @@ const blackBlade = (() => {
         depthWrite: false, blending: THREE.AdditiveBlending }));
       m.userData = { r, op }; g.add(m); shells.push(m);
     }
-    g.visible = false; scene.add(g);
+    g.userData.warmUp = true; g.visible = false; scene.add(g);
     spheres.push({ e, g });
     return (R.deathSphere = { g, shells, k: 0 });
   }
   const shredding = e => e.alive() && e.attack && e.attack.sphere && (e.state === ES.ACTIVE || (e.state === ES.WINDUP && e.hitIndex > 0));
   let last = performance.now();
-  function render(game) {
-    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), t = now / 1000; last = now;
-    for (let i = spheres.length - 1; i >= 0; i--) if (!game.enemies.includes(spheres[i].e)) {
+  function clean(enemies) {
+    for (let i = spheres.length - 1; i >= 0; i--) if (!enemies.includes(spheres[i].e)) {
       scene.remove(spheres[i].g); for (const m of spheres[i].g.children) if (m.material) { m.material.dispose(); m.geometry.dispose(); }
       spheres.splice(i, 1);
     }
+  }
+  function render(game) {
+    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), t = now / 1000; last = now;
+    clean(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig; if (!R) continue;
       const conceal = e.def.conceal;
@@ -72,5 +75,5 @@ const blackBlade = (() => {
     });
     events.on('destinedDeath', d => spawnBurst({ x: d.body.x, y: d.body.y + d.body.height * 0.6, z: d.body.z }, B.doom));
   }
-  return { attach };
+  return { attach, prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.sphere)) sphereFor(e); } };
 })();
