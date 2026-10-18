@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.0: The Lands Between
+# Combat Arena 3D — v7.0.1: Conservative Auto Graphics
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.0.1:** Auto graphics is more conservative on laptops: older integrated GPUs and limited CPU/RAM start on Low; higher presets require faster benchmark results and account for resolution and pixel density. Saved manual choices remain unchanged. See [the Auto selector notes](docs/auto-quality-v7.0.1.md).
 
 **v7.0:** a second Story road, **The Lands Between: The Elden Throne** — eight new lands, one for each Elden Ring boss, from the storm over Stormhill to the scarlet rot under the Haligtree, with eight new enemies, a new guide and its own ending. The main menu is tidier: **Story** holds both roads, and **1v1 Arena** holds the Enemies, Ashmere's Bosses and the Elden Ring Bosses.
 
@@ -47,6 +49,8 @@ Every land also mixes in Ashmere's foes (often in their stronger **elite** form)
 ## Graphics: Ultra (v6.0)
 
 **Options → Graphics** offers **Auto**, Low, High and **Ultra**. On the very first launch the game tests your graphics card for a moment and picks a preset for you (Auto), and says so on the title screen; you can change it at any time in Options (on the title screen or in the pause menu). Options with ‹ › arrows can be stepped either way.
+
+Auto now favors smooth play on weaker laptops. Older integrated graphics start on Low, modern integrated graphics can earn High, and recognized stronger GPUs can earn Ultra only with enough benchmark headroom. A saved Auto choice is reassessed when the page reloads; an explicit Low, High or Ultra choice stays as you set it.
 
 **Low** renders at 100% resolution with a pixel ratio capped at 1. Shared surface maps, simpler character shader work and faster loading preserve its existing model and texture detail. Enemies, hidden boss phases and required attack effects are prepared before gameplay. See [the LOW performance audit](docs/low-performance-audit.md) for measurements and limits.
 

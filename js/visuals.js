@@ -22,6 +22,16 @@ function checkVisualData(need, num) {
   const tri = v => Array.isArray(v) && v.length === 3 && v.every(num);
   const amount = (v, max = 2) => num(v) && v >= 0 && v <= max;
   const Q = VIS.quality;
+  const auto = VIS.autoQuality;
+  need(auto && ['size', 'loops', 'passes', 'rounds', 'referenceWidth', 'referenceHeight', 'minHighCores', 'minHighMemory', 'minUltraCores', 'phoneWidth']
+    .every(k => Number.isInteger(auto[k]) && auto[k] > 0)
+    && num(auto.ultraMs) && auto.ultraMs > 0 && num(auto.highMs) && auto.highMs > auto.ultraMs
+    && auto.minUltraCores >= auto.minHighCores, 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
+  for (const key of ['software', 'integrated', 'capableIntegrated', 'strong']) {
+    let valid = typeof auto[key] === 'string' && auto[key].length > 0;
+    try { new RegExp(auto[key]); } catch (e) { valid = false; }
+    need(valid, `CONFIG.VISUALS.autoQuality.${key} must be a valid GPU-name pattern.`);
+  }
   need(Q && Q.high && Q.low, 'CONFIG.VISUALS.quality needs "high" and "low" presets.');
   if (Q && Q.high) for (const [n, q] of Object.entries(Q)) {   // every preset lists the same keys
     for (const k of Object.keys(Q.high)) need(k in q, `CONFIG.VISUALS.quality.${n} is missing "${k}".`);

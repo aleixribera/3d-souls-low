@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.0.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -313,12 +313,14 @@ const CONFIG = {
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {
     defaultQuality: 'high',
-    // First launch (js/autoquality.js): the preset is picked from the GPU's name (`software` and `integrated` patterns cap it
-    // at Low / High; `strong` cards may reach Ultra) and a benchmark (`passes` of a `loops`-deep shader over a `size` px
-    // target: Ultra within `ultraMs` ms a pass, High within `highMs`). The note shows `showTime` s on the title screen.
-    autoQuality: { size: 1024, loops: 48, passes: 6, ultraMs: 7, highMs: 24, showTime: 7,
+    // Auto is conservative: older integrated GPUs and limited CPU/RAM start on Low. Modern integrated chips may
+    // earn High; only recognized strong GPUs may earn Ultra. Time the slowest benchmark round and scale its cost
+    // by each preset's actual pixel load relative to the reference viewport. Manual choices always remain available.
+    autoQuality: { size: 1024, loops: 48, passes: 6, rounds: 3, ultraMs: 3, highMs: 8, showTime: 7,
+                   referenceWidth: 1280, referenceHeight: 720, minHighCores: 6, minHighMemory: 8, minUltraCores: 8, phoneWidth: 820,
                    software: 'swiftshader|llvmpipe|softpipe|basic render|software',
                    integrated: 'intel|iris|uhd graphics|hd graphics|radeon\\(tm\\) graphics|radeon graphics|vega [0-9]+ graphics|mali|adreno|powervr|apple gpu',
+                   capableIntegrated: 'iris.*(xe|plus)|arc.*graphics|radeon.*(680m|780m|880m|890m|8060s)|apple m[0-9]',
                    strong: 'rtx|rx [6-9][0-9]{3}|apple m[0-9] (pro|max|ultra)|arc a7|radeon pro w',
                    message: 'Recommended graphics applied: {preset}. You can change it any time in Options.' },
     // Graphics option presets. Every preset lists the same keys (checked at load).

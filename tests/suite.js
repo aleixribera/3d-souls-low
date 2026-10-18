@@ -2959,6 +2959,38 @@
   // Quality changes made here go back to the player's own setting afterwards.
   const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
   const ultraWarnings = () => [...warned].filter(w => w.startsWith('Ultra'));
+  test('Auto quality: older integrated laptops and limited hardware start on Low even with a fast shader result', () => {
+    const ready = { ms: 1, width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
+    for (const name of ['ANGLE (Intel, Intel(R) UHD Graphics 620)', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'low', `${name}: conservative Low`);
+    for (const limits of [{ cores: 4 }, { memory: 4 }, { touch: true }])
+      expect.ok(autoQuality.recommend({ ...ready, name: 'NVIDIA GeForce RTX 3060 Laptop GPU', ...limits }).pick === 'low', 'limited CPU/RAM or phone: Low');
+  });
+  test('Auto quality: higher presets need stricter timings and account for display resolution', () => {
+    const ready = { name: 'NVIDIA GeForce RTX 3060', width: 1280, height: 720, pixelRatio: 1, cores: 8, memory: 8 };
+    const cases = [
+      [{ ms: 2 }, 'ultra'], [{ ms: 4 }, 'high'], [{ ms: 9 }, 'low'],
+      [{ ms: 2, pixelRatio: 2 }, 'high'],
+      [{ ms: 2, pixelRatio: 2, width: 1920, height: 1080 }, 'low'],
+      [{ name: 'Intel Iris Xe Graphics', ms: 2 }, 'high'],
+      [{ name: 'Intel Iris Xe Graphics', ms: 4, pixelRatio: 2 }, 'low'],
+      [{ name: 'AMD Radeon 780M', ms: 2 }, 'high'],
+      [{ name: 'Unknown GPU', ms: 1 }, 'high'],
+      [{ ms: Infinity }, 'low'], [{ ms: NaN }, 'low'],
+    ];
+    for (const [sample, expected] of cases)
+      expect.ok(autoQuality.recommend({ ...ready, ...sample }).pick === expected, `${JSON.stringify(sample)} -> ${expected}`);
+  });
+  test('Auto quality: hardware hints may be unavailable and explicit graphics choices always win', () => {
+    const saved = settings.graphics;
+    try {
+      expect.ok(autoQuality.recommend({ name: 'RTX 5060', ms: 1 }).pick === 'ultra', 'missing CPU/RAM hints do not imply a weak machine');
+      for (const preset of ['low', 'high', 'ultra']) {
+        settings.graphics = preset;
+        expect.ok(autoQuality.effective() === preset, `${preset}: manual choice preserved`);
+      }
+    } finally { settings.graphics = saved; }
+  });
   test('Ultra: the presets share their keys and reserve the lighting extras for Ultra', () => {
     const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();
     for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as high`);
