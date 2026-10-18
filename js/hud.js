@@ -320,6 +320,7 @@ function applySettings() {
   fpsMeter.show(settings.fps);
   hud.toggle.checked = settings.hitboxes;
   hud.layout();
-  visuals.setQuality(settings.graphics);
+  const q = autoQuality.effective();   // Auto: the detected preset (js/autoquality.js)
+  if (applySettings.graphics !== q) { applySettings.graphics = q; visuals.setQuality(q); }   // only when it changed: a quality change rebuilds shaders
   audio.setVolume(clamp(Number(settings.volume), 0, 10) / 10);
 }

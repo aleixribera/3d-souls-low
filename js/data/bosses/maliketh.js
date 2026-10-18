@@ -50,29 +50,29 @@ const MALIKETH_PARTS = {};
   // cross-guard with down-swept quillons, a long grip and a ring pommel. Along +z from the hand, metres at scale 1.
   P.blackBlade = o => {
     const blade = new THREE.BoxGeometry(0.03, 0.16, 1.45).translate(0, 0, 0.9);
-    const tip = new THREE.ConeGeometry(0.08, 0.28, 4).rotateX(Math.PI / 2).scale(0.38, 1, 1).translate(0, 0, 1.76);
+    const tip = KIT_GEO.Cone(0.08, 0.28, 4).rotateX(Math.PI / 2).scale(0.38, 1, 1).translate(0, 0, 1.76);
     const fuller = new THREE.BoxGeometry(0.036, 0.03, 1.2).translate(0, 0, 0.82);
     const edges = [-1, 1].map(s => new THREE.BoxGeometry(0.036, 0.016, 1.4).translate(0, s * 0.084, 0.9));
     const guard = new THREE.BoxGeometry(0.06, 0.42, 0.06).translate(0, 0, 0.14);
-    const quillons = [-1, 1].map(s => new THREE.ConeGeometry(0.03, 0.16, 4).rotateX(-Math.PI / 2).rotateX(s * 0.5).translate(0, s * 0.22, 0.1));
-    const grip = new THREE.CylinderGeometry(0.026, 0.03, 0.42, 6).rotateX(Math.PI / 2).translate(0, 0, -0.1);
-    const pommel = new THREE.TorusGeometry(0.05, 0.015, 4, 8).translate(0, 0, -0.36);
+    const quillons = [-1, 1].map(s => KIT_GEO.Cone(0.03, 0.16, 4).rotateX(-Math.PI / 2).rotateX(s * 0.5).translate(0, s * 0.22, 0.1));
+    const grip = KIT_GEO.Cylinder(0.026, 0.03, 0.42, 6).rotateX(Math.PI / 2).translate(0, 0, -0.1);
+    const pommel = KIT_GEO.Torus(0.05, 0.015, 4, 8).translate(0, 0, -0.36);
     return [...[blade, tip, guard, ...quillons, grip, pommel].map(geo => ({ slot: o.slot, geo })),
             ...[fuller, ...edges].map(geo => ({ slot: o.glow, geo }))];
   };
   // The Cinquedea: a short, very broad triangular dagger with a fat grip.
   P.cinquedea = o => {
-    const blade = new THREE.ConeGeometry(0.11, 0.6, 4).rotateX(Math.PI / 2).scale(0.25, 1, 1).translate(0, 0, 0.4);
+    const blade = KIT_GEO.Cone(0.11, 0.6, 4).rotateX(Math.PI / 2).scale(0.25, 1, 1).translate(0, 0, 0.4);
     const guard = new THREE.BoxGeometry(0.05, 0.28, 0.05).translate(0, 0, 0.1);
-    const grip = new THREE.CylinderGeometry(0.028, 0.032, 0.22, 6).rotateX(Math.PI / 2).translate(0, 0, -0.02);
+    const grip = KIT_GEO.Cylinder(0.028, 0.032, 0.22, 6).rotateX(Math.PI / 2).translate(0, 0, -0.02);
     return [blade, guard, grip].map(geo => ({ slot: o.slot, geo }));
   };
   // A beast's muzzle and fangs under the hood (head frame): the Clergyman is a beast of the Twinbirds' kin.
   P.beastSnout = o => {
     const s = o.size ?? 1;
-    const muzzle = new THREE.ConeGeometry(0.075 * s, 0.24 * s, 7).rotateX(Math.PI / 2).scale(1, 0.75, 1).translate(0, -0.01 * s, 0.17 * s);
-    const jaw = new THREE.ConeGeometry(0.05 * s, 0.18 * s, 6).rotateX(Math.PI / 2 + 0.25).translate(0, -0.06 * s, 0.13 * s);
-    const fangs = [-1, 1].map(sd => new THREE.ConeGeometry(0.012 * s, 0.06 * s, 4).rotateX(Math.PI).translate(sd * 0.035 * s, -0.05 * s, 0.22 * s));
+    const muzzle = KIT_GEO.Cone(0.075 * s, 0.24 * s, 7).rotateX(Math.PI / 2).scale(1, 0.75, 1).translate(0, -0.01 * s, 0.17 * s);
+    const jaw = KIT_GEO.Cone(0.05 * s, 0.18 * s, 6).rotateX(Math.PI / 2 + 0.25).translate(0, -0.06 * s, 0.13 * s);
+    const fangs = [-1, 1].map(sd => KIT_GEO.Cone(0.012 * s, 0.06 * s, 4).rotateX(Math.PI).translate(sd * 0.035 * s, -0.05 * s, 0.22 * s));
     return [muzzle, jaw, ...fangs];
   };
 }

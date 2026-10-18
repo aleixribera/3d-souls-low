@@ -32,10 +32,30 @@ function addDissolve(mat, rim, uniform) {
   mat.customProgramCacheKey = () => 'rimDissolve';
   return mat;
 }
+// Model detail (the Ultra preset): while a model is built, every round primitive takes `k` times its segments, so limbs,
+// rims, horns and tubes come out smooth. KIT.setDetail picks k; each detail level has its own cache (bodies spawned
+// after a change use it). Also used by parts defined in data (Malenia's, Maliketh's), which build inside modelParts.
+const KIT_GEO = (() => {
+  let k = 1;
+  const s = (n, min = 3) => Math.max(min, Math.round(n * k));
+  return {
+    set(mult) { k = mult; }, get: () => k,
+    Sphere: (r, w = 32, h = 16, ...rest) => new THREE.SphereGeometry(r, s(w), s(h, 2), ...rest),
+    Cylinder: (rt, rb, h, rs = 32, hs = 1, ...rest) => new THREE.CylinderGeometry(rt, rb, h, s(rs), hs, ...rest),
+    Cone: (r, h, rs = 32, hs = 1, ...rest) => new THREE.ConeGeometry(r, h, s(rs), hs, ...rest),
+    Torus: (r, t, rs = 12, ts = 48, arc) => new THREE.TorusGeometry(r, t, s(rs), s(ts), arc),
+    Lathe: (pts, seg = 12, ...rest) => new THREE.LatheGeometry(pts, s(seg), ...rest),
+    Tube: (path, ts = 64, r = 1, rs = 8, closed = false) => new THREE.TubeGeometry(path, s(ts), r, s(rs), closed),
+    Circle: (r, seg = 32, ...rest) => new THREE.CircleGeometry(r, s(seg), ...rest),
+    Ring: (ri, ro, ts = 32, ...rest) => new THREE.RingGeometry(ri, ro, s(ts), ...rest),
+  };
+})();
 const KIT = (() => {
   const TAU = Math.PI * 2, V3 = THREE.Vector3, V2 = THREE.Vector2, MS = MODEL_SETTINGS;
   const modelCache = new Map();
   let limbSides = MS.limbSides;   // radial segments of limbs for the model being built
+  let detail = { geo: 1, tex: 1 };   // KIT.setDetail: segment and texture-size multipliers for models built from now on
+  const texSize = spec => Math.min(TEXTURE_SETTINGS.ultraMax, Math.round((spec.size ?? MS.texSize) * detail.tex));
 
   // ---- geometry helpers ------------------------------------------------------------------------------------
   const xf = (geo, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => {
@@ -58,7 +78,7 @@ const KIT = (() => {
   };
   const deform = (geo, fn) => { const p = geo.attributes.position, v = new V3(); for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); fn(v); p.setXYZ(i, v.x, v.y, v.z); } return geo; };
   // A solid of revolution: profile [[radius, y]] listed bottom to top; ovalZ squashes depth.
-  const lathe = (profile, seg, ovalZ = 1) => xf(new THREE.LatheGeometry(profile.map(([r, y]) => new V2(r, y)), seg), 0, 0, 0, 0, 0, 0, 1, 1, ovalZ);
+  const lathe = (profile, seg, ovalZ = 1) => xf(KIT_GEO.Lathe(profile.map(([r, y]) => new V2(r, y)), seg), 0, 0, 0, 0, 0, 0, 1, 1, ovalZ);
   // A limb hanging down from its joint: profile [[t 0..1 along the length, radius]].
   const limb = (len, prof, thick = 1, ovalZ = 0.92) =>
     uvScale(lathe(prof.slice().reverse().map(([t, r]) => [r * thick, -t * len]), limbSides, ovalZ), 1.4, len / MS.texMeters);
@@ -82,18 +102,94 @@ const KIT = (() => {
     for (const g of list) g.dispose();
     return out;
   };
-  const sphere = (r, w, h) => uvScale(new THREE.SphereGeometry(r, w, h), 2, 1);
-  const tube = (r0, r1, len, seg = 6, open = false) => uvScale(new THREE.CylinderGeometry(r0, r1, len, seg, 1, open), 1.2, len / MS.texMeters);
+  const sphere = (r, w, h) => uvScale(KIT_GEO.Sphere(r, w, h), 2, 1);
+  const tube = (r0, r1, len, seg = 6, open = false) => uvScale(KIT_GEO.Cylinder(r0, r1, len, seg, 1, open), 1.2, len / MS.texMeters);
 
   // ---- core body pieces (built from the definition's proportions) ----------------------------------------
   const sideOf = bone => bone.endsWith('L') ? 'L' : 'R';
   const limbTweak = (M, bone) => ({ len: 1, thick: 1, ...(M.limbs && M.limbs[bone]) });
+  // Ultra anatomy (detail.geo > 1): the same bones and the same outer envelope (armour still fits), but sculpted:
+  // muscled limbs (deltoid, biceps, forearm, quadriceps, calf), caps over the joints instead of balls, fists with
+  // fingers closed round the grip, a torso with chest and shoulder blades, boots with a heel.
+  function ultraBody(M) {
+    const P = M.proportions, B = M.body, out = [];
+    const add = (bone, slot, geo) => { if (slot) out.push({ bone, slot, geo }); };
+    const tw = P.torsoW / 0.2, oz = P.torsoD / P.torsoW;
+    // a muscle: radial bulge of `amt` (fraction) toward +z (front) or -z (back), centred at t (0..1 down the limb)
+    const bulge = (geo, len, t0, t1, amt, front = 1, side = 0) => deform(geo, v => {
+      const t = -v.y / len; if (t < t0 || t > t1) return;
+      const k = Math.sin((t - t0) / (t1 - t0) * Math.PI), r = Math.hypot(v.x, v.z) || 1, dir = (v.z * front + v.x * side) / r;
+      if (dir > 0) { const m = 1 + amt * k * dir; v.x *= m; v.z *= m; }
+    });
+    if (B.pelvis) add('spin', B.pelvis, uvScale(lathe([[0.1, -0.1], [0.14, -0.085], [0.165, -0.05], [0.178, -0.01], [0.18, 0.02], [0.172, 0.06], [0.16, 0.08]].map(([r, y]) => [r * tw, y]), 10, oz * 1.1), 1.5, 1));
+    if (B.torso) {
+      const g = lathe([[0.15, -0.06], [0.158, 0.0], [0.168, 0.05], [0.188, 0.14], [0.21, 0.22], [0.238, 0.31], [0.26, 0.4], [0.28, 0.46], [0.286, 0.5],
+                       [0.276, 0.535], [0.25, 0.565], [0.21, 0.59], [0.16, 0.612], [0.11, 0.632], [0.08, 0.65]].map(([r, y]) => [r * tw, y]), 12, oz);   // sloped shoulders (v6.0)
+      deform(g, v => {
+        const ax = Math.abs(v.x) / tw;
+        if (v.z > 0 && v.y > 0.33 && v.y < 0.52 && ax > 0.03 && ax < 0.22) v.z *= 1 + 0.06 * Math.sin((v.y - 0.33) / 0.19 * Math.PI) * Math.sin((ax - 0.03) / 0.19 * Math.PI);   // the chest
+        if (v.z < 0) { v.z *= 0.94; if (ax < 0.035) v.z *= 0.96; if (v.y > 0.36 && v.y < 0.52 && ax > 0.06 && ax < 0.2) v.z *= 1.04; }   // flatter back, spine groove, shoulder blades
+        if (v.y > 0.05 && v.y < 0.24) { const k = 1 - 0.04 * Math.sin((v.y - 0.05) / 0.19 * Math.PI); v.x *= k; }   // the waist
+      });
+      add('chest', B.torso, uvScale(g, 1.8, 1.2));
+    }
+    add('neck', B.neck, tube(P.headR * 0.4, P.headR * 0.5, 0.17, 10));
+    const skull = deform(sphere(P.headR, 14, 10), v => {
+      if (v.y < 0) { const k = 1 - 0.38 * (-v.y / P.headR); v.x *= k; v.z *= k; v.z += v.y * 0.1; }
+      if (v.z > 0) v.z *= 0.9; v.y *= 1.08;
+      if (v.z > P.headR * 0.5 && Math.abs(v.y) < P.headR * 0.25 && Math.abs(v.x) > P.headR * 0.15 && Math.abs(v.x) < P.headR * 0.55) v.z -= P.headR * 0.06;   // eye sockets
+    });
+    if (B.head) {
+      add('head', B.head, xf(skull, 0, P.headR * 0.9, 0.01));
+      add('head', B.head, xf(sphere(P.headR * 0.9, 8, 4), 0, P.headR * 1.25, P.headR * 0.45, 0, 0, 0, 1, 0.22, 0.4));   // heavy brow
+      add('head', B.head, xf(KIT_GEO.Cone(P.headR * 0.13, P.headR * 0.42, 6), 0, P.headR * 0.85, P.headR * 0.92, 1.35, 0, 0, 1, 1, 0.8));   // the nose
+      for (const sx of [-1, 1]) add('head', B.head, xf(sphere(P.headR * 0.22, 6, 4), sx * P.headR * 0.95, P.headR * 0.9, -P.headR * 0.05, 0, 0, 0, 0.35, 1, 0.7));   // ears
+    }
+    for (const bone of ['armL', 'armR']) {
+      const t = limbTweak(M, bone), len = 0.3 * t.len, s = P.armR / 0.052, k = s * t.thick;
+      const up = limb(len, [[0, 0.058], [0.08, 0.064], [0.22, 0.063], [0.42, 0.058], [0.6, 0.054], [0.78, 0.048], [0.92, 0.045], [1, 0.044]], k);
+      bulge(up, len, 0.3, 0.8, 0.12, 1); bulge(up, len, 0.15, 0.6, 0.06, -1);   // biceps, triceps
+      add(bone, B.arms, up);
+      add(bone, B.arms, xf(sphere(0.064 * k, 10, 6), 0, 0.005, 0, 0, 0, 0, 1.08, 0.92, 1));   // the deltoid cap
+      const el = 'elbow' + sideOf(bone);
+      const fore = limb(len, [[0, 0.046], [0.1, 0.05], [0.28, 0.049], [0.5, 0.044], [0.75, 0.036], [0.9, 0.032], [1, 0.03]], k);
+      bulge(fore, len, 0.05, 0.5, 0.08, 1, sideOf(bone) === 'L' ? 1 : -1);   // the forearm's muscle, toward the thumb
+      add(el, B.arms, fore);
+      add(el, B.arms, xf(sphere(0.042 * k, 8, 5), 0, 0, -0.012 * k, 0, 0, 0, 0.9, 0.8, 0.9));   // the elbow
+      // the fist: a palm and four fingers closed round a grip along z, a thumb across them
+      const h = P.handR, hy = -len - 0.03;
+      add(el, B.hands, xf(sphere(h, 10, 6), 0, hy, 0.01, 0, 0, 0, 0.78, 1.05, 0.95));
+      for (let i = 0; i < 4; i++) {
+        const z = 0.01 + (i - 1.5) * h * 0.46, fr = h * (0.42 - Math.abs(i - 1.2) * 0.04);
+        add(el, B.hands, xf(KIT_GEO.Torus(fr, h * 0.19, 6, 8, Math.PI * 1.25), 0.002, hy - h * 0.62, z, 0, 0, Math.PI * 0.62));
+      }
+      add(el, B.hands, xf(KIT_GEO.Cylinder(h * 0.19, h * 0.16, h * 0.9, 6), h * 0.32 * (sideOf(bone) === 'L' ? 1 : -1), hy - h * 0.55, 0.01 + h * 0.5, 0.5, 0, Math.PI / 2));
+    }
+    for (const bone of ['legL', 'legR']) {
+      const t = limbTweak(M, bone), s = P.legR / 0.07, knee = 'knee' + sideOf(bone), k = s * t.thick;
+      const thigh = limb(LEG_SEG, [[0, 0.078], [0.12, 0.081], [0.35, 0.077], [0.6, 0.068], [0.85, 0.058], [1, 0.054]], k, 1);
+      bulge(thigh, LEG_SEG, 0.15, 0.85, 0.07, 1);   // quadriceps
+      add(bone, B.legs, thigh);
+      const shin = limb(LEG_SEG, [[0, 0.054], [0.1, 0.059], [0.28, 0.061], [0.5, 0.052], [0.75, 0.042], [0.9, 0.038], [1, 0.037]], k, 1);
+      bulge(shin, LEG_SEG, 0.08, 0.55, 0.16, -1);   // the calf
+      add(knee, B.legs, shin);
+      add(knee, B.legs, xf(sphere(0.035 * k, 8, 6), 0, -0.005, 0.045 * k, 0, 0, 0, 1, 1.15, 0.6));   // the kneecap
+      const L = P.footLen;
+      const foot = new THREE.ExtrudeGeometry(shape([[-0.075, 0], [L - 0.08, 0], [L - 0.035, 0.02], [L - 0.05, 0.045], [L - 0.13, 0.078], [-0.03, 0.1], [-0.075, 0.07]]),
+        { depth: 0.11, bevelEnabled: true, bevelThickness: 0.016, bevelSize: 0.014, bevelSegments: 3, curveSegments: 4 });
+      xf(foot, 0, 0, -0.055, 0, 0, 0); foot.rotateY(-Math.PI / 2); xf(foot, 0, -LEG_SEG - 0.0, 0);
+      add(knee, B.feet, uvScale(foot, 1 / MS.texMeters));
+      add(knee, B.feet, xf(KIT_GEO.Cylinder(0.04 * k, 0.045 * k, 0.03, 10), 0, -LEG_SEG + 0.015, -0.04, 0, 0, 0, 1, 1, 0.9));   // the heel
+    }
+    return out;
+  }
   function bodyParts(M) {
+    if (geoK > 1) return ultraBody(M);
     const P = M.proportions, B = M.body, out = [];
     const add = (bone, slot, geo) => out.push({ bone, slot, geo });
     const tw = P.torsoW / 0.2, oz = P.torsoD / P.torsoW;
     if (B.pelvis) add('spin', B.pelvis, uvScale(lathe([[0.1, -0.1], [0.17, -0.06], [0.18, 0.02], [0.16, 0.08]].map(([r, y]) => [r * tw, y]), 8, oz * 1.1), 1.5, 1));
-    if (B.torso) add('chest', B.torso, uvScale(lathe([[0.15, -0.06], [0.17, 0.05], [0.21, 0.22], [0.26, 0.4], [0.29, 0.5], [0.2, 0.575], [0.07, 0.625]].map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2));
+    if (B.torso) add('chest', B.torso, uvScale(lathe([[0.15, -0.06], [0.17, 0.05], [0.21, 0.22], [0.26, 0.4], [0.286, 0.5], [0.25, 0.565], [0.17, 0.605], [0.08, 0.64]].map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2));   // sloped shoulders (v6.0)
     add('neck', B.neck, tube(P.headR * 0.4, P.headR * 0.46, 0.17, 6));
     xf(out[out.length - 1].geo, 0, 0.0, 0);
     // Skull: the lower half narrows to a jaw; the face is flatter than the back of the head.
@@ -139,20 +235,20 @@ const KIT = (() => {
     // Vertebrae pushing through the skin of a hunched back.
     spineBumps() {
       return [0.08, 0.2, 0.32, 0.44].map((y, i) => {
-        const s = 1 - Math.abs(i - 1.2) * 0.12, c = new THREE.ConeGeometry(0.03 * s, 0.075 * s, 5);
+        const s = 1 - Math.abs(i - 1.2) * 0.12, c = KIT_GEO.Cone(0.03 * s, 0.075 * s, 5);
         return xf(c, hash3(i, 1, 1, 9) * 0.03, y, -0.125 - i * 0.004, -Math.PI / 2 + 0.25, 0, 0);
       });
     },
     // A rag hood pulled low: open at the face, a tail hanging behind.
     hood(o) {
-      const g = new THREE.SphereGeometry(0.158 * (o.size ?? 1), 10, 6, Math.PI / 2 + 0.75 - (o.close ?? 0), TAU - 1.5 + 2 * (o.close ?? 0), 0, 2.25), tail = o.tail ?? 1;
+      const g = KIT_GEO.Sphere(0.158 * (o.size ?? 1), 10, 6, Math.PI / 2 + 0.75 - (o.close ?? 0), TAU - 1.5 + 2 * (o.close ?? 0), 0, 2.25), tail = o.tail ?? 1;
       deform(g, v => { if (v.z < 0 && v.y < 0.08) { v.z -= (0.08 - v.y) * 0.9 * tail; v.y -= (-v.z) * 0.15 * tail; } if (v.y > 0.1) v.z += (v.y - 0.1) * 0.35; });
       xf(g, 0, 0.115, 0.0, 0.2, 0, 0, 1.0, 1.05, 1.05); roughen(g, 0.012, 21);
       return [uvScale(g, 2, 1)];
     },
     // A dented shoulder dome, strapped on one side only.
     pauldron(o) {
-      const g = new THREE.SphereGeometry(0.115 * (o.size ?? 1), 8, 4, 0, TAU, 0, Math.PI / 2);
+      const g = KIT_GEO.Sphere(0.115 * (o.size ?? 1), 8, 4, 0, TAU, 0, Math.PI / 2);
       const sd = o.side ?? 1; xf(g, 0.035 * sd, 0.035, 0, 0, 0, -0.38 * sd, 1.1, 0.7, 1.0); roughen(g, 0.014, 5);
       return [uvScale(g, 3, 1.5)];
     },
@@ -163,7 +259,7 @@ const KIT = (() => {
       xf(g, s * 0.1, 0.1, 0.095, 0.12, s * 0.35, s * 0.1); roughen(g, 0.01, 8);
       return [g];
     },
-    belt() { return [uvScale(xf(new THREE.TorusGeometry(0.185, 0.022, 3, 10), 0, 0.045, 0, Math.PI / 2, 0, 0.08, 1, 1, 0.72), 6, 1)]; },
+    belt() { return [uvScale(xf(KIT_GEO.Torus(0.185, 0.022, 3, 10), 0, 0.045, 0, Math.PI / 2, 0, 0.08, 1, 1, 0.72), 6, 1)]; },
     pouch(o) { return [xf(plate([[-0.045, 0], [0.045, 0], [0.05, 0.1], [-0.05, 0.1]], 0.05, 0.012), o.x ?? 0, -0.05, o.z ?? 0.1, 0.1, -0.5, 0.1)]; },
     // Bandage rings spiralling along a limb (from..to metres below the bone origin).
     wraps(o) {
@@ -196,7 +292,7 @@ const KIT = (() => {
       return [uvScale(g, 2.5, 1)];
     },
     // A scarf around the neck.
-    scarf() { return [uvScale(xf(new THREE.TorusGeometry(0.085, 0.03, 4, 9), 0, 0.02, 0.0, Math.PI / 2, 0, 0.1, 1, 1, 0.9), 4, 1)]; },
+    scarf() { return [uvScale(xf(KIT_GEO.Torus(0.085, 0.03, 4, 9), 0, 0.02, 0.0, Math.PI / 2, 0, 0.1, 1, 1, 0.9), 4, 1)]; },
     // One hanging section of a cape: top and bottom widths, length, curved to wrap round the shoulders. The hem
     // section keeps its 0..1 texture so the ragged edge of a tattered texture lands at the bottom.
     capeSegment(o) {
@@ -213,7 +309,7 @@ const KIT = (() => {
     // A round shield: dish, rim and boss, axis along +y before `rot` turns it; `at` places it in the bone's frame.
     roundShield(o) {
       const k = (o.r ?? 0.21) / 0.21, dish = lathe([[0, -0.02], [0.2, -0.02], [0.213, 0.0], [0.2, 0.02], [0.065, 0.04], [0.05, 0.075], [0, 0.082]].map(([r, y]) => [r * k, y]), 10);
-      const rim = xf(new THREE.TorusGeometry(0.208 * k, 0.013, 3, 14), 0, 0.0, 0, Math.PI / 2, 0, 0);
+      const rim = xf(KIT_GEO.Torus(0.208 * k, 0.013, 3, 14), 0, 0.0, 0, Math.PI / 2, 0, 0);
       const boss = lathe([[0, 0.03], [0.062, 0.035], [0.05, 0.075], [0, 0.088]], 7);
       const place = g => xf(g, ...o.at, ...o.rot);
       roughen(dish, 0.01, 12);
@@ -234,7 +330,7 @@ const KIT = (() => {
       const s = o.size ?? 1, top = o.flat ? [[0.15, 0.13], [0.15, 0.18], [0, 0.185]] : [[0.14, 0.2], [0.1, 0.245], [0, 0.26]];
       const g = lathe([[0.12, -0.03], [0.15, 0.05], ...top].map(([r, y]) => [r * s, y * s]), 9);
       roughen(g, 0.012, 31);
-      const out = [uvScale(g, 3, 1), uvScale(xf(new THREE.TorusGeometry(0.152 * s, 0.012, 3, 7, Math.PI), 0, 0.105 * s, 0.0, Math.PI / 2, 0, 0), 4, 1)];
+      const out = [uvScale(g, 3, 1), uvScale(xf(KIT_GEO.Torus(0.152 * s, 0.012, 3, 7, Math.PI), 0, 0.105 * s, 0.0, Math.PI / 2, 0, 0), 4, 1)];
       if (o.crest) {
         const fin = plate([[-0.14, 0], [0.14, 0], [0.1, o.crest * 0.55], [-0.02, o.crest], [-0.12, o.crest * 0.6]], 0.02, 0.006);
         fin.rotateY(-Math.PI / 2); xf(fin, 0.01, 0.235 * s, 0.0); out.push(fin);
@@ -250,7 +346,7 @@ const KIT = (() => {
       const skull = lathe([[0.13, -0.04], [0.14, 0.02], [0.145, 0.12]].map(([r, y]) => [r * s, y * s]), 8, 1.0);
       const visor = deform(sphere(0.1 * s, 8, 5), v => { if (v.z > 0) v.z *= 1 + 0.35 * Math.max(0, 1 - Math.abs(v.x) / (0.07 * s)); });
       xf(visor, 0, 0.08 * s, 0.03 * s, 0, 0, 0, 1.35, 0.95, 1.12);
-      const brow = xf(new THREE.TorusGeometry(0.15 * s, 0.014 * s, 3, 9, Math.PI), 0, 0.165 * s, 0, Math.PI / 2, 0, 0, 1, 1.08, 1);
+      const brow = xf(KIT_GEO.Torus(0.15 * s, 0.014 * s, 3, 9, Math.PI), 0, 0.165 * s, 0, Math.PI / 2, 0, 0, 1, 1.08, 1);
       const comb = xf(plate([[-0.13, 0], [0.13, 0], [0.1, 0.03], [-0.12, 0.03]], 0.014, 0.004), 0, 0.28 * s, 0.0, 0, Math.PI / 2, 0, s);
       const gorget = lathe([[0.25, -0.2], [0.23, -0.15], [0.18, -0.09], [0.145, -0.04]].map(([r, y]) => [r * s, y * s]), 8, 0.9);
       for (const g of [dome, skull, visor, gorget]) roughen(g, 0.006, 33);
@@ -267,10 +363,10 @@ const KIT = (() => {
     // A great rounded pauldron in three lames: a big dome and two curved plates below it (side: 1 left, -1 right).
     roundPauldron(o) {
       const s = o.size ?? 1, sd = o.side ?? 1, out = [];
-      const dome = new THREE.SphereGeometry(0.12 * s, 8, 4, 0, TAU, 0, Math.PI * 0.58);   // dips past the equator: it hugs the shoulder
+      const dome = KIT_GEO.Sphere(0.12 * s, 8, 4, 0, TAU, 0, Math.PI * 0.58);   // dips past the equator: it hugs the shoulder
       xf(dome, 0.015 * sd * s, -0.005 * s, 0, 0, 0, -0.42 * sd, 1.05, 1.0, 1.1); out.push(uvScale(roughen(dome, 0.008, 5), 3, 1.5));
       for (let i = 0; i < 2; i++) {   // two lames down the outside of the upper arm
-        const r = 0.098 * s * (1 - i * 0.08), g = new THREE.CylinderGeometry(r, r * 1.06, 0.055 * s, 7, 1, true, sd > 0 ? 0.25 : Math.PI + 0.25, 2.6);
+        const r = 0.098 * s * (1 - i * 0.08), g = KIT_GEO.Cylinder(r, r * 1.06, 0.055 * s, 7, 1, true, sd > 0 ? 0.25 : Math.PI + 0.25, 2.6);
         out.push(uvScale(xf(g, 0.03 * sd * s, (-0.055 - i * 0.045) * s, 0, 0, 0, -0.18 * sd, 1, 1, 1.05), 2, 0.5));
       }
       return out;
@@ -290,32 +386,32 @@ const KIT = (() => {
       const tw = M.proportions.torsoW / 0.2, out = [];
       for (const [mid, span] of [[1.0, 1.35], [-1.0, 1.35], [Math.PI, 1.9]])
         for (let i = 0; i < 3; i++) {
-          const r = (0.2 + i * 0.022) * tw, g = new THREE.CylinderGeometry(r, r + 0.02 * tw, 0.11, 6, 1, true, mid - span / 2, span);
+          const r = (0.2 + i * 0.022) * tw, g = KIT_GEO.Cylinder(r, r + 0.02 * tw, 0.11, 6, 1, true, mid - span / 2, span);
           out.push(uvScale(xf(g, 0, -0.02 - i * 0.095, 0, 0, 0, 0, 1, 1, 0.82), 2, 0.5));
         }
-      out.push(uvScale(xf(new THREE.TorusGeometry(0.2 * tw, 0.024, 3, 12), 0, 0.05, 0, Math.PI / 2, 0, 0, 1, 1, 0.8), 6, 1));   // the fauld at the waist
+      out.push(uvScale(xf(KIT_GEO.Torus(0.2 * tw, 0.024, 3, 12), 0, 0.05, 0, Math.PI / 2, 0, 0, 1, 1, 0.8), 6, 1));   // the fauld at the waist
       return out;
     },
     // A cloth peak on top of a hood (executioner, lancer): leans back.
-    hoodPeak(o) { return [uvScale(xf(new THREE.ConeGeometry(0.14 * (o.size ?? 1), 0.34 * (o.height ?? 1), 7, 1, true), 0, 0.3, -0.04, -0.35, 0, 0), 2, 1)]; },
+    hoodPeak(o) { return [uvScale(xf(KIT_GEO.Cone(0.14 * (o.size ?? 1), 0.34 * (o.height ?? 1), 7, 1, true), 0, 0.3, -0.04, -0.35, 0, 0), 2, 1)]; },
     // A quiver on the back with arrows poking out.
     quiver(o) {
       const out = [{ slot: 'leather', geo: uvScale(xf(tube(0.055, 0.045, 0.5, 6), -0.1, 0.28, -0.22, 0.2, 0, 0.35), 1, 1) }];
-      for (let i = 0; i < 3; i++) out.push({ slot: 'wood', geo: xf(new THREE.ConeGeometry(0.016, 0.07, 4), -0.1 + i * 0.03 - 0.03 + 0.1 * 0.35 * 0, 0.58 + i * 0.02, -0.28 - 0.0, 0.2, 0, 0.35 + i * 0.12) });
+      for (let i = 0; i < 3; i++) out.push({ slot: 'wood', geo: xf(KIT_GEO.Cone(0.016, 0.07, 4), -0.1 + i * 0.03 - 0.03 + 0.1 * 0.35 * 0, 0.58 + i * 0.02, -0.28 - 0.0, 0.2, 0, 0.35 + i * 0.12) });
       return out;
     },
     // A feathered cap: a shallow dome tilted over one eye, a long plume trailing behind.
     featherCap(o) {
-      const cap = xf(new THREE.SphereGeometry(0.135, 8, 4, 0, TAU, 0, 1.25), 0, 0.13, 0, 0.15, 0, -0.15);
-      const plume = xf(new THREE.ConeGeometry(0.02, 0.4, 4), -0.13, 0.27, -0.1, 0.7, 0, 0.9);
+      const cap = xf(KIT_GEO.Sphere(0.135, 8, 4, 0, TAU, 0, 1.25), 0, 0.13, 0, 0.15, 0, -0.15);
+      const plume = xf(KIT_GEO.Cone(0.02, 0.4, 4), -0.13, 0.27, -0.1, 0.7, 0, 0.9);
       return [{ slot: o.slot, geo: uvScale(cap, 2, 1) }, { slot: o.plumeSlot, geo: plume }];
     },
     // A long beast's tail from the base of the spine, curving back and down to the floor, tapering in two lengths (Margit).
     tail(o) {
       const s = o.size ?? 1, V = (x, y, z) => new V3(x * s, y * s, z * s);
-      const a = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0, 0, 0), V(0, -0.12, -0.22), V(0.02, -0.36, -0.42), V(0.05, -0.62, -0.55)]), 8, 0.075 * s, 6, false);
-      const b = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0.05, -0.6, -0.54), V(0.09, -0.86, -0.6), V(0.16, -1.02, -0.48), V(0.24, -1.08, -0.3)]), 8, 0.045 * s, 5, false);
-      const tip = xf(new THREE.ConeGeometry(0.045 * s, 0.2 * s, 5), 0.29 * s, -1.08 * s, -0.2 * s, Math.PI / 2, 0, 0);
+      const a = KIT_GEO.Tube(new THREE.CatmullRomCurve3([V(0, 0, 0), V(0, -0.12, -0.22), V(0.02, -0.36, -0.42), V(0.05, -0.62, -0.55)]), 8, 0.075 * s, 6, false);
+      const b = KIT_GEO.Tube(new THREE.CatmullRomCurve3([V(0.05, -0.6, -0.54), V(0.09, -0.86, -0.6), V(0.16, -1.02, -0.48), V(0.24, -1.08, -0.3)]), 8, 0.045 * s, 5, false);
+      const tip = xf(KIT_GEO.Cone(0.045 * s, 0.2 * s, 5), 0.29 * s, -1.08 * s, -0.2 * s, Math.PI / 2, 0, 0);
       return [uvScale(a, 3, 1), uvScale(b, 3, 1), tip];
     },
     // Grafted limbs (Godrick, v5.4): extra arms sprouting from the back and flanks, in the chest's frame. Each entry of
@@ -358,9 +454,9 @@ const KIT = (() => {
       const snout = roughen(xf(new THREE.BoxGeometry(0.15 * s, 0.26 * s, 0.11 * s), 0, Y - 0.3 * s, 0.05 * s, 0.25, 0, 0), 0.015 * s, 9);
       const jaw = xf(new THREE.BoxGeometry(0.12 * s, 0.24 * s, 0.05 * s), 0, Y - 0.27 * s, -0.08 * s, -0.45, 0, 0);
       out.push(skull, snout, jaw);
-      for (let i = -2; i <= 2; i++) out.push(xf(new THREE.ConeGeometry(0.012 * s, 0.05 * s, 3), i * 0.028 * s, Y - 0.38 * s, 0.0, 0, 0, Math.PI));
+      for (let i = -2; i <= 2; i++) out.push(xf(KIT_GEO.Cone(0.012 * s, 0.05 * s, 3), i * 0.028 * s, Y - 0.38 * s, 0.0, 0, 0, Math.PI));
       for (const sd of [-1, 1]) {
-        const horn = new THREE.ConeGeometry(0.035 * s, 0.32 * s, 5, 3);
+        const horn = KIT_GEO.Cone(0.035 * s, 0.32 * s, 5, 3);
         deform(horn, v => { const t = (v.y + 0.16 * s) / (0.32 * s); v.z += t * t * 0.12 * s; });
         out.push(xf(horn, sd * 0.08 * s, Y + 0.08 * s, 0.07 * s, -0.5, 0, sd * 0.35));
       }
@@ -373,28 +469,28 @@ const KIT = (() => {
       const s = o.size ?? 1, n = o.count ?? 9, out = [];
       for (let i = 0; i < n; i++) {
         const a = -1.5 + 3.0 * i / (n - 1), len = (0.16 + 0.1 * hash3(i, 2, 3, 41)) * s;
-        const g = new THREE.ConeGeometry(0.03 * s, len, 5, 3);
+        const g = KIT_GEO.Cone(0.03 * s, len, 5, 3);
         deform(g, v => { const t = (v.y + len / 2) / len; v.z += t * t * 0.08 * s; v.x += Math.sin(t * 5 + i) * 0.015 * s; });
         xf(g, Math.sin(a) * 0.13 * s, 0.17 * s + len * 0.4, Math.cos(a) * 0.1 * s, -0.35, 0, -Math.sin(a) * 0.55);
         out.push(roughen(g, 0.006, 40 + i));
       }
-      out.push(roughen(xf(new THREE.TorusGeometry(0.135 * s, 0.022 * s, 4, 12, Math.PI * 1.3), 0, 0.17 * s, 0.01, Math.PI / 2, 0, Math.PI * 0.85), 0.008, 49));
+      out.push(roughen(xf(KIT_GEO.Torus(0.135 * s, 0.022 * s, 4, 12, Math.PI * 1.3), 0, 0.17 * s, 0.01, Math.PI / 2, 0, Math.PI * 0.85), 0.008, 49));
       return out;
     },
     // A ram's spiral horn of growth on the back of a shoulder (Margit): a tube coiling out flat, tapering.
     ramHorn(o) {
       const s = o.size ?? 1, sd = o.side ?? 1, pts = [];
       for (let i = 0; i <= 16; i++) { const t = i / 16, a = t * Math.PI * 3.2, r = (0.17 - 0.12 * t) * s; pts.push(new V3(sd * (0.02 + t * 0.05) * s, Math.cos(a) * r, -Math.sin(a) * r - 0.05 * s)); }
-      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.045 * s, 6, false);
+      const g = KIT_GEO.Tube(new THREE.CatmullRomCurve3(pts), 32, 0.045 * s, 6, false);
       const ribs = [];
-      for (let i = 1; i < 12; i++) { const p = pts[i]; ribs.push(xf(new THREE.TorusGeometry((0.05 - i * 0.002) * s, 0.008 * s, 3, 7), p.x, p.y, p.z, 0, Math.PI / 2, 0)); }
+      for (let i = 1; i < 12; i++) { const p = pts[i]; ribs.push(xf(KIT_GEO.Torus((0.05 - i * 0.002) * s, 0.008 * s, 3, 7), p.x, p.y, p.z, 0, Math.PI / 2, 0)); }
       return [uvScale(g, 4, 1), ...ribs];
     },
     // A thick furred tail curling round from the spine up toward the shoulder (Margit), with tufts along it.
     furTail(o) {
       const s = o.size ?? 1, sd = o.side ?? 1, V = (x, y, z) => new V3(x * s * sd, y * s, z * s);
       const curve = new THREE.CatmullRomCurve3([V(0, 0, -0.05), V(0.1, -0.2, -0.32), V(0.38, -0.32, -0.5), V(0.62, -0.1, -0.5), V(0.7, 0.25, -0.38), V(0.62, 0.55, -0.25), V(0.48, 0.72, -0.18)]);
-      const g = new THREE.TubeGeometry(curve, 24, 0.13 * s, 8, false);
+      const g = new THREE.TubeGeometry(curve, 24, 0.13 * s, 8, false);   // fixed counts: the taper below walks its rings
       const pos = g.attributes.position, c = new V3();   // taper toward the tip
       for (let i = 0; i < pos.count; i++) {
         const t = Math.floor(i / 9) / 24, p = curve.getPointAt(clamp01(t)), k = 1 - 0.65 * t;
@@ -404,7 +500,7 @@ const KIT = (() => {
       const tufts = [];
       for (let i = 0; i < 14; i++) {
         const t = 0.05 + 0.9 * i / 13, p = curve.getPointAt(t), tan = curve.getTangentAt(t), r = 0.13 * s * (1 - 0.65 * t);
-        const cone = new THREE.ConeGeometry(0.05 * s, 0.16 * s, 4); cone.rotateZ(Math.PI / 2 * (i % 2 ? 1 : -1)); cone.translate((i % 2 ? -1 : 1) * r, 0, 0);
+        const cone = KIT_GEO.Cone(0.05 * s, 0.16 * s, 4); cone.rotateZ(Math.PI / 2 * (i % 2 ? 1 : -1)); cone.translate((i % 2 ? -1 : 1) * r, 0, 0);
         cone.lookAt(tan); cone.translate(p.x, p.y, p.z); tufts.push(cone);
       }
       return [uvScale(roughen(g, 0.02, 53), 2, 4), ...tufts];
@@ -434,15 +530,15 @@ const KIT = (() => {
     },
     // A knotted rope sash across the body with two hanging ends (Margit's cord).
     ropeSash(o) {
-      const s = o.size ?? 1, band = xf(new THREE.TorusGeometry(0.24 * s, 0.018, 4, 14), 0, o.y ?? 0.05, 0, Math.PI / 2 + 0.25, 0, 0.2, 1, 1, 0.8);
+      const s = o.size ?? 1, band = xf(KIT_GEO.Torus(0.24 * s, 0.018, 4, 14), 0, o.y ?? 0.05, 0, Math.PI / 2 + 0.25, 0, 0.2, 1, 1, 0.8);
       const ends = [-1, 1].map(i => xf(tube(0.016, 0.012, 0.42, 4), 0.06 * i, (o.y ?? 0.05) - 0.24, 0.2, 0.15, 0, i * 0.1));
       return [band, ...ends, xf(sphere(0.04, 5, 4), 0, (o.y ?? 0.05) - 0.02, 0.2)];
     },
     // A low gold circlet round the brow (head frame), a ring of short points on top (Godrick).
     circlet(o) {
-      const r = o.r ?? 0.14, y = o.y ?? 0.2, out = [xf(new THREE.TorusGeometry(r, 0.016, 4, 14), 0, y, 0.01, Math.PI / 2 + 0.12, 0, 0, 1, 1, 1)];
-      out.push(xf(new THREE.CylinderGeometry(r * 1.02, r * 1.05, 0.05, 14, 1, true), 0, y + 0.02, 0.01, 0.12, 0, 0));
-      for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU; out.push(xf(new THREE.ConeGeometry(0.016, 0.07, 4), Math.sin(a) * r, y + 0.07, Math.cos(a) * r + 0.01, 0.12, 0, 0)); }
+      const r = o.r ?? 0.14, y = o.y ?? 0.2, out = [xf(KIT_GEO.Torus(r, 0.016, 4, 14), 0, y, 0.01, Math.PI / 2 + 0.12, 0, 0, 1, 1, 1)];
+      out.push(xf(KIT_GEO.Cylinder(r * 1.02, r * 1.05, 0.05, 14, 1, true), 0, y + 0.02, 0.01, 0.12, 0, 0));
+      for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU; out.push(xf(KIT_GEO.Cone(0.016, 0.07, 4), Math.sin(a) * r, y + 0.07, Math.cos(a) * r + 0.01, 0.12, 0, 0)); }
       return out.map(g => uvScale(g, 3, 1));
     },
     // A wild mane of white hair: `count` tapering locks bursting out round the back, sides and top of the head.
@@ -461,13 +557,13 @@ const KIT = (() => {
     // A round gold medallion pinned on the chest (chest frame).
     medallion(o) {
       const [x, y, z] = o.at ?? [0.12, 0.45, 0.2], r = o.r ?? 0.07;
-      return [xf(new THREE.CylinderGeometry(r, r, 0.02, 12), x, y, z, Math.PI / 2, 0, 0), xf(new THREE.TorusGeometry(r * 0.75, 0.01, 3, 12), x, y, z + 0.012),
+      return [xf(KIT_GEO.Cylinder(r, r, 0.02, 12), x, y, z, Math.PI / 2, 0, 0), xf(KIT_GEO.Torus(r * 0.75, 0.01, 3, 12), x, y, z + 0.012),
               ...[0, 1, 2, 3].map(i => xf(new THREE.BoxGeometry(0.012, r * 1.5, 0.012), x, y, z + 0.014, 0, 0, i * Math.PI / 4))];
     },
     // Radagon's Elden Ring sigil (v5.7): a glowing rune burned into the chest (chest frame), the Ring's crossing arcs
     // over a vertical stroke and a crossbar, a hair proud of the skin; `glow` slot, `size` scales it.
     eldenRune(o) {
-      const s = o.size ?? 1, [x, y, z] = o.at ?? [0.04, 0.4, 0.22], arc = (r, a0, a1, cy) => xf(new THREE.TorusGeometry(r * s, 0.008 * s, 3, 16, a1 - a0), x, y + cy * s, z, 0, 0, a0);
+      const s = o.size ?? 1, [x, y, z] = o.at ?? [0.04, 0.4, 0.22], arc = (r, a0, a1, cy) => xf(KIT_GEO.Torus(r * s, 0.008 * s, 3, 16, a1 - a0), x, y + cy * s, z, 0, 0, a0);
       return [arc(0.1, 0.3, Math.PI * 2 - 0.3, 0.02), arc(0.065, Math.PI * 0.1, Math.PI * 1.1, 0.07), arc(0.065, Math.PI * 1.1, Math.PI * 2.1, -0.04),
               xf(new THREE.BoxGeometry(0.012 * s, 0.34 * s, 0.01), x, y - 0.03 * s, z), xf(new THREE.BoxGeometry(0.16 * s, 0.01 * s, 0.01), x, y + 0.1 * s, z),
               ...[-1, 1].map(k => xf(new THREE.BoxGeometry(0.008 * s, 0.09 * s, 0.01), x + k * 0.03 * s, y - 0.17 * s, z, 0, 0, k * 0.5))];
@@ -503,7 +599,7 @@ const KIT = (() => {
           const len = side === 1 || o.whole ? Math.PI * 0.78 : (i < broken ? Math.PI * (0.35 + 0.1 * (i % 2)) : 0);
           if (side === 1 && i >= full) continue;
           if (len <= 0) continue;
-          const g = new THREE.TorusGeometry(rad, 0.017, 3, 7, len);
+          const g = KIT_GEO.Torus(rad, 0.017, 3, 7, len);
           // The torus arc starts at +x, curving toward +y; lay it flat and swing it so it starts at the spine (back) and
           // curves forward round a chest centred `rad` in front of it. The other side is the same arc turned over
           // (rotateZ(PI) mirrors x; the tube is round, so it stays the right way out). Ribs droop toward the front.
@@ -522,13 +618,13 @@ const KIT = (() => {
     skullFace(o, M) {
       const r = M.proportions.headR, out = [];
       for (const s of [-1, 1]) out.push({ slot: o.void, geo: xf(sphere(r * 0.24, 6, 4), s * r * 0.42, r * 1.05, r * 0.76, 0, 0, 0, 1, 1.15, 0.8) });
-      out.push({ slot: o.void, geo: xf(new THREE.ConeGeometry(r * 0.1, r * 0.3, 3), 0, r * 0.7, r * 0.9, Math.PI, 0, 0) });
+      out.push({ slot: o.void, geo: xf(KIT_GEO.Cone(r * 0.1, r * 0.3, 3), 0, r * 0.7, r * 0.9, Math.PI, 0, 0) });
       out.push({ slot: o.void, geo: xf(xf(plate([[-0.01, 0], [0.01, 0], [0.012, r * 0.9], [-0.012, r * 0.9]], 0.01, 0.002), 0, 0, 0), r * 0.15, r * 1.05, r * 0.98, 0, 0, -0.5) });
       const teeth = [];
-      for (let i = -3; i <= 3; i++) teeth.push(xf(new THREE.ConeGeometry(r * 0.04, r * 0.16, 3), i * r * 0.1, r * 0.46, r * 0.86 - Math.abs(i) * r * 0.03, Math.PI, 0, 0));
+      for (let i = -3; i <= 3; i++) teeth.push(xf(KIT_GEO.Cone(r * 0.04, r * 0.16, 3), i * r * 0.1, r * 0.46, r * 0.86 - Math.abs(i) * r * 0.03, Math.PI, 0, 0));
       const jaw = deform(sphere(r * 0.8, 8, 4), v => { if (v.y > 0) v.y *= 0.05; v.z += 0.2 * r; });
       xf(jaw, 0, r * 0.35, 0, 0.35, 0, 0.1, 0.9, 0.55, 0.9); roughen(jaw, 0.012, 41);
-      for (let i = -3; i <= 3; i++) teeth.push(xf(new THREE.ConeGeometry(r * 0.035, r * 0.12, 3), i * r * 0.1, r * 0.02, r * 0.95 - Math.abs(i) * r * 0.03, 0.35, 0, 0));
+      for (let i = -3; i <= 3; i++) teeth.push(xf(KIT_GEO.Cone(r * 0.035, r * 0.12, 3), i * r * 0.1, r * 0.02, r * 0.95 - Math.abs(i) * r * 0.03, 0.35, 0, 0));
       return [...out, ...teeth.map(geo => ({ slot: o.slot, geo })), { slot: o.slot, geo: jaw }];
     },
     // Knuckles and joints: lumps of bone at the given points of the bone's frame.
@@ -536,14 +632,14 @@ const KIT = (() => {
     // Fingers: bony cones fanning out of a hand (in the forearm's frame).
     fingers(o) {
       const out = [];
-      for (let i = -1; i <= 1; i++) out.push(xf(new THREE.ConeGeometry(o.r ?? 0.012, o.len ?? 0.14, 4), i * (o.spread ?? 0.03), -(o.at ?? 0.34) - (o.len ?? 0.14) / 2, 0.012, Math.PI + 0.25, 0, i * 0.18));
+      for (let i = -1; i <= 1; i++) out.push(xf(KIT_GEO.Cone(o.r ?? 0.012, o.len ?? 0.14, 4), i * (o.spread ?? 0.03), -(o.at ?? 0.34) - (o.len ?? 0.14) / 2, 0.012, Math.PI + 0.25, 0, i * 0.18));
       return out;
     },
     // Curved horns on a helmet.
     horns(o) {
       const out = [];
       for (const s of [-1, 1]) {
-        const g = new THREE.ConeGeometry(0.06 * (o.size ?? 1), 0.38 * (o.size ?? 1), 5, 3);
+        const g = KIT_GEO.Cone(0.06 * (o.size ?? 1), 0.38 * (o.size ?? 1), 5, 3);
         deform(g, v => { const t = (v.y + 0.19 * (o.size ?? 1)) / (0.38 * (o.size ?? 1)); v.x += t * t * 0.28 * s * (o.size ?? 1); v.z += t * 0.04; });
         xf(g, s * 0.16 * (o.size ?? 1), 0.26, 0.0, 0, 0, -s * 0.4);
         out.push(g);
@@ -559,12 +655,12 @@ const KIT = (() => {
       roughen(body, 0.005, 61);
       out.push({ slot: o.slot, geo: uvScale(body, 3, 1) });
       const ribs = [-0.05, 0, 0.05].map(x => xf(new THREE.BoxGeometry(0.014 * s, 0.24 * s, 0.02 * s), x * s, 0.13 * s, 0.17 * s));
-      const brow = xf(new THREE.TorusGeometry(0.152 * s, 0.012 * s, 3, 9, Math.PI * 1.1), 0, 0.2 * s, 0.006 * s, Math.PI / 2, 0, -0.1, 1, 1.08, 1);
+      const brow = xf(KIT_GEO.Torus(0.152 * s, 0.012 * s, 3, 9, Math.PI * 1.1), 0, 0.2 * s, 0.006 * s, Math.PI / 2, 0, -0.1, 1, 1.08, 1);
       const cross = xf(new THREE.BoxGeometry(0.3 * s, 0.035 * s, 0.07 * s), 0, 0.33 * s, 0.02 * s);
-      const crest = xf(new THREE.ConeGeometry(0.025 * s, 0.32 * s, 4), 0, 0.46 * s, 0.03 * s);
+      const crest = xf(KIT_GEO.Cone(0.025 * s, 0.32 * s, 4), 0, 0.46 * s, 0.03 * s);
       for (const g of [...ribs, brow, cross, crest]) out.push({ slot: o.metal ?? o.slot, geo: g });
       for (const sd of [-1, 1]) {
-        const h = new THREE.CylinderGeometry(0.012 * s, 0.05 * s, 0.5 * s, 6, 8).translate(0, 0.25 * s, 0);
+        const h = KIT_GEO.Cylinder(0.012 * s, 0.05 * s, 0.5 * s, 6, 8).translate(0, 0.25 * s, 0);
         deform(h, v => { const t = v.y / (0.5 * s); v.x += sd * Math.sin(t * 2.2) * 0.22 * s; v.z -= t * t * 0.06 * s; v.y -= Math.max(0, t - 0.6) * 0.08 * s; });
         xf(h, sd * 0.13 * s, 0.24 * s, -0.01 * s, 0, 0, -sd * 0.25);
         roughen(h, 0.004, 17);
@@ -579,7 +675,7 @@ const KIT = (() => {
       for (let i = 0; i < seg; i++) { const a = i / seg * Math.PI * 2; pts.push([Math.cos(a) * w / 2, Math.sin(a) * h / 2]); }
       const dish = g => deform(g, v => { v.z -= ((v.x / (w / 2)) ** 2 + (v.y / (h / 2)) ** 2) * 0.07; });
       const board = dish(plate(pts, 0.04, 0.012)); roughen(board, 0.006, 23);
-      const rim = dish(xf(new THREE.TorusGeometry(0.5, 0.022, 3, seg * 2), 0, 0, 0.03, 0, 0, 0, w, h, 1));
+      const rim = dish(xf(KIT_GEO.Torus(0.5, 0.022, 3, seg * 2), 0, 0, 0.03, 0, 0, 0, w, h, 1));
       const boss = xf(lathe([[0, 0], [0.07, 0], [0.055, 0.05], [0, 0.065]], 8), 0, 0.05, 0.05, Math.PI / 2, 0, 0);
       const ribs = [];
       for (let i = 0; i < 6; i++) {
@@ -593,7 +689,7 @@ const KIT = (() => {
     spikes(o) {
       return (o.at ?? [[0.06, 0.1, 0.0], [0.1, 0.06, 0.07], [0.1, 0.06, -0.07]]).map(([x, y, z]) => {
         const sd = o.side ?? 1;
-        return xf(new THREE.ConeGeometry(0.03, 0.14 * (o.size ?? 1), 4), x * sd, y, z, 0, 0, -0.9 * sd);
+        return xf(KIT_GEO.Cone(0.03, 0.14 * (o.size ?? 1), 4), x * sd, y, z, 0, 0, -0.9 * sd);
       });
     },
     // A chain of links sagging between two points of the bone's frame.
@@ -601,7 +697,7 @@ const KIT = (() => {
       const out = [], n = o.links ?? 10, a = new V3(...o.from), b = new V3(...o.to);
       for (let i = 0; i < n; i++) {
         const t = i / (n - 1), p = a.clone().lerp(b, t); p.y -= Math.sin(t * Math.PI) * (o.sag ?? 0.06);
-        const g = new THREE.TorusGeometry(0.022, 0.006, 3, 5); g.scale(1, 1.4, 1);
+        const g = KIT_GEO.Torus(0.022, 0.006, 3, 5); g.scale(1, 1.4, 1);
         out.push(xf(g, p.x, p.y, p.z, 0, i % 2 ? Math.PI / 2 : 0, 0));
       }
       return out;
@@ -611,13 +707,13 @@ const KIT = (() => {
       const s = o.size ?? 1;
       const g = lathe([[0.2, -0.04], [0.185, 0.02], [0.15, 0.12], [0.115, 0.21], [0.07, 0.27], [0.0, 0.295]].map(([r, y]) => [r * s, y * s]), 10);
       roughen(g, 0.01, 61);
-      return [uvScale(g, 3, 1), xf(new THREE.TorusGeometry(0.04 * s, 0.012, 3, 6), 0, 0.33 * s, 0, 0, Math.PI / 2, 0), uvScale(xf(new THREE.TorusGeometry(0.2 * s, 0.014, 3, 10), 0, -0.035 * s, 0, Math.PI / 2, 0, 0), 4, 1)];
+      return [uvScale(g, 3, 1), xf(KIT_GEO.Torus(0.04 * s, 0.012, 3, 6), 0, 0.33 * s, 0, 0, Math.PI / 2, 0), uvScale(xf(KIT_GEO.Torus(0.2 * s, 0.014, 3, 10), 0, -0.035 * s, 0, Math.PI / 2, 0, 0), 4, 1)];
     },
     // A skirt flaring out like a bell.
     bellSkirt() {
       const g = lathe([[0.31, -0.5], [0.28, -0.4], [0.23, -0.22], [0.2, -0.06], [0.2, 0.05]], 10, 0.85);
       roughen(g, 0.012, 71);
-      return [uvScale(g, 3, 1), uvScale(xf(new THREE.TorusGeometry(0.31, 0.02, 3, 10), 0, -0.5, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), 4, 1)];
+      return [uvScale(g, 3, 1), uvScale(xf(KIT_GEO.Torus(0.31, 0.02, 3, 10), 0, -0.5, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), 4, 1)];
     },
     // ---- the Hollow Soldier (v5.5) ----
     // A padded gambeson over the torso (chest frame), a little bulkier than the body, high collar.
@@ -659,13 +755,13 @@ const KIT = (() => {
       const dome = lathe([[0.152, 0.14], [0.145, 0.21], [0.1, 0.285], [0.0, 0.305]].map(([r, y]) => [r * s, y * s]), 8);
       const brim = lathe([[0.15 * s, 0.142 * s], [0.2 * s, 0.15 * s]], 8);
       deform(brim, v => { const f = (v.z * v.z) / (v.x * v.x + v.z * v.z + 1e-6); v.y += 0.09 * f * Math.hypot(v.x, v.z) / 0.2; if (v.z > 0.1) v.z *= 1.15; });
-      const comb = xf(new THREE.SphereGeometry(0.13 * s, 6, 2, 0, TAU, 0, Math.PI / 2), 0, 0.245 * s, 0, 0, 0, 0, 0.05, 0.55, 1);
+      const comb = xf(KIT_GEO.Sphere(0.13 * s, 6, 2, 0, TAU, 0, Math.PI / 2), 0, 0.245 * s, 0, 0, 0, 0, 0.05, 0.55, 1);
       roughen(dome, 0.008, 81); roughen(brim, 0.008, 82);
       return [uvScale(xf(dome, 0, -0.01, -0.005), 3, 1), uvScale(xf(brim, 0, -0.01, -0.005), 3, 1), comb];
     },
     // A round iron cop over the knee (knee frame).
     kneeCop(o) {
-      const r = o.r ?? 0.068, cup = new THREE.SphereGeometry(r, 6, 3, 0, TAU, 0, Math.PI / 2);
+      const r = o.r ?? 0.068, cup = KIT_GEO.Sphere(r, 6, 3, 0, TAU, 0, Math.PI / 2);
       xf(cup, 0, -0.01, 0.045, Math.PI / 2, 0, 0, 1, 0.7, 1.15); roughen(cup, 0.006, 83);
       return [uvScale(cup, 2, 1)];
     },
@@ -686,7 +782,7 @@ const KIT = (() => {
     // A strap round the torso at height y (chest frame), its buckle at the front in `buckle`'s slot.
     strap(o, M) {
       const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW, r = (o.r ?? 0.22) * tw;
-      const band = uvScale(xf(new THREE.TorusGeometry(r, 0.016, 3, 12), 0, o.y, 0, Math.PI / 2, 0, o.tilt ?? 0, 1, 1, oz), 6, 1);
+      const band = uvScale(xf(KIT_GEO.Torus(r, 0.016, 3, 12), 0, o.y, 0, Math.PI / 2, 0, o.tilt ?? 0, 1, 1, oz), 6, 1);
       const buckle = xf(plate([[-0.025, -0.022], [0.025, -0.022], [0.025, 0.022], [-0.025, 0.022]], 0.008, 0.004), o.bx ?? 0.05, o.y, r * oz + 0.004);
       return [band, { slot: o.buckle, geo: buckle }];
     },
@@ -707,9 +803,9 @@ const KIT = (() => {
       const body = lathe([[0.125, -0.05], [0.145, 0.03], [0.148, 0.16], [0.144, 0.27], [0.135, 0.285], [0, 0.29]].map(([r, y]) => [r * s, y * s]), 8, 1.05);
       deform(body, v => { if (v.z > 0.04 * s) v.z += (0.14 * s - Math.min(0.14 * s, Math.abs(v.x))) * 0.22; });   // slight prow down the front
       roughen(body, 0.006, 35);
-      const crownRim = xf(new THREE.TorusGeometry(0.143 * s, 0.011 * s, 3, 8), 0, 0.275 * s, 0.005 * s, Math.PI / 2, 0, 0, 1, 1.06, 1);
-      const brow = xf(new THREE.TorusGeometry(0.152 * s, 0.013 * s, 3, 7, Math.PI * 1.05), 0, 0.172 * s, 0.006 * s, Math.PI / 2, 0, -0.08, 1, 1.08, 1);
-      const cheekBand = xf(new THREE.TorusGeometry(0.15 * s, 0.01 * s, 3, 7, Math.PI * 1.05), 0, 0.132 * s, 0.006 * s, Math.PI / 2, 0, -0.08, 1, 1.08, 1);
+      const crownRim = xf(KIT_GEO.Torus(0.143 * s, 0.011 * s, 3, 8), 0, 0.275 * s, 0.005 * s, Math.PI / 2, 0, 0, 1, 1.06, 1);
+      const brow = xf(KIT_GEO.Torus(0.152 * s, 0.013 * s, 3, 7, Math.PI * 1.05), 0, 0.172 * s, 0.006 * s, Math.PI / 2, 0, -0.08, 1, 1.08, 1);
+      const cheekBand = xf(KIT_GEO.Torus(0.15 * s, 0.01 * s, 3, 7, Math.PI * 1.05), 0, 0.132 * s, 0.006 * s, Math.PI / 2, 0, -0.08, 1, 1.08, 1);
       const nasal = xf(new THREE.BoxGeometry(0.022 * s, 0.32 * s, 0.026 * s), 0, 0.125 * s, 0.165 * s);
       const bars = [-2.5, -1.2, 1.2, 2.5].map(i => {
         const a = i * 0.22;
@@ -727,7 +823,7 @@ const KIT = (() => {
         [-0.24, 0.62, 0.04, 0.19, 0.22, 0.15], [-0.27, 0.6, -0.03, 0.22, 0.32, 0], [-0.23, 0.58, -0.1, 0.17, 0.25, -0.2],
         [0.2, 0.6, 0.05, 0.15, -0.2, -0.15], [0.22, 0.59, -0.04, 0.16, -0.25, 0.1],
       ]) {
-        const fin = xf(new THREE.ConeGeometry(0.032, h, 4), x * tw, y + h * 0.45, z, 0, ry, rz);
+        const fin = xf(KIT_GEO.Cone(0.032, h, 4), x * tw, y + h * 0.45, z, 0, ry, rz);
         out.push(fin);
       }
       // Diagonal overlapping chest bevel straps (V-shaped cuirass ribs)
@@ -742,7 +838,7 @@ const KIT = (() => {
       const tw = M.proportions.torsoW / 0.2;
       const pouch = deform(sphere(0.11, 6, 4), v => { if (v.y < 0) v.x *= 0.78; v.z *= 0.85; });
       xf(pouch, 0, -0.13, 0.165 * tw, 0.15, 0, 0, 0.92, 1.35, 0.9); roughen(pouch, 0.006, 44);
-      const belt2 = uvScale(xf(new THREE.TorusGeometry(0.205 * tw, 0.016, 3, 8), 0, 0.01, 0, Math.PI / 2, 0, -0.06, 1, 1, 0.82), 5, 1);
+      const belt2 = uvScale(xf(KIT_GEO.Torus(0.205 * tw, 0.016, 3, 8), 0, 0.01, 0, Math.PI / 2, 0, -0.06, 1, 1, 0.82), 5, 1);
       return [uvScale(pouch, 1.5, 1.5), belt2];
     },
     // A towering, ornate rectangular greatshield with horned top corners, curved inward like a pavilion, and raised
@@ -778,7 +874,7 @@ const KIT = (() => {
 
       // Swept top horn tips on the upper corners
       for (const s of [-1, 1]) {
-        const horn = new THREE.ConeGeometry(0.042, 0.18, 4);
+        const horn = KIT_GEO.Cone(0.042, 0.18, 4);
         xf(horn, s * (hw + 0.01), hh * 1.01, -0.08, -0.15, 0, -s * 0.38);
         trim.push(horn);
       }
@@ -821,33 +917,33 @@ const KIT = (() => {
     // Swept-back auburn hair with a widow's peak, sideburns and a short knotted ponytail at the nape (head frame).
     sweptHair(o, M) {
       const r = M.proportions.headR * (o.size ?? 1), out = [];
-      const cap = deform(new THREE.SphereGeometry(r * 1.07, 9, 6, 0.55, TAU - 1.1, 0, 2.05), v => {
+      const cap = deform(KIT_GEO.Sphere(r * 1.07, 9, 6, 0.55, TAU - 1.1, 0, 2.05), v => {
         if (v.z > 0) v.y += 0.025 * Math.max(0, 1 - Math.abs(v.x) / (r * 0.45));   // widow's peak hairline
         if (v.z < 0) { v.z -= 0.03 * (1 - v.y / r); v.y -= 0.015; }
         v.x += Math.sin(v.y * 28 + v.z * 18) * 0.005;
       });
       out.push(uvScale(xf(cap, 0, r * 0.94, -0.008), 2, 1.5));
       for (let i = -2; i <= 2; i++) {   // swept-back crown ridges
-        const ridge = xf(new THREE.ConeGeometry(0.024 * (1 - Math.abs(i) * 0.1), 0.16, 4), i * 0.028, r * 1.72 - Math.abs(i) * 0.015, 0.01, -1.25, 0, -i * 0.18);
+        const ridge = xf(KIT_GEO.Cone(0.024 * (1 - Math.abs(i) * 0.1), 0.16, 4), i * 0.028, r * 1.72 - Math.abs(i) * 0.015, 0.01, -1.25, 0, -i * 0.18);
         out.push(uvScale(ridge, 1, 1));
       }
-      const tail = xf(new THREE.ConeGeometry(0.036, 0.18, 5), 0, r * 0.55, -r * 1.05, 2.6, 0, 0);
+      const tail = xf(KIT_GEO.Cone(0.036, 0.18, 5), 0, r * 0.55, -r * 1.05, 2.6, 0, 0);
       out.push(uvScale(tail, 1, 1));
       return out;
     },
     // A diagonal strap and dark eye patch across one eye, plus sculpted nose bridge and brow (head frame).
     eyePatch(o, M) {
       const r = M.proportions.headR, sd = o.side ?? 1;
-      const strap = uvScale(xf(new THREE.TorusGeometry(r * 0.99, 0.011, 3, 12), 0, r * 1.04, 0.008, Math.PI / 2 - 0.14, 0.34 * sd, 0, 1.01, 0.94, 1), 3, 0.5);
+      const strap = uvScale(xf(KIT_GEO.Torus(r * 0.99, 0.011, 3, 12), 0, r * 1.04, 0.008, Math.PI / 2 - 0.14, 0.34 * sd, 0, 1.01, 0.94, 1), 3, 0.5);
       const patch = xf(sphere(0.028, 6, 4), sd * r * 0.36, r * 0.98, r * 0.85, 0.1, sd * 0.3, -0.22 * sd, 1.25, 0.82, 0.45);
-      const nose = xf(new THREE.ConeGeometry(0.018, 0.058, 4), 0, r * 0.86, r * 0.95, 0.32, Math.PI / 4, 0);
+      const nose = xf(KIT_GEO.Cone(0.018, 0.058, 4), 0, r * 0.86, r * 0.95, 0.32, Math.PI / 4, 0);
       const brow = xf(new THREE.BoxGeometry(0.044, 0.012, 0.018), -sd * r * 0.36, r * 1.12, r * 0.88, 0, -sd * 0.2, sd * 0.12);
       return [strap, patch, { slot: o.skin ?? 'skin', geo: nose }, { slot: o.hair ?? 'hair', geo: brow }];
     },
     // An upturned, V-notched collar around the neck (chest frame), framing the throat above the feathered hauberk.
     openCollar(o, M) {
       const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
-      const g = new THREE.CylinderGeometry(0.21 * tw, 0.175 * tw, 0.11, 10, 1, true, 0.45, TAU - 0.9);
+      const g = KIT_GEO.Cylinder(0.21 * tw, 0.175 * tw, 0.11, 10, 1, true, 0.45, TAU - 0.9);
       g.rotateY(Math.PI);   // leave the V-opening at the front (+z)
       deform(g, v => { if (v.z > 0) v.y -= 0.03 * (v.z / (0.2 * tw)); });
       return [uvScale(xf(g, 0, 0.585, -0.01, 0.08, 0, 0, 1, 1, oz * 1.05), 3, 0.6)];
@@ -866,7 +962,7 @@ const KIT = (() => {
         for (let i = 0; i < R.n; i++) {
           const a = ((i + (ri & 1) * 0.5) / R.n) * TAU, sn = Math.sin(a), cs = Math.cos(a);
           const x = sn * R.r * tw, z = cs * R.r * tw * oz, yaw = Math.atan2(sn, cs / oz);
-          const vane = new THREE.ConeGeometry(R.w, R.h, 4, 1);
+          const vane = KIT_GEO.Cone(R.w, R.h, 4, 1);
           vane.translate(0, -R.h * 0.45, 0); vane.rotateX(Math.PI); vane.scale(1, 1, 0.24);
           out.push(uvScale(xf(vane, x, R.y + hash3(i, ri, 2, 19) * 0.012, z, R.tilt, yaw, hash3(i, ri, 5, 23) * 0.12), 0.7, 0.7));
         }
@@ -878,10 +974,10 @@ const KIT = (() => {
       const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW, out = [], cords = [];
       for (let i = 0; i < 4; i++) {
         const y = 0.01 + i * 0.032, r = (0.205 + i * 0.006) * tw;
-        out.push(uvScale(xf(new THREE.TorusGeometry(r, 0.018, 3, 12), 0, y, 0, Math.PI / 2 + (i % 2 ? 0.04 : -0.03), 0, i * 0.2, 1, 1, oz * 0.96), 5, 0.6));
+        out.push(uvScale(xf(KIT_GEO.Torus(r, 0.018, 3, 12), 0, y, 0, Math.PI / 2 + (i % 2 ? 0.04 : -0.03), 0, i * 0.2, 1, 1, oz * 0.96), 5, 0.6));
       }
       // Diagonal leather strap cutting down from the chest across the sash, plus hanging cord loops at the right hip.
-      const strap = uvScale(xf(new THREE.TorusGeometry(0.22 * tw, 0.014, 3, 12), 0, 0.08, 0.005, Math.PI / 2 + 0.34, 0, -0.28, 1.02, 1, oz * 0.98), 5, 0.5);
+      const strap = uvScale(xf(KIT_GEO.Torus(0.22 * tw, 0.014, 3, 12), 0, 0.08, 0.005, Math.PI / 2 + 0.34, 0, -0.28, 1.02, 1, oz * 0.98), 5, 0.5);
       cords.push(strap);
       for (let i = 0; i < 3; i++) {
         cords.push(xf(tube(0.009, 0.006, 0.26 - i * 0.03, 4), (0.15 + i * 0.025) * tw, -0.11, (0.12 - i * 0.02) * tw * oz, 0.08, 0, 0.12 - i * 0.06));
@@ -926,16 +1022,16 @@ const KIT = (() => {
       for (const s of [-1, 1]) {
         out.push({ slot: o.void, geo: xf(sphere(r * 0.24, 4, 3), s * r * 0.38, r * 0.98, r * 0.78, 0, 0, 0, 1.05, 1.1, 0.7) });
       }
-      out.push({ slot: o.void, geo: xf(new THREE.ConeGeometry(r * 0.11, r * 0.28, 3), 0, r * 0.72, r * 0.9, Math.PI, 0, 0) });
+      out.push({ slot: o.void, geo: xf(KIT_GEO.Cone(r * 0.11, r * 0.28, 3), 0, r * 0.72, r * 0.9, Math.PI, 0, 0) });
       out.push({ slot: o.void, geo: xf(new THREE.BoxGeometry(0.012, r * 0.55, 0.014), r * 0.16, r * 1.15, r * 0.92, 0, 0, -0.45) });
       // Upper and lower teeth
       for (let i = -1.5; i <= 1.5; i++) {
-        out.push({ slot: o.slot, geo: xf(new THREE.ConeGeometry(r * 0.044, r * 0.15, 3), i * r * 0.16, r * 0.46, r * 0.86 - Math.abs(i) * r * 0.03, Math.PI, 0, 0) });
-        out.push({ slot: o.slot, geo: xf(new THREE.ConeGeometry(r * 0.04, r * 0.12, 3), i * r * 0.15, r * 0.12, r * 0.88 - Math.abs(i) * r * 0.03, 0.25, 0, 0) });
+        out.push({ slot: o.slot, geo: xf(KIT_GEO.Cone(r * 0.044, r * 0.15, 3), i * r * 0.16, r * 0.46, r * 0.86 - Math.abs(i) * r * 0.03, Math.PI, 0, 0) });
+        out.push({ slot: o.slot, geo: xf(KIT_GEO.Cone(r * 0.04, r * 0.12, 3), i * r * 0.15, r * 0.12, r * 0.88 - Math.abs(i) * r * 0.03, 0.25, 0, 0) });
       }
       if (o.hood) {
         const hs = o.hoodSize ?? 1.14, close = o.close ?? 0.35, tail = o.tail ?? 0.42;
-        const hood = new THREE.SphereGeometry(0.158 * hs, 7, 4, Math.PI / 2 + 0.75 - close, TAU - 1.5 + 2 * close, 0, 2.25);
+        const hood = KIT_GEO.Sphere(0.158 * hs, 7, 4, Math.PI / 2 + 0.75 - close, TAU - 1.5 + 2 * close, 0, 2.25);
         deform(hood, v => {
           if (v.z < 0 && v.y < 0.08) { v.z -= (0.08 - v.y) * 0.9 * tail; v.y -= (-v.z) * 0.15 * tail; }
           if (v.y > 0.1) v.z += (v.y - 0.1) * 0.35;
@@ -950,7 +1046,7 @@ const KIT = (() => {
     shroud(o, M) {
       const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
       // Open-front mantle cylinder from y = -0.05 up to the shoulders (y = 0.58).
-      const mantle = new THREE.CylinderGeometry(0.245 * tw, 0.305 * tw, 0.62, 6, 2, true, 0.26, TAU - 0.52);
+      const mantle = KIT_GEO.Cylinder(0.245 * tw, 0.305 * tw, 0.62, 6, 2, true, 0.26, TAU - 0.52);
       deform(mantle, v => {
         const t = (0.31 - v.y) / 0.62;   // 0 at shoulders, 1 at lower hem
         if (v.z > 0) {
@@ -965,7 +1061,7 @@ const KIT = (() => {
       });
       xf(mantle, 0, 0.26, -0.008, 0.04, 0, 0, 1, 1, oz * 1.2);
       // Shoulder cowl wrapping around the upper shoulders and neck base, curving down over the shoulder joints
-      const cowl = new THREE.CylinderGeometry(0.145 * tw, 0.34 * tw, 0.19, 6, 1, true, 0.44, TAU - 0.88);
+      const cowl = KIT_GEO.Cylinder(0.145 * tw, 0.34 * tw, 0.19, 6, 1, true, 0.44, TAU - 0.88);
       deform(cowl, v => {
         if (v.y < 0) {
           v.x *= 1.24;   // flare wide over the left and right shoulder caps
@@ -977,7 +1073,7 @@ const KIT = (() => {
       });
       xf(cowl, 0, 0.525, -0.005, 0.03, 0, 0, 1, 1, oz * 1.08);
       // Twisted dark reddish-brown rope/cloth collar around the neck opening
-      const cord = uvScale(xf(new THREE.TorusGeometry(0.145 * tw, 0.028, 3, 5), 0, 0.56, 0.018, Math.PI / 2 + 0.22, 0, 0, 1.08, 1, oz * 1.14), 4, 1);
+      const cord = uvScale(xf(KIT_GEO.Torus(0.145 * tw, 0.028, 3, 5), 0, 0.56, 0.018, Math.PI / 2 + 0.22, 0, 0, 1.08, 1, oz * 1.14), 4, 1);
       const out = [{ slot: o.slot, geo: uvScale(mantle, 2.2, 1.4) }, { slot: o.slot, geo: uvScale(cowl, 2.2, 0.8) }];
       if (o.collar) out.push({ slot: o.collar, geo: cord });
       if (o.ribs) {
@@ -1028,21 +1124,21 @@ const KIT = (() => {
       voidGeos.push(xf(new THREE.BoxGeometry(r * 0.72, r * 0.48, r * 0.78), 0, r * 0.38, r * 0.52, 0.22, 0, 0));
       for (const s of [-1, 1]) {
         voidGeos.push(xf(new THREE.BoxGeometry(r * 0.34, r * 0.26, r * 0.22), s * r * 0.38, r * 0.94, r * 0.78, 0.1, s * 0.2, -s * 0.15));
-        voidGeos.push(xf(new THREE.ConeGeometry(r * 0.11, r * 0.16, 3), s * r * 0.22, r * 0.76, r * 1.06, -Math.PI / 2, 0, 0));
+        voidGeos.push(xf(KIT_GEO.Cone(r * 0.11, r * 0.16, 3), s * r * 0.22, r * 0.76, r * 1.06, -Math.PI / 2, 0, 0));
       }
       // Upper and lower fangs + side teeth (open-bottom cones)
       for (const s of [-1, 1]) {
-        toothGeos.push(xf(new THREE.ConeGeometry(r * 0.065, r * 0.24, 3, 1, true), s * r * 0.28, r * 0.44, r * 0.92, Math.PI + 0.1, 0, 0));
-        toothGeos.push(xf(new THREE.ConeGeometry(r * 0.045, r * 0.15, 3, 1, true), s * r * 0.11, r * 0.48, r * 0.96, Math.PI + 0.1, 0, 0));
-        toothGeos.push(xf(new THREE.ConeGeometry(r * 0.058, r * 0.2, 3, 1, true), s * r * 0.24, r * 0.12, r * 0.86, 0.35, 0, 0));
+        toothGeos.push(xf(KIT_GEO.Cone(r * 0.065, r * 0.24, 3, 1, true), s * r * 0.28, r * 0.44, r * 0.92, Math.PI + 0.1, 0, 0));
+        toothGeos.push(xf(KIT_GEO.Cone(r * 0.045, r * 0.15, 3, 1, true), s * r * 0.11, r * 0.48, r * 0.96, Math.PI + 0.1, 0, 0));
+        toothGeos.push(xf(KIT_GEO.Cone(r * 0.058, r * 0.2, 3, 1, true), s * r * 0.24, r * 0.12, r * 0.86, 0.35, 0, 0));
       }
       // Ornate verdigris-patinated brow band and crest scrolls across the forehead and temples
-      const browArc = xf(new THREE.TorusGeometry(r * 0.96, r * 0.12, 3, 4, Math.PI * 0.88), 0, r * 1.12, r * 0.14, Math.PI / 2 - 0.22, 0, Math.PI * 0.06, 1.08, 0.85, 1);
+      const browArc = xf(KIT_GEO.Torus(r * 0.96, r * 0.12, 3, 4, Math.PI * 0.88), 0, r * 1.12, r * 0.14, Math.PI / 2 - 0.22, 0, Math.PI * 0.06, 1.08, 0.85, 1);
       const centerCrest = xf(new THREE.BoxGeometry(r * 0.32, r * 0.34, r * 0.24), 0, r * 1.24, r * 0.86, -0.2, Math.PI / 4, 0);
       bronzeGeos.push(browArc, centerCrest);
       for (const s of [-1, 1]) {
         // Swept ear/temple horn scroll and engraved neck-shoulder relief band
-        const horn = xf(new THREE.ConeGeometry(r * 0.16, r * 0.52, 4, 1, true), s * r * 0.88, r * 1.08, r * 0.12, -0.55, 0, -s * 0.55);
+        const horn = xf(KIT_GEO.Cone(r * 0.16, r * 0.52, 4, 1, true), s * r * 0.88, r * 1.08, r * 0.12, -0.55, 0, -s * 0.55);
         const cheek = xf(new THREE.BoxGeometry(r * 0.22, r * 0.48, r * 0.36), s * r * 0.62, r * 0.56, r * 0.42, 0.2, s * 0.35, -s * 0.18);
         out.push(horn, cheek);
       }
@@ -1065,12 +1161,12 @@ const KIT = (() => {
         // Collarbone verdigris-patinated relief band running from neck to shoulder
         trim.push(uvScale(xf(new THREE.BoxGeometry(0.24 * tw, 0.042, 0.038), s * 0.14 * tw, 0.54, 0.13 * tw * oz, 0.25, -s * 0.38, -s * 0.32), 1.5, 0.5));
         // Pectoral scroll ridge
-        out.push(uvScale(xf(new THREE.TorusGeometry(0.095 * tw, 0.022, 3, 4, Math.PI * 1.25), s * 0.11 * tw, 0.39, 0.185 * tw * oz, 0.12, s * 0.28, s > 0 ? -0.4 : 1.2), 2, 0.5));
+        out.push(uvScale(xf(KIT_GEO.Torus(0.095 * tw, 0.022, 3, 4, Math.PI * 1.25), s * 0.11 * tw, 0.39, 0.185 * tw * oz, 0.12, s * 0.28, s > 0 ? -0.4 : 1.2), 2, 0.5));
         // Rib / abdominal V-chevrons
         out.push(uvScale(xf(new THREE.BoxGeometry(0.18 * tw, 0.028, 0.026), s * 0.08 * tw, 0.22, 0.165 * tw * oz, 0.1, -s * 0.32, -s * 0.45), 1, 0.4));
       }
       // Central sternum rosette / whorl relief
-      trim.push(xf(new THREE.TorusGeometry(0.055 * tw, 0.018, 3, 4), 0, 0.29, 0.195 * tw * oz, 0.08, 0, 0));
+      trim.push(xf(KIT_GEO.Torus(0.055 * tw, 0.018, 3, 4), 0, 0.29, 0.195 * tw * oz, 0.08, 0, 0));
       return [
         ...out.map(geo => ({ slot: o.slot, geo })),
         ...trim.map(geo => ({ slot: o.trim ?? o.slot, geo })),
@@ -1106,7 +1202,7 @@ const KIT = (() => {
         new V3(sd * 0.92 * s, 0.98 * s, -0.06 * s),
         new V3(sd * 1.42 * s, 1.18 * s, -0.02 * s),
       ]);
-      const spar = new THREE.TubeGeometry(armCurve, 5, 0.055 * s, 4, false);
+      const spar = new THREE.TubeGeometry(armCurve, 5, 0.055 * s, 4, false);   // fixed counts: the taper below walks its rings
       const sparPos = spar.attributes.position, tmp = new V3();
       for (let i = 0; i < sparPos.count; i++) {
         const t = Math.min(1, Math.floor(i / 5) / 5), p = armCurve.getPointAt(t), k = 1.25 - 0.65 * t;
@@ -1135,7 +1231,7 @@ const KIT = (() => {
       }
 
       // 3. Outer upturned claw horn at the wingtip apex (x = 1.44, y = 1.2)
-      const tipHorn = new THREE.ConeGeometry(0.038 * s, 0.24 * s, 4, 1, true);
+      const tipHorn = KIT_GEO.Cone(0.038 * s, 0.24 * s, 4, 1, true);
       xf(tipHorn, sd * 1.44 * s, 1.3 * s, -0.01 * s, 0.1, 0, sd * 0.18);
       stone.push(uvScale(tipHorn, 1, 1));
 
@@ -1195,7 +1291,7 @@ const KIT = (() => {
       ];
       for (const [fx, fy, flen, fang] of feathers) {
         const span = fx / 1.45, fz = -Math.sin(span * Math.PI) * 0.085 * s;
-        const vane = new THREE.ConeGeometry(0.058 * s, flen * s, 4, 1, true);
+        const vane = KIT_GEO.Cone(0.058 * s, flen * s, 4, 1, true);
         vane.scale(1, 1, 0.38);
         xf(vane, fx * sd * s, fy * s, fz, 0, 0, sd * fang);
         wing.push(uvScale(vane, 0.8, 1.2));
@@ -1209,16 +1305,16 @@ const KIT = (() => {
     gargoyleClaws(o, M) {
       const sd = o.side ?? 1, len = 0.3 * (M.limbs?.armL?.len ?? 1), out = [];
       // Sculpted forearm ridge and pointed elbow spur
-      out.push(uvScale(xf(new THREE.ConeGeometry(0.032, 0.14, 4, 1, true), sd * 0.025, 0.03, -0.045, -2.4, 0, -sd * 0.2), 1, 1));
+      out.push(uvScale(xf(KIT_GEO.Cone(0.032, 0.14, 4, 1, true), sd * 0.025, 0.03, -0.045, -2.4, 0, -sd * 0.2), 1, 1));
       out.push(uvScale(xf(new THREE.BoxGeometry(0.055, len * 0.78, 0.068), sd * 0.015, -len * 0.44, 0.01, 0, 0, 0), 1, 1.5));
       // Four long curved talons fanning from the hand + inner thumb talon
       for (let i = -1.5; i <= 1.5; i++) {
-        const claw = new THREE.ConeGeometry(0.016, 0.19, 3, 1, true);
+        const claw = KIT_GEO.Cone(0.016, 0.19, 3, 1, true);
         deform(claw, v => { if (v.y > 0) v.z -= 0.045; });
         xf(claw, i * 0.022, -len - 0.11, 0.02 - Math.abs(i) * 0.006, Math.PI + 0.18, 0, i * 0.14);
         out.push(claw);
       }
-      const thumb = new THREE.ConeGeometry(0.016, 0.14, 3, 1, true);
+      const thumb = KIT_GEO.Cone(0.016, 0.14, 3, 1, true);
       xf(thumb, -sd * 0.048, -len - 0.06, 0.038, Math.PI - 0.25, 0, -sd * 0.45);
       out.push(thumb);
       return out.map(geo => ({ slot: o.slot, geo }));
@@ -1227,13 +1323,13 @@ const KIT = (() => {
     gargoyleFoot(o) {
       const out = [];
       // Pointed stone knee cop and shin crest
-      const knee = xf(new THREE.ConeGeometry(0.058, 0.16, 4, 1, true), 0, 0.01, 0.055, 1.25, 0, 0);
+      const knee = xf(KIT_GEO.Cone(0.058, 0.16, 4, 1, true), 0, 0.01, 0.055, 1.25, 0, 0);
       const shin = xf(new THREE.BoxGeometry(0.078, 0.32, 0.095), 0, -0.2, 0.022, -0.05, 0, 0);
       out.push(uvScale(knee, 1, 1), uvScale(shin, 1, 1.5));
       // Broad 4-toed talon foot gripping the ground at y = -LEG_SEG (-0.45)
       for (let i = -1.5; i <= 1.5; i++) {
         const a = i * 0.22;
-        const talon = new THREE.ConeGeometry(0.028, 0.22, 3, 1, true);
+        const talon = KIT_GEO.Cone(0.028, 0.22, 3, 1, true);
         xf(talon, Math.sin(a) * 0.055, -LEG_SEG + 0.02, 0.12 + Math.cos(a) * 0.02, Math.PI / 2 + 0.18, a, 0);
         out.push(uvScale(talon, 1, 1));
       }
@@ -1242,7 +1338,7 @@ const KIT = (() => {
     // Short stone tail hanging down between the legs behind the pelvis (spin frame, ~14 tris).
     gargoyleTail(o) {
       const a = xf(tube(0.038, 0.026, 0.28, 4, true), 0, -0.18, -0.14, 0.18, 0, 0);
-      const b = xf(new THREE.ConeGeometry(0.028, 0.22, 3, 1, true), 0, -0.4, -0.17, Math.PI - 0.1, 0, 0);
+      const b = xf(KIT_GEO.Cone(0.028, 0.22, 3, 1, true), 0, -0.4, -0.17, Math.PI - 0.1, 0, 0);
       return [uvScale(a, 1, 1.5), uvScale(b, 1, 1)];
     },
     // ---- the Toll Wisp (v5.5, after the reference art) ----
@@ -1276,7 +1372,7 @@ const KIT = (() => {
       dark.push(under);
 
       // Tall slouching conical crown that bends backward and to the left (+x, viewer's right) into a hooked tip
-      const crown = new THREE.CylinderGeometry(0.012 * s, 0.175 * s, 0.56 * s, 8, 5, true);
+      const crown = KIT_GEO.Cylinder(0.012 * s, 0.175 * s, 0.56 * s, 8, 5, true);
       deform(crown, v => {
         const t = clamp((v.y + 0.28 * s) / (0.56 * s), 0, 1);   // 0 at base, 1 at tip
         // Taper with a soft mid-crown bulge and crease folds
@@ -1292,7 +1388,7 @@ const KIT = (() => {
 
       // Double-coiled pale twisted rope hatband around the crown base + knot and frayed hanging tassel on +x
       for (let i = 0; i < 2; i++) {
-        const coil = xf(new THREE.TorusGeometry((0.168 - i * 0.006) * s, 0.015 * s, 3, 8), 0.005 * s, (0.165 + i * 0.024) * s, 0.008 * s, Math.PI / 2 + 0.06, 0, -0.08 + i * 0.05, 1, 0.95, 1);
+        const coil = xf(KIT_GEO.Torus((0.168 - i * 0.006) * s, 0.015 * s, 3, 8), 0.005 * s, (0.165 + i * 0.024) * s, 0.008 * s, Math.PI / 2 + 0.06, 0, -0.08 + i * 0.05, 1, 0.95, 1);
         rope.push(uvScale(coil, 5, 1));
       }
       rope.push(xf(sphere(0.024 * s, 4, 3), 0.135 * s, 0.172 * s, 0.088 * s));
@@ -1323,7 +1419,7 @@ const KIT = (() => {
       // Wavy cascading beard locks fanning across the front and sides of the chin down onto the upper chest
       for (let i = -3; i <= 3; i++) {
         const u = i / 3, len = (0.21 - Math.abs(u) * 0.045);
-        const lock = new THREE.ConeGeometry(0.028 * (1 - Math.abs(u) * 0.18), len, 4, 1, true);
+        const lock = KIT_GEO.Cone(0.028 * (1 - Math.abs(u) * 0.18), len, 4, 1, true);
         deform(lock, v => {
           const t = (len * 0.5 - v.y) / len;
           v.z += t * t * 0.028; v.x += Math.sin(t * 4 + i) * 0.008;
@@ -1357,7 +1453,7 @@ const KIT = (() => {
       }
 
       // 2. Draped warm-brown shoulder capelet / cowl covering the upper chest, shoulders, and upper back
-      const cowl = new THREE.CylinderGeometry(0.155 * tw, 0.345 * tw, 0.27, 9, 2, true);
+      const cowl = KIT_GEO.Cylinder(0.155 * tw, 0.345 * tw, 0.27, 9, 2, true);
       deform(cowl, v => {
         const t = (0.135 - v.y) / 0.27;   // 0 at neck, 1 at shoulder hem
         const a = Math.atan2(v.z, v.x);
@@ -1373,20 +1469,20 @@ const KIT = (() => {
       // 3. Knotted brown cloth scarf / cravat on the right collar/chest (-x, viewer's left) with cord tie & 2 hanging tails
       const kx = -0.095 * tw, ky = 0.46, kz = 0.175 * tw * oz;
       mantle.push(uvScale(xf(sphere(0.042, 5, 4), kx, ky, kz, 0, 0, 0, 1.15, 0.95, 0.85), 1, 1));
-      rope.push(uvScale(xf(new THREE.TorusGeometry(0.038, 0.01, 3, 6), kx, ky + 0.01, kz, 0.3, 0.2, -0.3), 3, 1));
+      rope.push(uvScale(xf(KIT_GEO.Torus(0.038, 0.01, 3, 6), kx, ky + 0.01, kz, 0.3, 0.2, -0.3), 3, 1));
       // Two pointed brown cloth tails hanging down from the knot over the upper right chest
-      const tailA = new THREE.ConeGeometry(0.048, 0.24, 4, 1, true);
+      const tailA = KIT_GEO.Cone(0.048, 0.24, 4, 1, true);
       tailA.scale(1, 1, 0.42); xf(tailA, kx - 0.018, ky - 0.11, kz + 0.012, Math.PI - 0.12, 0.15, -0.14);
-      const tailB = new THREE.ConeGeometry(0.042, 0.27, 4, 1, true);
+      const tailB = KIT_GEO.Cone(0.042, 0.27, 4, 1, true);
       tailB.scale(1, 1, 0.38); xf(tailB, kx + 0.022, ky - 0.13, kz + 0.016, Math.PI - 0.15, -0.1, 0.08);
       mantle.push(uvScale(tailA, 1, 1.5), uvScale(tailB, 1, 1.5));
 
       // 4. Sage-green / pale-olive shoulder caps peeking out from beneath the brown capelet on both shoulders
       for (const s of [-1, 1]) {
-        const cap = new THREE.CylinderGeometry(0.095, 0.132, 0.12, 6, 1, true, s > 0 ? -0.35 : Math.PI - 1.25, 1.6);
+        const cap = KIT_GEO.Cylinder(0.095, 0.132, 0.12, 6, 1, true, s > 0 ? -0.35 : Math.PI - 1.25, 1.6);
         xf(cap, s * 0.255 * tw, 0.43, 0.0, 0, 0, -s * 0.28, 1, 1, 0.92);
         ep.push(uvScale(cap, 1.5, 0.8));
-        const rim = new THREE.TorusGeometry(0.13, 0.01, 3, 6, 1.55);
+        const rim = KIT_GEO.Torus(0.13, 0.01, 3, 6, 1.55);
         xf(rim, s * 0.27 * tw, 0.375, 0.0, Math.PI / 2, -s * 0.28, s > 0 ? -0.78 : Math.PI - 0.78, 1, 0.92, 1);
         trim.push(uvScale(rim, 3, 1));
       }
@@ -1478,7 +1574,7 @@ const KIT = (() => {
       // In Three.js CylinderGeometry(rTop, rBot, height, seg, hSeg, open, thetaStart, thetaLength):
       // x = r * sin(theta), z = r * cos(theta). So theta = 0 is +Z (front)! Front arc is thetaStart = -span/2, thetaLength = span.
       const apronH = L * 0.84;
-      const apron = new THREE.CylinderGeometry(r0 + 0.008, r0 + (r1 - r0) * 0.84 + 0.008, apronH, 8, 3, true, -span / 2, span);
+      const apron = KIT_GEO.Cylinder(r0 + 0.008, r0 + (r1 - r0) * 0.84 + 0.008, apronH, 8, 3, true, -span / 2, span);
       xf(apron, 0, -apronH / 2 + 0.01, 0, 0, 0, 0, 1, 1, ov);
       deform(apron, v => {
         const a = Math.atan2(v.z, v.x), t = clamp01(-v.y / L), f = foldAt(a, t);
@@ -1488,7 +1584,7 @@ const KIT = (() => {
 
       // 3. Wide ornate golden-amber bottom border band across the lower front apron + central vertical amber stripe
       const bTop = -apronH + 0.01, bBot = -L - 0.002, bH = bTop - bBot;
-      const border = new THREE.CylinderGeometry(r0 + (r1 - r0) * 0.83 + 0.011, r1 + 0.011, bH, 8, 1, true, -span * 0.51, span * 1.02);
+      const border = KIT_GEO.Cylinder(r0 + (r1 - r0) * 0.83 + 0.011, r1 + 0.011, bH, 8, 1, true, -span * 0.51, span * 1.02);
       xf(border, 0, (bTop + bBot) / 2, 0, 0, 0, 0, 1, 1, ov);
       deform(border, v => {
         const a = Math.atan2(v.z, v.x), t = clamp01(-v.y / L), f = foldAt(a, t);
@@ -1507,13 +1603,13 @@ const KIT = (() => {
       // 4. Multi-coiled pale twisted rope waist girdle (4 coils) + front-right knot
       for (let i = 0; i < 4; i++) {
         const y = 0.0 + i * 0.025, r = (0.21 + (i % 2) * 0.005) * tw;
-        const coil = xf(new THREE.TorusGeometry(r, 0.017, 3, 10), 0, y, 0.004, Math.PI / 2 + (i % 2 ? 0.04 : -0.03), 0, i * 0.15, 1, 1, ov * 1.02);
+        const coil = xf(KIT_GEO.Torus(r, 0.017, 3, 10), 0, y, 0.004, Math.PI / 2 + (i % 2 ? 0.04 : -0.03), 0, i * 0.15, 1, 1, ov * 1.02);
         rope.push(uvScale(coil, 5, 0.8));
       }
       rope.push(uvScale(xf(sphere(0.038, 5, 4), -0.055 * tw, 0.03, r0 * ov + 0.022, 0, 0, 0, 1.15, 1.1, 0.85), 1, 1));
 
       // 5. Angled brown leather belt below the rope sash, front metal buckle, hanging strap tongue, and left hip satchel (+x)
-      const belt = xf(new THREE.TorusGeometry(0.218 * tw, 0.016, 3, 10), 0, -0.03, 0.004, Math.PI / 2 + 0.18, 0, -0.18, 1.02, 1, ov * 1.02);
+      const belt = xf(KIT_GEO.Torus(0.218 * tw, 0.016, 3, 10), 0, -0.03, 0.004, Math.PI / 2 + 0.18, 0, -0.18, 1.02, 1, ov * 1.02);
       leather.push(uvScale(belt, 5, 0.8));
       const fz = r0 * ov + 0.018;
       buckle.push(xf(new THREE.BoxGeometry(0.042, 0.036, 0.016), 0.025 * tw, -0.035, fz + 0.008, 0, 0.1, -0.18));
@@ -1539,12 +1635,12 @@ const KIT = (() => {
       const out = [];
       // Two bow loops at the knot
       for (const s of [-1, 1]) {
-        out.push(uvScale(xf(new THREE.TorusGeometry(0.038, 0.01, 3, 5), s * 0.028, -0.03, 0.008, 0.15, s * 0.25, s * 0.4, 0.75, 1.35, 0.8), 2, 1));
+        out.push(uvScale(xf(KIT_GEO.Torus(0.038, 0.01, 3, 5), s * 0.028, -0.03, 0.008, 0.15, s * 0.25, s * 0.4, 0.75, 1.35, 0.8), 2, 1));
       }
       // Two long hanging braided cords with tasseled ends reaching to knee level
       for (const [dx, len, rz] of [[-0.018, 0.44, 0.04], [0.02, 0.50, -0.03]]) {
         out.push(uvScale(xf(tube(0.012, 0.009, len, 4, true), dx, -len / 2 - 0.01, 0.006, 0.04, 0, rz), 1, 3));
-        out.push(uvScale(xf(new THREE.ConeGeometry(0.022, 0.075, 4, 1, true), dx - rz * len * 0.5, -len - 0.035, 0.02, 0.05, 0, rz), 1, 1));
+        out.push(uvScale(xf(KIT_GEO.Cone(0.022, 0.075, 4, 1, true), dx - rz * len * 0.5, -len - 0.035, 0.02, 0.05, 0, rz), 1, 1));
       }
       return out.map(geo => ({ slot: o.slot, geo }));
     },
@@ -1556,7 +1652,7 @@ const KIT = (() => {
       const s = o.size ?? 1, plate = [], fili = [], dark = [], plume = [];
       // Wide ringed golden gorget at the base of the neck/collar
       const gorget = lathe([[0.165 * s, -0.045 * s], [0.145 * s, 0.005 * s], [0.125 * s, 0.04 * s]], 7, 1.04);
-      const gorgetRim = xf(new THREE.TorusGeometry(0.158 * s, 0.012 * s, 3, 7), 0, -0.025 * s, 0.004 * s, Math.PI / 2 + 0.06, 0, 0, 1, 1.04, 1);
+      const gorgetRim = xf(KIT_GEO.Torus(0.158 * s, 0.012 * s, 3, 7), 0, -0.025 * s, 0.004 * s, Math.PI / 2 + 0.06, 0, 0, 1, 1.04, 1);
       plate.push(uvScale(gorget, 2.5, 0.8), uvScale(gorgetRim, 4, 1));
 
       // Tall narrow ovoid close-helm dome with a slight prow along the front centerline
@@ -1576,8 +1672,8 @@ const KIT = (() => {
       fili.push(uvScale(keel, 0.5, 2), uvScale(comb, 1, 1));
 
       // Short dark bronze plume / crest tuft rising from the rear-top of the crown comb
-      const tuftA = xf(new THREE.ConeGeometry(0.026 * s, 0.12 * s, 4, 1, true), 0, 0.405 * s, -0.035 * s, -0.55, 0, 0);
-      const tuftB = xf(new THREE.ConeGeometry(0.022 * s, 0.10 * s, 4, 1, true), 0, 0.39 * s, -0.065 * s, -0.85, 0, 0);
+      const tuftA = xf(KIT_GEO.Cone(0.026 * s, 0.12 * s, 4, 1, true), 0, 0.405 * s, -0.035 * s, -0.55, 0, 0);
+      const tuftB = xf(KIT_GEO.Cone(0.022 * s, 0.10 * s, 4, 1, true), 0, 0.39 * s, -0.065 * s, -0.85, 0, 0);
       plume.push(uvScale(tuftA, 1, 1), uvScale(tuftB, 1, 1));
 
       // Two vertical columns of 3 dark breathing/sight perforations flanking the central faceplate ridge
@@ -1610,16 +1706,16 @@ const KIT = (() => {
       plate.push(uvScale(body, 2.5, 1.5));
 
       // Ornate filigree upper pectoral overlay panel (visible on the exposed left chest +x and upper back)
-      const plackart = new THREE.CylinderGeometry(0.242 * tw, 0.278 * tw, 0.24, 7, 1, true, -0.2, Math.PI * 1.35);
+      const plackart = KIT_GEO.Cylinder(0.242 * tw, 0.278 * tw, 0.24, 7, 1, true, -0.2, Math.PI * 1.35);
       xf(plackart, 0, 0.43, 0.005, 0.03, 0, 0, 1.01, 1, oz * 1.10);
       fili.push(uvScale(plackart, 2.5, 1.2));
 
       // Raised golden collar rim and 3 horizontal molded waist lames (fauld rings) around the lower torso
-      const collar = xf(new THREE.TorusGeometry(0.18 * tw, 0.015, 3, 7), 0, 0.59, 0.006, Math.PI / 2 + 0.08, 0, 0, 1, 1, oz * 1.06);
+      const collar = xf(KIT_GEO.Torus(0.18 * tw, 0.015, 3, 7), 0, 0.59, 0.006, Math.PI / 2 + 0.08, 0, 0, 1, 1, oz * 1.06);
       plate.push(uvScale(collar, 4, 1));
       for (let i = 0; i < 3; i++) {
         const y = 0.02 + i * 0.055, r = (0.202 + i * 0.008) * tw;
-        const lame = xf(new THREE.TorusGeometry(r, 0.015, 3, 7), 0, y, 0.003, Math.PI / 2 + 0.03, 0, 0, 1, 1, oz * 1.08);
+        const lame = xf(KIT_GEO.Torus(r, 0.015, 3, 7), 0, y, 0.003, Math.PI / 2 + 0.03, 0, 0, 1, 1, oz * 1.08);
         plate.push(uvScale(lame, 4, 0.8));
       }
       return [
@@ -1672,7 +1768,7 @@ const KIT = (() => {
         }
       }
       // Shoulder drape cap bridging the front and back panels over the right collarbone/shoulder (-x)
-      const cap = new THREE.CylinderGeometry(0.115 * tw, 0.135 * tw, 0.18 * tw, 5, 1, true, -Math.PI * 0.45, Math.PI * 0.9);
+      const cap = KIT_GEO.Cylinder(0.115 * tw, 0.135 * tw, 0.18 * tw, 5, 1, true, -Math.PI * 0.45, Math.PI * 0.9);
       cap.rotateZ(Math.PI / 2);
       xf(cap, -0.125 * tw, 0.535, 0, 0, 0, -0.18, 1, 0.85, oz * 1.15);
       cloth.push(uvScale(cap, 1, 1));
@@ -1736,7 +1832,7 @@ const KIT = (() => {
     sentinelPauldron(o) {
       const s = o.size ?? 1, sd = o.side ?? 1, plate = [], fili = [];
       // Main flared shoulder guard dome with upturned outer wing lip
-      const dome = new THREE.SphereGeometry(0.155 * s, 7, 4, 0, TAU, 0, Math.PI * 0.56);
+      const dome = KIT_GEO.Sphere(0.155 * s, 7, 4, 0, TAU, 0, Math.PI * 0.56);
       deform(dome, v => {
         const out = v.x * sd;
         if (out > 0) {
@@ -1750,7 +1846,7 @@ const KIT = (() => {
       plate.push(uvScale(dome, 2, 1.2));
 
       // Embossed filigree top crest panel over the pauldron dome
-      const crest = new THREE.SphereGeometry(0.142 * s, 6, 3, 0, TAU, 0.08, Math.PI * 0.42);
+      const crest = KIT_GEO.Sphere(0.142 * s, 6, 3, 0, TAU, 0.08, Math.PI * 0.42);
       deform(crest, v => {
         const out = v.x * sd;
         if (out > 0) v.x += sd * (out / (0.142 * s)) * 0.055 * s;
@@ -1774,14 +1870,14 @@ const KIT = (() => {
     sentinelGauntlet(o, M) {
       const sd = o.side ?? 1, len = 0.3 * (M.limbs?.armL?.len ?? 1), plate = [], fili = [];
       // Heavy projecting elbow cop (couter) with side flange
-      const couter = xf(new THREE.SphereGeometry(0.078, 6, 3, 0, TAU, 0, Math.PI * 0.55), sd * 0.018, 0.01, -0.025, -Math.PI * 0.48, 0, -sd * 0.25, 1.05, 1.15, 0.9);
+      const couter = xf(KIT_GEO.Sphere(0.078, 6, 3, 0, TAU, 0, Math.PI * 0.55), sd * 0.018, 0.01, -0.025, -Math.PI * 0.48, 0, -sd * 0.25, 1.05, 1.15, 0.9);
       plate.push(uvScale(couter, 1.5, 1));
       // Contoured barrelled filigree vambrace enclosing the forearm
       const vam = lathe([[0.064, -len * 0.88], [0.076, -len * 0.48], [0.072, -len * 0.12]], 6, 1.04);
       fili.push(uvScale(vam, 2, 1.4));
       // Raised golden upper and wrist cuff rings + articulated knuckle guard plate over the hand
-      plate.push(uvScale(xf(new THREE.TorusGeometry(0.075, 0.011, 3, 6), 0, -len * 0.14, 0, Math.PI / 2, 0, 0), 3, 1));
-      plate.push(uvScale(xf(new THREE.TorusGeometry(0.068, 0.012, 3, 6), 0, -len * 0.86, 0, Math.PI / 2, 0, 0), 3, 1));
+      plate.push(uvScale(xf(KIT_GEO.Torus(0.075, 0.011, 3, 6), 0, -len * 0.14, 0, Math.PI / 2, 0, 0), 3, 1));
+      plate.push(uvScale(xf(KIT_GEO.Torus(0.068, 0.012, 3, 6), 0, -len * 0.86, 0, Math.PI / 2, 0, 0), 3, 1));
       const handPlate = xf(new THREE.BoxGeometry(0.082, 0.095, 0.045), sd * 0.008, -len - 0.035, 0.018, 0.12, 0, -sd * 0.08);
       plate.push(uvScale(handPlate, 1, 1));
       return [
@@ -1795,10 +1891,10 @@ const KIT = (() => {
       const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
       const plate = [], fili = [];
       // Heavy molded golden waist belt ring
-      plate.push(uvScale(xf(new THREE.TorusGeometry(0.212 * tw, 0.02, 3, 8), 0, 0.01, 0, Math.PI / 2, 0, 0, 1, 1, oz * 1.06), 5, 1));
+      plate.push(uvScale(xf(KIT_GEO.Torus(0.212 * tw, 0.02, 3, 8), 0, 0.01, 0, Math.PI / 2, 0, 0, 1, 1, oz * 1.06), 5, 1));
       // Left and right curved thigh tasset shields hanging from the fauld over the outer hips
       for (const s of [-1, 1]) {
-        const shield = new THREE.CylinderGeometry(0.115 * tw, 0.145 * tw, 0.28, 5, 2, true, -0.68, 1.36);
+        const shield = KIT_GEO.Cylinder(0.115 * tw, 0.145 * tw, 0.28, 5, 2, true, -0.68, 1.36);
         deform(shield, v => {
           const t = (0.14 - v.y) / 0.28;
           if (t > 0.65) v.x *= 1 - (t - 0.65) * 0.55;   // pointed lower tasset tip
@@ -1806,7 +1902,7 @@ const KIT = (() => {
         xf(shield, s * 0.115 * tw, -0.15, 0.01, 0.06, s * Math.PI * 0.42, -s * 0.14);
         plate.push(uvScale(shield, 1.5, 1.5));
 
-        const inset = new THREE.CylinderGeometry(0.095 * tw, 0.12 * tw, 0.21, 4, 1, true, -0.52, 1.04);
+        const inset = KIT_GEO.Cylinder(0.095 * tw, 0.12 * tw, 0.21, 4, 1, true, -0.52, 1.04);
         xf(inset, s * 0.122 * tw, -0.145, 0.012, 0.06, s * Math.PI * 0.42, -s * 0.14);
         fili.push(uvScale(inset, 1.5, 1.2));
       }
@@ -1821,7 +1917,7 @@ const KIT = (() => {
     sentinelGreave(o) {
       const sd = o.side ?? 1, plate = [], fili = [];
       // 1. Domed golden knee cop (poleyn) with raised central ridge and side wing boss
-      const poleyn = new THREE.SphereGeometry(0.092, 6, 4, 0, TAU, 0, Math.PI * 0.55);
+      const poleyn = KIT_GEO.Sphere(0.092, 6, 4, 0, TAU, 0, Math.PI * 0.55);
       deform(poleyn, v => {
         v.z *= 1.18;
         if (Math.abs(v.x) < 0.025) v.z += 0.016;   // central vertical knee keel
@@ -1830,7 +1926,7 @@ const KIT = (() => {
       fili.push(uvScale(poleyn, 1.8, 1.4));
 
       // 2. Angled V-chevron upper-shin border rim below the knee cop + 3 raised golden rivets
-      const chevRim = new THREE.TorusGeometry(0.092, 0.013, 3, 6, Math.PI * 1.15);
+      const chevRim = KIT_GEO.Torus(0.092, 0.013, 3, 6, Math.PI * 1.15);
       deform(chevRim, v => { if (v.y > 0) v.z -= (v.y / 0.092) * 0.038; });
       xf(chevRim, 0, -0.065, 0.008, Math.PI / 2 + 0.18, 0, -Math.PI * 0.075);
       plate.push(uvScale(chevRim, 3, 1));
@@ -1849,7 +1945,7 @@ const KIT = (() => {
       fili.push(uvScale(shin, 2.2, 1.8));
 
       // Flared lower ankle rim and side ankle bosses
-      const ankleRim = xf(new THREE.TorusGeometry(0.086, 0.012, 3, 7), 0, -0.405, 0.006, Math.PI / 2 + 0.08, 0, 0, 1, 1.08, 1);
+      const ankleRim = xf(KIT_GEO.Torus(0.086, 0.012, 3, 7), 0, -0.405, 0.006, Math.PI / 2 + 0.08, 0, 0, 1, 1.08, 1);
       const ankleBoss = xf(sphere(0.022, 4, 3), sd * 0.082, -0.39, 0.0, 0, 0, 0, 0.7, 1, 1);
       plate.push(uvScale(ankleRim, 3, 1), ankleBoss);
 
@@ -1879,7 +1975,7 @@ const KIT = (() => {
       const shaft = uvScale(xf(tube(0.028, 0.025, 2.50, 5, true), 0, 0, 0.33, Math.PI / 2, 0, 0), 1, 5);
       // Helical/spiral grip rings along the shaft + ornate square engraved block and cylindrical ferrule at the butt end
       const gripRings = [-0.45, -0.15, 0.18, 0.52, 0.86, 1.18].map((z, i) =>
-        xf(new THREE.TorusGeometry(0.031, 0.006, 3, 5), 0, 0, z, 0.22 * (i % 2 ? 1 : -1), 0, 0)
+        xf(KIT_GEO.Torus(0.031, 0.006, 3, 5), 0, 0, z, 0.22 * (i % 2 ? 1 : -1), 0, 0)
       );
       const buttBlock = uvScale(box(0.068, 0.068, 0.14, 0, 0, -0.78), 1, 1);
       const buttRing = xf(tube(0.042, 0.042, 0.028, 5, true), 0, 0, -0.69, Math.PI / 2, 0, 0);
@@ -1914,8 +2010,8 @@ const KIT = (() => {
       roughen(axe, 0.002, 131);
 
       // Rear upward-swept fluke beak (+y) and tall diamond-section top spear spike (+z)
-      const fluke = xf(new THREE.ConeGeometry(0.028, 0.22, 4, 1, true), 0, 0.13, 1.48, -0.28, Math.PI / 4, 0);
-      const spearSpike = xf(new THREE.ConeGeometry(0.038, 0.58, 4, 1, true), 0, 0, 1.94, Math.PI / 2, Math.PI / 4, 0);
+      const fluke = xf(KIT_GEO.Cone(0.028, 0.22, 4, 1, true), 0, 0.13, 1.48, -0.28, Math.PI / 4, 0);
+      const spearSpike = xf(KIT_GEO.Cone(0.038, 0.58, 4, 1, true), 0, 0, 1.94, Math.PI / 2, Math.PI / 4, 0);
       spearSpike.scale(0.55, 1.0, 1.0);
 
       return {
@@ -1988,10 +2084,10 @@ const KIT = (() => {
     },
     // A club made of one fused thigh bone: a long shaft, a great knuckled end, vertebra spikes.
     boneClub() {
-      const shaft = uvScale(xf(new THREE.CylinderGeometry(0.06, 0.1, 1.1, 6), 0, 0, 0.45, Math.PI / 2, 0, 0), 1, 2);
+      const shaft = uvScale(xf(KIT_GEO.Cylinder(0.06, 0.1, 1.1, 6), 0, 0, 0.45, Math.PI / 2, 0, 0), 1, 2);
       const head = roughen(xf(sphere(0.3, 8, 6), 0, 0, 1.2, 0, 0, 0, 1, 1, 1.25), 0.05, 77);
       const knobs = [xf(sphere(0.16, 6, 4), 0.2, 0.12, 1.0), xf(sphere(0.15, 6, 4), -0.2, 0.1, 1.15), xf(sphere(0.13, 6, 4), 0.0, -0.22, 1.05)];
-      const spikes = [[0.22, 0.2, 1.3, 0.6], [-0.22, 0.2, 1.35, -0.6], [0, 0.32, 1.1, 0], [0.1, -0.3, 1.3, 3]].map(([x, y, z, a]) => xf(new THREE.ConeGeometry(0.05, 0.22, 4), x, y, z, 0, 0, a));
+      const spikes = [[0.22, 0.2, 1.3, 0.6], [-0.22, 0.2, 1.35, -0.6], [0, 0.32, 1.1, 0], [0.1, -0.3, 1.3, 3]].map(([x, y, z, a]) => xf(KIT_GEO.Cone(0.05, 0.22, 4), x, y, z, 0, 0, a));
       return { blade: [head, ...knobs, ...spikes], grip: [shaft], guard: [roughen(xf(sphere(0.09, 5, 4), 0, 0, -0.12), 0.02, 79)] };
     },
     // A halberd: a long haft, an axe blade with a hooked beak behind and a spike on top.
@@ -2000,13 +2096,13 @@ const KIT = (() => {
       const axe = plate([[1.4, 0.0], [1.85, -0.02], [1.95, -0.3], [1.72, -0.56], [1.4, -0.4]], 0.035, 0.008);
       const hook = plate([[1.45, 0.02], [1.6, 0.26], [1.5, 0.3], [1.36, 0.1]], 0.03, 0.006);
       for (const g of [axe, hook]) { g.rotateY(-Math.PI / 2); xf(g, 0.017, 0, 0); roughen(g, 0.006, 83); }
-      return { grip: [haft], blade: [axe, hook, xf(new THREE.ConeGeometry(0.05, 0.5, 4), 0, 0, 2.05, Math.PI / 2, 0, 0)], guard: [xf(tube(0.05, 0.045, 0.14, 5), 0, 0, 1.4, Math.PI / 2, 0, 0)] };
+      return { grip: [haft], blade: [axe, hook, xf(KIT_GEO.Cone(0.05, 0.5, 4), 0, 0, 2.05, Math.PI / 2, 0, 0)], guard: [xf(tube(0.05, 0.045, 0.14, 5), 0, 0, 1.4, Math.PI / 2, 0, 0)] };
     },
     // A temple bell swung like a maul: crown on the haft, the mouth leading the blow, a lip of iron, a clapper inside.
     bellMaul() {
       const bell = lathe([[0, 0], [0.14, 0.03], [0.22, 0.15], [0.3, 0.35], [0.4, 0.55], [0.5, 0.7], [0.53, 0.76]], 10);
       roughen(bell, 0.012, 91); xf(bell, 0, 0, 1.2, Math.PI / 2, 0, 0);
-      const lip = xf(new THREE.TorusGeometry(0.53, 0.035, 3, 10), 0, 0, 1.96, 0, 0, 0);
+      const lip = xf(KIT_GEO.Torus(0.53, 0.035, 3, 10), 0, 0, 1.96, 0, 0, 0);
       const clapper = xf(sphere(0.12, 6, 4), 0, 0, 1.75);
       const haft = xf(tube(0.05, 0.05, 1.5, 6), 0, 0, 0.55, Math.PI / 2, 0, 0);
       return { blade: [bell], guard: [lip, clapper], grip: [haft] };
@@ -2015,7 +2111,7 @@ const KIT = (() => {
     cane() {
       const shaft = roughen(xf(tube(0.03, 0.022, 1.75, 6), 0, 0, 0.62, Math.PI / 2, 0, 0), 0.006, 31);
       const knots = [0.25, 0.7, 1.1].map((z, i) => xf(sphere(0.04, 5, 4), 0, 0, z, 0, 0, 0, 1, 1, 1.5 + i * 0.2));
-      const ferrule = xf(new THREE.ConeGeometry(0.03, 0.16, 5), 0, 0, 1.56, Math.PI / 2, 0, 0);
+      const ferrule = xf(KIT_GEO.Cone(0.03, 0.16, 5), 0, 0, 1.56, Math.PI / 2, 0, 0);
       const crook = deform(tube(0.032, 0.03, 0.3, 5), v => { v.z -= v.y * v.y * 2.4; }); xf(crook, 0, 0.05, -0.32, Math.PI / 2, 0, 0);
       return { grip: [shaft, ...knots], blade: [ferrule], guard: [crook] };
     },
@@ -2026,15 +2122,15 @@ const KIT = (() => {
       const knots = [-0.1, 0.22, 0.52, 0.8, 1.05].map((z, i) => roughen(xf(sphere(0.06, 6, 4), 0, 0, z, 0, i, 0, 1, 1, 1.3), 0.012, 50 + i));
       const head = roughen(xf(new THREE.BoxGeometry(0.42, 0.2, 0.22, 3, 2, 2), 0, 0, 1.36), 0.025, 77);
       const face = roughen(xf(sphere(0.13, 6, 4), 0.21, 0, 1.36, 0, 0, 0, 0.6, 1, 1), 0.02, 78);
-      const spike = xf(new THREE.ConeGeometry(0.07, 0.24, 5), -0.32, 0, 1.36, 0, 0, Math.PI / 2);
-      const band = xf(new THREE.TorusGeometry(0.06, 0.02, 4, 10), 0, 0, 1.2);
+      const spike = xf(KIT_GEO.Cone(0.07, 0.24, 5), -0.32, 0, 1.36, 0, 0, Math.PI / 2);
+      const band = xf(KIT_GEO.Torus(0.06, 0.02, 4, 10), 0, 0, 1.2);
       return { blade: [head, face, spike], grip: [haft, ...knots], guard: [band] };
     },
     // A heavy two-handed sword: broad blade, long grip.
     greatSword() {
       const blade = plate([[0.1, -0.075], [1.35, -0.072], [1.5, -0.03], [1.58, 0], [1.5, 0.03], [1.35, 0.072], [0.1, 0.075]], 0.035, 0.008);
       blade.rotateY(-Math.PI / 2); blade.translate(0.017, 0, 0); roughen(blade, 0.005, 17);
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.026, 0.03, 0.3, 6), 0, 0, -0.06, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.026, 0.03, 0.3, 6), 0, 0, -0.06, Math.PI / 2, 0, 0), 1, 1);
       const guard = deform(tube(0.02, 0.02, 0.5, 5), v => { v.z += v.y * v.y * 1.6; }); xf(guard, 0, 0, 0.1);
       return { blade: [blade], grip: [grip], guard: [guard, xf(sphere(0.045, 5, 4), 0, 0, -0.25)] };
     },
@@ -2045,7 +2141,7 @@ const KIT = (() => {
       blade.rotateY(-Math.PI / 2); blade.translate(0.017, 0, 0); roughen(blade, 0.004, 18);
       const ricasso = xf(new THREE.BoxGeometry(0.05, 0.12, 0.08), 0, 0, 0.14);
       const bar = xf(new THREE.BoxGeometry(0.05, 0.4, 0.05), 0, 0, 0.08), ends = [-1, 1].map(s => xf(new THREE.BoxGeometry(0.07, 0.05, 0.08), 0, s * 0.2, 0.08));
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.026, 0.028, 0.42, 6), 0, 0, -0.14, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.026, 0.028, 0.42, 6), 0, 0, -0.14, Math.PI / 2, 0, 0), 1, 1);
       const pommel = xf(new THREE.BoxGeometry(0.075, 0.075, 0.06), 0, 0, -0.38), cap = xf(sphere(0.03, 5, 4), 0, 0, -0.42);
       return { blade: [uvScale(blade, 0.6, 0.6)], grip: [grip], guard: [ricasso, bar, ...ends, pommel, cap] };
     },
@@ -2056,10 +2152,10 @@ const KIT = (() => {
       blade.rotateY(-Math.PI / 2); blade.translate(0.011, 0, 0); roughen(blade, 0.003, 21);
       const ricasso = xf(new THREE.BoxGeometry(0.038, 0.095, 0.14), 0, 0, 0.16);
       const guard = deform(tube(0.018, 0.016, 0.48, 5), v => { v.z += v.y * v.y * 1.4; }); xf(guard, 0, 0, 0.09);
-      const FlukeL = xf(new THREE.ConeGeometry(0.02, 0.08, 4), 0, 0.16, 0.18, 0.6, 0, -0.4);
-      const FlukeR = xf(new THREE.ConeGeometry(0.02, 0.08, 4), 0, -0.16, 0.18, -0.6, 0, 0.4);
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.024, 0.027, 0.46, 6), 0, 0, -0.15, Math.PI / 2, 0, 0), 1, 2);
-      const ring = xf(new THREE.TorusGeometry(0.03, 0.008, 3, 6), 0, 0, -0.14);
+      const FlukeL = xf(KIT_GEO.Cone(0.02, 0.08, 4), 0, 0.16, 0.18, 0.6, 0, -0.4);
+      const FlukeR = xf(KIT_GEO.Cone(0.02, 0.08, 4), 0, -0.16, 0.18, -0.6, 0, 0.4);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.024, 0.027, 0.46, 6), 0, 0, -0.15, Math.PI / 2, 0, 0), 1, 2);
+      const ring = xf(KIT_GEO.Torus(0.03, 0.008, 3, 6), 0, 0, -0.14);
       const pommel = xf(lathe([[0, -0.09], [0.048, -0.055], [0.052, -0.02], [0.028, 0.01]], 6), 0, 0, -0.38, Math.PI / 2, 0, 0);
       return { blade: [uvScale(blade, 0.6, 0.6)], grip: [grip], guard: [ricasso, guard, FlukeL, FlukeR, ring, pommel] };
     },
@@ -2076,8 +2172,8 @@ const KIT = (() => {
       const haft = xf(tube(0.034, 0.03, 1.62, 6), 0, 0, 0.56, Math.PI / 2, 0, 0);
       const pts = [[0.86, 0.05], [0.95, 0.1], [0.8, 0.28], [0.73, 0.42], [0.88, 0.5], [1.05, 0.54], [1.22, 0.5], [1.37, 0.42], [1.3, 0.28], [1.15, 0.1], [1.24, 0.05]];   // a convex crescent edge
       const bits = [1, -1].map(s => { const g = plate(pts.map(([z, y]) => [z, y * s]), 0.035, 0.01); g.rotateY(-Math.PI / 2); xf(g, 0.018, 0, 0); return roughen(g, 0.008, 27 + s); });
-      const block = xf(new THREE.BoxGeometry(0.13, 0.15, 0.2), 0, 0, 1.05), boss = xf(new THREE.CylinderGeometry(0.05, 0.05, 0.16, 8), 0, 0, 1.05, 0, 0, Math.PI / 2);
-      const spike = xf(new THREE.ConeGeometry(0.04, 0.24, 4), 0, 0, 1.48, Math.PI / 2, 0, 0);
+      const block = xf(new THREE.BoxGeometry(0.13, 0.15, 0.2), 0, 0, 1.05), boss = xf(KIT_GEO.Cylinder(0.05, 0.05, 0.16, 8), 0, 0, 1.05, 0, 0, Math.PI / 2);
+      const spike = xf(KIT_GEO.Cone(0.04, 0.24, 4), 0, 0, 1.48, Math.PI / 2, 0, 0);
       const pommel = xf(new THREE.BoxGeometry(0.09, 0.09, 0.12), 0, 0, -0.3), collars = [0.8, 1.3, -0.18].map(z => xf(tube(0.048, 0.048, 0.05, 6), 0, 0, z, Math.PI / 2, 0, 0));
       return { blade: [...bits.map(g => uvScale(g, 0.5, 0.5)), spike], grip: [haft], guard: [block, boss, pommel, ...collars] };
     },
@@ -2085,7 +2181,7 @@ const KIT = (() => {
       const haft = xf(tube(0.036, 0.036, 1.75, 5), 0, 0, 0.62, Math.PI / 2, 0, 0);
       const head = plate([[1.05, 0.16], [1.4, 0.18], [1.52, -0.05], [1.56, -0.45], [1.3, -0.52], [1.08, -0.28]], 0.05, 0.01);
       head.rotateY(-Math.PI / 2); xf(head, 0.025, 0, 0); roughen(head, 0.008, 19);
-      return { grip: [haft], blade: [head, xf(new THREE.ConeGeometry(0.04, 0.2, 4), 0, 0, 1.58, Math.PI / 2, 0, 0)], guard: [xf(tube(0.05, 0.045, 0.12, 5), 0, 0, 1.06, Math.PI / 2, 0, 0)] };
+      return { grip: [haft], blade: [head, xf(KIT_GEO.Cone(0.04, 0.2, 4), 0, 0, 1.58, Math.PI / 2, 0, 0)], guard: [xf(tube(0.05, 0.045, 0.12, 5), 0, 0, 1.06, Math.PI / 2, 0, 0)] };
     },
     // The Executioner's greataxe (v5.5, after the reference art): a long gnarled haft wrapped in red-stained bindings
     // with a swollen bone pommel, a massive flared cleaver head with a concave top arch and deep bearded toe, a rear
@@ -2099,7 +2195,7 @@ const KIT = (() => {
         [1.56, -0.66], [1.28, -0.65], [1.02, -0.58], [0.88, -0.44], [0.94, -0.22],
       ], 0.038, 0.009);
       head.rotateY(-Math.PI / 2); xf(head, 0.019, 0, 0); roughen(head, 0.007, 95);
-      const fluke = xf(new THREE.ConeGeometry(0.028, 0.28, 4), 0, 0.14, 1.24, -0.45, 0, 0);
+      const fluke = xf(KIT_GEO.Cone(0.028, 0.28, 4), 0, 0.14, 1.24, -0.45, 0, 0);
       const socket = xf(tube(0.052, 0.046, 0.28, 6), 0, 0, 1.12, Math.PI / 2, 0, 0);
       const tasselA = deform(new THREE.PlaneGeometry(0.065, 0.34, 1, 3), v => { v.z += (0.17 - v.y) * 0.18; v.x *= 1 - (0.17 - v.y) * 1.4; });
       const tasselB = deform(new THREE.PlaneGeometry(0.055, 0.28, 1, 3), v => { v.z -= (0.14 - v.y) * 0.15; v.x *= 1 - (0.14 - v.y) * 1.5; });
@@ -2114,7 +2210,7 @@ const KIT = (() => {
     // A short bow held upright when aimed: limbs along z, the belly away from the archer (-y), the string at +y.
     bow() {
       const pts = [-1, -0.66, -0.33, 0, 0.33, 0.66, 1].map(s => new V3(0, 0.17 - 0.22 * (1 - s * s), s * 0.52));
-      const limb = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.016, 4, false);
+      const limb = KIT_GEO.Tube(new THREE.CatmullRomCurve3(pts), 10, 0.016, 4, false);
       const string = xf(tube(0.004, 0.004, 1.04, 3), 0, 0.17, 0, Math.PI / 2, 0, 0);
       return { limb: [uvScale(limb, 6, 2), xf(tube(0.03, 0.03, 0.14, 5), 0, -0.05, 0, Math.PI / 2, 0, 0)], string: [string] };
     },
@@ -2122,16 +2218,16 @@ const KIT = (() => {
     rapier() {
       const blade = plate([[0.12, -0.02], [1.35, -0.013], [1.45, 0], [1.35, 0.013], [0.12, 0.02]], 0.012, 0.004);
       blade.rotateY(-Math.PI / 2); blade.translate(0.006, 0, 0);
-      const cup = xf(new THREE.SphereGeometry(0.075, 7, 3, 0, TAU, 0, Math.PI / 2), 0, 0, 0.1, Math.PI / 2, 0, 0);
+      const cup = xf(KIT_GEO.Sphere(0.075, 7, 3, 0, TAU, 0, Math.PI / 2), 0, 0, 0.1, Math.PI / 2, 0, 0);
       const quill = xf(tube(0.011, 0.011, 0.3, 4), 0, 0, 0.1, 0, 0, Math.PI / 2);
-      return { blade: [blade], grip: [uvScale(xf(new THREE.CylinderGeometry(0.02, 0.022, 0.2, 5), 0, 0, -0.03, Math.PI / 2, 0, 0), 1, 1)], guard: [cup, quill, xf(sphere(0.03, 5, 4), 0, 0, -0.14)] };
+      return { blade: [blade], grip: [uvScale(xf(KIT_GEO.Cylinder(0.02, 0.022, 0.2, 5), 0, 0, -0.03, Math.PI / 2, 0, 0), 1, 1)], guard: [cup, quill, xf(sphere(0.03, 5, 4), 0, 0, -0.14)] };
     },
     // A curved, hooked knife: short, quick, cruel.
     curvedKnife() {
       const blade = plate([[0.1, -0.04], [0.6, -0.05], [0.88, -0.03], [1.0, 0.03], [0.74, 0.0], [0.1, 0.04]], 0.016, 0.005);
       blade.rotateY(-Math.PI / 2); blade.translate(0.008, 0, 0);
       deform(blade, v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.22; });
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.022, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.022, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
       return { blade: [blade], grip: [grip], guard: [xf(tube(0.014, 0.014, 0.16, 4), 0, 0, 0.09, 0, 0, Math.PI / 2)] };
     },
     // A broad iron scimitar (the Rogue) widening toward a curved tip.
@@ -2139,14 +2235,14 @@ const KIT = (() => {
       const bend = v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.3; };
       const blade = plate([[0.1, -0.034], [0.5, -0.048], [0.78, -0.074], [0.95, -0.045], [1.02, 0.02], [0.86, 0.036], [0.5, 0.04], [0.1, 0.034]], 0.014, 0.005);
       blade.rotateY(-Math.PI / 2); blade.translate(0.007, 0, 0); deform(blade, bend); roughen(blade, 0.003, 17);
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.021, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.021, 0.024, 0.2, 5), 0, 0, -0.01, Math.PI / 2, 0, 0), 1, 1);
       return { blade: [blade], grip: [grip], guard: [xf(tube(0.015, 0.015, 0.14, 4), 0, 0, 0.09, 0, 0, Math.PI / 2), xf(sphere(0.026, 5, 4), 0, 0, -0.12)] };
     },
     // A worn arming sword: straight, leather-wrapped grip, plain crossguard.
     wandererSword() {
       const blade = plate([[0.1, -0.045], [1.0, -0.044], [1.1, -0.022], [1.17, 0.0], [1.1, 0.022], [1.0, 0.044], [0.1, 0.045]], 0.02, 0.006);
       blade.rotateY(-Math.PI / 2); blade.translate(0.01, 0, 0); roughen(blade, 0.003, 9);
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.022, 0.025, 0.22, 6), 0, 0, -0.02, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.022, 0.025, 0.22, 6), 0, 0, -0.02, Math.PI / 2, 0, 0), 1, 1);
       const guard = xf(tube(0.017, 0.017, 0.3, 5), 0, 0, 0.09, 0, 0, 0.04);
       return { blade: [blade], grip: [grip], guard: [guard, xf(sphere(0.034, 5, 4), 0, 0, -0.14)] };
     },
@@ -2156,7 +2252,7 @@ const KIT = (() => {
         [0.68, 0.052], [0.64, 0.04], [0.6, 0.054], [0.1, 0.05]], 0.022, 0.006);
       blade.rotateY(-Math.PI / 2); blade.translate(0.011, 0, 0);
       deform(blade, v => { v.x += Math.max(0, v.z - 0.1) ** 2 * 0.035; }); roughen(blade, 0.004, 4);
-      const grip = uvScale(xf(new THREE.CylinderGeometry(0.022, 0.026, 0.22, 6), 0, 0, -0.02, Math.PI / 2, 0, 0), 1, 1);
+      const grip = uvScale(xf(KIT_GEO.Cylinder(0.022, 0.026, 0.22, 6), 0, 0, -0.02, Math.PI / 2, 0, 0), 1, 1);
       const guard = deform(tube(0.017, 0.017, 0.3, 5), v => { v.z += v.y * v.y * 2.4; });
       xf(guard, 0, 0, 0.09);
       return { blade: [blade], grip: [grip], guard: [guard, xf(sphere(0.035, 5, 4), 0, 0, -0.14)] };
@@ -2224,10 +2320,18 @@ const KIT = (() => {
   // Everything one model is made of, built once per id (and variant) and shared by every body of that type: the
   // parts are moved into the skeleton's rest pose and merged into ONE geometry per material, each vertex bound to
   // the bone its part hangs from. So a body costs a handful of draw calls, however many pieces it has.
+  let geoK = 1;   // the segment multiplier of the model being built (detail.geo, by its budget class)
   function modelParts(id, variant) {
-    const ckey = variant ? id + '|' + variant : id;
+    const g = typeof detail.geo === 'object' ? detail.geo[resolve(id).budget] ?? 1 : detail.geo;
+    const ckey = (variant ? id + '|' + variant : id) + (g !== 1 ? '@' + g : '');
     let m = modelCache.get(ckey);
     if (m) return m;
+    KIT_GEO.set(g); geoK = g;
+    try { m = buildParts(id, variant, ckey); } finally { KIT_GEO.set(1); geoK = 1; }
+    return m;
+  }
+  function buildParts(id, variant, ckey) {
+    let m;
     const M = resolveVariant(id, variant), groups = new Map();
     limbSides = M.limbSides ?? MS.limbSides;
     const spec = boneSpec(M), index = {}, bind = {};
@@ -2256,8 +2360,8 @@ const KIT = (() => {
       geo.boundingSphere = new THREE.Sphere(new V3(0, 1, 0), 3.4);   // generous: a swung weapon must not be culled with its body
       parts.push({ slot, weapon, geo }); tris += geo.attributes.position.count / 3;
     }
-    const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1);   // a stronger variant may carry a quarter more
-    if (tris > budget) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
+    const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1) * geoK * geoK;   // a stronger variant may carry a quarter more; Ultra's detail its square
+    if (tris > budget && geoK === 1) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
     m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox };
     modelCache.set(ckey, m);
     return m;
@@ -2290,7 +2394,7 @@ const KIT = (() => {
       let m;
       if ('glow' in spec) m = new THREE.MeshBasicMaterial({ color: new THREE.Color(spec.glow).multiplyScalar(1.6), transparent: true });
       else {
-        m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: spec.size ?? MS.texSize }).clone();
+        m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: texSize(spec) }).clone();
         m.side = spec.double ? THREE.DoubleSide : THREE.FrontSide; addDissolve(m, rim, rig.dissolve);
       }
       rig.mats.push(m);
@@ -2357,18 +2461,25 @@ const KIT = (() => {
     const jobs = [];
     for (const id of Object.keys(MODEL_DEFS)) {
       const M = resolve(id);
-      for (const spec of Object.values(M.materials)) if (spec.tex) jobs.push(() => TEXLIB.get(spec.tex, { tint: spec.tint, decay: spec.decay, size: spec.size ?? MS.texSize }));
+      for (const spec of Object.values(M.materials)) if (spec.tex) {   // to the worker when there is one (no stall), else baked here a piece at a time
+        const opts = { tint: spec.tint, decay: spec.decay, size: texSize(spec) };
+        if (!TEXLIB.prefetch(spec.tex, opts)) jobs.push(() => TEXLIB.get(spec.tex, opts));
+      }
       jobs.push(() => modelParts(id));
     }
     const step = () => {
       if (!jobs.length) return;
       if (typeof Game !== 'undefined' && Game.mode === 'play') { setTimeout(step, 1500); return; }
       try { jobs.shift()(); } catch (e) { console.warn('prewarm:', e); }
-      setTimeout(step, 40);
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 400 }); else setTimeout(step, 40);   // only between frames
     };
     setTimeout(step, 800);
   }
 
-  return { buildModelRig, modelParts, resolve, resolveVariant, prewarm, parts: KIT_PARTS, weapons: KIT_WEAPONS, cache: modelCache };
+  // The detail of models built from now on: { geo, tex } multipliers (1, 1 normally; the Ultra preset's VISUALS.ultra.models).
+  const setDetail = d => { const was = JSON.stringify(detail); detail = { geo: d.geo ?? 1, tex: d.tex ?? 1 }; if (JSON.stringify(detail) !== was) prewarm(); };   // the new detail baked in the background
+  // The geometry helpers, for parts defined outside the kit (js/kit-premium.js).
+  const helpers = { xf, uvScale, hash3, roughen, deform, lathe, limb, shape, plate, sphere, tube, texMeters: MS.texMeters };
+  return { buildModelRig, modelParts, resolve, resolveVariant, prewarm, setDetail, detail: () => detail, parts: KIT_PARTS, weapons: KIT_WEAPONS, cache: modelCache, helpers };
 })();
 const buildModelRig = KIT.buildModelRig;

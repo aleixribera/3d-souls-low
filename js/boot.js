@@ -139,9 +139,11 @@ rootStyle.setProperty('--fade-time', CONFIG.nextLevel.fadeTime + 's');
 registerListeners();
 window.addEventListener('resize', resize);
 resize();
+autoQuality.firstRun();   // first launch only: the preset this machine should start on (js/autoquality.js)
 applySettings();
 $('version').textContent = VERSION;
 Game.showMenu('main');
+autoQuality.show();
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;

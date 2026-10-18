@@ -22,7 +22,7 @@
   #menuBox h1 { position: relative; z-index: 0; margin: 0; padding: 0 0.04em; text-align: center; font-weight: bold; white-space: nowrap;
     font-family: 'Trajan Pro', 'Cinzel', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
     font-size: clamp(34px, 7.6vw, 124px); letter-spacing: 0.01em; line-height: 1.05; color: #f4f2ee;
-    filter: url(#menuCrack) drop-shadow(0 0 1px #fff4); }
+    text-shadow: 0 0 1px #fff4, 0 0 24px #ffffff10; }   /* static: no live filters, the menus cost nothing to draw */
   /* the thin horizontal line through the title, a little wider than the lettering, broken in places */
   #menuBox h1::before { content: ''; position: absolute; z-index: 1; left: -6%; right: -6%; top: 50%; height: 2px; margin-top: -1px;
     background: linear-gradient(90deg, #fff0 0, #ffffffb0 6%, #ffffffe0 50%, #ffffffb0 94%, #fff0 100%);
@@ -45,13 +45,18 @@
   #menuList:empty { display: none; }
   .menuBtn { position: relative; flex: none; display: block; width: min(760px, 92vw); box-sizing: border-box; margin: 0; padding: 5px 16px;
     text-align: center; background: none; border: none; color: #d6d3cb; cursor: pointer; font-family: inherit; outline: none;
-    transition: color 0.25s; }
+    transition: color 0.12s; }
   .menuBtn::before { content: ''; position: absolute; left: 50%; top: 50%; width: 300px; height: 40px; margin: -20px 0 0 -150px; opacity: 0;
-    transition: opacity 0.3s; pointer-events: none;
+    transition: opacity 0.12s; pointer-events: none;
     background: radial-gradient(ellipse 50% 50% at 50% 50%, #b8892a99 0%, #b8892a55 45%, #b8892a00 100%); }
   .menuBtn .n { position: relative; font-size: 19px; letter-spacing: 0.5px; line-height: 1.2; }
   .menuBtn .d { display: none; }
   .menuBtn:hover, .menuBtn.sel { color: #fff; }
+  /* adjustable options: arrows either side of the line, brighter on the selected one */
+  .menuBtn.adj { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .menuBtn.adj .n { order: 1; } .menuBtn .al { order: 0; } .menuBtn .ar { order: 2; }
+  .menuBtn .al, .menuBtn .ar { position: relative; font-size: 22px; line-height: 1; color: #c9a85e; opacity: 0.35; padding: 0 6px; cursor: pointer; transition: opacity 0.12s; }
+  .menuBtn.sel .al, .menuBtn.sel .ar, .menuBtn:hover .al, .menuBtn:hover .ar { opacity: 1; }
   .menuBtn.sel::before { opacity: 1; }
   #menuDesc { flex: none; max-width: min(640px, 90vw); min-height: 1.4em; margin-top: 14px; text-align: center; font-size: 13px; letter-spacing: 0.5px; color: #8d897d; }
   #menuBox .hint { position: absolute; left: 0; right: 0; bottom: 4vh; margin: 0; text-align: center; font-size: 12px; letter-spacing: 1.5px; color: #6a675e; }
@@ -59,6 +64,10 @@
   #menuBox .notice:empty { display: none; }
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
   body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
+  #qualityNote { position: fixed; left: 50%; top: 7vh; z-index: 12; transform: translateX(-50%); padding: 8px 22px; max-width: 86vw; text-align: center;
+    font-size: 13px; letter-spacing: 1px; color: #d9c792; border-top: 1px solid #c9a85e55; border-bottom: 1px solid #c9a85e55;
+    background: linear-gradient(90deg, #0000, #000c 20%, #000c 80%, #0000); pointer-events: none; opacity: 1; transition: opacity 1.4s; }
+  #qualityNote.out { opacity: 0; }
   #version { position: absolute; right: 10px; bottom: 6px; font-size: 11px; letter-spacing: 1px; color: #6f6753; text-align: right; pointer-events: none; }
 
   #fade { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 0; pointer-events: none; transition: opacity var(--fade-time, 1s); }
@@ -340,7 +349,6 @@
   </div>
 </div>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="menuCrack" x="-5%" y="-10%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 9 -6.1" result="holes"/><feComposite in="SourceGraphic" in2="holes" operator="out" result="speck"/><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="w"/><feDisplacementMap in="speck" in2="w" scale="3"/></filter></svg>
 <div id="menu">
   <div id="menuBox">
     <h1 id="menuTitle">COMBAT ARENA 3D</h1>
@@ -373,9 +381,10 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE = THREE;
-window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, mergeGeometries, mergeVertices };
+window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices };
 
 // Game files in load order (paths under js/). A file may only use, at load time, what earlier files define.
 const GAME_FILES = [
@@ -403,6 +412,7 @@ const GAME_FILES = [
   'data/bosses/radagon.js',
   'data/bosses/malenia.js',
   'data/elden-bosses.js',
+  'data/boss-fx.js',
   'levels/arena.js',
   'levels/tutorial.js',
   'levels/long-hall.js',
@@ -427,6 +437,7 @@ const GAME_FILES = [
   'scene.js',
   'rig.js',
   'bodykit.js',
+  'kit-premium.js',
   'animator.js',
   'attack-anim.js',
   'character.js',
@@ -447,12 +458,17 @@ const GAME_FILES = [
   'lore.js',
   'story.js',
   'impact.js',
+  'camera-feel.js',
   'spectral.js',
   'flame.js',
   'blackblade.js',
   'holy.js',
   'scarlet.js',
+  'ultra-post.js',
+  'ultra-fx.js',
+  'ultra-boss.js',
   'elden.js',
+  'autoquality.js',
   'boot.js',
 ];
 const LOAD_STAMP = Date.now();   // a fresh copy of every script on each page load: never a cached file mixed with new ones

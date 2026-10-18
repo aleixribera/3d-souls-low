@@ -55,7 +55,7 @@ MODEL_DEFS.godfrey = {
     haft: { tex: 'rustedIron', tint: 0x6a4a30, decay: 0.5 },
     eye: { glow: 0xffe0a0 },
   },
-  body: { torso: 'skin', pelvis: 'sash', arms: 'skin', legs: 'skin', head: 'skin', neck: 'skin', hands: 'skin', feet: 'armour' },
+  body: { torso: null, pelvis: 'sash', arms: 'skin', legs: 'skin', head: 'skin', neck: 'skin', hands: 'skin', feet: 'armour' },
   bones: {
     loinF: { parent: 'spin', at: [0, -0.02, 0.22] }, loinB: { parent: 'spin', at: [0, -0.02, -0.22] },
     beard: { parent: 'head', at: [0, 0.0, 0.12] }, mane: { parent: 'head', at: [0, 0, 0] },
@@ -63,6 +63,7 @@ MODEL_DEFS.godfrey = {
     capeA: { parent: 'chest', at: [0, 0.6, -0.27] }, capeB: { parent: 'capeA', at: [0, -0.46, 0] }, capeC: { parent: 'capeB', at: [0, -0.46, 0] },
   },
   parts: [
+    { use: 'muscleTorso', slot: 'skin', bone: 'chest', bulk: 1.15 },   // v6.0: a sculpted bare torso (js/kit-premium.js)
     // Armour (phase 1 only): breastplate, big rounded pauldrons, bracers, tassets and mail skirt, greaves.
     { use: 'breastplate', slot: 'armour', bone: 'chest' },
     { use: 'medallion', slot: 'gold', bone: 'chest', at: [0, 0.4, 0.25], r: 0.08 },

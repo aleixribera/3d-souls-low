@@ -34,7 +34,7 @@
 // tall closed helm with lyre horns and a crest spike, dark mail between the plates, a great oval shield on the left arm
 // and a long straight greatsword. Built on the Shield Warden's frame (same skeleton and shield arm).
 MODEL_DEFS.crucibleKnight = {
-  extends: 'ironWarden', fit: 1.0,
+  extends: 'ironWarden', fit: 1.0, budget: 'boss',
   proportions: { ...IRONBOUND_PROPS, shoulderX: 0.4, torsoW: 0.27, torsoD: 0.2, armR: 0.07, legR: 0.095, headR: 0.12 },
   posture: { chest: [0.04, 0, 0], neck: [0.04, 0, 0], head: [0.02, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.3, 0, 0] },
   materials: {

@@ -31,12 +31,12 @@ const Game = {
     const S = story.screens(this);
     const pauseItems = this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
-        { name: 'Options', desc: '', go: () => this.showMenu('options') },
+        { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Leave the training hall and set out for the Long Hall.', go: () => story.afterTutorial() }] : []),
         { name: 'Quit to main menu', desc: 'Saves first. Continue returns you to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
-        { name: 'Options', desc: '', go: () => this.showMenu('options') },
+        { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => { const er = !!this.eldenBoss; this.eldenBoss = null; this.reset(); this.showMenu(er ? 'elden' : 'main'); } },
       ];
     return {
@@ -46,18 +46,19 @@ const Game = {
         { name: 'Levels', desc: 'Learn the controls, then fight your way through each level.', go: () => this.showMenu('levels') },
         { name: 'Enemies', desc: 'Duel a single opponent in the arena.', go: () => this.showMenu('enemies') },
         elden.mainItem(this),
+        { name: 'Options', desc: 'Graphics, camera, sound and controls.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
         items: [...finale.devItems(), ...lore.devItems(),
-                ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.startLevel(l.id) })),
-                ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.startFight(d.id) }))] },
+                ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
+                ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main',
-        items: LEVELS.map(l => ({ name: l.name + (l.ending && finale.completed() ? '  ✦' : ''), desc: l.description, go: () => this.startLevel(l.id) })) },
+        items: LEVELS.map(l => ({ name: l.name + (l.ending && finale.completed() ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })) },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'main',
-        items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.startFight(d.id) })) },
+        items: ENEMY_DEFS.map(d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) })) },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: pauseItems },
-      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: true, back: 'pause', items: [
+      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main', back: this.optionsFrom === 'main' ? 'main' : 'pause', items: [
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
         { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
@@ -67,16 +68,18 @@ const Game = {
           adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
         { name: `Sound volume: ${settings.volume}`, desc: 'Master volume of effects and menu sounds.',
           adjust: d => { settings.volume = clamp(Math.round(Number(settings.volume)) + d, 0, 10); } },
-        { name: `Graphics: ${visuals.qualityLabel(settings.graphics)}`, desc: 'High: bloom, vignette, grain, light shafts. Low: for integrated graphics, plainer.',
-          adjust: d => { settings.graphics = visuals.nextQuality(settings.graphics, d); } },
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('pause') },
+        { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Small camera movements with your swings, rolls and the blows you take.',
+          adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
+        { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
+          adjust: d => { const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics)); settings.graphics = c[(i + d + c.length) % c.length]; } },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.optionsFrom === 'main' ? 'main' : 'pause') },
       ] },
     };
   },
   showMenu(screen, keepSelection) {
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
-    const inGame = screen === 'pause' || screen === 'options';
+    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main');   // options open from the title or from a pause
     if (!inGame) {
       this.mode = 'menu';
       this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu
@@ -89,11 +92,17 @@ const Game = {
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
     this.showMenuHint();
     list.textContent = '';
+    this.menuItems = s.items;   // what select() and adjust() read, so a key press never rebuilds every screen
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
-      b.className = 'menuBtn';
+      b.className = 'menuBtn' + (it.adjust ? ' adj' : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
+      if (it.adjust) for (const [cls, d] of [['al', -1], ['ar', 1]]) {   // ‹ › : the setting can be stepped either way (clickable)
+        const a = document.createElement('span'); a.className = cls; a.textContent = d < 0 ? '‹' : '›';
+        a.addEventListener('click', ev => { ev.stopPropagation(); this.select(i); this.adjust(d); });
+        b.appendChild(a);
+      }
       b.addEventListener('click', () => { this.select(i); if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); });
       b.addEventListener('mouseenter', () => { if (this.selected !== i) events.emit('menuMove'); this.select(i); });
       list.appendChild(b);
@@ -118,17 +127,21 @@ const Game = {
     this.selected = n ? (i + n) % n : 0;
     [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
     const cur = $('menuList').children[this.selected]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
-    const it = (this.screens()[this.screen] || { items: [] }).items[this.selected];
+    const it = (this.menuItems || [])[this.selected];
     $('menuDesc').textContent = it ? it.desc || '' : '';
     $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
-  confirm() { const it = this.screens()[this.screen].items[this.selected]; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
+  confirm() { const it = this.menuItems[this.selected]; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
   adjust(d) {
-    const it = this.screens()[this.screen].items[this.selected];
-    if (!it.adjust) return;
+    const it = this.menuItems[this.selected];
+    if (!it || !it.adjust) return;
     it.adjust(d); saveSettings(); applySettings();
     events.emit('menuAdjust', { dir: d });
-    this.showMenu(this.screen, true);
+    // Only the labels change: rewrite them in place (the list, its buttons and the selection stay).
+    const items = this.screens()[this.screen].items, btns = $('menuList').children;
+    this.menuItems = items;
+    items.forEach((x, i) => { if (btns[i]) btns[i].children[0].textContent = x.name; });
+    $('menuDesc').textContent = items[this.selected] ? items[this.selected].desc || '' : '';
   },
   menuBack() {
     const s = this.screens()[this.screen];
@@ -175,6 +188,22 @@ const Game = {
     document.documentElement.style.setProperty('--load-fade', CONFIG.loading.fade + 's');
     $('loading').classList.add('show');
     this.loading = CONFIG.loading.time;
+  },
+  // The title card first, the work after: shows the loading screen (a level's name and line) and waits until it is on
+  // screen before `fn` builds the level, so a long build never looks like a freeze. Under a hand-stepped clock (tests)
+  // it runs at once. A second request while one is pending is dropped.
+  loadingFirst(name, tip, fn) {
+    if (this.pendingLoad) return;
+    if (this.manualClock) { fn(); return; }
+    this.pendingLoad = true; this.mode = 'loading'; input.clear();
+    $('loadName').textContent = name; $('loadTip').textContent = tip || ''; $('loadPadText').textContent = CONFIG.hud.text.controller;
+    $('loading').classList.add('show'); $('menu').classList.add('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => { this.pendingLoad = false; fn(); }));
+  },
+  // What a level's loading screen says: its chapter title and line in Story mode, else its name and description.
+  levelCard(id) {
+    const L = ALL_LEVELS.find(l => l.id === id), ch = this.story && story.chapter(id);
+    return ch ? [ch.title, ch.line] : [L ? L.name : '', L ? L.description : ''];
   },
   tickLoading(dt) {
     if (this.loading <= 0) return;
@@ -628,7 +657,7 @@ const Game = {
       const N = CONFIG.nextLevel;
       this.nextTimer += dt;
       if (this.nextTimer >= N.delay) $('fade').classList.add('show');
-      if (this.nextTimer >= N.delay + N.fadeTime) this.startLevel(next);
+      if (this.nextTimer >= N.delay + N.fadeTime) this.loadingFirst(...this.levelCard(next), () => this.startLevel(next));
     }
   },
 
@@ -755,6 +784,7 @@ const Game = {
       // no pull when the player runs straight at the camera. Mouse or stick input holds both off for a moment.
       this.mouseHold = Math.max(0, this.mouseHold - dt);
       const moving = clamp(Math.hypot(p.vx, p.vz) / K.moveSpeed, 0, 1);
+      look.x += p.vx / K.moveSpeed * K.lead * moving; look.z += p.vz / K.moveSpeed * K.lead * moving;   // lead into the run
       if (this.mouseHold <= 0 && moving > 0) {
         c.yaw += Math.sin(angDiff(p.yaw, c.yaw)) * K.yawFollow * moving * dt;
         c.pitch += (K.levelPitch - c.pitch) * (1 - Math.exp(-K.levelRate * moving * dt));
@@ -792,7 +822,7 @@ const Game = {
     t = Math.max(0, t);
     const wx = p.x + ox * t, wz = p.z + oz * t;
     const want = new THREE.Vector3(wx, this.camY(wx, wz, base + height * Math.max(t, 0.5) + (1 - t) * K.closeRaise, base), wz);
-    c.pos.lerp(want, k); c.look.lerp(look, k);
+    c.pos.lerp(want, k); c.look.lerp(look, snap ? 1 : 1 - Math.exp(-K.lookRate * dt));
     if (W.solids) {
       // The smoothed position can cut a corner: pull it back along the line from the player if it would.
       const dx = c.pos.x - p.x, dz = c.pos.z - p.z, f = this.boomFit(p.x, head, p.z, dx, c.pos.y - head, dz);

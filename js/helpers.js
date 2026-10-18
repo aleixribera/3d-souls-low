@@ -1,6 +1,6 @@
 'use strict';
 // Three.js addons, imported by the loader in combat-arena-3d.html.
-const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, mergeGeometries, mergeVertices } = THREE_ADDONS;
+const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices } = THREE_ADDONS;
 
 // ============================================================================
 // 0. Shared helpers

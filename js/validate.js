@@ -204,6 +204,7 @@ function validateData() {
       }
     }
     for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
+    for (const b of L.braziers || []) need(inX(b.x) && Math.abs(b.z) < L.halfZ - 0.5 && !L.gated.some(g => Math.abs(g.gateX - b.x) < 1.2), `${where}: a brazier at x ${b.x} must stand in the hall, clear of the gates.`);
     if (L.script === 'tutorial') for (const k of ['dummy', 'sparring', 'dodge', 'execution']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
   }
   // Arena and timings
@@ -227,6 +228,28 @@ function validateData() {
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   checkVisualData(need, num);   // optional look fields (section 9b)
+  // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
+  const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
+  for (const [n, E] of Object.entries(FX_ELEMENTS))
+    need(['core', 'glow', 'mote', 'trail'].every(k => isCol(E[k])) && E.sparks in CONFIG.VISUALS.ultra.sparks.colors && BOSS_FX_IMPACTS.includes(E.impact)
+      && (E.smoke === undefined || isCol(E.smoke)), `FX_ELEMENTS.${n}: core, glow, mote and trail colours, sparks (a spark palette) and an impact (${BOSS_FX_IMPACTS.join(', ')}).`);
+  for (const [id, B] of Object.entries(BOSS_FX)) {
+    const d = ENEMY_BY_ID[id], w = `BOSS_FX.${id}`;
+    need(!!d, `${w}: no enemy "${id}".`);
+    if (!d) continue;
+    need(B.element in FX_ELEMENTS, `${w}: unknown element "${B.element}".`);
+    if ('aura' in B) need(isCol(B.aura), `${w}: aura must be a colour.`);
+    for (const [ph, el] of Object.entries(B.phases || {}))
+      need(!!(d.phases && d.phases[ph]) && el in FX_ELEMENTS, `${w}.phases.${ph}: needs a phase of "${id}" and a known element ("${el}").`);
+    const ids = new Set([...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])].filter(a => a && typeof a === 'object').map(a => a.id));
+    for (const [aid, A] of Object.entries(B.attacks || {})) {
+      need(ids.has(aid), `${w}.attacks.${aid}: "${id}" has no attack "${aid}".`);
+      if (A.element !== undefined) need(A.element in FX_ELEMENTS, `${w}.attacks.${aid}: unknown element "${A.element}".`);
+      if (A.impact !== undefined) need(BOSS_FX_IMPACTS.includes(A.impact), `${w}.attacks.${aid}: unknown impact "${A.impact}".`);
+      if (A.windup !== undefined) need(['gather', 'none'].includes(A.windup), `${w}.attacks.${aid}: windup is "gather" or "none".`);
+      if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
+    }
+  }
   // Story mode (js/data/story.js): each chapter and the tutorial name a real level, once each, with a title and a line.
   const storyIds = [STORY.tutorial, ...STORY.chapters].map(c => c && c.level);
   for (const c of [STORY.tutorial, ...STORY.chapters]) {

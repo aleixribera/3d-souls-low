@@ -13,8 +13,11 @@ for (let i = 0; i < CONFIG.fx.particleCount; i++) {
   particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
 }
 let particleCursor = 0;
+// A preset with effects of its own (Ultra, js/ultra-fx.js) can take the bursts over: when this returns true, none is spawned.
+let burstOverride = null;
 // burst: { color, count, speed } from CONFIG.fx.bursts
 function spawnBurst(pos, burst) {
+  if (burstOverride && burstOverride(pos, burst)) return;
   for (let i = 0; i < burst.count; i++) {
     const p = particles[particleCursor++ % particles.length];
     const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u), s = burst.speed * rand(0.35, 1);
@@ -150,6 +153,7 @@ function makeSwordTrail(color = 0xfff0d0, opacity = 0.3) {
   // Blade base/tip pairs, newest first; `free` holds the spare pairs, so a swing allocates nothing.
   const pts = [], free = Array.from({ length: N }, () => [new THREE.Vector3(), new THREE.Vector3()]);
   return {
+    mesh,   // the Ultra preset draws its own ribbon and hides this one (js/ultra-fx.js)
     update(active, rig) {
       if (active) {
         rig.weapon.updateWorldMatrix(true, false);   // the blade and what holds it, not the whole rig

@@ -54,7 +54,7 @@ MODEL_DEFS.radagon = {
     rune: { glow: 0xffc850 },
     eye: { glow: 0xffd890 },
   },
-  body: { torso: 'skin', pelvis: 'skirt', arms: 'skin', legs: 'skirt', head: 'skin', neck: 'skin', hands: 'skin', feet: 'skin' },
+  body: { torso: null, pelvis: 'skirt', arms: 'skin', legs: 'skirt', head: 'skin', neck: 'skin', hands: 'skin', feet: 'skin' },
   bones: {
     loinF: { parent: 'spin', at: [0, -0.04, 0.2] }, loinB: { parent: 'spin', at: [0, -0.04, -0.2] },
     loinL: { parent: 'spin', at: [0.2, -0.04, 0.02] }, loinR: { parent: 'spin', at: [-0.2, -0.04, 0.02] },
@@ -62,6 +62,7 @@ MODEL_DEFS.radagon = {
     hairB: { parent: 'head', at: [0, 0.12, -0.08] }, hairL: { parent: 'head', at: [0.12, 0.08, -0.05] }, hairR: { parent: 'head', at: [-0.12, 0.08, -0.05] },
   },
   parts: [
+    { use: 'muscleTorso', slot: 'skin', bone: 'chest', bulk: 1.0 },   // v6.0: a sculpted bare torso (js/kit-premium.js)
     // A long skirt of dark rags knotted at the hips, falling to the feet.
     { use: 'robeSkirt', slot: 'skirt', bone: 'spin', len: 1.05, top: 0.24, hem: 0.44, seed: 11 },
     { use: 'robeSkirt', slot: 'skirtDark', bone: 'spin', len: 0.5, top: 0.27, hem: 0.36, seed: 13 },

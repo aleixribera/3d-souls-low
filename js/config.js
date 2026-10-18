@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v5.9';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v6.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -11,7 +11,9 @@ const CONFIG = {
   input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {
     focusRate: 3.5,   // how fast the camera turns to a scripted moment (Game.camFocus)
-    fov: 55, lookHeight: 1.35,
+    fov: 55, lookHeight: 1.5,
+    lead: 0.45,           // m the aim leads ahead of the player at full speed (unlocked), so the view opens where they go
+    lookRate: 11,         // aim smoothing (1/s): quicker than the position, so the player never drifts out of frame
     followRate: 7,        // position smoothing (1/s)
     yawFollow: 1.15,      // how fast the camera swings behind the facing while the player moves (rad/s at 90 deg off)
     moveSpeed: 3,         // planar speed (m/s) at which the swing and the auto-levelling reach full strength; none standing still
@@ -19,9 +21,18 @@ const CONFIG = {
     leanRange: 11, leanAmount: 0.38, leanPullback: 1.4, leanRaise: 0.5,
     wallMargin: 0.3, gateMargin: 0.6, closeRaise: 1.6, floor: 0.6, ceilingMargin: 0.7,
     refRate: 8,           // how fast the camera's ground height follows stairs and drops (1/s)
+    // Camera feel (js/camera-feel.js, drawing only; the "Camera motion" option turns it off): critically damped springs
+    // of stiffness `omega` (1/s). Offsets in m, rolls in rad, fov in degrees. A swing nudges forward (`swing`, heavies
+    // `heavy` and dip), a roll widens and dips, a blow taken pushes away from the attacker (scaled by damage over
+    // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / breaks / executions punch the
+    // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. Never past `maxRoll` / `maxFov`.
+    feel: { omega: 13, swing: 0.05, heavy: 0.1, heavyDip: 0.04, swingRoll: 0.006, rollFov: 3, rollDip: 0.06,
+            hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4,
+            parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
+            strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6 },
   },
-  zoom: { min: 2.6, max: 12, step: 0.8, default: 6.4, rate: 7, repeatDelay: 0.28, repeat: 0.09,
-          heightRatio: 0.48 },   // camera height = distance * heightRatio
+  zoom: { min: 2.6, max: 12, step: 0.8, default: 4.9, rate: 7, repeatDelay: 0.28, repeat: 0.09,
+          heightRatio: 0.4 },   // camera height = distance * heightRatio
   mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
   // Gamepad (standard layout). Sticks: dead zone, then rescaled to 0..1. Camera speeds are rad/s at full
   // tilt and sensitivity 5 (the Options value scales them like the mouse). A flick switches lock-on target
@@ -295,16 +306,28 @@ const CONFIG = {
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {
     defaultQuality: 'high',
-    // Graphics option presets. Both must list the same keys (checked at load).
+    // First launch (js/autoquality.js): the preset is picked from the GPU's name (`software` and `integrated` patterns cap it
+    // at Low / High; `strong` cards may reach Ultra) and a benchmark (`passes` of a `loops`-deep shader over a `size` px
+    // target: Ultra within `ultraMs` ms a pass, High within `highMs`). The note shows `showTime` s on the title screen.
+    autoQuality: { size: 1024, loops: 48, passes: 6, ultraMs: 7, highMs: 24, showTime: 7,
+                   software: 'swiftshader|llvmpipe|softpipe|basic render|software',
+                   integrated: 'intel|iris|uhd graphics|hd graphics|radeon\\(tm\\) graphics|radeon graphics|vega [0-9]+ graphics|mali|adreno|powervr|apple gpu',
+                   strong: 'rtx|rx [6-9][0-9]{3}|apple m[0-9] (pro|max|ultra)|arc a7|radeon pro w',
+                   message: 'Recommended graphics applied: {preset}. You can change it any time in Options.' },
+    // Graphics option presets. Every preset lists the same keys (checked at load).
     quality: {
       // renderScale: fraction of the pixel ratio actually drawn (the canvas is stretched to fit). antialias: the
       // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
-      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
-              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1 },
+      // ultra: every extra of VISUALS.ultra (shadows, ambient occlusion, volumetric light, reflections, the lens pass and
+      // the Ultra effects of js/ultra-fx.js). The order here is the order of the Graphics option.
       low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 0.75, antialias: false, bloomScale: 1,
-              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5 },
+              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false },
+      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
+              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false },
+      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 8, renderScale: 1, antialias: false, bloomScale: 1,
+               lights: 12, simpleSurfaces: false, glows: true, particles: 1.15, shafts: true, debris: true, grass: 1, embers: 1.6, ultra: true },
     },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
@@ -313,30 +336,31 @@ const CONFIG = {
     // Strongly red pixels skip the desaturation so the wind-up telegraph never dulls.
     grade: { shadowTint: [0.9, 0.96, 1.08], highlightTint: [1.07, 1.0, 0.9], saturation: 0.8, contrast: 1.05 },
     vignette: { strength: 0.5, softness: 0.55, lowHealthAt: 0.3, lowHealthRate: 3 },   // darker, redder edges below lowHealthAt
-    grain: { amount: 0.03 },
+    grain: { amount: 0.03, ultra: 0.015 },   // Ultra: finer grain (the image is already rich)
     rim: { strength: 0.32, power: 3.0, mixWhite: 0.45 },     // silhouette light on characters; colour from the level
     // Procedural surfaces. Patterns build the canvas textures (fractions of the texture size); kinds say how
-    // each material family weathers (tile sizes in metres; colours multiply the base colour).
+    // each material family weathers (tile sizes in metres; colours multiply the base colour; `relief`: how deep joints
+    // and cracks look to the light, fading out by `reliefFade` m; not with simpleSurfaces).
     surfaces: {
-      texSize: 512,
+      texSize: 512, reliefFade: [4, 16],
       patterns: {
-        wall:  { rows: [1 / 6, 1 / 6], slab: [0.22, 0.4], shade: [0.8, 1.14], joint: 2.2, cracks: 10, freq: 10 },
-        floor: { rows: [0.17, 0.27], slab: [0.18, 0.36], shade: [0.74, 1.2], joint: 3, cracks: 8, freq: 12 },
+        wall:  { rows: [1 / 6, 1 / 6], slab: [0.22, 0.4], shade: [0.88, 1.08], joint: 2.2, cracks: 5, freq: 8 },
+        floor: { rows: [0.17, 0.27], slab: [0.18, 0.36], shade: [0.86, 1.1], joint: 3, cracks: 4, freq: 9 },
         metal: { rows: null, cracks: 0, streaks: 50, freq: 18 },
         plaster: { rows: null, cracks: 14, freq: 9 },
-        tiles: { rows: [1 / 16, 1 / 16], slab: [0.06, 0.1], shade: [0.72, 1.2], joint: 1.6, cracks: 2, freq: 16 },
+        tiles: { rows: [1 / 16, 1 / 16], slab: [0.06, 0.1], shade: [0.82, 1.12], joint: 1.6, cracks: 2, freq: 12 },
       },
       kinds: {
-        stone: { side: 'wall', top: 'floor', tileSide: 3, tileTop: 4, detail: 0.85, crack: 0.55, grimeColor: 0x9a9286,
-                 grimeHeight: 1.5, mossColor: 0x5a6448, moss: 0.5, roughVar: 0.35, rustColor: 0x000000, rust: 0 },
-        metal: { side: 'metal', top: 'metal', tileSide: 1.2, tileTop: 1.2, detail: 0.7, crack: 0.35, grimeColor: 0x8a8278,
-                 grimeHeight: 1.0, mossColor: 0x000000, moss: 0, roughVar: 0.3, rustColor: 0x5a4030, rust: 0.35 },
-        wood:  { side: 'metal', top: 'metal', tileSide: 0.6, tileTop: 0.6, detail: 0.8, crack: 0.3, grimeColor: 0x7a7268,
-                 grimeHeight: 0.3, mossColor: 0x000000, moss: 0, roughVar: 0.2, rustColor: 0x000000, rust: 0 },
-        plaster: { side: 'plaster', top: 'plaster', tileSide: 2.5, tileTop: 2.5, detail: 0.55, crack: 0.45, grimeColor: 0x8a7e6c,
-                   grimeHeight: 1.4, mossColor: 0x5a6448, moss: 0.12, roughVar: 0.25, rustColor: 0x000000, rust: 0 },
-        roof:  { side: 'tiles', top: 'tiles', tileSide: 2.2, tileTop: 2.2, detail: 0.9, crack: 0.3, grimeColor: 0x6a6058,
-                 grimeHeight: 0.01, mossColor: 0x4a5438, moss: 0.3, roughVar: 0.3, rustColor: 0x000000, rust: 0 },
+        stone: { side: 'wall', top: 'floor', tileSide: 3, tileTop: 4, detail: 0.5, crack: 0.3, grimeColor: 0x9a9286,
+                 grimeHeight: 1.5, mossColor: 0x5a6448, moss: 0.5, roughVar: 0.35, rustColor: 0x000000, rust: 0, relief: 0.3 },
+        metal: { side: 'metal', top: 'metal', tileSide: 1.2, tileTop: 1.2, detail: 0.5, crack: 0.2, grimeColor: 0x8a8278,
+                 grimeHeight: 1.0, mossColor: 0x000000, moss: 0, roughVar: 0.3, rustColor: 0x5a4030, rust: 0.35, relief: 0 },
+        wood:  { side: 'metal', top: 'metal', tileSide: 0.6, tileTop: 0.6, detail: 0.55, crack: 0.2, grimeColor: 0x7a7268,
+                 grimeHeight: 0.3, mossColor: 0x000000, moss: 0, roughVar: 0.2, rustColor: 0x000000, rust: 0, relief: 0.2 },
+        plaster: { side: 'plaster', top: 'plaster', tileSide: 2.5, tileTop: 2.5, detail: 0.4, crack: 0.25, grimeColor: 0x8a7e6c,
+                   grimeHeight: 1.4, mossColor: 0x5a6448, moss: 0.12, roughVar: 0.25, rustColor: 0x000000, rust: 0, relief: 0.2 },
+        roof:  { side: 'tiles', top: 'tiles', tileSide: 2.2, tileTop: 2.2, detail: 0.6, crack: 0.2, grimeColor: 0x6a6058,
+                 grimeHeight: 0.01, mossColor: 0x4a5438, moss: 0.3, roughVar: 0.3, rustColor: 0x000000, rust: 0, relief: 0.25 },
       },
       materials: { stone: 'stone', edge: 'stone', wall: 'stone', dark: 'stone', ceiling: 'stone',   // MAT entry -> kind
                    iron: 'metal', bonfireSword: 'metal', log: 'wood' },
@@ -392,5 +416,68 @@ const CONFIG = {
     smoke: { puffs: 40, rise: 34, size: [2.5, 11], speed: 0.06, wind: [0.45, 0, 0.18], color: 0x262020, light: 0x9a5434, opacity: 0.55 },
     // Embers (atmosphere `embers` 0..2): at most `max` sparks in a box round the camera.
     embers: { max: 700, box: [32, 16, 32], size: 0.06, maxPx: 5, color: 0xff7a30, boost: 2.4 },
+    // The Ultra preset (quality.ultra). Rendering (js/ultra-post.js) and effects (js/ultra-fx.js), drawing only.
+    ultra: {
+      // Real-time shadows. The moon is split in two: `share` of it (open sky / roofed levels) becomes a shadow-casting
+      // light whose `moonMap` px map covers `moonBox` m either side of the player; ceilings never block it. The
+      // `points` nearest point lights within `pointRange` m cast soft shadows too (`pointMap` px per cube face).
+      // The old blob shadow under each body stays at `blob` of its strength (contact darkening).
+      shadows: { moonMap: 4096, moonBox: 24, moonDist: 70, share: { open: 0.7, roofed: 0.5 }, bias: -0.0005, normalBias: 0.035,
+                 points: 2, pointMap: 1024, pointFar: 26, pointRange: 24, pointBias: -0.003, pointNormalBias: 0.04, radius: 2.5, blob: 0.35 },
+      // Screen-space ambient occlusion, worked out at `scale` of the screen: `samples` taps within `radius` m.
+      ao: { scale: 0.5, samples: 16, radius: 0.85, bias: 0.035, strength: 0.85, power: 1.5, keepBright: [1.2, 3.5] },
+      rim: 1.35,   // character rim light x this, so bodies in shadow still read against the fog
+      // Models built at Ultra detail: `geo` x every round primitive's segments (Ultra anatomy too), `tex` x model texture
+      // size (js/bodykit.js); bodies spawned after the switch get it.
+      models: { geo: { enemy: 1.8, player: 2.6, boss: 2.6 }, tex: 2 },   // geo by the model's budget class
+      // Volumetric light in the fog, analytic: the nearest `lights` point lights glow in the air out to `reach` of their
+      // range (`light` scales it, by the level's fog density over `fogRef`); on open-sky levels the moon's light is
+      // ray-marched through its shadow map (`moonSteps` steps out to `moonDist` m, forward-scattering `moonG`).
+      // `offscreen`: the glow of a light out of view; `minH`: closest approach (m) used, so no light burns white.
+      scatter: { lights: 8, light: 0.0035, reach: 0.75, minH: 0.6, fogRef: 0.022, offscreen: 0.55, moon: 0.004, moonSteps: 20, moonDist: 48, moonG: 0.6, maxDist: 80 },
+      // Reflections on metal (metalness >= `metalFrom`): a small environment built per level from its fog, moon and fire light.
+      env: { intensity: 1.0, metalFrom: 0.25, fire: 0xff8a3c },
+      // The final lens pass: chromatic aberration at the edges (`ca`, plus pulses), a light sharpen, radial zoom blur
+      // on big blows (`punch`, `punchTaps`), a white or red screen flash, red edges when hurt. Pulses decay at `decay`/s.
+      lens: { ca: 0.0012, sharpen: 0, punchTaps: 12, decay: { ca: 4, punch: 5, flash: 6, hurt: 2.2 } },
+      // Shockwaves: rings of refraction spreading over the screen from a blow (`max` at once).
+      waves: { max: 6, time: 0.6, size: 0.42, width: 0.05, strength: 0.03 },
+      // ---- effects (js/ultra-fx.js) ----
+      // Streaks: sparks (additive, bloom-bright) and blood drops (opaque), drawn as stretched quads along their flight.
+      sparks: { max: 1200, life: [0.25, 0.7], speed: [4, 13], width: 0.034, stretch: 0.06, gravity: 14, bounce: 0.35, drag: 1.4,
+                colors: { clash: [0xfff2c0, 0xffb040], parry: [0xffffff, 0xfff0a0], gold: [0xffe08a, 0xffa020], ember: [0xffa040, 0xff4010], holy: [0xfff6d0, 0xffd060],
+                          blood: [0xff6a40, 0xc00808], rot: [0xffa080, 0xff2a20], storm: [0xffffff, 0x9ec0ff] },
+                boost: 4.5 },
+      blood: { max: 900, life: [0.5, 1.1], speed: [2.5, 7.5], width: 0.065, stretch: 0.04, gravity: 13, color: 0xb01010, dark: 0x5a0404,
+               splats: 0.3, mist: 4, mistColor: 0x6a0808, sawdust: 0xa08a60 },
+      // Motes: soft glowing points (souls, auras, embers, holy dust). Puffs: soft smoke and dust that grow and fade.
+      motes: { max: 2600, size: 0.09, maxPx: 42 },
+      puffs: { max: 360, size: [0.6, 2.2], life: 1.3, dust: 0x8a8070, smoke: 0x2a2624 },
+      chunks: { max: 120, size: [0.06, 0.2], speed: [3, 8], life: 2.6 },
+      // Impact lights: `lights` point lights flashed by clashes, parries, executions and boss moments (fixed count).
+      flash: { lights: 3, decay: 7, range: 9 },
+      flares: { max: 10, time: 0.28 },
+      // Weapon trails: a smooth ribbon (Catmull-Rom, `sub` points between samples) that fades over `life` s; HDR so bloom
+      // catches it. Enemy trails take their boss colour from `trailColors` (by enemy id), else `enemy` / roll-only blue.
+      trails: { samples: 26, sub: 4, life: 0.16, player: 0xfff0d0, playerBoost: 1.8, enemy: 0xff9a6a, enemyBoost: 1.5, rollOnly: 0x6ac0ff, opacity: 0.85,
+                max: 8 },
+      trailColors: { margit: 0xffd27a, morgott: 0xffc060, radagon: 0xffd890, godrick: 0xff8a30, maliketh: 0xff3a3a,
+                     malenia: 0xff4a38, godfrey: 0xffb050, crucibleKnight: 0xffc880, varn: 0xff7a3a },
+      // Boss auras: motes per second round a living boss, in its colour (`auraColors` by enemy id, else `aura`); a burning
+      // (`ignite`) phase adds rising embers. `stepDust`: big bodies (scale >= `from`) kick dust as they move fast.
+      aura: { rate: 22, color: 0xffd8a0, ember: 0xff6a20, igniteRate: 55, size: 1.1 },
+      auraColors: { margit: 0xffd27a, morgott: 0xffc060, radagon: 0xffe0a0, godrick: 0xff9a40, maliketh: 0xff2a2a,
+                    malenia: 0xff5040, godfrey: 0xffc070, crucibleKnight: 0xffd090, varn: 0xff8040 },
+      stepDust: { from: 1.4, speed: 2.2, every: 0.32 },
+      // Fire: torches, braziers and bonfires drawn as rising procedural flame instead of cones.
+      fire: { width: 2.2, height: 1.5, boost: 2.6, core: 0xffe6a0, mid: 0xff8a2a, edge: 0xb02a08 },
+      // Boss attacks (js/ultra-boss.js with js/data/boss-fx.js): a heavy wind-up (from `heavy` damage, or held, leaping,
+      // ringing or striking the ground) gathers `gather` motes/s into the weapon; a swing sheds `shed` motes per frame;
+      // ring hitboxes draw a ground ring `ringWidth` m wide; impacts scale with the blow's ring size.
+      boss: { heavy: 40, gather: 55, gatherGlow: 1.5, shed: 3, trailBoost: 1.4, ringWidth: 0.55, rings: 12, pillars: 6, fires: 28,
+              pillar: { time: 1.0, height: 11, radius: 0.9 }, fireTime: [0.6, 1.3] },
+      // What each blow looks like. Damage scales a hit's spray between `light` and `heavy` damage.
+      hits: { light: 15, heavy: 55, drops: [10, 46], wave: 40, punch: 60 },
+    },
   },
 };

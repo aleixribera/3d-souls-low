@@ -11,17 +11,17 @@ const scarlet = (() => {
   Object.assign(KIT.weapons, MALENIA_WEAPONS);
   Object.assign(SPECTRAL_WEAPONS, {
     phantom() {
-      return { look: 'rot', geos: [new THREE.BoxGeometry(0.06, 0.014, 1.6).translate(0, 0, 0.95), new THREE.SphereGeometry(0.12, 6, 4).scale(1, 1.6, 1).translate(0, 0.1, 0)] };
+      return { look: 'rot', geos: [new THREE.BoxGeometry(0.06, 0.014, 1.6).translate(0, 0, 0.95), KIT_GEO.Sphere(0.12, 6, 4).scale(1, 1.6, 1).translate(0, 0.1, 0)] };
     },
     // A ring of long petals opening outward along the floor (spin frame; ~4.4 m across at her scale).
     aeonia() {
       const geos = [];
       for (let i = 0; i < 12; i++) {
-        const a = i / 12 * Math.PI * 2, p = new THREE.CircleGeometry(1, 8).scale(0.55, 1.8, 1).translate(0, 1.9, 0);
+        const a = i / 12 * Math.PI * 2, p = KIT_GEO.Circle(1, 8).scale(0.55, 1.8, 1).translate(0, 1.9, 0);
         p.rotateX(-Math.PI / 2 + 0.25); p.rotateY(a); p.translate(0, -0.85, 0);
         geos.push(p);
       }
-      geos.push(new THREE.SphereGeometry(0.6, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, -0.85, 0));
+      geos.push(KIT_GEO.Sphere(0.6, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, -0.85, 0));
       return { look: 'rot', bone: 'spin', geos };
     },
   });

@@ -55,12 +55,12 @@ const MALENIA_PARTS = {
   // back from the temples. Head frame, metres at scale 1.
   wingedHelm(o) {
     const s = o.size ?? 1, out = [];
-    out.push(new THREE.SphereGeometry(0.135 * s, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.62).scale(1, 1.15, 1.08).translate(0, 0.1 * s, 0.01 * s));
-    out.push(new THREE.CylinderGeometry(0.128 * s, 0.12 * s, 0.14 * s, 10, 1, true).translate(0, 0.02 * s, 0.012 * s));   // the face plate and nape
+    out.push(KIT_GEO.Sphere(0.135 * s, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.62).scale(1, 1.15, 1.08).translate(0, 0.1 * s, 0.01 * s));
+    out.push(KIT_GEO.Cylinder(0.128 * s, 0.12 * s, 0.14 * s, 10, 1, true).translate(0, 0.02 * s, 0.012 * s));   // the face plate and nape
     out.push(new THREE.BoxGeometry(0.02 * s, 0.12 * s, 0.03 * s).translate(0, 0.08 * s, 0.14 * s));   // the nose ridge
     for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
       const len = (0.26 - i * 0.04) * s;
-      const f = new THREE.ConeGeometry(0.035 * s, len, 4).scale(1, 1, 0.25).translate(0, len / 2, 0);
+      const f = KIT_GEO.Cone(0.035 * s, len, 4).scale(1, 1, 0.25).translate(0, len / 2, 0);
       f.rotateX(-0.55 - i * 0.28); f.rotateZ(-sd * (0.12 + i * 0.05));
       f.translate(sd * 0.12 * s, (0.12 - i * 0.025) * s, -0.02 * s);
       out.push(f);
@@ -75,7 +75,7 @@ const MALENIA_PARTS = {
       pos.setXYZ(i, x * (1 + 0.5 * t), 0.14 - t * L, -0.15 - 0.18 * Math.sin(Math.min(1, t * 2.2) * Math.PI / 2) - x * x * 0.8);
     }
     g.computeVertexNormals();
-    return [{ slot: o.slot, geo: g }, { slot: o.slot, geo: new THREE.SphereGeometry(0.14, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).scale(1.05, 1, 1.1).translate(0, 0.06, -0.02) }];
+    return [{ slot: o.slot, geo: g }, { slot: o.slot, geo: KIT_GEO.Sphere(0.14, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).scale(1.05, 1, 1.1).translate(0, 0.06, -0.02) }];
   },
   // Phase 2: two pairs of great scarlet butterfly wings from the shoulder blades (chest frame); a hidden slot until revealed.
   butterflyWings(o) {
@@ -94,8 +94,8 @@ const MALENIA_WEAPONS = {
     const blade = new THREE.BoxGeometry(0.012, 0.04, 1.4, 1, 1, 12), pos = blade.attributes.position;
     for (let i = 0; i < pos.count; i++) { const z = pos.getZ(i), t = (z + 0.7) / 1.4; pos.setY(i, pos.getY(i) * (1 - 0.5 * t * t) + t * t * 0.07); }
     blade.computeVertexNormals(); blade.translate(0, 0, 0.82);
-    return { blade: [blade], grip: [new THREE.CylinderGeometry(0.018, 0.02, 0.3, 6).rotateX(Math.PI / 2).translate(0, 0, -0.02)],
-             guard: [new THREE.CylinderGeometry(0.055, 0.055, 0.015, 10).rotateX(Math.PI / 2).translate(0, 0, 0.13)] };
+    return { blade: [blade], grip: [KIT_GEO.Cylinder(0.018, 0.02, 0.3, 6).rotateX(Math.PI / 2).translate(0, 0, -0.02)],
+             guard: [KIT_GEO.Cylinder(0.055, 0.055, 0.015, 10).rotateX(Math.PI / 2).translate(0, 0, 0.13)] };
   },
 };
 
@@ -123,7 +123,7 @@ MODEL_DEFS.malenia = {
   body: { torso: 'robe', pelvis: 'robe', arms: 'skin', legs: 'goldDark', head: 'skin', neck: 'skin', hands: 'gold', feet: 'gold' },
   parts: [
     { use: 'robeSkirt', slot: 'robe', bone: 'spin', len: 1.0, top: 0.2, hem: 0.36, seed: 3 },
-    { use: 'breastplate', slot: 'gold', bone: 'chest' },
+    { use: 'breastplate', slot: 'gold', bone: 'chest', slim: true, trim: 'goldDark' },   // v6.0: a fitted, corseted cuirass
     { use: 'scarf', slot: 'cloak', bone: 'chest' },
     { use: 'wingedHelm', slot: 'helm', bone: 'head', size: 1.0 },
     { use: 'longHair', slot: 'hair', bone: 'head', len: 1.15 },   // long red hair over the cape

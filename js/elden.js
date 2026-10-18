@@ -17,13 +17,13 @@ const elden = (() => {
       return {
         elden: { title: 'COMBAT ARENA 3D', sub: 'ELDEN RING BOSSES', back: 'main',
           items: [...ELDEN_BOSSES.map(e => ({ name: e.difficulty ? `${e.name}   ${stars(e.difficulty)}` : e.name,
-            desc: `${e.title}. ${e.description}`, go: () => this.start(e.id) })),
+            desc: `${e.title}. ${e.description}`, go: () => Game.loadingFirst(e.name, e.description, () => this.start(e.id)) })),
             { name: 'Back', desc: 'Return to the main menu.', cue: 'menuBack', go: () => game.showMenu('main') }] },
         eldenWon: { title: 'ENEMY FELLED', sub: b ? b.name.toUpperCase() : '', overlay: true, items: [
-          { name: 'Retry', desc: 'Fight again from the start.', go: () => this.start(b.id) },
+          { name: 'Retry', desc: 'Fight again from the start.', go: () => Game.loadingFirst(b.name, b.description, () => this.start(b.id)) },
           { name: 'Boss select', desc: 'Choose another boss.', cue: 'menuBack', go: () => this.leave() }] },
         eldenDeath: { title: 'YOU DIED', sub: b ? b.name.toUpperCase() : '', overlay: true, items: [
-          { name: 'Retry', desc: 'Fight again from the start.', go: () => this.start(b.id) },
+          { name: 'Retry', desc: 'Fight again from the start.', go: () => Game.loadingFirst(b.name, b.description, () => this.start(b.id)) },
           { name: 'Boss select', desc: 'Choose another boss.', cue: 'menuBack', go: () => this.leave() }] },
       };
     },

@@ -179,6 +179,15 @@ function buildHall(L) {
     addFlame(G, t.x, T.flameHeight, z, T.flameSize, light);
     addDust(G, t.x, T.mountHeight, t.side * (hz - 1.6), 1.6, 10);
   }
+  // Freestanding braziers (optional `braziers: [{ x, z }]`): an iron bowl on a stand whose fire lights the hall round it.
+  const C = CONFIG.rooms;
+  for (const b of L.braziers || []) {
+    addBox(G, 0.5, 1.0, 0.5, MAT.iron, b.x, 0.5, b.z);
+    addBox(G, 0.8, 0.15, 0.8, MAT.iron, b.x, 1.05, b.z);
+    const light = new THREE.PointLight(0xffa050, C.lampLight, C.lampRange, 1.0);
+    light.position.set(b.x, 2.2, b.z);
+    addFlame(G, b.x, 1.45, b.z, C.brazierSize, light);
+  }
   return { group: G, gates };
 }
 // Room-style levels (js/terrain.js): each room gets its own floor, wall and light colours, at its own height.

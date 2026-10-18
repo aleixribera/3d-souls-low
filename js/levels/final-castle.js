@@ -24,11 +24,12 @@ const LEVEL_5 = {
   help: 'Level 5: the castle of the Gaoler King. Bonfires light as you reach them; the throne room fog seals behind you. Gargoyles grind before they spring; Toll Wisps ring before they shoot.',
   wallHeight: 10, gateHeight: 3.6, gateThickness: 0.5,
   // Night over the castle: cold moonlight on dark stone, ash on the wind, a red glow low in the east behind the keep.
+  // v6.0: the moon behind the approach (the player lit, the castle still a silhouette), more fill, an avenue of fire to the gate.
   atmosphere: { background: 0x14121a, fog: 0x221e28, fogDensity: 0.011,
-                moon: { color: 0x9aa8d0, intensity: 2.0, position: [40, 30, -20] },
-                ambient: { color: 0x3a3448, intensity: 1.05 },
-                hemi: { sky: 0x6a6488, ground: 0x1a1412, intensity: 0.55 },
-                exposure: 1.0, ash: 1.2, embers: 0.35, dust: 0.2, rim: 0xb0b8e0,
+                moon: { color: 0x9aa8d0, intensity: 2.4, position: [-16, 40, -12] },
+                ambient: { color: 0x403a52, intensity: 1.3 },
+                hemi: { sky: 0x6a6488, ground: 0x241a16, intensity: 0.7 },
+                exposure: 1.08, ash: 1.2, embers: 0.35, dust: 0.2, rim: 0xb0b8e0,
                 grade: { shadowTint: [0.9, 0.92, 1.12], highlightTint: [1.08, 0.98, 0.88], saturation: 0.62 },
                 surface: { moss: 0.4, grime: 1.3 }, banners: [0x2e3a4a, 0x5a4a22], debris: 0.3,
                 shafts: { rooms: true, color: 0xd8c8b0, opacity: 0.16 },
@@ -38,7 +39,8 @@ const LEVEL_5 = {
   rooms: [
     // The field before the gate: wide, open, no pillars in the middle.
     { id: 'field', rect: [0, 84, -36, 36], open: true, height: 10, grass: true, floor: 0x3a3832, wall: 0x4a4640, light: 0xffb070,
-      lamps: [[6, -30], [6, 30], [42, -33], [42, 33], [78, -30], [78, 30]] },
+      lamps: [[6, -30], [6, 30], [42, -33], [42, 33], [78, -30], [78, 30],
+              [22, -13], [22, 13], [38, -13], [38, 13], [54, -13], [54, 13], [70, -11], [70, 11]] },   // the avenue to the gate
     // Section A: the outer ward.
     { id: 'gate-yard', rect: [84, 96, -8, 8], height: 8, floor: 0x37342f, wall: 0x48433b, light: 0xffa060 },
     { id: 'lower-court', rect: [96, 136, -20, 20], open: true, height: 6, grass: true, floor: 0x3c3a34, wall: 0x4e4a42, light: 0xffc890,

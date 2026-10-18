@@ -10,11 +10,14 @@ const TUTORIAL = {
                 ambient: { color: 0x6a6f80, intensity: 1.5 },
                 hemi: { sky: 0x8a93a8, ground: 0x2a241c, intensity: 0.5 },
                 exposure: 1.15, ash: 0.1, dust: 0.4, grade: { saturation: 0.92, contrast: 1.02 },
-                surface: { moss: 0.15, grime: 0.7 }, banners: [0x5a4426] },
+                surface: { moss: 0.15, grime: 0.7 }, banners: [0x5a4426, 0x3a2c4a],
+                shafts: { every: 14, color: 0xc8d4e8, opacity: 0.16 } },   // v6.0: pale light falling through the vault
   length: 40, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
   start: { x: 5, z: 0, yaw: Math.PI / 2 }, bonfires: [{ id: 'tutorial-fire', x: 9, z: -4 }],
   alcoveWidth: 0, alcoveDepth: 2, alcoves: [], gated: [], dispersed: [],
-  torches: [{ x: 14, side: 1 }, { x: 26, side: -1 }, { x: 36, side: 1 }],
+  // v6.0: a training hall worth standing in: torches down both walls, braziers at the far end.
+  torches: [{ x: 3, side: 1 }, { x: 14, side: 1 }, { x: 14, side: -1 }, { x: 26, side: -1 }, { x: 26, side: 1 }, { x: 36, side: 1 }, { x: 36, side: -1 }],
+  braziers: [{ x: 37.5, z: 3.6 }, { x: 37.5, z: -3.6 }],
   training: { dummy: 'dummy', sparring: 'sparringDummy', dodge: 'dodgeDummy', execution: 'executionDummy',
               dummyAhead: 4,          // a single target dummy stands this far ahead of the player
               attackerAhead: 2.3,     // the sparring and dodge dummies stand within their swing range

@@ -6,12 +6,10 @@
 // TEXLIB.material('bone', { tint, decay, size, repeat: [2, 1] })       -> a shared MeshStandardMaterial
 // Recipes live in js/data/textures.js. Every texture is generated once; asking again returns the same object.
 // Layers: base pattern, grime gathering in creases, worn edges, scratches, stains, tint. Decay scales all of it.
-const TEXLIB = (() => {
-  const TAU = Math.PI * 2, S = TEXTURE_SETTINGS;
-  const DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
-  const cache = new Map(), matCache = new Map();
-  const stats = { textures: 0, ms: 0, last: [] };
-
+// The baking core: pure maths (no DOM, no three.js), so the same code also runs in a Web Worker built from its source
+// (TEXLIB.prefetch). bake() fills float layers; pack() turns them into the RGBA pixels of the colour, roughness and bump maps.
+function TEXCORE_FACTORY(S, seeded) {
+  const TAU = Math.PI * 2;
   // ---- tileable value noise with separate periods per axis (so streaks and ridges can be stretched) ----
   const hash = (ix, iy, s) => {
     let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1442695041)) | 0;
@@ -54,12 +52,16 @@ const TEXLIB = (() => {
       const thr = 0.97 - 0.04 * decay, crack = sstep(thr, thr + 0.025, ridge(fbm(u, v, 6 * k, 6 * k, 4, 3)));
       out.h = grain * 0.4 + big * 0.3 + (1 - crack) * 0.3; out.mix = big; out.acc = crack;
     },
+    // A fine, uneven weave (threads wander and thicken), drape folds running down the cloth, slubbed fibres and worn
+    // patches; the weave stays faint so it reads as texture, never as a grid of dots.
     cloth(u, v, k, decay, out) {
-      const T = 48 * k, wx = 0.5 + 0.5 * Math.sin(u * TAU * T), wy = 0.5 + 0.5 * Math.sin(v * TAU * T);
-      const over = (Math.floor(u * T) + Math.floor(v * T)) & 1;
-      out.h = over ? wx * 0.6 + wy * 0.4 : wy * 0.6 + wx * 0.4;
+      const T = 96 * k, jit = (fbm(u, v, 12 * k, 12 * k, 2, 8) - 0.5) * 0.9;
+      const wx = 0.5 + 0.5 * Math.sin((u * T + jit) * TAU), wy = 0.5 + 0.5 * Math.sin((v * T - jit) * TAU);
+      const over = (Math.floor(u * T + jit) + Math.floor(v * T - jit)) & 1, weave = over ? wx * 0.65 + wy * 0.35 : wy * 0.65 + wx * 0.35;
+      const fold = ridge(fbm(u, v, 3 * k, 1 * k, 4, 13)), slub = fbm(u, v, 4 * k, 64 * k, 2, 14), wear = fbm(u, v, 6 * k, 6 * k, 4, 15);
+      out.h = weave * 0.22 + fold * 0.42 + slub * 0.18 + (1 - sstep(0.55, 0.8, wear) * decay) * 0.18;
       const fray = fbm(u, v, 5 * k, 5 * k, 4, 4);
-      out.mix = fbm(u, v, 10 * k, 10 * k, 3, 5) * 0.7 + out.h * 0.3;
+      out.mix = fbm(u, v, 10 * k, 10 * k, 3, 5) * 0.55 + fold * 0.25 + slub * 0.2;
       out.acc = sstep(0.6 - 0.25 * decay, 0.82 - 0.2 * decay, fray) * 0.8;
     },
     tattered(u, v, k, decay, out) {
@@ -221,10 +223,28 @@ const TEXLIB = (() => {
     return { size, C, R, H, A };
   }
 
-  const canvasOf = (size, fill) => {
+  const byte = x => x < 0 ? 0 : x > 255 ? 255 : x | 0;
+  function pack(b) {
+    const size = b.size, n = size * size, map = new Uint8ClampedArray(n * 4), rough = new Uint8ClampedArray(n * 4), bump = new Uint8ClampedArray(n * 4);
+    for (let i = 0; i < n; i++) {
+      map[i * 4] = byte(b.C[i * 3]); map[i * 4 + 1] = byte(b.C[i * 3 + 1]); map[i * 4 + 2] = byte(b.C[i * 3 + 2]); map[i * 4 + 3] = b.A ? (b.A[i] > 0.5 ? 255 : 0) : 255;
+      const r = byte(b.R[i] * 255), h = byte(b.H[i] * 255);
+      rough[i * 4] = rough[i * 4 + 1] = rough[i * 4 + 2] = r; rough[i * 4 + 3] = 255;
+      bump[i * 4] = bump[i * 4 + 1] = bump[i * 4 + 2] = h; bump[i * 4 + 3] = 255;
+    }
+    return { size, map, rough, bump };
+  }
+  return { bake, pack };
+}
+const TEXLIB = (() => {
+  const S = TEXTURE_SETTINGS, CORE = TEXCORE_FACTORY(S, seeded);
+  const DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
+  const cache = new Map(), matCache = new Map();
+  const stats = { textures: 0, ms: 0, last: [] };
+
+  const canvasOf = (size, px) => {
     const c = document.createElement('canvas'); c.width = c.height = size;
-    const g = c.getContext('2d'), img = g.createImageData(size, size);
-    fill(img.data); g.putImageData(img, 0, 0); return c;
+    c.getContext('2d').putImageData(new ImageData(px, size, size), 0, 0); return c;
   };
   const texOf = (canvas, srgb) => {
     const t = new THREE.CanvasTexture(canvas);
@@ -232,30 +252,52 @@ const TEXLIB = (() => {
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };
-  const byte = x => x < 0 ? 0 : x > 255 ? 255 : x | 0;
   const decayKey = d => Math.round(clamp(d, 0, 1) / S.decayStep) * S.decayStep;
+  const keyOf = (name, tint, d, size) => `${name}|${tint.toString(16)}|${d.toFixed(2)}|${size}`;
+  // A finished entry from packed pixels (made here or in the worker).
+  const store = (key, name, tint, d, size, P, ms) => {
+    const entry = { name, tint, decay: d, size, map: texOf(canvasOf(size, P.map), true), rough: texOf(canvasOf(size, P.rough), false),
+                    bump: texOf(canvasOf(size, P.bump), false), def: DEFS[name] };
+    cache.set(key, entry); stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`);
+    return entry;
+  };
+  const check = (name, size) => {
+    if (!DEFS[name]) throw new Error(`Unknown texture "${name}". Known: ${Object.keys(DEFS).join(', ')}.`);
+    const max = Math.max(S.maxSize, S.ultraMax || 0);
+    if (size > max) throw new Error(`Texture "${name}" asked for size ${size}; the limit is ${max}.`);
+  };
 
   function get(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
-    const def = DEFS[name];
-    if (!def) throw new Error(`Unknown texture "${name}". Known: ${Object.keys(DEFS).join(', ')}.`);
-    if (size > S.maxSize) throw new Error(`Texture "${name}" asked for size ${size}; the limit is ${S.maxSize}.`);
-    const d = decayKey(decay), key = `${name}|${tint.toString(16)}|${d.toFixed(2)}|${size}`;
-    let entry = cache.get(key);
+    check(name, size);
+    const d = decayKey(decay), key = keyOf(name, tint, d, size);
+    const entry = cache.get(key);
     if (entry) return entry;
-    const t0 = performance.now(), b = bake(def, size, tint, d, strSeed(name));
-    const map = texOf(canvasOf(size, px => {
-      for (let i = 0; i < size * size; i++) { px[i * 4] = byte(b.C[i * 3]); px[i * 4 + 1] = byte(b.C[i * 3 + 1]); px[i * 4 + 2] = byte(b.C[i * 3 + 2]); px[i * 4 + 3] = b.A ? (b.A[i] > 0.5 ? 255 : 0) : 255; }
-    }), true);
-    const rough = texOf(canvasOf(size, px => {
-      for (let i = 0; i < size * size; i++) { const v = byte(b.R[i] * 255); px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = v; px[i * 4 + 3] = 255; }
-    }), false);
-    const bump = texOf(canvasOf(size, px => {
-      for (let i = 0; i < size * size; i++) { const v = byte(b.H[i] * 255); px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = v; px[i * 4 + 3] = 255; }
-    }), false);
-    entry = { name, tint, decay: d, size, map, rough, bump, def };
-    cache.set(key, entry);
-    const ms = performance.now() - t0; stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`);
-    return entry;
+    const t0 = performance.now();   // not baked yet (or still in the worker): baked here and now
+    return store(key, name, tint, d, size, CORE.pack(CORE.bake(DEFS[name], size, tint, d, strSeed(name))), performance.now() - t0);
+  }
+
+  // Background baking: a Web Worker built from the core's own source (so it also works from a file:// page) bakes
+  // textures off the main thread; the menus stay smooth while every model's textures get ready. Without workers,
+  // prefetch does nothing and get() bakes on demand.
+  let worker = null, busy = new Set();
+  try {
+    const src = `const TEXTURE_SETTINGS = ${JSON.stringify(S)}; const TEXTURE_DEFS = ${JSON.stringify(TEXTURE_DEFS)};
+const seeded = ${seeded.toString()}; const strSeed = ${strSeed.toString()};
+const CORE = (${TEXCORE_FACTORY.toString()})(TEXTURE_SETTINGS, seeded), DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
+onmessage = e => { const { key, name, tint, d, size } = e.data, t0 = performance.now();
+  const P = CORE.pack(CORE.bake(DEFS[name], size, tint, d, strSeed(name)));
+  postMessage({ key, name, tint, d, size, P, ms: performance.now() - t0 }, [P.map.buffer, P.rough.buffer, P.bump.buffer]); };`;
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = e => { const m = e.data; busy.delete(m.key); if (!cache.has(m.key)) store(m.key, m.name, m.tint, m.d, m.size, m.P, m.ms); };
+    worker.onerror = () => { worker = null; };
+  } catch (e) { worker = null; }
+  function prefetch(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
+    if (!worker) return false;
+    check(name, size);
+    const d = decayKey(decay), key = keyOf(name, tint, d, size);
+    if (cache.has(key) || busy.has(key)) return true;
+    busy.add(key); worker.postMessage({ key, name, tint, d, size });
+    return true;
   }
 
   // A shared material for a recipe. `repeat` tiles the texture over the surface (e.g. [2, 1] around a sphere).
@@ -274,5 +316,5 @@ const TEXLIB = (() => {
     return m;
   }
 
-  return { names: TEXTURE_DEFS.map(d => d.id), defs: DEFS, get, material, stats, count: () => cache.size };
+  return { names: TEXTURE_DEFS.map(d => d.id), defs: DEFS, get, prefetch, material, stats, count: () => cache.size, pending: () => busy.size };
 })();

@@ -6,14 +6,15 @@ const LEVEL_1 = {
   description: 'Four opponents, and others waiting in the dark. Clear the way forward.',
   help: 'Level 1: defeat each gated opponent to open the next gate. Others are optional.',
   // Cold, grey-blue and close, with warm pools under the torches.
-  atmosphere: { background: 0x0a0d12, fog: 0x161c25, fogDensity: 0.033,
+  // v6.0: a torch every few metres down both walls, braziers flanking each gate, the fog thinned so the hall's length reads.
+  atmosphere: { background: 0x0a0d12, fog: 0x161c25, fogDensity: 0.027,
                 moon: { color: 0x8fa2c8, intensity: 1.9, position: [-6, 14, 8] },
-                ambient: { color: 0x3c4658, intensity: 1.2 },
-                hemi: { sky: 0x5a6a86, ground: 0x1a1510, intensity: 0.65 },
-                exposure: 1.05, ash: 0.6, dust: 0.45, rim: 0x8fa3c4,
+                ambient: { color: 0x44506a, intensity: 1.45 },
+                hemi: { sky: 0x5a6a86, ground: 0x2a2018, intensity: 0.75 },
+                exposure: 1.12, ash: 0.45, dust: 0.35, rim: 0x8fa3c4,
                 grade: { shadowTint: [0.82, 0.93, 1.16], highlightTint: [1.05, 1.0, 0.92], saturation: 0.66 },
                 surface: { moss: 0.3, grime: 1.15 },
-                shafts: { every: 30, color: 0xa8b8d0, opacity: 0.14 },
+                shafts: { every: 22, color: 0xa8b8d0, opacity: 0.18 },
                 banners: [0x4a1c1a, 0x2c2a33], debris: 0.25 },
   length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
   start: { x: 5, z: 0, yaw: Math.PI / 2 },
@@ -39,6 +40,11 @@ const LEVEL_1 = {
     { behavior: 'patrol', enemy: 'hollow', z: 2.5, path: [139, 144] },   // clear of the bonfire past the Rogue's gate
     { behavior: 'slumber', enemy: 'knight', x: 93, z: 2, yaw: -Math.PI / 2 },
   ],
-  torches: [{ x: 30, side: -1 }, { x: 50, side: 1 }, { x: 79, side: -1 }, { x: 100, side: 1 },
-            { x: 125, side: -1 }, { x: 150, side: 1 }, { x: 167, side: -1 }],
+  torches: [{ x: 14, side: -1 }, { x: 22, side: 1 }, { x: 30, side: -1 }, { x: 40, side: 1 }, { x: 46, side: -1 }, { x: 50, side: 1 },
+            { x: 62, side: -1 }, { x: 68, side: 1 }, { x: 76, side: 1 }, { x: 79, side: -1 }, { x: 95, side: -1 }, { x: 100, side: 1 },
+            { x: 110, side: -1 }, { x: 116, side: 1 }, { x: 125, side: -1 }, { x: 134, side: 1 }, { x: 150, side: 1 }, { x: 156, side: -1 },
+            { x: 164, side: 1 }, { x: 167, side: -1 }],
+  // Braziers flanking each gate on the approach: the fight ahead is lit like a stage.
+  braziers: [{ x: 31.2, z: 3.9 }, { x: 31.2, z: -3.9 }, { x: 79.2, z: 3.9 }, { x: 76.5, z: -3.9 }, { x: 125.2, z: 3.9 }, { x: 122.5, z: -3.9 },
+             { x: 167.2, z: 3.9 }, { x: 164.5, z: -3.9 }],
 };

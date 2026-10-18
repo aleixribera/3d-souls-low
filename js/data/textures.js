@@ -12,6 +12,7 @@
 const TEXTURE_SETTINGS = {
   size: 256,          // default size; enemies 256, player / bosses up to maxSize
   maxSize: 512,
+  ultraMax: 1024,     // the Ultra preset doubles model textures (VISUALS.ultra.models.tex), up to this
   anisotropy: 4,
   decayStep: 0.1,     // decay is rounded to this so near-equal requests share one texture
   scratchLength: [10, 48],

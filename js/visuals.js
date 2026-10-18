@@ -23,11 +23,15 @@ function checkVisualData(need, num) {
   const amount = (v, max = 2) => num(v) && v >= 0 && v <= max;
   const Q = VIS.quality;
   need(Q && Q.high && Q.low, 'CONFIG.VISUALS.quality needs "high" and "low" presets.');
-  if (Q && Q.high && Q.low) for (const k of Object.keys(Q.high)) need(k in Q.low, `CONFIG.VISUALS.quality.low is missing "${k}".`);
+  if (Q && Q.high) for (const [n, q] of Object.entries(Q)) {   // every preset lists the same keys
+    for (const k of Object.keys(Q.high)) need(k in q, `CONFIG.VISUALS.quality.${n} is missing "${k}".`);
+    for (const k of Object.keys(q)) need(k in Q.high, `CONFIG.VISUALS.quality.${n}: unknown key "${k}" (not in "high").`);
+  }
   for (const [n, q] of Object.entries(Q || {}))
     need(num(q.renderScale) && q.renderScale > 0.25 && q.renderScale <= 1 && num(q.bloomScale) && q.bloomScale > 0 && q.bloomScale <= 1 && Number.isInteger(q.lights) && q.lights >= 1
-      && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean',
-      `CONFIG.VISUALS.quality.${n}: renderScale (0.25..1], bloomScale (0..1], lights (whole, >= 1), antialias, simpleSurfaces and glows (true / false).`);
+      && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean' && typeof q.ultra === 'boolean'
+      && Number.isInteger(q.msaa) && q.msaa >= 0 && num(q.particles) && q.particles >= 0 && num(q.embers) && q.embers >= 0,
+      `CONFIG.VISUALS.quality.${n}: renderScale (0.25..1], bloomScale (0..1], lights (whole, >= 1), msaa (whole, >= 0), particles and embers (>= 0), antialias, simpleSurfaces, glows and ultra (true / false).`);
   need(VIS.defaultQuality in Q, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a quality preset.`);
   for (const [m, kind] of Object.entries(VIS.surfaces.materials))
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
@@ -178,7 +182,8 @@ const WEATHER_VERT = `#include <begin_vertex>
   vWPos = (modelMatrix * wPos4).xyz; vWNrm = normalize(mat3(modelMatrix) * wNrm3);`;
 const WEATHER_HEAD = `varying vec3 vWPos; varying vec3 vWNrm;
 uniform sampler2D wSide, wTop;
-uniform float wScaleSide, wScaleTop, wGrimeH, wMossAmt, wCrack, wRough, wRustAmt, wDetailAmt, wLevelMoss, wLevelGrime;
+uniform float wScaleSide, wScaleTop, wGrimeH, wMossAmt, wCrack, wRough, wRustAmt, wDetailAmt, wLevelMoss, wLevelGrime, wRelief;
+uniform vec2 wReliefFade;
 uniform vec3 wGrime, wMoss, wRust;
 vec3 wTri() {
 #ifdef W_SIMPLE
@@ -205,6 +210,19 @@ const WEATHER_FRAG = `vec3 wT = wTri(); float wD = wT.r, wC = wT.g, wB = wT.b;
   diffuseColor.rgb = mix(diffuseColor.rgb, wMoss * (0.55 + 0.7 * wD), wMossM);
   float wRustM = smoothstep(0.45, 0.8, wB + wC * 0.3) * wRustAmt;
   diffuseColor.rgb = mix(diffuseColor.rgb, wRust * (0.5 + 0.8 * wD), wRustM);`;
+// Relief (not with simpleSurfaces): joints and cracks sink and the paler stone stands, so light rakes across them. The
+// height's screen-space slope tilts the normal (as three's bump map does), fading out with distance before it can shimmer.
+const WEATHER_RELIEF = `#include <normal_fragment_maps>
+#ifndef W_SIMPLE
+  if (wRelief > 0.0) {
+    float wHt = wD * 0.12 - wC;
+    float wFade = 1.0 - smoothstep(wReliefFade.x, wReliefFade.y, length(vViewPosition));
+    vec2 wDH = vec2(dFdx(wHt), dFdy(wHt)) * wRelief * wFade;
+    vec3 wSX = dFdx(-vViewPosition), wSY = dFdy(-vViewPosition), wR1 = cross(wSY, normal), wR2 = cross(normal, wSX);
+    float wDet = dot(wSX, wR1) * faceDirection;
+    normal = normalize(abs(wDet) * normal - sign(wDet) * (wDH.x * wR1 + wDH.y * wR2));
+  }
+#endif`;
 function weather(mat, kindName) {
   if (mat.userData.weathered) return mat;
   const K = VIS.surfaces.kinds[kindName];
@@ -216,12 +234,14 @@ function weather(mat, kindName) {
       wCrack: { value: K.crack }, wGrime: { value: new THREE.Color(K.grimeColor) }, wGrimeH: { value: K.grimeHeight },
       wMoss: { value: new THREE.Color(K.mossColor) }, wMossAmt: { value: K.moss }, wRough: { value: K.roughVar },
       wRust: { value: new THREE.Color(K.rustColor) }, wRustAmt: { value: K.rust }, wLevelMoss: SURF.moss, wLevelGrime: SURF.grime,
+      wRelief: { value: K.relief || 0 }, wReliefFade: { value: new THREE.Vector2(...VIS.surfaces.reliefFade) },
     });
     sh.vertexShader = 'varying vec3 vWPos; varying vec3 vWNrm;\n' + sh.vertexShader.replace('#include <begin_vertex>', WEATHER_VERT);
     sh.fragmentShader = (WEATHER_MODE.simple ? '#define W_SIMPLE\n' : '') + WEATHER_HEAD + sh.fragmentShader
       .replace('#include <map_fragment>', WEATHER_FRAG)
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp(roughness + (0.5 - wD) * wRough + wRustM * 0.25, 0.05, 1.0);')
-      .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * (1.0 - wRustM) * (0.7 + 0.6 * wD);');
+      .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * (1.0 - wRustM) * (0.7 + 0.6 * wD);')
+      .replace('#include <normal_fragment_maps>', WEATHER_RELIEF);
   };
   mat.customProgramCacheKey = () => WEATHER_MODE.simple ? 'weatherSimple' : 'weather';
   mat.needsUpdate = true;
@@ -526,7 +546,7 @@ function bannerMesh(list, colors) {
     o.position.set(b.x, b.y, b.z); o.rotation.set(0, b.ry, 0); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
     m.setColorAt(i, c.set(colors[i % colors.length]));
   });
-  m.computeBoundingSphere();
+  m.userData.noDepth = true; m.computeBoundingSphere();
   return m;
 }
 function shaftMesh(list, S) {
@@ -585,7 +605,7 @@ function grassMesh(rnd, count, spot, size = 1) {
     m.setColorAt(n, c.set(Gs.color).offsetHSL((rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.15, (rnd() - 0.5) * 0.12));
     n++;
   }
-  m.count = n; m.userData.max = n; m.computeBoundingSphere();
+  m.count = n; m.userData.max = n; m.userData.noDepth = true; m.computeBoundingSphere();
   return m;
 }
 // Distant ruins: towers with broken tops, wall runs and lone arches, merged into one mesh per layer.
@@ -673,8 +693,10 @@ function makeBloodTexture() {
 }
 
 // ---- pooled effects that outlive a stage ------------------------------------------------------------------
+// Buffers are sized for the preset that draws the most (Ultra); a preset draws a share of them (quality.particles).
+const MOST = key => Math.max(1, ...Object.values(VIS.quality).map(q => q[key]));
 function makeAsh() {   // ash (falls) and dust motes (hover) in a box that follows the camera; animated on the GPU
-  const P = VIS.particles, n = P.max, pos = new Float32Array(n * 3), seed = new Float32Array(n * 4);
+  const P = VIS.particles, n = Math.ceil(P.max * MOST('particles')), pos = new Float32Array(n * 3), seed = new Float32Array(n * 4);
   for (let i = 0; i < pos.length; i++) pos[i] = Math.random();
   for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
   const geo = new THREE.BufferGeometry();
@@ -688,7 +710,7 @@ function makeAsh() {   // ash (falls) and dust motes (hover) in a box that follo
   return pts;
 }
 function makeEmberField() {   // glowing sparks rising round the camera (atmosphere `embers`); animated on the GPU
-  const E = VIS.embers, pos = new Float32Array(E.max * 3), seed = new Float32Array(E.max * 4);
+  const E = VIS.embers, n = Math.ceil(E.max * MOST('particles')), pos = new Float32Array(n * 3), seed = new Float32Array(n * 4);
   for (let i = 0; i < pos.length; i++) pos[i] = Math.random();
   for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
   const geo = new THREE.BufferGeometry();
@@ -792,6 +814,9 @@ const visuals = (() => {
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
   const ash = makeAsh(), embers = makeEmberField(), decals = makeBloodDecals(), debris = makeDebris();
   let quality = Q[VIS.defaultQuality], def = null, A = {}, st = { bonfires: [], glows: [], lights: [] }, lowHp = 0, debrisTimer = 0;
+  // Extensions (the Ultra preset, js/ultra-post.js): called on a quality change, after a stage is dressed, around each draw
+  // and on a resize (with the drawn size in pixels).
+  const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
 
   function applyCounts() {
     const P = VIS.particles, a = A.ash || 0, d = A.dust || 0, amount = Math.min(1, a + d);
@@ -854,7 +879,7 @@ const visuals = (() => {
     const core = new THREE.Mesh(new THREE.IcosahedronGeometry(B.coreSize, 1),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(B.coreColor).multiplyScalar(B.coreBoost) }));
     core.position.set(b.x, y + 0.16, b.z); G.add(core);
-    const n = B.embers, seeds = new Float32Array(n * 4);
+    const n = Math.ceil(B.embers * MOST('embers')), seeds = new Float32Array(n * 4);
     for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random();
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute('seed', new THREE.BufferAttribute(seeds, 4));
@@ -1081,17 +1106,26 @@ const visuals = (() => {
   }
 
   return {
+    hooks, composer, passes: { bloom, grade },
+    quality: () => quality,
+    lowHealth: () => lowHp,
+    lights: () => st.lights,   // the point lights quality.lights limits (visible ones are lit this frame)
+    look: () => A,
+    decals,
     qualityLabel: name => (Q[name] || Q[VIS.defaultQuality]).label,
     nextQuality(name, d) { const k = Object.keys(Q), i = Math.max(0, k.indexOf(name)); return k[(i + d + k.length * 2) % k.length]; },
     setQuality(name) {
       quality = Q[name] || Q[VIS.defaultQuality];
       bloom.enabled = quality.bloom;
+      const samples = Math.min(quality.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
+      for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
+      for (const h of hooks.quality) h(quality);
       grade.uniforms.uVig.value = quality.vignette ? VIS.vignette.strength : 0;
       grade.uniforms.uVigSoft.value = VIS.vignette.softness;
-      grade.uniforms.uGrain.value = quality.grain ? VIS.grain.amount : 0;
+      grade.uniforms.uGrain.value = quality.grain ? (quality.ultra ? VIS.grain.ultra : VIS.grain.amount) : 0;
       this.resize(window.innerWidth, window.innerHeight);
       applyCounts();
-      if (stage && Game.player) this.warmUp(Game.cam);   // each quality draws through its own path, with its own shaders
+      if (stage && Game.player && Game.mode !== 'menu') this.warmUp(Game.cam);   // each quality draws through its own path, with its own shaders (from the title: at the next start)
       if (Game.mode === 'pause' && stage) this.draw();   // show the change behind the options menu
     },
     // Draw every pooled effect once, fully transparent and in front of the camera (cam: { pos, look }), so that its
@@ -1112,6 +1146,7 @@ const visuals = (() => {
       bloom.setSize(Math.max(1, Math.round(w * pr * quality.bloomScale)), Math.max(1, Math.round(h * pr * quality.bloomScale)));   // a soft glow: drawn smaller
       grade.uniforms.uRes.value.set(w * pr, h * pr);
       PT_SCALE.value = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.camera.fov) / 2));
+      for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr));
     },
     // Called once per stage build (loadStage), after applyAtmosphere. Everything added goes in the stage group.
     dressStage(d, built) {
@@ -1145,6 +1180,7 @@ const visuals = (() => {
       mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...(built.traps || []).map(t => t.group), ...flames.filter(f => f.group === G).map(f => f.mesh),
                               ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : []), ...(st.landmark ? [st.landmark] : [])]));
       applyLook();
+      for (const h of hooks.stage) h(d, built);
     },
     render(game, t, dt) {
       vTime.value = t;
@@ -1180,9 +1216,13 @@ const visuals = (() => {
       this.draw();
     },
     draw() {
-      if (!quality.post) { renderer.render(scene, camera); return; }
-      grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
-      composer.render();
+      for (const h of hooks.beforeDraw) h(quality);
+      if (!quality.post) renderer.render(scene, camera);
+      else {
+        grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
+        composer.render();
+      }
+      for (const h of hooks.afterDraw) h(quality);
     },
     // Event reactions (registerVisualListeners).
     blood(at, size, burst = true) {
@@ -1195,7 +1235,7 @@ const visuals = (() => {
     // What the current stage draws, for tests and tuning.
     info() {
       let lights = 0;
-      scene.traverse(o => { if (o.isPointLight) lights++; });
+      scene.traverse(o => { if (o.isPointLight && !o.userData.ultra) lights++; });   // the Ultra preset's own lights not counted
       const grassAt = [], m4 = new THREE.Matrix4(), v = new THREE.Vector3();
       if (st.grass) for (let i = 0; i < st.grass.userData.max; i++) { st.grass.getMatrixAt(i, m4); grassAt.push(v.setFromMatrixPosition(m4).toArray()); }
       return { sky: !!st.sky, grass: st.grass ? st.grass.count : 0, grassAt, pointLights: lights, far: camera.far,

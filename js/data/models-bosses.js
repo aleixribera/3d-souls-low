@@ -20,19 +20,23 @@ MODEL_DEFS.giantSkeleton = {
     core: { glow: 0xe8eeff },
     eye: { glow: 0xc8d8ff },
   },
-  body: { torso: null, pelvis: 'bone', arms: 'bone', legs: 'bone', head: 'bone', neck: 'bone', hands: 'bone', feet: 'bone' },
+  // v6.0 remake: a real skeleton (js/kit-premium.js): shaped long bones with heads and condyles, paired forearm and shin
+  // bones, bony hands and feet, a pelvis and neck vertebrae under the huge domed skull; the white-hot spine as before.
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: 'bone', neck: null, hands: null, feet: null },
   parts: [
     { use: 'ribcage', slot: 'bone', bone: 'chest', full: 8, broken: 8, whole: true, size: 1.3, spine: 0.16 },
     { use: 'skullFace', slot: 'bone', void: 'void', bone: 'head' },
     // the burning spine: white-hot vertebrae from the ribs down into the pelvis
     { use: 'knobs', slot: 'core', bone: 'chest', at: [[0, 0.04, -0.16, 0.032], [0, 0.11, -0.165, 0.03], [0, 0.18, -0.17, 0.028], [0, 0.25, -0.17, 0.026], [0, 0.32, -0.17, 0.024]] },
     { use: 'knobs', slot: 'core', bone: 'spin', at: [[0, 0.0, -0.08, 0.036], [0, 0.07, -0.095, 0.036], [0, 0.14, -0.11, 0.035], [0, 0.21, -0.125, 0.034], [0, 0.28, -0.14, 0.033]] },
-    // heavy knuckled joints: femur heads at the shoulders and hips, thick condyles at elbows, wrists and knees
-    { use: 'knobs', slot: 'dark', bone: 'armL', at: [[0, 0, 0, 0.11], [0.03, -0.05, 0.03, 0.07]] }, { use: 'knobs', slot: 'dark', bone: 'armR', at: [[0, 0, 0, 0.11], [-0.03, -0.05, 0.03, 0.07]] },
-    { use: 'knobs', slot: 'dark', bone: 'elbowL', at: [[0.03, 0, 0, 0.08], [-0.03, 0, 0, 0.07], [0, -0.36, 0, 0.07]] }, { use: 'knobs', slot: 'dark', bone: 'elbowR', at: [[0.03, 0, 0, 0.08], [-0.03, 0, 0, 0.07], [0, -0.34, 0, 0.07]] },
-    { use: 'knobs', slot: 'dark', bone: 'kneeL', at: [[0.03, 0, 0.01, 0.085], [-0.03, 0, 0.01, 0.08]] }, { use: 'knobs', slot: 'dark', bone: 'kneeR', at: [[0.03, 0, 0.01, 0.085], [-0.03, 0, 0.01, 0.08]] },
-    { use: 'knobs', slot: 'dark', bone: 'legL', at: [[0, 0, 0, 0.1]] }, { use: 'knobs', slot: 'dark', bone: 'legR', at: [[0, 0, 0, 0.1]] },
-    { use: 'fingers', slot: 'bone', bone: 'elbowL', at: 0.4, r: 0.022, len: 0.24, spread: 0.045 }, { use: 'fingers', slot: 'bone', bone: 'elbowR', at: 0.38, r: 0.022, len: 0.24, spread: 0.045 },
+    { use: 'bonePelvis', slot: 'bone', bone: 'spin', size: 1.3 },
+    { use: 'boneNeck', slot: 'dark', bone: 'neck', size: 1.4, count: 5 },
+    { use: 'longBone', slot: 'bone', bone: 'armL', len: 0.39, r: 0.05 }, { use: 'longBone', slot: 'bone', bone: 'armR', len: 0.3, r: 0.046 },
+    { use: 'longBone', slot: 'bone', bone: 'elbowL', len: 0.39, r: 0.042, pair: true }, { use: 'longBone', slot: 'bone', bone: 'elbowR', len: 0.3, r: 0.04, pair: true },
+    { use: 'longBone', slot: 'bone', bone: 'legL', len: 0.45, r: 0.062 }, { use: 'longBone', slot: 'bone', bone: 'legR', len: 0.45, r: 0.056 },
+    { use: 'longBone', slot: 'bone', bone: 'kneeL', len: 0.45, r: 0.052, pair: true }, { use: 'longBone', slot: 'bone', bone: 'kneeR', len: 0.45, r: 0.048, pair: true },
+    { use: 'boneHand', slot: 'bone', bone: 'elbowL', at: 0.42, size: 1.5 }, { use: 'boneHand', slot: 'bone', bone: 'elbowR', at: 0.33, size: 1.45 },
+    { use: 'boneFoot', slot: 'bone', bone: 'kneeL', size: 1.25 }, { use: 'boneFoot', slot: 'bone', bone: 'kneeR', size: 1.2 },
   ],
   weapon: { use: 'boneClub', slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },
   eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.11, at: [0, 0.28, 0.21] },

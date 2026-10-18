@@ -1141,7 +1141,9 @@
   const downTo = (x, z) => {   // the first surface drawn below (x, 5, z)
     Game.render(1, STEP);
     const ray = new THREE.Raycaster(new THREE.Vector3(x, 5, z), new THREE.Vector3(0, -1, 0)); ray.camera = A.camera;
-    const h = ray.intersectObject(stage.group, true).find(q => drawn(q.object));
+    // A slab of a sprung trap already falling (below where it was laid) is debris in the air, not the floor.
+    const falling = new Set((A.world.traps || []).flatMap(t => t.pieces.filter(c => c.mesh.position.y < c.y - 0.05).map(c => c.mesh)));
+    const h = ray.intersectObject(stage.group, true).find(q => drawn(q.object) && !falling.has(q.object));
     return h ? h.point.y : -Infinity;
   };
   // Into the passage past the gatehouse gate, and on east until the floor gives way and the player lands below.
@@ -2896,6 +2898,110 @@
     expect.ok(!document.getElementById('wonHint').textContent.includes('boss select'), 'the old win hint');
     const p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.3);
     expect.ok(Game.mode === 'play' && Game.player.alive(), 'death respawns in the arena as before');
+  });
+
+  // ---- v6.0 the Ultra preset ----------------------------------------------------------------------------------------
+  // Quality changes made here go back to the player's own setting afterwards.
+  const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
+  const ultraWarnings = () => [...warned].filter(w => w.startsWith('Ultra'));
+  test('Ultra: the presets share their keys and only Ultra turns the extras on', () => {
+    const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();
+    for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as high`);
+    expect.ok(Q.ultra && Q.ultra.ultra === true && !Q.high.ultra && !Q.low.ultra, 'ultra on Ultra only');
+    expect.ok(autoQuality.choices()[0] === 'auto' && autoQuality.choices().includes('ultra'), 'the Graphics option offers Auto first, and Ultra');
+    const saved = settings.graphics;
+    settings.graphics = 'auto';
+    expect.ok(autoQuality.effective() in Q && autoQuality.label('auto').startsWith('Auto ('), 'Auto resolves to a real preset and names it');
+    settings.graphics = saved;
+  });
+  test('Ultra: switching it on and off leaves the scene as it was', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin();
+    const before = A.visuals.info().pointLights, moonBefore = { ...DEFAULT_ATMOSPHERE, ...(A.LEVEL_1.atmosphere || {}) }.moon.intensity;
+    try {
+      A.visuals.setQuality('ultra'); sim.step(30, 2);
+      const U = ultraPost.info();
+      expect.ok(U.on && U.shadows && renderer.shadowMap.enabled, 'shadows on with Ultra');
+      expect.ok(A.visuals.info().pointLights === before, 'the stage keeps its own light count (Ultra lights are not counted)');
+      expect.ok(ultraFx.info().fires > 0, 'flames are drawn as procedural fire');
+      A.visuals.setQuality('high'); sim.step(4, 2);
+      expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on, 'shadows off again');
+      expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'the moon gets its whole strength back');
+      let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
+      expect.ok(extra === 0, `no Ultra light left in the scene (${extra})`);
+      expect.ok(ultraFx.info().fires === 0 && flames.every(f => f.mesh.material.visible), 'the old flame cones are back');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra: a storm of combat events is drawn without errors and never touches the fight', () => {
+    A.elden.start('margit'); Game.loading = 0; sim.begin();
+    try {
+      A.visuals.setQuality('ultra');
+      const p = Game.player, e = Game.enemies[0], hp = [p.hp, e.hp, e.posture], at = { x: e.x, y: e.y + 1.4, z: e.z }, warn0 = ultraWarnings().length;
+      events.emit('strike', { strike: { damage: 53 }, attacker: p, target: e, at, blocked: false });
+      events.emit('strike', { strike: { damage: 40 }, attacker: e, target: p, at: { x: p.x, y: p.y + 1.2, z: p.z }, blocked: true });
+      events.emit('strike', { strike: { damage: 20 }, attacker: null, target: p, at: { x: p.x, y: p.y + 1.2, z: p.z }, blocked: false });   // a trap: no attacker
+      events.emit('parry', { target: e }); events.emit('postureBreak', { enemy: e });
+      events.emit('execution', { player: p, enemy: e, damage: 0, at, exit: { x: e.x + 0.5, y: at.y, z: e.z } });
+      events.emit('impact', { x: e.x, y: e.y, z: e.z, fx: { ring: 3, crack: 2, dust: 10, shake: 0 }, enemy: e });
+      events.emit('bossPhase', { enemy: e, from: 'omen', to: 'golden' }); events.emit('land', { x: p.x, y: p.y, z: p.z, fx: { ring: 1.5 } });
+      for (const kind of BOSS_FX_IMPACTS) ultraBoss.IMPACT[kind](e.x, e.y, e.z, 2, { el: FX_ELEMENTS.steel, scale: 1 }, e);
+      for (let i = 0; i < 20; i++) Game.render(1, STEP);
+      const F = ultraFx.info();
+      expect.above(F.sparks + F.drops + F.motes + F.puffs, 50, 'effects spawned');
+      expect.ok(ultraWarnings().length === warn0, `no effect failed (${ultraWarnings().join('; ')})`);
+      expect.ok(p.hp === hp[0] && e.hp === hp[1] && e.posture === hp[2], 'health and posture untouched by drawing');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra boss effects: every boss, phase and attack named in BOSS_FX has a look and an impact', () => {
+    for (const k of BOSS_FX_IMPACTS) expect.ok(typeof ultraBoss.IMPACT[k] === 'function', `impact "${k}" is drawn`);
+    for (const [id, B] of Object.entries(BOSS_FX)) {
+      const d = ENEMY_BY_ID[id], phases = [null, ...Object.keys(d.phases || {})];
+      for (const ph of phases) for (const aid of Object.keys(B.attacks || {})) {
+        const L = ultraBoss.look({ baseDef: d, phase: ph, attack: { id: aid }, boss: true });
+        expect.ok(L && L.el && BOSS_FX_IMPACTS.includes((L.a && L.a.impact) || L.el.impact), `${id}/${ph}/${aid}: a look and an impact`);
+      }
+    }
+  });
+  test('Ultra: Godrick and Malenia fight 15 s with every effect on, no effect failing', () => {
+    try {
+      A.visuals.setQuality('ultra');
+      for (const id of ['godrick', 'malenia']) {
+        A.elden.start(id); Game.loading = 0; sim.begin();
+        const warn0 = ultraWarnings().length;
+        sim.seconds(15, 3);
+        expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
+        expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
+      }
+    } finally { restoreQuality(); }
+  });
+  test('Ultra models: every model builds at Ultra detail, with more triangles', () => {
+    const base = {}, was = KIT.detail();
+    try {
+      KIT.setDetail({ geo: 1, tex: 1 });
+      for (const id of Object.keys(MODEL_DEFS)) base[id] = KIT.modelParts(id).tris;
+      KIT.setDetail(CONFIG.VISUALS.ultra.models);
+      for (const id of Object.keys(MODEL_DEFS)) expect.ok(KIT.modelParts(id).tris > base[id], `${id}: more triangles at Ultra detail`);
+    } finally { KIT.setDetail(was); }
+  });
+  test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {
+    A.elden.start('margit'); Game.loading = 0; sim.begin();
+    const saved = settings.cameraMotion;
+    try {
+      settings.cameraMotion = true; sim.step(10, 1);
+      const camState = Game.cam.pos.clone();
+      events.emit('strike', { strike: { damage: 60 }, attacker: Game.enemies[0], target: Game.player, at: { x: Game.player.x, y: 1.2, z: Game.player.z }, blocked: false });
+      Game.render(1, STEP); Game.render(1, STEP);
+      const S = cameraFeel.state();
+      expect.ok(Math.abs(S.fov) > 0.01 || Math.hypot(S.x, S.z) > 0.001, 'the view reacts');
+      expect.ok(Game.cam.pos.equals(camState), 'Game.cam (aim, movement) untouched');
+      settings.cameraMotion = false; Game.render(1, STEP);
+      expect.ok(camera.fov === CONFIG.camera.fov, 'off: the plain field of view');
+    } finally { settings.cameraMotion = saved; }
+  });
+  test('Loading: the title card waits for nothing under the test clock', () => {
+    sim.begin();
+    let ran = false; Game.loadingFirst('x', 'y', () => { ran = true; });
+    expect.ok(ran && !Game.pendingLoad, 'ran at once');
+    expect.ok(Game.levelCard('long-hall')[0] === A.LEVEL_1.name, 'a level card names the level');
   });
 
   async function run(filter = '') {

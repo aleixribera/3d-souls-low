@@ -21,7 +21,7 @@ const MODEL_SETTINGS = {
   texMeters: 0.6,       // how many metres one texture tile covers on a surface
   texSize: 256,         // enemy textures; the player and bosses may use up to TEXTURE_SETTINGS.maxSize
   limbSides: 6,         // radial segments of limbs
-  triBudget: { enemy: 1500, player: 3000, boss: 6000 },   // checked by the model lab; the builder warns when over
+  triBudget: { enemy: 3000, player: 12000, boss: 14000 },   // checked by the model lab; the builder warns when over (not at Ultra detail: no limit there)
 };
 const MODEL_DEFS = {
   // The original Hollow Soldier look (before v5.5): the hollowed models in models-enemies.js / models-bosses.js start from it.
@@ -139,6 +139,8 @@ MODEL_DEFS.wanderer = {
     wood: { tex: 'barkMoss', tint: 0x7a6a58, decay: 0.15 },
     blade: { tex: 'dentedSteel', tint: 0xa0a4aa, decay: 0.4, size: 512 },
     scarf: { tex: 'rottenCloth', tint: 0xc03a2a, decay: 0.45, double: true },
+    coat: { tex: 'rottenCloth', tint: 0x5c5646, decay: 0.5, size: 512, double: true },
+    strap: { tex: 'crackedLeather', tint: 0x3e3428, decay: 0.55 },
   },
   body: { torso: 'cloth', pelvis: 'cloth', arms: 'cloth', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'leather', feet: 'leather' },
   bones: {
@@ -147,27 +149,38 @@ MODEL_DEFS.wanderer = {
     capeC: { parent: 'capeB', at: [0, -0.4, 0] },
     scarfTail: { parent: 'neck', at: [0.04, 0.0, -0.09] },
   },
+  // v6.0 remake (js/kit-premium.js): a quilted gambeson under a boiled-leather cuirass, the coat's split skirt (a back
+  // panel and two tassets that swing with the legs) over a short mail skirt, a deep cowl and shoulder mantle, a wound
+  // red scarf, a layered pauldron on the shield side and a leather one on the sword arm, vambraces, tall folded boots,
+  // a bandolier with a dagger, the planked round shield on the back and a bevelled longsword.
   parts: [
-    { use: 'jerkin', slot: 'leather', bone: 'chest' },
+    { use: 'gambeson', slot: 'cloth', bone: 'chest' },
+    { use: 'cuirass', slot: 'leather', bone: 'chest', strap: 'strap', metal: 'iron' },
     { use: 'mailSkirt', slot: 'mail', bone: 'spin' },
-    { use: 'belt', slot: 'leather', bone: 'spin' },
+    { use: 'coatBack', slot: 'coat', bone: 'spin', len: 0.58, seed: 3 },
+    { use: 'coatTasset', slot: 'coat', bone: 'legL', side: 1, seed: 5 },
+    { use: 'coatTasset', slot: 'coat', bone: 'legR', side: -1, seed: 6 },
+    { use: 'belt', slot: 'strap', bone: 'spin' },
     { use: 'pouch', slot: 'leather', bone: 'spin', x: -0.2, z: 0.08 },
     { use: 'flask', slot: 'iron', bone: 'spin', x: 0.2, z: 0.07 },
-    { use: 'hood', slot: 'hood', bone: 'head', size: 1.04, tail: 0.35, close: 0.3 },
+    { use: 'bandolier', slot: 'strap', bone: 'chest', metal: 'iron' },
+    { use: 'cowl', slot: 'hood', bone: 'head', size: 1.04 },
+    { use: 'mantle', slot: 'hood', bone: 'chest', seed: 8 },
     { use: 'faceWrap', slot: 'scarf', bone: 'head' },
-    { use: 'scarf', slot: 'scarf', bone: 'neck' },
+    { use: 'woundScarf', slot: 'scarf', bone: 'neck' },
     { use: 'clothStrip', slot: 'scarf', bone: 'scarfTail', w: 0.08, len: 0.4, seed: 5 },
-    { use: 'pauldron', slot: 'iron', bone: 'armL', size: 1.15 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.1, to: 0.29, radius: 0.047, count: 3 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.1, to: 0.29, radius: 0.047, count: 3 },
-    { use: 'wraps', slot: 'leather', bone: 'kneeL', from: 0.06, to: 0.3, radius: 0.058, count: 3 },
-    { use: 'wraps', slot: 'leather', bone: 'kneeR', from: 0.06, to: 0.3, radius: 0.058, count: 3 },
-    { use: 'shieldBack', slot: 'wood', bone: 'chest' },
+    { use: 'layeredPauldron', slot: 'iron', bone: 'armL', side: 1, size: 1.12, rivet: 'iron', strap: 'strap' },
+    { use: 'layeredPauldron', slot: 'leather', bone: 'armR', side: -1, size: 0.86, rivet: 'iron', strap: 'strap' },
+    { use: 'vambrace', slot: 'leather', bone: 'elbowL', strap: 'strap' },
+    { use: 'vambrace', slot: 'leather', bone: 'elbowR', strap: 'strap' },
+    { use: 'tallBoot', slot: 'leather', bone: 'kneeL', strap: 'strap', metal: 'iron' },
+    { use: 'tallBoot', slot: 'leather', bone: 'kneeR', strap: 'strap', metal: 'iron' },
+    { use: 'plankShield', slot: 'wood', bone: 'chest', face: 'wood', metal: 'iron', strap: 'strap' },
     { use: 'capeSegment', slot: 'cape', bone: 'capeA', w0: 0.52, w1: 0.62, len: 0.4, bow: 1.0 },
     { use: 'capeSegment', slot: 'cape', bone: 'capeB', w0: 0.62, w1: 0.74, len: 0.4, bow: 0.8 },
     { use: 'capeSegment', slot: 'capeHem', bone: 'capeC', w0: 0.74, w1: 0.82, len: 0.34, bow: 0.7, ragged: true, seed: 4 },
   ],
-  weapon: { use: 'wandererSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
+  weapon: { use: 'wandererLongsword', slots: { blade: 'blade', grip: 'strap', guard: 'iron' } },
   anim: {
     idle: { breathRate: 1.6, breath: 0.018, headDrift: 0.04, sway: 0.015, twitch: 0 },
     walk: { twist: 0.12, roll: 0.04, headNod: 0.03, elbow: 0.3, drag: 0 },

@@ -193,12 +193,14 @@ const story = (() => {
   function mainItems() {
     const noSave = storageOk ? '' : ' Progress cannot be saved in this window.';
     if (status === 'ok') return [
-      { name: 'Continue', desc: `${levelName(data.level)}${data.bonfire ? ', at the last bonfire rested at' : ', from its start'}.${data.completed ? ' The story is complete.' : ''}${noSave}`, go: () => resume() },
+      { name: 'Continue', desc: `${levelName(data.level)}${data.bonfire ? ', at the last bonfire rested at' : ', from its start'}.${data.completed ? ' The story is complete.' : ''}${noSave}`, go: () => Game.loadingFirst(...Game.levelCard(data.level), () => resume()) },
       { name: 'New Game', desc: 'Begin the story again from the start.', go: () => Game.showMenu('storyConfirm') },
     ];
     return [{ name: 'Story', desc: (status === 'broken' ? 'Your story save could not be read. Begin a new story.' : 'The whole road: from the cells to the Gaoler King\'s throne.') + noSave,
               go: () => Game.showMenu('storyTutorial') }];
   }
+  // A story level's title card, shown before the build (Game.loadingFirst): its chapter title and line.
+  const card = id => { const ch = chapter(id), L = ALL_LEVELS.find(l => l.id === id); return ch ? [ch.title, ch.line] : [L ? L.name : '', L ? L.description : '']; };
   function screens(game) {
     const devJumps = DEV ? [
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level.', go: () => game.showMenu('storyJump') },
@@ -210,8 +212,8 @@ const story = (() => {
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
       ] },
       storyTutorial: { title: 'PLAY THE TUTORIAL?', sub: '', back: 'main', items: [
-        { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => newGame(true) },
-        { name: 'No', desc: 'Straight to the Long Hall.', go: () => newGame(false) },
+        { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => Game.loadingFirst(...card(STORY.tutorial.level), () => newGame(true)) },
+        { name: 'No', desc: 'Straight to the Long Hall.', go: () => Game.loadingFirst(...card(chapterIds()[0]), () => newGame(false)) },
       ] },
       storyDone: { title: 'STORY COMPLETE', sub: '', notice: 'The ash has stopped falling. The road is walked.', items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },

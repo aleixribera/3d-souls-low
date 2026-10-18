@@ -46,7 +46,7 @@ const LEVEL_4 = {
     { id: 'bonfire-door', rect: [34, 36, 4, 7], height: 4, floor: 0x37342f, wall: 0x48433b },
     // The undercroft: under the passage (where its floor drops you) and under the courtyard's south-west.
     { id: 'undercroft-landing', rect: [22, 29, -11, 3], y: -4, height: 3.5, floor: 0x1f3238, wall: 0x2c434b, light: 0x6fc8c0 },
-    { id: 'undercroft', rect: [22, 64, -22, -11], y: -4, height: 3.5, floor: 0x1f3238, wall: 0x2c434b, light: 0x6fc8c0,
+    { id: 'undercroft', rect: [22, 64, -22, -11], lamps: [[25, -21], [44, -21], [62, -21], [52, -12]], y: -4, height: 3.5, floor: 0x1f3238, wall: 0x2c434b, light: 0x6fc8c0,
       pillars: [[40, -16.5], [52, -15], [58, -15]] },
     // The courtyard, under the sky.
     { id: 'courtyard', rect: [36, 86, -22, 22], open: true, height: 6, grass: true,
@@ -75,7 +75,7 @@ const LEVEL_4 = {
       floor: 0x4a4030, wall: 0x5a5040, lamps: [[112.5, 16]] },
     { id: 'bell-landing', rect: [84, 90, -16, -10], y: 22, open: true, height: 4, edges: { w: 'rail', s: 'rail' },
       floor: 0x3a3733, wall: 0x4a453e, lamps: [[85, -11]] },
-    { id: 'bell-platform', rect: [90, 110, -14, 10], y: 22, open: true, height: 5, edges: { w: 'rail', n: 'rail', s: 'rail', e: 'open' },
+    { id: 'bell-platform', rect: [90, 110, -14, 10], lamps: [[91.5, -12.5], [108.5, -12.5], [91.5, 8.5], [108.5, 8.5]], y: 22, open: true, height: 5, edges: { w: 'rail', n: 'rail', s: 'rail', e: 'open' },
       floor: 0x3a3a34, wall: 0x4a4a42, light: 0xffd8a0 },
     { id: 'belfry', rect: [96, 104, -18, -14], y: 22, height: 4.5, floor: 0x3a3733, wall: 0x4a453e, light: 0xffd080 },
   ],
