@@ -20,6 +20,14 @@ const TEXTURE_SETTINGS = {
   surfaceCacheBytes: 4 * 1024 * 1024, // bounded CPU cache of untinted surfaces, shared by colour variants
 };
 const TEXTURE_DEFS = [
+  // Selective identity pass: restrained surfaces let the cast forms and tailoring read.
+  { id: 'bellBronze', kind: 'plate', base: 0x536e68, alt: 0xa49a6a, accent: 0x366d61, rough: [0.3, 0.67], metal: 0.7, bump: 0.65, scratch: 28, stain: 0x263e37, contrast: 0.35 },
+  { id: 'wornGilt', kind: 'steel', base: 0x85704b, alt: 0xd4b674, accent: 0x51452f, rough: [0.26, 0.55], metal: 0.72, bump: 0.35, scratch: 22, stain: 0x302b22, contrast: 0.3 },
+  { id: 'gaolerPlate', kind: 'plate', base: 0x434a54, alt: 0x7c858d, accent: 0x6c5741, rough: [0.26, 0.6], metal: 0.7, bump: 0.65, scratch: 42, stain: 0x292b30, contrast: 0.4 },
+  { id: 'oathLinen', kind: 'cloth', base: 0xaaa79c, alt: 0xccc7b7, accent: 0x706c61, rough: [0.85, 1], metal: 0, bump: 0.55, scratch: 3, stain: 0x666058, cavity: 0.3, contrast: 0.22 },
+  { id: 'duelistVelvet', kind: 'cloth', base: 0x4e2333, alt: 0x793b4e, accent: 0x291c26, rough: [0.8, 0.97], metal: 0, bump: 0.45, scratch: 2, stain: 0x2d2026, cavity: 0.3, contrast: 0.25 },
+  { id: 'archerCanvas', kind: 'cloth', base: 0x626953, alt: 0x92947a, accent: 0x3e4635, rough: [0.87, 1], metal: 0, bump: 0.75, scratch: 5, stain: 0x3b3d30, cavity: 0.4, contrast: 0.3 },
+  { id: 'paviseWood', kind: 'bark', base: 0x45494b, alt: 0x747c7c, accent: 0x333735, rough: [0.65, 0.9], metal: 0, bump: 1, scratch: 14, stain: 0x292b27, contrast: 0.4 },
   { id: 'rustedIron', kind: 'rust', base: 0x4a4540, alt: 0x6a625a, accent: 0x8a4a22, rough: [0.45, 0.95], metal: 0.3, bump: 1.4, scratch: 30, stain: 0x2a1c12 },
   { id: 'dentedSteel', kind: 'steel', base: 0x7d8189, alt: 0x9ca0a6, accent: 0x6a4a30, rough: [0.3, 0.7], metal: 0.4, bump: 0.9, scratch: 90, stain: 0x2c2823, contrast: 0.5 },
   { id: 'crackedLeather', kind: 'leather', base: 0x5a4030, alt: 0x6e5038, accent: 0x1c1410, rough: [0.6, 0.9], metal: 0, bump: 1.2, scratch: 24, stain: 0x20180f , cavity: 0.7 },
