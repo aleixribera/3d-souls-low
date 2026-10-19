@@ -20,10 +20,14 @@ const server = http.createServer((req, res) => {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } }), errors = [];
+    const obsoleteRequests = [];
+    // Reproduce a blocked/missing standalone fullscreen file: startup must never request it.
+    await page.route('**/js/fullscreen.js*', route => { obsoleteRequests.push(route.request().url()); return route.abort('blockedbyclient'); });
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'high' })));
     await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
+    assert.deepEqual(obsoleteRequests, [], 'fullscreen adds no separate startup request');
     await page.getByRole('button', { name: 'Story', exact: true }).click();
     await page.waitForFunction(() => !!document.fullscreenElement);
     assert.equal(await page.evaluate(() => Game.screen), 'story', 'first click both enters fullscreen and opens Story');

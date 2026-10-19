@@ -9,7 +9,11 @@ const document = {
   addEventListener(type, fn) { docListeners[type] = fn; },
 };
 const context = vm.createContext({ document, window: { addEventListener(type, fn) { listeners[type] = fn; } }, Game: { screen: 'main' } });
-vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../js/fullscreen.js'), 'utf8'), context);
+// Exercise boot's standalone fullscreen prelude without starting the renderer or registering combat listeners.
+const boot = fs.readFileSync(require('node:path').join(__dirname, '../js/boot.js'), 'utf8');
+const preludeEnd = boot.indexOf('// Event listeners:');
+assert.ok(preludeEnd > 0, 'fullscreen stays in the existing boot script before game initialization');
+vm.runInContext(boot.slice(0, preludeEnd), context);
 const policy = vm.runInContext('fullscreen', context);
 (async () => {
   for (const ev of [

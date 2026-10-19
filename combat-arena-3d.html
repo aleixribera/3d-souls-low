@@ -528,10 +528,9 @@ const GAME_FILES = [
   'elden.js',
   'quality-benchmark.js',
   'autoquality.js',
-  'fullscreen.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.3.1';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.3.2';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -542,8 +541,8 @@ const loadScript = (file, dir = 'js/') => new Promise(resolve => {
 });
 const loading = GAME_FILES.map(file => loadScript(file));
 for (const [i, file] of GAME_FILES.entries()) {
-  if (!await loading[i]) { window.__bootError(`The game file js/${file} is missing.
-Keep the js folder next to this page.`); break; }
+  if (!await loading[i]) { window.__bootError(`Could not load js/${file}.
+Reload the page, or update the game and its js folder together.`); break; }
   if (window.__bootShown) break;   // the file failed while running: its message is already on screen
 }
 // Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.

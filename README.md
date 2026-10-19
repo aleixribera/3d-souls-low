@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.3.1: Easier Start
+# Combat Arena 3D — v7.3.2: Fullscreen Startup Fix
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.3.2:** Fullscreen now lives in the existing startup script. The game no longer requests a separate `js/fullscreen.js`, avoiding the startup error when that request is blocked or the new file is absent from a local copy. Fullscreen behavior is unchanged. Script cache keys are updated for this release.
 
 **v7.3.1:** Fullscreen starts on the first click or key press; Escape exits, and Options can turn it on again. Story shows both campaigns’ **Continue** and **New** actions together, with **Tutorial: On/Off**. New starts playing directly; replacing a save asks once. Jump attacks and executions keep their full instructions visible. The tutorial bonfire has a direction arrow and distance, including a “Turn around” cue when it is behind you. Melee enemies with projectile moves auto-lock normally; archers and Toll Wisps still require manual targeting. See [the release notes](docs/onboarding-v7.3.1.md).
 
