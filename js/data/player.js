@@ -32,20 +32,21 @@ const PLAYER_DEF = {
       // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery. Was 0.22 / 0.12 / 0.34
       // (docs/combat-timings-v4.1.md).
       // Light combo: diagonal -> backhand -> overhead finisher (`next`: the attack a press during this one chains into).
+      // Damage 18 -> 24 per hit: a full combo deals 72 versus a tapped heavy's 53, for 48 versus 40 stamina.
       light: { id: 'light', anim: 'sweep', pose: 'lightDiagonal', hits: [{ startup: 0.3, active: 0.1, follow: 0.14 }], recovery: 0.26, cost: 16,
                next: { light: 'light2' },
                markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
-               damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
+               damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
       light2: { id: 'light2', anim: 'sweep', pose: 'lightBackhand', hits: [{ startup: 0.26, active: 0.1, follow: 0.14 }], recovery: 0.28, cost: 16,
                 next: { light: 'light3' },
                 markers: [{ at: 'windup', t: 0.65, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
-                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.2, hitstop: 0.07, riposte: { damage: 2.4 },
+                damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.2, hitstop: 0.07, riposte: { damage: 2.4 },
                 box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
       light3: { id: 'light3', anim: 'overhead', pose: 'lightOverhead', hits: [{ startup: 0.38, active: 0.12, follow: 0.18 }], recovery: 0.36, cost: 16,
                 next: { light: 'light' },
                 markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingLight', vel: 0.7 }, { at: 'active', t: 0, event: 'glint' }],
-                damage: 18, poise: 22, postureDmg: 9, knock: 3, lunge: 2.6, hitstop: 0.08, riposte: { damage: 2.4 },
+                damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.6, hitstop: 0.08, riposte: { damage: 2.4 },
                 box: { w: 1.4, h: 2.2, d: 2.2, fwd: 1.35, y: 1.2 } },
       // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage.
       // Was 0.56 / 0.16, recovery 0.64 (docs/combat-timings-v4.1.md).

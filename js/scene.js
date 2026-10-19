@@ -395,7 +395,8 @@ function loadStage(def) {
   const built = BUILDERS[def.layout](def);
   if (lightSink) {   // culled level: the sources stay out of the scene; a fixed pool of real lights stands in
     built.lightSources = lightSink;
-    built.lightPool = Array.from({ length: CONFIG.cull.maxLights }, () => { const l = new THREE.PointLight(0xffffff, 0, 1, 1); built.group.add(l); return l; });
+    const localLights = CONFIG.cull.maxLights - Math.max(...Object.values(CONFIG.VISUALS.effectLight.counts));
+    built.lightPool = Array.from({ length: localLights }, () => { const l = new THREE.PointLight(0xffffff, 0, 1, 1); built.group.add(l); return l; });
   }
   lightSink = null;
   scene.add(built.group);

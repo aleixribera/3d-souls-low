@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.3.2: Fullscreen Startup Fix
+# Combat Arena 3D — v7.4: Guiding Light
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.4:** Subtle, stationary pockets of golden motes flow toward the next bonfire across both campaigns. Routes follow doorways, stairs and scripted drops, advance at bonfires, and resume from your checkpoint. Lightning lights the scenery and characters directionally. Spectral weapons, flame breath, holy runes, crimson effects and projectiles illuminate nearby surfaces on every graphics preset through a small shared light pool. Light attacks now deal 24 damage each (72 per combo); heavy and execution damage are preserved. See [the release notes](docs/guiding-light-v7.4.md).
 
 **v7.3.2:** Fullscreen now lives in the existing startup script. The game no longer requests a separate `js/fullscreen.js`, avoiding the startup error when that request is blocked or the new file is absent from a local copy. Fullscreen behavior is unchanged. Script cache keys are updated for this release.
 
@@ -101,8 +103,8 @@ Some enemies carry a meter under their health bar: a **stagger** meter (Undead K
 
 While it kneels, step in front of it: its body glows a faint red and **Execute** shows at the bottom of the screen. Press **light attack** and you drive your sword through its chest and out of its back, hold it there, then rip it free.
 
-- An execution deals 18 times a light attack's damage: most enemies die outright; the Empty Sentinel survives it.
-- Bosses take the same blow (never more than half a bar). Boss health bars are twice as long as before and their posture drains half as fast, so a boss fight is a long, hard duel; a bonfire always waits before it. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
+- An execution deals 90 damage to normal enemies; a healthy enemy can survive it.
+- Bosses take 324 damage before critical resistance, never more than half a bar. Boss health bars are twice as long as before and their posture drains half as fast, so a boss fight is a long, hard duel; a bonfire always waits before it. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
 - You can't be hurt during an execution, by anything, and for a moment after it. Other enemies keep fighting, so look around when you stand up.
 - From behind, from the side or too far away, light attack is just a light attack. If you wait too long, the enemy gets back up.
 
@@ -110,7 +112,7 @@ While it kneels, step in front of it: its body glows a faint red and **Execute**
 
 Every attack now has four phases: wind-up, strike (the only moment it can hit), follow-through and recovery, drawn from whole-body key poses.
 
-- **You:** a three-hit light combo; a heavy you can hold to charge (the body coils, trembles and glows at full charge, up to 1.5x damage); only a slight steer during a wind-up; a roll only cancels a swing in its recovery. One Souls-style input buffer: a press is kept only near the end of what you're doing, and the latest press wins.
+- **You:** a three-hit light combo (24 damage per hit, 72 total, at 16 stamina per hit); a heavy dealing 53 damage for 40 stamina that you can hold to charge (the body coils, trembles and glows at full charge, up to 1.5x damage); only a slight steer during a wind-up; a roll only cancels a swing in its recovery. One Souls-style input buffer: a press is kept only near the end of what you're doing, and the latest press wins.
 - **Enemies:** they turn to track you early in a wind-up, then lock their aim (the commit point): dodge sideways after that and the blow won't follow. Red warning glows mean a strike can be parried; blue means it cannot. A blade glint marks the exact moment the parry window opens. Some blue strikes can be blocked; rolling works against both types. Some enemies hold a wind-up still to bait a roll (delayed attacks). Combos end on their biggest wind-up, and big misses leave a punishable recovery. Bosses use larger, slower, more dramatic versions.
 - **Impact:** hit-pause and a shudder on the body you hit, camera shake scaled by the blow, weapon trails during strikes, cloth that swings with the body, flinches sized to the damage, staggers and parries that throw the body open, and walking that leans with acceleration and turns.
 - **Dev keys** (`#dev`): **F4** fills the nearest enemy's stagger, guard or posture meter (it kneels at once, ready to execute), **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase; **H** hitboxes.

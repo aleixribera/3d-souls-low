@@ -23,7 +23,8 @@
 //             over those rooms' floors (earth and grass on a heath, the grain of a branch, snow, ash with embers in it); it
 //             leaves out trap floors, and sits under blood and cracks
 // Tuning: CONFIG.VISUALS.realms. Quality: particle counts follow the preset's `particles` (more on Ultra), floaters,
-// stars and the tree's crown follow it too; no light is added but one ambient flash, so no shader ever recompiles.
+// stars and the tree's crown follow it too. Lightning shares a persistent directional surface light
+// with js/effect-lighting.js; its small ambient fill is summed without changing shader light counts.
 const REALM_KEYS = ['tree', 'stars', 'lightning', 'weather', 'clouds', 'floaters', 'dragon', 'halos', 'runes', 'pools', 'roots', 'blooms', 'beams', 'pillars', 'grounds'];
 const REALM_GROUNDS = ['earth', 'snow', 'bark', 'goldbark', 'palebark', 'ash'];
 const REALM_WEATHER = ['rain', 'snow', 'leaves', 'motes', 'spores', 'ash', 'petals'];
@@ -603,7 +604,7 @@ void main() {
       }
       st.flashK = Math.max(0, st.flashK - dt * C.lightning.decay);
       const f = st.flashK * (st.flashK > 0.55 || Math.sin(vTime.value * 60) > 0 ? 1 : 0.4);   // a double flicker
-      if (st.flash) st.flash.intensity = f * C.lightning.light * (1 - st.cover * 0.7);
+      if (st.flash) st.flash.intensity = f * VIS.effectLight.storm.ambient * (1 - st.cover * 0.7);
       for (const b of st.bolts) { b.t += dt; const k = Math.max(0, 1 - b.t / C.lightning.life); b.m.material.opacity = k * (b.t < 0.08 || b.t > 0.14 ? 1 : 0.3); b.glow.material.opacity = k * 0.6; }
       for (const b of st.bolts.filter(b => b.t >= C.lightning.life)) { st.group.remove(b.m); b.m.geometry.dispose(); b.m.material.dispose(); b.glow.material.dispose(); }
       st.bolts = st.bolts.filter(b => b.t < C.lightning.life);

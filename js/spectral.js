@@ -84,7 +84,7 @@ const spectral = (() => {
     const g = new THREE.Group(), W = shape(id), mat = material(W.look);
     for (const geo of W.geos) g.add(new THREE.Mesh(geo, mat));
     const light = new THREE.PointLight(S.glow, 0, S.lightRange); light.position.z = 0.8; g.add(light);
-    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().combatFx;
+    light.userData.legacyEffectLight = true; light.visible = false;   // shared effect-light pool
     R.mats.push(mat);   // disposed with its rig, rather than retained after every retry
     for (const geo of W.geos) geo.userData.shared = true;
     g.userData = { mat, light, k: 0, warmUp: true }; g.visible = false;

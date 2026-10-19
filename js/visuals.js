@@ -825,7 +825,9 @@ function poolLights(st, p, used = st.lightPool.length) {   // used: how many of 
     if (d < C.lightRange && l.intensity > 0) near.push({ d, l });
   }
   near.sort((a, b) => a.d - b.d);
-  const cut = near.length > pool.length ? Math.min(C.lightRange, near[pool.length].d) : C.lightRange;
+  const total = pool.length + VIS.effectLight.counts[visuals.quality().label.toLowerCase()];
+  const cut = near.length > total ? Math.min(C.lightRange, near[total].d) : C.lightRange;
+  st.lightFallbacks = near.slice(pool.length, total).map(n => ({ source: n.l, fade: clamp((cut - n.d) / C.fadeBand, 0, 1) }));
   pool.forEach((q, i) => {
     const n = near[i];
     if (!n) { q.intensity = 0; return; }
@@ -901,7 +903,7 @@ const visuals = (() => {
   // Only the quality.lights nearest point lights are on; the number lit stays fixed, so shaders never recompile.
   // A culled level's pool is already nearest first (poolLights); an unculled level's lights are sorted here.
   function limitLights(all = false) {
-    const L = st.lights, n = Math.min(quality.lights, L.length);
+    const L = st.lights, n = Math.min(quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()], L.length);
     if (n >= L.length) { if (all) for (const l of L) l.visible = true; return; }
     if (st.pooled) { L.forEach((l, i) => { l.visible = i < n; }); return; }
     const at = Game.player || camera.position, d = l => (l.position.x - at.x) ** 2 + (l.position.y - at.y) ** 2 + (l.position.z - at.z) ** 2;
@@ -1312,7 +1314,7 @@ const visuals = (() => {
         }
       }
       debris.update(dt);
-      if (stage && stage.lightPool && p) poolLights(stage, p, Math.min(quality.lights, stage.lightPool.length));
+      if (stage && stage.lightPool && p) poolLights(stage, p, Math.min(quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()], stage.lightPool.length));
       limitLights();
       const V = VIS.vignette, want = p && p.alive() ? clamp((V.lowHealthAt - p.hp / p.maxHp) / V.lowHealthAt, 0, 1) : 0;
       lowHp += (want - lowHp) * (1 - Math.exp(-V.lowHealthRate * dt));

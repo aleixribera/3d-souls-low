@@ -326,6 +326,51 @@ function validateData() {
     }
     for (const S of D.scenes || []) need(LORE_SCENES.includes(S.kind) && num(S.x) && num(S.z), `${tag}: scene "${S.kind}" must be one of ${LORE_SCENES.join(', ')} with x and z.`);
   }
+  errors.push(...validateBonfireGuidance());
+  return errors;
+}
+function validateBonfireGuidance() {
+  const errors = [], need = (ok, msg) => { if (!ok) errors.push(`Bonfire guidance: ${msg}`); };
+  const num = v => typeof v === 'number' && Number.isFinite(v), C = CONFIG.VISUALS.guidance;
+  for (const key of ['spacing', 'particles', 'lowParticles', 'height', 'travel', 'spread', 'rise', 'size', 'maxPx', 'opacity', 'life', 'near', 'far', 'fadeBand', 'arrival', 'floorTolerance', 'sample'])
+    need(num(C[key]) && C[key] > 0, `CONFIG.VISUALS.guidance.${key} must be positive.`);
+  need(Number.isInteger(C.particles) && Number.isInteger(C.lowParticles) && C.lowParticles <= C.particles, 'particle counts must be integers, Low no higher than High.');
+  need(C.far > C.near && C.fadeBand < C.far && C.opacity <= 1, 'invalid fade distances or opacity.');
+  const E = CONFIG.VISUALS.effectLight;
+  for (const key of ['range', 'intensity', 'decay', 'floor', 'fade', 'maxDistance', 'windup', 'active', 'sourceRetention', 'minPower', 'tip', 'maxDt', 'projectile', 'breath', 'sigil'])
+    need(num(E[key]) && E[key] > 0, `CONFIG.VISUALS.effectLight.${key} must be positive.`);
+  need(Number.isInteger(E.pulseSlots) && E.pulseSlots > 0, 'effect-light pulseSlots must be a positive integer.');
+  need(Array.isArray(E.elements) && E.elements.every(id => id in FX_ELEMENTS), 'effect-light elements must name FX_ELEMENTS.');
+  need(num(E.storm.intensity) && E.storm.intensity > 0 && num(E.storm.ambient) && E.storm.ambient > 0
+    && Array.isArray(E.storm.direction) && E.storm.direction.length === 3 && E.storm.direction.every(num)
+    && Math.hypot(...E.storm.direction) > 0, 'storm lighting needs positive intensity/fill and a nonzero direction.');
+  for (const [preset, q] of Object.entries(CONFIG.VISUALS.quality)) {
+    const n = CONFIG.VISUALS.effectLight.counts[preset];
+    need(Number.isInteger(n) && n > 0 && n < q.lights, `${preset}: effect lights must fit inside its local-light budget.`);
+  }
+  for (const [id, routes] of Object.entries(BONFIRE_GUIDANCE)) {
+    const L = ALL_LEVELS.find(l => l.id === id);
+    need(!!L, `unknown level "${id}".`); if (!L) continue;
+    need(Array.isArray(routes) && routes.length > 0, `${id}: routes must be a nonempty list.`); if (!Array.isArray(routes)) continue;
+    need(routes.filter(r => r && !routes.some(previous => previous && previous.to === r.from)).length === 1, `${id}: routes need one starting bonfire.`);
+    need(new Set(routes.filter(Boolean).map(r => r.from)).size === routes.length, `${id}: each bonfire can have only one outgoing route.`);
+    const ids = new Set();
+    for (const route of routes) {
+      const tag = `${id}/${route && route.id}`;
+      need(route && typeof route.id === 'string' && !ids.has(route.id), `${tag}: route needs a unique id.`); if (!route) continue;
+      ids.add(route.id);
+      need(route.from !== route.to && [route.from, route.to].every(id => L.bonfires.some(b => b.id === id)), `${tag}: from/to must name distinct bonfires of the level.`);
+      need(Array.isArray(route.paths) && route.paths.length > 0, `${tag}: paths must be a nonempty list.`);
+      for (const path of Array.isArray(route.paths) ? route.paths : []) {
+        const valid = Array.isArray(path) && path.length >= 2 && path.every(p => Array.isArray(p) && p.length === 3 && p.every(num));
+        need(valid, `${tag}: each path needs at least two [x, y, z] points.`); if (!valid) continue;
+        if (L.layout === 'rooms') for (const p of path) {
+          const y = terrainFor(L).floorY(p[0], p[2], p[1]);
+          need(Number.isFinite(y) && Math.abs(y - p[1]) < C.floorTolerance, `${tag}: point (${p.join(', ')}) must stand on its floor.`);
+        }
+      }
+    }
+  }
   return errors;
 }
 const GATE_STYLES = ['portcullis', 'barricade'];

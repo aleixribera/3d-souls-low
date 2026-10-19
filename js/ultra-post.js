@@ -371,7 +371,7 @@ void main() {
     const aniso = q.shadows ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
     scene.traverse(o => {
-      if (o.userData.legacyEffectLight) o.visible = !q.combatFx;
+      if (o.userData.legacyEffectLight) o.visible = false;
       const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
       for (const m of ms) m.needsUpdate = true;
     });   // shadows in or out of every shader

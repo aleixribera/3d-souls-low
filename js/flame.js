@@ -22,7 +22,7 @@ const flame = (() => {
       m.userData = { op, w }; g.add(m); layers.push(m);
     }
     const light = new THREE.PointLight(F.color, 0, F.lightRange); g.add(light);
-    light.userData.legacyEffectLight = true; light.visible = !visuals.quality().combatFx;
+    light.userData.legacyEffectLight = true; light.visible = false;   // shared effect-light pool
     g.userData.warmUp = true;
     g.visible = false; scene.add(g);
     jets.push({ e, g });

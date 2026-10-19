@@ -2375,7 +2375,7 @@
     e.takeHit(strikeOf('heavy'), behind(e));
     expect.near(hp0 - e.hp, strikeOf('heavy').damage, 0.01, 'a heavy on the kneeling giant');
   });
-  test('Execution: normal enemies take light x lightMul and survive at full health; bosses take light x bossLightMul', () => {
+  test('Execution: light attack damage buffs preserve 90 normal damage and 324 boss damage, capped at half a bar', () => {
     for (const [id, want] of [['knight', 'hurt'], ['executioner', 'hurt'], ['warden', 'hurt'], ['shover', 'hurt'], ['sentinel', 'hurt'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
       Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
       const p = Game.player, e = Game.duel, max = e.def.hp;
@@ -2384,8 +2384,8 @@
       expect.ok(p.state === PS.EXECUTE, `${id}: the execution starts`);
       sim.until(() => p.state !== PS.EXECUTE, 5);
       if (want === 'dead') expect.ok(!e.alive(), `${id}: killed outright (${e.hp.toFixed(0)} / ${max})`);
-      else if (want === 'hurt') expect.ok(e.alive() && Math.abs(max - e.hp - 18 * CONFIG.execution.damage.lightMul) < 0.01, `${id}: hurt, alive (${e.hp.toFixed(0)} / ${max})`);
-      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(18 * CONFIG.execution.damage.bossLightMul, max / 2)) < 0.01, `${id}: light x bossLightMul off its bar (${e.hp.toFixed(0)} / ${max})`);
+      else if (want === 'hurt') expect.ok(e.alive() && Math.abs(max - e.hp - 90) < 0.01, `${id}: hurt, alive (${e.hp.toFixed(0)} / ${max})`);
+      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(324, max / 2)) < 0.01, `${id}: capped boss damage off its bar (${e.hp.toFixed(0)} / ${max})`);
       expect.ok(e.state !== ES.EXECUTED && e.state !== ES.BROKEN, `${id}: let go (${e.state})`);
     }
   });
@@ -3331,9 +3331,9 @@
         expect.ok(enabled === 0, `${id}: no legacy light can change Ultra's shader light count`);
       }
       A.visuals.setQuality('low');
-      let hidden = 0;
-      scene.traverse(o => { if (o.userData.legacyEffectLight && !o.visible) hidden++; });
-      expect.ok(hidden === 0, 'Low restores legacy light visibility');
+      let enabledLow = 0;
+      scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabledLow++; });
+      expect.ok(enabledLow === 0, 'Low uses the bounded shared effect-light pool instead of per-effect lights');
     } finally { restoreQuality(); }
   });
   test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {

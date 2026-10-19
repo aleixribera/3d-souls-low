@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.3.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.4';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -100,11 +100,11 @@ const CONFIG = {
     gap: 0.3,            // ...m from the enemy's centre, so the blade runs through the chest and out of the back
     chest: 0.47,         // a kneeling body's chest, as a share of its standing height (where the blade goes in)
     thrustHeight: 1.1,   // m above the player's feet the thrust runs level; a taller chest tilts it up (bosses)
-    // Damage: `lightMul` times the player's light attack damage for normal enemies (18 x 5 = 90: hurts normal enemies
-    // without one-shotting them from full); `bossLightMul` times light damage for bosses (18 x 18 = 324: about a third
+    // Damage: `lightMul` times the player's light attack damage for normal enemies (24 x 3.75 = 90: hurts normal enemies
+    // without one-shotting them from full); `bossLightMul` times light damage for bosses (24 x 13.5 = 324: about a third
     // of a doubled boss bar or less), never above `bossCap` of a boss's bar.
     // A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change or retreat follows it.
-    damage: { lightMul: 5, bossLightMul: 18, bossCap: 0.5 },
+    damage: { lightMul: 3.75, bossLightMul: 13.5, bossCap: 0.5 },
     hitstop: 0.24,       // s the world freezes as the blade goes in
     grace: 0.25,         // s the player stays untouchable after the animation ends
     push: 5,             // knockback (m/s) on a survivor as the blade comes out
@@ -349,6 +349,17 @@ const CONFIG = {
                modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
                reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 0 },
     },
+    // Fixed pockets of guiding embers; all travel stays local to each pocket.
+    guidance: { spacing: 7, particles: 9, lowParticles: 5, height: 0.55, travel: 1.7, spread: 0.22,
+                rise: 0.28, size: 0.10, maxPx: 13, opacity: 0.38, color: 0xffdba0,
+                life: 3.8, near: 1.4, far: 30, fadeBand: 7, arrival: 2.8, floorTolerance: 1.2, sample: 0.35 },
+    // A fixed pool, with one/two shadowless lights reserved from the local-light budget.
+    effectLight: { counts: { low: 1, high: 2, ultra: 2 }, range: 8, intensity: 9, decay: 7,
+                   floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,
+                   sourceRetention: 1.15, minPower: 0.01, tip: 0.8, maxDt: 0.1,
+                   projectile: 0.65, breath: 1.4, sigil: 1.5, pulseSlots: 6,
+                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll'],
+                   storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
     bloom: { strength: 0.34, radius: 0.5, threshold: 0.8 },
@@ -477,8 +488,8 @@ const CONFIG = {
         goldbark: { size: 256, tile: 5, base: 0x8a6628, alt: 0xb08a42, accent: 0xe8bc64, accentMix: 0.25, rough: 0.7, grain: 9 },
         palebark: { size: 256, tile: 5, base: 0x9a8e7e, alt: 0xd0c4b0, accent: 0x6a5e50, accentMix: 0.45, rough: 0.9, grain: 9 },
         ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 } },
-      // A bolt `dist` m from the camera, `height` m tall; the flash's ambient `light` falls away at `decay`/s.
-      lightning: { dist: 150, height: 120, width: 0.9, boost: 3, glow: 120, life: 0.45, decay: 2.6, light: 2.4 },
+      // Distant bolt geometry/lifetime. Shared surface lighting is tuned in effectLight.storm.
+      lightning: { dist: 150, height: 120, width: 0.9, boost: 3, glow: 120, life: 0.45, decay: 2.6 },
     },
     // Decorative budgets never reduce attack rings, sigils, flame jets or warning shapes.
     fxBudgets: {
