@@ -12,7 +12,6 @@ const ACTIONS = {
   light: ['KeyJ', 'Mouse0', 'PadRB'], heavy: ['KeyK', 'Mouse2', 'PadRT'],
   block: ['KeyC', 'KeyL', 'Mouse3', 'Mouse4', 'PadLB'], parry: ['KeyE', 'PadLT'],   // no Ctrl: the browser keeps Ctrl+W (close tab)
   lock: ['KeyQ', 'PadR3'], switchTarget: ['Tab', 'PadFlickL', 'PadFlickR'], rest: ['KeyF', 'PadY'], flask: ['KeyG', 'PadX'], talk: ['KeyF', 'PadY'],
-  zoomIn: ['Equal', 'NumpadAdd', 'PadUp'], zoomOut: ['Minus', 'NumpadSubtract', 'PadDown'],
 };
 // Keys handled directly by the key handler rather than through ACTIONS.
 const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1', fps: 'F3' };

@@ -1016,7 +1016,7 @@
     }
     tutorialAt('light'); expect.ok(!Game.lock, 'other steps start unlocked');
     Game.render(1, STEP);
-    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 16, `the step counter counts the new step (${shown('tutStep')})`);
+    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 15, `the step counter counts the new step (${shown('tutStep')})`);
   });
   // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
   const cadence = (stepId, seconds) => {
@@ -3401,6 +3401,91 @@
     let ran = false; Game.loadingFirst('x', 'y', () => { ran = true; });
     expect.ok(ran && !Game.pendingLoad, 'ran at once');
     expect.ok(Game.levelCard('long-hall')[0] === A.LEVEL_1.name, 'a level card names the level');
+  });
+
+  test('Combat clarity: resting enemies take poise and meter damage while rising', () => {
+    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player;
+    for (const state of [ES.DORMANT, ES.RISE]) {
+      const e = sim.spawn('hollow', 25, 0); e.setState(state);
+      e.takeHit(strikeOf('jumpLight'), p);
+      expect.ok(e.state === ES.HURT, `${state}: jump light flinches the Hollow`);
+      expect.near(e.poise, e.def.poise - strikeOf('jumpLight').poise, 1e-6, `${state}: poise damage applied`);
+      e.takeHit(strikeOf('jumpHeavy'), p);
+      expect.ok(e.state === ES.STAGGER, `${state}: jump heavy breaks the Hollow's poise`);
+      const knight = sim.spawn('knight', 30, 0); knight.setState(state);
+      knight.takeHit(strikeOf('jumpHeavy'), p);
+      expect.near(knight.guardMeter, knight.def.stagger.heavy, 1e-6, `${state}: first jump heavy fills the meter`);
+      knight.takeHit(strikeOf('jumpHeavy'), p);
+      expect.ok(knight.state === ES.BROKEN, `${state}: second jump heavy kneels the Knight`);
+      sim.clearEnemies();
+    }
+  });
+  test('Combat clarity: jump heavies fill every enemy meter as heavy attacks', () => {
+    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    for (const d of [...A.ENEMY_DEFS, ...TRAINING_DEFS]) {
+      const M = d.stagger || d.guard; if (!M) continue;
+      const e = sim.spawn(d, 30, 0); e.setState(ES.RISE);
+      e.takeHit(strikeOf('jumpHeavy'), Game.player);
+      expect.near(e.guardMeter, Math.min(M.heavy, M.max), 1e-6, `${d.id}: jump heavy meter`);
+      sim.clearEnemies();
+    }
+    expect.ok(strikeOf('jumpLight').damage > 22 && strikeOf('jumpHeavy').damage > 59, 'both jump attacks deal more damage');
+    expect.ok(strikeOf('jumpHeavy').postureDmg > strikeOf('heavy').postureDmg, 'jump heavy rewards bosses with more posture damage');
+  });
+  test('Combat clarity: all boss attacks glow red exactly when combat allows parrying', () => {
+    const defs = Object.values(A.ENEMY_BY_ID).filter(isBossDef);
+    const sameColor = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b) < 1e-6;
+    let checked = 0;
+    for (const d of defs) {
+      Game.startFight(d.id); Game.loading = 0; sim.begin();
+      const e = Game.duel, p = Game.player;
+      for (const a of d.attacks) for (let i = 0; i < a.hits.length; i++) {
+        const parryable = !a.rollOnly && !a.projectile && !a.noParry;
+        e.attack = a; e.hitIndex = i; e.setState(ES.WINDUP); e.stateTime = Math.max(0, a.hits[i].startup - CONFIG.parry.lead / 2); e.yaw = 0;
+        p.x = e.x; p.z = e.z + Math.max(0.1, a.box.fwd); p.y = e.y; p.yaw = Math.PI;
+        expect.ok((parryTiming(p, e, 0) !== null) === parryable, `${d.id}/${a.id}/${i}: actual parry result`);
+        Game.render(0, STEP);
+        const color = parryable ? WARN_COLOR : ROLL_ONLY_COLOR;
+        const glow = clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);
+        expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
+        const G = parryable ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
+        expect.ok(sameColor(e.rig.warnGlow.material.color, new THREE.Color(G.color).multiplyScalar(G.boost)), `${d.id}/${a.id}/${i}: halo colour`);
+        checked++;
+      }
+    }
+    expect.above(checked, 100, 'checked every strike, including the Skeleton and all Elden Ring bosses');
+  });
+  test('Combat clarity: Aldric landing pounds hit on the floor and clear a jump', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin();
+    const e = Game.duel, p = Game.player;
+    for (const a of e.baseDef.attacks) for (const h of a.hits) if (h.leap) {
+      const b = h.box || a.box;
+      e.yaw = 0; e.stateTime = 0;
+      p.x = e.x; p.z = e.z + b.fwd; p.y = e.y; p.grounded = true;
+      const hb = new Hitbox(e, b, makeStrike(a));
+      expect.ok(hb.overlaps(p), `${a.id}: damages a grounded player`);
+      sim.press('jump'); p.update(STEP, { x: 0, z: 0, has: false }, [], null);
+      expect.ok(!p.grounded && !hb.overlaps(p), `${a.id}: an actual jump clears the landing impact`);
+      p.setState(PS.IDLE); p.vy = 0;
+    }
+  });
+  test('Combat clarity: stamina regenerates 20 percent faster with the same delays', () => {
+    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player; p.stamina = 40; p.staminaDelay = 0;
+    sim.seconds(1);
+    expect.near(p.stamina, 40 + 36 * 1.2, 1e-6, 'one second of regeneration');
+    expect.ok(CONFIG.player.staminaDelay === 0.75 && CONFIG.player.exhaustDelay === 1.3, 'recovery delays unchanged');
+  });
+  test('Combat clarity: tutorial prompts reveal one action at a time and zoom controls are gone', () => {
+    input.use('keyboard'); const p = tutorialAt('execute'), d = Game.enemies[0];
+    expect.ok(!shown('tutText').includes('Execute'), 'start by breaking the stance');
+    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p); Game.render(1, STEP);
+    expect.ok(shown('tutText').includes('Execute'), 'then teach the execution');
+    expect.ok(!Game.tutorialSteps().some(s => s.id === 'zoom') && !ACTIONS.zoomIn && !ACTIONS.zoomOut, 'no zoom step or bindings');
+    const zoom = Game.zoomTarget;
+    window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100 })); input.down('Equal'); sim.step(2); input.up('Equal');
+    expect.near(Game.zoomTarget, zoom, 1e-6, 'wheel and former zoom key cannot alter camera distance');
   });
 
   async function run(filter = '') {

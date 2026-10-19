@@ -18,7 +18,7 @@ const Game = {
   spawn: null, deathTimer: 0,
   cleared: new Set(),    // checkpoints: keys of the enemies killed before the last rest (they stay dead until a restart)
   loading: 0,            // s the loading screen still holds the world (CONFIG.loading)
-  zoomTarget: CONFIG.zoom.default, zoomRepeat: 0, mouseHold: 0,
+  zoomTarget: CONFIG.zoom.default, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
 
@@ -548,72 +548,7 @@ const Game = {
   // Each step: prompt text (labels from the live bindings), which dummies it needs, whether it starts locked on
   // to its dummy (`lockOn`: once, as it starts), optional setup, and how it completes: on(type, data, t, game) for
   // events and/or check(game, t) polled each step. Returning true from either advances the tutorial.
-  tutorialSteps() {
-    const B = bindLabel;
-    const byPlayer = (d, g) => d.attacker === g.player;
-    const byDummy = (d, g) => d.attacker === g.enemies[0];
-    return [
-      { id: 'move', text: () => `Walk around ${moveLabel()}`, check: (g, t) => t.dist >= 5 },
-      { id: 'jump', text: () => `Jump ${B('jump')}`, check: g => g.player.state === PS.JUMP },
-      { id: 'roll', text: () => `Roll ${B('roll')}: a quick dodge, briefly invulnerable`, check: g => g.player.state === PS.ROLL },
-      { id: 'light', dummies: 'one', text: () => `Hit the dummy with a light attack ${B('light')}. Keep pressing to chain a three-hit combo`,
-        on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'light' },
-      // Done on a fully charged heavy; a lighter one shows how.
-      { id: 'heavy', dummies: 'one', text: () => `Hold heavy attack ${B('heavy')} until it is fully charged, then let go to hit the dummy`,
-        on: (type, d, t, g) => {
-          if (type !== 'strike' || !byPlayer(d, g) || d.strike.attackId !== 'heavy') return false;
-          if (d.strike.charge >= 1 - 1e-6) return true;
-          g.tutorialHint('Hold it longer: let go once the blade glows');
-          return false;
-        } },
-      { id: 'jumpAttack', dummies: 'one', text: () => `Jump ${B('jump')}, then attack in the air ${B('light')} or ${B('heavy')} to hit the dummy`,
-        on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
-        check: (g, t) => t.flags.airHit && g.player.state !== PS.JUMP_ATTACK && g.player.state !== PS.LAND },   // after the landing
-      { id: 'block', dummies: 'sparring', lockOn: true, text: () => `Hold block ${B('block')} and take the dummy's swing on your guard`,
-        on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked },
-      { id: 'parry', dummies: 'sparring', lockOn: true, text: () => `Parry ${B('parry')} just before the dummy's swing lands`,
-        on: type => type === 'parry' },
-      // Done on one roll through the swing. A swing that ends without one shows why: hit after rolling during it, its
-      // invulnerability over before the swing landed (too early), hit without having rolled (too late), or rolled clear
-      // of it (`swing`: this swing so far; a roll that starts in the step a hit lands is invulnerable, so it never counts).
-      { id: 'dodge', dummies: 'dodge', lockOn: true,
-        text: () => `Blue strikes can't be blocked or parried, only rolled. Roll ${B('roll')} into the dummy's swing just as it lands`,
-        on: (type, d, t, g) => {
-          if (type === 'attackStart' && d.enemy === g.enemies[0]) t.flags.swing = { rolled: false, hit: null };
-          if (type === 'strike' && byDummy(d, g) && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early' : 'Too late';
-          return type === 'dodge' && byDummy(d, g);
-        },
-        check: (g, t) => {
-          const e = g.enemies[0], s = t.flags.swing;
-          if (s && g.player.state === PS.ROLL && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) s.rolled = true;
-          if (s && e.state === ES.RECOVER) {
-            const hint = s.hit || (s.rolled ? 'Roll into the swing' : null);
-            if (hint) g.tutorialHint(hint);
-            t.flags.swing = null;
-          }
-          return false;
-        } },
-      // v5.2: break the dummy's stance, then execute it. Done on one finished execution.
-      { id: 'execute', dummies: 'execution', lockOn: true,
-        text: () => `Attacks ${B('light')} ${B('heavy')} fill the stagger bar under the dummy's health. When it is full the dummy kneels: light attack ${B('light')} in front of it to execute. Nothing can hurt you while you execute`,
-        on: (type, d, t, g) => {
-          if (type === 'postureBreak' && d.enemy === g.enemies[0]) g.tutorialHint('It kneels: get in front of it and press light attack');
-          return type === 'executionEnd';
-        } },
-      { id: 'flask', text: () => `You're hurt. Drink from your flask ${B('flask')}`,
-        setup: g => { const it = g.player.item('flask'); g.player.hp = Math.min(g.player.hp, 55); if (g.player.inventory.flask) it.count = Math.max(it.count, 1); },
-        on: (type, d, t) => { if (type === 'itemUsed' && d.item === 'flask') t.flags.drank = true; },
-        check: (g, t) => t.flags.drank && g.player.state !== PS.USE_ITEM },
-      { id: 'rest', text: () => `Walk to the bonfire and rest ${B('rest')}`, on: type => type === 'rest' },
-      { id: 'lock', dummies: 'one', text: () => `Lock on to the dummy ${B('lock')}`, on: type => type === 'lock' },
-      { id: 'switch', dummies: 'pair', text: () => `Lock on ${B('lock')}, then switch target ${B('switchTarget')}`,
-        on: type => type === 'switchTarget' },
-      { id: 'zoom', text: () => `Zoom the camera in ${B('zoomIn', 'Wheel up')} and out ${B('zoomOut', 'Wheel down')}`,
-        on: (type, d, t) => { if (type === 'zoom') t.flags[d.dir < 0 ? 'zoomIn' : 'zoomOut'] = true; return t.flags.zoomIn && t.flags.zoomOut; } },
-      { id: 'pause', text: () => `Open the pause menu ${systemLabel('pause')}, then close it again ${systemLabel('pause')}`,
-        on: (type, d, t) => { if (type === 'pause') t.flags.paused = true; return type === 'resume' && t.flags.paused; } },
-    ];
-  },
+  tutorialSteps() { return tutorialSteps(); },
   currentStep() { return this.tut ? this.tutorialSteps()[this.tut.index] || null : null; },
   tutorialAllowsPause() { const s = this.currentStep(); return !!s && s.id === 'pause' && this.tut.doneTimer <= 0; },
   // Fresh dummies for the step (this is also how a dummy "resets").
@@ -800,19 +735,6 @@ const Game = {
     return { x: x / l * mag, z: z / l * mag, has: true };
   },
 
-  stepZoom(dir) {
-    const Z = CONFIG.zoom;
-    this.zoomTarget = clamp(this.zoomTarget + dir * Z.step, Z.min, Z.max);
-    events.emit('zoom', { dir });
-  },
-  updateZoomKeys(dt) {
-    const dir = (input.isHeld('zoomOut') ? 1 : 0) - (input.isHeld('zoomIn') ? 1 : 0);
-    if (input.consume('zoomIn')) { this.stepZoom(-1); this.zoomRepeat = CONFIG.zoom.repeatDelay; }
-    if (input.consume('zoomOut')) { this.stepZoom(1); this.zoomRepeat = CONFIG.zoom.repeatDelay; }
-    if (!dir) return;
-    this.zoomRepeat -= dt;
-    if (this.zoomRepeat <= 0) { this.stepZoom(dir); this.zoomRepeat = CONFIG.zoom.repeat; }
-  },
   mouseLook(dx, dy) {
     if (this.mode !== 'play' || this.lock) return;   // no mouse camera while locked on
     const M = CONFIG.mouse, s = settings.sensitivity;
@@ -945,7 +867,6 @@ const Game = {
     p.savePrev(); for (const e of this.enemies) e.savePrev();
     c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
     this.restartArm = Math.max(0, this.restartArm - dt);
-    this.updateZoomKeys(dt);
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt;

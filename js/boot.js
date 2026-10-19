@@ -110,11 +110,6 @@ document.addEventListener('mousemove', ev => {
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && Game.mode === 'play') Game.pause(true);
 });
-window.addEventListener('wheel', ev => {
-  input.use('keyboard');
-  if (Game.mode !== 'play') return;
-  Game.stepZoom(ev.deltaY > 0 ? 1 : -1);
-}, { passive: true });
 
 function resize() {
   const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);

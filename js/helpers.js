@@ -1,4 +1,7 @@
 'use strict';
+// Attack-wide parry rules shared by combat and presentation.
+function canParryAttack(a) { return !!a && !a.rollOnly && !a.projectile && !a.noParry; }
+
 // Three.js addons, imported by the loader in combat-arena-3d.html.
 const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices } = THREE_ADDONS;
 

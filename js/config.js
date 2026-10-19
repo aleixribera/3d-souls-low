@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.2.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.3';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -31,7 +31,7 @@ const CONFIG = {
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6 },
   },
-  zoom: { min: 2.6, max: 12, step: 0.8, default: 4.6, rate: 7, repeatDelay: 0.28, repeat: 0.09,
+  zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
   mouse: { yawPerPx: 0.0006, pitchPerPx: 0.0005, holdTime: 1.6, pitchMin: -0.3, pitchMax: 0.7 },
   // Gamepad (standard layout). Sticks: dead zone, then rescaled to 0..1. Camera speeds are rad/s at full
@@ -49,7 +49,7 @@ const CONFIG = {
           autoRange: 9,               // first-encounter auto lock-on distance
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
-    poiseResetTime: 4, staminaRegen: 36, staminaDelay: 0.75,
+    poiseResetTime: 4, staminaRegen: 43.2, staminaDelay: 0.75,
     walkSpeed: 4.3, accel: 26, decel: 22, turnRate: 14,   // v4.1: accel 34, decel 28 (a little more weight)
     airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
@@ -277,7 +277,7 @@ const CONFIG = {
                  // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.
                  deathTips: ['Tip: watch your stamina. Empty it and you can’t roll until it refills.',
                              'Tip: roll through a strike as it lands, not before.',
-                             'Tip: blue strikes can’t be blocked. Roll them.',
+                             'Tip: red attacks can be parried. Roll blue attacks.',
                              'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
                  staminaTipTime: 6 },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…' } },
@@ -388,8 +388,8 @@ const CONFIG = {
     enemy: { desaturate: 0.3, darkMul: 0.6, skin: 0xa8a294, skinRoughness: 0.75 },
     windupGlow: { color: 0xff2a10, boost: 2.2, opacity: 0.85, size: 1.5, along: 0.6 },   // additive halo on the blade; ignores fog
     weaponEmbers: { color: 0xff7a30, boost: 1.6, size: 1.1, opacity: 0.55, pierce: 0.6, edge: 2.2 },   // a weapon glowing with embers
-    // Roll-only attacks (cannot be blocked or parried): a cold blue blade instead of red, and a faint ring
-    // on the ground under the enemy as the wind-up starts (`ring`: size, `opacity`: its peak).
+    // Every unparryable attack has a cold blue blade. Roll-only attacks also show a faint ground ring
+    // as the wind-up starts (`ring`: size, `opacity`: its peak).
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },

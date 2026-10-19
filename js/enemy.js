@@ -609,7 +609,7 @@ class Enemy {
     // fills it too (v5.2: it used to be shrugged off with the other no-reaction states).
     if (M && this.state === ES.PARRIED) return { broke: this.fillMeter(M, strike.attackId), died: false };
     if (this.in('shrugsHits')) return { broke: false, died: false };
-    if (this.state === ES.DORMANT) { this.setState(ES.RISE); return { broke: false, died: false }; }
+    if (this.state === ES.DORMANT) this.setState(ES.RISE);
     const unaware = this.in('unaware');
     if (M) {
       if (unaware) this.setState(ES.CHASE);
@@ -733,7 +733,7 @@ class Enemy {
     }
     if (r.anim) r.anim.update(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
-    r.setWarning(warn, a && a.rollOnly ? ROLL_ONLY_COLOR : WARN_COLOR);   // roll-only attacks glow their own colour
+    r.setWarning(warn, canParryAttack(a) ? WARN_COLOR : ROLL_ONLY_COLOR);   // red: parryable; blue: cannot be parried
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);

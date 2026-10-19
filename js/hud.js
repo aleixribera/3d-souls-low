@@ -48,7 +48,6 @@ const hud = {
       ['Block (hold)', usingPad() ? bindLabel('block') : `[ ${ACTIONS.block.filter(c => !isPadCode(c)).map(keyLabel).filter((v, i, a) => a.indexOf(v) === i).join(' / ')} ]`],
       ['Parry', `${bindLabel('parry')} just before the blow lands`],
       ['Lock-on', bindLabel('lock')], ['Switch target', `${bindLabel('switchTarget')} while locked on`],
-      ['Zoom in / out', `${bindLabel('zoomIn', 'Wheel up')} ${bindLabel('zoomOut', 'Wheel down')}`],
       ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')], ['Talk / read', bindLabel('talk')],
       ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`],
     ];
@@ -274,7 +273,7 @@ const hud = {
     this.tutPrompt.classList.toggle('hidden', !step);
     if (step) {
       this.tutStep.textContent = `${tut.index + 1} / ${game.tutorialSteps().length}`;
-      this.tutText.textContent = step.text();
+      this.tutText.textContent = step.text(game);
       this.tutHint.textContent = tut.hintTimer > 0 ? tut.hint : '';   // a short hint on its own line, replaced, never stacked
       this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
     }

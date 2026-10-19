@@ -1,6 +1,6 @@
 # Project Guidelines
 
-Current version: **v7.1** (v7.1 — Measured Auto Graphics) (`VERSION` in `js/config.js`). The game is complete: two Story roads (Ashmere: Tutorial, Levels 1–5, the ending; the Lands Between: eight lands, one per Elden Ring boss, its own ending), plus Levels, the 1v1 Arena (Enemies, Bosses, Elden Ring Bosses), with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 added the second, Godrick the Grafted; v5.5 added the third, the Crucible Knight; v5.6 added the fourth, Morgott, the Omen King; v5.7 added Radagon of the Golden Order; v6.0 added the Ultra graphics preset, remade models, boss attack effects and a visual overhaul of the levels. v6.1 reduces rendering overhead, model subdivision and loading time while preserving the main Ultra effects. v6.2 doubles the three pre-Aldric story bosses' health, adds borrowed Elden Ring moves, and optimizes Low graphics at native resolution with shared texture maps and improved loading. v7.0 adds the second road, eight new enemies, the realm set pieces and the regrouped menus (see the last section).
+Current version: **v7.3** (v7.3 — Clearer Combat) (`VERSION` in `js/config.js`). The game is complete: two Story roads (Ashmere: Tutorial, Levels 1–5, the ending; the Lands Between: eight lands, one per Elden Ring boss, its own ending), plus Levels, the 1v1 Arena (Enemies, Bosses, Elden Ring Bosses), with its lore told by an NPC, inscriptions and scenes. v5.2 added executions; v5.3 added the Elden Ring Bosses mode and its first boss, Margit; v5.4 added the second, Godrick the Grafted; v5.5 added the third, the Crucible Knight; v5.6 added the fourth, Morgott, the Omen King; v5.7 added Radagon of the Golden Order; v6.0 added the Ultra graphics preset, remade models, boss attack effects and a visual overhaul of the levels. v6.1 reduces rendering overhead, model subdivision and loading time while preserving the main Ultra effects. v6.2 doubles the three pre-Aldric story bosses' health, adds borrowed Elden Ring moves, and optimizes Low graphics at native resolution with shared texture maps and improved loading. v7.0 adds the second road, eight new enemies, the realm set pieces and the regrouped menus (see the last section).
 
 **`LORE.md` is the source of truth for the story** (Part II: the Lands Between). Every in-game story text (dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards) must agree with it. Change the story in LORE.md first, then in the game, and keep LORE.md updated.
 
@@ -8,6 +8,12 @@ Current version: **v7.1** (v7.1 — Measured Auto Graphics) (`VERSION` in `js/co
 - **Engine / Core:** Vanilla JavaScript (ES6+), Three.js r160[cite: 1].
 - **Structure:** Classic scripts loaded via `<script>` tags sharing a global execution context, loaded strictly in the order listed in `GAME_FILES` inside `combat-arena-3d.html`[cite: 1].
 - **Dependencies & Tooling:** Zero build steps, bundlers, or third-party npm runtime dependencies[cite: 1].
+
+## Clearer Combat (v7.3)
+- Tutorial lesson content is in `js/data/tutorial.js`, with short contextual prompts rendered by the HUD. `Game` handles setup and progression. Camera zoom inputs are removed.
+- `canParryAttack` in `js/helpers.js` is the shared combat/cue rule: red for parryable, blue for `noParry`, `rollOnly` or projectiles. Blue does not always mean unblockable.
+- Rising enemies take normal poise and meter damage. All stagger/guard `breakers` include `jumpHeavy`. Aldric's leap landing hitboxes are ground-only; Burning Ascent's initial rising slash stays full-height.
+- Stamina regen is 43.2/s; costs, cooldowns and recovery delays are unchanged. See `docs/combat-clarity-v7.3.md`. Tests: `run('Combat clarity')` and the full suite before committing.
 
 ## Run & Test Commands
 - **Launch:** Open `combat-arena-3d.html` directly in any modern browser[cite: 1].

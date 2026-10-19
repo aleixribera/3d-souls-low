@@ -452,7 +452,7 @@ const landsBorrow = (source, id, k, changes = {}) => {
 const CK = { attacks: Object.values(CK_ATTACKS), id: 'crucibleKnight' };
 const landsGlint = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));
 // A stagger meter (normal enemies of Ashmere's Undead Knight kind): never interrupted until it fills, then it kneels.
-const landsStagger = (heavy, light, breakTime = 2.2) => ({ max: 100, heavy, light, breakers: ['heavy'], decayDelay: 2.5, decay: 9.6, breakTime, hitstop: 0.14 });
+const landsStagger = (heavy, light, breakTime = 2.2) => ({ max: 100, heavy, light, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 9.6, breakTime, hitstop: 0.14 });
 
 // ---- the enemies ---------------------------------------------------------------------------------------------------------
 const LANDS_ENEMY_DEFS = [
@@ -492,7 +492,7 @@ const LANDS_ENEMY_DEFS = [
     visual: { skin: 0x8a6a40, skinMetal: 0.4, metal: 0.55, roughness: 0.42, rim: 0.85 },
     hp: 400, poise: 110, speed: 2.5, turnRate: 3.4, trackRate: 1.6, approach: 0.4,
     cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.9,
-    guard: { arc: 0.95, damageMul: 0.3, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
+    guard: { arc: 0.95, damageMul: 0.3, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 30, light: 9, decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       landsBorrow(CK, 'lungeThrust', 0.8, { id: 'squireLunge', name: 'Squire\'s Lunge', damage: 24, chance: 0.5 }),

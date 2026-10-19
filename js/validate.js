@@ -7,6 +7,13 @@
 function validateData() {
   const errors = [];
   const need = (ok, msg) => { if (!ok) errors.push(msg); };
+  const lessons = tutorialSteps();
+  need(lessons.length > 0 && new Set(lessons.map(s => s.id)).size === lessons.length, 'Tutorial steps need unique ids.');
+  for (const s of lessons) {
+    need(typeof s.id === 'string' && typeof s.text === 'function', 'Tutorial steps need an id and prompt.');
+    need(typeof s.on === 'function' || typeof s.check === 'function', `Tutorial step ${s.id}: missing completion rule.`);
+    if (s.dummies) need(['one', 'pair', 'sparring', 'dodge', 'execution'].includes(s.dummies), `Tutorial step ${s.id}: unknown dummy setup ${s.dummies}.`);
+  }
   need(QUALITY_CHOICES.length === 3 && new Set(QUALITY_CHOICES.map(c => c.id)).size === 3, 'Quality choices must list three distinct presets.');
   for (const c of QUALITY_CHOICES) {
     need(c.id in CONFIG.VISUALS.quality, `Quality choice: unknown preset "${c.id}".`);

@@ -1,6 +1,6 @@
 'use strict';
 const WARN_COLOR = new THREE.Color(0xff3a1a);
-const ROLL_ONLY_COLOR = new THREE.Color(CONFIG.VISUALS.rollOnlyGlow.color);   // wind-up of an attack that cannot be blocked or parried
+const ROLL_ONLY_COLOR = new THREE.Color(CONFIG.VISUALS.rollOnlyGlow.color);   // wind-up of any attack that cannot be parried
 const HURT_COLOR = new THREE.Color(0xff1010);
 const HIT_COLOR = new THREE.Color(0xffffff);
 const CRACK_COLOR = new THREE.Color(0xffc060);

@@ -64,14 +64,14 @@ const PLAYER_DEF = {
       // Jump attacks: wind-up in the air, the hitbox opens while descending and lasts until landing
       // plus impactTime. `recovery` is the landing recovery (shortened by hitRecoveryMul on a hit).
       jumpLight: { id: 'jumpLight', anim: 'overhead', hits: [{ startup: 0.12, active: Infinity }], recovery: 0.42, cost: 18,
-                   damage: 22, poise: 26, postureDmg: 9, knock: 3.5, lunge: 0, hitstop: 0.09, riposte: { damage: 2.4 },
+                   damage: 28, poise: 34, postureDmg: 14, knock: 3.5, lunge: 0, hitstop: 0.09, riposte: { damage: 2.4 },
                    box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 },
                    air: { impactTime: 0.08, hitRecoveryMul: 0.85, hop: 3.2, fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } } },
       // v4.2.1 balance (was damage 52, poise 60, posture 24, cost 42, recovery 0.7, hitstop 0.15, box 2.2 x 2.6): between a
       // tapped heavy and a full charge, a tighter landing zone, a longer landing to punish a miss that a hit no longer
-      // shortens, and it fills stagger and guard meters only as a light hit.
+      // shortens. Jump heavies now fill stagger and guard meters as heavy hits (v7.3).
       jumpHeavy: { id: 'jumpHeavy', anim: 'overhead', hits: [{ startup: 0.3, active: Infinity }], recovery: 0.85, cost: 46,
-                   damage: 59, poise: 50, postureDmg: 20, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+                   damage: 74, poise: 70, postureDmg: 30, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                    box: { w: 1.7, h: 2.4, d: 2.1, fwd: 1.1, y: 0.0 },
                    air: { impactTime: 0.1, hitRecoveryMul: 1, hop: 3.8, fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } } },
     },

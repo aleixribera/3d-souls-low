@@ -34,8 +34,8 @@ const ENEMY_DEFS = [
     cooldown: [0.98, 1.96], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.8,
     // Stagger meter (shown under its health bar), replacing poise: hits never interrupt it until the meter
     // fills (2 heavy, or 3 light; v4.2.1, was heavy 60 / light 45), then it kneels, open, for `breakTime`.
-    // Drains at `decay`/s once `decayDelay` s pass without a hit. A jump attack counts as light.
-    stagger: { max: 100, heavy: 50, light: 15, breakers: ['heavy'], decayDelay: 2.5, decay: 11.2,
+    // Drains at `decay`/s once `decayDelay` s pass without a hit. A jump heavy fills the meter as a heavy.
+    stagger: { max: 100, heavy: 50, light: 15, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 11.2,
                breakTime: 2.0, hitstop: 0.14 },
     attacks: [
       { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.5, active: 0.18, follow: 0.3, hold: { at: 0.45, time: [0.25, 0.6], chance: 0.4 } }], recovery: 1.15,
@@ -92,11 +92,11 @@ const ENEMY_DEFS = [
     // Shield guard: hits from within `arc` (rad) of its facing are blocked (taking `damageMul` of the damage)
     // while the shield is up: not attacking, and not stepping in to strike within `lowerReach` of its shortest reach.
     // Every hit, blocked or not, fills a visible guard meter instead of poise: `heavy` for a `breakers`
-    // attack, `light` otherwise (a jump attack counts as light). At `max` the guard breaks (3 heavy, 1 heavy + 2 light,
+    // attack, `light` otherwise (a jump heavy counts as heavy). At `max` the guard breaks (3 heavy, 1 heavy + 2 light,
     // or 4 light; v4.2.1, was heavy 50 / light 34).
     // Hits taken on the shield fill only `blockedMul` of that, so flanking or punishing swings breaks it far faster.
     // The meter drains at `decay`/s once `decayDelay` s pass without a hit.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 42, light: 12, decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'wardenSwing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.8, active: 0.12, follow: 0.16 }], recovery: 0.7,
@@ -136,7 +136,7 @@ const ENEMY_DEFS = [
     cooldown: [1.12, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
     // Stagger meter: never interrupted until it fills; heavy hits fill it far faster (three heavies, or five light hits;
     // v4.2.1, was heavy 45 / light 28).
-    stagger: { max: 100, heavy: 40, light: 10, breakers: ['heavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.2, hitstop: 0.14 },
+    stagger: { max: 100, heavy: 40, light: 10, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
         damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
@@ -180,7 +180,7 @@ const ENEMY_DEFS = [
     hp: 200, poise: 90, speed: 2.2, turnRate: 2.8, trackRate: 1.4,
     cooldown: [0.98, 1.82], flinchTime: 0.2, staggerTime: 1.15, parriedTime: 1.75,
     // Shield guard, as the Shield Warden's: frontal hits are blocked and barely fill the meter; flank it or break it with heavies.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy'],
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 42, light: 12, decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.14 },
     attacks: [
       { id: 'shoverShove', name: 'Shove', anim: 'shove', pose: 'enemyShove', tracking: { rate: 2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], shove: true, hits: [{ startup: 1.3, active: 0.16, follow: 0.2 }], recovery: 0.75,
@@ -257,7 +257,7 @@ const ENEMY_DEFS = [
     visual: { skin: 0x9e723c, skinMetal: 0.55, metal: 0.65, roughness: 0.38, rim: 0.9 },
     hp: 520, poise: 200, speed: 1.8, turnRate: 2.8, trackRate: 1.2, approach: 0.45,
     cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.3, parriedTime: 1.9,
-    stagger: { max: 100, heavy: 34, light: 9, breakers: ['heavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.16 },
+    stagger: { max: 100, heavy: 34, light: 9, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.4, hitstop: 0.16 },
     attacks: [
       { id: 'sentinelSweep', name: 'Patient Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.8, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25,
         hits: [{ startup: 1.3, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.4, 1.0], chance: 0.6 } }], recovery: 1.1,
@@ -340,7 +340,7 @@ const ENEMY_DEFS = [
       // The signature: a long crouch, a leap high along his locked aim, a crash that rings the ground. Long recovery.
       { id: 'varnLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 1.8, commit: 0.45 }, poseScale: 1.4, rollOnly: true, minRange: 4, chance: 0.35,
         hits: [{ startup: 1.9, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 13, short: 1.4 } }], recovery: 2.0,
-        damage: 60, poise: 90, knock: 12, lunge: 0, range: 13, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.6, y: 1.0 },
+        damage: 60, poise: 90, knock: 12, lunge: 0, range: 13, box: { w: 5.0, h: 0.6, d: 5.0, fwd: 0.6, y: 0.3, ground: true },
         impact: { ring: 6.0, crack: 2.6, dust: 26, shake: 0.2 } },
       // ---- the Ember-Crowned: the same moves, faster and fiercer ----
       { id: 'knellSweep', name: 'Burning Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 3.2, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.35,
@@ -362,7 +362,7 @@ const ENEMY_DEFS = [
         impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.14 } },
       { id: 'knellLeap', name: 'Judgement Leap', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.45 }, poseScale: 1.45, rollOnly: true, minRange: 4, chance: 0.45,
         hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 1.5,
-        damage: 64, poise: 90, knock: 12, lunge: 0, range: 14, box: { w: 5.6, h: 2.4, d: 5.6, fwd: 0.6, y: 1.0 },
+        damage: 64, poise: 90, knock: 12, lunge: 0, range: 14, box: { w: 5.6, h: 0.6, d: 5.6, fwd: 0.6, y: 0.3, ground: true },
         impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.22 } },
       // ---- the Ember-Crowned: new attacks ----
       // Four cuts, the last held a beat before it falls. Every cut can be parried.
@@ -379,7 +379,7 @@ const ENEMY_DEFS = [
       // A rising cut that throws him into a short leap and a burning crash.
       { id: 'burningAscent', name: 'Burning Ascent', anim: 'chop', pose: 'risingCrash', tracking: { rate: 2.6, commit: 0.6 }, poseScale: 1.35, rollOnly: true, chance: 0.4,
         hits: [{ startup: 0.85, active: 0.14, follow: 0.12 }, { startup: 1.1, active: 0.16, follow: 0.45, leap: { from: 0.3, max: 9, short: 1.4 },
-          box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.6, y: 1.0 }, impact: { ring: 5.0, crack: 2.2, dust: 22, shake: 0.16 } }], recovery: 1.5,
+          box: { w: 5.0, h: 0.6, d: 5.0, fwd: 0.6, y: 0.3, ground: true }, impact: { ring: 5.0, crack: 2.2, dust: 22, shake: 0.16 } }], recovery: 1.5,
         damage: 40, poise: 70, knock: 9, lunge: 1.6, range: 3.2, box: { w: 2.6, h: 2.8, d: 3.0, fwd: 1.8, y: 1.3 } },
       // The big one: he plants the blade; three tolls send three rings of fire out across the room (roll each as it
       // reaches you), then a blast close round him. Long recovery after.
@@ -421,7 +421,7 @@ const TRAINING_DEFS = [
   // three lights). It kneels for a long `breakTime`, so there is time to step in front of it and execute; it never dies.
   { id: 'executionDummy', name: 'Execution Dummy', scale: 1.5, bulk: 1.3, radius: 0.6, color: 0x6a4a3a, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
     hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [],
-    stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy'], showBar: true, decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
+    stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy', 'jumpHeavy'], showBar: true, decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));
 // A boss (the big bar at the top, no overhead bar): posture or phases. The 1v1 Arena lists them apart from the enemies.
