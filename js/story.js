@@ -189,18 +189,18 @@ function makeCampaign(C) {
   function levelName(id) { const c = chapter(id); return c ? c.title.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase()) : id; }
   // A story level's title card, shown before the build (Game.loadingFirst): its chapter title and line.
   const card = id => { const ch = chapter(id), L = ALL_LEVELS.find(l => l.id === id); return ch ? [ch.title, ch.line] : [L ? L.name : '', L ? L.description : '']; };
-  // The campaign's own screen (from Story): Continue and New Game with a save, else Begin.
+  // Both campaigns share one screen. Continue loads immediately; New only confirms replacing a save.
   function items(game) {
     const noSave = storageOk ? '' : ' Progress cannot be saved in this window.';
-    const back = { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('story') };
-    if (status === 'ok') return [
-      { name: 'Continue', desc: `${levelName(data.level)}${data.bonfire ? ', at the last bonfire rested at' : ', from its start'}.${data.completed ? ' The story is complete.' : ''}${noSave}`,
+    const actions = status === 'ok' ? [
+      { name: 'Continue', desc: `${levelName(data.level)} · ${data.bonfire ? 'Last bonfire' : 'Level start'}${data.completed ? ' · Completed' : ''}${noSave}`,
         go: () => { story.use(C.id); Game.loadingFirst(...Game.levelCard(data.level), () => resume()); } },
-      { name: 'New Game', desc: 'Begin this story again from the start.', go: () => { story.use(C.id); game.showMenu('storyConfirm'); } },
-      back,
-    ];
-    return [{ name: 'Begin', desc: (status === 'broken' ? 'Your save of this story could not be read. Begin it anew.' : C.description) + noSave,
-              go: () => { story.use(C.id); game.showMenu(C.tutorial ? 'storyTutorial' : 'storyBegin'); } }, back];
+    ] : [];
+    actions.push({ name: 'New', desc: (status === 'broken' ? 'Save could not be loaded. Start a new game.' : C.description) + noSave,
+      go: () => { story.use(C.id); if (status === 'ok') game.showMenu('storyConfirm'); else story.startNew(); } });
+    actions.forEach(it => { it.campaign = C.id; it.label = `${C.menuTitle}: ${it.name}`; });
+    actions[0].group = C.menuTitle;
+    return actions;
   }
   load();
   return {
@@ -214,7 +214,13 @@ function makeCampaign(C) {
 const story = (() => {
   const campaigns = Object.fromEntries(STORIES.map(C => [C.id, makeCampaign(C)]));
   let active = campaigns[STORIES[0].id];
+  let withTutorial = true;
   const A = () => active;
+  const startNew = () => {
+    const campaign = A(), tutorial = withTutorial && !!campaign.def.tutorial;
+    const level = tutorial ? campaign.def.tutorial.level : campaign.chapterIds()[0];
+    Game.loadingFirst(...campaign.card(level), () => campaign.newGame(tutorial));
+  };
   events.on('enemyDeath', d => { const e = d.enemy; if (Game.story && (e.phaseIds || e.baseDef.posture)) A().bossBeaten(e); });
   events.on('rest', d => { if (Game.story && !Game.isTutorial()) A().save(d.bonfire.id); });
   events.on('gateOpened', () => A().autosave());
@@ -231,26 +237,16 @@ const story = (() => {
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level of either road.', go: () => game.showMenu('storyJump') },
       { name: 'Story: clear the saves', desc: 'Developer: deletes both story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
     ] : [];
-    const first = A().chapterIds()[0];
-    return { main: [{ name: 'Story', desc: 'Two roads: Ashmere and the Gaoler King, or the Lands Between and the Elden Throne.', go: () => game.showMenu('story') }],
+    return { main: [{ name: 'Story', desc: 'Continue your game or start a new story.', go: () => game.showMenu('story') }],
       devItems: devJumps, screens: {
-      story: { title: 'STORY', sub: 'CHOOSE A ROAD', back: 'main', items: [
-        ...STORIES.map(S => { const c = campaigns[S.id], st = c.status === 'ok' ? (c.data.completed ? '  ✦' : '  ·  in progress') : '';
-          return { name: S.name + st, desc: S.description, go: () => { story.use(S.id); game.showMenu('storyRoad'); } }; }),
+      story: { title: 'STORY', sub: 'Choose a story, then play.', back: 'main', items: [
+        ...STORIES.flatMap(S => campaigns[S.id].items(game)),
+        { name: `Tutorial: ${withTutorial ? 'On' : 'Off'}`, desc: 'Learn the controls before a new game.', adjust: () => { withTutorial = !withTutorial; } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
       ] },
-      storyRoad: { title: C.menuTitle, sub: C.menuSub, back: 'story', items: A().items(game) },
-      storyConfirm: { title: 'NEW GAME', sub: C.menuSub, notice: 'Your journey so far on this road will be lost.', back: 'storyRoad', items: [
-        { name: 'Begin anew', desc: 'Overwrite this story\'s save and start again.', go: () => game.showMenu(C.tutorial ? 'storyTutorial' : 'storyBegin') },
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('storyRoad') },
-      ] },
-      storyTutorial: { title: 'PLAY THE TUTORIAL?', sub: '', back: 'storyRoad', items: [
-        { name: 'Yes', desc: 'Learn every control on training dummies, then set out.', go: () => game.chooseTutorialQuality(() => Game.loadingFirst(...A().card(C.tutorial.level), () => A().newGame(true))) },
-        { name: 'No', desc: `Straight to ${A().levelName(first)}.`, go: () => Game.loadingFirst(...A().card(first), () => A().newGame(false)) },
-      ] },
-      storyBegin: { title: C.menuTitle, sub: C.menuSub, back: 'storyRoad', items: [
-        { name: 'Set out', desc: `Straight to ${A().levelName(first)}.`, go: () => Game.loadingFirst(...A().card(first), () => A().newGame(false)) },
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('storyRoad') },
+      storyConfirm: { title: 'NEW GAME?', sub: C.menuTitle, notice: 'Replace this story’s saved game?', back: 'story', items: [
+        { name: 'Cancel', desc: 'Keep your saved game.', cue: 'menuBack', go: () => game.showMenu('story') },
+        { name: 'New', desc: 'Replace the save and start playing.', go: startNew },
       ] },
       storyDone: { title: 'STORY COMPLETE', sub: C.menuSub, notice: C.done, items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },
@@ -263,7 +259,7 @@ const story = (() => {
   }
 
   return {
-    screens, campaigns, owner,
+    screens, campaigns, owner, startNew,
     // Make a campaign the active one (the menus pick it; jumps and Continue follow it).
     use(id) { if (!campaigns[id]) throw new Error(`Unknown story "${id}".`); active = campaigns[id]; return active; },
     get active() { return active; },

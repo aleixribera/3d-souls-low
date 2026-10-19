@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.3';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.3.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -243,6 +243,7 @@ const CONFIG = {
            homeLeash: 40,    // ...or this far from its home (was 30, and measured from the enemy); then walk back home
            gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5,   // hintTime: a dodge hint stays under the prompt this long
+              restGuide: { behindAngle: Math.PI * 0.65 },   // screen arrow adds "Turn around" when the fire is behind
               restArrow: { color: 0xffc860, size: 0.28, height: 2.6, bob: 0.25, bobSpeed: 3 } },   // the arrow over the bonfire in the rest step
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
   // Level 5's script (js/finale.js, v4.3): Aldric's fights, the throne room's transition, the ending.

@@ -103,6 +103,7 @@ function validateData() {
       need(a && num(a.range) && a.range > 0, `Enemy "${d.id}" attack "${a && a.id}": range must be a number above 0.`);
     }
     if ('approach' in d) need(num(d.approach) && d.approach >= 0, `Enemy "${d.id}": approach must be a number of 0 or more (per second).`);
+    if ('autoLock' in d) need(typeof d.autoLock === 'boolean', `Enemy "${d.id}": autoLock must be true or false.`);
     if ('kite' in d) need(num(d.kite) && d.kite >= 0 && d.kite <= 1, `Enemy "${d.id}": kite must be a number from 0 to 1 (a chance).`);
     if ('lifesteal' in d) need(d.lifesteal && num(d.lifesteal.flat) && d.lifesteal.flat >= 0 && num(d.lifesteal.pct) && d.lifesteal.pct >= 0 && d.lifesteal.pct < 0.2,
       `Enemy "${d.id}": lifesteal needs flat (HP, 0 or more) and pct (a fraction of the bar under 0.2).`);   // v5.9 (Malenia)
@@ -218,7 +219,10 @@ function validateData() {
     }
     for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
     for (const b of L.braziers || []) need(inX(b.x) && Math.abs(b.z) < L.halfZ - 0.5 && !L.gated.some(g => Math.abs(g.gateX - b.x) < 1.2), `${where}: a brazier at x ${b.x} must stand in the hall, clear of the gates.`);
-    if (L.script === 'tutorial') for (const k of ['dummy', 'sparring', 'dodge', 'execution']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
+    if (L.script === 'tutorial') {
+      for (const k of ['dummy', 'sparring', 'dodge', 'execution']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
+      for (const s of tutorialSteps()) if (s.bonfire) need((L.bonfires || []).some(b => b.id === s.bonfire), `${where}: tutorial step "${s.id}" names unknown bonfire "${s.bonfire}".`);
+    }
   }
   // Arena and timings
   need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');

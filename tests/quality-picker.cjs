@@ -11,7 +11,7 @@ const assert=require('node:assert/strict');
  await page.addInitScript(()=>localStorage.setItem('combat-arena-3d.settings',JSON.stringify({graphics:'high'})));
  await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
  await page.waitForFunction(()=>window.__arenaReady&&window.__arena.tests,{timeout:120000});
- await page.evaluate(()=>{Game.manualClock=true;story.use('ashmere');Game.showMenu('storyTutorial');Game.select(0);Game.confirm();});
+ await page.evaluate(()=>{Game.manualClock=true;story.use('ashmere');Game.chooseTutorialQuality(()=>story.newGame(true),'story');});
  assert.equal(await page.evaluate(()=>Game.screen),'tutorialQuality');
  assert.equal(await page.evaluate(()=>Game.selected),1);
  await page.locator('#menuList img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
@@ -33,11 +33,11 @@ const assert=require('node:assert/strict');
   await page.keyboard.press(key);assert.equal(await page.evaluate(()=>Game.selected),selected,key);
  }
  await page.keyboard.press('Escape');
- assert.equal(await page.evaluate(()=>Game.screen),'storyTutorial');
+ assert.equal(await page.evaluate(()=>Game.screen),'story');
  assert.equal(await page.evaluate(()=>settings.graphics),'high','back preserves the setting');
  assert.ok(await page.evaluate(()=>Game.tutorialQualityStart===null),'back discards the continuation');
  // A controller D-pad and stick use the same real menuInput path; confirm starts the tutorial.
- await page.evaluate(()=>{Game.select(0);Game.confirm();input.use('pad');gamepad.menuDir=null;gamepad.down=new Set(['PadRight']);gamepad.menuInput([],CONFIG.step);});
+ await page.evaluate(()=>{Game.chooseTutorialQuality(()=>story.newGame(true),'story');input.use('pad');gamepad.menuDir=null;gamepad.down=new Set(['PadRight']);gamepad.menuInput([],CONFIG.step);});
  assert.equal(await page.evaluate(()=>Game.selected),2);
  assert.match(await page.locator('#menuHint').textContent(),/D-pad/);
  await page.evaluate(()=>{gamepad.down.clear();gamepad.move={x:-1,y:0};gamepad.menuInput([],CONFIG.step);});
@@ -53,8 +53,8 @@ const assert=require('node:assert/strict');
  await page.evaluate(()=>{Game.story=false;Game.showMenu('storyJump');const item=Game.menuItems.find(i=>i.name===STORY.short+': '+story.campaigns[STORY.id].levelName(STORY.tutorial.level));item.go();});
  assert.equal(await page.evaluate(()=>Game.screen),'tutorialQuality');await page.keyboard.press('Escape');
  assert.equal(await page.evaluate(()=>Game.screen),'storyJump');
- // Skipping the tutorial never asks for a tutorial quality choice.
- await page.evaluate(()=>{story.use('ashmere');Game.showMenu('storyTutorial');Game.select(1);Game.confirm();});
+ // The new Story flow never asks for a quality choice, with or without the tutorial.
+ await page.evaluate(()=>{story.use('ashmere');story.erase();Game.showMenu('main');Game.showMenu('story');const toggle=Game.menuItems.find(i=>i.name.startsWith('Tutorial:'));if(toggle.name==='Tutorial: On')toggle.adjust();Game.menuItems.find(i=>i.campaign==='ashmere'&&i.name==='New').go();});
  assert.ok(await page.evaluate(()=>Game.mode==='play'&&Game.level.id==='long-hall'&&Game.story));
  await page.evaluate(()=>{Game.story=false;Game.showMenu('main');});
  assert.equal(await page.locator('#menu.quality-choice').count(),0,'comparison styling leaves with the page');

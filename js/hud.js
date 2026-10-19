@@ -33,6 +33,7 @@ const hud = {
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
+  tutGuide: $('tutGuide'), tutGuideArrow: $('tutGuideArrow'), tutGuideText: $('tutGuideText'), guideForward: new THREE.Vector3(),
   help: $('help'), toggle: $('hbToggle'),
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
@@ -248,6 +249,23 @@ const hud = {
     if (s && s.text !== this.subText.textContent) { this.subName.textContent = s.name; this.subText.textContent = s.text; }
     this.sub.classList.toggle('show', !!s && s.show);
   },
+  // A camera-relative compass stays visible even when the tutorial fire is directly behind the camera.
+  updateTutorialGuide(game, step) {
+    const show = !!step && step.id === 'rest' && game.tut.doneTimer <= 0 && game.player.alive();
+    this.tutGuide.hidden = !show;
+    if (!show) return;
+    const b = world.bonfires.find(f => f.id === step.bonfire);
+    if (!b) { this.tutGuide.hidden = true; return; }
+    const p = game.player, dx = b.x - p.x, dz = b.z - p.z, distance = Math.hypot(dx, dz);
+    camera.getWorldDirection(this.guideForward);
+    const f = this.guideForward;
+    const angle = Math.atan2(dz * f.x - dx * f.z, dx * f.x + dz * f.z);
+    const near = !!game.nearBonfire();
+    this.tutGuideArrow.style.transform = `rotate(${near ? 0 : angle}rad)`;
+    this.tutGuideArrow.hidden = near;
+    this.tutGuideText.textContent = near ? `Press ${bindLabel('rest')} to rest` :
+      `${Math.abs(angle) > CONFIG.tutorial.restGuide.behindAngle ? 'Turn around · ' : ''}Bonfire · ${Math.ceil(distance)} m`;
+  },
   update(game, dt) {
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
     const p = game.player;
@@ -270,6 +288,7 @@ const hud = {
     this.wasAlive = p.alive();
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
     const tut = game.tut, step = game.currentStep();
+    this.updateTutorialGuide(game, step);
     this.tutPrompt.classList.toggle('hidden', !step);
     if (step) {
       this.tutStep.textContent = `${tut.index + 1} / ${game.tutorialSteps().length}`;

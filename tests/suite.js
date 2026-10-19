@@ -1411,6 +1411,23 @@
     }
   });
 
+  test('lock-on: melee fighters with projectile moves remain automatic targets in every lock path', () => {
+    const mixed = [...A.ENEMY_DEFS, ...A.ELDEN_BOSS_DEFS].filter(d => d.autoLock !== false && d.attacks.some(a => a.projectile));
+    expect.ok(mixed.some(d => d.id === 'varn') && mixed.some(d => d.id === 'margit'), 'covers story and Elden Ring bosses');
+    for (const d of mixed) {
+      const e = retargetRange([['mixed', d.id, 16, 0, true]]).mixed;
+      // Some bosses gain their projectile later. Eligibility follows the entity, across phase changes.
+      if (e.phaseIds) e.enterPhase(e.phaseIds.length - 1);
+      sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: automatic retarget`);
+      Game.setLock(null); Game.retarget = false; e.discovered = false; sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: first encounter`);
+      const fallen = sim.spawn(rooted('hollow'), 14, 1, undefined, -Math.PI / 2); quiet(fallen);
+      Game.setLock(fallen); fallen.die(); sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: kill handoff`);
+    }
+  });
+
   test('lock-on: Q letting go turns the automatic pick off; a Q lock-on, a rest, a death and a level start turn it back on', () => {
     // The player at Test: Crowd's bonfire facing east; a rooted enemy fighting it 11 m away (beyond the first-encounter
     // range, so only the automatic pick ever locks it). `picks()`: with no lock, does a step lock it?
@@ -2126,15 +2143,15 @@
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
     expect.ok(S().nextLevelId('final-castle') === null, 'nothing after the castle');
   }));
-  test('Story: a new game saves at the level start and the menu offers Continue and New Game', withSave(() => {
+  test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
     expect.ok(Game.screens().main.items[0].name === 'Story', 'no save: Story comes first');
     S().newGame(false); sim.begin();
     expect.ok(Game.story && Game.level.id === 'long-hall', 'No to the tutorial: straight to Level 1');
     expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
     Game.showMenu('main');
-    const names = Game.screens().main.items.map(i => i.name), road = Game.screens().storyRoad.items.map(i => i.name);   // v7.0: Story holds both roads
-    expect.ok(names[0] === 'Story' && names.includes('Levels') && road[0] === 'Continue' && road[1] === 'New Game', `Story first, then the other modes; the road offers Continue and New Game (${road})`);
+    const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
+    expect.ok(names[0] === 'Story' && names.includes('Levels') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
   }));
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
@@ -3477,15 +3494,50 @@
     expect.near(p.stamina, 40 + 36 * 1.2, 1e-6, 'one second of regeneration');
     expect.ok(CONFIG.player.staminaDelay === 0.75 && CONFIG.player.exhaustDelay === 1.3, 'recovery delays unchanged');
   });
-  test('Combat clarity: tutorial prompts reveal one action at a time and zoom controls are gone', () => {
+  test('Combat clarity: tutorial keeps complete action sequences visible and zoom controls are gone', () => {
     input.use('keyboard'); const p = tutorialAt('execute'), d = Game.enemies[0];
-    expect.ok(!shown('tutText').includes('Execute'), 'start by breaking the stance');
+    const instruction = shown('tutText');
+    expect.ok(instruction.includes('until it kneels') && instruction.includes('front') && instruction.includes(bindLabel('light')), 'explain kneeling, approach and execution before the player begins');
     d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p); Game.render(1, STEP);
-    expect.ok(shown('tutText').includes('Execute'), 'then teach the execution');
+    expect.ok(shown('tutText') === instruction, 'the complete execution sequence stays visible when it kneels');
     expect.ok(!Game.tutorialSteps().some(s => s.id === 'zoom') && !ACTIONS.zoomIn && !ACTIONS.zoomOut, 'no zoom step or bindings');
     const zoom = Game.zoomTarget;
     window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100 })); input.down('Equal'); sim.step(2); input.up('Equal');
     expect.near(Game.zoomTarget, zoom, 1e-6, 'wheel and former zoom key cannot alter camera distance');
+  });
+
+  test('tutorial: jump attack instructions stay visible from the ground through the landing', () => {
+    for (const device of ['keyboard', 'pad']) {
+      input.use(device); const p = tutorialAt('jumpAttack'), step = Game.currentStep(), text = step.text(Game);
+      expect.ok(text.includes(bindLabel('jump')) && text.includes(bindLabel('heavy')) && text.includes('in the air'), `${device}: both inputs and their order are shown before jumping`);
+      for (const state of [PS.JUMP, PS.JUMP_ATTACK, PS.LAND]) {
+        p.state = state; p.grounded = false;
+        expect.ok(step.text(Game) === text, `${device}: stable instruction in ${state}`);
+      }
+      p.state = PS.IDLE; p.grounded = true;
+    }
+  });
+
+  test('tutorial: the bonfire compass points ahead, left, right and directly behind; it clears after resting', () => {
+    const p = tutorialAt('rest'), fire = world.bonfires.find(b => b.id === 'tutorial-fire');
+    p.x = fire.x + 7; p.z = fire.z; p.savePrev();
+    camera.position.set(p.x, 3, p.z);
+    const guide = document.getElementById('tutGuide'), arrow = document.getElementById('tutGuideArrow');
+    for (const [dx, dz, expected] of [[-1, 0, 0], [1, 0, Math.PI], [0, 1, Math.PI / 2], [0, -1, -Math.PI / 2]]) {
+      camera.lookAt(p.x + dx, 3, p.z + dz); camera.updateMatrixWorld();
+      A.hud.updateTutorialGuide(Game, Game.currentStep());
+      expect.ok(!guide.hidden && shown('tutGuideText').includes('7 m'), 'the objective stays visible with distance');
+      const angle = Number(arrow.style.transform.match(/rotate\(([^r]+)rad\)/)[1]);
+      expect.near(Math.abs(angDiff(angle, expected)), 0, 1e-4, 'camera-relative direction');
+      expect.ok(shown('tutGuideText').includes('Turn around') === (expected === Math.PI), 'behind text only when the fire is behind');
+    }
+    p.x = fire.x; p.z = fire.z; p.savePrev();
+    A.hud.updateTutorialGuide(Game, Game.currentStep());
+    expect.ok(arrow.hidden && shown('tutGuideText').includes(bindLabel('rest')), 'arrival shows the rest button');
+    Game.tryRest(); A.hud.updateTutorialGuide(Game, Game.currentStep());
+    expect.ok(guide.hidden, 'resting clears the compass');
+    tutorialAt('move');
+    expect.ok(guide.hidden, 'other lessons have no compass');
   });
 
   async function run(filter = '') {

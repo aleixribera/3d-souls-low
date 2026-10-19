@@ -32,7 +32,7 @@ const Game = {
     const pauseItems = this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
-        ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Leave the training hall and set out for the Long Hall.', go: () => story.afterTutorial() }] : []),
+        ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Start the story now.', go: () => story.afterTutorial() }] : []),
         { name: 'Quit to main menu', desc: 'Saves first. Continue returns you to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
@@ -46,7 +46,7 @@ const Game = {
     return {
       ...S.screens, ...elden.screens(this),
       tutorialQuality: { title: 'CHOOSE YOUR QUALITY', sub: 'Pick the look you prefer. You can change it later in Options.',
-        back: this.tutorialQualityBack || 'storyTutorial',
+        back: this.tutorialQualityBack || 'story',
         items: QUALITY_CHOICES.map(choice => ({ ...choice, desc: choice.systems, go: () => {
           const start = this.tutorialQualityStart;
           if (!start) return;
@@ -84,6 +84,7 @@ const Game = {
         items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
       pause: { title: 'PAUSED', sub: '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main', back: this.optionsFrom === 'main' ? 'main' : 'pause', items: [
+        { name: `Fullscreen: ${onOff(!!document.fullscreenElement)}`, desc: 'Fill the screen. Escape exits fullscreen.', go: () => fullscreen.toggle() },
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
         { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
@@ -109,7 +110,7 @@ const Game = {
       ] },
     };
   },
-  chooseTutorialQuality(start, back = 'storyTutorial') {
+  chooseTutorialQuality(start, back = 'story') {
     const measured = autoQuality.result();
     const recommendation = measured && measured.width === innerWidth && measured.height === innerHeight && measured.pixelRatio === (devicePixelRatio || 1)
       ? measured : autoQuality.recheck();
@@ -132,6 +133,7 @@ const Game = {
     this.screen = screen; input.clear(); this.setLock(null);
     if (document.pointerLockElement) document.exitPointerLock();
     $('menu').classList.toggle('quality-choice', screen === 'tutorialQuality');
+    $('menu').classList.toggle('story-menu', screen === 'story');
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
@@ -144,6 +146,8 @@ const Game = {
       b.className = 'menuBtn' + (it.adjust ? ' adj' : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
+      if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
+      if (it.label) b.setAttribute('aria-label', it.label);
       if (screen === 'tutorialQuality') {
         const frame = document.createElement('span'); frame.className = 'quality-image';
         const img = document.createElement('img'); img.src = it.image; img.alt = it.alt; img.width = 800; img.height = 600;
@@ -487,10 +491,10 @@ const Game = {
   },
   // Always-retarget's pick: the enemy fighting the player (it has noticed the player; never a training dummy) with the
   // lowest score, its distance from the middle of the screen (0 middle, 1 edge) plus its distance from the player per
-  // `retargetDistance` m. Ranged enemies require an explicit lock or target-switch input.
+  // `retargetDistance` m. Only enemies that opt out with autoLock:false require explicit targeting.
   retargetPick() {
     const L = CONFIG.lock;
-    const pool = this.lockable().filter(({ e }) => !e.ranged && e.fightingPlayer());
+    const pool = this.lockable().filter(({ e }) => e.def.autoLock !== false && e.fightingPlayer());
     const score = c => (c.v ? Math.abs(c.v.x) : L.offScreenScore) + c.d / L.retargetDistance;
     let best = null;
     for (const c of pool) if (!best || score(c) < score(best)) best = c;
@@ -524,14 +528,14 @@ const Game = {
     // unless already locked. An enemy is only ever auto-locked once.
     if (p.alive()) {
       for (const { e } of findEnemies(p, this.enemies, { range: CONFIG.lock.autoRange })) {
-        if (e.ranged || e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
+        if (e.def.autoLock === false || e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
         e.discovered = true;
         if (!this.lock && !this.retarget) this.setLock(e);
       }
     }
     const t = this.lock;
     if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
-      this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t && !e.ranged) || null);
+      this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t && e.def.autoLock !== false) || null);
     } else if (t) {
       if (!t.alive() || !t.awake() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
       else {
@@ -578,7 +582,7 @@ const Game = {
   // Tutorial "rest" step: a glowing arrow bobs over the bonfire so it is easy to find (drawing only).
   drawRestArrow(t) {
     const s = this.isTutorial() && this.tut && this.tut.doneTimer <= 0 ? this.currentStep() : null;
-    const b = s && s.id === 'rest' ? world.bonfires[0] : null;
+    const b = s && s.bonfire ? world.bonfires.find(b => b.id === s.bonfire) : null;
     if (!this.restArrow) {
       if (!b) return;
       const A = CONFIG.tutorial.restArrow, mat = new THREE.MeshBasicMaterial({ color: A.color, transparent: true, opacity: 0.9, depthTest: false });

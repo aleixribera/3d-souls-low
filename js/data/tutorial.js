@@ -1,5 +1,5 @@
 'use strict';
-// One action per prompt; longer actions reveal their next instruction as the player practices.
+// Keep a whole action sequence visible so beginners can read it before trying it.
 const tutorialSteps = () => {
     const B = bindLabel;
     const byPlayer = (d, g) => d.attacker === g.player;
@@ -12,14 +12,14 @@ const tutorialSteps = () => {
       { id: 'light', dummies: 'one', text: () => `Hit the dummy ${B('light')}`,
         on: (type, d, t, g) => type === 'strike' && byPlayer(d, g) && d.strike.attackId === 'light' },
       // Done on a fully charged heavy; a lighter one shows how.
-      { id: 'heavy', dummies: 'one', text: g => g.player.attack && g.player.attack.charge && g.player.chargeT >= g.player.attack.charge.hold - 1e-6 ? `Release heavy attack ${B('heavy')}` : `Hold heavy attack until the blade glows ${B('heavy')}`,
+      { id: 'heavy', dummies: 'one', text: () => `Hold ${B('heavy')} until the blade glows, then release to hit the dummy`,
         on: (type, d, t, g) => {
           if (type !== 'strike' || !byPlayer(d, g) || d.strike.attackId !== 'heavy') return false;
           if (d.strike.charge >= 1 - 1e-6) return true;
           g.tutorialHint('Hold it longer: let go once the blade glows');
           return false;
         } },
-      { id: 'jumpAttack', dummies: 'one', text: g => g.player.state === PS.JUMP_ATTACK || g.player.state === PS.LAND ? 'Land the hit on the dummy' : g.player.grounded ? `Jump toward the dummy ${B('jump')}` : `Attack now, while in the air ${B('heavy')}`,
+      { id: 'jumpAttack', dummies: 'one', text: () => `Jump toward the dummy ${B('jump')}, then press ${B('heavy')} in the air to attack`,
         on: (type, d, t, g) => { if (type === 'strike' && byPlayer(d, g) && d.strike.air) t.flags.airHit = true; },
         check: (g, t) => t.flags.airHit && g.player.state !== PS.JUMP_ATTACK && g.player.state !== PS.LAND },   // after the landing
       { id: 'block', dummies: 'sparring', lockOn: true, text: () => `Hold block and wait for the hit ${B('block')}`,
@@ -48,13 +48,13 @@ const tutorialSteps = () => {
         } },
       // v5.2: break the dummy's stance, then execute it. Done on one finished execution.
       { id: 'execute', dummies: 'execution', lockOn: true,
-        text: g => g.enemies.some(e => e.state === ES.BROKEN) ? `Stand in front. Execute ${B('light')}` : g.player.state === PS.EXECUTE ? 'Execution! You are safe until it ends.' : `Hit the dummy until it kneels ${B('heavy')}`,
+        text: () => `Hit the dummy with ${B('heavy')} until it kneels. Walk close to its front and press ${B('light')} to Execute`,
         on: type => type === 'executionEnd' },
       { id: 'flask', text: () => `Heal with your flask ${B('flask')}`,
         setup: g => { const it = g.player.item('flask'); g.player.hp = Math.min(g.player.hp, 55); if (g.player.inventory.flask) it.count = Math.max(it.count, 1); },
         on: (type, d, t) => { if (type === 'itemUsed' && d.item === 'flask') t.flags.drank = true; },
         check: (g, t) => t.flags.drank && g.player.state !== PS.USE_ITEM },
-      { id: 'rest', text: () => `Walk to the bonfire and rest ${B('rest')}`, on: type => type === 'rest' },
+      { id: 'rest', bonfire: 'tutorial-fire', text: () => `Follow the arrow to the bonfire, then press ${B('rest')} to rest`, on: type => type === 'rest' },
       { id: 'switch', dummies: 'pair', lockOn: true, text: () => `Switch to the other target ${B('switchTarget')}`,
         on: type => type === 'switchTarget' },
       { id: 'pause', text: () => `Pause, then resume ${systemLabel('pause')}`,

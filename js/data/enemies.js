@@ -160,7 +160,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    id: 'bowman', model: 'rampartBowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.',
+    id: 'bowman', model: 'rampartBowman', name: 'Rampart Bowman', description: 'Shoots from afar and kicks up close. Block the bolts and close the gap.', autoLock: false,
     scale: 0.95, bulk: 0.88, radius: 0.38, color: 0x5a6a3a, weapon: 'bow', idle: 'guard',
     visual: { skin: 0xa39d8f, bareArms: true, roughness: 0.85 },
     hp: 90, poise: 30, speed: 2.8, turnRate: 5, trackRate: 2.4, approach: 0, kite: 0.6,   // keeps its distance, but now and then kicks out at a player close by
@@ -273,7 +273,7 @@ const ENEMY_DEFS = [
   },
   {
     // The Toll Wisp: a hooded robe of blue flame round a small bell. It rings before every shot (the cue to move).
-    id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: 'A robe of blue flame round a little bell. It rings before it shoots. Fragile: close in and cut it down.',
+    id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: 'A robe of blue flame round a little bell. It rings before it shoots. Fragile: close in and cut it down.', autoLock: false,
     scale: 0.9, bulk: 0.96, radius: 0.36, color: 0x8a6432, weapon: 'none', idle: 'sway',
     visual: { skin: 0x9e9484, roughness: 0.75 },
     hp: 60, poise: 20, speed: 2.4, turnRate: 6, trackRate: 3,
