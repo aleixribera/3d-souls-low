@@ -55,8 +55,14 @@ const multiplayer = (() => {
     .online-level{margin:0 0 8px;padding:6px 10px;border:1px solid #8c7951;background:#161b1bef;color:#fff0c9;font:600 15px/1.4 system-ui;text-align:left}
     .online-level[hidden]{display:none}
     #onlineAlive{margin-top:6px;text-align:left;font:11px/1.6 system-ui;max-height:35vh;overflow:auto;pointer-events:auto}
-    #onlineAlive .alive-player{display:flex;gap:8px;justify-content:space-between}#onlineAlive .alive-player span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #onlineAlive .alive-player{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;margin-bottom:6px}#onlineAlive .alive-player span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     #onlineAlive .alive{color:#c4dfad}#onlineAlive .fallen{color:#c4a49d}#onlineAlive strong{white-space:nowrap;font-weight:400}
+    .ally-health{height:4px;background:#050907d9;border:1px solid #7d927354;overflow:hidden;box-sizing:content-box}.ally-health[hidden]{display:none}
+    .ally-health-fill{display:block;width:100%;height:100%;background:linear-gradient(90deg,#65966d,#c5dba0);transform-origin:left;transition:transform .18s linear}
+    #onlineAlive .ally-health{grid-column:1/-1}
+    .online-name{min-width:78px;max-width:190px;box-sizing:border-box;text-align:center}.online-name-text{display:block;overflow:hidden;text-overflow:ellipsis}
+    .online-name .ally-health{margin:4px 0 1px}
+    @media(prefers-reduced-motion:reduce){.ally-health-fill{transition:none}}
     @media(max-width:800px){#onlineParty{top:118px;max-width:180px}}
     #onlineSpectator{position:fixed;z-index:50;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));color:#fff0c9;text-align:center;font:14px/1.5 system-ui}
     #onlineSpectator[hidden],#spectatorControls[hidden]{display:none}
@@ -144,22 +150,44 @@ const multiplayer = (() => {
   window.addEventListener('keydown', ev => { if (!runIntro.hidden) { ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
   party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div><section id="onlineAlive" aria-label="Players alive"></section>';
+  const allyMeters = new Map();
+  function makeAllyHealth(parent, id) {
+    const meter = document.createElement('div'), fill = document.createElement('span');
+    meter.className = 'ally-health'; meter.dataset.playerId = id; meter.setAttribute('role', 'meter');
+    meter.setAttribute('aria-valuemin', '0'); meter.setAttribute('aria-valuemax', String(PLAYER_DEF.stats.maxHp));
+    fill.className = 'ally-health-fill'; meter.appendChild(fill); parent.appendChild(meter);
+    return { meter, fill };
+  }
+  function updateAllyHealth(bar, hp, name) {
+    const known = Number.isFinite(hp), max = PLAYER_DEF.stats.maxHp, value = known ? clamp(hp, 0, max) : 0;
+    const signature = `${known}/${value}/${name}`;
+    if (bar.meter.dataset.health === signature) return;
+    bar.meter.dataset.health = signature; bar.meter.hidden = !known;
+    bar.meter.setAttribute('aria-label', name + ' health');
+    bar.meter.setAttribute('aria-valuenow', String(Math.round(value)));
+    bar.meter.setAttribute('aria-valuetext', `${Math.ceil(value)} of ${max} health`);
+    bar.meter.title = `${name} · ${Math.ceil(value)} / ${max} HP`;
+    bar.fill.style.transform = `scaleX(${value / max})`;
+  }
   function updateAlivePanel() {
     if (!active()) return;
     const players = roster.map(p => {
       const state = p.id === self ? Game.player : remotes.get(p.id)?.samples.at(-1);
       const hp = state?.hp ?? p.hp;
-      return { name: p.name + (p.id === self ? ' (you)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
+      return { id: p.id, hp, name: p.name + (p.id === self ? ' (you)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
     });
-    const signature = JSON.stringify(players), pane = el('onlineAlive');
-    if (pane.dataset.players === signature) return;
-    pane.dataset.players = signature; pane.textContent = '';
-    const title = document.createElement('div'); title.textContent = `PLAYERS ALIVE · ${players.filter(p => p.status === 'Alive').length}/${players.length}`; pane.appendChild(title);
-    for (const p of players) {
-      const row = document.createElement('div'); row.className = 'alive-player ' + (p.status === 'Alive' ? 'alive' : 'fallen');
-      const name = document.createElement('span'), status = document.createElement('strong');
-      name.textContent = p.name; status.textContent = p.status; row.append(name, status); pane.appendChild(row);
+    const signature = JSON.stringify(players.map(({ id, name, status }) => ({ id, name, status }))), pane = el('onlineAlive');
+    if (pane.dataset.players !== signature) {
+      pane.dataset.players = signature; pane.textContent = ''; allyMeters.clear();
+      const title = document.createElement('div'); title.textContent = `PLAYERS ALIVE · ${players.filter(p => p.status === 'Alive').length}/${players.length}`; pane.appendChild(title);
+      for (const p of players) {
+        const row = document.createElement('div'); row.className = 'alive-player ' + (p.status === 'Alive' ? 'alive' : 'fallen');
+        const name = document.createElement('span'), status = document.createElement('strong');
+        name.textContent = p.name; status.textContent = p.status; row.append(name, status); pane.appendChild(row);
+        if (p.id !== self) allyMeters.set(p.id, makeAllyHealth(row, p.id));
+      }
     }
+    for (const p of players) if (allyMeters.has(p.id)) updateAllyHealth(allyMeters.get(p.id), p.hp, p.name);
   }
   const el = id => document.getElementById(id);
   function lobbyControls() {
@@ -605,12 +633,15 @@ const multiplayer = (() => {
       let r = remotes.get(s.id);
       if (!r) {
         const body = new Player(PLAYER_DEF, s.x, s.z, s.yaw, s.y), label = document.createElement('div');
-        label.className = 'online-name'; document.body.appendChild(label);
-        r = { body, label, samples: [] }; remotes.set(s.id, r);
+        label.className = 'online-name'; label.dataset.playerId = s.id; document.body.appendChild(label);
+        const name = document.createElement('span'); name.className = 'online-name-text'; label.appendChild(name);
+        const health = makeAllyHealth(label, s.id);
+        r = { body, label, name, health, samples: [] }; remotes.set(s.id, r);
       }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
-      r.label.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
+      r.name.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
+      updateAllyHealth(r.health, s.hp, s.name);
     }
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
   }

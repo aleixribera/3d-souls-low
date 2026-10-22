@@ -88,6 +88,8 @@ const { createServer } = require('../server/index.cjs');
     await a.setViewportSize({ width: 1280, height: 720 });
     await a.screenshot({ path: '.scratch/spectator/view.png' });
     await die(c); await target(a, bId); await matchesView(a, bView);
+    await a.waitForFunction(() => [...document.querySelectorAll('#onlineAlive .ally-health')].some(el => el.getAttribute('aria-label') === 'Tarnished health' && el.getAttribute('aria-valuenow') === '0'));
+    assert.equal(await a.locator('#onlineAlive .ally-health').count(), 2, 'spectators see health for every teammate, including fallen players');
     assert.equal(await a.locator('#spectatorNext').isDisabled(), true, 'dead teammates are excluded');
     await b.evaluate(() => multiplayer.leave());
     await a.waitForFunction(() => multiplayer.info.spectatorTarget === null);

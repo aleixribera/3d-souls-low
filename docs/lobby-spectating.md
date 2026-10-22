@@ -14,3 +14,9 @@ Checks:
 - `node tests/arena-wipe.cjs` and `node tests/arena-wipe-browser.cjs`: shared attempt and personal respawn rules.
 - `node tests/net-timing.cjs`: camera validation and delta round trips, alongside attack playback checks.
 - `node tests/multiplayer.cjs`, `node tests/multiplayer-browser.cjs`, `node tests/solo-browser.cjs`, `node tests/fullscreen.cjs`, `node tests/autoquality.cjs`: regression coverage.
+
+## Allied health (v7.8.4)
+
+Each teammate has a slim green health meter beneath their world nameplate and beneath their name in the players-alive panel. The panel remains visible while spectating, including when a teammate is off-screen. Meters follow the latest remote pose HP, use `PLAYER_DEF.stats.maxHp`, empty on death and refill on revival or a new boss. Loading players show no invented health value. The local player retains the normal HUD without a duplicate ally meter. Meters include accessible current/max values and hover HP text, and respect reduced motion. Health updates reuse meter nodes rather than rebuilding the roster on each damage tick.
+
+Checks: `tests/boss-only-browser.cjs` covers damage, healing while spectating, both meter locations, narrow layout and boss refills; `tests/spectator-browser.cjs` checks fallen teammates and target switching.
