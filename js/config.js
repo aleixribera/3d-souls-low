@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.8.7';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.8.8';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -273,6 +273,7 @@ const CONFIG = {
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8,
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
+         online: { noticeTime: 7 },
          exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
          text: { restBlocked: 'Enemies too close to rest', exhausted: 'Out of stamina', controller: 'Best played with a controller',
                  // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.

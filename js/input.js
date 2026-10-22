@@ -86,6 +86,6 @@ const input = {
 
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
-const settings = { sensitivity: 5, invert: false, hitboxes: true, fps: true, hudScale: 1, graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true };
+const settings = { sensitivity: 5, invert: false, hitboxes: true, fps: false, hudScale: 1, graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* defaults */ }
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }

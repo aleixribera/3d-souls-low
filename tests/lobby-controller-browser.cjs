@@ -86,6 +86,7 @@ const { createServer } = require('../server/index.cjs');
     await a.screenshot({ path: '.scratch/lobby-controller/name-keyboard.png' });
     await pad(a, 1); await a.setViewportSize({ width: 1280, height: 720 });
     const bId = await b.evaluate(() => multiplayer.info.self), transfer = 'transfer/' + bId;
+    await navigate(a, 'lobbyManage'); await pad(a, 0);
     await navigate(a, transfer);
     await b.locator('#lobbyName').fill('Renamed friend'); await b.locator('#lobbyName').dispatchEvent('change');
     await a.waitForFunction(() => multiplayer.info.players.some(p => p.name === 'Renamed friend'));

@@ -277,7 +277,8 @@ class AudioManager {
   // ---- placing sounds in the world ---------------------------------------------------------------
   // Distance to the player sets the level and a low-pass (far things are duller); the camera's right-hand side sets the pan.
   space(pos) {
-    const S = AUDIO.space, pl = Game.player, ox = pl ? pl.x : camera.position.x, oz = pl ? pl.z : camera.position.z, oy = pl ? pl.y : camera.position.y;
+    const S = AUDIO.space, pl = typeof multiplayer !== 'undefined' ? multiplayer.listener : Game.player,
+      ox = pl ? pl.x : camera.position.x, oz = pl ? pl.z : camera.position.z, oy = pl ? pl.y : camera.position.y;
     const dx = pos.x - ox, dz = pos.z - oz, dy = ((pos.y === undefined ? oy : pos.y) - oy) * 0.5, d = Math.hypot(dx, dz, dy);
     if (d > S.range) return null;
     const t = d / S.range, e = camera.matrixWorld.elements, sp = this.sp;
@@ -302,14 +303,15 @@ class AudioManager {
   }
   watchWorld(now) {
     const g = Game, p = g.player, w = this.watch, M = AUDIO.muffle;
-    if (!p) return;
-    const mood = g.mode === 'pause' ? 'pause' : !p.alive() ? 'death' : 'open';
+    const watching = typeof multiplayer !== 'undefined' && multiplayer.spectating;
+    const mood = g.mode === 'pause' ? 'pause' : p && !p.alive() && !watching ? 'death' : 'open';
     if (mood !== this.mood) {
       this.mood = mood;
       const time = mood === 'pause' ? M.pauseTime : mood === 'death' ? M.deathTime : M.openTime;
       this.mood_f.frequency.cancelScheduledValues(now);
       this.mood_f.frequency.setTargetAtTime(M[mood === 'open' ? 'open' : mood], now, time / 3);
     }
+    if (!p) { w.player = null; return; }
     const idx = Math.floor(p.walkPhase / Math.PI);
     if (p !== w.player) { w.player = p; w.state = p.state; w.step = idx; w.vy = 0; return; }   // a new run: start from where it is
     const s = p.state;
@@ -324,9 +326,10 @@ class AudioManager {
     // Enemies on the move, close by: heavier ones sound lower.
     let played = 0;
     const R2 = AUDIO.steps.range * AUDIO.steps.range;
+    const listener = watching ? multiplayer.listener : p;
     for (const e of g.enemies) {
       if (e.asleep || e.hp <= 0) continue;
-      const dx = e.x - p.x, dz = e.z - p.z;
+      const dx = e.x - listener.x, dz = e.z - listener.z;
       if (dx * dx + dz * dz > R2) continue;
       const k = Math.floor(e.walkPhase / Math.PI), prev = w.enemySteps.get(e);
       w.enemySteps.set(e, k);

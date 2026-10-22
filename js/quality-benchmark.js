@@ -3,6 +3,11 @@
 const qualityBenchmark = (() => {
   const A = CONFIG.VISUALS.autoQuality, B = A.stage;
   function measure(preset, device) {
+    const gl = renderer.getContext();
+    if (gl.isContextLost()) throw new Error('The 3D graphics context is unavailable.');
+    // WebGL errors persist across unrelated draws. Start this measurement with
+    // a clean error queue; run() still rejects errors from the benchmark itself.
+    while (gl.getError() !== gl.NO_ERROR) { /* discard errors from prior rendering */ }
     const q = CONFIG.VISUALS.quality[preset];
     const ratio = Math.min(device.pixelRatio || 1, q.maxPixelRatio) * q.renderScale;
     const width = Math.max(1, Math.round(device.width * ratio)), height = Math.max(1, Math.round(device.height * ratio));

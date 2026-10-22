@@ -63,6 +63,7 @@ fs.mkdirSync(output, { recursive: true });
       finally { gamepad.read = read; gamepad.release(); }
     });
     await until(() => app.clients.get(leaderId).lastActivity === activityClock);
+    await b.locator('#lobbyManage').click();
     await b.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Aleix/ }).getByRole('button', { name: 'Make leader' }).click();
     await a.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
     console.log('Keyboard/controller activity, five-minute AFK handoff and lobby controls on both browsers passed.');
@@ -117,6 +118,7 @@ fs.mkdirSync(output, { recursive: true });
     await c.waitForFunction(() => __arena.multiplayer.info.ready && Game.duel.hp === 3176, { timeout: 90000 });
     assert.equal(app.clients.size, 3);
     await a.evaluate(() => multiplayer.show());
+    await a.locator('#lobbyManage').click();
     await a.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Friend/ }).getByRole('button', { name: 'Make leader' }).click();
     await b.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
     await b.evaluate(() => multiplayer.show());

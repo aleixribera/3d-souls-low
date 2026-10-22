@@ -41,6 +41,7 @@ const hud = {
   healTimer: 0, hurtTimer: 0, refundTimer: 0, deniedTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
+    const online = typeof multiplayer !== 'undefined' && multiplayer.connected, run = online && multiplayer.gauntlet;
     this.controlsTipsRows.textContent = '';
     const basics = [
       ['Attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
@@ -62,7 +63,8 @@ const hud = {
       ['Parry', `${bindLabel('parry')} just before the blow lands`],
       ['Lock-on', bindLabel('lock')], ['Switch target', `${bindLabel('switchTarget')} while locked on`],
       ['Rest at bonfire', bindLabel('rest')], ['Use flask', bindLabel('flask')], ['Talk / read', bindLabel('talk')],
-      ['Restart', `${systemLabel('restart')} twice`], ['Pause', systemLabel('pause')], ['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`],
+      online ? ['Lobby', systemLabel('restart')] : ['Restart', `${systemLabel('restart')} twice`],
+      [online ? 'Game menu' : 'Pause', systemLabel('pause')], ['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`],
     ];
     const table = $('helpTable'); table.textContent = '';
     for (const [k, v] of rows) {
@@ -71,9 +73,12 @@ const hud = {
     $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
-    $('wonHint').textContent = game.eldenBoss ? CONFIG.elden.victoryHint : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
+    $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
+      : online ? 'Open the lobby to choose your next fight.' : game.eldenBoss ? CONFIG.elden.victoryHint : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
-    $('completeHint').textContent = game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
+    const road = online && multiplayer.campaign;
+    $('completeHint').textContent = road ? road.next ? 'Next chapter incoming… Your party continues together.' : 'Adventure complete. Open the lobby to choose what comes next.'
+      : game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.pExhaust.textContent = CONFIG.hud.text.exhausted;
     this.promptKey.textContent = keycap(bindLabel('rest'));
@@ -308,7 +313,8 @@ const hud = {
     const waitingForTeam = typeof multiplayer !== 'undefined' && multiplayer.waitingForTeamWipe;
     $('diedStatus').textContent = waitingForTeam ? game.duelWon() ? 'Boss defeated' : 'Waiting for your team…' : 'Returning to the last bonfire…';
     if (waitingForTeam)
-      this.diedTip.textContent = game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
+      this.diedTip.textContent = multiplayer.gauntlet ? game.duelWon() ? multiplayer.gauntlet.next ? 'Next boss incoming. You return with full health.' : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.'
+        : game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
     this.wasAlive = p.alive();
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
     const tut = game.tut, step = game.currentStep();

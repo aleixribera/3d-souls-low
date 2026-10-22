@@ -89,8 +89,8 @@ const Game = {
         items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
       bosses: { title: 'COMBAT ARENA 3D', sub: 'THE BOSSES OF ASHMERE', back: 'arena',
         items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
-      pause: { title: 'PAUSED', sub: '', overlay: true, items: pauseItems },
-      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main', back: this.optionsFrom === 'main' ? 'main' : 'pause', items: [
+      pause: { title: online ? 'ONLINE' : 'PAUSED', sub: online ? 'THE WORLD KEEPS RUNNING' : '', overlay: true, items: pauseItems },
+      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
         { name: `Fullscreen: ${onOff(!!document.fullscreenElement)}`, desc: 'Fill the screen. Escape exits fullscreen.', go: () => fullscreen.toggle() },
         { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
@@ -113,7 +113,7 @@ const Game = {
           go: () => {
             settings.graphics = 'auto'; autoQuality.recheck(); saveSettings(); applySettings(); this.showMenu('options', true);
           } },
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.optionsFrom === 'main' ? 'main' : 'pause') },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause') },
       ] },
     };
   },
@@ -128,10 +128,11 @@ const Game = {
     this.select(Math.max(0, selected));
   },
   showMenu(screen, keepSelection) {
+    if (screen === 'lobby') { multiplayer.show(); return; }
     if (screen !== 'tutorialQuality') this.tutorialQualityStart = null;
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
-    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main');   // options open from the title or from a pause
+    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()));
     if (!inGame) {
       this.mode = 'menu';
       this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu

@@ -3038,6 +3038,8 @@
   test('Auto quality: 3D benchmark restores the renderer and leaves every live actor untouched', () => {
     const roots = [...scene.children], player = Game.player, enemies = Game.enemies, detail = KIT.detail();
     const target = renderer.getRenderTarget(), viewport = renderer.getViewport(new THREE.Vector4()), shadows = renderer.shadowMap.enabled;
+    // An unrelated earlier draw must not make a valid graphics check fail.
+    renderer.getContext().bindTexture(-1, null);
     const result = qualityBenchmark.measure('high', { width: 640, height: 360, pixelRatio: 1 });
     expect.ok(Number.isFinite(result.ms) && result.frames > 0 && result.method === 'synchronized-3d-frames', 'real frames were measured');
     expect.ok(result.width === 640 && result.height === 360, 'actual candidate resolution is measured');

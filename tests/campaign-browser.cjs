@@ -2,7 +2,11 @@
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
-const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
+const campaign = process.env.ARENA_CAMPAIGN || 'lands';
+assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');
+const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle']
+  : ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
+const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combatArena.complete' : 'combatArena.complete.haligtree';
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -27,24 +31,24 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
   async function ready(page, id) {
     await page.waitForFunction(id => __arena.multiplayer.info.ready && Game.level.id === id && Game.loading <= 0, id, { timeout: 90000 });
     assert.equal(await page.evaluate(() => Game.story), false);
-    assert.equal(await page.evaluate(() => document.getElementById('lobbyAdventure').value), 'campaign/lands');
+    assert.equal(await page.evaluate(() => document.getElementById('lobbyAdventure').value), `campaign/${campaign}`);
   }
   try {
     const a = await player('Leader'), b = await player('Friend');
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'boss gauntlet is selected by default');
-    await a.locator('#lobbyAdventure').selectOption('campaign/lands');
+    await a.locator('#lobbyAdventure').selectOption(`campaign/${campaign}`);
     await a.locator('#lobbyStart').click();
     for (let i = 0; i < chapters.length; i++) {
       await Promise.all([ready(a, chapters[i]), ready(b, chapters[i])]);
       for (const p of [a, b]) {
-        await p.waitForFunction(number => document.querySelector('#onlineCurrentLevel').textContent === `Level ${number}/8`, i + 1);
+        await p.waitForFunction(({ number, total }) => document.querySelector('#onlineCurrentLevel').textContent === `Level ${number}/${total}`, { number: i + 1, total: chapters.length });
         assert.equal(await p.locator('#onlineCurrentLevel').isVisible(), true, 'current level stays visible during play');
-        assert.equal(await p.locator('#lobbyCurrentLevel').textContent(), `Level ${i + 1}/8`,
+        assert.equal(await p.locator('#lobbyCurrentLevel').textContent(), `Level ${i + 1}/${chapters.length}`,
           'lobby uses the actual shared chapter');
         assert.deepEqual(await p.evaluate(() => ({ chapter: multiplayer.campaign.number, total: multiplayer.campaign.total,
           next: Game.nextLevelId(), card: Game.levelCard(Game.level.id) })), {
-          chapter: i + 1, total: 8, next: chapters[i + 1] || null,
-          card: [app.sim.campaign('lands', chapters[i]).title, app.sim.campaign('lands', chapters[i]).line],
+          chapter: i + 1, total: chapters.length, next: chapters[i + 1] || null,
+          card: [app.sim.campaign(campaign, chapters[i]).title, app.sim.campaign(campaign, chapters[i]).line],
         });
       }
       if (i === chapters.length - 1) {
@@ -67,7 +71,7 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
     for (const p of [a, b]) {
       await p.locator('#ending .back.show').waitFor({ timeout: 20000 });
       assert.equal(await p.locator('#ending .card').allTextContents().then(cards => cards.join('\n')),
-        await p.evaluate(() => LORE.endings.haligtree.join('\n')), 'canonical Lands Between ending');
+        await p.evaluate(id => (LORE.endings[id] || LORE.ending).join('\n'), ending), 'canonical campaign ending');
       const epoch = await p.evaluate(() => multiplayer.info.session.epoch);
       await p.keyboard.press('Enter');
       await p.locator('#publicLobby:not(.hidden)').waitFor();
@@ -77,12 +81,12 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
       assert.equal(await p.evaluate(() => Game.story), false);
       assert.deepEqual(await p.evaluate(() => ['', '.lands'].map(s => localStorage.getItem('combatArena.story' + s))),
         Array(2).fill('offline-save-sentinel'), 'co-op never writes solo saves');
-      assert.equal(await p.evaluate(() => localStorage.getItem('combatArena.complete.haligtree')), null, 'co-op never writes solo completion');
+      assert.equal(await p.evaluate(key => localStorage.getItem(key), completionKey), null, 'co-op never writes solo completion');
     }
     const late = await player('Late friend');
-    await ready(late, 'haligtree');
-    assert.equal(await late.evaluate(() => multiplayer.campaign.number), 8);
-    await late.waitForFunction(() => document.querySelector('#onlineCurrentLevel').textContent === 'Level 8/8');
+    await ready(late, ending);
+    assert.equal(await late.evaluate(() => multiplayer.campaign.number), chapters.length);
+    await late.waitForFunction(total => document.querySelector('#onlineCurrentLevel').textContent === `Level ${total}/${total}`, chapters.length);
     await late.evaluate(() => { Object.assign(CONFIG.finale.ending, { card: 0.05, credits: 0.05, hold: 0.05 }); });
     await late.locator('#ending .back.show').waitFor({ timeout: 25000 });
     await a.locator('#lobbyReturn').click();
@@ -93,6 +97,6 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
       assert.equal(await p.locator('#onlineParty').isVisible(), false);
     }
     assert.deepEqual(errors, []);
-    console.log('Campaign browsers: default choice, all eight maps, automatic party travel, chapter cards, ending, late join and untouched solo saves passed.');
+    console.log(`Campaign browsers (${campaign}): default choice, all ${chapters.length} maps, automatic party travel, chapter cards, ending, late join and untouched solo saves passed.`);
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

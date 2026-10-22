@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.8.7: Minimal Controls Tips
+# Combat Arena 3D — v7.8.8: Public Lobby Polish
+
+**v7.8.8:** A redesigned public lobby puts the adventure and Start action first, with a compact party list, optional controls and management, and direct access to Options. Clearer connection recovery, keyboard/controller focus, a quieter online HUD, smoother teammate walking and spectator-centered audio improve the full co-op flow. Controls tips no longer replay between bosses or chapters. See [the audit](docs/public-lobby-polish-v7.8.8.md).
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 

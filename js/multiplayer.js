@@ -3,58 +3,97 @@
 CONFIG.multiplayer = ArenaNet.config;
 const multiplayer = (() => {
   const C = CONFIG.multiplayer;
-  let socket = null, self = null, leader = null, catalog = null, session = null, connected = false;
+  let socket = null, self = null, leader = null, catalog = null, session = null, connected = false, capacity = C.defaultCapacity;
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, adventureBeforeEdit = null, nameDraft = '', nameLowercase = false;
+  let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
+  const labelPosition = new THREE.Vector3();
   const decoder = new ArenaNet.FrameDecoder(), tracks = new Map();
   const heldActivity = new Set();
   let activityPending = false, lastActivitySent = -Infinity;
   const hitIds = new WeakMap();
   const panel = document.createElement('section');
-  panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('aria-label', 'Public lobby');
-  panel.innerHTML = `<div class="lobby-card"><h1>PUBLIC LOBBY</h1><p id="lobbyStatus" role="status">Connecting…</p>
+  panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'lobbyTitle');
+  panel.innerHTML = `<div class="lobby-card">
+    <header class="lobby-header"><div><p class="lobby-kicker">COMBAT ARENA · ONLINE</p><h1 id="lobbyTitle">Public lobby</h1></div>
+    <span id="lobbyConnection" class="lobby-connection">Connecting</span></header>
+    <p id="lobbyStatus" role="status" aria-live="polite">Connecting…</p>
+    <p id="lobbyNotice" role="alert" hidden></p>
+    <div class="lobby-layout"><section class="lobby-adventure" aria-label="Adventure">
     <div id="lobbyCurrentLevel" class="online-level" hidden></div>
-    <label>Your name <input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name"></label>
+    <div id="lobbyLeader"><label for="lobbyAdventure">Choose your adventure</label><select id="lobbyAdventure" aria-describedby="lobbyAdventureSummary"></select>
+    <p id="lobbyAdventureSummary" class="lobby-summary"></p>
+    <div class="lobby-actions lobby-primary"><button id="lobbyResume">Return to game</button><button id="lobbyStart">Start together</button></div>
+    <div id="lobbyRunActions" class="lobby-actions" hidden><button id="lobbyRestart">Restart level</button>
+    <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
+    <div id="lobbyWaiting"><p class="lobby-summary">Gathering your party…</p><button id="lobbyGuestResume">Return to game</button></div>
+    <button id="lobbyRetry" hidden>Try again</button>
+    <p id="lobbyLiveWarning" class="lobby-hint" hidden>The world keeps running while you are here.</p>
+    </section><section class="lobby-party" aria-labelledby="lobbyPartyTitle">
+    <div class="lobby-section-title"><h2 id="lobbyPartyTitle">Your party</h2><span id="lobbyCount"></span></div>
+    <label for="lobbyName">Your name</label><input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name" spellcheck="false">
     <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
-    <section class="lobby-controls" aria-labelledby="lobbyControlsTitle"><h2 id="lobbyControlsTitle">Basic controls</h2>
+    <button id="lobbyManage" class="lobby-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button>
+    </section></div>
+    <footer class="lobby-footer"><div class="lobby-actions"><button id="lobbyHelp" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
+    <button id="lobbyOptions">Options</button></div><button id="lobbyLeave" class="lobby-text-button">Leave lobby</button></footer>
+    <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><h2 id="lobbyControlsTitle">Basic controls</h2>
     <p id="lobbyControlsDevice"></p><dl id="lobbyControlsList"></dl>
-    <p class="lobby-controls-tip">Attacks, rolls and blocking use stamina. Ease off to let it refill.</p></section>
-    <div id="lobbyLeader"><label>Adventure <select id="lobbyAdventure"></select></label>
-    <div class="lobby-actions"><button id="lobbyStart">Start together</button><button id="lobbyRestart">Restart level</button>
-    <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
-    <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
+    <p class="lobby-controls-tip">Attacks, rolls and blocking use stamina. Ease off to let it refill. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
     <p id="lobbyPadHint" class="lobby-hint"></p>
-    <p class="lobby-hint">BOSS ONLY is selected by default. Story chapters continue automatically. BOSS ONLY pits the party against every boss in a row: fallen players spectate, everyone refills between bosses, and a team wipe ends the run. Leadership passes on after five minutes without input.</p></div>`;
+    </div>`;
   const style = document.createElement('style');
-  style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
-    #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}
-    #publicLobby h1{letter-spacing:.15em;font-size:24px;margin:0 0 12px}#publicLobby label{display:block;margin:16px 0 8px}
-    #publicLobby input,#publicLobby select{display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:6px;background:#23282a;color:#eee6d6;border:1px solid #746448;font:inherit}
-    #publicLobby button{padding:10px 14px;background:#2c302e;color:#eee6d6;border:1px solid #817047;cursor:pointer;font:inherit}#publicLobby button:hover,#publicLobby button:focus-visible{background:#474737;outline:2px solid #d1b674}
-    #publicLobby button:disabled{opacity:.4;cursor:default}#publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}#publicLobby .lobby-player{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #393c38}
-    #publicLobby.lobby-pad .pad-selected{outline:2px solid #efd393;outline-offset:3px;background:#474737}
+  style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 25%,#211d15eb,#08090bf7 75%);color:#e8dfcd;font:14px/1.5 system-ui,sans-serif;padding:24px;overflow:auto;box-sizing:border-box;color-scheme:dark}
+    #publicLobby.hidden,#publicLobby [hidden]{display:none!important}#publicLobby *{box-sizing:border-box}
+    #publicLobby .lobby-card{width:min(860px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:32px;border:1px solid #74613d66;background:linear-gradient(140deg,#1c1c19,#101415);box-shadow:0 24px 90px #0008;scrollbar-width:thin;scrollbar-color:#756443 transparent;animation:lobby-arrive .22s ease-out}
+    #publicLobby .lobby-header{display:flex;align-items:center;justify-content:space-between;gap:16px}#publicLobby h1{font:400 clamp(28px,4vw,38px)/1.2 Georgia,serif;letter-spacing:.04em;margin:4px 0 0;color:#f2e6cb}
+    #publicLobby .lobby-kicker{font-size:10px;letter-spacing:.22em;color:#b4a17c;margin:0}
+    #publicLobby .lobby-connection{flex:none;font-size:11px;color:#c3c5b4;border:1px solid #6b755d66;border-radius:20px;padding:5px 10px}
+    #publicLobby .lobby-connection:before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#b7a377;margin-right:7px}#publicLobby[data-connected=true] .lobby-connection:before{background:#a9c68e}
+    #lobbyStatus{margin:12px 0 24px;color:#b7b4a9;font-size:13px}#publicLobby .lobby-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.8fr);gap:32px}
+    #publicLobby .lobby-adventure{min-width:0}#publicLobby .lobby-party{min-width:0;border-left:1px solid #74613d3d;padding-left:28px}
+    #publicLobby h2{font-size:14px;font-weight:500;margin:0;color:#d9c797}#publicLobby .lobby-section-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:14px}#lobbyCount{font-size:11px;color:#a9aa9d}
+    #publicLobby label{display:block;margin:0 0 7px;color:#b7b4a9;font-size:12px}#publicLobby input,#publicLobby select{display:block;width:100%;padding:12px;background:#090d0e88;color:#f0e5ca;border:1px solid #7c6a484d;font:inherit;border-radius:3px;min-height:44px}
+    #publicLobby input:focus-visible,#publicLobby select:focus-visible{outline:2px solid #d5b574;outline-offset:3px}
+    #publicLobby select{font:18px Georgia,serif;padding:14px 12px}#publicLobby select option,#publicLobby select optgroup{background:#161a19}
+    #publicLobby button{min-height:40px;padding:9px 13px;background:#ffffff05;color:#d9d3c2;border:1px solid #8b78504d;border-radius:3px;cursor:pointer;font:inherit;transition:background .15s,color .15s,border-color .15s}
+    #publicLobby button:hover{background:#cdb07416;border-color:#b69a61}#publicLobby button:focus-visible,#publicLobby.lobby-pad .pad-selected{outline:2px solid #efd393;outline-offset:3px;background:#cdb07416}
+    #publicLobby button:disabled{opacity:.4;cursor:default}#publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+    #publicLobby .lobby-summary{min-height:4.5em;color:#a8a99f;line-height:1.7;margin:14px 0 20px;font-size:13px}#publicLobby .lobby-primary{margin:0 0 18px}
+    #publicLobby .lobby-primary button{flex:1;min-height:46px}#publicLobby .lobby-primary #lobbyStart,#publicLobby #lobbyGuestResume{background:linear-gradient(110deg,#dcc28c,#b99a60);color:#201c13;border-color:#dfc58d;font-weight:600}
+    #publicLobby[data-running=true] .lobby-primary #lobbyStart{background:#ffffff05;color:#d9d3c2;border-color:#8b78504d;font-weight:400}#publicLobby[data-running=true] #lobbyResume{background:linear-gradient(110deg,#dcc28c,#b99a60);color:#201c13;font-weight:600}
+    #publicLobby #lobbyRunActions{padding-top:16px;border-top:1px solid #74613d33}#publicLobby #lobbyRunActions button{font-size:12px}
+    #publicLobby .lobby-player{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #74613d26}#publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#publicLobby .lobby-player-role{font-size:10px;color:#d5bb7d}
+    #lobbyPlayers{max-height:180px;overflow:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent;margin:4px 0 8px}
+    #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px}#publicLobby.managing-party .lobby-player-actions{display:flex}#publicLobby .lobby-player button{font-size:11px;padding:4px 8px;min-height:32px}#publicLobby .lobby-text-button{border-color:transparent;background:transparent;font-size:12px;color:#aaa99e}
+    #publicLobby .lobby-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px;padding-top:18px;border-top:1px solid #74613d3d}#publicLobby .lobby-footer .lobby-actions{margin:0}#publicLobby .lobby-footer button{font-size:12px}
+    #lobbyNotice{padding:10px 12px;border-left:2px solid #d1ad66;background:#c4a45e0b;color:#dfc990;font-size:12px;margin:0 0 20px;overflow-wrap:anywhere}#publicLobby .lobby-hint{font:12px/1.6 system-ui;color:#a8a99f}#lobbyPadHint:empty{display:none}
     #publicLobby .lobby-name-editor{margin:12px 0;padding:12px;border:1px solid #817047;background:#1b2221}
     #lobbyNameEditor[hidden]{display:none}#lobbyNamePreview{display:block;min-height:1.5em;padding:8px;margin-bottom:10px;background:#111817;color:#fff0c9;white-space:pre-wrap;overflow-wrap:anywhere}
     #lobbyNameKeys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}#publicLobby #lobbyNameKeys button{min-height:40px;padding:6px 0;font:14px system-ui}
+    #publicLobby.editing-name .lobby-layout{grid-template-columns:1fr}#publicLobby.editing-name .lobby-adventure{display:none}#publicLobby.editing-name .lobby-party{padding:0;border:0}
     #publicLobby #lobbyNameKeys .name-action{grid-column:span 2;font-size:12px}#publicLobby select[size]{max-height:220px}
-    #publicLobby .lobby-player span{flex:1}#publicLobby .lobby-player button{font-size:13px;padding:6px 9px}#lobbyNotice{color:#efd393;min-height:1.3em}#publicLobby .lobby-hint{font:13px/1.6 system-ui;color:#aaa99f}
-    #publicLobby .lobby-controls{margin:18px 0;padding:14px;background:#1c2223;border:1px solid #454b43;font:14px/1.5 system-ui}
-    #publicLobby .lobby-controls h2{margin:0;font-size:18px;color:#efd393}#lobbyControlsDevice{margin:2px 0 10px;color:#bdbeb3;font-size:12px}
+    #publicLobby .lobby-controls{margin:18px 0 0;padding:16px;background:#090d0e66;border:1px solid #74613d3d;font:13px/1.5 system-ui}
+    #publicLobby .lobby-controls h2{margin:0;color:#d9c797}#lobbyControlsDevice{margin:2px 0 14px;color:#a8a99f;font-size:11px}
     #lobbyControlsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 24px;margin:0}
     #lobbyControlsList div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}#lobbyControlsList dt{color:#c7c9c0}#lobbyControlsList dd{margin:0;text-align:right;color:#fff1cf;font-weight:600}
     #publicLobby .lobby-controls-tip{margin:12px 0 0;color:#bdbeb3;font-size:12px}
-    @media(max-width:600px){#lobbyControlsList{grid-template-columns:1fr}#publicLobby{padding:12px}#publicLobby .lobby-card{padding:16px;box-sizing:border-box}}
-    #onlineParty{position:fixed;right:18px;top:42px;z-index:25;max-width:240px;pointer-events:none;color:#e9e1ca;font:12px/1.7 system-ui;text-align:right;text-shadow:0 1px 3px #000;background:#10151599;padding:8px 12px;border-left:2px solid #8c7951}
-    .online-level{margin:0 0 8px;padding:6px 10px;border:1px solid #8c7951;background:#161b1bef;color:#fff0c9;font:600 15px/1.4 system-ui;text-align:left}
+    @keyframes lobby-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:650px){#publicLobby{padding:12px}#publicLobby .lobby-card{padding:22px;max-height:calc(100dvh - 24px)}#publicLobby .lobby-layout{grid-template-columns:1fr;gap:22px}#publicLobby .lobby-party{border-left:0;padding-left:0;border-top:1px solid #74613d3d;padding-top:18px}#publicLobby .lobby-summary{min-height:0}#lobbyControlsList{grid-template-columns:1fr}#lobbyPlayers{max-height:130px}#publicLobby .lobby-header{align-items:flex-start}#publicLobby .lobby-connection{margin-top:4px}#publicLobby .lobby-footer{margin-top:18px}}
+    @media(max-height:520px) and (min-width:651px){#publicLobby .lobby-card{padding:20px}#publicLobby h1{font-size:28px}#lobbyStatus{margin:8px 0 14px}#publicLobby .lobby-summary{min-height:0;font-size:12px;line-height:1.5;margin:10px 0 14px}}
+    #onlineParty{position:fixed;right:18px;top:42px;z-index:25;width:190px;max-width:calc(100vw - 36px);pointer-events:none;color:#e9e1ca;font:12px/1.6 system-ui;text-shadow:0 1px 3px #000;background:linear-gradient(110deg,#101515b8,#10151560);padding:8px 10px;border-left:1px solid #8c79516b}
+    .online-level{margin:0 0 8px;color:#e3cea0;font:500 12px/1.4 system-ui;text-align:left;letter-spacing:.03em}
     .online-level[hidden]{display:none}
-    #onlineAlive{margin-top:6px;text-align:left;font:11px/1.6 system-ui;max-height:35vh;overflow:auto;pointer-events:auto}
+    #onlinePartyDetails{color:#abae9f;font-size:10px}#onlineAlive{margin-top:6px;text-align:left;font:11px/1.6 system-ui;max-height:22vh;overflow:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent}
+    #onlineAlive .alive-title{color:#b9b7a7;font-size:10px;letter-spacing:.06em;margin-bottom:6px}
     #onlineAlive .alive-player{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;margin-bottom:6px}#onlineAlive .alive-player span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     #onlineAlive .alive{color:#c4dfad}#onlineAlive .fallen{color:#c4a49d}#onlineAlive strong{white-space:nowrap;font-weight:400}
     .ally-health{height:4px;background:#050907d9;border:1px solid #7d927354;overflow:hidden;box-sizing:content-box}.ally-health[hidden]{display:none}
@@ -62,8 +101,8 @@ const multiplayer = (() => {
     #onlineAlive .ally-health{grid-column:1/-1}
     .online-name{min-width:78px;max-width:190px;box-sizing:border-box;text-align:center}.online-name-text{display:block;overflow:hidden;text-overflow:ellipsis}
     .online-name .ally-health{margin:4px 0 1px}
-    @media(prefers-reduced-motion:reduce){.ally-health-fill{transition:none}}
-    @media(max-width:800px){#onlineParty{top:118px;max-width:180px}}
+    @media(prefers-reduced-motion:reduce){.ally-health-fill,#publicLobby button{transition:none}#publicLobby .lobby-card{animation:none}}
+    @media(max-width:800px){#onlineParty{top:118px;width:155px;right:12px;font-size:11px}}
     #onlineSpectator{position:fixed;z-index:50;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));color:#fff0c9;text-align:center;font:14px/1.5 system-ui}
     #onlineSpectator[hidden],#spectatorControls[hidden]{display:none}
     #spectatorControls{padding:10px 12px;background:#111817f2;border:1px solid #8c7951;box-shadow:0 6px 24px #0008}
@@ -176,9 +215,9 @@ const multiplayer = (() => {
     const signature = JSON.stringify(players.map(({ id, name, status }) => ({ id, name, status }))), pane = el('onlineAlive');
     if (pane.dataset.players !== signature) {
       pane.dataset.players = signature; pane.textContent = ''; allyMeters.clear();
-      const title = document.createElement('div'); title.textContent = `PLAYERS ALIVE · ${players.filter(p => p.status === 'Alive').length}/${players.length}`; pane.appendChild(title);
+      const title = document.createElement('div'); title.className = 'alive-title'; title.textContent = `PLAYERS ALIVE · ${players.filter(p => p.status === 'Alive').length}/${players.length}`; pane.appendChild(title);
       for (const p of players) {
-        const row = document.createElement('div'); row.className = 'alive-player ' + (p.status === 'Alive' ? 'alive' : 'fallen');
+        const row = document.createElement('div'); row.className = 'alive-player ' + p.status.toLowerCase();
         const name = document.createElement('span'), status = document.createElement('strong');
         name.textContent = p.name; status.textContent = p.status; row.append(name, status); pane.appendChild(row);
         if (p.id !== self) allyMeters.set(p.id, makeAllyHealth(row, p.id));
@@ -202,7 +241,7 @@ const multiplayer = (() => {
       if (!document.activeElement.classList.contains('pad-selected')) focusLobbyControl(document.activeElement);
       return document.activeElement;
     }
-    const preferred = [el('lobbyAdventure'), el('lobbyResume'), el('lobbyName')].find(node => controls.includes(node));
+    const preferred = [el('lobbyResume'), el('lobbyGuestResume'), el('lobbyAdventure'), el('lobbyRetry'), el('lobbyName')].find(node => controls.includes(node));
     const next = preferred || controls[0]; focusLobbyControl(next); return next;
   }
   function updateLobbyPadHint() {
@@ -220,6 +259,7 @@ const multiplayer = (() => {
   function closeNameEditor(save = false, restoreFocus = true) {
     if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
     el('lobbyNameEditor').hidden = true;
+    panel.classList.remove('editing-name');
     if (restoreFocus) focusLobbyControl(el('lobbyName'));
     updateLobbyPadHint();
   }
@@ -246,12 +286,14 @@ const multiplayer = (() => {
   }
   function openNameEditor() {
     closeAdventurePicker(true); nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
+    panel.classList.add('editing-name');
     el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
   }
   function lobbyBack() {
     if (!wipeScreen.hidden) return;
     if (!el('lobbyNameEditor').hidden) closeNameEditor();
     else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
+    else if (!el('lobbyControls').hidden) { el('lobbyHelp').click(); el('lobbyHelp').focus(); }
     else if (active()) hide();
     else leave();
   }
@@ -275,21 +317,28 @@ const multiplayer = (() => {
     const target = remotes.get(spectatorTarget), latest = target?.samples[target.samples.length - 1];
     const text = (id, value) => { const node = el(id); if (node.textContent !== value) node.textContent = value; };
     text('spectatorName', latest?.name || 'Waiting for a teammate…');
-    el('spectatorPrevious').disabled = el('spectatorNext').disabled = spectatorCandidates().length < 2;
+    const canSwitch = spectatorCandidates().length > 1;
+    for (const id of ['spectatorPrevious', 'spectatorNext']) {
+      const arrow = el(id); arrow.disabled = !canSwitch; arrow.hidden = !canSwitch;
+      if (!canSwitch && document.activeElement === arrow) el('spectatorToggle').focus();
+    }
     el('spectatorControls').hidden = !spectatorBarOpen;
     text('spectatorToggle', (spectatorBarOpen ? 'Hide' : 'Show') + ' spectator bar · ' + (usingPad() ? 'X / □' : 'Tab'));
     el('spectatorToggle').setAttribute('aria-expanded', String(spectatorBarOpen));
-    text('spectatorHint', usingPad() ? 'LB / L1 · RB / R1 to switch · Menu / Options to pause' : '← / → to switch · Escape to pause');
+    text('spectatorHint', (canSwitch ? usingPad() ? 'LB / L1 · RB / R1 to switch · ' : '← / → to switch · ' : '')
+      + (usingPad() ? 'Menu / Options opens menu' : 'Escape opens menu'));
   }
   function switchSpectator(direction) {
     const candidates = spectatorCandidates(), at = candidates.findIndex(([id]) => id === spectatorTarget);
     if (candidates.length) spectatorTarget = candidates[(at + direction + candidates.length) % candidates.length][0];
     updateSpectatorBar();
+    events.emit('menuMove');
   }
   function toggleSpectatorBar() {
     spectatorBarOpen = !spectatorBarOpen;
     if (!spectatorBarOpen && el('spectatorControls').contains(document.activeElement)) el('spectatorToggle').focus();
     updateSpectatorBar();
+    events.emit('menuConfirm');
   }
   el('spectatorPrevious').onclick = () => switchSpectator(-1);
   el('spectatorNext').onclick = () => switchSpectator(1);
@@ -302,7 +351,6 @@ const multiplayer = (() => {
     spectatorViewApplied = false;
   }
   function applySpectatorView() {
-    updateAlivePanel();
     const waiting = waitingForTeamWipe();
     if (waiting && !spectatorWasWaiting) {
       spectatorBarOpen = true; input.clear();
@@ -358,17 +406,22 @@ const multiplayer = (() => {
       ['Dodge / roll', bindLabel('roll')], ['Jump', bindLabel('jump')],
       ['Block (hold)', bindLabel('block')], ['Parry', bindLabel('parry')],
       ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
-      ['Rest / talk / read', bindLabel('rest')], ['Pause menu', systemLabel('pause')],
+      ['Rest at bonfire', bindLabel('rest')], ['Game menu', systemLabel('pause')],
     ];
     const list = el('lobbyControlsList'); list.textContent = '';
     for (const [action, binding] of rows) {
       const row = document.createElement('div'), name = document.createElement('dt'), keys = document.createElement('dd');
       name.textContent = action; keys.textContent = keycap(binding); row.append(name, keys); list.appendChild(row);
     }
+    el('lobbyTalkKey').textContent = keycap(bindLabel('talk'));
   }
   events.on('device', buildControls);
   buildControls();
-  const notice = s => { el('lobbyNotice').textContent = s; };
+  let noticeTimer = null;
+  const notice = (s, transient = false) => {
+    clearTimeout(noticeTimer); el('lobbyNotice').textContent = s; el('lobbyNotice').hidden = !s;
+    if (s && transient) noticeTimer = setTimeout(() => notice(''), CONFIG.hud.online.noticeTime * 1000);
+  };
   let savedName = '';
   try { savedName = localStorage.getItem('combatArena.onlineName') || ''; } catch {}
   el('lobbyName').value = savedName;
@@ -396,20 +449,38 @@ const multiplayer = (() => {
   window.addEventListener('blur', () => { heldActivity.clear(); activityPending = false; });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { heldActivity.clear(); activityPending = false; } });
   function command(type, data = {}) { if (ready) send({ type, epoch: session.epoch, seq: ++seq, ...data }); }
-  function control(action, data = {}) { send({ type: 'control', action, ...data }); }
+  function clearControlPending() { clearTimeout(controlDeadline); controlDeadline = null; controlPending = null; }
+  function control(action, data = {}) {
+    if (!connected || self !== leader || controlPending) return;
+    if (['start', 'restart', 'next', 'lobby'].includes(action)) {
+      controlPending = action; notice(''); updateRoster();
+      controlDeadline = setTimeout(() => { clearControlPending(); updateRoster(); notice('The request did not finish. Please try again.'); }, C.connectTimeout);
+    }
+    send({ type: 'control', action, ...data });
+  }
+  function closePanel() {
+    panel.classList.add('hidden');
+    el('menu').inert = false; hud.root.inert = false;
+    if (panel.contains(document.activeElement)) document.activeElement.blur();
+  }
+  function overlayVisibility() {
+    party.hidden = !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
+    if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
+  }
   function show() {
     closeNameEditor(false, false); closeAdventurePicker(true);
     lobbyPadDirection = null; lobbyPadTimer = 0;
     panel.classList.remove('hidden');
+    el('menu').inert = true; hud.root.inert = true;
     if (document.pointerLockElement) document.exitPointerLock();
     input.clear();
     if (active()) Game.mode = 'pause';
     el('menu').classList.add('hidden');
     document.body.classList.remove('no-cursor');
-    updateRoster();
-    updateLobbyPadHint(); if (usingPad()) focusLobbyControl(ensureLobbyFocus());
+    updateRoster(); overlayVisibility();
+    updateLobbyPadHint(); focusLobbyControl(ensureLobbyFocus());
   }
-  function hide() { closeNameEditor(false, false); closeAdventurePicker(true); panel.classList.add('hidden'); if (active()) Game.resume(); }
+  function hide() { closeNameEditor(false, false); closeAdventurePicker(true); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
   function chapterCard(id) {
     const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
@@ -432,10 +503,11 @@ const multiplayer = (() => {
     intentionalClose = true;
     if (retry) socket?.close(); else socket?.close(1000, 'Left lobby');
     socket = null;
-    connected = false; self = leader = null; session = null; loaded = false; starting = false; resetStream(); clearRemotes();
+    connected = false; self = leader = null; session = null; loaded = false; starting = false; ping = null; resetStream(); clearRemotes(); clearControlPending();
+    roster = []; rosterSignature = ''; panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false');
     finale.cancelEnding();
     heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;
-    party.classList.add('hidden'); panel.classList.add('hidden');
+    party.classList.add('hidden'); closePanel(); notice('');
     if (Game.player) Game.clearActors();
     Game.loading = 0; el('loading').classList.remove('show'); Game.showMenu('main');
     if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').textContent = retry ? 'Leave lobby' : 'Back to main menu'; }
@@ -457,7 +529,7 @@ const multiplayer = (() => {
       if (!starting || attempt !== joinAttempt) return;
       if (info.players >= info.capacity) throw new Error(`The public lobby is full (${info.capacity} players). ${retry ? 'Waiting for a place to open.' : 'Try again when a place opens.'}`);
       const pageBuild = document.querySelector('meta[name="arena-build"]')?.content;
-      if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; throw new Error('The game has updated. Reload this page before joining.'); }
+      if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; needsReload = true; throw new Error('The game has updated. Reload this page before joining.'); }
       if (!starting || attempt !== joinAttempt) return;
       socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
       const joining = socket;
@@ -468,40 +540,76 @@ const multiplayer = (() => {
         if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
         else retryConnection(e.reason || 'Connection lost. Rejoining the current game…');
       } };
-      socket.onerror = () => { if (!connected) notice('Could not connect. The lobby may be full or the server may be unavailable.'); };
+      socket.onerror = () => { if (socket === joining && !connected) notice('Could not connect. The lobby may be full or the server may be unavailable.'); };
     } catch (e) {
       if (attempt !== joinAttempt) return;
       starting = false;
       if (retry && reconnectWanted) retryConnection(e.message);
-      else { reconnectWanted = false; el('lobbyStatus').textContent = e.message; }
+      else { reconnectWanted = false; el('lobbyStatus').textContent = e.name === 'TimeoutError' ? 'The lobby took too long to respond. Try again.'
+        : e instanceof TypeError ? 'Could not reach the lobby. Check your connection and try again.' : e.message; }
+      updateConnection();
     }
   }
+  function updateConnection() {
+    panel.dataset.connected = String(connected); panel.dataset.running = String(!!session);
+    el('lobbyConnection').textContent = connected ? ping === null ? 'Connected' : `${ping} ms` : starting || reconnectWanted ? 'Connecting' : 'Offline';
+    el('lobbyConnection').title = connected ? 'Round-trip connection time' : '';
+    el('lobbyRetry').hidden = connected || starting || reconnectWanted;
+    el('lobbyRetry').textContent = needsReload ? 'Reload game' : 'Try again';
+    el('lobbyWaiting').hidden = connected && self === leader || !connected;
+    el('lobbyName').disabled = !connected;
+    el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
+  }
+  function adventureSummary() {
+    const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
+    const campaign = STORIES.find(s => s.id === id);
+    el('lobbyAdventureSummary').textContent = value === 'gauntlet/boss-only'
+      ? `${catalog?.bosses.length || ''} bosses, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.`
+      : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
+      : 'Play this encounter together.';
+  }
   function updateRoster() {
-    const focusKey = document.activeElement?.dataset.padKey;
+    const previousFocus = panel.contains(document.activeElement) ? document.activeElement : null, focusKey = previousFocus?.dataset.padKey;
     const owner = connected && self === leader;
     if (!owner && adventureBeforeEdit !== null) closeAdventurePicker(true);
-    if (connected) el('lobbyStatus').textContent = leader ? 'Connected. Anyone with this link can join.' : 'No active leader. Press a key, move the mouse or use your controller to lead.';
+    if (connected) el('lobbyStatus').textContent = owner ? session ? 'You lead the party. Your adventure is in progress.' : 'You lead the party. Choose an adventure and start when you are ready.'
+      : leader ? `${roster.find(p => p.id === leader)?.name || 'The leader'} leads the party.` : 'Use your keyboard, mouse or controller to become the leader.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
-    el('lobbyRestart').disabled = !session;
-    el('lobbyNext').disabled = !session || !!session.gauntlet || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
+    el('lobbyGuestResume').hidden = !active();
+    el('lobbyRunActions').hidden = !session;
+    el('lobbyLiveWarning').hidden = !active();
+    el('lobbyRestart').disabled = !session || !!controlPending;
+    el('lobbyNext').hidden = !!session?.gauntlet;
+    el('lobbyNext').disabled = !session || !!controlPending || !!session.gauntlet || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
     el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
     el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
-    el('lobbyReturn').disabled = !session;
-    el('lobbyStart').disabled = !connected;
-    el('lobbyPlayers').textContent = '';
-    for (const p of roster) {
-      const row = document.createElement('div'); row.className = 'lobby-player';
-      const name = document.createElement('span'); name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}${p.id === leader ? ' · Leader' : ''}`; row.appendChild(name);
-      if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
-        const button = document.createElement('button'); button.textContent = text;
-        button.dataset.padKey = action + '/' + p.id;
-        button.onclick = () => control(action, { player: p.id }); row.appendChild(button);
+    el('lobbyReturn').disabled = !session || !!controlPending;
+    el('lobbyStart').disabled = !connected || !!controlPending;
+    el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start new adventure' : 'Start together';
+    el('lobbyManage').hidden = !owner || roster.length < 2;
+    if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
+    el('lobbyWaiting').firstElementChild.textContent = session ? 'Your party is already in an adventure. Jump back in when you are ready.' : 'The leader chooses the adventure and starts for everyone.';
+    updateConnection(); adventureSummary();
+    const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name]), self, leader, owner });
+    if (signature !== rosterSignature) {
+      rosterSignature = signature; el('lobbyPlayers').textContent = '';
+      for (const p of roster) {
+        const row = document.createElement('div'); row.className = 'lobby-player';
+        const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
+        if (p.id === leader) { const role = document.createElement('span'); role.className = 'lobby-player-role'; role.textContent = 'Leader'; row.appendChild(role); }
+        const actions = document.createElement('div'); actions.className = 'lobby-player-actions'; row.appendChild(actions);
+        if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
+          const button = document.createElement('button'); button.textContent = text;
+          button.setAttribute('aria-label', `${text}: ${p.name}`);
+          button.dataset.padKey = action + '/' + p.id;
+          button.onclick = () => control(action, { player: p.id }); actions.appendChild(button);
+        }
+        el('lobbyPlayers').appendChild(row);
       }
-      el('lobbyPlayers').appendChild(row);
     }
     updateStatus();
-    if (!panel.classList.contains('hidden') && usingPad()) {
+    if (!panel.classList.contains('hidden') && (usingPad() || previousFocus && (!previousFocus.isConnected || !previousFocus.offsetParent || previousFocus.disabled))) {
       const restored = focusKey && lobbyControls().find(node => node.dataset.padKey === focusKey);
       focusLobbyControl(restored || ensureLobbyFocus());
     }
@@ -516,14 +624,14 @@ const multiplayer = (() => {
       tag.hidden = !connected || !levelTag;
       tag.textContent = levelTag;
     }
-    const chapter = road ? `\n${road.name} · Chapter ${road.number}/${road.total}${latestFrame?.complete && !road.next ? ' · Complete' : ''}` : '';
-    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${chapter}\nEscape to pause`;
+    el('onlinePartyDetails').textContent = session?.gauntlet ? '' : road?.name || 'Public lobby';
     updateAlivePanel();
-    party.style.whiteSpace = 'pre-line'; party.classList.toggle('hidden', !active());
+    party.classList.toggle('hidden', !active()); updateConnection(); overlayVisibility();
   }
   function receive(msg) {
     if (msg.type === 'welcome') {
-      connected = true; starting = false; reconnectAttempt = 0; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
+      connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
+      el('lobbyName').value = roster.find(p => p.id === self)?.name || el('lobbyName').value;
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
@@ -536,13 +644,15 @@ const multiplayer = (() => {
       el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
     } else if (msg.type === 'roster') {
       roster = msg.players; leader = msg.leader; updateRoster();
-      if (msg.notice) notice(msg.notice);
+      if (msg.notice && roster.length > 1) notice(msg.notice, true);
     } else if (msg.type === 'start') {
+      clearControlPending(); notice('');
       finale.cancelEnding();
+      const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes();
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
-      Game.story = false; Game.eldenBoss = null; panel.classList.add('hidden');
+      Game.story = false; Game.eldenBoss = null; closePanel();
       const data = (session.kind === 'level' ? catalog.levels : catalog.bosses).find(x => x.id === session.id);
       el('lobbyAdventure').value = session.gauntlet ? 'gauntlet/boss-only' : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
@@ -552,13 +662,14 @@ const multiplayer = (() => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer();
-          if (session.gauntlet) $('wonHint').textContent = session.gauntlet.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…';
+          hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
           loaded = true; updateRoster();
         });
       };
       begin();
     } else if (msg.type === 'stop') {
+      clearControlPending();
       const endedRun = session?.gauntlet;
       finale.cancelEnding();
       session = null; loaded = false; resetStream(); clearRemotes(); Game.loading = 0; el('loading').classList.remove('show');
@@ -567,7 +678,7 @@ const multiplayer = (() => {
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
       const packet = decoder.decode(msg), frame = packet.frame;
       if (latestFrame && frame.time <= latestFrame.time) return;
-      latestFrame = frame; receivedFrames++; updateRemotes(packet.players || []);
+      latestFrame = frame; receivedFrames++; updateRemotes(packet.players || []); updateAlivePanel();
       for (const s of frame.enemies) {
         let track = tracks.get(s.id);
         if (!track) {
@@ -587,8 +698,8 @@ const multiplayer = (() => {
         grantedEnemy = msg.enemy; execution.start(Game.player, e); grantedEnemy = null;
       } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
       pendingExecution = null;
-    } else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateStatus(); }
-    else if (msg.type === 'error') notice(msg.message);
+    } else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
+    else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
   }
   function capturePose(p) {
     return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
@@ -598,6 +709,7 @@ const multiplayer = (() => {
       landTime: p.landTime, stunTime: p.stunTime, view: session.teamWipeOnly && p.alive() ? lastView : null };
   }
   function heartbeat(now) {
+    overlayVisibility();
     if (!connected) return;
     // A stray return to the title must not strand a connected player while the
     // server continues the shared run. Reload from its current session/baseline.
@@ -782,7 +894,7 @@ const multiplayer = (() => {
       const p = r.body;
       p.x = lerp(a.x, b.x, f); p.y = lerp(a.y, b.y, f); p.z = lerp(a.z, b.z, f); p.yaw = a.yaw + angDiff(b.yaw, a.yaw) * f;
       p.state = a.state; p.stateTime = a.stateTime + Math.max(0, now - a.at); p.hp = a.hp; p.attackT = a.attackT + (a.charge === 1 ? 0 : Math.max(0, now - a.at));
-      p.attack = PLAYER_DEF.moveset.attacks[a.attack] || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = a.walkPhase;
+      p.attack = PLAYER_DEF.moveset.attacks[a.attack] || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = lerp(a.walkPhase, b.walkPhase, f);
       p.vx = a.vx; p.vy = a.vy; p.vz = a.vz;
       p.usingItem = ITEMS.flask; p.landTime = a.landTime; p.stunTime = a.stunTime;
       p.activeAt = a.activeAt < 0 ? Infinity : a.activeAt;
@@ -795,8 +907,8 @@ const multiplayer = (() => {
       p.rig.place(p.x, p.y, p.z, p.yaw, world.groundAt(p.x, p.z, p.y + 0.05));
       p.pose(p.stateTime, { t: performance.now() / 1000, dt: CONFIG.step, yaw: p.yaw, px: game.player.x, pz: game.player.z });
       placed.push([p, { x: p.x, y: p.y, z: p.z, yaw: p.yaw }]);
-      const v = new THREE.Vector3(p.x, p.y + p.height, p.z).project(camera);
-      r.label.hidden = v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1;
+      const v = labelPosition.set(p.x, p.y + p.height, p.z).project(camera);
+      r.label.hidden = p.hp <= 0 || r === remotes.get(spectatorTarget) || Game.mode !== 'play' || Game.loading > 0 || !runIntro.hidden || v.z < -1 || v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1;
       r.label.style.left = `${(v.x + 1) * innerWidth / 2}px`; r.label.style.top = `${(1 - v.y) * innerHeight / 2}px`;
     }
   }
@@ -815,9 +927,38 @@ const multiplayer = (() => {
     command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
   }
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
+  el('lobbyGuestResume').onclick = hide;
+  el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
+  el('lobbyAdventure').onchange = () => { adventureSummary(); events.emit('menuAdjust', { dir: 1 }); };
+  el('lobbyManage').onclick = () => {
+    const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));
+    if (open) el('lobbyPlayers').scrollTop = 0;
+  };
+  el('lobbyHelp').onclick = () => {
+    const open = el('lobbyControls').hidden; el('lobbyControls').hidden = !open;
+    el('lobbyHelp').setAttribute('aria-expanded', String(open));
+    if (open) el('lobbyControls').scrollIntoView({ block: 'nearest' });
+  };
+  el('lobbyOptions').onclick = () => { closePanel(); Game.optionsFrom = 'lobby'; Game.showMenu('options'); };
+  // Native keyboard focus stays inside the dialog. Roster refreshes retain the
+  // same controls, so a teammate joining never interrupts typing or selection.
+  window.addEventListener('keydown', ev => {
+    if (panel.classList.contains('hidden') || panel.inert) return;
+    input.use('keyboard');
+    if (ev.code !== 'Tab') return;
+    const controls = lobbyControls(), at = controls.indexOf(document.activeElement);
+    ev.preventDefault();
+    const next = at < 0 ? ev.shiftKey ? controls.length - 1 : 0 : (at + (ev.shiftKey ? -1 : 1) + controls.length) % controls.length;
+    focusLobbyControl(controls[next]);
+  }, true);
+  panel.addEventListener('focusin', ev => { if (ev.target.matches('button,input,select')) events.emit('menuMove'); });
+  panel.addEventListener('click', ev => {
+    const button = ev.target.closest('button');
+    if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
+  });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
-  el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value); el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
+  el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
   function lobbyMove(direction) {
     const focus = ensureLobbyFocus(), controls = lobbyControls();
     if (!focus) return;
@@ -872,6 +1013,8 @@ const multiplayer = (() => {
     get spectatorMode() { return waitingForTeamWipe(); },
     get runIntroActive() { return !runIntro.hidden; },
     get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
+    get listener() { return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
+    get gauntlet() { return connected ? session?.gauntlet || null : null; },
     get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback, spectatorTarget,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,
