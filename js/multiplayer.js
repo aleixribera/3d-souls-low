@@ -755,6 +755,8 @@ const multiplayer = (() => {
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
   }
   function sampleEnemies(dt) {
+    // These effects are client-local, including during execution holds or stream gaps.
+    for (const e of Game.enemies) e.updateFeedback(dt);
     if (!latestFrame) return;
     let oldest = latestFrame.time;
     for (const [id, track] of tracks) {
@@ -779,7 +781,6 @@ const multiplayer = (() => {
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
       e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
-      e.tint = Math.max(0, e.tint - dt / CONFIG.fx.tintTime);
       if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
       const boxKey = `${s.serial}/${s.hitIndex}`;
       if (s.hitbox && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {

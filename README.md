@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.8.9: A Steadier Journey
+# Combat Arena 3D — v7.8.10: Enemy Glow Recovery
+
+**v7.8.10:** Enemy posture-break flashes and hit recoil now fade correctly in multiplayer, including during execution holds and gaps in enemy playback. All enemies and bosses share the same feedback countdowns as solo play. See [the fix and checks](docs/enemy-feedback-v7.8.10.md).
 
 **v7.8.9:** An experience audit improves menu readability in short and narrow windows, keyboard focus and navigation, safe solo pause on focus loss, controller recovery, and mouse attacks when pointer capture is refused. Camera shake has its own option. Settings and checkpoints reject malformed data safely, failed saves give a brief notice, and shader warm-up finishes pending variants before character cleanup. The two roads, lore, combat timings and visual identity are preserved. See [the audit](docs/experience-audit-v7.8.9.md).
 

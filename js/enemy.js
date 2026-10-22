@@ -182,13 +182,18 @@ class Enemy {
     return true;
   }
 
+  // Local presentation timers also run when multiplayer owns the enemy simulation.
+  updateFeedback(dt) {
+    this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
+    this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
+    this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
+  }
+
   update(dt, player) {
     this.checkPhaseAt();
     const d = this.def, E = CONFIG.enemy;
     this.stateTime += dt;
-    this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
-    this.crack = Math.max(0, this.crack - dt / CONFIG.fx.crackTime);
-    this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
+    this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
