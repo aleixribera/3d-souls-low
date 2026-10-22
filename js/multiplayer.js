@@ -16,6 +16,9 @@ const multiplayer = (() => {
   panel.innerHTML = `<div class="lobby-card"><h1>PUBLIC LOBBY</h1><p id="lobbyStatus" role="status">Connecting…</p>
     <label>Your name <input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name"></label>
     <div id="lobbyPlayers" aria-label="Players"></div>
+    <section class="lobby-controls" aria-labelledby="lobbyControlsTitle"><h2 id="lobbyControlsTitle">Basic controls</h2>
+    <p id="lobbyControlsDevice"></p><dl id="lobbyControlsList"></dl>
+    <p class="lobby-controls-tip">Attacks, rolls and blocking use stamina. Ease off to let it refill.</p></section>
     <div id="lobbyLeader"><label>Adventure <select id="lobbyAdventure"></select></label>
     <div class="lobby-actions"><button id="lobbyStart">Start together</button><button id="lobbyRestart">Restart level</button>
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
@@ -29,11 +32,35 @@ const multiplayer = (() => {
     #publicLobby button{padding:10px 14px;background:#2c302e;color:#eee6d6;border:1px solid #817047;cursor:pointer;font:inherit}#publicLobby button:hover,#publicLobby button:focus-visible{background:#474737;outline:2px solid #d1b674}
     #publicLobby button:disabled{opacity:.4;cursor:default}#publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}#publicLobby .lobby-player{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #393c38}
     #publicLobby .lobby-player span{flex:1}#publicLobby .lobby-player button{font-size:13px;padding:6px 9px}#lobbyNotice{color:#efd393;min-height:1.3em}#publicLobby .lobby-hint{font:13px/1.6 system-ui;color:#aaa99f}
+    #publicLobby .lobby-controls{margin:18px 0;padding:14px;background:#1c2223;border:1px solid #454b43;font:14px/1.5 system-ui}
+    #publicLobby .lobby-controls h2{margin:0;font-size:18px;color:#efd393}#lobbyControlsDevice{margin:2px 0 10px;color:#bdbeb3;font-size:12px}
+    #lobbyControlsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 24px;margin:0}
+    #lobbyControlsList div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}#lobbyControlsList dt{color:#c7c9c0}#lobbyControlsList dd{margin:0;text-align:right;color:#fff1cf;font-weight:600}
+    #publicLobby .lobby-controls-tip{margin:12px 0 0;color:#bdbeb3;font-size:12px}
+    @media(max-width:600px){#lobbyControlsList{grid-template-columns:1fr}#publicLobby{padding:12px}#publicLobby .lobby-card{padding:16px;box-sizing:border-box}}
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;max-width:240px;pointer-events:none;color:#e9e1ca;font:12px/1.7 system-ui;text-align:right;text-shadow:0 1px 3px #000;background:#10151599;padding:8px 12px;border-left:2px solid #8c7951}
     #onlineParty.hidden{display:none}.online-name{position:fixed;z-index:21;pointer-events:none;color:#ecd79b;background:#111a;padding:3px 7px;border-radius:3px;font:12px system-ui;transform:translate(-50%,-100%);white-space:nowrap}`;
   document.head.appendChild(style); document.body.appendChild(panel);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
   const el = id => document.getElementById(id);
+  function buildControls() {
+    el('lobbyControlsDevice').textContent = usingPad() ? 'Controller · Xbox / PlayStation' : 'Keyboard & mouse · LMB / RMB = left / right mouse button';
+    const rows = [
+      ['Move', moveLabel()], ['Look around', usingPad() ? 'Right stick' : 'Mouse · click game first'],
+      ['Light attack', bindLabel('light')], ['Heavy attack (hold to charge)', bindLabel('heavy')],
+      ['Dodge / roll', bindLabel('roll')], ['Jump', bindLabel('jump')],
+      ['Block (hold)', bindLabel('block')], ['Parry', bindLabel('parry')],
+      ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
+      ['Rest / talk / read', bindLabel('rest')], ['Pause / open lobby', systemLabel('pause')],
+    ];
+    const list = el('lobbyControlsList'); list.textContent = '';
+    for (const [action, binding] of rows) {
+      const row = document.createElement('div'), name = document.createElement('dt'), keys = document.createElement('dd');
+      name.textContent = action; keys.textContent = keycap(binding); row.append(name, keys); list.appendChild(row);
+    }
+  }
+  events.on('device', buildControls);
+  buildControls();
   const notice = s => { el('lobbyNotice').textContent = s; };
   let savedName = '';
   try { savedName = localStorage.getItem('combatArena.onlineName') || ''; } catch {}
