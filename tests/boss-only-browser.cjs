@@ -25,7 +25,8 @@ const { createServer } = require('../server/index.cjs');
   try {
     const a = await player('Ash'), b = await player('Ember');
     assert.equal(await a.locator('#lobbyAdventure option').count(), 3);
-    await a.locator('#lobbyAdventure').selectOption('gauntlet/boss-only'); await a.locator('#lobbyStart').click();
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'BOSS ONLY is selected without setup');
+    await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     const allyHealth = a.locator('#onlineAlive').getByRole('meter', { name: 'Ember health', exact: true });

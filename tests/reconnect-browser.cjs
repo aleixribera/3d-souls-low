@@ -86,7 +86,7 @@ const { config: C } = require('../js/net-protocol.js');
     await b.waitForFunction(() => multiplayer.connected && multiplayer.panelOpen && !multiplayer.active());
     assert.equal(app.session, null, 'returning later clears the abandoned run');
     assert.equal(await b.locator('#lobbyStart').isEnabled(), true, 'leader returns to lobby controls');
-    assert.equal(await b.locator('#lobbyAdventure').inputValue(), 'campaign/lands');
+    assert.equal(await b.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only');
     await a.evaluate(() => multiplayer.join());
     await a.waitForFunction(() => multiplayer.connected && multiplayer.panelOpen && !multiplayer.active());
     await b.locator('#lobbyAdventure').selectOption('gauntlet/boss-only'); await b.locator('#lobbyStart').click();

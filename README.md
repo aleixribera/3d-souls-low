@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.5: Clearer Openings
+# Combat Arena 3D — v7.8.6: BOSS ONLY by Default
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.6:** BOSS ONLY is now the default selected adventure when joining the public lobby. Both stories remain available in the dropdown.
 
 **v7.8.5:** Gold opening screens now show only the selected mode and one short goal.
 

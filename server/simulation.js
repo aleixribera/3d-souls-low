@@ -13,6 +13,9 @@ globalThis.host = (() => {
       throw new Error(`Campaign ${story.id} has an unknown or empty chapter list.`);
   }
   if (!STORIES.some(s => s.id === C.defaultCampaign)) throw new Error('Unknown default multiplayer campaign: ' + C.defaultCampaign);
+  const choice = C.defaultAdventure;
+  if (!(choice.kind === 'gauntlet' && choice.id === 'boss-only' || choice.kind === 'campaign' && STORIES.some(s => s.id === choice.id && s.lobbyName)))
+    throw new Error('Unknown default lobby adventure: ' + choice.kind + '/' + choice.id);
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
     isAttacking() { return this.state === PS.ATTACK || this.state === PS.JUMP_ATTACK; },
@@ -49,7 +52,7 @@ globalThis.host = (() => {
   function catalog() {
     return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
       campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
-      defaultAdventure: { kind: 'campaign', id: C.defaultCampaign },
+      defaultAdventure: { ...C.defaultAdventure },
       bosses: [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
   }
   function campaign(id, level) {

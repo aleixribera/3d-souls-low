@@ -31,7 +31,8 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
   }
   try {
     const a = await player('Leader'), b = await player('Friend');
-    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'campaign/lands', 'full Elden Ring story is selected without any setup');
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'boss gauntlet is selected by default');
+    await a.locator('#lobbyAdventure').selectOption('campaign/lands');
     await a.locator('#lobbyStart').click();
     for (let i = 0; i < chapters.length; i++) {
       await Promise.all([ready(a, chapters[i]), ready(b, chapters[i])]);

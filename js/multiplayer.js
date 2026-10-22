@@ -31,7 +31,7 @@ const multiplayer = (() => {
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
     <p id="lobbyPadHint" class="lobby-hint"></p>
-    <p class="lobby-hint">Story 2 (Lands) is selected by default. Chapters continue automatically. BOSS ONLY pits the party against every boss in a row: fallen players spectate, everyone refills between bosses, and a team wipe ends the run. Leadership passes on after five minutes without input.</p></div>`;
+    <p class="lobby-hint">BOSS ONLY is selected by default. Story chapters continue automatically. BOSS ONLY pits the party against every boss in a row: fallen players spectate, everyone refills between bosses, and a team wipe ends the run. Leadership passes on after five minutes without input.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
     #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}

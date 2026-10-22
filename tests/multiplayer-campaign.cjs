@@ -35,11 +35,11 @@ function peer(url) {
   const add = async () => { const p = peer(url); peers.push(p); return [p, await p.join()]; };
   try {
     const [a, welcome] = await add(), [b] = await add();
-    assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'campaign', id: 'lands' });
+    assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'gauntlet', id: 'boss-only' });
     assert.equal(welcome.catalog.campaigns.find(c => c.id === 'lands').chapters, 8);
     a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'unknown' });
     assert.match((await a.next('error')).message, /Unknown campaign/);
-    a.send({ type: 'control', action: 'start', ...welcome.catalog.defaultAdventure });
+    a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'lands' });
     let session = (await a.next('start')).session;
     await b.next('start');
     for (let i = 0; i < chapters.length; i++) {

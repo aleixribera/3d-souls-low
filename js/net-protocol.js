@@ -16,6 +16,7 @@
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     emptyLobbyTimeout: 60 * 1000,
     defaultCampaign: 'lands',
+    defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     runIntroScreenTime: 5,
     spectatorFov: [10, 150],
