@@ -14,6 +14,7 @@ const gamepad = {
   move: { x: 0, y: 0 },         // left stick after the dead zone (y up), length 0..1
   look: { x: 0, y: 0 },         // right stick after the dead zone (y down)
   flickArmed: true,
+  neutralRequired: false,
   menuDir: null, menuTimer: 0,
 
   // The first connected pad, or null.
@@ -30,6 +31,7 @@ const gamepad = {
     return { x: x * k, y: y * k };
   },
   poll(dt) {
+    if (input.suspended) { this.release(); return; }
     const p = this.read();
     if (!p) { this.release(); return; }
     const C = CONFIG.gamepad, now = new Set();
@@ -39,6 +41,13 @@ const gamepad = {
     });
     const ax = p.axes || [];
     const ls = this.stick(ax[0] || 0, -(ax[1] || 0)), rs = this.stick(ax[2] || 0, ax[3] || 0);
+    // A button held in another window must be released before it can resume or act here.
+    if (this.neutralRequired) {
+      this.down = now;
+      this.move = { x: 0, y: 0 }; this.look = { x: 0, y: 0 };
+      if (!now.size && !ls.x && !ls.y && !rs.x && !rs.y) this.neutralRequired = false;
+      return;
+    }
     this.move = ls; this.look = rs;
     const pressed = [...now].filter(c => !this.down.has(c)), released = [...this.down].filter(c => !now.has(c));
     this.down = now;
@@ -55,6 +64,7 @@ const gamepad = {
   release() {
     for (const c of this.down) input.up(c);
     this.down.clear(); this.move = { x: 0, y: 0 }; this.look = { x: 0, y: 0 };
+    this.menuDir = null; this.menuTimer = 0; this.flickArmed = true;
   },
   playInput(pressed, dt) {
     for (const c of pressed) {

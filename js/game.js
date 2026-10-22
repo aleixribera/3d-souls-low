@@ -96,13 +96,15 @@ const Game = {
           adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
         { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
         { name: `FPS counter: ${onOff(settings.fps)}`, desc: `Frames per second in the top right corner (${SYSTEM_KEYS.fps} toggles it anywhere).`, adjust: () => { settings.fps = !settings.fps; } },
-        { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: 'Default for the F1 hitbox display.', adjust: () => { settings.hitboxes = !settings.hitboxes; } },
+        { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: `Show attack hitboxes while help is open (${keyLabel(SYSTEM_KEYS.help)}). ${keyLabel(SYSTEM_KEYS.hitboxes)} toggles them.`, adjust: () => { settings.hitboxes = !settings.hitboxes; } },
         { name: `HUD scale: ${Math.round(settings.hudScale * 100)}%`, desc: 'Size of bars and text.',
           adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
         { name: `Sound volume: ${settings.volume}`, desc: 'Master volume of effects and menu sounds.',
           adjust: d => { settings.volume = clamp(Math.round(Number(settings.volume)) + d, 0, 10); } },
         { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Small camera movements with your swings, rolls and the blows you take.',
           adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
+        { name: `Camera shake: ${onOff(settings.screenShake !== false)}`, desc: 'Camera shake from impacts, executions and collapsing floors. Turn off for a steadier view.',
+          adjust: () => { settings.screenShake = settings.screenShake === false; } },
         { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
           adjust: d => {
             const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
@@ -138,7 +140,7 @@ const Game = {
       this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu
       this.cam.pitch = 0;
     } else this.mode = 'pause';
-    this.screen = screen; input.clear(); this.setLock(null);
+    this.screen = screen; this.clearControls(); this.setLock(null);
     if (document.pointerLockElement) document.exitPointerLock();
     $('menu').classList.toggle('quality-choice', screen === 'tutorialQuality');
     $('menu').classList.toggle('story-menu', screen === 'story');
@@ -151,6 +153,7 @@ const Game = {
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
       b.type = 'button';
+      b.setAttribute('aria-describedby', 'menuDesc');
       b.className = 'menuBtn' + (it.adjust ? ' adj' : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
@@ -181,7 +184,7 @@ const Game = {
       });
       list.appendChild(b);
     });
-    this.select(keepSelection ? this.selected : 0);
+    this.select(keepSelection ? this.selected : 0, true);
   },
   // Key or button names follow the device used last, so this is redone when it changes.
   showMenuHint() {
@@ -197,19 +200,21 @@ const Game = {
   },
   // One step of directional menu input (keys, D-pad or stick).
   menuStep(dir) {
-    if (this.screen === 'tutorialQuality' || dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1)); }
+    if (this.screen === 'tutorialQuality' || dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1), true); }
     else this.adjust(dir === 'left' ? -1 : 1);
   },
-  select(i) {
+  select(i, focus = true) {
     const n = $('menuList').children.length;
     this.selected = n ? (i + n) % n : 0;
-    [...$('menuList').children].forEach((b, k) => b.classList.toggle('sel', k === this.selected));
-    const cur = $('menuList').children[this.selected]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+    [...$('menuList').children].forEach((b, k) => { b.classList.toggle('sel', k === this.selected); b.tabIndex = k === this.selected ? 0 : -1; });
+    const cur = $('menuList').children[this.selected];
+    if (focus && cur && document.activeElement !== cur) cur.focus({ preventScroll: true });
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const it = (this.menuItems || [])[this.selected];
     $('menuDesc').textContent = it ? it.desc || '' : '';
     $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
-  confirm() { const it = this.menuItems[this.selected]; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
+  confirm() { const it = (this.menuItems || [])[this.selected]; if (!it) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
   adjust(d) {
     const it = this.menuItems[this.selected];
     if (!it || !it.adjust) return;
@@ -227,20 +232,25 @@ const Game = {
     else if (s.back) { events.emit('menuBack'); this.showMenu(s.back); }
   },
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
-  pause(fromPointer) {
+  pause(fromPointer, fromFocus = false) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     if (online && multiplayer.runIntroActive) return;
     if (fromPointer && online && multiplayer.spectatorMode) return;
     if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
-    if (this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
+    if (!fromFocus && this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
     events.emit('pause');
   },
   resume() {
-    this.mode = 'play'; input.clear();
+    this.mode = 'play'; this.clearControls();
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     events.emit('resume');
+  },
+  clearControls() {
+    input.clear();
+    if (this.player) this.player.buffer = null;
   },
   enterPlay() {
     this.mode = 'play';
@@ -479,6 +489,7 @@ const Game = {
   // ---- lock-on -----------------------------------------------------------------------------------
   setLock(e) { this.lock = e; this.lockLost = 0; this.lockHidden = 0; },
   addShake(time, amp) {
+    if (settings.screenShake === false) return;
     if (amp * time < this.shakeAmp * this.shake) return;   // keep the stronger shake
     this.shake = this.shakeDur = time; this.shakeAmp = amp;
   },
@@ -947,7 +958,7 @@ const Game = {
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
     if (this.shake > 0) {
-      const a = this.shakeAmp * this.shake / this.shakeDur;
+      const a = settings.screenShake === false ? 0 : this.shakeAmp * this.shake / this.shakeDur;
       camera.position.x += rand(-a, a); camera.position.y += rand(-a, a); camera.position.z += rand(-a, a);
       this.shake = Math.max(0, this.shake - frameDt);
     }

@@ -25,22 +25,28 @@ function makeCampaign(C) {
   let status = 'none';    // 'none' | 'ok' | 'broken'
   let restoring = false;  // Continue is rebuilding a checkpoint: the level start must not overwrite the save
   let storageOk = true;   // false in a private window that refuses storage: the game plays on without saving
+  let saveFailureShown = false;
 
   // ---- storage, every access wrapped -----------------------------------------------------------------------------
   function readRaw() {
     try { return localStorage.getItem(key()); } catch (err) { storageOk = false; return null; }
   }
   function write(obj) {
-    try { localStorage.setItem(key(), JSON.stringify(obj)); storageOk = true; return true; }
-    catch (err) { storageOk = false; return false; }
+    try { localStorage.setItem(key(), JSON.stringify(obj)); storageOk = true; saveFailureShown = false; return true; }
+    catch (err) {
+      storageOk = false;
+      if (!saveFailureShown) { saveFailureShown = true; events.emit('saveFailed', { campaign: C.id }); }
+      return false;
+    }
   }
   function erase() { try { localStorage.removeItem(key()); } catch (err) { storageOk = false; } data = null; status = 'none'; }
 
   const strs = a => Array.isArray(a) && a.every(s => typeof s === 'string');
   const finite = v => typeof v === 'number' && Number.isFinite(v);
+  const record = v => !!v && typeof v === 'object' && !Array.isArray(v);
   // A readable save, or null. Anything odd (an old version, a level since removed, a bonfire that moved) is refused.
   function check(d) {
-    if (!d || typeof d !== 'object' || d.v !== S().saveVersion) return null;
+    if (!record(d) || d.v !== S().saveVersion) return null;
     if (!storyLevels().includes(d.level)) return null;
     const L = ALL_LEVELS.find(l => l.id === d.level);
     if (!L) return null;
@@ -48,7 +54,11 @@ function makeCampaign(C) {
     if (d.spawn !== null && !(d.spawn && finite(d.spawn.x) && finite(d.spawn.z) && finite(d.spawn.yaw) && (d.spawn.y === undefined || finite(d.spawn.y)))) return null;
     if (![d.cleared, d.shortcuts, d.traps, d.seen, d.bosses].every(strs)) return null;
     if ('zones' in d && !strs(d.zones)) return null;   // v5.1: optional (older saves derive won zones from `cleared`)
-    if (!d.progress || typeof d.progress !== 'object' || !d.progress.inventory || typeof d.progress.inventory !== 'object') return null;
+    if (!record(d.progress) || !record(d.progress.inventory)) return null;
+    for (const saved of Object.values(d.progress.inventory))
+      if (!record(saved) || !Number.isSafeInteger(saved.max) || saved.max < 0) return null;
+    if ('completed' in d && typeof d.completed !== 'boolean') return null;
+    if ('savedAt' in d && (!finite(d.savedAt) || d.savedAt < 0)) return null;
     return { ...d, completed: !!d.completed };
   }
   function load() {
@@ -78,7 +88,7 @@ function makeCampaign(C) {
     const lo = (chapter(Game.level.id) || {}).loadout || {};
     for (const [id, saved] of Object.entries(data.progress.inventory)) {
       const it = p.inventory[id];
-      if (!it || !ITEMS[id] || !finite(saved.max)) continue;   // an item this build does not have: ignored
+      if (!it || !ITEMS[id] || !saved || !finite(saved.max)) continue;   // an item this build does not have: ignored
       const c = lo[id] || {};
       it.max = clamp(Math.round(saved.max), c.min ?? 0, c.max ?? Infinity);
       it.count = it.max;

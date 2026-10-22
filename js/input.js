@@ -55,6 +55,7 @@ const menuLabel = name => usingPad() ? keyLabel(MENU_PAD[name]) : MENU_KEYS[name
 
 const input = {
   device: 'keyboard',   // 'keyboard' (keys and mouse) or 'pad': the last one used, for button labels
+  suspended: false,     // a blurred/hidden page must not poll held controller inputs back into play
   // Set the device used last; announces a change so labels can follow.
   use(device) { if (device !== this.device) { this.device = device; events.emit('device', { device }); } },
   held: new Set(),
@@ -86,6 +87,19 @@ const input = {
 
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
-const settings = { sensitivity: 5, invert: false, hitboxes: true, fps: false, hudScale: 1, graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true };
-try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* defaults */ }
+const DEFAULT_SETTINGS = Object.freeze({ sensitivity: 5, invert: false, hitboxes: false, fps: false, hudScale: 1,
+  graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true, screenShake: true });
+function readSettings(value) {
+  const clean = { ...DEFAULT_SETTINGS };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
+  for (const key of ['invert', 'hitboxes', 'fps', 'cameraMotion', 'screenShake'])
+    if (typeof value[key] === 'boolean') clean[key] = value[key];
+  for (const [key, min, max, step] of [['sensitivity', 1, 10, 1], ['hudScale', 0.7, 1.5, 0.1], ['volume', 0, 10, 1]])
+    if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
+  if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;
+  return clean;
+}
+let savedSettings = null;
+try { savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch (e) { /* defaults */ }
+const settings = readSettings(savedSettings);
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }

@@ -45,6 +45,10 @@ const cases = [
   ['modern integrated failed timing', { gpu: 'Intel Iris Xe Graphics', memory: 4 }, { first: 'low', effective: 'low', benchmarks: 1, saves: 1, saved: 'auto' }],
   ['explicit recheck', { gpu: 'NVIDIA GeForce RTX 5060', recheck: true }, { first: 'low', effective: 'low', benchmarks: 4, saves: 1, saved: 'auto' }],
   ['failed timing', { gpu: 'NVIDIA GeForce RTX 5060' }, { first: 'low', effective: 'low', benchmarks: 2, saves: 1, saved: 'auto' }],
+  ...['unknown', 'constructor', null, 9].map(graphics => [
+    `invalid saved graphics: ${graphics}`, { gpu: 'Intel UHD Graphics 620', saved: { graphics } },
+    { first: 'low', effective: 'low', benchmarks: 0, saves: 1, saved: 'auto' },
+  ]),
 ];
 for (const graphics of ['low', 'high', 'ultra']) cases.push([
   `manual ${graphics}`, { gpu: 'Intel UHD Graphics 620', saved: { graphics } },

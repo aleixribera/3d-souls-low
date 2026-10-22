@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.8.8: Public Lobby Polish
+# Combat Arena 3D — v7.8.9: A Steadier Journey
+
+**v7.8.9:** An experience audit improves menu readability in short and narrow windows, keyboard focus and navigation, safe solo pause on focus loss, controller recovery, and mouse attacks when pointer capture is refused. Camera shake has its own option. Settings and checkpoints reject malformed data safely, failed saves give a brief notice, and shader warm-up finishes pending variants before character cleanup. The two roads, lore, combat timings and visual identity are preserved. See [the audit](docs/experience-audit-v7.8.9.md).
 
 **v7.8.8:** A redesigned public lobby puts the adventure and Start action first, with a compact party list, optional controls and management, and direct access to Options. Clearer connection recovery, keyboard/controller focus, a quieter online HUD, smoother teammate walking and spectator-centered audio improve the full co-op flow. Controls tips no longer replay between bosses or chapters. See [the audit](docs/public-lobby-polish-v7.8.8.md).
 

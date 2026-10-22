@@ -9,7 +9,10 @@ const autoQuality = (() => {
   const A = CONFIG.VISUALS.autoQuality, ORDER = ['low', 'high', 'ultra'];
   let note = null;
   const savedGraphics = () => {
-    try { return 'graphics' in JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return true; }   // no storage: leave the default
+    try {
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      return !!saved && ['auto', ...ORDER].includes(saved.graphics);
+    } catch (e) { return false; }   // unreadable options still get a safe measured preset
   };
   function gpuName() {
     try {
@@ -78,7 +81,7 @@ const autoQuality = (() => {
       return note.pick;
     },
     // The preset to draw with: the saved one, or the detected one for Auto (and for an unknown saved name).
-    effective: () => settings.graphics in CONFIG.VISUALS.quality ? settings.graphics : detect().pick,
+    effective: () => ORDER.includes(settings.graphics) ? settings.graphics : detect().pick,
     // The Graphics option's choices, in order, and how each is named ("Auto (Ultra)").
     choices: () => ['auto', ...Object.keys(CONFIG.VISUALS.quality)],
     label: name => name === 'auto' ? `Auto (${CONFIG.VISUALS.quality[detect().pick].label})` : (CONFIG.VISUALS.quality[name] || CONFIG.VISUALS.quality[CONFIG.VISUALS.defaultQuality]).label,

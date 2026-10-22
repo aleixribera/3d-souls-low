@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.8.8';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.8.9';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -282,7 +282,8 @@ const CONFIG = {
                              'Tip: red attacks can be parried. Roll blue attacks.',
                              'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
                  staminaTipTime: 6 },
-         toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…' } },
+         toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',
+                   saveFailed: 'Progress could not be saved. Closing this page may lose progress.' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
         trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,

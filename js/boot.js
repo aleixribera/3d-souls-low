@@ -82,6 +82,7 @@ function registerListeners() {
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.isComposing) return;
   if (multiplayer.panelOpen) {
     if (code === 'Escape') { ev.preventDefault(); if (!ev.repeat) multiplayer.lobbyBack(); }
     return;
@@ -99,7 +100,8 @@ window.addEventListener('keydown', ev => {
     return;
   }
   if (Game.mode === 'menu' || Game.mode === 'pause') {
-    if (code === 'Tab') ev.preventDefault();
+    if (code === 'Tab') { ev.preventDefault(); if (!ev.repeat) Game.menuStep(ev.shiftKey ? 'up' : 'down'); return; }
+    if (code === 'Home' || code === 'End') { ev.preventDefault(); Game.select(code === 'Home' ? 0 : Game.menuItems.length - 1, true); return; }
     if (ev.repeat) return;
     const dir = ['up', 'down', 'left', 'right'].find(d => isKey(d, code));
     const handled = dir ? Game.menuStep(dir) || true
@@ -117,17 +119,31 @@ window.addEventListener('keydown', ev => {
   else input.down(code);
 });
 window.addEventListener('keyup', ev => input.up(ev.code));
-window.addEventListener('blur', () => input.held.clear());
+function suspendInput() {
+  input.suspended = true;
+  Game.clearControls(); gamepad.release(); gamepad.neutralRequired = true;
+  // Online combat keeps running; returning always requires a deliberate Resume in solo play.
+  if (!multiplayer.active()) Game.pause(true, true);
+}
+window.addEventListener('blur', suspendInput);
+window.addEventListener('focus', () => { input.suspended = document.hidden; });
+document.addEventListener('visibilitychange', () => { if (document.hidden) suspendInput(); else input.suspended = !document.hasFocus(); });
 hud.toggle.addEventListener('change', () => { settings.hitboxes = hud.toggle.checked; saveSettings(); });
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
+let pointerCaptureFailed = false;
+document.addEventListener('pointerlockerror', () => { pointerCaptureFailed = true; });
 canvas.addEventListener('mousedown', ev => {
   input.use('keyboard');
   if (multiplayer.spectatorMode) return;
   if (Game.mode !== 'play') return;
   ev.preventDefault();
   // The click that captures the mouse only captures it; it does not also swing the sword.
-  if (!document.pointerLockElement && canvas.requestPointerLock) {
-    try { canvas.requestPointerLock(); return; } catch (e) { /* unsupported: fall through and attack */ }
+  if (!document.pointerLockElement && canvas.requestPointerLock && !pointerCaptureFailed) {
+    try {
+      const capture = canvas.requestPointerLock();
+      if (capture && capture.catch) capture.catch(() => { pointerCaptureFailed = true; });
+      return;
+    } catch (e) { pointerCaptureFailed = true; }   // unsupported: fall through and attack
   }
   if (GAME_CODES.has('Mouse' + ev.button)) input.down('Mouse' + ev.button);
 });

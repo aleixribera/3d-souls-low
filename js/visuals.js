@@ -262,8 +262,10 @@ uniform vec3 wGrime, wMoss, wRust;
 vec3 wTri() {
 #ifdef W_SIMPLE
   vec3 a = abs(vWNrm);   // low quality: one read, from the side the surface faces most
-  if (a.y >= a.x && a.y >= a.z) return texture2D(wTop, vWPos.xz * wScaleTop).rgb;
-  return texture2D(wSide, (a.x > a.z ? vWPos.zy : vWPos.xy) * wScaleSide).rgb;
+  vec3 sampled = vec3(1.0);
+  if (a.y >= a.x && a.y >= a.z) sampled = texture2D(wTop, vWPos.xz * wScaleTop).rgb;
+  else sampled = texture2D(wSide, (a.x > a.z ? vWPos.zy : vWPos.xy) * wScaleSide).rgb;
+  return sampled;
 #else
   vec3 n = pow(abs(normalize(vWNrm)), vec3(6.0)); n /= n.x + n.y + n.z;
   return texture2D(wSide, vWPos.zy * wScaleSide).rgb * n.x + texture2D(wTop, vWPos.xz * wScaleTop).rgb * n.y
@@ -1322,7 +1324,12 @@ const visuals = (() => {
         for (const [p, visible] of parents) p.visible = visible;
         // Hidden legacy attack lights have a different light count from the warm-up frame. Compile the normal
         // idle scene too, before the first playable frame, without another full-size draw.
-        try { if (!quality.combatFx) renderer.compile(scene, camera); }
+        try {
+          if (!quality.combatFx) renderer.compile(scene, camera);
+          // r160 initializes compiled variants lazily when their uniforms are first read. Finish hidden variants
+          // during loading, before old rigs/NPCs can release their pending programs on the next reset.
+          for (const program of renderer.info.programs) program.getUniforms();
+        }
         finally { renderer.setViewport(viewport); renderer.setScissor(scissor); renderer.setScissorTest(scissorTest); }
       }
     },

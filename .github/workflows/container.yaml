@@ -57,6 +57,7 @@ jobs:
           node tests/boss-only.cjs
           node tests/fullscreen.cjs
           node tests/autoquality.cjs
+          node tests/experience.cjs
           bash -n deploy/update.sh
           node tests/deployment.cjs
           docker compose config --quiet
