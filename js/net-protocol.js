@@ -14,6 +14,7 @@
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
+    emptyLobbyTimeout: 60 * 1000,
     defaultCampaign: 'lands',
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     spectatorFov: [10, 150],

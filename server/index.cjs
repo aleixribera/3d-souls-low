@@ -13,6 +13,8 @@ function createServer(options = {}) {
   if (!Number.isInteger(capacity) || capacity < 2 || capacity > C.maxCapacity) throw new Error(`MAX_PLAYERS must be an integer from 2 to ${C.maxCapacity}`);
   const sim = createSimulation(), clients = new Map();
   const activityNow = options.activityNow || (() => performance.now());
+  const lobbyNow = options.lobbyNow || (() => performance.now());
+  let emptySince = null;
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
@@ -59,9 +61,13 @@ function createServer(options = {}) {
   const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000).map(p => ({ ...p.pose, id: p.id })));
   const error = (p, message) => send(p, { type: 'error', message });
   function stop(message, reason = null) {
-    session = null;
+    session = null; emptySince = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason }); broadcast(roster());
+  }
+  function expireEmptyLobby() {
+    if (session && emptySince !== null && lobbyNow() - emptySince >= C.emptyLobbyTimeout)
+      stop('The previous party left. Choose an adventure to start a fresh run.');
   }
   function start(kind, id, campaignId = null, boss = undefined) {
     const gauntlet = kind === 'gauntlet' && id === 'boss-only' ? sim.gauntlet(boss) : null;
@@ -83,6 +89,9 @@ function createServer(options = {}) {
     if (msg.type === 'hello') {
       if (p.hello) return;
       if (msg.protocol !== C.protocol || msg.build !== build) { p.ws.close(1008, 'Game updated. Reload this page.'); return; }
+      // Check before welcoming the player: an expired run must never send a
+      // stale start packet, even if the interval has not processed expiry yet.
+      expireEmptyLobby(); emptySince = null;
       p.name = net.name(msg.name) || p.name; p.hello = true;
       noteActivity(p);
       send(p, { id: p.id, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
@@ -214,11 +223,13 @@ function createServer(options = {}) {
       let msg; try { msg = JSON.parse(data); } catch { ws.close(1007, 'Invalid JSON.'); return; }
       try { message(p, msg); } catch (e) { console.error('Lobby message failed:', e); error(p, 'The server could not process that action.'); }
     });
-    ws.on('close', () => {
+    ws.on('close', code => {
       clients.delete(p.id);
-      // The run belongs to the server, including when the last player drops.
-      // Pause an empty party and let reconnecting players resume its progress.
-      if (!clients.size) accumulator = 0;
+      if (![...clients.values()].some(p => p.hello)) {
+        accumulator = 0;
+        if (p.hello && code === 1000) stop('The party left. Choose an adventure to start a fresh run.');
+        else if (session && emptySince === null) emptySince = lobbyNow();
+      }
       if (!refreshLeader('disconnect')) broadcast(roster());
     });
     const deadline = setTimeout(() => { if (!p.hello) ws.close(1008, 'Join timed out.'); }, C.connectTimeout); deadline.unref();
@@ -229,6 +240,7 @@ function createServer(options = {}) {
   const timer = setInterval(() => {
     const now = performance.now(), elapsed = Math.min((now - last) / 1000, 0.25); last = now;
     updateMetrics(now);
+    expireEmptyLobby();
     refreshLeader();
     if (!session || ![...clients.values()].some(p => p.ready)) { accumulator = 0; return; }
     syncPlayers(); accumulator += elapsed;

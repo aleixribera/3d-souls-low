@@ -26,7 +26,8 @@ async function join(origin, name) {
   return { ws, send, next, id: welcome.id, welcome, activity: async () => { send({ type: 'activity' }); send({ type: 'ping' }); await next('pong'); } };
 }
 (async () => {
-  const app = createServer(), peers = [];
+  let lobbyClock = 0;
+  const app = createServer({ lobbyNow: () => lobbyClock }), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   const add = async name => { const p = await join(origin, name); peers.push(p); return p; };
@@ -84,6 +85,36 @@ async function join(origin, name) {
     for (let i = 0; i <= Math.ceil(app.sim.campaignAdvanceTime * C.tickRate); i++) app.sim.tick(1 / C.tickRate);
     const next = (await rejoined.next('start', m => m.session.id === session.campaign.next)).session;
     assert.equal(next.campaign.number, 2, 'campaign continues after original party drops');
-    console.log('Continuity: stale leader, leader/non-leader/last disconnect, rejoin baseline, enemy HP, gates, abandoned execution and campaign advance passed.');
+    const empty = async () => {
+      for (let i = 0; i < 200 && app.clients.size; i++) await new Promise(resolve => setTimeout(resolve, 10));
+      assert.equal(app.clients.size, 0);
+    };
+    lobbyClock += C.emptyLobbyTimeout * 2;
+    await rejoined.activity();
+    assert.equal(app.session.epoch, next.epoch, 'a connected party never expires');
+    rejoined.ws.close(1000, 'Left lobby'); await empty();
+    assert.equal(app.session, null, 'last deliberate leave immediately clears the old run');
+    const fresh = await add('Fresh party');
+    assert.equal(fresh.welcome.session, null, 'returning players see lobby controls');
+    fresh.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
+    const run = (await fresh.next('start')).session;
+    fresh.ws.terminate(); await empty();
+    lobbyClock += C.emptyLobbyTimeout - 1;
+    const quick = await add('Quick reconnect');
+    assert.equal((await quick.next('start')).session.epoch, run.epoch, 'brief connection loss preserves the run');
+    quick.ws.terminate(); await empty();
+    lobbyClock += C.emptyLobbyTimeout;
+    const later = await add('Returning later');
+    assert.equal(later.welcome.session, null, 'timeout boundary clears the run before welcoming returning players');
+    assert.equal(app.session, null);
+    ready(later, run); await later.activity();
+    assert.equal(app.clients.get(later.id).ready, false, 'old-epoch loading packets cannot revive the abandoned run');
+    later.send({ type: 'control', action: 'start', kind: 'campaign', id: 'lands' });
+    const restarted = (await later.next('start')).session;
+    assert.equal(restarted.campaign.number, 1, 'new adventure starts at the beginning');
+    later.ws.terminate(); await empty(); lobbyClock += C.emptyLobbyTimeout;
+    for (let i = 0; i < 100 && app.session; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(app.session, null, 'the idle server also clears the run without waiting for a join');
+    console.log('Continuity: shared progress, quick recovery, deliberate leave reset, 60s empty expiry, clean returning lobby, stale packets and fresh starts passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

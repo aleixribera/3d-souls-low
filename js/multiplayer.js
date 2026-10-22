@@ -360,7 +360,9 @@ const multiplayer = (() => {
     joinAttempt++;
     clearTimeout(reconnectTimer); reconnectTimer = null;
     if (!retry) { reconnectWanted = false; reconnectAttempt = 0; }
-    intentionalClose = true; socket?.close(); socket = null;
+    intentionalClose = true;
+    if (retry) socket?.close(); else socket?.close(1000, 'Left lobby');
+    socket = null;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; resetStream(); clearRemotes();
     finale.cancelEnding();
     heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;

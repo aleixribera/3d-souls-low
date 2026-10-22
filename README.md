@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.1: Team Wipe Screen
+# Combat Arena 3D — v7.8.2: Fresh Lobby Returns
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.2:** Returning to an abandoned public lobby now shows the adventure controls. The last deliberate leave clears the run immediately; connection drops keep a 60-second reconnect window. Parties with players still connected keep their progress.
 
 **v7.8.1:** Team wipes now get a dramatic four-second crimson death screen with the defeated-boss count before returning the party to the lobby.
 

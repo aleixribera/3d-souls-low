@@ -544,7 +544,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.8.1';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.8.2';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
