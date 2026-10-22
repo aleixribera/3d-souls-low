@@ -12,6 +12,7 @@
     targetHysteresis: 0.8, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
+    leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;
   const id = s => typeof s === 'string' && s.length > 0 && s.length <= 240;

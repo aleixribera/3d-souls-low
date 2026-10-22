@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.2: Container Updates
+# Combat Arena 3D — v7.7.3: Active Lobby Leaders
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.3:** After five minutes without player input, leadership passes to another active player. The inactive player stays connected and the current run continues. If everyone is idle, the next person to provide input becomes leader. See [the behavior and update command](docs/lobby-leader-v7.7.3.md).
 
 **v7.7.2:** Releases publish a ready-to-run container to GitHub Container Registry. Update your homelab with `docker compose pull && docker compose up -d`; an optional timer checks every 15 minutes and defers while players are connected. See the [one-time switch and update guide](docs/container-updates.md).
 

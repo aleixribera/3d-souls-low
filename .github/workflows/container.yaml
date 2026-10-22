@@ -50,6 +50,7 @@ jobs:
         run: |
           node tests/net-timing.cjs
           node tests/multiplayer.cjs
+          node tests/lobby-leader.cjs
           node tests/fullscreen.cjs
           node tests/autoquality.cjs
           bash -n deploy/update.sh

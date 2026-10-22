@@ -12,6 +12,7 @@ function createServer(options = {}) {
   const capacity = Number(options.capacity ?? process.env.MAX_PLAYERS ?? C.defaultCapacity);
   if (!Number.isInteger(capacity) || capacity < 2 || capacity > C.maxCapacity) throw new Error(`MAX_PLAYERS must be an integer from 2 to ${C.maxCapacity}`);
   const sim = createSimulation(), clients = new Map();
+  const activityNow = options.activityNow || (() => performance.now());
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
@@ -22,6 +23,24 @@ function createServer(options = {}) {
     const body = JSON.stringify(data); payloadBytes += Buffer.byteLength(body); p.ws.send(body);
   }
   function broadcast(data) { for (const p of clients.values()) send(p, data); }
+  const isActive = (p, now) => p?.hello && p.ws.readyState === WebSocket.OPEN
+    && Number.isFinite(p.lastActivity) && now - p.lastActivity < C.leaderIdle;
+  function refreshLeader(reason = 'idle', now = activityNow()) {
+    if (isActive(clients.get(leader), now)) return false;
+    const previous = leader;
+    leader = [...clients.values()].find(p => isActive(p, now))?.id || null;
+    if (previous === leader) return false;
+    const next = clients.get(leader);
+    const prefix = previous ? reason === 'disconnect' ? 'The leader left. ' : 'The leader was inactive for five minutes. ' : '';
+    broadcast({ ...roster(), notice: prefix + (next ? `${next.name} is now the leader.` : 'No active leader. Press a key, move the mouse or use your controller to lead.') });
+    return true;
+  }
+  function noteActivity(p) {
+    const now = activityNow();
+    refreshLeader('idle', now);
+    p.lastActivity = now;
+    if (!leader) refreshLeader('idle', now);
+  }
   const playerFrames = () => [...clients.values()].filter(p => p.ready && p.pose).map(p => ({ ...p.pose, id: p.id, name: p.name, poseSeq: p.poseSeq }));
   function sendFrame(p, frame, players) { if (p.hello && p.ready) send(p, p.encoder.encode({ ...frame, server: metrics }, players)); }
   function updateMetrics(now) {
@@ -47,16 +66,21 @@ function createServer(options = {}) {
   function message(p, msg) {
     if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return;
     if (msg.type === 'hello') {
+      if (p.hello) return;
       if (msg.protocol !== C.protocol || msg.build !== build) { p.ws.close(1008, 'Game updated. Reload this page.'); return; }
       p.name = net.name(msg.name) || p.name; p.hello = true;
+      noteActivity(p);
       send(p, { id: p.id, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
       if (session) send(p, { type: 'start', session });
       broadcast(roster()); return;
     }
     if (!p.hello) return;
+    // Poses, transport keepalives, loading and animation clocks are not input.
+    if (msg.type === 'activity') { noteActivity(p); return; }
     if (msg.type === 'ping') { send(p, { type: 'pong', sent: msg.sent }); return; }
-    if (msg.type === 'name') { p.name = net.name(msg.name) || p.name; broadcast(roster()); return; }
+    if (msg.type === 'name') { noteActivity(p); p.name = net.name(msg.name) || p.name; broadcast(roster()); return; }
     if (msg.type === 'control') {
+      noteActivity(p);
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
       if (msg.action === 'start') {
         if (!['level', 'arena'].includes(msg.kind) || !net.id(msg.id)) return;
@@ -70,6 +94,7 @@ function createServer(options = {}) {
         if (game.complete && next && sim.catalog().levels.some(l => l.id === next)) start('level', next);
         else error(p, 'Finish this level first, or select another level.');
       } else if (msg.action === 'transfer' && clients.has(msg.player) && clients.get(msg.player).hello) {
+        if (!isActive(clients.get(msg.player), activityNow())) { error(p, 'That player is inactive. They must provide input before becoming leader.'); return; }
         leader = msg.player; broadcast(roster());
       } else if (msg.action === 'kick' && msg.player !== p.id && clients.has(msg.player)) clients.get(msg.player).ws.close(1008, 'Removed by the lobby leader.');
       return;
@@ -156,8 +181,9 @@ function createServer(options = {}) {
     const p = { ws, id: randomUUID(), name: `Player ${clients.size + 1}`, hello: false, ready: false, pose: null,
       lastPose: 0, lastSeq: 0, claims: new Set(), alive: true, windowAt: performance.now(), count: 0,
       encoder: new net.FrameEncoder(), poseSeq: 0, lastWritten: 0 };
+    p.lastActivity = null;
     ws._socket.setNoDelay(true);
-    clients.set(p.id, p); if (!leader) leader = p.id;
+    clients.set(p.id, p);
     ws.on('pong', () => { p.alive = true; });
     ws.on('error', () => {});
     ws.on('message', (data, binary) => {
@@ -170,9 +196,8 @@ function createServer(options = {}) {
     });
     ws.on('close', () => {
       clients.delete(p.id);
-      if (leader === p.id) leader = [...clients.values()].find(p => p.hello)?.id || clients.keys().next().value || null;
       if (!clients.size) { session = null; accumulator = 0; }
-      broadcast(roster());
+      if (!refreshLeader('disconnect')) broadcast(roster());
     });
     const deadline = setTimeout(() => { if (!p.hello) ws.close(1008, 'Join timed out.'); }, C.connectTimeout); deadline.unref();
   });
@@ -182,6 +207,7 @@ function createServer(options = {}) {
   const timer = setInterval(() => {
     const now = performance.now(), elapsed = Math.min((now - last) / 1000, 0.25); last = now;
     updateMetrics(now);
+    refreshLeader();
     if (!session || ![...clients.values()].some(p => p.ready)) { accumulator = 0; return; }
     syncPlayers(); accumulator += elapsed;
     try {

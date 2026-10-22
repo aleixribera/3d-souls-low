@@ -4,10 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
+const { config: C } = require('../js/net-protocol.js');
 const output = path.resolve(process.argv[2] || '.scratch/multiplayer-browser');
 fs.mkdirSync(output, { recursive: true });
 (async () => {
-  const app = createServer({ dev: true });
+  let activityClock = 0;
+  const app = createServer({ dev: true, activityNow: () => activityClock });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [], pages = [], timers = new Set();
@@ -40,6 +42,29 @@ fs.mkdirSync(output, { recursive: true });
     await a.waitForFunction(() => __arena.multiplayer.info.players.length === 2);
     await a.screenshot({ path: path.join(output, 'lobby.png') });
     assert.equal(await b.locator('#lobbyLeader').isVisible(), false, 'only leader sees controls');
+    const friendId = await b.evaluate(() => __arena.multiplayer.info.self);
+    const until = async test => {
+      for (let n = 0; n < 150; n++) { if (test()) return; await new Promise(resolve => setTimeout(resolve, 20)); }
+      throw new Error('Timed out waiting for player activity');
+    };
+    activityClock = C.leaderIdle - 1;
+    await b.keyboard.press('Tab');
+    await until(() => app.clients.get(friendId).lastActivity === activityClock);
+    activityClock = C.leaderIdle;
+    await a.waitForFunction(() => __arena.multiplayer.info.self !== __arena.multiplayer.info.leader);
+    await b.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
+    assert.equal(await b.locator('#lobbyLeader').isVisible(), true, 'active player receives lobby controls after timeout');
+    assert.equal(await a.locator('#lobbyLeader').isVisible(), false, 'AFK leader loses lobby controls');
+    const leaderId = await a.evaluate(() => __arena.multiplayer.info.self);
+    await a.evaluate(() => {
+      const read = gamepad.read;
+      try { gamepad.read = () => ({ buttons: [], axes: [0.6, 0, 0, 0] }); gamepad.poll(CONFIG.step); }
+      finally { gamepad.read = read; gamepad.release(); }
+    });
+    await until(() => app.clients.get(leaderId).lastActivity === activityClock);
+    await b.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Aleix/ }).getByRole('button', { name: 'Make leader' }).click();
+    await a.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
+    console.log('Keyboard/controller activity, five-minute AFK handoff and lobby controls on both browsers passed.');
     await a.locator('#lobbyAdventure').selectOption('arena/margit');
     await a.locator('#lobbyStart').click();
     for (const p of [a, b]) await p.waitForFunction(() => __arena.multiplayer.info.ready && __arena.multiplayer.info.receivedFrames > 2 && __arena.multiplayer.info.remotes === 1, { timeout: 90000 });

@@ -8,6 +8,8 @@ const multiplayer = (() => {
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   const decoder = new ArenaNet.FrameDecoder(), tracks = new Map();
+  const heldActivity = new Set();
+  let activityPending = false, lastActivitySent = -Infinity;
   const hitIds = new WeakMap();
   const panel = document.createElement('section');
   panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('aria-label', 'Public lobby');
@@ -18,7 +20,7 @@ const multiplayer = (() => {
     <div class="lobby-actions"><button id="lobbyStart">Start together</button><button id="lobbyRestart">Restart level</button>
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
-    <p class="lobby-hint">The leader chooses where you go. Joining during a session puts you at the shared checkpoint. Menus keep the online world running.</p></div>`;
+    <p class="lobby-hint">The leader chooses where you go. Leadership passes on after five minutes without input. Joining during a session puts you at the shared checkpoint. Menus keep the online world running.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
     #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}
@@ -37,6 +39,28 @@ const multiplayer = (() => {
   try { savedName = localStorage.getItem('combatArena.onlineName') || ''; } catch {}
   el('lobbyName').value = savedName;
   function send(data) { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data)); }
+  function flushActivity(now) {
+    if (connected && activityPending && now - lastActivitySent >= C.activityInterval) {
+      activityPending = false; lastActivitySent = now; send({ type: 'activity' });
+    }
+  }
+  function activity() {
+    if (!connected || document.visibilityState === 'hidden') return;
+    activityPending = true; flushActivity(performance.now());
+  }
+  function userActivity(ev) {
+    if (!ev.isTrusted || !connected) return;
+    if (ev.type === 'pointermove' && !ev.movementX && !ev.movementY) return;
+    if (ev.type === 'keydown') heldActivity.add(ev.code);
+    if (ev.type === 'keyup') heldActivity.delete(ev.code);
+    if (ev.type === 'pointerdown') heldActivity.add('pointer/' + ev.pointerId);
+    if (ev.type === 'pointerup' || ev.type === 'pointercancel') heldActivity.delete('pointer/' + ev.pointerId);
+    activity();
+  }
+  for (const type of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'pointercancel', 'pointermove', 'wheel'])
+    window.addEventListener(type, userActivity, { capture: true, passive: true });
+  window.addEventListener('blur', () => { heldActivity.clear(); activityPending = false; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { heldActivity.clear(); activityPending = false; } });
   function command(type, data = {}) { if (ready) send({ type, epoch: session.epoch, seq: ++seq, ...data }); }
   function control(action, data = {}) { send({ type: 'control', action, ...data }); }
   function show() {
@@ -55,6 +79,7 @@ const multiplayer = (() => {
   function leave(message = '') {
     intentionalClose = true; socket?.close(); socket = null;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; resetStream(); clearRemotes();
+    heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;
     party.classList.add('hidden'); panel.classList.add('hidden');
     if (Game.player) Game.clearActors();
     Game.loading = 0; el('loading').classList.remove('show'); Game.showMenu('main');
@@ -86,6 +111,7 @@ const multiplayer = (() => {
   }
   function updateRoster() {
     const owner = connected && self === leader;
+    if (connected) el('lobbyStatus').textContent = leader ? 'Connected. Anyone with this link can join.' : 'No active leader. Press a key, move the mouse or use your controller to lead.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
     el('lobbyRestart').disabled = !session;
@@ -112,6 +138,7 @@ const multiplayer = (() => {
   function receive(msg) {
     if (msg.type === 'welcome') {
       connected = true; starting = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
+      activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       for (const [label, kind, entries] of [['Levels', 'level', catalog.levels], ['Arena opponents', 'arena', catalog.bosses]]) {
         const group = document.createElement('optgroup'); group.label = label;
@@ -121,6 +148,7 @@ const multiplayer = (() => {
       el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
     } else if (msg.type === 'roster') {
       roster = msg.players; leader = msg.leader; updateRoster();
+      if (msg.notice) notice(msg.notice);
     } else if (msg.type === 'start') {
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes();
       const current = session;
@@ -176,6 +204,8 @@ const multiplayer = (() => {
   }
   function heartbeat(now) {
     if (!connected) return;
+    if (heldActivity.size && document.visibilityState !== 'hidden') activityPending = true;
+    flushActivity(now);
     if (deferredStart && !Game.pendingLoad) { const start = deferredStart; deferredStart = null; start(); }
     if (active() && !ready && Game.loading <= 0) { ready = true; send({ type: 'ready', epoch: session.epoch }); }
     if (active() && ready && now >= lastPose) {
@@ -383,7 +413,7 @@ const multiplayer = (() => {
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, heartbeat, update, hit, parry, lifesteal, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
     get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,
