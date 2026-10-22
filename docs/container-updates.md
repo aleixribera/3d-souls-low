@@ -27,7 +27,7 @@ curl -fsS -w '\n' http://127.0.0.1:3080/healthz
 
 Stop if a command fails. Pulling first verifies registry access before changing the existing Compose file. The download preserves `.env`; port 3080 is the default. Use your usual `sudo` for Docker if needed. Your Funnel mapping stays as it is. Everyone should reload after an update.
 
-GitHub initially creates container packages as private. If the first pull returns `denied`, the owner must once open [this package](https://github.com/users/aleixribera/packages/container/3d-souls-low), choose **Package settings → Change visibility → Public**, then retry. Public container pulls require no GitHub login or token. [GitHub Container Registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+The image is public; anonymous access was verified for v7.7.2 on 22 October 2026. No GitHub login or token is needed on Ubuntu. If access is ever changed and a pull returns `denied`, the owner can restore **Package settings → Change visibility → Public** on [this package](https://github.com/users/aleixribera/packages/container/3d-souls-low). [GitHub Container Registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 ## Every future manual update
 
@@ -94,3 +94,5 @@ docker compose -f compose.yaml -f compose.source.yaml up -d --build
 ```
 
 That override is for a full source checkout, not needed for normal homelab operation.
+
+Release validation: [the publishing workflow](https://github.com/aleixribera/3d-souls-low/actions/runs/39760696842) passed the shared simulation, updater failure/rollback fixtures, Compose validation, actual Docker build and a live HTTP/WebSocket/boss smoke test. Both `linux/amd64` and `linux/arm64` images are published.
