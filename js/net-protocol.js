@@ -17,6 +17,7 @@
     emptyLobbyTimeout: 60 * 1000,
     defaultCampaign: 'lands',
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
+    runIntroScreenTime: 5,
     spectatorFov: [10, 150],
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;

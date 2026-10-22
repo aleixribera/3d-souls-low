@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.2: Fresh Lobby Returns
+# Combat Arena 3D — v7.8.3: Golden Beginnings
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.3:** New public story and BOSS ONLY runs begin with a gold five-second opening ceremony: a glowing crest, drifting embers, and a distinct title for each road. Combat waits for the whole party to finish loading and see the opening. Chapter travel and late joins keep their normal flow.
 
 **v7.8.2:** Returning to an abandoned public lobby now shows the adventure controls. The last deliberate leave clears the run immediately; connection drops keep a 60-second reconnect window. Parties with players still connected keep their progress.
 

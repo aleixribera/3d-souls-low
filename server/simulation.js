@@ -56,7 +56,7 @@ globalThis.host = (() => {
     const story = STORIES.find(s => s.id === id); if (!story) return null;
     const index = level === undefined ? 0 : story.chapters.findIndex(c => c.level === level);
     const chapter = story.chapters[index]; if (!chapter) return null;
-    return { id: story.id, name: story.name, level: chapter.level, title: chapter.title, line: chapter.line,
+    return { id: story.id, name: story.name, intro: LOBBY_INTROS.some(x => x.id === story.id), level: chapter.level, title: chapter.title, line: chapter.line,
       number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
   }
   function gauntlet(boss) {
@@ -118,9 +118,9 @@ globalThis.host = (() => {
     Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : !Game.duel.alive();
     completedFor = Game.complete ? completedFor + dt : 0;
   }
-  function tick(dt, holdBoss = false) {
+  function tick(dt, holdSimulation = false) {
     time += dt;
-    if (holdBoss) return;
+    if (holdSimulation) return;
     const living = players.filter(p => p.alive());
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.

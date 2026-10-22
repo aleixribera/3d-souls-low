@@ -7,6 +7,14 @@ The game text lives in `js/data/lore.js` (dialogues, inscriptions, scenes), `js/
 
 Voice: archaic, understated, melancholic, tender in places. No modern words, no jokes. Show, never tell the whole.
 
+## Public-lobby opening ceremonies
+
+These gold title cards introduce a new shared run; they do not replace chapter loading lines or change the story.
+
+- Ashmere — **RISE FROM ASH**: “From the prison to the crown, / let no darkness turn you back.”
+- The Lands Between — **FOLLOW THE GOLD**: “Grace calls you to the Lands Between. / Walk the broken road. Claim the Elden Throne.”
+- BOSS ONLY — **DEFY THEM ALL**: “Every foe. One unbroken trial. / Stand together, or begin again.”
+
 ## Story V2: the shorter road through Ashmere
 
 Story V2 is an alternate playable staging of the same tale, with its own save. It does not replace either road.

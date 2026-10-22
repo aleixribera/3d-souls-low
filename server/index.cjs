@@ -69,7 +69,7 @@ function createServer(options = {}) {
     if (session && emptySince !== null && lobbyNow() - emptySince >= C.emptyLobbyTimeout)
       stop('The previous party left. Choose an adventure to start a fresh run.');
   }
-  function start(kind, id, campaignId = null, boss = undefined) {
+  function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     const gauntlet = kind === 'gauntlet' && id === 'boss-only' ? sim.gauntlet(boss) : null;
     if (kind === 'gauntlet' && !gauntlet) throw new Error('Unknown boss run');
     if (gauntlet) { kind = 'arena'; id = gauntlet.boss; }
@@ -79,10 +79,11 @@ function createServer(options = {}) {
     session = sim.start(kind, id);
     if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;
+    if (opening && (campaign?.intro || gauntlet)) session.opening = true;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false;
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
-    broadcast({ type: 'start', session }); broadcast(roster());
+    broadcast({ type: 'start', session, opening: !!session.opening }); broadcast(roster());
   }
   function message(p, msg) {
     if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return;
@@ -108,8 +109,8 @@ function createServer(options = {}) {
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
       if (msg.action === 'start') {
         if (!['campaign', 'level', 'arena', 'gauntlet'].includes(msg.kind) || !net.id(msg.id)) return;
-        try { start(msg.kind, msg.id); } catch (e) { error(p, e.message); }
-      } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', 'boss-only') : start(session.kind, session.id, session.campaign?.id);
+        try { start(msg.kind, msg.id, null, undefined, true); } catch (e) { error(p, e.message); }
+      } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', 'boss-only', null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
       else if (msg.action === 'lobby') {
         stop('The leader returned everyone to the lobby.');
       } else if (msg.action === 'next' && session && !session.gauntlet) {
@@ -246,12 +247,13 @@ function createServer(options = {}) {
     syncPlayers(); accumulator += elapsed;
     try {
       while (accumulator >= 1 / C.tickRate) {
-        if (session.teamWipeOnly && !bossStarted) {
+        if ((session.teamWipeOnly || session.opening) && !bossStarted) {
           const party = [...clients.values()].filter(p => p.hello);
-          bossLoadFor = party.length && party.every(p => p.ready && p.pose) ? bossLoadFor + 1 / C.tickRate : 0;
-          bossStarted = bossLoadFor >= C.bossLoadGrace;
+          const allReady = party.length > 0 && party.every(p => p.ready && p.pose);
+          bossLoadFor = allReady ? bossLoadFor + 1 / C.tickRate : 0;
+          bossStarted = allReady && bossLoadFor >= (session.teamWipeOnly ? C.bossLoadGrace : 0);
         }
-        const began = performance.now(); sim.tick(1 / C.tickRate, session.teamWipeOnly && !bossStarted); ticks++;
+        const began = performance.now(); sim.tick(1 / C.tickRate, (session.teamWipeOnly || session.opening) && !bossStarted); ticks++;
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
         accumulator -= 1 / C.tickRate; sinceSnapshot += 1 / C.tickRate;
         if (session.teamWipeOnly) {

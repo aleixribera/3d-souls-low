@@ -50,6 +50,14 @@ function peer(url) {
       assert.equal(session.campaign.total, 8);
       assert.equal(session.campaign.next, chapters[i + 1] || null);
       assert.ok(session.campaign.title && session.campaign.line);
+      if (i === 0) {
+        assert.equal(session.opening, true, 'new campaigns carry the opening ceremony');
+        const held = () => app.sim.inspect().Game.enemies.map(e => [e.netId, e.x, e.y, e.z, e.state, e.stateTime]);
+        const before = held();
+        a.ready(session);
+        await a.next('frame', m => m.frame.epoch === session.epoch && m.frame.time > 0.1);
+        assert.deepEqual(held(), before, 'story enemies wait until the whole party has finished its intro');
+      } else assert.equal(session.opening, undefined, 'automatic chapters do not repeat the ceremony');
       for (const p of peers) p.ready(session);
       await a.next('frame', m => m.frame.epoch === session.epoch && m.frame.time > 0);
       if (i === 0) {
