@@ -256,11 +256,16 @@ const Game = {
   startLevel(id) {
     this.kind = 'level'; this.eldenBoss = null; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
     const ch = this.story && story.chapter(id);
+    const onlineCard = typeof multiplayer !== 'undefined' && multiplayer.chapterCard(id);
     if (ch) { this.showLoading(ch.title, ch.line); this.loading = CONFIG.story.titleTime; story.onLevelStart(); }   // Souls-style title over the load
+    else if (onlineCard) { this.showLoading(...onlineCard); this.loading = Math.max(this.loading, CONFIG.story.titleTime); }
     else this.showLoading(this.level.name, this.level.description);
   },
   // The level that follows this one: the next chapter in Story mode, else the level's own `next`.
-  nextLevelId() { return this.story ? story.nextLevelId(this.level.id) : this.level.next || null; },
+  nextLevelId() {
+    if (typeof multiplayer !== 'undefined' && multiplayer.campaign) return multiplayer.campaign.next;
+    return this.story ? story.nextLevelId(this.level.id) : this.level.next || null;
+  },
   // The loading screen over a fresh level or duel: its name, a line about it, and the controller note. The world
   // waits behind it (boot.js steps nothing while `loading` > 0), then it fades.
   showLoading(name, tip) {
@@ -287,6 +292,8 @@ const Game = {
   },
   // What a level's loading screen says: its chapter title and line in Story mode, else its name and description.
   levelCard(id) {
+    const online = typeof multiplayer !== 'undefined' && multiplayer.chapterCard(id);
+    if (online) return online;
     const L = ALL_LEVELS.find(l => l.id === id), ch = this.story && story.chapter(id);
     return ch ? [ch.title, ch.line] : [L ? L.name : '', L ? L.description : ''];
   },

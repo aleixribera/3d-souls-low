@@ -5,8 +5,14 @@
 globalThis.host = (() => {
   let epoch = 0, time = 0, attackSerial = 0, bolts = [], eventList = [], history = [];
   let players = [], checkpoint = null;
+  let completedFor = 0;
   const crowdClocks = new Map();
   const C = ArenaNet.config;
+  for (const story of STORIES) {
+    if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
+      throw new Error(`Campaign ${story.id} has an unknown or empty chapter list.`);
+  }
+  if (!STORIES.some(s => s.id === C.defaultCampaign)) throw new Error('Unknown default multiplayer campaign: ' + C.defaultCampaign);
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
     isAttacking() { return this.state === PS.ATTACK || this.state === PS.JUMP_ATTACK; },
@@ -42,9 +48,19 @@ globalThis.host = (() => {
   };
   function catalog() {
     return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
+      campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
+      defaultAdventure: { kind: 'campaign', id: C.defaultCampaign },
       bosses: [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].map(e => ({ id: e.id, name: e.name })) };
   }
+  function campaign(id, level) {
+    const story = STORIES.find(s => s.id === id); if (!story) return null;
+    const index = level === undefined ? 0 : story.chapters.findIndex(c => c.level === level);
+    const chapter = story.chapters[index]; if (!chapter) return null;
+    return { id: story.id, name: story.name, level: chapter.level, title: chapter.title, line: chapter.line,
+      number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
+  }
   function start(kind, id) {
+    if (!['level', 'arena'].includes(kind)) throw new Error('Unknown game mode');
     if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id]) throw new Error('Unknown level or opponent');
     Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null;
     const d = kind === 'arena' && ENEMY_BY_ID[id], L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
@@ -57,7 +73,7 @@ globalThis.host = (() => {
     Game.enemies = Game.makeEnemies();
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
-    epoch++; time = 0; eventList = []; bolts = []; history = []; players = [];
+    epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; history = []; players = [];
     return { epoch, kind, id, spawn: checkpoint };
   }
   function setPlayers(list) { players = list.map(s => proxy(s, s.id)); }
@@ -93,6 +109,7 @@ globalThis.host = (() => {
       if (t.state === 'warning' && t.timer >= t.warning) { t.state = 'sprung'; world.openHole(t.region, t.collapse); eventList.push({ type: 'trapSprung', id: t.id }); }
     }
     Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : !Game.duel.alive();
+    completedFor = Game.complete ? completedFor + dt : 0;
   }
   function tick(dt) {
     time += dt;
@@ -204,9 +221,10 @@ globalThis.host = (() => {
     const e = enemy(msg.enemy);
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
   }
-  return { catalog, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { catalog, campaign, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
-    get state() { return { epoch, time, checkpoint, complete: Game.complete }; },
+    campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
+    get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
     // Test harnesses can inspect state without giving public clients a debug API.
     inspect: () => ({ Game, world, players, crowd }),
   };

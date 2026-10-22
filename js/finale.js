@@ -9,6 +9,7 @@
 // get the Level 5 jumps (Test Grounds) and F10, which empties the current boss bar.
 const finale = (() => {
   const F = CONFIG.finale, V3 = THREE.Vector3;
+  const onlineGame = () => typeof multiplayer !== 'undefined' && multiplayer.active();
   let L = null;         // the level being scripted (one with `ending`), or null
   let group = null;     // this level's own drawn things
   let st = null;        // its state; rebuilt on every level start
@@ -133,12 +134,12 @@ const finale = (() => {
   }
 
   // ---- every fixed step of a level ------------------------------------------------------------------------------
-  function update(game, dt) {
+  function update(game, dt, online = false) {
     if (!st) return;
     const p = game.player;
     // The fog gate: open until the player is inside the throne room with the fight on; then it drops behind them and
     // stays down until they win or die (the respawn puts them back at the bonfire outside, the gate open again).
-    if (st.fog) {
+    if (st.fog && !online) {
       const f = st.fog, zone = game.zones.find(z => z.id === f.zoneId), won = zone.gate.open;
       // Inside: in the zone, on the gate's floor and clear of the gate's own doorway (on whichever side the room lies).
       const b = f.gate.box, pad = 0.3, clear = p.x < b.x0 - pad || p.x > b.x1 + pad || p.z < b.z0 - pad || p.z > b.z1 + pad;
@@ -334,7 +335,7 @@ const finale = (() => {
     const e = d.enemy;
     if (!st || !isBoss(e) || !e.lastPhase() || !L.ending) return;
     st.ending = { boss: e, t: 0, stage: 0 };
-    try { localStorage.setItem(storeKey(L.id), '1'); } catch (err) { /* private window: the flag is just not kept */ }
+    if (!onlineGame()) try { localStorage.setItem(storeKey(L.id), '1'); } catch (err) { /* private window: the flag is just not kept */ }
   });
 
   // ---- the ending ------------------------------------------------------------------------------------------------------
@@ -377,8 +378,9 @@ const finale = (() => {
     }
     if (r.weapon && t >= D.blaze) r.weapon.visible = false;   // the blade stays behind, standing in the floor
   }
-  let overlay = null, overlayTimer = null, padLoop = 0;
+  let overlay = null, overlayTimer = null, padLoop = 0, overlayCleanup = null;
   function hideEnding() {
+    if (overlayCleanup) { overlayCleanup(); overlayCleanup = null; }
     if (overlay) overlay.remove();
     overlay = null; clearTimeout(overlayTimer); cancelAnimationFrame(padLoop);
   }
@@ -387,6 +389,7 @@ const finale = (() => {
     Game.mode = 'ending'; input.clear();
     if (document.pointerLockElement) document.exitPointerLock();
     const E = F.ending;
+    const online = onlineGame();
     const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
     // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
     const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
@@ -416,7 +419,7 @@ const finale = (() => {
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
       <div class="thanks">THANK YOU FOR PLAYING</div>
-      <div class="back">Press any key to return to the title<br><button type="button">Return to title</button></div>`;
+      <div class="back">Press any key to return to ${online ? 'the lobby' : 'the title'}<br><button type="button">${online ? 'Return to lobby' : 'Return to title'}</button></div>`;
     document.body.appendChild(overlay);
     const cardEls = [...overlay.querySelectorAll('.card')], roll = overlay.querySelector('.roll'), thanks = overlay.querySelector('.thanks'), back = overlay.querySelector('.back');
     let i = 0, canLeave = false;
@@ -434,12 +437,14 @@ const finale = (() => {
     nextCard();
     const leave = () => {
       if (!canLeave || !overlay) return;
-      hideEnding(); window.removeEventListener('keydown', onKey, true); window.removeEventListener('pointerdown', onKey, true);
+      hideEnding();
       events.emit('endingDone');   // Story mode (js/story.js) marks the story complete and shows its own screen
-      if (Game.mode === 'ending') { Game.reset(); Game.showMenu('main'); }
+      if (onlineGame()) { Game.mode = 'play'; $('fade').classList.remove('show'); multiplayer.show(); }
+      else if (Game.mode === 'ending') { Game.reset(); Game.showMenu('main'); }
     };
     const onKey = ev => { if (canLeave) { ev.preventDefault(); ev.stopPropagation(); leave(); } };
     window.addEventListener('keydown', onKey, true); window.addEventListener('pointerdown', onKey, true);
+    overlayCleanup = () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('pointerdown', onKey, true); };
     // A gamepad: any button once the way back shows.
     const pads = () => { padLoop = requestAnimationFrame(pads); if (!canLeave) return;
       for (const g of (navigator.getGamepads ? navigator.getGamepads() : [])) if (g && g.buttons.some(b => b.pressed)) { leave(); return; } };
@@ -482,6 +487,8 @@ const finale = (() => {
   Game.renderHooks.push(render);
   return {
     reset, update, devItems, jump, depleteBoss, seenSightings, skipSightings,
+    updateOnline: (game, dt) => update(game, dt, true),
+    cancelEnding() { if (st) st.ending = null; hideEnding(); $('fade').classList.remove('show'); },
     completed(id = 'final-castle') { try { return localStorage.getItem(storeKey(id)) === '1'; } catch (err) { return false; } },
     get state() { return st; },
   };

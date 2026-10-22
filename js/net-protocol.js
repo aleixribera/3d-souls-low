@@ -13,6 +13,7 @@
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
+    defaultCampaign: 'lands',
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;
   const id = s => typeof s === 'string' && s.length > 0 && s.length <= 240;

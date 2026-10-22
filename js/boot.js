@@ -182,13 +182,13 @@ function frame(now) {
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   multiplayer.heartbeat(now);
   document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && (Game.mode === 'play' || input.device === 'pad'));   // pointer only for mouse-driven menus
-  if ((Game.mode !== 'play' && !(multiplayer.active() && Game.mode === 'pause')) || Game.manualClock) { accumulator = 0; return; }   // online menus keep the world running
+  if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
   if (accumulator >= CONFIG.step) accumulator = 0;   // stalled tab: drop the backlog instead of catching up
-  Game.render(accumulator / CONFIG.step, frameDt);
+  if (Game.mode !== 'ending') Game.render(accumulator / CONFIG.step, frameDt);
 }
 requestAnimationFrame(frame);
 

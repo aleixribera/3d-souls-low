@@ -57,10 +57,14 @@ function createServer(options = {}) {
   }
   const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000).map(p => ({ ...p.pose, id: p.id })));
   const error = (p, message) => send(p, { type: 'error', message });
-  function start(kind, id) {
+  function start(kind, id, campaignId = null) {
+    const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
+    if ((kind === 'campaign' || campaignId) && !campaign) throw new Error('Unknown campaign or chapter');
+    if (campaign) { kind = 'level'; id = campaign.level; }
     session = sim.start(kind, id);
+    if (campaign) session.campaign = campaign;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
-    sinceSnapshot = 0; server.lastSignature = null;
+    accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session }); broadcast(roster());
   }
   function message(p, msg) {
@@ -83,15 +87,15 @@ function createServer(options = {}) {
       noteActivity(p);
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
       if (msg.action === 'start') {
-        if (!['level', 'arena'].includes(msg.kind) || !net.id(msg.id)) return;
+        if (!['campaign', 'level', 'arena'].includes(msg.kind) || !net.id(msg.id)) return;
         try { start(msg.kind, msg.id); } catch (e) { error(p, e.message); }
-      } else if (msg.action === 'restart' && session) start(session.kind, session.id);
+      } else if (msg.action === 'restart' && session) start(session.kind, session.id, session.campaign?.id);
       else if (msg.action === 'lobby') {
         session = null; for (const p of clients.values()) { p.ready = false; p.pose = null; }
         broadcast({ type: 'stop' }); broadcast(roster());
       } else if (msg.action === 'next' && session) {
-        const game = sim.inspect().Game, next = game.level.next;
-        if (game.complete && next && sim.catalog().levels.some(l => l.id === next)) start('level', next);
+        const game = sim.inspect().Game, next = session.campaign ? session.campaign.next : game.level.next;
+        if (game.complete && next && sim.catalog().levels.some(l => l.id === next)) start('level', next, session.campaign?.id);
         else error(p, 'Finish this level first, or select another level.');
       } else if (msg.action === 'transfer' && clients.has(msg.player) && clients.get(msg.player).hello) {
         if (!isActive(clients.get(msg.player), activityNow())) { error(p, 'That player is inactive. They must provide input before becoming leader.'); return; }
@@ -221,6 +225,12 @@ function createServer(options = {}) {
           sinceSnapshot = 0; server.lastSignature = signature;
           const frame = sim.frame(), players = playerFrames();
           for (const p of clients.values()) sendFrame(p, frame, players);
+        }
+        // A campaign carries the entire party through its data-defined chapter
+        // order, using the same completion delay as solo story play.
+        if (session.campaign?.next && sim.state.completedFor >= sim.campaignAdvanceTime) {
+          start('level', session.campaign.next, session.campaign.id);
+          break;
         }
       }
     } catch (e) {

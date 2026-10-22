@@ -20,7 +20,7 @@ const multiplayer = (() => {
     <div class="lobby-actions"><button id="lobbyStart">Start together</button><button id="lobbyRestart">Restart level</button>
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
-    <p class="lobby-hint">The leader chooses where you go. Leadership passes on after five minutes without input. Joining during a session puts you at the shared checkpoint. Menus keep the online world running.</p></div>`;
+    <p class="lobby-hint">The full Elden Ring campaign is selected by default. Completed chapters carry everyone into the next chapter. The leader can also choose a level or arena. Leadership passes on after five minutes without input.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
     #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}
@@ -74,11 +74,16 @@ const multiplayer = (() => {
   }
   function hide() { panel.classList.add('hidden'); if (active()) Game.resume(); }
   function active() { return connected && !!session && loaded; }
+  function chapterCard(id) {
+    const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
+    return chapter ? [chapter.title, chapter.line] : null;
+  }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
   function resetStream() { tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; }
   function leave(message = '') {
     intentionalClose = true; socket?.close(); socket = null;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; resetStream(); clearRemotes();
+    finale.cancelEnding();
     heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;
     party.classList.add('hidden'); panel.classList.add('hidden');
     if (Game.player) Game.clearActors();
@@ -115,7 +120,9 @@ const multiplayer = (() => {
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
     el('lobbyRestart').disabled = !session;
-    el('lobbyNext').disabled = !session;
+    el('lobbyNext').disabled = !session || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
+    el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
+    el('lobbyRestart').textContent = session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session;
     el('lobbyStart').disabled = !connected;
     el('lobbyPlayers').textContent = '';
@@ -132,7 +139,9 @@ const multiplayer = (() => {
   }
   function updateStatus() {
     const buffered = latestFrame && playback !== null ? Math.max(0, Math.round((latestFrame.time - playback) * 1000)) : 0;
-    party.textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape for lobby`;
+    const road = session?.campaign;
+    const chapter = road ? `\n${road.name} · Chapter ${road.number}/${road.total}${latestFrame?.complete && !road.next ? ' · Complete' : ''}` : '';
+    party.textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape for lobby`;
     party.style.whiteSpace = 'pre-line'; party.classList.toggle('hidden', !active());
   }
   function receive(msg) {
@@ -140,24 +149,27 @@ const multiplayer = (() => {
       connected = true; starting = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
-      for (const [label, kind, entries] of [['Levels', 'level', catalog.levels], ['Arena opponents', 'arena', catalog.bosses]]) {
+      for (const [label, kind, entries] of [['Full campaigns', 'campaign', catalog.campaigns], ['Individual levels', 'level', catalog.levels], ['Arena opponents', 'arena', catalog.bosses]]) {
         const group = document.createElement('optgroup'); group.label = label;
-        for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = entry.name; group.appendChild(option); }
+        for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = entry.name + (kind === 'campaign' ? ` · Full campaign (${entry.chapters} chapters)` : ''); group.appendChild(option); }
         select.appendChild(group);
       }
+      select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
       el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
     } else if (msg.type === 'roster') {
       roster = msg.players; leader = msg.leader; updateRoster();
       if (msg.notice) notice(msg.notice);
     } else if (msg.type === 'start') {
+      finale.cancelEnding();
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes();
       const current = session;
       Game.story = false; Game.eldenBoss = null; panel.classList.add('hidden');
       const data = (session.kind === 'level' ? catalog.levels : catalog.bosses).find(x => x.id === session.id);
+      el('lobbyAdventure').value = session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
-        Game.loadingFirst(data?.name || 'Public lobby', 'Playing together', () => {
+        Game.loadingFirst(...(chapterCard(session.id) || [data?.name || 'Public lobby', 'Playing together']), () => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer();
@@ -167,6 +179,7 @@ const multiplayer = (() => {
       };
       begin();
     } else if (msg.type === 'stop') {
+      finale.cancelEnding();
       session = null; loaded = false; resetStream(); clearRemotes(); Game.loading = 0; el('loading').classList.remove('show');
       if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
@@ -291,7 +304,12 @@ const multiplayer = (() => {
       else if (s.state === 'warning' && t.state === 'set') events.emit('trapWarning', { trap: t });
       Object.assign(t, s);
     }
-    if (frame.complete && !Game.complete) { Game.complete = true; if (Game.kind === 'level') events.emit('levelComplete'); }
+    if (frame.complete && !Game.complete) {
+      Game.complete = true;
+      if (Game.kind === 'level') events.emit('levelComplete');
+      updateRoster();
+      if (session.campaign) notice(session.campaign.next ? 'Chapter complete. Everyone continues to the next chapter automatically.' : session.campaign.done);
+    }
   }
   function animateGates(dt) {
     for (const g of world.gates) {
@@ -325,6 +343,9 @@ const multiplayer = (() => {
     p.savePrev(); for (const e of Game.enemies) e.savePrev(); c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
     sampleEnemies(dt);
     animateGates(dt);
+    // Credits may outlast the replay buffer. Consume the shared stream at the
+    // normal fixed step while leaving personal movement/combat at the ending.
+    if (Game.mode === 'ending') return;
     if (!p.alive()) {
       Game.deathTimer += dt;
       if (Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
@@ -340,7 +361,7 @@ const multiplayer = (() => {
       if (!p.alive()) Game.onPlayerDeath();
     }
     projectiles.update(Game, dt);
-    if (Game.kind === 'level') { lore.update(Game, dt); updateHazards(dt); }
+    if (Game.kind === 'level') { lore.update(Game, dt); updateHazards(dt); finale.updateOnline(Game, dt); }
     Game.updateCamera(dt, false);
     if (!Game.player.alive() && Game.deathTimer === 0) Game.onPlayerDeath();
   }
@@ -413,7 +434,8 @@ const multiplayer = (() => {
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, chapterCard, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
+    get campaign() { return connected ? session?.campaign || null : null; },
     get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,

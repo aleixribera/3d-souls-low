@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.3: Active Lobby Leaders
+# Combat Arena 3D — v7.7.4: The Full Campaign Together
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.4:** The public lobby defaults to the full eight-chapter Elden Ring campaign. Start together in Stormhill; completed chapters automatically carry the party through the story to the Haligtree, its ending and credits. Late joins and chapter restarts preserve the current campaign, and solo saves stay separate. See [the campaign and update guide](docs/campaign-v7.7.4.md).
 
 **v7.7.3:** After five minutes without player input, leadership passes to another active player. The inactive player stays connected and the current run continues. If everyone is idle, the next person to provide input becomes leader. See [the behavior and update command](docs/lobby-leader-v7.7.3.md).
 
