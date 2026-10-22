@@ -14,7 +14,7 @@ function createServer(options = {}) {
   const sim = createSimulation(), clients = new Map();
   const activityNow = options.activityNow || (() => performance.now());
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
-  let arenaWipeFor = 0;
+  let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })) });
@@ -58,14 +58,23 @@ function createServer(options = {}) {
   }
   const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000).map(p => ({ ...p.pose, id: p.id })));
   const error = (p, message) => send(p, { type: 'error', message });
-  function start(kind, id, campaignId = null) {
+  function stop(message) {
+    session = null;
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
+    broadcast({ type: 'stop', message }); broadcast(roster());
+  }
+  function start(kind, id, campaignId = null, boss = undefined) {
+    const gauntlet = kind === 'gauntlet' && id === 'boss-only' ? sim.gauntlet(boss) : null;
+    if (kind === 'gauntlet' && !gauntlet) throw new Error('Unknown boss run');
+    if (gauntlet) { kind = 'arena'; id = gauntlet.boss; }
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw new Error('Unknown campaign or chapter');
     if (campaign) { kind = 'level'; id = campaign.level; }
     session = sim.start(kind, id);
+    if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
-    arenaWipeFor = 0;
+    arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false;
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session }); broadcast(roster());
   }
@@ -89,13 +98,12 @@ function createServer(options = {}) {
       noteActivity(p);
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
       if (msg.action === 'start') {
-        if (!['campaign', 'level', 'arena'].includes(msg.kind) || !net.id(msg.id)) return;
+        if (!['campaign', 'level', 'arena', 'gauntlet'].includes(msg.kind) || !net.id(msg.id)) return;
         try { start(msg.kind, msg.id); } catch (e) { error(p, e.message); }
-      } else if (msg.action === 'restart' && session) start(session.kind, session.id, session.campaign?.id);
+      } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', 'boss-only') : start(session.kind, session.id, session.campaign?.id);
       else if (msg.action === 'lobby') {
-        session = null; for (const p of clients.values()) { p.ready = false; p.pose = null; }
-        broadcast({ type: 'stop' }); broadcast(roster());
-      } else if (msg.action === 'next' && session) {
+        stop('The leader returned everyone to the lobby.');
+      } else if (msg.action === 'next' && session && !session.gauntlet) {
         const game = sim.inspect().Game, next = session.campaign ? session.campaign.next : game.level.next;
         if (game.complete && next && sim.catalog().levels.some(l => l.id === next)) start('level', next, session.campaign?.id);
         else error(p, 'Finish this level first, or select another level.');
@@ -226,7 +234,12 @@ function createServer(options = {}) {
     syncPlayers(); accumulator += elapsed;
     try {
       while (accumulator >= 1 / C.tickRate) {
-        const began = performance.now(); sim.tick(1 / C.tickRate); ticks++;
+        if (session.teamWipeOnly && !bossStarted) {
+          const party = [...clients.values()].filter(p => p.hello);
+          bossLoadFor = party.length && party.every(p => p.ready && p.pose) ? bossLoadFor + 1 / C.tickRate : 0;
+          bossStarted = bossLoadFor >= C.bossLoadGrace;
+        }
+        const began = performance.now(); sim.tick(1 / C.tickRate, session.teamWipeOnly && !bossStarted); ticks++;
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
         accumulator -= 1 / C.tickRate; sinceSnapshot += 1 / C.tickRate;
         if (session.teamWipeOnly) {
@@ -235,7 +248,11 @@ function createServer(options = {}) {
           // peer from this check, while a stale living pose never counts as dead.
           const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated);
           arenaWipeFor = wiped && sim.inspect().Game.duel?.alive() ? arenaWipeFor + 1 / C.tickRate : 0;
-          if (arenaWipeFor >= sim.arenaWipeDelay) { start(session.kind, session.id); break; }
+          if (arenaWipeFor >= sim.arenaWipeDelay) {
+            if (session.gauntlet) stop('TEAM WIPED · The boss run ends here. Choose BOSS ONLY to try again from boss 1.');
+            else start(session.kind, session.id);
+            break;
+          }
         }
         // Capture every state transition (even a short active phase) reliably.
         const signature = sim.inspect().Game.enemies.map(e => `${e.state}/${e.netAttack}/${e.hitIndex}/${!!e.hitbox}/${e.phase}`).join('|');
@@ -248,6 +265,11 @@ function createServer(options = {}) {
         // order, using the same completion delay as solo story play.
         if (session.campaign?.next && sim.state.completedFor >= sim.campaignAdvanceTime) {
           start('level', session.campaign.next, session.campaign.id);
+          break;
+        }
+        if (session.gauntlet && sim.state.completedFor >= C.bossVictoryDelay) {
+          if (session.gauntlet.next) start('gauntlet', 'boss-only', null, session.gauntlet.next);
+          else stop('BOSS ONLY COMPLETE · Every boss defeated. The whole party conquered the gauntlet!');
           break;
         }
       }

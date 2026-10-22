@@ -231,6 +231,7 @@ const Game = {
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
   pause(fromPointer) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
+    if (fromPointer && online && multiplayer.spectatorMode) return;
     if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
     if (this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }

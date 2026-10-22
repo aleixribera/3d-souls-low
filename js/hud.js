@@ -301,7 +301,7 @@ const hud = {
       this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
     }
     this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);
-    this.won.classList.toggle('show', game.duelWon() && p.alive());
+    this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },

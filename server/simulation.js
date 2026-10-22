@@ -59,6 +59,13 @@ globalThis.host = (() => {
     return { id: story.id, name: story.name, level: chapter.level, title: chapter.title, line: chapter.line,
       number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
   }
+  function gauntlet(boss) {
+    const bosses = catalog().bosses;
+    const current = boss === undefined ? bosses[0] : bosses.find(e => e.id === boss);
+    if (!current) throw new Error('Unknown gauntlet boss');
+    const number = bosses.findIndex(e => e.id === current.id) + 1;
+    return { id: 'boss-only', boss: current.id, number, total: bosses.length, next: bosses[number]?.id || null };
+  }
   function start(kind, id) {
     if (!['level', 'arena'].includes(kind)) throw new Error('Unknown game mode');
     if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id]) throw new Error('Unknown level or opponent');
@@ -111,8 +118,9 @@ globalThis.host = (() => {
     Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : !Game.duel.alive();
     completedFor = Game.complete ? completedFor + dt : 0;
   }
-  function tick(dt) {
+  function tick(dt, holdBoss = false) {
     time += dt;
+    if (holdBoss) return;
     const living = players.filter(p => p.alive());
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
@@ -223,7 +231,7 @@ globalThis.host = (() => {
     const e = enemy(msg.enemy);
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
   }
-  return { catalog, campaign, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { catalog, campaign, gauntlet, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,

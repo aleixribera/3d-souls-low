@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
+const { selectAdventure } = require('./browser-adventure.cjs');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
 (async () => {
@@ -21,7 +22,7 @@ const { createServer } = require('../server/index.cjs');
   const die = p => p.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
   try {
     const a = await player(), b = await player();
-    await a.locator('#lobbyAdventure').selectOption('arena/margit'); await a.locator('#lobbyStart').click();
+    await selectAdventure(a, 'arena/margit'); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     // Hold the boss still so this fixture controls each player's death.
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};

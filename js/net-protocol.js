@@ -15,6 +15,7 @@
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     defaultCampaign: 'lands',
+    bossLoadGrace: 3, bossVictoryDelay: 5,
     spectatorFov: [10, 150],
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;

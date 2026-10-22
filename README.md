@@ -1,8 +1,10 @@
-# Combat Arena 3D — v7.7.9: Lobby Adventure Choices
+# Combat Arena 3D — v7.8.0: BOSS ONLY
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
 
-**v7.7.9:** The public lobby Adventure dropdown now offers Story 1 (Ashmere), Story 2 (Lands), and the twelve boss fights. Individual levels are no longer listed. Story 2 remains selected by default.
+**v7.8.0:** BOSS ONLY replaces individual public-lobby boss choices with a twelve-boss gauntlet. Fallen players automatically spectate without pause, and a compact panel tracks who is alive. Each boss waits three seconds after everyone loads. Victory advances the party after five seconds with full health and flasks; a team wipe returns everyone to the lobby to retry from boss one. See [the release notes](docs/boss-only-v7.8.0.md).
+
+**v7.7.9:** The public lobby Adventure dropdown offers Story 1 (Ashmere), Story 2 (Lands), and boss fights. Individual levels are no longer listed. Story 2 remains selected by default.
 
 **v7.7.8:** Escape and the controller Menu/Options button now open the normal pause menu during public games, including while spectating. Choose Lobby for player and leader controls, Options for settings, or Leave lobby to return to solo play. The online world keeps running while menus are open.
 

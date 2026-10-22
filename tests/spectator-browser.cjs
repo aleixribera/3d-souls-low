@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
+const { selectAdventure } = require('./browser-adventure.cjs');
 const fs = require('node:fs');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
@@ -45,7 +46,7 @@ const { createServer } = require('../server/index.cjs');
   }, index);
   try {
     const a = await player('Observer'), b = await player('Knight'), c = await player('Tarnished');
-    await a.locator('#lobbyAdventure').selectOption('arena/margit'); await a.locator('#lobbyStart').click();
+    await selectAdventure(a, 'arena/margit'); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b), ready(c)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     const bId = await b.evaluate(() => multiplayer.info.self), cId = await c.evaluate(() => multiplayer.info.self);
@@ -99,7 +100,7 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(await a.evaluate(() => Game.player.alive()), true);
     assert.equal(await a.evaluate(() => camera.fov), await a.evaluate(() => CONFIG.camera.fov));
     await a.evaluate(() => multiplayer.show());
-    await a.locator('#lobbyAdventure').selectOption('level/long-hall'); await a.locator('#lobbyStart').click();
+    await selectAdventure(a, 'level/long-hall'); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(c)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     await die(a);

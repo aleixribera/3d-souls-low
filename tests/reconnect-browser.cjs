@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
+const { selectAdventure } = require('./browser-adventure.cjs');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
 (async () => {
@@ -28,7 +29,7 @@ const { createServer } = require('../server/index.cjs');
   }
   try {
     const a = await player('Leader'), b = await player('Friend');
-    await a.locator('#lobbyAdventure').selectOption('level/long-hall');
+    await selectAdventure(a, 'level/long-hall');
     await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     const epoch = app.session.epoch;

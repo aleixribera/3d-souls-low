@@ -31,7 +31,7 @@ const multiplayer = (() => {
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
     <p id="lobbyPadHint" class="lobby-hint"></p>
-    <p class="lobby-hint">Story 2 (Lands) is selected by default. Completed chapters carry everyone into the next chapter. The leader can choose either story or a boss fight. Leadership passes on after five minutes without input.</p></div>`;
+    <p class="lobby-hint">Story 2 (Lands) is selected by default. Chapters continue automatically. BOSS ONLY pits the party against every boss in a row: fallen players spectate, everyone refills between bosses, and a team wipe ends the run. Leadership passes on after five minutes without input.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
     #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}
@@ -54,6 +54,10 @@ const multiplayer = (() => {
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;max-width:240px;pointer-events:none;color:#e9e1ca;font:12px/1.7 system-ui;text-align:right;text-shadow:0 1px 3px #000;background:#10151599;padding:8px 12px;border-left:2px solid #8c7951}
     .online-level{margin:0 0 8px;padding:6px 10px;border:1px solid #8c7951;background:#161b1bef;color:#fff0c9;font:600 15px/1.4 system-ui;text-align:left}
     .online-level[hidden]{display:none}
+    #onlineAlive{margin-top:6px;text-align:left;font:11px/1.6 system-ui;max-height:35vh;overflow:auto;pointer-events:auto}
+    #onlineAlive .alive-player{display:flex;gap:8px;justify-content:space-between}#onlineAlive .alive-player span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #onlineAlive .alive{color:#c4dfad}#onlineAlive .fallen{color:#c4a49d}#onlineAlive strong{white-space:nowrap;font-weight:400}
+    @media(max-width:800px){#onlineParty{top:118px;max-width:180px}}
     #onlineSpectator{position:fixed;z-index:50;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));color:#fff0c9;text-align:center;font:14px/1.5 system-ui}
     #onlineSpectator[hidden],#spectatorControls[hidden]{display:none}
     #spectatorControls{padding:10px 12px;background:#111817f2;border:1px solid #8c7951;box-shadow:0 6px 24px #0008}
@@ -67,7 +71,24 @@ const multiplayer = (() => {
     #onlineParty.hidden{display:none}.online-name{position:fixed;z-index:21;pointer-events:none;color:#ecd79b;background:#111a;padding:3px 7px;border-radius:3px;font:12px system-ui;transform:translate(-50%,-100%);white-space:nowrap}`;
   document.head.appendChild(style); document.body.appendChild(panel);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
-  party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div>';
+  party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div><section id="onlineAlive" aria-label="Players alive"></section>';
+  function updateAlivePanel() {
+    if (!active()) return;
+    const players = roster.map(p => {
+      const state = p.id === self ? Game.player : remotes.get(p.id)?.samples.at(-1);
+      const hp = state?.hp ?? p.hp;
+      return { name: p.name + (p.id === self ? ' (you)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
+    });
+    const signature = JSON.stringify(players), pane = el('onlineAlive');
+    if (pane.dataset.players === signature) return;
+    pane.dataset.players = signature; pane.textContent = '';
+    const title = document.createElement('div'); title.textContent = `PLAYERS ALIVE · ${players.filter(p => p.status === 'Alive').length}/${players.length}`; pane.appendChild(title);
+    for (const p of players) {
+      const row = document.createElement('div'); row.className = 'alive-player ' + (p.status === 'Alive' ? 'alive' : 'fallen');
+      const name = document.createElement('span'), status = document.createElement('strong');
+      name.textContent = p.name; status.textContent = p.status; row.append(name, status); pane.appendChild(row);
+    }
+  }
   const el = id => document.getElementById(id);
   function lobbyControls() {
     const root = el('lobbyNameEditor').hidden ? panel : el('lobbyNameEditor');
@@ -183,6 +204,7 @@ const multiplayer = (() => {
     spectatorViewApplied = false;
   }
   function applySpectatorView() {
+    updateAlivePanel();
     const waiting = waitingForTeamWipe();
     if (waiting && !spectatorWasWaiting) {
       spectatorBarOpen = true; input.clear();
@@ -192,7 +214,7 @@ const multiplayer = (() => {
     const candidates = waiting ? spectatorCandidates() : [];
     if (!candidates.some(([id]) => id === spectatorTarget)) spectatorTarget = candidates[0]?.[0] || null;
     spectator.hidden = !waiting || Game.mode !== 'play' || !panel.classList.contains('hidden') || Game.loading > 0;
-    document.body.classList.toggle('spectator-view', !!spectatorTarget);
+    document.body.classList.toggle('spectator-view', waiting);
     if (waiting) updateSpectatorBar();
     const r = remotes.get(spectatorTarget);
     if (!r) {
@@ -362,9 +384,9 @@ const multiplayer = (() => {
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
     el('lobbyRestart').disabled = !session;
-    el('lobbyNext').disabled = !session || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
+    el('lobbyNext').disabled = !session || !!session.gauntlet || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
     el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
-    el('lobbyRestart').textContent = session?.campaign ? 'Restart chapter' : 'Restart level';
+    el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session;
     el('lobbyStart').disabled = !connected;
     el('lobbyPlayers').textContent = '';
@@ -385,18 +407,18 @@ const multiplayer = (() => {
     }
   }
   function updateStatus() {
-    const buffered = latestFrame && playback !== null ? Math.max(0, Math.round((latestFrame.time - playback) * 1000)) : 0;
     const road = session?.campaign;
     const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
     const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
-    const levelTag = number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    const levelTag = session?.gauntlet ? `BOSS ONLY · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
     for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
       const tag = el(id);
       tag.hidden = !connected || !levelTag;
       tag.textContent = levelTag;
     }
     const chapter = road ? `\n${road.name} · Chapter ${road.number}/${road.total}${latestFrame?.complete && !road.next ? ' · Complete' : ''}` : '';
-    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape to pause`;
+    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${chapter}\nEscape to pause`;
+    updateAlivePanel();
     party.style.whiteSpace = 'pre-line'; party.classList.toggle('hidden', !active());
   }
   function receive(msg) {
@@ -405,7 +427,7 @@ const multiplayer = (() => {
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
-      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Arena bosses', 'arena', catalog.bosses]]) {
+      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Challenge', 'gauntlet', [{ id: 'boss-only', name: 'BOSS ONLY' }]]]) {
         const group = document.createElement('optgroup'); group.label = label;
         for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
         select.appendChild(group);
@@ -421,7 +443,7 @@ const multiplayer = (() => {
       const current = session;
       Game.story = false; Game.eldenBoss = null; panel.classList.add('hidden');
       const data = (session.kind === 'level' ? catalog.levels : catalog.bosses).find(x => x.id === session.id);
-      el('lobbyAdventure').value = session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
+      el('lobbyAdventure').value = session.gauntlet ? 'gauntlet/boss-only' : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
@@ -429,6 +451,7 @@ const multiplayer = (() => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer();
+          if (session.gauntlet) $('wonHint').textContent = session.gauntlet.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…';
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
           loaded = true; updateRoster();
         });
