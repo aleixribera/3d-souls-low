@@ -70,6 +70,34 @@ const multiplayer = (() => {
     body.spectator-view #died,body.spectator-view #pBars{display:none}body.spectator-view canvas#view.dying{filter:none;transition:none}
     #onlineParty.hidden{display:none}.online-name{position:fixed;z-index:21;pointer-events:none;color:#ecd79b;background:#111a;padding:3px 7px;border-radius:3px;font:12px system-ui;transform:translate(-50%,-100%);white-space:nowrap}`;
   document.head.appendChild(style); document.body.appendChild(panel);
+  const wipeScreen = document.createElement('section'); wipeScreen.id = 'teamWipeScreen'; wipeScreen.hidden = true;
+  wipeScreen.tabIndex = -1; wipeScreen.setAttribute('role', 'alert'); wipeScreen.setAttribute('aria-label', 'Team wiped');
+  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker">BOSS ONLY · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
+  document.body.appendChild(wipeScreen);
+  const wipeStyle = document.createElement('style');
+  wipeStyle.textContent = `#teamWipeScreen[hidden]{display:none}
+    #teamWipeScreen{position:fixed;inset:0;z-index:120;display:grid;place-items:center;box-sizing:border-box;padding:24px;text-align:center;color:#c94242;background:radial-gradient(ellipse at center,#350910 0%,#130206 55%,#030001 100%);box-shadow:inset 0 0 130px #000;animation:wipe-veil .8s ease-out both;outline:none}
+    #teamWipeScreen .wipe-message{width:100%;animation:wipe-arrive 1.6s cubic-bezier(.16,1,.3,1) both}
+    #teamWipeScreen h1{font:400 clamp(36px,9vw,108px)/1.2 Georgia,serif;letter-spacing:.13em;margin:20px 0;text-indent:.13em;color:#d74747;text-shadow:0 0 30px #c3142570,0 2px 12px #000}
+    #teamWipeScreen p{font:14px/1.7 Georgia,serif;letter-spacing:.1em;color:#c18c8c}
+    #teamWipeScreen .wipe-kicker{font:11px/1.6 system-ui;letter-spacing:.3em;color:#a26167}
+    #teamWipeScreen .wipe-rule{height:1px;width:min(480px,80%);margin:26px auto;background:linear-gradient(90deg,transparent,#b33040,transparent)}
+    #teamWipeScreen .wipe-return{margin-top:36px;font-size:12px;color:#95686d}
+    @keyframes wipe-veil{from{opacity:0}to{opacity:1}}
+    @keyframes wipe-arrive{from{opacity:0;transform:scale(1.12);filter:blur(5px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
+    @media(prefers-reduced-motion:reduce){#teamWipeScreen,#teamWipeScreen .wipe-message{animation:none}}`;
+  document.head.appendChild(wipeStyle);
+  let wipeTimer = null;
+  function clearTeamWipe() { clearTimeout(wipeTimer); wipeTimer = null; wipeScreen.hidden = true; panel.inert = false; }
+  function showTeamWipe(run) {
+    clearTeamWipe();
+    el('teamWipeScore').textContent = run ? `Bosses defeated · ${run.number - 1} / ${run.total}` : '';
+    panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
+    wipeTimer = setTimeout(() => {
+      clearTeamWipe();
+      if (connected) { show(); if (!usingPad()) el('lobbyLeave').focus(); }
+    }, C.teamWipeScreenTime * 1000);
+  }
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
   party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div><section id="onlineAlive" aria-label="Players alive"></section>';
   function updateAlivePanel() {
@@ -152,6 +180,7 @@ const multiplayer = (() => {
     el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
   }
   function lobbyBack() {
+    if (!wipeScreen.hidden) return;
     if (!el('lobbyNameEditor').hidden) closeNameEditor();
     else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
     else if (active()) hide();
@@ -318,7 +347,7 @@ const multiplayer = (() => {
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
+  function resetStream() { clearTeamWipe(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -458,9 +487,11 @@ const multiplayer = (() => {
       };
       begin();
     } else if (msg.type === 'stop') {
+      const endedRun = session?.gauntlet;
       finale.cancelEnding();
       session = null; loaded = false; resetStream(); clearRemotes(); Game.loading = 0; el('loading').classList.remove('show');
       if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
+      if (msg.reason === 'team-wipe') showTeamWipe(endedRun);
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
       const packet = decoder.decode(msg), frame = packet.frame;
       if (latestFrame && frame.time <= latestFrame.time) return;
@@ -728,6 +759,7 @@ const multiplayer = (() => {
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
   function pad(pressed, dt = CONFIG.step) {
+    if (!wipeScreen.hidden) return;
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }

@@ -58,10 +58,10 @@ function createServer(options = {}) {
   }
   const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000).map(p => ({ ...p.pose, id: p.id })));
   const error = (p, message) => send(p, { type: 'error', message });
-  function stop(message) {
+  function stop(message, reason = null) {
     session = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
-    broadcast({ type: 'stop', message }); broadcast(roster());
+    broadcast({ type: 'stop', message, reason }); broadcast(roster());
   }
   function start(kind, id, campaignId = null, boss = undefined) {
     const gauntlet = kind === 'gauntlet' && id === 'boss-only' ? sim.gauntlet(boss) : null;
@@ -249,7 +249,7 @@ function createServer(options = {}) {
           const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated);
           arenaWipeFor = wiped && sim.inspect().Game.duel?.alive() ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (session.gauntlet) stop('TEAM WIPED · The boss run ends here. Choose BOSS ONLY to try again from boss 1.');
+            if (session.gauntlet) stop('TEAM WIPED · The boss run ends here. Choose BOSS ONLY to try again from boss 1.', 'team-wipe');
             else start(session.kind, session.id);
             break;
           }

@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.0: BOSS ONLY
+# Combat Arena 3D — v7.8.1: Team Wipe Screen
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.1:** Team wipes now get a dramatic four-second crimson death screen with the defeated-boss count before returning the party to the lobby.
 
 **v7.8.0:** BOSS ONLY replaces individual public-lobby boss choices with a twelve-boss gauntlet. Fallen players automatically spectate without pause, and a compact panel tracks who is alive. Each boss waits three seconds after everyone loads. Victory advances the party after five seconds with full health and flasks; a team wipe returns everyone to the lobby to retry from boss one. See [the release notes](docs/boss-only-v7.8.0.md).
 

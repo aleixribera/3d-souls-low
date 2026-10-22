@@ -72,7 +72,8 @@ async function peer(origin) {
     pose(a, true); await flush(a); await wait(200);
     assert.ok(app.session, 'one survivor keeps the run alive');
     pose(b, true); await flush(b);
-    assert.match((await a.next('stop')).message, /TEAM WIPED/); await b.next('stop');
+    const wipe = await a.next('stop');
+    assert.match(wipe.message, /TEAM WIPED/); assert.equal(wipe.reason, 'team-wipe'); await b.next('stop');
     assert.equal(app.session, null, 'wipe returns everyone to lobby');
     await begin(); assert.equal(session.id, bosses[0].id); assert.equal(session.gauntlet.number, 1);
     console.log('BOSS ONLY: loading barrier, 3s grace, defeat latch, ordered full roster, victory delay, revival, completion, wipe and retry passed.');
