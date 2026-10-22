@@ -41,6 +41,9 @@ const { createServer } = require('../server/index.cjs');
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0, null, { timeout: 90000 });
   try {
     const a = await player('Leader'), b = await player('Friend');
+    assert.deepEqual(await a.locator('#lobbyAdventure optgroup[label="Stories"] option').allTextContents(), ['Story 1 (Ashmere)', 'Story 2 (Lands)']);
+    assert.equal(await a.locator('#lobbyAdventure option').count(), 14, 'only two stories and twelve bosses');
+    assert.equal(await a.locator('#lobbyAdventure option[value^="level/"]').count(), 0, 'no individual levels in the dropdown');
     assert.equal(await a.getByRole('button', { name: 'Edit name', exact: true }).count(), 0, 'no separate name-edit action');
     await a.locator('#lobbyName').click();
     assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'mouse activation keeps normal text entry');

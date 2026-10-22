@@ -1,6 +1,6 @@
 {
   "name": "combat-arena-lobby",
-  "version": "7.7.8",
+  "version": "7.7.9",
   "private": true,
   "description": "One public co-op lobby and static game host",
   "engines": { "node": ">=22.8" },

@@ -10,7 +10,7 @@
 // Adding a level to a campaign: write the level as usual (js/levels/, data/levels.js), then add a chapter where it falls.
 // The order here, not the levels' `next`, drives the campaign. Every line here must agree with LORE.md.
 const STORY = {
-  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
+  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story 1 (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
   description: 'Start here. Five levels, from the prison to the king.',
   tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
   chapters: [
@@ -29,7 +29,7 @@ const STORY = {
 // The second road (v7.0): the Lands Between, one land for each boss of the Elden Ring Bosses mode, in that order. Harder
 // than Ashmere from its first step; every land grants more flasks (the levels' `flasks`). LORE.md, part II.
 const LANDS_STORY = {
-  id: 'lands', name: 'The Lands Between: The Elden Throne', short: 'Lands', menuTitle: 'THE LANDS BETWEEN', menuSub: 'THE ELDEN THRONE',
+  id: 'lands', name: 'The Lands Between: The Elden Throne', short: 'Lands', lobbyName: 'Story 2 (Lands)', menuTitle: 'THE LANDS BETWEEN', menuSub: 'THE ELDEN THRONE',
   description: 'Harder. Eight levels, each with an Elden Ring boss.',
   tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
   chapters: [

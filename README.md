@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.8: Public Lobby Pause Menu
+# Combat Arena 3D — v7.7.9: Lobby Adventure Choices
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.9:** The public lobby Adventure dropdown now offers Story 1 (Ashmere), Story 2 (Lands), and the twelve boss fights. Individual levels are no longer listed. Story 2 remains selected by default.
 
 **v7.7.8:** Escape and the controller Menu/Options button now open the normal pause menu during public games, including while spectating. Choose Lobby for player and leader controls, Options for settings, or Leave lobby to return to solo play. The online world keeps running while menus are open.
 

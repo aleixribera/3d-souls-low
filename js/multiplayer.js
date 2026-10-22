@@ -31,7 +31,7 @@ const multiplayer = (() => {
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
     <p id="lobbyPadHint" class="lobby-hint"></p>
-    <p class="lobby-hint">The full Elden Ring campaign is selected by default. Completed chapters carry everyone into the next chapter. The leader can also choose a level or arena. Leadership passes on after five minutes without input.</p></div>`;
+    <p class="lobby-hint">Story 2 (Lands) is selected by default. Completed chapters carry everyone into the next chapter. The leader can choose either story or a boss fight. Leadership passes on after five minutes without input.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
     #publicLobby.hidden{display:none}#publicLobby .lobby-card{width:min(690px,100%);max-height:90vh;overflow:auto;padding:24px;border:1px solid #6d5c3d;background:#141719;box-shadow:0 18px 70px #0008}
@@ -404,9 +404,10 @@ const multiplayer = (() => {
       connected = true; starting = false; reconnectAttempt = 0; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
-      for (const [label, kind, entries] of [['Full campaigns', 'campaign', catalog.campaigns], ['Individual levels', 'level', catalog.levels], ['Arena bosses', 'arena', catalog.bosses]]) {
+      const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
+      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Arena bosses', 'arena', catalog.bosses]]) {
         const group = document.createElement('optgroup'); group.label = label;
-        for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = entry.name + (kind === 'campaign' ? ` · Full campaign (${entry.chapters} chapters)` : ''); group.appendChild(option); }
+        for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
         select.appendChild(group);
       }
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
