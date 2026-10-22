@@ -160,7 +160,7 @@ const multiplayer = (() => {
     el('spectatorControls').hidden = !spectatorBarOpen;
     text('spectatorToggle', (spectatorBarOpen ? 'Hide' : 'Show') + ' spectator bar · ' + (usingPad() ? 'X / □' : 'Tab'));
     el('spectatorToggle').setAttribute('aria-expanded', String(spectatorBarOpen));
-    text('spectatorHint', usingPad() ? 'LB / L1 · RB / R1 to switch · Menu / Options for lobby' : '← / → to switch · Escape for lobby');
+    text('spectatorHint', usingPad() ? 'LB / L1 · RB / R1 to switch · Menu / Options to pause' : '← / → to switch · Escape to pause');
   }
   function switchSpectator(direction) {
     const candidates = spectatorCandidates(), at = candidates.findIndex(([id]) => id === spectatorTarget);
@@ -191,7 +191,7 @@ const multiplayer = (() => {
     spectatorWasWaiting = waiting;
     const candidates = waiting ? spectatorCandidates() : [];
     if (!candidates.some(([id]) => id === spectatorTarget)) spectatorTarget = candidates[0]?.[0] || null;
-    spectator.hidden = !waiting || !panel.classList.contains('hidden') || Game.loading > 0;
+    spectator.hidden = !waiting || Game.mode !== 'play' || !panel.classList.contains('hidden') || Game.loading > 0;
     document.body.classList.toggle('spectator-view', !!spectatorTarget);
     if (waiting) updateSpectatorBar();
     const r = remotes.get(spectatorTarget);
@@ -212,22 +212,22 @@ const multiplayer = (() => {
     if (active() && session.teamWipeOnly && Game.player?.alive()) lastView = { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov };
   }
   function spectatorKey(ev) {
-    if (!waitingForTeamWipe()) return false;
+    if (Game.mode !== 'play' || !waitingForTeamWipe()) return false;
     if (!['ArrowLeft', 'ArrowRight', 'Tab', 'Escape'].includes(ev.code)) return false;
     ev.preventDefault();
     if (!ev.repeat) {
       if (ev.code === 'Tab') toggleSpectatorBar();
-      else if (ev.code === 'Escape') show();
+      else if (ev.code === 'Escape') Game.pause(false);
       else switchSpectator(ev.code === 'ArrowLeft' ? -1 : 1);
     }
     return true;
   }
   function spectatorPad(pressed) {
-    if (!waitingForTeamWipe()) return false;
+    if (Game.mode !== 'play' || !waitingForTeamWipe()) return false;
     if (pressed.includes('PadLB') || pressed.includes('PadLeft')) switchSpectator(-1);
     if (pressed.includes('PadRB') || pressed.includes('PadRight')) switchSpectator(1);
     if (pressed.includes('PadX')) toggleSpectatorBar();
-    if (pressed.includes('PadStart')) show();
+    if (pressed.includes('PadStart')) Game.pause(false);
     return true;
   }
   function buildControls() {
@@ -238,7 +238,7 @@ const multiplayer = (() => {
       ['Dodge / roll', bindLabel('roll')], ['Jump', bindLabel('jump')],
       ['Block (hold)', bindLabel('block')], ['Parry', bindLabel('parry')],
       ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
-      ['Rest / talk / read', bindLabel('rest')], ['Pause / open lobby', systemLabel('pause')],
+      ['Rest / talk / read', bindLabel('rest')], ['Pause menu', systemLabel('pause')],
     ];
     const list = el('lobbyControlsList'); list.textContent = '';
     for (const [action, binding] of rows) {
@@ -396,7 +396,7 @@ const multiplayer = (() => {
       tag.textContent = levelTag;
     }
     const chapter = road ? `\n${road.name} · Chapter ${road.number}/${road.total}${latestFrame?.complete && !road.next ? ' · Complete' : ''}` : '';
-    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape for lobby`;
+    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape to pause`;
     party.style.whiteSpace = 'pre-line'; party.classList.toggle('hidden', !active());
   }
   function receive(msg) {

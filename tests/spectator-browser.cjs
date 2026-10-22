@@ -70,7 +70,14 @@ const { createServer } = require('../server/index.cjs');
     await pad(a, 2);
     assert.equal(await a.locator('#spectatorControls').isVisible(), true);
     await matchesView(a, cView); // right-stick input cannot alter the relayed view
-    await pad(a, 9); await a.locator('#publicLobby:not(.hidden)').waitFor();
+    await a.keyboard.press('Escape');
+    await a.getByRole('button', { name: 'Options', exact: true }).click();
+    assert.equal(await a.evaluate(() => Game.screen), 'options', 'spectators can access Options');
+    await a.keyboard.press('Escape');
+    await a.keyboard.press('Escape');
+    await pad(a, 9);
+    await a.getByRole('button', { name: /^Lobby(?:Players|$)/ }).click();
+    await a.locator('#publicLobby:not(.hidden)').waitFor();
     assert.equal(await a.locator('#onlineSpectator').isVisible(), false);
     await pad(a, 1); await a.locator('#onlineSpectator').waitFor({ state: 'visible' });
     await a.setViewportSize({ width: 390, height: 740 });

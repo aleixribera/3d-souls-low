@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.7: Lobby Name Editing
+# Combat Arena 3D — v7.7.8: Public Lobby Pause Menu
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.8:** Escape and the controller Menu/Options button now open the normal pause menu during public games, including while spectating. Choose Lobby for player and leader controls, Options for settings, or Leave lobby to return to solo play. The online world keeps running while menus are open.
 
 **v7.7.7:** Lobby name editing now starts from the name field: type directly with mouse/keyboard, or focus it and press A/Cross to open the controller keyboard. The separate Edit name button and Y/Triangle shortcut are removed.
 

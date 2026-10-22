@@ -32,7 +32,7 @@ const Game = {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     const pauseItems = online ? [
         { name: 'Resume', desc: 'The online world keeps running while menus are open.', go: () => this.resume() },
-        { name: 'Lobby controls', desc: 'Players, level selection and leader controls.', go: () => multiplayer.show() },
+        { name: 'Lobby', desc: 'Players, level selection and leader controls.', go: () => multiplayer.show() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
       ] : this.story ? [
@@ -230,8 +230,8 @@ const Game = {
   },
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
   pause(fromPointer) {
-    if (typeof multiplayer !== 'undefined' && multiplayer.active() && this.mode === 'play') { multiplayer.show(); return; }
-    if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
+    const online = typeof multiplayer !== 'undefined' && multiplayer.active();
+    if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
     if (this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
