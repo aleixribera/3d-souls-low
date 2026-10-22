@@ -1,5 +1,7 @@
 # Public co-op lobby on your Ubuntu server
 
+**Recommended:** switch once to the [published container and quick updates](container-updates.md). Your stack is `/opt/homelab/stacks/combat-arena`; the older source-install instructions below are retained for v7.7.1.
+
 This deployment runs on **your separate Ubuntu home server**, not your Windows gaming PC. The existing Tailscale address `100.95.233.56` is useful for copying files and SSH. Players will use the public HTTPS address printed by Tailscale Funnel.
 
 The game and the single lobby run together in one Docker Compose service. Browsers automatically connect to that same address over WebSocket. There is no IP or server name to put in JavaScript.
@@ -23,10 +25,10 @@ Tailscale must be connected on your PC to reach this private address. Use your u
 Run these commands in the SSH session on your **separate Ubuntu server**. Use a new directory for a fresh installation:
 
 ```bash
-mkdir -p ~/containers/combat-arena
+mkdir -p /opt/homelab/stacks/combat-arena
 curl -fL --retry 3 -o ~/combat-arena-v7.7.1.tar.gz https://github.com/aleixribera/3d-souls-low/archive/refs/tags/v7.7.1.tar.gz
-tar -xzf ~/combat-arena-v7.7.1.tar.gz --strip-components=1 -C ~/containers/combat-arena
-cd ~/containers/combat-arena
+tar -xzf ~/combat-arena-v7.7.1.tar.gz --strip-components=1 -C /opt/homelab/stacks/combat-arena
+cd /opt/homelab/stacks/combat-arena
 printf 'GAME_PORT=3080\nMAX_PLAYERS=16\n' > .env
 docker compose up -d --build
 docker compose ps
@@ -101,7 +103,7 @@ Browser saves belong to their website's address. Existing solo saves on the GitH
 
 ## Operation and updates
 
-From `~/containers/combat-arena` on Ubuntu:
+From `/opt/homelab/stacks/combat-arena` on Ubuntu:
 
 ```bash
 docker compose logs --tail=100 -f souls

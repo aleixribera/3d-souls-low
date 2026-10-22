@@ -1,5 +1,7 @@
 # Update your homelab to v7.7.1
 
+**Recommended:** switch once to the [published container and quick updates](container-updates.md). Your stack is `/opt/homelab/stacks/combat-arena`; the older source-install instructions below are retained for v7.7.1.
+
 Your game is on the **separate Ubuntu server** at `100.95.233.56`. The host port is **3080**, the container's internal port is **3000**, and your public link remains:
 
 **https://aleix.tailfef0f7.ts.net:8443/**
@@ -16,12 +18,12 @@ Open PowerShell on your gaming PC:
 ssh aleix@100.95.233.56
 ```
 
-Run **all remaining commands on Ubuntu**, inside that SSH session. This assumes you used `~/containers/combat-arena` from the original guide. If you installed elsewhere, change that directory in the first command.
+Run **all remaining commands on Ubuntu**, inside that SSH session. This assumes you used `/opt/homelab/stacks/combat-arena` from the original guide. If you installed elsewhere, change that directory in the first command.
 
 ## 2. Back up your current installation
 
 ```bash
-cd ~/containers/combat-arena
+cd /opt/homelab/stacks/combat-arena
 umask 077
 backup="$HOME/combat-arena-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
 tar --exclude='./server/node_modules' --exclude='./.git' -czf "$backup" .
@@ -34,8 +36,8 @@ Keep the printed backup path for rollback. It includes your `.env`, so keep it p
 
 ```bash
 curl -fL --retry 3 -o "$HOME/combat-arena-v7.7.1.tar.gz" https://github.com/aleixribera/3d-souls-low/archive/refs/tags/v7.7.1.tar.gz
-tar -xzf "$HOME/combat-arena-v7.7.1.tar.gz" --strip-components=1 -C "$HOME/containers/combat-arena"
-cd ~/containers/combat-arena
+tar -xzf "$HOME/combat-arena-v7.7.1.tar.gz" --strip-components=1 -C "/opt/homelab/stacks/combat-arena"
+cd /opt/homelab/stacks/combat-arena
 ```
 
 If downloading fails, stop here and keep the current container running. The release archive contains no `.env`, so extraction preserves your settings. This method works with your original archive installation; `git pull` does not work inside an archive-only directory.
@@ -127,7 +129,7 @@ If ping remains 200–300 ms while `hz` stays near 60 and `bufferedBytes` stays 
 Use the exact backup path printed in step 2. Extract it over this game's directory and rebuild the game service:
 
 ```bash
-cd ~/containers/combat-arena
+cd /opt/homelab/stacks/combat-arena
 tar -xzf "$backup" -C .
 docker compose build souls
 docker compose up -d --no-deps souls

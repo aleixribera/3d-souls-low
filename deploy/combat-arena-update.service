@@ -1,0 +1,10 @@
+[Unit]
+Description=Update Combat Arena when the lobby is empty
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/homelab/stacks/combat-arena
+ExecStart=/bin/bash /opt/homelab/stacks/combat-arena/deploy/update.sh
+TimeoutStartSec=10min

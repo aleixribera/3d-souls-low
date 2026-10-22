@@ -1,4 +1,6 @@
 FROM node:24-alpine
+LABEL org.opencontainers.image.source="https://github.com/aleixribera/3d-souls-low"
+LABEL org.opencontainers.image.description="Combat Arena 3D with one public co-op lobby"
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
 WORKDIR /app
 COPY server/package*.json ./server/

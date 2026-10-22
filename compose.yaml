@@ -1,6 +1,6 @@
 services:
   souls:
-    build: .
+    image: ${GAME_IMAGE:-ghcr.io/aleixribera/3d-souls-low:latest}
     restart: unless-stopped
     init: true
     ports:

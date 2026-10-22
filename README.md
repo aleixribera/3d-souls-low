@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.1: Smoother Co-op
+# Combat Arena 3D — v7.7.2: Container Updates
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.2:** Releases publish a ready-to-run container to GitHub Container Registry. Update your homelab with `docker compose pull && docker compose up -d`; an optional timer checks every 15 minutes and defers while players are connected. See the [one-time switch and update guide](docs/container-updates.md).
 
 **v7.7.1:** Fixes accumulating co-op playback delay, server simulation overhead, gate/barricade animations and obstacle hunting. Shared updates use compressed changes instead of repeated full snapshots; the HUD separates ping from playback delay. See the [release notes](docs/multiplayer-v7.7.1.md) and [exact update commands for your Ubuntu server on port 3080](docs/update-v7.7.1.md).
 

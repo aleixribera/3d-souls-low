@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for Combat Arena releases every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+RandomizedDelaySec=30
+Persistent=true
+Unit=combat-arena-update.service
+
+[Install]
+WantedBy=timers.target

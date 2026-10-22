@@ -1,0 +1,6 @@
+# Optional developer build; production uses the published image in compose.yaml.
+# docker compose -f compose.yaml -f compose.source.yaml up -d --build
+services:
+  souls:
+    image: combat-arena-lobby:local
+    build: .
