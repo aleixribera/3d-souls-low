@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.8.6';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.8.7';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -131,7 +131,7 @@ const CONFIG = {
   // Hazard floors (v7.0, a level's `hazards`, js/game.js): the `hazard` event (sound, a flash of the health bar) every `tick` s.
   hazards: { tick: 0.5 },
   // saveKeys: one save slot per campaign of STORIES (js/data/story.js); saveKey is Ashmere's, kept for old saves.
-  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands', 'story-v2': 'combatArena.story.v2' }, saveVersion: 1, titleTime: 3.2 },
+  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands' }, saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -272,7 +272,7 @@ const CONFIG = {
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8,
-         toastTime: 3.2, maxToasts: 3,
+         toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
          exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
          text: { restBlocked: 'Enemies too close to rest', exhausted: 'Out of stamina', controller: 'Best played with a controller',
                  // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.

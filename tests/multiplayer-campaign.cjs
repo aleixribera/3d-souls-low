@@ -36,6 +36,7 @@ function peer(url) {
   try {
     const [a, welcome] = await add(), [b] = await add();
     assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'gauntlet', id: 'boss-only' });
+    assert.deepEqual(welcome.catalog.campaigns.map(c => c.id), ['ashmere', 'lands'], 'only the two story roads are available online');
     assert.equal(welcome.catalog.campaigns.find(c => c.id === 'lands').chapters, 8);
     a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'unknown' });
     assert.match((await a.next('error')).message, /Unknown campaign/);

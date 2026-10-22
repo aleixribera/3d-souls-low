@@ -15,33 +15,6 @@ These gold title cards introduce a new shared run; they do not replace chapter l
 - **STORY 2 · LANDS** — “Claim the Elden Throne.”
 - **BOSS ONLY** — “Defeat every boss.”
 
-## Story V2: the shorter road through Ashmere
-
-Story V2 is an alternate playable staging of the same tale, with its own save. It does not replace either road.
-The prisoner still leaves the Long Hall, passes through the Sunken Keep and burning Corvel, rings the Bell of
-Waking, and meets Aldric outside his castle before following him to the throne. Ysolde survives; the Ember dies;
-the original Ashmere ending and credits apply. These passages are places within the existing locations.
-
-| Chapter | Loading line and description |
-| --- | --- |
-| The Broken Hall | An open cell, a broken court, and the keeper of the lower stair. Read the blade before answering it. |
-| The Cistern Walk | Below the hall, the old keep holds its prisoners beside the water. Draw the wardens apart and open the river door. |
-| Corvel's Last Street | Corvel burns. Cross the crooked market and silence the invaders' commander at the river road. |
-| The Bell Ascent | Above the town, sheltered stairs climb to the Bell of Waking. Take the high ground and call the crown to answer. |
-| The Crown's Answer | Aldric answers outside his gates. Follow him through the ash garden to the throne, and put the Ember out. |
-
-Ysolde's short dialogues along this version of the road:
-
-- Broken Hall: “Your door is open. Mine was, too. Someone has remembered mercy.” / “Below this court lies the old keep. Beyond it, Corvel. If the river road still stands, I shall meet you there.”
-- Cistern Walk: “The water carried our bells once. Now it carries the ash.” / “The wardens have forgotten whom they guard. Do not let them hem you in.”
-- Corvel's Last Street: “These are the king's soldiers. We called them invaders because we could not bear the other name.” / “Above the town stands the Bell of Waking. Ring it, and the king must answer.”
-- Bell Ascent: “The Seven cast that bell from their own crowns. No king was meant to keep the realm for himself.” / “Who rings it calls the crown to answer. Let the crown come out.”
-- Crown's Answer: “He came out. The old law has not forgotten him.” / “Follow him. Beneath that crown is the fire that ate our people. Let it hunger no more.”
-
-Ysolde's idle line throughout: “The road is still before you.”
-The inscription beside the final bell reads: “Who rings me calls the crown to answer. Let the crown come out.”
-Level 4 completion: “The bell has rung. The crown must answer.”
-
 ---
 
 ## 1. The world

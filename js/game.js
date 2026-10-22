@@ -75,10 +75,7 @@ const Game = {
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
         { name: 'Ashmere  ›', desc: 'The five levels of Ashmere, from the Long Hall to the Final Castle.', go: () => this.showMenu('levelsAshmere') },
         { name: 'The Lands Between  ›', desc: 'The levels of the second road, from Stormhill to the Haligtree.', go: () => this.showMenu('levelsLands') },
-        { name: 'Ashmere · Story V2  ›', desc: 'Five compact levels. A gentler introduction with its own story save.', go: () => this.showMenu('levelsV2') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
-      levelsV2: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · STORY V2', back: 'levels', items: [...STORY_V2_LEVELS.map(levelItem),
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsAshmere: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'levels', items: [...STORY.chapters.map(c => levelItem(ALL_LEVELS.find(l => l.id === c.level))),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
@@ -335,7 +332,7 @@ const Game = {
   // floor under it: the top-most one, or the highest at or below its `y` when it gives one.
   spawnSpec(entry, behavior) {
     const spec = this.placement(entry, behavior);
-    return { ...spec, y: world.floorY(spec.x, spec.z, spec.y), enemyTuning: this.level.enemyTuning };
+    return { ...spec, y: world.floorY(spec.x, spec.z, spec.y) };
   },
   placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;

@@ -34,13 +34,25 @@ const hud = {
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
   tutGuide: $('tutGuide'), tutGuideArrow: $('tutGuideArrow'), tutGuideText: $('tutGuideText'), guideForward: new THREE.Vector3(),
-  help: $('help'), toggle: $('hbToggle'),
+  help: $('help'), toggle: $('hbToggle'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
   healTimer: 0, hurtTimer: 0, refundTimer: 0, deniedTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
+    this.controlsTipsRows.textContent = '';
+    const basics = [
+      ['Attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
+      ['Dodge', bindLabel('roll')],
+      ['Jump', bindLabel('jump')],
+      ['Heal', bindLabel('flask')], ['Lock on', bindLabel('lock')],
+    ];
+    for (const [label, binding] of basics) {
+      const row = document.createElement('div'), name = document.createElement('span'), key = document.createElement('span');
+      name.textContent = label; key.textContent = keycap(binding);
+      row.append(name, key); this.controlsTipsRows.appendChild(row);
+    }
     const rows = [
       ['Move', moveLabel()], ['Camera', usingPad() ? 'Right stick' : 'Mouse (click the view to capture it)'],
       ['Jump', bindLabel('jump')], ['Roll', bindLabel('roll')],
@@ -71,6 +83,8 @@ const hud = {
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
   },
   reset(game) {
+    this.controlsTipsTimer = CONFIG.hud.controlsTipsTime;
+    this.controlsTips.hidden = true;
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
     this.healTimer = this.hurtTimer = this.refundTimer = this.deniedTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
@@ -81,6 +95,11 @@ const hud = {
     this.layout();
   },
   showRested() { this.restedTimer = CONFIG.rest.messageTime; },
+  updateControlsTips(game, dt) {
+    const playing = game.mode === 'play' && game.loading <= 0 && !game.isTutorial();
+    if (playing) this.controlsTipsTimer = Math.max(0, this.controlsTipsTimer - dt);
+    this.controlsTips.hidden = !playing || this.controlsTipsTimer <= 0 || !game.player.alive() || this.helpOpen();
+  },
 
   // ---- layout ----------------------------------------------------------------------------------
   // The stage scale: fit a design-size window to the real one by its tighter side, within limits, times the
@@ -270,6 +289,7 @@ const hud = {
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
     const p = game.player;
     this.clock += dt;
+    this.updateControlsTips(game, dt);
     for (const k of ['healTimer', 'hurtTimer', 'refundTimer', 'deniedTimer']) this[k] = Math.max(0, this[k] - dt);
     this.updateTags(game, dt);
     this.updateCalm(game, t, dt);

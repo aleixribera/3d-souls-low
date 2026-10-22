@@ -16,7 +16,7 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
-      for (const suffix of ['', '.lands', '.v2']) localStorage.setItem('combatArena.story' + suffix, 'offline-save-sentinel');
+      for (const suffix of ['', '.lands']) localStorage.setItem('combatArena.story' + suffix, 'offline-save-sentinel');
     }, name);
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
@@ -75,8 +75,8 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
       assert.equal(await p.evaluate(() => multiplayer.info.session.epoch), epoch, 'credits keep the party session');
       assert.equal(await p.locator('#lobbyNext').isDisabled(), true, 'last chapter cannot wrap');
       assert.equal(await p.evaluate(() => Game.story), false);
-      assert.deepEqual(await p.evaluate(() => ['', '.lands', '.v2'].map(s => localStorage.getItem('combatArena.story' + s))),
-        Array(3).fill('offline-save-sentinel'), 'co-op never writes solo saves');
+      assert.deepEqual(await p.evaluate(() => ['', '.lands'].map(s => localStorage.getItem('combatArena.story' + s))),
+        Array(2).fill('offline-save-sentinel'), 'co-op never writes solo saves');
       assert.equal(await p.evaluate(() => localStorage.getItem('combatArena.complete.haligtree')), null, 'co-op never writes solo completion');
     }
     const late = await player('Late friend');

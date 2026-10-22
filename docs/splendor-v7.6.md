@@ -50,5 +50,4 @@ and buffer dimensions for preset-transition regression checks.
 
 Release checks and measured results are recorded in `splendor-results.json`.
 Measurements use Edge on the available RTX 5060 at 1280 × 720; they are GPU
-render times, not an integrated-GPU frame-rate guarantee. The isolated release
-excludes unrelated local Story v2 work.
+render times, not an integrated-GPU frame-rate guarantee.

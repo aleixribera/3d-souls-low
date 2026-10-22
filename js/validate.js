@@ -184,9 +184,6 @@ function validateData() {
     const where = `Level "${L.id}"`;
     need(typeof L.id === 'string' && !levelIds.has(L.id), `${where}: missing or duplicate id.`);
     levelIds.add(L.id);
-    if ('enemyTuning' in L) need(L.enemyTuning && ['health', 'bossHealth', 'damage'].every(k =>
-      num(L.enemyTuning[k]) && L.enemyTuning[k] > 0 && L.enemyTuning[k] <= 1),
-      `${where}: enemyTuning needs health, bossHealth and damage multipliers in (0, 1].`);
     need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);

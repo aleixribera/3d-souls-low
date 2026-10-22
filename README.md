@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.6: BOSS ONLY by Default
+# Combat Arena 3D — v7.8.7: Minimal Controls Tips
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.7:** A translucent controls panel shows Attack, Heavy attack, Dodge, Jump, Heal and Lock on for the first 30 seconds of play. It follows keyboard/controller input and stays hidden in the tutorial. The alternate Story V2 road and its encounter tuning have been removed; Ashmere and the Lands Between remain the two campaigns. BOSS ONLY remains the public lobby default.
 
 **v7.8.6:** BOSS ONLY is now the default selected adventure when joining the public lobby. Both stories remain available in the dropdown.
 
