@@ -20,7 +20,6 @@ const multiplayer = (() => {
   panel.innerHTML = `<div class="lobby-card"><h1>PUBLIC LOBBY</h1><p id="lobbyStatus" role="status">Connecting…</p>
     <div id="lobbyCurrentLevel" class="online-level" hidden></div>
     <label>Your name <input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name"></label>
-    <button id="lobbyEditName">Edit name</button>
     <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
@@ -85,7 +84,7 @@ const multiplayer = (() => {
       if (!document.activeElement.classList.contains('pad-selected')) focusLobbyControl(document.activeElement);
       return document.activeElement;
     }
-    const preferred = [el('lobbyAdventure'), el('lobbyResume'), el('lobbyEditName')].find(node => controls.includes(node));
+    const preferred = [el('lobbyAdventure'), el('lobbyResume'), el('lobbyName')].find(node => controls.includes(node));
     const next = preferred || controls[0]; focusLobbyControl(next); return next;
   }
   function updateLobbyPadHint() {
@@ -93,7 +92,7 @@ const multiplayer = (() => {
     el('lobbyPadHint').textContent = !usingPad() ? '' : !el('lobbyNameEditor').hidden
       ? 'D-pad / left stick: move · A / ×: choose · X / □: delete · B / ○: cancel'
       : adventureBeforeEdit !== null ? 'D-pad / left stick: choose adventure · A / ×: confirm · B / ○: cancel'
-      : 'D-pad / left stick: move · A / ×: select · ← / →: change adventure · Y / △: edit name · B / ○: back';
+      : 'D-pad / left stick: move · A / ×: select · ← / →: change adventure · B / ○: back';
   }
   events.on('device', updateLobbyPadHint);
   function closeAdventurePicker(cancel = false) {
@@ -103,7 +102,7 @@ const multiplayer = (() => {
   function closeNameEditor(save = false, restoreFocus = true) {
     if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
     el('lobbyNameEditor').hidden = true;
-    if (restoreFocus) focusLobbyControl(el('lobbyEditName'));
+    if (restoreFocus) focusLobbyControl(el('lobbyName'));
     updateLobbyPadHint();
   }
   function nameKey(key) {
@@ -131,7 +130,6 @@ const multiplayer = (() => {
     closeAdventurePicker(true); nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
     el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
   }
-  el('lobbyEditName').onclick = openNameEditor;
   function lobbyBack() {
     if (!el('lobbyNameEditor').hidden) closeNameEditor();
     else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
@@ -709,7 +707,6 @@ const multiplayer = (() => {
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }
-    if (pressed.includes('PadY') && el('lobbyNameEditor').hidden) { openNameEditor(); return; }
     if (pressed.includes('PadX') && !el('lobbyNameEditor').hidden) nameKey('delete');
     const C = CONFIG.gamepad, S = C.menuStick;
     const direction = gamepad.down.has('PadUp') || gamepad.move.y > S ? 'up'

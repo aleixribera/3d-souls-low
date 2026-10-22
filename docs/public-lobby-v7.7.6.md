@@ -4,7 +4,7 @@ The public lobby works with a controller throughout: D-pad or left stick moves f
 
 On Adventure, Left/Right cycles choices. A/Cross opens an expanded list, Up/Down chooses, A/Cross confirms, and B/Circle restores the previous choice. Campaigns and individual levels remain available; the arena section lists only the twelve bosses.
 
-Y/Triangle opens the on-screen name keyboard from anywhere in the lobby. D-pad or left stick selects a key, A/Cross types or chooses an action, X/Square deletes, and B/Circle cancels. Space, letter case, Cancel and Done are also clickable. Saving a name uses the existing validation, local preference and server update.
+The name field is the only name-editing control. Mouse and keyboard users type directly into it. With a controller, focus the name field and press A/Cross to open the on-screen keyboard; simply moving focus there does not open it. D-pad or left stick selects a key, A/Cross types or chooses an action, X/Square deletes, and B/Circle cancels. Space, letter case, Cancel and Done are also clickable once the keyboard is open. Saving a name uses the existing validation, local preference and server update.
 
 Other changes included in this release:
 

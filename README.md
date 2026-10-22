@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.7.6: Lobby Party Play
+# Combat Arena 3D — v7.7.7: Lobby Name Editing
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.7:** Lobby name editing now starts from the name field: type directly with mouse/keyboard, or focus it and press A/Cross to open the controller keyboard. The separate Edit name button and Y/Triangle shortcut are removed.
 
 **v7.7.6:** Public lobbies now support full controller navigation, an adventure picker and an on-screen name keyboard. The current story level number is visible during play; arena choices contain bosses only. Boss attempts restart after a full team wipe, and defeated players automatically spectate a surviving teammate's camera with mouse, keyboard or controller switching. Lobby reconnects preserve shared progress. See [the release notes](docs/public-lobby-v7.7.6.md).
 
