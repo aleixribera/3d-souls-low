@@ -287,10 +287,10 @@
   });
 
   // ---- the two roads, the menus ----------------------------------------------------------------------------------------
-  test('Menus: the title offers Story, 1v1 Arena, Levels and Options; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
+  test('Menus: the title offers Story, the public lobby, 1v1 Arena, Levels and Options; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
     Game.showMenu('main');
     const main = Game.screens().main.items.map(i => i.name);
-    expect.ok(main.slice(0, 4).join() === 'Story,1v1 Arena,Levels,Options', `main: ${main}`);
+    expect.ok(main.slice(0, 5).join() === 'Story,Join public lobby,1v1 Arena,Levels,Options', `main: ${main}`);
     const roads = Game.screens().story.items;
     expect.ok(roads.some(i => i.campaign === 'ashmere' && i.name === 'New') && roads.some(i => i.campaign === 'lands' && i.name === 'New') && roads.at(-1).name === 'Back', 'both campaigns offer New on the same screen');
     const arena = Game.screens().arena.items.map(i => i.name);
@@ -299,7 +299,7 @@
     expect.ok(!enemies.includes('Aldric, the Gaoler King') && bosses.includes('Aldric, the Gaoler King') && bosses.includes('Giant Skeleton'), 'the Ashmere bosses apart');
     expect.ok(['Omenkin', 'Cleanrot Knight', 'Golden Zealot'].every(n => enemies.includes(n)), 'the new enemies are in the Enemies list');
     const levels = Game.screens().levels.items;
-    expect.ok(levels.map(i => i.name).join() === 'Ashmere  ›,The Lands Between  ›,Back', 'Levels groups both roads');
+    expect.ok(levels.map(i => i.name).join() === 'Ashmere  ›,The Lands Between  ›,Ashmere · Story V2  ›,Back', 'Levels groups the original roads and Story V2');
     levels[0].go();
     expect.ok(Game.screen === 'levelsAshmere', 'Ashmere opens its own list');
     const ash = Game.screens().levelsAshmere;

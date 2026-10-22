@@ -40,7 +40,7 @@ const qualityBenchmark = (() => {
       }
       test.add(new THREE.AmbientLight(0xb8c8e0, B.ambient));
       moon = new THREE.DirectionalLight(0xffe6c0, B.moon); moon.position.set(8, 15, 8); moon.castShadow = q.shadows;
-      moon.shadow.mapSize.setScalar(CONFIG.VISUALS.ultra.shadows.moonMap);
+      moon.shadow.mapSize.setScalar(CONFIG.VISUALS.cinematic[preset]?.shadowMap || CONFIG.VISUALS.ultra.shadows.moonMap);
       Object.assign(moon.shadow.camera, { left: -B.shadowBox, right: B.shadowBox, top: B.shadowBox, bottom: -B.shadowBox });
       moon.shadow.camera.updateProjectionMatrix(); test.add(moon);
       for (let i = 0; i < Math.min(B.lights, q.lights); i++) {
@@ -82,7 +82,8 @@ const qualityBenchmark = (() => {
       composer.setPixelRatio(1); composer.setSize(width, height);
       const render = new RenderPass(test, cam); composer.addPass(render);
       if (q.ao || q.volumetrics) {
-        const w = Math.max(1, Math.round(width * B.aoScale)), h = Math.max(1, Math.round(height * B.aoScale));
+        const budget = CONFIG.VISUALS.cinematic[preset];
+        const w = Math.max(1, Math.round(width * budget.aoScale)), h = Math.max(1, Math.round(height * budget.aoScale));
         normalTarget = own(new THREE.WebGLRenderTarget(w, h, { depthTexture: own(new THREE.DepthTexture(w, h)) }));
         const normal = own(new THREE.MeshNormalMaterial());
         const prepass = new class extends Pass {
@@ -97,7 +98,7 @@ const qualityBenchmark = (() => {
         // Same reduced depth/normal workload class as Ultra; a small screen shader samples occlusion and fog.
         composer.insertPass(prepass, 0);
         const light = new ShaderPass({
-          defines: { TAPS: B.aoSamples },
+          defines: { TAPS: budget.aoSamples },
           uniforms: { tDiffuse: { value: null }, tNormal: { value: normalTarget.texture }, tDepth: { value: normalTarget.depthTexture } },
           vertexShader: 'varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
           fragmentShader: `uniform sampler2D tDiffuse,tNormal,tDepth;varying vec2 vUv;

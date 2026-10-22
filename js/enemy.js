@@ -48,8 +48,26 @@ function pickByChance(attacks) {
 
 // opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path,
 // zone (the gated zone it belongs to: an alert wakes the whole zone), key (its placement, for bonfire checkpoints)
+// Opt-in encounter tuning: copy only changed data, never mutate the shared registry.
+// Damage can live on an attack, hit, projectile or breath; preserve every timing and reference.
+function encounterEnemyDef(def, tuning) {
+  if (!tuning) return def;
+  const damageCopy = value => {
+    if (Array.isArray(value)) return value.map(damageCopy);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value).map(([key, v]) =>
+      [key, key === 'damage' && typeof v === 'number' ? v * tuning.damage : damageCopy(v)]));
+  };
+  const copy = damageCopy(def), health = isBossDef(def) ? tuning.bossHealth : tuning.health;
+  copy.hp = def.hp * health;
+  if (copy.phases) for (const phase of Object.values(copy.phases)) {
+    if (typeof phase.hp === 'number') phase.hp *= health;
+  }
+  return copy;
+}
 class Enemy {
   constructor(def, opts) {
+    def = encounterEnemyDef(def, opts.enemyTuning);
     const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
     this.def = def;
     this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual, model: def.model, variant: opts.variant });

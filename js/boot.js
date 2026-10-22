@@ -82,6 +82,10 @@ function registerListeners() {
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
+  if (multiplayer.panelOpen) {
+    if (code === 'Escape' && multiplayer.active()) { ev.preventDefault(); multiplayer.hide(); }
+    return;
+  }
   input.use('keyboard');
   if (code === SYSTEM_KEYS.fps) {   // the FPS counter toggles anywhere, menus included
     ev.preventDefault();
@@ -176,8 +180,9 @@ function frame(now) {
   const frameDt = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
-  document.body.classList.toggle('no-cursor', Game.mode === 'play' || input.device === 'pad');   // pointer only for mouse-driven menus
-  if (Game.mode !== 'play' || Game.manualClock) { accumulator = 0; return; }   // menus, pause, or tests stepping by hand
+  multiplayer.heartbeat(now);
+  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && (Game.mode === 'play' || input.device === 'pad'));   // pointer only for mouse-driven menus
+  if ((Game.mode !== 'play' && !(multiplayer.active() && Game.mode === 'pause')) || Game.manualClock) { accumulator = 0; return; }   // online menus keep the world running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
   let steps = 0;
@@ -192,5 +197,6 @@ window.__arena = { Game, story, elden, spectral, ELDEN_BOSSES, ELDEN_BOSS_DEFS, 
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles, finale, LEVEL_5, lore, LORE,
                    STORIES, LANDS_STORY, LANDS_LEVELS, LANDS_ENEMY_DEFS, realms, LANDS_1, LANDS_2, LANDS_3, LANDS_4, LANDS_5, LANDS_6, LANDS_7, LANDS_8,
                    get world() { return world; } };
+window.__arena.multiplayer = multiplayer;
 window.__arenaReady = true;
 KIT.prewarm();   // bake model textures and geometry in the background while the menus are up

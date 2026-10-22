@@ -41,6 +41,7 @@ const execution = (() => {
   }
 
   function start(p, e) {
+    if (typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.grantedEnemy !== e.netId) { multiplayer.requestExecution(e); return; }
     const C = CONFIG.execution;
     const dir = Math.atan2(p.x - e.x, p.z - e.z), d = p.radius + e.radius * C.standoff + C.gap;   // from the enemy toward the player
     p.buffer = null; p.comboFrom = null; p.chainPose = null; p.hitbox = null;
@@ -62,6 +63,7 @@ const execution = (() => {
     const e = X.enemy, C = CONFIG.execution;
     if (X.resolved) return;
     X.resolved = true; e.exec = null;
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) return;   // the server resolves the reserved execution
     if (e.state !== ES.EXECUTED) return;
     if (e.training) { e.hp = e.def.hp; e.guardMeter = 0; e.setState(ES.IDLE); return; }
     if (X.lethal) { e.hp = 0; if (!e.outlast()) e.die(); return; }
@@ -74,7 +76,7 @@ const execution = (() => {
     const e = X.enemy, C = CONFIG.execution, dmg = damageFor(e);
     X.impact = true;
     X.lethal = !e.training && e.hp - dmg <= 0;
-    e.hp = Math.max(1, e.hp - dmg);   // the bar empties only when the animation lets it
+    if (!(typeof multiplayer !== 'undefined' && multiplayer.active())) e.hp = Math.max(1, e.hp - dmg);   // the bar empties only when the animation lets it
     e.tint = 1;
     Game.hitstop = Math.max(Game.hitstop, C.hitstop);
     const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), y = e.y + e.height * C.chest;

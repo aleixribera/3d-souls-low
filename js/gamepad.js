@@ -44,6 +44,7 @@ const gamepad = {
     this.down = now;
     if (pressed.length || ls.x || ls.y || rs.x || rs.y) input.use('pad');
     for (const c of released) input.up(c);
+    if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed); return; }
     if (Game.mode === 'play') this.playInput(pressed, dt);
     else this.menuInput(pressed, dt);
   },

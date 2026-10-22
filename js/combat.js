@@ -74,7 +74,7 @@ function resolveCombat(game) {
     let target = null, soonest = Infinity;
     for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
     if (target) {
-      const broke = target.getParried();
+      const broke = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getParried();
       p.stamina = Math.min(p.maxStamina, p.stamina + P.cost);   // a successful parry is free
       p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
       p.setState(PS.IDLE);
@@ -91,7 +91,7 @@ function resolveCombat(game) {
   for (const e of playerHits) {
     const strike = p.hitbox.payload;
     p.hitbox.markHit(e);
-    const res = e.takeHit(strike, p);
+    const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.hit(e, strike) : e.takeHit(strike, p);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
     if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); }
@@ -104,7 +104,10 @@ function resolveCombat(game) {
     }
     hb.markHit(p);
     const res = p.takeHit(hb.payload, hb.owner);
-    if (hb.owner.def && hb.owner.def.lifesteal) hb.owner.lifesteal();   // v5.9: every blow that connects heals, blocked or not
+    if (hb.owner.def && hb.owner.def.lifesteal) {
+      if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.lifesteal(hb.owner);
+      else hb.owner.lifesteal();
+    }
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : hb.payload.hitstop);
     events.emit('strike', { strike: hb.payload, attacker: hb.owner, target: p, at: contact(hb, p), blocked: res.blocked });
   }

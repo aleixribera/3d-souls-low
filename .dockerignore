@@ -1,0 +1,12 @@
+.git
+.claude
+.codex
+.agents
+.scratch
+node_modules
+server/node_modules
+tests
+docs
+*.zip
+.env
+*.log

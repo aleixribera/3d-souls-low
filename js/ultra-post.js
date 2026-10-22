@@ -13,6 +13,7 @@
 const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
   const quality = () => visuals.quality();
+  const budget = () => VIS.cinematic[quality().label.toLowerCase()];
   let on = false, lastT = performance.now(), W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
   const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
@@ -33,13 +34,14 @@ const ultraPost = (() => {
   const visRT = rt(MAXL, 1);   // one texel per light: how much of it is in view (not behind a wall)
   function makeTargets() {
     for (const t of [gbuf, lightA, lightB]) if (t) { t.dispose(); if (t.depthTexture) t.depthTexture.dispose(); }
-    const hw = Math.max(1, Math.round(W * U.ao.scale)), hh = Math.max(1, Math.round(H * U.ao.scale));
+    const hw = Math.max(1, Math.round(W * budget().aoScale)), hh = Math.max(1, Math.round(H * budget().aoScale));
     gbuf = rt(hw, hh, { depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh) });
     lightA = rt(hw, hh, { type: THREE.HalfFloatType }); lightB = rt(hw, hh, { type: THREE.HalfFloatType });
     for (const m of [lightMat, blurMat, visMat]) { m.uniforms.tDepth.value = gbuf.depthTexture; }
     lightMat.uniforms.tNormal.value = gbuf.texture;
     lightMat.uniforms.uRes.value.set(hw, hh);
     compMat.uniforms.tLight.value = lightA.texture;
+    compMat.uniforms.tDepth.value = gbuf.depthTexture;
   }
 
   // ---- shaders -----------------------------------------------------------------------------------------------------
@@ -117,6 +119,7 @@ void main() {
       vec3 k = vec3(cos(ph) * sqrt(f), sin(ph) * sqrt(f), sqrt(1.0 - f));
       vec3 Sp = P + (T * k.x + B * k.y + N * k.z) * rad * mix(0.12, 1.0, f * f);
       vec4 o = uProj * vec4(Sp, 1.0); vec2 suv = o.xy / o.w * 0.5 + 0.5;
+      if (suv.x < 0.0 || suv.y < 0.0 || suv.x > 1.0 || suv.y > 1.0) continue;
       float sz = viewPos(suv).z;
       float range = smoothstep(0.0, 1.0, rad / max(abs(P.z - sz), 1e-3));
       occ += step(Sp.z + uAoBias, sz) * range;
@@ -172,12 +175,17 @@ void main() {
   // Composite: the shockwaves bend the image, then occlusion darkens it (not what glows) and the scattered light adds.
   const compMat = new THREE.ShaderMaterial({
     defines: { MAXW },
-    uniforms: { tDiffuse: { value: null }, tLight: { value: null }, uAoStr: { value: U.ao.strength }, uAoPow: { value: U.ao.power },
+    uniforms: { tDiffuse: { value: null }, tLight: { value: null }, tDepth: { value: null },
+                uInvProj: { value: camera.projectionMatrixInverse }, uInvView: { value: camera.matrixWorld },
+                uMist: { value: 0 }, uMistColor: { value: new THREE.Color() }, uMistBase: { value: 0 },
+                uAoStr: { value: U.ao.strength }, uAoPow: { value: U.ao.power },
                 uBright: { value: new THREE.Vector2(...U.ao.keepBright) }, uAspect: { value: 1 }, uWaveW: { value: U.waves.width },
                 uWaves: { value: Array.from({ length: MAXW }, () => new THREE.Vector4()) } },
     vertexShader: QUAD_VERT,
-    fragmentShader: `uniform sampler2D tDiffuse, tLight; uniform float uAoStr, uAoPow, uAspect, uWaveW; uniform vec2 uBright;
+    fragmentShader: `uniform sampler2D tDiffuse, tLight, tDepth; uniform float uAoStr, uAoPow, uAspect, uWaveW; uniform vec2 uBright;
+uniform mat4 uInvProj, uInvView; uniform float uMist, uMistBase; uniform vec3 uMistColor;
 uniform vec4 uWaves[MAXW]; varying vec2 vUv;
+${VIEW_POS}
 void main() {
   vec2 uv = vUv;
   for (int i = 0; i < MAXW; i++) {
@@ -189,7 +197,15 @@ void main() {
   vec3 c = texture2D(tDiffuse, uv).rgb; vec4 l = texture2D(tLight, uv);
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c *= mix(1.0, pow(clamp(l.a, 0.0, 1.0), uAoPow), uAoStr * (1.0 - smoothstep(uBright.x, uBright.y, lum)));
-  gl_FragColor = vec4(c + l.rgb, 1.0);
+  // Analytically integrate a ground-hugging exponential layer along the ray.
+  // The existing depth buffer stops it at walls, bodies and floors; no extra pass.
+  vec3 p = viewPos(uv), wp = (uInvView * vec4(p, 1.0)).xyz;
+  float h0 = max(uInvView[3].y - uMistBase, 0.0) / ${VIS.cinematic.mist.height};
+  float h1 = max(wp.y - uMistBase, 0.0) / ${VIS.cinematic.mist.height};
+  float dh = h1 - h0;
+  float integral = abs(dh) < 0.001 ? exp(-h0) : (exp(-h0) - exp(-h1)) / dh;
+  float mist = min(${VIS.cinematic.mist.max}, 1.0 - exp(-uMist * min(length(p), ${VIS.cinematic.mist.distance.toFixed(1)}) * integral));
+  gl_FragColor = vec4(mix(c + l.rgb, uMistColor, mist), 1.0);
 }` });
   const quad = new FullScreenQuad(null);
   const pass = (mat, target) => { quad.material = mat; renderer.setRenderTarget(target); quad.render(renderer); };
@@ -225,11 +241,11 @@ void main() {
   // Metal reflections: the level's environment on every metallic material (armour, weapons, iron).
   const reflected = new Set();
   function reflect(m) {
-    if (!quality().reflections || !m.isMeshStandardMaterial || m.metalness < U.env.metalFrom || !envTex) return;
+    if (!quality().reflections || !m.isMeshStandardMaterial || (!m.userData.weathered && m.metalness < U.env.metalFrom) || !envTex) return;
     reflected.add(m);
     if (m.envMap === envTex) return;
     if (!m.envMap) m.needsUpdate = true;
-    m.envMap = envTex; m.envMapIntensity = U.env.intensity;
+    m.envMap = envTex; m.envMapIntensity = m.userData.weathered ? VIS.cinematic.surface.environment : U.env.intensity;
   }
   function unreflect() { for (const m of reflected) { m.envMap = null; m.needsUpdate = true; } reflected.clear(); }
   // The environment: a dim sphere of the level's fog and moonlight, with warm fire low round the horizon (and the sun).
@@ -282,7 +298,7 @@ void main() {
         for (const o of hidden) o.visible = true;
       }
       // 2. light visibility, 3. occlusion + scattered light, 4. blur, 5. composite
-      pass(visMat, visRT);
+      if (quality().volumetrics) pass(visMat, visRT);
       pass(lightMat, lightA);
       blurMat.uniforms.tLight.value = lightA.texture; blurMat.uniforms.uDir.value.set(1 / lightA.width, 0); pass(blurMat, lightB);
       blurMat.uniforms.tLight.value = lightB.texture; blurMat.uniforms.uDir.value.set(0, 1 / lightA.height); pass(blurMat, lightA);
@@ -328,7 +344,7 @@ void main() {
     const share = open ? S.share.open : S.share.roofed;
     sun.color.copy(moonLight.color); sun.intensity = moonBase * share; moonLight.intensity = moonBase * (1 - share);
     const p = Game.player || camera.position, dir = v3b.copy(moonLight.position).normalize();
-    const texel = 2 * S.moonBox / S.moonMap, up = Math.abs(dir.y) > 0.99 ? sunUp.set(1, 0, 0) : sunUp.set(0, 1, 0);
+    const texel = 2 * S.moonBox / sun.shadow.mapSize.x, up = Math.abs(dir.y) > 0.99 ? sunUp.set(1, 0, 0) : sunUp.set(0, 1, 0);
     const right = sunRight.crossVectors(up, dir).normalize(), up2 = sunUp2.crossVectors(dir, right);
     const c = sunCenter.set(p.x, p.y + 1, p.z);
     const a = Math.round(c.dot(right) / texel) * texel, b = Math.round(c.dot(up2) / texel) * texel, f = c.dot(dir);
@@ -356,9 +372,19 @@ void main() {
   }
 
   function setQuality(q) {
+    const b = budget();
+    if (q.shadows && sun.shadow.mapSize.x !== b.shadowMap) {
+      if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+      sun.shadow.mapSize.set(b.shadowMap, b.shadowMap);
+    }
+    if (lightMat.defines.AO_SAMPLES !== b.aoSamples) {
+      lightMat.defines.AO_SAMPLES = b.aoSamples; lightMat.needsUpdate = true;
+    }
     on = q.ao || q.volumetrics || q.refraction;
     lightPass.enabled = on;
     lightMat.uniforms.uAoRadius.value = q.ao ? U.ao.radius : 0;
+    // Clear previous Ultra scattering when switching to High in the same scene.
+    if (!q.volumetrics) lightMat.uniforms.uLCount.value = 0;
     compMat.uniforms.uAoStr.value = q.ao ? U.ao.strength : 0;
     waves.length = 0;
     pulse.flash = pulse.hurt = 0;
@@ -423,6 +449,9 @@ void main() {
     }
     // the moon's rays: on open-sky levels, through its shadow map
     const L = lightMat.uniforms, map = sun.shadow.map;
+    compMat.uniforms.uMist.value = open ? budget().mist : 0;
+    compMat.uniforms.uMistColor.value.copy(scene.fog.color).multiplyScalar(1.35);
+    compMat.uniforms.uMistBase.value = lastDef?.spawn?.y || 0;
     L.uMoonOn.value = q.volumetrics && q.shadows && open && map ? 1 : 0;
     if (map) L.tShadow.value = map.texture;
     L.uMoonDir.value.copy(moonLight.position).normalize().transformDirection(camera.matrixWorldInverse);
@@ -445,6 +474,8 @@ void main() {
       if (flash > pulse.flash) { pulse.flash = flash; pulse.flashColor.set(color); }
     },
     info: () => ({ on, lights: lightList.length, noDepth: noDepth.length, reflected: reflected.size, waves: waves.length,
+                   shadowSize: sun.shadow.mapSize.x, aoSamples: lightMat.defines.AO_SAMPLES,
+                   scatteringLights: lightMat.uniforms.uLCount.value, bufferSize: gbuf ? [gbuf.width, gbuf.height] : null,
                    sweeps, sun: quality().shadows ? sun.intensity : 0, shadows: renderer.shadowMap.enabled,
                    ao: quality().ao, volumetrics: quality().volumetrics, reflections: quality().reflections }),
   };

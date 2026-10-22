@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.4';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.7.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -131,7 +131,7 @@ const CONFIG = {
   // Hazard floors (v7.0, a level's `hazards`, js/game.js): the `hazard` event (sound, a flash of the health bar) every `tick` s.
   hazards: { tick: 0.5 },
   // saveKeys: one save slot per campaign of STORIES (js/data/story.js); saveKey is Ashmere's, kept for old saves.
-  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands' }, saveVersion: 1, titleTime: 3.2 },
+  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands', 'story-v2': 'combatArena.story.v2' }, saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -333,8 +333,8 @@ const CONFIG = {
       // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
-      // Presentation and lighting are independent: High uses modern combat effects and cached metal reflections;
-      // Ultra adds sculpted anatomy, shadows, AO, volumetrics, ambient procedural fire and refraction.
+      // High shares modern combat effects, surface reflections and budgeted shadows/AO.
+      // Ultra adds sculpted anatomy, denser AO, volumetrics, procedural ambient fire and refraction.
       // `ultra` identifies the preset for compatibility; features read their own flags. Graphics cycles in this order.
       low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 1, antialias: false, bloomScale: 1,
               lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
@@ -343,7 +343,7 @@ const CONFIG = {
       high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
               modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'high', proceduralFire: false,
-              reflections: true, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
+              reflections: true, shadows: true, ao: true, volumetrics: false, refraction: false, warmupSize: 32 },
       ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
                lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true,
                modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
@@ -362,12 +362,23 @@ const CONFIG = {
                    storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
-    bloom: { strength: 0.34, radius: 0.5, threshold: 0.8 },
+    // Shared art direction; expensive screen lighting remains strictly tiered.
+    cinematic: {
+      low: { cloudLayers: 1, shadowMap: 0, aoScale: 0.25, aoSamples: 8, mist: 0 },
+      high: { cloudLayers: 3, shadowMap: 1024, aoScale: 0.35, aoSamples: 8, mist: 0.012 },
+      ultra: { cloudLayers: 5, shadowMap: 2048, aoScale: 0.5, aoSamples: 16, mist: 0.022 },
+      clouds: { size: 256, scale: 0.65, speed: 0.003, cover: 0.48, opacity: 0.8, silver: 1.3 },
+      mist: { height: 3.2, distance: 65, max: 0.32 },
+      stone: { variation: 0.22, cavity: 0.24, mineral: [0.78, 0.86, 0.94] },
+      surface: { macroScale: 0.065, variation: 0.24, damp: 0.38, roughness: 0.27, environment: 0.65, floorSeams: false },
+      foliage: { segments: 3, bend: 0.38, rootShade: 0.38, tipShade: 1.18 },
+    },
+    bloom: { strength: 0.42, radius: 0.65, threshold: 1.0 },
     // Colour grade (after tone mapping): cool shadows, warm highlights, a little desaturation.
     // Strongly red pixels skip the desaturation so the wind-up telegraph never dulls.
     grade: { shadowTint: [0.9, 0.96, 1.08], highlightTint: [1.07, 1.0, 0.9], saturation: 0.8, contrast: 1.05 },
-    vignette: { strength: 0.5, softness: 0.55, lowHealthAt: 0.3, lowHealthRate: 3 },   // darker, redder edges below lowHealthAt
-    grain: { amount: 0.015, ultra: 0.015 },   // the same fine grain on both post-processed presets
+    vignette: { strength: 0.3, softness: 0.65, lowHealthAt: 0.3, lowHealthRate: 3 },   // darker, redder edges below lowHealthAt
+    grain: { amount: 0.006, ultra: 0.004 },   // fine dithering without obscuring material detail
     rim: { strength: 0.32, power: 3.0, mixWhite: 0.45 },     // silhouette light on characters; colour from the level
     // Procedural surfaces. Patterns build the canvas textures (fractions of the texture size); kinds say how
     // each material family weathers (tile sizes in metres; colours multiply the base colour; `relief`: how deep joints
@@ -376,14 +387,14 @@ const CONFIG = {
       texSize: 512, reliefFade: [4, 16],
       patterns: {
         wall:  { rows: [1 / 6, 1 / 6], slab: [0.22, 0.4], shade: [0.88, 1.08], joint: 2.2, cracks: 5, freq: 8 },
-        floor: { rows: [0.17, 0.27], slab: [0.18, 0.36], shade: [0.86, 1.1], joint: 3, cracks: 4, freq: 9 },
+        floor: { rows: [0.14, 0.32], slab: [0.16, 0.4], shade: [0.78, 1.12], joint: 2, cracks: 7, freq: 16 },
         metal: { rows: null, cracks: 0, streaks: 50, freq: 18 },
         plaster: { rows: null, cracks: 14, freq: 9 },
         tiles: { rows: [1 / 16, 1 / 16], slab: [0.06, 0.1], shade: [0.82, 1.12], joint: 1.6, cracks: 2, freq: 12 },
       },
       kinds: {
         stone: { side: 'wall', top: 'floor', tileSide: 3, tileTop: 4, detail: 0.5, crack: 0.3, grimeColor: 0x9a9286,
-                 grimeHeight: 1.5, mossColor: 0x5a6448, moss: 0.5, roughVar: 0.35, rustColor: 0x000000, rust: 0, relief: 0.3 },
+                 grimeHeight: 1.5, mossColor: 0x5a6448, moss: 0.5, roughVar: 0.35, rustColor: 0x000000, rust: 0, relief: 0.055 },
         metal: { side: 'metal', top: 'metal', tileSide: 1.2, tileTop: 1.2, detail: 0.5, crack: 0.2, grimeColor: 0x8a8278,
                  grimeHeight: 1.0, mossColor: 0x000000, moss: 0, roughVar: 0.3, rustColor: 0x5a4030, rust: 0.35, relief: 0 },
         wood:  { side: 'metal', top: 'metal', tileSide: 0.6, tileTop: 0.6, detail: 0.55, crack: 0.2, grimeColor: 0x7a7268,

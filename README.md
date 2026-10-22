@@ -1,6 +1,10 @@
-# Combat Arena 3D — v7.4: Guiding Light
+# Combat Arena 3D — v7.7.1: Smoother Co-op
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.7.1:** Fixes accumulating co-op playback delay, server simulation overhead, gate/barricade animations and obstacle hunting. Shared updates use compressed changes instead of repeated full snapshots; the HUD separates ping from playback delay. See the [release notes](docs/multiplayer-v7.7.1.md) and [exact update commands for your Ubuntu server on port 3080](docs/update-v7.7.1.md).
+
+**v7.7:** **Join public lobby** connects to one co-op lobby on the home server. Play any level or arena opponent together, with leader controls, shared enemies and health bars, late joins and individual checkpoint respawns. Personal movement and defensive outcomes run immediately on each player's browser. Hosting uses Docker Compose and a public Tailscale Funnel link; see [the Ubuntu server setup](docs/homelab-multiplayer.md) and [the multiplayer design](docs/multiplayer-v7.7.md). Solo play still opens directly from the HTML file; multiplayer requires the server.
 
 **v7.4:** Subtle, stationary pockets of golden motes flow toward the next bonfire across both campaigns. Routes follow doorways, stairs and scripted drops, advance at bonfires, and resume from your checkpoint. Lightning lights the scenery and characters directionally. Spectral weapons, flame breath, holy runes, crimson effects and projectiles illuminate nearby surfaces on every graphics preset through a small shared light pool. Light attacks now deal 24 damage each (72 per combo); heavy and execution damage are preserved. See [the release notes](docs/guiding-light-v7.4.md).
 

@@ -22,14 +22,20 @@ const Game = {
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
 
-  isTutorial() { return this.kind === 'level' && this.level.script === 'tutorial'; },
+  isTutorial() { return this.kind === 'level' && this.level.script === 'tutorial' && !(typeof multiplayer !== 'undefined' && multiplayer.connected); },
   duelWon() { return this.kind === 'arena' && !!this.duel && !this.duel.alive(); },
 
   // ---- menus -----------------------------------------------------------------------------------
   screens() {
     const onOff = v => v ? 'On' : 'Off';
     const S = story.screens(this);
-    const pauseItems = this.story ? [
+    const online = typeof multiplayer !== 'undefined' && multiplayer.active();
+    const pauseItems = online ? [
+        { name: 'Resume', desc: 'The online world keeps running while menus are open.', go: () => this.resume() },
+        { name: 'Lobby controls', desc: 'Players, level selection and leader controls.', go: () => multiplayer.show() },
+        { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
+      ] : this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Start the story now.', go: () => story.afterTutorial() }] : []),
@@ -56,8 +62,9 @@ const Game = {
         } })) },
       main: { title: 'COMBAT ARENA 3D', sub: '', items: [
         ...S.main,
+        { name: 'Join public lobby', desc: 'Play together on the home server. Anyone with the link can join.', go: () => multiplayer.join() },
         { name: '1v1 Arena', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
-        { name: 'Levels', desc: 'Play a level on its own from either story.', go: () => this.showMenu('levels') },
+        { name: 'Levels', desc: 'Play a level on its own from any story.', go: () => this.showMenu('levels') },
         { name: 'Options', desc: 'Graphics, camera, sound and controls.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
       ] },
@@ -68,7 +75,10 @@ const Game = {
       levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
         { name: 'Ashmere  ›', desc: 'The five levels of Ashmere, from the Long Hall to the Final Castle.', go: () => this.showMenu('levelsAshmere') },
         { name: 'The Lands Between  ›', desc: 'The levels of the second road, from Stormhill to the Haligtree.', go: () => this.showMenu('levelsLands') },
+        { name: 'Ashmere · Story V2  ›', desc: 'Five compact levels. A gentler introduction with its own story save.', go: () => this.showMenu('levelsV2') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      levelsV2: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · STORY V2', back: 'levels', items: [...STORY_V2_LEVELS.map(levelItem),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsAshmere: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'levels', items: [...STORY.chapters.map(c => levelItem(ALL_LEVELS.find(l => l.id === c.level))),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
@@ -293,6 +303,7 @@ const Game = {
   },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.show(); return; }
     if (this.story) return;   // a campaign has no restart: death returns you to the bonfire
     if (!this.player.alive() || this.duelWon() || this.complete || this.restartArm > 0) { this.reset(); return; }
     this.restartArm = CONFIG.restartConfirmTime;
@@ -314,7 +325,7 @@ const Game = {
   // floor under it: the top-most one, or the highest at or below its `y` when it gives one.
   spawnSpec(entry, behavior) {
     const spec = this.placement(entry, behavior);
-    return { ...spec, y: world.floorY(spec.x, spec.z, spec.y) };
+    return { ...spec, y: world.floorY(spec.x, spec.z, spec.y), enemyTuning: this.level.enemyTuning };
   },
   placement(entry, behavior) {
     const L = this.level, V = CONFIG.level;
@@ -413,6 +424,7 @@ const Game = {
   tryRest() {
     const p = this.player, b = this.canRest();
     if (!b || !p.isFree()) return;
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.rest(b); return; }
     p.hp = p.maxHp; p.stamina = p.maxStamina; p.vx = p.vz = 0;
     p.setState(PS.REST);
     p.refillItems();
@@ -867,6 +879,7 @@ const Game = {
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
   // body separation, combat, deaths, level gates or tutorial, camera.
   update(dt) {
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); return; }
     const p = this.player, c = this.cam;
     p.savePrev(); for (const e of this.enemies) e.savePrev();
     c.prevPos.copy(c.pos); c.prevLook.copy(c.look);

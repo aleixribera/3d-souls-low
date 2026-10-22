@@ -235,7 +235,7 @@ const story = (() => {
     const C = A().def;
     const devJumps = DEV ? [
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level of either road.', go: () => game.showMenu('storyJump') },
-      { name: 'Story: clear the saves', desc: 'Developer: deletes both story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
+      { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
     ] : [];
     return { main: [{ name: 'Story', desc: 'Continue your game or start a new story.', go: () => game.showMenu('story') }],
       devItems: devJumps, screens: {

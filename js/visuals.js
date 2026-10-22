@@ -64,6 +64,31 @@ function checkVisualData(need, num) {
       `CONFIG.VISUALS.fxBudgets.${name}: invalid density, capacity, light or ribbon budget.`);
   }
   need(VIS.defaultQuality in Q, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a quality preset.`);
+  for (const name of Object.keys(Q)) {
+    const c = VIS.cinematic[name];
+    need(c && Number.isInteger(c.cloudLayers) && c.cloudLayers >= 1 && c.cloudLayers <= 5
+      && [0, 1024, 2048, 4096].includes(c.shadowMap) && c.aoScale > 0 && c.aoScale <= 1
+      && Number.isInteger(c.aoSamples) && c.aoSamples >= 4 && c.aoSamples <= 32
+      && num(c.mist) && c.mist >= 0 && c.mist <= 0.1,
+      `CONFIG.VISUALS.cinematic.${name}: invalid sky, shadow, occlusion or mist budget.`);
+  }
+  const C = VIS.cinematic;
+  need(Number.isInteger(C.clouds.size) && C.clouds.size >= 32 && C.clouds.size <= 512
+    && (C.clouds.size & (C.clouds.size - 1)) === 0,
+    'CONFIG.VISUALS.cinematic.clouds.size must be a power of two from 32 to 512.');
+  for (const [group, keys] of Object.entries({
+    clouds: ['scale', 'speed', 'cover', 'opacity', 'silver'],
+    mist: ['height', 'distance', 'max'], stone: ['variation', 'cavity'],
+    surface: ['macroScale', 'variation', 'damp', 'roughness', 'environment'],
+    foliage: ['bend', 'rootShade', 'tipShade'],
+  })) for (const key of keys) need(num(C[group][key]) && C[group][key] >= 0,
+    `CONFIG.VISUALS.cinematic.${group}.${key} must be a non-negative finite number.`);
+  need(C.mist.height > 0 && C.mist.distance > 0 && C.mist.max <= 1
+    && C.clouds.opacity <= 1 && C.surface.roughness <= 1 && C.surface.damp <= 1
+    && tri(C.stone.mineral) && C.stone.mineral.every(v => v >= 0 && v <= 1)
+    && typeof C.surface.floorSeams === 'boolean'
+    && Number.isInteger(C.foliage.segments) && C.foliage.segments >= 1 && C.foliage.segments <= 4,
+    'CONFIG.VISUALS.cinematic: invalid mist, surface, mineral or foliage settings.');
   for (const [m, kind] of Object.entries(VIS.surfaces.materials))
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
   for (const [k, K] of Object.entries(VIS.surfaces.kinds))
@@ -201,6 +226,24 @@ function makeSurfaceTexture(name) {
 }
 const SURF_TEX = Object.fromEntries(Object.keys(VIS.surfaces.patterns).map(k => [k, makeSurfaceTexture(k)]));
 
+// A single shared, tileable cloud field, baked once. Even Low uses just one lookup;
+// more layers add parallax and silver edges without meshes, lights or render targets.
+const CLOUD_TEX = (() => {
+  const n = VIS.cinematic.clouds.size, data = new Uint8Array(n * n * 4);
+  const noise = makeNoise(7319);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = noise(x / n * 8, y / n * 8, 8, 5);
+    const i = (y * n + x) * 4;
+    data[i] = data[i + 1] = data[i + 2] = Math.round(v * 255); data[i + 3] = 255;
+  }
+  const t = new THREE.DataTexture(data, n, n);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true; t.needsUpdate = true;
+  return t;
+})();
+const SKY_LAYERS = { value: 1 };
+
 // ---- weathered materials -----------------------------------------------------------------------------
 // Patches a MeshStandardMaterial: the surface texture is projected in world space from three sides
 // (so every box, any size, tiles evenly), with cracks, grime pooled near the floor, moss in damp
@@ -233,8 +276,21 @@ const WEATHERED = [];
 const WEATHER_MODE = { simple: false };
 const WEATHER_FRAG = `vec3 wT = wTri(); float wD = wT.r, wC = wT.g, wB = wT.b;
   float wUp = smoothstep(0.5, 0.95, normalize(vWNrm).y);
+  float wWet = 0.0;
+#ifndef W_SIMPLE
+  // Broad weathering breaks repetition across slabs. One shared packed lookup,
+  // independent of tile size, also defines the damp polished patches.
+  float wMacro = texture2D(wTop, vWPos.xz * ${VIS.cinematic.surface.macroScale}).b;
+  diffuseColor.rgb *= 1.0 + (wMacro - 0.5) * ${VIS.cinematic.surface.variation};
+  wWet = smoothstep(0.46, 0.68, wMacro) * wUp * (1.0 - wC) * wMossAmt * ${VIS.cinematic.surface.damp};
+  diffuseColor.rgb *= 1.0 - wWet * 0.3;
+#endif
   diffuseColor.rgb *= mix(1.0, 0.45 + wD * 1.1, wDetailAmt);
   diffuseColor.rgb *= 1.0 - wC * wCrack;
+  // Mineral colour and recessed mortar reuse the packed sample on every preset.
+  diffuseColor.rgb *= mix(vec3(1.0), vec3(${VIS.cinematic.stone.mineral.join(',')}),
+    smoothstep(0.3, 0.72, wB) * ${VIS.cinematic.stone.variation});
+  diffuseColor.rgb *= 1.0 - wC * wC * ${VIS.cinematic.stone.cavity};
   float wLow = (1.0 - smoothstep(0.0, wGrimeH, vWPos.y)) * (1.0 - wUp);
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * wGrime, clamp(wLow * (0.55 + 0.6 * wB) * wLevelGrime, 0.0, 1.0));
   float wMossM = clamp(smoothstep(0.56, 0.8, wB + wLow * 0.22 + wC * 0.12 + wUp * 0.04) * wMossAmt * wLevelMoss, 0.0, 1.0);
@@ -270,7 +326,7 @@ function weather(mat, kindName) {
     sh.vertexShader = 'varying vec3 vWPos; varying vec3 vWNrm;\n' + sh.vertexShader.replace('#include <begin_vertex>', WEATHER_VERT);
     sh.fragmentShader = (WEATHER_MODE.simple ? '#define W_SIMPLE\n' : '') + WEATHER_HEAD + sh.fragmentShader
       .replace('#include <map_fragment>', WEATHER_FRAG)
-      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp(roughness + (0.5 - wD) * wRough + wRustM * 0.25, 0.05, 1.0);')
+      .replace('#include <roughnessmap_fragment>', `float roughnessFactor = mix(clamp(roughness + (0.5 - wD) * wRough + wRustM * 0.25, 0.05, 1.0), ${VIS.cinematic.surface.roughness}, wWet);`)
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * (1.0 - wRustM) * (0.7 + 0.6 * wD);')
       .replace('#include <normal_fragment_maps>', WEATHER_RELIEF);
   };
@@ -414,12 +470,28 @@ void main() {
 }`;
 const SKY_VERT = `varying vec3 vDir;
 void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const SKY_FRAG = `uniform vec3 uZen, uHor, uSun, uSunDir; varying vec3 vDir;
+const SKY_FRAG = `uniform vec3 uZen, uHor, uSun, uSunDir;
+uniform sampler2D uCloud; uniform float uTime; uniform int uLayers; varying vec3 vDir;
 void main() {
   vec3 d = normalize(vDir);
   vec3 c = mix(uHor, uZen, smoothstep(0.02, 0.6, d.y));
   float s = max(dot(d, uSunDir), 0.0);
-  c += uSun * (pow(s, 5.0) * 0.35 + pow(s, 48.0) * 0.9 + pow(s, 900.0) * 6.0) * smoothstep(-0.1, 0.05, d.y);
+  float horizon = smoothstep(-0.03, 0.18, d.y);
+  vec2 uv = d.xz / (abs(d.y) + 0.24) * ${VIS.cinematic.clouds.scale};
+  float cloud = 0.0, weight = 0.0, amp = 0.55;
+  for (int i = 0; i < 5; i++) {
+    if (i >= uLayers) break;
+    float layer = float(i);
+    cloud += texture2D(uCloud, uv + vec2(uTime * ${VIS.cinematic.clouds.speed} * (1.0 + layer * 0.17), layer * 0.21)).r * amp;
+    weight += amp; amp *= 0.5; uv = uv * 1.93 + vec2(0.31, 0.73);
+  }
+  cloud /= weight;
+  float body = smoothstep(${VIS.cinematic.clouds.cover - 0.12}, ${VIS.cinematic.clouds.cover + 0.16}, cloud) * horizon;
+  float silver = exp(-abs(cloud - ${VIS.cinematic.clouds.cover}) * 22.0) * pow(s, 12.0);
+  vec3 cloudColor = mix(uZen * 0.7, uHor * 1.25, 0.5 + 0.5 * d.y);
+  cloudColor += uSun * silver * ${VIS.cinematic.clouds.silver};
+  c += uSun * (pow(s, 5.0) * 0.28 + pow(s, 48.0) * 0.7 + pow(s, 900.0) * 6.0) * smoothstep(-0.1, 0.05, d.y);
+  c = mix(c, cloudColor, body * ${VIS.cinematic.clouds.opacity});
   gl_FragColor = vec4(c, 1.0);
   ${COLOR_OUT}
 }`;
@@ -618,11 +690,23 @@ function grassMesh(rnd, count, spot, size = 1) {
     const h = Gs.height * (0.5 + rnd() * 0.7), w = 0.05 + rnd() * 0.04, a = rnd() * Math.PI;
     const ox = (rnd() - 0.5) * 0.35, oz = (rnd() - 0.5) * 0.35, lean = (rnd() - 0.5) * 0.3, cx = Math.cos(a) * w, cz = Math.sin(a) * w;
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute([ox - cx, 0, oz - cz, ox + cx, 0, oz + cz, ox + lean, h, oz + lean * 0.5], 3));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
+    const F = VIS.cinematic.foliage, positions = [], colors = [], indices = [];
+    for (let j = 0; j <= F.segments; j++) {
+      const t = j / F.segments, taper = (1 - t) * (1 - t * 0.3);
+      const bend = lean * t + F.bend * h * t * t;
+      for (const side of [-1, 1]) {
+        positions.push(ox + cx * taper * side + Math.sin(a) * bend, h * t, oz + cz * taper * side - Math.cos(a) * bend);
+        const shade = lerp(F.rootShade, F.tipShade, t);
+        colors.push(shade, shade, shade);
+      }
+      if (j < F.segments) { const k = j * 2; indices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    g.setIndex(indices); g.computeVertexNormals();
     parts.push(g);
   }
-  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.9 });
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, side: THREE.DoubleSide, roughness: 0.9 });
   mat.onBeforeCompile = sh => {
     sh.uniforms.uTime = vTime;
     sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -883,6 +967,7 @@ const visuals = (() => {
   const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
 
   function applyCounts() {
+    SKY_LAYERS.value = VIS.cinematic[quality.label.toLowerCase()].cloudLayers;
     const P = VIS.particles, a = A.ash || 0, d = A.dust || 0, amount = Math.min(1, a + d);
     ash.geometry.setDrawRange(0, Math.round(P.max * amount * quality.particles));
     ash.material.uniforms.uDustRatio.value = a + d > 0 ? d / (a + d) : 0;
@@ -1102,7 +1187,7 @@ const visuals = (() => {
   function addSky(G, S) {
     const m = new THREE.Mesh(new THREE.SphereGeometry(170, 32, 16), new THREE.ShaderMaterial({
       uniforms: { uZen: { value: new THREE.Color(S.zenith) }, uHor: { value: scene.fog.color.clone() }, uSun: { value: new THREE.Color(S.sun) },
-                  uSunDir: { value: new THREE.Vector3(...S.sunDir).normalize() } },
+                  uSunDir: { value: new THREE.Vector3(...S.sunDir).normalize() }, uCloud: { value: CLOUD_TEX }, uTime: vTime, uLayers: SKY_LAYERS },
       vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false }));
     m.renderOrder = -1; m.frustumCulled = false; G.add(m);
     return m;

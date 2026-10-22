@@ -3070,10 +3070,11 @@
   test('High: modern presentation is independent from expensive lighting and keeps native resolution', () => {
     const { low, high, ultra } = CONFIG.VISUALS.quality;
     expect.ok(high.combatFx && high.reflections && !low.combatFx && !low.reflections, 'High adds modern effects and cached metal');
-    for (const key of ['shadows', 'ao', 'volumetrics', 'refraction']) expect.ok(!high[key] && ultra[key], `${key} stays Ultra only`);
+    for (const key of ['shadows', 'ao']) expect.ok(high[key] && ultra[key] && !low[key], `${key} scales across High and Ultra`);
+    for (const key of ['volumetrics', 'refraction']) expect.ok(!high[key] && ultra[key], `${key} stays Ultra only`);
     expect.ok(high.renderScale === 1 && high.maxPixelRatio === 1.5 && high.msaa === 4 && high.lights === 8, 'High keeps resolution, AA and lights');
     expect.ok(!high.proceduralFire && ultra.proceduralFire && high.modelDetail.tex === 1, 'native textures; ambient procedural fire stays Ultra');
-    expect.ok(CONFIG.VISUALS.grain.amount === CONFIG.VISUALS.grain.ultra, 'same fine grain');
+    expect.ok(CONFIG.VISUALS.grain.amount <= 0.006 && CONFIG.VISUALS.grain.ultra <= CONFIG.VISUALS.grain.amount, 'fine grain preserves material detail');
   });
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
@@ -3125,7 +3126,7 @@
       for (let i = 0; i < 12; i++) Game.render(1, STEP);
       expect.ok(ultraWarnings().length === warnings, 'no effect failures');
       expect.ok([p.hp, e.hp, e.posture, p.x, e.x].every((v, i) => v === state[i]), 'drawing preserves the fight');
-      expect.ok(!ultraPost.info().on && !renderer.shadowMap.enabled && ultraPost.info().waves === 0, 'no Ultra scene passes or refraction');
+      expect.ok(ultraPost.info().on && renderer.shadowMap.enabled && !ultraPost.info().volumetrics && ultraPost.info().waves === 0, 'High uses shadow/AO lighting without volumetrics or refraction');
       A.visuals.setQuality('low');
       expect.ok(!ultraFx.on() && ultraFx.info().sparks === 0 && ultraFx.info().drops === 0 && ultraBoss.info().fires === 0, 'Low releases modern effects');
       expect.ok(ultraPost.info().reflected === 0, 'Low removes metal reflections');
@@ -3193,12 +3194,17 @@
       expect.ok(A.visuals.info().pointLights === before, 'the stage keeps its own light count (Ultra lights are not counted)');
       expect.ok(ultraFx.info().fires > 0, 'flames are drawn as procedural fire');
       A.visuals.setQuality('high'); sim.step(4, 2);
-      expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on, 'shadows off again');
-      expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'the moon gets its whole strength back');
+      const H = ultraPost.info();
+      expect.ok(renderer.shadowMap.enabled && H.on && H.shadowSize === 1024 && H.aoSamples === 8, 'High uses smaller shadow and AO budgets');
+      expect.ok(H.scatteringLights === 0, 'Ultra scattering does not leak into High');
       let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
-      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights, `High keeps only its fixed impact light (${extra})`);
+      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights + 1, `High keeps its sun and fixed impact light (${extra})`);
       expect.above(ultraPost.info().reflected, 0, 'High retains cached metal reflections');
       expect.ok(ultraFx.info().fires === 0 && flames.every(f => f.mesh.material.visible), 'the old flame cones are back');
+      A.visuals.setQuality('low'); sim.step(4, 2);
+      expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on && ultraPost.info().bufferSize === null, 'Low releases screen-lighting targets');
+      expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'Low restores the whole moon intensity');
+      expect.ok(ultraPost.info().reflected === 0, 'Low removes environment maps');
     } finally { restoreQuality(); }
   });
   test('Ultra: a storm of combat events is drawn without errors and never touches the fight', () => {
