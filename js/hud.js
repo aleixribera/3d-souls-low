@@ -285,6 +285,10 @@ const hud = {
       const T = H.text, tips = T.deathTips;
       this.diedTip.textContent = p.sinceExhausted <= T.staminaTipTime ? tips[0] : tips[Math.floor(Math.random() * tips.length)];
     }
+    const waitingForTeam = typeof multiplayer !== 'undefined' && multiplayer.waitingForTeamWipe;
+    $('diedStatus').textContent = waitingForTeam ? game.duelWon() ? 'Boss defeated' : 'Waiting for your team…' : 'Returning to the last bonfire…';
+    if (waitingForTeam)
+      this.diedTip.textContent = game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
     this.wasAlive = p.alive();
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
     const tut = game.tut, step = game.currentStep();

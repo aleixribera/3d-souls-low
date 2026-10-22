@@ -45,7 +45,8 @@ const gamepad = {
     if ((now.size || ls.x || ls.y || rs.x || rs.y) && typeof multiplayer !== 'undefined') multiplayer.activity();
     if (pressed.length || ls.x || ls.y || rs.x || rs.y) input.use('pad');
     for (const c of released) input.up(c);
-    if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed); return; }
+    if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
+    if (typeof multiplayer !== 'undefined' && multiplayer.spectatorPad(pressed)) return;
     if (Game.mode === 'play') this.playInput(pressed, dt);
     else this.menuInput(pressed, dt);
   },

@@ -7,6 +7,10 @@ const multiplayer = (() => {
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
+  let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
+  let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
+  let lobbyPadDirection = null, lobbyPadTimer = 0, adventureBeforeEdit = null, nameDraft = '', nameLowercase = false;
+  const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
   const decoder = new ArenaNet.FrameDecoder(), tracks = new Map();
   const heldActivity = new Set();
   let activityPending = false, lastActivitySent = -Infinity;
@@ -14,7 +18,11 @@ const multiplayer = (() => {
   const panel = document.createElement('section');
   panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('aria-label', 'Public lobby');
   panel.innerHTML = `<div class="lobby-card"><h1>PUBLIC LOBBY</h1><p id="lobbyStatus" role="status">Connecting…</p>
+    <div id="lobbyCurrentLevel" class="online-level" hidden></div>
     <label>Your name <input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name"></label>
+    <button id="lobbyEditName">Edit name</button>
+    <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
+      <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
     <section class="lobby-controls" aria-labelledby="lobbyControlsTitle"><h2 id="lobbyControlsTitle">Basic controls</h2>
     <p id="lobbyControlsDevice"></p><dl id="lobbyControlsList"></dl>
@@ -23,6 +31,7 @@ const multiplayer = (() => {
     <div class="lobby-actions"><button id="lobbyStart">Start together</button><button id="lobbyRestart">Restart level</button>
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
     <p id="lobbyNotice" role="alert"></p><div class="lobby-actions"><button id="lobbyResume">Return to game</button><button id="lobbyLeave">Leave lobby</button></div>
+    <p id="lobbyPadHint" class="lobby-hint"></p>
     <p class="lobby-hint">The full Elden Ring campaign is selected by default. Completed chapters carry everyone into the next chapter. The leader can also choose a level or arena. Leadership passes on after five minutes without input.</p></div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:#090c12eF;color:#e8dfcd;font:16px Georgia,serif;padding:24px;overflow:auto;box-sizing:border-box}
@@ -31,6 +40,11 @@ const multiplayer = (() => {
     #publicLobby input,#publicLobby select{display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:6px;background:#23282a;color:#eee6d6;border:1px solid #746448;font:inherit}
     #publicLobby button{padding:10px 14px;background:#2c302e;color:#eee6d6;border:1px solid #817047;cursor:pointer;font:inherit}#publicLobby button:hover,#publicLobby button:focus-visible{background:#474737;outline:2px solid #d1b674}
     #publicLobby button:disabled{opacity:.4;cursor:default}#publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}#publicLobby .lobby-player{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #393c38}
+    #publicLobby.lobby-pad .pad-selected{outline:2px solid #efd393;outline-offset:3px;background:#474737}
+    #publicLobby .lobby-name-editor{margin:12px 0;padding:12px;border:1px solid #817047;background:#1b2221}
+    #lobbyNameEditor[hidden]{display:none}#lobbyNamePreview{display:block;min-height:1.5em;padding:8px;margin-bottom:10px;background:#111817;color:#fff0c9;white-space:pre-wrap;overflow-wrap:anywhere}
+    #lobbyNameKeys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}#publicLobby #lobbyNameKeys button{min-height:40px;padding:6px 0;font:14px system-ui}
+    #publicLobby #lobbyNameKeys .name-action{grid-column:span 2;font-size:12px}#publicLobby select[size]{max-height:220px}
     #publicLobby .lobby-player span{flex:1}#publicLobby .lobby-player button{font-size:13px;padding:6px 9px}#lobbyNotice{color:#efd393;min-height:1.3em}#publicLobby .lobby-hint{font:13px/1.6 system-ui;color:#aaa99f}
     #publicLobby .lobby-controls{margin:18px 0;padding:14px;background:#1c2223;border:1px solid #454b43;font:14px/1.5 system-ui}
     #publicLobby .lobby-controls h2{margin:0;font-size:18px;color:#efd393}#lobbyControlsDevice{margin:2px 0 10px;color:#bdbeb3;font-size:12px}
@@ -39,10 +53,185 @@ const multiplayer = (() => {
     #publicLobby .lobby-controls-tip{margin:12px 0 0;color:#bdbeb3;font-size:12px}
     @media(max-width:600px){#lobbyControlsList{grid-template-columns:1fr}#publicLobby{padding:12px}#publicLobby .lobby-card{padding:16px;box-sizing:border-box}}
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;max-width:240px;pointer-events:none;color:#e9e1ca;font:12px/1.7 system-ui;text-align:right;text-shadow:0 1px 3px #000;background:#10151599;padding:8px 12px;border-left:2px solid #8c7951}
+    .online-level{margin:0 0 8px;padding:6px 10px;border:1px solid #8c7951;background:#161b1bef;color:#fff0c9;font:600 15px/1.4 system-ui;text-align:left}
+    .online-level[hidden]{display:none}
+    #onlineSpectator{position:fixed;z-index:50;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));color:#fff0c9;text-align:center;font:14px/1.5 system-ui}
+    #onlineSpectator[hidden],#spectatorControls[hidden]{display:none}
+    #spectatorControls{padding:10px 12px;background:#111817f2;border:1px solid #8c7951;box-shadow:0 6px 24px #0008}
+    #onlineSpectator .spectator-row{display:flex;align-items:center;gap:12px}
+    #onlineSpectator .spectator-person{flex:1;min-width:0}#spectatorName{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px}
+    #onlineSpectator button{color:#fff0c9;background:#202725;border:1px solid #8c7951;cursor:pointer;font:inherit;padding:8px 12px}
+    #onlineSpectator button:focus-visible{outline:2px solid #efd393;outline-offset:3px}#onlineSpectator button:disabled{opacity:.35;cursor:default}
+    #onlineSpectator .spectator-arrow{font-size:22px;min-width:44px;min-height:44px}#spectatorHint{margin:6px 0 0;color:#bdbeb3;font-size:12px}
+    #spectatorToggle{margin-top:6px;font-size:12px!important}
+    body.spectator-view #died,body.spectator-view #pBars{display:none}body.spectator-view canvas#view.dying{filter:none;transition:none}
     #onlineParty.hidden{display:none}.online-name{position:fixed;z-index:21;pointer-events:none;color:#ecd79b;background:#111a;padding:3px 7px;border-radius:3px;font:12px system-ui;transform:translate(-50%,-100%);white-space:nowrap}`;
   document.head.appendChild(style); document.body.appendChild(panel);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
+  party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div>';
   const el = id => document.getElementById(id);
+  function lobbyControls() {
+    const root = el('lobbyNameEditor').hidden ? panel : el('lobbyNameEditor');
+    return [...root.querySelectorAll('button,input,select')].filter(node => !node.disabled && !node.hidden && node.offsetParent);
+  }
+  function focusLobbyControl(node) {
+    for (const previous of panel.querySelectorAll('.pad-selected')) previous.classList.remove('pad-selected');
+    if (!node) return;
+    node.classList.add('pad-selected'); node.focus({ preventScroll: true }); node.scrollIntoView({ block: 'nearest' });
+  }
+  function ensureLobbyFocus() {
+    const controls = lobbyControls();
+    if (controls.includes(document.activeElement)) {
+      if (!document.activeElement.classList.contains('pad-selected')) focusLobbyControl(document.activeElement);
+      return document.activeElement;
+    }
+    const preferred = [el('lobbyAdventure'), el('lobbyResume'), el('lobbyEditName')].find(node => controls.includes(node));
+    const next = preferred || controls[0]; focusLobbyControl(next); return next;
+  }
+  function updateLobbyPadHint() {
+    panel.classList.toggle('lobby-pad', usingPad());
+    el('lobbyPadHint').textContent = !usingPad() ? '' : !el('lobbyNameEditor').hidden
+      ? 'D-pad / left stick: move · A / ×: choose · X / □: delete · B / ○: cancel'
+      : adventureBeforeEdit !== null ? 'D-pad / left stick: choose adventure · A / ×: confirm · B / ○: cancel'
+      : 'D-pad / left stick: move · A / ×: select · ← / →: change adventure · Y / △: edit name · B / ○: back';
+  }
+  events.on('device', updateLobbyPadHint);
+  function closeAdventurePicker(cancel = false) {
+    if (adventureBeforeEdit !== null && cancel) el('lobbyAdventure').value = adventureBeforeEdit;
+    adventureBeforeEdit = null; el('lobbyAdventure').removeAttribute('size'); updateLobbyPadHint();
+  }
+  function closeNameEditor(save = false, restoreFocus = true) {
+    if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
+    el('lobbyNameEditor').hidden = true;
+    if (restoreFocus) focusLobbyControl(el('lobbyEditName'));
+    updateLobbyPadHint();
+  }
+  function nameKey(key) {
+    if (key === 'done' || key === 'cancel') { closeNameEditor(key === 'done'); return; }
+    if (key === 'case') { nameLowercase = !nameLowercase; buildNameKeys(); return; }
+    if (key === 'delete') nameDraft = nameDraft.slice(0, -1);
+    else if (nameDraft.length < C.maxName) nameDraft += key;
+    el('lobbyNamePreview').textContent = nameDraft || 'Your name';
+  }
+  function buildNameKeys() {
+    const previous = document.activeElement?.dataset.nameKey, keys = el('lobbyNameKeys'); keys.textContent = '';
+    const characters = (nameLowercase ? 'abcdefghijklmnopqrstuvwxyz' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') + '0123456789-_. ';
+    const add = (label, key, row, column, action = false) => {
+      const button = document.createElement('button'); button.textContent = label; button.dataset.nameKey = key;
+      button.dataset.nameRow = row; button.dataset.nameColumn = column;
+      if (action) button.className = 'name-action';
+      button.onclick = () => nameKey(key); keys.appendChild(button);
+    };
+    [...characters].forEach((char, i) => add(char === ' ' ? '␣' : char, char, Math.floor(i / 10), i % 10));
+    [['Space', ' '], ['Delete', 'delete'], [nameLowercase ? 'ABC' : 'abc', 'case'], ['Cancel', 'cancel'], ['Done', 'done']]
+      .forEach(([label, key], i) => add(label, key, 4, i * 2 + 0.5, true));
+    focusLobbyControl([...keys.children].find(node => node.dataset.nameKey === previous) || keys.firstElementChild);
+  }
+  function openNameEditor() {
+    closeAdventurePicker(true); nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
+    el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
+  }
+  el('lobbyEditName').onclick = openNameEditor;
+  function lobbyBack() {
+    if (!el('lobbyNameEditor').hidden) closeNameEditor();
+    else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
+    else if (active()) hide();
+    else leave();
+  }
+  const spectator = document.createElement('section'); spectator.id = 'onlineSpectator'; spectator.hidden = true;
+  spectator.setAttribute('aria-label', 'Spectator controls'); spectator.setAttribute('data-cursor', '');
+  spectator.innerHTML = `<div id="spectatorControls"><div class="spectator-row">
+    <button id="spectatorPrevious" class="spectator-arrow" aria-label="Previous player">&#8592;</button>
+    <div class="spectator-person"><span>SPECTATING</span><strong id="spectatorName" role="status"></strong></div>
+    <button id="spectatorNext" class="spectator-arrow" aria-label="Next player">&#8594;</button>
+    </div><p id="spectatorHint"></p></div><button id="spectatorToggle" aria-controls="spectatorControls" aria-expanded="true">Hide spectator bar</button>`;
+  document.body.appendChild(spectator);
+  function waitingForTeamWipe() { return active() && !!session.teamWipeOnly && !!Game.player && !Game.player.alive(); }
+  function spectatorCandidates() {
+    const now = performance.now() / 1000;
+    return [...remotes].filter(([, r]) => {
+      const s = r.samples[r.samples.length - 1];
+      return s && s.hp > 0 && s.state !== PS.DEAD && s.view && now - s.at < C.stalePlayer;
+    });
+  }
+  function updateSpectatorBar() {
+    const target = remotes.get(spectatorTarget), latest = target?.samples[target.samples.length - 1];
+    const text = (id, value) => { const node = el(id); if (node.textContent !== value) node.textContent = value; };
+    text('spectatorName', latest?.name || 'Waiting for a teammate…');
+    el('spectatorPrevious').disabled = el('spectatorNext').disabled = spectatorCandidates().length < 2;
+    el('spectatorControls').hidden = !spectatorBarOpen;
+    text('spectatorToggle', (spectatorBarOpen ? 'Hide' : 'Show') + ' spectator bar · ' + (usingPad() ? 'X / □' : 'Tab'));
+    el('spectatorToggle').setAttribute('aria-expanded', String(spectatorBarOpen));
+    text('spectatorHint', usingPad() ? 'LB / L1 · RB / R1 to switch · Menu / Options for lobby' : '← / → to switch · Escape for lobby');
+  }
+  function switchSpectator(direction) {
+    const candidates = spectatorCandidates(), at = candidates.findIndex(([id]) => id === spectatorTarget);
+    if (candidates.length) spectatorTarget = candidates[(at + direction + candidates.length) % candidates.length][0];
+    updateSpectatorBar();
+  }
+  function toggleSpectatorBar() {
+    spectatorBarOpen = !spectatorBarOpen;
+    if (!spectatorBarOpen && el('spectatorControls').contains(document.activeElement)) el('spectatorToggle').focus();
+    updateSpectatorBar();
+  }
+  el('spectatorPrevious').onclick = () => switchSpectator(-1);
+  el('spectatorNext').onclick = () => switchSpectator(1);
+  el('spectatorToggle').onclick = toggleSpectatorBar;
+  events.on('device', updateSpectatorBar);
+  function resetSpectator() {
+    spectatorTarget = null; spectatorBarOpen = true; spectatorWasWaiting = false; lastView = null;
+    spectator.hidden = true; document.body.classList.remove('spectator-view');
+    if (spectatorViewApplied) { camera.fov = CONFIG.camera.fov; camera.updateProjectionMatrix(); }
+    spectatorViewApplied = false;
+  }
+  function applySpectatorView() {
+    const waiting = waitingForTeamWipe();
+    if (waiting && !spectatorWasWaiting) {
+      spectatorBarOpen = true; input.clear();
+      if (document.pointerLockElement) document.exitPointerLock();
+    }
+    spectatorWasWaiting = waiting;
+    const candidates = waiting ? spectatorCandidates() : [];
+    if (!candidates.some(([id]) => id === spectatorTarget)) spectatorTarget = candidates[0]?.[0] || null;
+    spectator.hidden = !waiting || !panel.classList.contains('hidden') || Game.loading > 0;
+    document.body.classList.toggle('spectator-view', !!spectatorTarget);
+    if (waiting) updateSpectatorBar();
+    const r = remotes.get(spectatorTarget);
+    if (!r) {
+      if (spectatorViewApplied) { camera.fov = CONFIG.camera.fov; camera.updateProjectionMatrix(); spectatorViewApplied = false; }
+      return;
+    }
+    const now = performance.now() / 1000 - C.interpolation;
+    const { a, b, alpha } = remoteSample(r, now), av = a.view, bv = b.view || av;
+    if (!av) return;
+    camera.position.fromArray(av.position).lerp(viewPosition.fromArray(bv.position), alpha);
+    viewRotation.fromArray(av.quaternion); nextViewRotation.fromArray(bv.quaternion);
+    camera.quaternion.copy(viewRotation.slerp(nextViewRotation, alpha));
+    camera.fov = lerp(av.fov, bv.fov, alpha); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    spectatorViewApplied = true;
+  }
+  function captureView() {
+    if (active() && session.teamWipeOnly && Game.player?.alive()) lastView = { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov };
+  }
+  function spectatorKey(ev) {
+    if (!waitingForTeamWipe()) return false;
+    if (!['ArrowLeft', 'ArrowRight', 'Tab', 'Escape'].includes(ev.code)) return false;
+    ev.preventDefault();
+    if (!ev.repeat) {
+      if (ev.code === 'Tab') toggleSpectatorBar();
+      else if (ev.code === 'Escape') show();
+      else switchSpectator(ev.code === 'ArrowLeft' ? -1 : 1);
+    }
+    return true;
+  }
+  function spectatorPad(pressed) {
+    if (!waitingForTeamWipe()) return false;
+    if (pressed.includes('PadLB') || pressed.includes('PadLeft')) switchSpectator(-1);
+    if (pressed.includes('PadRB') || pressed.includes('PadRight')) switchSpectator(1);
+    if (pressed.includes('PadX')) toggleSpectatorBar();
+    if (pressed.includes('PadStart')) show();
+    return true;
+  }
   function buildControls() {
     el('lobbyControlsDevice').textContent = usingPad() ? 'Controller · Xbox / PlayStation' : 'Keyboard & mouse · LMB / RMB = left / right mouse button';
     const rows = [
@@ -91,6 +280,8 @@ const multiplayer = (() => {
   function command(type, data = {}) { if (ready) send({ type, epoch: session.epoch, seq: ++seq, ...data }); }
   function control(action, data = {}) { send({ type: 'control', action, ...data }); }
   function show() {
+    closeNameEditor(false, false); closeAdventurePicker(true);
+    lobbyPadDirection = null; lobbyPadTimer = 0;
     panel.classList.remove('hidden');
     if (document.pointerLockElement) document.exitPointerLock();
     input.clear();
@@ -98,16 +289,28 @@ const multiplayer = (() => {
     el('menu').classList.add('hidden');
     document.body.classList.remove('no-cursor');
     updateRoster();
+    updateLobbyPadHint(); if (usingPad()) focusLobbyControl(ensureLobbyFocus());
   }
-  function hide() { panel.classList.add('hidden'); if (active()) Game.resume(); }
+  function hide() { closeNameEditor(false, false); closeAdventurePicker(true); panel.classList.add('hidden'); if (active()) Game.resume(); }
   function active() { return connected && !!session && loaded; }
   function chapterCard(id) {
     const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; }
-  function leave(message = '') {
+  function resetStream() { tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
+  function retryConnection(message) {
+    if (!reconnectWanted) return;
+    leave(message, true);
+    notice('Reconnecting automatically… You can leave the lobby to cancel.');
+    const delay = Math.min(C.reconnectMaxDelay, C.reconnectDelay * 2 ** Math.min(reconnectAttempt++, C.reconnectBackoffSteps));
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; join(true); }, delay);
+  }
+  function leave(message = '', retry = false) {
+    closeNameEditor(false, false); closeAdventurePicker(true);
+    joinAttempt++;
+    clearTimeout(reconnectTimer); reconnectTimer = null;
+    if (!retry) { reconnectWanted = false; reconnectAttempt = 0; }
     intentionalClose = true; socket?.close(); socket = null;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; resetStream(); clearRemotes();
     finale.cancelEnding();
@@ -115,11 +318,14 @@ const multiplayer = (() => {
     party.classList.add('hidden'); panel.classList.add('hidden');
     if (Game.player) Game.clearActors();
     Game.loading = 0; el('loading').classList.remove('show'); Game.showMenu('main');
-    if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').textContent = 'Back to main menu'; }
+    if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').textContent = retry ? 'Leave lobby' : 'Back to main menu'; }
   }
-  async function join() {
+  async function join(retry = false) {
     if (connected) { show(); return; }
     if (starting) return;
+    clearTimeout(reconnectTimer); reconnectTimer = null;
+    reconnectWanted = true;
+    const attempt = ++joinAttempt;
     starting = true; intentionalClose = false; show(); notice('');
     el('lobbyStatus').textContent = 'Connecting to the public lobby…';
     el('lobbyLeave').textContent = 'Leave lobby';
@@ -128,21 +334,32 @@ const multiplayer = (() => {
       const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(C.connectTimeout) });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('The public lobby is available on the home server link. This address only hosts solo play.');
       const info = await response.json();
-      if (info.players >= info.capacity) throw new Error(`The public lobby is full (${info.capacity} players). Try again when a place opens.`);
+      if (!starting || attempt !== joinAttempt) return;
+      if (info.players >= info.capacity) throw new Error(`The public lobby is full (${info.capacity} players). ${retry ? 'Waiting for a place to open.' : 'Try again when a place opens.'}`);
       const pageBuild = document.querySelector('meta[name="arena-build"]')?.content;
-      if (info.version !== VERSION || pageBuild !== info.build) throw new Error('The game has updated. Reload this page before joining.');
-      if (!starting) return;
+      if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; throw new Error('The game has updated. Reload this page before joining.'); }
+      if (!starting || attempt !== joinAttempt) return;
       socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
       const joining = socket;
-      const deadline = setTimeout(() => { if (joining === socket && !connected) { leave('The lobby did not respond. Try joining again.'); } }, C.connectTimeout);
+      const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
       socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value }); };
-      socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); leave('The game could not read a lobby update. Reload and rejoin.'); } };
-      socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) leave(e.reason || 'Disconnected from the lobby. Rejoin to continue.'); };
+      socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
+      socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
+        if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
+        else retryConnection(e.reason || 'Connection lost. Rejoining the current game…');
+      } };
       socket.onerror = () => { if (!connected) notice('Could not connect. The lobby may be full or the server may be unavailable.'); };
-    } catch (e) { starting = false; el('lobbyStatus').textContent = e.message; }
+    } catch (e) {
+      if (attempt !== joinAttempt) return;
+      starting = false;
+      if (retry && reconnectWanted) retryConnection(e.message);
+      else { reconnectWanted = false; el('lobbyStatus').textContent = e.message; }
+    }
   }
   function updateRoster() {
+    const focusKey = document.activeElement?.dataset.padKey;
     const owner = connected && self === leader;
+    if (!owner && adventureBeforeEdit !== null) closeAdventurePicker(true);
     if (connected) el('lobbyStatus').textContent = leader ? 'Connected. Anyone with this link can join.' : 'No active leader. Press a key, move the mouse or use your controller to lead.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
@@ -158,25 +375,38 @@ const multiplayer = (() => {
       const name = document.createElement('span'); name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}${p.id === leader ? ' · Leader' : ''}`; row.appendChild(name);
       if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
         const button = document.createElement('button'); button.textContent = text;
+        button.dataset.padKey = action + '/' + p.id;
         button.onclick = () => control(action, { player: p.id }); row.appendChild(button);
       }
       el('lobbyPlayers').appendChild(row);
     }
     updateStatus();
+    if (!panel.classList.contains('hidden') && usingPad()) {
+      const restored = focusKey && lobbyControls().find(node => node.dataset.padKey === focusKey);
+      focusLobbyControl(restored || ensureLobbyFocus());
+    }
   }
   function updateStatus() {
     const buffered = latestFrame && playback !== null ? Math.max(0, Math.round((latestFrame.time - playback) * 1000)) : 0;
     const road = session?.campaign;
+    const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
+    const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
+    const levelTag = number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
+      const tag = el(id);
+      tag.hidden = !connected || !levelTag;
+      tag.textContent = levelTag;
+    }
     const chapter = road ? `\n${road.name} · Chapter ${road.number}/${road.total}${latestFrame?.complete && !road.next ? ' · Complete' : ''}` : '';
-    party.textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape for lobby`;
+    el('onlinePartyDetails').textContent = `PUBLIC LOBBY · ${roster.length} players${ping === null ? '' : ` · ${ping} ms ping`}${chapter}\n${roster.map(p => p.name + (p.id === leader ? ' ♛' : '')).join(' · ')}\n${buffered} ms playback · Escape for lobby`;
     party.style.whiteSpace = 'pre-line'; party.classList.toggle('hidden', !active());
   }
   function receive(msg) {
     if (msg.type === 'welcome') {
-      connected = true; starting = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
+      connected = true; starting = false; reconnectAttempt = 0; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog;
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
-      for (const [label, kind, entries] of [['Full campaigns', 'campaign', catalog.campaigns], ['Individual levels', 'level', catalog.levels], ['Arena opponents', 'arena', catalog.bosses]]) {
+      for (const [label, kind, entries] of [['Full campaigns', 'campaign', catalog.campaigns], ['Individual levels', 'level', catalog.levels], ['Arena bosses', 'arena', catalog.bosses]]) {
         const group = document.createElement('optgroup'); group.label = label;
         for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = entry.name + (kind === 'campaign' ? ` · Full campaign (${entry.chapters} chapters)` : ''); group.appendChild(option); }
         select.appendChild(group);
@@ -222,7 +452,7 @@ const multiplayer = (() => {
           }
         }
         track.push({ time: frame.time, value: s, events: frame.events.filter(d => d.enemy === s.id), shots: frame.shots.filter(d => d.enemy === s.id) });
-        if (track.samples.length > C.maxHistory || frame.time - track.time > C.historySeconds) { leave('Your connection fell behind. Rejoin to resume with complete attack telegraphs.'); return; }
+        if (track.samples.length > C.maxHistory || frame.time - track.time > C.historySeconds) { retryConnection('Catching up with the current game…'); return; }
       }
       applyProgress(frame, msg.full);
     } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
@@ -240,10 +470,15 @@ const multiplayer = (() => {
       attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
       walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
       vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
-      landTime: p.landTime, stunTime: p.stunTime };
+      landTime: p.landTime, stunTime: p.stunTime, view: session.teamWipeOnly && p.alive() ? lastView : null };
   }
   function heartbeat(now) {
     if (!connected) return;
+    // A stray return to the title must not strand a connected player while the
+    // server continues the shared run. Reload from its current session/baseline.
+    if (session && loaded && Game.mode === 'menu' && Game.screen === 'main') {
+      receive({ type: 'start', session }); return;
+    }
     if (heldActivity.size && document.visibilityState !== 'hidden') activityPending = true;
     flushActivity(now);
     if (deferredStart && !Game.pendingLoad) { const start = deferredStart; deferredStart = null; start(); }
@@ -267,9 +502,9 @@ const multiplayer = (() => {
         label.className = 'online-name'; document.body.appendChild(label);
         r = { body, label, samples: [] }; remotes.set(s.id, r);
       }
-      if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
+      if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
-      r.label.textContent = s.name + (s.hp <= 0 ? ' · returning to checkpoint' : '');
+      r.label.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
     }
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
   }
@@ -375,7 +610,7 @@ const multiplayer = (() => {
     if (Game.mode === 'ending') return;
     if (!p.alive()) {
       Game.deathTimer += dt;
-      if (Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
+      if (!session.teamWipeOnly && Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
       else p.update(dt, { x: 0, z: 0, has: false }, [], null);
     } else if (Game.hitstop > 0) { Game.hitstop = Math.max(0, Game.hitstop - dt); input.hold(dt); }
     else {
@@ -400,13 +635,17 @@ const multiplayer = (() => {
       if (p.hp <= 0) { p.setState(PS.DEAD); Game.onPlayerDeath(); }
     }
   }
+  function remoteSample(r, now) {
+    while (r.samples.length > 1 && r.samples[1].at <= now) r.samples.shift();
+    const a = r.samples[0], b = r.samples[1] || a;
+    return { a, b, alpha: a === b ? 0 : clamp((now - a.at) / (b.at - a.at), 0, 1) };
+  }
   function render(game, placed) {
     if (!active()) return;
     const now = performance.now() / 1000 - C.interpolation;
     for (const r of remotes.values()) {
-      while (r.samples.length > 1 && r.samples[1].at <= now) r.samples.shift();
-      const a = r.samples[0], b = r.samples[1] || a; if (!a) continue;
-      const f = a === b ? 0 : clamp((now - a.at) / (b.at - a.at), 0, 1), p = r.body;
+      const { a, b, alpha: f } = remoteSample(r, now); if (!a) continue;
+      const p = r.body;
       p.x = lerp(a.x, b.x, f); p.y = lerp(a.y, b.y, f); p.z = lerp(a.z, b.z, f); p.yaw = a.yaw + angDiff(b.yaw, a.yaw) * f;
       p.state = a.state; p.stateTime = a.stateTime + Math.max(0, now - a.at); p.hp = a.hp; p.attackT = a.attackT + (a.charge === 1 ? 0 : Math.max(0, now - a.at));
       p.attack = PLAYER_DEF.moveset.attacks[a.attack] || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = a.walkPhase;
@@ -415,7 +654,8 @@ const multiplayer = (() => {
       p.activeAt = a.activeAt < 0 ? Infinity : a.activeAt;
       p.exec = a.execEnemy ? { enemy: Game.enemies.find(e => e.netId === a.execEnemy), aim: 0 } : null;
       if ([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.EXECUTE].includes(p.state) && !p.attack) p.state = PS.IDLE;
-      const visible = Math.hypot(p.x - game.player.x, p.z - game.player.z) < C.remoteRange;
+      const focus = remotes.get(spectatorTarget)?.body || game.player;
+      const visible = Math.hypot(p.x - focus.x, p.z - focus.z) < C.remoteRange;
       p.rig.root.visible = p.rig.shadow.visible = visible;
       if (!visible) { r.label.hidden = true; continue; }
       p.rig.place(p.x, p.y, p.z, p.yaw, world.groundAt(p.x, p.z, p.y + 0.05));
@@ -444,27 +684,61 @@ const multiplayer = (() => {
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
   el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value); el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
-  function pad(pressed) {
-    if (pressed.includes('PadB') && active()) { hide(); return; }
-    const focus = document.activeElement;
-    if (focus?.tagName === 'SELECT' && pressed.some(c => c === 'PadLeft' || c === 'PadRight')) {
-      focus.selectedIndex = clamp(focus.selectedIndex + (pressed.includes('PadRight') ? 1 : -1), 0, focus.options.length - 1);
+  function lobbyMove(direction) {
+    const focus = ensureLobbyFocus(), controls = lobbyControls();
+    if (!focus) return;
+    if (!el('lobbyNameEditor').hidden) {
+      const row = Number(focus.dataset.nameRow), column = Number(focus.dataset.nameColumn);
+      const horizontal = direction === 'left' || direction === 'right', forward = direction === 'right' || direction === 'down';
+      const targetRow = horizontal ? row : (row + (forward ? 1 : -1) + 5) % 5;
+      const candidates = controls.filter(node => Number(node.dataset.nameRow) === targetRow);
+      if (horizontal) {
+        const at = candidates.indexOf(focus); focusLobbyControl(candidates[(at + (forward ? 1 : -1) + candidates.length) % candidates.length]);
+      } else focusLobbyControl(candidates.sort((a, b) => Math.abs(Number(a.dataset.nameColumn) - column) - Math.abs(Number(b.dataset.nameColumn) - column))[0]);
       return;
     }
-    const controls = [...panel.querySelectorAll('button,input,select')].filter(e => !e.disabled && !e.hidden && e.offsetParent);
-    const current = controls.indexOf(document.activeElement);
-    if (pressed.some(c => ['PadDown', 'PadRight', 'PadUp', 'PadLeft'].includes(c))) {
-      const dir = pressed.includes('PadDown') || pressed.includes('PadRight') ? 1 : -1;
-      controls[(current + dir + controls.length) % controls.length]?.focus();
+    if (focus === el('lobbyAdventure') && (adventureBeforeEdit !== null || direction === 'left' || direction === 'right')) {
+      const step = direction === 'up' || direction === 'left' ? -1 : 1;
+      focus.selectedIndex = clamp(focus.selectedIndex + step, 0, focus.options.length - 1);
+      focus.dispatchEvent(new Event('change', { bubbles: true })); return;
     }
-    if (pressed.includes('PadA') && document.activeElement?.tagName === 'BUTTON') document.activeElement.click();
+    const current = controls.indexOf(focus), step = direction === 'up' || direction === 'left' ? -1 : 1;
+    focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
+  }
+  function pad(pressed, dt = CONFIG.step) {
+    const focus = ensureLobbyFocus();
+    if (pressed.includes('PadB')) { lobbyBack(); return; }
+    if (pressed.includes('PadStart') && active()) { hide(); return; }
+    if (pressed.includes('PadY') && el('lobbyNameEditor').hidden) { openNameEditor(); return; }
+    if (pressed.includes('PadX') && !el('lobbyNameEditor').hidden) nameKey('delete');
+    const C = CONFIG.gamepad, S = C.menuStick;
+    const direction = gamepad.down.has('PadUp') || gamepad.move.y > S ? 'up'
+      : gamepad.down.has('PadDown') || gamepad.move.y < -S ? 'down'
+      : gamepad.down.has('PadLeft') || gamepad.move.x < -S ? 'left'
+      : gamepad.down.has('PadRight') || gamepad.move.x > S ? 'right' : null;
+    if (direction !== lobbyPadDirection) {
+      lobbyPadDirection = direction; lobbyPadTimer = C.menuDelay; if (direction) lobbyMove(direction);
+    } else if (direction && (lobbyPadTimer -= dt) <= 0) { lobbyPadTimer = C.menuRepeat; lobbyMove(direction); }
+    if (pressed.includes('PadA')) {
+      const current = document.activeElement || focus;
+      if (current === el('lobbyAdventure')) {
+        if (adventureBeforeEdit === null) { adventureBeforeEdit = current.value; current.size = 8; current.scrollIntoView({ block: 'nearest' }); }
+        else closeAdventurePicker();
+        updateLobbyPadHint();
+      } else if (current === el('lobbyName')) openNameEditor();
+      else if (current?.tagName === 'BUTTON') current.click();
+    }
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
   return { join, leave, show, hide, active, chapterCard, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
+    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack,
     get campaign() { return connected ? session?.campaign || null : null; },
+    get waitingForTeamWipe() { return waitingForTeamWipe(); },
+    get spectatorMode() { return waitingForTeamWipe(); },
+    get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
     get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
-    get info() { return { self, leader, connected, ready, session, players: roster, ping, playback,
+    get info() { return { self, leader, connected, ready, session, players: roster, ping, playback, spectatorTarget,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,
       playbackDelayMs: latestFrame && playback !== null ? Math.max(0, (latestFrame.time - playback) * 1000) : 0, server: latestFrame?.server }; },
   };

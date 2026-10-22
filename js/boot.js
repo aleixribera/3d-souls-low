@@ -83,10 +83,11 @@ const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   if (multiplayer.panelOpen) {
-    if (code === 'Escape' && multiplayer.active()) { ev.preventDefault(); multiplayer.hide(); }
+    if (code === 'Escape') { ev.preventDefault(); if (!ev.repeat) multiplayer.lobbyBack(); }
     return;
   }
   input.use('keyboard');
+  if (multiplayer.spectatorKey(ev)) return;
   if (code === SYSTEM_KEYS.fps) {   // the FPS counter toggles anywhere, menus included
     ev.preventDefault();
     if (!ev.repeat) { settings.fps = !settings.fps; saveSettings(); applySettings(); }
@@ -121,6 +122,7 @@ hud.toggle.addEventListener('change', () => { settings.hitboxes = hud.toggle.che
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 canvas.addEventListener('mousedown', ev => {
   input.use('keyboard');
+  if (multiplayer.spectatorMode) return;
   if (Game.mode !== 'play') return;
   ev.preventDefault();
   // The click that captures the mouse only captures it; it does not also swing the sword.
@@ -181,7 +183,7 @@ function frame(now) {
   lastTime = now;
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   multiplayer.heartbeat(now);
-  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && (Game.mode === 'play' || input.device === 'pad'));   // pointer only for mouse-driven menus
+  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
   if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds

@@ -230,6 +230,7 @@ const Game = {
   },
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
   pause(fromPointer) {
+    if (typeof multiplayer !== 'undefined' && multiplayer.active() && this.mode === 'play') { multiplayer.show(); return; }
     if (this.mode !== 'play' || !this.player.alive()) return;   // no pausing during the death sequence
     // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
     if (this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
@@ -951,6 +952,7 @@ const Game = {
       this.shake = Math.max(0, this.shake - frameDt);
     }
     camera.lookAt(new THREE.Vector3().lerpVectors(c.prevLook, c.look, alpha));
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.applySpectatorView();
     projectiles.render(frozen ? 1 : alpha);
     const lockAt = this.lock && placed.find(([b]) => b === this.lock);
     lockMarker.visible = !!lockAt;
@@ -978,6 +980,7 @@ const Game = {
     updateParticles(frameDt);
     updateDebug(this, hud.showHitboxes(), placed);
     for (const hook of this.renderHooks) hook(this, placed);   // developer overlays (js/debug-combat.js)
+    if (typeof multiplayer !== 'undefined') multiplayer.captureView();
     this.drawRestArrow(t);
     hud.update(this, frameDt);
     visuals.render(this, t, frameDt);

@@ -50,7 +50,7 @@ globalThis.host = (() => {
     return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
       campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
       defaultAdventure: { kind: 'campaign', id: C.defaultCampaign },
-      bosses: [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].map(e => ({ id: e.id, name: e.name })) };
+      bosses: [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
   }
   function campaign(id, level) {
     const story = STORIES.find(s => s.id === id); if (!story) return null;
@@ -74,7 +74,7 @@ globalThis.host = (() => {
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; history = []; players = [];
-    return { epoch, kind, id, spawn: checkpoint };
+    return { epoch, kind, id, spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
   }
   function setPlayers(list) { players = list.map(s => proxy(s, s.id)); }
   function progress(dt) {
@@ -114,7 +114,13 @@ globalThis.host = (() => {
   function tick(dt) {
     time += dt;
     const living = players.filter(p => p.alive());
-    if (!living.length) return;
+    // Reservations and world timers belong to the run, even if their owner
+    // disconnects or every remaining player is dead/stale.
+    for (const e of Game.enemies) if (e.netExec) {
+      e.stateTime += dt;
+      if (time >= e.netExec.until) finishExecution(e);
+    }
+    if (!living.length) { progress(dt); return; }
     const was = new Set(Game.enemies.filter(e => e.in('unaware') || e.state === ES.DORMANT));
     const groups = new Map(living.map(p => [p.id, { player: p, enemies: [] }]));
     // Choose targets first, then run each player's crowd independently. Fights
@@ -137,11 +143,7 @@ globalThis.host = (() => {
       crowd.enemies = group.enemies; crowd.sinceStart = (crowdClocks.get(id) ?? Infinity) + dt;
       crowd.spread(group.player);
       for (const e of group.enemies) {
-        if (e.netExec) {
-          e.stateTime += dt;
-          if (time >= e.netExec.until) finishExecution(e);
-          continue;
-        }
+        if (e.netExec) continue;
         e.savePrev(); e.update(dt, group.player);
         if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
       }
@@ -223,6 +225,7 @@ globalThis.host = (() => {
   }
   return { catalog, campaign, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
+    arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
     // Test harnesses can inspect state without giving public clients a debug API.

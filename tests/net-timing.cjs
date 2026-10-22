@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
-const { EnemyTrack, FrameEncoder, FrameDecoder, config: C } = require('../js/net-protocol.js');
+const { EnemyTrack, FrameEncoder, FrameDecoder, cameraView, config: C } = require('../js/net-protocol.js');
 const { createSimulation } = require('../server/headless.cjs');
 const sample = (time, state, extras = {}) => ({ time, value: { id: 'test', state, ...extras }, events: [], shots: [] });
 const track = new EnemyTrack();
@@ -55,6 +55,14 @@ decoded = decoder.decode(JSON.parse(JSON.stringify(hit)));
 assert.equal(decoded.frame.enemies[0].hp, frame.enemies[0].hp);
 assert.equal(decoded.frame.enemies[0].def, frame.enemies[0].def, 'unchanged fields survive delta decoding');
 assert.ok(Buffer.byteLength(JSON.stringify(hit)) < Buffer.byteLength(JSON.stringify(first)) / 4, 'delta frame is materially smaller');
+const camera = { position: [3, 5, -8], quaternion: [0, 0, 0, 1], fov: 64 };
+assert.deepEqual(cameraView({ ...camera, ignored: 'untrusted' }), camera, 'camera fields are whitelisted');
+for (const invalid of [null, { ...camera, position: [Infinity, 0, 0] }, { ...camera, quaternion: [0, 0, 0, 0] },
+  { ...camera, quaternion: [0, 0, 0, 2] }, { ...camera, fov: 0 }, { ...camera, fov: 179 }]) assert.equal(cameraView(invalid), null);
+const cameraFrame = encoder.encode(frame, [{ id: 'player', name: 'Friend', hp: 120, view: camera }]);
+assert.deepEqual(decoder.decode(cameraFrame).players[0].view, camera, 'rendered camera survives player deltas');
+const deadFrame = encoder.encode(frame, [{ id: 'player', name: 'Friend', hp: 0, view: null }]);
+assert.equal(decoder.decode(deadFrame).players[0].view, null, 'death clears camera data');
 const left = decoder.decode(encoder.encode(frame, [])); assert.equal(left.players.length, 0, 'disconnect removes a player by ID');
 sim.start('arena', 'margit'); const restarted = encoder.encode(sim.frame(false), []);
 assert.equal(restarted.full, true); assert.equal(decoder.decode(restarted).frame.enemies.length, 1, 'new epoch clears old actors');

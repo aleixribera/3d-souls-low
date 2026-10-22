@@ -44,6 +44,13 @@ const cameraFeel = (() => {
   Game.renderHooks.unshift((game) => {   // first of the hooks: effects drawn after it see the moved camera
     const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.05, (now - last) / 1000); last = now;
     const p = game.player;
+    if (typeof multiplayer !== 'undefined' && multiplayer.spectating) {
+      // The shared camera already includes its owner's effects. Clear personal
+      // springs so an old kick cannot resume after the next team attempt.
+      for (const k of keys) pos[k] = vel[k] = 0;
+      wasOn = false;
+      return;
+    }
     if (!enabled()) {
       if (wasOn) { for (const k of keys) pos[k] = vel[k] = 0; camera.fov = CONFIG.camera.fov; camera.updateProjectionMatrix(); wasOn = false; }
       return;

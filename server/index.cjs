@@ -14,6 +14,7 @@ function createServer(options = {}) {
   const sim = createSimulation(), clients = new Map();
   const activityNow = options.activityNow || (() => performance.now());
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
+  let arenaWipeFor = 0;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })) });
@@ -63,7 +64,8 @@ function createServer(options = {}) {
     if (campaign) { kind = 'level'; id = campaign.level; }
     session = sim.start(kind, id);
     if (campaign) session.campaign = campaign;
-    for (const p of clients.values()) { p.ready = false; p.pose = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
+    arenaWipeFor = 0;
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session }); broadcast(roster());
   }
@@ -104,7 +106,7 @@ function createServer(options = {}) {
       return;
     }
     if (!session || msg.epoch !== session.epoch) return;
-    if (msg.type === 'ready') { if (p.ready) return; p.ready = true; p.encoder.reset(); sendFrame(p, sim.frame(false), playerFrames()); broadcast(roster()); return; }
+    if (msg.type === 'ready') { p.ready = true; p.encoder.reset(); sendFrame(p, sim.frame(false), playerFrames()); broadcast(roster()); return; }
     if (!p.ready) return;
     if (msg.type === 'pose') {
       const s = msg.pose;
@@ -112,17 +114,23 @@ function createServer(options = {}) {
       // Whitelist fields: remote data never becomes a Player object or arbitrary properties.
       const states = ['idle', 'walk', 'jump', 'fall', 'roll', 'attack', 'jumpAttack', 'land', 'block', 'parry', 'useItem', 'rest', 'hurt', 'stagger', 'dead', 'execute'];
       if (!states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > sim.playerMaxHp || s.stateTime < 0 || s.attackT < 0) return;
+      // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
+      // shared session clears this player's defeat, including repeated ready messages.
+      if (session.teamWipeOnly && (s.hp <= 0 || s.state === 'dead')) p.arenaDefeated = true;
       p.pose = { x: s.x, y: s.y, z: s.z, yaw: s.yaw, hp: s.hp, state: s.state, stateTime: s.stateTime,
         attack: typeof s.attack === 'string' ? s.attack.slice(0, 60) : null,
         attackT: s.attackT, chargeT: s.chargeT, charge: Math.min(2, Math.max(0, Number(s.charge) || 0)),
         walkPhase: s.walkPhase, grounded: s.grounded, execEnemy: net.id(s.execEnemy) ? s.execEnemy : null,
         vx: net.finite(s.vx) ? s.vx : 0, vy: net.finite(s.vy) ? s.vy : 0, vz: net.finite(s.vz) ? s.vz : 0,
         activeAt: net.finite(s.activeAt) ? s.activeAt : -1, landTime: net.finite(s.landTime) ? s.landTime : 0,
-        stunTime: net.finite(s.stunTime) ? s.stunTime : 0 };
+        stunTime: net.finite(s.stunTime) ? s.stunTime : 0,
+        view: net.cameraView(s.view) };
+      if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
       p.lastPose = performance.now(); p.poseSeq++; return;
     }
     if (!Number.isSafeInteger(msg.seq) || msg.seq <= p.lastSeq) return;
     p.lastSeq = msg.seq; syncPlayers();
+    if (session.teamWipeOnly && p.arenaDefeated && msg.type !== 'executionEnd') return;
     if (msg.type === 'hit') {
       if (!net.id(msg.enemy) || !net.id(msg.swing) || !net.id(msg.attack)) return;
       const key = `${msg.swing}/${msg.enemy}`;
@@ -200,7 +208,9 @@ function createServer(options = {}) {
     });
     ws.on('close', () => {
       clients.delete(p.id);
-      if (!clients.size) { session = null; accumulator = 0; }
+      // The run belongs to the server, including when the last player drops.
+      // Pause an empty party and let reconnecting players resume its progress.
+      if (!clients.size) accumulator = 0;
       if (!refreshLeader('disconnect')) broadcast(roster());
     });
     const deadline = setTimeout(() => { if (!p.hello) ws.close(1008, 'Join timed out.'); }, C.connectTimeout); deadline.unref();
@@ -219,6 +229,14 @@ function createServer(options = {}) {
         const began = performance.now(); sim.tick(1 / C.tickRate); ticks++;
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
         accumulator -= 1 / C.tickRate; sinceSnapshot += 1 / C.tickRate;
+        if (session.teamWipeOnly) {
+          const party = [...clients.values()].filter(p => p.hello);
+          // Loading peers still belong to the attempt; a disconnect removes a
+          // peer from this check, while a stale living pose never counts as dead.
+          const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated);
+          arenaWipeFor = wiped && sim.inspect().Game.duel?.alive() ? arenaWipeFor + 1 / C.tickRate : 0;
+          if (arenaWipeFor >= sim.arenaWipeDelay) { start(session.kind, session.id); break; }
+        }
         // Capture every state transition (even a short active phase) reliably.
         const signature = sim.inspect().Game.enemies.map(e => `${e.state}/${e.netAttack}/${e.hitIndex}/${!!e.hitbox}/${e.phase}`).join('|');
         if (sinceSnapshot >= 1 / C.snapshotRate - 1e-9 || signature !== server.lastSignature) {

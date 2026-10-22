@@ -13,11 +13,22 @@
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
+    reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     defaultCampaign: 'lands',
+    spectatorFov: [10, 150],
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;
   const id = s => typeof s === 'string' && s.length > 0 && s.length <= 240;
   const name = s => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, config.maxName) : '';
+  // Optional presentation data only. Reject malformed cameras without dropping
+  // the player's otherwise valid combat pose.
+  function cameraView(v) {
+    if (!v || !Array.isArray(v.position) || v.position.length !== 3 || !v.position.every(n => finite(n))
+      || !Array.isArray(v.quaternion) || v.quaternion.length !== 4 || !v.quaternion.every(n => finite(n, 1))
+      || !finite(v.fov) || v.fov < config.spectatorFov[0] || v.fov > config.spectatorFov[1]) return null;
+    const length = Math.hypot(...v.quaternion);
+    return length > 0 ? { position: v.position.slice(), quaternion: v.quaternion.map(n => n / length), fov: v.fov } : null;
+  }
   // Quantization affects only the wire representation, never simulation/balance.
   function wire(value) {
     if (typeof value === 'number') return Math.round(value * config.wirePrecision) / config.wirePrecision;
@@ -94,7 +105,7 @@
       return { a, b, time, alpha, crossed };
     }
   }
-  const api = { config, finite, id, name, FrameEncoder, FrameDecoder, EnemyTrack };
+  const api = { config, finite, id, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ArenaNet = api;
 })(globalThis);

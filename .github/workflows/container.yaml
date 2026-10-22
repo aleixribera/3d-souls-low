@@ -52,6 +52,8 @@ jobs:
           node tests/multiplayer.cjs
           node tests/multiplayer-campaign.cjs
           node tests/lobby-leader.cjs
+          node tests/lobby-continuity.cjs
+          node tests/arena-wipe.cjs
           node tests/fullscreen.cjs
           node tests/autoquality.cjs
           bash -n deploy/update.sh

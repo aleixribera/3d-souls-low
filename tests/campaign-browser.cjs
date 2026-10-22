@@ -36,6 +36,10 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
     for (let i = 0; i < chapters.length; i++) {
       await Promise.all([ready(a, chapters[i]), ready(b, chapters[i])]);
       for (const p of [a, b]) {
+        await p.waitForFunction(number => document.querySelector('#onlineCurrentLevel').textContent === `Level ${number}/8`, i + 1);
+        assert.equal(await p.locator('#onlineCurrentLevel').isVisible(), true, 'current level stays visible during play');
+        assert.equal(await p.locator('#lobbyCurrentLevel').textContent(), `Level ${i + 1}/8`,
+          'lobby uses the actual shared chapter');
         assert.deepEqual(await p.evaluate(() => ({ chapter: multiplayer.campaign.number, total: multiplayer.campaign.total,
           next: Game.nextLevelId(), card: Game.levelCard(Game.level.id) })), {
           chapter: i + 1, total: 8, next: chapters[i + 1] || null,
@@ -77,12 +81,15 @@ const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capit
     const late = await player('Late friend');
     await ready(late, 'haligtree');
     assert.equal(await late.evaluate(() => multiplayer.campaign.number), 8);
+    await late.waitForFunction(() => document.querySelector('#onlineCurrentLevel').textContent === 'Level 8/8');
     await late.evaluate(() => { Object.assign(CONFIG.finale.ending, { card: 0.05, credits: 0.05, hold: 0.05 }); });
     await late.locator('#ending .back.show').waitFor({ timeout: 25000 });
     await a.locator('#lobbyReturn').click();
     for (const p of pages) {
       await p.locator('#publicLobby:not(.hidden)').waitFor();
       assert.equal(await p.locator('#ending').count(), 0, 'leader return cancels every credits overlay');
+      assert.equal(await p.locator('#lobbyCurrentLevel').isVisible(), false, 'no stale level after returning to lobby');
+      assert.equal(await p.locator('#onlineParty').isVisible(), false);
     }
     assert.deepEqual(errors, []);
     console.log('Campaign browsers: default choice, all eight maps, automatic party travel, chapter cards, ending, late join and untouched solo saves passed.');
