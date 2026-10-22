@@ -11,9 +11,9 @@ Voice: archaic, understated, melancholic, tender in places. No modern words, no 
 
 These gold title cards introduce a new shared run; they do not replace chapter loading lines or change the story.
 
-- Ashmere — **RISE FROM ASH**: “From the prison to the crown, / let no darkness turn you back.”
-- The Lands Between — **FOLLOW THE GOLD**: “Grace calls you to the Lands Between. / Walk the broken road. Claim the Elden Throne.”
-- BOSS ONLY — **DEFY THEM ALL**: “Every foe. One unbroken trial. / Stand together, or begin again.”
+- **STORY 1 · ASHMERE** — “Defeat the Gaoler King.”
+- **STORY 2 · LANDS** — “Claim the Elden Throne.”
+- **BOSS ONLY** — “Defeat every boss.”
 
 ## Story V2: the shorter road through Ashmere
 

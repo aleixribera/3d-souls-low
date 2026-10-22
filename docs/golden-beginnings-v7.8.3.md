@@ -1,6 +1,6 @@
 # Golden Beginnings (v7.8.3)
 
-New public-lobby story runs and BOSS ONLY runs begin with a five-second gold ceremony after each client's normal loading screen. Ashmere shows RISE FROM ASH, the Lands Between shows FOLLOW THE GOLD, and the gauntlet shows DEFY THEM ALL. A gold crest, expanding halo, drifting embers and a slow title reveal lead into play. Layout adapts to narrow and short screens; reduced motion removes all animations and embers.
+New public-lobby story runs and BOSS ONLY runs begin with a five-second gold ceremony after each client's normal loading screen. Since v7.8.5, each opening shows only the selected mode and a short goal: STORY 1 · ASHMERE / Defeat the Gaoler King; STORY 2 · LANDS / Claim the Elden Throne; BOSS ONLY / Defeat every boss. Extra headings, flavor lines, counts and footer text are removed. A gold crest, expanding halo, drifting embers and a slow title reveal lead into play. Layout adapts to narrow and short screens; reduced motion removes all animations and embers.
 
 Copy is data in `js/data/lobby-intros.js`, validated at startup and recorded first in LORE.md. Duration is `ArenaNet.config.runIntroScreenTime`. The client uses the existing loading hold to keep movement and combat frozen, swallows keyboard/controller actions, and sends ready only after the ceremony ends. Menus and timers are restored if the player leaves or the session changes.
 

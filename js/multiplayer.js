@@ -107,8 +107,8 @@ const multiplayer = (() => {
   const runIntro = document.createElement('section'); runIntro.id = 'runIntroScreen'; runIntro.hidden = true;
   runIntro.tabIndex = -1; runIntro.setAttribute('role', 'status'); runIntro.setAttribute('aria-label', 'Adventure begins');
   runIntro.innerHTML = `<div class="intro-halo" aria-hidden="true"></div><div class="intro-embers" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i style="--ember:${i}"></i>`).join('')}</div>
-    <div class="intro-message"><div class="intro-crest" aria-hidden="true"><span>✦</span></div><p id="runIntroKicker" class="intro-kicker"></p>
-    <h1 id="runIntroTitle"></h1><div class="intro-rule"></div><p id="runIntroLine" class="intro-line"></p><p id="runIntroTrials" class="intro-trials"></p><p class="intro-ready">PREPARE YOURSELF</p></div>`;
+    <div class="intro-message"><div class="intro-crest" aria-hidden="true"><span>✦</span></div>
+    <h1 id="runIntroTitle"></h1><div class="intro-rule"></div><p id="runIntroGoal" class="intro-goal"></p></div>`;
   document.body.appendChild(runIntro);
   const introStyle = document.createElement('style');
   introStyle.textContent = `#runIntroScreen[hidden]{display:none}
@@ -118,12 +118,9 @@ const multiplayer = (() => {
     #runIntroScreen .intro-message{position:relative;z-index:1;width:min(1040px,100%)}
     #runIntroScreen .intro-crest{position:relative;width:68px;height:68px;margin:0 auto 34px;border:1px solid #d4ad595e;transform:rotate(45deg);box-shadow:0 0 40px #f5bf3d1c;animation:intro-crest 1.5s ease-out both}
     #runIntroScreen .intro-crest:before{content:'';position:absolute;inset:7px;border:1px solid #dab86c44}#runIntroScreen .intro-crest span{display:block;transform:rotate(-45deg);font:46px/68px Georgia,serif;color:#ffe6a6;text-shadow:0 0 28px #f7c752a0}
-    #runIntroScreen .intro-kicker{font:10px/1.8 system-ui;letter-spacing:.26em;color:#c2a96d;animation:intro-rise 1s .25s both}
-    #runIntroScreen h1{font:400 clamp(32px,6.8vw,84px)/1.25 Georgia,serif;letter-spacing:.1em;text-indent:.1em;margin:18px 0 22px;color:#ffe8ac;text-shadow:0 0 42px #ecc16340,0 2px 12px #000;animation:intro-title 1.8s .4s cubic-bezier(.16,1,.3,1) both}
+    #runIntroScreen h1{font:400 clamp(30px,5.7vw,72px)/1.25 Georgia,serif;letter-spacing:.1em;text-indent:.1em;margin:18px 0 22px;color:#ffe8ac;text-shadow:0 0 42px #ecc16340,0 2px 12px #000;animation:intro-title 1.8s .4s cubic-bezier(.16,1,.3,1) both}
     #runIntroScreen .intro-rule{height:1px;width:min(480px,85%);margin:0 auto 24px;background:linear-gradient(90deg,transparent,#d6ae58,transparent);animation:intro-rule 1.6s .65s both}
-    #runIntroScreen .intro-line{font:clamp(14px,1.6vw,18px)/1.9 Georgia,serif;white-space:pre-line;color:#decc9f;animation:intro-rise 1.2s 1s both}
-    #runIntroScreen .intro-trials{margin-top:24px;font:10px/1.8 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#b89d60;animation:intro-rise 1.2s 1.35s both}
-    #runIntroScreen .intro-ready{margin-top:32px;font:9px/1.6 system-ui;letter-spacing:.32em;color:#8f7b4d;animation:intro-rise 1s 1.8s both}
+    #runIntroScreen .intro-goal{font:clamp(14px,1.6vw,18px)/1.9 Georgia,serif;color:#decc9f;animation:intro-rise 1.2s 1s both}
     #runIntroScreen .intro-embers{position:absolute;inset:0;pointer-events:none}#runIntroScreen .intro-embers i{position:absolute;left:calc(6% + var(--ember)*8%);top:85%;width:2px;height:2px;border-radius:50%;background:#f7d47b;box-shadow:0 0 9px #ffd35f;animation:intro-ember 4s calc(var(--ember)*-.33s) linear infinite}
     @keyframes intro-veil{0%{opacity:0}12%,86%{opacity:1}100%{opacity:0}}
     @keyframes intro-title{from{opacity:0;transform:scale(1.08);filter:blur(6px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
@@ -132,7 +129,7 @@ const multiplayer = (() => {
     @keyframes intro-crest{from{opacity:0;transform:rotate(25deg) scale(.85)}to{opacity:1;transform:rotate(45deg) scale(1)}}
     @keyframes intro-halo{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1.08)}}
     @keyframes intro-ember{0%{opacity:0;transform:translateY(0)}20%,65%{opacity:.65}100%{opacity:0;transform:translate(20px,-65vh)}}
-    @media(max-height:600px){#runIntroScreen .intro-crest{width:44px;height:44px;margin-bottom:18px}#runIntroScreen .intro-crest span{font-size:30px;line-height:44px}#runIntroScreen h1{margin:12px 0 16px}#runIntroScreen .intro-rule{margin-bottom:14px}#runIntroScreen .intro-ready,#runIntroScreen .intro-trials{margin-top:16px}}
+    @media(max-height:600px){#runIntroScreen .intro-crest{width:44px;height:44px;margin-bottom:18px}#runIntroScreen .intro-crest span{font-size:30px;line-height:44px}#runIntroScreen h1{margin:12px 0 16px}#runIntroScreen .intro-rule{margin-bottom:14px}}
     @media(prefers-reduced-motion:reduce){#runIntroScreen,#runIntroScreen *{animation:none!important}#runIntroScreen .intro-embers{display:none}}`;
   document.head.appendChild(introStyle);
   let runIntroPending = null;
@@ -140,8 +137,8 @@ const multiplayer = (() => {
   function showRunIntro(id) {
     const data = LOBBY_INTROS.find(x => x.id === id);
     if (!data) throw new Error('Unknown lobby intro: ' + id);
-    for (const field of ['kicker', 'title', 'line']) el('runIntro' + field[0].toUpperCase() + field.slice(1)).textContent = data[field];
-    el('runIntroTrials').textContent = session.gauntlet ? `${session.gauntlet.total} bosses · One unbroken run` : `${session.campaign.total} chapters · One shared journey`;
+    el('runIntroTitle').textContent = data.title;
+    el('runIntroGoal').textContent = data.goal;
     runIntro.style.setProperty('--intro-duration', C.runIntroScreenTime + 's');
     runIntroPending = null; panel.inert = true; el('menu').inert = true; runIntro.hidden = false;
     Game.loading = C.runIntroScreenTime; el('loading').classList.remove('show'); input.clear(); runIntro.focus();

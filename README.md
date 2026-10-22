@@ -1,6 +1,8 @@
-# Combat Arena 3D — v7.8.4: Allied Health Bars
+# Combat Arena 3D — v7.8.5: Clearer Openings
 
 A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
+
+**v7.8.5:** Gold opening screens now show only the selected mode and one short goal.
 
 **v7.8.4:** Public-lobby teammates now have health bars beneath their world nameplates and in the players-alive panel. They update with damage, healing and revival, and remain visible while spectating.
 

@@ -11,7 +11,7 @@ function validateData() {
   for (const intro of LOBBY_INTROS) {
     need(!introIds.has(intro.id), `Duplicate lobby intro: ${intro.id}.`); introIds.add(intro.id);
     need(intro.id === 'boss-only' || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
-    for (const field of ['kicker', 'title', 'line']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
+    for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
   for (const id of ['boss-only', ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   const lessons = tutorialSteps();

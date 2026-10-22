@@ -23,11 +23,13 @@ const { createServer } = require('../server/index.cjs');
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive, null, { timeout: 90000 });
   try {
     const a = await player('Ash'), b = await player('Ember');
-    for (const [choice, title] of [['campaign/ashmere', 'RISE FROM ASH'], ['campaign/lands', 'FOLLOW THE GOLD'], ['gauntlet/boss-only', 'DEFY THEM ALL']]) {
+    for (const [choice, title, goal] of [['campaign/ashmere', 'STORY 1 · ASHMERE', 'Defeat the Gaoler King.'], ['campaign/lands', 'STORY 2 · LANDS', 'Claim the Elden Throne.'], ['gauntlet/boss-only', 'BOSS ONLY', 'Defeat every boss.']]) {
       await a.evaluate(() => multiplayer.show());
       await a.locator('#lobbyAdventure').selectOption(choice); await a.locator('#lobbyStart').click();
       await Promise.all([a, b].map(p => p.locator('#runIntroScreen').waitFor({ timeout: 90000 })));
       assert.equal(await a.locator('#runIntroTitle').textContent(), title);
+      assert.equal(await a.locator('#runIntroGoal').textContent(), goal);
+      assert.equal(await a.locator('#runIntroScreen p').count(), 1, 'opening shows only the selected mode and one short goal');
       assert.equal(await a.evaluate(() => multiplayer.info.ready), false, 'intro holds ready until players have seen it');
       assert.ok([...app.clients.values()].every(p => !p.ready), 'combat cannot start during the opening');
       const before = await a.evaluate(() => [Game.player.x, Game.player.z]);
