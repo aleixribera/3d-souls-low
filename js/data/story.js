@@ -30,7 +30,8 @@ const STORY = {
 // than Ashmere from its first step; every land grants more flasks (the levels' `flasks`). LORE.md, part II.
 const LANDS_STORY = {
   id: 'lands', name: 'The Lands Between: The Elden Throne', short: 'Lands', lobbyName: 'Story 2 (Lands)', menuTitle: 'THE LANDS BETWEEN', menuSub: 'THE ELDEN THRONE',
-  description: 'Harder. Eight levels, each with an Elden Ring boss.',
+  description: 'Harder. Eight levels, each with an Elden Ring boss. Finn fights beside you.',
+  companion: { id: 'finn', name: 'Finn', profile: 'quill', color: 0x788d9f },
   tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
   chapters: [
     { level: 'stormhill', title: 'STORMHILL', line: 'The Elden Ring lies shattered, and the demigods who took its shards have gone mad with them. Grace has called you back from death, Tarnished. The road to the throne begins at Stormveil, and the Fell Omen keeps its gate.' },

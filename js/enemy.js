@@ -112,7 +112,7 @@ class Enemy {
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
   // on the same bar (no kneel, no refill). Its `opener` (an attack id) is the first thing it does.
   checkPhaseAt() {
-    if (!this.phaseIds || this.lastPhase() || !this.alive() || this.state === ES.PHASE) return;
+    if (!this.phaseIds || this.lastPhase() || !this.alive() || this.state === ES.PHASE || this.state === ES.EXECUTED) return;
     const next = this.baseDef.phases[this.phaseIds[this.phase + 1]];
     if (!next.at || this.hp > this.def.hp * next.at) return;
     const hp = this.hp, posture = this.posture, from = this.phase;

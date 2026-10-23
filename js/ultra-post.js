@@ -392,7 +392,7 @@ void main() {
     renderer.shadowMap.enabled = q.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = !q.shadows;
     RIM.strength.value = VIS.rim.strength * (q.shadows ? U.rim : 1);
     for (const l of owned) { if (l.isPointLight ? q.combatFx : q.shadows) scene.add(l); else scene.remove(l); }
-    if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase; for (const e of [...(Game.enemies || []), Game.player]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
+    if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase; for (const e of [...(Game.enemies || []), ...Game.allies()]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
     if (!q.reflections) unreflect();
     const aniso = q.shadows ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
@@ -431,7 +431,7 @@ void main() {
     if (q.reflections && !envTex && lastDef) buildEnv(lastDef);
     let changed = sceneRoots.length !== scene.children.length || scene.children.some((o, i) => o !== sceneRoots[i] || o.children.length !== rootCounts[i]);
     // Spectral weapons attach inside a rig. Track that small socket too so new glows / lights are classified once.
-    for (const b of [Game.player, ...Game.enemies]) if (b && b.rig) {
+    for (const b of [...Game.allies(), ...Game.enemies]) if (b && b.rig) {
       const R = b.rig, count = R.weapon.children.length;
       if (R.ultraWeaponChildren !== count) { R.ultraWeaponChildren = count; changed = true; }
     }
@@ -441,7 +441,7 @@ void main() {
     if (q.shadows) placeSun();
     if (q.volumetrics) gatherLights();
     // dissolving bodies cast no shadow (the shadow pass cannot see the dissolve); the blob shadow keeps a little contact
-    for (const b of [Game.player, ...Game.enemies]) {
+    for (const b of [...Game.allies(), ...Game.enemies]) {
       if (!b || !b.rig) continue;
       const R = b.rig, castNow = R.alphaK > 0.99;
       if (R.ultraCast !== castNow) { R.root.traverse(o => { if (o.isMesh && o.userData.ultraShadow) o.castShadow = q.shadows && castNow; }); R.ultraCast = castNow; }

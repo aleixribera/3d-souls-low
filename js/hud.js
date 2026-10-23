@@ -361,13 +361,13 @@ const hud = {
 function registerHudListeners() {
   const H = CONFIG.hud;
   events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked) hud.hurtTimer = H.hurtTime; });
-  events.on('parry', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });   // a parry refunds its stamina
-  events.on('dodge', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });
+  events.on('parry', d => { if (d.player && d.player !== Game.player) return; hud.idle = 0; hud.refundTimer = H.refundPulse; });   // a parry refunds its stamina
+  events.on('dodge', d => { if (d.player && d.player !== Game.player) return; hud.idle = 0; hud.refundTimer = H.refundPulse; });
   events.on('itemUsed', d => { if (d.item === 'flask' && d.player === Game.player) {
     hud.popFlask = d.player.item('flask').count; hud.dismissHealingTip();
   } });
   events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
-  events.on('staminaDenied', () => { hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
+  events.on('staminaDenied', d => { if (d.player !== Game.player) return; hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
     hud.pSt.addEventListener('animationend', () => hud.pSt.classList.remove('empty'), { once: true }); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));

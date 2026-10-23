@@ -13,6 +13,8 @@ const Game = {
   eldenBoss: null,       // Elden Ring Bosses mode (js/elden.js): the ELDEN_BOSSES entry being fought, else null
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
+  companion: null,       // optional local campaign ally (js/companions.js)
+  allies() { return companions.actors(this); },
   player: null, enemies: [], zones: [], renderHooks: [], timeScale: 1, hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0, lockHidden: 0, restartArm: 0,
   retarget: true,        // always-retarget lock-on (see updateLock): off once Q lets go of a lock
@@ -328,12 +330,12 @@ const Game = {
 
   // ---- setup -----------------------------------------------------------------------------------
   clearActors(retainPrograms = false) {
-    const retired = [this.player, ...this.enemies].filter(Boolean);
+    const retired = [...this.allies(), ...this.enemies];
     for (const b of retired) {
       if (retainPrograms) scene.remove(b.rig.root, b.rig.shadow);
       else b.rig.dispose();
     }
-    this.player = null; this.enemies = []; this.zones = []; this.duel = null;
+    this.player = null; this.companion = null; companions.hide(); this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     groundFx.clear(); swordTrail.clear(); projectiles.clear();
     return retired;
@@ -416,6 +418,7 @@ const Game = {
     // v7.0: a level may grant more flasks (`flasks`: at least this many, the Lands Between's ramp); a carried larger stock stays.
     const fl = this.kind === 'level' && this.level.flasks, it = fl && this.player.inventory.flask;
     if (it && it.max < fl) it.max = it.count = fl;
+    companions.reset(this);
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -461,6 +464,7 @@ const Game = {
       for (const e of this.enemies) if (!e.alive() && e.key) this.cleared.add(e.key);
       this.respawnEnemies();
     }
+    companions.reset(this);
     this.setLock(null); this.retarget = true;
     hud.showRested();
     events.emit('rest', { bonfire: b });
@@ -675,21 +679,22 @@ const Game = {
   // gates never open. Traps: standing on the trap's floor in its trigger starts the warning; when the warning runs
   // out, its collapse area becomes a hole for good (through resting and dying, like an opened shortcut).
   updateLevel(dt) {
-    const p = this.player, V = CONFIG.level;
+    const p = this.player, V = CONFIG.level, party = this.allies().filter(a => a.alive());
     for (const z of this.zones) {
-      const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inArea(z.trigger, p.x, p.z);
-      if (!z.spawned && entered && p.alive()) this.spawnZone(z);   // normally already standing there since the start
+      const floor = z.actors.length ? z.actors[0].home.y : p.y;
+      const actor = party.find(a => (typeof z.trigger === 'number' ? a.x > z.trigger : inArea(z.trigger, a.x, a.z)) && Math.abs(a.y - floor) <= CONFIG.height.reach + 1);
+      const entered = !!actor;
+      if (!z.spawned && entered) this.spawnZone(z);   // normally already standing there since the start
       // `wakeZones` levels (v4.3.1): while the player is in a zone (on its floor), every member and every dispersed enemy
       // tied to it (`zone`: its archers, its gargoyles) is awake and on them, so none sleeps in a corner holding the gate shut.
-      const floor = z.actors.length ? z.actors[0].home.y : p.y;
       // v7.0: one that lost sight of the player (round a house, a pillar) keeps hunting toward where they are now, instead of
       // being flipped back to the chase every step (that froze it in place: the chase loses sight and searches again).
-      if (this.level.wakeZones && entered && p.alive() && !z.gate.open && Math.abs(p.y - floor) <= CONFIG.height.reach + 1)
+      if (this.level.wakeZones && entered && !z.gate.open && Math.abs(actor.y - floor) <= CONFIG.height.reach + 1)
         for (const e of this.enemies) {
           if (e.zone !== z.id || !e.alive()) continue;
           e.huntTime = CONFIG.ai.huntTime;   // its own fight: no leash pulls it home while the player stands in it
-          if (e.state === ES.SEARCH) { e.lastSeen = { x: p.x, z: p.z }; e.searchLook = 0; e.stateTime = 0; }
-          else if (e.in('unaware') || e.state === ES.DORMANT) e.wake(p);
+          if (e.state === ES.SEARCH) { e.lastSeen = { x: actor.x, z: actor.z }; e.searchLook = 0; e.stateTime = 0; }
+          else if (e.in('unaware') || e.state === ES.DORMANT) e.wake(actor);
         }
       if (((z.actors.length && z.actors.every(a => !a.alive())) || z.beaten) && !z.gate.open) {
         z.gate.open = true;
@@ -697,7 +702,7 @@ const Game = {
       }
     }
     for (const g of world.gates) {
-      if (g.opensFrom && !g.open && p.alive() && inRect(g.opensFrom, p.x, p.z) && Math.abs(p.y - g.y) <= CONFIG.height.reach) {
+      if (g.opensFrom && !g.open && party.some(a => inRect(g.opensFrom, a.x, a.z) && Math.abs(a.y - g.y) <= CONFIG.height.reach)) {
         g.open = true;
         events.emit('gateOpened', { gate: g, shortcut: true });
       }
@@ -713,8 +718,9 @@ const Game = {
       if (h.timer >= CONFIG.hazards.tick) { h.timer -= CONFIG.hazards.tick; p.tint = Math.max(p.tint, 0.5); events.emit('hazard', { hazard: h, player: p }); }
       if (p.hp <= 0) { p.hitbox = null; p.setState(PS.DEAD); events.emit('hazardDeath', { hazard: h, player: p }); }
     }
+    companions.hazards(this, dt);
     for (const t of world.traps) {
-      if (t.state === 'set' && p.alive() && p.grounded && p.state !== PS.EXECUTE && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp) {
+      if (t.state === 'set' && party.some(a => a.alive() && a.grounded && a.state !== PS.EXECUTE && inRect(t.trigger, a.x, a.z) && Math.abs(a.y - t.y) < CONFIG.height.stepUp)) {
         t.state = 'warning'; t.timer = 0;
         events.emit('trapWarning', { trap: t });
       } else if (t.state === 'warning') t.timer += dt;
@@ -745,11 +751,11 @@ const Game = {
     const queue = this.enemies.filter(e => was.has(e) && e.alive() && !e.in('unaware') && e.state !== ES.DORMANT);
     for (const e of queue) events.emit('alert', { enemy: e });
     while (queue.length) {
-      const a = queue.shift();
+      const a = queue.shift(), target = this.companion && this.companion.targets.get(a) || p;
       for (const e of this.enemies) {
         const mate = !!a.zone && e.zone === a.zone;
         if (e === a || (!mate && (Math.hypot(e.x - a.x, e.z - a.z) > R || sightLost(a, e)))) continue;
-        if (e.wake(p)) { events.emit('alert', { enemy: e, by: a }); queue.push(e); }
+        if (e.wake(target)) { events.emit('alert', { enemy: e, by: a }); queue.push(e); }
       }
     }
   },
@@ -901,8 +907,9 @@ const Game = {
   // Culled levels: an unaware enemy far from the player sleeps (no update, not drawn) until the player comes
   // near or an alert wakes it. Enemies that are fighting, reeling or dying always run.
   sleeps(e) {
+    const p = this.player, ally = this.companion && this.companion.body, range = Math.max(CONFIG.cull.enemyRange, e.notice + 6);
     e.asleep = this.kind === 'level' && !!this.level.cull && !e.boss && e.alive() && (e.in('unaware') || e.state === ES.DORMANT)   // a boss placement never sleeps
-      && Math.hypot(e.x - this.player.x, e.z - this.player.z) > Math.max(CONFIG.cull.enemyRange, e.notice + 6);   // a far-sighted placement stays awake to see
+      && Math.hypot(e.x - p.x, e.z - p.z) > range && (!ally || !ally.alive() || Math.hypot(e.x - ally.x, e.z - ally.z) > range);   // a far-sighted placement stays awake to see
     return e.asleep;
   },
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
@@ -911,7 +918,7 @@ const Game = {
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); return; }
     if (this.kind === 'bossBattle') { bossBattle.update(this, dt); return; }
     const p = this.player, c = this.cam;
-    p.savePrev(); for (const e of this.enemies) e.savePrev();
+    for (const a of this.allies()) a.savePrev(); for (const e of this.enemies) e.savePrev();
     c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
     this.restartArm = Math.max(0, this.restartArm - dt);
     if (!p.alive()) {
@@ -938,10 +945,15 @@ const Game = {
     const alerting = this.kind === 'level' && this.level.alert;
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
     p.update(dt, this.moveInput(), live, this.lock);
-    crowd.update(this, dt);
-    for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
+    companions.update(this, dt);
+    if (this.companion) companions.updateEnemies(this, dt);
+    else {
+      crowd.update(this, dt);
+      for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
+    }
     separateBodies(p, this.enemies);
     resolveCombat(this);
+    companions.resolve(this);
     execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);
     if (alerting) this.spreadAlert(unaware);
@@ -961,12 +973,12 @@ const Game = {
     const frozen = this.hitstop > 0, sub = frozen ? 0 : alpha * CONFIG.step;
     const at = b => ({ x: lerp(b.px, b.x, alpha), y: lerp(b.py, b.y, alpha), z: lerp(b.pz, b.z, alpha),
                        yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
-    const placed = [p, ...this.enemies].map(b => [b, at(b)]);
+    const placed = [...this.allies(), ...this.enemies].map(b => [b, at(b)]);
     for (const [b, q] of placed) {
       if (b === p && this.kind === 'bossBattle') { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       if (b.asleep) { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       b.rig.place(q.x, q.y, q.z, q.yaw, world.groundAt(q.x, q.z, q.y + 0.05));
-      const looking = this.kind === 'bossBattle' && b.battleTarget || p;
+      const looking = this.kind === 'bossBattle' && b.battleTarget || companions.focus(this, b);
       b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: looking.x, pz: looking.z });
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
@@ -1007,6 +1019,7 @@ const Game = {
     if (typeof multiplayer !== 'undefined') multiplayer.captureView();
     this.drawRestArrow(t);
     hud.update(this, frameDt);
+    companions.draw(this);
     visuals.render(this, t, frameDt);
   },
 };

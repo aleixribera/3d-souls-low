@@ -306,7 +306,7 @@ void main() {
   }
   const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map();
   function trailColor(b) {
-    if (b === Game.player) return [T.player, T.playerBoost];
+    if (b instanceof Player) return [T.player, T.playerBoost];
     const a = b.attack, own = hooks.trail && hooks.trail(b);
     if (a && a.rollOnly) return [T.rollOnly, T.enemyBoost * 1.2];
     if (own) return own;
@@ -475,7 +475,7 @@ void main() {
     }
   });
   when('parry', d => {
-    const e = d.target, p = Game.player, ec = chest(e), pc = chest(p), at = { x: lerp(pc.x, ec.x, 0.4), y: lerp(pc.y, ec.y, 0.4) + 0.1, z: lerp(pc.z, ec.z, 0.4) };
+    const e = d.target, p = d.player || Game.player, ec = chest(e), pc = chest(p), at = { x: lerp(pc.x, ec.x, 0.4), y: lerp(pc.y, ec.y, 0.4) + 0.1, z: lerp(pc.z, ec.z, 0.4) };
     sparkBurst(at, 120, 'parry', null, 0, 1.25);
     flare(at, 0xfff2c8, 2.4, 0.4); flashAt(at, 0xffe0a0, 18, 11);
     moteBurst(at, 40, 0xffe2a0, { r: 0.3, speed: 4, lift: 0.3, life: [0.4, 1.0], size: 0.8, up: 0.2 });
@@ -497,7 +497,7 @@ void main() {
     ultraPost.wave(d.at, 1.4, 1.2); ultraPost.pulse({ punch: 0.8, ca: 1, at: d.at, flash: 0.1, color: 0x5a0000 });
   });
   when('executionPull', d => {
-    const e = d.enemy, at = chest(e), dir = dirOf(e, Game.player);
+    const e = d.enemy, at = chest(e), dir = dirOf(e, d.player || Game.player);
     bloodSpray(at, dir, 55, 1.4); flashAt(at, 0xff3018, 8, 7);
     ultraPost.pulse({ punch: 0.4, ca: 0.6, at });
   });
@@ -625,12 +625,12 @@ void main() {
     const fogC = scene.fog ? scene.fog.color : col.set(0);
     for (const m of fogged) m.uniforms.uFogC.value.copy(fogC);
     const cam = camera.position;
-    for (const [b, r] of ribbonOf) if (b !== game.player && !game.enemies.includes(b)) { r.clear(); ribbonOf.delete(b); }
+    for (const [b, r] of ribbonOf) if (!game.allies().includes(b) && !game.enemies.includes(b)) { r.clear(); ribbonOf.delete(b); }
     // the old ribbons and cones stay hidden; ours follow every blade that can hit
     swordTrail.mesh.visible = false;
     for (const t of impactFx.trails.values()) t.mesh.visible = false;
     for (const [b] of placed) {
-      const isP = b === game.player;
+      const isP = b instanceof Player;
       const act = isP ? (b.state === PS.JUMP_ATTACK || (b.state === PS.ATTACK && !!b.hitbox)) : b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
       let r = ribbonOf.get(b);
       if (!r && act) { r = ribbons.slice(0, budget().ribbons).find(x => !x.owner); if (r) { r.owner = b; ribbonOf.set(b, r); } }
@@ -641,7 +641,7 @@ void main() {
       if (b.asleep || !b.rig.root.visible) continue;
       let F2 = bodyFx.get(b);
       if (!F2) bodyFx.set(b, F2 = { aura: 0, ember: 0, step: 0, ash: 0, state: null });
-      const isP = b === game.player, sc = isP ? 1 : scaleOf(b);
+      const isP = b instanceof Player, sc = isP ? 1 : scaleOf(b);
       if (!isP && b.alive() && isBoss(b)) {
         const A = U.aura, c = auraColor(b);
         F2.aura += A.rate * dt * sc;

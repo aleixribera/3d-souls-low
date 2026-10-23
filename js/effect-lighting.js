@@ -47,7 +47,7 @@ const effectLighting = (() => {
   });
   quality();
   events.on('enemyBlink', d => flash(d.enemy, FX_ELEMENTS.holy.glow, C.intensity));
-  events.on('parry', d => { if (!visuals.quality().combatFx && Game.player) flash(Game.player, FX_ELEMENTS.holy.glow, C.intensity); });
+  events.on('parry', d => { if (!visuals.quality().combatFx && Game.player) flash(d.player || Game.player, FX_ELEMENTS.holy.glow, C.intensity); });
   events.on('execution', d => { if (!visuals.quality().combatFx && d.at) flash(d.at, FX_ELEMENTS.fire.glow, C.intensity); });
   Game.renderHooks.push(game => {
     const now = performance.now(), dt = game.manualClock ? CONFIG.step : Math.min(C.maxDt, (now - last) / 1000); last = now;

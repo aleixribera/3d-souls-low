@@ -34,9 +34,9 @@ const cameraFeel = (() => {
       kick('roll', (lx >= 0 ? -1 : 1) * F.hurtRoll * k); kick('fov', F.hurtFov * k);
     } else if (isPlayer(d.attacker) && !d.blocked && (d.strike.damage || 0) >= F.punchFrom) kick('fov', F.hitFov);
   });
-  events.on('parry', () => { kick('fov', F.parryFov); kick('z', F.parryPush); });
+  events.on('parry', d => { if (d.player && !isPlayer(d.player)) return; kick('fov', F.parryFov); kick('z', F.parryPush); });
   events.on('postureBreak', () => kick('fov', F.breakFov));
-  events.on('execution', () => kick('fov', F.executeFov));
+  events.on('execution', d => { if (!d.player || isPlayer(d.player)) kick('fov', F.executeFov); });
   events.on('land', () => kick('y', -F.landDip * 1.5));
   events.on('fallDamage', d => { if (isPlayer(d.body)) kick('y', -F.landDip * 1.3); });
   events.on('bossPhase', () => kick('fov', F.phaseFov));

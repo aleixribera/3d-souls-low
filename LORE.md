@@ -325,6 +325,10 @@ Her arc: welcome (1), warning (2-3), foreboding (4), sacrifice — after Leyndel
 from the ashen capital on she appears as **a spirit of grace**, translucent and glowing (5-8) — and promise (8).
 Like Ysolde, she is never hostile, cannot be attacked and cannot die. Her look in the game: `MODEL_DEFS.seren`.
 
+### Finn, a fellow Tarnished
+
+In the single-player Lands campaign, **Finn** is a fellow Tarnished who fights beside the player through all eight lands. He is a mortal companion with his own health, stamina and flasks. If he falls, he returns when the player rests at a site of grace, returns after death, or enters the next land. Seren remains the guide and keeper of the lantern; Finn has no dialogue or quest. The single-player ending also names Finn among those who walked beside the player.
+
 ## II.3 The road
 
 | Land | Title (loading screen) | Boss | New enemy | Its place |
@@ -453,7 +457,7 @@ Messages are words left on the ground by other Tarnished (a glowing mark: **Mess
 4. The Elden Ring is whole. The throne is yours, Tarnished, if you will sit.
 5. Somewhere, a maiden's lantern is lit again.
 
-Then the credits, which name the eight lands under *The road*, Seren under *Who walked beside you* and the eight bosses.
+Then the credits, which name the eight lands under *The road*, Seren under *Who walked beside you* (with Finn in the single-player campaign) and the eight bosses.
 Story mode's last screen for this road: *The Elden Ring is whole. Somewhere, a maiden's lantern is lit again.*
 
 ## II.7 Names (fixed)

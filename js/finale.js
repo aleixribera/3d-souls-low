@@ -394,7 +394,7 @@ const finale = (() => {
     // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
     const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
     const credits = `<h2>THE ROAD</h2>${road.chapterIds().map(id => `<p>${road.levelName(id)}</p>`).join('')}
-        <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>
+        <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>${Game.story && !online && R.companion ? `<p>${R.companion.name}</p>` : ''}
         <h2>THOSE WHO STOOD IN THE WAY</h2>${R.credits.foes.map(f => `<p>${f}</p>`).join('')}`;
     overlay = document.createElement('div');
     overlay.id = 'ending';

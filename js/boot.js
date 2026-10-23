@@ -32,10 +32,10 @@ window.addEventListener('keydown', ev => fullscreen.auto(ev), { capture: true })
 function registerListeners() {
   const F = CONFIG.fx.bursts, chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   events.on('strike', d => {
-    const kind = d.blocked ? 'block' : d.attacker === Game.player ? (d.strike.riposte ? 'riposte' : 'hit') : 'hurt';
+    const kind = d.blocked ? 'block' : d.attacker instanceof Player ? (d.strike.riposte ? 'riposte' : 'hit') : 'hurt';
     spawnBurst(d.at, F[kind]);
   });
-  events.on('chargeFull', () => Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp));
+  events.on('chargeFull', d => { if (!d.player || d.player === Game.player) Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp); });
   events.on('parry', d => { spawnBurst(chest(d.target), F.parry); Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
   events.on('postureBreak', d => {
     spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);

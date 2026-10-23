@@ -18,7 +18,7 @@ const projectiles = (() => {
     mesh.add(new THREE.Mesh(shaftGeo, shaftMat));
     const head = new THREE.Mesh(headGeo, headMat); head.position.z = P.length / 2 + 0.06; mesh.add(head);
     mesh.visible = false; scene.add(mesh);
-    pool.push({ mesh, live: false, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, vx: 0, vy: 0, vz: 0, g: 0, size: 0, age: 0, owner: null, strike: null, passed: false });
+    pool.push({ mesh, live: false, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, vx: 0, vy: 0, vz: 0, g: 0, size: 0, age: 0, owner: null, strike: null, passed: new Set() });
   }
   let cursor = 0;
   const v = new THREE.Vector3();
@@ -106,7 +106,7 @@ const projectiles = (() => {
       const along = Math.max(1, (target.x - b.x) * s + (target.z - b.z) * c), t = along / A.speed;
       const dy = target.y + target.height * P.aimAt - b.y;
       b.vx = s * A.speed; b.vz = c * A.speed; b.vy = dy / t + 0.5 * A.gravity * t;
-      b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed = false; b.live = true;
+      b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed.clear(); b.live = true;
       prepareLook(b, A);
       b.mesh.visible = true;
       events.emit('shot', { enemy: owner, bolt: b });
@@ -122,28 +122,31 @@ const projectiles = (() => {
         const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt;
         b.age += dt;
         const wall = stop(b.x, b.y, b.z, dx, dy, dz);
-        // A team bolt can hit the first opposing body along its flight; allies and the spectator are transparent.
-        let target = p, hitT = null;
-        if (game.kind === 'bossBattle') {
-          for (const e of game.enemies) if (e.team !== b.owner.team && e.alive() && !e.invulnerable()) {
-            const t = meets(e, b.x, b.y, b.z, dx, dy, dz, e.radius + b.size);
-            if (t !== null && (hitT === null || t < hitT)) { target = e; hitT = t; }
-          }
-        } else hitT = p.alive() && !b.passed ? meets(p, b.x, b.y, b.z, dx, dy, dz, p.radius + b.size) : null;
-        if (hitT !== null && hitT <= wall) {
-          const at = { x: b.x + dx * hitT, y: b.y + dy * hitT, z: b.z + dz * hitT };
-          if (game.kind === 'bossBattle') {
-            applyEnemyStrike(game, b.strike, b.owner, target, at, true, { x: b.x, z: b.z });
-            this.kill(b); continue;
-          }
-          if (p.invulnerable()) { b.passed = true; if (p.state === PS.ROLL) events.emit('dodge', { attacker: b.owner, strike: b.strike, projectile: true }); }   // rolled through: it flies on
-          else {
-            const res = p.takeHit(b.strike, { x: b.x, z: b.z });   // from where the bolt came: blocks need it in front
-            game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : b.strike.hitstop);
-            events.emit('strike', { strike: b.strike, attacker: b.owner, target: p, at, blocked: res.blocked, projectile: true });
-            this.kill(b); continue;
-          }
+        // The first opposing body stops the bolt; rolling/executing bodies let it pass on.
+        const team = game.kind === 'bossBattle';
+        const actors = team ? game.enemies.filter(e => e.team !== b.owner.team && !e.invulnerable()) : game.allies ? game.allies() : [p];
+        const hits = [];
+        for (const actor of actors) if (actor.alive() && !b.passed.has(actor)) {
+          const t = meets(actor, b.x, b.y, b.z, dx, dy, dz, actor.radius + b.size);
+          if (t !== null && t <= wall) hits.push({ actor, t });
         }
+        hits.sort((a, b) => a.t - b.t);
+        for (const { actor, t } of hits) {
+          if (!team && actor.invulnerable()) {
+            b.passed.add(actor);
+            if (actor.state === PS.ROLL) events.emit('dodge', { attacker: b.owner, strike: b.strike, projectile: true, player: actor });
+            continue;
+          }
+          const at = { x: b.x + dx * t, y: b.y + dy * t, z: b.z + dz * t };
+          if (team) applyEnemyStrike(game, b.strike, b.owner, actor, at, true, { x: b.x, z: b.z });
+          else {
+            const res = actor.takeHit(b.strike, { x: b.x, z: b.z });
+            game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : b.strike.hitstop);
+            events.emit('strike', { strike: b.strike, attacker: b.owner, target: actor, at, blocked: res.blocked, projectile: true });
+          }
+          this.kill(b); break;
+        }
+        if (!b.live) continue;
         if (wall <= 1) { b.x += dx * wall; b.y += dy * wall; b.z += dz * wall; events.emit('boltStopped', { bolt: b }); this.kill(b); continue; }
         b.x += dx; b.y += dy; b.z += dz;
         if (b.age > P.life || b.y < world.killY) this.kill(b);

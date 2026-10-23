@@ -79,7 +79,7 @@ function resolveCombat(game) {
       p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
       p.setState(PS.IDLE);
       game.hitstop = Math.max(game.hitstop, P.hitstop);
-      events.emit('parry', { target });
+      events.emit('parry', { target, player: p });
       if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); }
     }
   }
@@ -99,7 +99,7 @@ function resolveCombat(game) {
   for (const hb of enemyHits) {
     if (!p.alive()) continue;
     if (p.invulnerable()) {   // rolled through: announced once per hitbox, which stays live (it can catch the end of the roll)
-      if (!hb.dodged && p.state === PS.ROLL) { hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload }); }   // an execution's untouchable time is no dodge
+      if (!hb.dodged && p.state === PS.ROLL) { hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p }); }   // an execution's untouchable time is no dodge
       continue;
     }
     hb.markHit(p);

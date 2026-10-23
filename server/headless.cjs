@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8');
 const files = [...html.match(/const GAME_FILES = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]);
-const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'execution.js', 'bot-navigation.js', 'bot.js', 'game.js', 'attack-anim.js']);
+const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'execution.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'attack-anim.js']);
 const scripts = files.filter(f => engine.has(f) || f.startsWith('data/') || f.startsWith('levels/'));
 // Ignore text/visual-only definitions in the compatibility fingerprint? No: clients and
 // server must run exactly the same release, including every level and balance edit.

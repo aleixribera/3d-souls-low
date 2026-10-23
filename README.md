@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.15.0: Companions on the road
+# Combat Arena 3D — v7.16.0: Finn of the Lands
+
+**v7.16.0:** Finn accompanies you through all eight levels of the single-player Lands campaign. He follows routes, fights with the existing bot brain, and has his own health, stamina and flasks. If he falls, he returns when you rest, respawn or enter the next land. Ashmere, training, standalone levels, arena and multiplayer keep their existing parties. See [the notes](docs/solo-companion-v7.16.0.md).
 
 **v7.15.0:** Idle bots follow human players through normal levels, split evenly across the party. Extra bots—and a lone bot—support whoever is closest to the remaining enemies. Companions walk routes around walls and hazards, use stairs and required drops, and wait at closed gates. Distance and floor changes no longer teleport them; only sustained failed movement can trigger a short unstick. See [the notes](docs/bot-following-v7.15.0.md).
 

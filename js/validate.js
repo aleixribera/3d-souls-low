@@ -35,6 +35,8 @@ function validateData() {
   need(CONFIG.bossBattle.maxTeam === 6, 'Boss battle team limit must be six.');
   for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
+  for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
+  need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
   need(num(botConfig.assignmentTime) && botConfig.assignmentTime > 0, 'Bot assignmentTime must be positive.');
   need(Array.isArray(botConfig.follow) && botConfig.follow.length === 2 && botConfig.follow.every(num) && botConfig.follow[0] > 0 && botConfig.follow[1] > botConfig.follow[0],
@@ -322,6 +324,12 @@ function validateData() {
     campaignIds.add(C.id);
     for (const k of ['name', 'short', 'menuTitle', 'menuSub', 'description', 'done']) need(typeof C[k] === 'string' && C[k].length > 0, `${w}: ${k} must be a line of text.`);
     need(C.credits && typeof C.credits.companion === 'string' && Array.isArray(C.credits.foes) && C.credits.foes.every(f => typeof f === 'string'), `${w}: credits need a companion and a list of foes.`);
+    if (C.companion) {
+      const a = C.companion;
+      need(typeof a.id === 'string' && a.id.length > 0 && typeof a.name === 'string' && a.name.trim().length > 0 &&
+        BOT_PROFILES.some(p => p.id === a.profile) && Number.isInteger(a.color) && a.color >= 0 && a.color <= 0xffffff,
+        `${w}: companion needs an id, name, bot profile and colour.`);
+    }
     need(C.progress && typeof C.progress === 'object', `${w}: progress must be an object.`);
     const list = [...(C.tutorial ? [C.tutorial] : []), ...(C.chapters || [])], storyIds = list.map(c => c && c.level);
     for (const c of list) {
