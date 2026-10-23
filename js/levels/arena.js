@@ -1,7 +1,7 @@
 'use strict';
 // The duel arena (Enemies menu).
 const ARENA = {
-  id: 'arena', layout: 'arena', name: 'Arena',
+  id: 'arena', layout: 'arena', name: 'Arena', fullTracking: true,
   halfX: 18, halfZ: 13, wallHeight: 1.3, wallThickness: 0.9, border: 0.7, grid: 4, outerGround: 160,
   pillarRing: { inset: 3.5, base: 1.9, size: 1.4 }, bonfireLight: 11,
   // A dying sun over open ruins: warm haze, a sky, layered silhouettes and dry grass beyond the walls.

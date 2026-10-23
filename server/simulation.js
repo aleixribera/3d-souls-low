@@ -127,7 +127,7 @@ globalThis.host = (() => {
     if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id] || partners.length && (kind !== 'arena' || partners.some(p => !ENEMY_BY_ID[p]))) throw new Error('Unknown level or opponent');
     Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null; Game.duelPartners = [...partners];
     const d = kind === 'arena' && ENEMY_BY_ID[id], L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    Game.level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
+    Game.level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     world = makeWorld(Game.level, collisionStage(Game.level));
     Game.cleared = new Set(); Game.complete = false; crowd.reset(); crowdClocks.clear();
     const s = Game.level.playerStart || Game.level.start;

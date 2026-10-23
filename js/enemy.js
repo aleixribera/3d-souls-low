@@ -216,9 +216,9 @@ class Enemy {
     this.playerRel = angDiff(toPlayer, this.yaw);   // where the player stands round it (rad, + at its left)
     const playerAlive = player.alive();
     // Unaware, it sees only in a cone ahead (CONFIG.vision); fighting or searching, all round.
-    const V = CONFIG.vision, inCone = this.wide || !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
+    const V = CONFIG.vision, inCone = Game.level?.fullTracking || this.wide || !this.in('narrowSight') || dist < V.near || Math.abs(angDiff(toPlayer, this.yaw)) <= V.cone;
     const inArena = !this.arena || inArea(this.arena, player.x, player.z);   // e.g. the Bell Warden: the bonfire before its arena is safe
-    const sees = playerAlive && inArena && dist < this.notice && inCone && !gateBetween(this, player);
+    const sees = playerAlive && inArena && dist < trackingRange(this.notice) && inCone && !gateBetween(this, player);
     // Its leash is measured from home to the player, so chasing toward the line never flickers.
     const playerFromHome = Math.hypot(player.x - this.home.x, player.z - this.home.z);
     // Too far above or below to fight (a walkway, a drop): it notices but won't come for the player.

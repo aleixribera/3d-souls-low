@@ -255,7 +255,7 @@ const Game = {
   startFight(id, partners = []) {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
     this.kind = 'arena'; this.duelId = id; this.duelPartners = partners; this.eldenBoss = null;   // js/elden.js sets it again for its own fights
-    this.level = L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
+    this.level = L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     this.enterPlay(); this.reset(); this.showLoading(...this.duelCard(id, partners));
   },
   // Loading card for a duel, or for a group of opponents fought together.
@@ -508,9 +508,9 @@ const Game = {
   // Valid targets: in lock range, and on screen or in front of the player. `v`: where on screen (null if off it).
   lockable() {
     const p = this.player;
-    return findEnemies(p, this.enemies, { range: CONFIG.lock.range })
+    return findEnemies(p, this.enemies, { range: trackingRange(CONFIG.lock.range) })
       .map(c => ({ ...c, v: this.inView(c.e) }))
-      .filter(c => c.v || isInFront(p, c.e.x, c.e.z));
+      .filter(c => this.level.fullTracking || c.v || isInFront(p, c.e.x, c.e.z));
   },
   // Lock-on: the valid targets ordered by closeness to the screen centre, then distance.
   lockCandidates() {
@@ -522,7 +522,7 @@ const Game = {
   sideTarget(dir) {
     const cur = this.inView(this.lock), x0 = cur ? cur.x : 0;
     let best = null, bestD = Infinity;
-    for (const { e } of findEnemies(this.player, this.enemies, { range: CONFIG.lock.range })) {
+    for (const { e } of findEnemies(this.player, this.enemies, { range: trackingRange(CONFIG.lock.range) })) {
       const v = e !== this.lock && this.inView(e), d = v ? (v.x - x0) * dir : 0;
       if (d > 0 && d < bestD) { bestD = d; best = e; }
     }
@@ -566,8 +566,8 @@ const Game = {
     // Auto lock-on (retarget off): the first time each enemy comes into range (and into view), lock onto it
     // unless already locked. An enemy is only ever auto-locked once.
     if (p.alive()) {
-      for (const { e } of findEnemies(p, this.enemies, { range: CONFIG.lock.autoRange })) {
-        if (e.def.autoLock === false || e.discovered || (!this.inView(e) && !isInFront(p, e.x, e.z))) continue;
+      for (const { e } of findEnemies(p, this.enemies, { range: trackingRange(CONFIG.lock.autoRange) })) {
+        if (e.def.autoLock === false || e.discovered || (!this.level.fullTracking && !this.inView(e) && !isInFront(p, e.x, e.z))) continue;
         e.discovered = true;
         if (!this.lock && !this.retarget) this.setLock(e);
       }
@@ -576,10 +576,10 @@ const Game = {
     if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any
       this.setLock(this.retarget ? null : this.lockCandidates().find(e => e !== t && e.def.autoLock !== false) || null);
     } else if (t) {
-      if (!t.alive() || !t.awake() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > CONFIG.lock.breakRange) this.setLock(null);
+      if (!t.alive() || !t.awake() || !p.alive() || closedGateBetween(p, t) || Math.hypot(t.x - p.x, t.z - p.z) > trackingRange(CONFIG.lock.breakRange)) this.setLock(null);
       else {
         // Off screen, or hidden behind cover (walls, pillars, props, floors): let go only once it has lasted a while.
-        this.lockLost = this.inView(t) ? 0 : this.lockLost + dt;
+        this.lockLost = this.level.fullTracking || this.inView(t) ? 0 : this.lockLost + dt;
         this.lockHidden = gateBetween(p, t) ? this.lockHidden + dt : 0;
         if (this.lockLost > CONFIG.lock.lostTime || this.lockHidden > CONFIG.lock.coverTime) this.setLock(null);
       }

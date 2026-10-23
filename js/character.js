@@ -85,6 +85,11 @@ function pushOutOfBox(b, s, r) {
     b[axis] = v;
   }
 }
+// Arena awareness spans the whole bounded fight, including custom room arenas and spectator matches.
+// Apply only to tracking: melee hitboxes, executions and attack selection keep their own physical ranges.
+// A zero range remains an explicit opt-out (training and deliberately quiet actors).
+function trackingRange(range) { return range > 0 && Game.level?.fullTracking ? Infinity : range; }
+
 // Enemies around `from`, filtered: the one place that decides who can be targeted.
 // opts: range, cone/yaw (angle limit around a heading), surface (measure to the body's edge), deadFor.
 function findEnemies(from, enemies, { range, cone = Infinity, yaw = from.yaw, surface = false, deadFor = 0 }) {

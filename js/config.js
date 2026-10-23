@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.12.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.12.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -595,6 +595,10 @@ const CONFIG = {
     reach: 1.55,                // edge gap a light attack still connects from
     spacing: 2.2,               // edge gap it keeps while waiting out an enemy
     strafe: 0.55, strafeSwitch: [1.2, 3.4],   // sideways share of its walk, and how often it changes side
+    roll: { margin: 0.15, reverseChance: 0.35, ringAngle: [0.15, 0.45], retreatAngle: [0.2, 0.7] },
+    tacticTime: [2, 4],         // commit to a movement pattern before choosing another
+    probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange
+    healRetreatTime: 3,         // seek space briefly; if no safe drink appears, fight for an opening instead
     healBelow: 0.5, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap
     engageRange: 16, wakeRange: 9,             // fights awake enemies within, sleeping ones only this close
     follow: [2.5, 5.5], catchUp: 26,           // stays this close to its party; farther (or another floor) it catches up

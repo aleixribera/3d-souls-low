@@ -1078,6 +1078,26 @@
     expect.ok(dodges.length === 1 && dodges[0].projectile && dodges[0].attacker === e, `one for the bolt (${dodges.length})`);
   });
   // The player at (10, 0) facing east in Test: Crowd, with enemies that stay put at the given spots.
+  test('Arena tracking: distant off-screen survivors remain available to player lock-on', () => {
+    Game.startFight('hollow', ['hollow']); sim.begin();
+    const p = Game.player, first = Game.duel, far = Game.enemies.find(e => e !== first);
+    p.x = -16; p.z = -11; p.yaw = -Math.PI / 2;
+    first.x = p.x + 2; first.z = p.z; first.wake(p);
+    far.x = 16; far.z = 11; far.wake(p);
+    const view = Game.inView;
+    try {
+      Game.inView = () => null;
+      expect.ok(Math.hypot(far.x - p.x, far.z - p.z) > CONFIG.lock.breakRange, 'the survivor is beyond the old break range');
+      expect.ok(Game.lockCandidates().includes(far), 'the whole arena is targetable, including behind the player');
+      Game.setLock(first); first.deplete(); Game.updateLock(CONFIG.step);
+      expect.ok(Game.lock === far, 'a kill retargets the survivor across the arena');
+      for (let i = 0; i < 120; i++) Game.updateLock(CONFIG.step);
+      expect.ok(Game.lock === far, 'distance and being off screen do not drop arena tracking');
+      sim.press('lock'); Game.updateLock(CONFIG.step);
+      expect.ok(!Game.lock && !Game.retarget, 'explicitly releasing lock-on is still respected');
+    } finally { Game.inView = view; }
+  });
+
   const lockRange = spots => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
     sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);

@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.12.0: Boss vs Boss
+# Combat Arena 3D — v7.12.1: More adaptable bots
+
+**v7.12.1:** Friendly bots alternate between pressure, flanking and baiting, with a different mix for each companion. They take the initiative after a quiet standoff, vary their rolling directions, and seek healing space briefly before fighting for an opening. Bots, enemies and player lock-on track opponents across the whole arena. See [the notes](docs/bot-behavior-v7.12.1.md).
 
 **v7.12.0:** 1v1 Arena → **Boss vs Boss** lets you build two teams of up to six bosses and watch them fight. Choose from all 12 bosses, add multiple copies, and remove bosses by selecting their team entry. Bosses target and damage only the opposing team, using their normal moves and phases. Team health bars, an automatic spectator camera, rematches and team editing are included. See [the notes](docs/boss-vs-boss-v7.12.0.md).
 

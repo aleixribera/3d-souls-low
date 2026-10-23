@@ -185,6 +185,7 @@ function validateData() {
   }
   if (PLAYER_DEF.look.model) need(PLAYER_DEF.look.model in MODEL_DEFS, `Player: unknown model "${PLAYER_DEF.look.model}".`);
   need(PLAYER_DEF.look.weapon in WEAPONS, `Player: unknown weapon "${PLAYER_DEF.look.weapon}".`);
+  need(typeof ARENA.fullTracking === 'boolean' && typeof BOSS_BATTLE_ARENA.fullTracking === 'boolean', 'Arena: fullTracking must be true or false.');
   // Levels
   const levelIds = new Set();
   for (const L of ALL_LEVELS) {
@@ -195,7 +196,7 @@ function validateData() {
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
-    for (const k of ['wakeZones', 'clearGates', 'steer']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
+    for (const k of ['wakeZones', 'clearGates', 'steer', 'fullTracking']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
