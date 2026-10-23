@@ -134,7 +134,7 @@ for (const profile of profiles) {
 }
 console.log('Arena tracking: all profiles and 13 enemy/boss definitions, far survivor reacquisition and ordinary detection passed.');
 
-// Repeated rolls against the same real strike should use several safe directions, rather than a fixed side.
+// Repeated rolls against the same real strike should use several directions, rather than a fixed side.
 for (const profile of profiles) {
   const directions = new Set();
   for (let seed = 1; seed <= 48; seed++) {
@@ -262,7 +262,7 @@ console.log('Bot jump defence: real clearance and no damage against a low stomp;
 
 {
   const { sim, b, p, e } = waiting('giant', 'quill');
-  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 1, jumpDodge: 0 }, seeded(21)); p.ctl = b.brain.hands;
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { bait: 1 }, greed: 0, parry: 0, evade: 1, jumpDodge: 0 }, seeded(21)); p.ctl = b.brain.hands;
   p.z = e.z + e.radius + p.radius + 1.2; e.yaw = 0;
   const attack = e.baseDef.attacks.find(a => a.id === 'sweep');
   e.beginAttack(attack);
@@ -352,4 +352,124 @@ for (const profile of profiles) {
   };
   assert.equal(choice(false), 'jump', 'a clear landing path permits the eligible jump');
   assert.equal(choice(true), 'roll', 'drift beyond the arena edge vetoes a jump and falls back to a roll');
+}
+
+
+// Greed is a bounded choice, and the resulting trade goes through ordinary Player/Enemy hitboxes.
+function trade(greed) {
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, greed, forward: 0,
+    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => 0.1); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0; e.cooldown = 30;
+  observe(b, p, [e], 2.9);
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.4;
+  const hp = p.hp, bossHp = e.hp; let attacked = false;
+  for (let i = 0; i < 60; i++) {
+    sim.setPlayers([]); sim.tick(dt); attacked ||= p.isAttacking();
+    if (p.hp < hp) {
+      // The server resumes the brain after the normal hit-pause.
+      for (let j = 0; j < 30; j++) { sim.setPlayers([]); sim.tick(dt); }
+      break;
+    }
+  }
+  return { hp: p.hp, initialHp: hp, damage: bossHp - e.hp, attacked, risking: b.brain.risking };
+}
+const carefulTrade = trade(0), greedyTrade = trade(1);
+assert.equal(carefulTrade.hp, carefulTrade.initialHp, 'ordinary defence still avoids the telegraphed sweep');
+assert.ok(greedyTrade.attacked && greedyTrade.damage > 0, 'greed takes a real extra hit before the boss recovers');
+assert.ok(greedyTrade.hp < greedyTrade.initialHp, 'the boss can punish a greedy swing with real damage');
+assert.equal(greedyTrade.risking, false, 'being hit ends the greedy exchange');
+
+// A greed decision can extend a combo that no longer fits the fully safe window.
+for (const greed of [0, 1]) {
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, greed, forward: 0,
+    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => 0.1); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; e.yaw = 0; e.cooldown = 30;
+  observe(b, p, [e], 2.9);
+  p.attack = p.def.moveset.attacks.light; p.attackT = 0.45; p.setState('attack');
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.6;
+  b.brain.think(dt, p, [e], []);
+  assert.equal(b.brain.hands.peek('light'), !!greed, 'only the greedy exchange squeezes in the unsafe combo extension');
+}
+
+// A forward dodge may collide with the boss or land in the swing. It still cannot choose a wall/ledge path.
+for (const atWall of [false, true]) {
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0, forward: 1, parry: 0, evade: 0, jumpDodge: 0 }, () => 0.1);
+  p.ctl = b.brain.hands;
+  e.x = atWall ? 17.3 : 0; e.z = 0; e.yaw = -Math.PI / 2;
+  p.x = e.x - 1.8; p.z = 0; p.vx = p.vz = 0;
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.05;
+  let direction;
+  for (let i = 0; i < 20; i++) {
+    const result = b.brain.think(dt, p, [e], []);
+    if (b.brain.hands.peek('roll')) { direction = result.mv; break; }
+  }
+  assert.ok(direction, 'the forward-roll fixture makes a defensive choice');
+  assert.ok(atWall ? direction.x < 0.1 : direction.x > 0.9,
+    atWall ? 'a forward path into the arena wall falls back to an escape' : 'the bot sometimes rolls straight toward the boss');
+}
+
+// Surviving without a human makes the aid press harder, while a living player keeps the normal personality.
+for (const allyKind of ['none', 'bot', 'human']) {
+  const withHuman = allyKind === 'human';
+  const { sim, b, p, e } = waiting('giant', 'tobin');
+  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0.3, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; e.cooldown = 30;
+  const allies = allyKind === 'none' ? [] : [{ botId: withHuman ? null : 'ally-bot', alive: () => true }];
+  let riskBefore = false, riskAfter = false;
+  for (let i = 0; i < 18 * 60; i++) {
+    b.brain.think(dt, p, [e], allies); b.brain.hands.clear();
+    if (i < 11 * 60) riskBefore ||= b.brain.risking;
+    else riskAfter ||= b.brain.risking;
+  }
+  assert.equal(riskBefore, false, 'last-stand pressure has a grace period');
+  assert.equal(riskAfter, !withHuman, 'only a party with no surviving human increases its risk after the grace period');
+}
+console.log('Bot risk: real punishable trades, greedy combo extensions, forward dodges, wall vetoes and last-stand urgency passed.');
+
+
+// Forward rolls are not secretly given extra i-frames: a wide sweep can catch their early roll/blocked landing.
+const rollHits = {};
+for (const forward of [0, 1]) {
+  let hits = 0;
+  for (let seed = 1; seed <= 32; seed++) {
+    const { sim, b, p, e } = waiting('giant', 'quill');
+    b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0, forward, parry: 0, evade: 0, jumpDodge: 0 }, seeded(seed));
+    p.ctl = b.brain.hands; p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.35;
+    for (let i = 0; i < 70; i++) {
+      sim.setPlayers([]); sim.tick(dt);
+      if (e.state === 'recover') break;
+    }
+    hits += Number(p.hp < p.maxHp);
+  }
+  rollHits[forward] = hits;
+}
+assert.equal(rollHits[0], 0, 'the ordinary geometric escape still clears the sweep');
+assert.ok(rollHits[1] > 0 && rollHits[1] < 32, 'forward gambles can succeed or be punished by the same real sweep');
+console.log('Forward rolls: ' + rollHits[1] + '/32 punished; ordinary escapes ' + rollHits[0] + '/32.');
+
+// Greed against one target must still react to a different attacker or an incoming bolt.
+{
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 1, parry: 0, evade: 0, jumpDodge: 0 }, () => 0.1);
+  p.ctl = b.brain.hands; p.z = e.z + e.radius + p.radius + 0.5; e.cooldown = 30;
+  observe(b, p, [e], 2.9);
+  assert.ok(b.brain.risking, 'the fixture has committed to a risky exchange');
+  const other = waiting('hollow', 'quill').e;
+  other.x = p.x; other.z = p.z - 1.7; other.y = p.y; other.yaw = 0;
+  other.beginAttack(other.baseDef.attacks.find(a => !a.projectile && a.hits.length === 1));
+  other.stateTime = other.attack.hits[0].startup - 0.01;
+  let defended = false;
+  for (let i = 0; i < 20; i++) {
+    b.brain.think(dt, p, [e, other], []);
+    assert.ok(!b.brain.hands.peek('light') && !b.brain.hands.peek('heavy'), 'a second attacker vetoes the greedy swing');
+    if (b.brain.hands.peek('roll')) { defended = true; break; }
+  }
+  assert.ok(defended, 'the greedy bot still defends against another opponent');
+  b.brain.hands.clear();
+  b.brain.think(dt, p, [e], [], [{ x: p.x, z: p.z - 1, vx: 0, vz: 10, size: 0.1 }]);
+  assert.ok(b.brain.hands.peek('roll') && !b.brain.hands.peek('light'), 'a bolt interrupts the risky play');
 }

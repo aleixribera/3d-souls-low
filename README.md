@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.13.0: Human combat rhythm
+# Combat Arena 3D — v7.13.1: Riskier companions
+
+**v7.13.1:** Bots sometimes chase an extra hit or combo and roll forward to stay close, leaving real openings for bosses to punish. When no human remains, they press harder after a short grace period so solo attempts resolve sooner. See [the notes](docs/bot-risk-v7.13.1.md).
 
 **v7.13.0:** Companions fight in varied bursts, back out and reposition, then press real openings. Parry choices fall to one tenth of their former frequency; walking clear and rolling are their main defences, with occasional jumps over low attacks. See [the notes](docs/bot-rhythm-v7.13.0.md).
 

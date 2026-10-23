@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.13.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.13.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -599,6 +599,10 @@ const CONFIG = {
     parryChanceScale: 0.1,      // one tenth of each companion's former parry preference
     tempo: { comboBase: 0.12, comboAggression: 0.45, punishCombo: 0.9, punishWindow: 1.3,
       punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, regroupBelow: 0.3 },
+    // Risk is chosen on a clock, never re-rolled every frame. A lone aid presses harder after its party falls.
+    risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
+      combo: 0.9, reserve: 12, earlyRollChance: 0.35, rollLead: [0.12, 0.22],
+      lastStandAfter: 12, lastStandBonus: 0.25, lastStandReset: 0.55 },
     defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2 },
     jumpDodge: { lead: [0.16, 0.28], clearance: 0.12, timingMargin: 0.02, followMargin: 0.2, maxSpeed: 1.2 },
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another

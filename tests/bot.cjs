@@ -76,20 +76,21 @@ async function join(origin, name) {
     await app.close();
   }
 
-  // The duel record: a lone bot against the Giant Skeleton, then each other Ashmere boss once.
-  const duel = (boss, profile, limit = 600) => {
+  // An aid must contribute and resolve its solo attempt. Winning almost every duel is no longer the balance goal.
+  const duel = (boss, profile, limit = 180) => {
     const sim = createSimulation(); sim.addBot(profile); sim.start('arena', boss); sim.setPlayers([]);
-    const { Game } = sim.inspect();
+    const { Game } = sim.inspect(), e = Game.enemies[0], initialHp = e.hp;
     for (let t = 0; t < limit * 60; t++) {
       sim.setPlayers([]); sim.tick(1 / 60);
-      if (Game.enemies.every(e => !e.alive())) return true;
-      if (sim.botsDown()) return false;
+      if (Game.enemies.every(e => !e.alive()) || sim.botsDown())
+        return { win: Game.enemies.every(e => !e.alive()), damage: initialHp - e.hp, initialHp, time: t / 60 };
     }
-    return false;
+    return { timeout: true, damage: initialHp - e.hp, initialHp, time: limit };
   };
   const profiles = ['quill', 'maren', 'tobin'];
-  let wins = 0;
-  for (let i = 0; i < 30; i++) wins += duel('giant', profiles[i % 3]);
-  assert.ok(wins >= 29, `the bot beats the Giant Skeleton reliably (${wins}/30)`);
+  const duels = Array.from({ length: 30 }, (_, i) => duel('giant', profiles[i % 3]));
+  const wins = duels.filter(d => d.win).length;
+  assert.ok(duels.every(d => !d.timeout), 'solo attempts resolve within three minutes');
+  assert.ok(duels.filter(d => d.damage >= d.initialHp * 0.2).length >= 24, 'bots still make a useful damage contribution');
   console.log(`Friendly bots: leader-only add/remove, cap, roster, frames, camera, strikes, damage, no wipe while standing, removal passed. Giant Skeleton duels: ${wins}/30.`);
 })().catch(e => { console.error(e); process.exit(1); });

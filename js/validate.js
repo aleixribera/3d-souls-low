@@ -43,6 +43,15 @@ function validateData() {
   for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
+  for (const key of ['windowSlack', 'minWindow', 'reserve', 'lastStandAfter'])
+    need(num(botConfig.risk?.[key]) && botConfig.risk[key] > 0, `Bot risk.${key} must be positive.`);
+  for (const key of ['combo', 'earlyRollChance', 'lastStandBonus', 'lastStandReset'])
+    need(num(botConfig.risk?.[key]) && botConfig.risk[key] >= 0 && botConfig.risk[key] <= 1, `Bot risk.${key} must be 0..1.`);
+  for (const key of ['interval', 'duration', 'rollLead']) {
+    const range = botConfig.risk?.[key];
+    need(Array.isArray(range) && range.length === 2 && range.every(num) && range[0] > 0 && range[1] >= range[0],
+      `Bot risk.${key} needs an ordered positive range.`);
+  }
   const jumpRange = botConfig.jumpDodge.lead;
   need(Array.isArray(jumpRange) && jumpRange.length === 2 && jumpRange.every(num) && jumpRange[0] > 0 && jumpRange[1] >= jumpRange[0],
     'Bot jumpDodge.lead needs an ordered positive range.');
