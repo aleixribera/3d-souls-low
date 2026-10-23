@@ -10,10 +10,10 @@ function validateData() {
   const introIds = new Set();
   for (const intro of LOBBY_INTROS) {
     need(!introIds.has(intro.id), `Duplicate lobby intro: ${intro.id}.`); introIds.add(intro.id);
-    need(intro.id === 'boss-only' || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
+    need(ArenaNet.config.gauntlets[intro.id] || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
-  for (const id of ['boss-only', ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  for (const id of [...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   const lessons = tutorialSteps();
   need(lessons.length > 0 && new Set(lessons.map(s => s.id)).size === lessons.length, 'Tutorial steps need unique ids.');
   for (const s of lessons) {

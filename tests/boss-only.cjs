@@ -65,7 +65,23 @@ async function peer(origin) {
       ready(a); ready(b); await flush(b);
       assert.equal(app.clients.get(a.id).pose.hp, 120, 'next boss clears defeat for everyone');
     }
-    assert.match((await a.next('stop')).message, /COMPLETE/); await b.next('stop');
+    // Surviving BOSS ONLY carries the party into DOUBLE BOSSES: catalog pairs, both bosses at once.
+    const pairs = await a.next('start'); session = pairs.session; await b.next('start');
+    assert.equal(pairs.opening, true, 'the paired run opens with its own ceremony');
+    assert.equal(session.gauntlet.id, 'boss-pairs'); assert.equal(session.gauntlet.total, Math.ceil(bosses.length / 2));
+    for (let i = 0; i < bosses.length; i += 2) {
+      assert.equal(session.id, bosses[i].id); assert.equal(session.partner, bosses[i + 1]?.id);
+      ready(a); ready(b); await flush(b);
+      const game = app.sim.inspect().Game;
+      assert.deepEqual(Array.from(game.enemies, e => e.baseDef.id), [bosses[i].id, bosses[i + 1].id], 'both bosses of the pair spawn together');
+      game.enemies[0].hp = 0; game.enemies[0].die(); app.sim.tick(1 / 60);
+      assert.equal(game.complete, false, 'one fallen boss of a pair does not end the encounter');
+      game.enemies[1].hp = 0; game.enemies[1].die();
+      app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
+      if (!session.gauntlet.next) break;
+      session = (await a.next('start')).session; await b.next('start');
+    }
+    assert.match((await a.next('stop')).message, /DOUBLE BOSSES COMPLETE/); await b.next('stop');
     assert.equal(app.session, null);
     await begin(); ready(a); ready(b); await flush(b);
     app.sim.arenaWipeDelay = 0.1;
@@ -76,6 +92,6 @@ async function peer(origin) {
     assert.match(wipe.message, /TEAM WIPED/); assert.equal(wipe.reason, 'team-wipe'); await b.next('stop');
     assert.equal(app.session, null, 'wipe returns everyone to lobby');
     await begin(); assert.equal(session.id, bosses[0].id); assert.equal(session.gauntlet.number, 1);
-    console.log('BOSS ONLY: loading barrier, 3s grace, defeat latch, ordered full roster, victory delay, revival, completion, wipe and retry passed.');
+    console.log('BOSS ONLY: loading barrier, 3s grace, defeat latch, ordered full roster, victory delay, revival, redirect into DOUBLE BOSSES, paired completion, wipe and retry passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

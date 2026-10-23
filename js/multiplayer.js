@@ -143,7 +143,7 @@ const multiplayer = (() => {
     const rows = latestFrame?.results;
     if (rows && !leaderboardRows) {
       leaderboardRows = rows;
-      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : ENEMY_BY_ID[session.id].name;
+      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, session.partner].filter(Boolean).map(id => ENEMY_BY_ID[id].name).join(' & ');
       for (const row of rows) {
         const tr = document.createElement('tr'); tr.dataset.self = String(row.id === self); tr.dataset.playerId = row.id;
         for (const value of [row.rank, row.name + (row.id === self ? ' (you)' : ''), row.damage.toLocaleString(undefined, { maximumFractionDigits: 1 })]) {
@@ -157,7 +157,7 @@ const multiplayer = (() => {
   }
   const wipeScreen = document.createElement('section'); wipeScreen.id = 'teamWipeScreen'; wipeScreen.hidden = true;
   wipeScreen.tabIndex = -1; wipeScreen.setAttribute('role', 'alert'); wipeScreen.setAttribute('aria-label', 'Team wiped');
-  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker">BOSS ONLY · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
+  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker" id="teamWipeKicker">BOSS ONLY · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
   document.body.appendChild(wipeScreen);
   const wipeStyle = document.createElement('style');
   wipeStyle.textContent = `#teamWipeScreen[hidden]{display:none}
@@ -176,7 +176,8 @@ const multiplayer = (() => {
   function clearTeamWipe() { clearTimeout(wipeTimer); wipeTimer = null; wipeScreen.hidden = true; panel.inert = false; }
   function showTeamWipe(run) {
     clearTeamWipe();
-    el('teamWipeScore').textContent = run ? `Bosses defeated · ${run.number - 1} / ${run.total}` : '';
+    el('teamWipeKicker').textContent = `${run?.name || 'BOSS ONLY'} · RUN ENDED`;
+    el('teamWipeScore').textContent = run ? `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}` : '';
     panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
     wipeTimer = setTimeout(() => {
       clearTeamWipe();
@@ -605,7 +606,9 @@ const multiplayer = (() => {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
     const campaign = STORIES.find(s => s.id === id);
     el('lobbyAdventureSummary').textContent = value === 'gauntlet/boss-only'
-      ? `${catalog?.bosses.length || ''} bosses, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.`
+      ? `${catalog?.bosses.length || ''} bosses, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run. Survive to face them in pairs.`
+      : value === 'gauntlet/boss-pairs'
+      ? `${catalog?.bosses.length || ''} bosses, two at a time, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.`
       : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
       : 'Play this encounter together.';
   }
@@ -659,7 +662,7 @@ const multiplayer = (() => {
     const road = session?.campaign;
     const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
     const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
-    const levelTag = session?.gauntlet ? `BOSS ONLY · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS ONLY'} · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
     for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
       const tag = el(id);
       tag.hidden = !connected || !levelTag;
@@ -676,7 +679,7 @@ const multiplayer = (() => {
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
-      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Challenge', 'gauntlet', [{ id: 'boss-only', name: 'BOSS ONLY' }]]]) {
+      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Challenge', 'gauntlet', Object.entries(C.gauntlets).map(([id, run]) => ({ id, name: run.name }))]]) {
         const group = document.createElement('optgroup'); group.label = label;
         for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
         select.appendChild(group);
@@ -694,15 +697,14 @@ const multiplayer = (() => {
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
       Game.story = false; Game.eldenBoss = null; closePanel();
-      const boss = session.kind === 'arena' && ENEMY_BY_ID[session.id];
-      const loadingCard = boss ? [`Duel: ${boss.name}`, boss.description] : Game.levelCard(session.id);
-      el('lobbyAdventure').value = session.gauntlet ? 'gauntlet/boss-only' : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
+      const loadingCard = session.kind === 'arena' ? Game.duelCard(session.id, session.partner) : Game.levelCard(session.id);
+      el('lobbyAdventure').value = session.gauntlet ? `gauntlet/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
         Game.loadingFirst(...loadingCard, () => {
           if (session !== current || !connected) return;
-          if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id);
+          if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id, session.partner || null);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer();
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;

@@ -17,6 +17,11 @@
     emptyLobbyTimeout: 60 * 1000,
     defaultCampaign: 'lands',
     defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
+    // Boss runs: `size` bosses fought together per encounter, in catalog order; `then` follows a full victory.
+    gauntlets: Object.freeze({
+      'boss-only': Object.freeze({ name: 'BOSS ONLY', size: 1, then: 'boss-pairs' }),
+      'boss-pairs': Object.freeze({ name: 'DOUBLE BOSSES', size: 2, then: null }),
+    }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,

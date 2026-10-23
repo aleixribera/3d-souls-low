@@ -70,13 +70,12 @@ function createServer(options = {}) {
       stop('The previous party left. Choose an adventure to start a fresh run.');
   }
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
-    const gauntlet = kind === 'gauntlet' && id === 'boss-only' ? sim.gauntlet(boss) : null;
-    if (kind === 'gauntlet' && !gauntlet) throw new Error('Unknown boss run');
+    const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : null;
     if (gauntlet) { kind = 'arena'; id = gauntlet.boss; }
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw new Error('Unknown campaign or chapter');
     if (campaign) { kind = 'level'; id = campaign.level; }
-    session = sim.start(kind, id);
+    session = sim.start(kind, id, gauntlet?.partner || null);
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;
@@ -112,7 +111,7 @@ function createServer(options = {}) {
       if (msg.action === 'start') {
         if (!['campaign', 'level', 'arena', 'gauntlet'].includes(msg.kind) || !net.id(msg.id)) return;
         try { start(msg.kind, msg.id, null, undefined, true); } catch (e) { error(p, e.message); }
-      } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', 'boss-only', null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
+      } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
       else if (msg.action === 'lobby') {
         stop('The leader returned everyone to the lobby.');
       } else if (msg.action === 'next' && session && !session.gauntlet) {
@@ -263,9 +262,9 @@ function createServer(options = {}) {
           // Loading peers still belong to the attempt; a disconnect removes a
           // peer from this check, while a stale living pose never counts as dead.
           const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated);
-          arenaWipeFor = wiped && sim.inspect().Game.duel?.alive() ? arenaWipeFor + 1 / C.tickRate : 0;
+          arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (session.gauntlet) stop('TEAM WIPED · The boss run ends here. Choose BOSS ONLY to try again from boss 1.', 'team-wipe');
+            if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
             else start(session.kind, session.id);
             break;
           }
@@ -284,8 +283,11 @@ function createServer(options = {}) {
           break;
         }
         if (session.gauntlet && sim.state.completedFor >= Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)) {
-          if (session.gauntlet.next) start('gauntlet', 'boss-only', null, session.gauntlet.next);
-          else stop('BOSS ONLY COMPLETE · Every boss defeated. The whole party conquered the gauntlet!');
+          const run = C.gauntlets[session.gauntlet.id];
+          if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
+          // A survived run carries the party on into the next, harder run, with its own opening.
+          else if (run.then) start('gauntlet', run.then, null, undefined, true);
+          else stop(`${run.name} COMPLETE · Every boss defeated. The whole party conquered the gauntlet!`);
           break;
         }
       }

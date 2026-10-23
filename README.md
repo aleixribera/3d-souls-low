@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.8.11: Multiplayer Damage Leaderboard
+# Combat Arena 3D — v7.9.0: Double Bosses
+
+**v7.9.0:** The public lobby adds DOUBLE BOSSES: all 12 bosses in catalog order, fought two at a time in one arena (bosses 1 and 2, then 3 and 4, …), with the same loading grace, refills, spectating, team-wipe and leaderboard rules as BOSS ONLY. A party that survives BOSS ONLY is carried straight into it. See [the notes](docs/double-bosses-v7.9.0.md).
 
 **v7.8.11:** Multiplayer victories show each player ranked by total damage dealt during that level or boss. Results appear one second after victory and stay for six seconds before automatic progression. Boss loading cards now keep one consistent message. This release also simplifies Options, combines camera motion and shake, keeps FPS visible, ties hitboxes to F1 help, and adds a healing reminder once per level. See [the changes and checks](docs/damage-leaderboard-v7.8.11.md).
 

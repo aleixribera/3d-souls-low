@@ -14,6 +14,7 @@ These gold title cards introduce a new shared run; they do not replace chapter l
 - **STORY 1 · ASHMERE** — “Defeat the Gaoler King.”
 - **STORY 2 · LANDS** — “Claim the Elden Throne.”
 - **BOSS ONLY** — “Defeat every boss.”
+- **DOUBLE BOSSES** — “Defeat every boss, two at a time.”
 
 ---
 
