@@ -2653,6 +2653,25 @@
     sim.until(() => e.state === ES.ACTIVE, 3); Game.render(1, STEP);
     expect.ok(S.pillar.visible, 'then the pillar');
   });
+  test('Radagon: Elden Shattering leaves time to roll the last slam and shockwave separately', () => {
+    const { p, e } = startRadagon(); faceOff(e, p, 2); quiet(e);
+    const a = e.baseDef.attacks.find(a => a.id === 'eldenShattering');
+    const slam = a.hits[2], wave = a.hits[3], hp = p.hp;
+    // Start as the third hit lands, after its leap, to isolate the final pair of impacts.
+    e.beginAttack(a); e.hitIndex = 2; e.leapHit = 2; e.stateTime = slam.startup - 0.05;
+    sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
+    expect.ok(sim.until(() => e.hitIndex === 2 && e.state === ES.ACTIVE, 1) >= 0, 'the third slam lands');
+    expect.ok(e.hitbox && e.hitbox.dodged, 'the first roll passes through the real slam hitbox');
+    expect.ok(sim.until(() => e.hitIndex === 3 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0,
+      'the final shockwave is about to open');
+    expect.ok(p.isFree(), 'the first roll has ended with time to start a second dodge');
+    sim.press('roll');
+    expect.ok(sim.until(() => e.hitIndex === 3 && e.hitbox && e.hitbox.dodged, 1) >= 0,
+      'the second roll passes through the expanding shockwave');
+    expect.ok(sim.until(() => e.state === ES.RECOVER, 2) >= 0, 'the combo reaches recovery');
+    expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
+    sim.move(null);
+  });
   test('Radagon: at 60% the Gold Breaker opens phase 2, faster, with the Elden Shattering', () => {
     const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 6);
     e.hp = 5200 * 0.59; sim.step(2);

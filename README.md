@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.12.1: More adaptable bots
+# Combat Arena 3D — v7.12.2: Radagon dodge window
+
+**v7.12.2:** Radagon's four-hit Elden Shattering combo leaves more time between its third slam and final shockwave, allowing two separate dodges. See [the timing change](docs/combat-timings-v4.1.md).
 
 **v7.12.1:** Friendly bots alternate between pressure, flanking and baiting, with a different mix for each companion. They take the initiative after a quiet standoff, vary their rolling directions, and seek healing space briefly before fighting for an opening. Bots, enemies and player lock-on track opponents across the whole arena. See [the notes](docs/bot-behavior-v7.12.1.md).
 
