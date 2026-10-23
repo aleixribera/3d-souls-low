@@ -9,3 +9,7 @@ A party that defeats the last BOSS ONLY boss is no longer returned to the lobby:
 Runs are data in `ArenaNet.config.gauntlets` (`js/net-protocol.js`): `{ name, size, then }`. The session carries `gauntlet: { id, name, boss, partner, number, total, defeated, bosses, next }` and the session's `partner` boss id. Solo duels are unaffected (`partner` defaults to none).
 
 Checks: `node tests/boss-only.cjs` (redirect, pairs, both-dead completion), plus the multiplayer, campaign, leaderboard, continuity, arena-wipe suites and the in-game suite.
+
+## v7.10.0: TRIPLE and QUAD BOSSES
+
+Two more runs: TRIPLE BOSSES (`boss-triples`, four encounters of three) and QUAD BOSSES (`boss-quads`, three encounters of four). Survived runs now chain BOSS ONLY → DOUBLE → TRIPLE → QUAD BOSSES, each with its own opening; finishing QUAD returns to the lobby. `session.partner` became `session.partners` (a list), and groups stand in a line `ARENA.groupSpacing` (7 m) apart, squeezed to fit `ARENA.groupWidth` (20 m).

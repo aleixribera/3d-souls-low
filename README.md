@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.9.0: Double Bosses
+# Combat Arena 3D — v7.10.0: Triple and Quad Bosses
+
+**v7.10.0:** The lobby adds TRIPLE BOSSES and QUAD BOSSES: the 12 bosses three or four at a time. Surviving runs chain BOSS ONLY → DOUBLE → TRIPLE → QUAD BOSSES. See [the notes](docs/double-bosses-v7.9.0.md).
 
 **v7.9.0:** The public lobby adds DOUBLE BOSSES: all 12 bosses in catalog order, fought two at a time in one arena (bosses 1 and 2, then 3 and 4, …), with the same loading grace, refills, spectating, team-wipe and leaderboard rules as BOSS ONLY. A party that survives BOSS ONLY is carried straight into it. See [the notes](docs/double-bosses-v7.9.0.md).
 

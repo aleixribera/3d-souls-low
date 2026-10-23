@@ -75,7 +75,7 @@ function createServer(options = {}) {
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw new Error('Unknown campaign or chapter');
     if (campaign) { kind = 'level'; id = campaign.level; }
-    session = sim.start(kind, id, gauntlet?.partner || null);
+    session = sim.start(kind, id, gauntlet?.partners || []);
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;

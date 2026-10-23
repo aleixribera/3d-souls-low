@@ -15,6 +15,8 @@ These gold title cards introduce a new shared run; they do not replace chapter l
 - **STORY 2 · LANDS** — “Claim the Elden Throne.”
 - **BOSS ONLY** — “Defeat every boss.”
 - **DOUBLE BOSSES** — “Defeat every boss, two at a time.”
+- **TRIPLE BOSSES** — “Defeat every boss, three at a time.”
+- **QUAD BOSSES** — “Defeat every boss, four at a time.”
 
 ---
 

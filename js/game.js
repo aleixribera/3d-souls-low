@@ -9,7 +9,7 @@ const Game = {
   story: false,          // Story mode (js/story.js): levels chain through STORY's chapters and progress is saved
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
-  duelPartnerId: null,        // optional second arena opponent (online DOUBLE BOSSES)
+  duelPartners: [],           // further arena opponents fought at once (online boss groups)
   eldenBoss: null,       // Elden Ring Bosses mode (js/elden.js): the ELDEN_BOSSES entry being fought, else null
   tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
@@ -247,19 +247,19 @@ const Game = {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   },
   // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
-  startFight(id, partner = null) {
+  startFight(id, partners = []) {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    this.kind = 'arena'; this.duelId = id; this.duelPartnerId = partner; this.eldenBoss = null;   // js/elden.js sets it again for its own fights
+    this.kind = 'arena'; this.duelId = id; this.duelPartners = partners; this.eldenBoss = null;   // js/elden.js sets it again for its own fights
     this.level = L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
-    this.enterPlay(); this.reset(); this.showLoading(...this.duelCard(id, partner));
+    this.enterPlay(); this.reset(); this.showLoading(...this.duelCard(id, partners));
   },
-  // Loading card for a duel, or for two opponents fought together.
-  duelCard(id, partner = null) {
-    const d = ENEMY_BY_ID[id], q = partner && ENEMY_BY_ID[partner];
-    return q ? [`Duel: ${d.name} & ${q.name}`, `${d.description} ${q.description}`] : [`Duel: ${d.name}`, d.description];
+  // Loading card for a duel, or for a group of opponents fought together.
+  duelCard(id, partners = []) {
+    const defs = [id, ...partners].map(i => ENEMY_BY_ID[i]);
+    return defs.length > 1 ? [`Duel: ${defs.map(d => d.name).join(' & ')}`, `${defs.length} bosses at once. Fight them together.`] : [`Duel: ${defs[0].name}`, defs[0].description];
   },
   startLevel(id) {
-    this.kind = 'level'; this.eldenBoss = null; this.duelPartnerId = null; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
+    this.kind = 'level'; this.eldenBoss = null; this.duelPartners = []; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
     const ch = this.story && story.chapter(id);
     const onlineCard = typeof multiplayer !== 'undefined' && multiplayer.chapterCard(id);
     if (ch) { this.showLoading(ch.title, ch.line); this.loading = CONFIG.story.titleTime; story.onLevelStart(); }   // Souls-style title over the load
@@ -352,11 +352,11 @@ const Game = {
   },
   makeEnemies() {
     if (this.kind === 'arena') {
-      const s = this.level.enemyStart, ids = [this.duelId, ...(this.duelPartnerId ? [this.duelPartnerId] : [])];
-      // A pair stands side by side, `pairSpacing` apart across the arena.
-      const spread = ids.length > 1 ? (this.level.pairSpacing ?? ARENA.pairSpacing) / 2 : 0;
+      const s = this.level.enemyStart, ids = [this.duelId, ...this.duelPartners];
+      // A group stands in a line across the arena, `groupSpacing` apart, kept within `groupWidth`.
+      const L = this.level, n = ids.length, gap = n > 1 ? Math.min(L.groupSpacing ?? ARENA.groupSpacing, (L.groupWidth ?? ARENA.groupWidth) / (n - 1)) : 0;
       const list = ids.map((id, i) => {
-        const z = s.z + (i ? spread : -spread);
+        const z = s.z + (i - (n - 1) / 2) * gap;
         return new Enemy(ENEMY_BY_ID[id], { ...s, z, y: world.floorY(s.x, z, s.y), behavior: 'arena', notice: CONFIG.notice.arena });
       });
       this.duel = list[0];
@@ -750,11 +750,11 @@ const Game = {
   // (the arena duel always shows its opponent).
   target() {
     if (this.lock) return this.lock;
-    if (this.kind === 'arena' && !this.duelPartnerId) return this.duel;
+    if (this.kind === 'arena' && !this.duelPartners.length) return this.duel;
     let best = null;
     for (const c of findEnemies(this.player, this.enemies, { range: CONFIG.level.targetRange, deadFor: CONFIG.fx.deadTargetTime }))
       if (!best || c.d < best.d) best = c;
-    if (!best && this.kind === 'arena') return this.enemies.find(e => e.alive()) || this.duel;   // a pair: the survivor across the arena
+    if (!best && this.kind === 'arena') return this.enemies.find(e => e.alive()) || this.duel;   // a group: a survivor across the arena
     return best ? best.e : null;
   },
 

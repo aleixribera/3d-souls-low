@@ -326,7 +326,7 @@ const hud = {
     const waitingForTeam = typeof multiplayer !== 'undefined' && multiplayer.waitingForTeamWipe;
     $('diedStatus').textContent = waitingForTeam ? game.duelWon() ? 'Boss defeated' : 'Waiting for your team…' : 'Returning to the last bonfire…';
     if (waitingForTeam)
-      this.diedTip.textContent = multiplayer.gauntlet ? game.duelWon() ? multiplayer.gauntlet.next ? 'Next boss incoming. You return with full health.' : CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id]?.then ? 'All bosses defeated. Now face them two at a time…' : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.'
+      this.diedTip.textContent = multiplayer.gauntlet ? game.duelWon() ? multiplayer.gauntlet.next ? 'Next boss incoming. You return with full health.' : CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id]?.then ? `All bosses defeated. ${CONFIG.multiplayer.gauntlets[CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id].then].name} next…` : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.'
         : game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
     this.wasAlive = p.alive();
     // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.

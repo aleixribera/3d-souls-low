@@ -13,7 +13,7 @@ const ARENA = {
                 surface: { moss: 0.45, grime: 1 },
                 sky: { zenith: 0x34323a, sun: 0xffa860, sunDir: [-0.75, 0.2, -0.55] }, silhouettes: 3, grass: 1 },
   playerStart: { x: -6, z: 0, yaw: Math.PI / 2 }, enemyStart: { x: 6, z: 0, yaw: -Math.PI / 2 },
-  pairSpacing: 7,   // m between two opponents fought together
+  groupSpacing: 7, groupWidth: 20,   // m between opponents fought together, and the widest their line may be
   bonfires: [{ id: 'arena-fire', x: 0, z: -10.8 }],
   help: '',
 };

@@ -70,13 +70,13 @@ globalThis.host = (() => {
     const index = boss === undefined ? 0 : bosses.findIndex(e => e.id === boss);
     if (index < 0 || index % run.size) throw new Error('Unknown gauntlet boss');
     const group = bosses.slice(index, index + run.size);
-    return { id, name: run.name, boss: group[0].id, partner: group[1]?.id || null, number: index / run.size + 1,
+    return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
       total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
   }
-  function start(kind, id, partner = null) {
+  function start(kind, id, partners = []) {
     if (!['level', 'arena'].includes(kind)) throw new Error('Unknown game mode');
-    if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id] || partner && (kind !== 'arena' || !ENEMY_BY_ID[partner])) throw new Error('Unknown level or opponent');
-    Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null; Game.duelPartnerId = partner;
+    if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id] || partners.length && (kind !== 'arena' || partners.some(p => !ENEMY_BY_ID[p]))) throw new Error('Unknown level or opponent');
+    Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null; Game.duelPartners = [...partners];
     const d = kind === 'arena' && ENEMY_BY_ID[id], L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
     Game.level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     world = makeWorld(Game.level, collisionStage(Game.level));
@@ -89,7 +89,7 @@ globalThis.host = (() => {
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; history = []; players = [];
     damage = new Map(); results = null;
-    return { epoch, kind, id, ...(partner ? { partner } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
+    return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
   }
   function setPlayers(list) { players = list.map(s => proxy(s, s.id)); }
   function registerPlayer(id, name) {
