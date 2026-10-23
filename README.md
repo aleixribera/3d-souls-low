@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.10.0: Triple and Quad Bosses
+# Combat Arena 3D — v7.10.1: Lobby redesign
+
+**v7.10.1:** The online lobby, party panel, nameplates, damage leaderboard, spectator bar and TEAM WIPED screen are redesigned with one consistent look. See [the notes](docs/lobby-redesign-v7.10.1.md).
 
 **v7.10.0:** The lobby adds TRIPLE BOSSES and QUAD BOSSES: the 12 bosses three or four at a time. Surviving runs chain BOSS ONLY → DOUBLE → TRIPLE → QUAD BOSSES. See [the notes](docs/double-bosses-v7.9.0.md).
 
