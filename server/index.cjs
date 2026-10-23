@@ -19,7 +19,7 @@ function createServer(options = {}) {
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
-  const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })) });
+  const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })).concat(sim.botList()) });
   function send(p, data) {
     if (p.ws.readyState !== WebSocket.OPEN) return;
     if (p.ws.bufferedAmount > C.maxBuffered) { p.ws.close(1013, 'Connection too slow. Rejoin the lobby.'); return; }
@@ -44,7 +44,7 @@ function createServer(options = {}) {
     p.lastActivity = now;
     if (!leader) refreshLeader('idle', now);
   }
-  const playerFrames = () => [...clients.values()].filter(p => p.ready && p.pose).map(p => ({ ...p.pose, id: p.id, name: p.name, poseSeq: p.poseSeq }));
+  const playerFrames = () => [...clients.values()].filter(p => p.ready && p.pose).map(p => ({ ...p.pose, id: p.id, name: p.name, poseSeq: p.poseSeq })).concat(session ? sim.botFrames() : []);
   function sendFrame(p, frame, players) { if (p.hello && p.ready) send(p, p.encoder.encode({ ...frame, server: metrics }, players)); }
   function updateMetrics(now) {
     if (now - metricsAt < C.metricsInterval) return;
@@ -67,7 +67,7 @@ function createServer(options = {}) {
   }
   function expireEmptyLobby() {
     if (session && emptySince !== null && lobbyNow() - emptySince >= C.emptyLobbyTimeout)
-      stop('The previous party left. Choose an adventure to start a fresh run.');
+      { sim.clearBots(); stop('The previous party left. Choose an adventure to start a fresh run.'); }
   }
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : null;
@@ -121,6 +121,10 @@ function createServer(options = {}) {
       } else if (msg.action === 'transfer' && clients.has(msg.player) && clients.get(msg.player).hello) {
         if (!isActive(clients.get(msg.player), activityNow())) { error(p, 'That player is inactive. They must provide input before becoming leader.'); return; }
         leader = msg.player; broadcast(roster());
+      } else if (msg.action === 'addBot') {
+        if (!sim.addBot()) error(p, `A party can have at most ${C.maxBots} bots.`); else broadcast(roster());
+      } else if (msg.action === 'removeBot' && net.id(msg.player)) {
+        if (sim.removeBot(msg.player)) broadcast(roster());
       } else if (msg.action === 'kick' && msg.player !== p.id && clients.has(msg.player)) clients.get(msg.player).ws.close(1008, 'Removed by the lobby leader.');
       return;
     }
@@ -229,7 +233,7 @@ function createServer(options = {}) {
       clients.delete(p.id);
       if (![...clients.values()].some(p => p.hello)) {
         accumulator = 0;
-        if (p.hello && code === 1000) stop('The party left. Choose an adventure to start a fresh run.');
+        if (p.hello && code === 1000) { stop('The party left. Choose an adventure to start a fresh run.'); sim.clearBots(); }
         else if (session && emptySince === null) emptySince = lobbyNow();
       }
       if (!refreshLeader('disconnect')) broadcast(roster());
@@ -261,7 +265,7 @@ function createServer(options = {}) {
           const party = [...clients.values()].filter(p => p.hello);
           // Loading peers still belong to the attempt; a disconnect removes a
           // peer from this check, while a stale living pose never counts as dead.
-          const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated);
+          const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
             if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');

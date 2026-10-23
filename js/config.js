@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.10.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.11.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -573,5 +573,27 @@ const CONFIG = {
       // What each blow looks like. Damage scales a hit's spray between `light` and `heavy` damage.
       hits: { light: 15, heavy: 55, drops: [10, 46], wave: 40, punch: 60 },
     },
+  },
+  // Friendly bots (v7.11, js/bot.js): a bot presses the same actions a player does. Times in s, distances in m
+  // (between body edges unless named otherwise). Nothing here is tuned for one enemy: every read comes from attack data.
+  bot: {
+    notice: [0.04, 0.1],        // a new wind-up is seen this long after it starts
+    rollLead: [0.05, 0.12],     // a roll starts this long before the strike opens (its i-frames last CONFIG.player.rollIFrames)
+    parryLead: [0.02, 0.07],    // a parry is pressed this long before the strike opens (inside CONFIG.parry.lead)
+    threatMargin: 0.7,          // m added to a strike's reach before it counts as a threat
+    lungeShare: 0.4,            // share of an enemy attack's lunge speed (m/s) added to its reach
+    dashShare: 0.55,            // s of an enemy dash added to its reach
+    reserve: 34,                // stamina kept back for a roll while an enemy could strike
+    windowTrust: 0.7,           // share of an enemy's remaining cooldown counted as safe
+    safety: 0.12,               // s spare left after its own swing before an enemy strike may open
+    closeGap: 0.5,              // edge gap it closes to before striking
+    reach: 1.55,                // edge gap a light attack still connects from
+    spacing: 2.2,               // edge gap it keeps while waiting out an enemy
+    strafe: 0.55, strafeSwitch: [1.2, 3.4],   // sideways share of its walk, and how often it changes side
+    healBelow: 0.5, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap
+    engageRange: 16, wakeRange: 9,             // fights awake enemies within, sleeping ones only this close
+    follow: [2.5, 5.5], catchUp: 26,           // stays this close to its party; farther (or another floor) it catches up
+    respawnDelay: 4.8,
+    chargeWindow: 2.2,          // a long opening it fills with a charged heavy
   },
 };

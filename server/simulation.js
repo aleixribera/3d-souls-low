@@ -7,6 +7,10 @@ globalThis.host = (() => {
   let players = [], checkpoint = null;
   let completedFor = 0;
   let damage = new Map(), results = null;
+  // Friendly bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared
+  // enemies, so a bot keeps fighting whatever any browser tab is doing. id -> { id, name, profile, brain, body, ... }
+  const bots = new Map();
+  let botSerial = 0, wipeOnly = false, acting = null;
   const crowdClocks = new Map();
   const C = ArenaNet.config;
   for (const story of STORIES) {
@@ -40,6 +44,10 @@ globalThis.host = (() => {
   const enemyId = e => e.key || 'duel/' + e.baseDef.id;
   const enemy = id => Game.enemies.find(e => e.netId === id);
   events.onAny((type, d) => {
+    // A bot's own blows and parries reach the clients as a player's would.
+    if (acting && type === 'strike' && d.attacker === acting.body && d.target?.netId)
+      eventList.push({ type: 'strike', player: acting.id, enemy: d.target.netId, strike: d.strike, blocked: !!d.blocked, at: d.at });
+    if (acting && type === 'parry' && d.target?.netId) eventList.push({ type: 'parry', player: acting.id, enemy: d.target.netId });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'postureBreak', 'enemyBlink', 'impact'].includes(type))
@@ -49,7 +57,48 @@ globalThis.host = (() => {
   projectiles.fire = (e, attack, p) => {
     // A reliable shot event, replayed once on each client's presentation timeline.
     bolts.push({ enemy: e.netId, attack: attack.id, target: { x: p.x, y: p.y, z: p.z, height: p.height } });
+    // Browsers fly bolts against their own player; bots need the same bolts flown here (js/projectiles.js rules).
+    if (bots.size) for (const off of attack.projectile.spread || [0]) flying.push(launch(e, attack, p, off));
   };
+  const flying = [];
+  function launch(owner, attack, target, off) {
+    const A = attack.projectile, P = CONFIG.projectile, s = Math.sin(owner.yaw + off), c = Math.cos(owner.yaw + off);
+    const b = { x: owner.x + s * owner.radius * 1.2, z: owner.z + c * owner.radius * 1.2, y: owner.y + owner.height * P.muzzle };
+    const along = Math.max(1, (target.x - b.x) * s + (target.z - b.z) * c), t = along / A.speed;
+    const dy = target.y + target.height * P.aimAt - b.y;
+    return Object.assign(b, { vx: s * A.speed, vz: c * A.speed, vy: dy / t + 0.5 * A.gravity * t, g: A.gravity, size: A.size, age: 0,
+      owner, strike: makeStrike(attack), passed: new Set() });
+  }
+  function boltStop(x, y, z, dx, dy, dz) {
+    let f = Infinity;
+    if (world.solids) {
+      for (const s of world.solids) if (!s.low) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s));
+      for (const s of world.slabs) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, s));
+      for (const g of world.gates) if (!g.open && g.box) f = Math.min(f, segBox3(x, y, z, dx, dy, dz, g.box));
+      return f;
+    }
+    if (y + dy < 0) f = Math.min(f, y / -dy);
+    return f;
+  }
+  function flyBolts(dt) {
+    for (let i = flying.length - 1; i >= 0; i--) {
+      const b = flying[i];
+      b.vy -= b.g * dt; b.age += dt;
+      const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt, wall = boltStop(b.x, b.y, b.z, dx, dy, dz);
+      let gone = false;
+      for (const bb of bots.values()) {
+        const p = bb.body; if (!p || !p.alive() || b.passed.has(p)) continue;
+        const l2 = dx * dx + dz * dz, t = l2 > 1e-9 ? clamp(((p.x - b.x) * dx + (p.z - b.z) * dz) / l2, 0, 1) : 0;
+        const cx = b.x + dx * t - p.x, cz = b.z + dz * t - p.z, cy = b.y + dy * t, r = p.radius + b.size;
+        if (cx * cx + cz * cz > r * r || cy < p.y || cy > p.y + p.height || t > wall) continue;
+        if (p.invulnerable()) { b.passed.add(p); continue; }
+        p.takeHit(b.strike, { x: b.x, z: b.z }); gone = true; break;
+      }
+      if (!gone && wall <= 1) gone = true;
+      b.x += dx; b.y += dy; b.z += dz;
+      if (gone || b.age > CONFIG.projectile.life || b.y < (world.killY ?? -50)) flying.splice(i, 1);
+    }
+  }
   function catalog() {
     return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
       campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
@@ -87,11 +136,93 @@ globalThis.host = (() => {
     Game.enemies = Game.makeEnemies();
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
-    epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; history = []; players = [];
+    epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null;
+    wipeOnly = kind === 'arena' && isBossDef(d);
+    let index = 0;
+    for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
   }
-  function setPlayers(list) { players = list.map(s => proxy(s, s.id)); }
+  function setPlayers(list) { players = list.map(s => proxy(s, s.id)).concat(botBodies()); }
+  const botBodies = () => [...bots.values()].filter(b => b.body).map(b => b.body);
+  // Beside the checkpoint, alternating sides, as a party member arriving with everyone else.
+  function spawnBot(b, index) {
+    const s = checkpoint, off = (index % 2 ? -1 : 1) * (1 + Math.floor(index / 2)) * 1.4, yaw = s.yaw || 0;
+    const x = s.x + Math.cos(yaw) * off, z = s.z - Math.sin(yaw) * off;
+    b.brain = bot.create(b.profile);
+    b.body = new Player(PLAYER_DEF, x, z, yaw, world.floorY(x, z, s.y));
+    b.body.ctl = b.brain.hands; b.body.id = b.body.botId = b.id;
+    b.deadFor = 0; b.hitstop = 0;
+  }
+  function addBot(profileId) {
+    if (bots.size >= C.maxBots) return null;
+    const used = new Set([...bots.values()].map(b => b.profile.id));
+    const profile = BOT_PROFILES.find(p => p.id === profileId) || BOT_PROFILES.find(p => !used.has(p.id)) || BOT_PROFILES[bots.size % BOT_PROFILES.length];
+    const b = { id: 'bot-' + (++botSerial), name: profile.name, profile, brain: null, body: null, deadFor: 0, hitstop: 0, poseSeq: 0 };
+    bots.set(b.id, b);
+    if (Game.level && checkpoint) { registerPlayer(b.id, b.name); spawnBot(b, bots.size - 1); }
+    return { id: b.id, name: b.name };
+  }
+  function removeBot(id) { const ok = bots.delete(id); players = players.filter(p => p.id !== id); return ok; }
+  function clearBots() { for (const id of [...bots.keys()]) removeBot(id); }
+  function updateBots(dt) {
+    const B = CONFIG.bot;
+    for (const b of bots.values()) {
+      const p = b.body; if (!p) continue;
+      if (!p.alive()) {
+        b.deadFor += dt; p.update(dt, { x: 0, z: 0, has: false }, [], null);
+        if (!wipeOnly && b.deadFor >= B.respawnDelay) spawnBot(b, 0);
+        continue;
+      }
+      if (b.hitstop > 0) { b.hitstop = Math.max(0, b.hitstop - dt); continue; }
+      const allies = players.filter(o => o !== p && o.alive());
+      const { mv, lock } = b.brain.think(dt, p, Game.enemies, allies, flying);
+      const before = Game.enemies.map(e => e.hp);
+      acting = b;
+      try {
+        p.update(dt, mv, Game.enemies.filter(e => e.alive()), lock && lock.alive() ? lock : null);
+        for (const e of Game.enemies) if (e.state !== ES.EXECUTED) separatePair(p, e, 1);
+        const g = { player: p, enemies: Game.enemies, hitstop: 0 };
+        resolveCombat(g);
+        b.hitstop = g.hitstop;
+      } finally { acting = null; }
+      Game.enemies.forEach((e, i) => creditDamage(b.id, before[i] - e.hp));
+      if (p.alive() && !p.invulnerable()) for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
+        p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
+      }
+      // Left far behind (or on another floor) with nothing to fight: catch up with the nearest person.
+      if (Game.kind === 'level' && p.alive() && !b.brain.target) {
+        const people = players.filter(o => !o.botId && o.alive());
+        const lead = people.sort((a, c) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(c.x - p.x, c.z - p.z))[0];
+        if (lead && (Math.hypot(lead.x - p.x, lead.z - p.z) > B.catchUp || Math.abs(lead.y - p.y) > CONFIG.height.reach + 1)) {
+          p.x = lead.x - Math.sin(lead.yaw) * 1.5; p.z = lead.z - Math.cos(lead.yaw) * 1.5; p.y = lead.y;
+          p.vx = p.vy = p.vz = p.kx = p.kz = 0; p.savePrev();
+        }
+      }
+    }
+  }
+  // A chase camera behind the bot, facing its fight, for teammates who spectate it (the same view format browsers send).
+  function botView(b) {
+    const p = b.body, t = b.brain.target, want = t ? Math.atan2(t.x - p.x, t.z - p.z) : p.yaw;
+    b.camYaw = b.camYaw === undefined ? want : b.camYaw + angDiff(want, b.camYaw) * 0.12;
+    const fx = Math.sin(b.camYaw), fz = Math.cos(b.camYaw);
+    const pos = [p.x - fx * 6.5, p.y + 3.4, p.z - fz * 6.5], dx = p.x + fx - pos[0], dy = p.y + 1.2 - pos[1], dz = p.z + fz - pos[2];
+    const yaw = Math.atan2(-dx, -dz), pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2), sp = Math.sin(pitch / 2), cp = Math.cos(pitch / 2);
+    return { position: pos, quaternion: [cy * sp, sy * cp, -sy * sp, cy * cp], fov: CONFIG.camera.fov };
+  }
+  function botFrames() {
+    return [...bots.values()].filter(b => b.body).map(b => {
+      const p = b.body;
+      return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
+        attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
+        walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
+        vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
+        landTime: p.landTime, stunTime: p.stunTime, view: p.alive() ? botView(b) : null, id: b.id, name: b.name, bot: true, poseSeq: ++b.poseSeq };
+    });
+  }
+  const botList = () => [...bots.values()].map(b => ({ id: b.id, name: b.name, ready: true, hp: b.body ? b.body.hp : null, bot: true }));
+  const botsDown = () => [...bots.values()].every(b => !b.body || !b.body.alive());
   function registerPlayer(id, name) {
     if (results) return;
     const row = damage.get(id);
@@ -143,6 +274,7 @@ globalThis.host = (() => {
   function tick(dt, holdSimulation = false) {
     time += dt;
     if (holdSimulation) return;
+    updateBots(dt); flyBolts(dt);
     const living = players.filter(p => p.alive());
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
@@ -257,12 +389,12 @@ globalThis.host = (() => {
     const e = enemy(msg.enemy);
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
   }
-  return { catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
     // Test harnesses can inspect state without giving public clients a debug API.
-    inspect: () => ({ Game, world, players, crowd }),
+    inspect: () => ({ Game, world, players, crowd, bot, bots }),
   };
 })();

@@ -8,6 +8,7 @@ const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { coun
 class Player {
   constructor(def, x, z, yaw, y = 0) {
     this.def = def;
+    this.ctl = typeof input !== 'undefined' ? input : null;   // where presses come from: the keyboard/pad, or a bot's hands (js/bot.js)
     this.rig = new Rig(def.look);
     this.radius = def.radius; this.height = BODY_HEIGHT * def.look.scale;
     this.maxHp = def.stats.maxHp; this.maxStamina = def.stats.maxStamina; this.maxPoise = def.stats.maxPoise;
@@ -49,7 +50,7 @@ class Player {
   }
   // A stamina action pressed while exhausted: swallowed, and announced so the HUD can say why nothing happened.
   refuseIfExhausted(actions) {
-    if (this.canAct() || !actions.some(a => input.consume(a))) return;
+    if (this.canAct() || !actions.some(a => this.ctl.consume(a))) return;
     events.emit('staminaDenied', { player: this });
   }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
@@ -70,7 +71,7 @@ class Player {
   wantsRoll() {
     const buffered = this.buffer && this.buffer.action === 'roll';
     if (!this.canRoll()) { if (buffered) this.buffer = null; return false; }
-    return buffered || input.consume('roll');
+    return buffered || this.ctl.consume('roll');
   }
   // Seconds until `action` (roll or a ground attack) could come out of the current state; Infinity if it cannot.
   untilAllowed(action) {
@@ -93,7 +94,7 @@ class Player {
     if (this.buffer && (this.buffer.time -= CONFIG.step) <= 0) this.buffer = null;
     if (!this.in('buffers')) return;
     for (const action of ['roll', ...Object.keys(this.def.moveset.ground)]) {
-      if (!input.consume(action)) continue;
+      if (!this.ctl.consume(action)) continue;
       const wait = this.untilAllowed(action);
       if (wait <= C.bufferWindow) this.buffer = { action, time: wait + C.bufferGrace };
     }
@@ -148,19 +149,19 @@ class Player {
     // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js). It costs
     // no stamina, so it comes before the exhaustion check: even an exhausted player can execute.
     const victim = execution.target(this, enemies);
-    if (victim && ((this.buffer && this.buffer.action === 'light') || input.consume('light'))) { execution.start(this, victim); return true; }
+    if (victim && ((this.buffer && this.buffer.action === 'light') || this.ctl.consume('light'))) { execution.start(this, victim); return true; }
     this.refuseIfExhausted(['roll', 'parry', 'jump', ...Object.keys(M.ground)]);
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
-    if (this.canAct() && input.consume('parry')) { this.startParry(); return true; }
+    if (this.canAct() && this.ctl.consume('parry')) { this.startParry(); return true; }
     const queued = this.buffer && this.buffer.action;
     for (const action of Object.keys(M.ground)) {
-      if (this.canAct() && (queued === action || input.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
+      if (this.canAct() && (queued === action || this.ctl.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
     for (const [id, item] of Object.entries(ITEMS)) {
-      if (this.item(id).count > 0 && input.consume(item.action)) { this.useItem(id); return true; }
+      if (this.item(id).count > 0 && this.ctl.consume(item.action)) { this.useItem(id); return true; }
     }
-    if (this.canAct() && input.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
-    if (input.isHeld('block')) { this.setState(PS.BLOCK); return true; }
+    if (this.canAct() && this.ctl.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
+    if (this.ctl.isHeld('block')) { this.setState(PS.BLOCK); return true; }
     return false;
   }
 
@@ -196,7 +197,7 @@ class Player {
       case PS.JUMP:
       case PS.FALL: {
         if (this.canAct()) {
-          const action = Object.keys(M.air).find(a => input.consume(a));
+          const action = Object.keys(M.air).find(a => this.ctl.consume(a));
           if (action) {
             this.beginAttack(M.attacks[M.air[action]], mv, face, enemies);
             this.activeAt = Infinity;   // stateTime when the hitbox opened
@@ -246,14 +247,14 @@ class Player {
         // Heavy charge: held at `at` of the wind-up for up to `hold` s while the button stays down; released, it
         // carries on, harder by how long it was held.
         if (ch && this.charge === 1) {
-          if (input.isHeld(ch.action) && this.chargeT < ch.hold) {
+          if (this.ctl.isHeld(ch.action) && this.chargeT < ch.hold) {
             this.chargeT = Math.min(ch.hold, this.chargeT + dt);
             if (this.chargeT >= ch.hold) events.emit('chargeFull', { actor: this, attack: a });
           } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold); }
         }
         if (this.charge !== 1) this.attackT += dt;
         if (ch && this.charge === 0 && this.attackT >= a.hits[0].startup * ch.at) {
-          if (input.isHeld(ch.action)) { this.attackT = a.hits[0].startup * ch.at; this.charge = 1; } else this.charge = 2;
+          if (this.ctl.isHeld(ch.action)) { this.attackT = a.hits[0].startup * ch.at; this.charge = 1; } else this.charge = 2;
         }
         const tl = attackTimeline(a, this.attackT), prev = attackTimeline(a, t0);
         emitAttackEvents(this, a, t0, this.attackT);
@@ -285,10 +286,10 @@ class Player {
         this.refuseIfExhausted(['roll']);
         if (this.wantsRoll()) { this.startRoll(mv); break; }   // roll straight out of a guard
         // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
-        if (input.consume('parry')) {
+        if (this.ctl.consume('parry')) {
           if (this.canAct() && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
         }
-        if (!input.isHeld('block')) this.setState(PS.IDLE);
+        if (!this.ctl.isHeld('block')) this.setState(PS.IDLE);
         break;
       }
       case PS.PARRY: {

@@ -87,7 +87,7 @@ const execution = (() => {
   // One fixed step of PS.EXECUTE (from Player.update).
   function update(p, dt) {
     const X = p.exec, e = X.enemy, a = p.attack, C = CONFIG.execution;
-    for (const action of SWALLOWED) input.consume(action);   // dodge, attack and the rest wait until it is over
+    for (const action of SWALLOWED) p.ctl.consume(action);   // dodge, attack and the rest wait until it is over
     const t0 = p.attackT;
     p.attackT += dt;
     emitAttackEvents(p, a, t0, p.attackT);

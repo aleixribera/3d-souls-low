@@ -9,7 +9,7 @@
     heartbeat: 15000, idleTimeout: 45000, connectTimeout: 10000,
     messagesPerSecond: 100, maxName: 24, maxCoordinate: 100000,
     maxCharge: 1, respawnSpread: 0.85, remoteRange: 100, maxClaims: 2048,
-    targetHysteresis: 0.8, contactTolerance: 1.5,
+    targetHysteresis: 0.8, maxBots: 3, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000,

@@ -43,6 +43,7 @@ const multiplayer = (() => {
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
     <button id="lobbyManage" class="lobby-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button>
+    <button id="lobbyAddBot" hidden>Add a friendly bot</button><p id="lobbyBotHint" class="lobby-hint" hidden></p>
     </section></div>
     <footer class="lobby-footer"><div class="lobby-actions"><button id="lobbyHelp" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
     <button id="lobbyOptions">Options</button></div><button id="lobbyLeave" class="lobby-text-button">Leave lobby</button></footer>
@@ -91,6 +92,9 @@ const multiplayer = (() => {
     #publicLobby .lobby-player:before{content:attr(data-initial);flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#2b2f2c;border:1px solid #ffffff1f;color:#d8d3c2;font:600 13px/1 system-ui}
     #publicLobby .lobby-player[data-self=true]{border-color:#c9a96a55;background:#dcbb740d}#publicLobby .lobby-player[data-self=true]:before{background:#3a321f;border-color:var(--mp-gold);color:var(--mp-gold-hi)}
     #publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #publicLobby .lobby-player[data-bot=true]:before{background:#23312c;border-color:#a9cf8e66;color:var(--mp-good)}
+    #publicLobby .lobby-player-role.bot{background:#a9cf8e;}#publicLobby #lobbyAddBot{width:100%;margin-top:8px;border-style:dashed}
+    #publicLobby .lobby-bot-remove{font-size:11px;padding:4px 10px;min-height:32px;margin-left:auto}
     #publicLobby .lobby-player-role{font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:#1d180e;background:var(--mp-gold);border-radius:999px;padding:2px 8px}
     #lobbyPlayers{max-height:200px;overflow:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent;margin:16px 0 6px}
     #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px;padding-left:40px}#publicLobby.managing-party .lobby-player-actions{display:flex}
@@ -304,7 +308,7 @@ const multiplayer = (() => {
     const players = roster.map(p => {
       const state = p.id === self ? Game.player : remotes.get(p.id)?.samples.at(-1);
       const hp = state?.hp ?? p.hp;
-      return { id: p.id, hp, name: p.name + (p.id === self ? ' (you)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
+      return { id: p.id, hp, name: p.name + (p.id === self ? ' (you)' : p.bot ? ' (bot)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
     });
     const signature = JSON.stringify(players.map(({ id, name, status }) => ({ id, name, status }))), pane = el('onlineAlive');
     if (pane.dataset.players !== signature) {
@@ -682,18 +686,31 @@ const multiplayer = (() => {
     el('lobbyReturn').disabled = !session || !!controlPending;
     el('lobbyStart').disabled = !connected || !!controlPending;
     el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start new adventure' : 'Start together';
-    el('lobbyManage').hidden = !owner || roster.length < 2;
+    el('lobbyManage').hidden = !owner || roster.filter(p => !p.bot).length < 2;
+    const botCount = roster.filter(p => p.bot).length;
+    el('lobbyAddBot').hidden = !owner; el('lobbyAddBot').disabled = !connected || botCount >= C.maxBots;
+    el('lobbyBotHint').hidden = !owner;
+    el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : 'Bots fight beside you with the same moves: rolls, parries, combos and executions.';
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
     el('lobbyWaiting').firstElementChild.textContent = session ? 'Your party is already in an adventure. Jump back in when you are ready.' : 'The leader chooses the adventure and starts for everyone.';
     updateConnection(); adventureSummary();
-    const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name]), self, leader, owner });
+    const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name, !!p.bot]), self, leader, owner });
     if (signature !== rosterSignature) {
       rosterSignature = signature; el('lobbyPlayers').textContent = '';
       for (const p of roster) {
         const row = document.createElement('div'); row.className = 'lobby-player';
-        row.dataset.self = String(p.id === self); row.dataset.initial = ([...p.name.trim()][0] || '?').toUpperCase();
+        row.dataset.self = String(p.id === self); row.dataset.bot = String(!!p.bot); row.dataset.initial = ([...p.name.trim()][0] || '?').toUpperCase();
         const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
         if (p.id === leader) { const role = document.createElement('span'); role.className = 'lobby-player-role'; role.textContent = 'Leader'; row.appendChild(role); }
+        if (p.bot) {
+          const role = document.createElement('span'); role.className = 'lobby-player-role bot'; role.textContent = 'Bot'; row.appendChild(role);
+          if (owner) {
+            const button = document.createElement('button'); button.className = 'lobby-bot-remove'; button.textContent = 'Remove';
+            button.setAttribute('aria-label', `Remove bot: ${p.name}`); button.dataset.padKey = 'removeBot/' + p.id;
+            button.onclick = () => control('removeBot', { player: p.id }); row.appendChild(button);
+          }
+          el('lobbyPlayers').appendChild(row); continue;
+        }
         const actions = document.createElement('div'); actions.className = 'lobby-player-actions'; row.appendChild(actions);
         if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
           const button = document.createElement('button'); button.textContent = text;
@@ -845,7 +862,7 @@ const multiplayer = (() => {
       }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
-      r.name.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
+      r.name.textContent = s.name + (s.bot ? ' · Bot' : '') + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
       updateAllyHealth(r.health, s.hp, s.name);
     }
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
@@ -1054,6 +1071,7 @@ const multiplayer = (() => {
     if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
+  el('lobbyAddBot').onclick = () => control('addBot');
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
   el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
   function lobbyMove(direction) {
