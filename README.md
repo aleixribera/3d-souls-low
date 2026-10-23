@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.10.2: Boss group tip
+# Combat Arena 3D — v7.12.0: Boss vs Boss
+
+**v7.12.0:** 1v1 Arena → **Boss vs Boss** lets you build two teams of up to six bosses and watch them fight. Choose from all 12 bosses, add multiple copies, and remove bosses by selecting their team entry. Bosses target and damage only the opposing team, using their normal moves and phases. Team health bars, an automatic spectator camera, rematches and team editing are included. See [the notes](docs/boss-vs-boss-v7.12.0.md).
 
 **v7.10.2:** Fights against several bosses at once show a BOSSES tip beside the HEALING one: how many bosses still stand and the switch-target key. It hides once one boss remains.
 

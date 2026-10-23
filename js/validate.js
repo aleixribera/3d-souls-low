@@ -28,6 +28,13 @@ function validateData() {
     need([c.name, c.image, c.alt, c.look].every(v => typeof v === 'string' && v.length), `Quality choice ${c.id}: missing preview or label.`);
   }
   const num = v => typeof v === 'number' && Number.isFinite(v);
+  need(BOSS_TEAMS.length === 2 && new Set(BOSS_TEAMS.map(t => t.id)).size === 2,
+    'Boss battle needs two teams with unique string ids.');
+  for (const t of BOSS_TEAMS) need(typeof t.id === 'string' && typeof t.name === 'string' && /^#[0-9a-f]{6}$/i.test(t.color) && [-1, 1].includes(t.side),
+    `Boss battle team ${t.id}: invalid name, color or side.`);
+  need(CONFIG.bossBattle.maxTeam === 6, 'Boss battle team limit must be six.');
+  for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
+  for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
   const checkAttack = (a, owner) => {
     const tag = `${owner} attack "${a && a.id}"`;
     need(a && typeof a.id === 'string', `${owner}: an attack has no id.`);

@@ -91,6 +91,7 @@ const hud = {
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
   },
   reset(game) {
+    this.root.classList.toggle('boss-battle', game.kind === 'bossBattle');
     this.controlsTipsTimer = CONFIG.hud.controlsTipsTime;
     this.controlsTips.hidden = true;
     this.healingTip.hidden = true;
@@ -159,10 +160,10 @@ const hud = {
     camera.updateMatrixWorld();
     let n = 0;
     for (const e of game.enemies) {
-      if (!e.alive() || !e.awake() || e.asleep || (e.training && !(e.def.stagger && e.def.stagger.showBar)) || e.def.posture) continue;
+      if (!e.alive() || !e.awake() || e.asleep || (e.training && !(e.def.stagger && e.def.stagger.showBar)) || e.def.posture && game.kind !== 'bossBattle') continue;
       if (e.in('unaware') && e.hp >= e.def.hp && e !== game.lock) continue;   // untouched and unaware: no bar yet
       const q = e.rig.root.position;
-      if (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e)) continue;
+      if (game.kind !== 'bossBattle' && (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e))) continue;
       v.set(q.x, q.y + e.height + F.tagGap, q.z).project(camera);
       if (v.z >= 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
       let t = this.tags[n++];
@@ -189,6 +190,8 @@ const hud = {
       const trail = t.lag.update(eh, dt);
       t.hp.style.width = eh * 100 + '%'; t.trail.style.width = trail * 100 + '%';
       t.el.classList.toggle('locked', e === game.lock);
+      t.el.dataset.team = game.kind === 'bossBattle' ? e.team : '';
+      t.el.dataset.name = game.kind === 'bossBattle' ? `${bossBattle.team(e.team).name} · ${e.def.name}` : '';
       t.el.style.transform = at;
       t.el.style.display = 'block';
     }
@@ -311,6 +314,7 @@ const hud = {
       `${Math.abs(angle) > CONFIG.tutorial.restGuide.behindAngle ? 'Turn around · ' : ''}Bonfire · ${Math.ceil(distance)} m`;
   },
   update(game, dt) {
+    if (game.kind === 'bossBattle') { this.updateTags(game, dt); bossBattle.drawHud(game); return; }
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
     const p = game.player;
     this.clock += dt;

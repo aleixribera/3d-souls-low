@@ -122,9 +122,20 @@ const projectiles = (() => {
         const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt;
         b.age += dt;
         const wall = stop(b.x, b.y, b.z, dx, dy, dz);
-        const hitT = p.alive() && !b.passed ? meets(p, b.x, b.y, b.z, dx, dy, dz, p.radius + b.size) : null;
+        // A team bolt can hit the first opposing body along its flight; allies and the spectator are transparent.
+        let target = p, hitT = null;
+        if (game.kind === 'bossBattle') {
+          for (const e of game.enemies) if (e.team !== b.owner.team && e.alive() && !e.invulnerable()) {
+            const t = meets(e, b.x, b.y, b.z, dx, dy, dz, e.radius + b.size);
+            if (t !== null && (hitT === null || t < hitT)) { target = e; hitT = t; }
+          }
+        } else hitT = p.alive() && !b.passed ? meets(p, b.x, b.y, b.z, dx, dy, dz, p.radius + b.size) : null;
         if (hitT !== null && hitT <= wall) {
           const at = { x: b.x + dx * hitT, y: b.y + dy * hitT, z: b.z + dz * hitT };
+          if (game.kind === 'bossBattle') {
+            applyEnemyStrike(game, b.strike, b.owner, target, at, true, { x: b.x, z: b.z });
+            this.kill(b); continue;
+          }
           if (p.invulnerable()) { b.passed = true; if (p.state === PS.ROLL) events.emit('dodge', { attacker: b.owner, strike: b.strike, projectile: true }); }   // rolled through: it flies on
           else {
             const res = p.takeHit(b.strike, { x: b.x, z: b.z });   // from where the bolt came: blocks need it in front

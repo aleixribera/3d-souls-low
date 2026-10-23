@@ -3,10 +3,15 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.11.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.12.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
+  bossBattle: {
+    maxTeam: 6, notice: 100, spacing: 4, startX: 7, rowWidth: 20,
+    victoryTime: 2.5,
+    camera: { rate: 4, margin: 5, minDistance: 16, elevation: 0.85, lookHeight: 1.5 },
+  },
   gravity: 30,
   input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {

@@ -295,7 +295,7 @@
     expect.ok(roads.filter(i => i.name === 'New').map(i => i.campaign).join() === 'ashmere,lands' && roads.at(-1).name === 'Back', 'only Ashmere and Lands offer New on the same screen');
     expect.ok(Object.keys(A.story.campaigns).join() === 'ashmere,lands' && Object.keys(CONFIG.story.saveKeys).join() === 'ashmere,lands', 'only the two campaigns have story and save registrations');
     const arena = Game.screens().arena.items.map(i => i.name);
-    expect.ok(arena.join() === 'Enemies,Bosses,Elden Ring Bosses,Back', `arena: ${arena}`);
+    expect.ok(arena.join() === 'Enemies,Bosses,Elden Ring Bosses,Boss vs Boss,Back', `arena: ${arena}`);
     const enemies = Game.screens().enemies.items.map(i => i.name), bosses = Game.screens().bosses.items.map(i => i.name);
     expect.ok(!enemies.includes('Aldric, the Gaoler King') && bosses.includes('Aldric, the Gaoler King') && bosses.includes('Giant Skeleton'), 'the Ashmere bosses apart');
     expect.ok(['Omenkin', 'Cleanrot Knight', 'Golden Zealot'].every(n => enemies.includes(n)), 'the new enemies are in the Enemies list');

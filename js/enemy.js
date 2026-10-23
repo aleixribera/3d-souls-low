@@ -27,7 +27,7 @@ const REACTIONS = {
   behind: (e, p, rel) => Math.abs(rel) > CONFIG.ai.reactions.behind,
   flank: (e, p, rel) => rel > CONFIG.ai.reactions.flank[0] && rel < CONFIG.ai.reactions.flank[1],
   healing: (e, p) => p.state === PS.USE_ITEM,
-  staggered: (e, p) => p.state === PS.STAGGER,
+  staggered: (e, p) => p.state === PS.STAGGER || p.state === ES.STAGGER || p.state === ES.BROKEN,
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
   struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
 };
@@ -158,6 +158,7 @@ class Enemy {
   setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
+  isAttacking() { return this.in('attacking'); }
   awake() { return !this.in('hidden'); }   // visible and engaged enough to be a target
   // Has noticed the player and is fighting it (alive, not a training dummy, not unaware or asleep).
   fightingPlayer() { return this.alive() && !this.training && !this.in('unaware') && this.state !== ES.DORMANT; }

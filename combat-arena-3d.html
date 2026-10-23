@@ -336,6 +336,41 @@
   #hud.narrow #died .big { font-size: 48px; letter-spacing: 8px; }
   #hud.narrow #complete .big { font-size: 34px; letter-spacing: 6px; }
   #hud.narrow #won .big, #hud.narrow #tutDone, #hud.narrow #rested { font-size: 26px; letter-spacing: 6px; }
+  /* Boss team builder: two rosters, with shared start/back actions below them. */
+  #menu.boss-team-menu #menuBox { padding-top: 7vh; }
+  #menu.boss-team-menu h1 { font-size: clamp(28px, 6vw, 70px); }
+  #menu.boss-team-menu .sub { letter-spacing: 2px; font-size: 12px; }
+  #menu.boss-team-menu #menuList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch; gap: 3px 18px; max-width: 880px; max-height: none; flex-shrink: 1;
+    mask-image: none; -webkit-mask-image: none; padding: 10px 0; }
+  #menu.boss-team-menu .menuBtn { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #ffffff12; background: #ffffff04; }
+  #menu.boss-team-menu .menuBtn .n { font-size: clamp(13px, 1.7vw, 18px); overflow-wrap: anywhere; }
+  #menu.boss-team-menu .menuBtn::before { width: 100%; left: 0; margin-left: 0; }
+  #menu.boss-team-menu [data-team="a"] { grid-column: 1; color: #80c9ed; }
+  #menu.boss-team-menu [data-team="b"] { grid-column: 2; color: #efab7b; }
+  #menu.boss-team-menu .menuBtn:not([data-team]) { grid-column: 1 / -1; }
+  .menuBtn.unavailable { opacity: 0.5; cursor: default; }
+  #hud.boss-battle #stage { display: none; }
+  #bossBattleHud { display: none; }
+  #hud.boss-battle #bossBattleHud { display: flex; justify-content: space-between; gap: 30px;
+    position: absolute; inset: 22px 3vw auto; pointer-events: none; color: #eee5d5; font-family: inherit; }
+  #bossBattleHud section { width: min(300px, 36vw); padding: 12px; background: #0c0d10c9; border-top: 2px solid var(--team-color); }
+  #bossBattleHud h2 { margin: 0 0 12px; color: var(--team-color); font-size: 15px; letter-spacing: 2px; text-transform: uppercase; }
+  .battle-health { margin-top: 8px; font-size: clamp(10px, 1.2vw, 13px); }
+  .battle-health-track { height: 4px; margin-top: 4px; background: #ffffff18; }
+  .battle-health-track > div { height: 100%; background: var(--team-color); }
+  .battle-health.defeated { opacity: 0.4; }
+  #bossBattleHud .battle-hint { position: fixed; bottom: 22px; left: 5vw; right: 5vw; text-align: center;
+    font-size: 12px; color: #e4d6bc; text-shadow: 0 1px 3px #000; }
+  .eTag[data-team="a"], .eTag[data-team="b"] { overflow: visible; }
+  .eTag[data-team="a"] .hp { background: #80c9ed; }
+  .eTag[data-team="b"] .hp { background: #efab7b; }
+  .eTag[data-team="a"]::after, .eTag[data-team="b"]::after { content: attr(data-name); position: absolute;
+    bottom: 10px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #fff; text-shadow: 0 1px 3px #000; }
+  @media (max-height: 650px) { #menu.boss-team-menu #menuBox { padding-top: 3vh; padding-bottom: 80px; }
+    #menu.boss-team-menu .menuBtn { padding: 6px; min-height: 30px; }
+    #hud.boss-battle #bossBattleHud { top: 10px; } #bossBattleHud section { padding: 6px; }
+    #bossBattleHud h2 { margin-bottom: 6px; } .battle-health { margin-top: 5px; } }
 </style>
 <script>
   // Load guard (plain script, runs even if the game module never does): if the game fails to start
@@ -494,6 +529,7 @@ const GAME_FILES = [
   'data/boss-fx.js',
   'data/lands-enemies.js',
   'levels/arena.js',
+  'data/boss-battle.js',
   'levels/tutorial.js',
   'levels/long-hall.js',
   'levels/sunken-keep.js',
@@ -566,12 +602,13 @@ const GAME_FILES = [
   'bonfire-guidance.js',
   'effect-lighting.js',
   'elden.js',
+  'boss-battle.js',
   'quality-benchmark.js',
   'autoquality.js',
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.11.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.12.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

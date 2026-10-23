@@ -113,6 +113,34 @@ function resolveCombat(game) {
   }
 }
 
+// Boss team combat uses the same hitboxes, shields, posture, damage and phase transitions as a duel.
+// Capture active hitboxes before applying damage so simultaneous opposing swings can trade.
+function applyEnemyStrike(game, strike, attacker, target, at, projectile = false, from = attacker) {
+  const res = target.takeHit(strike, from);
+  if (attacker.def.lifesteal) attacker.lifesteal();
+  game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
+  events.emit('strike', { strike, attacker, target, at, blocked: !!res.blocked, projectile });
+  if (res.broke) {
+    game.hitstop = Math.max(game.hitstop, (target.def.posture || target.def.guard || target.def.stagger).hitstop);
+    events.emit('postureBreak', { enemy: target });
+  }
+  return res;
+}
+function resolveTeamCombat(game) {
+  const hits = [];
+  for (const e of game.enemies) if (e.alive() && e.hitbox) {
+    const hb = e.hitbox;
+    for (const target of game.enemies) if (target !== e && target.team !== e.team && target.alive() &&
+      !target.invulnerable() && hb.overlaps(target) && !gateBetween(e, target)) hits.push({ hb, target });
+  }
+  for (const { hb, target } of hits) {
+    if (!target.alive() || target.invulnerable()) continue;
+    hb.markHit(target);
+    const c = hb.center(), at = { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
+    applyEnemyStrike(game, hb.payload, hb.owner, target, at);
+  }
+}
+
 // Bodies cannot overlap; enemies barely give way to the player, and dummies never do.
 function separatePair(a, b, shareA) {
   if (b.immovable) shareA = 1; else if (a.immovable) shareA = 0;

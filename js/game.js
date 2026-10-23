@@ -45,13 +45,13 @@ const Game = {
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
-          const back = this.eldenBoss ? 'elden' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
-          this.eldenBoss = null; this.reset(); this.showMenu(back); } },
+          const back = this.kind === 'bossBattle' ? 'bossBattle' : this.eldenBoss ? 'elden' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
+          this.eldenBoss = null; if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
     const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
     const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
     return {
-      ...S.screens, ...elden.screens(this),
+      ...S.screens, ...elden.screens(this), ...bossBattle.screens(this),
       tutorialQuality: { title: 'CHOOSE YOUR QUALITY', sub: 'Pick the look you prefer. You can change it later in Options.',
         back: this.tutorialQualityBack || 'story',
         items: QUALITY_CHOICES.map(choice => ({ ...choice, desc: choice.systems, go: () => {
@@ -85,6 +85,7 @@ const Game = {
         { name: 'Enemies', desc: 'The common foes of both roads, one at a time.', go: () => this.showMenu('enemies') },
         { name: 'Bosses', desc: 'The bosses of Ashmere: the Giant Skeleton, the Pillager Captain, the Bell Warden and Aldric.', go: () => this.showMenu('bosses') },
         elden.mainItem(this),
+        { name: 'Boss vs Boss', desc: 'Build two teams of up to six bosses and watch them battle.', go: () => this.showMenu('bossBattle') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'arena',
         items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
@@ -133,6 +134,7 @@ const Game = {
     if (document.pointerLockElement) document.exitPointerLock();
     $('menu').classList.toggle('quality-choice', screen === 'tutorialQuality');
     $('menu').classList.toggle('story-menu', screen === 'story');
+    $('menu').classList.toggle('boss-team-menu', screen === 'bossBattle');
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
@@ -148,6 +150,9 @@ const Game = {
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
       if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
       if (it.label) b.setAttribute('aria-label', it.label);
+      if (it.team) b.dataset.team = it.team;
+      if (it.row) b.style.gridRow = it.row;
+      if (it.disabled) { b.setAttribute('aria-disabled', 'true'); b.classList.add('unavailable'); }
       if (screen === 'tutorialQuality') {
         const frame = document.createElement('span'); frame.className = 'quality-image';
         const img = document.createElement('img'); img.src = it.image; img.alt = it.alt; img.width = 800; img.height = 600;
@@ -165,7 +170,7 @@ const Game = {
         a.addEventListener('click', ev => { ev.stopPropagation(); this.select(i); this.adjust(d); });
         b.appendChild(a);
       }
-      b.addEventListener('click', () => { this.select(i); if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); });
+      b.addEventListener('click', () => { this.select(i); this.confirm(); });
       // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it.
       b.addEventListener('mousemove', ev => {
         if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
@@ -173,7 +178,7 @@ const Game = {
       });
       list.appendChild(b);
     });
-    this.select(keepSelection ? this.selected : 0, true);
+    this.select(keepSelection ? this.selected : Math.max(0, s.items.findIndex(it => !it.disabled)), true);
   },
   // Key or button names follow the device used last, so this is redone when it changes.
   showMenuHint() {
@@ -203,7 +208,7 @@ const Game = {
     $('menuDesc').textContent = it ? it.desc || '' : '';
     $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
-  confirm() { const it = (this.menuItems || [])[this.selected]; if (!it) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
+  confirm() { const it = (this.menuItems || [])[this.selected]; if (!it || it.disabled) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
   adjust(d) {
     const it = this.menuItems[this.selected];
     if (!it || !it.adjust) return;
@@ -351,6 +356,7 @@ const Game = {
     return { ...base, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw };
   },
   makeEnemies() {
+    if (this.kind === 'bossBattle') return bossBattle.spawn(this);
     if (this.kind === 'arena') {
       const s = this.level.enemyStart, ids = [this.duelId, ...this.duelPartners];
       // A group stands in a line across the arena, `groupSpacing` apart, kept within `groupWidth`.
@@ -369,6 +375,7 @@ const Game = {
   },
   // Full restart of the current fight or level.
   reset() {
+    if (this.kind === 'bossBattle') bossBattle.reset();
     // Keep the old materials alive only until the replacement rigs are prepared: disposing them first evicts
     // their shared WebGL programs and makes retries compile the same shaders again. Nothing survives this load.
     const retired = this.clearActors(true);
@@ -395,6 +402,7 @@ const Game = {
         return;
       }
       this.enemies = this.makeEnemies();
+      if (this.kind === 'bossBattle') this.updateCamera(0, true);
       if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
       visuals.warmUp(this.cam);   // include enemies: prepare their shadows and materials behind the loading screen
     } finally { for (const b of retired) b.rig.dispose(); }
@@ -805,6 +813,7 @@ const Game = {
     return Math.min(Math.max(y, (floor > -Infinity ? floor : base) + K.floor), ceil - K.ceilingMargin);
   },
   updateCamera(dt, snap) {
+    if (this.kind === 'bossBattle') { bossBattle.updateCamera(this, dt, snap); return; }
     const K = CONFIG.camera, Z = CONFIG.zoom, Lk = CONFIG.lock, W = world, p = this.player, c = this.cam;
     const k = snap ? 1 : 1 - Math.exp(-K.followRate * dt);
     c.zoom += (this.zoomTarget - c.zoom) * (snap ? 1 : 1 - Math.exp(-Z.rate * dt));
@@ -900,6 +909,7 @@ const Game = {
   // body separation, combat, deaths, level gates or tutorial, camera.
   update(dt) {
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); return; }
+    if (this.kind === 'bossBattle') { bossBattle.update(this, dt); return; }
     const p = this.player, c = this.cam;
     p.savePrev(); for (const e of this.enemies) e.savePrev();
     c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
@@ -953,9 +963,11 @@ const Game = {
                        yaw: b.pyaw + angDiff(b.yaw, b.pyaw) * alpha });
     const placed = [p, ...this.enemies].map(b => [b, at(b)]);
     for (const [b, q] of placed) {
+      if (b === p && this.kind === 'bossBattle') { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       if (b.asleep) { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       b.rig.place(q.x, q.y, q.z, q.yaw, world.groundAt(q.x, q.z, q.y + 0.05));
-      b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: p.x, pz: p.z });
+      const looking = this.kind === 'bossBattle' && b.battleTarget || p;
+      b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: looking.x, pz: looking.z });
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
     if (this.shake > 0) {
