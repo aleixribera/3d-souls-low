@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.10.1: Lobby redesign
+# Combat Arena 3D — v7.10.2: Boss group tip
+
+**v7.10.2:** Fights against several bosses at once show a BOSSES tip beside the HEALING one: how many bosses still stand and the switch-target key. It hides once one boss remains.
 
 **v7.10.1:** The online lobby, party panel, nameplates, damage leaderboard, spectator bar and TEAM WIPED screen are redesigned with one consistent look. See [the notes](docs/lobby-redesign-v7.10.1.md).
 

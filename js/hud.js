@@ -36,6 +36,7 @@ const hud = {
   tutGuide: $('tutGuide'), tutGuideArrow: $('tutGuideArrow'), tutGuideText: $('tutGuideText'), guideForward: new THREE.Vector3(),
   help: $('help'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
   healingTip: $('healingTip'), healingTipText: $('healingTipText'), healingTipState: 'pending',
+  groupTip: $('groupTip'), groupTipCount: $('groupTipCount'), groupTipText: $('groupTipText'),
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
@@ -44,6 +45,7 @@ const hud = {
   buildTexts(game) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.connected, run = online && multiplayer.gauntlet;
     this.healingTipText.textContent = `Press ${keycap(bindLabel('flask'))} to heal`;
+    this.groupTipText.textContent = `Press ${keycap(bindLabel('switchTarget'))} to switch target`;
     this.controlsTipsRows.textContent = '';
     const basics = [
       ['Attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
@@ -93,6 +95,7 @@ const hud = {
     this.controlsTips.hidden = true;
     this.healingTip.hidden = true;
     this.healingTipState = 'pending';
+    this.groupTip.hidden = true;
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
     this.healTimer = this.hurtTimer = this.refundTimer = this.deniedTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
@@ -117,6 +120,10 @@ const hud = {
     this.healingTip.hidden = hidden || this.healingTipState === 'done' || this.controlsTipsTimer > 0 || p.hp >= p.hpCap() || p.item('flask').count <= 0 ||
       p.state === PS.USE_ITEM && p.usingItem === ITEMS.flask;
     if (!this.healingTip.hidden) this.healingTipState = 'active';
+    // Fights against several bosses at once: how many still stand, while more than one does.
+    const group = game.kind === 'arena' && game.duelPartners.length > 0, standing = group ? game.enemies.filter(e => e.alive()).length : 0;
+    this.groupTip.hidden = hidden || standing < 2;
+    if (!this.groupTip.hidden) this.groupTipCount.textContent = `${standing} of ${game.enemies.length} still stand`;
   },
 
   // ---- layout ----------------------------------------------------------------------------------
