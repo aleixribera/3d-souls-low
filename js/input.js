@@ -88,7 +88,7 @@ const input = {
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
 const DEFAULT_SETTINGS = Object.freeze({ sensitivity: 5, invert: false, hudScale: 1,
-  graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true });
+  graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true });
 function readSettings(value) {
   const clean = { ...DEFAULT_SETTINGS };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
@@ -98,6 +98,7 @@ function readSettings(value) {
   if (value.screenShake === false) clean.cameraMotion = false;
   for (const [key, min, max, step] of [['sensitivity', 1, 10, 1], ['hudScale', 0.7, 1.5, 0.1], ['volume', 0, 10, 1]])
     if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
+  if (clean.volume === 8) clean.volume = 5;
   if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;
   return clean;
 }

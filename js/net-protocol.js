@@ -12,9 +12,9 @@
     targetHysteresis: 0.8, maxBots: 3, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
-    leaderIdle: 5 * 60 * 1000, activityInterval: 1000,
+    leaderIdle: 5 * 60 * 1000, activityInterval: 1000, leaderInputGrace: 2000,
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
-    emptyLobbyTimeout: 60 * 1000,
+    loadTimeout: 30 * 1000, rememberedPlayers: 1024,
     defaultCampaign: 'lands',
     defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
     // Boss runs: `size` bosses fought together per encounter, in catalog order; `then` follows a full victory.

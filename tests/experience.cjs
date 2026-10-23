@@ -19,6 +19,9 @@ function options(raw, denied = false) {
   return { context, settings: plain(vm.runInContext('settings', context)) };
 }
 const defaults = options(null).settings;
+assert.equal(defaults.volume, 5);
+assert.equal(options('{"volume":8}').settings.volume, 5, 'the former volume of 8 is lowered to 5');
+assert.equal(options('{"volume":3}').settings.volume, 3, 'other saved volume choices remain intact');
 assert.ok(!('hitboxes' in defaults) && !('fps' in defaults) && !('screenShake' in defaults));
 for (const raw of ['null', '[]', '9', '"text"', '{broken']) assert.deepEqual(options(raw).settings, defaults);
 assert.deepEqual(options(null, true).settings, defaults, 'refused storage keeps usable defaults');

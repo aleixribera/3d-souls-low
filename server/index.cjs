@@ -2,7 +2,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, randomBytes } = require('node:crypto');
 const { WebSocketServer, WebSocket } = require('ws');
 const net = require('../js/net-protocol.js');
 const { createSimulation, build, root } = require('./headless.cjs');
@@ -13,10 +13,35 @@ function createServer(options = {}) {
   if (!Number.isInteger(capacity) || capacity < 2 || capacity > C.maxCapacity) throw new Error(`MAX_PLAYERS must be an integer from 2 to ${C.maxCapacity}`);
   const sim = createSimulation(), clients = new Map();
   const activityNow = options.activityNow || (() => performance.now());
-  const lobbyNow = options.lobbyNow || (() => performance.now());
-  let emptySince = null;
+  const loadNow = options.loadNow || (() => performance.now());
+  const memories = new Map(); // Private browser credentials; never included in roster or pose broadcasts.
+  const freshPose = p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000;
+  const participating = p => p.hello && p.foreground && (p.ready && p.pose ? freshPose(p) : performance.now() - p.loadingSince < C.loadTimeout);
+  function remember(p) {
+    if (!p.memory) return;
+    Object.assign(p.memory, { name: p.name, epoch: session?.epoch, pose: p.pose, arenaDefeated: !!p.arenaDefeated });
+  }
+  function identify(p, token) {
+    let memory = typeof token === 'string' && /^[a-f0-9]{64}$/.test(token) ? memories.get(token) : null;
+    if (!memory) {
+      if (memories.size >= C.rememberedPlayers) {
+        const oldest = [...memories].find(([, value]) => !clients.has(value.id));
+        if (oldest) memories.delete(oldest[0]);
+      }
+      token = randomBytes(32).toString('hex');
+      memory = { id: p.id, name: p.name }; memories.set(token, memory);
+    } else {
+      memories.delete(token); memories.set(token, memory);
+      const previous = clients.get(memory.id);
+      if (previous && previous !== p) { remember(previous); previous.ws.close(1008, 'You joined from another tab. Rejoin here to take over.'); }
+      clients.delete(p.id); p.id = memory.id; clients.set(p.id, p);
+      p.name = memory.name;
+      if (session && memory.epoch === session.epoch) { p.pose = memory.pose; p.arenaDefeated = memory.arenaDefeated; }
+    }
+    p.memory = memory; p.token = token;
+  }
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
-  let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false;
+  let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })).concat(sim.botList()) });
@@ -26,7 +51,7 @@ function createServer(options = {}) {
     const body = JSON.stringify(data); payloadBytes += Buffer.byteLength(body); p.ws.send(body);
   }
   function broadcast(data) { for (const p of clients.values()) send(p, data); }
-  const isActive = (p, now) => p?.hello && p.ws.readyState === WebSocket.OPEN
+  const isActive = (p, now) => p?.hello && p.foreground && (!session || participating(p) || now - p.lastActivity < C.leaderInputGrace) && p.ws.readyState === WebSocket.OPEN
     && Number.isFinite(p.lastActivity) && now - p.lastActivity < C.leaderIdle;
   function refreshLeader(reason = 'idle', now = activityNow()) {
     if (isActive(clients.get(leader), now)) return false;
@@ -34,7 +59,7 @@ function createServer(options = {}) {
     leader = [...clients.values()].find(p => isActive(p, now))?.id || null;
     if (previous === leader) return false;
     const next = clients.get(leader);
-    const prefix = previous ? reason === 'disconnect' ? 'The leader left. ' : 'The leader was inactive for five minutes. ' : '';
+    const prefix = previous ? reason === 'disconnect' ? 'The leader left. ' : clients.get(previous)?.foreground && (!session || participating(clients.get(previous))) ? 'The leader was inactive for five minutes. ' : 'The leader is away. ' : '';
     broadcast({ ...roster(), notice: prefix + (next ? `${next.name} is now the leader.` : 'No active leader. Press a key, move the mouse or use your controller to lead.') });
     return true;
   }
@@ -44,7 +69,11 @@ function createServer(options = {}) {
     p.lastActivity = now;
     if (!leader) refreshLeader('idle', now);
   }
-  const playerFrames = () => [...clients.values()].filter(p => p.ready && p.pose).map(p => ({ ...p.pose, id: p.id, name: p.name, poseSeq: p.poseSeq })).concat(session ? sim.botFrames() : []);
+  const playerFrames = () => [...clients.values()].filter(p => p.foreground && freshPose(p)).map(p => {
+    const pose = { ...p.pose };
+    for (const key of ['stamina', 'flasks', 'exhausted', 'staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']) delete pose[key];
+    return { ...pose, id: p.id, name: p.name, poseSeq: p.poseSeq };
+  }).concat(session ? sim.botFrames() : []);
   function sendFrame(p, frame, players) { if (p.hello && p.ready) send(p, p.encoder.encode({ ...frame, server: metrics }, players)); }
   function updateMetrics(now) {
     if (now - metricsAt < C.metricsInterval) return;
@@ -58,16 +87,12 @@ function createServer(options = {}) {
       bytesPerSecond: Math.round(payloadBytes / span), websocketBytesPerSecond: Math.round(written / span), bufferedBytes: buffered };
     metricsAt = now; ticks = 0; payloadBytes = 0; tickTimes = [];
   }
-  const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000).map(p => ({ ...p.pose, id: p.id })));
+  const syncPlayers = () => sim.setPlayers([...clients.values()].filter(p => p.foreground && freshPose(p)).map(p => ({ ...p.pose, id: p.id })));
   const error = (p, message) => send(p, { type: 'error', message });
   function stop(message, reason = null) {
-    session = null; emptySince = null;
+    session = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason }); broadcast(roster());
-  }
-  function expireEmptyLobby() {
-    if (session && emptySince !== null && lobbyNow() - emptySince >= C.emptyLobbyTimeout)
-      { sim.clearBots(); stop('The previous party left. Choose an adventure to start a fresh run.'); }
   }
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : null;
@@ -80,8 +105,8 @@ function createServer(options = {}) {
     if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
-    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); }
-    arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false;
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
+    arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow();
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); broadcast(roster());
   }
@@ -90,21 +115,25 @@ function createServer(options = {}) {
     if (msg.type === 'hello') {
       if (p.hello) return;
       if (msg.protocol !== C.protocol || msg.build !== build) { p.ws.close(1008, 'Game updated. Reload this page.'); return; }
-      // Check before welcoming the player: an expired run must never send a
-      // stale start packet, even if the interval has not processed expiry yet.
-      expireEmptyLobby(); emptySince = null;
-      p.name = net.name(msg.name) || p.name; p.hello = true;
+      identify(p, msg.token);
+      p.name = net.name(msg.name) || p.name; p.hello = true; p.foreground = msg.foreground !== false;
+      p.loadingSince = performance.now(); remember(p);
       if (session) sim.registerPlayer(p.id, p.name);
       noteActivity(p);
-      send(p, { id: p.id, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
-      if (session) send(p, { type: 'start', session });
+      send(p, { id: p.id, token: p.token, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
+      if (session) send(p, { type: 'start', session, resume: p.pose });
       broadcast(roster()); return;
     }
-    if (!p.hello) return;
+    if (!p.hello || clients.get(p.id) !== p) return;
+    if (msg.type === 'presence' && typeof msg.foreground === 'boolean') {
+      p.foreground = msg.foreground;
+      if (!refreshLeader('presence')) broadcast(roster());
+      return;
+    }
     // Poses, transport keepalives, loading and animation clocks are not input.
     if (msg.type === 'activity') { noteActivity(p); return; }
     if (msg.type === 'ping') { send(p, { type: 'pong', sent: msg.sent }); return; }
-    if (msg.type === 'name') { noteActivity(p); p.name = net.name(msg.name) || p.name; if (session) sim.registerPlayer(p.id, p.name); broadcast(roster()); return; }
+    if (msg.type === 'name') { noteActivity(p); p.name = net.name(msg.name) || p.name; remember(p); if (session) sim.registerPlayer(p.id, p.name); broadcast(roster()); return; }
     if (msg.type === 'control') {
       noteActivity(p);
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
@@ -137,6 +166,11 @@ function createServer(options = {}) {
       // Whitelist fields: remote data never becomes a Player object or arbitrary properties.
       const states = ['idle', 'walk', 'jump', 'fall', 'roll', 'attack', 'jumpAttack', 'land', 'block', 'parry', 'useItem', 'rest', 'hurt', 'stagger', 'dead', 'execute'];
       if (!states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > sim.playerMaxHp || s.stateTime < 0 || s.attackT < 0) return;
+      const limits = { stamina: sim.playerMaxStamina, flasks: sim.playerMaxFlasks, staminaDelay: C.maxCoordinate,
+        poise: sim.playerMaxPoise, poiseTimer: C.maxCoordinate, doomTime: C.maxCoordinate, doomDrain: sim.playerMaxHp };
+      if (Object.entries(limits).some(([key, max]) => s[key] !== undefined && (!net.finite(s[key], max) || s[key] < 0)) ||
+        s.flasks !== undefined && !Number.isInteger(s.flasks) || s.exhausted !== undefined && typeof s.exhausted !== 'boolean') return;
+      const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'stamina' ? sim.playerMaxStamina : key === 'flasks' ? sim.playerMaxFlasks : key === 'poise' ? sim.playerMaxPoise : 0);
       // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
       // shared session clears this player's defeat, including repeated ready messages.
       if (session.teamWipeOnly && (s.hp <= 0 || s.state === 'dead')) p.arenaDefeated = true;
@@ -147,9 +181,10 @@ function createServer(options = {}) {
         vx: net.finite(s.vx) ? s.vx : 0, vy: net.finite(s.vy) ? s.vy : 0, vz: net.finite(s.vz) ? s.vz : 0,
         activeAt: net.finite(s.activeAt) ? s.activeAt : -1, landTime: net.finite(s.landTime) ? s.landTime : 0,
         stunTime: net.finite(s.stunTime) ? s.stunTime : 0,
+        ...Object.fromEntries(Object.keys(limits).map(key => [key, resource(key)])), exhausted: s.exhausted ?? p.pose?.exhausted ?? false,
         view: net.cameraView(s.view) };
       if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
-      p.lastPose = performance.now(); p.poseSeq++; return;
+      p.lastPose = performance.now(); p.poseSeq++; remember(p); return;
     }
     if (!Number.isSafeInteger(msg.seq) || msg.seq <= p.lastSeq) return;
     p.lastSeq = msg.seq; syncPlayers();
@@ -216,7 +251,7 @@ function createServer(options = {}) {
     const p = { ws, id: randomUUID(), name: `Player ${clients.size + 1}`, hello: false, ready: false, pose: null,
       lastPose: 0, lastSeq: 0, claims: new Set(), alive: true, windowAt: performance.now(), count: 0,
       encoder: new net.FrameEncoder(), poseSeq: 0, lastWritten: 0 };
-    p.lastActivity = null;
+    p.lastActivity = null; p.foreground = true; p.loadingSince = performance.now();
     ws._socket.setNoDelay(true);
     clients.set(p.id, p);
     ws.on('pong', () => { p.alive = true; });
@@ -230,12 +265,8 @@ function createServer(options = {}) {
       try { message(p, msg); } catch (e) { console.error('Lobby message failed:', e); error(p, 'The server could not process that action.'); }
     });
     ws.on('close', code => {
-      clients.delete(p.id);
-      if (![...clients.values()].some(p => p.hello)) {
-        accumulator = 0;
-        if (p.hello && code === 1000) { stop('The party left. Choose an adventure to start a fresh run.'); sim.clearBots(); }
-        else if (session && emptySince === null) emptySince = lobbyNow();
-      }
+      if (clients.get(p.id) !== p) return; // A replacement connection owns this identity now.
+      remember(p); clients.delete(p.id);
       if (!refreshLeader('disconnect')) broadcast(roster());
     });
     const deadline = setTimeout(() => { if (!p.hello) ws.close(1008, 'Join timed out.'); }, C.connectTimeout); deadline.unref();
@@ -246,15 +277,15 @@ function createServer(options = {}) {
   const timer = setInterval(() => {
     const now = performance.now(), elapsed = Math.min((now - last) / 1000, 0.25); last = now;
     updateMetrics(now);
-    expireEmptyLobby();
     refreshLeader();
-    if (!session || ![...clients.values()].some(p => p.ready)) { accumulator = 0; return; }
+    if (!session) { accumulator = 0; return; }
     syncPlayers(); accumulator += elapsed;
     try {
       while (accumulator >= 1 / C.tickRate) {
         if ((session.teamWipeOnly || session.opening) && !bossStarted) {
-          const party = [...clients.values()].filter(p => p.hello);
-          const allReady = party.length > 0 && party.every(p => p.ready && p.pose);
+          // Background or stalled loaders cannot hold the run hostage. Bots need no browser loading barrier.
+          const party = [...clients.values()].filter(participating);
+          const allReady = loadNow() - loadStarted >= C.loadTimeout || party.every(p => p.ready && p.pose);
           bossLoadFor = allReady ? bossLoadFor + 1 / C.tickRate : 0;
           bossStarted = allReady && bossLoadFor >= (session.teamWipeOnly ? C.bossLoadGrace : 0);
         }
@@ -262,10 +293,9 @@ function createServer(options = {}) {
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
         accumulator -= 1 / C.tickRate; sinceSnapshot += 1 / C.tickRate;
         if (session.teamWipeOnly) {
-          const party = [...clients.values()].filter(p => p.hello);
-          // Loading peers still belong to the attempt; a disconnect removes a
-          // peer from this check, while a stale living pose never counts as dead.
-          const wiped = party.length > 0 && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
+          const party = [...clients.values()].filter(p => p.hello && (p.arenaDefeated || participating(p)));
+          // Active loaders get bounded time; away players do not prevent a real team defeat.
+          const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
             if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
@@ -300,8 +330,8 @@ function createServer(options = {}) {
       broadcast({ type: 'stop', message: 'The session stopped after a server error. The leader can start another level.' });
     }
   }, 1000 / C.tickRate); timer.unref();
-  function close() { clearInterval(timer); clearInterval(heartbeat); for (const p of clients.values()) p.ws.terminate(); wss.close(); return new Promise(resolve => server.close(resolve)); }
-  return { server, close, sim, clients, get session() { return session; }, get metrics() { return metrics; } };
+  function close() { clearInterval(timer); clearInterval(heartbeat); for (const ws of wss.clients) ws.terminate(); wss.close(); return new Promise(resolve => server.close(resolve)); }
+  return { server, close, sim, clients, get session() { return session; }, get leader() { return leader; }, get metrics() { return metrics; } };
 }
 if (require.main === module) {
   const app = createServer();

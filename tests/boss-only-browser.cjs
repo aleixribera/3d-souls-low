@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
+const { config: C } = require('../js/net-protocol.js');
 (async () => {
   const app = createServer({ dev: true }), errors = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -24,7 +25,7 @@ const { createServer } = require('../server/index.cjs');
   const die = p => p.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
   try {
     const a = await player('Ash'), b = await player('Ember');
-    assert.equal(await a.locator('#lobbyAdventure option').count(), 3);
+    assert.equal(await a.locator('#lobbyAdventure option').count(), 2 + Object.keys(C.gauntlets).length);
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'BOSS ONLY is selected without setup');
     await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);

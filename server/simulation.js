@@ -282,7 +282,17 @@ globalThis.host = (() => {
       e.stateTime += dt;
       if (time >= e.netExec.until) finishExecution(e);
     }
-    if (!living.length) { progress(dt); return; }
+    if (!living.length) {
+      // With nobody present, finish attacks/phases, decay meters and return home normally.
+      // This observer is dead and never acquires a target, takes damage or joins combat.
+      const absent = proxy({ ...checkpoint, hp: 0, state: PS.DEAD }, null);
+      crowd.enemies = [];
+      for (const e of Game.enemies) if (!e.netExec) {
+        e.savePrev(); e.netTarget = null; e.update(dt, absent);
+        if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
+      }
+      progress(dt); return;
+    }
     const was = new Set(Game.enemies.filter(e => e.in('unaware') || e.state === ES.DORMANT));
     const groups = new Map(living.map(p => [p.id, { player: p, enemies: [] }]));
     // Choose targets first, then run each player's crowd independently. Fights
@@ -390,7 +400,8 @@ globalThis.host = (() => {
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
-    playerMaxHp: PLAYER_DEF.stats.maxHp,
+    playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
+    get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },

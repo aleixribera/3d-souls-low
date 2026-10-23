@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.13.1: Riskier companions
+# Combat Arena 3D — v7.14.0: Persistent public lobby
+
+**v7.14.0:** Online runs keep simulating with inactive or absent players, and bots continue after everyone leaves. Away leaders hand control to an active player; stalled loading tabs cannot block the party forever. Returning from the same browser restores your name, position, health, stamina and flasks in the current encounter. Volume defaults to 5, with the former saved value of 8 lowered to 5. See [the notes](docs/persistent-lobby-v7.14.0.md).
 
 **v7.13.1:** Bots sometimes chase an extra hit or combo and roll forward to stay close, leaving real openings for bosses to punish. When no human remains, they press harder after a short grace period so solo attempts resolve sooner. See [the notes](docs/bot-risk-v7.13.1.md).
 

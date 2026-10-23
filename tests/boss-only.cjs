@@ -35,7 +35,8 @@ async function peer(origin) {
   try {
     const a = await peer(origin), b = await peer(origin); peers.push(a, b);
     const begin = async () => {
-      a.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
+      const owner = [a, b].find(p => p.id === app.leader) || a;
+      owner.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
       session = (await a.next('start')).session; await b.next('start');
     };
     await begin();

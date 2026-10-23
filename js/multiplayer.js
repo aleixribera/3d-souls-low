@@ -520,8 +520,8 @@ const multiplayer = (() => {
     clearTimeout(noticeTimer); el('lobbyNotice').textContent = s; el('lobbyNotice').hidden = !s;
     if (s && transient) noticeTimer = setTimeout(() => notice(''), CONFIG.hud.online.noticeTime * 1000);
   };
-  let savedName = '';
-  try { savedName = localStorage.getItem('combatArena.onlineName') || ''; } catch {}
+  let savedName = '', resumeToken = '', foreground = !document.hidden;
+  try { savedName = localStorage.getItem('combatArena.onlineName') || ''; resumeToken = localStorage.getItem('combatArena.onlineToken') || ''; } catch {}
   el('lobbyName').value = savedName;
   function send(data) { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data)); }
   function flushActivity(now) {
@@ -531,7 +531,7 @@ const multiplayer = (() => {
   }
   function activity() {
     if (!connected || document.visibilityState === 'hidden') return;
-    activityPending = true; flushActivity(performance.now());
+    setPresence(true); activityPending = true; flushActivity(performance.now());
   }
   function userActivity(ev) {
     if (!ev.isTrusted || !connected) return;
@@ -544,8 +544,17 @@ const multiplayer = (() => {
   }
   for (const type of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'pointercancel', 'pointermove', 'wheel'])
     window.addEventListener(type, userActivity, { capture: true, passive: true });
-  window.addEventListener('blur', () => { heldActivity.clear(); activityPending = false; });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { heldActivity.clear(); activityPending = false; } });
+  function publishPose() { if (active() && ready && Game.player) send({ type: 'pose', epoch: session.epoch, pose: capturePose(Game.player) }); }
+  function setPresence(value) {
+    if (foreground === value) return;
+    if (!value) { publishPose(); heldActivity.clear(); activityPending = false; }
+    foreground = value;
+    if (connected) send({ type: 'presence', foreground });
+  }
+  window.addEventListener('blur', () => setPresence(false));
+  window.addEventListener('focus', () => setPresence(!document.hidden));
+  document.addEventListener('visibilitychange', () => setPresence(!document.hidden && document.hasFocus()));
+  window.addEventListener('pagehide', () => { publishPose(); if (connected) send({ type: 'presence', foreground: false }); });
   function command(type, data = {}) { if (ready) send({ type, epoch: session.epoch, seq: ++seq, ...data }); }
   function clearControlPending() { clearTimeout(controlDeadline); controlDeadline = null; controlPending = null; }
   function control(action, data = {}) {
@@ -595,6 +604,7 @@ const multiplayer = (() => {
     reconnectTimer = setTimeout(() => { reconnectTimer = null; join(true); }, delay);
   }
   function leave(message = '', retry = false) {
+    publishPose();
     closeNameEditor(false, false); closeAdventurePicker(true);
     joinAttempt++;
     clearTimeout(reconnectTimer); reconnectTimer = null;
@@ -633,7 +643,7 @@ const multiplayer = (() => {
       socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
       const joining = socket;
       const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
-      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value }); };
+      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value, token: resumeToken, foreground }); };
       socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
       socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
         if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
@@ -744,7 +754,9 @@ const multiplayer = (() => {
   function receive(msg) {
     if (msg.type === 'welcome') {
       connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
+      resumeToken = typeof msg.token === 'string' ? msg.token : '';
       el('lobbyName').value = roster.find(p => p.id === self)?.name || el('lobbyName').value;
+      try { localStorage.setItem('combatArena.onlineToken', resumeToken); localStorage.setItem('combatArena.onlineName', el('lobbyName').value); } catch {}
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
@@ -774,7 +786,7 @@ const multiplayer = (() => {
         Game.loadingFirst(...loadingCard, () => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id, session.partners || []);
-          Game.spawn = { ...session.spawn }; Game.spawnPlayer();
+          Game.spawn = { ...session.spawn }; Game.spawnPlayer(); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
           loaded = true; updateRoster();
@@ -814,11 +826,27 @@ const multiplayer = (() => {
     } else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
   }
+  // Reconnect is the only time personal resources come back from the server. Ordinary frames never reconcile them.
+  // Resume at the saved position without replaying an old attack, roll, flask or execution animation.
+  function restorePlayer(s) {
+    if (!s || !['x', 'y', 'z', 'yaw', 'hp', 'stamina', 'flasks'].every(key => ArenaNet.finite(s[key]))) return;
+    const p = Game.player;
+    for (const key of ['x', 'y', 'z', 'yaw']) p[key] = s[key];
+    p.hp = clamp(s.hp, 0, p.maxHp); p.stamina = clamp(s.stamina, 0, p.maxStamina);
+    p.item('flask').count = clamp(Math.floor(s.flasks), 0, p.item('flask').max);
+    for (const key of ['staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
+    p.exhausted = !!s.exhausted; p.grounded = !!s.grounded; p.peak = p.y;
+    for (const key of ['vx', 'vy', 'vz']) p[key] = !p.grounded && ArenaNet.finite(s[key]) ? s[key] : 0;
+    p.setState(p.hp <= 0 || s.state === PS.DEAD ? PS.DEAD : p.grounded ? PS.IDLE : PS.FALL);
+    p.savePrev(); Game.deathTimer = 0; Game.cam.yaw = p.yaw; Game.updateCamera(0, true);
+  }
   function capturePose(p) {
     return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
       attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
       walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
       vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
+      stamina: p.stamina, flasks: p.item('flask').count, exhausted: p.exhausted, staminaDelay: p.staminaDelay,
+      poise: clamp(p.poise, 0, p.maxPoise), poiseTimer: Math.min(p.poiseTimer, CONFIG.player.poiseResetTime), doomTime: p.doomTime, doomDrain: p.doomDrain,
       landTime: p.landTime, stunTime: p.stunTime, view: session.teamWipeOnly && p.alive() ? lastView : null };
   }
   function heartbeat(now) {
@@ -827,7 +855,7 @@ const multiplayer = (() => {
     // A stray return to the title must not strand a connected player while the
     // server continues the shared run. Reload from its current session/baseline.
     if (session && loaded && Game.mode === 'menu' && Game.screen === 'main') {
-      receive({ type: 'start', session }); return;
+      receive({ type: 'start', session, resume: capturePose(Game.player) }); return;
     }
     if (heldActivity.size && document.visibilityState !== 'hidden') activityPending = true;
     flushActivity(now);
@@ -842,7 +870,7 @@ const multiplayer = (() => {
     if (active() && ready && now >= lastPose) {
       const interval = 1000 / C.playerRate;
       lastPose = lastPose && lastPose + interval > now ? lastPose + interval : now + interval;
-      send({ type: 'pose', epoch: session.epoch, pose: capturePose(Game.player) });
+      publishPose();
     }
     if (now - lastPing >= C.pingInterval) { lastPing = now; send({ type: 'ping', sent: now }); }
     if (now - lastStats >= C.metricsInterval) { lastStats = now; updateStatus(); }
