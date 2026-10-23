@@ -312,10 +312,12 @@
     expect.ok(Game.screens().elden.back === 'arena' && Game.screens().levelsLands.items.length === A.LANDS_LEVELS.length + 1, 'Elden Ring Bosses back to the Arena; the Lands in Levels');
   });
   test('Menus: scrolling beneath a stationary mouse preserves directional selection', () => {
-    const from = Game.optionsFrom;
+    const from = Game.optionsFrom, list = document.getElementById('menuList'), maxHeight = list.style.maxHeight;
     try {
       Game.optionsFrom = 'main'; Game.showMenu('options');
-      const list = document.getElementById('menuList'), buttons = [...list.children];
+      // Keep this a scrolling fixture even with the shorter Options menu.
+      list.style.maxHeight = '80px';
+      const buttons = [...list.children];
       const hover = (button, moving = false) => {
         button.dispatchEvent(new MouseEvent('mouseenter'));
         button.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementY: moving ? 1 : 0 }));
@@ -336,7 +338,7 @@
       expect.ok(Game.selected === buttons.length - 1, 'moving the mouse still selects a row');
       buttons[buttons.length - 1].click();
       expect.ok(Game.screen === 'main', 'clicking Back still opens the main menu');
-    } finally { Game.optionsFrom = from; Game.showMenu('main'); }
+    } finally { list.style.maxHeight = maxHeight; Game.optionsFrom = from; Game.showMenu('main'); }
   });
   test('Story: the two roads keep separate saves; Continue on one never touches the other', () => {
     const keys = CONFIG.story.saveKeys, kept = {};

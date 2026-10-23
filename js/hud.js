@@ -34,7 +34,8 @@ const hud = {
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
   tutGuide: $('tutGuide'), tutGuideArrow: $('tutGuideArrow'), tutGuideText: $('tutGuideText'), guideForward: new THREE.Vector3(),
-  help: $('help'), toggle: $('hbToggle'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
+  help: $('help'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
+  healingTip: $('healingTip'), healingTipText: $('healingTipText'), healingTipState: 'pending',
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
@@ -42,6 +43,7 @@ const hud = {
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.connected, run = online && multiplayer.gauntlet;
+    this.healingTipText.textContent = `Press ${keycap(bindLabel('flask'))} to heal`;
     this.controlsTipsRows.textContent = '';
     const basics = [
       ['Attack', bindLabel('light')], ['Heavy attack', bindLabel('heavy')],
@@ -70,7 +72,6 @@ const hud = {
     for (const [k, v] of rows) {
       const tr = table.insertRow(); tr.insertCell().textContent = k; tr.insertCell().textContent = v;
     }
-    $('hbLabel').textContent = `Show hitboxes ${systemLabel('hitboxes')}`;
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
@@ -90,6 +91,8 @@ const hud = {
   reset(game) {
     this.controlsTipsTimer = CONFIG.hud.controlsTipsTime;
     this.controlsTips.hidden = true;
+    this.healingTip.hidden = true;
+    this.healingTipState = 'pending';
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
     this.healTimer = this.hurtTimer = this.refundTimer = this.deniedTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
@@ -100,10 +103,20 @@ const hud = {
     this.layout();
   },
   showRested() { this.restedTimer = CONFIG.rest.messageTime; },
+  dismissHealingTip() {
+    if (this.healingTipState === 'active') this.healingTipState = 'done';
+    this.healingTip.hidden = true;
+  },
   updateControlsTips(game, dt) {
     const playing = game.mode === 'play' && game.loading <= 0 && !game.isTutorial();
     if (playing) this.controlsTipsTimer = Math.max(0, this.controlsTipsTimer - dt);
-    this.controlsTips.hidden = !playing || this.controlsTipsTimer <= 0 || !game.player.alive() || this.helpOpen();
+    const p = game.player, hidden = !playing || !p.alive() || this.helpOpen();
+    this.controlsTips.hidden = hidden || this.controlsTipsTimer <= 0;
+    // Offer the reminder once per level, keeping it dismissed after healing or death.
+    if (this.healingTipState === 'active' && (!p.alive() || p.hp >= p.hpCap())) this.dismissHealingTip();
+    this.healingTip.hidden = hidden || this.healingTipState === 'done' || this.controlsTipsTimer > 0 || p.hp >= p.hpCap() || p.item('flask').count <= 0 ||
+      p.state === PS.USE_ITEM && p.usingItem === ITEMS.flask;
+    if (!this.healingTip.hidden) this.healingTipState = 'active';
   },
 
   // ---- layout ----------------------------------------------------------------------------------
@@ -331,7 +344,7 @@ const hud = {
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
-  showHitboxes() { return this.helpOpen() && this.toggle.checked; },
+  showHitboxes() { return this.helpOpen(); },
 };
 // Listeners: they only set the HUD's own timers and notices, from what the event says and what the game shows.
 function registerHudListeners() {
@@ -339,21 +352,23 @@ function registerHudListeners() {
   events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked) hud.hurtTimer = H.hurtTime; });
   events.on('parry', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });   // a parry refunds its stamina
   events.on('dodge', () => { hud.idle = 0; hud.refundTimer = H.refundPulse; });
-  events.on('itemUsed', d => { if (d.item === 'flask') { hud.popFlask = d.player.item('flask').count; } });
-  events.on('rest', () => { hud.healTimer = H.healFlash; });
+  events.on('itemUsed', d => { if (d.item === 'flask' && d.player === Game.player) {
+    hud.popFlask = d.player.item('flask').count; hud.dismissHealingTip();
+  } });
+  events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
   events.on('staminaDenied', () => { hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
     hud.pSt.addEventListener('animationend', () => hud.pSt.classList.remove('empty'), { once: true }); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
   events.on('saveFailed', () => hud.toast(H.toasts.saveFailed));
 }
-// FPS counter (settings.fps, F3): its own animation-frame loop, so it also counts in menus; refreshed every
+// Always-visible FPS counter: its own animation-frame loop, so it also counts in menus; refreshed every
 // CONFIG.hud.fps.interval s. Drawing only.
-const fpsMeter = (() => {
+(() => {
   const el = document.createElement('div');
   el.id = 'fpsCounter';
   el.style.cssText = 'position:fixed;top:6px;right:8px;z-index:50;font:600 13px/1 monospace;color:#e8e0c8;' +
-    'background:rgba(0,0,0,0.45);padding:3px 6px;border-radius:3px;pointer-events:none;display:none';
+    'background:rgba(0,0,0,0.45);padding:3px 6px;border-radius:3px;pointer-events:none';
   document.body.appendChild(el);
   let frames = 0, last = performance.now();
   const tick = now => {
@@ -363,11 +378,8 @@ const fpsMeter = (() => {
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
-  return { show(on) { el.style.display = on ? 'block' : 'none'; } };
 })();
 function applySettings() {
-  fpsMeter.show(settings.fps);
-  hud.toggle.checked = settings.hitboxes;
   hud.layout();
   const q = autoQuality.effective();   // Auto: the detected preset (js/autoquality.js)
   if (applySettings.graphics !== q) { applySettings.graphics = q; visuals.setQuality(q); }   // only when it changed: a quality change rebuilds shaders

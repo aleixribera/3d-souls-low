@@ -35,10 +35,8 @@ const server = http.createServer((req, res) => {
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'leaving fullscreen is respected');
     await page.getByRole('button', { name: 'Options', exact: true }).click();
-    await page.getByRole('button', { name: 'Fullscreen: Off', exact: true }).click();
-    await page.waitForFunction(() => !!document.fullscreenElement);
-    await page.getByRole('button', { name: 'Fullscreen: On', exact: true }).click();
-    await page.waitForFunction(() => !document.fullscreenElement);
+    assert.equal(await page.getByRole('button', { name: /^Fullscreen:/ }).count(), 0, 'Options omits the fullscreen control');
+    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'opening Options respects leaving fullscreen');
     // Prepare both saved campaigns, keeping all starting actions on the same screen.
     await page.evaluate(() => {
       Game.manualClock = true;
@@ -98,6 +96,6 @@ const server = http.createServer((req, res) => {
       }
     }
     assert.deepEqual(errors, []);
-    console.log('Onboarding: native fullscreen, exit/re-entry, Story mouse/controller flow, save protection and tutorial layouts passed.');
+    console.log('Onboarding: native fullscreen, respected exit, simplified Options, Story mouse/controller flow, save protection and tutorial layouts passed.');
   } finally { await browser.close(); }
 })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => server.close());

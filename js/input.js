@@ -14,7 +14,7 @@ const ACTIONS = {
   lock: ['KeyQ', 'PadR3'], switchTarget: ['Tab', 'PadFlickL', 'PadFlickR'], rest: ['KeyF', 'PadY'], flask: ['KeyG', 'PadX'], talk: ['KeyF', 'PadY'],
 };
 // Keys handled directly by the key handler rather than through ACTIONS.
-const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', hitboxes: 'KeyH', help: 'F1', fps: 'F3' };
+const SYSTEM_KEYS = { pause: 'Escape', restart: 'KeyR', help: 'F1' };
 const SYSTEM_PAD = { pause: 'PadStart', restart: 'PadBack' };   // gamepad equivalents (handled in gamepad.js)
 // Menu navigation. The gamepad's left stick also moves the selection.
 const MENU_KEYS = { up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'],
@@ -87,13 +87,15 @@ const input = {
 
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
-const DEFAULT_SETTINGS = Object.freeze({ sensitivity: 5, invert: false, hitboxes: false, fps: false, hudScale: 1,
-  graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true, screenShake: true });
+const DEFAULT_SETTINGS = Object.freeze({ sensitivity: 5, invert: false, hudScale: 1,
+  graphics: CONFIG.VISUALS.defaultQuality, volume: 8, cameraMotion: true });
 function readSettings(value) {
   const clean = { ...DEFAULT_SETTINGS };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
-  for (const key of ['invert', 'hitboxes', 'fps', 'cameraMotion', 'screenShake'])
+  for (const key of ['invert', 'cameraMotion'])
     if (typeof value[key] === 'boolean') clean[key] = value[key];
+  // Preserve a steadier view when either of the former camera options was disabled.
+  if (value.screenShake === false) clean.cameraMotion = false;
   for (const [key, min, max, step] of [['sensitivity', 1, 10, 1], ['hudScale', 0.7, 1.5, 0.1], ['volume', 0, 10, 1]])
     if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
   if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;

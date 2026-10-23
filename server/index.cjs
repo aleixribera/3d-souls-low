@@ -77,6 +77,7 @@ function createServer(options = {}) {
     if ((kind === 'campaign' || campaignId) && !campaign) throw new Error('Unknown campaign or chapter');
     if (campaign) { kind = 'level'; id = campaign.level; }
     session = sim.start(kind, id);
+    for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
@@ -94,6 +95,7 @@ function createServer(options = {}) {
       // stale start packet, even if the interval has not processed expiry yet.
       expireEmptyLobby(); emptySince = null;
       p.name = net.name(msg.name) || p.name; p.hello = true;
+      if (session) sim.registerPlayer(p.id, p.name);
       noteActivity(p);
       send(p, { id: p.id, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
       if (session) send(p, { type: 'start', session });
@@ -103,7 +105,7 @@ function createServer(options = {}) {
     // Poses, transport keepalives, loading and animation clocks are not input.
     if (msg.type === 'activity') { noteActivity(p); return; }
     if (msg.type === 'ping') { send(p, { type: 'pong', sent: msg.sent }); return; }
-    if (msg.type === 'name') { noteActivity(p); p.name = net.name(msg.name) || p.name; broadcast(roster()); return; }
+    if (msg.type === 'name') { noteActivity(p); p.name = net.name(msg.name) || p.name; if (session) sim.registerPlayer(p.id, p.name); broadcast(roster()); return; }
     if (msg.type === 'control') {
       noteActivity(p);
       if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
@@ -277,11 +279,11 @@ function createServer(options = {}) {
         }
         // A campaign carries the entire party through its data-defined chapter
         // order, using the same completion delay as solo story play.
-        if (session.campaign?.next && sim.state.completedFor >= sim.campaignAdvanceTime) {
+        if (session.campaign?.next && sim.state.completedFor >= Math.max(sim.campaignAdvanceTime, C.leaderboardDelay + C.leaderboardTime)) {
           start('level', session.campaign.next, session.campaign.id);
           break;
         }
-        if (session.gauntlet && sim.state.completedFor >= C.bossVictoryDelay) {
+        if (session.gauntlet && sim.state.completedFor >= Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)) {
           if (session.gauntlet.next) start('gauntlet', 'boss-only', null, session.gauntlet.next);
           else stop('BOSS ONLY COMPLETE · Every boss defeated. The whole party conquered the gauntlet!');
           break;

@@ -6,6 +6,7 @@ globalThis.host = (() => {
   let epoch = 0, time = 0, attackSerial = 0, bolts = [], eventList = [], history = [];
   let players = [], checkpoint = null;
   let completedFor = 0;
+  let damage = new Map(), results = null;
   const crowdClocks = new Map();
   const C = ArenaNet.config;
   for (const story of STORIES) {
@@ -84,9 +85,19 @@ globalThis.host = (() => {
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; history = []; players = [];
+    damage = new Map(); results = null;
     return { epoch, kind, id, spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
   }
   function setPlayers(list) { players = list.map(s => proxy(s, s.id)); }
+  function registerPlayer(id, name) {
+    if (results) return;
+    const row = damage.get(id);
+    damage.set(id, { id, name, damage: row?.damage || 0 });
+  }
+  function creditDamage(id, amount) {
+    const row = damage.get(id);
+    if (row && !results) row.damage += Math.max(0, amount);
+  }
   function progress(dt) {
     const living = players.filter(p => p.alive());
     for (const z of Game.zones) {
@@ -120,6 +131,11 @@ globalThis.host = (() => {
     }
     Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : !Game.duel.alive();
     completedFor = Game.complete ? completedFor + dt : 0;
+    if (Game.complete && !results) {
+      results = [...damage.values()].map(row => ({ ...row }))
+        .sort((a, b) => b.damage - a.damage || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+      for (let i = 0; i < results.length; i++) results[i].rank = i && results[i].damage === results[i - 1].damage ? results[i - 1].rank : i + 1;
+    }
   }
   function tick(dt, holdSimulation = false) {
     time += dt;
@@ -170,7 +186,9 @@ globalThis.host = (() => {
     while (history.length && time - history[0].time > C.historySeconds) history.shift();
   }
   function frame(drain = true) {
-    const result = { epoch, time, complete: Game.complete, checkpoint, enemies: Game.enemies.map(e => ({
+    const result = { epoch, time, complete: Game.complete,
+      results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
+      checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
       hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
@@ -191,7 +209,8 @@ globalThis.host = (() => {
     if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'execute' || !ArenaNet.finite(msg.charge, C.maxCharge)) return false;
     const strike = makeStrike(a, !!msg.riposte, msg.charge);
     if (e.invulnerable()) return false;
-    const result = e.takeHit(strike, p);
+    const hp = e.hp, result = e.takeHit(strike, p);
+    creditDamage(id, hp - e.hp);
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
@@ -217,7 +236,8 @@ globalThis.host = (() => {
     return true;
   }
   function finishExecution(e) {
-    const damage = e.netExec.damage; e.netExec = null;
+    const { damage, player } = e.netExec; e.netExec = null;
+    creditDamage(player, Math.min(e.hp, damage));
     e.hp = Math.max(0, e.hp - damage);
     if (e.hp <= 0) { if (!e.outlast()) e.die(); }
     else { e.posture = 0; e.guardMeter = 0; e.setState(ES.STAGGER); }
@@ -234,7 +254,7 @@ globalThis.host = (() => {
     const e = enemy(msg.enemy);
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
   }
-  return { catalog, campaign, gauntlet, start, setPlayers, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,

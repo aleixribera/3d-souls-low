@@ -59,7 +59,7 @@ async function peer(origin) {
       const epoch = session.epoch;
       await wait(150);
       assert.equal(app.session.epoch, epoch, 'victory remains visible before progression');
-      app.sim.tick(C.bossVictoryDelay);
+      app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
       if (!session.gauntlet.next) break;
       session = (await a.next('start')).session; await b.next('start');
       ready(a); ready(b); await flush(b);

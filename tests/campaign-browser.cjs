@@ -63,7 +63,14 @@ const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combat
       }
       if (i > 0 && i < chapters.length - 1) {
         await a.waitForFunction(() => Game.complete);
+        for (const p of [a, b]) {
+          await p.locator('#onlineLeaderboard').waitFor();
+          assert.equal(await p.locator('#leaderboardRows tr').count(), 2, 'level results include both participants');
+          assert.deepEqual(await p.locator('#leaderboardRows tr td:last-child').allTextContents(), ['0', '0'], 'zero damage remains explicit in level results');
+          assert.deepEqual(await p.locator('#leaderboardRows tr td:first-child').allTextContents(), ['1', '1'], 'tied level totals share a rank');
+        }
         await a.evaluate(() => multiplayer.show());
+        assert.equal(await a.locator('#onlineLeaderboard').isVisible(), false, 'level results yield to the lobby');
         await a.locator('#lobbyNext').click();
       }
       console.log('Browsers completed chapter ' + (i + 1) + ': ' + chapters[i]);

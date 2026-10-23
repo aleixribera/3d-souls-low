@@ -55,6 +55,7 @@ jobs:
           node tests/lobby-continuity.cjs
           node tests/arena-wipe.cjs
           node tests/boss-only.cjs
+          node tests/damage-leaderboard.cjs
           node tests/fullscreen.cjs
           node tests/autoquality.cjs
           node tests/experience.cjs

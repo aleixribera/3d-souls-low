@@ -1,0 +1,13 @@
+# v7.8.11 — Multiplayer Damage Leaderboard
+
+Every completed multiplayer level or boss fight shows a damage leaderboard one second after victory. Players are ranked by total enemy damage dealt during that level or boss, with numeric totals and a marker on the local player. Tied damage shares a rank; names and IDs provide stable ordering. Spectators see the same results. Automatic progression waits until the six-second results display has finished.
+
+The shared server credits actual HP removed by accepted contacts, including guarded chip damage and resolved executions. Excess damage beyond the remaining bar does not count. Boss phase refills and lifesteal never subtract prior contributions. Executions count for their reservation owner only when resolved. Duplicate claims retain the existing transport deduplication. Players who leave keep their earned contribution; connected participants with no damage receive zero. Totals reset on every new session epoch, including restarts and automatic progression, and freeze at completion. Personal HP and solo saves are unchanged.
+
+Results travel in normal authoritative snapshots, including full baselines for late-ready clients, and use text nodes for player names. The panel hides during loading, menus and credits, clears on disconnect/new sessions, supports narrow windows and reduced motion, and scrolls for larger parties. Timing lives in `ArenaNet.config.leaderboardDelay` and `leaderboardTime`.
+
+The multiplayer pre-paint loading card now uses the same chapter or duel name and description as the prepared scene. Advancing bosses no longer switches from generic “Playing together” copy to a second loading message.
+
+This release also includes the completed Options and HUD changes: Options offers Camera motion, Graphics, Check graphics again and Back; the motion toggle controls swing and shake together, preserving either former Off preference. FPS remains visible, and hitboxes follow F1 help. After the initial controls tip ends, a wounded player with a flask receives one healing reminder per level; using a flask dismisses it immediately, including partial healing.
+
+Regression coverage: `tests/damage-leaderboard.cjs` checks trusted amounts, chip damage, overkill, executions, refilling phases, ties, disconnected contributors, delayed display, baselines, expiry and epoch resets. `tests/boss-only-browser.cjs` checks ranked totals in two actual clients (including a spectator), duplicate contacts, narrow/desktop layout, clearing on progression and a single loading card throughout preparation. Existing boss-only/campaign fixtures use the full results reading delay.

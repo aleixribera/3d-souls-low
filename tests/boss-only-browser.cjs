@@ -29,6 +29,15 @@ const { createServer } = require('../server/index.cjs');
     await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
+    for (const [page, hits] of [[a, 1], [b, 2]]) await page.evaluate(hits => {
+      const p = Game.player, e = Game.duel, strike = makeStrike(PLAYER_DEF.moveset.attacks.light);
+      for (let i = 0; i < hits; i++) {
+        p.hitbox = new Hitbox(p, PLAYER_DEF.moveset.attacks.light.box, strike);
+        multiplayer.hit(e, strike); multiplayer.hit(e, strike); // duplicate contact must not inflate totals
+      }
+      p.hitbox = null;
+    }, hits);
+    await a.waitForFunction(() => Game.duel.hp === Game.duel.def.hp - 72);
     const allyHealth = a.locator('#onlineAlive').getByRole('meter', { name: 'Ember health', exact: true });
     const worldHealth = a.locator('.online-name').filter({ hasText: 'Ember' }).locator('.ally-health');
     await a.waitForFunction(() => document.querySelector('#onlineAlive .ally-health')?.getAttribute('aria-valuenow') === '120');
@@ -59,13 +68,35 @@ const { createServer } = require('../server/index.cjs');
     await a.screenshot({ path: '.scratch/boss-only/spectating.png' });
     await b.evaluate(() => { Game.player.hp = 1; Game.player.item('flask').count = 0; });
     await a.evaluate(() => { hud.controlsTipsTimer = 0; });
+    for (const page of [a, b]) await page.evaluate(() => {
+      window.__loadingCards = [];
+      new MutationObserver(() => {
+        if (document.querySelector('#loading').classList.contains('show'))
+          window.__loadingCards.push([document.querySelector('#loadName').textContent, document.querySelector('#loadTip').textContent]);
+      }).observe(document.querySelector('#loading'), { subtree: true, childList: true, attributes: true });
+    });
     const epoch = app.session.epoch;
     const boss = app.sim.inspect().Game.duel; boss.hp = 0; boss.die();
     await a.locator('#won.show').waitFor();
     await b.locator('#won.show').waitFor();
+    assert.equal(await a.locator('#onlineLeaderboard').isVisible(), false, 'results wait for the victory beat');
     assert.equal(app.session.epoch, epoch, 'victory is visible before the next fight');
+    for (const page of [a, b]) {
+      await page.locator('#onlineLeaderboard').waitFor();
+      assert.deepEqual(await page.locator('#leaderboardRows tr').allTextContents(), page === a
+        ? ['1Ember48', '2Ash (you)24'] : ['1Ember (you)48', '2Ash24']);
+    }
+    assert.equal(await a.locator('#onlineLeaderboard').evaluate(el => el.scrollWidth <= innerWidth), true, 'results fit narrow spectator screen');
+    await a.screenshot({ path: '.scratch/boss-only/leaderboard-mobile.png' });
+    await b.screenshot({ path: '.scratch/boss-only/leaderboard-desktop.png' });
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 20000 });
     await Promise.all([ready(a), ready(b)]);
+    for (const page of [a, b]) {
+      assert.equal(await page.locator('#onlineLeaderboard').isVisible(), false, 'next boss clears prior results');
+      const cards = await page.evaluate(() => [...new Set(window.__loadingCards.map(c => JSON.stringify(c)))]);
+      assert.equal(cards.length, 1, 'one consistent loading message from first paint through boss preparation');
+      assert.match(JSON.parse(cards[0])[0], /^Duel: /);
+    }
     assert.equal(await a.evaluate(() => hud.controlsTipsTimer), 0, 'automatic progression does not replay controls over every boss');
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     for (const page of [a, b]) assert.equal(await page.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp && Game.player.item('flask').count === Game.player.item('flask').max), true);

@@ -27,9 +27,6 @@ const fullscreen = {
 };
 window.addEventListener('pointerdown', ev => fullscreen.auto(ev), { capture: true });
 window.addEventListener('keydown', ev => fullscreen.auto(ev), { capture: true });
-document.addEventListener('fullscreenchange', () => {
-  if (Game.screen === 'options') Game.showMenu('options', true);
-});
 
 // Event listeners: visual effects and the tutorial, each in one place.
 function registerListeners() {
@@ -89,11 +86,6 @@ window.addEventListener('keydown', ev => {
   }
   input.use('keyboard');
   if (multiplayer.spectatorKey(ev)) return;
-  if (code === SYSTEM_KEYS.fps) {   // the FPS counter toggles anywhere, menus included
-    ev.preventDefault();
-    if (!ev.repeat) { settings.fps = !settings.fps; saveSettings(); applySettings(); }
-    return;
-  }
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
@@ -115,7 +107,6 @@ window.addEventListener('keydown', ev => {
   if (ev.repeat) return;
   if (code === SYSTEM_KEYS.pause) Game.pause(false);
   else if (code === SYSTEM_KEYS.restart) Game.requestRestart();
-  else if (code === SYSTEM_KEYS.hitboxes) { settings.hitboxes = !settings.hitboxes; saveSettings(); applySettings(); }
   else input.down(code);
 });
 window.addEventListener('keyup', ev => input.up(ev.code));
@@ -128,7 +119,6 @@ function suspendInput() {
 window.addEventListener('blur', suspendInput);
 window.addEventListener('focus', () => { input.suspended = document.hidden; });
 document.addEventListener('visibilitychange', () => { if (document.hidden) suspendInput(); else input.suspended = !document.hasFocus(); });
-hud.toggle.addEventListener('change', () => { settings.hitboxes = hud.toggle.checked; saveSettings(); });
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 let pointerCaptureFailed = false;
 document.addEventListener('pointerlockerror', () => { pointerCaptureFailed = true; });

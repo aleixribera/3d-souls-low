@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.8.10: Enemy Glow Recovery
+# Combat Arena 3D — v7.8.11: Multiplayer Damage Leaderboard
+
+**v7.8.11:** Multiplayer victories show each player ranked by total damage dealt during that level or boss. Results appear one second after victory and stay for six seconds before automatic progression. Boss loading cards now keep one consistent message. This release also simplifies Options, combines camera motion and shake, keeps FPS visible, ties hitboxes to F1 help, and adds a healing reminder once per level. See [the changes and checks](docs/damage-leaderboard-v7.8.11.md).
 
 **v7.8.10:** Enemy posture-break flashes and hit recoil now fade correctly in multiplayer, including during execution holds and gaps in enemy playback. All enemies and bosses share the same feedback countdowns as solo play. See [the fix and checks](docs/enemy-feedback-v7.8.10.md).
 
@@ -157,7 +159,7 @@ Every attack now has four phases: wind-up, strike (the only moment it can hit), 
 - **You:** a three-hit light combo (24 damage per hit, 72 total, at 16 stamina per hit); a heavy dealing 53 damage for 40 stamina that you can hold to charge (the body coils, trembles and glows at full charge, up to 1.5x damage); only a slight steer during a wind-up; a roll only cancels a swing in its recovery. One Souls-style input buffer: a press is kept only near the end of what you're doing, and the latest press wins.
 - **Enemies:** they turn to track you early in a wind-up, then lock their aim (the commit point): dodge sideways after that and the blow won't follow. Red warning glows mean a strike can be parried; blue means it cannot. A blade glint marks the exact moment the parry window opens. Some blue strikes can be blocked; rolling works against both types. Some enemies hold a wind-up still to bait a roll (delayed attacks). Combos end on their biggest wind-up, and big misses leave a punishable recovery. Bosses use larger, slower, more dramatic versions.
 - **Impact:** hit-pause and a shudder on the body you hit, camera shake scaled by the blow, weapon trails during strikes, cloth that swings with the body, flinches sized to the damage, staggers and parries that throw the body open, and walking that leans with acceleration and turns.
-- **Dev keys** (`#dev`): **F4** fills the nearest enemy's stagger, guard or posture meter (it kneels at once, ready to execute), **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase; **H** hitboxes.
+- **Dev keys** (`#dev`): **F4** fills the nearest enemy's stagger, guard or posture meter (it kneels at once, ready to execute), **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase. **F1** shows help and hitboxes in every build.
 
 Timings before and after are in `docs/combat-timings-v4.1.md`.
 
@@ -264,12 +266,14 @@ The hardest fight in the game. A slender knight in a gold winged helm with a lon
 | Talk / read | T | D-pad right |
 | Restart fight / level (not in Story mode) | R, twice (once on the death or victory screen) | View / Share, twice |
 | Pause and options (incl. Graphics: High / Low) | Escape | Menu / Options |
-| Help / hitboxes | F1 (H toggles hitboxes) | — |
+| Help / hitboxes | F1 | — |
 | Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A / ✕, B / ○ |
 
 On-screen prompts show keys or gamepad buttons, whichever you used last.
 
 ! IMPORTANT ! More controls and features exist, this list was only used for the prototyping versions of the game
+
+Options contains **Camera motion: On/Off**, **Graphics**, and **Check graphics again**. Camera motion controls swing and shake together; if either former camera setting was Off, the combined setting starts Off. The FPS counter is always visible. Hitboxes appear only while F1 help is open. Fullscreen, mouse sensitivity, camera inversion, FPS, hitboxes, HUD scale and sound volume have no menu controls; existing sensitivity, inversion, HUD scale and volume preferences are preserved.
 
 ## Testing
 
@@ -299,7 +303,7 @@ The game data lives in `js/data/` and `js/levels/` and is checked when the page 
 
 - **Enemies:** add an entry with a unique `id` to `ENEMY_DEFS` (any position). Animations, weapons and idle styles must exist in `ANIMS`, `WEAPONS` and `IDLE_STYLES`. Attacks get their look from `pose` (key poses in `js/data/attack-poses.js`) plus `tracking`, glint `markers` and optional `hold`: see CLAUDE.md.
 - **Models:** give an enemy `model: '<id>'` and describe its look in `js/data/models*.js` (proportions, posture, material slots, parts from `KIT_PARTS`, a weapon from `KIT_WEAPONS`; a model can `extends` another). Textures are recipes in `js/data/textures.js`. A level placement can add `variant: 'elite'` for a darker, spiked, auraed version. See CLAUDE.md.
-- **Sounds:** every sound is a recipe of noise and tone layers in `js/data/audio.js`, built live by the engine in `js/audio.js` (no audio files). Add a recipe, then play it from an event listener at the bottom of `js/audio.js`. Sound volume is in Options.
+- **Sounds:** every sound is a recipe of noise and tone layers in `js/data/audio.js`, built live by the engine in `js/audio.js` (no audio files). Add a recipe, then play it from an event listener at the bottom of `js/audio.js`. Master volume uses the default or an existing saved preference.
 - **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see CLAUDE.md.
 - **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.
 - **Lore:** the story's source of truth is `LORE.md`. Dialogues, inscriptions, scenes and the ending cards are data in `js/data/lore.js`; write them in LORE.md first. See CLAUDE.md.

@@ -143,17 +143,17 @@
   #aTC { left: 0; right: 0; top: var(--my); align-items: center; }
   #aBC { left: 0; right: 0; bottom: 13%; align-items: center; gap: 6px; }
   #aBL { left: var(--mx); bottom: 16px; align-items: flex-start; justify-content: flex-end; }
-  #controlsTips { position: relative; margin-top: 18px; padding: 14px 18px 16px; min-width: 182px;
+  .hud-tip { position: relative; margin-top: 18px; padding: 14px 18px 16px; min-width: 182px;
     background: linear-gradient(90deg, #0b0c1057, #0b0c1010); border-radius: 2px;
     color: #e1ddd2; font: 14px/1.5 Georgia, 'Times New Roman', serif; text-shadow: 0 1px 3px #000c; }
-  #controlsTips::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
+  .hud-tip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
     background: linear-gradient(transparent, #c7ad7580 20%, #c7ad7533 80%, transparent); }
-  #controlsTips[hidden] { display: none; }
-  #controlsTips .title { display: flex; align-items: center; gap: 9px; margin-bottom: 12px;
+  .hud-tip[hidden] { display: none; }
+  .hud-tip .title { display: flex; align-items: center; gap: 9px; margin-bottom: 12px;
     font: 10px/1.5 Arial, sans-serif; letter-spacing: 2.5px; color: #c7ad75; }
-  #controlsTips .title::before { content: ''; width: 4px; height: 4px; transform: rotate(45deg);
+  .hud-tip .title::before { content: ''; width: 4px; height: 4px; transform: rotate(45deg);
     border: 1px solid #c7ad7599; }
-  #controlsTips .title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #c7ad754d, transparent); }
+  .hud-tip .title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #c7ad754d, transparent); }
   #controlsTipsRows { display: grid; gap: 6px; }
   #controlsTipsRows > div { display: flex; align-items: baseline; justify-content: space-between; gap: 26px; }
   #controlsTipsRows > div > span:last-child { color: #f1e4c8; font: 12px/1.5 Arial, sans-serif; }
@@ -278,7 +278,6 @@
   #help table { border-collapse: collapse; }
   #help td { padding: 0 14px 0 0; }
   #help td:first-child { color: #b79d5c; }
-  #help label { display: block; margin-top: 8px; cursor: pointer; color: #d9cda8; }
   #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
   #help .level:empty { display: none; }
   #helpHint { font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000; transition: opacity 0.4s; opacity: calc(1 - (1 - var(--calm)) * 0.7); }
@@ -381,8 +380,11 @@
         <div id="pExhaust"></div>
         <div id="pFlasks"></div>
       </div>
-      <aside id="controlsTips" aria-label="Basic controls" hidden>
+      <aside id="controlsTips" class="hud-tip" aria-label="Basic controls" hidden>
         <div class="title">CONTROLS</div><div id="controlsTipsRows"></div>
+      </aside>
+      <aside id="healingTip" class="hud-tip" aria-label="Healing reminder" hidden>
+        <div class="title">HEALING</div><div id="healingTipText"></div>
       </aside>
     </div>
     <div class="anchor" id="aTC">
@@ -405,7 +407,6 @@
     <div class="anchor" id="aBL">
       <div id="help" class="hidden">
         <table id="helpTable"></table>
-        <label><input type="checkbox" id="hbToggle" checked> <span id="hbLabel">Show hitboxes</span></label>
         <div class="level" id="helpLevel"></div>
       </div>
       <div id="helpHint"></div>
@@ -565,7 +566,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.8.10';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.8.11';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -587,7 +588,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-lighting.js', 'tests/');
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
-  await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours (H shows hitboxes anywhere)
+  await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours
 }
 </script>
 </body>

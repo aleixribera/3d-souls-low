@@ -13,10 +13,16 @@ const { createServer } = require('../server/index.cjs');
     browser = await chromium.launch({ channel: 'msedge', headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     page.on('pageerror', e => errors.push(e.message));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0,
+      fps: false, hitboxes: false, cameraMotion: true, screenShake: false })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; fullscreen.attempted = true; });
+    await page.waitForFunction(() => /\d+ FPS/.test(document.getElementById('fpsCounter').textContent));
+    assert.equal(await page.locator('#fpsCounter').isVisible(), true, 'FPS is visible despite an old saved Off preference');
+    await page.keyboard.press('F3');
+    assert.equal(await page.locator('#fpsCounter').isVisible(), true, 'the retired FPS shortcut cannot hide the counter');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), false, 'legacy shake Off migrates to combined motion Off');
     const selection = () => page.evaluate(() => ({ selected: Game.selected,
       focus: [...document.querySelector('#menuList').children].indexOf(document.activeElement),
       stops: document.querySelectorAll('#menuList button[tabindex="0"]').length }));
@@ -28,12 +34,20 @@ const { createServer } = require('../server/index.cjs');
     await page.keyboard.press('Shift+Tab');
     assert.equal((await selection()).selected, await page.locator('#menuList button').count() - 1, 'backward Tab wraps');
     await page.evaluate(() => { Game.optionsFrom = 'main'; Game.showMenu('options'); });
+    assert.deepEqual(await page.locator('#menuList .n').allTextContents(),
+      ['Camera motion: Off', 'Graphics: Low', 'Check graphics again', 'Back']);
+    await page.keyboard.press('Space');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), true, 'Space activates the focused option exactly once');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), false);
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), true);
+    assert.deepEqual(await page.evaluate(() => {
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      return { cameraMotion: saved.cameraMotion, legacyShake: 'screenShake' in saved };
+    }), { cameraMotion: true, legacyShake: false }, 'saving the unified option retires the old shake preference');
     await page.keyboard.press('ArrowDown');
     assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
-    await page.keyboard.press('Space');
-    assert.equal(await page.evaluate(() => settings.sensitivity), 6, 'Space activates the focused option exactly once');
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await page.evaluate(() => settings.sensitivity), 7);
     await page.keyboard.press('End');
     assert.equal((await selection()).selected, await page.locator('#menuList button').count() - 1);
     await page.keyboard.press('Home'); await page.keyboard.press('ArrowDown');
@@ -41,16 +55,15 @@ const { createServer } = require('../server/index.cjs');
       const key = new KeyboardEvent('keydown', { code: 'KeyJ', ctrlKey: true, bubbles: true, cancelable: true });
       window.dispatchEvent(key); return key.defaultPrevented;
     }), false, 'browser shortcuts are left to the browser');
-    assert.equal(await page.evaluate(() => settings.sensitivity), 7, 'shortcut never activates a menu item');
-    const volumeOption = page.getByRole('button', { name: /^Sound volume:/ });
-    await volumeOption.hover({ position: { x: 100, y: 18 } });
-    await volumeOption.hover({ position: { x: 102, y: 18 } });
+    assert.equal(await page.evaluate(() => settings.graphics), 'low', 'shortcut never activates a menu item');
+    const motionOption = page.getByRole('button', { name: /^Camera motion:/ });
+    await motionOption.hover({ position: { x: 100, y: 18 } });
+    await motionOption.hover({ position: { x: 102, y: 18 } });
     const hovered = await selection();
     assert.equal(hovered.focus, hovered.selected, 'actual pointer movement keeps native focus with selection');
-    assert.match(await page.evaluate(() => Game.menuItems[Game.selected].name), /^Sound volume:/);
+    assert.match(await page.evaluate(() => Game.menuItems[Game.selected].name), /^Camera motion:/);
     await page.keyboard.press('Space');
-    assert.equal(await page.evaluate(() => settings.volume), 1, 'Space activates the hovered selection too');
-    await page.evaluate(() => { settings.volume = 0; applySettings(); });
+    assert.equal(await page.evaluate(() => settings.cameraMotion), false, 'Space activates the hovered selection too');
 
     // Check every item, not just the first description: graphics and campaign text wrap more than simple options.
     for (const viewport of [{ width: 1280, height: 720 }, { width: 1920, height: 1080 },
@@ -98,6 +111,14 @@ const { createServer } = require('../server/index.cjs');
       } finally { gamepad.read = read; gamepad.release(); }
     }), 'pause', 'a controller button held while away cannot resume play');
     await page.keyboard.press('Enter');
+
+    assert.equal(await page.evaluate(() => hud.showHitboxes()), false, 'hitboxes are hidden during normal play');
+    await page.keyboard.press('F1');
+    assert.equal(await page.evaluate(() => hud.showHitboxes()), true, 'F1 help always shows hitboxes despite an old Off preference');
+    await page.keyboard.press('h');
+    assert.equal(await page.evaluate(() => hud.showHitboxes()), true, 'the retired hitbox shortcut cannot disable F1 hitboxes');
+    await page.keyboard.press('F1');
+    assert.equal(await page.evaluate(() => hud.showHitboxes()), false, 'closing F1 hides hitboxes again');
     assert.equal(await page.evaluate(() => Game.mode), 'play');
     await page.evaluate(() => {
       Game.player.buffer = { action: 'roll', time: 0.3 }; Game.pause(false);
@@ -117,13 +138,13 @@ const { createServer } = require('../server/index.cjs');
     await page.evaluate(() => { input.clear(); canvas.dispatchEvent(new MouseEvent('mouseup', { button: 0 })); });
 
     const steady = await page.evaluate(() => {
-      settings.cameraMotion = false; settings.screenShake = false;
+      settings.cameraMotion = false;
       Game.shake = 0; Game.addShake(1, 1); const refused = Game.shake === 0;
       Game.shake = Game.shakeDur = 1; Game.shakeAmp = 2; Game.render(1, CONFIG.step);
       const steady = camera.position.distanceTo(Game.cam.pos) < 0.000001;
-      settings.screenShake = true; Game.shake = 0; Game.addShake(1, 1);
+      settings.cameraMotion = true; Game.shake = 0; Game.addShake(1, 1);
       const enabled = Game.shake === 1;
-      settings.cameraMotion = true; Game.shake = 0;
+      Game.shake = 0;
       return { refused, steady, enabled };
     });
     assert.deepEqual(steady, { refused: true, steady: true, enabled: true });

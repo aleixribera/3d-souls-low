@@ -115,6 +115,46 @@ const multiplayer = (() => {
     body.spectator-view #died,body.spectator-view #pBars{display:none}body.spectator-view canvas#view.dying{filter:none;transition:none}
     #onlineParty.hidden{display:none}.online-name{position:fixed;z-index:21;pointer-events:none;color:#ecd79b;background:#111a;padding:3px 7px;border-radius:3px;font:12px system-ui;transform:translate(-50%,-100%);white-space:nowrap}`;
   document.head.appendChild(style); document.body.appendChild(panel);
+  const leaderboard = document.createElement('section'); leaderboard.id = 'onlineLeaderboard'; leaderboard.hidden = true;
+  leaderboard.setAttribute('aria-labelledby', 'leaderboardTitle');
+  leaderboard.setAttribute('aria-live', 'polite');
+  leaderboard.innerHTML = '<div class="results-card"><p class="results-kicker">VICTORY · PARTY RESULTS</p><h2 id="leaderboardTitle">Damage leaderboard</h2><p id="leaderboardEncounter"></p><div class="results-scroll"><table><thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col">Total damage</th></tr></thead><tbody id="leaderboardRows"></tbody></table></div></div>';
+  document.body.appendChild(leaderboard);
+  const resultsStyle = document.createElement('style');
+  resultsStyle.textContent = `#onlineLeaderboard[hidden]{display:none}
+    #onlineLeaderboard{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:18px;box-sizing:border-box;pointer-events:none;background:radial-gradient(ellipse,#080b0dbb,transparent 80%);color:#ece3cf;font:14px/1.5 system-ui}
+    #onlineLeaderboard .results-card{width:min(560px,100%);max-height:72dvh;box-sizing:border-box;padding:26px;background:linear-gradient(140deg,#20221ff5,#0d1315f5);border:1px solid #b69a6166;box-shadow:0 18px 70px #0009;animation:lobby-arrive .3s ease-out}
+    #onlineLeaderboard h2{margin:5px 0;font:400 clamp(23px,4vw,32px)/1.3 Georgia,serif;color:#f2dba8}
+    #onlineLeaderboard p{margin:0 0 16px;color:#aaa99c;overflow-wrap:anywhere}#onlineLeaderboard .results-kicker{margin:0;font-size:10px;letter-spacing:.2em;color:#c8ad72}
+    #onlineLeaderboard .results-scroll{max-height:42dvh;overflow:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent}
+    #onlineLeaderboard table{width:100%;border-collapse:collapse;table-layout:fixed}#onlineLeaderboard th{color:#a9a998;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;text-align:left}
+    #onlineLeaderboard th:first-child{width:46px}#onlineLeaderboard th:last-child{width:108px;text-align:right}
+    #onlineLeaderboard td{padding:11px 0;border-top:1px solid #8b785033;font-variant-numeric:tabular-nums}#onlineLeaderboard td:first-child{color:#c8ad72}#onlineLeaderboard td:nth-child(2){overflow-wrap:anywhere;padding-right:8px}#onlineLeaderboard td:last-child{text-align:right;color:#f0d69f}
+    #onlineLeaderboard tr[data-self=true]{background:#d9bb7010}body.online-results #won,body.online-results #complete{visibility:hidden}
+    @media(max-width:450px){#onlineLeaderboard .results-card{padding:20px 16px}#onlineLeaderboard{font-size:12px}#onlineLeaderboard th:last-child{width:94px}}
+    @media(prefers-reduced-motion:reduce){#onlineLeaderboard .results-card{animation:none}}`;
+  document.head.appendChild(resultsStyle);
+  let leaderboardRows = null;
+  function clearLeaderboard() {
+    leaderboardRows = null; leaderboard.hidden = true; document.body.classList.remove('online-results');
+    el('leaderboardRows').replaceChildren();
+  }
+  function updateLeaderboard() {
+    const rows = latestFrame?.results;
+    if (rows && !leaderboardRows) {
+      leaderboardRows = rows;
+      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : ENEMY_BY_ID[session.id].name;
+      for (const row of rows) {
+        const tr = document.createElement('tr'); tr.dataset.self = String(row.id === self); tr.dataset.playerId = row.id;
+        for (const value of [row.rank, row.name + (row.id === self ? ' (you)' : ''), row.damage.toLocaleString(undefined, { maximumFractionDigits: 1 })]) {
+          const td = document.createElement('td'); td.textContent = value; tr.appendChild(td);
+        }
+        el('leaderboardRows').appendChild(tr);
+      }
+    }
+    const visible = !!rows && active() && Game.mode === 'play' && Game.loading <= 0 && panel.classList.contains('hidden') && runIntro.hidden;
+    leaderboard.hidden = !visible; document.body.classList.toggle('online-results', visible);
+  }
   const wipeScreen = document.createElement('section'); wipeScreen.id = 'teamWipeScreen'; wipeScreen.hidden = true;
   wipeScreen.tabIndex = -1; wipeScreen.setAttribute('role', 'alert'); wipeScreen.setAttribute('aria-label', 'Team wiped');
   wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker">BOSS ONLY · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
@@ -464,6 +504,7 @@ const multiplayer = (() => {
     if (panel.contains(document.activeElement)) document.activeElement.blur();
   }
   function overlayVisibility() {
+    updateLeaderboard();
     party.hidden = !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
@@ -487,7 +528,7 @@ const multiplayer = (() => {
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { clearTeamWipe(); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
+  function resetStream() { clearLeaderboard(); clearTeamWipe(); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -653,12 +694,13 @@ const multiplayer = (() => {
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
       Game.story = false; Game.eldenBoss = null; closePanel();
-      const data = (session.kind === 'level' ? catalog.levels : catalog.bosses).find(x => x.id === session.id);
+      const boss = session.kind === 'arena' && ENEMY_BY_ID[session.id];
+      const loadingCard = boss ? [`Duel: ${boss.name}`, boss.description] : Game.levelCard(session.id);
       el('lobbyAdventure').value = session.gauntlet ? 'gauntlet/boss-only' : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
-        Game.loadingFirst(...(chapterCard(session.id) || [data?.name || 'Public lobby', 'Playing together']), () => {
+        Game.loadingFirst(...loadingCard, () => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer();

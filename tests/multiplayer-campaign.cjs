@@ -88,7 +88,7 @@ function peer(url) {
       app.sim.tick(1 / C.tickRate);
       assert.equal(app.sim.state.complete, true, chapters[i] + ' completes from shared gates');
       if (i === 0 || i === chapters.length - 1) {
-        for (let n = 0; n < Math.ceil(app.sim.campaignAdvanceTime * C.tickRate) + 1; n++) app.sim.tick(1 / C.tickRate);
+        for (let n = 0; n < Math.ceil(Math.max(app.sim.campaignAdvanceTime, C.leaderboardDelay + C.leaderboardTime) * C.tickRate) + 1; n++) app.sim.tick(1 / C.tickRate);
       }
       if (i < chapters.length - 1) {
         if (i > 0) a.send({ type: 'control', action: 'next' });

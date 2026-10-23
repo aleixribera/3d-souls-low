@@ -3,7 +3,7 @@
 //   F6  slow motion (CONFIG.debug.slowMo of normal speed)
 //   F7  a light over each attacking enemy: yellow while it still turns to follow you, red once it has committed;
 //       also names the player's current attack phase in the corner
-//   H   hitboxes (any build): yellow = yours, red = enemies', green = bodies
+//   F1  help and hitboxes (any build): yellow = yours, red = enemies', green = bodies
 const combatDebug = (() => {
   const S = { slow: false, track: false };
   const geo = new THREE.SphereGeometry(0.16, 10, 8), lights = [];

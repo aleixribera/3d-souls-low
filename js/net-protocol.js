@@ -19,6 +19,7 @@
     defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     runIntroScreenTime: 5,
+    leaderboardDelay: 1, leaderboardTime: 6,
     spectatorFov: [10, 150],
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;
@@ -59,7 +60,7 @@
         return { patches, removed };
       };
       const enemies = changes('enemies', frame.enemies), gates = changes('gates', frame.gates), traps = changes('traps', frame.traps), people = changes('players', players);
-      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete,
+      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, results: frame.results,
         checkpoint: frame.checkpoint, enemies: enemies.patches, gates: gates.patches, traps: traps.patches,
         events: frame.events, shots: frame.shots, server: frame.server }, players: people.patches,
         removed: { enemies: enemies.removed, gates: gates.removed, traps: traps.removed, players: people.removed } };

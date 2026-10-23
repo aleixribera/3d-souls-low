@@ -19,8 +19,7 @@ function options(raw, denied = false) {
   return { context, settings: plain(vm.runInContext('settings', context)) };
 }
 const defaults = options(null).settings;
-assert.equal(defaults.hitboxes, false);
-assert.equal(defaults.fps, false);
+assert.ok(!('hitboxes' in defaults) && !('fps' in defaults) && !('screenShake' in defaults));
 for (const raw of ['null', '[]', '9', '"text"', '{broken']) assert.deepEqual(options(raw).settings, defaults);
 assert.deepEqual(options(null, true).settings, defaults, 'refused storage keeps usable defaults');
 const corrupt = options(JSON.stringify({ sensitivity: 'fast', hudScale: null, volume: {}, invert: 'false',
@@ -29,7 +28,13 @@ assert.deepEqual(corrupt, defaults, 'incorrect types and unknown keys cannot poi
 const saved = options(JSON.stringify({ sensitivity: 99, hudScale: 0.01, volume: -5, invert: true,
   graphics: 'ultra', cameraMotion: false, screenShake: false, fps: true, hitboxes: true })).settings;
 assert.deepEqual(saved, { ...defaults, sensitivity: 10, hudScale: 0.7, volume: 0, invert: true,
-  graphics: 'ultra', cameraMotion: false, screenShake: false, fps: true, hitboxes: true });
+  graphics: 'ultra', cameraMotion: false });
+for (const cameraMotion of [true, false]) for (const screenShake of [true, false]) {
+  assert.equal(options(JSON.stringify({ cameraMotion, screenShake })).settings.cameraMotion, cameraMotion && screenShake,
+    'either disabled legacy camera effect keeps the combined setting off');
+}
+assert.equal(options('{"screenShake":false}').settings.cameraMotion, false);
+assert.deepEqual(options('{"fps":false,"hitboxes":false}').settings, defaults, 'retired visibility preferences are ignored');
 assert.equal(options('{"sensitivity":1e999,"volume":1e999,"hudScale":1e999}').settings.volume, defaults.volume);
 assert.equal(options('{"hudScale":1.26}').settings.hudScale, 1.3);
 

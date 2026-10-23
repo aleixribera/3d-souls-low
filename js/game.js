@@ -91,20 +91,8 @@ const Game = {
         items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
       pause: { title: online ? 'ONLINE' : 'PAUSED', sub: online ? 'THE WORLD KEEPS RUNNING' : '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
-        { name: `Fullscreen: ${onOff(!!document.fullscreenElement)}`, desc: 'Fill the screen. Escape exits fullscreen.', go: () => fullscreen.toggle() },
-        { name: `Mouse sensitivity: ${settings.sensitivity}`, desc: 'Camera turn speed with the mouse or right stick (lock-on off).',
-          adjust: d => { settings.sensitivity = clamp(settings.sensitivity + d, 1, 10); } },
-        { name: `Camera invert: ${onOff(settings.invert)}`, desc: 'Flips vertical camera movement.', adjust: () => { settings.invert = !settings.invert; } },
-        { name: `FPS counter: ${onOff(settings.fps)}`, desc: `Frames per second in the top right corner (${SYSTEM_KEYS.fps} toggles it anywhere).`, adjust: () => { settings.fps = !settings.fps; } },
-        { name: `Show hitboxes: ${onOff(settings.hitboxes)}`, desc: `Show attack hitboxes while help is open (${keyLabel(SYSTEM_KEYS.help)}). ${keyLabel(SYSTEM_KEYS.hitboxes)} toggles them.`, adjust: () => { settings.hitboxes = !settings.hitboxes; } },
-        { name: `HUD scale: ${Math.round(settings.hudScale * 100)}%`, desc: 'Size of bars and text.',
-          adjust: d => { settings.hudScale = clamp(Math.round((settings.hudScale + d * 0.1) * 10) / 10, 0.7, 1.5); } },
-        { name: `Sound volume: ${settings.volume}`, desc: 'Master volume of effects and menu sounds.',
-          adjust: d => { settings.volume = clamp(Math.round(Number(settings.volume)) + d, 0, 10); } },
-        { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Small camera movements with your swings, rolls and the blows you take.',
+        { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Camera swing and shake from attacks, rolls, impacts and collapsing floors. Turn off for a steadier view.',
           adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
-        { name: `Camera shake: ${onOff(settings.screenShake !== false)}`, desc: 'Camera shake from impacts, executions and collapsing floors. Turn off for a steadier view.',
-          adjust: () => { settings.screenShake = settings.screenShake === false; } },
         { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
           adjust: d => {
             const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
@@ -489,7 +477,7 @@ const Game = {
   // ---- lock-on -----------------------------------------------------------------------------------
   setLock(e) { this.lock = e; this.lockLost = 0; this.lockHidden = 0; },
   addShake(time, amp) {
-    if (settings.screenShake === false) return;
+    if (settings.cameraMotion === false) return;
     if (amp * time < this.shakeAmp * this.shake) return;   // keep the stronger shake
     this.shake = this.shakeDur = time; this.shakeAmp = amp;
   },
@@ -958,7 +946,7 @@ const Game = {
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
     if (this.shake > 0) {
-      const a = settings.screenShake === false ? 0 : this.shakeAmp * this.shake / this.shakeDur;
+      const a = settings.cameraMotion === false ? 0 : this.shakeAmp * this.shake / this.shakeDur;
       camera.position.x += rand(-a, a); camera.position.y += rand(-a, a); camera.position.z += rand(-a, a);
       this.shake = Math.max(0, this.shake - frameDt);
     }
