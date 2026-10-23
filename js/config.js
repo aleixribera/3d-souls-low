@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.14.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.15.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -610,7 +610,14 @@ const CONFIG = {
     healRetreatTime: 3,         // seek space briefly; if no safe drink appears, fight for an opening instead
     healBelow: 0.5, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap
     engageRange: 16, wakeRange: 9,             // fights awake enemies within, sleeping ones only this close
-    follow: [2.5, 5.5], catchUp: 26,           // stays this close to its party; farther (or another floor) it catches up
+    follow: [2.5, 5.5],                       // start following outside the outer gap, walk down to the inner gap
+    assignmentTime: 0.5,                     // fair human assignments, with surplus companions at the front
+    // Floor routes avoid walls, gates, pits and rot. Required drops keep ordinary falling/damage.
+    // Searches advance in small batches; eight seconds of failed movement permits a 1–3 m unstick.
+    navigation: { cell: 1, sample: 0.25, tile: 6, clearance: 0.08, heightTolerance: 0.2, maxDrop: 8,
+      anchor: 2, anchors: 4, maxNodes: 24000, searchSteps: 96, waypoint: 0.4, lookAhead: 4,
+      goalMoved: 1.5, replan: 1.2, retry: 3, directionEpsilon: 0.01,
+      progressTime: 1, progressDistance: 0.5, stuckTime: 8, recoverMin: 1, recoverMax: 3 },
     respawnDelay: 4.8,
     chargeWindow: 2.2,          // a long opening it fills with a charged heavy
   },

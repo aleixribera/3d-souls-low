@@ -35,7 +35,16 @@ function validateData() {
   need(CONFIG.bossBattle.maxTeam === 6, 'Boss battle team limit must be six.');
   for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
-  const botConfig = CONFIG.bot;
+  const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
+  need(num(botConfig.assignmentTime) && botConfig.assignmentTime > 0, 'Bot assignmentTime must be positive.');
+  need(Array.isArray(botConfig.follow) && botConfig.follow.length === 2 && botConfig.follow.every(num) && botConfig.follow[0] > 0 && botConfig.follow[1] > botConfig.follow[0],
+    'Bot follow needs ordered positive inner/outer distances.');
+  for (const key of ['cell', 'sample', 'tile', 'clearance', 'heightTolerance', 'maxDrop', 'anchor', 'anchors', 'maxNodes', 'searchSteps', 'waypoint', 'lookAhead',
+    'goalMoved', 'replan', 'retry', 'directionEpsilon', 'progressTime', 'progressDistance', 'stuckTime', 'recoverMin', 'recoverMax'])
+    need(num(nav[key]) && nav[key] > 0, `Bot navigation.${key} must be positive.`);
+  need(Number.isInteger(nav.anchors) && Number.isInteger(nav.maxNodes) && Number.isInteger(nav.searchSteps) && nav.sample <= nav.cell &&
+    nav.maxDrop < CONFIG.fall.lethal && nav.progressTime < nav.stuckTime && nav.recoverMin < nav.recoverMax,
+    'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
     defence: ['walkMargin', 'walkLead', 'margin'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))

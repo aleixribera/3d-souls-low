@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.14.0: Persistent public lobby
+# Combat Arena 3D — v7.15.0: Companions on the road
+
+**v7.15.0:** Idle bots follow human players through normal levels, split evenly across the party. Extra bots—and a lone bot—support whoever is closest to the remaining enemies. Companions walk routes around walls and hazards, use stairs and required drops, and wait at closed gates. Distance and floor changes no longer teleport them; only sustained failed movement can trigger a short unstick. See [the notes](docs/bot-following-v7.15.0.md).
 
 **v7.14.0:** Online runs keep simulating with inactive or absent players, and bots continue after everyone leaves. Away leaders hand control to an active player; stalled loading tabs cannot block the party forever. Returning from the same browser restores your name, position, health, stamina and flasks in the current encounter. Volume defaults to 5, with the former saved value of 8 lowered to 5. See [the notes](docs/persistent-lobby-v7.14.0.md).
 

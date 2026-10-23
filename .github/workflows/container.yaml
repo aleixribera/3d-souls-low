@@ -56,6 +56,7 @@ jobs:
           node tests/arena-wipe.cjs
           node tests/boss-only.cjs
           node tests/bot-behavior.cjs
+          node tests/bot-follow.cjs
           node tests/damage-leaderboard.cjs
           node tests/fullscreen.cjs
           node tests/autoquality.cjs

@@ -10,6 +10,7 @@ globalThis.host = (() => {
   // Friendly bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared
   // enemies, so a bot keeps fighting whatever any browser tab is doing. id -> { id, name, profile, brain, body, ... }
   const bots = new Map();
+  let followers = new Map(), assignLeft = 0, partyKey = '';
   let botSerial = 0, wipeOnly = false, acting = null;
   const crowdClocks = new Map();
   const C = ArenaNet.config;
@@ -137,7 +138,7 @@ globalThis.host = (() => {
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
-    damage = new Map(); results = null;
+    damage = new Map(); results = null; followers.clear(); assignLeft = 0; partyKey = '';
     wipeOnly = kind === 'arena' && isBossDef(d);
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
@@ -166,7 +167,14 @@ globalThis.host = (() => {
   function removeBot(id) { const ok = bots.delete(id); players = players.filter(p => p.id !== id); return ok; }
   function clearBots() { for (const id of [...bots.keys()]) removeBot(id); }
   function updateBots(dt) {
-    const B = CONFIG.bot;
+    if (!bots.size) return;
+    const B = CONFIG.bot, people = players.filter(p => !p.botId && p.alive());
+    const liveBots = botBodies().filter(p => p.alive());
+    const key = people.map(p => p.id).sort().join(',') + '/' + liveBots.map(p => p.id).sort().join(',');
+    if (Game.kind === 'level' && ((assignLeft -= dt) <= 0 || key !== partyKey)) {
+      followers = BotNavigation.assign(people, liveBots, Game.enemies, followers);
+      assignLeft = B.assignmentTime; partyKey = key;
+    }
     for (const b of bots.values()) {
       const p = b.body; if (!p) continue;
       if (!p.alive()) {
@@ -176,7 +184,8 @@ globalThis.host = (() => {
       }
       if (b.hitstop > 0) { b.hitstop = Math.max(0, b.hitstop - dt); continue; }
       const allies = players.filter(o => o !== p && o.alive());
-      const { mv, lock } = b.brain.think(dt, p, Game.enemies, allies, flying);
+      const lead = Game.kind === 'level' ? people.find(p => p.id === followers.get(b.id)) : null;
+      const { mv, lock } = b.brain.think(dt, p, Game.enemies, allies, flying, lead);
       const before = Game.enemies.map(e => e.hp);
       acting = b;
       try {
@@ -190,14 +199,11 @@ globalThis.host = (() => {
       if (p.alive() && !p.invulnerable()) for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
         p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
       }
-      // Left far behind (or on another floor) with nothing to fight: catch up with the nearest person.
-      if (Game.kind === 'level' && p.alive() && !b.brain.target) {
-        const people = players.filter(o => !o.botId && o.alive());
-        const lead = people.sort((a, c) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(c.x - p.x, c.z - p.z))[0];
-        if (lead && (Math.hypot(lead.x - p.x, lead.z - p.z) > B.catchUp || Math.abs(lead.y - p.y) > CONFIG.height.reach + 1)) {
-          p.x = lead.x - Math.sin(lead.yaw) * 1.5; p.z = lead.z - Math.cos(lead.yaw) * 1.5; p.y = lead.y;
-          p.vx = p.vy = p.vz = p.kx = p.kz = 0; p.savePrev();
-        }
+      // Only sustained failed walking can request a short, collision-checked unstick along its route.
+      const rescue = b.brain.navigator.recovery;
+      if (Game.kind === 'level' && p.alive() && !b.brain.target && rescue && lead) {
+        p.x = rescue.x; p.y = rescue.y; p.z = rescue.z;
+        p.vx = p.vy = p.vz = p.kx = p.kz = 0; p.savePrev();
       }
     }
   }

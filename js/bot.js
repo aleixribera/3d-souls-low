@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Friendly bots (v7.13.1)
+// Friendly bots (v7.15.0)
 // ============================================================================
 // A bot is an ordinary Player whose presses come from BotHands instead of the keyboard (Player.ctl). The brain
 // reads the fight the way a player watches it: each enemy's wind-up, how long until its blow opens, how far that
@@ -140,7 +140,7 @@ const bot = (() => {
   }
 
   function create(profile, rng = Math.random) {
-    const hands = new BotHands(), C = B();
+    const hands = new BotHands(), C = B(), navigator = BotNavigation.create();
     const seen = new WeakMap();   // enemy -> { key, at, plan, done }: what was decided about its current blow
     let target = null, side = profile.side, sideTimer = span(C.strafeSwitch, rng), heavyHold = 0, jumpPlan = 0;
     let wasAlive = new WeakSet(), cheer = 0;
@@ -276,7 +276,7 @@ const bot = (() => {
       return best;
     }
 
-    function think(dt, me, enemies, allies, bolts = []) {
+    function think(dt, me, enemies, allies, bolts = [], leader = null) {
       const C = B(), P = CONFIG.player, R = C.risk;
       hands.tick(dt);
       const idle = { x: 0, z: 0, has: false };
@@ -299,8 +299,10 @@ const bot = (() => {
         aloneTime = 0; lastStand = false;
         hands.hold('block', false); hands.hold('heavy', false);
         if (cheer > 0 && (cheer -= dt) <= 0.2 && me.isFree() && me.canAct()) { hands.press('jump'); cheer = 0; }
-        return { mv: followParty(me, allies), lock: null };
+        const lead = leader || allies.filter(a => !a.botId && a.alive()).sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
+        return { mv: navigator.move(dt, me, lead), lock: null };
       }
+      navigator.reset();
       const e = target, to = flat(e.x - me.x, e.z - me.z), gap = edge(me, e);
       aloneTime = allies.some(a => !a.botId && a.alive()) ? 0 : aloneTime + dt;
       lastStand = aloneTime >= R.lastStandAfter;
@@ -487,14 +489,7 @@ const bot = (() => {
       const tang = rot(to, side * Math.PI / 2), k = C.strafe * circle * (Math.abs(radial) < 0.6 ? 1 : 0.4);
       return flat(to.x * radial + tang.x * k, to.z * radial + tang.z * k);
     }
-    function followParty(me, allies) {
-      const C = B();
-      let lead = null, d = Infinity;
-      for (const a of allies) { const k = Math.hypot(a.x - me.x, a.z - me.z); if (a.alive() && k < d) { d = k; lead = a; } }
-      if (!lead || d < C.follow[0]) return { x: 0, z: 0, has: false };
-      return d > C.follow[1] ? flat(lead.x - me.x, lead.z - me.z) : { x: 0, z: 0, has: false };
-    }
-    return { hands, think, profile, get target() { return target; }, get tactic() { return tacticId; }, get risking() { return riskLeft > 0; } };
+    return { hands, think, profile, navigator, get target() { return target; }, get tactic() { return tacticId; }, get risking() { return riskLeft > 0; } };
   }
-  return { create, nextBlow, opening, reach, jumpLead };
+  return { create, nextBlow, opening, reach, jumpLead, navigation: BotNavigation };
 })();
