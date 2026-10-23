@@ -35,6 +35,17 @@ function validateData() {
   need(CONFIG.bossBattle.maxTeam === 6, 'Boss battle team limit must be six.');
   for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
+  const botConfig = CONFIG.bot;
+  need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
+  for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
+    defence: ['walkMargin', 'walkLead', 'margin'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
+    for (const key of fields) need(num(botConfig[group]?.[key]) && botConfig[group][key] >= 0, `Bot ${group}.${key} must be non-negative.`);
+  for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
+    need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
+  for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
+  const jumpRange = botConfig.jumpDodge.lead;
+  need(Array.isArray(jumpRange) && jumpRange.length === 2 && jumpRange.every(num) && jumpRange[0] > 0 && jumpRange[1] >= jumpRange[0],
+    'Bot jumpDodge.lead needs an ordered positive range.');
   const checkAttack = (a, owner) => {
     const tag = `${owner} attack "${a && a.id}"`;
     need(a && typeof a.id === 'string', `${owner}: an attack has no id.`);

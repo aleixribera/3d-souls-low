@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.12.2';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.13.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -582,7 +582,7 @@ const CONFIG = {
   // Friendly bots (v7.11, js/bot.js): a bot presses the same actions a player does. Times in s, distances in m
   // (between body edges unless named otherwise). Nothing here is tuned for one enemy: every read comes from attack data.
   bot: {
-    notice: [0.04, 0.1],        // a new wind-up is seen this long after it starts
+    notice: [0.08, 0.18],        // a new wind-up is seen this long after it starts
     rollLead: [0.05, 0.12],     // a roll starts this long before the strike opens (its i-frames last CONFIG.player.rollIFrames)
     parryLead: [0.02, 0.07],    // a parry is pressed this long before the strike opens (inside CONFIG.parry.lead)
     threatMargin: 0.7,          // m added to a strike's reach before it counts as a threat
@@ -596,6 +596,11 @@ const CONFIG = {
     spacing: 2.2,               // edge gap it keeps while waiting out an enemy
     strafe: 0.55, strafeSwitch: [1.2, 3.4],   // sideways share of its walk, and how often it changes side
     roll: { margin: 0.15, reverseChance: 0.35, ringAngle: [0.15, 0.45], retreatAngle: [0.2, 0.7] },
+    parryChanceScale: 0.1,      // one tenth of each companion's former parry preference
+    tempo: { comboBase: 0.12, comboAggression: 0.45, punishCombo: 0.9, punishWindow: 1.3,
+      punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, regroupBelow: 0.3 },
+    defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2 },
+    jumpDodge: { lead: [0.16, 0.28], clearance: 0.12, timingMargin: 0.02, followMargin: 0.2, maxSpeed: 1.2 },
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another
     probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange
     healRetreatTime: 3,         // seek space briefly; if no safe drink appears, fight for an opening instead

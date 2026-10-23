@@ -65,7 +65,7 @@ function observe(b, p, enemies, seconds) {
   b.brain.think(dt, p, [e], []);
   assert.ok(!b.brain.hands.peek('light') && !b.brain.hands.peek('heavy'), 'impatience cannot spend unavailable stamina');
   p.stamina = p.maxStamina;
-  b.brain.think(dt, p, [e], []);
+  for (let i = 0; i < 30 && !b.brain.hands.peek('light'); i++) b.brain.think(dt, p, [e], []);
   assert.ok(b.brain.hands.peek('light'), 'a rested bot probes even when the theoretical counter window is too short');
 }
 {
@@ -81,7 +81,7 @@ function observe(b, p, enemies, seconds) {
   assert.ok(attack, 'the defence fixture uses a real single-hit boss attack');
   threat.beginAttack(attack); threat.stateTime = attack.hits[0].startup - 0.01;
   let defended = false;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 20; i++) {
     b.brain.think(dt, p, [e, threat], []);
     assert.ok(!b.brain.hands.peek('light') && !b.brain.hands.peek('heavy'), 'a known incoming blow vetoes a probe');
     if (b.brain.hands.peek('roll') || b.brain.hands.peek('parry')) { defended = true; break; }
@@ -143,7 +143,7 @@ for (const profile of profiles) {
     p.x = e.x; p.z = e.z + e.radius + p.radius + 1.2; e.yaw = 0;
     const attack = e.baseDef.attacks.find(a => !a.projectile && !a.box.ring && a.hits.length === 1 && !a.hits[0].leap);
     e.beginAttack(attack); e.stateTime = attack.hits[0].startup - 0.01;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const decision = b.brain.think(dt, p, [e], []);
       if (b.brain.hands.peek('roll')) {
         directions.add(Math.round(Math.atan2(decision.mv.x, decision.mv.z) * 4 / Math.PI)); break;
@@ -153,3 +153,203 @@ for (const profile of profiles) {
   assert.ok(directions.size >= 3, profile + ' varies roll direction against the same strike (' + [...directions] + ')');
 }
 console.log('Bot rolls: each personality used at least three dodge directions against the same attack.');
+
+// A large theoretical opening must not erase a deliberate bait/reposition plan.
+{
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { bait: 1 } }, seeded(40)); p.ctl = b.brain.hands;
+  e.cooldown = 30;
+  const to = { x: e.x - p.x, z: e.z - p.z };
+  const decision = b.brain.think(dt, p, [e], []);
+  assert.ok(decision.mv.x * to.x + decision.mv.z * to.z < 0, 'a baiting bot backs out even with a long safe opening');
+  assert.ok(!b.brain.hands.peek('light') && !b.brain.hands.peek('heavy'), 'baiting does not automatically become a swing');
+  e.setState('parried'); e.stateTime = 0; p.z = e.z + e.radius + p.radius + 0.7; p.riposte = 1;
+  b.brain.think(dt, p, [e], []);
+  assert.ok(b.brain.hands.peek('heavy') || b.brain.hands.peek('light'), 'a real riposte opportunity immediately overrides baiting');
+}
+{
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, burst: [1, 1], reset: [1, 1], heavy: 0, jump: 0 }, seeded(83)); p.ctl = b.brain.hands;
+  e.cooldown = 30; e.def = { ...e.def, posture: { ...e.def.posture, max: 1e6 } };
+  let wasAttacking = false, finished = false, retreatFrames = 0, lastDistance = Math.hypot(p.x - e.x, p.z - e.z), hits = 0, lastHp = e.hp;
+  for (let i = 0; i < 12 * 60; i++) {
+    sim.setPlayers([]); sim.tick(dt);
+    if (e.hp < lastHp) hits++; lastHp = e.hp;
+    if (wasAttacking && !p.isAttacking()) finished = true;
+    const distance = Math.hypot(p.x - e.x, p.z - e.z);
+    if (finished && !p.isAttacking() && p.state !== 'roll' && distance > lastDistance + 0.01) retreatFrames++;
+    lastDistance = distance; wasAttacking = p.isAttacking();
+  }
+  assert.ok(retreatFrames >= 15, 'a completed attack burst is followed by a visible retreat');
+  assert.ok(hits >= 2, 'the bot returns to attack after regrouping');
+}
+
+// Combo decisions are made once per swing. A declined chain must not be retried every frame until it succeeds.
+{
+  let declined = false;
+  for (let seed = 1; seed < 30 && !declined; seed++) {
+    const { sim, b, p, e } = waiting('giant', 'quill', false, seed);
+    e.cooldown = 30;
+    p.z = e.z + e.radius + p.radius + 0.7;
+    p.attack = p.def.moveset.attacks.light; p.attackT = p.attack.hits[0].startup + 0.01; p.setState('attack');
+    b.brain.think(dt, p, [e], []);
+    if (b.brain.hands.peek('light')) continue;
+    declined = true;
+    for (let i = 0; i < 30; i++) {
+      b.brain.hands.clear(); b.brain.think(dt, p, [e], []);
+      assert.ok(!b.brain.hands.peek('light'), 'a declined combo remains declined for this swing');
+    }
+  }
+  assert.ok(declined, 'ordinary openings sometimes end after one attack');
+}
+console.log('Bot tempo: baiting survives safe windows, key openings override it, bursts retreat and re-engage, and combos are chosen once.');
+
+// Check the requested reduction across repeated eligible parry opportunities, without player animation hiding a parry.
+for (const profile of profiles) {
+  const { sim, b, p, e } = waiting('hollow', profile);
+  b.brain = sim.inspect().bot.create({ ...b.profile, evade: 0, jumpDodge: 0 }, seeded(514)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.7; e.yaw = 0;
+  const attack = e.baseDef.attacks.find(a => !a.noParry && !a.rollOnly && !a.projectile && a.hits.length === 1);
+  let parries = 0, responses = 0;
+  for (let sample = 0; sample < 2000; sample++) {
+    b.brain.hands.clear(); e.beginAttack(attack); e.stateTime = attack.hits[0].startup - 0.01;
+    for (let i = 0; i < 20; i++) {
+      b.brain.think(dt, p, [e], []);
+      if (b.brain.hands.peek('parry') || b.brain.hands.peek('roll')) {
+        parries += Number(b.brain.hands.peek('parry')); responses++; break;
+      }
+    }
+  }
+  assert.equal(responses, 2000, 'every eligible blow gets a defensive response');
+  const rate = parries / responses;
+  assert.ok(Math.abs(rate - b.profile.parry * 0.1) < 0.025, profile + ' parry rate is one tenth of its former preference (' + (rate * 100).toFixed(1) + '%)');
+  console.log(profile + ': parried ' + parries + '/' + responses + ' eligible blows.');
+}
+
+// Defensive jumping uses ordinary Player physics and low hitboxes; it is not a free invulnerability state.
+{
+  const { sim, b, p, e } = waiting('giant', 'maren');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 1 }, seeded(7)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
+  const attack = e.baseDef.attacks.find(a => a.id === 'stomp');
+  e.beginAttack(attack); e.holdLeft = 0;
+  const hp = p.hp; let jumped = false, cleared = false;
+  for (let i = 0; i < 3 * 60; i++) {
+    sim.setPlayers([]); sim.tick(dt);
+    if (p.state === 'jump' || p.state === 'fall') jumped = true;
+    if (e.hitbox && e.hitbox.overlaps({ ...p, y: e.y, grounded: true }) && !e.hitbox.overlaps(p) && p.y > e.y) cleared = true;
+    if (e.state === 'recover') break;
+  }
+  assert.ok(jumped && cleared, 'the bot jumps and physically clears the stomp while a grounded body would be hit');
+  assert.equal(p.hp, hp, 'the jump avoids the real attack damage');
+}
+{
+  const { sim, b, p, e } = waiting('hollow', 'maren');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 1 }, seeded(7)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.7; e.yaw = 0;
+  const attack = e.baseDef.attacks.find(a => !a.projectile && a.hits.length === 1);
+  e.beginAttack(attack);
+  let rolled = false;
+  for (let i = 0; i < 2 * 60; i++) {
+    const decision = b.brain.think(dt, p, [e], []);
+    assert.ok(!b.brain.hands.peek('jump'), 'a tall swing never gets a defensive jump');
+    if (b.brain.hands.peek('roll')) { rolled = true; break; }
+    e.stateTime += dt;
+  }
+  assert.ok(rolled, 'an unjumpable attack keeps its roll response');
+}
+console.log('Bot jump defence: real clearance and no damage against a low stomp; tall attacks retain rolls.');
+
+{
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 1, jumpDodge: 0 }, seeded(21)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 1.2; e.yaw = 0;
+  const attack = e.baseDef.attacks.find(a => a.id === 'sweep');
+  e.beginAttack(attack);
+  const hp = p.hp; let rolled = false, movedOut = false, farthest = 0;
+  for (let i = 0; i < 3 * 60; i++) {
+    sim.setPlayers([]); sim.tick(dt);
+    if (p.state === 'roll') rolled = true;
+    if (e.hitbox && !e.hitbox.overlaps(p)) movedOut = true;
+    farthest = Math.max(farthest, Math.hypot(p.x - e.x, p.z - e.z));
+    if (e.state === 'recover') break;
+  }
+  assert.ok(movedOut && !rolled && p.hp === hp, 'with enough room and wind-up, the bot walks clear and stays out until the swing closes');
+  assert.ok(farthest < 7, 'walking evasion stops once clear instead of retreating for the whole wind-up');
+}
+{
+  const { sim, p, e } = waiting('giant', 'maren'), brain = sim.inspect().bot;
+  const stomp = e.baseDef.attacks.find(a => a.id === 'stomp'), low = stomp.hits[0];
+  assert.ok(brain.jumpLead(e, { attack: stomp, hit: low, index: 0 }, p), 'a low stomp can physically be cleared');
+  const chain = { ...stomp, hits: [low, { startup: 0.1, active: 0.15, box: { w: 4, d: 4, h: 4, fwd: 1, y: 2 } }] };
+  assert.equal(brain.jumpLead(e, { attack: chain, hit: low, index: 0 }, p), null, 'a quick follow-up vetoes a jump commitment');
+  const bolt = { ...stomp, projectile: { speed: 20 } };
+  assert.equal(brain.jumpLead(e, { attack: bolt, hit: low, index: 0 }, p), null, 'projectiles do not acquire jump evasion');
+}
+console.log('Bot spacing: a safe walking escape avoids damage without a roll; fast follow-ups and projectiles veto jumping.');
+
+for (const profile of profiles) {
+  let jumps = 0, rolls = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { sim, b, p, e } = waiting('giant', profile);
+    b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0 }, seeded(seed * 131)); p.ctl = b.brain.hands;
+    p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0;
+    for (let i = 0; i < 2 * 60; i++) {
+      sim.setPlayers([]); sim.tick(dt);
+      if (p.state === 'jump') { jumps++; break; }
+      if (p.state === 'roll') { rolls++; break; }
+    }
+  }
+  assert.ok(jumps > 0 && rolls > jumps && jumps + rolls === 40, profile + ' sometimes jumps a low stomp, usually rolls, and never gets stuck deciding');
+  console.log(profile + ': ' + jumps + ' jumps and ' + rolls + ' rolls over 40 eligible low attacks.');
+}
+
+{
+  const { sim, b, p, e } = waiting('giant', 'maren');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 1 }, seeded(7)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
+  const otherSim = createSimulation(); otherSim.addBot(); otherSim.start('arena', 'hollow');
+  const other = otherSim.inspect().Game.duel;
+  other.x = p.x; other.z = p.z + 1.7; other.yaw = Math.PI;
+  const tall = other.baseDef.attacks.find(a => !a.projectile && a.hits.length === 1);
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = e.attack.hits[0].startup - 0.4;
+  other.beginAttack(tall); other.stateTime = tall.hits[0].startup - 0.3;
+  let rolled = false;
+  for (let i = 0; i < 40; i++) {
+    b.brain.think(dt, p, [e, other], []);
+    assert.ok(!b.brain.hands.peek('jump'), 'another incoming attack vetoes a jump over the low attack');
+    if (b.brain.hands.peek('roll')) { rolled = true; break; }
+    e.stateTime += dt; other.stateTime += dt;
+  }
+  assert.ok(rolled, 'overlapping threats retain a grounded emergency dodge');
+}
+
+{
+  const { sim, b, p, e } = waiting('giant', 'tobin');
+  b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { bait: 1 }, heavy: 0, jump: 0 }, seeded(19)); p.ctl = b.brain.hands;
+  p.z = e.z + 6; p.vx = p.vz = 0;
+  e.attack = e.baseDef.attacks.find(a => a.id === 'sweep'); e.setState('recover'); e.stateTime = 0;
+  const hp = e.hp;
+  for (let i = 0; i < 2 * 60 && e.hp === hp; i++) { sim.setPlayers([]); sim.tick(dt); }
+  assert.ok(e.hp < hp, 'a bot pursues a recovery opening long enough to close and hit, rather than abandoning it mid-approach');
+}
+
+{
+  const choice = atEdge => {
+    const { sim, b, p, e } = waiting('giant', 'maren');
+    b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 1 }, () => 0.5); p.ctl = b.brain.hands;
+    e.x = atEdge ? 15.7 : 0; e.z = 0; e.yaw = Math.PI / 2;
+    p.x = e.x + 1.8; p.z = 0; p.vx = 1.1; p.vz = 0;
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = e.attack.hits[0].startup - 0.18;
+    for (let i = 0; i < 20; i++) {
+      b.brain.think(dt, p, [e], []);
+      if (b.brain.hands.peek('jump')) return 'jump';
+    }
+    e.stateTime = e.attack.hits[0].startup - 0.05;
+    for (let i = 0; i < 10; i++) b.brain.think(dt, p, [e], []);
+    return b.brain.hands.peek('roll') ? 'roll' : 'none';
+  };
+  assert.equal(choice(false), 'jump', 'a clear landing path permits the eligible jump');
+  assert.equal(choice(true), 'roll', 'drift beyond the arena edge vetoes a jump and falls back to a roll');
+}

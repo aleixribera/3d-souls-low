@@ -42,7 +42,8 @@ const { createServer } = require('../server/index.cjs');
     if (shots) { await a.waitForTimeout(1500); await a.screenshot({ path: path.join(shots, 'bot-fight.png') }); }
     // Both players fall: the bot carries the attempt, and the fallen watch it fight.
     for (const p of [a, b]) await p.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
-    await a.waitForFunction(() => document.body.classList.contains('spectator-view') && (document.getElementById('spectatorName')?.textContent || '').trim().length > 0, null, { timeout: 15000 });
+    // The first fallen player briefly watches the other human until their death pose arrives.
+    await a.waitForFunction(() => document.body.classList.contains('spectator-view') && /Ser Quill|Maren|Tobin/.test(document.getElementById('spectatorName')?.textContent || ''), null, { timeout: 15000 });
     const watched = await a.locator('#spectatorName').textContent();
     assert.match(watched, /Ser Quill|Maren|Tobin/, 'the fallen spectate the bot');
     const epoch = app.session.epoch;

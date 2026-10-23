@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.12.2: Radagon dodge window
+# Combat Arena 3D — v7.13.0: Human combat rhythm
+
+**v7.13.0:** Companions fight in varied bursts, back out and reposition, then press real openings. Parry choices fall to one tenth of their former frequency; walking clear and rolling are their main defences, with occasional jumps over low attacks. See [the notes](docs/bot-rhythm-v7.13.0.md).
 
 **v7.12.2:** Radagon's four-hit Elden Shattering combo leaves more time between its third slam and final shockwave, allowing two separate dodges. See [the timing change](docs/combat-timings-v4.1.md).
 
