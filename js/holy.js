@@ -7,7 +7,7 @@
 // lands, from the start of its wind-up, brightening toward the strike, then a pillar of light as it erupts. The hitbox is
 // the hit's own box, as for every attack: the rune only shows where it already is. Tuning: CONFIG.elden.holy.
 const holy = (() => {
-  const H = CONFIG.elden.holy, flashes = [], sigils = [];
+  const H = CONFIG.elden.holy, flashes = [];
   const add = (color) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
   // Shared geometry (unit radius, flat on the floor): two rings, the Elden Ring's crossing arcs and a vertical stroke.
   const flat = g => g.rotateX(-Math.PI / 2);
@@ -34,31 +34,31 @@ const holy = (() => {
   }
   events.on('enemyBlink', d => { const e = d.enemy; flash(e.x, e.y, e.z); });
 
-  // ---- sigils: one per enemy that uses them, made on first need ----
+  // ---- sigils: one per enemy that uses them, made on first need (js/effect-slots.js), freed once it leaves the game ----
+  const sigils = effectSlots.slots((S, e) => {
+    scene.remove(S.g); for (const m of S.g.children) if (m.material) m.material.dispose();
+    if (e.rig && e.rig.holySigil === S) e.rig.holySigil = null;
+  });
   function sigilFor(e) {
     if (e.rig.holySigil) return e.rig.holySigil;
+    return (e.rig.holySigil = sigils.acquire(e, makeSigil));
+  }
+  function makeSigil() {
     const g = new THREE.Group(), rune = new THREE.Mesh(RUNE, add(H.color)), pillar = new THREE.Mesh(PILLAR, add(H.core));
     const light = new THREE.PointLight(H.color, 0, H.lightRange); light.position.y = 1;
     light.userData.legacyEffectLight = true; light.visible = false;   // shared effect-light pool
     g.userData.warmUp = true;
     g.add(rune, pillar, light); g.visible = false; scene.add(g);
-    sigils.push({ e, g });
-    return (e.rig.holySigil = { g, rune, pillar, light, at: null, k: 0 });
+    return { g, rune, pillar, light, at: null, k: 0 };
   }
 
-  let last = performance.now();
-  function clean(enemies) {
-    for (let i = sigils.length - 1; i >= 0; i--) if (!enemies.includes(sigils[i].e)) {
-      scene.remove(sigils[i].g); for (const m of sigils[i].g.children) if (m.material) m.material.dispose(); sigils.splice(i, 1);
-    }
-  }
   function render(game) {
-    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const dt = effectSlots.dt(), now = effectSlots.time() * 1000;   // the shared effect clock (ms, for the rune's shimmer)
     for (const f of flashes) if (f.mesh.visible) {
       f.t += dt; const k = Math.min(1, f.t / H.ringTime), s = 0.4 + k * H.ring;
       f.mesh.scale.set(s, 1, s); f.mesh.material.opacity = 0.9 * (1 - k); f.mesh.visible = k < 1;
     }
-    clean(game.enemies);
+    sigils.sweep(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig;
       // Unseen while it rushes (restored the frame it reappears).
@@ -88,6 +88,6 @@ const holy = (() => {
   }
   return {
     attach() { Game.renderHooks.push(render); },
-    prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.hits.some(h => h.sigil))) sigilFor(e); },
+    prepare(enemies) { sigils.sweep(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.hits.some(h => h.sigil))) sigilFor(e); },
   };
 })();

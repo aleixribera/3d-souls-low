@@ -161,5 +161,6 @@ class Rig {
     if (this.skeleton) this.skeleton.dispose();
     if (this.glint) this.glint.sprite.material.dispose();
     if (this.aura) this.aura.sprite.material.dispose();
+    if (this.modelEntry) { KIT.release(this.modelEntry); this.modelEntry = null; }   // its model cache entry (js/bodykit.js)
   }
 }

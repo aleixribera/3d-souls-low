@@ -245,7 +245,7 @@ const lore = (() => {
   // ---- drawing, every frame --------------------------------------------------------------------------------------------
   function render(game) {
     if (!st) return;
-    const p = game.player, t = performance.now() / 1000, dt = 1 / 60;
+    const p = game.player, t = performance.now() / 1000, dt = effectSlots.real();   // the render delta (Game.renderDt)
     // Scenes: only near the player.
     for (const s of st.scenes) {
       const on = Math.hypot(p.x - s.def.x, p.z - s.def.z) < C.sceneRange;

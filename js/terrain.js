@@ -25,6 +25,11 @@ const EDGES = {   // fixed coordinate (rect index), outward sign, the axis the e
   w: { at: 0, out: -1, along: 'z', lo: 2, hi: 3, opp: 'e' },
 };
 
+// Level layouts (each has a stage builder in js/scene.js's BUILDERS; validated).
+const LEVEL_LAYOUTS = ['arena', 'hall', 'rooms'];
+// Every entry of a room level with a gate: its zones, shortcuts and sealed gates.
+const gatedEntries = L => [...L.gated, ...(L.shortcuts || []), ...(L.sealed || [])];
+
 // A room or ramp as a region: floorAt(x, z), its floor range lo..hi, and `top` (lo..hi plus headroom).
 function makeRegion(src, kind, L) {
   const r = src.rect, height = src.height ?? L.wallHeight;

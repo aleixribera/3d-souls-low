@@ -134,7 +134,6 @@ void main() {
       fx.mark(x, y, z, L.el.glow, s * 2.6, 1.6, 1); fx.flare(P(x, y + 0.4, z), L.el.core, 1.6 + s * 0.6, 0.3);
       fx.flashAt(P(x, y + 0.6, z), L.el.glow, 8 + 4 * s, 6 + 2 * s);
       groundRing(x, y, z, 0.3, s * 1.6, 0.45, L.el.glow, 0.35, 0.8);
-      ultraPost.pulse({ punch: 0.25 + 0.1 * s, ca: 0.5 });
     },
     pillar(x, y, z, s, L) {   // the light comes down: a column, a ring of gold rising, a blinding flash
       base(x, y, z, s, L, 0.6);
@@ -145,7 +144,7 @@ void main() {
       fx.flare(P(x, y + 1, z), L.el.core, 2.4 + 0.6 * s, 0.45); fx.flashAt(P(x, y + 1.5, z), L.el.glow, 14 + 4 * s, 10 + 2 * s);
       fx.mark(x, y, z, L.el.glow, s * 2.4, 1.6, 1);
       groundRing(x, y, z, 0.2, s * 1.8, 0.55, L.el.glow, 0.4, 1);
-      ultraPost.pulse({ flash: 0.06, color: L.el.core, ca: 0.4 });
+      ultraPost.pulse({ flash: 0.06, color: L.el.core });
     },
     blaze(x, y, z, s, L) {   // a ring of fire bursts up and burns on a moment
       base(x, y, z, s, L, 0.7);
@@ -181,7 +180,6 @@ void main() {
       fx.sparkBurst(P(x, y + 0.3, z), Math.round(40 * s), L.el.sparks, [0, 1, 0], 0.4, 1.3);
       fx.flare(P(x, y + 0.6, z), L.el.core, 2 + 0.6 * s, 0.35); fx.flashAt(P(x, y + 1, z), L.el.glow, 14 + 5 * s, 9 + 2 * s);
       fx.mark(x, y, z, L.el.glow, s * 2.4, 1.6, 1); groundRing(x, y, z, 0.2, s * 1.7, 0.4, L.el.core, 0.35, 1);
-      ultraPost.pulse({ punch: 0.3 + 0.1 * s, ca: 0.7 });
     },
     gale(x, y, z, s, L) {   // a whirlwind tears out of the blow
       base(x, y, z, s, L, 0.8);
@@ -196,7 +194,6 @@ void main() {
       ultraPost.wave(c, 2, 2.4); later(() => ultraPost.wave(c, 1.4, 3), 140);
       fx.dustRing(x, y, z, 28, s * 1.8, U.puffs.dust, 1.6);
       groundRing(x, y, z, 0.5, s * 2.6, 0.7, L.el.glow, 0.7, 0.9);
-      ultraPost.pulse({ punch: 0.5, ca: 0.9, at: c });
     },
     toll(x, y, z, s, L) {   // the bell's note: rings of pale sound, one after another
       base(x, y, z, s, L, 0.5);
@@ -241,19 +238,21 @@ void main() {
   when('bossLeap', d => { const L = look(d.enemy); if (L) fx.moteBurst(fx.chest(d.enemy), 40, L.el.mote, { r: d.enemy.radius, speed: 2, lift: 0.5, life: [0.5, 1], size: 1 }); });
 
   // ---- each frame: gathering, shedding, trails, breath, the sphere ----------------------------------------------------------
-  let last = performance.now();
   const rate = new WeakMap();
+  // Reused moteBurst options (it only reads them), so the per-frame shedding allocates no option objects.
+  const SHED = { r: 0.05, speed: 0.6, lift: 0.3, life: [0.3, 0.7], size: 0.8, boost: 2.2, up: 0.2 };
+  const LEAP = { r: 1, speed: 0.4, lift: 0, life: [0.4, 0.8], size: 1.1, up: 0 };
+  const BREATH = { r: 0.2, speed: 1.2, lift: 2, life: [0.4, 0.9], size: 1.2, up: 1 };
   function clearEffects() {
     generation++;
     for (const g of glows.values()) { g.visible = false; glowPool.push(g); }
     glows.clear();
     for (const pool of [rings, pillars, fires]) for (const o of pool) { o.m.visible = false; o.age = Infinity; }
-    last = performance.now();
   }
   visuals.hooks.stage.push(clearEffects);
   visuals.hooks.quality.push(clearEffects);
   Game.renderHooks.push(game => {
-    const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;
+    const dt = effectSlots.real();   // the shared effect clock (one step a frame when tests step by hand)
     if (!on()) return;
     for (const [e, g] of glows) if (!game.enemies.includes(e) || !e.alive()) { g.visible = false; glowPool.push(g); glows.delete(e); }
     for (const e of game.enemies) {
@@ -267,8 +266,8 @@ void main() {
         tip(e, 1.0, v1);
         acc += BB.gather * dt * sc * (0.4 + k) * VIS.fxBudgets[visuals.quality().fxBudget].density;
         for (; acc >= 1; acc--) {
-          const u = [rand(-1, 1), rand(-0.6, 1), rand(-1, 1)], l = Math.hypot(...u) || 1, r = rand(0.9, 1.7) * L.scale * 0.8, life = rand(0.25, 0.45);
-          const sx = v1.x + u[0] / l * r, sy = v1.y + u[1] / l * r, sz = v1.z + u[2] / l * r;
+          const ux = rand(-1, 1), uy = rand(-0.6, 1), uz = rand(-1, 1), l = Math.hypot(ux, uy, uz) || 1, r = rand(0.9, 1.7) * L.scale * 0.8, life = rand(0.25, 0.45);
+          const sx = v1.x + ux / l * r, sy = v1.y + uy / l * r, sz = v1.z + uz / l * r;
           col.set(L.el.mote).multiplyScalar(2.6);
           fx.motes.spawn({ x: sx, y: sy, z: sz, vx: (v1.x - sx) / life, vy: (v1.y - sy) / life, vz: (v1.z - sz) / life, drag: 0, lift: 0, life, max: life,
                            s0: U.motes.size * 1.1 * sc, s1: U.motes.size * 0.3, r: col.r, g: col.g, b: col.b, fadeIn: 0.3 });
@@ -281,16 +280,18 @@ void main() {
       }
       if (e.state === ES.ACTIVE || (e.state === ES.WINDUP && a.spectral)) {   // shed: the blade throws its element as it moves
         const n = e.state === ES.ACTIVE ? BB.shed : 1;
+        SHED.size = 0.8 * sc;   // one options record for every shed mote (moteBurst only reads it)
         for (let i = 0; i < n; i++) {
           tip(e, rand(0.35, 1.25), v1);
-          fx.moteBurst(v1, 1, L.el.mote, { r: 0.05, speed: 0.6, lift: 0.3, life: [0.3, 0.7], size: 0.8 * sc, boost: 2.2, up: 0.2 });
+          fx.moteBurst(v1, 1, L.el.mote, SHED);
         }
         if (e.state === ES.ACTIVE && Math.random() < 0.5) fx.sparkBurst(tip(e, 1.2, v1), 1, L.el.sparks, null, 0, 0.5);
         if (L.el.smoke && e.state === ES.ACTIVE && Math.random() < 0.6) fx.puff(tip(e, rand(0.4, 1.2), v1).x, v1.y, v1.z, L.el.smoke, 0.25, 0.9, 0.7, [0, 0.3, 0], 0.5);
       }
       if (e.leaping) {   // through the air, a trail of the element
         const c = fx.chest(e);
-        fx.moteBurst(c, 3, L.el.mote, { r: e.radius, speed: 0.4, lift: 0, life: [0.4, 0.8], size: 1.1 * sc, up: 0 });
+        LEAP.r = e.radius; LEAP.size = 1.1 * sc;
+        fx.moteBurst(c, 3, L.el.mote, LEAP);
         if (Math.random() < 0.5) fx.sparkBurst(c, 1, L.el.sparks, [0, -1, 0], 0.5, 0.4);
       }
       if (a.breath && e.state === ES.ACTIVE) {   // flame breath: embers and smoke all along the jet
@@ -298,7 +299,7 @@ void main() {
         for (let i = 0; i < 4; i++) {
           const t = rand(0.5, B.len), w = (Math.random() - 0.5) * B.width * (t / B.len);
           v2.set(e.x + s * t + c * w, e.y + rand(0.3, 1.6), e.z + c * t - s * w);
-          fx.moteBurst(v2, 1, FX_ELEMENTS.fire.mote, { r: 0.2, speed: 1.2, lift: 2, life: [0.4, 0.9], size: 1.2, up: 1 });
+          fx.moteBurst(v2, 1, FX_ELEMENTS.fire.mote, BREATH);
         }
         if (Math.random() < 0.35) fx.puff(e.x + s * B.len * 0.6, e.y + 1.4, e.z + c * B.len * 0.6, U.puffs.smoke, 0.8, 2.4, 1.2, [s, 1, c], 0.35);
       }

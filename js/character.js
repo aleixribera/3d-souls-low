@@ -96,11 +96,11 @@ function findEnemies(from, enemies, { range, cone = Infinity, yaw = from.yaw, su
   const out = [];
   for (const e of enemies) {
     const recentlyDead = !e.alive() && e.stateTime < deadFor;
-    if ((!e.alive() && !recentlyDead) || !e.awake() || gateBetween(from, e)) continue;
+    if ((!e.alive() && !recentlyDead) || !e.awake()) continue;
     const dx = e.x - from.x, dz = e.z - from.z, dist = Math.hypot(dx, dz), d = surface ? dist - e.radius : dist;
     if (d > range) continue;
     const dir = Math.atan2(dx, dz), ang = Math.abs(angDiff(dir, yaw));
-    if (ang > cone) continue;
+    if (ang > cone || gateBetween(from, e)) continue;   // the costly line test last, only for bodies in range and cone
     out.push({ e, d, dir, ang });
   }
   return out;

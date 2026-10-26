@@ -14,14 +14,15 @@
 const crowd = {
   enemies: [],            // the current fight
   sinceStart: Infinity,   // seconds since an enemy last started an attack
+  lastStarter: null,      // the enemy that started it (a solo companion's split crowds credit it to the right clock)
 
-  reset() { this.enemies = []; this.sinceStart = Infinity; },
+  reset() { this.enemies = []; this.sinceStart = Infinity; this.lastStarter = null; },
   update(game, dt) {
     this.enemies = game.enemies; this.sinceStart += dt;
     this.spread(game.player);
   },
   mayStart() { return this.sinceStart >= CONFIG.ai.gap - 1e-9; },
-  started() { this.sinceStart = 0; },
+  started(e = null) { this.sinceStart = 0; this.lastStarter = e; },
   // How many enemies other than `self` are mid-attack.
   busy(self) {
     let n = 0;

@@ -1,0 +1,18 @@
+{
+  "name": "3d-souls-low",
+  "version": "7.18.0",
+  "private": true,
+  "description": "Combat Arena 3D test tooling. The game itself has no build step or runtime dependencies; the server has its own package in server/.",
+  "engines": { "node": ">=22.8" },
+  "scripts": {
+    "setup": "npm --prefix server ci --no-audit --no-fund",
+    "serve": "node -e \"const p=Number(process.env.PORT||3000);require('./server/index.cjs').createServer({dev:true}).server.listen(p,'127.0.0.1',()=>console.log('http://127.0.0.1:'+p+'/combat-arena-3d.html#dev'))\"",
+    "test": "node tests/run-all.cjs --group all",
+    "test:node": "node tests/run-all.cjs --group node",
+    "test:browser": "node tests/run-all.cjs --group browser",
+    "test:list": "node tests/run-all.cjs --list"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

@@ -1,0 +1,85 @@
+# Changelog
+
+One line per release, newest first. Design notes for each feature: `docs/feature-history.md`; the current rules: `AGENTS.md`.
+
+- **v7.18.0** (2026-10-27) — Audit fixes: hardened multiplayer server (own-key id lookups, range-checked hits and executions, connection and message limits, data validation at startup, caching), deaths from every cause run the death sequence, enemy sound markers, input buffer on simulation time, lock-on through the simulated camera, rendering leaks and per-frame garbage, reduced-motion support, Game split into four files, CI on every push, AGENTS.md rewritten as a guide.
+- **v7.17.0** (2026-10-26, untagged; includes the v7.16.1 companion follow-ups) — Steadier battles: exact camera springs, owner-tagged companion events, positional companion audio, one instanced burst pool, retired navigation routes, cancellable thunder, HUD contrast.
+- **v7.16.0** (2026-10-23) — Add Finn as the solo Lands campaign companion
+- **v7.15.0** (2026-10-23) — Make idle bots follow the party with fair assignments and walking routes
+- **v7.14.0** (2026-10-23) — Keep public runs alive and restore returning players
+- **v7.13.1** (2026-10-23) — Make companion bots take punishable risks and finish solo attempts sooner
+- **v7.13.0** (2026-10-23) — give companions varied combat rhythm and jump defence
+- **v7.12.2** (2026-10-23) — give Radagon's final shockwave a separate dodge window
+- **v7.12.1** (2026-10-23) — vary bot behavior and track the whole arena
+- **v7.12.0** (2026-10-23) — add Boss vs Boss arena teams and spectator matches
+- **v7.11.0** (2026-10-23) — add friendly bots to the multiplayer lobby
+- **v7.10.2** (2026-10-23) — add a BOSSES tip to multi-boss fights
+- **v7.10.1** (2026-10-23) — redesign the multiplayer lobby, party panel, results and overlays
+- **v7.10.0** (2026-10-23) — add TRIPLE and QUAD BOSSES and chain every boss run
+- **v7.9.0** (2026-10-23) — add DOUBLE BOSSES lobby run and carry BOSS ONLY survivors into it
+- **v7.8.11** (2026-10-23) — add multiplayer results and simplify controls and HUD
+- **v7.8.10** (2026-10-22) — clear enemy glow and recoil after multiplayer breaks
+- **v7.8.9** (2026-10-22) — polish game experience and recovery
+- **v7.8.8** (2026-10-22) — polish public lobby and online experience
+- **v7.8.7** (2026-10-22) — refine controls tips and remove alternate Story V2
+- **v7.8.6** (2026-10-22) — select BOSS ONLY by default in public lobby
+- **v7.8.5** (2026-10-22) — simplify adventure opening text
+- **v7.8.4** (2026-10-22) — show allied health in play and spectating
+- **v7.8.3** (2026-10-22) — add gold openings for public adventures
+- **v7.8.2** (2026-10-22) — reset abandoned public lobbies
+- **v7.8.1** (2026-10-22) — add dramatic red team-wipe screen
+- **v7.8.0** (2026-10-22) — add public lobby BOSS ONLY gauntlet
+- **v7.7.9** (2026-10-22) — simplify public lobby adventure choices
+- **v7.7.8** (2026-10-22) — open public lobby controls from the pause menu
+- **v7.7.7** (2026-10-22) — simplify lobby name editing
+- **v7.7.6** (2026-10-22) — complete public lobby party play and controller support
+- **v7.7.5** (2026-10-22) — Show basic controls in the public lobby
+- **v7.7.4** (2026-10-22) — Default public lobby to the full Elden Ring campaign
+- **v7.7.3** (2026-10-22) — Transfer leadership after five minutes without input
+- **v7.7.2** (2026-10-22) — Publish Docker images and enable simple homelab updates
+- **v7.7.1** (2026-10-22) — Fix co-op latency, simulation speed and shared gates
+- **v7.5** (2026-10-19) — Enable FPS counter by default
+- **v7.4** (2026-10-19) — Add bonfire guidance, shared effect lighting and stronger light attacks
+- **v7.3.2** (2026-10-19) — Remove separate fullscreen startup dependency
+- **v7.3.1** (2026-10-19) — Simplify Story start, tutorial guidance and mixed-enemy lock-on
+- **v7.3** (2026-10-19) — Simplify tutorial and fix combat clarity
+- **v7.2.2** (2026-10-18) — Bring camera closer and raise its viewing angle
+- **v7.2.1** (2026-10-18) — Raise default camera slightly for better floor visibility
+- **v7.2** (2026-10-18) — Add tutorial quality comparison and system recommendation
+- **v7.1** (2026-10-18) — Measure Auto quality with real 3D frames
+- **v7.0.5** (2026-10-18) — Refresh Auto checks and release script caches
+- **v7.0.4** (2026-10-18) — Calibrate Auto Ultra for desktop GPUs
+- **v7.0.3** (2026-10-18) — Menu Navigation Fix
+- **v7.0.2** (2026-10-18) — Arrival and Rendering Fixes
+- **v7.0.1** (2026-10-18) — Conservative Auto Graphics
+- **v7.0** (2026-10-18) — The Lands Between
+- **v6.2** (2026-10-18) — Story Bosses and Low Graphics Optimizations
+- **v6.1** (2026-10-18) — Performance and Loading Optimizations
+- **v6.0** (2026-10-18) — Ultra Visual Overhaul
+- **v5.9** (2026-10-18) — Malenia, Blade of Miquella; Godfrey, First Elden Lord
+- **v5.4.8** (2026-10-18) — Graphics presets: Low for integrated graphics, lighter High
+- **v5.4.7** (2026-10-18) — Fresh scripts on every load (fixes a stale cached config crash), parallel download
+- **v5.4.6** (2026-10-17) — Toggleable FPS counter (F3 / pause menu)
+- **v5.4.5** (2026-10-17) — Shared interact key, tutorial fixes, stagger and heavy tuning, Level 3 ambush, camera auto-level
+- **v5.4.4** (2026-10-17) — Rogue's scimitar is plain iron (no flame)
+- **v5.2** (2026-10-17) — The Kneeling Dead: executions replace the stagger damage bonus; run a kneeling enemy through with light attack
+- **v5.1.1** (2026-10-17) — What the Ash Remembers: true bonfire checkpoints, a safe bell bonfire, autosave, Ysolde easier to find
+- **v5.1** (2026-10-17) — What the Ash Remembers: the lore of Ashmere, Ysolde of Corvel and seamless subtitles
+- **v5.0** (2026-10-17) — The Unbroken Road: Story mode campaign with autosave, Continue and level chaining
+- **v4.3.1** (2026-10-17) — The Last Toll: Level 5 fixes (floors, bonfires, engaging archers and gargoyles, clear gates, jumpable shockwaves, slash wave, retreat camera)
+- **v4.3** (2026-10-17) — The Last Toll: Level 5, the final castle, Varn the Gaoler King and the ending
+- **v4.2.4** (2026-10-17) — checkpoints, exhaustion, smarter enemies, fairer bosses
+- **v4.2.3** (2026-10-17) — a more aggressive Ashen Lancer
+- **v4.2.2** (2026-10-17) — swing sounds follow the strike
+- **v4.2.1** (2026-10-17) — balance the heavy jump attack and stagger meters
+- **v4.2** (2026-10-17) — Weight of Steel - four-phase combat animation
+- **v4.1** (2026-10-17) — Bone and Ash - procedural character models, textures and animation
+- **v4.0** (2026-10-16) — The Burning Town - a new Level 3, a town's building blocks, the Pillager Captain, lock-on through cover
+- **v3.7** (2026-10-15) — Tutorial and tower fixes - dodge step, Tab order, block keys, trap route, effect warm-up
+- **v3.6** (2026-10-15) — Reading the distance - attack chances, holding and crowds
+- **v3.5** (2026-10-15) — Level 3: The Tower - a cliff-top keep climbed by outer walkways
+- **v3.4** (2026-10-15) — The Tower's enemies and the Bell Warden; player health 1.2x, stamina 1.6x, lighter heavy
+- **v3.3** (2026-10-15) — Bows, shoves and shortcuts - projectiles, uncapped knockback and one-way gates
+- **v3.2** (2026-10-15) — Open sky and culling - sky, grass and ruins over open rooms; light pool and enemy sleep
+- **v3.1** (2026-10-15) — Heights - a 2.5D world with ramps, edges, drops, pits and fall damage
+- **v1-stable** (2026-10-14) — Level 1, parry, lock-on, zoom, bonfires and souls, boss posture, jump attacks, pause/options

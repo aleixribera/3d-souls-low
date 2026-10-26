@@ -3033,7 +3033,9 @@
   test('Auto quality: loaded game scripts use the current release cache key', () => {
     const scripts = [...document.scripts].filter(s => s.src && new URL(s.src).pathname.includes('/js/'));
     expect.ok(scripts.length > 0, 'game scripts loaded');
-    for (const script of scripts) expect.ok(new URL(script.src).searchParams.get('v') === VERSION.slice(1), `${script.src}: current release`);
+    // A page served by server/index.cjs adds its build hash (the arena-build meta) to the release stamp.
+    const build = document.querySelector('meta[name="arena-build"]')?.content, stamp = VERSION.slice(1) + (build ? `-${build}` : '');
+    for (const script of scripts) expect.ok(new URL(script.src).searchParams.get('v') === stamp, `${script.src}: current release`);
   });
   test('Auto quality: explicit menu recheck replaces cached detection and applies Auto', () => {
     const saved = settings.graphics, from = Game.optionsFrom;

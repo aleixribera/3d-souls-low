@@ -100,7 +100,7 @@ function makeCampaign(C) {
   // the last rest come back, as after a death (v5.1). Won zones are saved by id (`zones`): their gates stay open.
   function checkpointCleared() {
     const keys = new Set(Game.cleared);
-    for (const z of Game.zones) if (z.gate.open) for (const a of z.actors) if (a.key && !a.alive() && (a.boss || a.phaseIds || a.baseDef.posture)) keys.add(a.key);
+    for (const z of Game.zones) if (z.gate.open) for (const a of z.actors) if (a.key && !a.alive() && a.isBoss()) keys.add(a.key);
     return [...keys];
   }
   const beatenBosses = new Set();
@@ -231,7 +231,7 @@ const story = (() => {
     const level = tutorial ? campaign.def.tutorial.level : campaign.chapterIds()[0];
     Game.loadingFirst(...campaign.card(level), () => campaign.newGame(tutorial));
   };
-  events.on('enemyDeath', d => { const e = d.enemy; if (Game.story && (e.phaseIds || e.baseDef.posture)) A().bossBeaten(e); });
+  events.on('enemyDeath', d => { const e = d.enemy; if (Game.story && e.isBoss()) A().bossBeaten(e); });
   events.on('rest', d => { if (Game.story && !Game.isTutorial()) A().save(d.bonfire.id); });
   events.on('gateOpened', () => A().autosave());
   window.addEventListener('pagehide', () => A().autosave());

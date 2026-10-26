@@ -224,8 +224,10 @@ const hud = {
     this.syncFlasks(p.item('flask'));
 
     // Screen edge: a steady red at low health, beating with the heart; a flare when a blow lands.
-    const beat = low ? H.critVignette * (0.6 + 0.4 * Math.sin(this.clock * H.heartRate)) * (1 - ph / H.lowHp * 0.5) : 0;
-    const hurt = H.hurtVignette * clamp01(this.hurtTimer / H.hurtTime);
+    // Reduced motion (js/visuals.js): the low-health edge holds steady and the hurt flare is softer.
+    const calm = reducedMotion();
+    const beat = low ? H.critVignette * (calm ? 0.8 : 0.6 + 0.4 * Math.sin(this.clock * H.heartRate)) * (1 - ph / H.lowHp * 0.5) : 0;
+    const hurt = H.hurtVignette * clamp01(this.hurtTimer / H.hurtTime) * (calm ? CONFIG.VISUALS.reducedMotion.hurt : 1);
     this.vignette.style.opacity = Math.max(beat, hurt).toFixed(3);
   },
   // Engagement: the vitals dim after a quiet spell and come back at the first threat; low health keeps them lit.
@@ -298,7 +300,7 @@ const hud = {
   },
   // A camera-relative compass stays visible even when the tutorial fire is directly behind the camera.
   updateTutorialGuide(game, step) {
-    const show = !!step && step.id === 'rest' && game.tut.doneTimer <= 0 && game.player.alive();
+    const show = !!step && !!step.bonfire && game.tut.doneTimer <= 0 && game.player.alive();   // a step that names a bonfire guides to it
     this.tutGuide.hidden = !show;
     if (!show) return;
     const b = world.bonfires.find(f => f.id === step.bonfire);

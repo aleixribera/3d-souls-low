@@ -14,7 +14,7 @@
 // held (ES.EXECUTED: no AI, no hitbox, blows pass through). Presses during it are swallowed.
 // Events: executionStart { player, enemy }, execution { player, enemy, damage, at, exit }, executionPull, executionEnd.
 const execution = (() => {
-  const isBossLike = e => !!(e.baseDef.posture || e.baseDef.phases || e.boss);
+  const isBossLike = e => e.isBoss();
   const SWALLOWED = ['roll', 'parry', 'jump', 'light', 'heavy', 'flask', 'rest'];
 
   // How well placed `p` is to execute `e` (lower is better), or null if it cannot.
@@ -99,7 +99,7 @@ const execution = (() => {
       if (held) e.yaw = X.enemyYaw.from + angDiff(X.enemyYaw.to, X.enemyYaw.from) * w;
     } else {
       p.vx = p.vz = 0;
-      if (held) p.yaw = turnToward(p.yaw, Math.atan2(e.x - p.x, e.z - p.z), 8 * dt);   // stopped short by a wall: still aims at it
+      if (held) p.yaw = turnToward(p.yaw, Math.atan2(e.x - p.x, e.z - p.z), C.aimRate * dt);   // stopped short by a wall: still aims at it
     }
     if (!held && !X.pulled) {   // it died or left from something else: go straight to the pull-out
       X.pulled = true; X.resolved = true; e.exec = null;
@@ -122,6 +122,14 @@ const execution = (() => {
     resolve(X);   // a boss: its death, next bar or retreat starts only now, with the player back in control
   }
 
+  // The executor died mid-execution (Destined Death's drain can kill through the untouchable frames): the victim never
+  // stays held on a blade nobody pulls out. Its result resolves at once, as the pull-out would have.
+  function abandon(p) {
+    const X = p.exec;
+    if (!X) return;
+    p.exec = null;
+    resolve(X);
+  }
   // Each step (Game.update): mark the one kneeling enemy the player could execute, for the cue.
   function mark(p, enemies) {
     const t = p.alive() && p.isFree() ? target(p, enemies) : null;
@@ -152,7 +160,7 @@ const execution = (() => {
   }
   if (DEV) window.addEventListener('keydown', ev => { if (ev.code === 'F4' && Game.mode === 'play') { ev.preventDefault(); breakNearest(); } });
 
-  return { target, start, update, mark, cameraWeight, damageFor, isBossLike, breakNearest };
+  return { target, start, update, abandon, mark, cameraWeight, damageFor, isBossLike, breakNearest };
 })();
 
 // The player's execution pose (from Player.pose): the `execute` key poses, tilted up (chest and sword arm) by the aim

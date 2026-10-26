@@ -20,6 +20,16 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Allow manual publishing only from main or a release tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [[ "$REF" != refs/heads/main && "$REF" != refs/tags/v* ]]; then
+            echo "Manual publishing runs only from main or a v* tag (got $REF)." >&2
+            exit 1
+          fi
       - name: Check out release
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Set up Node
@@ -48,21 +58,8 @@ jobs:
         run: npm --prefix server ci
       - name: Test shared simulation and deployment
         run: |
-          node tests/net-timing.cjs
-          node tests/multiplayer.cjs
-          node tests/multiplayer-campaign.cjs
-          node tests/lobby-leader.cjs
-          node tests/lobby-continuity.cjs
-          node tests/arena-wipe.cjs
-          node tests/boss-only.cjs
-          node tests/bot-behavior.cjs
-          node tests/bot-follow.cjs
-          node tests/damage-leaderboard.cjs
-          node tests/fullscreen.cjs
-          node tests/autoquality.cjs
-          node tests/experience.cjs
           bash -n deploy/update.sh
-          node tests/deployment.cjs
+          node tests/run-all.cjs --group node
           docker compose config --quiet
       - name: Set up multi-platform emulation
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3

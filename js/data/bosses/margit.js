@@ -3,7 +3,7 @@
 // Elden Ring Bosses: Margit, the Fell Omen (v5.3)
 // ============================================================================
 // Everything that makes Margit lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/Margit/margit-stats.txt.
+// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/margit-stats.txt.
 //
 // Scaled to this game, not to Elden Ring's numbers: the player has 120 HP, a light hit does 18 and a heavy 38, and a roll
 // is invulnerable for 0.3 s. Margit stands a little above Aldric (the throne + knell duel, 3800 HP over two bars):

@@ -12,10 +12,18 @@
 // No lights are added (a new light recompiles every shader).
 const blackBlade = (() => {
   Object.assign(KIT.parts, MALIKETH_PARTS);   // his blades and muzzle (js/data/bosses/maliketh.js)
-  const B = CONFIG.elden.blackBlade, spheres = [], at = new THREE.Vector3();
+  const B = CONFIG.elden.blackBlade, at = new THREE.Vector3();
+  // One Destined Death sphere per enemy that casts it (js/effect-slots.js), freed once that enemy leaves the game.
+  const spheres = effectSlots.slots((S, e) => {
+    scene.remove(S.g); for (const m of S.g.children) if (m.material) { m.material.dispose(); m.geometry.dispose(); }
+    if (e.rig && e.rig.deathSphere === S) e.rig.deathSphere = null;
+  });
   function sphereFor(e) {
     const R = e.rig;
     if (R.deathSphere) return R.deathSphere;
+    return (R.deathSphere = spheres.acquire(e, makeSphere));
+  }
+  function makeSphere() {
     const g = new THREE.Group(), shells = [];
     for (const [color, r, op] of [[B.color, 1, B.opacity * 0.6], [B.core, 0.72, B.opacity], [B.color, 0.45, B.opacity]]) {
       const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0,
@@ -23,20 +31,12 @@ const blackBlade = (() => {
       m.userData = { r, op }; g.add(m); shells.push(m);
     }
     g.userData.warmUp = true; g.visible = false; scene.add(g);
-    spheres.push({ e, g });
-    return (R.deathSphere = { g, shells, k: 0 });
+    return { g, shells, k: 0 };
   }
   const shredding = e => e.alive() && e.attack && e.attack.sphere && (e.state === ES.ACTIVE || (e.state === ES.WINDUP && e.hitIndex > 0));
-  let last = performance.now();
-  function clean(enemies) {
-    for (let i = spheres.length - 1; i >= 0; i--) if (!enemies.includes(spheres[i].e)) {
-      scene.remove(spheres[i].g); for (const m of spheres[i].g.children) if (m.material) { m.material.dispose(); m.geometry.dispose(); }
-      spheres.splice(i, 1);
-    }
-  }
   function render(game) {
-    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), t = now / 1000; last = now;
-    clean(game.enemies);
+    const dt = effectSlots.dt(), t = effectSlots.time();   // the shared effect clock: hand-stepped tests, hit-pauses
+    spheres.sweep(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig; if (!R) continue;
       const conceal = e.def.conceal;
@@ -54,7 +54,8 @@ const blackBlade = (() => {
       const sp = (e.attack && e.attack.sphere) || S.last; if (!sp) continue;
       S.last = sp;
       S.g.position.set(e.x + Math.sin(e.yaw) * sp.fwd, e.y + sp.r * 0.6, e.z + Math.cos(e.yaw) * sp.fwd);
-      for (const [i, m] of S.shells.entries()) {
+      for (let i = 0; i < S.shells.length; i++) {
+        const m = S.shells[i];
         const f = 1 + 0.08 * Math.sin(t * (31 + i * 11));
         m.scale.setScalar(sp.r * m.userData.r * f * (0.6 + 0.4 * S.k));
         m.rotation.set(t * B.spin * (i % 2 ? -1 : 1), t * B.spin * 0.7, t * B.spin * 0.4 * i);
@@ -75,5 +76,5 @@ const blackBlade = (() => {
     });
     events.on('destinedDeath', d => spawnBurst({ x: d.body.x, y: d.body.y + d.body.height * 0.6, z: d.body.z }, B.doom));
   }
-  return { attach, prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.sphere)) sphereFor(e); } };
+  return { attach, prepare(enemies) { spheres.sweep(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.sphere)) sphereFor(e); } };
 })();

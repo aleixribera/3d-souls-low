@@ -346,7 +346,7 @@ void main() {
   if (a < 0.003) discard;
   gl_FragColor = vec4(c, a);
 }` });
-  const fireGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);
+  const fireGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0); fireGeo.userData.shared = true;   // also on the stage's torches: kept on a stage change
   function dressFires() {
     for (const f of flames) {
       if (visuals.quality().proceduralFire && !f.ultraFire) {
@@ -457,7 +457,6 @@ void main() {
       flare(at, 0xffd890, 1.4 + 1.6 * k); flashAt(at, 0xffa040, 5 + 10 * k, 6 + 4 * k);
       puff(at.x, at.y, at.z, U.puffs.dust, 0.3, 1.0, 0.6, null, 0.25);
       if (k > 0.5) ultraPost.wave(at, 0.5 * k, 0.6);
-      ultraPost.pulse({ ca: 0.25 + 0.35 * k });
       return;
     }
     if (d.target.training) { bloodSpray(at, dir, Math.round(lerp(...H.drops, k) * 0.6), 0.8, U.blood.sawdust); sparkBurst(at, 6, 'ember', dir, 0.5, 0.6); return; }
@@ -466,11 +465,10 @@ void main() {
     if (d.attacker && d.attacker === Game.player && d.target.baseDef && (d.target.baseDef.visual || {}).metal > 0.4) sparkBurst(at, 10, 'clash', dir, 0.4, 0.7);
     if (toPlayer) {
       const hurt = clamp(dmg / Game.player.maxHp * 2.4, 0.3, 1);
-      ultraPost.pulse({ hurt, ca: 0.4 + 0.6 * k, flash: 0.05 + 0.1 * k, color: 0x7a0a04 });
+      ultraPost.pulse({ hurt, flash: 0.05 + 0.1 * k, color: 0x7a0a04 });
       if (dmg >= H.wave) ultraPost.wave(at, 0.8 * k + 0.3, 0.9);
     } else {
       if (dmg >= H.wave || d.strike.riposte) ultraPost.wave(at, 0.5 + 0.6 * k, 0.8);
-      if (dmg >= H.punch || d.strike.riposte) ultraPost.pulse({ punch: 0.35 + 0.4 * k, ca: 0.5, at });
       if (d.strike.riposte) flashAt(at, 0xff3020, 9, 7);
     }
   });
@@ -479,7 +477,7 @@ void main() {
     sparkBurst(at, 120, 'parry', null, 0, 1.25);
     flare(at, 0xfff2c8, 2.4, 0.4); flashAt(at, 0xffe0a0, 18, 11);
     moteBurst(at, 40, 0xffe2a0, { r: 0.3, speed: 4, lift: 0.3, life: [0.4, 1.0], size: 0.8, up: 0.2 });
-    ultraPost.wave(at, 1.3, 1.1); ultraPost.pulse({ ca: 0.9, punch: 0.3, at, flash: 0.12, color: 0xfff0c8 });
+    ultraPost.wave(at, 1.3, 1.1); ultraPost.pulse({ flash: 0.12, color: 0xfff0c8 });
   });
   when('postureBreak', d => {
     const e = d.enemy, at = { x: e.x, y: e.y + e.height * 0.65, z: e.z };
@@ -487,19 +485,18 @@ void main() {
     moteBurst(at, 60, 0xffc860, { r: e.radius, speed: 3, lift: 0.8, life: [0.8, 1.6], size: 1.2 });
     flare(at, 0xffd070, 3.5, 0.4); flashAt(at, 0xffb040, 14, 10);
     mark(e.x, e.y, e.z, 0xffa030, 3 * scaleOf(e), 1.2, 0.9);
-    ultraPost.wave(at, 1.1, 1.2); ultraPost.pulse({ ca: 0.7, punch: 0.25, at });
+    ultraPost.wave(at, 1.1, 1.2);
   });
   when('execution', d => {
     const dir = dirOf(d.at, d.exit);
     bloodSpray(d.exit, dir, 70, 1.6); bloodSpray(d.at, [-dir[0], 0, -dir[2]], 30, 1.1);
     sparkBurst(d.exit, 40, 'ember', dir, 0.6, 1.1);
     flashAt(d.at, 0xff2a14, 16, 9); flare(d.at, 0xff9070, 2.6, 0.3);
-    ultraPost.wave(d.at, 1.4, 1.2); ultraPost.pulse({ punch: 0.8, ca: 1, at: d.at, flash: 0.1, color: 0x5a0000 });
+    ultraPost.wave(d.at, 1.4, 1.2); ultraPost.pulse({ flash: 0.1, color: 0x5a0000 });
   });
   when('executionPull', d => {
     const e = d.enemy, at = chest(e), dir = dirOf(e, d.player || Game.player);
     bloodSpray(at, dir, 55, 1.4); flashAt(at, 0xff3018, 8, 7);
-    ultraPost.pulse({ punch: 0.4, ca: 0.6, at });
   });
   when('enemyDeath', d => {
     const e = d.enemy;
@@ -512,7 +509,7 @@ void main() {
       flashAt(c, color, 30, 18); flare(c, color, 7, 0.8);
       mark(e.x, e.y, e.z, color, 7 * scaleOf(e), 3, 1);
       dustRing(e.x, e.y, e.z, 18, 2.5, U.puffs.dust, 1.6);
-      ultraPost.wave(c, 2.2, 2.2); ultraPost.pulse({ punch: 0.7, ca: 1, at: c, flash: 0.35, color });
+      ultraPost.wave(c, 2.2, 2.2); ultraPost.pulse({ flash: 0.35, color });
     } else {
       moteBurst(c, 70, 0xd8e4ff, { r: e.radius, speed: 1.2, lift: 1.6, life: [1.0, 2.2], size: 1.0, swirl: 1.4, up: 0.8, drag: 0.8 });
       flashAt(c, 0xc8d8ff, 5, 6);
@@ -522,7 +519,7 @@ void main() {
     const c = chest(d.player);
     bloodSpray(c, [0, 0.2, 0], 50, 1.4);
     moteBurst(c, 70, 0x8a1010, { r: 0.4, speed: 1, lift: 1.0, life: [1.2, 2.4], size: 1.2, swirl: 1.2, boost: 1.4 });
-    ultraPost.pulse({ hurt: 1, ca: 1, punch: 0.4, at: c });
+    ultraPost.pulse({ hurt: 1 });
   });
   when('bossPhase', d => {
     const e = d.enemy, c = chest(e), color = auraColor(e);
@@ -531,7 +528,7 @@ void main() {
     flashAt(c, color, 26, 16); flare(c, color, 6, 0.7);
     mark(e.x, e.y, e.z, color, 8 * scaleOf(e), 2.5, 1);
     dustRing(e.x, e.y, e.z, 20, 3, U.puffs.dust, 1.8);
-    ultraPost.wave(c, 2, 2); ultraPost.pulse({ punch: 0.6, ca: 1, flash: 0.3, color, at: c });
+    ultraPost.wave(c, 2, 2); ultraPost.pulse({ flash: 0.3, color });
   });
   when('alert', d => moteBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height + 0.3, z: d.enemy.z }, 14, 0xff6a30, { r: 0.15, speed: 1.6, lift: 0.4, life: [0.4, 0.8], size: 0.8 }));
   burstOverride = () => on();   // Ultra draws its own sparks, blood and motes: the old box bursts stay out
@@ -544,14 +541,14 @@ void main() {
     dustRing(d.x, d.y, d.z, Math.round(8 + 3 * s), s, U.puffs.dust, 0.8 + 0.25 * s);
     sparkBurst({ x: d.x, y: d.y + 0.15, z: d.z }, Math.round(10 * s), boss ? 'ember' : 'clash', [0, 1, 0], 0.5, 0.8);
     if (boss) { mark(d.x, d.y, d.z, color, s * 2.2, 1.1, 0.8); flashAt({ x: d.x, y: d.y + 0.5, z: d.z }, color, 4 + 3 * s, 4 + 2 * s); }
-    if (s >= 1.5) { ultraPost.wave({ x: d.x, y: d.y + 0.3, z: d.z }, Math.min(1.6, s / 2.5), Math.min(2, s / 2)); ultraPost.pulse({ ca: 0.4 }); }
+    if (s >= 1.5) ultraPost.wave({ x: d.x, y: d.y + 0.3, z: d.z }, Math.min(1.6, s / 2.5), Math.min(2, s / 2));
   });
   when('land', d => {   // the player's plunging attack: the floor cracks under the blade
     const s = d.fx.ring || 1.5;
     chunkBurst(d.x, d.y, d.z, Math.round(8 + 3 * s), 0.6 + 0.2 * s); dustRing(d.x, d.y, d.z, 14, s, U.puffs.dust, 1 + 0.15 * s);
     sparkBurst({ x: d.x, y: d.y + 0.1, z: d.z }, 26, 'clash', [0, 1, 0], 0.5, 0.9);
     mark(d.x, d.y, d.z, 0xffb070, s * 1.6, 0.8, 0.6); flashAt({ x: d.x, y: d.y + 0.5, z: d.z }, 0xffc890, 6, 6);
-    ultraPost.wave({ x: d.x, y: d.y + 0.2, z: d.z }, 1, 1.2); ultraPost.pulse({ ca: 0.4 });
+    ultraPost.wave({ x: d.x, y: d.y + 0.2, z: d.z }, 1, 1.2);
   });
   when('fallDamage', d => dustRing(d.body.x, d.body.y, d.body.z, 9, 1, U.puffs.dust, 0.9));
   when('boltStopped', d => { sparkBurst(d.bolt, 14, 'clash', null, 0, 0.6); puff(d.bolt.x, d.bolt.y, d.bolt.z, U.puffs.dust, 0.2, 0.7, 0.6, null, 0.3); });
@@ -569,7 +566,7 @@ void main() {
                     vz: (e.z - p.z) / life * t, drag: 0.3, lift: 0, life, max: life, s0: U.motes.size * 1.3, s1: U.motes.size * 0.5, r: col.r, g: col.g, b: col.b, fadeIn: 0.15 });
     }
   });
-  when('destinedDeath', d => { moteBurst(chest(d.body), 40, 0xff1010, { r: 0.4, speed: 1.5, lift: 0.5, life: [0.6, 1.4], size: 1, boost: 1.6 }); ultraPost.pulse({ hurt: 0.6, ca: 0.5 }); });
+  when('destinedDeath', d => { moteBurst(chest(d.body), 40, 0xff1010, { r: 0.4, speed: 1.5, lift: 0.5, life: [0.6, 1.4], size: 1, boost: 1.6 }); ultraPost.pulse({ hurt: 0.6 }); });
   when('rest', d => {
     const b = d.bonfire, y = groundBelow(b.x, (b.y || 0) + 1, b.z);
     moteBurst({ x: b.x, y: y + 0.5, z: b.z }, 90, 0xff8a30, { r: 0.4, speed: 1.4, lift: 1.8, life: [1.2, 2.6], size: 0.9, swirl: 1.2, up: 1 });
@@ -597,12 +594,12 @@ void main() {
                     rx: rand(0, 6), ry: rand(0, 6), spin: rand(-6, 6), ground: groundBelow(cx, y - 0.5, cz), age: 0, rest: false, kind: 'stone' });
     }
     for (let i = 0; i < 16; i++) puff(rand(c[0], c[1]), y + 0.2, rand(c[2], c[3]), U.puffs.dust, 0.6, 2.6, 1.8, [rand(-1, 1), rand(0.3, 1.5), rand(-1, 1)], 0.45);
-    ultraPost.wave({ x: cx, y: y + 0.5, z: cz }, 1, 1.6); ultraPost.pulse({ ca: 0.5 });
+    ultraPost.wave({ x: cx, y: y + 0.5, z: cz }, 1, 1.6);
   });
-  const grinding = [];
+  const grinding = [], inGame = new Set();
+  const BOLT_MOTE = { r: 0.05, speed: 0.2, lift: 0, life: [0.2, 0.4], size: 0.6, boost: 2, up: 0 };   // read only (moteBurst destructures it)
 
   // ---- each frame ------------------------------------------------------------------------------------------------------------
-  let last = performance.now();
   const bodyFx = new WeakMap();   // per body: aura and dust timers, last state
   function clearEffects() {
     for (const p of [sparks, drops, motes, puffs]) p.clear();
@@ -613,19 +610,24 @@ void main() {
     for (const f of flares) f.s.visible = false;
     for (const m of marks) m.m.visible = false;
     updateChunks(0);
-    last = performance.now();
   }
   visuals.hooks.quality.push(() => { clearEffects(); dressFires(); });
   visuals.hooks.stage.push(() => { clearEffects(); dressFires(); });   // fire ready before shader warm-up
   function frameUpdate(game, placed) {
-    const now = performance.now(), real = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - last) / 1000); last = now;   // stepped by hand (tests): one 60th a frame
+    // The shared effect clock (js/effect-slots.js): one step a frame when stepped by hand (tests); a blow's hit-pause
+    // all but freezes the flying sparks and drops too (dt), while flashes and flares keep real time.
+    const now = performance.now(), real = effectSlots.real();
     const active = on();
     if (!active) return;
-    const dt = game.hitstop > 0 ? real * 0.12 : real;   // a blow's hit-pause freezes the flying sparks and drops too
+    const dt = effectSlots.dt();
     const fogC = scene.fog ? scene.fog.color : col.set(0);
     for (const m of fogged) m.uniforms.uFogC.value.copy(fogC);
     const cam = camera.position;
-    for (const [b, r] of ribbonOf) if (!game.allies().includes(b) && !game.enemies.includes(b)) { r.clear(); ribbonOf.delete(b); }
+    if (ribbonOf.size) {   // ribbons of bodies no longer in the game (one Set of the living, not a search per ribbon)
+      inGame.clear(); for (const b of game.allies()) inGame.add(b); for (const b of game.enemies) inGame.add(b);
+      for (const [b, r] of ribbonOf) if (!inGame.has(b)) { r.clear(); ribbonOf.delete(b); }
+      inGame.clear();
+    }
     // the old ribbons and cones stay hidden; ours follow every blade that can hit
     swordTrail.mesh.visible = false;
     for (const t of impactFx.trails.values()) t.mesh.visible = false;
@@ -702,7 +704,7 @@ void main() {
       f.ultraLit = f.group.visible;
     }
     // bolts in flight leave glowing motes
-    for (const bolt of projectiles.live()) if (!(hooks.bolt && hooks.bolt(bolt))) moteBurst(bolt, 1, CONFIG.projectile.glow, { r: 0.05, speed: 0.2, lift: 0, life: [0.2, 0.4], size: 0.6, boost: 2, up: 0 });
+    for (const bolt of projectiles.flying()) if (!(hooks.bolt && hooks.bolt(bolt))) moteBurst(bolt, 1, CONFIG.projectile.glow, BOLT_MOTE);
     sparks.update(dt, cam); motes.update(dt); puffs.update(dt); updateChunks(dt);
     drops.update(dt, cam, p => { if (p.splat) visuals.blood({ x: p.x, y: p.ground + 0.05, z: p.z }, rand(0.25, 0.6), false); });
     for (const l of flashes) l.intensity *= Math.exp(-U.flash.decay * real);

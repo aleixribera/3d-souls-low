@@ -246,34 +246,15 @@ const KIT = (() => {
   }
 
   // ---- accessories: name -> (options, model) => geometry list, in the bone's own frame ------------------------
-  // The Hollow Soldier's gambeson profile [[radius, y]] (chest frame), shared by the coat and the straps laid on it.
+  // The Hollow Soldier's gambeson profile [[radius, y]] (chest frame), which its cross straps follow.
   const GAMBESON = [[0.2, -0.08], [0.25, 0.22], [0.295, 0.4], [0.32, 0.5], [0.255, 0.57], [0.13, 0.625], [0.115, 0.66]];
   const KIT_PARTS = {
-    // A ragged tunic around the waist: uneven hem.
-    tunic(o) {
-      const g = lathe([[0.19, -0.2], [0.2, -0.1], [0.19, 0.0], [0.18, 0.07]], 8, 0.7);
-      deform(g, v => { if (v.y < -0.05) v.y -= (hash3(Math.round(v.x * 90), Math.round(v.z * 90), 3, 5) + 0.5) * 0.14; });
-      return [uvScale(g, 2, 1.2)];
-    },
     // Vertebrae pushing through the skin of a hunched back.
     spineBumps() {
       return [0.08, 0.2, 0.32, 0.44].map((y, i) => {
         const s = 1 - Math.abs(i - 1.2) * 0.12, c = KIT_GEO.Cone(0.03 * s, 0.075 * s, 5);
         return xf(c, hash3(i, 1, 1, 9) * 0.03, y, -0.125 - i * 0.004, -Math.PI / 2 + 0.25, 0, 0);
       });
-    },
-    // A rag hood pulled low: open at the face, a tail hanging behind.
-    hood(o) {
-      const g = KIT_GEO.Sphere(0.158 * (o.size ?? 1), 10, 6, Math.PI / 2 + 0.75 - (o.close ?? 0), TAU - 1.5 + 2 * (o.close ?? 0), 0, 2.25), tail = o.tail ?? 1;
-      deform(g, v => { if (v.z < 0 && v.y < 0.08) { v.z -= (0.08 - v.y) * 0.9 * tail; v.y -= (-v.z) * 0.15 * tail; } if (v.y > 0.1) v.z += (v.y - 0.1) * 0.35; });
-      xf(g, 0, 0.115, 0.0, 0.2, 0, 0, 1.0, 1.05, 1.05); roughen(g, 0.012, 21);
-      return [uvScale(g, 2, 1)];
-    },
-    // A dented shoulder dome, strapped on one side only.
-    pauldron(o) {
-      const g = KIT_GEO.Sphere(0.115 * (o.size ?? 1), 8, 4, 0, TAU, 0, Math.PI / 2);
-      const sd = o.side ?? 1; xf(g, 0.035 * sd, 0.035, 0, 0, 0, -0.38 * sd, 1.1, 0.7, 1.0); roughen(g, 0.014, 5);
-      return [uvScale(g, 3, 1.5)];
     },
     // Half a breastplate: a curved, buckled plate across one side of the chest.
     breastHalf(o) {
@@ -282,32 +263,7 @@ const KIT = (() => {
       xf(g, s * 0.1, 0.1, 0.095, 0.12, s * 0.35, s * 0.1); roughen(g, 0.01, 8);
       return [g];
     },
-    belt() { return [uvScale(xf(KIT_GEO.Torus(0.185, 0.022, 3, 10), 0, 0.045, 0, Math.PI / 2, 0, 0.08, 1, 1, 0.72), 6, 1)]; },
     pouch(o) { return [xf(plate([[-0.045, 0], [0.045, 0], [0.05, 0.1], [-0.05, 0.1]], 0.05, 0.012), o.x ?? 0, -0.05, o.z ?? 0.1, 0.1, -0.5, 0.1)]; },
-    // Bandage rings spiralling along a limb (from..to metres below the bone origin).
-    wraps(o) {
-      const n = o.count ?? 4, step = (o.to - o.from) / n, out = [];
-      for (let i = 0; i < n; i++) {
-        const r = o.radius * (1.18 - 0.18 * i / n), g = tube(r, r * 0.97, step * 1.7, 7, true);
-        out.push(uvScale(xf(g, 0, -(o.from + step * (i + 0.5)), 0, hash3(i, 2, 4, 1) * 0.5, 0, hash3(i, 3, 4, 1) * 0.5), 1, 0.4));
-      }
-      return out;
-    },
-    // A strip of hanging cloth: top at the bone, ragged and narrowing toward the hem.
-    clothStrip(o) {
-      const g = new THREE.PlaneGeometry(o.w, o.len, 1, 2);
-      deform(g, v => {
-        const t = (o.len / 2 - v.y) / o.len; v.x *= 1 - 0.35 * t; v.z += t * t * 0.05;
-        if (t > 0.9) v.y += hash3(Math.round(v.x * 80), 1, 1, o.seed ?? 1) * 0.1 - 0.02;
-        v.y -= o.len / 2;
-      });
-      return [uvScale(xf(g, o.dx ?? 0, 0, o.dz ?? 0, 0, o.turn ?? 0, 0), 1, 1)];
-    },
-    // A leather jerkin over the torso.
-    jerkin(o, M) {
-      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
-      return [uvScale(lathe([[0.185, -0.02], [0.195, 0.05], [0.235, 0.22], [0.28, 0.4], [0.31, 0.5], [0.25, 0.565]].map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2)];
-    },
     // A flared skirt of mail plates, uneven at the hem.
     mailSkirt() {
       const g = lathe([[0.19, 0.02], [0.2, -0.1], [0.235, -0.24], [0.245, -0.3]], 8, 0.8);
@@ -316,17 +272,6 @@ const KIT = (() => {
     },
     // A scarf around the neck.
     scarf() { return [uvScale(xf(KIT_GEO.Torus(0.085, 0.03, 4, 9), 0, 0.02, 0.0, Math.PI / 2, 0, 0.1, 1, 1, 0.9), 4, 1)]; },
-    // One hanging section of a cape: top and bottom widths, length, curved to wrap round the shoulders. The hem
-    // section keeps its 0..1 texture so the ragged edge of a tattered texture lands at the bottom.
-    capeSegment(o) {
-      const g = new THREE.PlaneGeometry(1, 1, 4, 2);
-      deform(g, v => {
-        const t = 0.5 - v.y, w = o.w0 + (o.w1 - o.w0) * t;
-        v.x *= w; v.z = (v.x * v.x) * (o.bow ?? 1.4); v.y = -t * o.len;
-        if (o.ragged && t > 0.97) v.y -= (hash3(Math.round(v.x * 60), 2, 2, o.seed ?? 1) + 0.5) * 0.07;
-      });
-      return [o.ragged ? g : uvScale(g, o.w0 / MS.texMeters, o.len / MS.texMeters)];
-    },
     // A round shield slung on the back, face out: wooden dish, iron rim and boss.
     shieldBack(o) { return KIT_PARTS.roundShield({ at: [0, 0.3, -0.34], rot: [-Math.PI / 2, 0, 0.18], r: 0.21, face: 'wood', metal: 'iron' }); },
     // A round shield: dish, rim and boss, axis along +y before `rot` turns it; `at` places it in the bone's frame.
@@ -348,19 +293,6 @@ const KIT = (() => {
       xf(strap, 0, 0, d + 0.012);
       return [board, boss, strap].map((g, i) => ({ slot: i ? o.metal : o.slot, geo: xf(g, ...at) }));
     },
-    // Helmets: a great helm (barrel), optionally with a crest fin or a flat top. Eyes glow in the slit.
-    greatHelm(o) {
-      const s = o.size ?? 1, top = o.flat ? [[0.15, 0.13], [0.15, 0.18], [0, 0.185]] : [[0.14, 0.2], [0.1, 0.245], [0, 0.26]];
-      const g = lathe([[0.12, -0.03], [0.15, 0.05], ...top].map(([r, y]) => [r * s, y * s]), 9);
-      roughen(g, 0.012, 31);
-      const out = [uvScale(g, 3, 1), uvScale(xf(KIT_GEO.Torus(0.152 * s, 0.012, 3, 7, Math.PI), 0, 0.105 * s, 0.0, Math.PI / 2, 0, 0), 4, 1)];
-      if (o.crest) {
-        const fin = plate([[-0.14, 0], [0.14, 0], [0.1, o.crest * 0.55], [-0.02, o.crest], [-0.12, o.crest * 0.6]], 0.02, 0.006);
-        fin.rotateY(-Math.PI / 2); xf(fin, 0.01, 0.235 * s, 0.0); out.push(fin);
-      }
-      if (o.nose) out.push(xf(plate([[-0.02, 0], [0.02, 0], [0.025, -0.11], [-0.025, -0.11]], 0.012, 0.004), 0, 0.12 * s, 0.15 * s));
-      return out;
-    },
     // A rounded close helm (Undead Knight): a domed skull, a brow ridge over the eye slit, a beaked visor below it,
     // and a broad flared gorget sitting on the shoulders. Eyes glow in the slit (y ≈ 0.16 × size).
     closeHelm(o) {
@@ -374,35 +306,6 @@ const KIT = (() => {
       const gorget = lathe([[0.25, -0.2], [0.23, -0.15], [0.18, -0.09], [0.145, -0.04]].map(([r, y]) => [r * s, y * s]), 8, 0.9);
       for (const g of [dome, skull, visor, gorget]) roughen(g, 0.006, 33);
       return [uvScale(dome, 3, 1), uvScale(skull, 3, 1), uvScale(visor, 2, 1), brow, comb, uvScale(gorget, 3, 1)];
-    },
-    // A swelling, rounded breastplate with a waist plackart (Undead Knight).
-    breastplate(o, M) {
-      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
-      const g = lathe([[0.2, -0.04], [0.215, 0.07], [0.26, 0.2], [0.3, 0.34], [0.322, 0.45], [0.29, 0.53], [0.2, 0.6]].map(([r, y]) => [r * tw, y]), 9, oz * 1.12);
-      deform(g, v => { if (v.z > 0) v.z += 0.03 * Math.max(0, 1 - Math.abs(v.x) / (0.12 * tw)) * Math.sin(Math.PI * Math.min(1, Math.max(0, (v.y + 0.04) / 0.64))); });   // a soft centre ridge
-      const plackart = lathe([[0.225, 0.0], [0.24, 0.07], [0.235, 0.14]].map(([r, y]) => [r * tw, y]), 9, oz * 1.15);
-      return [uvScale(roughen(g, 0.006, 41), 2, 1.2), uvScale(plackart, 2, 0.5)];
-    },
-    // A great rounded pauldron in three lames: a big dome and two curved plates below it (side: 1 left, -1 right).
-    roundPauldron(o) {
-      const s = o.size ?? 1, sd = o.side ?? 1, out = [];
-      const dome = KIT_GEO.Sphere(0.12 * s, 8, 4, 0, TAU, 0, Math.PI * 0.58);   // dips past the equator: it hugs the shoulder
-      xf(dome, 0.015 * sd * s, -0.005 * s, 0, 0, 0, -0.42 * sd, 1.05, 1.0, 1.1); out.push(uvScale(roughen(dome, 0.008, 5), 3, 1.5));
-      for (let i = 0; i < 2; i++) {   // two lames down the outside of the upper arm
-        const r = 0.098 * s * (1 - i * 0.08), g = KIT_GEO.Cylinder(r, r * 1.06, 0.055 * s, 7, 1, true, sd > 0 ? 0.25 : Math.PI + 0.25, 2.6);
-        out.push(uvScale(xf(g, 0.03 * sd * s, (-0.055 - i * 0.045) * s, 0, 0, 0, -0.18 * sd, 1, 1, 1.05), 2, 0.5));
-      }
-      return out;
-    },
-    // Straight plate bands down a limb (vambrace, greave, gauntlet cuff), with an optional cop at the joint.
-    plateBands(o) {
-      const n = o.count ?? 3, step = (o.to - o.from) / n, out = [];
-      for (let i = 0; i < n; i++) {
-        const r = o.radius * (1 + (o.flare ?? 0) * i / Math.max(1, n - 1));
-        out.push(uvScale(xf(tube(r, r * 1.06, step * 1.05, 7, true), 0, -(o.from + step * (i + 0.5)), 0), 1, 0.4));
-      }
-      if (o.cop) out.push(xf(sphere(o.cop, 6, 4), 0, 0, 0.02, 0, 0, 0, 1, 1, 1.05));
-      return out;
     },
     // Banded tassets on the hips: curved lames over each thigh and the seat; the front is open over the trousers.
     tassets(o, M) {
@@ -436,38 +339,6 @@ const KIT = (() => {
       const b = KIT_GEO.Tube(new THREE.CatmullRomCurve3([V(0.05, -0.6, -0.54), V(0.09, -0.86, -0.6), V(0.16, -1.02, -0.48), V(0.24, -1.08, -0.3)]), 8, 0.045 * s, 5, false);
       const tip = xf(KIT_GEO.Cone(0.045 * s, 0.2 * s, 5), 0.29 * s, -1.08 * s, -0.2 * s, Math.PI / 2, 0, 0);
       return [uvScale(a, 3, 1), uvScale(b, 3, 1), tip];
-    },
-    // Grafted limbs (Godrick, v5.4): extra arms sprouting from the back and flanks, in the chest's frame. Each entry of
-    // `arms` is [root, elbow, hand] points; a lumpy socket at the root, two tapering bones and a clawed hand.
-    graftedArms(o) {
-      const out = [], q = new THREE.Quaternion(), up = new V3(0, 1, 0);
-      const seg = (a, b, r0, r1) => {
-        const A = new V3(...a), B = new V3(...b), d = B.clone().sub(A), g = tube(r1, r0, d.length(), 5);
-        g.applyQuaternion(q.setFromUnitVectors(up, d.normalize())); const m = A.add(B).multiplyScalar(0.5); return g.translate(m.x, m.y, m.z);
-      };
-      // `hand` (m): a broad palm with four long hooked claws (Godrick's grafts); without it, three short fingers.
-      for (const [root, elbow, hand] of o.arms) {
-        const r = o.r ?? 0.05, H = o.hand ?? 0;
-        out.push(roughen(xf(sphere(r * 1.6, 6, 4), ...root), r * 0.4, 13));
-        out.push(roughen(seg(root, elbow, r, r * 0.85), r * 0.15, 17), xf(sphere(r * 0.95, 5, 4), ...elbow), seg(elbow, hand, r * 0.85, r * 0.6));
-        const h = new V3(...hand), dir = h.clone().sub(new V3(...elbow)).normalize();
-        const side = new V3().crossVectors(dir, up).normalize(); if (side.lengthSq() < 0.1) side.set(1, 0, 0);
-        if (H) {
-          out.push(roughen(xf(sphere(H * 0.45, 6, 4), h.x, h.y, h.z, 0, 0, 0, 1.2, 1, 0.7), H * 0.06, 23));
-          for (let i = -1.5; i <= 1.5; i++) {
-            const base = h.clone().add(side.clone().multiplyScalar(i * H * 0.22)).add(dir.clone().multiplyScalar(H * 0.3));
-            const mid = base.clone().add(dir.clone().multiplyScalar(H * 0.55)).add(side.clone().multiplyScalar(i * H * 0.12));
-            const tip = mid.clone().add(dir.clone().multiplyScalar(H * 0.35)).add(new V3(0, -H * 0.3, 0));
-            out.push(seg(base.toArray(), mid.toArray(), r * 0.32, r * 0.26), seg(mid.toArray(), tip.toArray(), r * 0.26, r * 0.04));
-          }
-          continue;
-        }
-        for (let i = -1; i <= 1; i++) {
-          const tip = h.clone().add(dir.clone().multiplyScalar(0.12)).add(new V3(i * 0.04, 0, i * 0.03));
-          out.push(seg(hand, tip.toArray(), r * 0.35, r * 0.12));
-        }
-      }
-      return out.map(geo => uvScale(geo, 1.5, 1));
     },
     // A grafted dragon's head on the end of the left forearm (Godrick's second phase), jaws along the arm (-y): skull,
     // snout, open lower jaw, teeth, swept horns (all `o.slot`) and glowing eyes and a fire-lit throat (`o.glow`).
@@ -509,25 +380,6 @@ const KIT = (() => {
       for (let i = 1; i < 12; i++) { const p = pts[i]; ribs.push(xf(KIT_GEO.Torus((0.05 - i * 0.002) * s, 0.008 * s, 3, 7), p.x, p.y, p.z, 0, Math.PI / 2, 0)); }
       return [uvScale(g, 4, 1), ...ribs];
     },
-    // A thick furred tail curling round from the spine up toward the shoulder (Margit), with tufts along it.
-    furTail(o) {
-      const s = o.size ?? 1, sd = o.side ?? 1, V = (x, y, z) => new V3(x * s * sd, y * s, z * s);
-      const curve = new THREE.CatmullRomCurve3([V(0, 0, -0.05), V(0.1, -0.2, -0.32), V(0.38, -0.32, -0.5), V(0.62, -0.1, -0.5), V(0.7, 0.25, -0.38), V(0.62, 0.55, -0.25), V(0.48, 0.72, -0.18)]);
-      const g = new THREE.TubeGeometry(curve, 24, 0.13 * s, 8, false);   // fixed counts: the taper below walks its rings
-      const pos = g.attributes.position, c = new V3();   // taper toward the tip
-      for (let i = 0; i < pos.count; i++) {
-        const t = Math.floor(i / 9) / 24, p = curve.getPointAt(clamp01(t)), k = 1 - 0.65 * t;
-        c.fromBufferAttribute(pos, i).sub(p).multiplyScalar(k).add(p); pos.setXYZ(i, c.x, c.y, c.z);
-      }
-      g.computeVertexNormals();
-      const tufts = [];
-      for (let i = 0; i < 14; i++) {
-        const t = 0.05 + 0.9 * i / 13, p = curve.getPointAt(t), tan = curve.getTangentAt(t), r = 0.13 * s * (1 - 0.65 * t);
-        const cone = KIT_GEO.Cone(0.05 * s, 0.16 * s, 4); cone.rotateZ(Math.PI / 2 * (i % 2 ? 1 : -1)); cone.translate((i % 2 ? -1 : 1) * r, 0, 0);
-        cone.lookAt(tan); cone.translate(p.x, p.y, p.z); tufts.push(cone);
-      }
-      return [uvScale(roughen(g, 0.02, 53), 2, 4), ...tufts];
-    },
     // A long robe from the waist to the floor (Margit): flared, hanging in folds, its hem torn ragged; `len` m long.
     robeSkirt(o) {
       const L = o.len ?? 0.95, r0 = o.top ?? 0.22, r1 = o.hem ?? 0.42;
@@ -544,12 +396,6 @@ const KIT = (() => {
       const s = o.size ?? 1, g = sphere(0.3 * s, 10, 7);
       xf(g, 0, o.y ?? 0.42, o.z ?? -0.08, 0, 0, 0, 1.15, 0.85, 0.95); roughen(g, 0.025, 67);
       return [uvScale(g, 3, 2)];
-    },
-    // A loose cloth sleeve round a bone (upper arm): a flared tube, torn at the cuff.
-    sleeve(o) {
-      const L = o.len ?? 0.36, g = lathe([[o.r0 ?? 0.09, o.y0 ?? 0.02], [o.r1 ?? 0.13, -L]], o.seg ?? 9);
-      deform(g, v => { if (v.y < -L * 0.8) v.y -= (hash3(Math.round(v.x * 70), Math.round(v.z * 70), 5, o.seed ?? 2) + 0.5) * 0.08; });
-      return [uvScale(g, 2, 1.5)];
     },
     // A knotted rope sash across the body with two hanging ends (Margit's cord).
     ropeSash(o) {
@@ -652,12 +498,6 @@ const KIT = (() => {
     },
     // Knuckles and joints: lumps of bone at the given points of the bone's frame.
     knobs(o) { return o.at.map(([x, y, z, r]) => roughen(xf(sphere(r, 6, 4), x, y, z), r * 0.25, 51)); },
-    // Fingers: bony cones fanning out of a hand (in the forearm's frame).
-    fingers(o) {
-      const out = [];
-      for (let i = -1; i <= 1; i++) out.push(xf(KIT_GEO.Cone(o.r ?? 0.012, o.len ?? 0.14, 4), i * (o.spread ?? 0.03), -(o.at ?? 0.34) - (o.len ?? 0.14) / 2, 0.012, Math.PI + 0.25, 0, i * 0.18));
-      return out;
-    },
     // Curved horns on a helmet.
     horns(o) {
       const out = [];
@@ -738,13 +578,8 @@ const KIT = (() => {
       roughen(g, 0.012, 71);
       return [uvScale(g, 3, 1), uvScale(xf(KIT_GEO.Torus(0.31, 0.02, 3, 10), 0, -0.5, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), 4, 1)];
     },
-    // ---- the Hollow Soldier (v5.5) ----
-    // A padded gambeson over the torso (chest frame), a little bulkier than the body, high collar.
-    gambeson(o, M) {
-      const tw = M.proportions.torsoW / 0.2, oz = M.proportions.torsoD / M.proportions.torsoW;
-      return [uvScale(lathe(GAMBESON.map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2)];
-    },
-    // Its quilted skirt to mid-thigh (spin frame), a band of mail peeking under the hem when `mail` names a slot.
+    // ---- the Hollow Soldier (v5.5; its gambeson, knee cops and boots are js/kit-premium.js's) ----
+    // A quilted skirt to mid-thigh (spin frame), a band of mail peeking under the hem when `mail` names a slot.
     quiltSkirt(o, M) {
       const tw = M.proportions.torsoW / 0.2, h = o.hem ?? -0.27;
       const g = lathe([[0.245, h], [0.225, -0.12], [0.205, 0.0], [0.195, 0.1]].map(([r, y]) => [r * tw, y]), 8, 0.78);
@@ -781,18 +616,6 @@ const KIT = (() => {
       const comb = xf(KIT_GEO.Sphere(0.13 * s, 6, 2, 0, TAU, 0, Math.PI / 2), 0, 0.245 * s, 0, 0, 0, 0, 0.05, 0.55, 1);
       roughen(dome, 0.008, 81); roughen(brim, 0.008, 82);
       return [uvScale(xf(dome, 0, -0.01, -0.005), 3, 1), uvScale(xf(brim, 0, -0.01, -0.005), 3, 1), comb];
-    },
-    // A round iron cop over the knee (knee frame).
-    kneeCop(o) {
-      const r = o.r ?? 0.068, cup = KIT_GEO.Sphere(r, 6, 3, 0, TAU, 0, Math.PI / 2);
-      xf(cup, 0, -0.01, 0.045, Math.PI / 2, 0, 0, 1, 0.7, 1.15); roughen(cup, 0.006, 83);
-      return [uvScale(cup, 2, 1)];
-    },
-    // A boot shaft up the shin with a loose turned-down cuff (knee frame).
-    boot(o) {
-      const shaft = tube(0.06, 0.056, 0.22, 6, true); xf(shaft, 0, -0.34, 0);
-      const cuff = lathe([[0.066, -0.26], [0.08, -0.215], [0.084, -0.17]], 6); roughen(cuff, 0.008, 84);
-      return [shaft, uvScale(cuff, 2, 0.5)];
     },
     // A broken arrow still stuck in the back
     // A cloth wrap over the lower face with eye sockets left dark: the face is hidden but readable.
@@ -2345,16 +2168,33 @@ const KIT = (() => {
   // the bone its part hangs from. So a body costs a handful of draw calls, however many pieces it has.
   let anatomy = false;
   let geoK = 1;   // the segment multiplier of the model being built (detail.geo, by its budget class)
-  function modelParts(id, variant) {
+  // The cache key of a model at the current detail: its segment multiplier (by budget class) and its anatomy.
+  const detailOf = id => {
     const g = typeof detail.geo === 'object' ? detail.geo[resolve(id).budget] ?? 1 : detail.geo;
-    const sculpted = detail.anatomy ?? (g > 1);
-    const ckey = (variant ? id + '|' + variant : id) + '@' + g + (sculpted ? '|anatomy' : '|base');
+    return { g, sculpted: detail.anatomy ?? (g > 1) };
+  };
+  const cacheKey = (id, variant, { g, sculpted } = detailOf(id)) => (variant ? id + '|' + variant : id) + '@' + g + (sculpted ? '|anatomy' : '|base');
+  function modelParts(id, variant) {
+    const d = detailOf(id), ckey = cacheKey(id, variant, d);
     let m = modelCache.get(ckey);
     if (m) return m;
-    KIT_GEO.set(g); geoK = g; anatomy = sculpted;
+    KIT_GEO.set(d.g); geoK = d.g; anatomy = d.sculpted;
     try { m = buildParts(id, variant, ckey); } finally { KIT_GEO.set(1); geoK = 1; anatomy = false; }
     return m;
   }
+  // Cache upkeep: each entry counts the live rigs built from it (`users`). An entry of another detail than the current
+  // one (a preset change, the Auto benchmark's trial presets, a test) is dropped, its geometry freed, as soon as no rig
+  // uses it: at once on a detail change, else when its last rig is disposed (old bodies keep their detail until they
+  // respawn, and a reset disposes them only after the new cast has warmed up). The current detail's entries stay.
+  const stale = m => m.ckey !== cacheKey(m.id, m.variant);
+  function evict(m) {
+    if (modelCache.get(m.ckey) !== m) return;
+    modelCache.delete(m.ckey);
+    for (const p of m.parts) p.geo.dispose();
+    if (m.eyeGeo) m.eyeGeo.dispose();
+  }
+  function evictStale() { for (const m of [...modelCache.values()]) if (!m.users && stale(m)) evict(m); }
+  function release(m) { m.users = Math.max(0, m.users - 1); if (!m.users && stale(m)) evict(m); }
   function buildParts(id, variant, ckey) {
     let m;
     const M = resolveVariant(id, variant), groups = new Map();
@@ -2387,7 +2227,7 @@ const KIT = (() => {
     }
     const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1) * geoK * geoK;   // a stronger variant may carry a quarter more; Ultra's detail its square
     if (tris > budget && geoK === 1) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
-    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox };
+    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox, id, variant, ckey, users: 0, eyeGeo: null };
     modelCache.set(ckey, m);
     return m;
   }
@@ -2411,6 +2251,8 @@ const KIT = (() => {
     const M = resolveVariant(id, variant);
     checkModel(id, M);
     const built = modelParts(id, variant), rim = M.rim ?? 1, P = M.proportions;
+    // This body holds its cache entry until Rig.dispose hands it back (KIT.release).
+    built.users++; rig.modelEntry = built;
     rig.dissolve = { value: 0 };   // death: the body breaks up into ash (see addDissolve)
     // Materials: cloned per rig (own flash and fade), sharing the cached textures.
     const mats = {}, weaponMats = {};
@@ -2458,7 +2300,8 @@ const KIT = (() => {
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
     if (M.eyes) {
-      const E = M.eyes, em = mats.eye, eg = sphere(E.size, 5, 3); eg.userData.shared = true;
+      const E = M.eyes, em = mats.eye, eg = built.eyeGeo || (built.eyeGeo = sphere(E.size, 5, 3));   // one per model, freed with it
+      eg.userData.shared = true;
       for (const s of [-1, 1]) { const e = new THREE.Mesh(eg, em); e.position.set(s * E.spread, E.at[1], E.at[2]); rig.head.add(e); }
       const halo = glowSprite(E.color, 1.2, 0.22, 0.45, 0.6); halo.position.set(0, E.at[1], E.at[2] + 0.02); rig.head.add(halo);
       rig.glows.push({ mat: halo.material, base: 0.45 });
@@ -2511,9 +2354,18 @@ const KIT = (() => {
   }
 
   // Detail of models built from now on: geo/tex multipliers and explicit anatomy. Omitted anatomy retains the old API.
-  const setDetail = d => { const was = JSON.stringify(detail); detail = { geo: d.geo ?? 1, tex: d.tex ?? 1, anatomy: d.anatomy }; if (JSON.stringify(detail) !== was) prewarm(); };   // the new detail baked in the background
+  // opts.prewarm (default true): bake the new detail in the background; opts.evict (default true): drop unused entries of
+  // other details now. A temporary detail (the Auto benchmark's trial presets) passes both false: the pending prewarm
+  // carries on and nothing current is dropped; what it built goes when its trial rigs are disposed (release).
+  const setDetail = (d, { prewarm: warm = true, evict: drop = true } = {}) => {
+    const was = JSON.stringify(detail);
+    detail = { geo: d.geo ?? 1, tex: d.tex ?? 1, anatomy: d.anatomy };
+    if (JSON.stringify(detail) === was) return;
+    if (drop) evictStale();
+    if (warm) prewarm();
+  };
   // The geometry helpers, for parts defined outside the kit (js/kit-premium.js).
   const helpers = { xf, uvScale, hash3, roughen, deform, lathe, limb, shape, plate, sphere, tube, texMeters: MS.texMeters };
-  return { buildModelRig, modelParts, resolve, resolveVariant, prewarm, setDetail, detail: () => detail, parts: KIT_PARTS, weapons: KIT_WEAPONS, cache: modelCache, helpers };
+  return { buildModelRig, modelParts, resolve, resolveVariant, prewarm, setDetail, evictStale, release, detail: () => detail, parts: KIT_PARTS, weapons: KIT_WEAPONS, cache: modelCache, helpers };
 })();
 const buildModelRig = KIT.buildModelRig;

@@ -1,7 +1,7 @@
 I am designing a 3d souls game with html and web browser playability with 0 downloads.
 You are responsible for creating a prompt for my Opus agent inside the project, which already knows everything about the project.
 
-Always add a final phase to all prompts, which is, commit and push to github, with version = vx.x, and edit CLAUDE.md and README.md accordingly to display the new current main game details.
+Always add a final phase to all prompts, which is, commit and push to github, with version = vx.x, and edit AGENTS.md (and docs/CHANGELOG.md) and README.md accordingly to display the new current main game details.
 
 Now, we are going to implement a boss in Elden Ring Bosses, a menu with all available bosses displayed, that when clicked, the player enters a 1v1 arena with that boss, the arena is same as the one used in "enemies".
 

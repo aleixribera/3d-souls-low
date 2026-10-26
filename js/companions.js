@@ -58,13 +58,15 @@ const companions = (() => {
   // enemies fighting Finn from circling or throttling the ones fighting the human elsewhere.
   function updateEnemies(game, dt) {
     const c = game.companion, living = actors(game).filter(p => p.alive());
+    // An attack started outside the crowd pass (a perch pounce woken by an alert) still counts on its target's clock.
+    if (crowd.lastStarter) { c.clocks.set(c.targets.get(crowd.lastStarter) || game.player, 0); crowd.lastStarter = null; }
     const groups = new Map(living.map(p => [p, []]));
     for (const e of game.enemies) {
       const valid = living.filter(p => !e.arena || inArea(e.arena, p.x, p.z));
       let target = valid.find(p => p === c.targets.get(e));
       if (!target || !e.in('attacking')) {
         const score = p => Math.hypot(p.x - e.x, p.z - e.z) + Math.abs(p.y - e.y) * CONFIG.height.reach + (gateBetween(e, p) ? e.notice : 0);
-        target = valid.reduce((best, p) => !best || score(p) < score(best) * (p === c.targets.get(e) ? 1 : ArenaNet.config.targetHysteresis) ? p : best, target);
+        target = valid.reduce((best, p) => !best || score(p) < score(best) * (p === c.targets.get(e) ? 1 : CONFIG.companion.targetHysteresis) ? p : best, target);
       }
       target = target || game.player; c.targets.set(e, target);
       if (!groups.has(target)) groups.set(target, []); groups.get(target).push(e);
@@ -74,6 +76,7 @@ const companions = (() => {
       for (const e of enemies) if (!game.sleeps(e)) e.update(dt, p);
       c.clocks.set(p, crowd.sinceStart);
     }
+    crowd.lastStarter = null;
   }
   function resolve(game) {
     const c = game.companion; if (!c) return;
@@ -82,18 +85,7 @@ const companions = (() => {
     resolveCombat(fight); game.hitstop = Math.max(game.hitstop, fight.hitstop);
   }
   function hazards(game, dt) {
-    const c = game.companion; if (!c) return;
-    const p = c.body;
-    for (const h of world.hazards) {
-      const on = p.alive() && p.grounded && !p.invulnerable() && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) < CONFIG.height.stepUp;
-      let timer = on ? (c.hazardTimers.get(h) || 0) + dt : 0;
-      if (on) {
-        p.hp = Math.max(0, p.hp - h.dps * dt);
-        if (timer >= CONFIG.hazards.tick) { timer -= CONFIG.hazards.tick; p.tint = Math.max(p.tint, 0.5); events.emit('hazard', { hazard: h, player: p }); }
-        if (p.hp <= 0) { p.hitbox = null; p.setState(PS.DEAD); events.emit('hazardDeath', { hazard: h, player: p }); }
-      }
-      c.hazardTimers.set(h, timer);
-    }
+    const c = game.companion; if (c) c.body.standInHazards(dt, c.hazardTimers);
   }
   function focus(game, b) {
     const c = game.companion;

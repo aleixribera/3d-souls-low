@@ -12,10 +12,18 @@
 const flame = (() => {
   const F = CONFIG.elden.flame, V3 = THREE.Vector3, from = new V3(), to = new V3(), dir = new V3(), Z = new V3(0, 0, 1);
   const coneGeo = (r, len) => new THREE.ConeGeometry(r, len, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, len / 2);
-  const UNIT = coneGeo(0.5, 1), jets = [];   // every jet made, with its owner (dropped once the owner leaves the game)
+  const UNIT = coneGeo(0.5, 1);
+  // Every jet made, by its owner (js/effect-slots.js): dropped, its materials freed, once the owner leaves the game.
+  const jets = effectSlots.slots((J, e) => {
+    scene.remove(J.g); for (const m of J.g.children) if (m.material) m.material.dispose();
+    if (e.rig && e.rig.flameJet === J) e.rig.flameJet = null;
+  });
   function jetFor(e) {
     const R = e.rig;
     if (R.flameJet) return R.flameJet;
+    return (R.flameJet = jets.acquire(e, makeJet));
+  }
+  function makeJet() {
     const g = new THREE.Group(), layers = [];
     for (const [color, op, w] of [[F.outer, F.opacity * 0.55, 1], [F.color, F.opacity, 0.7], [F.core, F.opacity, 0.35]]) {
       const m = new THREE.Mesh(UNIT, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
@@ -25,8 +33,7 @@ const flame = (() => {
     light.userData.legacyEffectLight = true; light.visible = false;   // shared effect-light pool
     g.userData.warmUp = true;
     g.visible = false; scene.add(g);
-    jets.push({ e, g });
-    return (R.flameJet = { g, layers, light, k: 0 });
+    return { g, layers, light, k: 0 };
   }
   const burningNow = e => {
     const a = e.attack, B = a && a.breath;
@@ -34,15 +41,9 @@ const flame = (() => {
     if (e.state === ES.ACTIVE) return e.hitIndex >= (B.from ?? 0);
     return e.state === ES.WINDUP && e.hitIndex > (B.from ?? 0);
   };
-  function clean(enemies) {
-    for (let i = jets.length - 1; i >= 0; i--) if (!enemies.includes(jets[i].e)) {
-      scene.remove(jets[i].g); for (const m of jets[i].g.children) if (m.material) m.material.dispose(); jets.splice(i, 1);
-    }
-  }
-  let last = performance.now();
   function render(game) {
-    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), t = now / 1000; last = now;
-    clean(game.enemies);
+    const dt = effectSlots.dt(), t = effectSlots.time();   // the shared effect clock: hand-stepped tests, hit-pauses
+    jets.sweep(game.enemies);
     for (const e of game.enemies) {
       const R = e.rig; if (!R) continue;
       // Grafted parts: hidden until the phase that reveals them has struck its opener.
@@ -80,7 +81,8 @@ const flame = (() => {
       to.set(e.x + s * (box.fwd + box.d / 2), e.y + box.y * 0.6, e.z + c * (box.fwd + box.d / 2));
       dir.subVectors(to, from); const len = Math.max(0.5, Math.min(a.breath.len, dir.length()));
       J.g.position.copy(from); J.g.quaternion.setFromUnitVectors(Z, dir.normalize());
-      for (const [i, m] of J.layers.entries()) {
+      for (let i = 0; i < J.layers.length; i++) {
+        const m = J.layers[i];
         const f = 1 + F.flicker * Math.sin(t * (23 + i * 7) + i * 2);
         m.scale.set(a.breath.width * m.userData.w * f, a.breath.width * m.userData.w * f, len * (0.92 + 0.08 * f));
         m.material.opacity = m.userData.op * J.k;
@@ -94,6 +96,6 @@ const flame = (() => {
   }
   return {
     attach() { Game.renderHooks.push(render); },
-    prepare(enemies) { clean(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.breath)) jetFor(e); },
+    prepare(enemies) { jets.sweep(enemies); for (const e of enemies) if (e.baseDef.attacks.some(a => a.breath)) jetFor(e); },
   };
 })();

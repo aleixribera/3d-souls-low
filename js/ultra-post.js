@@ -14,7 +14,7 @@ const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
   const quality = () => visuals.quality();
   const budget = () => VIS.cinematic[quality().label.toLowerCase()];
-  let on = false, lastT = performance.now(), W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
+  let on = false, W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
   const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
 
@@ -277,7 +277,7 @@ void main() {
     for (const m of reflected) m.envMap = envTex;
   }
 
-  // ---- screen pulses: shockwaves, chromatic aberration, punch, flash, hurt -------------------------------------------
+  // ---- screen pulses: shockwaves, flash, hurt ----------------------------------------------------------------------------
   const waves = [];   // { x, y, z, age, k, size }
   const pulse = { flash: 0, hurt: 0, flashColor: new THREE.Color(1, 1, 1) };
 
@@ -311,23 +311,26 @@ void main() {
   visuals.composer.insertPass(lightPass, 1);   // right after the scene render, before bloom
 
   // ---- per frame ------------------------------------------------------------------------------------------------------
-  const lightList = [];
+  const lightList = [], lightSlots = [];   // lightSlots: reused records, so a frame allocates nothing
+  const byScore = (a, b) => b.score - a.score;
+  function consider(l, k) {
+    if (!l.visible || !(l.intensity > 0)) return;
+    for (let a = l.parent; a; a = a.parent) if (!a.visible) return;
+    l.getWorldPosition(v3);
+    const R = Math.min(l.distance > 0 ? l.distance : 14, 16) * SC.reach, d2 = v3.distanceToSquared(camera.position);
+    if (d2 > (R + SC.maxDist) ** 2) return;
+    const L = lightSlots[lightList.length] || (lightSlots[lightList.length] = { x: 0, y: 0, z: 0, R: 0, col: null, I: 0, score: 0 });
+    L.x = v3.x; L.y = v3.y; L.z = v3.z; L.R = R; L.col = l.color; L.I = l.intensity * k; L.score = l.intensity * R * R / (d2 + 4);
+    lightList.push(L);
+  }
   // The lights glowing in the fog this frame: the stage's lit ones and any effect lights, the most striking first.
   function gatherLights() {
     lightList.length = 0;
-    const cam = camera.position, k = SC.light * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef;
-    const consider = l => {
-      if (!l.visible || !(l.intensity > 0)) return;
-      for (let a = l.parent; a; a = a.parent) if (!a.visible) return;
-      l.getWorldPosition(v3);
-      const R = Math.min(l.distance > 0 ? l.distance : 14, 16) * SC.reach, d2 = v3.distanceToSquared(cam);
-      if (d2 > (R + SC.maxDist) ** 2) return;
-      lightList.push({ x: v3.x, y: v3.y, z: v3.z, R, col: l.color, I: l.intensity * k, score: l.intensity * R * R / (d2 + 4) });
-    };
-    for (const l of visuals.lights()) consider(l);
-    for (const l of extraLights) consider(l);
-    for (const l of owned) if (l.isPointLight && l.userData.flash) consider(l);
-    lightList.sort((a, b) => b.score - a.score);
+    const k = SC.light * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef;
+    for (const l of visuals.lights()) consider(l, k);
+    for (const l of extraLights) consider(l, k);
+    for (const l of owned) if (l.isPointLight && l.userData.flash) consider(l, k);
+    lightList.sort(byScore);
     const n = quality().volumetrics ? Math.min(MAXL, lightList.length) : 0, view = camera.matrixWorldInverse;
     for (const M of [lightMat, visMat]) M.uniforms.uLCount.value = n;
     for (let i = 0; i < n; i++) {
@@ -358,8 +361,9 @@ void main() {
     pulse.hurt = Math.max(0, pulse.hurt - pulse.hurt * D.hurt * dt - 0.01 * dt);
     const L = visuals.passes.grade.uniforms;
     L.uFlash.value = pulse.flash; L.uFlashCol.value.copy(pulse.flashColor); L.uHurt.value = Math.max(pulse.hurt, visuals.lowHealth() * 0.35);
-    // shockwaves: each frame re-projected, so they stay on the spot they started from
+    // shockwaves: each frame re-projected, so they stay on the spot they started from (dropped once motion is reduced)
     const Wv = U.waves, list = compMat.uniforms.uWaves.value;
+    if (waves.length && reducedMotion()) waves.length = 0;
     for (let i = waves.length - 1; i >= 0; i--) if ((waves[i].age += dt) >= Wv.time) waves.splice(i, 1);
     for (let i = 0; i < MAXW; i++) {
       const w = waves[i];
@@ -425,13 +429,16 @@ void main() {
     waves.length = 0;
   });
   visuals.hooks.beforeDraw.push(() => {
-    const now = performance.now(), dt = Game.manualClock ? 1 / 60 : Math.min(0.1, (now - lastT) / 1000); lastT = now;
-    const q = quality();
+    const dt = effectSlots.real(), q = quality();
     if (!on && !q.reflections && !q.shadows && !q.combatFx) return;
     if (q.reflections && !envTex && lastDef) buildEnv(lastDef);
-    let changed = sceneRoots.length !== scene.children.length || scene.children.some((o, i) => o !== sceneRoots[i] || o.children.length !== rootCounts[i]);
+    let changed = sceneRoots.length !== scene.children.length;
+    for (let i = 0; !changed && i < sceneRoots.length; i++) { const o = scene.children[i]; changed = o !== sceneRoots[i] || o.children.length !== rootCounts[i]; }
     // Spectral weapons attach inside a rig. Track that small socket too so new glows / lights are classified once.
-    for (const b of [...Game.allies(), ...Game.enemies]) if (b && b.rig) {
+    const allies = Game.allies();
+    for (let i = 0, n = allies.length + Game.enemies.length; i < n; i++) {
+      const b = i < allies.length ? allies[i] : Game.enemies[i - allies.length];
+      if (!b || !b.rig) continue;
       const R = b.rig, count = R.weapon.children.length;
       if (R.ultraWeaponChildren !== count) { R.ultraWeaponChildren = count; changed = true; }
     }
@@ -441,7 +448,8 @@ void main() {
     if (q.shadows) placeSun();
     if (q.volumetrics) gatherLights();
     // dissolving bodies cast no shadow (the shadow pass cannot see the dissolve); the blob shadow keeps a little contact
-    for (const b of [...Game.allies(), ...Game.enemies]) {
+    for (let i = 0, n = allies.length + Game.enemies.length; i < n; i++) {
+      const b = i < allies.length ? allies[i] : Game.enemies[i - allies.length];
       if (!b || !b.rig) continue;
       const R = b.rig, castNow = R.alphaK > 0.99;
       if (R.ultraCast !== castNow) { R.root.traverse(o => { if (o.isMesh && o.userData.ultraShadow) o.castShadow = q.shadows && castNow; }); R.ultraCast = castNow; }
@@ -465,14 +473,17 @@ void main() {
     on: () => on,
     // A light of js/ultra-fx.js: in the scene only while Ultra is on (`flash` lights also glow in the fog).
     own(light) { light.userData.ultra = true; owned.push(light); if (quality().combatFx) scene.add(light); },
-    // A shockwave from world point p: k its strength (1 = a heavy blow), size its reach on screen.
-    wave(p, k = 1, size = 1) { if (!quality().refraction) return; waves.push({ x: p.x, y: p.y, z: p.z, age: 0, k, size }); if (waves.length > MAXW) waves.shift(); },
-    // Flash / hurt remain. Legacy ca / punch requests are intentionally ignored (camera feel supplies motion).
+    // A shockwave from world point p: k its strength (1 = a heavy blow), size its reach on screen. None with reduced motion.
+    wave(p, k = 1, size = 1) { if (!quality().refraction || reducedMotion()) return; waves.push({ x: p.x, y: p.y, z: p.z, age: 0, k, size }); if (waves.length > MAXW) waves.shift(); },
+    // A full-screen flash (of `color`) and / or hurt vignette, 0..1. Reduced motion keeps a subtle share of each.
     pulse({ flash = 0, color = 0xffffff, hurt = 0 } = {}) {
       if (!quality().combatFx) return;
+      if (reducedMotion()) { flash *= VIS.reducedMotion.flash; hurt *= VIS.reducedMotion.hurt; }
       pulse.hurt = Math.min(1, Math.max(pulse.hurt, hurt));
       if (flash > pulse.flash) { pulse.flash = flash; pulse.flashColor.set(color); }
     },
+    // Tests: whether an object is kept out of the depth / normal pre-pass (glows, particles, lightning).
+    excluded: o => noDepth.includes(o),
     info: () => ({ on, lights: lightList.length, noDepth: noDepth.length, reflected: reflected.size, waves: waves.length,
                    shadowSize: sun.shadow.mapSize.x, aoSamples: lightMat.defines.AO_SAMPLES,
                    scatteringLights: lightMat.uniforms.uLCount.value, bufferSize: gbuf ? [gbuf.width, gbuf.height] : null,

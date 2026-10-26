@@ -36,8 +36,8 @@ const FOLLOW_IF = {
   any: () => true,
   far: (e, dist) => dist > e.attack.range,
   near: (e, dist) => dist <= e.attack.range,
-  flank: (e, dist, rel) => REACTIONS.flank(e, null, rel) && dist <= e.attack.range + 1,
-  behind: (e, dist, rel) => REACTIONS.behind(e, null, rel) && dist <= e.attack.range + 1,
+  flank: (e, dist, rel) => REACTIONS.flank(e, null, rel) && dist <= e.attack.range + CONFIG.enemy.followReach,
+  behind: (e, dist, rel) => REACTIONS.behind(e, null, rel) && dist <= e.attack.range + CONFIG.enemy.followReach,
 };
 // One of `attacks`, with odds in proportion to their chances (null if they are all 0).
 function pickByChance(attacks) {
@@ -108,6 +108,9 @@ class Enemy {
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
   }
+  // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
+  // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).
+  isBoss() { return isBossDef(this.baseDef) || !!this.boss; }
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
   // on the same bar (no kneel, no refill). Its `opener` (an attack id) is the first thing it does.
@@ -134,7 +137,7 @@ class Enemy {
     if (this.boss && this.boss.retreat) {
       this.retreatFrom = { x: this.x, y: this.y, z: this.z };
       const R = this.boss.retreat;   // a far leap takes longer: at most `speed` m/s (default 24)
-      this.retreatHop = Math.max(R.hop, Math.hypot(R.to[0] - this.x, R.to[2] - this.z) / (R.speed || 24));
+      this.retreatHop = Math.max(R.hop, Math.hypot(R.to[0] - this.x, R.to[2] - this.z) / (R.speed || CONFIG.enemy.retreatSpeed));
       this.setState(ES.RETREAT);
       events.emit('bossRetreat', { enemy: this });
       return true;
@@ -155,7 +158,7 @@ class Enemy {
   // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
   invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; }
+  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   isAttacking() { return this.in('attacking'); }
@@ -190,7 +193,38 @@ class Enemy {
     this.recoil = Math.max(0, this.recoil - dt / CONFIG.fx.recoilTime);
   }
 
+  // Where it is in its attack's marker clock: the phase name, hit and seconds into that phase (null when not attacking).
+  markerClock() {
+    const a = this.attack;
+    if (!a || !a.markers || !this.in('attacking')) return null;
+    const h = a.hits[this.hitIndex], t = this.stateTime;
+    if (this.state === ES.WINDUP) return { a, at: 'windup', hit: this.hitIndex, t };
+    if (this.state === ES.ACTIVE) return t < h.active ? { a, at: 'active', hit: this.hitIndex, t } : { a, at: 'follow', hit: this.hitIndex, t: t - h.active };
+    if (this.state === ES.RECOVER) return { a, at: 'recovery', hit: a.hits.length - 1, t };
+    return null;
+  }
+  // Attack markers (`sound`, `shake`) crossed this step, as the player's attacks announce theirs (js/attack-anim.js):
+  // the Bell Warden's tolls and the Toll Wisp's chime pace their roll-only moves. Glints are drawn, not announced.
+  // `markerSeen`: the clock already announced up to (reset by every state change), so an attack begun outside the
+  // enemy's own step (an alert's pounce, a test) still sounds its opening marker, and none sounds twice.
+  emitMarkers() {
+    const now = this.markerClock(), was = this.markerSeen;
+    this.markerSeen = now;
+    if (!now) return;
+    const same = was && was.a === now.a && was.at === now.at && was.hit === now.hit;
+    const len = now.at === 'windup' ? now.a.hits[now.hit].startup : now.at === 'active' ? now.a.hits[now.hit].active
+      : now.at === 'follow' ? now.a.hits[now.hit].follow || 0 : now.a.recovery;
+    for (const m of now.a.markers) {
+      if (m.event === 'glint' || (m.at || 'windup') !== now.at || (m.hit ?? 0) !== now.hit) continue;
+      const T = len * (m.t ?? 0);
+      if (T <= now.t && (!same || T > was.t)) events.emit('attackMarker', { actor: this, attack: now.a, marker: m });
+    }
+  }
   update(dt, player) {
+    this.step(dt, player);
+    this.emitMarkers();
+  }
+  step(dt, player) {
     this.checkPhaseAt();
     const d = this.def, E = CONFIG.enemy;
     this.stateTime += dt;
@@ -279,7 +313,7 @@ class Enemy {
         const g = this.lastSeen || this.home, gx = g.x - this.x, gz = g.z - this.z, gd = Math.hypot(gx, gz);
         if (gd < S.arrive || this.searchLook > 0) {   // there: look about a while
           this.searchLook += dt;
-          this.yaw += Math.sin(this.searchLook * 1.6) * d.turnRate * 0.25 * dt;
+          this.yaw += Math.sin(this.searchLook * S.lookRate) * d.turnRate * S.lookTurn * dt;
           if (this.searchLook > S.look) this.setState(ES.RETURN);
           break;
         }
@@ -333,7 +367,7 @@ class Enemy {
         }
         // A hit's `abort` (v5.3): at `at` of the wind-up, a player who backed beyond `beyond` m turns it into `into`.
         if (hit.abort && this.stateTime >= hit.startup * hit.abort.at && !(this.holdLeft > 0) && dist > hit.abort.beyond) {
-          this.beginAttack(d.attacks.find(o => o.id === hit.abort.into)); break;
+          this.beginAttack(this.attackById(hit.abort.into)); break;
         }
         // Gap closer: rush forward late in the wind-up, stopping once the strike would reach.
         if (a.dash && this.hitIndex === 0 && this.stateTime >= hit.startup * a.dash.from && dist > a.box.fwd + a.box.d * 0.25 + player.radius) {
@@ -386,7 +420,7 @@ class Enemy {
         if (this.stateTime >= (d.posture || d.guard || d.stagger).breakTime) { this.posture = 0; this.guardMeter = 0; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.PHASE: {   // between two health bars: kneels, rises, the new bar fills; nothing it does can hurt
-        const T = d.transition || 3;
+        const T = d.transition || CONFIG.enemy.transition;
         const top = d.hp * (d.fill ?? 1);   // a phase's `fill` (v5.9, Malenia): the new bar refills only to that fraction
         this.hp = top * clamp((this.stateTime - T * 0.35) / (T * 0.5), 0, 1);
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * 0.25 * dt);
@@ -510,7 +544,7 @@ class Enemy {
   }
   beginAttack(attack) {
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
-    crowd.started();
+    crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
   }
@@ -541,11 +575,13 @@ class Enemy {
   followUp() {
     for (const f of this.attack.followUps || []) {
       if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || Math.random() >= f.chance) continue;
-      this.beginAttack(this.def.attacks.find(a => a.id === f.attack) || this.baseDef.attacks.find(a => a.id === f.attack));
+      this.beginAttack(this.attackById(f.attack));
       return true;
     }
     return false;
   }
+  // An attack by id: the current phase's, else the base def's (a phase may branch into a move it doesn't choose itself).
+  attackById(id) { return this.def.attacks.find(a => a.id === id) || this.baseDef.attacks.find(a => a.id === id); }
   // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
   updateTraining() {
     if (!this.def.attacks.length) return;
@@ -706,7 +742,7 @@ class Enemy {
         r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
       }
       case ES.PHASE: {   // sinks to a knee, head bowed, then rises as the new bar fills
-        const T = d.transition || 3, k = ease(clamp(tt / 0.6, 0, 1)) * (1 - ease(clamp((tt - T * 0.62) / (T * 0.3), 0, 1)));
+        const T = d.transition || CONFIG.enemy.transition, k = ease(clamp(tt / 0.6, 0, 1)) * (1 - ease(clamp((tt - T * 0.62) / (T * 0.3), 0, 1)));
         r.kneel(k); r.lean(0.35 * k); r.head.rotation.x = 0.55 * k;
         r.armR.rotation.x = lerp(-0.4, 0.25, k); r.weapon.rotation.x = lerp(0.5, 1.5, k);
         r.spin.rotation.z = Math.sin(tt * 3) * 0.03 * k; break;

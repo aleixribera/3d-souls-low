@@ -91,15 +91,16 @@ const spectral = (() => {
     (W.bone ? R.bones[W.bone] : R.weapon).add(g);
     return (set[id] = g);
   }
-  let last = performance.now();
-  // Every frame: the drawn attack's weapon fades in through the wind-up and strike, the rest fade out.
+  // Every frame: the drawn attack's weapon fades in through the wind-up and strike, the rest fade out. Its groups live
+  // in the rig (freed with it), so nothing is kept per body here; the clock is the shared effect clock.
   function render(game) {
-    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const dt = effectSlots.dt(), now = effectSlots.time() * 1000;
     for (const e of game.enemies) {
       const want = e.alive() && e.attack && e.attack.spectral && (e.state === ES.WINDUP || e.state === ES.ACTIVE) ? e.attack.spectral : null;
       if (want) weaponFor(e, want);
-      for (const [id, g] of Object.entries(e.rig.spectral || {})) {
-        const u = g.userData, on = id === want;
+      const set = e.rig.spectral;
+      if (set) for (const id in set) {
+        const g = set[id], u = g.userData, on = id === want;
         u.k = clamp01(u.k + (on ? dt / S.fadeIn : -dt / S.fadeOut));
         g.visible = u.k > 0; u.mat.opacity = u.k; u.light.intensity = u.k * S.light;
         if (on && id === 'sword') u.mat.emissive.setHSL((now / 1600) % 1, 0.7, 0.45);   // the prism sheen drifts through the hues

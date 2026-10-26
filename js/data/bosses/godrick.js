@@ -3,7 +3,7 @@
 // Elden Ring Bosses: Godrick the Grafted (v5.4)
 // ============================================================================
 // Everything that makes Godrick lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/Margit/godrick-stats.txt.
+// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/godrick-stats.txt.
 //
 // Conversion to this game's scale (not Elden Ring's numbers). The player has 120 HP, a light hit does 18 and a heavy 38,
 // a roll is invulnerable for 0.3 s. Aldric (throne + knell, 3800 HP over two bars) and Margit (3200, one bar) are the

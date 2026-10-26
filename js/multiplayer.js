@@ -196,7 +196,7 @@ const multiplayer = (() => {
     const rows = latestFrame?.results;
     if (rows && !leaderboardRows) {
       leaderboardRows = rows;
-      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, ...(session.partners || [])].map(id => ENEMY_BY_ID[id].name).join(' & ');
+      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, ...(session.partners || [])].map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & ');
       for (const row of rows) {
         const tr = document.createElement('tr'); tr.dataset.self = String(row.id === self); tr.dataset.playerId = row.id; tr.dataset.rank = row.rank;
         tr.style.setProperty('--share', String(row.damage / Math.max(1, ...rows.map(x => x.damage))));
@@ -671,9 +671,9 @@ const multiplayer = (() => {
   }
   function adventureSummary() {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
-    const campaign = STORIES.find(s => s.id === id);
-    el('lobbyAdventureSummary').textContent = C.gauntlets[id]
-      ? `${catalog?.bosses.length || ''} bosses${C.gauntlets[id].size > 1 ? `, ${C.gauntlets[id].size} at a time` : ''}, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.${C.gauntlets[id].then ? ` Survive to face ${C.gauntlets[C.gauntlets[id].then].name}.` : ''}`
+    const campaign = STORIES.find(s => s.id === id), run = ArenaNet.own(C.gauntlets, id);
+    el('lobbyAdventureSummary').textContent = run
+      ? `${catalog?.bosses.length || ''} bosses${run.size > 1 ? `, ${run.size} at a time` : ''}, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.${run.then ? ` Survive to face ${C.gauntlets[run.then].name}.` : ''}`
       : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
       : 'Play this encounter together.';
   }
@@ -841,13 +841,10 @@ const multiplayer = (() => {
     p.savePrev(); Game.deathTimer = 0; Game.cam.yaw = p.yaw; Game.updateCamera(0, true);
   }
   function capturePose(p) {
-    return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
-      attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
-      walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
-      vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
+    return { ...ArenaNet.bodyPose(p),
       stamina: p.stamina, flasks: p.item('flask').count, exhausted: p.exhausted, staminaDelay: p.staminaDelay,
       poise: clamp(p.poise, 0, p.maxPoise), poiseTimer: Math.min(p.poiseTimer, CONFIG.player.poiseResetTime), doomTime: p.doomTime, doomDrain: p.doomDrain,
-      landTime: p.landTime, stunTime: p.stunTime, view: session.teamWipeOnly && p.alive() ? lastView : null };
+      view: session.teamWipeOnly && p.alive() ? lastView : null };
   }
   function heartbeat(now) {
     overlayVisibility();
@@ -975,12 +972,19 @@ const multiplayer = (() => {
       const e = Game.enemies.find(e => e.netId === d.enemy);
       if (d.type === 'strike' && d.player !== self && e) {
         const attacker = remotes.get(d.player)?.body;
-        if (attacker) events.emit('strike', { ...d, attacker, target: e });
-      } else if (d.type === 'parry' && d.player !== self && e) events.emit('parry', { target: e });
+        if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
+      // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
+      } else if (d.type === 'parry' && d.player !== self && e) events.emit('parry', { target: e, player: remotes.get(d.player)?.body || d.player });
       if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'postureBreak'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });
       } else if (d.type === 'impact') events.emit('impact', { ...d, enemy: e });
+      else if (d.type === 'attackMarker' && e) {
+        // Wire values: the attack by id from this enemy's own data, the marker index bounds-checked.
+        const attack = e.baseDef.attacks.find(a => a.id === d.attackId) || e.def.attacks?.find(a => a.id === d.attackId);
+        const marker = attack && Array.isArray(attack.markers) && Number.isInteger(d.marker) && d.marker >= 0 && d.marker < attack.markers.length ? attack.markers[d.marker] : null;
+        if (marker) events.emit('attackMarker', { actor: e, attack, marker });
+      }
     }
     for (const shot of sample.shots) {
       const e = Game.enemies.find(e => e.netId === shot.enemy), attack = e?.baseDef.attacks.find(a => a.id === shot.attack);
@@ -1036,7 +1040,7 @@ const multiplayer = (() => {
       const p = r.body;
       p.x = lerp(a.x, b.x, f); p.y = lerp(a.y, b.y, f); p.z = lerp(a.z, b.z, f); p.yaw = a.yaw + angDiff(b.yaw, a.yaw) * f;
       p.state = a.state; p.stateTime = a.stateTime + Math.max(0, now - a.at); p.hp = a.hp; p.attackT = a.attackT + (a.charge === 1 ? 0 : Math.max(0, now - a.at));
-      p.attack = PLAYER_DEF.moveset.attacks[a.attack] || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = lerp(a.walkPhase, b.walkPhase, f);
+      p.attack = ArenaNet.own(PLAYER_DEF.moveset.attacks, a.attack) || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = lerp(a.walkPhase, b.walkPhase, f);
       p.vx = a.vx; p.vy = a.vy; p.vz = a.vz;
       p.usingItem = ITEMS.flask; p.landTime = a.landTime; p.stunTime = a.stunTime;
       p.activeAt = a.activeAt < 0 ? Infinity : a.activeAt;

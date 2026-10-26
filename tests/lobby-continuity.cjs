@@ -38,7 +38,8 @@ const until = async (test, message, limit = 4000) => {
   for (let i = 0; i < 360; i++) idle.tick(1 / C.tickRate);
   assert.ok(!['windup', 'active', 'recover'].includes(enemy.state), 'an empty arena finishes attacks and returns to idle');
   assert.ok(idle.state.time > 5);
-  const owner = { ...idle.state.checkpoint, id: 'absent-owner', hp: 120, state: 'idle' };
+  // The owner kneels beside its victim: the server range-checks executions (ArenaNet.config.contactSlack).
+  const owner = { ...idle.state.checkpoint, x: enemy.x, y: enemy.y, z: enemy.z + enemy.radius + 0.8, id: 'absent-owner', hp: 120, state: 'idle' };
   idle.setPlayers([owner]); enemy.setState('broken');
   assert.ok(idle.beginExecution(owner.id, { enemy: enemy.netId })); idle.setPlayers([]);
   for (let i = 0; i < 600; i++) idle.tick(1 / C.tickRate);

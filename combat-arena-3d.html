@@ -601,11 +601,15 @@ const GAME_FILES = [
   'hud.js',
   'audio.js',
   'game.js',
+  'game-menus.js',
+  'game-view.js',
+  'game-level.js',
   'finale.js',
   'lore.js',
   'story.js',
   'impact.js',
   'camera-feel.js',
+  'effect-slots.js',
   'spectral.js',
   'flame.js',
   'blackblade.js',
@@ -624,7 +628,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.17.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.18.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -644,6 +648,8 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite.js', 'tests/');
   await loadScript('suite-lands.js', 'tests/');   // v7.0: the Lands Between
   await loadScript('suite-lighting.js', 'tests/');
+  await loadScript('suite-render.js', 'tests/');   // rendering audit: disposal, model cache, lightning, reduced motion
+  await loadScript('suite-audit.js', 'tests/');   // v7.18: the audit fixes
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours

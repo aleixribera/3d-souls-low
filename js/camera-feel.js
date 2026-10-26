@@ -17,7 +17,7 @@ const cameraFeel = (() => {
   // A world direction in the camera's own frame (right, forward), flattened.
   const local = (dx, dz) => { const l = Math.hypot(dx, dz) || 1; return [(dx * right.x + dz * right.z) / l, (dx * fwd.x + dz * fwd.z) / l]; };
   const isPlayer = b => b && b === Game.player;
-  const heavy = a => a && (a.id === 'heavy' || a.id === 'jumpHeavy' || a.charge);
+  const heavy = a => a && (a.feel === 'heavy' || a.charge);   // charged heavies, or attacks that opt in (jumpHeavy)
 
   events.on('attackPhase', d => {
     if (!isPlayer(d.actor) || d.phase !== PHASE.ACTIVE) return;

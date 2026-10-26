@@ -4,3 +4,4 @@ server/node_modules/
 .combat-arena-update.lock
 .obsidian/
 3d-souls-low/
+node_modules/

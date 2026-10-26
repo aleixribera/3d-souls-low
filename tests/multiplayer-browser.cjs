@@ -76,6 +76,9 @@ fs.mkdirSync(output, { recursive: true });
     await b.evaluate(() => { Game.player.hp = 17; Game.player.x = -14; Game.player.z = 9; Game.setLock(null); });
     await b.waitForFunction(() => __arena.multiplayer.info.playback > 1);
     assert.equal(await b.evaluate(() => Game.player.hp), 17, 'incoming snapshots do not overwrite personal health');
+    // Contacts are range-checked against the sender's pose on the server: stand at reach until it has seen that pose.
+    await a.evaluate(() => { const e = Game.duel, p = Game.player; p.x = e.x - 2; p.z = e.z; p.yaw = Math.PI / 2; });
+    await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => Math.hypot(p.x - e.x, p.z - e.z) < 3); });
     await a.evaluate(() => {
       const e = Game.duel, p = Game.player;
       p.x = e.x - 2; p.z = e.z; p.yaw = Math.PI / 2;

@@ -57,7 +57,7 @@ const tutorialSteps = () => {
       { id: 'rest', bonfire: 'tutorial-fire', text: () => `Follow the arrow to the bonfire, then press ${B('rest')} to rest`, on: type => type === 'rest' },
       { id: 'switch', dummies: 'pair', lockOn: true, text: () => `Switch to the other target ${B('switchTarget')}`,
         on: type => type === 'switchTarget' },
-      { id: 'pause', text: () => `Pause, then resume ${systemLabel('pause')}`,
+      { id: 'pause', allowsPause: true, text: () => `Pause, then resume ${systemLabel('pause')}`,
         on: (type, d, t) => { if (type === 'pause') t.flags.paused = true; return type === 'resume' && t.flags.paused; } },
     ];
 };

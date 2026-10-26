@@ -25,6 +25,12 @@ const BotNavigation = (() => {
     return result;
   }
 
+  // A shared per-tick budget of floor samples (walkable checks). The server calls tick() once per step; searches
+  // then yield when the party's bots have used it, so several searching bots cannot stack into one long tick.
+  // Without tick() (a browser companion) the budget is unlimited, as before.
+  let samples = Infinity, used = 0;
+  function tick() { samples = CONFIG.bot.navigation.tickSamples ?? 1500; used = 0; }
+  const spent = () => used >= samples;
   const grids = new WeakMap();
   function gridFor(w, body) {
     const C = CONFIG.bot.navigation;
@@ -47,6 +53,7 @@ const BotNavigation = (() => {
       return found;
     };
     function walkable(p) {
+      used++;
       if (!Number.isFinite(p.y)) return false;
       if (!w.solids) {
         if (p.x < w.minX + r || p.x > w.maxX - r) return false;
@@ -111,7 +118,9 @@ const BotNavigation = (() => {
   // A bounded A* search with a heap, shared lazy floor/collision samples and independent search state.
   function* searchRoute(me, goal) {
     const C = CONFIG.bot.navigation, g = gridFor(world, me);
+    while (spent()) yield;
     if (g.walkable(me) && g.clear(me, goal)) return [goal];
+    while (spent()) yield;
     const starts = g.near(me, !g.walkable(me)), ends = g.near(goal, !g.walkable(goal));
     if (!starts.length || !ends.length) return null;
     const endKeys = new Set(ends.map(n => n.key)), costs = new Map(), parents = new Map(), heap = [];
@@ -128,8 +137,8 @@ const BotNavigation = (() => {
       return first;
     }
     for (const p of starts) { const cost = distance(me, p); costs.set(p.key, cost); push({ p, cost, f: cost + distance(p, goal) }); }
-    for (let visited = 0; heap.length && visited < C.maxNodes; visited++) {
-      if (visited && visited % C.searchSteps === 0) yield;
+    for (let visited = 0, batch = 0; heap.length && visited < C.maxNodes; visited++) {
+      if (++batch > C.searchSteps || spent()) { batch = 1; do yield; while (spent()); }
       const { p, cost } = pop(); if (cost !== costs.get(p.key)) continue;
       if (endKeys.has(p.key)) {
         const path = g.walkable(goal) && g.clear(p, goal) ? [goal, p] : [p]; let at = p;
@@ -145,24 +154,35 @@ const BotNavigation = (() => {
     return null;
   }
 
-  function route(me, goal) {
-    const search = searchRoute(me, goal); let step; do { step = search.next(); } while (!step.done); return step.value;
+  function route(me, goal) {   // synchronous (tests, tools): outside the per-tick budget
+    const budget = samples; samples = Infinity;
+    try { const search = searchRoute(me, goal); let step; do { step = search.next(); } while (!step.done); return step.value; }
+    finally { samples = budget; }
   }
 
   function create() {
     let leader = null, walking = false, path = null, goal = null, grid = null, replan = 0, search = null;
     let sampleAt = null, sampleTime = 0, stuck = 0, recovery = null;
-    function reset() { leader = null; walking = false; path = goal = grid = search = null; replan = 0; sampleAt = null; sampleTime = stuck = 0; recovery = null; }
+    // Throttled line checks: whether an idle bot already stands with its player, and which waypoint ahead it can see.
+    let together = null, togetherLeft = 0, lookLeft = 0;
+    function reset() { leader = null; walking = false; path = goal = grid = search = together = null; replan = togetherLeft = lookLeft = 0; sampleAt = null; sampleTime = stuck = 0; recovery = null; }
     function move(dt, me, lead) {
       const C = CONFIG.bot.navigation, follow = CONFIG.bot.follow;
       recovery = null;
       if (!lead || !lead.alive() || lead.botId) { reset(); return idle(); }
       if (leader !== lead.id) { reset(); leader = lead.id; }
       const g = gridFor(world, me), d = distance(me, lead);
-      const together = g.clear(me, lead) || d < follow[0] && !gateBetween(me, { ...lead, height: me.height });
-      if (together && d < follow[0]) walking = false;
-      else if (d > follow[1] || !together) walking = true;
+      // Same rule as before: together = a clear line, or within the inner gap with no closed gate. Beyond the outer
+      // gap it always walks (no line check); stopping is checked every step; starting re-checks every `directTime`.
+      const near = () => d < follow[0] && !gateBetween(me, { ...lead, height: me.height }) || g.clear(me, lead);
+      if (d > follow[1]) walking = true;
+      else if (walking) { if (d < follow[0] && near()) walking = false; }
+      else {
+        if ((togetherLeft -= dt) <= 0 || together === null || grid !== g) { together = near(); togetherLeft = C.directTime ?? 0.25; }
+        if (!together) walking = true;
+      }
       if (!walking || !me.isFree() || !me.grounded) { sampleAt = null; sampleTime = stuck = 0; return idle(); }
+      together = null;
       replan -= dt;
       if (!goal || (!search && (distance(goal, lead) > C.goalMoved || replan <= 0)) || grid !== g) {
         if (grid !== g) path = null;
@@ -172,7 +192,7 @@ const BotNavigation = (() => {
       }
       if (search) {
         const step = search.next();
-        if (step.done) { path = step.value; search = null; replan = path ? C.replan : C.retry; }
+        if (step.done) { path = step.value; search = null; replan = path ? C.replan : C.retry; lookLeft = 0; }
         else if (!path) { sampleAt = null; sampleTime = stuck = 0; return idle(); }
       }
       if (!path) { sampleAt = null; sampleTime = stuck = 0; return idle(); }
@@ -188,9 +208,13 @@ const BotNavigation = (() => {
       let next = path[0], skip = 0;
       // A search may finish after the bot has advanced along its previous route. Reconnect ahead,
       // discarding old start nodes instead of walking backwards to that captured starting position.
-      for (let i = 0; i < path.length; i++) {
-        const q = path[i];
-        if (distance(me, q) <= C.lookAhead && g.clear(me, q)) { next = q; skip = i; }
+      // At once for a new route, then every `lookTime` s (the line checks are the costly part).
+      if ((lookLeft -= dt) <= 0) {
+        lookLeft = C.lookTime ?? 0.2;
+        for (let i = 0; i < path.length; i++) {
+          const q = path[i];
+          if (distance(me, q) <= C.lookAhead && g.clear(me, q)) { next = q; skip = i; }
+        }
       }
       if (skip) path.splice(0, skip);
       if (!search && stuck >= C.stuckTime) {
@@ -211,5 +235,5 @@ const BotNavigation = (() => {
     }
     return { move, reset, get leader() { return leader; }, get recovery() { return recovery; } };
   }
-  return { assign, create, route };
+  return { assign, create, route, tick };
 })();

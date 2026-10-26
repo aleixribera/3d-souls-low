@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.17.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.18.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -12,11 +12,13 @@ const CONFIG = {
     victoryTime: 2.5,
     camera: { rate: 4, margin: 5, minDistance: 16, elevation: 0.85, lookHeight: 1.5 },
   },
-  companion: { spawnOffset: 1.5, nameGap: 0.3, separationShare: 0.85, respawnDelay: 4.8 },   // solo level companion placement, name and return
+  companion: { spawnOffset: 1.5, nameGap: 0.3, separationShare: 0.85, respawnDelay: 4.8,
+               targetHysteresis: 0.8 },   // an enemy switches between the human and the companion only for a target this much closer   // solo level companion placement, name and return
   gravity: 30,
   input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {
     focusRate: 3.5,   // how fast the camera turns to a scripted moment (Game.camFocus)
+    focus: { lift: 1.5, far: 30, mix: [0.3, 0.6], pull: 2 },   // its gaze: `lift` m above it, eased in by distance / `far` within `mix`; the boom `pull`s back m
     fov: 55, lookHeight: 1.5,
     lead: 0.45,           // m the aim leads ahead of the player at full speed (unlocked), so the view opens where they go
     lookRate: 11,         // aim smoothing (1/s): quicker than the position, so the player never drifts out of frame
@@ -111,6 +113,7 @@ const CONFIG = {
     // of a doubled boss bar or less), never above `bossCap` of a boss's bar.
     // A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change or retreat follows it.
     damage: { lightMul: 3.75, bossLightMul: 13.5, bossCap: 0.5 },
+    aimRate: 8,   // rad/s the executor keeps turning toward a victim it was stopped short of by a wall
     hitstop: 0.24,       // s the world freezes as the blade goes in
     grace: 0.25,         // s the player stays untouchable after the animation ends
     push: 5,             // knockback (m/s) on a survivor as the blade comes out
@@ -152,7 +155,10 @@ const CONFIG = {
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
-           patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6 },
+           patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6,
+           transition: 3,       // a refilled boss phase's kneel (s) when its phase sets no `transition`
+           retreatSpeed: 24,    // a `boss.retreat` leap's top speed (m/s) when it sets no `speed`
+           followReach: 1 },    // `flank` / `behind` follow-ups reach this many m past the attack's range
   // How far each placement behaviour notices the player. The one place notice ranges are set.
   notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 15, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line
@@ -185,7 +191,7 @@ const CONFIG = {
   // the way home only once the player is within `leashResume` of that (no flicker at the line).
   ai: { chance: { basic: 0.9, dash: 0.3, rollOnly: 0.22, shove: 0.26, projectile: 0.6 }, busyMul: 0.4, busyCooldown: 0.5, gap: 0.3,
         approach: 0.3, holdInset: 0.5, holdMax: 10, holdBand: 1, holdSpeedMul: 0.62, stepOut: 2, commitReach: 1,
-        kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9 },
+        kite: 0.35, leashResume: 0.85, search: { speedMul: 0.55, arrive: 0.8, look: 2.2, max: 9, lookRate: 1.6, lookTurn: 0.25 },
         // v7.0: while the player stands in a woken zone (wakeZones), its members hunt: no leash for `huntTime` s, renewed each step.
         huntTime: 0.25,
         // Reactions (an attack's `when`, v5.3): `behind` past this angle (rad) from its facing; `flank` between these
@@ -232,7 +238,7 @@ const CONFIG = {
   // Culling (levels with `cull`): a pool of `maxLights` real lights follows the nearest light sources within
   // `lightRange` of the player, each fading out over `fadeBand` m before it is dropped. Unaware enemies more than
   // `enemyRange` m away sleep (no update, not drawn); fighting enemies always run.
-  cull: { maxLights: 8, lightRange: 45, fadeBand: 8, enemyRange: 40 },
+  cull: { maxLights: 8, lightRange: 45, fadeBand: 8, enemyRange: 40, noticeMargin: 6 },   // a far-sighted enemy stays awake within its notice + margin
   // Heights (room levels, js/terrain.js). A body walks up onto anything within `stepUp` of its feet and
   // stays on floors that drop away by at most `stepDown` per step (stairs, ramps); a bigger drop is a fall.
   // `slab`: floor and roof thickness (blocks sight and the camera). `rail`: parapet height and thickness.
@@ -247,7 +253,8 @@ const CONFIG = {
   fall: { safe: 4.5, perMetre: 9, lethal: 14, hurtTime: 0.5 },
   level: { leash: 28,        // give up the chase when the player is this far away (v4.2.4: was 22)...
            homeLeash: 40,    // ...or this far from its home (was 30, and measured from the enemy); then walk back home
-           gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55 },
+           gateLiftTime: 1.6, gateLiftGap: 0.3, targetRange: 14, ambushDepth: 0.55,
+           zoneFloorSlack: 1 },   // a zone counts someone as inside within the height reach + this many m of its floor
   tutorial: { doneTime: 0.9, completeTime: 3.0, hintTime: 2.5,   // hintTime: a dodge hint stays under the prompt this long
               restGuide: { behindAngle: Math.PI * 0.65 },   // screen arrow adds "Turn around" when the fire is behind
               restArrow: { color: 0xffc860, size: 0.28, height: 2.6, bob: 0.25, bobSpeed: 3 } },   // the arrow over the bonfire in the rest step
@@ -274,7 +281,7 @@ const CONFIG = {
   // (by `calmDim`) over `calmFadeOut` s; any threat brings them back over `calmFadeIn` s.
   hud: { fps: { interval: 0.5 },   // FPS counter refresh (s)
          refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
-         trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, emptyPulse: 0.6, refundPulse: 0.45,
+         trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, refundPulse: 0.45,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8,
@@ -322,6 +329,12 @@ const CONFIG = {
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {
     defaultQuality: 'high',
+    // Reduced motion (the Camera motion option off, or the OS asking for less motion): full-screen flash and hurt pulses
+    // are scaled to these shares (a subtle cue stays), refraction shockwaves stop and the lightning flash is capped here.
+    reducedMotion: { flash: 0.3, hurt: 0.45, lightning: 0.35 },
+    // The one frame clock of drawn effects (js/effect-slots.js): the render delta capped at `maxDt` s (a test's hand-stepped
+    // frame is one fixed step), slowed to `hitstop` of itself through a blow's hit-pause.
+    effectClock: { maxDt: 0.1, hitstop: 0.12 },
     // Measure actual-resolution 3D frames, including characters, lights, MSAA, shadows and post-processing.
     // CPU/RAM browser hints cannot hard-cap a recognized dedicated GPU; rendered cost determines its preset.
     autoQuality: { passes: 4, rounds: 5, warmFrames: 3, frameMs: { high: 14, ultra: 14 }, showTime: 7,
@@ -508,7 +521,9 @@ const CONFIG = {
         palebark: { size: 256, tile: 5, base: 0x9a8e7e, alt: 0xd0c4b0, accent: 0x6a5e50, accentMix: 0.45, rough: 0.9, grain: 9 },
         ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 } },
       // Distant bolt geometry/lifetime. Shared surface lighting is tuned in effectLight.storm.
-      lightning: { dist: 150, height: 120, width: 0.9, boost: 3, glow: 120, life: 0.45, decay: 2.6 },
+      // `pool` bolts are built with the realm and reused. The flash is `pulses` [[start s, strength]], each fading at `decay`/s:
+      // two distinct pulses 0.4 s apart (under 3 Hz, never a rapid flicker); reduced motion keeps the first, capped.
+      lightning: { dist: 150, height: 120, width: 0.9, boost: 3, glow: 120, life: 0.45, decay: 2.6, pool: 3, pulses: [[0, 1], [0.4, 0.55]] },
     },
     // Decorative budgets never reduce attack rings, sigils, flame jets or warning shapes.
     fxBudgets: {
@@ -577,7 +592,7 @@ const CONFIG = {
       boss: { heavy: 40, gather: 55, gatherGlow: 1.5, shed: 3, trailBoost: 1.4, ringWidth: 0.55, rings: 12, pillars: 6, fires: 28,
               pillar: { time: 1.0, height: 11, radius: 0.9 }, fireTime: [0.6, 1.3] },
       // What each blow looks like. Damage scales a hit's spray between `light` and `heavy` damage.
-      hits: { light: 15, heavy: 55, drops: [10, 46], wave: 40, punch: 60 },
+      hits: { light: 15, heavy: 55, drops: [10, 46], wave: 40 },
     },
   },
   // Friendly bots (v7.11, js/bot.js): a bot presses the same actions a player does. Times in s, distances in m
@@ -618,7 +633,10 @@ const CONFIG = {
     navigation: { cell: 1, sample: 0.25, tile: 6, clearance: 0.08, heightTolerance: 0.2, maxDrop: 8,
       anchor: 2, anchors: 4, maxNodes: 24000, searchSteps: 96, waypoint: 0.4, lookAhead: 4,
       goalMoved: 1.5, replan: 1.2, retry: 3, directionEpsilon: 0.01,
-      progressTime: 1, progressDistance: 0.5, stuckTime: 8, recoverMin: 1, recoverMax: 3 },
+      progressTime: 1, progressDistance: 0.5, stuckTime: 8, recoverMin: 1, recoverMax: 3,
+      // Server cost caps: geometry samples per tick across all bots, and how often an idle follower re-checks the
+      // straight line (s) and looks ahead along its route (s).
+      tickSamples: 1500, directTime: 0.25, lookTime: 0.2 },
     respawnDelay: 4.8,
     chargeWindow: 2.2,          // a long opening it fills with a charged heavy
   },

@@ -536,17 +536,40 @@ void main() {
   }
 
   // ---- lightning --------------------------------------------------------------------------------------------------------
-  function buildBolt(rnd) {
-    const pts = [], segs = 14, a = rnd() * Math.PI * 2, dist = C.lightning.dist * (0.8 + rnd() * 0.4), h = C.lightning.height;
-    let x = 0, z = 0;
-    for (let i = 0; i <= segs; i++) { pts.push(new V3(x, h * (1 - i / segs), z)); x += (rnd() - 0.5) * 14; z += (rnd() - 0.5) * 6; }
-    const geo = sweepTube(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), t => C.lightning.width * (1 - 0.6 * t), 40, 4, new THREE.Color(1, 1, 1), 1);
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(st.def.realm.lightning.color).multiplyScalar(C.lightning.boost), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-    const m = new THREE.Mesh(geo, mat); m.frustumCulled = false;
-    m.position.set(uCam.value.x + Math.cos(a) * dist, uCam.value.y - 20, uCam.value.z + Math.sin(a) * dist);
-    const glow = glowSprite(st.def.realm.lightning.color, 1, C.lightning.glow, 0, null); glow.material.fog = false; glow.position.set(0, h * 0.75, 0); m.add(glow);
-    add(m);
-    return { m, glow, t: 0 };
+  // A small pool of bolts, built with the realm (so js/ultra-post.js's sweep files them with the glows it keeps out of its
+  // depth pass) and reused: a strike moves the next one round the camera, turns and mirrors it, so no tube or material
+  // is made mid-fight. Its own seed, so the realm's other random dressing is unchanged.
+  function buildBolts(L, def) {
+    const rnd = seeded(strSeed(def.id + '/bolts')), h = C.lightning.height;
+    for (let n = 0; n < C.lightning.pool; n++) {
+      const pts = [], segs = 14;
+      let x = 0, z = 0;
+      for (let i = 0; i <= segs; i++) { pts.push(new V3(x, h * (1 - i / segs), z)); x += (rnd() - 0.5) * 14; z += (rnd() - 0.5) * 6; }
+      const geo = sweepTube(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), t => C.lightning.width * (1 - 0.6 * t), 40, 4, new THREE.Color(1, 1, 1), 1);
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(L.color).multiplyScalar(C.lightning.boost), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+      const m = new THREE.Mesh(geo, mat); m.frustumCulled = false; m.visible = false;
+      const glow = glowSprite(L.color, 1, C.lightning.glow, 0, null); glow.material.fog = false; glow.position.set(0, h * 0.75, 0); m.add(glow);
+      glow.userData.noDepth = true; add(m);
+      st.bolts.push({ m, glow, t: Infinity });
+    }
+  }
+  function strikeBolt(rnd) {
+    if (!st.bolts.length) return;
+    const b = st.bolts.reduce((a, q) => q.t > a.t ? q : a), a = rnd() * Math.PI * 2, dist = C.lightning.dist * (0.8 + rnd() * 0.4);
+    b.m.position.set(uCam.value.x + Math.cos(a) * dist, uCam.value.y - 20, uCam.value.z + Math.sin(a) * dist);
+    b.m.rotation.y = rnd() * Math.PI * 2; b.m.scale.x = rnd() < 0.5 ? -1 : 1;
+    b.t = 0; b.m.visible = true;
+  }
+  // The land's flash at `t` s after a strike: the configured pulses, each fading linearly (never a rapid flicker).
+  // Reduced motion keeps only the first, capped (CONFIG.VISUALS.reducedMotion.lightning).
+  function flashAt(t, reduced) {
+    let f = 0;
+    for (const [at, k] of C.lightning.pulses) {
+      if (t < at) break;
+      f = Math.max(f, k * (1 - (t - at) * C.lightning.decay));
+      if (reduced) break;
+    }
+    return Math.max(0, f) * (reduced ? VIS.reducedMotion.lightning : 1);
   }
 
   // ---- building and clearing -------------------------------------------------------------------------------------------
@@ -564,7 +587,7 @@ void main() {
     if (!R) return;
     const rnd = seeded(strSeed(def.id + '/realm')), TR = terrainFor(def);
     const floorY = (x, z, y) => { const f = TR.floorY(x, z, y ?? Infinity); return Number.isFinite(f) ? f : (y ?? 0); };
-    st = { def, built, group: new THREE.Group(), weather: [], beams: [], bolts: [], thunderTimers: new Set(), timer: 2 + rnd() * 3, flashK: 0, cover: 0, rnd };
+    st = { def, built, group: new THREE.Group(), weather: [], beams: [], bolts: [], thunderTimers: new Set(), timer: 2 + rnd() * 3, flashK: 0, flashT: Infinity, cover: 0, rnd };
     st.floaterTransform = new THREE.Object3D();
     built.group.add(st.group);
     try {
@@ -583,14 +606,14 @@ void main() {
       if (R.roots) buildRoots(R.roots);
       if (R.blooms) buildBlooms(R.blooms, rnd, floorY);
       if (R.grounds) buildGrounds(R.grounds, def);
-      if (R.lightning) { st.flash = new THREE.AmbientLight(R.lightning.color, 0); scene.add(st.flash); }   // ambient light is summed: no shader changes
+      if (R.lightning) { buildBolts(R.lightning, def); st.flash = new THREE.AmbientLight(R.lightning.color, 0); scene.add(st.flash); }   // ambient light is summed: no shader changes
     } catch (err) { warnOnce(`Realm of "${def.id}" could not be fully drawn: ${err.message}`); }
   }
 
   // ---- every frame ------------------------------------------------------------------------------------------------------
   function render(game) {
     if (!st || st.def !== game.level) return;
-    const dt = clamp(vTime.value - uTime.value, 0, 0.05), R = st.def.realm, p = game.player;
+    const dt = Math.min(0.05, effectSlots.real()), R = st.def.realm, p = game.player;   // the shared effect clock (js/effect-slots.js)
     uTime.value = vTime.value; uCam.value.copy(camera.position);
     // Under a roof the weather fades out (and comes back on stepping out); the lightning's flash is dimmer indoors.
     const roofed = world && world.ceilingAt && world.ceilingAt(camera.position.x, camera.position.z, camera.position.y) < Infinity;
@@ -600,7 +623,7 @@ void main() {
       st.timer -= dt;
       if (st.timer <= 0) {
         st.timer = R.lightning.every[0] + st.rnd() * (R.lightning.every[1] - R.lightning.every[0]);
-        st.bolts.push(buildBolt(st.rnd)); st.flashK = 1;
+        strikeBolt(st.rnd); st.flashT = 0;
         const delay = 0.3 + st.rnd() * 1.4;
         const realm = st, vel = 0.6 + realm.rnd() * 0.4;
         const timer = setTimeout(() => {
@@ -611,12 +634,14 @@ void main() {
         }, delay * 1000);
         realm.thunderTimers.add(timer);
       }
-      st.flashK = Math.max(0, st.flashK - dt * C.lightning.decay);
-      const f = st.flashK * (st.flashK > 0.55 || Math.sin(vTime.value * 60) > 0 ? 1 : 0.4);   // a double flicker
-      if (st.flash) st.flash.intensity = f * VIS.effectLight.storm.ambient * (1 - st.cover * 0.7);
-      for (const b of st.bolts) { b.t += dt; const k = Math.max(0, 1 - b.t / C.lightning.life); b.m.material.opacity = k * (b.t < 0.08 || b.t > 0.14 ? 1 : 0.3); b.glow.material.opacity = k * 0.6; }
-      for (const b of st.bolts.filter(b => b.t >= C.lightning.life)) { st.group.remove(b.m); b.m.geometry.dispose(); b.m.material.dispose(); b.glow.material.dispose(); }
-      st.bolts = st.bolts.filter(b => b.t < C.lightning.life);
+      // Two slow pulses at most (photosensitivity: well under 3 flashes a second); capped with reduced motion.
+      st.flashT += dt; st.flashK = flashAt(st.flashT, reducedMotion());
+      if (st.flash) st.flash.intensity = st.flashK * VIS.effectLight.storm.ambient * (1 - st.cover * 0.7);
+      for (const b of st.bolts) {   // each bolt fades once over its life (no strobing)
+        if (!b.m.visible) continue;
+        b.t += dt; const k = Math.max(0, 1 - b.t / C.lightning.life);
+        b.m.material.opacity = k; b.glow.material.opacity = k * 0.6; b.m.visible = k > 0;
+      }
     }
     for (const w of st.weather) {
       const u = w.mesh.material.uniforms;

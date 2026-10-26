@@ -194,7 +194,7 @@ function frame(now) {
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
   let steps = 0;
-  while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
+  while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { input.tick(CONFIG.step); Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
   if (accumulator >= CONFIG.step) accumulator = 0;   // stalled tab: drop the backlog instead of catching up
   if (Game.mode !== 'ending') Game.render(accumulator / CONFIG.step, frameDt);
 }

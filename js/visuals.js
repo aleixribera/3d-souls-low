@@ -13,6 +13,18 @@ const RIM = { color: { value: new THREE.Color() }, strength: { value: VIS.rim.st
 const PT_SCALE = { value: 500 };                             // point sprites: pixels per metre at 1 m away
 const FOG_D = { value: 0.02 };                               // current fog density, for custom shaders
 const COLOR_OUT = '#include <tonemapping_fragment>\n#include <colorspace_fragment>';
+// Reduced motion, for photosensitive players: true while the Camera motion option is off or the OS asks for less motion
+// (prefers-reduced-motion). Full-screen flash and hurt pulses soften, refraction shockwaves stop and lightning flashes
+// are capped (CONFIG.VISUALS.reducedMotion). Read every frame, so changing either takes effect at once. Tests may
+// `reducedMotion.force(true | false)` the OS half (null: ask the browser again).
+const reducedMotion = (() => {
+  let query = null, forced = null;
+  try { query = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null; } catch (e) { query = null; }
+  const os = () => { if (forced !== null) return forced; try { return !!(query && query.matches); } catch (e) { return false; } };
+  const fn = () => (typeof settings !== 'undefined' && settings && settings.cameraMotion === false) || os();
+  fn.force = v => { forced = v === null || v === undefined ? null : !!v; };
+  return fn;
+})();
 const ATMOSPHERE_KEYS = ['background', 'fog', 'fogDensity', 'moon', 'ambient', 'hemi', 'exposure', 'ash', 'dust', 'rim',
   'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers'];
 
@@ -619,6 +631,10 @@ function rubbleMesh(rocks, rnd) {
   m.computeBoundingSphere();
   return m;
 }
+// One banner cloth for every level (it is seeded, so every level painted the same one): built on first use and shared,
+// never one more mipmapped canvas per level change. Its materials are per stage (js/scene.js disposes them, not this).
+let BANNER_TEX = null;
+const bannerTexture = () => BANNER_TEX || (BANNER_TEX = makeBannerTexture());
 function makeBannerTexture() {
   const W = 128, H = 384, c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d'), rnd = seeded(77);
@@ -640,7 +656,7 @@ function makeBannerTexture() {
 }
 function bannerMesh(list, colors) {
   const B = VIS.banners;
-  const mat = new THREE.MeshStandardMaterial({ map: makeBannerTexture(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.95 });
+  const mat = new THREE.MeshStandardMaterial({ map: bannerTexture(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.95 });
   mat.onBeforeCompile = sh => {   // a slow sway that grows toward the hem
     Object.assign(sh.uniforms, { uTime: vTime, uSway: { value: B.sway }, uSpeed: { value: B.swaySpeed }, uH: { value: B.height } });
     sh.vertexShader = 'uniform float uTime, uSway, uSpeed, uH;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -846,30 +862,47 @@ function makeEmberField() {   // glowing sparks rising round the camera (atmosph
   pts.frustumCulled = false; pts.visible = false; scene.add(pts);
   return pts;
 }
+// Blood on the floor: one instanced mesh (one material, one draw) for the whole pool, oldest reused first. Each splat
+// keeps its own fade through a per-instance alpha; the live ones are packed into the first `count` instances.
 function makeBloodDecals() {
   const B = VIS.blood, tex = makeBloodTexture(), geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-  const pool = Array.from({ length: B.decals }, () => {
-    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.3,
-      polygonOffset: true, polygonOffsetFactor: -4 }));
-    m.visible = false; m.renderOrder = 1; scene.add(m); pooledFx.push(m);
-    return { m, age: Infinity };
-  });
+  const alpha = new THREE.InstancedBufferAttribute(new Float32Array(B.decals), 1).setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('aAlpha', alpha);
+  const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -4 });
+  mat.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute float aAlpha;\nvarying float vDecalA;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vDecalA = aAlpha;');
+    sh.fragmentShader = 'varying float vDecalA;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  diffuseColor.a *= vDecalA;');
+  };
+  mat.customProgramCacheKey = () => 'bloodDecal';
+  const mesh = new THREE.InstancedMesh(geo, mat, B.decals), o = new THREE.Object3D();
+  mesh.count = 0; mesh.visible = false; mesh.renderOrder = 1; mesh.frustumCulled = false; scene.add(mesh); pooledFx.push(mesh);
+  const pool = Array.from({ length: B.decals }, () => ({ x: 0, y: 0, z: 0, ry: 0, sx: 1, sz: 1, age: Infinity }));
   let cursor = 0;
+  function pack() {   // the live splats into the first instances, each with its fade
+    let n = 0;
+    for (const d of pool) {
+      if (d.age > B.life) continue;
+      o.position.set(d.x, d.y, d.z); o.rotation.set(0, d.ry, 0); o.scale.set(d.sx, 1, d.sz); o.updateMatrix();
+      mesh.setMatrixAt(n, o.matrix); alpha.array[n] = 0.9 * clamp((B.life - d.age) / B.fade, 0, 1); n++;
+    }
+    mesh.count = n; mesh.visible = n > 0;
+    if (n) { mesh.instanceMatrix.needsUpdate = true; alpha.needsUpdate = true; }
+  }
   return {
-    clear() { for (const d of pool) { d.m.visible = false; d.age = Infinity; } },
+    mesh,
+    clear() { for (const d of pool) d.age = Infinity; pack(); },
     splat(x, z, size, y = 0) {   // oldest reused first; y: the floor
       const d = pool[cursor++ % pool.length];
-      d.age = 0; d.m.position.set(x, y + 0.035 + (cursor % 7) * 0.0015, z); d.m.rotation.y = rand(0, Math.PI * 2);
-      d.m.scale.set(size, 1, size * rand(0.7, 1.25)); d.m.visible = true;
+      d.age = 0; d.x = x; d.y = y + 0.035 + (cursor % 7) * 0.0015; d.z = z; d.ry = rand(0, Math.PI * 2);
+      d.sx = size; d.sz = size * rand(0.7, 1.25);
+      pack();
     },
     update(dt) {
-      for (const d of pool) {
-        if (!d.m.visible) continue;
-        d.age += dt;
-        if (d.age > B.life) { d.m.visible = false; continue; }
-        d.m.material.opacity = 0.9 * clamp((B.life - d.age) / B.fade, 0, 1);
-      }
+      if (!mesh.visible) return;
+      for (const d of pool) if (d.age <= B.life) d.age += dt;
+      pack();
     },
+    count: () => mesh.count,
   };
 }
 function makeDebris() {   // small stones falling from the ceiling (and from lifting gates); visual only
@@ -904,22 +937,36 @@ function makeDebris() {   // small stones falling from the ceiling (and from lif
 // Culled levels: give the fixed pool of real lights to the light sources nearest the player (copying position,
 // colour, range and the intensity flicker set this frame). A light fades out over `fadeBand` m before the
 // nearest-N cut-off, so a light swapping out never pops.
+// Every frame of a culled level, so nothing is allocated: `near` and the fallbacks reuse their arrays and records.
+// st.lightFallbacks ({ source, fade }, the next nearest sources after the pool) is read the same frame
+// (js/effect-lighting.js lends them its idle slots) and rewritten the next.
+const poolNear = [], poolNearSlots = [], byNear = (a, b) => a.d - b.d;
 function poolLights(st, p, used = st.lightPool.length) {   // used: how many of the pool are lit (quality.lights)
-  const C = CONFIG.cull, pool = st.lightPool.slice(0, used), near = [];
+  const C = CONFIG.cull, len = st.lightPool.length, n = used >= 0 ? Math.min(used, len) : Math.max(0, len + used);   // as slice(0, used)
+  poolNear.length = 0;
   for (const l of st.lightSources) {
     const d = Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
-    if (d < C.lightRange && l.intensity > 0) near.push({ d, l });
+    if (d < C.lightRange && l.intensity > 0) {
+      const q = poolNearSlots[poolNear.length] || (poolNearSlots[poolNear.length] = { d: 0, l: null });
+      q.d = d; q.l = l; poolNear.push(q);
+    }
   }
-  near.sort((a, b) => a.d - b.d);
-  const total = pool.length + VIS.effectLight.counts[visuals.quality().label.toLowerCase()];
-  const cut = near.length > total ? Math.min(C.lightRange, near[total].d) : C.lightRange;
-  st.lightFallbacks = near.slice(pool.length, total).map(n => ({ source: n.l, fade: clamp((cut - n.d) / C.fadeBand, 0, 1) }));
-  pool.forEach((q, i) => {
-    const n = near[i];
-    if (!n) { q.intensity = 0; return; }
-    q.position.copy(n.l.position); q.color.copy(n.l.color); q.distance = n.l.distance; q.decay = n.l.decay;
-    q.intensity = n.l.intensity * clamp((cut - n.d) / C.fadeBand, 0, 1);
-  });
+  poolNear.sort(byNear);
+  const total = n + VIS.effectLight.counts[visuals.quality().label.toLowerCase()];
+  const cut = poolNear.length > total ? Math.min(C.lightRange, poolNear[total].d) : C.lightRange;
+  const fallbacks = st.lightFallbacks || (st.lightFallbacks = []), slots = st.lightFallbackSlots || (st.lightFallbackSlots = []);
+  fallbacks.length = 0;
+  for (let i = n; i < Math.min(total, poolNear.length); i++) {
+    const f = slots[fallbacks.length] || (slots[fallbacks.length] = { source: null, fade: 0 });
+    f.source = poolNear[i].l; f.fade = clamp((cut - poolNear[i].d) / C.fadeBand, 0, 1); fallbacks.push(f);
+  }
+  for (let i = 0; i < n; i++) {
+    const q = st.lightPool[i], near = poolNear[i];
+    if (!near) { q.intensity = 0; continue; }
+    q.position.copy(near.l.position); q.color.copy(near.l.color); q.distance = near.l.distance; q.decay = near.l.decay;
+    q.intensity = near.l.intensity * clamp((cut - near.d) / C.fadeBand, 0, 1);
+  }
+  poolNear.length = 0;   // drop the frame's references
 }
 
 // The floor under a dressing item in level d (flat layouts: 0). Used while the stage is built, before `world` exists.
@@ -989,12 +1036,19 @@ const visuals = (() => {
   }
   // Only the quality.lights nearest point lights are on; the number lit stays fixed, so shaders never recompile.
   // A culled level's pool is already nearest first (poolLights); an unculled level's lights are sorted here.
+  let lightAt = null;
+  const lightOrder = [], lightD = l => (l.position.x - lightAt.x) ** 2 + (l.position.y - lightAt.y) ** 2 + (l.position.z - lightAt.z) ** 2;
+  const byLightDistance = (a, b) => lightD(a) - lightD(b);
   function limitLights(all = false) {
     const L = st.lights, n = Math.min(quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()], L.length);
     if (n >= L.length) { if (all) for (const l of L) l.visible = true; return; }
-    if (st.pooled) { L.forEach((l, i) => { l.visible = i < n; }); return; }
-    const at = Game.player || camera.position, d = l => (l.position.x - at.x) ** 2 + (l.position.y - at.y) ** 2 + (l.position.z - at.z) ** 2;
-    L.slice().sort((a, b) => d(a) - d(b)).forEach((l, i) => { l.visible = i < n; });
+    if (st.pooled) { for (let i = 0; i < L.length; i++) L[i].visible = i < n; return; }
+    // Sorted in a reused list by squared distance from the player (or camera), with one comparator: no per-frame copies.
+    lightAt = Game.player || camera.position;
+    lightOrder.length = 0; for (const l of L) lightOrder.push(l);
+    lightOrder.sort(byLightDistance);
+    for (let i = 0; i < lightOrder.length; i++) lightOrder[i].visible = i < n;
+    lightOrder.length = 0;
   }
   // Per-level look on top of applyAtmosphere (fog, moon, ambient): exposure, fill, rim, grade, weathering.
   function applyLook() {
@@ -1272,8 +1326,8 @@ const visuals = (() => {
       const samples = Math.min(quality.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
       for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
       for (const h of hooks.quality) h(quality);
-      KIT.setDetail(quality.modelDetail);
-      if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low
+      KIT.setDetail(quality.modelDetail, { prewarm: quality === previous });   // drops unused models of the old detail
+      if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low (one restart)
       grade.uniforms.uVig.value = quality.vignette ? VIS.vignette.strength : 0;
       grade.uniforms.uVigSoft.value = VIS.vignette.softness;
       grade.uniforms.uGrain.value = quality.grain ? (quality.ultra ? VIS.grain.ultra : VIS.grain.amount) : 0;

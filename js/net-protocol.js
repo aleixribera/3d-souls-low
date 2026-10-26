@@ -28,9 +28,43 @@
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,
     spectatorFov: [10, 150],
+    // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
+    // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.
+    pendingConnections: 8, connectionsPerAddress: 6, hellosPerMinute: 20,
+    // Lobby chatter: rosters coalesce to one per interval; repeated ready (full baselines) wait `resyncInterval` ms.
+    rosterInterval: 250, resyncInterval: 1000,
+    // Contact plausibility: a hit, parry or execution must be within reach of the sender's last pose, measured to any
+    // place the enemy stood in the last `contactWindow` s (a delayed display), plus `contactTolerance` m, `contactSpeed`
+    // m/s of pose age (at most `contactAgeMax` s) and `contactSlack` m. The slack is generous: fixtures and honest
+    // clients may move between 30 Hz poses; it still rules out contacts from across a level.
+    contactWindow: 3, contactSpeed: 8, contactAgeMax: 0.5, contactSlack: 2.5, riposteSlack: 1,
+    // Hits per player and enemy refill one per `hitInterval` s up to a burst of `hitBurst` (jitter bunches honest ones).
+    hitInterval: 0.3, hitBurst: 3,
+    // Leader kicks: one per `kickCooldown` ms; the same player once per `kickRepeat` ms.
+    kickCooldown: 5000, kickRepeat: 60000,
+    // An empty, settled run sleeps: world clocks advance, enemies wait at home until somebody returns.
+    sleepCheck: 0.5,
+    // Static files: versioned (`?v=`) responses are immutable; compressed bodies are cached up to this many bytes.
+    staticMaxAge: 31536000, compressMin: 1024, compressCache: 32 * 1024 * 1024,
   });
   const finite = (n, max = config.maxCoordinate) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= max;
   const id = s => typeof s === 'string' && s.length > 0 && s.length <= 240;
+  // Wire ids index plain data objects: never let 'constructor', '__proto__' or 'toString' resolve to the prototype.
+  const own = (table, key) => typeof key === 'string' && table != null && Object.prototype.hasOwnProperty.call(table, key) ? table[key] : undefined;
+  // One pose contract. Browsers send it, the server whitelists it, bots and peers relay it.
+  // `required` are finite numbers; `motion` optional finite numbers; `personal` never leave the server.
+  const pose = Object.freeze({
+    required: Object.freeze(['x', 'y', 'z', 'yaw', 'hp', 'stateTime', 'attackT', 'chargeT', 'walkPhase']),
+    motion: Object.freeze(['vx', 'vy', 'vz', 'activeAt', 'landTime', 'stunTime', 'execGrace']),
+    personal: Object.freeze(['stamina', 'flasks', 'exhausted', 'staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']),
+    states: Object.freeze(['idle', 'walk', 'jump', 'fall', 'roll', 'attack', 'jumpAttack', 'land', 'block', 'parry', 'useItem', 'rest', 'hurt', 'stagger', 'dead', 'execute']),
+  });
+  // The body fields of a Player, shared by browsers (capturePose) and server bots (botFrames).
+  const bodyPose = p => ({ x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
+    attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
+    walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
+    vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
+    landTime: p.landTime, stunTime: p.stunTime, execGrace: p.execGrace || 0 });
   const name = s => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, config.maxName) : '';
   // Optional presentation data only. Reject malformed cameras without dropping
   // the player's otherwise valid combat pose.
@@ -117,7 +151,7 @@
       return { a, b, time, alpha, crossed };
     }
   }
-  const api = { config, finite, id, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
+  const api = { config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ArenaNet = api;
 })(globalThis);

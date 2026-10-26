@@ -22,6 +22,8 @@ const projectiles = (() => {
   }
   let cursor = 0;
   const v = new THREE.Vector3();
+  // Scratch, so a step and a frame allocate nothing: the bolts in flight, a step's actors and its hits (records reused).
+  const flyingNow = [], stepActors = [], hits = [], hitSlots = [], byT = (a, b) => a.t - b.t;
 
   // Is the segment from (x, y, z) by (dx, dy, dz) stopped by the world? Returns the fraction where, or Infinity.
   function stop(x, y, z, dx, dy, dz) {
@@ -124,13 +126,19 @@ const projectiles = (() => {
         const wall = stop(b.x, b.y, b.z, dx, dy, dz);
         // The first opposing body stops the bolt; rolling/executing bodies let it pass on.
         const team = game.kind === 'bossBattle';
-        const actors = team ? game.enemies.filter(e => e.team !== b.owner.team && !e.invulnerable()) : game.allies ? game.allies() : [p];
-        const hits = [];
+        let actors;
+        if (team) { stepActors.length = 0; for (const e of game.enemies) if (e.team !== b.owner.team && !e.invulnerable()) stepActors.push(e); actors = stepActors; }
+        else if (game.allies) actors = game.allies();
+        else { stepActors.length = 0; stepActors.push(p); actors = stepActors; }
+        hits.length = 0;
         for (const actor of actors) if (actor.alive() && !b.passed.has(actor)) {
           const t = meets(actor, b.x, b.y, b.z, dx, dy, dz, actor.radius + b.size);
-          if (t !== null && t <= wall) hits.push({ actor, t });
+          if (t !== null && t <= wall) {
+            const h = hitSlots[hits.length] || (hitSlots[hits.length] = { actor: null, t: 0 });
+            h.actor = actor; h.t = t; hits.push(h);
+          }
         }
-        hits.sort((a, b) => a.t - b.t);
+        hits.sort(byT);
         for (const { actor, t } of hits) {
           if (!team && actor.invulnerable()) {
             b.passed.add(actor);
@@ -163,5 +171,7 @@ const projectiles = (() => {
     },
     clear() { for (const b of pool) this.kill(b); },
     live() { return pool.filter(b => b.live); },
+    // The bolts in flight, in one reused list (for per-frame drawing: read it at once, never keep it).
+    flying() { flyingNow.length = 0; for (const b of pool) if (b.live) flyingNow.push(b); return flyingNow; },
   };
 })();

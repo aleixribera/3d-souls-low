@@ -345,15 +345,35 @@ class Player {
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
   }
+  // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
+  // health a second; untouchable frames (an execution, a roll's i-frames) keep it off. `timers` (a Map per body) paces
+  // the `hazard` tick event. Returns true if it killed this body (`hazardDeath` then).
+  standInHazards(dt, timers) {
+    let died = false;
+    for (const h of world.hazards) {
+      const on = this.alive() && this.grounded && !this.invulnerable() && inRect(h.rect, this.x, this.z) && Math.abs(this.y - h.y) < CONFIG.height.stepUp;
+      let timer = on ? (timers.get(h) || 0) + dt : 0;
+      if (on) {
+        this.hp = Math.max(0, this.hp - h.dps * dt);
+        if (timer >= CONFIG.hazards.tick) { timer -= CONFIG.hazards.tick; this.tint = Math.max(this.tint, 0.5); events.emit('hazard', { hazard: h, player: this }); }
+        if (this.hp <= 0) { this.die(); died = true; events.emit('hazardDeath', { hazard: h, player: this }); }
+      }
+      timers.set(h, timer);
+    }
+    return died;
+  }
+  // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
+  // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
+  die() { if (this.exec) execution.abandon(this); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
   checkFall() {
     if (!this.alive()) return;
-    if (this.inPit) { this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); events.emit('fell', { body: this }); return; }
+    if (this.inPit) { this.die(); events.emit('fell', { body: this }); return; }
     const dmg = this.fallHeight > 0 ? fallDamage(this.fallHeight) : 0;
     if (dmg <= 0) return;
     this.hp = Math.max(0, this.hp - dmg); this.tint = 1; this.hitbox = null;
     events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.maxHp) });
-    if (this.hp <= 0) { this.setState(PS.DEAD); return; }
+    if (this.hp <= 0) { this.die(); return; }
     this.stunTime = CONFIG.fall.hurtTime; this.setState(PS.HURT);
   }
 
@@ -367,7 +387,7 @@ class Player {
       this.doomDrain -= d; this.hp -= d;
     }
     this.hp = Math.min(this.hp, this.hpCap());
-    if (this.hp <= 0) { this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+    if (this.hp <= 0) this.die();
   }
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
   takeHit(strike, from) {
@@ -384,7 +404,7 @@ class Player {
     this.hp = Math.max(0, this.hp - damage);
     this.kx += dx / d * knock; this.kz += dz / d * knock;
     if (blocked) this.brace = 1; else this.tint = 1;
-    if (this.hp <= 0) { this.hitbox = null; this.setState(PS.DEAD); return { blocked, died: true }; }
+    if (this.hp <= 0) { this.die(); return { blocked, died: true }; }
     if (strike.destined && !blocked) {   // a new hit restarts the cut (it never stacks) and the drain
       const D = CONFIG.elden.destined;
       this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());

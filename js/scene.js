@@ -353,8 +353,6 @@ function placeGate(g) {
   g.mesh.position.y = g.y - clamp((g.lift - B.sinkFrom) / (1 - B.sinkFrom), 0, 1) * B.sink;
   g.mesh.visible = g.lift < 1;
 }
-// Every entry of a room level with a gate: its zones, shortcuts and sealed gates.
-const gatedEntries = L => [...L.gated, ...(L.shortcuts || []), ...(L.sealed || [])];
 // Headroom over a gate: the lowest of the regions whose floor it stands on.
 function gateHeadroom(TR, x, z, y) {
   const hs = TR.regions.filter(R => inRect(R.rect, x, z) && Math.abs(R.floorAt(x, z) - y) < 0.05).map(R => R.height);
@@ -386,11 +384,21 @@ const BUILDERS = { arena: buildArena, hall: buildHall, rooms: buildRooms };
 
 // The geometry of the current level. Built when the level starts and torn down when another one does.
 let stage = null;
+// What a stage owns goes with it: geometry, and the materials of its meshes, points, sprites and lines (dust, smoke,
+// bonfire embers, flame glows). Kept: the shared MAT set, anything marked `userData.shared` / `realmShared`, and every
+// texture (the library's, the weathered stone's and visuals' glow and banner cloth are all shared across stages).
+function disposeStageObject(o, keep) {
+  if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+  if (!o.material || !(o.isMesh || o.isPoints || o.isSprite || o.isLine)) return;
+  for (const m of Array.isArray(o.material) ? o.material : [o.material])
+    if (!keep.has(m) && !m.userData.shared && !m.userData.realmShared) m.dispose();
+}
 function loadStage(def) {
   if (stage && stage.id === def.id) return stage;
   if (stage) {
     scene.remove(stage.group);
-    stage.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.isMesh && o.material && !Object.values(MAT).includes(o.material)) o.material.dispose(); });
+    const keep = new Set(Object.values(MAT));
+    stage.group.traverse(o => disposeStageObject(o, keep));
     for (let i = flames.length - 1; i >= 0; i--) if (flames[i].group === stage.group) flames.splice(i, 1);
     for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group || dust[i].group.parent === stage.group) dust.splice(i, 1);
   }

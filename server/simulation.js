@@ -13,6 +13,10 @@ globalThis.host = (() => {
   let followers = new Map(), assignLeft = 0, partyKey = '';
   let botSerial = 0, wipeOnly = false, acting = null;
   const crowdClocks = new Map();
+  // Contact plausibility state, per run: hit budgets per player/enemy and each player's last accepted parry (riposte).
+  const hitBudget = new Map(), lastParry = new Map();
+  // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
+  let sleeping = false, settleCheck = 0;
   const C = ArenaNet.config;
   for (const story of STORIES) {
     if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
@@ -25,7 +29,8 @@ globalThis.host = (() => {
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
     isAttacking() { return this.state === PS.ATTACK || this.state === PS.JUMP_ATTACK; },
-    invulnerable() { return this.state === PS.EXECUTE || this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames; },
+    // Player's own rule (roll i-frames, executing, and the post-execution grace the pose carries).
+    invulnerable() { return Player.prototype.invulnerable.call(this); },
   });
   // Geometry-free equivalent of the scene builders' collision metadata.
   function collisionStage(L) {
@@ -54,6 +59,9 @@ globalThis.host = (() => {
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'postureBreak', 'enemyBlink', 'impact'].includes(type))
       eventList.push({ type, enemy: e && e.netId, attack: e && e.netAttack, out: d.out, seamless: d.seamless,
         x: d.x, y: d.y, z: d.z, fx: d.fx, hitIndex: e && e.hitIndex });
+    // Enemy key-pose markers (tolls, chimes): the marker's index in its attack's own list.
+    if (type === 'attackMarker' && e?.netId && Array.isArray(d.attack?.markers) && d.attack.markers.includes(d.marker))
+      eventList.push({ type, enemy: e.netId, attack: e.netAttack, attackId: d.attack.id, marker: d.attack.markers.indexOf(d.marker) });
   });
   projectiles.fire = (e, attack, p) => {
     // A reliable shot event, replayed once on each client's presentation timeline.
@@ -114,22 +122,27 @@ globalThis.host = (() => {
       number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
   }
   // One encounter of a boss run: `size` consecutive catalog bosses, referenced by the first one's id.
+  const rejected = message => Object.assign(new Error(message), { rejected: true });   // a refused request, safe to show
   function gauntlet(boss, id = 'boss-only') {
-    const run = C.gauntlets[id]; if (!run) throw new Error('Unknown boss run');
+    const run = ArenaNet.own(C.gauntlets, id); if (!run) throw rejected('Unknown boss run');
     const bosses = catalog().bosses;
     const index = boss === undefined ? 0 : bosses.findIndex(e => e.id === boss);
-    if (index < 0 || index % run.size) throw new Error('Unknown gauntlet boss');
+    if (index < 0 || index % run.size) throw rejected('Unknown gauntlet boss');
     const group = bosses.slice(index, index + run.size);
     return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
       total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
   }
   function start(kind, id, partners = []) {
-    if (!['level', 'arena'].includes(kind)) throw new Error('Unknown game mode');
-    if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !ENEMY_BY_ID[id] || partners.length && (kind !== 'arena' || partners.some(p => !ENEMY_BY_ID[p]))) throw new Error('Unknown level or opponent');
+    // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
+    if (!['level', 'arena'].includes(kind)) throw rejected('Unknown game mode');
+    if (!Array.isArray(partners)) throw rejected('Unknown level or opponent');
+    const own = id => ArenaNet.own(ENEMY_BY_ID, id);
+    if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !own(id) || partners.length && (kind !== 'arena' || partners.some(p => !own(p)))) throw rejected('Unknown level or opponent');
+    const d = kind === 'arena' && own(id), L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
+    const level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
+    const nextWorld = makeWorld(level, collisionStage(level));
     Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null; Game.duelPartners = [...partners];
-    const d = kind === 'arena' && ENEMY_BY_ID[id], L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    Game.level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
-    world = makeWorld(Game.level, collisionStage(Game.level));
+    Game.level = level; world = nextWorld;
     Game.cleared = new Set(); Game.complete = false; crowd.reset(); crowdClocks.clear();
     const s = Game.level.playerStart || Game.level.start;
     checkpoint = { ...s, y: world.floorY(s.x, s.z, s.y) };
@@ -139,6 +152,7 @@ globalThis.host = (() => {
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; followers.clear(); assignLeft = 0; partyKey = '';
+    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
@@ -168,6 +182,7 @@ globalThis.host = (() => {
   function clearBots() { for (const id of [...bots.keys()]) removeBot(id); }
   function updateBots(dt) {
     if (!bots.size) return;
+    BotNavigation.tick();   // one shared floor-sample budget for every bot's route search this step
     const B = CONFIG.bot, people = players.filter(p => !p.botId && p.alive());
     const liveBots = botBodies().filter(p => p.alive());
     const key = people.map(p => p.id).sort().join(',') + '/' + liveBots.map(p => p.id).sort().join(',');
@@ -218,14 +233,8 @@ globalThis.host = (() => {
     return { position: pos, quaternion: [cy * sp, sy * cp, -sy * sp, cy * cp], fov: CONFIG.camera.fov };
   }
   function botFrames() {
-    return [...bots.values()].filter(b => b.body).map(b => {
-      const p = b.body;
-      return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, hp: p.hp, state: p.state, stateTime: p.stateTime,
-        attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
-        walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
-        vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
-        landTime: p.landTime, stunTime: p.stunTime, view: p.alive() ? botView(b) : null, id: b.id, name: b.name, bot: true, poseSeq: ++b.poseSeq };
-    });
+    return [...bots.values()].filter(b => b.body).map(b => ({ ...ArenaNet.bodyPose(b.body),
+      view: b.body.alive() ? botView(b) : null, id: b.id, name: b.name, bot: true, poseSeq: ++b.poseSeq }));
   }
   const botList = () => [...bots.values()].map(b => ({ id: b.id, name: b.name, ready: true, hp: b.body ? b.body.hp : null, bot: true }));
   const botsDown = () => [...bots.values()].every(b => !b.body || !b.body.alive());
@@ -277,17 +286,31 @@ globalThis.host = (() => {
       for (let i = 0; i < results.length; i++) results[i].rank = i && results[i].damage === results[i - 1].damage ? results[i - 1].rank : i + 1;
     }
   }
+  // Nothing left to simulate: no bots, bolts, reservations or trap warnings, and every enemy dead or resting with its
+  // meters recovered (patrols simply pause). The world clock keeps running; any living player wakes the run.
+  const RESTING = new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.DORMANT]);
+  function settled() {
+    if (bots.size || flying.length || world.traps.some(t => t.state === 'warning')) return false;
+    return Game.enemies.every(e => !e.netExec && (!e.alive() ? e.rewarded || e.state === ES.GONE
+      : RESTING.has(e.state) && !(e.huntTime > 0) && e.grounded && !(e.posture > 0) && !(e.guardMeter > 0) && e.poise === e.def.poise
+        && (e.state === ES.PATROL || Math.hypot(e.vx, e.vz) < 0.05)));
+  }
   function tick(dt, holdSimulation = false) {
     time += dt;
     if (holdSimulation) return;
+    let living = players.filter(p => p.alive());
+    // Contacts and reservations wake it at once; a periodic check also notices any other change.
+    if (living.length || bots.size) sleeping = false;
+    else if ((settleCheck -= dt) <= 0) { settleCheck = C.sleepCheck; sleeping = settled(); }
+    if (sleeping) { progress(dt); return; }
     updateBots(dt); flyBolts(dt);
-    const living = players.filter(p => p.alive());
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
     for (const e of Game.enemies) if (e.netExec) {
       e.stateTime += dt;
       if (time >= e.netExec.until) finishExecution(e);
     }
+    living = players.filter(p => p.alive());   // bots may have fallen or risen this step
     if (!living.length) {
       // With nobody present, finish attacks/phases, decay meters and return home normally.
       // This observer is dead and never acquires a target, takes damage or joins combat.
@@ -354,13 +377,36 @@ globalThis.host = (() => {
   }
   // Clients report contacts against their displayed world. Resolve values from
   // trusted game data; do not accept a damage/HP amount from the wire.
+  // Plausibility: the sender's last pose must be within reach of some place the enemy stood in the last
+  // `contactWindow` s (its display may lag), with generous slack for pose age and honest movement.
+  const reachOf = b => b.ring ? b.ring.to + b.ring.width / 2 : b.fwd + Math.hypot(b.w / 2, b.d / 2);
+  function within(p, e, reach, height, match = null) {
+    const slack = C.contactTolerance + C.contactSlack + C.contactSpeed * Math.min(p.poseAge || 0, C.contactAgeMax);
+    const seen = [e];
+    for (let i = history.length - 1; i >= 0 && time - history[i].time <= C.contactWindow; i--) {
+      const s = history[i].enemies.find(s => s.id === e.netId); if (s && (!match || match(s))) seen.push(s);
+    }
+    return seen.some(s => (s !== e || !match || match(e)) && Math.hypot(p.x - s.x, p.z - s.z) - e.radius <= reach + slack &&
+      Math.max(0, s.y - (p.y + height[1]), p.y + height[0] - (s.y + e.height)) <= slack);
+  }
+  // Each player/enemy pair refills one hit per `hitInterval` s up to `hitBurst`: no faster than real swings chain.
+  function spendHit(id, e) {
+    const key = id + '\n' + e.netId, b = hitBudget.get(key) || { tokens: C.hitBurst, at: time };
+    b.tokens = Math.min(C.hitBurst, b.tokens + (time - b.at) / C.hitInterval); b.at = time;
+    if (b.tokens < 1) { hitBudget.set(key, b); return false; }
+    b.tokens--; hitBudget.set(key, b); return true;
+  }
   function hit(id, msg) {
     const e = enemy(msg.enemy), p = players.find(p => p.id === id);
-    const a = PLAYER_DEF.moveset.attacks[msg.attack];
-    if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'execute' || !ArenaNet.finite(msg.charge, C.maxCharge)) return false;
-    const strike = makeStrike(a, !!msg.riposte, msg.charge);
-    if (e.invulnerable()) return false;
-    const hp = e.hp, result = e.takeHit(strike, p);
+    const a = ArenaNet.own(PLAYER_DEF.moveset.attacks, msg.attack);
+    if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'execute' || !ArenaNet.finite(msg.charge, C.maxCharge) || msg.charge < 0) return false;
+    if (!within(p, e, reachOf(a.box), [a.box.y - a.box.h / 2, a.box.y + a.box.h / 2])) return false;
+    // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer).
+    const riposte = msg.riposte === true && time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack;
+    const strike = makeStrike(a, riposte, msg.charge);
+    if (!Number.isFinite(strike.damage) || !Number.isFinite(strike.poise) || e.invulnerable() || !spendHit(id, e)) return false;
+    const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
+    if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp);
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
@@ -368,21 +414,34 @@ globalThis.host = (() => {
     return true;
   }
   function parry(id, msg) {
-    const e = enemy(msg.enemy);
-    if (!e || !e.alive() || e.netExec || !history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE) && canParryAttack(e.baseDef.attacks.find(a => a.id === s.attackId))))) return false;
+    const e = enemy(msg.enemy), p = players.find(p => p.id === id);
+    if (!e || !p || !p.alive() || !e.alive() || e.netExec) return false;
+    const recent = history.filter(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE)))
+      .map(f => f.enemies.find(s => s.id === msg.enemy));
+    const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
+    if (!a || !canParryAttack(a)) return false;
+    // The parried blow must have reached this player: its farthest hit from where the enemy stood during it.
+    const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
+    if (!within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial)) return false;
     // A delayed parry of an old move still succeeded on that player's screen,
     // but must never cancel an unrelated new move on everybody else's screen.
+    sleeping = false;
     const broke = e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry) : false;
+    lastParry.set(id, time);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     return true;
   }
   function beginExecution(id, msg) {
-    const e = enemy(msg.enemy), p = players.find(p => p.id === id);
+    const e = enemy(msg.enemy), p = players.find(p => p.id === id), X = CONFIG.execution;
     if (!e || !p || !p.alive() || e.state !== ES.BROKEN || e.netExec) return false;
+    // Execution range is between body edges (CONFIG.execution.range), on about the same floor.
+    if (!within(p, e, X.range + p.radius, [-X.floor, p.height + X.floor])) return false;
     const a = PLAYER_DEF.moveset.attacks.execute;
     const duration = a.hits.reduce((n, h) => n + h.startup + h.active + (h.follow || 0), 0) + a.recovery;
-    e.netExec = { player: id, until: time + duration + C.historySeconds, damage: execution.damageFor(e) };
+    const damage = execution.damageFor(e);
+    if (!Number.isFinite(damage)) return false;
+    e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
     e.hitbox = null; e.setState(ES.EXECUTED);
     return true;
   }
@@ -395,7 +454,7 @@ globalThis.host = (() => {
   }
   function rest(id, bonfire) {
     const p = players.find(p => p.id === id), b = world.bonfires.find(b => b.id === bonfire);
-    if (!p || !b || Math.hypot(p.x - b.x, p.z - b.z) >= CONFIG.rest.range || Math.abs(world.floorY(b.x, b.z, b.y) - p.y) >= CONFIG.height.reach || b.litBy && !Game.zones.find(z => z.id === b.litBy)?.gate.open) return false;
+    if (!p || !p.alive() || !b || Math.hypot(p.x - b.x, p.z - b.z) >= CONFIG.rest.range + C.contactTolerance || Math.abs(world.floorY(b.x, b.z, b.y) - p.y) >= CONFIG.height.reach || b.litBy && !Game.zones.find(z => z.id === b.litBy)?.gate.open) return false;
     if (Game.enemies.some(e => e.alive() && !e.in('unaware') && Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange && !gateBetween(e, p))) return false;
     checkpoint = b.spawn ? { ...b.spawn } : { x: b.x, y: world.floorY(b.x, b.z, b.y), z: b.z, yaw: p.yaw };
     return true;
@@ -403,7 +462,9 @@ globalThis.host = (() => {
   function endExecution(id, enemyId) { const e = enemy(enemyId); if (e?.netExec?.player === id) finishExecution(e); }
   function lifesteal(id, msg) {
     const e = enemy(msg.enemy);
-    if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) e.lifesteal();
+    if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) {
+      const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
+    }
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
@@ -411,6 +472,9 @@ globalThis.host = (() => {
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
+    get sleeping() { return sleeping; },
+    // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.
+    playerAttack: id => ArenaNet.own(PLAYER_DEF.moveset.attacks, id) ? id : null,
     // Test harnesses can inspect state without giving public clients a debug API.
     inspect: () => ({ Game, world, players, crowd, bot, bots }),
   };

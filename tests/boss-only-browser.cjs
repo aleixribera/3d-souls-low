@@ -30,6 +30,13 @@ const { config: C } = require('../js/net-protocol.js');
     await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
+    // Contacts are range-checked against each sender's pose on the server: both stand at reach first.
+    for (const page of [a, b]) await page.evaluate(() => { const e = Game.duel, p = Game.player; p.x = e.x - 2.5; p.z = e.z; p.yaw = Math.PI / 2; });
+    for (let i = 0; i < 200; i++) {
+      const s = app.sim.inspect(), e = s.Game.duel;
+      if (s.players.filter(p => !p.botId && Math.hypot(p.x - e.x, p.z - e.z) < 3.5).length === 2) break;
+      await new Promise(r => setTimeout(r, 25));
+    }
     for (const [page, hits] of [[a, 1], [b, 2]]) await page.evaluate(hits => {
       const p = Game.player, e = Game.duel, strike = makeStrike(PLAYER_DEF.moveset.attacks.light);
       for (let i = 0; i < hits; i++) {

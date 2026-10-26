@@ -218,7 +218,7 @@ const finale = (() => {
   // ---- drawing, every frame -------------------------------------------------------------------------------------
   const tmp = new V3();
   function render(game, placed) {
-    const dt = 1 / 60, t = performance.now() / 1000;
+    const dt = effectSlots.real(), t = performance.now() / 1000;   // the render delta (Game.renderDt), not a fixed 60th
     // Any boss that burns (a phase with `ignite`), in a level or a duel: glowing armour, embers on the blade and off him.
     for (const [e] of placed) {
       if (!isBoss(e) || !e.rig || e.asleep) continue;
@@ -464,8 +464,7 @@ const finale = (() => {
     }
     Game.respawnEnemies();
     if (j.at) { const b = lvl.bonfires.find(q => q.id === j.at); Game.spawn = { ...b.spawn }; Game.spawnPlayer(); }
-    if (st && j.seen) skipSightings(j.seen);   // a jump may name the sightings already passed
-    else if (st) skipSightings(st.spectators.filter(s => j.won.includes('zone-hall') || (j.won.includes('zone-upper') && s.def.id === 'sighting-chapel')).map(s => s.def.id));
+    if (st && j.seen) skipSightings(j.seen);   // a jump names the sightings already passed (level data, `seen`)
   }
   // Sightings already seen (Story mode saves them so Continue does not play them again), and putting them away.
   function seenSightings() { return st ? st.spectators.filter(s => s.state !== 'wait').map(s => s.def.id) : []; }

@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8');
 const files = [...html.match(/const GAME_FILES = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]);
-const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'execution.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'attack-anim.js']);
+const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'execution.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
 const scripts = files.filter(f => engine.has(f) || f.startsWith('data/') || f.startsWith('levels/'));
 // Ignore text/visual-only definitions in the compatibility fingerprint? No: clients and
 // server must run exactly the same release, including every level and balance edit.
@@ -18,6 +18,16 @@ const build = hash.digest('hex').slice(0, 24);
 
 class Vector3 { constructor() { this.x = this.y = this.z = 0; } }
 class Rig { dispose() {} }
+// The data check runs once per process, on the first simulation: the same validateData the browser runs at load,
+// without its drawing half (models, looks, stage builders). Broken data stops the server with the readable list.
+let validated = false;
+function validate(context) {
+  if (validated) return;
+  vm.runInContext(fs.readFileSync(path.join(root, 'js', 'validate.js'), 'utf8'), context, { filename: 'validate.js' });
+  const errors = vm.runInContext('validateData({ visual: false })', context);
+  if (errors.length) throw new Error(`Game data check failed (${errors.length}):\n- ${errors.join('\n- ')}`);
+  validated = true;
+}
 function createSimulation() {
   // An ordinary isolated VM global avoids Node's contextified-property proxy
   // on every shared helper call in terrain, collision and AI hot loops.
@@ -26,11 +36,13 @@ function createSimulation() {
     console, performance, THREE: { Vector3 }, THREE_ADDONS: {}, Rig,
     location: { hash: '' }, window: { addEventListener() {} },
     projectiles: { fire() {} },
+    bindLabel: () => '',   // tutorial prompts name keys; the server never shows them
   });
   // Keep hot numeric operations in the VM's lexical scope. Repeated built-in
   // lookups through a contextified global are much slower than normal scripts.
   vm.runInContext('const Math = globalThis.Math, Number = globalThis.Number;', context);
   for (const file of scripts) vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), context, { filename: file });
+  validate(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'simulation.js'), 'utf8'), context, { filename: 'server/simulation.js' });
   return context.host;
 }

@@ -52,7 +52,8 @@ const qualityBenchmark = (() => {
         const a = i * Math.PI * 2 / B.lights, l = new THREE.PointLight(i % 2 ? 0xff9038 : 0x8fbaff, B.lightPower, B.lightRange);
         l.position.set(Math.cos(a) * B.lightRadius, B.lightHeight, Math.sin(a) * B.lightRadius); test.add(l);
       }
-      KIT.setDetail(q.modelDetail);
+      // A trial detail: no prewarm restart and nothing current dropped; its models go with the trial rigs (finally, below).
+      KIT.setDetail(q.modelDetail, { prewarm: false, evict: false });
       try {
         for (const spec of AUTO_QUALITY_SCENE.actors) {
           const rig = new Rig(spec); rigs.push(rig);
@@ -61,7 +62,7 @@ const qualityBenchmark = (() => {
           // Hidden phase meshes also take part, as they do in the real loading warm-up.
           if (rig.slotMeshes) for (const mesh of Object.values(rig.slotMeshes)) mesh.visible = true;
         }
-      } finally { KIT.setDetail(state.detail); }
+      } finally { KIT.setDetail(state.detail, { prewarm: false, evict: false }); }
       if (q.reflections) {
         const environmentScene = new THREE.Scene(); environmentScene.background = test.background;
         const generator = new THREE.PMREMGenerator(renderer);

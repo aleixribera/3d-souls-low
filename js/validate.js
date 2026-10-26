@@ -4,7 +4,9 @@
 // ============================================================================
 // Verifies every cross-reference and the level ordering rules. Any problem stops the game at load
 // with a readable list on screen, instead of a frozen screen or a soft-locked level later.
-function validateData() {
+// The server (server/headless.cjs) runs it with `{ visual: false }`: everything but the checks that need the drawing
+// half of the game (models, spectral weapons, stage builders, looks and realms), which the browser still runs.
+function validateData({ visual = true } = {}) {
   const errors = [];
   const need = (ok, msg) => { if (!ok) errors.push(msg); };
   const introIds = new Set();
@@ -99,7 +101,7 @@ function validateData() {
       `${tag}: projectile spread must list angles (rad).`);
     if (a.projectile && 'colors' in a.projectile) need(Array.isArray(a.projectile.colors) && a.projectile.colors.length === 2 && a.projectile.colors.every(num),
       `${tag}: projectile colors must be [core, rim] (hex numbers).`);
-    if ('spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
+    if (visual && 'spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
     if ('hpBelow' in a) need(num(a.hpBelow) && a.hpBelow > 0 && a.hpBelow <= 1, `${tag}: hpBelow must be a fraction of the bar (0 to 1).`);   // v5.9 (Malenia)
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
     if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1
@@ -165,9 +167,9 @@ function validateData() {
         // A mid-bar phase (`at`, v5.3) shares the bar it starts on; any other phase is a full bar of its own.
         if (ph && 'at' in ph) need(num(ph.at) && ph.at > 0 && ph.at < 1 && !('hp' in ph), `${tag}: at must be a fraction of the bar (0 to 1), with no hp of its own.`);
         else need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
-        if (ph && 'reveal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.reveal) && !!M && ph.reveal.every(sl => (M.hidden || []).includes(sl)),
+        if (visual && ph && 'reveal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.reveal) && !!M && ph.reveal.every(sl => (M.hidden || []).includes(sl)),
           `${tag}: reveal must list material slots its model hides (its "hidden").`); }
-        if (ph && 'conceal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.conceal) && !!M && ph.conceal.every(sl => sl === 'weapon' || sl in M.materials),
+        if (visual && ph && 'conceal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.conceal) && !!M && ph.conceal.every(sl => sl === 'weapon' || sl in M.materials),
           `${tag}: conceal must list material slots of its model (or 'weapon').`); }
         if (ph && 'opener' in ph) need(aids.has(ph.opener), `${tag}: opener "${ph.opener}" is not one of its attacks.`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
@@ -198,6 +200,7 @@ function validateData() {
   const M = PLAYER_DEF.moveset;
   for (const a of Object.values(M.attacks)) {
     checkAttack(a, 'Player');
+    need(a.feel === undefined || a.feel === 'heavy', `Player attack "${a.id}": feel must be 'heavy' or left out.`);
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
   // Executions (js/execution.js): the attack they run, and every tuning number.
@@ -223,12 +226,12 @@ function validateData() {
     const where = `Level "${L.id}"`;
     need(typeof L.id === 'string' && !levelIds.has(L.id), `${where}: missing or duplicate id.`);
     levelIds.add(L.id);
-    need(L.layout in BUILDERS, `${where}: unknown layout "${L.layout}".`);
+    need(LEVEL_LAYOUTS.includes(L.layout), `${where}: unknown layout "${L.layout}".`);
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     for (const k of ['wakeZones', 'clearGates', 'steer', 'fullTracking']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
-    if (L.layout === 'rooms') { validateRooms(L, where, need, num); continue; }
+    if (L.layout === 'rooms') { validateRooms(L, where, need, num, visual); continue; }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
     need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);
@@ -271,7 +274,8 @@ function validateData() {
     }
   }
   // Arena and timings
-  need(ARENA.layout in BUILDERS && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
+  if (visual) need(LEVEL_LAYOUTS.every(k => k in BUILDERS), 'Every layout in LEVEL_LAYOUTS (js/terrain.js) needs a stage builder in BUILDERS (js/scene.js).');
+  need(LEVEL_LAYOUTS.includes(ARENA.layout) && ARENA.enemyStart && ARENA.playerStart, 'Arena: needs a layout, playerStart and enemyStart.');
   const Cu = CONFIG.cull;
   need(Number.isInteger(Cu.maxLights) && Cu.maxLights >= 1 && Cu.lightRange > 0 && Cu.fadeBand > 0 && Cu.enemyRange > Math.max(...Object.values(CONFIG.notice)),
     'CONFIG.cull: maxLights must be a whole number of at least 1, ranges above 0, and enemyRange beyond every notice range.');
@@ -290,8 +294,10 @@ function validateData() {
     'CONFIG.hud.text.deathTips must be a list of tips (text).');
   const D = CONFIG.death;
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
-  checkVisualData(need, num);   // optional look fields (section 9b)
-  checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
+  if (visual) {
+    checkVisualData(need, num);   // optional look fields (section 9b)
+    checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
+  }
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
   for (const [n, E] of Object.entries(FX_ELEMENTS))
@@ -428,7 +434,7 @@ function validateBonfireGuidance() {
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];
 /// Room-style level checks (see LEVEL_2 and js/terrain.js): shapes first, then the 3D layout built from them.
-function validateRooms(L, where, need, num) {
+function validateRooms(L, where, need, num, visual = true) {
   const H = CONFIG.height, eps = 1e-6;
   const rectOk = r => Array.isArray(r) && r.length === 4 && r.every(num) && r[0] < r[1] && r[2] < r[3];
   const areaOk = a => rectOk(a) || (Array.isArray(a) && a.length > 0 && a.every(rectOk));   // a rect, or a list of them
@@ -488,7 +494,7 @@ function validateRooms(L, where, need, num) {
   if ('props' in L) check(Array.isArray(L.props), `${where}: props must be a list.`);
   for (const P of Array.isArray(L.props) ? L.props : []) {
     const tag = `${where} prop "${P && P.kind}" at (${P && P.x}, ${P && P.z})`;
-    check(P && P.kind in PROP_KINDS && P.kind in PROP_LOOKS, `${tag}: unknown prop kind "${P && P.kind}" (known: ${Object.keys(PROP_KINDS).join(', ')}).`);
+    check(P && P.kind in PROP_KINDS && (!visual || P.kind in PROP_LOOKS), `${tag}: unknown prop kind "${P && P.kind}" (known: ${Object.keys(PROP_KINDS).join(', ')}).`);
     if (!P) continue;
     check(num(P.x) && num(P.z) && (!('y' in P) || num(P.y)), `${tag}: x and z (and y, if given) must be numbers.`);
     const q = (P.yaw || 0) / (Math.PI / 2);

@@ -60,7 +60,11 @@ const input = {
   use(device) { if (device !== this.device) { this.device = device; events.emit('device', { device }); } },
   held: new Set(),
   pressed: new Map(),   // code -> time of press (s); each press is consumed at most once
-  now() { return performance.now() / 1000; },
+  // The buffer ages on simulation time (advanced once per fixed step by the loop in js/boot.js), not the wall clock:
+  // slow motion, catch-up frames and stalls leave its window the same length of play.
+  clock: 0,
+  tick(dt) { this.clock += dt; },
+  now() { return this.clock; },
   down(code) { if (!this.held.has(code)) { this.held.add(code); this.pressed.set(code, this.now()); } },
   up(code) { this.held.delete(code); },
   isHeld(action) { return ACTIONS[action].some(c => this.held.has(c)); },
@@ -87,10 +91,14 @@ const input = {
 
 // Persistent options (pause menu). Stored per browser; failures fall back to defaults.
 const SETTINGS_KEY = 'combat-arena-3d.settings';
-const DEFAULT_SETTINGS = Object.freeze({ sensitivity: 5, invert: false, hudScale: 1,
+// `v`: the settings format (2 since v7.18: the one-time volume migration below has run).
+const DEFAULT_SETTINGS = Object.freeze({ v: 2, sensitivity: 5, invert: false, hudScale: 1,
   graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true });
+// The operating system asks for reduced motion: camera motion starts off until the player chooses otherwise.
+const prefersReducedMotion = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 function readSettings(value) {
   const clean = { ...DEFAULT_SETTINGS };
+  if (prefersReducedMotion()) clean.cameraMotion = false;
   if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
   for (const key of ['invert', 'cameraMotion'])
     if (typeof value[key] === 'boolean') clean[key] = value[key];
@@ -98,7 +106,7 @@ function readSettings(value) {
   if (value.screenShake === false) clean.cameraMotion = false;
   for (const [key, min, max, step] of [['sensitivity', 1, 10, 1], ['hudScale', 0.7, 1.5, 0.1], ['volume', 0, 10, 1]])
     if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
-  if (clean.volume === 8) clean.volume = 5;
+  if (clean.volume === 8 && value.v !== 2) clean.volume = 5;   // v7.14: the old default 8 became 5, once (not a later choice of 8)
   if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;
   return clean;
 }

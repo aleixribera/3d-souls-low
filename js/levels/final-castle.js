@@ -179,10 +179,10 @@ const LEVEL_5 = {
                 pillars: [[343, 17, 1], [333, -17, -1]], fires: [[362, -7], [362, 7], [322, -18], [322, 18]], glow: [356, 0] },
   // Developer jumps (#dev, js/finale.js): start the level at a bonfire with the zones before it already won.
   devJumps: [
-    { name: 'L5: Field (boss phase 1)', at: null, won: [] },
-    { name: 'L5: Bonfire 1 (castle gate)', at: 'castle-gate', won: ['zone-field'] },
-    { name: 'L5: Bonfire 2 (chapel)', at: 'castle-chapel', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper'] },
-    { name: 'L5: Bonfire 3 (tower top)', at: 'castle-tower', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart'] },
-    { name: 'L5: Final bonfire (throne door)', at: 'castle-throne', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart', 'zone-ashbridge', 'zone-gauntlet', 'zone-heavies'] },
+    { name: 'L5: Field (boss phase 1)', at: null, won: [], seen: [] },
+    { name: 'L5: Bonfire 1 (castle gate)', at: 'castle-gate', won: ['zone-field'], seen: [] },
+    { name: 'L5: Bonfire 2 (chapel)', at: 'castle-chapel', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper'], seen: ['sighting-chapel'] },
+    { name: 'L5: Bonfire 3 (tower top)', at: 'castle-tower', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart'], seen: ['sighting-chapel', 'sighting-bridge'] },
+    { name: 'L5: Final bonfire (throne door)', at: 'castle-throne', won: ['zone-field', 'zone-court', 'zone-bridge', 'zone-upper', 'zone-hall', 'zone-rampart', 'zone-ashbridge', 'zone-gauntlet', 'zone-heavies'], seen: ['sighting-chapel', 'sighting-bridge'] },
   ],
 };
