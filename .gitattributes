@@ -1,4 +1,9 @@
-*.sh text eol=lf
-*.service text eol=lf
-*.timer text eol=lf
-.github/workflows/*.yaml text eol=lf
+# Text files are stored with LF and checked out with LF on every platform.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.glb binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.cpuprofile binary

@@ -2,3 +2,5 @@ server/node_modules/
 .env
 .scratch/
 .combat-arena-update.lock
+.obsidian/
+3d-souls-low/
