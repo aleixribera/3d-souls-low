@@ -327,7 +327,7 @@ Like Ysolde, she is never hostile, cannot be attacked and cannot die. Her look i
 
 ### Finn, a fellow Tarnished
 
-In the single-player Lands campaign, **Finn** is a fellow Tarnished who fights beside the player through all eight lands. He is a mortal companion with his own health, stamina and flasks. If he falls, he returns when the player rests at a site of grace, returns after death, or enters the next land. Seren remains the guide and keeper of the lantern; Finn has no dialogue or quest. The single-player ending also names Finn among those who walked beside the player.
+In the single-player Lands, in Story or individually selected levels, **Finn** is a fellow Tarnished who fights beside the player through all eight lands. He is a mortal companion with his own health, stamina and flasks. If he falls while the player lives, he returns at the current checkpoint after a short delay and walks back to the player. He also returns when the player rests at a site of grace, returns after death, or enters the next land. Seren remains the guide and keeper of the lantern; Finn has no dialogue or quest. The single-player ending also names Finn among those who walked beside the player.
 
 ## II.3 The road
 

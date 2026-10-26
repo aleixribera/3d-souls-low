@@ -408,7 +408,7 @@ function registerAudioListeners() {
     audio.play('postureBreak', { vel: 0.8, pos: d.at, pitch: big(d.enemy) * 0.7, delay: 0.04 });
   });
   on('postureBreak', d => audio.play('postureBreak', { pos: chest(d.enemy), pitch: big(d.enemy) }));
-  on('dodge', () => audio.play('dodge', { vel: 0.6 }));
+  on('dodge', d => audio.play('dodge', { vel: 0.6, pos: d.player && d.player !== Game.player ? spot(d.player) : null }));
   on('enemyDeath', d => audio.play('enemyDeath', { pos: chest(d.enemy), pitch: big(d.enemy), vel: clamp(0.5 * ((d.enemy.def && d.enemy.def.scale) || 1), 0.4, 1) }));
   on('playerDeath', () => { audio.play('playerDeath'); audio.play('hurtMoan', { vel: 1, pitch: 0.9, delay: 0.05 }); });
   on('land', d => audio.play('groundPound', { pos: spot(d), vel: clamp((d.fx.shake || 0.1) / 0.12, 0.45, 1) }));
@@ -427,7 +427,7 @@ function registerAudioListeners() {
     const me = d.actor === Game.player;
     audio.play(a.damage >= 30 ? 'swingHeavy' : 'swingLight', { pos: me ? null : chest(d.actor), vel: clamp(a.damage / 45, 0.3, 1), pitch: big(d.actor) });
   });
-  on('itemUsed', d => { if (d.item === 'flask') audio.play('flask'); });
+  on('itemUsed', d => { if (d.item === 'flask') audio.play('flask', { pos: d.player && d.player !== Game.player ? spot(d.player) : null }); });
   on('rest', () => audio.play('rest'));
   on('gateOpened', d => audio.play('gateOpened', { pos: spot(d.gate) }));
   on('trapWarning', d => audio.play('trapWarning', { pos: trapAt(d.trap) }));

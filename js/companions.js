@@ -1,34 +1,40 @@
 'use strict';
-// Local campaign companions are ordinary Players using the shared bot hands, physics and combat.
+// Local companions are ordinary Players using the shared bot hands, physics and combat.
 // Opt-in content lives on the campaign; solo death/bonfires still belong to the human player.
 const companions = (() => {
   let label = null, health = null, labelPosition = null;
   function definition(game) {
-    if (!game.story || game.kind !== 'level' || (typeof multiplayer !== 'undefined' && multiplayer.connected)) return null;
-    const C = story.active.def;
-    return C.companion && C.chapters.some(c => c.level === game.level.id) ? C.companion : null;
+    if (game.kind !== 'level' || (typeof multiplayer !== 'undefined' && multiplayer.connected)) return null;
+    const campaign = story.owner(game.level.id);
+    return campaign && campaign.def.companion || null;
   }
   function hide() { if (label) label.hidden = true; }
-  function reset(game) {
+  function reset(game, spawn = game.player) {
     if (game.companion) game.companion.body.rig.dispose();
     game.companion = null; hide();
     const def = definition(game); if (!def) return;
-    const leader = game.player, profile = BOT_PROFILES.find(p => p.id === def.profile), brain = bot.create(profile);
+    const leader = spawn, y = world.floorY(leader.x, leader.z, leader.y);
+    const profile = BOT_PROFILES.find(p => p.id === def.profile), brain = bot.create(profile);
     const off = CONFIG.companion.spawnOffset, x = leader.x + Math.cos(leader.yaw) * off, z = leader.z - Math.sin(leader.yaw) * off;
     const look = { ...PLAYER_DEF.look, color: def.color };
-    const body = new Player({ ...PLAYER_DEF, name: def.name, look }, x, z, leader.yaw, leader.y);
-    body.ctl = brain.hands; body.id = body.botId = def.id; leader.id = 'solo-player';
+    const body = new Player({ ...PLAYER_DEF, name: def.name, look }, x, z, leader.yaw, y);
+    body.ctl = brain.hands; body.id = body.botId = def.id; game.player.id = 'solo-player';
     clampToWorld(body);
-    const floor = world.groundAt(body.x, body.z, leader.y);
-    if (!Number.isFinite(floor) || Math.abs(floor - leader.y) > CONFIG.height.stepDown || gateBetween(leader, body)) { body.x = leader.x; body.z = leader.z; }
-    body.y = body.peak = world.groundAt(body.x, body.z, leader.y); body.savePrev();
-    game.companion = { def, body, brain, targets: new WeakMap(), clocks: new Map(), hazardTimers: new Map() };
+    const floor = world.groundAt(body.x, body.z, y);
+    if (!Number.isFinite(floor) || Math.abs(floor - y) > CONFIG.height.stepDown || gateBetween({ x: leader.x, y, z: leader.z }, body)) { body.x = leader.x; body.z = leader.z; }
+    body.y = body.peak = world.groundAt(body.x, body.z, y); body.savePrev();
+    game.companion = { def, body, brain, deadFor: 0, targets: new WeakMap(), clocks: new Map(), hazardTimers: new Map() };
   }
   function actors(game) { return [game.player, game.companion && game.companion.body].filter(Boolean); }
   function update(game, dt) {
     const c = game.companion; if (!c) return;
     const p = c.body;
-    if (!p.alive()) { c.brain.hands.clear(); p.update(dt, { x: 0, z: 0, has: false }, [], null); return; }
+    if (!p.alive()) {
+      c.brain.hands.clear(); p.update(dt, { x: 0, z: 0, has: false }, [], null);
+      c.deadFor += dt;
+      if (game.player.alive() && c.deadFor >= CONFIG.companion.respawnDelay) reset(game, game.spawn);
+      return;
+    }
     const live = game.enemies.filter(e => e.alive());
     // Like an online ally, Finn may enter an encounter after the human seals its fog.
     // Only his own input/physics see this entry allowance; the human and enemies retain the closed gate.

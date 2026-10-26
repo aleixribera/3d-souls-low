@@ -552,6 +552,7 @@ void main() {
   // ---- building and clearing -------------------------------------------------------------------------------------------
   function clear() {
     if (!st) return;
+    for (const timer of st.thunderTimers) clearTimeout(timer);
     if (st.group.parent) st.group.parent.remove(st.group);
     st.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (!m.userData.realmShared) m.dispose(); }); });
     if (st.flash) scene.remove(st.flash);
@@ -563,7 +564,8 @@ void main() {
     if (!R) return;
     const rnd = seeded(strSeed(def.id + '/realm')), TR = terrainFor(def);
     const floorY = (x, z, y) => { const f = TR.floorY(x, z, y ?? Infinity); return Number.isFinite(f) ? f : (y ?? 0); };
-    st = { def, built, group: new THREE.Group(), weather: [], beams: [], bolts: [], timer: 2 + rnd() * 3, flashK: 0, cover: 0, rnd };
+    st = { def, built, group: new THREE.Group(), weather: [], beams: [], bolts: [], thunderTimers: new Set(), timer: 2 + rnd() * 3, flashK: 0, cover: 0, rnd };
+    st.floaterTransform = new THREE.Object3D();
     built.group.add(st.group);
     try {
       if (R.tree) st.tree = buildTree(R.tree, rnd);
@@ -600,7 +602,14 @@ void main() {
         st.timer = R.lightning.every[0] + st.rnd() * (R.lightning.every[1] - R.lightning.every[0]);
         st.bolts.push(buildBolt(st.rnd)); st.flashK = 1;
         const delay = 0.3 + st.rnd() * 1.4;
-        setTimeout(() => { try { audio.play('thunder', { vel: 0.6 + st.rnd() * 0.4 }); } catch (e) { /* sound never breaks the game */ } }, delay * 1000);
+        const realm = st, vel = 0.6 + realm.rnd() * 0.4;
+        const timer = setTimeout(() => {
+          realm.thunderTimers.delete(timer);
+          if (st === realm && game.mode === 'play') {
+            try { audio.play('thunder', { vel }); } catch (e) { /* sound never breaks the game */ }
+          }
+        }, delay * 1000);
+        realm.thunderTimers.add(timer);
       }
       st.flashK = Math.max(0, st.flashK - dt * C.lightning.decay);
       const f = st.flashK * (st.flashK > 0.55 || Math.sin(vTime.value * 60) > 0 ? 1 : 0.4);   // a double flicker
@@ -616,8 +625,12 @@ void main() {
     }
     if (st.clouds) for (const c of st.clouds) { c.material.uniforms.uFlash.value = st.flashK; c.material.uniforms.uCenter.value.set(camera.position.x, camera.position.z); c.position.x = camera.position.x; c.position.z = camera.position.z; }
     if (st.floaters) {   // drifting slowly, each bobbing on its own time
-      const { mesh, list } = st.floaters, m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new V3(), v = new V3();
-      list.forEach((f, i) => { e.set(0, f.ry + uTime.value * f.sp * 0.2, f.rz); q.setFromEuler(e); s.setScalar(f.s); v.set(f.x, f.y + Math.sin(uTime.value * f.sp + f.ph) * f.s * 0.12, f.z); mesh.setMatrixAt(i, m4.compose(v, q, s)); });
+      const { mesh, list } = st.floaters, transform = st.floaterTransform;
+      list.forEach((f, i) => {
+        transform.rotation.set(0, f.ry + uTime.value * f.sp * 0.2, f.rz); transform.scale.setScalar(f.s);
+        transform.position.set(f.x, f.y + Math.sin(uTime.value * f.sp + f.ph) * f.s * 0.12, f.z);
+        transform.updateMatrix(); mesh.setMatrixAt(i, transform.matrix);
+      });
       mesh.instanceMatrix.needsUpdate = true;
     }
     if (st.dragon) {   // round and round, high up, its wings beating slowly, gliding now and then

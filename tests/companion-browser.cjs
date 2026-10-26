@@ -1,5 +1,5 @@
 'use strict';
-// A real local Player companion throughout the eight solo Lands chapters.
+// A real local Player companion throughout the eight solo Lands levels, in Story and Levels.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const { createServer } = require('../server/index.cjs');
@@ -32,6 +32,21 @@ const { createServer } = require('../server/index.cjs');
     for (const c of chapters) { assert.equal(c.name, 'Finn'); assert.equal(c.count, 2);
       for (const k of ['player', 'hands', 'resources', 'removed', 'present']) assert.ok(c[k], c.level + '/' + k); }
     console.log('All eight chapters: one Finn, separate inputs/resources, real Player rigs and clean chapter replacement.');
+
+    const levels = await page.evaluate(() => {
+      Game.story = false; story.use('ashmere');
+      const saves = STORIES.map(c => localStorage.getItem(CONFIG.story.saveKeys[c.id]));
+      return STORIES.find(c => c.id === 'lands').chapters.map(ch => {
+        const old = Game.companion && Game.companion.body.rig.root;
+        Game.startLevel(ch.level); Game.loading = 0;
+        const c = Game.companion;
+        return { level: ch.level, joins: c && c.def.name === 'Finn' && Game.allies().length === 2,
+          clean: !old || !old.parent, campaign: !Game.story && story.active.def.id === 'ashmere',
+          saves: STORIES.every((c, i) => localStorage.getItem(CONFIG.story.saveKeys[c.id]) === saves[i]) };
+      });
+    });
+    for (const l of levels) for (const k of ['joins', 'clean', 'campaign', 'saves']) assert.ok(l[k], l.level + '/' + k);
+    console.log('All eight standalone Lands levels include Finn independently of the active Story, without changing saves.');
 
     const mechanics = await page.evaluate(() => {
       const dt = CONFIG.step, nextLevelId = Game.nextLevelId;
@@ -97,21 +112,29 @@ const { createServer } = require('../server/index.cjs');
       const midCritical = midImpact && heldMid && e.alive() && e.phase !== midPhase && !c.body.exec;
       c = fresh();
       const dead = c.body; dead.hp = 0; dead.setState(PS.DEAD);
-      for (let i = 0; i < 600; i++) Game.update(dt);
+      for (let i = 0; i < Math.floor(CONFIG.companion.respawnDelay / dt) - 1; i++) Game.update(dt);
       const mortal = c.body === dead && !dead.alive() && Game.player.alive();
+      Game.update(dt); Game.update(dt);
+      c = Game.companion;
+      const respawn = c.body !== dead && c.body.alive() && !dead.rig.root.parent && c.deadFor === 0 &&
+        c.body.hp === c.body.maxHp && c.body.item('flask').count === c.body.item('flask').max &&
+        Math.hypot(c.body.x - Game.spawn.x, c.body.z - Game.spawn.z) < 2 && Game.player.alive();
+      const returned = c.body; returned.hp = 0; returned.setState(PS.DEAD); Game.update(dt);
       const b = world.bonfires[0]; at(Game.player, b.x, world.floorY(b.x, b.z, b.y), b.z); Game.tryRest();
       c = Game.companion;
-      const rest = c.body !== dead && c.body.alive() && c.body.hp === c.body.maxHp && !dead.rig.root.parent;
+      const rest = c.body !== returned && c.body.alive() && c.body.hp === c.body.maxHp && c.deadFor === 0 && !returned.rig.root.parent;
       const saved = { ...Game.spawn }, beforeDeath = c.body;
       Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); Game.deathTimer = CONFIG.death.respawnDelay; Game.update(dt);
       const death = Game.companion.body !== beforeDeath && Game.companion.body.alive() && Game.player.alive() &&
         Math.hypot(Game.companion.body.x - Game.player.x, Game.companion.body.z - Game.player.z) < 2;
-      story.quit(); const quit = !Game.companion; story.use('lands'); story.resume();
+      story.quit(); Game.render(1, dt);
+      const quit = Game.mode === 'menu' && (!document.getElementById('companionNameplate') || document.getElementById('companionNameplate').hidden);
+      story.use('lands'); story.resume();
       const resume = !!Game.companion && Game.allies().length === 2 && Game.player.x === saved.x && Game.player.z === saved.z;
       Game.nextLevelId = nextLevelId;
       for (const z of Game.zones) z.gate.open = true; Game.nextTimer = CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime; Game.updateLevel(dt);
       const next = Game.level.id === 'stormveil' && Game.companion.def.name === 'Finn' && Game.allies().length === 2;
-      return { follows, fights, melee, single, friendly, bolt, boltRoll, flask, ownHud, critical, midCritical, mortal, rest, death, quit, resume, next };
+      return { follows, fights, melee, single, friendly, bolt, boltRoll, flask, ownHud, critical, midCritical, mortal, respawn, rest, death, quit, resume, next };
     });
     for (const [key, value] of Object.entries(mechanics)) assert.ok(value, key);
     console.log('Following, actual combat, damage, friendly safety, projectiles/rolls, flasks, own HUD, mortality, rest/death/Continue and automatic progression passed.');
@@ -141,15 +164,20 @@ const { createServer } = require('../server/index.cjs');
     const negative = await page.evaluate(() => {
       story.use('ashmere'); story.newGame(false); const ash = !Game.companion;
       story.use('lands'); story.newGame(true); const tutorial = !Game.companion; story.afterTutorial(); const afterTutorial = !!Game.companion;
-      Game.story = false; Game.startLevel('stormhill'); const level = !Game.companion;
+      Game.story = false; Game.startLevel('stormhill'); const level = !!Game.companion;
+      const c = Game.companion, old = c.body; old.hp = 0; old.setState(PS.DEAD);
+      Game.loading = 0;
+      for (let i = 0; i < Math.ceil(CONFIG.companion.respawnDelay / CONFIG.step) + 2; i++) { Game.hitstop = 0; Game.update(CONFIG.step); }
+      const respawn = Game.companion.body !== old && Game.companion.body.alive() && !old.rig.root.parent;
+      Game.startLevel(STORY.chapters[0].level); const standaloneAsh = !Game.companion;
       Game.startFight('margit'); const arena = !Game.companion;
-      return { ash, tutorial, afterTutorial, level, arena };
+      return { ash, tutorial, afterTutorial, level, respawn, standaloneAsh, arena };
     });
     for (const [key, value] of Object.entries(negative)) assert.ok(value, key);
     await page.evaluate(() => multiplayer.join());
     await page.waitForFunction(() => multiplayer.connected);
     assert.ok(await page.evaluate(() => { Game.story = true; Game.startLevel('stormhill'); const absent = !Game.companion; multiplayer.leave(); return absent; }), 'connected games never spawn a local companion');
-    console.log('Boss fog entry and exclusion from Ashmere, training, standalone levels, duels and online play passed.');
+    console.log('Boss fog entry, standalone respawn and exclusion from Ashmere, training, duels and online play passed.');
 
     for (const quality of ['low', 'high', 'ultra']) {
       await page.evaluate(quality => {

@@ -1,14 +1,14 @@
-# v7.16.0 — Finn of the Lands
+# v7.16.1 — Finn of the Lands
 
-Finn accompanies the human through all eight chapters of the single-player Lands campaign. He is a fellow Tarnished, recorded in LORE.md, with a simple overhead name, a health meter and a different armour colour. Seren remains the guide and lantern bearer.
+Finn accompanies the human through all eight single-player Lands levels, both in Story and when selected from Levels. He is a fellow Tarnished, recorded in LORE.md, with a simple overhead name, a health meter and a different armour colour. Seren remains the guide and lantern bearer.
 
 ## Scope and lifecycle
 
 The campaign opts into `companion: { id, name, profile, color }` in `js/data/story.js`. The engine does not special-case a campaign or enemy id. Finn uses the existing Quill profile and ordinary Player health, stamina, damage, controls, inventory and physics. His hands are independent of keyboard/controller input.
 
-He joins every campaign chapter, including New, automatic progression and Continue from an existing save. Resting refills/rejoins the companion; the human's death returns both characters to the checkpoint. If Finn falls while the human lives, the attempt continues and he remains down until a rest, human respawn or new chapter. There is no automatic resurrection during the same attempt.
+He joins every campaign chapter, including New, automatic progression and Continue from an existing save, and every individually selected Lands level. His definition comes from `story.owner(level.id)`, independently of the active Story selection; selecting a level does not enable Story or change its saves. Resting refills/rejoins the companion; the human's death returns both characters to the checkpoint. If Finn falls while the human lives, he returns at the current checkpoint after `CONFIG.companion.respawnDelay` (4.8 seconds, matching friendly bots), with full resources and fresh bot hands, and walks back using normal navigation. The old rig is disposed. Pauses/loading do not advance this simulation timer; human death still owns the solo death sequence and respawns both actors together.
 
-The shared training hall, Ashmere, individually selected levels, duels, boss teams and connected multiplayer do not create a local companion. Multiplayer retains its existing server-owned bot roster. The save format is unchanged: Finn starts fresh at the restored checkpoint and never overwrites the human's saved resources. His rig is disposed with the other actors, so chapter changes and reloads cannot accumulate extra companions.
+The shared training hall, Ashmere, duels, boss teams and connected multiplayer do not create a local companion. Multiplayer retains its existing server-owned bot roster. The save format is unchanged: Finn starts fresh at the restored checkpoint and never overwrites the human's saved resources. His rig is disposed with the other actors, so chapter changes and reloads cannot accumulate extra companions.
 
 ## Shared gameplay
 
@@ -24,6 +24,6 @@ Companion parry/dodge events name their owner. Personal stamina denial/refund in
 
 ## Validation
 
-`node tests/companion-browser.cjs` exercises the real browser engine: all eight chapter spawns and cleanup, walking/fighting, enemy targeting, normal damage and one hit per swing, friendly safety, projectile interception/rolls, independent flasks and HUD feedback, deferred boss phase during Finn's execution, mortality, bonfire/death/Continue, automatic progression, fog entry, rot/traps, tutorial-to-campaign arrival, excluded modes, three graphics presets and the ending credit.
+`node tests/companion-browser.cjs` exercises the real browser engine: all eight chapter and standalone spawns and cleanup, active campaign/save isolation, walking/fighting, enemy targeting, normal damage and one hit per swing, friendly safety, projectile interception/rolls, independent flasks and HUD feedback, deferred boss phase during Finn's execution, death/return delay and full resources, bonfire/death/Continue, automatic progression, fog entry, rot/traps, tutorial-to-campaign arrival, excluded modes, three graphics presets and the ending credit.
 
 Regression checks include bot behavior/follow/integration, lobby continuity, multiplayer/campaign and boss-only, boss-team melee/projectile browser tests, the bot spectator browser, fullscreen, Auto, settings and the full solo browser suite.

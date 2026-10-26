@@ -165,7 +165,7 @@ const hud = {
       const q = e.rig.root.position;
       if (game.kind !== 'bossBattle' && (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e))) continue;
       v.set(q.x, q.y + e.height + F.tagGap, q.z).project(camera);
-      if (v.z >= 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
+      if (v.z < -1 || v.z >= 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
       let t = this.tags[n++];
       if (!t) {
         const el = document.createElement('div'); el.className = 'eTag';

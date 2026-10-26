@@ -340,7 +340,7 @@ class Player {
       this.landHit = false; this.landTime = a.recovery;
       this.vx *= C.landKeep; this.vz *= C.landKeep;
       this.setState(PS.LAND);
-      events.emit('land', { x: this.x, y: this.y, z: this.z, fx: a.air.fx });
+      events.emit('land', { player: this, x: this.x, y: this.y, z: this.z, fx: a.air.fx });
     }
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;

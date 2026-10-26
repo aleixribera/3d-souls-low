@@ -168,7 +168,7 @@ const BotNavigation = (() => {
         if (grid !== g) path = null;
         goal = { x: lead.x, y: lead.y, z: lead.z }; grid = g;
         search = searchRoute({ x: me.x, y: me.y, z: me.z, radius: me.radius, height: me.height }, goal);
-        if (path && !g.clear(me, path[0])) path = null;
+        if (path && (!path.length || !g.clear(me, path[0]))) path = null;
       }
       if (search) {
         const step = search.next();
@@ -184,7 +184,7 @@ const BotNavigation = (() => {
         sampleAt = { x: me.x, y: me.y, z: me.z }; sampleTime = 0;
       }
       while (path.length && distance(me, path[0]) < C.waypoint) path.shift();
-      if (!path.length) { replan = 0; sampleAt = null; sampleTime = stuck = 0; return idle(); }
+      if (!path.length) { path = null; replan = 0; sampleAt = null; sampleTime = stuck = 0; return idle(); }
       let next = path[0], skip = 0;
       // A search may finish after the bot has advanced along its previous route. Reconnect ahead,
       // discarding old start nodes instead of walking backwards to that captured starting position.

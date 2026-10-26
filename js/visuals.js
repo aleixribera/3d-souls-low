@@ -1289,7 +1289,7 @@ const visuals = (() => {
       projectiles.prepare(Game.enemies);
       camera.position.copy(cam.pos); camera.lookAt(cam.look); camera.updateMatrixWorld();
       const at = new THREE.Vector3(0, 0, -3).applyMatrix4(camera.matrixWorld);
-      const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity]);
+      const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity, m.count]);
       const bodies = [], parents = new Map();
       // Upload every character mesh, including distant enemies, lore rigs and hidden boss phases, while loading.
       // Merely compiling their shaders would still leave geometry and textures to upload at their first encounter.
@@ -1301,7 +1301,7 @@ const visuals = (() => {
           p.visible = true;
         }
       });
-      for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; }
+      for (const m of pooledFx) { m.visible = true; m.position.copy(at); m.material.opacity = 0; if (m.isInstancedMesh) m.count = Math.max(1, m.count); }
       // LOW uses a tiny default viewport; HIGH uses a small separate post pipeline with the same output shader.
       // All actors still issue draws and upload full geometry/textures, even when far away or in a hidden phase.
       const viewport = renderer.getViewport(new THREE.Vector4()), scissor = renderer.getScissor(new THREE.Vector4());
@@ -1319,7 +1319,7 @@ const visuals = (() => {
       } finally {
         warming = false;
         [grade.uniforms.uFlash.value, grade.uniforms.uHurt.value] = feedback;
-        for (const [m, visible, pos, opacity] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; }
+        for (const [m, visible, pos, opacity, count] of saved) { m.visible = visible; m.position.copy(pos); m.material.opacity = opacity; if (m.isInstancedMesh) m.count = count; }
         for (const [m, visible, culled] of bodies) { m.visible = visible; m.frustumCulled = culled; }
         for (const [p, visible] of parents) p.visible = visible;
         // Hidden legacy attack lights have a different light count from the warm-up frame. Compile the normal

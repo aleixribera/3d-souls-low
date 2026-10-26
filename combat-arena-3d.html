@@ -12,7 +12,8 @@
   canvas#view.dying { filter: grayscale(1) brightness(0.75); transition: filter var(--dying-fade); }
 
   .companion-nameplate { position: fixed; z-index: 4; transform: translate(-50%, -100%); pointer-events: none;
-    color: #dae6ed; font: 13px Georgia, serif; text-shadow: 0 1px 3px #000; text-align: center; }
+    color: #e5eff5; font: 13px Georgia, serif; text-shadow: 0 1px 2px #000, 0 0 4px #000; text-align: center;
+    padding: 4px 9px 6px; background: radial-gradient(ellipse, #080e16b8, #080e1600 75%); }
   .companion-nameplate[hidden] { display: none; }
   .companion-health { display: block; width: 64px; height: 3px; margin-top: 4px; background: #10151bd9; border: 1px solid #a4b5bf55; }
   .companion-health i { display: block; height: 100%; background: #8ea47a; }
@@ -286,7 +287,7 @@
   #help td:first-child { color: #b79d5c; }
   #help .level { color: #c9b26a; font-size: 12px; margin-top: 8px; max-width: 320px; }
   #help .level:empty { display: none; }
-  #helpHint { font-size: 13px; color: #8f866c; text-shadow: 0 0 4px #000; transition: opacity 0.4s; opacity: calc(1 - (1 - var(--calm)) * 0.7); }
+  #helpHint { font-size: 13px; color: #c4b99e; text-shadow: 0 1px 2px #000, 0 0 4px #000; transition: opacity 0.4s; opacity: calc(0.75 + var(--calm) * 0.25); }
 
   /* Edge vignette: red at low health, a flare when hurt. Opacity comes from hud.js. */
   #vignette { position: absolute; inset: 0; opacity: 0; pointer-events: none;
@@ -377,6 +378,13 @@
     #menu.boss-team-menu .menuBtn { padding: 6px; min-height: 30px; }
     #hud.boss-battle #bossBattleHud { top: 10px; } #bossBattleHud section { padding: 6px; }
     #bossBattleHud h2 { margin-bottom: 6px; } .battle-health { margin-top: 5px; } }
+  @media (prefers-reduced-motion: reduce) {
+    #menu *, #hud *, canvas#view { transition-duration: 0.01ms !important; }
+    #pHp, #pSt, #pFlasks, .flask, #ePost { animation: none !important; }
+    #pHp.low { border-color: #e0604a; }
+    #ePost.warn { border-color: #f4d27a; }
+    .toast { animation: none; opacity: 1; transform: none; }
+  }
 </style>
 <script>
   // Load guard (plain script, runs even if the game module never does): if the game fails to start
@@ -616,7 +624,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.16.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.17.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

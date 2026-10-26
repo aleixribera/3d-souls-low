@@ -1,4 +1,6 @@
-# Combat Arena 3D — v7.16.0: Finn of the Lands
+# Combat Arena 3D — v7.17.0: Steadier Battles
+
+**v7.17.0:** Camera motion responds consistently at different display rates, and Finn's own parries, criticals and landings no longer shake your view. Combat particles share one drawing submission, HUD labels are clearer, reduced-motion preferences are respected, and delayed thunder ends with its level. Fixed a companion route crash found while testing every Lands route. Finn also joins standalone Lands levels and returns at the current checkpoint after 4.8 seconds if you survive. See [the audit](docs/game-audit-v7.17.0.md).
 
 **v7.16.0:** Finn accompanies you through all eight levels of the single-player Lands campaign. He follows routes, fights with the existing bot brain, and has his own health, stamina and flasks. If he falls, he returns when you rest, respawn or enter the next land. Ashmere, training, standalone levels, arena and multiplayer keep their existing parties. See [the notes](docs/solo-companion-v7.16.0.md).
 

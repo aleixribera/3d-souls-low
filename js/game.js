@@ -337,6 +337,7 @@ const Game = {
     }
     this.player = null; this.companion = null; companions.hide(); this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
+    particleBatch.visible = false; particleBatch.count = 0;
     groundFx.clear(); swordTrail.clear(); projectiles.clear();
     return retired;
   },
@@ -968,7 +969,8 @@ const Game = {
     this.updateCamera(dt, false);
   },
 
-  render(alpha, frameDt) {
+  render(alpha, frameDt = CONFIG.step) {
+    this.renderDt = Math.max(0, frameDt);
     const p = this.player, c = this.cam, t = performance.now() / 1000;
     const frozen = this.hitstop > 0, sub = frozen ? 0 : alpha * CONFIG.step;
     const at = b => ({ x: lerp(b.px, b.x, alpha), y: lerp(b.py, b.y, alpha), z: lerp(b.pz, b.z, alpha),

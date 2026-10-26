@@ -9,7 +9,7 @@ const impactFx = (() => {
   events.on('strike', d => {
     if (d.blocked) return;
     const S = F.strikeShake, k = clamp((d.strike.damage - S.from) / (S.full - S.from), 0, 1);
-    if (k > 0) Game.addShake(S.time, S.amp * k);
+    if (k > 0 && (d.target === Game.player || d.attacker === Game.player || Game.kind === 'bossBattle')) Game.addShake(S.time, S.amp * k);
     struck = d.target; struckK = clamp(d.strike.damage / S.full, 0.35, 1);
   });
   const trailFor = e => {

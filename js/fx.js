@@ -7,9 +7,26 @@
 const pooledFx = [];
 const particles = [];
 const particleGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
+const particleAlpha = new THREE.InstancedBufferAttribute(new Float32Array(CONFIG.fx.particleCount).fill(1), 1).setUsage(THREE.DynamicDrawUsage);
+particleGeo.setAttribute('particleAlpha', particleAlpha);
+const particleMaterial = new THREE.MeshBasicMaterial({ transparent: true, fog: false });
+particleMaterial.onBeforeCompile = shader => {
+  shader.vertexShader = 'attribute float particleAlpha; varying float vParticleAlpha;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvParticleAlpha = particleAlpha;');
+  shader.fragmentShader = 'varying float vParticleAlpha;\n' + shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.a *= vParticleAlpha;');
+};
+particleMaterial.customProgramCacheKey = () => 'pooled-burst-opacity';
+const particleBatch = new THREE.InstancedMesh(particleGeo, particleMaterial, CONFIG.fx.particleCount);
+particleBatch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+particleBatch.setColorAt(0, new THREE.Color());
+particleBatch.instanceColor.setUsage(THREE.DynamicDrawUsage);
+particleBatch.frustumCulled = false; particleBatch.visible = false;
+scene.add(particleBatch); pooledFx.push(particleBatch);
+const liveParticles = [];
+const particleForward = new THREE.Vector3();
 for (let i = 0; i < CONFIG.fx.particleCount; i++) {
-  const mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false }));
-  mesh.visible = false; scene.add(mesh); pooledFx.push(mesh);
+  // Keep the same reusable transform/colour interface for bursts and body-dissolve embers.
+  const mesh = new THREE.Object3D(); mesh.material = { color: new THREE.Color(), opacity: 1 };
+  mesh.visible = false;
   particles.push({ mesh, life: 0, vx: 0, vy: 0, vz: 0 });
 }
 let particleCursor = 0;
@@ -27,6 +44,7 @@ function spawnBurst(pos, burst) {
   }
 }
 function updateParticles(dt) {
+  liveParticles.length = 0;
   for (const p of particles) {
     if (p.life <= 0) continue;
     p.life -= dt;
@@ -35,6 +53,23 @@ function updateParticles(dt) {
     p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
     p.mesh.rotation.x += dt * 9; p.mesh.rotation.y += dt * 7;
     p.mesh.material.opacity = clamp(p.life / CONFIG.fx.particleLife * 1.6, 0, 1);
+    liveParticles.push(p);
+  }
+  // Preserve transparent back-to-front ordering inside the single submission.
+  if (liveParticles.length) {
+    camera.getWorldDirection(particleForward);
+    for (const p of liveParticles) p.depth = p.mesh.position.dot(particleForward);
+    liveParticles.sort((a, b) => b.depth - a.depth);
+  }
+  for (let i = 0; i < liveParticles.length; i++) {
+    const m = liveParticles[i].mesh; m.updateMatrix();
+    particleBatch.setMatrixAt(i, m.matrix); particleBatch.setColorAt(i, m.material.color);
+    particleAlpha.array[i] = m.material.opacity;
+  }
+  const n = liveParticles.length;
+  particleBatch.count = n; particleBatch.visible = n > 0;
+  if (n) for (const [attribute, size] of [[particleBatch.instanceMatrix, 16], [particleBatch.instanceColor, 3], [particleAlpha, 1]]) {
+    attribute.clearUpdateRanges(); attribute.addUpdateRange(0, n * size); attribute.needsUpdate = true;
   }
 }
 function updateDust(t) {
