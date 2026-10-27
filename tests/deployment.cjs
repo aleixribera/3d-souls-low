@@ -43,4 +43,9 @@ r = run('fresh', { MOCK_EXISTS: '0' }); assert.equal(r.status, 0, r.stderr); ass
 r = run('pull-fails', { MOCK_PULL_FAIL: '1' }); assert.notEqual(r.status, 0); assert.ok(!r.calls.includes('compose up'), 'failed pull keeps the running container');
 r = run('unhealthy', { MOCK_UP_FAIL: '1' }); assert.notEqual(r.status, 0); assert.ok(r.calls.includes('image=sha256:old docker compose up -d --no-deps --pull never'), 'failed health check restores the previous local image');
 r = run('unknown-players', { MOCK_PLAYERS: 'unavailable' }); assert.notEqual(r.status, 0); assert.ok(!r.calls.includes('compose pull'), 'unknown lobby state cannot interrupt play');
-console.log('Deployment: busy/idle/fresh lobby, pull failure, health rollback and unknown state passed.');
+// Every path the image copies is in git: a checkout without it fails the build (v7.19.0 once removed the last asset).
+const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n');
+for (const [, sources] of fs.readFileSync('Dockerfile', 'utf8').matchAll(/^COPY\s+(.+)\s+\S+\s*$/gm))
+  for (const from of sources.split(/\s+/).filter(s => !s.startsWith('--')))
+    assert.ok(tracked.some(t => from.includes('*') ? t.startsWith(from.slice(0, from.indexOf('*'))) : t === from || t.startsWith(from + '/')), `Dockerfile copies ${from}, which git does not track`);
+console.log('Deployment: busy/idle/fresh lobby, pull failure, health rollback, unknown state and tracked image sources passed.');
