@@ -11,16 +11,20 @@ const C = net.config;
 
 // The client's address: the socket's own, or the last X-Forwarded-For entry added by a loopback/private proxy
 // (Tailscale Funnel, Docker's port proxy). A local/private peer without that header has no per-address budget.
+// Only trust the header when private peers are proxies (compose.yaml publishes the port on 127.0.0.1 only): a server
+// reachable directly on a LAN sets TRUST_PROXY=0, or a LAN client could pick its own address with the header.
 const PRIVATE = /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1$|f[cde][0-9a-f]{2}:)/i;
-function clientAddress(req) {
+function clientAddress(req, trustProxy) {
   const remote = String(req.socket.remoteAddress || '').replace(/^::ffff:/i, '');
   if (!PRIVATE.test(remote)) return remote || null;
+  if (!trustProxy) return remote;
   const forwarded = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean).pop();
   return forwarded ? forwarded.replace(/^::ffff:/i, '').slice(0, 64) : null;
 }
 
 function createServer(options = {}) {
   const capacity = Number(options.capacity ?? process.env.MAX_PLAYERS ?? C.defaultCapacity);
+  const trustProxy = options.trustProxy ?? process.env.TRUST_PROXY !== '0';
   if (!Number.isInteger(capacity) || capacity < 2 || capacity > C.maxCapacity) throw new Error(`MAX_PLAYERS must be an integer from 2 to ${C.maxCapacity}`);
   // `clients` holds players who said hello (they own a slot); `pending` sockets are still joining.
   const sim = createSimulation(), clients = new Map(), pending = new Set();
@@ -348,7 +352,7 @@ function createServer(options = {}) {
   server.on('upgrade', (req, socket, head) => {
     let origin;
     try { origin = new URL(req.headers.origin); } catch { socket.destroy(); return; }
-    const address = clientAddress(req);
+    const address = clientAddress(req, trustProxy);
     if (req.url !== C.path || origin.host !== req.headers.host) { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); return; }
     // Joining sockets hold no player slot, but only a few may wait at once and each address has its own budget.
     if (clients.size >= capacity || pending.size >= C.pendingConnections || address && (addresses.get(address) || 0) >= C.connectionsPerAddress) {

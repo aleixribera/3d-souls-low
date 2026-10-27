@@ -30,7 +30,8 @@
     spectatorFov: [10, 150],
     // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
     // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.
-    pendingConnections: 8, connectionsPerAddress: 6, hellosPerMinute: 20,
+    // The pending allowance covers a full default party joining at once from a shared link.
+    pendingConnections: 32, connectionsPerAddress: 6, hellosPerMinute: 20,
     // Lobby chatter: rosters coalesce to one per interval; repeated ready (full baselines) wait `resyncInterval` ms.
     rosterInterval: 250, resyncInterval: 1000,
     // Contact plausibility: a hit, parry or execution must be within reach of the sender's last pose, measured to any

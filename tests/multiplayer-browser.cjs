@@ -76,8 +76,9 @@ fs.mkdirSync(output, { recursive: true });
     await b.evaluate(() => { Game.player.hp = 17; Game.player.x = -14; Game.player.z = 9; Game.setLock(null); });
     await b.waitForFunction(() => __arena.multiplayer.info.playback > 1);
     assert.equal(await b.evaluate(() => Game.player.hp), 17, 'incoming snapshots do not overwrite personal health');
-    // Contacts are range-checked against the sender's pose on the server: stand at reach until it has seen that pose.
-    await a.evaluate(() => { const e = Game.duel, p = Game.player; p.x = e.x - 2; p.z = e.z; p.yaw = Math.PI / 2; });
+    // Contacts are range-checked against the sender's pose on the server: stand at reach until it has seen that pose
+    // (untouchable meanwhile, so Margit's swings cannot end the fixture early).
+    await a.evaluate(() => { const e = Game.duel, p = Game.player; p.invulnerable = () => true; p.x = e.x - 2; p.z = e.z; p.yaw = Math.PI / 2; });
     await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => Math.hypot(p.x - e.x, p.z - e.z) < 3); });
     await a.evaluate(() => {
       const e = Game.duel, p = Game.player;
@@ -85,7 +86,7 @@ fs.mkdirSync(output, { recursive: true });
       const strike = makeStrike(PLAYER_DEF.moveset.attacks.light);
       p.hitbox = new Hitbox(p, PLAYER_DEF.moveset.attacks.light.box, strike);
       multiplayer.hit(e, strike); multiplayer.hit(e, strike); p.hitbox = null;
-      p.x = -14; p.z = -9;
+      p.x = -14; p.z = -9; delete p.invulnerable;
     });
     await a.waitForFunction(() => Game.duel.hp <= 3176);
     await b.waitForFunction(() => Game.duel.hp <= 3176);
@@ -136,6 +137,11 @@ fs.mkdirSync(output, { recursive: true });
       const d = p.radius + e.radius * C.standoff + C.gap;
       p.x = e.x + Math.sin(e.yaw) * d; p.z = e.z + Math.cos(e.yaw) * d; p.y = e.y; p.yaw = e.yaw + Math.PI;
       p.hp = p.maxHp; p.setState(PS.IDLE); p.kx = p.kz = p.vx = p.vz = 0;
+    });
+    // The server range-checks the execution against a's pose: wait until it has seen a beside Aldric.
+    await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => !p.botId && Math.hypot(p.x - e.x, p.z - e.z) < e.radius + 2.5); });
+    await a.evaluate(() => {
+      const p = Game.player, e = Game.duel;
       window.__coopPhaseStates = [];
       events.on('bossPhase', () => window.__coopPhaseStates.push(Game.player.state));
       execution.start(p, e);

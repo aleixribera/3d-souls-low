@@ -1012,19 +1012,19 @@ const multiplayer = (() => {
       // The server owns enemy positions. Other players have no body blocking.
       for (const e of Game.enemies) if (e.state !== ES.EXECUTED) separatePair(p, e, 1);
       resolveCombat(Game); execution.mark(p, Game.enemies);
-      if (!p.alive()) Game.onPlayerDeath();
     }
     projectiles.update(Game, dt);
     if (Game.kind === 'level') { lore.update(Game, dt); updateHazards(dt); finale.updateOnline(Game, dt); }
     Game.updateCamera(dt, false);
-    if (!Game.player.alive() && Game.deathTimer === 0) Game.onPlayerDeath();
+    // One death sequence per body, whatever killed it (a blow, rot, a script): as Game.update does.
+    if (!Game.player.alive() && Game.deathOf !== Game.player) Game.onPlayerDeath();
   }
   function updateHazards(dt) {
     const p = Game.player;
     if (!p.alive() || p.invulnerable()) return;
     for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
       p.hp = Math.max(0, p.hp - h.dps * dt);
-      if (p.hp <= 0) { p.setState(PS.DEAD); Game.onPlayerDeath(); }
+      if (p.hp <= 0) { p.die(); return; }   // the end of the online step starts the death sequence
     }
   }
   function remoteSample(r, now) {

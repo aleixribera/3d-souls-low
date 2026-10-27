@@ -41,6 +41,8 @@ The service binds to **127.0.0.1:3080** on Ubuntu and uses **3000 inside the con
 
 The default capacity is 16, configurable from 2 through 64 with `MAX_PLAYERS`. That is a connection limit, not a measured capacity promise. Every browser renders its own world; the server runs shared enemy simulation. Test with your friends and actual upload connection before raising it.
 
+Per-address connection limits read the client's address from Funnel's `X-Forwarded-For` header, because the port is published on `127.0.0.1` only. If you ever publish the port directly on your LAN instead, set `TRUST_PROXY=0` so a LAN client cannot choose its own address with that header.
+
 ## 3. Publish a public HTTPS link with Tailscale Funnel
 
 You do **not** need your WAN IP, router port forwarding, or CGNAT details for this approach. Friends do not need Tailscale. Funnel publishes just this local web service through a public HTTPS URL. [Tailscale's public sharing guide](https://tailscale.com/docs/use-cases/application-testing/share-local-dev-server-with-internet)
