@@ -996,16 +996,16 @@
     }
   };
   const shown = id => (document.getElementById(id) || {}).textContent || '';
-  test('block: C, L and both side mouse buttons hold block; Ctrl no longer does', () => {
+  test('block: C and L hold block; the side mouse buttons and Ctrl do not', () => {
     input.use('keyboard');   // key labels in the prompt, whatever an earlier gamepad test left
     const p = trainingAt('sparring');
-    for (const code of ['KeyC', 'KeyL', 'Mouse3', 'Mouse4']) {
+    for (const code of ['KeyC', 'KeyL']) {
       input.down(code); sim.step(2);
       expect.ok(p.state === PS.BLOCK, `${code} blocks (state ${p.state})`);
       input.up(code); sim.step(2);
       expect.ok(p.state !== PS.BLOCK, `${code} let go`);
     }
-    for (const code of ['ControlLeft', 'ControlRight']) {
+    for (const code of ['ControlLeft', 'ControlRight', 'Mouse3', 'Mouse4']) {
       input.down(code); sim.step(2);
       expect.ok(p.state !== PS.BLOCK, `${code} does not block`);
       input.up(code);
@@ -1016,12 +1016,12 @@
       expect.ok(ev.defaultPrevented, `side button ${button} ${type}: the browser does not go back or forward`);
     }
     withLessons(() => {
-      trainingAt(null, 'long-hall'); A.lessons.show('guard'); Game.render(1, STEP);
+      trainingAt(null, 'long-hall'); A.lessons.show('block'); Game.render(1, STEP);
       const caps = [...document.querySelectorAll('#lessonKeys kbd')].map(k => k.textContent).join(' ');
-      expect.ok(caps === 'C Side mouse E', `the red glint card's keys: "${caps}"`);
+      expect.ok(caps === 'L', `the BLOCK card shows only L: "${caps}"`);
     })();
     const row = [...document.querySelectorAll('#helpTable tr')].find(r => r.cells[0].textContent.startsWith('Block'));
-    expect.ok(row && row.cells[1].textContent === '[ c / l / Side mouse ]', `help panel: "${row && row.cells[1].textContent}"`);
+    expect.ok(row && row.cells[1].textContent === '[ c / l ]', `help panel: "${row && row.cells[1].textContent}"`);
   });
   // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
   const cadence = (kind, seconds) => {
@@ -3559,34 +3559,60 @@
   // ---- Lessons (v7.19.0): the controls taught inside Level 1, a little in Levels 2 and 3, and catch-up in Stormhill ---
   const card = () => A.lessons.card ? A.lessons.card.id : null;
   const lessonsIn = id => (A.ALL_LEVELS.find(l => l.id === id).lessons || []).map(e => e.lesson);
-  test('Lessons: Level 1 teaches the old tutorial\'s moves; Levels 2 and 3 add one each; Stormhill catches up; the rest have none', () => {
+  test('Lessons: Level 1 teaches the basics first, in order; Levels 2 and 3 add one each; Stormhill catches up; the rest have none', () => {
     const hall = lessonsIn('long-hall');
-    for (const id of ['move', 'roll', 'jump', 'lock', 'light', 'guard', 'heavy', 'jumpAttack', 'flask', 'stance', 'execute', 'parry', 'rest', 'switch', 'dodge']) expect.ok(hall.includes(id), `Level 1 teaches ${id}`);
+    expect.ok(hall.join() === 'move,light,roll,lock,block,flask,heavy,jumpAttack,stance,execute,parry,rest,switch,dodge', `Level 1's course: ${hall}`);
     expect.ok(lessonsIn('sunken-keep').join() === 'shield' && lessonsIn('burning-town').join() === 'blue', 'one lesson in Level 2 and one in Level 3');
-    expect.ok(['move', 'lock', 'guard', 'blue', 'flask', 'rest'].every(id => lessonsIn('stormhill').includes(id)), 'Stormhill catches up');
+    expect.ok(lessonsIn('stormhill').join() === 'move,light,roll,lock,block,blue,flask,rest', `Stormhill catches up: ${lessonsIn('stormhill')}`);
     const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town', 'stormhill'].includes(l.id)).map(l => l.id);
     expect.ok(others.length === 0, `no other level teaches: ${others}`);
     expect.ok(!A.ALL_LEVELS.some(l => l.id === 'tutorial') && !A.STORY.chapters.some(c => c.level === 'tutorial'), 'the Training Hall is gone from the road');
   });
-  test('Lessons: walking out of the cell shows MOVE, then ROLL, then JUMP, each done by doing it', withLessons(() => {
+  test('Lessons: walking out of the cell shows MOVE, then ATTACK, then ROLL, each done by doing it', withLessons(() => {
     trainingAt(null, 'long-hall'); sim.step(2); Game.render(1, STEP);
-    expect.ok(card() === 'move' && !document.getElementById('lesson').hidden && document.getElementById('lesson').classList.contains('show'), `MOVE first (${card()})`);
+    expect.ok(card() === 'move' && document.getElementById('lesson').classList.contains('show'), `MOVE first (${card()})`);
     expect.ok(shown('lessonTitle') === 'MOVE', `the card says so (${shown('lessonTitle')})`);
     sim.move(1, 0); sim.until(() => A.lessons.learned('move'), 4); sim.move(null);
     expect.ok(A.lessons.learned('move'), 'walking five metres learns it');
+    sim.until(() => card() === 'light', 4); Game.render(1, STEP);
+    expect.ok(card() === 'light' && shown('lessonTitle') === 'ATTACK', `ATTACK next (${card()})`);
+    sim.press('light'); sim.step(3);
+    expect.ok(A.lessons.learned('light'), 'a swing at nothing learns it');
     sim.until(() => card() === 'roll', 4);
-    expect.ok(card() === 'roll', `ROLL next, past x 9 (${card()} at x ${Game.player.x.toFixed(1)})`);
+    expect.ok(card() === 'roll', `ROLL after it (${card()})`);
     sim.press('roll'); sim.step(2);
     expect.ok(A.lessons.learned('roll'), 'a roll learns it');
-    sim.until(() => card() === 'jump', 4);
-    expect.ok(card() === 'jump', `JUMP right after (${card()})`);
   }));
-  test('Lessons: a move made before its card counts as learned, and a learned card never shows', withLessons(() => {
+  test('Lessons: the course keeps its order: rushing ahead never shows a later card before the basics', withLessons(() => {
+    const was = { ...CONFIG.lessons };
+    try {
+      CONFIG.lessons.show = 0.5;   // each card steps aside quickly, unanswered
+      trainingAt(null, 'long-hall'); sturdy(Game.player); sim.place(40, 0);   // past the first fight's start and the heavy's spot
+      const order = [];
+      for (let i = 0; i < 60 * 12; i++) { sim.step(); if (card() && order[order.length - 1] !== card()) order.push(card()); }
+      // Urgent cards (BLOCK as a blow winds up, HEAL) may cut in; the calm ones keep the course's order.
+      const calm = order.filter(id => !A.LESSONS[id].urgent);
+      expect.ok(calm.slice(0, 5).join() === 'move,light,roll,lock,heavy', `the basics in teaching order: ${order}`);
+      expect.ok(order.indexOf('block') < 0 || order.indexOf('block') > order.indexOf('light'), `BLOCK never before ATTACK: ${order}`);
+    } finally { Object.assign(CONFIG.lessons, was); }
+  }));
+  test('Lessons: a move made before its card does not skip it; a learned card never shows; a stale one is dropped', withLessons(() => {
+    localStorage.setItem(CONFIG.lessons.storageKey, JSON.stringify(['move', 'light', 'roll'])); A.lessons.load();
     trainingAt(null, 'long-hall'); sim.step(2);
+    expect.ok(card() === null, `nothing the player has learned shows (${card()})`);
     events.emit('lock', { player: Game.player });
-    expect.ok(A.lessons.learned('lock'), 'a lock-on before its card is learned');
+    expect.ok(!A.lessons.learned('lock'), 'a lock-on before its card is not taken as learned');
     const z = Game.zones.find(z => z.id === 'zone-hollow'); sim.place(z.trigger + 1, 0); sim.step(2);
-    expect.ok(!A.lessons.queue.includes('lock') && card() !== 'lock', 'its fight shows no LOCK ON card');
+    expect.ok(card() === 'lock', `its fight shows LOCK ON (${card()})`);
+    events.emit('lock', { player: Game.player }); sim.step(1);
+    expect.ok(A.lessons.learned('lock'), 'locking on while it shows learns it');
+    const was = { ...CONFIG.lessons };
+    try {
+      CONFIG.lessons.stale = 2; A.lessons.forget(); trainingAt(null, 'long-hall'); A.lessons.show('heavy'); sim.step(1);
+      expect.ok(A.lessons.queue.includes('move'), 'MOVE waits behind the card on screen');
+      sim.seconds(2.5);
+      expect.ok(!A.lessons.queue.includes('move') && !A.lessons.learned('move'), 'and is dropped once its moment has passed, unlearned');
+    } finally { Object.assign(CONFIG.lessons, was); }
   }));
   test('Lessons: an urgent card (HEAL) takes over; the calmer one comes back after it', withLessons(() => {
     trainingAt(null, 'long-hall'); sim.step(2);

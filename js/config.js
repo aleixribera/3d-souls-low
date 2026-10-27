@@ -257,9 +257,10 @@ const CONFIG = {
            zoneFloorSlack: 1 },   // a zone counts someone as inside within the height reach + this many m of its floor
   // Lesson cards (v7.19.0, js/lessons.js, a level's `lessons`). Times in s, ranges in m. `show`: a card waits this long
   // for its action, then steps aside unlearned; `done`: the seal holds; `gap`: quiet between two cards; `hintTime`: a
-  // wrong try's line. A trigger sees foes within `seeRange`, a bonfire within `nearRange`, a kneeling foe within
-  // `kneelRange`. `restArrow`: the arrow over the bonfire while its card is up (drawing only).
-  lessons: { show: 16, done: 1.2, gap: 0.7, hintTime: 2.5, seeRange: 9, nearRange: 7, kneelRange: 5, storageKey: 'combatArena.lessons',
+  // wrong try's line; `stale`: a calm card still waiting its turn this long is dropped, its moment passed (v7.19.1).
+  // A trigger sees foes within `seeRange`, a bonfire within `nearRange`, a kneeling foe within `kneelRange`.
+  // `restArrow`: the arrow over the bonfire while its card is up (drawing only).
+  lessons: { show: 16, done: 1.2, gap: 0.7, hintTime: 2.5, stale: 30, seeRange: 9, nearRange: 7, kneelRange: 5, storageKey: 'combatArena.lessons',
              restArrow: { color: 0xffc860, size: 0.28, height: 2.6, bob: 0.25, bobSpeed: 3 } },
   // The title screen's look at the public lobby (js/multiplayer.js peek): every `interval` s while the title shows,
   // giving up on one request after `timeout` s.

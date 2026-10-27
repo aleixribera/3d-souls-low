@@ -3,13 +3,13 @@
 // js/lessons.js shows them, one card at a time, and never stops the game; a level opts in with
 // `lessons: [{ lesson, when }]` (see LESSON_TRIGGERS below). Each lesson:
 //   title          the card's heading
-//   keys           what to press, drawn as keycaps: action ids of ACTIONS ('light'), or 'move' / 'camera'
+//   keys           what to press, drawn as keycaps: action ids of ACTIONS ('light'), or 'move' / 'camera'; or
+//                  { action, key }: on a keyboard only that key is drawn (when it is still bound), no mouse button
 //   text()         one short line (the bindings show on the keycaps, so it never names a key)
 //   on(type, d, t, g)  an event that completes it (return true); check(g, t) is polled each step instead or as well.
 //                  `t` is the card's own scratch: { flags, dist } (dist: metres walked since it showed).
 //   urgent         shown at once over a calmer card (that one waits its turn again)
-// A lesson already done before its card would show (a parry before the parry card) counts as learned: `on` is also
-// heard while the lesson waits, with a scratch of its own. Learned lessons are kept per player (CONFIG.lessons.storageKey).
+// A card is done by doing its move while it shows. Learned lessons are kept per player (CONFIG.lessons.storageKey).
 const lessonBy = (d, g) => d.attacker === g.player || d.player === g.player;
 const LESSONS = {
   move: { title: 'MOVE', keys: ['move', 'camera'],
@@ -20,14 +20,15 @@ const LESSONS = {
   jump: { title: 'JUMP', keys: ['jump'], text: () => 'Jump over low rubble, or onto a foe.',
     check: g => g.player.state === PS.JUMP },
   lock: { title: 'LOCK ON', keys: ['lock'], text: () => 'Fix your eyes on the foe ahead. Lock on again to let go.',
-    on: type => type === 'lock' },
-  light: { title: 'ATTACK', keys: ['light'], text: () => 'Quick blows. Each one spends a little stamina.',
-    on: (type, d, t, g) => type === 'strike' && lessonBy(d, g) && d.strike.attackId === 'light' },
-  // A red glint: the attack can be parried. Done on a block, a parry or a roll through it.
-  guard: { title: 'RED GLINT', keys: ['block', 'parry'], urgent: true,
-    text: () => 'Red means it can be parried. Hold block to take it on your shield, or parry just before it lands.',
-    on: (type, d, t, g) => type === 'parry' && lessonBy(d, g) || type === 'dodge' && d.player === g.player && !d.projectile
-      || type === 'strike' && d.target === g.player && d.blocked },
+    on: type => type === 'lock', check: g => !!g.lock },   // already locked on (while another card showed): done
+  // Done on a swing, hit or miss: the first thing to know is how to strike at all.
+  light: { title: 'ATTACK', keys: ['light'], text: () => 'Swing your sword. Each blow spends a little stamina, the green bar.',
+    check: g => g.player.state === PS.ATTACK && !!g.player.attack && /^light/.test(g.player.attack.id) },
+  // The shield, shown as the first red-glinting blow winds up (urgent: the blow is coming). Done on a blow taken on it,
+  // or parried.
+  block: { title: 'BLOCK', keys: [{ action: 'block', key: 'KeyL' }], urgent: true,
+    text: () => 'Hold to raise your shield and take the blow on it. A red glint means it can be blocked.',
+    on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked || type === 'parry' && lessonBy(d, g) },
   // Done on a fully charged heavy that lands; a lighter one says how.
   heavy: { title: 'HEAVY ATTACK', keys: ['heavy'], text: () => 'Hold until the blade glows, then let go. Slow, but it breaks guards.',
     on: (type, d, t, g) => {

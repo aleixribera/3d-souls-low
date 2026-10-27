@@ -19,7 +19,8 @@ function validateData({ visual = true } = {}) {
   for (const [id, s] of Object.entries(LESSONS)) {
     need(typeof s.title === 'string' && s.title.trim() && typeof s.text === 'function', `Lesson ${id}: needs a title and text().`);
     need(typeof s.on === 'function' || typeof s.check === 'function', `Lesson ${id}: missing completion rule.`);
-    need(Array.isArray(s.keys) && s.keys.length > 0 && s.keys.every(k => k === 'move' || k === 'camera' || typeof ACTIONS === 'undefined' || k in ACTIONS), `Lesson ${id}: keys must name actions.`);   // the server has no ACTIONS
+    need(Array.isArray(s.keys) && s.keys.length > 0 && s.keys.every(k => k === 'move' || k === 'camera' || typeof ACTIONS === 'undefined' || (typeof k === 'string' ? k in ACTIONS
+      : !!k && k.action in ACTIONS && typeof k.key === 'string' && ACTIONS[k.action].includes(k.key))), `Lesson ${id}: keys must name actions (or { action, key } with a key bound to it).`);   // the server has no ACTIONS
   }
   const num = v => typeof v === 'number' && Number.isFinite(v);
   need(BOSS_TEAMS.length === 2 && new Set(BOSS_TEAMS.map(t => t.id)).size === 2,

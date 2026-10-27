@@ -44,8 +44,10 @@ r = run('pull-fails', { MOCK_PULL_FAIL: '1' }); assert.notEqual(r.status, 0); as
 r = run('unhealthy', { MOCK_UP_FAIL: '1' }); assert.notEqual(r.status, 0); assert.ok(r.calls.includes('image=sha256:old docker compose up -d --no-deps --pull never'), 'failed health check restores the previous local image');
 r = run('unknown-players', { MOCK_PLAYERS: 'unavailable' }); assert.notEqual(r.status, 0); assert.ok(!r.calls.includes('compose pull'), 'unknown lobby state cannot interrupt play');
 // Every path the image copies is in git: a checkout without it fails the build (v7.19.0 once removed the last asset).
-const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n');
-for (const [, sources] of fs.readFileSync('Dockerfile', 'utf8').matchAll(/^COPY\s+(.+)\s+\S+\s*$/gm))
+// Skipped outside a git checkout (remote-test's mirror copy has no .git).
+let tracked = null;
+try { tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n'); } catch { console.log('Deployment: not a git checkout, image sources not checked.'); }
+if (tracked) for (const [, sources] of fs.readFileSync('Dockerfile', 'utf8').matchAll(/^COPY\s+(.+)\s+\S+\s*$/gm))
   for (const from of sources.split(/\s+/).filter(s => !s.startsWith('--')))
     assert.ok(tracked.some(t => from.includes('*') ? t.startsWith(from.slice(0, from.indexOf('*'))) : t === from || t.startsWith(from + '/')), `Dockerfile copies ${from}, which git does not track`);
 console.log('Deployment: busy/idle/fresh lobby, pull failure, health rollback, unknown state and tracked image sources passed.');

@@ -6,13 +6,16 @@
 // events: it never writes to the simulation and never pauses, so it plays the same solo and online, and the server
 // never loads it. Its own state: the learned set (kept per player, every access wrapped), this level's plan, the queue
 // and the card on screen. update() runs on the fixed step (Game.update), draw() on each frame (a render hook).
+// v7.19.1: a level's list is its course, in teaching order. Of the lessons whose moment has come, the earliest in the
+// list shows first (urgent ones before it), so the essentials always come before the finer points; a card is done only
+// by doing its move while it shows, and one left waiting too long (`CONFIG.lessons.stale`) is dropped, not shown late.
 const lessons = (() => {
   const L = () => CONFIG.lessons, $ = id => document.getElementById(id);
   const learned = new Set();
   let plan = [];        // this level's entries: { lesson, when, fired }
-  let queue = [];       // lesson ids waiting their turn
+  let queue = [];       // lesson ids waiting their turn, with how long each has waited (waited[id], seconds)
   let card = null;      // the card on screen: { id, t: { flags, dist, hint }, age, done, hint, hintTimer }
-  let shadows = {};     // per lesson heard before its card shows: its own scratch
+  let seen = new Set(), waited = {};   // this run: lessons already shown (an `after` may follow them)
   let gap = 0, drawn = '', arrow = null;
   function load() {   // what this player has learned, from storage
     learned.clear();
@@ -27,7 +30,7 @@ const lessons = (() => {
   const owns = g => enabled() && g.kind === 'level' && !!g.level && !!g.level.lessons;
   function reset(g) {
     plan = owns(g) ? g.level.lessons.map(e => ({ ...e, fired: false })) : [];
-    queue = []; card = null; shadows = {}; gap = 0;
+    queue = []; card = null; seen = new Set(); waited = {}; gap = 0;
   }
   function learn(id) { if (!learned.has(id)) { learned.add(id); keep(); } }
 
@@ -48,59 +51,67 @@ const lessons = (() => {
     if ('kneel' in w) return g.enemies.some(e => awake(e) && (e.execReady || e.state === ES.BROKEN && near(p, e, C.kneelRange)));
     if ('group' in w) return !!g.lock && g.lockCandidates().length >= w.group;
     if ('hurt' in w) { const f = p.item('flask'); return p.hp < p.maxHp * w.hurt && !!f && f.count > 0 && p.state !== PS.USE_ITEM; }
-    if ('after' in w) { const before = plan.find(e => e.lesson === w.after); return !!before && before.fired && learned.has(w.after) && !(card && card.id === w.after); }
+    if ('after' in w) {   // that lesson has had its turn: shown (done or not) this run, or learned before
+      const before = plan.find(e => e.lesson === w.after);
+      return !!before && before.fired && (seen.has(w.after) || learned.has(w.after)) && !(card && card.id === w.after) && !queue.includes(w.after);
+    }
     return false;
   }
 
   // ---- the card --------------------------------------------------------------------------------------------------
-  function show(id) { card = { id, t: scratch(), age: 0, done: 0, hint: '', hintTimer: 0 }; queue = queue.filter(q => q !== id); }
+  function show(id) { card = { id, t: scratch(), age: 0, done: 0, hint: '', hintTimer: 0 }; queue = queue.filter(q => q !== id); delete waited[id]; }
   function complete() { learn(card.id); card.done = L().done; events.emit('lessonLearned', { lesson: card.id }); }
+  const close = () => { seen.add(card.id); card = null; gap = L().gap; };
+  // Only the card on screen listens: doing a move before its card shows does not skip the card (it is done at once).
   function onEvent(type, d) {
-    if (!plan.length) return;
-    const g = Game;
-    if (!g.player) return;
-    if (card && !card.done) {
-      const def = LESSONS[card.id];
-      if (def.on && def.on(type, d, card.t, g)) complete();
-    }
-    for (const e of plan) {   // heard before its card: a lesson already done counts as learned
-      if (learned.has(e.lesson) || card && card.id === e.lesson) continue;
-      const def = LESSONS[e.lesson];
-      if (def.on && def.on(type, d, shadows[e.lesson] || (shadows[e.lesson] = scratch()), g)) { learn(e.lesson); queue = queue.filter(q => q !== e.lesson); }
-    }
+    if (!card || card.done || !plan.length || !Game.player) return;
+    const def = LESSONS[card.id];
+    if (def.on && def.on(type, d, card.t, Game)) complete();
   }
+  // What shows next: an urgent lesson first, otherwise the earliest in the level's list.
+  const order = id => plan.findIndex(e => e.lesson === id);
+  const next = () => [...queue].sort((a, b) => (LESSONS[b].urgent ? 1 : 0) - (LESSONS[a].urgent ? 1 : 0) || order(a) - order(b))[0];
   // Cards wait (their clocks stopped) while the game is not in plain play: menus, loading, death, an execution, help.
   const playing = g => g.mode === 'play' && g.loading <= 0 && !!g.player && g.player.alive() && g.player.state !== PS.EXECUTE && !hud.helpOpen();
   function update(g, dt) {
     if (!plan.length || !owns(g) || !playing(g)) return;
-    for (const e of plan) if (!e.fired && fires(e.when, e, g)) { e.fired = true; if (!learned.has(e.lesson) && !queue.includes(e.lesson)) queue.push(e.lesson); }
-    queue = queue.filter(id => !learned.has(id));
+    for (const e of plan) if (!e.fired && fires(e.when, e, g)) { e.fired = true; if (!learned.has(e.lesson) && !queue.includes(e.lesson)) { queue.push(e.lesson); waited[e.lesson] = 0; } }
+    for (const id of queue) waited[id] += dt;
+    // Learned, or waited so long its moment has passed (urgent ones wait for as long as it takes): dropped, unseen.
+    queue = queue.filter(id => !learned.has(id) && (LESSONS[id].urgent || waited[id] < L().stale));
     if (card) {
       card.age += dt;
       const p = g.player;
       if (p.state !== PS.ROLL) card.t.dist += Math.hypot(p.x - p.px, p.z - p.pz);
       if (card.t.hint) { card.hint = card.t.hint; card.hintTimer = L().hintTime; card.t.hint = null; }
       card.hintTimer = Math.max(0, card.hintTimer - dt);
-      if (card.done > 0) { if ((card.done -= dt) <= 0) { card = null; gap = L().gap; } }
+      if (card.done > 0) { if ((card.done -= dt) <= 0) close(); }
       else if (learned.has(card.id)) card.done = L().done;   // learned elsewhere meanwhile
       else {
         const def = LESSONS[card.id];
         if (def.check && def.check(g, card.t)) complete();
-        else if (card.age >= L().show) { card = null; gap = L().gap; }   // stepped aside unlearned: it may come again another time
-        else { const urgent = queue.find(id => LESSONS[id].urgent); if (urgent && !LESSONS[card.id].urgent) { queue.push(card.id); show(urgent); } }   // the calm card resumes next
+        else if (card.age >= L().show) close();   // stepped aside unlearned: it comes again another time
+        else {   // an urgent card takes over; the calm one waits again, from the start
+          const urgent = queue.find(id => LESSONS[id].urgent);
+          if (urgent && !LESSONS[card.id].urgent) { const calm = card.id; show(urgent); queue.push(calm); waited[calm] = 0; }
+        }
       }
     }
     if (gap > 0) gap -= dt;
-    // Urgent first, then the newest: the lesson for where the player stands now, before any older one still waiting.
-    if (!card && gap <= 0 && queue.length) show(queue.find(id => LESSONS[id].urgent) || queue[queue.length - 1]);
+    if (!card && gap <= 0 && queue.length) show(next());
   }
 
   // ---- drawing ---------------------------------------------------------------------------------------------------
-  // Keycaps from the live bindings: the keyboard's first key and its mouse button, or the controller's buttons.
+  // Keycaps from the live bindings: the keyboard's first key and its mouse button (or the one key a lesson names), or the
+  // controller's buttons.
   const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Parry', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Roll' };
   const FACE = { PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y' };
   const cap = label => label.length === 1 ? label.toUpperCase() : label;
   function caps(key) {
+    if (typeof key === 'object') {   // { action, key }: that one key on a keyboard, while it is still bound
+      if (!usingPad() && ACTIONS[key.action].includes(key.key)) return [{ text: cap(keyLabel(key.key)), kind: 'key' }];
+      key = key.action;
+    }
     if (key === 'move') return usingPad() ? [{ text: 'Left stick', kind: 'stick' }] : ['up', 'left', 'down', 'right'].map(a => ({ text: cap(keyLabel(ACTIONS[a][0])), kind: 'key' }));
     if (key === 'camera') return [{ text: usingPad() ? 'Right stick' : 'Mouse', kind: usingPad() ? 'stick' : 'mouse' }];
     const codes = ACTIONS[key];
@@ -118,7 +129,7 @@ const lessons = (() => {
     def.keys.forEach((k, i) => {
       if (i) { const sep = document.createElement('span'); sep.className = 'lesson-sep'; sep.setAttribute('aria-hidden', 'true'); keys.appendChild(sep); }
       const group = document.createElement('span'); group.className = 'lesson-group';
-      if (def.keys.length > 1) { const name = document.createElement('span'); name.className = 'lesson-name'; name.textContent = NAMES[k] || k; group.appendChild(name); }
+      if (def.keys.length > 1) { const name = document.createElement('span'); name.className = 'lesson-name'; name.textContent = NAMES[k.action || k] || k.action || k; group.appendChild(name); }
       for (const c of caps(k)) {
         const el = document.createElement('kbd'); el.className = `lesson-cap ${c.kind}`; el.textContent = c.text;
         if (c.title) el.title = c.title;
@@ -173,7 +184,7 @@ const lessons = (() => {
   return {
     reset, update, owns, load,
     // Options: forget every learned lesson, so they all show again.
-    forget() { learned.clear(); keep(); for (const e of plan) e.fired = false; queue = []; card = null; shadows = {}; },
+    forget() { learned.clear(); keep(); for (const e of plan) e.fired = false; queue = []; card = null; seen = new Set(); waited = {}; },
     learned: id => learned.has(id),
     show(id) { if (LESSONS[id]) { show(id); gap = 0; } },   // developer tools and tests: this card, now
     get card() { return card ? { id: card.id, done: card.done > 0, hint: card.hintTimer > 0 ? card.hint : '' } : null; },

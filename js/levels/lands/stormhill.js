@@ -37,10 +37,10 @@ const LANDS_1 = {
   // v7.19.0: catch-up lessons for a player who starts here; each shows only if Ashmere has not taught it already.
   lessons: [
     { lesson: 'move', when: { x: 0 } },
-    { lesson: 'roll', when: { x: 12 } },
+    { lesson: 'light', when: { after: 'move' } },
+    { lesson: 'roll', when: { after: 'light' } },
     { lesson: 'lock', when: { x: 34 } },
-    { lesson: 'light', when: { after: 'lock' } },
-    { lesson: 'guard', when: { glint: 'red' } },
+    { lesson: 'block', when: { glint: 'red' } },
     { lesson: 'blue', when: { glint: 'blue' } },
     { lesson: 'flask', when: { hurt: 0.6 } },
     { lesson: 'rest', when: { near: 'storm-gatefront' } },

@@ -137,8 +137,8 @@ canvas.addEventListener('mousedown', ev => {
   if (GAME_CODES.has('Mouse' + ev.button)) input.down('Mouse' + ev.button);
 });
 window.addEventListener('mouseup', ev => input.up('Mouse' + ev.button));
-// The side buttons (3 back, 4 forward) block: they never send the browser back or forward. Browsers navigate on
-// different ones of these events, so all three are stopped.
+// The side buttons (3 back, 4 forward) are not bound (v7.19.1), but they never send the browser back or forward out of
+// the game. Browsers navigate on different ones of these events, so all three are stopped.
 for (const type of ['mousedown', 'mouseup', 'auxclick'])
   window.addEventListener(type, ev => { if (ev.button === 3 || ev.button === 4) ev.preventDefault(); });
 document.addEventListener('mousemove', ev => {

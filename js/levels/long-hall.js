@@ -18,16 +18,16 @@ const LEVEL_1 = {
                 banners: [0x4a1c1a, 0x2c2a33], debris: 0.25 },
   length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
   start: { x: 5, z: 0, yaw: Math.PI / 2 },
-  // v7.19.0: the controls, taught where the hall first asks for them (js/data/lessons.js). It replaced the Training Hall:
-  // walking out of the cell, the first duel (lock on, strike, the red glint), the patrolling Hollow (heavy, jump attack),
-  // the Knight (break its stance, execute), the Rogue (parry), the second fire (rest), the pair past it, and the Giant.
+  // The controls, taught where the hall first asks for them (js/data/lessons.js), essentials first: the list is the
+  // course, in teaching order (v7.19.1). In the corridor out of the cell: walk, swing, roll. The first duel: lock on,
+  // block as its first blow winds up; a flask when hurt. The patrolling Hollow: the heavy and the jump attack. The Knight: break its stance, execute.
+  // The Rogue: parry. The second fire: rest. The pair past it: switch target. The Giant: roll into its swing.
   lessons: [
     { lesson: 'move', when: { x: 0 } },
-    { lesson: 'roll', when: { x: 9 } },
-    { lesson: 'jump', when: { after: 'roll' } },
+    { lesson: 'light', when: { after: 'move' } },
+    { lesson: 'roll', when: { after: 'light' } },
     { lesson: 'lock', when: { zone: 'zone-hollow' } },
-    { lesson: 'light', when: { after: 'lock' } },
-    { lesson: 'guard', when: { glint: 'red' } },
+    { lesson: 'block', when: { glint: 'red' } },
     { lesson: 'flask', when: { hurt: 0.6 } },
     { lesson: 'heavy', when: { x: 38 } },
     { lesson: 'jumpAttack', when: { after: 'heavy' } },

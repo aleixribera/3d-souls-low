@@ -73,7 +73,7 @@ const server = http.createServer((req, res) => {
     // A new Ashmere game starts in Level 1 itself: the controls are taught there.
     assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.level.id === STORY.chapters[0].level && lessons.owns(Game)));
     // Lesson cards stay whole on screen, with their keys, on both input devices.
-    for (const [id, device] of [['move', 'keyboard'], ['guard', 'keyboard'], ['jumpAttack', 'keyboard'], ['rest', 'keyboard'], ['execute', 'pad'], ['guard', 'pad']]) {
+    for (const [id, device] of [['move', 'keyboard'], ['block', 'keyboard'], ['jumpAttack', 'keyboard'], ['rest', 'keyboard'], ['execute', 'pad'], ['block', 'pad']]) {
       await page.evaluate(({ id, device }) => {
         Game.manualClock = true; input.use(device);
         Game.loading = 0; document.getElementById('loading').classList.remove('show');
