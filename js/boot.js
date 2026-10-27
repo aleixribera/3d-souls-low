@@ -28,7 +28,7 @@ const fullscreen = {
 window.addEventListener('pointerdown', ev => fullscreen.auto(ev), { capture: true });
 window.addEventListener('keydown', ev => fullscreen.auto(ev), { capture: true });
 
-// Event listeners: visual effects and the tutorial, each in one place.
+// Event listeners: visual effects, each in one place (the lesson cards listen in js/lessons.js).
 function registerListeners() {
   const F = CONFIG.fx.bursts, chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   events.on('strike', d => {
@@ -64,7 +64,6 @@ function registerListeners() {
   };
   events.on('trapWarning', d => { Game.addShake(d.trap.warning + CONFIG.fx.trap.rumble, CONFIG.fx.trap.jolt); trapDust(d.trap, false); });
   events.on('trapSprung', d => trapDust(d.trap, true));
-  events.onAny((type, data) => Game.onTutorialEvent(type, data));
   events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
   registerHudListeners();
@@ -201,7 +200,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
-window.__arena = { Game, story, elden, spectral, ELDEN_BOSSES, ELDEN_BOSS_DEFS, STORY, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, TUTORIAL, ARENA, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, makeStrike,
+window.__arena = { Game, story, elden, spectral, ELDEN_BOSSES, ELDEN_BOSS_DEFS, STORY, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, ARENA, LESSONS, lessons, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, makeStrike,
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles, finale, LEVEL_5, lore, LORE,
                    STORIES, LANDS_STORY, LANDS_LEVELS, LANDS_ENEMY_DEFS, realms, LANDS_1, LANDS_2, LANDS_3, LANDS_4, LANDS_5, LANDS_6, LANDS_7, LANDS_8,
                    get world() { return world; } };

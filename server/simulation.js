@@ -121,6 +121,17 @@ globalThis.host = (() => {
     return { id: story.id, name: story.name, intro: LOBBY_INTROS.some(x => x.id === story.id), level: chapter.level, title: chapter.title, line: chapter.line,
       number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
   }
+  // What a session is, in a few words, for the title screen of someone about to join (v7.19.0): "Ashmere · The Long
+  // Hall", "Boss Only", "Duel: Hollow Soldier". Null when nothing runs.
+  function describe(session) {
+    if (!session) return null;
+    const title = t => t.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase());
+    if (session.campaign) { const story = STORIES.find(s => s.id === session.campaign.id); return `${story ? story.short : session.campaign.name} · ${title(session.campaign.title)}`; }
+    if (session.gauntlet) return title(session.gauntlet.name);
+    if (session.kind === 'level') { const L = ALL_LEVELS.find(l => l.id === session.id); return L ? L.name : null; }
+    const d = ArenaNet.own(ENEMY_BY_ID, session.id);
+    return d ? `Duel: ${d.name}` : null;
+  }
   // One encounter of a boss run: `size` consecutive catalog bosses, referenced by the first one's id.
   const rejected = message => Object.assign(new Error(message), { rejected: true });   // a refused request, safe to show
   function gauntlet(boss, id = 'boss-only') {
@@ -466,7 +477,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, describe, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,

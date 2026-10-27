@@ -153,7 +153,7 @@ const server = http.createServer((req, res) => {
     });
     console.log(JSON.stringify(hardware));
     const results = [];
-    for (const id of ['tutorial', 'long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'godrick', 'malenia']) {
+    for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'godrick', 'malenia']) {
       const result = await page.evaluate(async id => {
         let seed = 12345;
         Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };

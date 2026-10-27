@@ -35,7 +35,7 @@ const { createServer } = require('../server/index.cjs');
     assert.equal((await selection()).selected, await page.locator('#menuList button').count() - 1, 'backward Tab wraps');
     await page.evaluate(() => { Game.optionsFrom = 'main'; Game.showMenu('options'); });
     assert.deepEqual(await page.locator('#menuList .n').allTextContents(),
-      ['Camera motion: Off', 'Graphics: Low', 'Check graphics again', 'Back']);
+      ['Camera motion: Off', 'Lessons: On', 'Show lessons again', 'Graphics: Low', 'Check graphics again', 'Back']);
     await page.keyboard.press('Space');
     assert.equal(await page.evaluate(() => settings.cameraMotion), true, 'Space activates the focused option exactly once');
     await page.keyboard.press('ArrowRight');

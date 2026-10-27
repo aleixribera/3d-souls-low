@@ -16,18 +16,10 @@ function validateData({ visual = true } = {}) {
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
   for (const id of [...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
-  const lessons = tutorialSteps();
-  need(lessons.length > 0 && new Set(lessons.map(s => s.id)).size === lessons.length, 'Tutorial steps need unique ids.');
-  for (const s of lessons) {
-    need(typeof s.id === 'string' && typeof s.text === 'function', 'Tutorial steps need an id and prompt.');
-    need(typeof s.on === 'function' || typeof s.check === 'function', `Tutorial step ${s.id}: missing completion rule.`);
-    if (s.dummies) need(['one', 'pair', 'sparring', 'dodge', 'execution'].includes(s.dummies), `Tutorial step ${s.id}: unknown dummy setup ${s.dummies}.`);
-  }
-  need(QUALITY_CHOICES.length === 3 && new Set(QUALITY_CHOICES.map(c => c.id)).size === 3, 'Quality choices must list three distinct presets.');
-  for (const c of QUALITY_CHOICES) {
-    need(c.id in CONFIG.VISUALS.quality, `Quality choice: unknown preset "${c.id}".`);
-    need(typeof c.systems === 'string' && c.systems.trim().split(/\s+/).length === 3, `Quality choice ${c.id}: system guidance needs three words.`);
-    need([c.name, c.image, c.alt, c.look].every(v => typeof v === 'string' && v.length), `Quality choice ${c.id}: missing preview or label.`);
+  for (const [id, s] of Object.entries(LESSONS)) {
+    need(typeof s.title === 'string' && s.title.trim() && typeof s.text === 'function', `Lesson ${id}: needs a title and text().`);
+    need(typeof s.on === 'function' || typeof s.check === 'function', `Lesson ${id}: missing completion rule.`);
+    need(Array.isArray(s.keys) && s.keys.length > 0 && s.keys.every(k => k === 'move' || k === 'camera' || typeof ACTIONS === 'undefined' || k in ACTIONS), `Lesson ${id}: keys must name actions.`);   // the server has no ACTIONS
   }
   const num = v => typeof v === 'number' && Number.isFinite(v);
   need(BOSS_TEAMS.length === 2 && new Set(BOSS_TEAMS.map(t => t.id)).size === 2,
@@ -230,6 +222,7 @@ function validateData({ visual = true } = {}) {
     if (L.next) need(ALL_LEVELS.some(o => o.id === L.next), `${where}: next level "${L.next}" does not exist.`);
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
+    if ('lessons' in L) validateLessons(L, where, need);
     for (const k of ['wakeZones', 'clearGates', 'steer', 'fullTracking']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num, visual); continue; }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
@@ -268,10 +261,6 @@ function validateData({ visual = true } = {}) {
     }
     for (const t of L.torches) need(inX(t.x), `${where}: a torch is outside the hall.`);
     for (const b of L.braziers || []) need(inX(b.x) && Math.abs(b.z) < L.halfZ - 0.5 && !L.gated.some(g => Math.abs(g.gateX - b.x) < 1.2), `${where}: a brazier at x ${b.x} must stand in the hall, clear of the gates.`);
-    if (L.script === 'tutorial') {
-      for (const k of ['dummy', 'sparring', 'dodge', 'execution']) need(L.training && L.training[k] in ENEMY_BY_ID, `${where}: training.${k} must name an enemy.`);
-      for (const s of tutorialSteps()) if (s.bonfire) need((L.bonfires || []).some(b => b.id === s.bonfire), `${where}: tutorial step "${s.id}" names unknown bonfire "${s.bonfire}".`);
-    }
   }
   // Arena and timings
   if (visual) need(LEVEL_LAYOUTS.every(k => k in BUILDERS), 'Every layout in LEVEL_LAYOUTS (js/terrain.js) needs a stage builder in BUILDERS (js/scene.js).');
@@ -320,7 +309,7 @@ function validateData({ visual = true } = {}) {
       if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
     }
   }
-  // Story mode (js/data/story.js): each campaign's chapters and tutorial name a real level, once each, with a title and
+  // Story mode (js/data/story.js): each campaign's chapters name a real level, once each, with a title and
   // a line; every campaign has its own id, save slot and texts, and no level belongs to two campaigns' chapters.
   const storyIdsAll = [], campaignIds = new Set();
   for (const C of STORIES) {
@@ -337,7 +326,7 @@ function validateData({ visual = true } = {}) {
         `${w}: companion needs an id, name, bot profile and colour.`);
     }
     need(C.progress && typeof C.progress === 'object', `${w}: progress must be an object.`);
-    const list = [...(C.tutorial ? [C.tutorial] : []), ...(C.chapters || [])], storyIds = list.map(c => c && c.level);
+    const list = C.chapters || [], storyIds = list.map(c => c && c.level);
     for (const c of list) {
       const tag = `${w} chapter "${c && c.level}"`;
       need(c && ALL_LEVELS.some(l => l.id === c.level), `${tag}: no level with that id.`);
@@ -434,6 +423,31 @@ function validateBonfireGuidance() {
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];
 /// Room-style level checks (see LEVEL_2 and js/terrain.js): shapes first, then the 3D layout built from them.
+// A level's lesson cards (v7.19.0, js/data/lessons.js): each a known lesson, once, with one trigger whose references exist
+// in this level (a zone, a bonfire, an enemy kind, an earlier lesson of the same list).
+function validateLessons(L, where, need) {
+  need(Array.isArray(L.lessons) && L.lessons.length > 0, `${where}: lessons must be a non-empty list.`);
+  if (!Array.isArray(L.lessons)) return;
+  const seen = new Set();
+  for (const e of L.lessons) {
+    const tag = `${where} lesson "${e && e.lesson}"`;
+    need(e && e.lesson in LESSONS && !seen.has(e.lesson), `${tag}: unknown or repeated lesson.`);
+    const w = e && e.when, keys = w && typeof w === 'object' ? Object.keys(w) : [];
+    need(keys.length === 1 && LESSON_TRIGGERS.includes(keys[0]), `${tag}: when needs exactly one of ${LESSON_TRIGGERS.join(', ')}.`);
+    if (keys.length === 1) {
+      const v = w[keys[0]];
+      if (keys[0] === 'x' || keys[0] === 'hurt' || keys[0] === 'group') need(Number.isFinite(v) && v >= 0, `${tag}: ${keys[0]} must be a number.`);
+      if (keys[0] === 'hurt') need(v > 0 && v < 1, `${tag}: hurt is a fraction of the bar.`);
+      if (keys[0] === 'zone') need((L.gated || []).some(z => z.id === v), `${tag}: no zone "${v}" in this level.`);
+      if (keys[0] === 'near') need((L.bonfires || []).some(b => b.id === v), `${tag}: no bonfire "${v}" in this level.`);
+      if (keys[0] === 'enemy') need(v in ENEMY_BY_ID, `${tag}: no enemy "${v}".`);
+      if (keys[0] === 'glint') need(v === 'red' || v === 'blue', `${tag}: glint is red or blue.`);
+      if (keys[0] === 'kneel') need(v === true, `${tag}: kneel must be true.`);
+      if (keys[0] === 'after') need(seen.has(v), `${tag}: after must name an earlier lesson of this level.`);
+    }
+    if (e && e.lesson) seen.add(e.lesson);
+  }
+}
 function validateRooms(L, where, need, num, visual = true) {
   const H = CONFIG.height, eps = 1e-6;
   const rectOk = r => Array.isArray(r) && r.length === 4 && r.every(num) && r[0] < r[1] && r[2] < r[3];

@@ -18,6 +18,26 @@ const LEVEL_1 = {
                 banners: [0x4a1c1a, 0x2c2a33], debris: 0.25 },
   length: 180, halfZ: 6, wallHeight: 7, gateHeight: 4.8, gateThickness: 0.5,
   start: { x: 5, z: 0, yaw: Math.PI / 2 },
+  // v7.19.0: the controls, taught where the hall first asks for them (js/data/lessons.js). It replaced the Training Hall:
+  // walking out of the cell, the first duel (lock on, strike, the red glint), the patrolling Hollow (heavy, jump attack),
+  // the Knight (break its stance, execute), the Rogue (parry), the second fire (rest), the pair past it, and the Giant.
+  lessons: [
+    { lesson: 'move', when: { x: 0 } },
+    { lesson: 'roll', when: { x: 9 } },
+    { lesson: 'jump', when: { after: 'roll' } },
+    { lesson: 'lock', when: { zone: 'zone-hollow' } },
+    { lesson: 'light', when: { after: 'lock' } },
+    { lesson: 'guard', when: { glint: 'red' } },
+    { lesson: 'flask', when: { hurt: 0.6 } },
+    { lesson: 'heavy', when: { x: 38 } },
+    { lesson: 'jumpAttack', when: { after: 'heavy' } },
+    { lesson: 'stance', when: { zone: 'zone-knight' } },
+    { lesson: 'execute', when: { kneel: true } },
+    { lesson: 'parry', when: { zone: 'zone-rogue' } },
+    { lesson: 'rest', when: { near: 'after-rogue' } },
+    { lesson: 'switch', when: { group: 2 } },
+    { lesson: 'dodge', when: { zone: 'zone-giant' } },
+  ],
   bonfires: [{ id: 'hall-start', x: 2.6, z: -3.4 }, { id: 'after-rogue', x: 130.5, z: -4.2 }],
   alcoveWidth: 2.8, alcoveDepth: 2.2,
   alcoves: [{ id: 'cell-8', x: 8, side: 1 }, { id: 'west-58', x: 58, side: 1 },   // cell-8: Ysolde's cell (js/data/lore.js)

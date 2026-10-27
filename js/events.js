@@ -3,7 +3,7 @@
 // 3b. Events
 // ============================================================================
 // "Something happened" channel. Combat, items, bonfires and menus emit; effects and the
-// tutorial listen (see registerListeners in the bootstrap). Events:
+// lesson cards listen (see registerListeners in the bootstrap). Events:
 //   strike {strike, attacker, target, at, blocked}  parry {target, player}  postureBreak {enemy}
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
 //   impact {x, y, z, fx, enemy} (an attack with `impact` hits the ground)  shot {enemy, bolt}  boltStopped {bolt}  (strike carries projectile: true when a bolt hits)
@@ -11,7 +11,7 @@
 //   dodge {attacker, strike, projectile, player} (a live hitbox or a bolt met the player during the roll's invulnerability; once each)
 //   trapWarning {trap} (the player set a trap off)  trapSprung {trap} (its floor gave way)
 //   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  attackStart {enemy, attack} (an enemy starts an attack)  attackPhase {actor, attack, phase, hitIndex} (a strike changes phase)  attackMarker {actor, attack, marker}  perilous {enemy, attack} (a roll-only wind-up starts)  lock  switchTarget
-//   pause  resume  device {device}
+//   pause  resume  device {device}  lessonLearned {lesson} (a lesson card was completed, js/lessons.js)
 //   menuMove  menuConfirm  menuBack  menuAdjust {dir}  (menus; the audio engine plays their sounds)
 const events = {
   handlers: {}, anyHandlers: [],

@@ -1,4 +1,4 @@
-// Browser checks for fullscreen, the Story entry flow and readable tutorial guidance.
+// Browser checks for fullscreen, the Story entry flow and readable lesson cards.
 // NODE_PATH=<directory containing playwright> node tests/onboarding.cjs [output-directory]
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const assert = require('node:assert/strict');
@@ -45,7 +45,7 @@ const server = http.createServer((req, res) => {
       document.getElementById('loading').classList.remove('show');
     });
     const labels = await page.locator('#menuList .n').allTextContents();
-    assert.deepEqual(labels, ['Continue', 'New', 'Continue', 'New', 'Tutorial: On', 'Back']);
+    assert.deepEqual(labels, ['Continue', 'New', 'Continue', 'New', 'Back']);
     for (const [width, height] of [[1280, 720], [800, 600], [640, 480]]) {
       await page.setViewportSize({ width, height });
       const boxes = await page.locator('#menuList .menuBtn').evaluateAll(btns => btns.map(b => {
@@ -70,32 +70,28 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => localStorage.getItem(CONFIG.story.saveKeys.ashmere)), kept);
     await page.getByRole('button', { name: 'ASHMERE: New', exact: true }).click();
     await page.getByRole('button', { name: 'New', exact: true }).click();
-    assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.isTutorial()));
-    // Capture complete instructions and the objective directly behind the camera, on both input devices.
-    for (const [id, device] of [['jumpAttack', 'keyboard'], ['execute', 'keyboard'], ['rest', 'keyboard'], ['execute', 'pad']]) {
+    // A new Ashmere game starts in Level 1 itself: the controls are taught there.
+    assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.level.id === STORY.chapters[0].level && lessons.owns(Game)));
+    // Lesson cards stay whole on screen, with their keys, on both input devices.
+    for (const [id, device] of [['move', 'keyboard'], ['guard', 'keyboard'], ['jumpAttack', 'keyboard'], ['rest', 'keyboard'], ['execute', 'pad'], ['guard', 'pad']]) {
       await page.evaluate(({ id, device }) => {
         Game.manualClock = true; input.use(device);
-        Game.tut.index = Game.tutorialSteps().findIndex(s => s.id === id); Game.setupTutorialStep();
-        if (id === 'rest') {
-          const b = world.bonfires.find(f => f.id === 'tutorial-fire');
-          Game.player.x = b.x + 7; Game.player.z = b.z; Game.player.savePrev();
-          Game.cam.yaw = Math.PI / 2; Game.cam.pitch = 0; Game.updateCamera(0, true);
-        }
-        Game.loading = 0; document.getElementById('loading').classList.remove('show'); Game.render(1, CONFIG.step);
+        Game.loading = 0; document.getElementById('loading').classList.remove('show');
+        lessons.show(id); Game.render(1, CONFIG.step);
       }, { id, device });
-      if (id === 'rest') assert.match(await page.locator('#tutGuideText').textContent(), /Turn around/);
-      for (const [width, height] of [[1280, 720], [640, 480]]) {
+      assert.equal(await page.locator('#lessonKeys kbd').count() > 0, true, `${id} shows its keys`);
+      for (const [width, height] of [[1280, 720], [640, 480], [375, 667]]) {
         await page.setViewportSize({ width, height });
         await page.evaluate(async () => {
           // Let viewport resize handlers finish before drawing with the manual test clock.
           await new Promise(requestAnimationFrame); resize(); Game.render(1, CONFIG.step);
         });
-        const box = await page.locator('#tutPrompt').boundingBox();
+        const box = await page.locator('#lesson').boundingBox();
         await page.screenshot({ path: path.join(out, `${id}-${device}-${width}.png`), animations: 'disabled' });
         assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= height, `whole instruction fits: ${id}/${device} ${width}x${height}: ${JSON.stringify(box)}`);
       }
     }
     assert.deepEqual(errors, []);
-    console.log('Onboarding: native fullscreen, respected exit, simplified Options, Story mouse/controller flow, save protection and tutorial layouts passed.');
+    console.log('Onboarding: native fullscreen, respected exit, simplified Options, Story mouse/controller flow, save protection and lesson card layouts passed.');
   } finally { await browser.close(); }
 })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => server.close());

@@ -34,6 +34,17 @@ const LANDS_1 = {
     grounds: [{ kind: 'earth', rooms: ['chapel-steps', 'heath', 'approach', 'gorge', 'niche-n', 'niche-s', 'gatefront', 'stair-foot', 'cliff-path'] }],
   },
   start: { x: 4, z: 0, yaw: Math.PI / 2 },
+  // v7.19.0: catch-up lessons for a player who starts here; each shows only if Ashmere has not taught it already.
+  lessons: [
+    { lesson: 'move', when: { x: 0 } },
+    { lesson: 'roll', when: { x: 12 } },
+    { lesson: 'lock', when: { x: 34 } },
+    { lesson: 'light', when: { after: 'lock' } },
+    { lesson: 'guard', when: { glint: 'red' } },
+    { lesson: 'blue', when: { glint: 'blue' } },
+    { lesson: 'flask', when: { hurt: 0.6 } },
+    { lesson: 'rest', when: { near: 'storm-gatefront' } },
+  ],
   rooms: [
     { id: 'chapel', rect: [0, 18, -9, 9], open: true, height: 9, floor: 0x3e3c36, wall: 0x5e5a50, light: 0xffc890,
       pillars: [[7, -5], [7, 5], [13, -5], [13, 5]], braziers: [[16.5, -7.5], [16.5, 7.5]] },

@@ -1,6 +1,6 @@
 {
   "name": "3d-souls-low",
-  "version": "7.18.0",
+  "version": "7.19.0",
   "private": true,
   "description": "Combat Arena 3D test tooling. The game itself has no build step or runtime dependencies; the server has its own package in server/.",
   "engines": { "node": ">=22.8" },

@@ -138,7 +138,7 @@
       Game.startLevel(L.id); sim.begin();
       const p = Game.player, y0 = p.y;
       sim.seconds(10, 6);
-      expect.ok(p.alive() || L.id !== 'tutorial', `${L.id}: player died standing still`);
+      expect.ok(p.alive() || L.id !== 'test-training', `${L.id}: player died standing still`);
       expect.near(p.y, y0, 0.01, `${L.id}: player height at rest`);
       expect.ok(Number.isFinite(Game.cam.pos.y), `${L.id}: camera position is finite`);
     }
@@ -154,7 +154,7 @@
     }
   });
   test('regression: walking, jumping and rolling on flat ground', () => {
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player, x0 = p.x;
     sim.move(1, 0); sim.seconds(1); sim.move(null);
     expect.above(p.x - x0, 3, 'walked distance in 1 s');
@@ -480,7 +480,7 @@
     const a = A.PLAYER_DEF.moveset.attacks.light, h = a.hits[0];
     expect.ok(a.pose && h.follow > 0, 'the light attack is key-posed with a follow-through');
     expect.ok(attackTimeline(a, h.startup + h.active + h.follow * 0.5).phase === PHASE.FOLLOW, 'follow-through sits between strike and recovery');
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player, phases = [], marks = [];
     A.events.on('attackPhase', d => { if (d.actor === p) phases.push(d.phase); });
     A.events.on('attackMarker', d => { if (d.actor === p) marks.push(d.marker.event); });
@@ -497,7 +497,7 @@
     expect.ok(marks.includes('sound'), 'the swing sound marker fired');
   });
   test('player combo: light presses chain diagonal -> backhand -> overhead -> diagonal', () => {
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player, seen = [];
     for (let i = 0; i < 300 && seen.length < 4; i++) {
       if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
@@ -507,7 +507,7 @@
     expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light', `chain: ${seen.map(a => a.id).join()}`);
   });
   test('input buffer: early mashing is dropped; a late press is kept, the latest wins, and fires at the cancel point', () => {
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy, cancel = phaseSpan(H, 'recovery')[0];
     sim.press('heavy'); sim.step(2); sim.press('roll'); sim.step(2);
     expect.ok(!p.buffer, 'a roll pressed at the start of a heavy is dropped');
@@ -529,7 +529,7 @@
     expect.ok(p.state === PS.ROLL, 'one pressed at the end of a roll chains into the next');
   });
   test('heavy charge: the feet stay planted while held', () => {
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player;
     sim.hold('heavy'); sim.until(() => p.charge === 1, 120);
     const x = p.x, z = p.z; sim.seconds(0.5);
@@ -556,7 +556,7 @@
     expect.ok(e.state === ES.ACTIVE && !e.hitbox, 'follow-through: still swinging, no hitbox');
   });
   test('player heavy: holding charges (frozen wind-up, more damage), a tap does not', () => {
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy;
     sim.release('heavy'); sim.press('heavy'); sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.ACTIVE, 120);
     const tap = p.payload.damage, tapTime = p.stateTime;
@@ -573,7 +573,7 @@
     const S = A.PLAYER_DEF.stats;
     expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
     expect.ok(A.PLAYER_DEF.moveset.attacks.heavy.damage === 53, 'heavy attack damage 53 (38 x 1.4, v5.4.5)');
-    Game.startLevel('tutorial'); sim.begin();
+    Game.startLevel('test-training'); sim.begin();
     expect.ok(Game.player.hp === 120 && Game.player.stamina === 160, 'a fresh player starts full');
   });
   test('new enemies: each duels in the arena, attacks, and can be beaten', () => {
@@ -970,18 +970,35 @@
     expect.above(closest, longest - 1.5, `closest it came once the player had left (its longest reach is ${longest} m)`);
   });
 
-  // ---- v3.7 tutorial and tower fixes ---------------------------------------------------------------------------
-  // The tutorial, jumped straight to one step (its dummies set up as the step starts).
-  const tutorialAt = id => {
-    Game.startLevel('tutorial'); sim.begin(); log.length = 0;
-    Game.tut.index = Game.tutorialSteps().findIndex(s => s.id === id);
-    Game.setupTutorialStep(); Game.render(1, STEP);
-    return Game.player;
+  // ---- v3.7 training dummies and tower fixes (the Training Hall is the Test: Training Room since v7.19.0) ------------
+  // A training dummy set before the player in an empty level, as the old tutorial steps set them: 'dummy' (stands),
+  // 'sparring' (swings, parryable), 'dodge' (swings, roll-only), 'execution' (kneels to two heavies), 'pair' (two that
+  // stand). The ones that swing start locked on. They go first in Game.enemies.
+  const TRAINING = { dummy: 'dummy', sparring: 'sparringDummy', dodge: 'dodgeDummy', execution: 'executionDummy' };
+  const trainingAt = (kind, level = 'test-training') => {
+    Game.startLevel(level); Game.loading = 0; sim.begin(); log.length = 0;
+    const p = Game.player, add = (id, behavior, x, z) => Game.enemies.unshift(new A.Enemy(A.ENEMY_BY_ID[id],
+      { x, z, yaw: Math.atan2(p.x - x, p.z - z), behavior, notice: CONFIG.notice[behavior] }));
+    if (kind === 'pair') for (const side of [1, -1]) add(TRAINING.dummy, 'dummy', p.x + 6, p.z + side * 3);
+    else if (kind === 'sparring' || kind === 'dodge') { add(TRAINING[kind], 'sparring', p.x + 2.3, p.z); Game.setLock(Game.enemies[0]); }
+    else if (kind) add(TRAINING[kind], 'dummy', p.x + 4, p.z);
+    Game.render(1, STEP);
+    return p;
+  };
+  // A test that changes the learned lessons puts the player's own back afterwards.
+  const withLessons = fn => () => {
+    const key = CONFIG.lessons.storageKey; let kept = null;
+    try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
+    A.lessons.forget();
+    try { return fn(); } finally {
+      try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
+      A.lessons.load();
+    }
   };
   const shown = id => (document.getElementById(id) || {}).textContent || '';
   test('block: C, L and both side mouse buttons hold block; Ctrl no longer does', () => {
     input.use('keyboard');   // key labels in the prompt, whatever an earlier gamepad test left
-    const p = tutorialAt('block');
+    const p = trainingAt('sparring');
     for (const code of ['KeyC', 'KeyL', 'Mouse3', 'Mouse4']) {
       input.down(code); sim.step(2);
       expect.ok(p.state === PS.BLOCK, `${code} blocks (state ${p.state})`);
@@ -998,76 +1015,66 @@
       document.body.dispatchEvent(ev);
       expect.ok(ev.defaultPrevented, `side button ${button} ${type}: the browser does not go back or forward`);
     }
-    Game.render(1, STEP);
-    expect.ok(shown('tutText').includes('[ c / Side mouse ]'), `block prompt: "${shown('tutText')}"`);
+    withLessons(() => {
+      trainingAt(null, 'long-hall'); A.lessons.show('guard'); Game.render(1, STEP);
+      const caps = [...document.querySelectorAll('#lessonKeys kbd')].map(k => k.textContent).join(' ');
+      expect.ok(caps === 'C Side mouse E', `the red glint card's keys: "${caps}"`);
+    })();
     const row = [...document.querySelectorAll('#helpTable tr')].find(r => r.cells[0].textContent.startsWith('Block'));
     expect.ok(row && row.cells[1].textContent === '[ c / l / Side mouse ]', `help panel: "${row && row.cells[1].textContent}"`);
   });
-  test('tutorial: block, parry and dodge start locked on to their dummy; a lock let go stays off', () => {
-    const ids = Game.tutorialSteps().map(s => s.id), at = ids.indexOf('block');
-    expect.ok(ids.slice(at, at + 3).join() === 'block,parry,dodge', `step order: ${ids.join(', ')}`);
-    for (const id of ['block', 'parry', 'dodge']) {
-      tutorialAt(id);
-      expect.ok(Game.enemies.length === 1 && Game.lock === Game.enemies[0], `${id}: locked on to its dummy`);
-      sim.press('lock'); sim.step(1, 1);
-      expect.ok(!Game.lock, `${id}: the lock key lets go`);
-      sim.seconds(4, 6);
-      expect.ok(!Game.lock, `${id}: and nothing locks it again`);
-    }
-    tutorialAt('light'); expect.ok(!Game.lock, 'other steps start unlocked');
-    Game.render(1, STEP);
-    expect.ok(shown('tutStep').endsWith(`/ ${ids.length}`) && ids.length === 15, `the step counter counts the new step (${shown('tutStep')})`);
-  });
   // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
-  const cadence = (stepId, seconds) => {
-    tutorialAt(stepId); const e = Game.enemies[0], out = [];
+  const cadence = (kind, seconds) => {
+    trainingAt(kind); const e = Game.enemies[0], out = [];
     for (let i = 0; i < seconds / STEP; i++) { sim.step(); out.push(e.state); }
     return out.join();
   };
-  test('tutorial: the dodge dummy swings exactly like the sparring dummy, but roll-only; a block or a parry does not answer it', () => {
-    expect.ok(cadence('dodge', 12) === cadence('block', 12), 'the same rest, wind-up, strike and recovery, step for step');
-    let p = tutorialAt('dodge');
+  test('training: the dodge dummy swings exactly like the sparring dummy, but roll-only; a block or a parry does not answer it', () => {
+    expect.ok(cadence('dodge', 12) === cadence('sparring', 12), 'the same rest, wind-up, strike and recovery, step for step');
+    let p = trainingAt('dodge');
     const dummy = Game.enemies[0], swing = dummy.def.attacks[0];
     expect.ok(sim.until(() => log.includes('perilous'), 4) >= 0, 'its wind-up flashes the blue ring (perilous)');
     expect.ok(makeStrike(swing).rollOnly, 'its swing is roll-only');
     sim.hold('block'); let hp0 = p.hp;
     sim.until(() => dummy.state === ES.RECOVER, 4); sim.release('block');
     expect.ok(p.hp < hp0 && log.includes('strike'), 'it went through the guard');
-    expect.ok(Game.currentStep().id === 'dodge' && Game.tut.doneTimer === 0, 'blocking does not finish the step');
-    p = tutorialAt('dodge');
+    expect.ok(!log.includes('dodge'), 'blocking it is no dodge');
+    p = trainingAt('dodge');
     const d = Game.enemies[0];
     sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.08, 6); sim.press('parry');
     sim.until(() => d.state === ES.RECOVER, 2);
-    expect.ok(!log.includes('parry') && Game.tut.doneTimer === 0, 'it cannot be parried');
+    expect.ok(!log.includes('parry'), 'it cannot be parried');
   });
   const dodges = [];
   A.events.on('dodge', d => dodges.push(d));
-  // The dodge step: roll `before` s before the dummy's swing lands (negative: after), toward it or `away` from it.
-  // What the player sees once that swing is over: the step done, or the hint under the prompt.
+  // The ROLL INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
+  // toward it or `away` from it. What the card shows once that swing is over: done, or a hint.
   const dodgeRoll = (before, away = false, fresh = true) => {
-    const p = fresh ? tutorialAt('dodge') : Game.player, dummy = Game.enemies[0], swing = dummy.def.attacks[0];
+    if (fresh) { trainingAt('dodge', 'long-hall'); A.lessons.forget(); A.lessons.show('dodge'); }   // each try starts unlearned
+    const p = Game.player, dummy = Game.enemies[0], swing = dummy.def.attacks[0];
     dodges.length = 0;
     sim.until(() => dummy.state === ES.WINDUP, 6); sim.seconds(swing.hits[0].startup - before);
     if (away) sim.move(p.x - dummy.x, p.z - dummy.z);
     sim.press('roll');
     sim.until(() => dummy.state === ES.RECOVER, 3); sim.move(null); sim.step(2); Game.render(1, STEP);
-    return { done: Game.tut.doneTimer > 0, hint: shown('tutHint') };
+    const card = A.lessons.card;
+    return { done: !!card && card.id === 'dodge' && card.done, hint: card ? card.hint : '' };
   };
-  test('tutorial: a roll through the swing finishes the dodge step; early, late or clear of it shows a hint', () => {
+  test('Lessons: a roll through the swing finishes ROLL INTO IT; early, late or clear of it shows a hint', withLessons(() => {
     const timed = dodgeRoll(0.1);
     expect.ok(timed.done, `rolled through the swing as it landed: done (hint "${timed.hint}")`);
-    expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === A.TUTORIAL.training.dodge, `one dodge event (${dodges.length})`);
-    for (const [before, away, want] of [[0.45, false, 'Too early'], [0.9, false, 'Too early'], [-0.05, false, 'Too late'], [0.5, true, 'Roll into the swing']]) {
+    expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === TRAINING.dodge, `one dodge event (${dodges.length})`);
+    for (const [before, away, want] of [[0.45, false, 'Too early: roll as it falls'], [0.9, false, 'Too early: roll as it falls'], [-0.05, false, 'Too late: roll sooner'], [0.5, true, 'Roll into the blow']]) {
       const r = dodgeRoll(before, away);
       expect.ok(!r.done && r.hint === want, `rolled ${before} s before it landed${away ? ', away' : ''}: "${r.hint}" (want "${want}")`);
     }
     dodgeRoll(-0.05);
-    sim.seconds(CONFIG.tutorial.hintTime + 0.1); Game.render(1, STEP);
-    expect.ok(shown('tutHint') === '', `the hint goes after a while ("${shown('tutHint')}")`);
+    sim.seconds(CONFIG.lessons.hintTime + 0.1); Game.render(1, STEP);
+    expect.ok(A.lessons.card.hint === '' && shown('lessonHint') === '', `the hint goes after a while ("${shown('lessonHint')}")`);
     dodgeRoll(0.45); const next = dodgeRoll(-0.05, false, false);
-    expect.ok(next.hint === 'Too late', `the next hint replaces it ("${next.hint}")`);
-  });
-  test('events: dodge fires once for a swing rolled through, and for a bolt', () => {
+    expect.ok(next.hint === 'Too late: roll sooner', `the next hint replaces it ("${next.hint}")`);
+  }));
+  test('events: dodge fires once for a swing rolled through, and for a bolt', withLessons(() => {
     dodgeRoll(0.1);
     expect.ok(dodges.length === 1 && !dodges[0].projectile, `one for the dummy's swing (${dodges.length})`);
     Game.startFight('testBowman'); sim.begin(); dodges.length = 0;
@@ -1076,7 +1083,7 @@
     const b = A.projectiles.fire(e, shot, p), arrive = Math.hypot(p.x - b.x, p.z - b.z) / shot.projectile.speed;
     sim.seconds(Math.max(0, arrive - CONFIG.player.rollIFrames * 0.5)); sim.press('roll'); settleBolts();
     expect.ok(dodges.length === 1 && dodges[0].projectile && dodges[0].attacker === e, `one for the bolt (${dodges.length})`);
-  });
+  }));
   // The player at (10, 0) facing east in Test: Crowd, with enemies that stay put at the given spots.
   test('Arena tracking: distant off-screen survivors remain available to player lock-on', () => {
     Game.startFight('hollow', ['hollow']); sim.begin();
@@ -1241,7 +1248,6 @@
     rejects(exec, 'behavior', 'patrol', ['zone-undercroft', 'behaviour']);
     rejects(L.sealed[0], 'gate', { x: 200, z: 0, along: 'z', width: 6 }, ['sealed gate "bonfire-portcullis"', 'floor']);
     rejects(L.sealed[0], 'gate', { x: 29, z: 0, along: 'y' }, ['sealed gate "bonfire-portcullis"', 'along']);
-    rejects(A.TUTORIAL.training, 'dodge', 'nobody', ['training.dodge']);
   });
   const atLoad = { screen: Game.screen, notice: shown('menuNotice') };   // what the page showed as it finished loading
   test('loading screen: no controller notice screen; every level and duel opens on a loading screen with the controller note', () => {
@@ -1281,13 +1287,13 @@
     const fire = A.LEVEL_1.bonfires.find(b => b.id === 'after-rogue'), rogue = A.LEVEL_1.gated.find(z => z.id === 'zone-rogue');
     expect.ok(fire.x > rogue.gateX, 'Level 1: the second bonfire is the reward past the Rogue\'s gate');
   });
-  test('v4.2.4 tutorial: the heavy step wants a fully charged heavy; a lighter one shows a hint', () => {
-    const p = tutorialAt('heavy'), d = Game.enemies[0], at = Game.tut.index;
-    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 0.4 }, at: { x: 0, y: 0, z: 0 }, blocked: false });
-    expect.ok(Game.tut.doneTimer <= 0 && /longer/i.test(Game.tut.hint), `a half charge: not done, a hint (${Game.tut.hint})`);
-    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false });
-    expect.ok(Game.tut.doneTimer > 0 && Game.tut.index === at, 'a full charge: done');
-  });
+  test('Lessons: the HEAVY ATTACK card wants a fully charged heavy; a lighter one shows a hint', withLessons(() => {
+    const p = trainingAt('dummy', 'long-hall'), d = Game.enemies[0]; A.lessons.show('heavy');
+    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 0.4 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
+    expect.ok(!A.lessons.card.done && /longer/i.test(A.lessons.card.hint), `a half charge: not done, a hint (${A.lessons.card.hint})`);
+    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
+    expect.ok(A.lessons.card.id === 'heavy' && A.lessons.card.done && A.lessons.learned('heavy'), 'a full charge: done, and learned');
+  }));
   test('v4.2.4 stamina: emptying the bar exhausts; nothing but walking until it refills, and a press says why', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); log.length = 0;
     const p = Game.player; sim.step(2);
@@ -1477,9 +1483,9 @@
   });
 
   test('lock-on: training dummies are never picked automatically, even swinging at the player', () => {
-    tutorialAt('light'); sim.seconds(3, 6);
+    trainingAt('dummy'); sim.seconds(3, 6);
     expect.ok(!Game.lock, 'the dummy in front is not locked');
-    tutorialAt('block'); Game.setLock(null);
+    trainingAt('sparring'); Game.setLock(null);
     let swung = false;
     for (let i = 0; i < 6 * 10; i++) { sim.step(10, 10); if (Game.enemies[0].state === ES.WINDUP) swung = true; }
     expect.ok(swung && !Game.lock, 'the sparring dummy swung and was never locked');
@@ -2157,21 +2163,21 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run tutorial -> Level 1 ... Level 5, and Level 5 ends the road', withSave(() => {
-    expect.ok(S().nextLevelId('tutorial') === 'long-hall', 'the tutorial leads to the Long Hall');
+  test('Story: the chapters run Level 1 ... Level 5, and Level 5 ends the road', withSave(() => {
+    expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
     const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
     expect.ok(S().nextLevelId('final-castle') === null, 'nothing after the castle');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
-    expect.ok(Game.screens().main.items[0].name === 'Story', 'no save: Story comes first');
-    S().newGame(false); sim.begin();
-    expect.ok(Game.story && Game.level.id === 'long-hall', 'No to the tutorial: straight to Level 1');
+    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 2).join() === 'Play Online,Story', 'Play Online, then Story, whatever the save');
+    S().newGame(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'long-hall', 'a new story starts in Level 1');
     expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
     Game.showMenu('main');
     const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
-    expect.ok(names[0] === 'Story' && names.includes('Levels') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
+    expect.ok(names[1] === 'Story' && names.includes('Levels') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
   }));
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
@@ -2195,7 +2201,7 @@
     for (const bad of ['{not json', JSON.stringify({ v: 1, level: 'nowhere' }), JSON.stringify({ v: 99 }), '"x"']) {
       localStorage.setItem(CONFIG.story.saveKey, bad);
       Game.showMenu('main');
-      expect.ok(S().status === 'broken' && Game.screens().main.items[0].name === 'Story', `refused: ${bad}`);
+      expect.ok(S().status === 'broken' && Game.screens().main.items.some(i => i.name === 'Story'), `refused: ${bad}`);
     }
   }));
   test('Story: with storage refused (private window) the story still plays, unsaved', withSave(() => {
@@ -2204,21 +2210,21 @@
     Storage.prototype.getItem = () => { throw new Error('denied'); };
     try {
       Game.showMenu('main');
-      S().newGame(true); sim.begin();
-      expect.ok(Game.isTutorial() && Game.story && !S().storageOk, 'the tutorial runs without saving');
-      S().afterTutorial(); expect.ok(Game.level.id === 'long-hall', 'skipped on to Level 1');
+      S().newGame(); sim.begin();
+      expect.ok(Game.story && Game.level.id === 'long-hall' && !S().storageOk, 'Level 1 runs without saving');
     } finally { Object.defineProperty(Storage.prototype, 'setItem', real); Storage.prototype.getItem = get; }
   }));
-  test('Story: the pause menu offers Skip tutorial only in the tutorial, and the flasks carry over', withSave(() => {
-    S().newGame(true); sim.begin(); Game.mode = 'play';
+  test('Story: the pause menu offers Quit, and the Training Hall\'s Skip is gone; an old tutorial save continues in Level 1', withSave(() => {
+    S().newGame(); sim.begin(); Game.mode = 'play';
     Game.pause(false);
-    expect.ok(Game.screens().pause.items.some(i => i.name === 'Skip tutorial'), 'Skip tutorial while training');
+    const items = Game.screens().pause.items.map(i => i.name);
+    expect.ok(!items.some(n => /tutorial/i.test(n)) && items.includes('Quit to main menu'), `pause: ${items}`);
     Game.resume();
-    S().data.progress.inventory.flask.max = 6;   // a future upgrade
-    S().afterTutorial(); Game.mode = 'play'; Game.pause(false);
-    expect.ok(!Game.screens().pause.items.some(i => i.name === 'Skip tutorial') && Game.screens().pause.items.some(i => i.name === 'Quit to main menu'), 'no skip in Level 1; Quit saves');
-    expect.ok(Game.player.item('flask').max === 6 && Game.player.item('flask').count === 6, 'carried capacity, refilled');
-    Game.resume();
+    const old = { ...JSON.parse(localStorage.getItem(CONFIG.story.saveKey)), level: 'tutorial', bonfire: 'tutorial-fire', spawn: { x: 9, z: -2, yaw: 0 } };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(old)); S().load();
+    expect.ok(S().status !== 'broken' && S().data.level === 'long-hall' && S().data.bonfire === null && S().data.spawn === null, `migrated: ${S().status} ${JSON.stringify(S().data && S().data.level)}`);
+    S().resume(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'long-hall', 'Continue opens Level 1');
   }));
   test('Story: the ending marks the story complete and shows its own screen', withSave(() => {
     S().jumpTo('final-castle'); sim.begin();
@@ -2470,21 +2476,16 @@
       expect.ok(j >= 0 && i >= 0 && !execLog.slice(0, j).includes(after), `${phase}: ${after} only after the animation (${execLog.join(', ')})`);
     }
   });
-  test('Execution: the tutorial has an execution step, done by one execution', () => {
-    Game.startLevel('tutorial'); Game.loading = 0; sim.begin();
-    const steps = Game.tutorialSteps(), i = steps.findIndex(s => s.id === 'execute');
-    expect.ok(i > 0, 'the step exists');
-    Game.tut.index = i; Game.setupTutorialStep();
-    const p = Game.player, d = Game.enemies[0];
+  test('Execution: the execution dummy kneels to two heavies; one execution finishes the EXECUTE card and it never dies', withLessons(() => {
+    const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute');
     expect.ok(!!d.def.stagger && d.training, 'a training dummy with a stagger meter');
     d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p);
     expect.ok(d.state === ES.BROKEN, 'two heavies break its stance');
     inFront(d, p); sim.step(1); sim.press('light'); sim.step(1);
     expect.ok(p.state === PS.EXECUTE, 'executing the dummy');
-    sim.until(() => Game.tut.doneTimer > 0, 5);
-    expect.ok(Game.tut.doneTimer > 0, 'the step completed');
+    expect.ok(sim.until(() => A.lessons.learned('execute'), 5) >= 0, 'the card completed');
     expect.ok(d.alive(), 'the dummy never dies');
-  });
+  }));
 
   // ---- Elden Ring Bosses: Margit, the Fell Omen (v5.3) ------------------------------------------------------------
   const startMargit = () => { A.elden.start('margit'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
@@ -3543,55 +3544,107 @@
     expect.near(p.stamina, 40 + 36 * 1.2, 1e-6, 'one second of regeneration');
     expect.ok(CONFIG.player.staminaDelay === 0.75 && CONFIG.player.exhaustDelay === 1.3, 'recovery delays unchanged');
   });
-  test('Combat clarity: tutorial keeps complete action sequences visible and zoom controls are gone', () => {
-    input.use('keyboard'); const p = tutorialAt('execute'), d = Game.enemies[0];
-    const instruction = shown('tutText');
-    expect.ok(instruction.includes('until it kneels') && instruction.includes('front') && instruction.includes(bindLabel('light')), 'explain kneeling, approach and execution before the player begins');
-    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p); Game.render(1, STEP);
-    expect.ok(shown('tutText') === instruction, 'the complete execution sequence stays visible when it kneels');
-    expect.ok(!Game.tutorialSteps().some(s => s.id === 'zoom') && !ACTIONS.zoomIn && !ACTIONS.zoomOut, 'no zoom step or bindings');
+  test('Combat clarity: the EXECUTE card tells the whole sequence and stays put as the foe kneels; zoom controls are gone', withLessons(() => {
+    input.use('keyboard'); const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute'); Game.render(1, STEP);
+    const instruction = shown('lessonText') + shown('lessonKeys');
+    expect.ok(/kneels/.test(instruction) && /front/.test(instruction) && document.querySelectorAll('#lessonKeys kbd').length > 0,`kneel, approach and the key, before it begins: "${instruction}"`);
+    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p); sim.step(1); Game.render(1, STEP);
+    expect.ok(shown('lessonText') + shown('lessonKeys') === instruction, 'the card stays the same as it kneels');
+    expect.ok(!ACTIONS.zoomIn && !ACTIONS.zoomOut, 'no zoom bindings');
     const zoom = Game.zoomTarget;
     window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100 })); input.down('Equal'); sim.step(2); input.up('Equal');
     expect.near(Game.zoomTarget, zoom, 1e-6, 'wheel and former zoom key cannot alter camera distance');
-  });
+  }));
 
-  test('tutorial: jump attack instructions stay visible from the ground through the landing', () => {
-    for (const device of ['keyboard', 'pad']) {
-      input.use(device); const p = tutorialAt('jumpAttack'), step = Game.currentStep(), text = step.text(Game);
-      expect.ok(text.includes(bindLabel('jump')) && text.includes(bindLabel('heavy')) && text.includes('in the air'), `${device}: both inputs and their order are shown before jumping`);
-      for (const state of [PS.JUMP, PS.JUMP_ATTACK, PS.LAND]) {
-        p.state = state; p.grounded = false;
-        expect.ok(step.text(Game) === text, `${device}: stable instruction in ${state}`);
-      }
-      p.state = PS.IDLE; p.grounded = true;
-    }
+  // ---- Lessons (v7.19.0): the controls taught inside Level 1, a little in Levels 2 and 3, and catch-up in Stormhill ---
+  const card = () => A.lessons.card ? A.lessons.card.id : null;
+  const lessonsIn = id => (A.ALL_LEVELS.find(l => l.id === id).lessons || []).map(e => e.lesson);
+  test('Lessons: Level 1 teaches the old tutorial\'s moves; Levels 2 and 3 add one each; Stormhill catches up; the rest have none', () => {
+    const hall = lessonsIn('long-hall');
+    for (const id of ['move', 'roll', 'jump', 'lock', 'light', 'guard', 'heavy', 'jumpAttack', 'flask', 'stance', 'execute', 'parry', 'rest', 'switch', 'dodge']) expect.ok(hall.includes(id), `Level 1 teaches ${id}`);
+    expect.ok(lessonsIn('sunken-keep').join() === 'shield' && lessonsIn('burning-town').join() === 'blue', 'one lesson in Level 2 and one in Level 3');
+    expect.ok(['move', 'lock', 'guard', 'blue', 'flask', 'rest'].every(id => lessonsIn('stormhill').includes(id)), 'Stormhill catches up');
+    const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town', 'stormhill'].includes(l.id)).map(l => l.id);
+    expect.ok(others.length === 0, `no other level teaches: ${others}`);
+    expect.ok(!A.ALL_LEVELS.some(l => l.id === 'tutorial') && !A.STORY.chapters.some(c => c.level === 'tutorial'), 'the Training Hall is gone from the road');
   });
-
-  test('tutorial: the bonfire compass points ahead, left, right and directly behind; it clears after resting', () => {
-    const p = tutorialAt('rest'), fire = world.bonfires.find(b => b.id === 'tutorial-fire');
-    p.x = fire.x + 7; p.z = fire.z; p.savePrev();
-    camera.position.set(p.x, 3, p.z);
-    const guide = document.getElementById('tutGuide'), arrow = document.getElementById('tutGuideArrow');
-    for (const [dx, dz, expected] of [[-1, 0, 0], [1, 0, Math.PI], [0, 1, Math.PI / 2], [0, -1, -Math.PI / 2]]) {
-      camera.lookAt(p.x + dx, 3, p.z + dz); camera.updateMatrixWorld();
-      A.hud.updateTutorialGuide(Game, Game.currentStep());
-      expect.ok(!guide.hidden && shown('tutGuideText').includes('7 m'), 'the objective stays visible with distance');
-      const angle = Number(arrow.style.transform.match(/rotate\(([^r]+)rad\)/)[1]);
-      expect.near(Math.abs(angDiff(angle, expected)), 0, 1e-4, 'camera-relative direction');
-      expect.ok(shown('tutGuideText').includes('Turn around') === (expected === Math.PI), 'behind text only when the fire is behind');
-    }
-    p.x = fire.x; p.z = fire.z; p.savePrev();
-    A.hud.updateTutorialGuide(Game, Game.currentStep());
-    expect.ok(arrow.hidden && shown('tutGuideText').includes(bindLabel('rest')), 'arrival shows the rest button');
-    Game.tryRest(); A.hud.updateTutorialGuide(Game, Game.currentStep());
-    expect.ok(guide.hidden, 'resting clears the compass');
-    tutorialAt('move');
-    expect.ok(guide.hidden, 'other lessons have no compass');
-  });
+  test('Lessons: walking out of the cell shows MOVE, then ROLL, then JUMP, each done by doing it', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2); Game.render(1, STEP);
+    expect.ok(card() === 'move' && !document.getElementById('lesson').hidden && document.getElementById('lesson').classList.contains('show'), `MOVE first (${card()})`);
+    expect.ok(shown('lessonTitle') === 'MOVE', `the card says so (${shown('lessonTitle')})`);
+    sim.move(1, 0); sim.until(() => A.lessons.learned('move'), 4); sim.move(null);
+    expect.ok(A.lessons.learned('move'), 'walking five metres learns it');
+    sim.until(() => card() === 'roll', 4);
+    expect.ok(card() === 'roll', `ROLL next, past x 9 (${card()} at x ${Game.player.x.toFixed(1)})`);
+    sim.press('roll'); sim.step(2);
+    expect.ok(A.lessons.learned('roll'), 'a roll learns it');
+    sim.until(() => card() === 'jump', 4);
+    expect.ok(card() === 'jump', `JUMP right after (${card()})`);
+  }));
+  test('Lessons: a move made before its card counts as learned, and a learned card never shows', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2);
+    events.emit('lock', { player: Game.player });
+    expect.ok(A.lessons.learned('lock'), 'a lock-on before its card is learned');
+    const z = Game.zones.find(z => z.id === 'zone-hollow'); sim.place(z.trigger + 1, 0); sim.step(2);
+    expect.ok(!A.lessons.queue.includes('lock') && card() !== 'lock', 'its fight shows no LOCK ON card');
+  }));
+  test('Lessons: an urgent card (HEAL) takes over; the calmer one comes back after it', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2);
+    expect.ok(card() === 'move', 'MOVE up');
+    Game.player.hp = Game.player.maxHp * 0.4; sim.step(2);
+    expect.ok(card() === 'flask' && A.lessons.queue.includes('move'), `HEAL takes over (${card()}; queue ${A.lessons.queue})`);
+    events.emit('itemUsed', { item: 'flask', player: Game.player });
+    sim.seconds(CONFIG.lessons.done + CONFIG.lessons.gap + 0.1);
+    expect.ok(card() === 'move', `MOVE again after it (${card()})`);
+  }));
+  test('Lessons: a card unanswered for a while steps aside without being learned', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2);
+    sim.seconds(CONFIG.lessons.show + 0.2);
+    expect.ok(card() !== 'move' && !A.lessons.learned('move'), `stepped aside unlearned (${card()})`);
+  }));
+  test('Lessons: they only watch: the same run plays out step for step with lessons on and off', withLessons(() => {
+    const was = settings.lessons, runOnce = on => {
+      settings.lessons = on; A.lessons.forget(); Math.random = seededRandom(777);
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.place(14, 0);
+      sim.move(1, 0); sim.seconds(4, 6); sim.move(null); sim.press('roll'); sim.seconds(2, 6); sim.press('light'); sim.seconds(4, 6);
+      const p = Game.player, cardUp = card();
+      return { cardUp, state: [p.x, p.z, p.hp, p.stamina, ...Game.enemies.map(e => `${e.x.toFixed(6)},${e.z.toFixed(6)},${e.hp},${e.state}`)].map(String).join('|') };
+    };
+    try {
+      runOnce(false);   // both compared runs start from the same built stage
+      const on = runOnce(true), off = runOnce(false), a = on.state.split('|'), b = off.state.split('|'), at = a.findIndex((v, i) => v !== b[i]);
+      expect.ok(on.cardUp !== null && off.cardUp === null, `cards only with the option on (${on.cardUp} / ${off.cardUp})`);
+      expect.ok(at < 0 && a.length === b.length, `the same simulation (first difference at ${at}: ${a[at]} / ${b[at]})`);
+    } finally { settings.lessons = was; }
+  }));
+  test('Lessons: the option turns them off; duels, gauntlets and levels without lessons show none', withLessons(() => {
+    const was = settings.lessons;
+    try {
+      settings.lessons = false; trainingAt(null, 'long-hall'); sim.step(2);
+      expect.ok(!A.lessons.owns(Game) && card() === null && !document.getElementById('lesson').classList.contains('show'), 'Lessons: Off');
+    } finally { settings.lessons = was; }
+    trainingAt(null, 'the-tower'); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'Level 4 has none');
+    Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'a duel has none');
+    const opt = Game.screens().options.items.map(i => i.name);
+    expect.ok(opt.some(n => /^Lessons: (On|Off)$/.test(n)) && opt.includes('Show lessons again'), `Options: ${opt}`);
+  }));
+  test('Lessons: the REST card points an arrow at its bonfire, and the CONTROLS panel steps aside in Level 1', withLessons(() => {
+    trainingAt(null, 'long-hall'); A.lessons.show('rest'); Game.render(1, STEP);
+    const fire = world.bonfires.find(b => b.id === 'after-rogue');
+    const arrow = scene.children.find(o => o.userData.shared && o.visible && o.renderOrder === 10 && Math.abs(o.position.x - fire.x) < 1e-6 && Math.abs(o.position.z - fire.z) < 1e-6);
+    expect.ok(!!arrow && arrow.position.y > world.floorY(fire.x, fire.z, fire.y) + 1, 'an arrow over the fire');
+    A.lessons.show('move'); Game.render(1, STEP);
+    expect.ok(!arrow.visible, 'other cards have no arrow');
+    trainingAt(null, 'the-tower'); Game.render(1, STEP);
+    expect.ok(!arrow.visible, 'nor other levels');
+  }));
 
   async function run(filter = '') {
     const out = [], t0 = performance.now();
     const wasMode = Game.mode;
+    // What the tests teach by playing (a roll, a lock-on) never sticks to this player: their lessons come back after.
+    const lessonsKey = CONFIG.lessons.storageKey; let keptLessons = null;
+    try { keptLessons = localStorage.getItem(lessonsKey); } catch (e) { /* none */ }
     for (const t of tests) {
       if (filter && !t.name.includes(filter)) continue;
       let ok = true, msg = '';
@@ -3601,6 +3654,8 @@
       out.push({ name: t.name, ok, msg });
       await new Promise(r => setTimeout(r, 0));   // let the page breathe between tests
     }
+    try { if (keptLessons === null) localStorage.removeItem(lessonsKey); else localStorage.setItem(lessonsKey, keptLessons); } catch (e) { /* none */ }
+    A.lessons.load();
     if (wasMode !== 'play') { Game.reset && Game.player && Game.showMenu('main'); }
     const failed = out.filter(r => !r.ok);
     const summary = `${out.length - failed.length}/${out.length} passed in ${((performance.now() - t0) / 1000).toFixed(1)} s`;

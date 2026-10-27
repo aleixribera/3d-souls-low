@@ -80,33 +80,67 @@
     #menuBox .hint { font-size: 11px; bottom: 28px; }
   }
 
-  /* Tutorial quality comparison: static captures keep this page cheap even on older laptops. */
-  #menu.quality-choice #menuBox { padding: 11vh 4vw 9vh; justify-content: center; }
-  #menu.quality-choice h1 { font-size: clamp(25px, 4vw, 58px); white-space: normal; }
-  #menu.quality-choice h1::before { display: none; }
-  #menu.quality-choice .sub { margin-top: 16px; font-size: clamp(12px, 1.2vw, 16px); letter-spacing: 1px; line-height: 1.5; }
-  #menu.quality-choice #menuList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 2vw, 28px);
-    width: min(1320px, 100%); max-height: none; overflow: visible; margin-top: 5vh; padding: 5px; mask-image: none; -webkit-mask-image: none; }
-  #menu.quality-choice .menuBtn { width: 100%; padding: 0; display: flex; flex-direction: column; align-items: stretch; }
-  #menu.quality-choice .menuBtn::before { display: none; }
-  #menu.quality-choice .quality-image { position: relative; display: block; border: 1px solid #51483a; overflow: hidden; }
-  #menu.quality-choice img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
-  #menu.quality-choice .quality-recommended { position: absolute; top: 10px; left: 8px; right: 8px; width: fit-content; margin: 0 auto; padding: 6px 10px; background: #d9ba78; color: #211a0f; font-size: clamp(10px, 1.1vw, 14px); box-shadow: 0 2px 10px #0008; }
-  #menu.quality-choice .quality-look { position: absolute; bottom: 0; left: 0; right: 0; padding: 22px 8px 10px;
-    background: linear-gradient(transparent, #000d); color: #e0dacd; font-size: clamp(10px, 1.1vw, 14px); letter-spacing: .4px; }
-  #menu.quality-choice .n { margin-top: 16px; padding: 12px 8px; border: 1px solid #65573d; background: #18150f;
-    font-size: clamp(16px, 2vw, 24px); letter-spacing: 3px; text-transform: uppercase; }
-  #menu.quality-choice .d { display: block; margin-top: 12px; font-size: clamp(10px, 1.2vw, 16px); color: #aaa294; line-height: 1.5; }
-  #menu.quality-choice .sel .quality-image, #menu.quality-choice .menuBtn:focus-visible .quality-image { border-color: #e8c67b; box-shadow: 0 0 0 2px #c49a4855; }
-  #menu.quality-choice .sel .n { border-color: #e8c67b; background: #493820; color: #fff1d1; }
-  #menu.quality-choice .menuArrow, #menu.quality-choice #menuDesc { display: none; }
-  #menu.quality-choice .hint { padding: 0 4vw; line-height: 1.7; }
-  @media (max-height: 600px) {
-    #menu.quality-choice #menuBox { padding-top: 4vh; }
-    #menu.quality-choice #menuList { margin-top: 2vh; max-width: 900px; }
-    #menu.quality-choice img { aspect-ratio: 16 / 9; }
-    #menu.quality-choice .n { margin-top: 8px; padding: 8px; }
-    #menu.quality-choice .d { margin-top: 6px; }
+  /* The title (v7.19.0): two cards, Play Online over Story, then a row of small entries, in the same black and gilt.
+     The online card's badge says who is in the public lobby right now (a slow ember dot when people are playing). */
+  #menu.title-menu #menuBox { padding-top: 14vh; }
+  #menu.title-menu #menuBox h1 { font-size: clamp(26px, 6.4vw, 104px); }
+  #menu.title-menu .menuArrow { display: none; }
+  #menu.title-menu #menuList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: min(600px, 100%);
+    flex: none; align-content: start; max-height: none; min-height: 0; overflow: visible; margin-top: 6vh; padding: 4px; box-sizing: border-box; mask-image: none; -webkit-mask-image: none; }
+  #menu.title-menu .menuBtn { width: 100%; }
+  #menu.title-menu .menuBtn::before { display: none; }
+  #menu.title-menu .menuBtn.hero { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 15px 22px 15px 26px; text-align: left; border: 1px solid #5a4c2e88;
+    background: linear-gradient(90deg, #15110bf0, #0b0a08c8 70%, #0b0a0890);
+    box-shadow: inset 0 1px 0 #ffffff0a, 0 6px 22px #000c; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, opacity 0.3s; }
+  .menuBtn.hero .n { order: 2; font-family: 'Trajan Pro', 'Cinzel', 'Palatino Linotype', Georgia, serif; font-size: clamp(20px, 2.4vw, 27px);
+    letter-spacing: 1.5px; color: #efe6cf; }
+  .menuBtn.hero .k { order: 1; font: 10px/1.5 Arial, sans-serif; letter-spacing: 3px; color: #b99b5c; }
+  .menuBtn.hero .l { order: 3; font-size: 13px; line-height: 1.4; color: #aaa18c; letter-spacing: 0.3px; }
+  .menuBtn.hero .b { order: 4; display: flex; align-items: center; gap: 8px; margin-top: 8px; font: 12px/1.4 Arial, sans-serif;
+    letter-spacing: 0.6px; color: #cbbd98; }
+  .menuBtn.hero .b:empty { display: none; }
+  .menuBtn.hero .b::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #6f6655; }
+  .menuBtn.hero .b[data-state="live"] { color: #f2dfb0; }
+  .menuBtn.hero .b[data-state="live"]::before { background: #ff6a3d; box-shadow: 0 0 8px 1px #ff5a2ac0; animation: liveDot 2.4s ease-in-out infinite; }
+  .menuBtn.hero .b[data-state="open"]::before { width: 5px; height: 5px; background: none; border: 1px solid #c9a85e; }
+  .menuBtn.hero .b[data-state="checking"]::before { background: #c9a85e66; }
+  @keyframes liveDot { 50% { opacity: 0.45; box-shadow: 0 0 3px #ff5a2a60; } }
+  #menu.still .menuBtn.hero .b::before { animation: none; }
+  /* gilt corner ticks, full strength on the chosen card */
+  .menuBtn.hero::after { content: ''; position: absolute; inset: -1px; pointer-events: none; opacity: 0.5; transition: opacity 0.15s;
+    background: linear-gradient(#c9a85e, #c9a85e) left top / 14px 1px no-repeat, linear-gradient(#c9a85e, #c9a85e) left top / 1px 14px no-repeat,
+                linear-gradient(#c9a85e, #c9a85e) right bottom / 14px 1px no-repeat, linear-gradient(#c9a85e, #c9a85e) right bottom / 1px 14px no-repeat; }
+  #menu.title-menu .menuBtn.hero.sel, #menu.title-menu .menuBtn.hero:hover { border-color: #c9a85e;
+    background: linear-gradient(90deg, #3a2c14f0, #17120bd8 55%, #0b0a08b0); box-shadow: inset 3px 0 0 #e0bd6e, 0 0 26px #b8892a30, 0 6px 22px #000c; }
+  .menuBtn.hero.sel::after, .menuBtn.hero:hover::after { opacity: 1; }
+  .menuBtn.hero.offline { opacity: 0.6; }
+  .menuBtn.hero.offline.sel { opacity: 0.85; }
+  #menu.title-menu .menuBtn.small { padding: 10px 6px; min-height: 44px; border: 1px solid #ffffff14; background: #ffffff05; }
+  #menu.title-menu .menuBtn.small .n { font-size: 16px; }
+  #menu.title-menu .menuBtn.small.sel, #menu.title-menu .menuBtn.small:hover { border-color: #c9a85e;
+    background: radial-gradient(ellipse at 50% 50%, #b8892a55, #b8892a10 75%); }
+  #menu.title-menu #menuDesc { margin-top: 14px; max-width: min(600px, 90vw); }
+  @media (max-height: 650px) {
+    #menu.title-menu #menuList { margin-top: 14px; gap: 7px; }
+    #menu.title-menu .menuBtn.hero { padding: 9px 16px 9px 18px; }
+    .menuBtn.hero .b { margin-top: 3px; }
+    #menu.title-menu #menuDesc { min-height: 0; margin-top: 8px; }
+  }
+  @media (max-height: 600px) {   /* small phones: the card's second line repeats the description below */
+    #menu.title-menu #menuBox { padding-top: 6vh; }
+    .menuBtn.hero .l { display: none; }
+  }
+  @media (max-height: 450px) {   /* a phone on its side: the two cards side by side, without their second line */
+    #menu.title-menu #menuBox { padding-top: 4vh; }
+    #menu.title-menu #menuList { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 8px; gap: 6px; }
+    #menu.title-menu .menuBtn.hero { grid-column: span 3; align-self: stretch; padding: 7px 12px 7px 14px; }
+    #menu.title-menu .menuBtn.small { grid-column: span 2; min-height: 34px; padding: 6px; }
+    .menuBtn.hero .l { display: none; }
+  }
+  @media (max-width: 520px) {
+    #menu.title-menu .menuBtn.small .n { font-size: 14px; }
+    #menu.title-menu .menuBtn.hero { padding: 12px 14px 12px 16px; }
   }
 
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
@@ -307,18 +341,48 @@
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
   #won.show, #complete.show { opacity: 1; transition: opacity 2s ease-in 1s; }
   #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
-  #tutPrompt { padding: 9px 22px; background: #0d0b10d8; border: 1px solid #7d6a3a; color: #e8dcb8; font-size: 18px; letter-spacing: 1px;
-    box-shadow: inset 0 1px 0 #ffffff10, 0 3px 14px #000000a0;
-    text-shadow: 0 0 6px #000; width: max-content; box-sizing: border-box; max-width: min(880px, calc(100vw / var(--u) - 2 * var(--mx))); text-align: center; transition: border-color 0.2s, color 0.2s; }
-  #tutPrompt.hidden { display: none; }
-  #tutPrompt.done { border-color: #8fbf6a; color: #c8f0a8; }
-  #tutStep { color: #8f866c; font-size: 13px; margin-right: 14px; letter-spacing: 2px; }
-  #tutHint { margin-top: 5px; text-align: center; font-size: 15px; color: #f0b070; }
-  #tutHint:empty { display: none; }
-  #tutText { line-height: 1.5; }
-  #tutGuide { margin-top: 10px; color: #ffd782; font-size: 16px; letter-spacing: 0.5px; }
-  #tutGuide[hidden], #tutGuideArrow[hidden] { display: none; }
-  #tutGuideArrow { display: inline-block; margin-right: 10px; font-size: 26px; line-height: 1; }
+  /* Lesson cards (js/lessons.js, v7.19.0): one control at a time, under the boss bar's slot. A smoked plate in a gilt
+     hairline with corner ticks, the heading in small caps between two rules, the controls as engraved keycaps (round
+     face buttons on a controller). It rises in with a little ember light; once done, a gilt seal stamps on its corner. */
+  #lesson { position: relative; margin-top: 4px; width: max-content; box-sizing: border-box; padding: 13px 30px 15px; text-align: center;
+    max-width: min(580px, calc(100vw / var(--u) - 2 * var(--mx))); color: #e9dfc4; pointer-events: none;
+    background: radial-gradient(ellipse 70% 90% at 50% 0%, #3a2a1270, #0000 70%), linear-gradient(#0d0b0ee8, #08070bdc);
+    border: 1px solid #6e5d36a0; box-shadow: inset 0 1px 0 #ffffff0d, 0 8px 26px #000b;
+    opacity: 0; transform: translateY(-6px); transition: opacity 0.35s, transform 0.35s, border-color 0.3s; }
+  #lesson::before, #lesson::after { content: ''; position: absolute; width: 12px; height: 12px; pointer-events: none; }
+  #lesson::before { left: -1px; top: -1px; border-left: 1px solid var(--gilt); border-top: 1px solid var(--gilt); }
+  #lesson::after { right: -1px; bottom: -1px; border-right: 1px solid var(--gilt); border-bottom: 1px solid var(--gilt); }
+  #lesson.show { opacity: 1; transform: none; }
+  #lesson.show.enter { animation: lessonIn 0.6s ease-out; }
+  @keyframes lessonIn { 0% { opacity: 0; transform: translateY(-12px); box-shadow: inset 0 1px 0 #ffffff0d, 0 0 0 #0000; }
+    55% { box-shadow: inset 0 1px 0 #ffffff0d, 0 0 30px #d9902c50; } 100% { opacity: 1; transform: none; } }
+  .lesson-title { display: flex; align-items: center; justify-content: center; gap: 12px; font: 15px/1.3 Georgia, serif;
+    font-variant: small-caps; letter-spacing: 4px; color: #dcc086; text-shadow: 0 0 10px #000; transition: color 0.3s; }
+  .lesson-title::before, .lesson-title::after { content: ''; width: 38px; height: 1px; background: linear-gradient(90deg, #c9a85e00, #c9a85eb0); }
+  .lesson-title::after { transform: scaleX(-1); }
+  #lessonKeys { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; margin: 11px 0 9px; }
+  .lesson-group { display: inline-flex; align-items: center; gap: 6px; }
+  .lesson-name { margin-right: 2px; font: 10px/1 Arial, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #a99c7c; }
+  .lesson-sep { width: 5px; height: 5px; margin: 0 6px; transform: rotate(45deg); border: 1px solid #c9a85e88; }
+  .lesson-cap { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 30px; height: 30px; padding: 0 9px;
+    font: 14px/1 Georgia, serif; color: #f6e9c4; background: linear-gradient(#2f281a, #15120c); border: 1px solid #9c8650; border-radius: 5px;
+    box-shadow: 0 3px 0 #000, inset 0 1px 0 #ffffff26, inset 0 -2px 0 #00000070, 0 0 12px #c9a85e2a; }
+  .lesson-cap.mouse, .lesson-cap.stick, .lesson-cap.pad { border-radius: 15px; padding: 0 12px; font-size: 12px; letter-spacing: 1px; }
+  .lesson-cap.face { width: 30px; padding: 0; border-radius: 50%; font: bold 14px/1 Arial, sans-serif; }
+  .lesson-cap.face-a { color: #9bd884; border-color: #6c9a58; } .lesson-cap.face-b { color: #ec8a7a; border-color: #a2584c; }
+  .lesson-cap.face-x { color: #8bb6f0; border-color: #557aa8; } .lesson-cap.face-y { color: #eed27a; border-color: #a28c4a; }
+  #lessonText { max-width: 470px; margin: 0 auto; font: 15px/1.5 Georgia, serif; color: #e6dcc2; text-shadow: 0 1px 3px #000; }
+  #lessonHint { margin-top: 6px; font: italic 14px/1.4 Georgia, serif; color: #f0b070; }
+  #lessonHint:empty { display: none; }
+  .lesson-seal { position: absolute; right: -13px; top: -13px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+    border-radius: 50%; font: bold 15px/1 Arial, sans-serif; color: #2a1c08; background: radial-gradient(circle at 40% 35%, #fbe3a0, #c9963a 60%, #6e4f1c);
+    box-shadow: 0 0 0 1px #000, 0 0 14px #ffd27a90; opacity: 0; transform: scale(1.8) rotate(-25deg); transition: opacity 0.2s, transform 0.3s cubic-bezier(0.2, 1.6, 0.4, 1); }
+  #lesson.done { border-color: #e3c47c; }
+  #lesson.done .lesson-title { color: #ffe2a0; }
+  #lesson.done .lesson-seal { opacity: 1; transform: none; }
+  #lesson.still, #lesson.still.show.enter, #lesson.still .lesson-seal { animation: none; transform: none; }
+  #hud.narrow #lesson { padding: 11px 18px 13px; }
+  #hud.narrow #lessonText { font-size: 14px; }
   #menu.story-menu #menuBox { padding-top: 7vh; }
   #menu.story-menu h1 { font-size: clamp(34px, 6vw, 70px); }
   #menu.story-menu .sub { letter-spacing: 1px; }
@@ -327,9 +391,6 @@
   #menu.story-menu .campaign-start:first-child { margin-top: 0; }
   #menu.story-menu .campaign-start::after { content: attr(data-group); position: absolute; left: 0; right: 0; bottom: 100%;
     font-size: 14px; letter-spacing: 2px; color: #c9b26a; padding-bottom: 7px; pointer-events: none; }
-  #tutDone { position: absolute; left: 0; right: 0; top: 36%; text-align: center; font-size: 46px; letter-spacing: 10px;
-    color: #c9b26a; text-shadow: 0 0 20px #000; opacity: 0; transition: opacity 0.6s; }
-  #tutDone.show { opacity: 1; }
   #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
     color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
   #rested.show { opacity: 1; transition: opacity 0.4s; }
@@ -342,7 +403,7 @@
   #hud.narrow #eName { font-size: 14px; letter-spacing: 3px; }
   #hud.narrow #died .big { font-size: 48px; letter-spacing: 8px; }
   #hud.narrow #complete .big { font-size: 34px; letter-spacing: 6px; }
-  #hud.narrow #won .big, #hud.narrow #tutDone, #hud.narrow #rested { font-size: 26px; letter-spacing: 6px; }
+  #hud.narrow #won .big, #hud.narrow #rested { font-size: 26px; letter-spacing: 6px; }
   /* Boss team builder: two rosters, with shared start/back actions below them. */
   #menu.boss-team-menu #menuBox { padding-top: 7vh; }
   #menu.boss-team-menu h1 { font-size: clamp(28px, 6vw, 70px); }
@@ -384,6 +445,8 @@
     #pHp.low { border-color: #e0604a; }
     #ePost.warn { border-color: #f4d27a; }
     .toast { animation: none; opacity: 1; transform: none; }
+    #lesson, #lesson.show.enter, #lesson .lesson-seal { animation: none !important; transform: none !important; }
+    .menuBtn.hero .b::before { animation: none !important; }
   }
 </style>
 <script>
@@ -446,7 +509,8 @@
         <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
         <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
-      <div id="tutPrompt" class="hidden"><span id="tutStep"></span><span id="tutText"></span><div id="tutHint"></div><div id="tutGuide" hidden><span id="tutGuideArrow" aria-hidden="true">↑</span><span id="tutGuideText"></span></div></div>
+      <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
+        <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>
     </div>
     <div class="anchor" id="aBC">
       <div id="toasts"></div>
@@ -463,7 +527,6 @@
       </div>
       <div id="helpHint"></div>
     </div>
-    <div id="tutDone">TUTORIAL COMPLETE</div>
     <div id="rested">RESTED</div>
     <div id="died"><div class="big">YOU DIED</div><div class="small" id="diedStatus">Returning to the last bonfire&hellip;</div><div class="small tip" id="diedTip"></div></div>
     <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
@@ -516,7 +579,7 @@ const GAME_FILES = [
   'terrain.js',
   'data/player.js',
   'data/bots.js',
-  'data/tutorial.js',
+  'data/lessons.js',
   'data/test-enemies.js',
   'data/enemies.js',
   'data/props.js',
@@ -526,7 +589,6 @@ const GAME_FILES = [
   'data/models-enemies.js',
   'data/models-bosses.js',
   'data/auto-quality.js',
-  'data/quality-choice.js',
   'data/animations.js',
   'data/attack-poses.js',
   'data/audio.js',
@@ -544,7 +606,6 @@ const GAME_FILES = [
   'data/lands-enemies.js',
   'levels/arena.js',
   'data/boss-battle.js',
-  'levels/tutorial.js',
   'levels/long-hall.js',
   'levels/sunken-keep.js',
   'levels/burning-town.js',
@@ -563,6 +624,7 @@ const GAME_FILES = [
   'levels/test-courtyard.js',
   'levels/test-mixed.js',
   'levels/test-town.js',
+  'levels/test-training.js',
   'data/levels.js',
   'data/bonfire-guidance.js',
   'data/story.js',
@@ -607,6 +669,7 @@ const GAME_FILES = [
   'finale.js',
   'lore.js',
   'story.js',
+  'lessons.js',
   'impact.js',
   'camera-feel.js',
   'effect-slots.js',
@@ -628,7 +691,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.18.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.19.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

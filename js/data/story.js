@@ -2,7 +2,6 @@
 // Story mode (v4.4; two roads since v7.0): each campaign as content. js/story.js plays them; this is only their text and order.
 //   id, name, short    the campaign's id (its save slot is CONFIG.story.saveKeys[id]), its menu line and a short tag (dev jumps)
 //   menuTitle, menuSub its own menu screen's title and subtitle; description: the line under it in the Story menu
-//   tutorial           the level played with Tutorial: On, or null (New goes straight to chapter 1)
 //   chapters           the campaign in order, each a level id with the title shown over its loading screen and one line
 //     linking it to the last. Optional `loadout: { <item id>: { min, max } }` clamps a carried item's capacity on that
 //     chapter (for a level built around a fixed kit).
@@ -11,8 +10,7 @@
 // The order here, not the levels' `next`, drives the campaign. Every line here must agree with LORE.md.
 const STORY = {
   id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story 1 (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
-  description: 'Start here. Five levels, from the prison to the king.',
-  tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
+  description: 'Start here. Five levels, from the prison to the king. The controls are taught on the way.',
   chapters: [
     { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells, in the old hall of judgment. The hall beyond is long, and not empty.' },
     { level: 'sunken-keep', title: 'THE SUNKEN KEEP', line: 'Below the hall the founders\' first keep sinks into the dark. He keeps his prisoners there now, and its wardens hold the doors.' },
@@ -30,9 +28,8 @@ const STORY = {
 // than Ashmere from its first step; every land grants more flasks (the levels' `flasks`). LORE.md, part II.
 const LANDS_STORY = {
   id: 'lands', name: 'The Lands Between: The Elden Throne', short: 'Lands', lobbyName: 'Story 2 (Lands)', menuTitle: 'THE LANDS BETWEEN', menuSub: 'THE ELDEN THRONE',
-  description: 'Harder. Eight levels, each with an Elden Ring boss. Finn fights beside you.',
+  description: 'Harder. Eight levels, each with an Elden Ring boss. Finn fights beside you. Best after Ashmere.',
   companion: { id: 'finn', name: 'Finn', profile: 'quill', color: 0x788d9f },
-  tutorial: { level: 'tutorial', title: 'THE TRAINING HALL', line: 'Before the road, learn the blade.' },
   chapters: [
     { level: 'stormhill', title: 'STORMHILL', line: 'The Elden Ring lies shattered, and the demigods who took its shards have gone mad with them. Grace has called you back from death, Tarnished. The road to the throne begins at Stormveil, and the Fell Omen keeps its gate.' },
     { level: 'stormveil', title: 'STORMVEIL CASTLE', line: 'Past the Omen stands the castle of Godrick the Grafted, who sews the limbs of the fallen onto his own body, and keeps a Great Rune he never earned.' },

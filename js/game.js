@@ -11,7 +11,6 @@ const Game = {
   duelId: null, duel: null,   // arena opponent
   duelPartners: [],           // further arena opponents fought at once (online boss groups)
   eldenBoss: null,       // Elden Ring Bosses mode (js/elden.js): the ELDEN_BOSSES entry being fought, else null
-  tut: null,             // tutorial progress: { index, flags, dist, doneTimer, completeTimer, hint, hintTimer }
   selected: 0,
   companion: null,       // optional local campaign ally (js/companions.js)
   allies() { return companions.actors(this); },
@@ -26,7 +25,6 @@ const Game = {
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
 
-  isTutorial() { return this.kind === 'level' && this.level.script === 'tutorial' && !(typeof multiplayer !== 'undefined' && multiplayer.connected); },
   duelWon() { return this.kind === 'arena' && !!this.duel && this.enemies.every(e => !e.alive()); },
 
   // ---- setup -----------------------------------------------------------------------------------
@@ -92,7 +90,7 @@ const Game = {
       input.pressed.clear();
       this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
       $('fade').classList.remove('show');   // fades back in after a level transition
-      this.setLock(null); this.retarget = true; this.tut = null; crowd.reset(); this.cleared = new Set(); this.hazardTimers = new Map();
+      this.setLock(null); this.retarget = true; crowd.reset(); this.cleared = new Set(); this.hazardTimers = new Map();
       const def = this.level;
       world = makeWorld(def, loadStage(def));
       const start = def.playerStart || def.start;
@@ -104,12 +102,7 @@ const Game = {
       hud.reset(this);
       finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
       lore.reset(this);     // the NPC, inscriptions and scenes of a story level (js/lore.js)
-      if (this.isTutorial()) {
-        this.tut = { index: 0, flags: {}, dist: 0, doneTimer: 0, completeTimer: 0, hint: '', hintTimer: 0 };
-        this.setupTutorialStep();
-        visuals.warmUp(this.cam);
-        return;
-      }
+      if (typeof lessons !== 'undefined') lessons.reset(this);   // the level's lesson cards (js/lessons.js; not on the server)
       this.enemies = this.makeEnemies();
       if (this.kind === 'bossBattle') this.updateCamera(0, true);
       if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
@@ -168,10 +161,8 @@ const Game = {
     const off = CONFIG.rest.respawnOffset;
     this.spawn = b.spawn ? { ...b.spawn }
       : { x: b.x + (b.x > p.x ? -off : off), z: b.z, yaw: this.level.start ? this.level.start.yaw : p.yaw };
-    if (!this.isTutorial()) {   // a checkpoint: everything beaten so far stays beaten
-      for (const e of this.enemies) if (!e.alive() && e.key) this.cleared.add(e.key);
-      this.respawnEnemies();
-    }
+    for (const e of this.enemies) if (!e.alive() && e.key) this.cleared.add(e.key);   // a checkpoint: everything beaten so far stays beaten
+    this.respawnEnemies();
     companions.reset(this);
     this.setLock(null); this.retarget = true;
     hud.showRested();
@@ -217,9 +208,9 @@ const Game = {
     return e.asleep;
   },
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
-  // body separation, combat, deaths, level gates or tutorial, camera.
+  // body separation, combat, deaths, level gates, camera, then the lesson cards (which only read).
   update(dt) {
-    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); return; }
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); if (typeof lessons !== 'undefined') lessons.update(this, dt); return; }
     if (this.kind === 'bossBattle') { bossBattle.update(this, dt); return; }
     const p = this.player, c = this.cam;
     for (const a of this.allies()) a.savePrev(); for (const e of this.enemies) e.savePrev();
@@ -232,7 +223,7 @@ const Game = {
       if (this.eldenBoss && elden.onDeath(this)) return;   // Elden Ring Bosses: Retry / Boss select instead of the respawn
       if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
         this.spawnPlayer(); this.setLock(null); this.retarget = true;
-        if (!this.isTutorial()) this.respawnEnemies();
+        this.respawnEnemies();
         events.emit('respawn', { player: this.player });
         return;
       }
@@ -263,15 +254,12 @@ const Game = {
     projectiles.update(this, dt);
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
-    if (!p.alive() && this.isTutorial()) {   // nothing can kill you in the tutorial
-      p.hp = 1; p.stunTime = CONFIG.player.hurtTime; p.setState(PS.HURT);
-    }
-    if (this.isTutorial()) this.updateTutorial(dt);
-    else if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }
+    if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }
     else if (this.eldenBoss) elden.update(this, dt);
     // Last, so a death from any cause this step (a blow, a fall, Destined Death, a hazard floor) starts the death sequence.
     if (!p.alive() && this.deathOf !== p) this.onPlayerDeath();
     this.updateCamera(dt, false);
+    if (typeof lessons !== 'undefined') lessons.update(this, dt);   // reads only: which card to show (js/lessons.js)
   },
 
   render(alpha, frameDt = CONFIG.step) {
@@ -333,7 +321,6 @@ const Game = {
       try { hook(this, placed); } catch (e) { warnOnce(`Render hook ${hook.name || 'anonymous'} failed: ${e && e.message}`); }
     }
     if (typeof multiplayer !== 'undefined') multiplayer.captureView();
-    this.drawRestArrow(t);
     hud.update(this, frameDt);
     companions.draw(this);
     visuals.render(this, t, frameDt);

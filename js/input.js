@@ -93,14 +93,14 @@ const input = {
 const SETTINGS_KEY = 'combat-arena-3d.settings';
 // `v`: the settings format (2 since v7.18: the one-time volume migration below has run).
 const DEFAULT_SETTINGS = Object.freeze({ v: 2, sensitivity: 5, invert: false, hudScale: 1,
-  graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true });
+  graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true, lessons: true });
 // The operating system asks for reduced motion: camera motion starts off until the player chooses otherwise.
 const prefersReducedMotion = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 function readSettings(value) {
   const clean = { ...DEFAULT_SETTINGS };
   if (prefersReducedMotion()) clean.cameraMotion = false;
   if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
-  for (const key of ['invert', 'cameraMotion'])
+  for (const key of ['invert', 'cameraMotion', 'lessons'])
     if (typeof value[key] === 'boolean') clean[key] = value[key];
   // Preserve a steadier view when either of the former camera options was disabled.
   if (value.screenShake === false) clean.cameraMotion = false;

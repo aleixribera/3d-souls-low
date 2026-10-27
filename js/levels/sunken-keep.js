@@ -22,6 +22,7 @@ const LEVEL_2 = {
                 shafts: { rooms: true, color: 0xd4e6cc, opacity: 0.2 },
                 banners: [0x2c3a2a, 0x3a2420], debris: 0.35 },
   start: { x: 5, z: 0, yaw: Math.PI / 2 },
+  lessons: [{ lesson: 'shield', when: { enemy: 'warden' } }],   // v7.19.0: the first raised shield (js/data/lessons.js)
   rooms: [
     { id: 'vestibule', rect: [0, 20, -8, 8], floor: 0x3a3733, wall: 0x4a453e, light: 0xffa060, lamps: [[18, -6.5], [18, 6.5]], braziers: [[2, 6.5]] },
     { id: 'hall-1', rect: [20, 34, -4, 4], floor: 0x2f3433, wall: 0x3a403f, light: 0x6fc8c0, dim: true, lamps: [[27, -3.2]] },

@@ -27,7 +27,7 @@ const NODE = ['net-timing', 'multiplayer', 'multiplayer-campaign', 'lobby-leader
   'boss-only', 'bot-behavior', 'bot-follow', 'bot', 'damage-leaderboard', 'fullscreen', 'autoquality', 'experience',
   'deployment', 'network-load', 'textures'];
 // Playwright suites that are not named *-browser.cjs.
-const BROWSER_EXTRA = ['onboarding', 'quality-picker'];
+const BROWSER_EXTRA = ['onboarding'];
 // Run only when named: benchmarks, long duels, and checks that need a running container.
 const OPTIONAL = {
   'bot-duel': 'bot duel benchmark; pass -- <boss|all> <trials>',

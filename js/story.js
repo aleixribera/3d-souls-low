@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Story mode (v4.4; two campaigns since v7.0): tutorial (optional) -> every chapter of a campaign -> its ending -> the title.
+// Story mode (v4.4; two campaigns since v7.0): every chapter of a campaign -> its ending -> the title.
 // ============================================================================
 // A campaign is one entry of STORIES (js/data/story.js): Ashmere (the Gaoler King) and the Lands Between (the Elden
 // Throne). Each keeps its own save slot (`saveKey`); one campaign is active at a time (`story.use(id)`), and every
@@ -15,11 +15,12 @@
 //     zones: [won zone ids, v5.1, optional], traps: [trap ids sprung], seen: [sightings already gone], bosses: [enemy def ids beaten, ever],
 //     progress: { inventory: { <item id>: { max } }, currency, equipment, upgrades }, completed: bool, savedAt: ms }
 // A save that is missing, unreadable or names something that no longer exists is treated as no save (New Game).
+// v7.19.0: the Training Hall is gone; a save made in it (level 'tutorial') starts chapter 1 instead.
 function makeCampaign(C) {
   const S = () => CONFIG.story;
   const chapterIds = () => C.chapters.map(c => c.level);
-  const storyLevels = () => [...(C.tutorial ? [C.tutorial.level] : []), ...chapterIds()];
-  const chapter = id => C.tutorial && id === C.tutorial.level ? C.tutorial : C.chapters.find(c => c.level === id) || null;
+  const storyLevels = () => chapterIds();
+  const chapter = id => C.chapters.find(c => c.level === id) || null;
   const key = () => S().saveKeys[C.id];
   let data = null;        // the save as last read or written (null: none)
   let status = 'none';    // 'none' | 'ok' | 'broken'
@@ -47,6 +48,7 @@ function makeCampaign(C) {
   // A readable save, or null. Anything odd (an old version, a level since removed, a bonfire that moved) is refused.
   function check(d) {
     if (!record(d) || d.v !== S().saveVersion) return null;
+    if (d.level === 'tutorial') d = { ...d, level: chapterIds()[0], bonfire: null, spawn: null };
     if (!storyLevels().includes(d.level)) return null;
     const L = ALL_LEVELS.find(l => l.id === d.level);
     if (!L) return null;
@@ -106,16 +108,16 @@ function makeCampaign(C) {
   const beatenBosses = new Set();
   function save(bonfire) {
     if (!Game.story || Game.kind !== 'level') return false;
-    const tut = Game.isTutorial(), prev = data && data.level === Game.level.id ? data : null;
+    const prev = data && data.level === Game.level.id ? data : null;
     data = {
       v: S().saveVersion, level: Game.level.id,
-      bonfire: tut ? null : bonfire !== undefined ? bonfire : prev ? prev.bonfire : null,
-      spawn: tut || (bonfire === undefined && !(prev && prev.bonfire)) ? null : { ...Game.spawn },
-      cleared: tut ? [] : checkpointCleared(),
-      zones: tut ? [] : Game.zones.filter(z => z.gate.open).map(z => z.id),
-      shortcuts: tut ? [] : world.gates.filter(g => g.opensFrom && g.open).map(g => g.id),
-      traps: tut ? [] : world.traps.filter(t => t.state === 'sprung').map(t => t.id),
-      seen: tut ? [] : finale.seenSightings(),
+      bonfire: bonfire !== undefined ? bonfire : prev ? prev.bonfire : null,
+      spawn: bonfire === undefined && !(prev && prev.bonfire) ? null : { ...Game.spawn },
+      cleared: checkpointCleared(),
+      zones: Game.zones.filter(z => z.gate.open).map(z => z.id),
+      shortcuts: world.gates.filter(g => g.opensFrom && g.open).map(g => g.id),
+      traps: world.traps.filter(t => t.state === 'sprung').map(t => t.id),
+      seen: finale.seenSightings(),
       bosses: [...new Set([...(data ? data.bosses : []), ...beatenBosses])],
       progress: captureProgress(),
       completed: !!(data && data.completed),
@@ -131,7 +133,7 @@ function makeCampaign(C) {
   }
   // Autosaves (v5.1): a zone won or a shortcut opened is kept at once (its gate stays open on Continue; the kills since
   // the last rest still come back, as after a death), and so is everything when the page is hidden or closed.
-  const autosave = () => { if (Game.story && !restoring && Game.kind === 'level' && !Game.isTutorial() && Game.player && Game.player.alive()) save(); };
+  const autosave = () => { if (Game.story && !restoring && Game.kind === 'level' && Game.player && Game.player.alive()) save(); };
   function finish() {
     if (data) { data.completed = true; write(data); }
     Game.story = false; Game.reset();
@@ -143,15 +145,15 @@ function makeCampaign(C) {
     Game.story = true; beatenBosses.clear();
     Game.startLevel(levelId);
   }
-  function newGame(withTutorial) {
+  function newGame() {
     erase();
     data = { v: S().saveVersion, level: chapterIds()[0], bonfire: null, spawn: null, cleared: [], shortcuts: [], traps: [], seen: [], bosses: [],
              progress: freshProgress(), completed: false, savedAt: Date.now() };
-    begin(withTutorial && C.tutorial ? C.tutorial.level : chapterIds()[0]);
+    begin(chapterIds()[0]);
   }
   // Developer jump (#dev): a fresh story starting at any chapter.
   function jumpTo(levelId) {
-    newGame(false);
+    newGame();
     if (levelId !== chapterIds()[0]) begin(levelId);
   }
   // Continue: the saved level, rebuilt to its checkpoint as if the player had just rested there.
@@ -162,22 +164,20 @@ function makeCampaign(C) {
     restoring = true;
     try {
       begin(d.level);
-      if (!Game.isTutorial()) {
-        Game.cleared = new Set(d.cleared);
-        for (const g of world.gates) if (g.opensFrom && d.shortcuts.includes(g.id)) { g.open = true; g.lift = 1; }
-        for (const t of world.traps) if (d.traps.includes(t.id) && t.state === 'set') { t.state = 'sprung'; t.dropTime = 99; world.openHole(t.region, t.collapse); }
-        // Zones whose every member was beaten are won: their gates stand open (silently) and their fighters are gone.
-        for (const z of Game.zones) {
-          const keys = z.members.map(m => Game.placementKey({ ...m, ...m.spawn }, z.id + '/'));
-          if (!(d.zones || []).includes(z.id) && (!keys.length || !keys.every(k => Game.cleared.has(k)))) continue;
-          z.gate.open = true; z.gate.lift = 1; z.beaten = true;
-          for (const a of z.actors) a.rig.dispose();
-          Game.enemies = Game.enemies.filter(e => !z.actors.includes(e)); z.actors = [];
-        }
-        Game.respawnEnemies();
-        finale.skipSightings(d.seen);
-        if (d.spawn) { Game.spawn = { ...d.spawn }; Game.spawnPlayer(); }
+      Game.cleared = new Set(d.cleared);
+      for (const g of world.gates) if (g.opensFrom && d.shortcuts.includes(g.id)) { g.open = true; g.lift = 1; }
+      for (const t of world.traps) if (d.traps.includes(t.id) && t.state === 'set') { t.state = 'sprung'; t.dropTime = 99; world.openHole(t.region, t.collapse); }
+      // Zones whose every member was beaten are won: their gates stand open (silently) and their fighters are gone.
+      for (const z of Game.zones) {
+        const keys = z.members.map(m => Game.placementKey({ ...m, ...m.spawn }, z.id + '/'));
+        if (!(d.zones || []).includes(z.id) && (!keys.length || !keys.every(k => Game.cleared.has(k)))) continue;
+        z.gate.open = true; z.gate.lift = 1; z.beaten = true;
+        for (const a of z.actors) a.rig.dispose();
+        Game.enemies = Game.enemies.filter(e => !z.actors.includes(e)); z.actors = [];
       }
+      Game.respawnEnemies();
+      finale.skipSightings(d.seen);
+      if (d.spawn) { Game.spawn = { ...d.spawn }; Game.spawnPlayer(); }
     } finally { restoring = false; }
     save();
   }
@@ -187,10 +187,8 @@ function makeCampaign(C) {
     if (data && data.level !== Game.level.id) { data = { ...data, bonfire: null, spawn: null }; }
     save(null);
   }
-  function afterTutorial() { begin(chapterIds()[0]); }
   function nextLevelId(id) {
     const ids = chapterIds(), i = ids.indexOf(id);
-    if (C.tutorial && id === C.tutorial.level) return ids[0];
     return i >= 0 && i < ids.length - 1 ? ids[i + 1] : null;
   }
   function quit() { save(); Game.story = false; Game.reset(); Game.showMenu('main'); }
@@ -214,7 +212,7 @@ function makeCampaign(C) {
   }
   load();
   return {
-    def: C, items, newGame, resume, jumpTo, quit, save, erase, load, onLevelStart, afterTutorial, nextLevelId, applyProgress, chapter,
+    def: C, items, newGame, resume, jumpTo, quit, save, erase, load, onLevelStart, nextLevelId, applyProgress, chapter,
     storyLevels, chapterIds, levelName, card, bossBeaten, autosave, finish,
     get data() { return data; }, get status() { return status; }, get storageOk() { return storageOk; },
   };
@@ -224,21 +222,19 @@ function makeCampaign(C) {
 const story = (() => {
   const campaigns = Object.fromEntries(STORIES.map(C => [C.id, makeCampaign(C)]));
   let active = campaigns[STORIES[0].id];
-  let withTutorial = true;
   const A = () => active;
   const startNew = () => {
-    const campaign = A(), tutorial = withTutorial && !!campaign.def.tutorial;
-    const level = tutorial ? campaign.def.tutorial.level : campaign.chapterIds()[0];
-    Game.loadingFirst(...campaign.card(level), () => campaign.newGame(tutorial));
+    const campaign = A();
+    Game.loadingFirst(...campaign.card(campaign.chapterIds()[0]), () => campaign.newGame());
   };
   events.on('enemyDeath', d => { const e = d.enemy; if (Game.story && e.isBoss()) A().bossBeaten(e); });
-  events.on('rest', d => { if (Game.story && !Game.isTutorial()) A().save(d.bonfire.id); });
+  events.on('rest', d => { if (Game.story) A().save(d.bonfire.id); });
   events.on('gateOpened', () => A().autosave());
   window.addEventListener('pagehide', () => A().autosave());
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') A().autosave(); });
   events.on('endingDone', () => { if (Game.story) A().finish(); });
 
-  // The campaign a level belongs to (its chapters or tutorial), or null.
+  // The campaign a level belongs to (its chapters), or null.
   const owner = levelId => STORIES.map(C => campaigns[C.id]).find(c => c.chapterIds().includes(levelId)) || null;
 
   function screens(game) {
@@ -247,11 +243,13 @@ const story = (() => {
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level of either road.', go: () => game.showMenu('storyJump') },
       { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
     ] : [];
-    return { main: [{ name: 'Story', desc: 'Continue your game or start a new story.', go: () => game.showMenu('story') }],
+    // The title's Story card (v7.19.0) names the road last played, or where a first story begins.
+    const last = Object.values(campaigns).filter(c => c.status === 'ok' && !c.data.completed).sort((a, b) => (b.data.savedAt || 0) - (a.data.savedAt || 0))[0];
+    const line = last ? `Continue ${last.def.short}: ${last.levelName(last.data.level)}` : 'Begin in Ashmere. The controls are taught on the way.';
+    return { main: [{ name: 'Story', line, desc: `${line}. Two roads, saved at every bonfire.`, go: () => game.showMenu('story') }],
       devItems: devJumps, screens: {
       story: { title: 'STORY', sub: 'Choose a story, then play.', back: 'main', items: [
         ...STORIES.flatMap(S => campaigns[S.id].items(game)),
-        { name: `Tutorial: ${withTutorial ? 'On' : 'Off'}`, desc: 'Learn the controls before a new game.', adjust: () => { withTutorial = !withTutorial; } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
       ] },
       storyConfirm: { title: 'NEW GAME?', sub: C.menuTitle, notice: 'Replace this story’s saved game?', back: 'story', items: [
@@ -264,7 +262,7 @@ const story = (() => {
       storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'main',
         items: STORIES.flatMap(S => { const c = campaigns[S.id];
           return c.storyLevels().map(id => ({ name: `${S.short}: ${c.levelName(id)}`, desc: 'Developer: starts a fresh story here (that road\'s save is replaced).',
-            go: () => { story.use(S.id); if (S.tutorial && id === S.tutorial.level) game.chooseTutorialQuality(() => c.newGame(true), 'storyJump'); else c.jumpTo(id); } })); }) },
+            go: () => { story.use(S.id); c.jumpTo(id); } })); }) },
     } };
   }
 
@@ -275,9 +273,9 @@ const story = (() => {
     get active() { return active; },
     load() { for (const c of Object.values(campaigns)) c.load(); },
     // Everything else acts on the active campaign.
-    newGame: w => A().newGame(w), resume: () => A().resume(), jumpTo: id => { const c = owner(id); if (c) active = c; return A().jumpTo(id); },
+    newGame: () => A().newGame(), resume: () => A().resume(), jumpTo: id => { const c = owner(id); if (c) active = c; return A().jumpTo(id); },
     quit: () => A().quit(), save: b => A().save(b), erase: () => A().erase(), onLevelStart: () => A().onLevelStart(),
-    afterTutorial: () => A().afterTutorial(), nextLevelId: id => A().nextLevelId(id), applyProgress: p => A().applyProgress(p), chapter: id => A().chapter(id),
+    nextLevelId: id => A().nextLevelId(id), applyProgress: p => A().applyProgress(p), chapter: id => A().chapter(id),
     get data() { return A().data; }, get status() { return A().status; }, get storageOk() { return A().storageOk; },
   };
 })();

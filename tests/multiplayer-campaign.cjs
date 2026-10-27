@@ -33,7 +33,10 @@ function peer(url) {
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const url = `ws://127.0.0.1:${app.server.address().port}/lobby`;
   const add = async () => { const p = peer(url); peers.push(p); return [p, await p.join()]; };
+  // The title screen's live badge reads /api/lobby: how many are in, and what they are playing (v7.19.0).
+  const lobby = async () => (await fetch(url.replace('ws:', 'http:').replace('/lobby', '/api/lobby'))).json();
   try {
+    assert.equal((await lobby()).playing, null, 'an empty lobby plays nothing');
     const [a, welcome] = await add(), [b] = await add();
     assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'gauntlet', id: 'boss-only' });
     assert.deepEqual(welcome.catalog.campaigns.map(c => c.id), ['ashmere', 'lands'], 'only the two story roads are available online');
@@ -62,6 +65,9 @@ function peer(url) {
       for (const p of peers) p.ready(session);
       await a.next('frame', m => m.frame.epoch === session.epoch && m.frame.time > 0);
       if (i === 0) {
+        const info = await lobby();
+        assert.equal(info.players, 2);
+        assert.ok(/ · /.test(info.playing) && info.playing.toLowerCase().endsWith(session.campaign.title.toLowerCase()), `/api/lobby names the run: ${info.playing}`);
         a.send({ type: 'control', action: 'next' });
         assert.match((await a.next('error')).message, /Finish this level/);
         b.send({ type: 'control', action: 'next' });

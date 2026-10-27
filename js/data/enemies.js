@@ -402,7 +402,7 @@ const ENEMY_DEFS = [
     attacks: B.attacks.map(a => a.id === 'bowShot' ? { ...a, id: 'castleShot', projectile: { ...a.projectile, speed: 28 }, range: 34 } : a) });
 }
 
-// Training dummies (tutorial only): same humanoid primitives. They never move or aggro, never die,
+// Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).
 const SPARRING_DUMMY = { id: 'sparringDummy', name: 'Sparring Dummy', scale: 1.0, bulk: 1.05, radius: 0.42, color: 0x6a5446, weapon: 'sword',

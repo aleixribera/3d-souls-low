@@ -21,7 +21,7 @@ const multiplayer = (() => {
   panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'lobbyTitle');
   panel.innerHTML = `<div class="lobby-card">
-    <header class="lobby-header"><div><p class="lobby-kicker">COMBAT ARENA · ONLINE</p><h1 id="lobbyTitle">Public lobby</h1></div>
+    <header class="lobby-header"><div><p class="lobby-kicker">PLAYING ONLINE · EVERYONE ON THIS LINK</p><h1 id="lobbyTitle">The public lobby</h1></div>
     <span id="lobbyConnection" class="lobby-connection">Connecting</span></header>
     <p id="lobbyStatus" role="status" aria-live="polite">Connecting…</p>
     <p id="lobbyNotice" role="alert" hidden></p>
@@ -677,12 +677,53 @@ const multiplayer = (() => {
       : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
       : 'Play this encounter together.';
   }
+  // v7.19.0: plain words for someone who just followed the link. Who else is here, and who decides.
+  function guestStatus() {
+    const others = roster.filter(p => p.id !== self && !p.bot).length, lead = roster.find(p => p.id === leader)?.name || 'The leader';
+    return `You're in${others ? `, with ${others} other player${others > 1 ? 's' : ''}` : ''}. ${lead} leads: they choose the adventure and start it for everyone.`;
+  }
+  // The running adventure, in a few words ("Ashmere: The Long Hall"), or ''.
+  function runName() {
+    if (!session) return '';
+    if (session.campaign) return `${STORIES.find(s => s.id === session.campaign.id)?.short || session.campaign.name}: ${session.campaign.title.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}`;
+    if (session.gauntlet) return session.gauntlet.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    return session.kind === 'level' ? ALL_LEVELS.find(l => l.id === session.id)?.name || '' : ArenaNet.own(ENEMY_BY_ID, session.id)?.name || '';
+  }
+  // ---- the title screen's look at the lobby (v7.19.0) ------------------------------------------------------------
+  // How many are inside and what they play, asked only while the title shows (CONFIG.titleLobby). A page with no lobby
+  // (opened from a file, or a static host such as GitHub Pages) says so at once and asks no more; a lobby that stops
+  // answering keeps being asked. state: 'checking' | 'online' | 'offline' (unreachable for now) | 'absent' (no lobby here).
+  const peekState = { state: 'checking', players: 0, capacity: 0, playing: null };
+  let peekTimer = null, peekBusy = false;
+  const onTitle = () => Game.screen === 'main' && Game.mode === 'menu' && !connected && !starting;
+  function setPeek(next) {
+    const before = JSON.stringify(peekState);
+    Object.assign(peekState, next);
+    if (JSON.stringify(peekState) !== before && onTitle()) Game.refreshTitleLobby();
+  }
+  async function peek() {
+    clearTimeout(peekTimer); peekTimer = null;
+    if (!onTitle() || peekBusy || peekState.state === 'absent') return;
+    if (!/^https?:$/.test(location.protocol)) { setPeek({ state: 'absent' }); return; }
+    peekBusy = true;
+    try {
+      const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(CONFIG.titleLobby.timeout * 1000) });
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) setPeek({ state: 'absent' });
+      else {
+        const info = await response.json();
+        setPeek({ state: 'online', players: Math.max(0, Number(info.players) | 0), capacity: Math.max(0, Number(info.capacity) | 0),
+          playing: typeof info.playing === 'string' && info.playing ? info.playing.slice(0, 80) : null });
+      }
+    } catch (e) { setPeek({ state: 'offline' }); }
+    finally { peekBusy = false; }
+    if (onTitle() && peekState.state !== 'absent') peekTimer = setTimeout(peek, CONFIG.titleLobby.interval * 1000);
+  }
   function updateRoster() {
     const previousFocus = panel.contains(document.activeElement) ? document.activeElement : null, focusKey = previousFocus?.dataset.padKey;
     const owner = connected && self === leader;
     if (!owner && adventureBeforeEdit !== null) closeAdventurePicker(true);
     if (connected) el('lobbyStatus').textContent = owner ? session ? 'You lead the party. Your adventure is in progress.' : 'You lead the party. Choose an adventure and start when you are ready.'
-      : leader ? `${roster.find(p => p.id === leader)?.name || 'The leader'} leads the party.` : 'Use your keyboard, mouse or controller to become the leader.';
+      : leader ? guestStatus() : 'Use your keyboard, mouse or controller to become the leader.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
     el('lobbyGuestResume').hidden = !active();
@@ -702,7 +743,8 @@ const multiplayer = (() => {
     el('lobbyBotHint').hidden = !owner;
     el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : 'Bots fight beside you with the same moves: rolls, parries, combos and executions.';
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
-    el('lobbyWaiting').firstElementChild.textContent = session ? 'Your party is already in an adventure. Jump back in when you are ready.' : 'The leader chooses the adventure and starts for everyone.';
+    el('lobbyWaiting').firstElementChild.textContent = session ? `${runName() ? `${runName()} is underway.` : 'Your party is already in an adventure.'} Jump back in when you are ready.`
+      : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start. You will be brought in with everyone.`;
     updateConnection(); adventureSummary();
     const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name, !!p.bot]), self, leader, owner });
     if (signature !== rosterSignature) {
@@ -1153,8 +1195,9 @@ const multiplayer = (() => {
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, chapterCard, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack,
+    get lobby() { return { ...peekState }; },
     get campaign() { return connected ? session?.campaign || null : null; },
     get waitingForTeamWipe() { return waitingForTeamWipe(); },
     get spectatorMode() { return waitingForTeamWipe(); },

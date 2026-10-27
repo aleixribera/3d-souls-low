@@ -18,7 +18,6 @@ Object.assign(Game, {
       ] : this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
-        ...(this.isTutorial() ? [{ name: 'Skip tutorial', desc: 'Start the story now.', go: () => story.afterTutorial() }] : []),
         { name: 'Quit to main menu', desc: 'Saves first. Continue returns you to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
@@ -31,22 +30,17 @@ Object.assign(Game, {
     const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
     return {
       ...S.screens, ...elden.screens(this), ...bossBattle.screens(this),
-      tutorialQuality: { title: 'CHOOSE YOUR QUALITY', sub: 'Pick the look you prefer. You can change it later in Options.',
-        back: this.tutorialQualityBack || 'story',
-        items: QUALITY_CHOICES.map(choice => ({ ...choice, desc: choice.systems, go: () => {
-          const start = this.tutorialQualityStart;
-          if (!start) return;
-          settings.graphics = choice.id; saveSettings(); applySettings();
-          this.tutorialQualityStart = null;
-          start();
-        } })) },
-      main: { title: 'COMBAT ARENA 3D', sub: '', items: [
-        ...S.main,
-        { name: 'Join public lobby', desc: 'Play together on the home server. Anyone with the link can join.', go: () => multiplayer.join() },
-        { name: '1v1 Arena', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
-        { name: 'Levels', desc: 'Play a level on its own from any story.', go: () => this.showMenu('levels') },
-        { name: 'Options', desc: 'Graphics, camera, sound and controls.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
-        ...(DEV ? [{ name: 'Test Grounds', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems] : []),
+      // v7.19.0: the title leads with the two ways to play. Online first: everyone who opens the link plays in one public
+      // lobby, and the card says who is in it right now (multiplayer.lobby, asked while the title shows).
+      main: { title: 'COMBAT ARENA 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 0 : 1, items: [
+        { ...this.titleLobby(), size: 'hero', kicker: 'PLAY WITH FRIENDS', name: 'Play Online',
+          desc: 'Everyone who opens this link plays in the same public lobby. The leader picks the adventure and everyone goes in together.',
+          go: () => multiplayer.join() },
+        { ...S.main[0], size: 'hero', kicker: 'PLAY ALONE', label: 'Story' },
+        { name: '1v1 Arena', size: 'small', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
+        { name: 'Levels', size: 'small', desc: 'Play a level on its own from any story.', go: () => this.showMenu('levels') },
+        { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
+        ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems.map(it => ({ ...it, size: 'small' }))] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
         items: [...finale.devItems(), ...lore.devItems(),
@@ -74,6 +68,10 @@ Object.assign(Game, {
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
         { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Camera swing and shake from attacks, rolls, impacts and collapsing floors. Turn off for a steadier view.',
           adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
+        { name: `Lessons: ${onOff(settings.lessons !== false)}`, desc: 'Cards that teach the controls the first time a level needs them. Each shows once, until you have done it.',
+          adjust: () => { settings.lessons = settings.lessons === false; } },
+        { name: 'Show lessons again', desc: 'Forget which lessons you have learned, so every card shows again.',
+          go: () => { lessons.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
         { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
           adjust: d => {
             const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
@@ -88,19 +86,30 @@ Object.assign(Game, {
       ] },
     };
   },
-  chooseTutorialQuality(start, back = 'story') {
-    const measured = autoQuality.result();
-    const recommendation = measured && measured.width === innerWidth && measured.height === innerHeight && measured.pixelRatio === (devicePixelRatio || 1)
-      ? measured : autoQuality.recheck();
-    this.tutorialQualityRecommendation = recommendation.pick;
-    this.tutorialQualityStart = start; this.tutorialQualityBack = back;
-    this.showMenu('tutorialQuality');
-    const selected = QUALITY_CHOICES.findIndex(c => c.id === autoQuality.effective());
-    this.select(Math.max(0, selected));
+  // The title's online card: what the public lobby looks like from here (multiplayer.lobby), as its line and live badge.
+  titleLobby() {
+    const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
+    const live = L.state === 'online' && n > 0;
+    const badge = L.state === 'checking' ? 'Looking for the lobby…'
+      : L.state === 'online' ? live ? `${n} playing now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : 'Nobody inside yet. Start a run, then share this link.'
+      : L.state === 'offline' ? 'The lobby is not answering right now.' : 'Online play is on the home server link.';
+    return { line: 'Join your friends in the public lobby', badge, badgeState: live ? 'live' : L.state === 'online' ? 'open' : L.state,
+      reachable: L.state === 'online', label: `Play Online: Join public lobby. ${badge}` };
+  },
+  // A new answer from the lobby: rewrite the online card in place (the list and the selection stay), and move to it
+  // if the player has not chosen anything yet.
+  refreshTitleLobby() {
+    if (this.screen !== 'main' || this.mode !== 'menu') return;
+    const t = this.titleLobby(), b = $('menuList').children[0];
+    if (!b || !b.classList.contains('hero')) return;
+    b.querySelector('.b').textContent = t.badge; b.querySelector('.b').dataset.state = t.badgeState;
+    b.classList.toggle('offline', !t.reachable && t.badgeState !== 'checking');
+    b.setAttribute('aria-label', t.label);
+    if (this.menuItems && this.menuItems[0]) Object.assign(this.menuItems[0], t);
+    if (!this.menuTouched) this.select(t.reachable ? 0 : 1, document.activeElement && $('menuList').contains(document.activeElement));
   },
   showMenu(screen, keepSelection) {
     if (screen === 'lobby') { multiplayer.show(); return; }
-    if (screen !== 'tutorialQuality') this.tutorialQualityStart = null;
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
     const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()));
@@ -111,7 +120,8 @@ Object.assign(Game, {
     } else this.mode = 'pause';
     this.screen = screen; this.clearControls(); this.setLock(null);
     if (document.pointerLockElement) document.exitPointerLock();
-    $('menu').classList.toggle('quality-choice', screen === 'tutorialQuality');
+    $('menu').classList.toggle('title-menu', s.layout === 'title');
+    $('menu').classList.toggle('still', reducedMotion());
     $('menu').classList.toggle('story-menu', screen === 'story');
     $('menu').classList.toggle('boss-team-menu', screen === 'bossBattle');
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
@@ -124,25 +134,22 @@ Object.assign(Game, {
       const b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('aria-describedby', 'menuDesc');
-      b.className = 'menuBtn' + (it.adjust ? ' adj' : '');
+      b.className = 'menuBtn' + (it.adjust ? ' adj' : '') + (it.size ? ` ${it.size}` : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
+      if (it.size === 'hero') {   // a title card: a kicker over the name, a line under it, and a live badge
+        for (const [cls, text] of [['k', it.kicker], ['l', it.line], ['b', it.badge]]) {
+          const el = document.createElement('div'); el.className = cls; el.textContent = text || '';
+          if (cls === 'b') { el.dataset.state = it.badgeState || ''; el.setAttribute('aria-hidden', 'true'); }
+          b.appendChild(el);
+        }
+        if (it.reachable === false && it.badgeState !== 'checking') b.classList.add('offline');
+      }
       if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
       if (it.label) b.setAttribute('aria-label', it.label);
       if (it.team) b.dataset.team = it.team;
       if (it.row) b.style.gridRow = it.row;
       if (it.disabled) { b.setAttribute('aria-disabled', 'true'); b.classList.add('unavailable'); }
-      if (screen === 'tutorialQuality') {
-        const frame = document.createElement('span'); frame.className = 'quality-image';
-        const img = document.createElement('img'); img.src = it.image; img.alt = it.alt; img.width = 800; img.height = 600;
-        const look = document.createElement('span'); look.className = 'quality-look'; look.textContent = it.look;
-        frame.append(img, look); b.prepend(frame);
-        if (it.id === this.tutorialQualityRecommendation) {
-          const badge = document.createElement('span'); badge.className = 'quality-recommended'; badge.textContent = 'System recommended';
-          frame.appendChild(badge);
-        }
-        b.setAttribute('aria-label', `${it.name} quality. ${it.systems}. ${it.look}.${it.id === this.tutorialQualityRecommendation ? ' System recommended.' : ''}`);
-      }
       b.addEventListener('focus', () => this.select(i));
       if (it.adjust) for (const [cls, d] of [['al', -1], ['ar', 1]]) {   // ‹ › : the setting can be stepped either way (clickable)
         const a = document.createElement('span'); a.className = cls; a.textContent = d < 0 ? '‹' : '›';
@@ -153,27 +160,37 @@ Object.assign(Game, {
       // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it.
       b.addEventListener('mousemove', ev => {
         if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
-        events.emit('menuMove'); this.select(i);
+        events.emit('menuMove'); this.menuTouched = true; this.select(i);
       });
       list.appendChild(b);
     });
-    this.select(keepSelection ? this.selected : Math.max(0, s.items.findIndex(it => !it.disabled)), true);
+    if (!keepSelection) this.menuTouched = false;
+    this.select(keepSelection ? this.selected : s.focus ?? Math.max(0, s.items.findIndex(it => !it.disabled)), true);
+    if (screen === 'main' && typeof multiplayer !== 'undefined') multiplayer.peek();   // who is online right now
   },
   // Key or button names follow the device used last, so this is redone when it changes.
   showMenuHint() {
     const screen = this.screen, own = this.screens()[screen].hint;
     if (own) { $('menuHint').textContent = own; return; }
-    if (screen === 'tutorialQuality') {
-      $('menuHint').textContent = `${menuLabel('left')} · ${menuLabel('right')} to select · ${menuLabel('confirm')} to start tutorial · ${menuLabel('back')} to go back`;
-      return;
-    }
     $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
       (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
       (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
   },
   // One step of directional menu input (keys, D-pad or stick).
+  // The title is a grid: the two cards stacked, the small entries in a row under them.
   menuStep(dir) {
-    if (this.screen === 'tutorialQuality' || dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1), true); }
+    const items = this.menuItems || [], it = items[this.selected];
+    this.menuTouched = true;
+    if (this.screens()[this.screen].layout === 'title' && it) {
+      const heroes = items.filter(x => x.size === 'hero').length, small = it.size !== 'hero';
+      let to = this.selected;
+      if (dir === 'down') to = small ? 0 : this.selected + 1;
+      else if (dir === 'up') to = small ? heroes - 1 : this.selected - 1;
+      else to = small ? heroes + (this.selected - heroes + (dir === 'left' ? -1 : 1) + items.length - heroes) % (items.length - heroes) : this.selected + (dir === 'left' ? -1 : 1);
+      events.emit('menuMove'); this.select(to, true);
+      return;
+    }
+    if (dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1), true); }
     else this.adjust(dir === 'left' ? -1 : 1);
   },
   select(i, focus = true) {
@@ -210,8 +227,6 @@ Object.assign(Game, {
     if (online && multiplayer.runIntroActive) return;
     if (fromPointer && online && multiplayer.spectatorMode) return;
     if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
-    // Tutorial: the pause key leaves to the Levels list (and restarts), except on the pause step itself.
-    if (!fromFocus && this.isTutorial() && !this.story && !this.tutorialAllowsPause()) { if (!fromPointer) this.leaveTutorial(); return; }
     this.showMenu('pause');
     events.emit('pause');
   },
@@ -291,7 +306,6 @@ Object.assign(Game, {
     this.loading = Math.max(0, this.loading - dt);
     if (this.loading <= 0) $('loading').classList.remove('show');
   },
-  leaveTutorial() { if (this.story) story.afterTutorial(); else { this.reset(); this.showMenu('levels'); } },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.show(); return; }

@@ -2,6 +2,7 @@
 
 One line per release, newest first. Design notes for each feature: `docs/feature-history.md`; the current rules: `AGENTS.md`.
 
+- **v7.19.0** (2026-10-27) — Friendlier start: an online-first title (Play Online and Story cards, a live lobby badge from `/api/lobby` `playing`, clearer lobby copy), the Training Hall replaced by lesson cards inside Level 1 (one each in Levels 2 and 3, catch-up in Stormhill), Options to turn lessons off or show them again, old tutorial saves continue in Level 1. Notes: `docs/onboarding-v7.19.0.md`.
 - **v7.18.0** (2026-10-27) — Audit fixes: hardened multiplayer server (own-key id lookups, range-checked hits and executions, connection and message limits, data validation at startup, caching), deaths from every cause run the death sequence, enemy sound markers, input buffer on simulation time, lock-on through the simulated camera, rendering leaks and per-frame garbage, reduced-motion support, Game split into four files, CI on every push, AGENTS.md rewritten as a guide.
 - **v7.17.0** (2026-10-26, untagged; includes the v7.16.1 companion follow-ups) — Steadier battles: exact camera springs, owner-tagged companion events, positional companion audio, one instanced burst pool, retired navigation routes, cancellable thunder, HUD contrast.
 - **v7.16.0** (2026-10-23) — Add Finn as the solo Lands campaign companion

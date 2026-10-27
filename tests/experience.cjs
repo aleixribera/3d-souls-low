@@ -70,7 +70,7 @@ const campaignContext = vm.createContext({
   ALL_LEVELS: [{ id: 'hall', bonfires: [] }], PLAYER_DEF: { inventory: [] }, ITEMS: { flask: {} },
   localStorage: { getItem: () => stored, setItem(k, v) { if (refuseWrite) throw new Error('Quota exceeded'); stored = v; } },
   events: { emit: type => notices.push(type) },
-  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [], isTutorial: () => false },
+  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [] },
   world: { gates: [], traps: [] }, finale: { seenSightings: () => [] },
 });
 const storySource = source('js/story.js');

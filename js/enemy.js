@@ -75,7 +75,7 @@ class Enemy {
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
     this.rewarded = false;                           // death already announced
-    this.training = !!B.training;                    // tutorial dummy: rooted, never dies
+    this.training = !!B.training;                    // training dummy: rooted, never dies
     this.immovable = this.training;
     this.discovered = this.training;                 // has had its one-time auto lock-on (dummies never do)
     this.state = B.start; this.stateTime = 0;

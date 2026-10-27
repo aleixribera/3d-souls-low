@@ -5,7 +5,7 @@
 // Drawing only: the HUD reads the game (player, enemies, zones, target) and listens to events; it never writes to
 // them. Its own state (lag trails, pulse timers, the calm level) lives on `hud`. All numbers are in CONFIG.hud;
 // the layout (anchors, frames, colours) is in the page's stylesheet. Anchors (see #stage): top left, the player's
-// vitals; top centre, the boss bar and the tutorial prompt; bottom centre, warnings,
+// vitals; top centre, the boss bar and the lesson card (js/lessons.js); bottom centre, warnings,
 // notices and the interaction prompt; bottom left, help.
 const $ = id => document.getElementById(id);
 const clamp01 = v => Math.max(0, Math.min(1, v));
@@ -32,8 +32,6 @@ const hud = {
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
-  tutPrompt: $('tutPrompt'), tutStep: $('tutStep'), tutText: $('tutText'), tutHint: $('tutHint'), tutDone: $('tutDone'),
-  tutGuide: $('tutGuide'), tutGuideArrow: $('tutGuideArrow'), tutGuideText: $('tutGuideText'), guideForward: new THREE.Vector3(),
   help: $('help'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
   healingTip: $('healingTip'), healingTipText: $('healingTipText'), healingTipState: 'pending',
   groupTip: $('groupTip'), groupTipCount: $('groupTipCount'), groupTipText: $('groupTipText'),
@@ -112,7 +110,7 @@ const hud = {
     this.healingTip.hidden = true;
   },
   updateControlsTips(game, dt) {
-    const playing = game.mode === 'play' && game.loading <= 0 && !game.isTutorial();
+    const playing = game.mode === 'play' && game.loading <= 0 && !(typeof lessons !== 'undefined' && lessons.owns(game));   // lesson cards teach instead
     if (playing) this.controlsTipsTimer = Math.max(0, this.controlsTipsTimer - dt);
     const p = game.player, hidden = !playing || !p.alive() || this.helpOpen();
     this.controlsTips.hidden = hidden || this.controlsTipsTimer <= 0;
@@ -298,23 +296,6 @@ const hud = {
     if (s && s.text !== this.subText.textContent) { this.subName.textContent = s.name; this.subText.textContent = s.text; }
     this.sub.classList.toggle('show', !!s && s.show);
   },
-  // A camera-relative compass stays visible even when the tutorial fire is directly behind the camera.
-  updateTutorialGuide(game, step) {
-    const show = !!step && !!step.bonfire && game.tut.doneTimer <= 0 && game.player.alive();   // a step that names a bonfire guides to it
-    this.tutGuide.hidden = !show;
-    if (!show) return;
-    const b = world.bonfires.find(f => f.id === step.bonfire);
-    if (!b) { this.tutGuide.hidden = true; return; }
-    const p = game.player, dx = b.x - p.x, dz = b.z - p.z, distance = Math.hypot(dx, dz);
-    camera.getWorldDirection(this.guideForward);
-    const f = this.guideForward;
-    const angle = Math.atan2(dz * f.x - dx * f.z, dx * f.x + dz * f.z);
-    const near = !!game.nearBonfire();
-    this.tutGuideArrow.style.transform = `rotate(${near ? 0 : angle}rad)`;
-    this.tutGuideArrow.hidden = near;
-    this.tutGuideText.textContent = near ? `Press ${bindLabel('rest')} to rest` :
-      `${Math.abs(angle) > CONFIG.tutorial.restGuide.behindAngle ? 'Turn around · ' : ''}Bonfire · ${Math.ceil(distance)} m`;
-  },
   update(game, dt) {
     if (game.kind === 'bossBattle') { this.updateTags(game, dt); bossBattle.drawHud(game); return; }
     const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
@@ -342,17 +323,6 @@ const hud = {
       this.diedTip.textContent = multiplayer.gauntlet ? game.duelWon() ? multiplayer.gauntlet.next ? 'Next boss incoming. You return with full health.' : CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id]?.then ? `All bosses defeated. ${CONFIG.multiplayer.gauntlets[CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id].then].name} next…` : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.'
         : game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
     this.wasAlive = p.alive();
-    // Tutorial: one prompt at a time, replaced (never stacked) as steps advance.
-    const tut = game.tut, step = game.currentStep();
-    this.updateTutorialGuide(game, step);
-    this.tutPrompt.classList.toggle('hidden', !step);
-    if (step) {
-      this.tutStep.textContent = `${tut.index + 1} / ${game.tutorialSteps().length}`;
-      this.tutText.textContent = step.text(game);
-      this.tutHint.textContent = tut.hintTimer > 0 ? tut.hint : '';   // a short hint on its own line, replaced, never stacked
-      this.tutPrompt.classList.toggle('done', tut.doneTimer > 0);
-    }
-    this.tutDone.classList.toggle('show', !!tut && tut.completeTimer > 0);
     this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },

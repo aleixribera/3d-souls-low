@@ -287,10 +287,12 @@
   });
 
   // ---- the two roads, the menus ----------------------------------------------------------------------------------------
-  test('Menus: the title offers Story, the public lobby, 1v1 Arena, Levels and Options; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
+  test('Menus: the title offers Play Online (the public lobby), Story, 1v1 Arena, Levels and Options; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
     Game.showMenu('main');
     const main = Game.screens().main.items.map(i => i.name);
-    expect.ok(main.slice(0, 5).join() === 'Story,Join public lobby,1v1 Arena,Levels,Options', `main: ${main}`);
+    expect.ok(main.slice(0, 5).join() === 'Play Online,Story,1v1 Arena,Levels,Options', `main: ${main}`);
+    const sizes = Game.screens().main.items.slice(0, 5).map(i => i.size);
+    expect.ok(sizes.join() === 'hero,hero,small,small,small', `two large cards, then a row: ${sizes}`);
     const roads = Game.screens().story.items;
     expect.ok(roads.filter(i => i.name === 'New').map(i => i.campaign).join() === 'ashmere,lands' && roads.at(-1).name === 'Back', 'only Ashmere and Lands offer New on the same screen');
     expect.ok(Object.keys(A.story.campaigns).join() === 'ashmere,lands' && Object.keys(CONFIG.story.saveKeys).join() === 'ashmere,lands', 'only the two campaigns have story and save registrations');
@@ -305,7 +307,6 @@
     expect.ok(Game.screen === 'levelsAshmere', 'Ashmere opens its own list');
     const ash = Game.screens().levelsAshmere;
     expect.ok(ash.back === 'levels' && ash.items.length === A.STORY.chapters.length + 1, 'only Ashmere chapters and Back');
-    expect.ok(!ash.items.some(i => i.name === A.TUTORIAL.name), 'tutorial omitted');
     ash.items[ash.items.length - 1].go();
     levels[1].go();
     expect.ok(Game.screen === 'levelsLands' && Game.screens().levelsLands.back === 'levels', 'Lands list returns to the groups');
@@ -366,16 +367,14 @@
     const kept = Object.fromEntries(Object.values(CONFIG.story.saveKeys).map(k => [k, localStorage.getItem(k)]));
     const menu = () => { Game.showMenu('main'); Game.showMenu('story'); };
     const action = (id, name) => Game.menuItems.find(i => i.campaign === id && i.name === name).go();
-    const tutorial = on => { const it = Game.screens().story.items.find(i => i.name.startsWith('Tutorial:')); if (it.name !== `Tutorial: ${on ? 'On' : 'Off'}`) it.adjust(); };
     try {
       sim.begin();
       for (const c of Object.values(A.story.campaigns)) c.erase();
       for (const id of ['ashmere', 'lands']) {
-        menu(); tutorial(true); action(id, 'New');
-        expect.ok(Game.mode === 'play' && Game.story && Game.isTutorial() && A.story.active.def.id === id, `${id}: New starts the tutorial directly`);
-        A.story.afterTutorial();
+        menu(); action(id, 'New');
         const first = A.story.active.chapterIds()[0], before = localStorage.getItem(CONFIG.story.saveKeys[id]);
-        expect.ok(Game.level.id === first, `${id}: tutorial continues into its own campaign`);
+        expect.ok(Game.mode === 'play' && Game.story && A.story.active.def.id === id && Game.level.id === first, `${id}: New starts its first chapter directly`);
+        expect.ok(!Game.screens().story.items.some(i => /tutorial/i.test(i.name)), 'no Tutorial toggle');
         menu(); action(id, 'New');
         expect.ok(Game.screen === 'storyConfirm' && Game.menuItems[0].name === 'Cancel', 'only replacing a save needs a confirmation, defaulting to Cancel');
         Game.confirm();
@@ -383,15 +382,15 @@
         action(id, 'Continue');
         expect.ok(Game.mode === 'play' && Game.story && Game.level.id === first && A.story.active.def.id === id, 'Continue loads directly into the right campaign');
         const other = id === 'ashmere' ? 'lands' : 'ashmere', otherSave = localStorage.getItem(CONFIG.story.saveKeys[other]);
-        menu(); tutorial(false); action(id, 'New');
+        menu(); action(id, 'New');
         Game.menuItems.find(i => i.name === 'New').go();
-        expect.ok(Game.mode === 'play' && Game.story && Game.level.id === first, 'Tutorial Off starts chapter one directly after confirmation');
+        expect.ok(Game.mode === 'play' && Game.story && Game.level.id === first, 'replacing a save starts chapter one directly after confirmation');
         expect.ok(localStorage.getItem(CONFIG.story.saveKeys[other]) === otherSave, 'the other campaign save is untouched');
       }
     } finally {
       Game.story = false;
       for (const [key, value] of Object.entries(kept)) { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); }
-      A.story.load(); A.story.use('ashmere'); menu(); tutorial(true); Game.showMenu('main');
+      A.story.load(); A.story.use('ashmere'); Game.showMenu('main');
     }
   });
 

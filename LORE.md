@@ -111,7 +111,6 @@ How it is revealed:
 
 | Level | Place | Its history |
 |---|---|---|
-| Tutorial | The Training Hall | Where the castle's soldiers once learned the blade. |
 | 1 | The Long Hall | The old **hall of judgment's** approach, where kings walked to swear the Oath. Aldric walled its alcoves into cells. The player wakes here. |
 | 2 | The Sunken Keep | The Seven's **first keep**, the oldest stone in Ashmere, sinking into the river silt. Its chapel and shrine are the founders'; its throne room is where the Oath was sworn. Now the deep gaol, held by Shield Wardens. |
 | 3 | The Burning Town | **Corvel**, a river town of bellwrights and tinkers below the cliff. The town the champion would not burn. The Ashbound burned it anyway, a year later. |

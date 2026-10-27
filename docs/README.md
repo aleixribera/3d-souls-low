@@ -28,4 +28,4 @@ Start with `../AGENTS.md` (the project guide) and `CHANGELOG.md` (one line per r
 - `guiding-light-v7.4.md`
 
 ## Audits and onboarding
-- `onboarding-v7.3.1.md`, `experience-audit-v7.8.9.md`, `game-audit-v7.17.0.md`
+- `onboarding-v7.3.1.md`, `experience-audit-v7.8.9.md`, `game-audit-v7.17.0.md`, `onboarding-v7.19.0.md` (online-first title, lessons inside the levels)

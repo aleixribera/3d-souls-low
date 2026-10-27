@@ -1,10 +1,10 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.18.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.19.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
-- **Ashmere:** the Tutorial, Levels 1–5 and an ending.
+- **Ashmere:** Levels 1–5 and an ending. Level 1 teaches the controls with lesson cards.
 - **The Lands Between:** eight lands, one per Elden Ring boss, with its own ending and Finn as a solo companion.
 
 There is also a Levels menu, a 1v1 Arena (Enemies, Bosses, Elden Ring Bosses, Boss vs Boss), and an optional multiplayer server with a public lobby and friendly bots.
@@ -38,8 +38,8 @@ This file is the guide. History lives elsewhere (`docs/README.md` indexes all th
    - bots (`bot-navigation.js`, `bot.js`), `companions.js`, `projectiles.js`
 5. **Presentation and flow:**
    - `fx.js`, `visuals.js`, `textures.js`, `hud.js`, `audio.js`
-   - `Game`, split by concern: `game.js` (setup, bonfires, death, update, render), `game-menus.js` (menus and play flow), `game-view.js` (lock-on and camera), `game-level.js` (tutorial and level rules). Each later file is `Object.assign(Game, {...})`.
-   - `finale.js`, `lore.js`, `story.js`
+   - `Game`, split by concern: `game.js` (setup, bonfires, death, update, render), `game-menus.js` (menus and play flow), `game-view.js` (lock-on and camera), `game-level.js` (level rules). Each later file is `Object.assign(Game, {...})`.
+   - `finale.js`, `lore.js`, `story.js`, `lessons.js` (the lesson cards; reads only)
 6. **Drawing-only effects:**
    - `impact.js`, `camera-feel.js`, `effect-slots.js`
    - `spectral.js`, `flame.js`, `blackblade.js`, `holy.js`, `scarlet.js`
@@ -72,7 +72,8 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | A level | `js/levels/*.js`, listed in `data/levels.js` |
 | Story chapters and saves | `js/data/story.js`, `js/story.js`, `CONFIG.story` |
 | Lore, NPCs, inscriptions | `LORE.md`, then `js/data/lore.js` / `lore-lands.js` |
-| Menus | `js/game-menus.js` (`Game.screens()`) |
+| Menus, the title's online card | `js/game-menus.js` (`Game.screens()`, `titleLobby`), `multiplayer.peek()` |
+| Lessons (the controls taught in levels) | `js/data/lessons.js` (`LESSONS`, triggers), a level's `lessons`, `js/lessons.js`, `CONFIG.lessons` |
 | Bots | `js/bot.js`, `js/bot-navigation.js`, `js/data/bots.js`, `CONFIG.bot` |
 | Multiplayer | `server/simulation.js`, `server/index.cjs`, `js/multiplayer.js`, `js/net-protocol.js` |
 | Graphics presets | `CONFIG.VISUALS.quality` (low / high / ultra), `js/autoquality.js` |

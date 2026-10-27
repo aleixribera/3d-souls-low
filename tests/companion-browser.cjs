@@ -163,7 +163,7 @@ const { createServer } = require('../server/index.cjs');
     assert.ok(environment.rot && environment.trap, 'Finn takes rot damage and can trigger physical traps');
     const negative = await page.evaluate(() => {
       story.use('ashmere'); story.newGame(false); const ash = !Game.companion;
-      story.use('lands'); story.newGame(true); const tutorial = !Game.companion; story.afterTutorial(); const afterTutorial = !!Game.companion;
+      story.use('lands'); story.newGame(); const lands = !!Game.companion;
       Game.story = false; Game.startLevel('stormhill'); const level = !!Game.companion;
       const c = Game.companion, old = c.body; old.hp = 0; old.setState(PS.DEAD);
       Game.loading = 0;
@@ -171,13 +171,13 @@ const { createServer } = require('../server/index.cjs');
       const respawn = Game.companion.body !== old && Game.companion.body.alive() && !old.rig.root.parent;
       Game.startLevel(STORY.chapters[0].level); const standaloneAsh = !Game.companion;
       Game.startFight('margit'); const arena = !Game.companion;
-      return { ash, tutorial, afterTutorial, level, respawn, standaloneAsh, arena };
+      return { ash, lands, level, respawn, standaloneAsh, arena };
     });
     for (const [key, value] of Object.entries(negative)) assert.ok(value, key);
     await page.evaluate(() => multiplayer.join());
     await page.waitForFunction(() => multiplayer.connected);
     assert.ok(await page.evaluate(() => { Game.story = true; Game.startLevel('stormhill'); const absent = !Game.companion; multiplayer.leave(); return absent; }), 'connected games never spawn a local companion');
-    console.log('Boss fog entry, standalone respawn and exclusion from Ashmere, training, duels and online play passed.');
+    console.log('Boss fog entry, standalone respawn and exclusion from Ashmere, duels and online play passed.');
 
     for (const quality of ['low', 'high', 'ultra']) {
       await page.evaluate(quality => {

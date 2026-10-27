@@ -315,7 +315,7 @@ function createServer(options = {}) {
     let pathname, query;
     try { const url = new URL(req.url, 'http://localhost'); pathname = decodeURIComponent(url.pathname); query = url.searchParams; } catch { res.writeHead(400).end(); return; }
     if (pathname === '/healthz') { res.setHeader('Cache-Control', 'no-store'); res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ok: true, players: clients.size, connections: clients.size + pending.size, version: sim.catalog().version })); return; }
-    if (pathname === '/api/lobby') { res.setHeader('Cache-Control', 'no-store'); res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ protocol: C.protocol, build, capacity, players: clients.size, version: sim.catalog().version, metrics })); return; }
+    if (pathname === '/api/lobby') { res.setHeader('Cache-Control', 'no-store'); res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ protocol: C.protocol, build, capacity, players: clients.size, playing: clients.size ? sim.describe(session) : null, version: sim.catalog().version, metrics })); return; }
     if (pathname === '/') pathname = '/combat-arena-3d.html';
     if (pathname === '/favicon.ico') { res.writeHead(204).end(); return; }
     // Serve only public assets, never source control, server code or homelab files.

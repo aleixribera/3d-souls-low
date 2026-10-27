@@ -36,7 +36,7 @@ function createSimulation() {
     console, performance, THREE: { Vector3 }, THREE_ADDONS: {}, Rig,
     location: { hash: '' }, window: { addEventListener() {} },
     projectiles: { fire() {} },
-    bindLabel: () => '',   // tutorial prompts name keys; the server never shows them
+    bindLabel: () => '',   // lesson cards name keys; the server never shows them
   });
   // Keep hot numeric operations in the VM's lexical scope. Repeated built-in
   // lookups through a contextified global are much slower than normal scripts.

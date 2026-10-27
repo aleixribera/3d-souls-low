@@ -32,6 +32,7 @@ const LEVEL_3 = {
                 sky: { zenith: 0x262038, sun: 0xff7a3a, sunDir: [1, 0.08, 0.05] }, silhouettes: 2,
                 landmark: { x: 700, z: 60, y: -20, height: 300, width: 320 } },
   start: { x: 4, z: 1, yaw: Math.PI / 2 },
+  lessons: [{ lesson: 'blue', when: { glint: 'blue' } }],   // v7.19.0: the Lancer's charged thrust, the first blue glint
   rooms: [
     // The lower town (y 0).
     { id: 'keep-exit', rect: [-6, 0, -3, 3], height: 4.5, floor: 0x3a3733, wall: 0x6a6258, light: 0xd06040, dim: true },
