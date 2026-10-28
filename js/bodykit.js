@@ -2249,6 +2249,7 @@ const KIT = (() => {
 
   function buildModelRig(rig, id, variant) {
     const M = resolveVariant(id, variant);
+    if (M.glb) return GLB.buildRig(rig, id, variant);   // an authored model (js/glb.js)
     checkModel(id, M);
     const built = modelParts(id, variant), rim = M.rim ?? 1, P = M.proportions;
     // This body holds its cache entry until Rig.dispose hands it back (KIT.release).

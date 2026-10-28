@@ -33,7 +33,7 @@ This file is the guide. History lives elsewhere (`docs/README.md` indexes all th
 4. **Engine:**
    - `input.js`, `gamepad.js`, `events.js`
    - `world.js` (collision), `scene.js`
-   - rigs and kits (`rig.js`, `bodykit.js`, `kit-*.js`), `animator.js`, `attack-anim.js`
+   - rigs and kits (`rig.js`, `bodykit.js`, `kit-*.js`), `animator.js`, `attack-anim.js`, `glb.js` (authored models)
    - `character.js`, `player.js`, `enemy.js`, `crowd.js`, `combat.js`, `execution.js`
    - bots (`bot-navigation.js`, `bot.js`), `companions.js`, `projectiles.js`
 5. **Presentation and flow:**
@@ -65,6 +65,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 |---|---|
 | Player moves, stats, timings | `js/data/player.js`, `CONFIG.player` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
+| An authored (Blender) model | `assets/enemies/<id>/`, its `glb` block in `data/models.js`, `js/glb.js`; spec and briefs in `docs/enemy-redesign/` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |
 | Executions | `js/execution.js`, `CONFIG.execution` |
@@ -81,6 +82,11 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 
 ## Adding content
 
+- **An authored model** (the v8 enemy redesign, `docs/enemy-redesign/README.md`):
+  1. Write the brief; Terra (`blender-artist`) builds `assets/enemies/<id>/<id>.glb` to the shared spec.
+  2. Run `node tools/pack-glb.cjs` (writes the `.glb.js` the game loads; `tests/glb-assets.cjs` fails while it is stale).
+  3. Give the model def a `glb` block: `file`, `tris`, `states`, `attacks`, `stride`. Gameplay data stays untouched.
+  4. Run `Authored` in-page and the enemy's own suites.
 - **An enemy:**
   1. Add a def to `ENEMY_DEFS` with `model: '<id>'`.
   2. Add the model to a `data/models-*.js` file.

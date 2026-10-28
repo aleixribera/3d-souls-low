@@ -133,6 +133,7 @@
 
   // ---- regression: every level, duel and test room loads and runs ----------------------------------
   const allLevels = () => [...A.LEVELS, ...A.TEST_LEVELS];
+  const kitModelIds = () => Object.keys(MODEL_DEFS).filter(id => !MODEL_DEFS[id].glb);   // body-kit models (authored ones have no kit parts)
   test('regression: every level loads and runs 10 s with rendering', () => {
     for (const L of allLevels()) {
       Game.startLevel(L.id); sim.begin();
@@ -3130,9 +3131,9 @@
         KIT.setDetail({ ...Q.high.modelDetail, anatomy: true });
         expect.ok(KIT.modelParts(id) !== high, `${id}: anatomy has its own cache entry`);
       }
-      KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts('hollowSoldier');
+      KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts('undeadKnight');
       KIT.setDetail(Q.high.modelDetail);
-      expect.ok(KIT.modelParts('hollowSoldier') === low, 'ordinary enemies reuse base geometry');
+      expect.ok(KIT.modelParts('undeadKnight') === low, 'ordinary enemies reuse base geometry');
     } finally { KIT.setDetail(was); }
   });
   test('High loading: small scene warm-up keeps live targets full-size and restores hidden phase visibility', () => {
@@ -3296,9 +3297,9 @@
     const base = {}, was = KIT.detail();
     try {
       KIT.setDetail({ geo: 1, tex: 1 });
-      for (const id of Object.keys(MODEL_DEFS)) base[id] = KIT.modelParts(id).tris;
+      for (const id of kitModelIds()) base[id] = KIT.modelParts(id).tris;
       KIT.setDetail(CONFIG.VISUALS.ultra.models);
-      for (const id of Object.keys(MODEL_DEFS)) expect.ok(KIT.modelParts(id).tris > base[id], `${id}: more triangles at Ultra detail`);
+      for (const id of kitModelIds()) expect.ok(KIT.modelParts(id).tris > base[id], `${id}: more triangles at Ultra detail`);
     } finally { KIT.setDetail(was); }
   });
   test('Ultra performance: stable scenes are not rescanned and new actors are prepared on their first draw', () => {
@@ -3321,7 +3322,7 @@
     const was = KIT.detail();
     try {
       KIT.setDetail(CONFIG.VISUALS.ultra.models);
-      for (const id of Object.keys(MODEL_DEFS)) {
+      for (const id of kitModelIds()) {
         const built = KIT.modelParts(id); let triangles = 0, vertices = 0, indices = 0;
         for (const { geo } of built.parts) {
           const count = geo.attributes.position.count;
@@ -3444,7 +3445,7 @@
     const was = KIT.detail();
     try {
       KIT.setDetail({ geo: 1, tex: 1 });
-      for (const id of Object.keys(MODEL_DEFS)) {
+      for (const id of kitModelIds()) {
         let valid = true;
         for (const p of KIT.modelParts(id).parts) {
           const weights = p.geo.attributes.skinWeight.array;

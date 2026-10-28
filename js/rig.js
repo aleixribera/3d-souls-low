@@ -66,6 +66,7 @@ class Rig {
     scene.add(this.root, this.shadow);
   }
   reset() {
+    if (this.glb) { this.glb.reset(); this.crouchDrop = 0; return; }   // an authored body rests on its idle clip (js/glb.js)
     this.tip.rotation.set(0, 0, 0);
     this.spin.rotation.set(0, 0, 0); this.spin.scale.setScalar(1); this.spin.position.set(0, HIP, 0);
     this.head.rotation.set(0, 0, 0);
@@ -87,7 +88,7 @@ class Rig {
   // Repeated calls stack as one deeper crouch, not as two bends on top of each other.
   crouch(drop) {
     if (drop <= 0) return;
-    const bend = d => Math.acos(clamp(1 - d / (2 * LEG_SEG), -1, 1));
+    const seg = this.legSeg ?? LEG_SEG, bend = d => Math.acos(clamp(1 - d / (2 * seg), -1, 1));
     const a = bend(this.crouchDrop + drop) - bend(this.crouchDrop);
     this.crouchDrop += drop;
     this.spin.position.y -= drop;
@@ -98,7 +99,7 @@ class Rig {
   lean(a) { this.spin.rotation.x += a; this.legL.rotation.x -= a; this.legR.rotation.x -= a; }
   // One knee down: left foot planted ahead, right knee on the floor. k: 0..1.
   kneel(k) {
-    this.spin.position.y = HIP - 0.45 * k;
+    this.spin.position.y = (this.hipY ?? HIP) - 0.45 * k;
     this.legL.rotation.x = -1.45 * k; this.kneeL.rotation.x = 1.45 * k;
     this.legR.rotation.x = 0.05 * k; this.kneeR.rotation.x = 1.5 * k;
   }
@@ -159,6 +160,7 @@ class Rig {
     this.shadow.material.dispose(); this.warnGlow.material.dispose();
     if (this.glows) for (const g of this.glows) g.mat.dispose();
     if (this.skeleton) this.skeleton.dispose();
+    if (this.glb) this.glb.dispose();
     if (this.glint) this.glint.sprite.material.dispose();
     if (this.aura) this.aura.sprite.material.dispose();
     if (this.modelEntry) { KIT.release(this.modelEntry); this.modelEntry = null; }   // its model cache entry (js/bodykit.js)

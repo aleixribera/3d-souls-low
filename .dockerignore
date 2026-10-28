@@ -10,3 +10,8 @@ docs
 *.zip
 .env
 *.log
+# Authored models ship as their packed scripts (assets/**/*.glb.js); sources and previews stay out of the image.
+assets/**/*.glb
+assets/**/*.blend
+assets/**/*.blend1
+assets/**/previews

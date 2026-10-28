@@ -505,8 +505,10 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 window.THREE = THREE;
-window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices };
+window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices, GLTFLoader, SkeletonUtils };
 
 // Game files in load order (paths under js/). A file may only use, at load time, what earlier files define.
 const GAME_FILES = [
@@ -584,6 +586,7 @@ const GAME_FILES = [
   'kit-realms.js',
   'animator.js',
   'attack-anim.js',
+  'glb.js',
   'character.js',
   'player.js',
   'enemy.js',
@@ -637,11 +640,19 @@ const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   s.onerror = () => resolve(false);
   document.body.appendChild(s);
 });
-const loading = GAME_FILES.map(file => loadScript(file));
-for (const [i, file] of GAME_FILES.entries()) {
+// boot.js starts the game, so it runs last: after every authored model (js/glb.js) is loaded and decoded.
+const loading = GAME_FILES.slice(0, -1).map(file => loadScript(file));
+for (const [i, file] of GAME_FILES.slice(0, -1).entries()) {
   if (!await loading[i]) { window.__bootError(`Could not load js/${file}.
 Reload the page, or update the game and its js folder together.`); break; }
   if (window.__bootShown) break;   // the file failed while running: its message is already on screen
+}
+if (!window.__bootShown) {
+  try {
+    await GLB.load(src => loadScript(src, ''));
+    if (!await loadScript(GAME_FILES[GAME_FILES.length - 1])) window.__bootError('Could not load js/boot.js.
+Reload the page, or update the game and its js folder together.');
+  } catch (e) { window.__bootError(String(e && e.message || e)); }
 }
 // Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.
 if (location.hash === '#dev' && !window.__bootShown) {

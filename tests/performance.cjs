@@ -100,7 +100,7 @@ const server = http.createServer((req, res) => {
     if (process.argv[3] === 'MODELS') {
       await page.waitForFunction(() => typeof MODELLAB !== 'undefined' && MODELLAB.open);
       const rows = [];
-      for (const id of ['hollowSoldier', 'undeadKnight', 'ashExecutioner', 'giantSkeleton', 'margit', 'godrick', 'malenia']) {
+      for (const id of ['rogue', 'undeadKnight', 'ashExecutioner', 'giantSkeleton', 'margit', 'godrick', 'malenia']) {
         for (const detail of ['before', 'after']) {
           const result = await page.evaluate(({ id, detail }) => {
             Game.mode = 'play'; Game.manualClock = true;

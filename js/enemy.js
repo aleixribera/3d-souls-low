@@ -688,14 +688,19 @@ class Enemy {
   }
 
   // Idle personality layered on top of the base pose, weighted by how idle the enemy is.
-  idleLayer(r, ctx, w) {
+  idleLayer(r, ctx, w, clipped = false) {   // clipped: an authored idle clip already has the stance (js/glb.js)
     if (w <= 0.001) return;
     const t = ctx.t * this.tempo + this.seed;
     // Head turns toward the player now and then.
     const look = ease((Math.sin(t * 0.37) - 0.2) * 1.5);
     const rel = angDiff(Math.atan2(ctx.px - this.x, ctx.pz - this.z), this.yaw);
     r.head.rotation.y += clamp(rel, -1.0, 1.0) * look * w;
-    lookup(IDLE_STYLES, this.def.idle || 'none', 'idle style', 'none')(r, t, w);
+    if (!clipped) lookup(IDLE_STYLES, this.def.idle || 'none', 'idle style', 'none')(r, t, w);
+  }
+  // Seconds into the current attack on its own clock: a held wind-up stands still.
+  attackClock(tt) {
+    const still = this.holdLeft > 0 ? this.stateTime : tt;
+    return phaseSpan(this.attack, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + still;
   }
 
   pose(tt, ctx) {
@@ -715,10 +720,8 @@ class Enemy {
         r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
       }
       case ES.WINDUP: case ES.ACTIVE: case ES.RECOVER:
-        if (a.pose) {   // four-phase key poses (js/attack-anim.js) on the attack's own clock
-          const still = this.holdLeft > 0 ? this.stateTime : tt;   // a held wind-up is drawn perfectly still
-          const at = phaseSpan(a, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + still;
-          glint = poseAttackKeys(r, a, at);
+        if (a.pose) glint = poseAttackKeys(r, a, this.attackClock(tt));   // four-phase key poses (js/attack-anim.js) on the attack's own clock
+        else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
         } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
         else if (this.state === ES.ACTIVE) poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex);
         else poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex);

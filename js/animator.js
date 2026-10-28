@@ -97,8 +97,16 @@ class ModelAnimator {
   }
 
   // glint: as updatePlayer (a key-posed attack's own blade flash replaces the secondary attack layer).
-  update(e, tt, ctx, glint = -1) {   // an enemy
+  // clipped: an authored clip drives the body (js/glb.js); it already breathes, walks, swings and flinches, so only the
+  // glint, the hit recoil, cloth and the finishing touches are added.
+  update(e, tt, ctx, glint = -1, clipped = false) {   // an enemy
     const r = this.rig, st = e.state, t = ctx.t + this.seed, dt = Math.min(ctx.dt || 0, 0.1), dead = st === ES.DEAD;
+    if (clipped) {
+      if (glint >= 0) this.glintK = glint;
+      if (e.recoil > 0) { const k = Math.sin(e.recoil * Math.PI); this.add('head', [-0.45 * e.recoilF, 0.3 * e.recoilS, 0], k); this.add('chest', [-0.2 * e.recoilF, 0, 0.12 * e.recoilS], k); }
+      this.updateCloth(e, ctx, dt); this.finish(e, ctx, dt, dead);
+      return;
+    }
     if (!dead) this.idleLayer(t, r.idleW);
     this.walkLayer(e.walkPhase, ANIM_SETTINGS.walkStates.includes(st), dt);
     if (glint >= 0) this.glintK = glint;
