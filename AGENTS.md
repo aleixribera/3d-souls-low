@@ -1,10 +1,11 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.19.1** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.20.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
 - **Ashmere:** Levels 1–5 and an ending. Level 1 teaches the controls with lesson cards.
+- **Level 6, the Church in the Pass:** stands apart from both roads, in the Levels menu after the Final Castle.
 - **The Lands Between:** eight lands, one per Elden Ring boss, with its own ending and Finn as a solo companion.
 
 There is also a Levels menu, a 1v1 Arena (Enemies, Bosses, Elden Ring Bosses, Boss vs Boss), and an optional multiplayer server with a public lobby and friendly bots.
@@ -44,6 +45,7 @@ This file is the guide. History lives elsewhere (`docs/README.md` indexes all th
    - `impact.js`, `camera-feel.js`, `effect-slots.js`
    - `spectral.js`, `flame.js`, `blackblade.js`, `holy.js`, `scarlet.js`
    - `realms.js`, `ultra-*.js`, `bonfire-guidance.js`, `effect-lighting.js`
+   `baked/*.js`, `baked.js`, `scenery.js` (a level's Blender models) load in the presentation layer; the server loads none of them.
 7. **Modes and boot:** `elden.js`, `boss-battle.js`, `quality-benchmark.js`, `autoquality.js`, `multiplayer.js`, `boot.js` (the main loop).
 
 A new file goes in the layer it belongs to. If the server needs it, add it to the engine set in `server/headless.cjs`.
@@ -70,6 +72,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | Executions | `js/execution.js`, `CONFIG.execution` |
 | Boss phases, reactions, follow-ups | `js/enemy.js` (`enterPhase`, `outlast`, `REACTIONS`, `FOLLOW_IF`, `attackById`) |
 | A level | `js/levels/*.js`, listed in `data/levels.js` |
+| Models built in Blender | `tools/blender/*.py`, packed by `tools/pack-baked.cjs` into `js/baked/`, decoded by `js/baked.js`; a level draws them through `scenery` (`js/scenery.js`). Steps in `docs/church-in-the-pass-v7.20.0.md` |
 | Story chapters and saves | `js/data/story.js`, `js/story.js`, `CONFIG.story` |
 | Lore, NPCs, inscriptions | `LORE.md`, then `js/data/lore.js` / `lore-lands.js` |
 | Menus, the title's online card | `js/game-menus.js` (`Game.screens()`, `titleLobby`), `multiplayer.peek()` |

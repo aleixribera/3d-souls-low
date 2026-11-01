@@ -22,7 +22,7 @@ const { createServer } = require('../server/index.cjs');
     const start = page.getByRole('button', { name: 'Start battle', exact: true });
     assert.equal(await start.getAttribute('aria-disabled'), 'true', 'empty teams cannot start');
     const catalog = await page.evaluate(() => bossBattle.catalog().map(d => ({ id: d.id, name: d.name })));
-    assert.equal(catalog.length, 12, 'all four Ashmere and eight Elden Ring bosses are available');
+    assert.equal(catalog.length, 13, 'all five Ashmere and eight Elden Ring bosses are available');
     for (const team of ['Team 1', 'Team 2']) {
       await page.getByRole('button', { name: `Add boss to ${team}`, exact: true }).click();
       await page.getByRole('button', { name: catalog[0].name, exact: true }).click();
@@ -39,7 +39,7 @@ const { createServer } = require('../server/index.cjs');
     // Put every boss in the same match, exercising all of their normal AI and rendering paths.
     await page.evaluate(() => {
       bossBattle.teams = { a: [], b: [] };
-      bossBattle.catalog().forEach((d, i) => bossBattle.add(i < 6 ? 'a' : 'b', d.id));
+      bossBattle.catalog().slice(-CONFIG.bossBattle.maxTeam * 2).forEach((d, i) => bossBattle.add(i < 6 ? 'a' : 'b', d.id));
       Game.showMenu('bossBattle');
     });
     await page.screenshot({ path: `${output}/teams.png` });
@@ -82,7 +82,7 @@ const { createServer } = require('../server/index.cjs');
     await page.screenshot({ path: `${output}/battle.png` });
     assert.equal(await page.locator('.battle-health').count(), 12);
     assert.equal(await page.locator('.eTag[data-team="a"]').first().evaluate(el => getComputedStyle(el).overflow), 'visible', 'boss names above team health bars are visible');
-    console.log('Team UI, add/remove/duplicates, cap, responsive layout, all 12 boss AIs and spectator rendering passed.');
+    console.log('Team UI, add/remove/duplicates, cap, responsive layout, a full 12 boss AIs and spectator rendering passed.');
 
     const natural = await page.evaluate(() => {
       bossBattle.teams = { a: [], b: [] }; bossBattle.add('a', 'giant'); bossBattle.add('b', 'pillagerCaptain');

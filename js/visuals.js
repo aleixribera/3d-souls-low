@@ -26,7 +26,7 @@ const reducedMotion = (() => {
   return fn;
 })();
 const ATMOSPHERE_KEYS = ['background', 'fog', 'fogDensity', 'moon', 'ambient', 'hemi', 'exposure', 'ash', 'dust', 'rim',
-  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers'];
+  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers', 'interior'];
 
 // Optional look fields, checked at load (called from validateData).
 function checkVisualData(need, num) {
@@ -116,6 +116,12 @@ function checkVisualData(need, num) {
     if ('landmark' in A) need(A.landmark && num(A.landmark.x) && num(A.landmark.z) && num(A.landmark.height) && A.landmark.height > 0
       && num(A.landmark.width) && A.landmark.width > 0 && (!('y' in A.landmark) || num(A.landmark.y)),
       `${w}: landmark needs x, z, height and width (numbers; height and width above 0), and y if given.`);
+    if ('interior' in A) {
+      const I = A.interior, ids = L.layout === 'rooms' ? new Set(L.rooms.map(R => R.id)) : new Set();
+      need(I && Array.isArray(I.rooms) && I.rooms.length > 0 && I.rooms.every(id => ids.has(id)) && isCol(I.fog) && amount(I.fogDensity, 1) && amount(I.moon, 10) && amount(I.exposure, 5)
+        && I.ambient && isCol(I.ambient.color) && amount(I.ambient.intensity, 10) && I.hemi && isCol(I.hemi.sky) && isCol(I.hemi.ground) && amount(I.hemi.intensity, 5),
+        `${w}: interior needs rooms of the level, fog, fogDensity, moon, exposure, ambient { color, intensity } and hemi { sky, ground, intensity }.`);
+    }
     if ('hemi' in A) need(A.hemi && isCol(A.hemi.sky) && isCol(A.hemi.ground) && amount(A.hemi.intensity, 5), `${w}: hemi needs sky and ground colours and an intensity (0..5).`);
     if ('grade' in A) {
       for (const k of ['shadowTint', 'highlightTint']) if (k in A.grade) need(tri(A.grade[k]), `${w}: grade.${k} must be [r, g, b].`);
@@ -1014,6 +1020,7 @@ const visuals = (() => {
   // Extensions (the Ultra preset, js/ultra-post.js): called on a quality change, after a stage is dressed, around each draw
   // and on a resize (with the drawn size in pixels).
   const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
+  let look = null, interiorK = 0;   // the interior blend's two ends and where it stands (setInterior)
 
   function applyCounts() {
     SKY_LAYERS.value = VIS.cinematic[quality.label.toLowerCase()].cloudLayers;
@@ -1064,6 +1071,24 @@ const visuals = (() => {
     SURF.grime.value = A.surface && A.surface.grime !== undefined ? A.surface.grime : 1;
     FOG_D.value = scene.fog.density;
     applyCounts();
+    const I = A.interior;
+    interiorK = 0; look = null;
+    if (I) look = { fog: scene.fog.color.clone(), fogIn: new THREE.Color(I.fog), fogD: scene.fog.density, fogDIn: I.fogDensity, moon: moonLight.intensity, moonIn: I.moon,
+                    amb: ambientLight.color.clone(), ambIn: new THREE.Color(I.ambient.color), ambI: ambientLight.intensity, ambIIn: I.ambient.intensity,
+                    sky: hemi.color.clone(), skyIn: new THREE.Color(I.hemi.sky), ground: hemi.groundColor.clone(), groundIn: new THREE.Color(I.hemi.ground),
+                    hemiI: hemi.intensity, hemiIIn: I.hemi.intensity, exposure: renderer.toneMappingExposure, exposureIn: I.exposure };
+  }
+  // A level's `atmosphere.interior` (v7.20): k 0 is its outdoor look, 1 the look indoors. js/scenery.js eases k as the camera
+  // goes through the door; a roofed room under a daylit sky needs this because lights pass through its authored walls.
+  function setInterior(k) {
+    if (!look || k === interiorK) return;
+    interiorK = k;
+    const L = look;
+    scene.fog.color.lerpColors(L.fog, L.fogIn, k); scene.fog.density = lerp(L.fogD, L.fogDIn, k); FOG_D.value = scene.fog.density;
+    moonLight.intensity = lerp(L.moon, L.moonIn, k);
+    ambientLight.color.lerpColors(L.amb, L.ambIn, k); ambientLight.intensity = lerp(L.ambI, L.ambIIn, k);
+    hemi.color.lerpColors(L.sky, L.skyIn, k); hemi.groundColor.lerpColors(L.ground, L.groundIn, k); hemi.intensity = lerp(L.hemiI, L.hemiIIn, k);
+    renderer.toneMappingExposure = lerp(L.exposure, L.exposureIn, k);
   }
 
   function dressFlames(G, d, pools) {
@@ -1148,7 +1173,7 @@ const visuals = (() => {
       && !L.rooms.some(R => (R.braziers || []).some(([bx, bz]) => Math.hypot(bx - x, bz - z) < r));
     // Rubble and banners along full walls of rooms (not ramps, rails or ledge faces), on that room's floor.
     for (const w of TR.solids) {
-      if (w.kind !== 'wall' || !w.region || w.region.kind !== 'room') continue;
+      if (w.kind !== 'wall' || !w.region || w.region.kind !== 'room' || w.region.src.unseen) continue;
       const lx = w.x1 - w.x0, lz = w.z1 - w.z0, r = w.region.rect, y = w.region.lo;
       if (Math.max(lx, lz) < 1.5) continue;
       const alongX = w.edge === 'n' || w.edge === 's', hi = w.edge === 'n' || w.edge === 'e';
@@ -1399,6 +1424,8 @@ const visuals = (() => {
       PT_SCALE.value = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.camera.fov) / 2));
       for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr));
     },
+    setInterior,
+    moonScale() { return look && look.moon ? lerp(look.moon, look.moonIn, interiorK) / look.moon : 1; },   // the interior's share of the moon: js/ultra-post.js splits what is left
     // Called once per stage build (loadStage), after applyAtmosphere. Everything added goes in the stage group.
     dressStage(d, built) {
       def = d; A = d.atmosphere || {}; st = { bonfires: [], glows: [], lights: [] };

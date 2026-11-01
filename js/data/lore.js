@@ -167,5 +167,16 @@ const LORE = {
         { kind: 'crown', x: 318.2, y: 24, z: -4.6 },
       ],
     },
+    'the-church': {
+      inscriptions: [
+        { id: 'l6-cross', x: 80.8, y: 6, z: -18.4, yaw: 0, mount: 'none', label: 'Bent iron cross',
+          lines: ['"Those who stopped here on the way over. We came on without them."'] },
+        { id: 'l6-door', x: 116.6, y: 6, z: 2.4, yaw: Math.PI / 2, mount: 'none', label: 'Over the church door',
+          lines: ['"Seven came through. Leave it open behind you."'] },
+        { id: 'l6-icon', x: 168.6, y: 6, z: 0, yaw: Math.PI / 2, mount: 'none', label: 'Below the last icon',
+          lines: ['"We held it. We did not own it."', '— the Seven'] },
+      ],
+      scenes: [{ kind: 'corpse', x: 62, y: 3.6, z: 6, yaw: 1.1 }, { kind: 'corpse', x: 104, y: 6, z: -19, yaw: 2.6 }],
+    },
   },
 };

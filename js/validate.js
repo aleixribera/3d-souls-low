@@ -132,6 +132,7 @@ function validateData({ visual = true } = {}) {
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
     need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
+    if ('noRepeat' in d) need(Number.isInteger(d.noRepeat) && d.noRepeat > 0, `Enemy "${d.id}": noRepeat must be a positive whole number.`);
     if (d.crowd) need(['busyMul', 'busyCooldown', 'groupCooldown'].every(k => !(k in d.crowd) || (num(d.crowd[k]) && d.crowd[k] >= 0)),
       `Enemy "${d.id}": crowd may set busyMul, busyCooldown and groupCooldown (numbers, 0 or more).`);
     if (d.model) need(d.model in MODEL_DEFS, `Enemy "${d.id}": unknown model "${d.model}".`);
@@ -470,12 +471,17 @@ function validateRooms(L, where, need, num, visual = true) {
     if ('railHeight' in R) check(num(R.railHeight) && R.railHeight > H.stepUp, `${tag}: railHeight must be a number above CONFIG.height.stepUp (${H.stepUp} m), or a rail could be walked over.`);
     if ('pits' in R) check(Array.isArray(R.pits) && rectOk(R.rect) && R.pits.every(p => rectOk(p) && within(p, R.rect)), `${tag}: pits must be rects inside the room.`);
     if ('grass' in R) check(typeof R.grass === 'boolean' && (!R.grass || R.open === true), `${tag}: grass must be true or false, and grows only in an open room.`);
+    if ('unseen' in R) check(typeof R.unseen === 'boolean' && !!L.scenery, `${tag}: unseen must be true or false, and needs a level scenery to draw the room.`);
+    if ('pillarSize' in R) check(num(R.pillarSize) && R.pillarSize > 0, `${tag}: pillarSize must be a positive number.`);
+    if ('pillars' in R) check(Array.isArray(R.pillars) && R.pillars.every(P => Array.isArray(P) && num(P[0]) && num(P[1]) && (P[2] === undefined || num(P[2]) && P[2] > 0)), `${tag}: pillars must be a list of [x, z] or [x, z, size].`);
+    if ('lampFlame' in R) check(!!R.lampFlame && num(R.lampFlame.size) && num(R.lampFlame.y), `${tag}: lampFlame needs a size and a height y.`);
     if ('lamps' in R) check(Array.isArray(R.lamps) && rectOk(R.rect) && R.lamps.every(l => Array.isArray(l) && l.length === 2 && l.every(num)
       && inRect(R.rect, l[0], l[1])), `${tag}: lamps must be a list of [x, z] inside the room.`);
   }
   if ('ramps' in L) check(Array.isArray(L.ramps), `${where}: ramps must be a list.`);
   for (const R of Array.isArray(L.ramps) ? L.ramps : []) {
     const tag = `${where} ramp "${R.id}"`;
+    if ('unseen' in R) check(typeof R.unseen === 'boolean' && !!L.scenery, `${tag}: unseen must be true or false, and needs a level scenery to draw the ramp.`);
     check(typeof R.id === 'string' && !ids.has(R.id), `${tag}: missing or duplicate id.`); ids.add(R.id);
     check(rectOk(R.rect), `${tag}: rect must be [x0, x1, z0, z1] with x0 < x1 and z0 < z1.`);
     check(R.axis === 'x' || R.axis === 'z', `${tag}: axis must be 'x' or 'z' (the direction it rises along).`);
@@ -490,6 +496,28 @@ function validateRooms(L, where, need, num, visual = true) {
   }
   if ('blocks' in L) check(Array.isArray(L.blocks) && L.blocks.every(B => B && rectOk(B.rect) && num(B.y0) && num(B.y1) && B.y0 < B.y1),
     `${where}: blocks must be a list of { rect, y0, y1 } with y0 < y1.`);
+  // A level's authored scenery (js/scenery.js): its meshes exist only in the browser.
+  if ('scenery' in L) {
+    const S = L.scenery, list = S && Array.isArray(S.meshes) ? S.meshes : [], slots = S && S.materials ? Object.keys(S.materials) : [];
+    check(!!S && list.length > 0 && slots.length > 0 && Number.isFinite(S.far) && S.far > 0, `${where}: scenery needs meshes, materials and a far plane.`);
+    if (S && S.instances) check(Object.values(S.instances).every(m => Array.isArray(m) && m.length > 0), `${where}: scenery instances map a kind to its meshes.`);
+    if (S && S.veil) check(num(S.veil.x) && Array.isArray(S.veil.y) && Array.isArray(S.veil.z) && Number.isInteger(S.veil.color), `${where}: scenery veil needs x, y, z and color.`);
+    if (S && S.veil) check(!!(L.atmosphere && L.atmosphere.interior), `${where}: a scenery veil lifts with atmosphere.interior, which it lacks.`);
+    for (const k of ['plan', 'distant']) if (S && k in S) check(Array.isArray(S[k]) && S[k].every(n => list.includes(n)), `${where}: scenery ${k} must list scenery meshes.`);
+    if (S && 'thin' in S) check(Array.isArray(S.thin) && S.thin.every(k => S.instances && k in S.instances), `${where}: scenery thin must list instance kinds.`);
+    for (const [slot, M] of Object.entries((S && S.materials) || {})) {
+      if ('tex' in M) check(TEXTURE_DEFS.some(t => t.id === M.tex), `${where}: scenery material "${slot}" has an unknown tex.`);
+      if ('ground' in M) check(M.ground in CONFIG.VISUALS.realms.ground, `${where}: scenery material "${slot}" has an unknown ground.`);
+      for (const k of ['tile', 'bump']) if (k in M) check(num(M[k]) && M[k] > 0, `${where}: scenery material "${slot}": ${k} must be a positive number.`);
+      if (visual && 'painted' in M) check(scenery.painters.includes(M.painted), `${where}: scenery material "${slot}" has an unknown painter.`);
+    }
+    if (visual) for (const kind of Object.keys((S && S.instances) || {})) check(kind in BAKED_PLACES, `${where}: scenery instance "${kind}" has no placements.`);
+    if (S && S.tracks) check(Array.isArray(S.tracks.rooms) && S.tracks.rooms.length > 0 && S.tracks.rooms.every(id => ids.has(id)), `${where}: scenery tracks need rooms of the level.`);
+    if (visual) for (const name of [...list, ...Object.values((S && S.instances) || {}).flat()]) {
+      check(name in BAKED, `${where}: scenery mesh "${name}" is not baked.`);
+      check(slots.includes(name.split('__')[1]), `${where}: scenery mesh "${name}" has no material.`);
+    }
+  }
   // Houses (js/terrain.js, drawn by js/town.js) and props (js/data/props.js): their shapes.
   const houseTag = H => `${where} house at [${H && Array.isArray(H.rect) ? H.rect.join(', ') : '?'}]`;
   if ('houses' in L) check(Array.isArray(L.houses), `${where}: houses must be a list.`);

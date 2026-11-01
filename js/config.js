@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.19.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.20.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -491,6 +491,11 @@ const CONFIG = {
     // particles x `particles` (x `ultraBoost` on Ultra), scenery x `lowShare` on Low and x `ultraBoost` on Ultra.
     // `coverRate`: how fast weather fades under a roof. tree: per kind its bark, crown and glow colours, its haze, the
     // trunk's share of the height, boughs and crown blobs per bough, the cap over the top, veins of light in the bark.
+    // js/scenery.js (a level drawn from Blender models). paintGlow: how much of the painted walls shows in the dark; density:
+    // the share of a level's trees each preset draws; tracks: prints in the snow (sizes in m across and along a foot, for a
+    // body of scale 1), interiorRate: how fast the look changes through a door.
+    scenery: { paintGlow: 0.16, interiorRate: 3, density: { low: 0.45, high: 0.8, ultra: 1 },
+               tracks: { count: 240, stride: 0.72, spread: 0.11, size: [0.2, 0.36], lift: 0.02, airborne: 0.3, opacity: 0.32, color: 0x5a6a80 } },
     realms: {
       ultraBoost: 1.4, lowShare: 0.6, coverRate: 3, hazardPuff: 6,
       tree: {

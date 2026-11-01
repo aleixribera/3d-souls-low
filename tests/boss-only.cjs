@@ -73,7 +73,7 @@ async function peer(origin) {
       assert.equal(session.gauntlet.id, run); assert.equal(session.gauntlet.total, Math.ceil(bosses.length / size));
       for (let i = 0; i < bosses.length; i += size) {
         const group = Array.from(bosses.slice(i, i + size), e => e.id);
-        assert.equal(session.id, group[0]); assert.deepEqual(session.partners, group.slice(1));
+        assert.equal(session.id, group[0]); assert.deepEqual(session.partners || [], group.slice(1));   // a boss left over plays alone
         ready(a); ready(b); await flush(b);
         const game = app.sim.inspect().Game;
         assert.deepEqual(Array.from(game.enemies, e => e.baseDef.id), group, 'the whole group spawns together');

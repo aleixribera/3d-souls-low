@@ -306,7 +306,7 @@
     levels[0].go();
     expect.ok(Game.screen === 'levelsAshmere', 'Ashmere opens its own list');
     const ash = Game.screens().levelsAshmere;
-    expect.ok(ash.back === 'levels' && ash.items.length === A.STORY.chapters.length + 1, 'only Ashmere chapters and Back');
+    expect.ok(ash.back === 'levels' && ash.items.length === A.LEVELS.length + 1, 'only Ashmere levels and Back');
     ash.items[ash.items.length - 1].go();
     levels[1].go();
     expect.ok(Game.screen === 'levelsLands' && Game.screens().levelsLands.back === 'levels', 'Lands list returns to the groups');

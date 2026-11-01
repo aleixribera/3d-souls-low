@@ -114,7 +114,7 @@ const { config: C } = require('../js/net-protocol.js');
     await die(a); await die(b);
     await a.locator('#teamWipeScreen').waitFor({ timeout: 20000 });
     await b.locator('#teamWipeScreen').waitFor({ timeout: 20000 });
-    assert.match(await a.locator('#teamWipeScore').textContent(), /1 \/ 12/);
+    assert.match(await a.locator('#teamWipeScore').textContent(), /1 \/ 13/);
     assert.equal(await a.locator('#publicLobby').evaluate(el => el.inert), true, 'lobby cannot be activated under the death screen');
     await a.keyboard.press('Escape');
     await a.evaluate(() => multiplayer.pad(['PadB']));

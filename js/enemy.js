@@ -525,7 +525,7 @@ class Enemy {
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
-    const inReach = this.def.attacks.filter(a => !a.when && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
+    const inReach = this.def.attacks.filter(a => !a.when && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
       && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
     const close = inReach.filter(isClose);
     if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
@@ -538,11 +538,14 @@ class Enemy {
   react(player, dist, toPlayer, dt) {
     if (!crowd.mayStart()) return null;
     const rel = angDiff(toPlayer, this.yaw);
-    for (const a of this.def.attacks) if (a.when && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
+    for (const a of this.def.attacks) if (a.when && !this.spent(a) && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
       && Math.random() < attackChance(a) * dt) return a;
     return null;
   }
+  // `noRepeat` (v7.20): after that many of the same move in a row, it must pick another.
+  spent(a) { return !!this.def.noRepeat && a.id === this.lastMove && this.moveRun >= this.def.noRepeat; }
   beginAttack(attack) {
+    this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
@@ -574,7 +577,7 @@ class Enemy {
   // (`if`, FOLLOW_IF) holds and whose `chance` rolls starts at once instead of the recovery: a combo that branches.
   followUp() {
     for (const f of this.attack.followUps || []) {
-      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || Math.random() >= f.chance) continue;
+      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= f.chance) continue;
       this.beginAttack(this.attackById(f.attack));
       return true;
     }

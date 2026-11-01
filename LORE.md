@@ -116,6 +116,7 @@ How it is revealed:
 | 3 | The Burning Town | **Corvel**, a river town of bellwrights and tinkers below the cliff. The town the champion would not burn. The Ashbound burned it anyway, a year later. |
 | 4 | The Tower | The Seven's **watchtower**, built to hold the Bell of Waking. Seized by the king; its ringers turned to Toll Wisps; the Bell Warden set over the Bell. |
 | 5 | The Final Castle | Aldric's castle on the founders' hill, with the Ember beneath it. Field of Answer before the gates (where the ruler must come out), the outer ward, the chapel, the great hall with its empty portraits, the ash bridge, the throne. |
+| 6 | The Church in the Pass | The **first church of the Seven**, over the mountains: logs, shingle and their own painted faces. Apart from the Story; see 10b. |
 
 ---
 
@@ -244,6 +245,13 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 
 ---
 
+### Level 6 — The Church in the Pass
+- **The bent cross** (churchyard, past the second bonfire): "Those who stopped here on the way over. We came on without them."
+- **Over the church door**: "Seven came through. Leave it open behind you."
+- **Below the last icon** (behind the iron gate, once the Hunger is ash): "We held it. We did not own it. — the Seven"
+
+---
+
 ## 8. Environmental scenes (no words)
 
 - **Level 1:** a pile of shackles and a slumped body in the cell by the start; a body that died reaching for a gate.
@@ -279,6 +287,17 @@ Story mode's last screen: *The ash has stopped falling. The road is walked.*
 
 ---
 
+## 10b. Level 6 — The Church in the Pass (a road of its own)
+A level apart from the Story, reached from the Levels menu after the Final Castle. The ending stands: the Ember is out and
+the ash has stopped. But the Seven called it *the hunger that wears a king*, and when the Ember died the hunger had no king
+left to wear. It went back the way the Seven came, over the mountains, to the **first church of the Seven**: the log
+church in the pass where they stopped, painted their own faces on the wall and swore the first words of the Oath. There it
+found a stag starving in the snow and put it on. The player, nameless as ever, follows the last of it up the pass.
+
+**The Antlered Hunger** is that stag, grown: antlers, a skull for a face, quills along its back. It has no words. It never
+tries the same thing twice over, because the hunger learned that from a king; it only strikes what stands before it,
+because it was only ever a thing that looked ahead.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -293,6 +312,8 @@ Story mode's last screen: *The ash has stopped falling. The road is walked.*
 | The town of Level 3 | Corvel |
 | The NPC | Ysolde of Corvel |
 | The player | nameless; once the King's Blade, the champion |
+| The place of Level 6 | the Church in the Pass, first church of the Seven |
+| The beast of Level 6 | the Antlered Hunger |
 
 ---
 ---

@@ -20,6 +20,13 @@ const TEXTURE_SETTINGS = {
   surfaceCacheBytes: 4 * 1024 * 1024, // bounded CPU cache of untinted surfaces, shared by colour variants
 };
 const TEXTURE_DEFS = [
+  // The Church in the Pass (v7.20): the beast's root-brown hide and black quills, the log walls, shingles, carved oak, floorboards.
+  { id: 'beastHide', kind: 'bark', base: 0x644c36, alt: 0x98785a, accent: 0x4a3626, rough: [0.72, 0.95], metal: 0, bump: 0, scratch: 12, stain: 0x382a1e, contrast: 0.5 },
+  { id: 'beastQuill', kind: 'bone', base: 0x181412, alt: 0x3a322c, accent: 0x0e0c0a, rough: [0.4, 0.7], metal: 0, bump: 0, scratch: 6, stain: 0x0e0c0a, contrast: 0.5 },
+  { id: 'churchLog', kind: 'bark', base: 0x5a3e28, alt: 0x8e6a48, accent: 0x38261a, rough: [0.75, 0.95], metal: 0, bump: 0.9, scratch: 10, stain: 0x2a1c12, contrast: 0.5 },
+  { id: 'churchShingle', kind: 'bark', base: 0x2e2824, alt: 0x5c5046, accent: 0x1c1816, rough: [0.8, 1], metal: 0, bump: 1, scratch: 8, stain: 0x1a1614, contrast: 0.6 },
+  { id: 'churchOak', kind: 'bark', base: 0x2c1c12, alt: 0x523624, accent: 0x1a100a, rough: [0.55, 0.8], metal: 0, bump: 0.7, scratch: 6, stain: 0x140c08, contrast: 0.5 },
+  { id: 'churchPlank', kind: 'bark', base: 0x4a3424, alt: 0x6e5238, accent: 0x38281a, rough: [0.6, 0.85], metal: 0, bump: 0.5, scratch: 14, stain: 0x2c1e14, contrast: 0.3 },
   // Selective identity pass: restrained surfaces let the cast forms and tailoring read.
   { id: 'bellBronze', kind: 'plate', base: 0x536e68, alt: 0xa49a6a, accent: 0x366d61, rough: [0.3, 0.67], metal: 0.7, bump: 0.65, scratch: 28, stain: 0x263e37, contrast: 0.35 },
   { id: 'wornGilt', kind: 'steel', base: 0x85704b, alt: 0xd4b674, accent: 0x51452f, rough: [0.26, 0.55], metal: 0.72, bump: 0.35, scratch: 22, stain: 0x302b22, contrast: 0.3 },

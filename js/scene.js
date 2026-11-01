@@ -211,31 +211,30 @@ function buildRooms(L) {
     addBox(G, b.x1 - b.x0, b.y1 - b.y0 - shrinkTop, b.z1 - b.z0, mat, (b.x0 + b.x1) / 2, (b.y0 + b.y1 - shrinkTop) / 2, (b.z0 + b.z1) / 2);
   for (const R of TR.regions) {
     const room = R.src, [x0, x1, z0, z1] = R.rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, M = matsFor(room);
-    if (R.kind === 'ramp') { buildRamp(G, R, M.floor); continue; }
-    const y = R.lo, cutOut = [...R.pits, ...traps.filter(t => t.region === R).map(t => t.collapse)];
-    for (const p of rectMinus(R.rect, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y - H.slab, y1: y }, M.floor);
-    for (const sm of floorSeams(R)) for (const p of rectMinus(sm, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y, y1: y + 0.012 }, MAT.dark);
-    for (const p of R.roof) addBox(G, p[1] - p[0], H.slab, p[3] - p[2], MAT.ceiling, (p[0] + p[1]) / 2, R.top + H.slab / 2, (p[2] + p[3]) / 2);
+    if (R.kind === 'ramp') { if (!room.unseen) buildRamp(G, R, M.floor); continue; }
+    const y = R.lo, unseen = !!room.unseen, cutOut = [...R.pits, ...traps.filter(t => t.region === R).map(t => t.collapse)];
+    // `unseen` (v7.20): a level's scenery (js/scenery.js) draws this room; it keeps its collision and its lights.
+    if (!unseen) for (const p of rectMinus(R.rect, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y - H.slab, y1: y }, M.floor);
+    if (!unseen) for (const sm of floorSeams(R)) for (const p of rectMinus(sm, cutOut)) boxOf({ x0: p[0], x1: p[1], z0: p[2], z1: p[3], y0: y, y1: y + 0.012 }, MAT.dark);
+    if (!unseen) for (const p of R.roof) addBox(G, p[1] - p[0], H.slab, p[3] - p[2], MAT.ceiling, (p[0] + p[1]) / 2, R.top + H.slab / 2, (p[2] + p[3]) / 2);
     if (room.light !== undefined) {
       const light = new THREE.PointLight(room.light, room.dim ? C.dimLight : C.roomLight, Math.max(w, d) * 1.3, 1.0);
       light.position.set(cx, y + Math.min(R.height, L.wallHeight) - 1.5, cz); addLight(G, light);
     }
     for (const [lx, lz] of room.lamps || []) {   // a brazier whose fire lights the room around it
-      addBox(G, 0.5, 1.0, 0.5, MAT.iron, lx, y + 0.5, lz);
-      addBox(G, 0.8, 0.15, 0.8, MAT.iron, lx, y + 1.05, lz);
+      if (!unseen) { addBox(G, 0.5, 1.0, 0.5, MAT.iron, lx, y + 0.5, lz); addBox(G, 0.8, 0.15, 0.8, MAT.iron, lx, y + 1.05, lz); }
       const light = new THREE.PointLight(new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffa040), 0.5), C.lampLight, C.lampRange, 1.0);
       light.position.set(lx, y + 2.2, lz);
-      addFlame(G, lx, y + 1.45, lz, C.brazierSize, light);
+      addFlame(G, lx, y + (room.lampFlame ? room.lampFlame.y : 1.45), lz, room.lampFlame ? room.lampFlame.size : C.brazierSize, light);
     }
-    for (const [px, pz] of room.pillars || []) {
-      const s = C.pillarSize, h = R.height;
+    for (const [px, pz, size] of unseen ? [] : room.pillars || []) {
+      const s = size ?? room.pillarSize ?? C.pillarSize, h = R.height;
       addBox(G, s, h, s, M.wall, px, y + h / 2, pz);
       addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + 0.2, pz);
       addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + h - 0.5, pz);
     }
     for (const [bx, bz] of room.braziers || []) {
-      addBox(G, 0.5, 1.0, 0.5, MAT.iron, bx, y + 0.5, bz);
-      addBox(G, 0.8, 0.15, 0.8, MAT.iron, bx, y + 1.05, bz);
+      if (!unseen) { addBox(G, 0.5, 1.0, 0.5, MAT.iron, bx, y + 0.5, bz); addBox(G, 0.8, 0.15, 0.8, MAT.iron, bx, y + 1.05, bz); }
       addFlame(G, bx, y + 1.45, bz, C.brazierSize, null, new THREE.Color(room.light ?? 0xffa060).lerp(new THREE.Color(0xffffff), 0.35).getHex());
     }
   }
@@ -249,6 +248,7 @@ function buildRooms(L) {
   };
   for (const whole of TR.solids) {
     if (whole.kind === 'pillar' || whole.kind === 'prop' || whole.kind === 'house') continue;   // pillars above; props, houses: js/town.js
+    if (whole.region && whole.region.src.unseen) continue;
     const M = matsFor(whole.region ? whole.region.src : whole.block);
     for (const s of shown(whole)) {
       if (s.kind === 'face') boxOf(s, M.wall, 0.02);   // just under the floor above, so the two never flicker

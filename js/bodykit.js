@@ -2214,7 +2214,7 @@ const KIT = (() => {
       (groups.get(key) || groups.set(key, { slot, weapon, list: [] }).get(key)).list.push(geo);
     };
     for (const p of bodyParts(M)) push(p.bone, p.slot, p.geo);
-    for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M)) { if (g.geo) push(o.bone, g.slot, g.geo); else push(o.bone, o.slot, g); }
+    for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M, bind)) { if (g.geo) push(o.bone, g.slot, g.geo); else push(o.bone, o.slot, g); }
     if (M.weapon) {
       const W = KIT_WEAPONS[M.weapon.use]();
       for (const key of Object.keys(W)) for (const g of W[key]) push('weapon', M.weapon.slots[key], g, true);

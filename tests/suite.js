@@ -2148,7 +2148,7 @@
     expect.ok(e.hp === e.def.hp && !log.includes('fallDamage'), 'no fall damage from his own leap');
   });
   test('Level 4 now carries on into Level 5', () => {
-    expect.ok(A.LEVEL_4.next === 'final-castle' && A.LEVELS[A.LEVELS.length - 1].id === 'final-castle', 'the Tower leads to the castle, the last level');
+    expect.ok(A.LEVEL_4.next === 'final-castle' && A.LEVELS.some(L => L.id === 'final-castle'), 'the Tower leads to the castle');
   });
 
   // ---- Story mode (v4.4) -----------------------------------------------------------------------------------------
@@ -3299,7 +3299,10 @@
       KIT.setDetail({ geo: 1, tex: 1 });
       for (const id of Object.keys(MODEL_DEFS)) base[id] = KIT.modelParts(id).tris;
       KIT.setDetail(CONFIG.VISUALS.ultra.models);
-      for (const id of Object.keys(MODEL_DEFS)) expect.ok(KIT.modelParts(id).tris > base[id], `${id}: more triangles at Ultra detail`);
+      for (const id of Object.keys(MODEL_DEFS)) {
+        const fixed = (MODEL_DEFS[id].parts || []).some(p => p.use === 'baked');   // a Blender mesh has one detail
+        expect.ok(KIT.modelParts(id).tris > (fixed ? 0 : base[id]), `${id}: more triangles at Ultra detail`);
+      }
     } finally { KIT.setDetail(was); }
   });
   test('Ultra performance: stable scenes are not rescanned and new actors are prepared on their first draw', () => {

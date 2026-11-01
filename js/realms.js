@@ -686,5 +686,6 @@ void main() {
     },
     strike() { if (st && st.def.realm.lightning) st.timer = 0; },   // dev and tests: the next frame throws a bolt
     get state() { return st; },
+    groundMaterial,   // a natural ground's material, shared across stages (js/scenery.js lays it on authored land)
   };
 })();

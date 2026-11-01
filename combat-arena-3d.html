@@ -600,6 +600,7 @@ const GAME_FILES = [
   'data/bosses/godfrey.js',
   'data/bosses/radagon.js',
   'data/bosses/malenia.js',
+  'data/bosses/antlered-hunger.js',
   'data/elden-bosses.js',
   'data/story-boss-moves.js',
   'data/boss-fx.js',
@@ -611,6 +612,7 @@ const GAME_FILES = [
   'levels/burning-town.js',
   'levels/the-tower.js',
   'levels/final-castle.js',
+  'levels/the-church.js',
   'levels/lands/stormhill.js',
   'levels/lands/stormveil.js',
   'levels/lands/evergaol.js',
@@ -644,6 +646,8 @@ const GAME_FILES = [
   'kit-premium.js',
   'kit-identity.js',
   'kit-realms.js',
+  'baked/snow-church.js',
+  'baked.js',
   'animator.js',
   'attack-anim.js',
   'character.js',
@@ -679,6 +683,7 @@ const GAME_FILES = [
   'holy.js',
   'scarlet.js',
   'realms.js',
+  'scenery.js',
   'ultra-post.js',
   'ultra-fx.js',
   'ultra-boss.js',
@@ -691,7 +696,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.19.1';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.20.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -713,6 +718,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-lighting.js', 'tests/');
   await loadScript('suite-render.js', 'tests/');   // rendering audit: disposal, model cache, lightning, reduced motion
   await loadScript('suite-audit.js', 'tests/');   // v7.18: the audit fixes
+  await loadScript('suite-church.js', 'tests/');   // v7.20: Level 6
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours

@@ -345,7 +345,8 @@ void main() {
   function placeSun() {
     if (moonBase === null) moonBase = moonLight.intensity;
     const share = open ? S.share.open : S.share.roofed;
-    sun.color.copy(moonLight.color); sun.intensity = moonBase * share; moonLight.intensity = moonBase * (1 - share);
+    const moon = moonBase * visuals.moonScale();
+    sun.color.copy(moonLight.color); sun.intensity = moon * share; moonLight.intensity = moon * (1 - share);
     const p = Game.player || camera.position, dir = v3b.copy(moonLight.position).normalize();
     const texel = 2 * S.moonBox / sun.shadow.mapSize.x, up = Math.abs(dir.y) > 0.99 ? sunUp.set(1, 0, 0) : sunUp.set(0, 1, 0);
     const right = sunRight.crossVectors(up, dir).normalize(), up2 = sunUp2.crossVectors(dir, right);
@@ -396,7 +397,7 @@ void main() {
     renderer.shadowMap.enabled = q.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = !q.shadows;
     RIM.strength.value = VIS.rim.strength * (q.shadows ? U.rim : 1);
     for (const l of owned) { if (l.isPointLight ? q.combatFx : q.shadows) scene.add(l); else scene.remove(l); }
-    if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase; for (const e of [...(Game.enemies || []), ...Game.allies()]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
+    if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase * visuals.moonScale(); for (const e of [...(Game.enemies || []), ...Game.allies()]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
     if (!q.reflections) unreflect();
     const aniso = q.shadows ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
@@ -463,7 +464,7 @@ void main() {
     L.uMoonOn.value = q.volumetrics && q.shadows && open && map ? 1 : 0;
     if (map) L.tShadow.value = map.texture;
     L.uMoonDir.value.copy(moonLight.position).normalize().transformDirection(camera.matrixWorldInverse);
-    const mk = SC.moon * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef * moonBase;
+    const mk = SC.moon * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef * moonBase * visuals.moonScale();
     L.uMoonCol.value.set(sun.color.r * mk, sun.color.g * mk, sun.color.b * mk);
     L.uFog.value = scene.fog ? scene.fog.density : 0;
     renderer.shadowMap.needsUpdate = q.shadows;
