@@ -3,7 +3,7 @@
 // the player, and spectating it after a fall. node tests/bot-browser.cjs [screenshot directory]
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
   const shots = process.argv[2], app = createServer({ dev: true }), errors = [];

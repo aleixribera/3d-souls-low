@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { selectAdventure } = require('./browser-adventure.cjs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
 (async () => {

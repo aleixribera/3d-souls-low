@@ -3,7 +3,7 @@
 // sees that others are playing right now, and what. Polls only on the title; dims when the lobby does not answer.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
   const app = createServer({ dev: true }), errors = [];

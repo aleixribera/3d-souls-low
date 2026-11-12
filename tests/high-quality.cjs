@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const root = path.resolve(process.env.AUDIT_ROOT || path.join(__dirname, '..'));
 const output = path.resolve(process.argv[2] || '.scratch/high-quality');
 const variants = (process.argv[3] || 'low,high,no-reflections,base-geometry,fire,full-warmup,ultra').split(',');

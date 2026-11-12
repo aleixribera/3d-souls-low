@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const root = process.env.AUDIT_ROOT ? path.resolve(process.env.AUDIT_ROOT) : path.resolve(__dirname, '..');
 const output = path.resolve(process.argv[2] || path.join(root, 'performance-results'));
 fs.mkdirSync(output, { recursive: true });

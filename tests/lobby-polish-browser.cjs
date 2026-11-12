@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const WS = require('../server/node_modules/ws');
 const { build } = require('../server/headless.cjs');

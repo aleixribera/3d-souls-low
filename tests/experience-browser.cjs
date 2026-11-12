@@ -2,7 +2,7 @@
 // Actual keyboard, focus, pointer-capture and layout regressions for the experience audit.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
   const app = createServer({ dev: true }), errors = [];

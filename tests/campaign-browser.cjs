@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const campaign = process.env.ARENA_CAMPAIGN || 'lands';
 assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');

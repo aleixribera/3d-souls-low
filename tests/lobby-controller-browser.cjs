@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
 const adventures = ['campaign/ashmere', 'campaign/lands', ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id)];

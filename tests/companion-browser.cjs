@@ -1,7 +1,7 @@
 'use strict';
 // A real local Player companion throughout the eight solo Lands levels, in Story and Levels.
 const assert = require('node:assert/strict');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
   const app = createServer({ dev: true }), errors = [];

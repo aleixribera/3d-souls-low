@@ -17,6 +17,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+require('./low-priority.cjs');   // every test this starts runs at the lowest priority
 
 const root = path.resolve(__dirname, '..');
 const testsDir = __dirname;
@@ -37,7 +38,7 @@ const OPTIONAL = {
 };
 // Timing-sensitive measurements get one automatic retry (a busy machine can push a latency bound over).
 const RETRIES = { 'network-load': 1 };
-const NOT_TESTS = new Set(['run-all', 'browser-adventure']); // runner and a shared helper module
+const NOT_TESTS = new Set(['run-all', 'browser-adventure', 'browser', 'low-priority']); // the runner and shared helper modules
 
 function listCjs() {
   return fs.readdirSync(testsDir).filter(f => f.endsWith('.cjs')).map(f => f.slice(0, -4))

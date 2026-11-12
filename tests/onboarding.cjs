@@ -2,7 +2,7 @@
 // NODE_PATH=<directory containing playwright> node tests/onboarding.cjs [output-directory]
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const assert = require('node:assert/strict');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const root = path.resolve(__dirname, '..'), out = path.resolve(process.argv[2] || path.join(root, '.scratch/onboarding'));
 fs.mkdirSync(out, { recursive: true });
 const server = http.createServer((req, res) => {

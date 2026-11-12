@@ -3668,19 +3668,29 @@
     expect.ok(!arrow.visible, 'nor other levels');
   }));
 
-  async function run(filter = '') {
+  // shard [k, n]: only the k-th (0-based) of n equal runs of consecutive matching tests, so CI can split the suite
+  // across jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once.
+  async function run(filter = '', { shard = null } = {}) {
     const out = [], t0 = performance.now();
+    const picked = tests.filter(t => !filter || t.name.includes(filter));
+    const from = shard ? Math.floor(picked.length * shard[0] / shard[1]) : 0, to = shard ? Math.floor(picked.length * (shard[0] + 1) / shard[1]) : picked.length;
+    let matched = -1;
     const wasMode = Game.mode;
     // What the tests teach by playing (a roll, a lock-on) never sticks to this player: their lessons come back after.
     const lessonsKey = CONFIG.lessons.storageKey; let keptLessons = null;
     try { keptLessons = localStorage.getItem(lessonsKey); } catch (e) { /* none */ }
     for (const t of tests) {
       if (filter && !t.name.includes(filter)) continue;
+      matched++;
+      if (matched < from || matched >= to) continue;
       let ok = true, msg = '';
+      const started = performance.now();
       Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too
       try { await t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
       finally { sim.end(); }
-      out.push({ name: t.name, ok, msg });
+      const ms = performance.now() - started;
+      out.push({ name: t.name, ok, msg, ms });
+      if (window.__testProgress) await window.__testProgress({ name: t.name, ok, ms: Math.round(ms) });   // the headless runner logs each test as it ends
       await new Promise(r => setTimeout(r, 0));   // let the page breathe between tests
     }
     try { if (keptLessons === null) localStorage.removeItem(lessonsKey); else localStorage.setItem(lessonsKey, keptLessons); } catch (e) { /* none */ }
@@ -3690,7 +3700,8 @@
     const summary = `${out.length - failed.length}/${out.length} passed in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
     console.log(summary); for (const r of failed) console.warn('FAIL ' + r.name + '\n  ' + r.msg);
     if (Object.keys(metrics).length) console.log('metrics', JSON.stringify(metrics));
-    return { summary, failed: failed.map(r => `${r.name}: ${r.msg}`), passed: out.filter(r => r.ok).map(r => r.name), metrics };
+    const slowest = [...out].sort((a, b) => b.ms - a.ms).slice(0, 15).map(r => `${(r.ms / 1000).toFixed(1)} s  ${r.name}`);
+    return { summary, failed: failed.map(r => `${r.name}: ${r.msg}`), passed: out.filter(r => r.ok).map(r => r.name), metrics, slowest };
   }
   A.tests = { run, sim, expect, test, list: () => tests.map(t => t.name) };
 })();

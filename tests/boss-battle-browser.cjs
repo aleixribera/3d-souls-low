@@ -2,7 +2,7 @@
 // Real menu actions plus the fixed-step boss combat, projectiles, phases and spectator presentation.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
   const app = createServer({ dev: true }), errors = [];

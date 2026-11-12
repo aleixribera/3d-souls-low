@@ -141,7 +141,8 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
   - `npm test`: both.
   - `npm run test:list`: lists every check.
   - `node tests/run-all.cjs <filter> --bail`: a subset. Logs go to `.scratch/test-logs/`.
-  - `node tests/solo-browser.cjs [filter]`: the in-page suite headless.
+  - `node tests/solo-browser.cjs [filter]`: the in-page suite headless, at 640x360. `ARENA_SHARD=k/n` runs the k-th of n slices, `ARENA_VIEWPORT=WxH` another size, `ARENA_TEST_PROGRESS=1` a line per test.
+- **Keep the PC usable.** Local runs go at idle priority (`tests/low-priority.cjs`; `ARENA_TEST_PRIORITY=normal` opts out), and every browser test gets Playwright from `tests/browser.cjs`, which keeps Edge's processes idle too. A new browser test requires `./browser.cjs`, never `playwright`. Never run `ARENA_SOFTWARE_GL=1` locally: software WebGL fills every core for most of an hour. Long runs belong on CI.
 - **When to run what:**
   - Before committing changes to combat, terrain or movement, run the relevant in-page suites, or the full solo suite for broad changes.
   - Multiplayer changes also need `tests/multiplayer*.cjs`, `lobby-*.cjs` and `reconnect-browser.cjs`.
