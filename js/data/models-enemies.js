@@ -8,7 +8,7 @@
 //   ASHEN HOST  soot mail, peaked hoods, scorched cloth, one red sash, ember eyes          (Lancer, Executioner)
 const HOLLOWED_CLOTH = { tex: 'rottenCloth', decay: 0.8, double: true };
 
-MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood and black mask, layered belted leather over blue-black
+MODEL_DEFS.rogue = {   // (v5.5; v7.25.0 built in Blender, after the reference art) a deep charcoal hood and black mask, layered belted leather over blue-black
   // scale, blackened steel greaves, a broad iron scimitar and a dagger in the off hand
   extends: 'hollowBase', fit: 1.08,
   proportions: { torsoW: 0.17, torsoD: 0.11, armR: 0.045, legR: 0.065, headR: 0.112, handR: 0.045, footLen: 0.26 },
@@ -21,26 +21,19 @@ MODEL_DEFS.rogue = {   // (v5.5, after the reference art) a deep charcoal hood a
     hood: { tex: 'rogueHood', decay: 0.55, double: true },
     mask: { tex: 'rogueHood', tint: 0x2a2a2a, decay: 0.4, double: true },
     steel: { tex: 'rogueSteel', decay: 0.5 },
+    strap: { tex: 'rogueLeather', tint: 0x8a7a66, decay: 0.6 },
     blade: { tex: 'rustedIron', tint: 0xa8a49e, decay: 0.4 },
     eye: { glow: 0x8a5a28 },
   },
-  body: { torso: 'leather', pelvis: 'scales', arms: 'scales', legs: 'scales', head: 'mask', neck: 'mask', hands: 'leather', feet: 'steel' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.12] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.12] }, hoodTail: { parent: 'neck', at: [0, 0.04, -0.1] } },
+  // v7.25.0: built in Blender (tools/blender/rogue.py), one piece per bone; the kit still builds the dagger and the scimitar
   parts: [
-    { use: 'hood', slot: 'hood', bone: 'head', size: 1.15, tail: 0.6, close: 0.35 }, { use: 'faceWrap', slot: 'mask', bone: 'head' },
-    { use: 'clothStrip', slot: 'hood', bone: 'hoodTail', w: 0.2, len: 0.3, seed: 4 },
-    { use: 'jerkin', slot: 'leather', bone: 'chest' },
-    { use: 'strap', slot: 'leather', buckle: 'steel', bone: 'chest', y: 0.2, r: 0.215, tilt: 0.06 },
-    { use: 'strap', slot: 'leather', buckle: 'steel', bone: 'chest', y: 0.32, r: 0.25, tilt: -0.05, bx: 0.07 },
-    { use: 'pauldron', slot: 'leather', bone: 'armR', size: 1.2 },
-    { use: 'tunic', slot: 'leather', bone: 'spin' },
-    { use: 'belt', slot: 'leather', bone: 'spin' }, { use: 'pouch', slot: 'leather', bone: 'spin', x: 0.2, z: 0.08 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.08, to: 0.3, radius: 0.042, count: 3 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.08, to: 0.3, radius: 0.042, count: 3 },
-    { use: 'spikes', slot: 'leather', bone: 'elbowL', size: 0.7, at: [[0.035, -0.1, -0.01], [0.035, -0.17, -0.01], [0.035, -0.24, -0.01]] },
-    { use: 'kneeCop', slot: 'steel', bone: 'kneeL' }, { use: 'kneeCop', slot: 'steel', bone: 'kneeR' },
-    { use: 'boot', slot: 'steel', bone: 'kneeL' }, { use: 'boot', slot: 'steel', bone: 'kneeR' },
-    { use: 'clothStrip', slot: 'leather', bone: 'loinF', w: 0.18, len: 0.3, seed: 3 }, { use: 'clothStrip', slot: 'leather', bone: 'loinB', w: 0.2, len: 0.34, seed: 7 },
+    ...Object.entries({
+      head: ['mask', 'hood'], hoodTail: ['hood'], neck: ['mask'], chest: ['scales', 'leather', 'strap', 'steel'], spin: ['scales', 'leather', 'strap'],
+      loinF: ['leather'], loinB: ['leather'], armL: ['scales'], armR: ['scales', 'leather'], elbowL: ['scales', 'strap', 'leather', 'steel'],
+      elbowR: ['scales', 'strap', 'leather'], legL: ['scales', 'leather'], legR: ['scales', 'leather'], kneeL: ['steel', 'leather'], kneeR: ['steel', 'leather'],
+    }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `rogue:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
     { use: 'dagger', slot: 'blade', guardSlot: 'steel', bone: 'elbowL' },
   ],
   weapon: { use: 'scimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },

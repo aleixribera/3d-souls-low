@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.25.0', title: 'The Rogue Remade', text: 'The hooded cutthroat is rebuilt: a deep charcoal hood with a tail that swings, a black face wrap with a slit for the eyes, a belted leather jerkin over blue-black scale, a leather pauldron on the sword arm, strapped bracers, a spiked off-hand bracer, and blackened knee cops and greaves over soft boots.' },
   { version: 'v7.24.0', title: 'The Undead Knight Remade', text: 'The armoured knight is rebuilt plate by plate: a rounded close helm with a beaked visor and a dark eye slit, a broad gorget, a ridged breastplate, great lamed pauldrons, banded vambraces and dark gauntlets, tassets and knee cops over brown trousers, greaves and sabatons.' },
   { version: 'v7.23.0', title: 'The Ashen Lancer Remade', text: 'The spearman is rebuilt: a skull deep in a pointed burlap hood, a ragged poncho parted over a bare ribcage, a red cord at the throat, bone arms and legs with bound wrists and ankles, and tatters at the hips and down the back that swing as it lunges.' },
   { version: 'v7.22.0', title: 'The Hollow Soldier Remade', text: 'The soldier you meet most is rebuilt: a quilted gambeson whose skirt swings with each stride, straps crossed over the chest, a pouch on the belt, puffed sleeves and leather cuffs, iron knee cops over turned-down boots, and a crested morion over a sunken face.' },

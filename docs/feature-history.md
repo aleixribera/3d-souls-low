@@ -365,3 +365,9 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - 2,812 triangles of body and 2,992 with the kit-built `knightGreatsword`, inside the 3,000 enemy budget. The kit parts it used (`breastplate`, `tassets`, `closeHelm`, `roundPauldron`, `plateBands`) stay for the other Ironbound.
 - The model lab now places the rig every frame before posing it, as the game does, so the twitch idle's root offset no longer accumulates (the rogue and the Pale Duelist drifted out of the lab's view).
 - Checks: the model lab (idle, walk), the Long Hall on High, the in-page `odel` filter. Notes: `docs/knight-model-v7.24.0.md`. VERSION / LOAD_STAMP: v7.24.0 / 7.24.0.
+
+## The Rogue built in Blender (v7.25.0)
+- The Hollowed cutthroat (14 placements) was 5,248 triangles of kit primitives, the last common enemy over the 3,000 budget among the early levels. It is now `tools/blender/rogue.py`: one rigid piece per rig bone, named `rogue:<bone>__<slot>`, packed into `js/baked/rogue.js` and worn through `use: 'baked'` parts. The look keeps v5.5's brief: a deep charcoal hood (a loose sheet with folds, its tail on the swinging `hoodTail` bone), a black face wrap with an eye slit, a leather jerkin open over blue-black scale, crossed belts, a pauldron on the sword arm, strapped bracers, gloves closed on the grips, a spiked off-hand bracer, blackened knee cops and greaves over boots. The loin flaps stay on the `loinF` / `loinB` cloth bones.
+- One new material slot, `strap` (lighter leather for the belts, bracer straps and pouch). The kit still builds the scimitar and the dagger.
+- 3,000 triangles with both blades, exactly the enemy budget. The kit parts it used stay for the other models.
+- Checks: the model lab (idle), the Final Castle on High, the in-page `odel` filter. Notes: `docs/rogue-model-v7.25.0.md`. VERSION / LOAD_STAMP: v7.25.0 / 7.25.0.
