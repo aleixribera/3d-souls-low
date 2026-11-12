@@ -1,0 +1,38 @@
+{
+ "long-hall": {
+  "medianMs": 7,
+  "p95Ms": 13.9,
+  "calls": 762,
+  "triangles": 246098
+ },
+ "sunken-keep": {
+  "medianMs": 6.9,
+  "p95Ms": 7,
+  "calls": 534,
+  "triangles": 227926
+ },
+ "burning-town": {
+  "medianMs": 7,
+  "p95Ms": 13.9,
+  "calls": 500,
+  "triangles": 502470
+ },
+ "the-tower": {
+  "medianMs": 6.9,
+  "p95Ms": 7,
+  "calls": 724,
+  "triangles": 277031
+ },
+ "final-castle": {
+  "medianMs": 7,
+  "p95Ms": 16.4,
+  "calls": 717,
+  "triangles": 530982
+ },
+ "the-church": {
+  "medianMs": 7,
+  "p95Ms": 13.9,
+  "calls": 233,
+  "triangles": 632178
+ }
+}

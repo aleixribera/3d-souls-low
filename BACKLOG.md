@@ -13,3 +13,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   All three belong to the old second road and leave at the swap (`PLAN.md` stage 3), so they get no Blender pass.
 - `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
   without the v7.34.0 change: flaky (pass 2, 2026-11-13).
+- Bots fight bosses worse alone than in v7.12.1's record: Ser Quill beat the Bell Warden and Margit 6/6 then
+  (`.scratch/bot-duel-v7.12.1-final.json`), 0/6 now (`docs/scorecard/boss-duels-1-bot.txt`, pass 5). Bots fill The
+  Calling's empty slots (`PLAN.md` stage 2, item 3): find which change since v7.13.0 did it before then.
+- The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
+  no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
+- Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat
+  white that washes out the ground and the controls panel (`docs/scorecard/level-the-tower.jpg`, `level-the-church.jpg`).
+- Radagon is unbeaten by one bot or three (0/6 each, `docs/scorecard/boss-duels-*.txt`): check by hand whether a group
+  of people can beat it before The Calling offers it.

@@ -1,0 +1,13 @@
+giant              6/6 wins  {"win":6}  win avg 20s  resolve avg/max 20/22s  damage taken 0  hp left 120  longest lull 1.7s  fell avg 0.0/3  hit avg 0.3/3
+pillagerCaptain    6/6 wins  {"win":6}  win avg 22s  resolve avg/max 22/24s  damage taken 7  hp left 113  longest lull 2.8s  fell avg 0.0/3  hit avg 1.2/3
+bellWarden         6/6 wins  {"win":6}  win avg 29s  resolve avg/max 29/33s  damage taken 0  hp left 120  longest lull 2.2s  fell avg 0.0/3  hit avg 0.3/3
+varn               6/6 wins  {"win":6}  win avg 61s  resolve avg/max 61/67s  damage taken 42  hp left 93  longest lull 1.9s  fell avg 0.0/3  hit avg 1.8/3
+antlered           6/6 wins  {"win":6}  win avg 37s  resolve avg/max 37/40s  damage taken 23  hp left 105  longest lull 1.7s  fell avg 0.0/3  hit avg 1.8/3
+margit             5/6 wins  {"win":5,"loss":1}  win avg 47s  resolve avg/max 49/59s  damage taken 87  hp left 93  longest lull 2.4s  fell avg 0.7/3  hit avg 2.7/3
+godrick            4/6 wins  {"loss":2,"win":4}  win avg 63s  resolve avg/max 70/104s  damage taken 114  hp left 66  longest lull 2.3s  fell avg 1.0/3  hit avg 3.0/3
+crucibleKnight     6/6 wins  {"win":6}  win avg 41s  resolve avg/max 41/48s  damage taken 23  hp left 97  longest lull 2.0s  fell avg 0.0/3  hit avg 1.8/3
+morgott            3/6 wins  {"win":3,"loss":3}  win avg 81s  resolve avg/max 92/117s  damage taken 130  hp left 86  longest lull 1.6s  fell avg 1.7/3  hit avg 3.0/3
+godfrey            6/6 wins  {"win":6}  win avg 63s  resolve avg/max 63/70s  damage taken 79  hp left 86  longest lull 1.0s  fell avg 0.2/3  hit avg 2.8/3
+maliketh           5/6 wins  {"win":5,"loss":1}  win avg 62s  resolve avg/max 62/69s  damage taken 83  hp left 78  longest lull 2.5s  fell avg 0.8/3  hit avg 2.3/3
+radagon            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 83/126s  damage taken 217  hp left -  longest lull 2.6s  fell avg 3.0/3  hit avg 3.0/3
+malenia            3/6 wins  {"loss":3,"win":3}  win avg 126s  resolve avg/max 161/206s  damage taken 177  hp left 96  longest lull 2.4s  fell avg 1.5/3  hit avg 3.0/3

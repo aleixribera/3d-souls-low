@@ -4,14 +4,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 1, item 4, `SCORECARD.md`, pass 1 of it: one row per `VISION.md` area, one per Ashmere level
-and one per boss (with 1 and with 3 players), each 1-5 with one sentence and a path of evidence. Check: every row has
-evidence a reader can open. First check the queued runs below; a red one comes first.
+Next: `PLAN.md` stage 2, item 1, group scaling for every boss, pass 1 of it: one `CONFIG` rule scales a boss's health,
+posture and stagger with the number of players fighting it, opt-in override per boss def. Check: the same boss's bar
+and posture at 1, 2, 3 and 4 players, measured in a test; then `BOTS=3 node tests/bot-duel.cjs all 6 600` against
+`docs/scorecard/boss-duels-3-bots.txt` (today three bots beat every Ashmere boss in 20-61 s and none falls).
 
-Items 1 to 3 are done. Pass 4 shipped item 3: the Toll Wisp's Arena description is now "A bell-ringer's soul in its
-old robe, bound to a handbell", seen in Arena > Enemies at desktop and phone width
-(`.scratch/menu/wisp-desc-desktop.png`, `-phone.png`; `.scratch/menu-shot.cjs <menu> <item> <stem>` takes them).
-No release for a text fix: the next release's changelog line mentions it.
+Stage 1 is done. Pass 5 shipped item 4, `SCORECARD.md`: 7 area rows, 6 Ashmere level rows and 13 boss rows (1 and 3
+players), every row with evidence in `docs/scorecard/` (frames, `levels-high.json`, the bot-duel logs). Weakest areas:
+bosses and co-op (2 each), which stage 2 targets. `tools/scorecard-frames.cjs` retakes the frames; `tests/bot-duel.cjs`
+takes `BOTS=n`. The kit-part cleanup in `BACKLOG.md` was due "once stage 1 is done".
 
 ## Works
 
@@ -29,6 +30,8 @@ No release for a text fix: the next release's changelog line mentions it.
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
 - CI: Node checks and four browser shards on every push.
+- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
+  `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab, 1600x640), `lab-zoom.cjs`
   (same with `DSF=2 CLIP=x,y,w,h`, CSS pixels of the 1600 view), `enemy-play.cjs <q> <dist> <levelId> <enemyId[#n]>`
   (a frame in a level; `HIDEP=1` hides the player; `YAWOFF=0.15` puts the camera nearly in front of the enemy's
@@ -42,8 +45,7 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-- CI on main for pass 4's push (the Toll Wisp's description). v7.34.0's CI and container runs passed, and `:latest`
-  reads anonymously (pass 3).
+- CI on main for pass 5's push (the scorecard). Pass 4's CI run: see below.
 
 ## wip/ branches
 

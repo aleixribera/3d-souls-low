@@ -1,0 +1,13 @@
+giant              6/6 wins  {"win":6}  win avg 69s  resolve avg/max 69/81s  damage taken 81  hp left 84  longest lull 2.7s
+pillagerCaptain    2/6 wins  {"loss":4,"win":2}  win avg 68s  resolve avg/max 61/68s  damage taken 217  hp left 70  longest lull 2.8s
+bellWarden         0/6 wins  {"loss":6}  win avg -s  resolve avg/max 48/88s  damage taken 157  hp left -  longest lull 3.4s
+varn               0/6 wins  {"loss":6}  win avg -s  resolve avg/max 65/120s  damage taken 128  hp left -  longest lull 3.7s
+antlered           1/6 wins  {"loss":5,"win":1}  win avg 178s  resolve avg/max 97/178s  damage taken 218  hp left 42  longest lull 3.0s
+margit             0/6 wins  {"loss":6}  win avg -s  resolve avg/max 65/101s  damage taken 150  hp left -  longest lull 2.9s
+godrick            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 68/119s  damage taken 210  hp left -  longest lull 2.9s
+crucibleKnight     1/6 wins  {"loss":5,"win":1}  win avg 223s  resolve avg/max 98/223s  damage taken 183  hp left 28  longest lull 3.9s
+morgott            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 52/87s  damage taken 172  hp left -  longest lull 3.4s
+godfrey            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 97/152s  damage taken 247  hp left -  longest lull 2.1s
+maliketh           0/6 wins  {"loss":6}  win avg -s  resolve avg/max 68/118s  damage taken 172  hp left -  longest lull 2.9s
+radagon            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 27/44s  damage taken 143  hp left -  longest lull 2.6s
+malenia            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 93/192s  damage taken 210  hp left -  longest lull 2.3s
