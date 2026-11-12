@@ -264,7 +264,7 @@ MODEL_DEFS.ashenWarrior = {
             { bone: 'pelt', gain: 0.06, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'peltB', gain: 0.08, k: 30, damp: 3.2, flutter: 0.06, sideways: 1.1 }],
   },
 };
-// The Beastman of Farum Azula: a lean grey wolfish beast-man, hunched, long ears and a muzzle, fur matted over its
+// The Beastman of Farum Azula (v7.29.0 built in Blender): a lean grey wolfish beast-man, hunched, long ears and a muzzle, fur matted over its
 // shoulders and down its back, scraps of a robe, a curved blade; it springs from the ruins.
 MODEL_DEFS.beastman = {
   faction: 'beast', budget: 'enemy', fit: 1.04, limbSides: 7,
@@ -282,22 +282,17 @@ MODEL_DEFS.beastman = {
     void: { tex: 'ashSoot', tint: 0x0a0806, decay: 0.9 },
     eye: { glow: 0xff9a40 },
   },
-  body: { torso: 'fur', pelvis: 'rags', arms: 'fur', legs: 'fur', head: 'fur', neck: 'fur', hands: 'hide', feet: 'hide' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0, -0.02, 0.16] }, loinB: { parent: 'spin', at: [0, -0.02, -0.16] }, tail: { parent: 'spin', at: [0, 0.0, -0.14] } },
-  parts: [
-    { use: 'wolfMuzzle', slot: 'hide', dark: 'void', fangs: 'claw', bone: 'head', size: 1.0 },
-    { use: 'beastEars', slot: 'hide', bone: 'head', size: 1.0 },
-    { use: 'furClumps', slot: 'fur', bone: 'chest', from: [-0.28, 0.4, -0.22], to: [0.28, 0.64, 0.02], lay: [0, -0.5, -1], count: 40, len: 0.22, seed: 3 },
-    { use: 'furClumps', slot: 'fur', bone: 'chest', from: [-0.12, 0.06, -0.18], to: [0.12, 0.42, -0.14], lay: [0, -1, -0.6], count: 16, len: 0.14, seed: 7 },
-    { use: 'furClumps', slot: 'fur', bone: 'neck', from: [-0.1, -0.02, -0.1], to: [0.1, 0.1, 0.08], lay: [0, -0.6, -0.6], count: 14, len: 0.14, seed: 9 },
-    { use: 'sleeve', slot: 'rags', bone: 'armR', len: 0.3, seed: 3 },
-    { use: 'ropeSash', slot: 'leather', bone: 'spin', y: 0.05 },
-    { use: 'clothStrip', slot: 'rags', bone: 'loinF', w: 0.26, len: 0.48, seed: 5 }, { use: 'clothStrip', slot: 'rags', bone: 'loinB', w: 0.3, len: 0.52, seed: 8 },
-    { use: 'furTail', slot: 'fur', bone: 'tail', size: 0.55, side: -1 },
-    { use: 'fingers', slot: 'claw', bone: 'elbowL', len: 0.12, r: 0.01, at: 0.34 },
-  ],
+  // v7.29.0: built in Blender (tools/blender/beastman.py), one piece per bone; the kit still builds the scimitar
+  parts: Object.entries({
+    head: ['fur', 'fur.1', 'hide', 'hide.1', 'void', 'claw'], neck: ['fur', 'fur.1'], chest: ['fur', 'fur.1', 'fur.2', 'rags'],
+    spin: ['fur', 'leather', 'rags'], loinF: ['rags'], loinB: ['rags'], tail: ['fur'], armL: ['fur'], armR: ['fur', 'rags'],
+    elbowL: ['fur', 'hide', 'claw'], elbowR: ['fur', 'hide', 'claw'], legL: ['fur'], legR: ['fur'],
+    kneeL: ['fur', 'hide', 'claw'], kneeR: ['fur', 'hide', 'claw'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `beastman:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'scimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
-  eyes: { color: 0xff9a40, size: 0.013, spread: 0.05, at: [0, 0.1, 0.13] },
+  eyes: { color: 0xff9a40, size: 0.013, spread: 0.042, at: [0, 0.12, 0.086] },
   anim: {
     idle: { breathRate: 1.8, breath: 0.035, headDrift: 0.16, sway: 0.04, twitch: 0.8 }, walk: { twist: 0.22, roll: 0.08, headNod: 0.07, elbow: 0.5, drag: 0.3 },
     flinch: { head: 1, chest: 1, arms: 1 }, death: { buckle: 1.3, slump: 1 },

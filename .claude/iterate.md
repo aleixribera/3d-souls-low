@@ -14,8 +14,8 @@ Stage 1, **every character a Blender model** (the line of work since v7.21.0). O
 player meets it (placements across `js/levels/`, counted with `enemy: '<id>'`):
 
 1. ~~Wanderer, Hollow Soldier, Ashen Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden~~ (v7.21–v7.27)
-2. Rampart Bowman (`rampartBowman`: bowman 11 + castleBowman 12)
-3. Beastman of Farum Azula (`beastman`, 13)
+2. ~~Rampart Bowman (`rampartBowman`: bowman 11 + castleBowman 12)~~ (v7.28)
+3. ~~Beastman of Farum Azula (`beastman`, 13)~~ (v7.29)
 4. Toll Wisp (`tollWisp`, 12)
 5. Grafted Scion (`graftedScion`, 9)
 6. Ash Executioner (`ashExecutioner`, 7), Crucible Squire (`crucibleSquire`, 7)
