@@ -371,3 +371,10 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - One new material slot, `strap` (lighter leather for the belts, bracer straps and pouch). The kit still builds the scimitar and the dagger.
 - 3,000 triangles with both blades, exactly the enemy budget. The kit parts it used stay for the other models.
 - Checks: the model lab (idle), the Final Castle on High, the in-page `odel` filter. Notes: `docs/rogue-model-v7.25.0.md`. VERSION / LOAD_STAMP: v7.25.0 / 7.25.0.
+
+## The Pale Duelist built in Blender (v7.26.0)
+- The Hollowed fencer (10 placements) was 4,197 triangles of kit primitives and read as a mannequin: a blank head, a box doublet, a flat board of a cape. It is now `tools/blender/duelist.py`: one rigid piece per rig bone, named `duelist:<bone>__<slot>`, packed into `js/baked/duelist.js` and worn through `use: 'baked'` parts. The look keeps the model's brief (upright and thin, a plumed cap, rapier and dagger): a gaunt face with deep sockets for the eyes, a crimson beret with a white plume, a pleated millstone ruff, a peascod doublet with gilt buttons and a crimson baldric, paned sleeve caps and trunk hose, gauntlet gloves, tall boots with turned-down cuffs.
+- The half cape keeps its two cloth bones (`capeA`, `capeB`), and the doublet's tails and the sash end keep `loinF`, `loinB`, `loinS`.
+- A bone may carry two pieces in one material slot: the second is named `<bone>__<slot>.1` (the gauntlet cuffs, the boot cuffs), and its part's `slot` drops the suffix.
+- 2,665 triangles with the kit-built rapier and dagger, inside the 3,000 enemy budget. No material changed.
+- Checks: the model lab (idle, walk), the Final Castle on High, the in-page `odel` filter. Notes: `docs/duelist-model-v7.26.0.md`. VERSION / LOAD_STAMP: v7.26.0 / 7.26.0.

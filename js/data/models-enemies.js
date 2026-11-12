@@ -45,7 +45,7 @@ MODEL_DEFS.rogue = {   // (v5.5; v7.25.0 built in Blender, after the reference a
   },
 };
 
-MODEL_DEFS.paleDuelist = {   // a gaunt fallen noble: upright and thin, a plumed cap, rapier and dagger
+MODEL_DEFS.paleDuelist = {   // (v7.26.0 built in Blender) a gaunt fallen noble: upright and thin, a plumed cap, rapier and dagger
   extends: 'hollowBase', fit: 1.03,
   proportions: { shoulderX: 0.28, torsoW: 0.16, torsoD: 0.1, armR: 0.042, legR: 0.06, headR: 0.11, handR: 0.043, footLen: 0.26 },
   limbs: { armL: { len: 1.05, thick: 1 } },
@@ -60,22 +60,17 @@ MODEL_DEFS.paleDuelist = {   // a gaunt fallen noble: upright and thin, a plumed
     iron: { tex: 'dentedSteel', tint: 0x8a8e94, decay: 0.45 },
     eye: { glow: 0xd8e0ff },
   },
-  body: { torso: null, pelvis: 'cloth', arms: 'cloth', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'skin', feet: 'leather' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.12] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.12] }, loinS: { parent: 'spin', at: [0.19, -0.02, 0.0] }, capeA: { parent: 'chest', at: [0.1, 0.53, -0.15] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] } },
+  // v7.26.0: built in Blender (tools/blender/duelist.py), one piece per bone ('.1' marks a bone's second piece in a slot);
+  // the kit still builds the dagger and the rapier
   parts: [
-    { use: 'tunic', slot: 'plume', bone: 'spin' }, { use: 'fittedDoublet', slot: 'cloth', trim: 'trim', bone: 'chest' },
-    { use: 'sleeve', slot: 'plume', bone: 'armL', r0: 0.068, r1: 0.085, len: 0.22, seed: 9 },
-    { use: 'sleeve', slot: 'plume', bone: 'armR', r0: 0.068, r1: 0.085, len: 0.22, seed: 4 },
-    { use: 'capeSegment', slot: 'plume', bone: 'capeA', w0: 0.28, w1: 0.4, len: 0.42, bow: 0.5 },
-    { use: 'capeSegment', slot: 'plume', bone: 'capeB', w0: 0.4, w1: 0.44, len: 0.46, bow: 0.5, ragged: true, seed: 8 },
-    { use: 'featherCap', slot: 'cloth', plumeSlot: 'plume', bone: 'head' },
-    { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.08, to: 0.28, radius: 0.04, count: 3 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.08, to: 0.28, radius: 0.04, count: 3 },
-    { use: 'tallBoot', slot: 'leather', metal: 'trim', bone: 'kneeL', size: 1.05 },
-    { use: 'tallBoot', slot: 'leather', metal: 'trim', bone: 'kneeR', size: 1.05 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.15, len: 0.5, seed: 2 }, { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.2, len: 0.7, seed: 5 },
-    { use: 'clothStrip', slot: 'plume', bone: 'loinS', w: 0.07, len: 0.45, seed: 8, turn: Math.PI / 2 },
+    ...Object.entries({
+      head: ['skin', 'plume', 'cloth'], neck: ['skin', 'cloth'], chest: ['cloth', 'trim', 'plume'], spin: ['plume', 'cloth', 'leather', 'trim'],
+      loinF: ['cloth'], loinB: ['cloth'], loinS: ['plume'], capeA: ['plume'], capeB: ['plume'],
+      armL: ['plume', 'cloth'], armR: ['plume', 'cloth'], elbowL: ['cloth', 'leather', 'leather.1'], elbowR: ['cloth', 'leather', 'leather.1'],
+      legL: ['cloth'], legR: ['cloth'], kneeL: ['leather', 'leather.1', 'trim'], kneeR: ['leather', 'leather.1', 'trim'],
+    }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `duelist:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
     { use: 'dagger', slot: 'blade', guardSlot: 'iron', bone: 'elbowL' },
   ],
   weapon: { use: 'rapier', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
