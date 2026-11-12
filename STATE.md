@@ -4,19 +4,24 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 4 picks the next item: the Grafted Scion (`MODEL_DEFS.graftedScion`, 9 placements), pass 1 of it. First check the
-queued runs below; a red one comes first.
+Pass 5 picks the next item: the Ash Executioner (`MODEL_DEFS.ashExecutioner`, 7 placements, 7,768 tris now), pass 1 of
+it. First check the queued runs below; a red one comes first.
 
 ## Works
 
 - Baked figures: wanderer, Hollow Soldier, Ashen Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart
   Bowman (v7.28.0), Beastman of Farum Azula (v7.29.0, 2,800 body tris, 2,926 with the scimitar), Toll Wisp (v7.30.0,
-  2,881 tris, a handbell in the left hand; the first figure with no kit part, so baked meshes now share corners). `js/baked/*.js`;
-  checked by the in-page `model` filter (5 tests), `Bowman` (4), `Lands` (15), `Wisp` (1) and validation at load.
+  2,881 tris, a handbell in the left hand; the first figure with no kit part, so baked meshes now share corners), Grafted
+  Scion (v7.31.0, 2,774 body tris, 2,900 with the scimitar). `js/baked/*.js`; checked by the in-page `model` filter (5
+  tests), `Bowman` (4), `Lands` (15), `Wisp` (1), `Scion`, `Ultra performance` and validation at load.
+- Figure lesson (v7.31.0): a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped
+  end and it renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a
+  per-face reference point for bands round a limb.
 - CI: Node checks and four browser shards on every push.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids>` (model lab, 1600x640), `lab-zoom.cjs` (same with
   `DSF=2 CLIP=x,y,w,h`, CSS pixels of the 1600 view), `enemy-play.cjs <q> <dist> <levelId> <enemyId[#n]>` (a frame in a
-  level; `HIDEP=1` hides the player; it does not lift the player onto a raised enemy, so pick one on the floor).
+  level; `HIDEP=1` hides the player; it does not lift the player onto a raised enemy, so pick one on the floor),
+  `lab-probe.cjs <id>` (hides each mesh in turn; `TRY=`, `TEX=1`, `NOSHADOW=1` modes), `normals-probe.cjs`.
 
 ## Broken
 
@@ -24,8 +29,8 @@ Nothing known.
 
 ## Queued runs
 
-- The v7.30.0 push: CI on main and the container run for tag v7.30.0. Check both (`gh run list --limit 4`), and that
-  `ghcr.io/aleixribera/3d-souls-low:latest` reads anonymously.
+- The v7.31.0 push: CI on main and the container run for tag v7.31.0. Check both (`gh run list --limit 4`), and that
+  `ghcr.io/aleixribera/3d-souls-low:latest` reads anonymously. (v7.30.0's container run passed; its CI was still running.)
 
 ## wip/ branches
 
@@ -35,7 +40,7 @@ None.
 
 - Kit parts no model uses since v7.28.0/v7.29.0: `quiver`, `archerHarness`, `cowl`, `fittedDoublet`, `wolfMuzzle`,
   `beastEars`, `furClumps`, and since v7.30.0 `wispHat`, `wispBeard`, `wispMantle`, `wispSleeve`, `wispRobe`, `wispTassels`
-  (kit-identity.js, kit-premium.js, bodykit.js). Remove once stage 1 is done, with any others
+  and since v7.31.0 `scionMask`, `scionLimbs` (kit-identity.js, kit-premium.js, kit-realms.js, bodykit.js). Remove once stage 1 is done, with any others
   left unused.
 - The `beastFur` texture projects as vertical streaks that read like wood grain on the Beastman, and is brown where its
   brief says grey. A texture pass (Claude-only) after stage 1.

@@ -17,7 +17,7 @@ player meets it (placements across `js/levels/`, counted with `enemy: '<id>'`):
 2. ~~Rampart Bowman (`rampartBowman`: bowman 11 + castleBowman 12)~~ (v7.28)
 3. ~~Beastman of Farum Azula (`beastman`, 13)~~ (v7.29)
 4. ~~Toll Wisp (`tollWisp`, 12)~~ (v7.30)
-5. Grafted Scion (`graftedScion`, 9)
+5. ~~Grafted Scion (`graftedScion`, 9)~~ (v7.31)
 6. Ash Executioner (`ashExecutioner`, 7), Crucible Squire (`crucibleSquire`, 7)
 7. Iron Shover, Omenkin, Leyndell Knight, Gargoyle (6 each)
 8. Empty Sentinel, Golden Zealot, Ashen Warrior (5); Varn, Cleanrot Knight (4)

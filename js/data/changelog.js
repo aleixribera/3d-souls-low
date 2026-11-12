@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.31.0', title: 'The Grafted Scion Remade', text: 'Godrick\'s grafted things are rebuilt: a starved pale body sewn together with dark thread, a blank gold mask under a crown of knife-rays, and four extra arms stitched on at the back and the sides, each gripping a curved blade. Their rampage and their pounce are unchanged.' },
   { version: 'v7.30.0', title: 'The Toll Wisp Remade', text: 'The bell-ringers\' souls are rebuilt: a great wide-brimmed hat with a hooked crown, a face lost in shadow where two cold eyes burn over a long white beard, a chestnut capelet, laced sleeves over bony hands, a rope girdle with long tassels and a brocade robe under a dark coat. Each now carries the small bell it rings before it strikes.' },
   { version: 'v7.29.0', title: 'The Beastman Remade', text: 'The beast-men of Farum Azula are rebuilt: a wolf\'s head with bared fangs and long ears, a shaggy mane matted over the shoulders, scraps of an old robe bound with rope, big clawed hands and paws, a bushy tail. Their blade and their leaps are unchanged.' },
   { version: 'v7.28.0', title: 'The Rampart Bowman Remade', text: 'The archers on the walls are rebuilt: a gaunt face deep in a canvas cowl, a ragged cape over the shoulders, a leather harness across a fitted doublet, a quiver of fletched arrows on the back, a bracer on the bow arm and rags bound round the other. Their bow and their aim are unchanged.' },

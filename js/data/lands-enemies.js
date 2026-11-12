@@ -86,8 +86,8 @@ MODEL_DEFS.omenkin = {
             { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 36, damp: 3.8, flutter: 0.05 }, { bone: 'capeC', gain: 0.09, k: 28, damp: 3, flutter: 0.08, sideways: 1.2 }],
   },
 };
-// The Grafted Scion: a thin pale body stitched together, a blank gold mask crowned with knife-rays, four extra arms sewn on
-// at the back and sides, each with a blade; a sword in the hand; a stained loincloth; it moves low and fast.
+// The Grafted Scion (v7.31.0 built in Blender): a thin pale body stitched together, a blank gold mask crowned with knife-rays,
+// four extra arms sewn on at the back and sides, each with a blade; a sword in the hand; a stained loincloth; it moves low and fast.
 MODEL_DEFS.graftedScion = {
   faction: 'grafted', budget: 'enemy', fit: 1.02, limbSides: 7,
   proportions: { shoulderX: 0.3, torsoW: 0.18, torsoD: 0.13, armR: 0.042, legR: 0.062, headR: 0.118, handR: 0.05, footLen: 0.3 },
@@ -102,22 +102,17 @@ MODEL_DEFS.graftedScion = {
     blade: { tex: 'dentedSteel', tint: 0xb0b0b4, decay: 0.5 },
     eye: { glow: 0xffe0a0 },
   },
-  body: { torso: 'skin', pelvis: 'cloth', arms: 'skin', legs: 'skin', head: 'skin', neck: 'skin', hands: 'skin', feet: 'skin' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0, -0.03, 0.15] }, loinB: { parent: 'spin', at: [0, -0.03, -0.15] } },
-  parts: [
-    { use: 'spineBumps', slot: 'skin', bone: 'chest' },
-    { use: 'scionMask', slot: 'gold', dark: 'void', bone: 'head', size: 1.0, rays: 11 },
-    { use: 'scionLimbs', slot: 'skin', blades: 'blade', bone: 'chest', r: 0.032, blade: 0.55, arms: [
-      [[0.12, 0.5, -0.14], [0.42, 0.62, -0.32], [0.6, 0.3, -0.12]], [[-0.12, 0.5, -0.14], [-0.42, 0.62, -0.32], [-0.6, 0.3, -0.12]],
-      [[0.16, 0.28, -0.1], [0.4, 0.18, -0.24], [0.52, -0.08, 0.05]], [[-0.16, 0.28, -0.1], [-0.4, 0.18, -0.24], [-0.52, -0.08, 0.05]]] },
-    { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.26, len: 0.5, seed: 4 }, { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.3, len: 0.56, seed: 6 },
-    { use: 'wraps', slot: 'cloth', bone: 'kneeL', from: 0.08, to: 0.4, radius: 0.058, count: 4 }, { use: 'wraps', slot: 'cloth', bone: 'kneeR', from: 0.08, to: 0.4, radius: 0.058, count: 4 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.12, to: 0.28, radius: 0.045, count: 3 },
-    { use: 'circlet', slot: 'gold', bone: 'neck', r: 0.07, y: 0.0 },
-  ],
+  // v7.31.0: built in Blender (tools/blender/scion.py), one piece per bone; the kit still builds the scimitar
+  parts: Object.entries({
+    head: ['skin', 'gold', 'gold.1', 'gold.2', 'void'], neck: ['skin', 'gold'],
+    chest: ['skin', 'skin.1', 'skin.2', 'skin.3', 'skin.4', 'void', 'blade'], spin: ['skin', 'leather', 'gold', 'cloth'],
+    loinF: ['cloth'], loinB: ['cloth'], armL: ['skin', 'void'], armR: ['skin', 'void'], elbowL: ['skin'], elbowR: ['skin', 'leather'],
+    legL: ['skin'], legR: ['skin'], kneeL: ['skin', 'skin.1', 'leather'], kneeR: ['skin', 'skin.1', 'leather'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `scion:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'scimitar', slots: { blade: 'blade', grip: 'leather', guard: 'gold' } },
-  eyes: { color: 0xffe0a0, size: 0.012, spread: 0.045, at: [0, 0.13, 0.15] },
+  eyes: { color: 0xffe0a0, size: 0.011, spread: 0.042, at: [0, 0.135, 0.126] },
   anim: {
     idle: { breathRate: 1.6, breath: 0.03, headDrift: 0.14, sway: 0.04, twitch: 0.7 }, walk: { twist: 0.22, roll: 0.08, headNod: 0.06, elbow: 0.5, drag: 0.4 },
     flinch: { head: 1, chest: 1, arms: 1 }, death: { buckle: 1.3, slump: 1 },
