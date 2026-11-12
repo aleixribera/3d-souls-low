@@ -2,30 +2,17 @@
 
 The loop file for the `iterate` skill. Where it differs from the skill, this file wins.
 
-## Truth file
+## Vision
 
 - `AGENTS.md`: the project guide, architectural rules and invariants.
 - `LORE.md`: the story. Every look, name and line agrees with it.
 - `~/.claude/CLAUDE.md`: Aleix's standing rules (real Blender models, Claude-only textures, no stock-AI UI, ship without asking).
+- `VISION.md` replaces the first two as the vision once it exists.
 
-## Order of work
+## Plan
 
-Stage 1, **every character a Blender model** (the line of work since v7.21.0). One character per pass, by how often the
-player meets it (placements across `js/levels/`, counted with `enemy: '<id>'`):
-
-1. ~~Wanderer, Hollow Soldier, Ashen Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden~~ (v7.21–v7.27)
-2. ~~Rampart Bowman (`rampartBowman`: bowman 11 + castleBowman 12)~~ (v7.28)
-3. ~~Beastman of Farum Azula (`beastman`, 13)~~ (v7.29)
-4. ~~Toll Wisp (`tollWisp`, 12)~~ (v7.30)
-5. ~~Grafted Scion (`graftedScion`, 9)~~ (v7.31)
-6. Ash Executioner (`ashExecutioner`, 7), Crucible Squire (`crucibleSquire`, 7)
-7. Iron Shover, Omenkin, Leyndell Knight, Gargoyle (6 each)
-8. Empty Sentinel, Golden Zealot, Ashen Warrior (5); Varn, Cleanrot Knight (4)
-9. Then the Ashmere bosses, then the Elden Ring bosses (`MODEL_DEFS` in `models-bosses.js`, `data/bosses/*.js`; budget 14,000).
-
-A model counts as done when it is a baked piece per bone, inside its budget, its look follows LORE.md and its old brief
-(the comment on its `MODEL_DEFS` entry), and it is checked in the model lab and in a level. After stage 1: the weakest
-area by Aleix's feedback.
+`PLAN.md` (written by the director chat): the order of work and each item's acceptance check. Cuts and finds go to
+`BACKLOG.md`.
 
 ## Notes
 
