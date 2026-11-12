@@ -4,6 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
+Paused by Aleix, 2026-11-12 (the owner is retiring this loop).
+
 Pass 6 picks the next item: the Crucible Squire (`MODEL_DEFS.crucibleSquire` in `lands-enemies.js`, 7 placements,
 8,572 tris now; it extends `crucibleKnight`), pass 1 of it. First check the queued runs below; a red one comes first.
 
