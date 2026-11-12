@@ -82,7 +82,7 @@ MODEL_DEFS.paleDuelist = {   // (v7.26.0 built in Blender) a gaunt fallen noble:
   },
 };
 
-MODEL_DEFS.rampartBowman = {   // hunched, a bow taller than its body, a quiver bristling with arrows
+MODEL_DEFS.rampartBowman = {   // (v7.28.0 built in Blender) hunched, a bow taller than its body, a quiver bristling with arrows
   extends: 'hollowBase', fit: 1.06,
   proportions: { torsoW: 0.18, torsoD: 0.12, armR: 0.048, legR: 0.07, headR: 0.118 },
   limbs: { armL: { len: 1.08, thick: 0.9 } },
@@ -97,20 +97,15 @@ MODEL_DEFS.rampartBowman = {   // hunched, a bow taller than its body, a quiver 
     wood: { tex: 'barkMoss', tint: 0x8a7a6a, decay: 0.2 },
     eye: { glow: 0xd89a50 },
   },
-  body: { torso: null, pelvis: 'cloth', arms: 'skin', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'skin', feet: 'leather' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.13] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.13] } },
-  parts: [
-    { use: 'tunic', slot: 'cloth', bone: 'spin' }, { use: 'cowl', slot: 'hood', bone: 'head', size: 1.12 },
-    { use: 'fittedDoublet', slot: 'cloth', trim: 'leather', bone: 'chest' },
-    { use: 'mantle', slot: 'hood', bone: 'chest', seed: 8 },
-    { use: 'archerHarness', slot: 'leather', metal: 'metal', bone: 'chest' },
-    { use: 'belt', slot: 'leather', bone: 'spin' }, { use: 'pouch', slot: 'leather', bone: 'spin', x: -0.2, z: 0.1 },
-    { use: 'quiver', bone: 'chest', slot: 'leather' },
-    { use: 'vambrace', slot: 'leather', strap: 'wrap', bone: 'elbowL', size: 1.05 },
-    { use: 'wraps', slot: 'wrap', bone: 'kneeL', from: 0.05, to: 0.34, radius: 0.062, count: 4 },
-    { use: 'wraps', slot: 'wrap', bone: 'kneeR', from: 0.05, to: 0.34, radius: 0.062, count: 4 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.18, len: 0.42, seed: 3 }, { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.2, len: 0.5, seed: 7 },
-  ],
+  // v7.28.0: built in Blender (tools/blender/bowman.py), one piece per bone; the kit still builds the bow
+  parts: Object.entries({
+    head: ['skin', 'hood'], neck: ['skin'], chest: ['cloth', 'hood', 'leather', 'metal', 'wood', 'wrap'],
+    spin: ['cloth', 'cloth.1', 'leather', 'leather.1'], loinF: ['cloth'], loinB: ['cloth'], armL: ['skin'], armR: ['skin'],
+    elbowL: ['skin', 'wrap'], elbowR: ['skin', 'leather', 'leather.1', 'metal'], legL: ['cloth', 'cloth.1'], legR: ['cloth', 'cloth.1'],
+    kneeL: ['wrap', 'leather'], kneeR: ['wrap', 'leather'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bowman:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'bow', slots: { limb: 'wood', string: 'wrap' } },
   anim: { cloth: [{ bone: 'loinF', gain: 0.16, k: 60, damp: 5, flutter: 0.05 }, { bone: 'loinB', gain: 0.2, k: 50, damp: 4.5, flutter: 0.07 }] },
 };

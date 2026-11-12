@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.27.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.28.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
@@ -73,6 +73,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | The Rogue's model | `tools/blender/rogue.py` (rebuild and pack: `docs/rogue-model-v7.25.0.md`), materials in `MODEL_DEFS.rogue` |
 | The Pale Duelist's model | `tools/blender/duelist.py` (rebuild and pack: `docs/duelist-model-v7.26.0.md`), materials in `MODEL_DEFS.paleDuelist` |
 | The Shield Warden's model | `tools/blender/warden.py` (rebuild and pack: `docs/warden-model-v7.27.0.md`), materials in `MODEL_DEFS.ironWarden` |
+| The Rampart Bowman's model | `tools/blender/bowman.py` (rebuild and pack: `docs/bowman-model-v7.28.0.md`), materials in `MODEL_DEFS.rampartBowman` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |
