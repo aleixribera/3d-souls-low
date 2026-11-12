@@ -319,7 +319,8 @@ MODEL_DEFS.ashBase = {   // base template for the Ashen Pillager faction
 // burlap hood and tattered poncho shroud that parts over the chest to expose the ribcage and spine, a twisted dark
 // reddish-brown neck cord, bare bleached-ivory skeletal forearms, shins and bony feet with prominent dark-grimed knee
 // condyles and forearm/ankle bindings, frayed cloth tatters hanging around the waist and thighs, and a long curved
-// glaive with three circular perforations at the blade heel, rust encrustation, and hanging shaft streamers.
+// glaive with three circular perforations at the blade heel, rust encrustation, and hanging shaft streamers. v7.23 rebuilt the
+// body in Blender after the same brief; the glaive is still the kit's.
 MODEL_DEFS.ashLancer = {
   extends: 'hollowBase', faction: 'ashen', budget: 'enemy', fit: 1.03, limbSides: 4,
   proportions: { shoulderX: 0.31, torsoW: 0.185, torsoD: 0.12, armR: 0.036, legR: 0.046, headR: 0.116, handR: 0.032, footLen: 0.25 },
@@ -348,7 +349,7 @@ MODEL_DEFS.ashLancer = {
     wood: { tex: 'crackedLeather', tint: 0x38281e, decay: 0.72 },
     eye: { glow: 0xd8a858 },
   },
-  body: { torso: null, pelvis: 'darkBone', arms: 'bone', legs: 'bone', head: null, neck: 'darkBone', hands: 'bone', feet: 'bone' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     loinF: { parent: 'spin', at: [0.0, -0.02, 0.13] },
     loinB: { parent: 'spin', at: [0.0, -0.02, -0.13] },
@@ -357,36 +358,13 @@ MODEL_DEFS.ashLancer = {
     capeA: { parent: 'chest', at: [0, 0.54, -0.16] },
     capeB: { parent: 'capeA', at: [0, -0.42, 0] },
   },
-  parts: [
-    // Skull face with dark eye sockets, nasal cavity, brow crack and teeth under a deep woven burlap hood.
-    { use: 'skeletalSkull', slot: 'bone', void: 'socket', hood: 'shroud', bone: 'head' },
-    // Exposed skeletal ribcage and sternum inside the open V-front burlap shroud and twisted reddish-brown neck cord.
-    { use: 'shroud', slot: 'shroud', collar: 'collar', ribs: 'bone', void: 'socket', bone: 'chest' },
-    { use: 'belt', slot: 'leather', bone: 'spin' },
-    // Ragged burlap sleeves draping over the upper arms and shoulder joints.
-    { use: 'sleeve', slot: 'shroud', bone: 'armL', y0: 0.06, r0: 0.095, r1: 0.15, len: 0.29, seg: 6, seed: 11 },
-    { use: 'sleeve', slot: 'shroud', bone: 'armR', y0: 0.06, r0: 0.095, r1: 0.15, len: 0.29, seg: 6, seed: 14 },
-    // Prominent bone condyle knobs at elbows and dark-grimed knees, plus skeletal fingers.
-    { use: 'knobs', slot: 'bone', bone: 'armL', at: [[0, -0.3, 0, 0.036]] },
-    { use: 'knobs', slot: 'bone', bone: 'armR', at: [[0, -0.3, 0, 0.036]] },
-    { use: 'knobs', slot: 'darkBone', bone: 'legL', at: [[0, -0.4, 0.015, 0.05]] },
-    { use: 'knobs', slot: 'darkBone', bone: 'legR', at: [[0, -0.4, 0.015, 0.05]] },
-    { use: 'fingers', slot: 'bone', bone: 'elbowL', len: 0.11, r: 0.01, spread: 0.022 },
-    { use: 'fingers', slot: 'bone', bone: 'elbowR', len: 0.11, r: 0.01, spread: 0.022 },
-    // Dark leather/iron bindings on the skeletal forearms and lower shins/ankles.
-    { use: 'wraps', slot: 'leather', bone: 'elbowL', from: 0.07, to: 0.18, radius: 0.036, count: 1 },
-    { use: 'wraps', slot: 'leather', bone: 'elbowR', from: 0.07, to: 0.18, radius: 0.036, count: 1 },
-    { use: 'wraps', slot: 'leather', bone: 'kneeL', from: 0.22, to: 0.34, radius: 0.042, count: 1 },
-    { use: 'wraps', slot: 'leather', bone: 'kneeR', from: 0.22, to: 0.34, radius: 0.042, count: 1 },
-    // Hanging frayed cloth strips around the front, sides, and back of the waist, plus the tattered back cloak.
-    { use: 'clothStrip', slot: 'rags', bone: 'loinF', w: 0.16, len: 0.56, seed: 3, dx: -0.075 },
-    { use: 'clothStrip', slot: 'rags', bone: 'loinF', w: 0.15, len: 0.52, seed: 5, dx: 0.08, dz: 0.01 },
-    { use: 'clothStrip', slot: 'shroud', bone: 'loinL', w: 0.2, len: 0.58, seed: 11, turn: Math.PI / 2 },
-    { use: 'clothStrip', slot: 'shroud', bone: 'loinR', w: 0.2, len: 0.58, seed: 13, turn: -Math.PI / 2 },
-    { use: 'clothStrip', slot: 'rags', bone: 'loinB', w: 0.28, len: 0.62, seed: 7 },
-    { use: 'capeSegment', slot: 'shroud', bone: 'capeA', w0: 0.46, w1: 0.56, len: 0.44, bow: 0.95, ragged: true, seed: 2 },
-    { use: 'capeSegment', slot: 'rags', bone: 'capeB', w0: 0.56, w1: 0.64, len: 0.46, bow: 0.78, ragged: true, seed: 6 },
-  ],
+  // v7.23: the body is Blender meshes, one rigid piece per bone (tools/blender/lancer.py, packed in js/baked/lancer.js).
+  parts: Object.entries({
+    head: ['bone', 'socket', 'shroud'], neck: ['darkBone'], chest: ['bone', 'socket', 'shroud', 'collar'], spin: ['darkBone', 'rags'],
+    loinF: ['rags'], loinB: ['rags'], loinL: ['shroud'], loinR: ['shroud'], capeA: ['shroud'], capeB: ['rags'],
+    armL: ['bone', 'shroud'], armR: ['bone', 'shroud'], elbowL: ['bone', 'leather'], elbowR: ['bone', 'leather'],
+    legL: ['bone', 'darkBone'], legR: ['bone', 'darkBone'], kneeL: ['bone', 'leather'], kneeR: ['bone', 'leather'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `lancer:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
   weapon: { use: 'glaive', slots: { blade: 'blade', rust: 'rust', hole: 'socket', grip: 'wood', guard: 'iron', wrap: 'rags' } },
   eyes: { color: 0xd8a858, size: 0.009, spread: 0.036, at: [0, 0.112, 0.105] },
   anim: {

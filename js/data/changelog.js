@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.23.0', title: 'The Ashen Lancer Remade', text: 'The spearman is rebuilt: a skull deep in a pointed burlap hood, a ragged poncho parted over a bare ribcage, a red cord at the throat, bone arms and legs with bound wrists and ankles, and tatters at the hips and down the back that swing as it lunges.' },
   { version: 'v7.22.0', title: 'The Hollow Soldier Remade', text: 'The soldier you meet most is rebuilt: a quilted gambeson whose skirt swings with each stride, straps crossed over the chest, a pouch on the belt, puffed sleeves and leather cuffs, iron knee cops over turned-down boots, and a crested morion over a sunken face.' },
   { version: 'v7.21.0', title: 'The Wanderer Remade',
     text: 'Your wanderer is rebuilt from head to boot: a deep hood, the red scarf over the face, pauldrons, strapped boots, a torn cape and the shield slung on the back. The Giant Skeleton\'s limbs are bone again on Low and High, and this changelog is on the title.' },

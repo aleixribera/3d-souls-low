@@ -352,3 +352,9 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - `tools/blender/figure_lib.py` holds the piece helpers both figures use (`soft`, `hard`, `loft`, `sheet`, `shell`, ...). `begin(colours, prefix)` starts a figure. All baked meshes share one `BAKED` table, so a figure whose bone names another already uses takes a prefix (the packer refuses a duplicate name). The wanderer rebuilds byte-identical from the shared helpers.
 - The `mail` material and the kit parts `gambeson`, `quiltSkirt`, `crossStraps`, `satchel`, `morion`, `kneeCop` and `boot` stay in the kit for other models. The parked `wip/2026-10-27-hollow-enemy` branch (a skinned GLB with its own loader) was not used.
 - Checks: the model lab (idle, walk, attacks, death), Level 1 on High and Low, the in-page `odel` and `Hollow` filters. Notes: `docs/hollow-model-v7.22.0.md`. VERSION / LOAD_STAMP: v7.22.0 / 7.22.0.
+
+## The Ashen Lancer built in Blender (v7.23.0)
+- The second most common enemy (16 placements) was kit primitives: a boxy coat with floating shoulder blocks, a ball for a hood and stick limbs. It is now `tools/blender/lancer.py`: one rigid piece per rig bone, named `lancer:<bone>__<slot>`, packed into `js/baked/lancer.js` and worn through `use: 'baked'` parts. The look keeps the v5.5 brief.
+- The waist tatters and the back cloak sit on the model's cloth bones (`loinF/B/L/R`, `capeA/B`), so they still swing as before. The poncho and hood are single sheets (the burlap is double-sided); a dark `socket` mass inside the ribcage and the eye sockets keeps the poncho from showing through.
+- 2,992 triangles with the kit-built `glaive`, inside the 3,000 enemy budget. The kit parts it used (`skeletalSkull`, `shroud`, `sleeve`, `knobs`, `fingers`) stay in the kit.
+- Checks: the model lab (idle, walk, death), the Burning Town on High, the in-page `odel` filter. Notes: `docs/lancer-model-v7.23.0.md`. VERSION / LOAD_STAMP: v7.23.0 / 7.23.0.
