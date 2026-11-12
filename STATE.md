@@ -45,7 +45,7 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-- CI on main for pass 5's push (the scorecard). Pass 4's CI run: see below.
+None. CI on main passed for pass 5's push (`56d2df3`, which includes pass 4's Toll Wisp change).
 
 ## wip/ branches
 
