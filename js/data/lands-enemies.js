@@ -192,6 +192,7 @@ MODEL_DEFS.leyndellKnight = {
     guard: { tex: 'scionGold', tint: 0xe0b860, decay: 0.35 },
     eye: { glow: 0xfff0c0 },
   },
+  body: IRONBOUND_BODY,   // the Shield Warden's body is baked (v7.27.0); this knight keeps the kit's mail body
   bones: { loinF: { parent: 'spin', at: [0, -0.04, 0.18] }, loinB: { parent: 'spin', at: [0, -0.04, -0.18] },
            capeA: { parent: 'chest', at: [0, 0.58, -0.21] }, capeB: { parent: 'capeA', at: [0, -0.44, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] } },
   parts: [
@@ -371,6 +372,7 @@ MODEL_DEFS.cleanrotKnight = {
     rot: { glow: 0xff4030 },
     eye: { glow: 0xff7050 },
   },
+  body: IRONBOUND_BODY,   // the Shield Warden's body is baked (v7.27.0); this knight keeps the kit's mail body
   bones: { loinF: { parent: 'spin', at: [0, -0.04, 0.17] }, loinB: { parent: 'spin', at: [0, -0.04, -0.17] },
            capeA: { parent: 'chest', at: [0, 0.56, -0.2] }, capeB: { parent: 'capeA', at: [0, -0.44, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] } },
   parts: [

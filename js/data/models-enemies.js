@@ -196,7 +196,7 @@ MODEL_DEFS.undeadKnight = {
 // V-ribbed breastplate, fauld and tassets with a heavy bulbous codpiece, banded greaves with winged knee cops, a long
 // slender greatsword carried over the right shoulder, and a towering ornate horned greatshield with gothic brass-silver
 // tracery over a fire-and-soot recessed face. No banner, no tabard.
-MODEL_DEFS.ironWarden = {
+MODEL_DEFS.ironWarden = {   // (v7.27.0 built in Blender) the gaoler of the Sunken Keep: heavy blued plate, a tower helm, a great shield
   extends: 'ironKnight', fit: 1.0,
   proportions: { ...IRONBOUND_PROPS, shoulderX: 0.38, torsoW: 0.25, torsoD: 0.18, armR: 0.066, legR: 0.09 },
   posture: { chest: [0.06, 0, 0], neck: [0.08, 0, 0], head: [0.03, 0, 0.02], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
@@ -209,23 +209,18 @@ MODEL_DEFS.ironWarden = {
     grip: { tex: 'crackedLeather', tint: 0x8a4228, decay: 0.55 },
     blade: { tex: 'knightPlate', tint: 0xb4b8c0, decay: 0.45 },
     guard: { tex: 'wardenPlate', tint: 0x90949c, decay: 0.55 },
+    dark: { tex: 'ashSoot', tint: 0x0c0c0e, decay: 0.9 },
   },
-  body: { torso: 'mail', pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {},
+  // v7.27.0: built in Blender (tools/blender/warden.py), one piece per bone; the kit still builds the greatshield and the
+  // greatsword
   parts: [
-    { use: 'breastplate', slot: 'plate', bone: 'chest' },
-    { use: 'neckGuard', slot: 'plate', bone: 'chest' },
-    { use: 'tassets', slot: 'plate', bone: 'spin' },
-    { use: 'codpiece', slot: 'plate', bone: 'spin' },
-    { use: 'towerHelm', slot: 'plate', bone: 'head', size: 1.12 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.45, side: -1 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.25 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.28, radius: 0.06, count: 3, flare: 0.28, cop: 0.07 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.28, radius: 0.058, count: 3, flare: 0.22, cop: 0.066 },
-    { use: 'plateBands', slot: 'plate', bone: 'legL', from: 0.1, to: 0.32, radius: 0.095, count: 2 },
-    { use: 'plateBands', slot: 'plate', bone: 'legR', from: 0.1, to: 0.32, radius: 0.095, count: 2 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.03, to: 0.4, radius: 0.072, count: 3, flare: 0.14, cop: 0.084 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.03, to: 0.4, radius: 0.072, count: 3, flare: 0.14, cop: 0.084 },
+    ...Object.entries({
+      head: ['plate', 'dark', 'guard'], neck: ['mail'], chest: ['plate', 'guard'], spin: ['leather', 'mail', 'plate', 'rust'],
+      armL: ['mail', 'plate'], armR: ['mail', 'plate', 'guard'], elbowL: ['plate', 'guard'], elbowR: ['plate', 'guard'],
+      legL: ['mail', 'plate'], legR: ['mail', 'plate'], kneeL: ['plate', 'guard'], kneeR: ['plate', 'guard'],
+    }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `warden:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
     { use: 'greatshield', slot: 'shieldFace', metal: 'shieldTrim', bone: 'elbowL', w: 0.74, h: 1.48, at: [0.08, -0.22, 0.22] },
   ],
   weapon: { use: 'wardenGreatsword', slots: { blade: 'blade', grip: 'grip', guard: 'guard' } },

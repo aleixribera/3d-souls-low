@@ -297,6 +297,13 @@ function validateData({ visual = true } = {}) {
     checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
     for (const [id, M] of Object.entries(MODEL_DEFS)) for (const o of M.parts || [])   // models built in Blender (js/baked.js)
       if (o.use === 'baked') need(o.mesh in BAKED, `Model "${id}": baked mesh "${o.mesh}" is not packed (run node tools/pack-baked.cjs).`);
+    // A baked model sets every body piece to null; a model extending it without its own `body` would lose its limbs.
+    const inherited = (id, k) => { for (let M = MODEL_DEFS[id]; M; M = MODEL_DEFS[M.extends]) if (k in M) return M[k]; };
+    for (const id of Object.keys(MODEL_DEFS)) {
+      const body = inherited(id, 'body');
+      if (body && Object.values(body).every(v => v == null))
+        need((inherited(id, 'parts') || []).some(o => o.use === 'baked'), `Model "${id}": its body is all null but it has no baked parts (it extends a baked model?): give it its own body.`);
+    }
   }
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
