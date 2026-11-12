@@ -23,6 +23,7 @@ const FILES = {
   'scion': { sources: ['scion'] },
   'executioner': { sources: ['executioner'] },
   'squire': { sources: ['squire'] },
+  'shover': { sources: ['shover'] },
 };
 
 function readGlb(file) {

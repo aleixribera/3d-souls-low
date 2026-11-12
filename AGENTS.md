@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.33.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.34.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
@@ -79,6 +79,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | The Grafted Scion's model | `tools/blender/scion.py` (rebuild and pack: `docs/scion-model-v7.31.0.md`), materials in `MODEL_DEFS.graftedScion` |
 | The Executioner's model | `tools/blender/executioner.py` (rebuild and pack: `docs/executioner-model-v7.32.0.md`), materials in `MODEL_DEFS.ashExecutioner` |
 | The Crucible Squire's model | `tools/blender/squire.py` (rebuild and pack: `docs/squire-model-v7.33.0.md`), materials in `MODEL_DEFS.crucibleSquire` |
+| The Shover's model | `tools/blender/shover.py` (rebuild and pack: `docs/shover-model-v7.34.0.md`), materials in `MODEL_DEFS.ironShover` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |

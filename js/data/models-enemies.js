@@ -223,20 +223,27 @@ MODEL_DEFS.ironWarden = {   // (v7.27.0 built in Blender) the gaoler of the Sunk
   anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
 
-MODEL_DEFS.ironShover = {   // a barrel-chested brute behind a wall-sized shield; no weapon, the shield is the weapon
+// The Shover (v7.34.0, built in Blender: tools/blender/shover.py): a barrel-chested brute behind a wall-sized shield; no
+// weapon, the shield is the weapon. A deep round cuirass bound with two iron hoops like a barrel and the pavise's guige
+// strap across it, a kettle hat over a high bevor, a great pauldron on the shield arm, a long brown tabard.
+MODEL_DEFS.ironShover = {
   extends: 'ironKnight', fit: 1.0,
   proportions: { shoulderX: 0.35, torsoW: 0.24, torsoD: 0.18, armR: 0.07, legR: 0.09, headR: 0.125 },
   posture: { chest: [0.16, 0, 0], neck: [0.1, 0, 0], head: [0.04, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.3, 0, 0] },
-  materials: { ...IRONBOUND_MATS, plate: { tex: 'gaolerPlate', tint: 0x9fa6ad, decay: 0.7 }, trim: { tex: 'wornGilt', tint: 0xaba392, decay: 0.7 }, shield: { tex: 'paviseWood', decay: 0.7 }, tabard: { tex: 'rottenCloth', tint: 0x6a5a48, decay: 0.75, double: true } },
-  body: { ...IRONBOUND_BODY, torso: null },
+  materials: {
+    ...IRONBOUND_MATS, plate: { tex: 'gaolerPlate', tint: 0x9fa6ad, decay: 0.7 }, trim: { tex: 'wornGilt', tint: 0xaba392, decay: 0.7 },
+    shield: { tex: 'paviseWood', decay: 0.7 }, tabard: { tex: 'rottenCloth', tint: 0x6a5a48, decay: 0.75, double: true },
+    dark: { tex: 'ashSoot', tint: 0x0c0c0e, decay: 0.9 },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  // v7.34.0: one baked piece per bone; the kit still builds the pavise
   parts: [
-    { use: 'castCuirass', slot: 'plate', trim: 'rust', bone: 'chest', flute: 0.015 }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'warHelm', slot: 'plate', dark: 'leather', bone: 'head', size: 1.1 },
-    { use: 'gorget', slot: 'rust', bone: 'neck', size: 1.15 },
-    { use: 'pauldron', slot: 'plate', bone: 'armR', size: 1.4, side: -1 }, { use: 'layeredPauldron', slot: 'plate', rivet: 'rust', bone: 'armL', size: 1.75 },
-    { use: 'wraps', slot: 'rust', bone: 'elbowR', from: 0.06, to: 0.28, radius: 0.06, count: 3 },
-    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.05, to: 0.32, radius: 0.08, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'kneeR', from: 0.05, to: 0.32, radius: 0.08, count: 3 },
-    ...tabardParts(0.3, 0.55),
+    ...Object.entries({
+      head: ['plate', 'plate.1', 'dark', 'mail', 'rust'], neck: ['rust'], chest: ['plate', 'rust', 'leather', 'trim'],
+      spin: ['leather', 'trim', 'mail', 'plate'], loinF: ['tabard', 'trim'], loinB: ['tabard'],
+      armL: ['mail', 'plate', 'rust'], armR: ['mail', 'plate'], elbowL: ['plate', 'rust.1'], elbowR: ['leather', 'rust', 'rust.1'],
+      legL: ['mail', 'plate'], legR: ['mail', 'plate'], kneeL: ['plate', 'rust', 'rust.1'], kneeR: ['plate', 'rust', 'rust.1'],
+    }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `shover:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
     { use: 'bulwarkShield', slot: 'shield', metal: 'rust', paint: 'trim', bone: 'elbowL', w: 0.8, h: 1.15, at: [0.08, -0.12, 0.22] },
   ],
   weapon: null,
