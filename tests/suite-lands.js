@@ -287,12 +287,12 @@
   });
 
   // ---- the two roads, the menus ----------------------------------------------------------------------------------------
-  test('Menus: the title offers Play Online (the public lobby), Story, 1v1 Arena, Levels and Options; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
+  test('Menus: the title offers Play Online (the public lobby), Story, 1v1 Arena, Levels, Options and Changelog; Story holds both roads, the Arena enemies, bosses and Elden Ring bosses', () => {
     Game.showMenu('main');
     const main = Game.screens().main.items.map(i => i.name);
-    expect.ok(main.slice(0, 5).join() === 'Play Online,Story,1v1 Arena,Levels,Options', `main: ${main}`);
-    const sizes = Game.screens().main.items.slice(0, 5).map(i => i.size);
-    expect.ok(sizes.join() === 'hero,hero,small,small,small', `two large cards, then a row: ${sizes}`);
+    expect.ok(main.slice(0, 6).join() === 'Play Online,Story,1v1 Arena,Levels,Options,Changelog', `main: ${main}`);
+    const sizes = Game.screens().main.items.slice(0, 6).map(i => i.size);
+    expect.ok(sizes.join() === 'hero,hero,small,small,small,small', `two large cards, then a row: ${sizes}`);
     const roads = Game.screens().story.items;
     expect.ok(roads.filter(i => i.name === 'New').map(i => i.campaign).join() === 'ashmere,lands' && roads.at(-1).name === 'Back', 'only Ashmere and Lands offer New on the same screen');
     expect.ok(Object.keys(A.story.campaigns).join() === 'ashmere,lands' && Object.keys(CONFIG.story.saveKeys).join() === 'ashmere,lands', 'only the two campaigns have story and save registrations');
@@ -340,6 +340,21 @@
       buttons[buttons.length - 1].click();
       expect.ok(Game.screen === 'main', 'clicking Back still opens the main menu');
     } finally { list.style.maxHeight = maxHeight; Game.optionsFrom = from; Game.showMenu('main'); }
+  });
+  test('Menus: the Changelog lists every release newest first, starting at the running version, and Back returns to the title', () => {
+    Game.showMenu('main');
+    const entry = Game.screens().main.items.find(i => i.name === 'Changelog');
+    entry.go();
+    expect.ok(Game.screen === 'changelog', 'the title entry opens the changelog');
+    const items = Game.screens().changelog.items, btns = [...$('menuList').children];
+    expect.ok(items.length === CHANGELOG.length + 1 && btns.length === items.length && items.at(-1).name === 'Back', 'one row per release, then Back');
+    expect.ok(btns[0].textContent.startsWith(VERSION) && $('menuDesc').textContent === CHANGELOG[0].text, `the running version first, its notes shown: ${btns[0].textContent}`);
+    Game.menuStep('down');
+    expect.ok($('menuDesc').textContent === CHANGELOG[1].text, 'moving down shows the next release');
+    Game.confirm();
+    expect.ok(Game.screen === 'changelog', 'confirming a release stays on the list');
+    Game.menuBack();
+    expect.ok(Game.screen === 'main', 'back returns to the title');
   });
   test('Story: the two roads keep separate saves; Continue on one never touches the other', () => {
     const keys = CONFIG.story.saveKeys, kept = {};

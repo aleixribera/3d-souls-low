@@ -77,6 +77,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | Story chapters and saves | `js/data/story.js`, `js/story.js`, `CONFIG.story` |
 | Lore, NPCs, inscriptions | `LORE.md`, then `js/data/lore.js` / `lore-lands.js` |
 | Menus, the title's online card | `js/game-menus.js` (`Game.screens()`, `titleLobby`), `multiplayer.peek()` |
+| The in-game changelog (title > Changelog) | `js/data/changelog.js` (newest first; the first entry must be `VERSION`) |
 | Lessons (the controls taught in levels) | `js/data/lessons.js` (`LESSONS`, triggers), a level's `lessons`, `js/lessons.js`, `CONFIG.lessons` |
 | Bots | `js/bot.js`, `js/bot-navigation.js`, `js/data/bots.js`, `CONFIG.bot` |
 | Multiplayer | `server/simulation.js`, `server/index.cjs`, `js/multiplayer.js`, `js/net-protocol.js` |
@@ -150,7 +151,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 ## Releasing
 
 1. Bump `VERSION` (`js/config.js`), `LOAD_STAMP` (`combat-arena-3d.html`) and both `package.json` versions. Then run `npm install --package-lock-only` at the root and in `server/`. A test checks that `LOAD_STAMP` matches `VERSION`.
-2. Add a line to `docs/CHANGELOG.md`. Detailed notes go in `docs/<topic>-v<version>.md`.
+2. Add a line to `docs/CHANGELOG.md`, and an entry for players at the top of `js/data/changelog.js` (validation fails until its first entry is the new `VERSION`). Detailed notes go in `docs/<topic>-v<version>.md`.
 3. Run the full test suite and commit.
 4. Push a `v*` tag. It publishes `ghcr.io/aleixribera/3d-souls-low:<version>` and `:latest` through `.github/workflows/container.yaml`.
    - Check that the workflow started; use `workflow_dispatch` if it did not.

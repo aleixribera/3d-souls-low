@@ -40,6 +40,7 @@ Object.assign(Game, {
         { name: '1v1 Arena', size: 'small', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
         { name: 'Levels', size: 'small', desc: 'Play a level on its own from any story.', go: () => this.showMenu('levels') },
         { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
+        { name: 'Changelog', size: 'small', desc: 'What each version of the game changed.', go: () => this.showMenu('changelog') },
         ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems.map(it => ({ ...it, size: 'small' }))] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
@@ -54,6 +55,9 @@ Object.assign(Game, {
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
+      changelog: { title: 'COMBAT ARENA 3D', sub: 'CHANGELOG', back: 'main', items: [   // js/data/changelog.js, newest first
+        ...CHANGELOG.map(c => ({ name: `${c.version}  ·  ${c.title}`, desc: c.text })),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       arena: { title: 'COMBAT ARENA 3D', sub: '1V1 ARENA', back: 'main', items: [
         { name: 'Enemies', desc: 'The common foes of both roads, one at a time.', go: () => this.showMenu('enemies') },
         { name: 'Bosses', desc: 'The bosses of Ashmere: the Giant Skeleton, the Pillager Captain, the Bell Warden, Aldric and the Antlered Hunger.', go: () => this.showMenu('bosses') },

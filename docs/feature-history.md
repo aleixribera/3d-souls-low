@@ -337,3 +337,12 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - `bodyParts` leaves out a body part whose slot is `null` (it used to build it with no material, drawn white); the Ultra body already did.
 - Removed the procedural parts only the old wanderer wore (`cuirass`, `coatBack`, `coatTasset`, `woundScarf`, `plankShield`, `bandolier`).
 - Checks: the in-page model tests (`models:`, `Low performance: every model`, `Ultra performance: model indices`, `Render audit: models`) and the `Church` suite. Notes: `docs/wanderer-model-v7.21.0.md`.
+
+## The changelog in the game (v7.21.0)
+
+- The title has a fourth small entry, Changelog (the row is four wide, two by two on phones). It opens a list of releases,
+  newest first; the selected one's notes show under the list, as a level's description does.
+- The entries are data (`js/data/changelog.js`): a version label (one release or a span), a title and one to three
+  sentences written for players. Small releases are grouped and the tooling is left out; `docs/CHANGELOG.md` stays the
+  developers' list. `js/validate.js` requires the first entry to be `VERSION`, so a release cannot forget it.
+- Check: `Menus: the Changelog` in `tests/suite-lands.js`.

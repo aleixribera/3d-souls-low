@@ -16,6 +16,13 @@ function validateData({ visual = true } = {}) {
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
   for (const id of [...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  // The changelog in the game (js/data/changelog.js): newest first, starting at the running version.
+  need(Array.isArray(CHANGELOG) && CHANGELOG.length && CHANGELOG[0].version === VERSION, `Changelog: the first entry must be the running version ${VERSION} (js/data/changelog.js).`);
+  const changeLabels = new Set();
+  for (const c of CHANGELOG || []) {
+    for (const field of ['version', 'title', 'text']) need(typeof c[field] === 'string' && c[field].trim(), `Changelog ${c.version}: missing ${field}.`);
+    need(!changeLabels.has(c.version), `Changelog: ${c.version} is listed twice.`); changeLabels.add(c.version);
+  }
   for (const [id, s] of Object.entries(LESSONS)) {
     need(typeof s.title === 'string' && s.title.trim() && typeof s.text === 'function', `Lesson ${id}: needs a title and text().`);
     need(typeof s.on === 'function' || typeof s.check === 'function', `Lesson ${id}: missing completion rule.`);

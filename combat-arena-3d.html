@@ -85,7 +85,7 @@
   #menu.title-menu #menuBox { padding-top: 14vh; }
   #menu.title-menu #menuBox h1 { font-size: clamp(26px, 6.4vw, 104px); }
   #menu.title-menu .menuArrow { display: none; }
-  #menu.title-menu #menuList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: min(600px, 100%);
+  #menu.title-menu #menuList { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(600px, 100%);
     flex: none; align-content: start; max-height: none; min-height: 0; overflow: visible; margin-top: 6vh; padding: 4px; box-sizing: border-box; mask-image: none; -webkit-mask-image: none; }
   #menu.title-menu .menuBtn { width: 100%; }
   #menu.title-menu .menuBtn::before { display: none; }
@@ -121,6 +121,7 @@
   #menu.title-menu .menuBtn.small.sel, #menu.title-menu .menuBtn.small:hover { border-color: #c9a85e;
     background: radial-gradient(ellipse at 50% 50%, #b8892a55, #b8892a10 75%); }
   #menu.title-menu #menuDesc { margin-top: 14px; max-width: min(600px, 90vw); }
+  @media (max-width: 520px) { #menu.title-menu #menuList { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-height: 650px) {
     #menu.title-menu #menuList { margin-top: 14px; gap: 7px; }
     #menu.title-menu .menuBtn.hero { padding: 9px 16px 9px 18px; }
@@ -633,6 +634,7 @@ const GAME_FILES = [
   'data/lobby-intros.js',
   'data/lore.js',
   'data/lore-lands.js',
+  'data/changelog.js',
   'states.js',
   'registries.js',
   'validate.js',
