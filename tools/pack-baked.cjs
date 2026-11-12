@@ -21,6 +21,7 @@ const FILES = {
   'beastman': { sources: ['beastman'] },
   'wisp': { sources: ['wisp'] },
   'scion': { sources: ['scion'] },
+  'executioner': { sources: ['executioner'] },
 };
 
 function readGlb(file) {

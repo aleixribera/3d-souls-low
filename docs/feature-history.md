@@ -410,3 +410,10 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - `hard()` in `tools/blender/figure_lib.py` takes `outward` as a function of the face's centre, so bands round a limb each turn away from the limb's axis at their own height.
 - No new material slots. 35 pieces, 2,774 triangles, 2,900 with the scimitar. The kit parts `scionMask` and `scionLimbs` have no users now.
 - Checks: the model lab (front, back, side, silhouette), Stormveil's yard with a Scion in play, the in-page `model`, `Scion` and `Ultra performance` filters, the Node checks. Notes: `docs/scion-model-v7.31.0.md`. VERSION / LOAD_STAMP: v7.31.0 / 7.31.0.
+
+## The Executioner built in Blender (v7.32.0)
+- The Ashbound headsman (7 placements: the Tower, the Final Castle, Stormveil, the Ashen Capital, the test level) was kit primitives (`sweptHair`, `eyePatch`, `openCollar`, `featherMantle`, `waistSash`, `borderedSkirt`, plate bands and spikes over the kit body) at 7,768 triangles, over the 3,000 enemy budget. It is now `tools/blender/executioner.py`: one rigid piece per rig bone, named `exec:<bone>__<slot>[.n]`, packed into `js/baked/executioner.js`. The kit still builds the greataxe.
+- The leaf-scales are one helper (`leaf`: a pointed scale of three triangles, its tip flared out) laid in rows round the torso, the hips, the pauldrons and the back mantle; the rows overlap and alternate by half a scale.
+- The skirt was one rigid cone on the hips that the legs walked through. It now hangs in four bordered panels on new cloth bones (`loinF`, `loinB`, `loinL`, `loinR`), the side panels lapping over the front and back.
+- No new material slots. 45 pieces, 2,687 triangles, 2,991 with the greataxe. The kit parts `eyePatch`, `openCollar`, `featherMantle`, `waistSash`, `borderedSkirt` and `boot` have no users now.
+- Checks: the model lab (front, back, side, silhouette), the Tower with an Executioner in play, the in-page `model` and `Ultra performance` filters, the Node checks. Notes: `docs/executioner-model-v7.32.0.md`. VERSION / LOAD_STAMP: v7.32.0 / 7.32.0.

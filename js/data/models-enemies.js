@@ -358,9 +358,10 @@ MODEL_DEFS.ashLancer = {
 // a silver-grey feathered scale hauberk with layered leaf-scale plumage over the chest, shoulders and hips, an open
 // collar over a dark undertunic, a multi-band amber sash and diagonal strap with red-white cord tassels, a beige-olive
 // skirt bordered in geometric embroidery, a heavy scaled left gauntlet and smooth leather right bracer, dark banded
-// knee-guards and boots, and a blood-stained crescent greataxe on a gnarled, red-wrapped haft.
+// knee-guards and boots, and a blood-stained crescent greataxe on a gnarled, red-wrapped haft. v7.32 rebuilt the body in
+// Blender after the same brief (the skirt now hangs in four swinging panels); the greataxe is still the kit's.
 MODEL_DEFS.ashExecutioner = {
-  extends: 'ashBase', faction: 'ashen', fit: 1.02,
+  extends: 'ashBase', faction: 'ashen', budget: 'enemy', fit: 1.02,
   proportions: { shoulderX: 0.37, torsoW: 0.25, torsoD: 0.17, armR: 0.072, legR: 0.088, headR: 0.122, handR: 0.062, footLen: 0.3 },
   limbs: { armL: { len: 1.04, thick: 1.06 }, armR: { len: 1.02, thick: 1.0 } },
   posture: { chest: [0.06, 0, 0], neck: [0.04, 0, 0], head: [0.02, -0.05, 0], elbowL: [-0.28, 0, 0.06], elbowR: [-0.38, 0, -0.04] },
@@ -382,51 +383,26 @@ MODEL_DEFS.ashExecutioner = {
     haft: { tex: 'bone', tint: 0x9a8878, decay: 0.6 },
     eye: { glow: 0xffe0b8 },
   },
-  body: { torso: 'plumage', pelvis: 'skirt', arms: 'sleeve', legs: 'darkLeather', head: 'skin', neck: 'skin', hands: 'darkLeather', feet: 'darkLeather' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     tasselL: { parent: 'chest', at: [0.06, 0.38, 0.19] },
     tasselR: { parent: 'chest', at: [-0.07, 0.36, 0.19] },
     cloakB: { parent: 'chest', at: [0, 0.52, -0.2] },
+    loinF: { parent: 'spin', at: [0, -0.13, 0.19] }, loinB: { parent: 'spin', at: [0, -0.13, -0.19] },
+    loinL: { parent: 'spin', at: [0.2, -0.13, 0] }, loinR: { parent: 'spin', at: [-0.2, -0.13, 0] },
   },
-  parts: [
-    // Head: swept-back auburn hair, black diagonal eyepatch over the left eye, sculpted nose and brow.
-    { use: 'sweptHair', slot: 'hair', bone: 'head', size: 1.02 },
-    { use: 'eyePatch', slot: 'patch', skin: 'skin', hair: 'hair', bone: 'head', side: 1 },
-    // Torso: open V-collar, feathered scale jerkin and cascading rows of pointed feather-scales.
-    { use: 'openCollar', slot: 'plumage', bone: 'chest' },
-    { use: 'jerkin', slot: 'plumage', bone: 'chest' },
-    { use: 'featherMantle', slot: 'plumage', bone: 'chest', rows: [
-      { y: 0.49, r: 0.31, n: 8, w: 0.072, h: 0.16, tilt: 0.26 },
-      { y: 0.35, r: 0.285, n: 8, w: 0.07, h: 0.165, tilt: 0.2 },
-      { y: 0.22, r: 0.255, n: 7, w: 0.068, h: 0.155, tilt: 0.16 },
-    ] },
-    // Lower feather-scale peplum below the waist sash, over the embroidered skirt.
-    { use: 'featherMantle', slot: 'plumage', bone: 'spin', rows: [
-      { y: -0.02, r: 0.235, n: 8, w: 0.07, h: 0.17, tilt: 0.18 },
-      { y: -0.14, r: 0.25, n: 7, w: 0.072, h: 0.17, tilt: 0.14 },
-    ] },
-    // Waist sash, diagonal strap, hanging cord tassels, side pouch, and the embroidered olive-tan skirt.
-    { use: 'waistSash', slot: 'sash', cord: 'cord', bone: 'spin' },
-    { use: 'pouch', slot: 'leather', bone: 'spin', x: -0.22, z: 0.04 },
-    { use: 'borderedSkirt', slot: 'skirt', trim: 'trim', bone: 'spin', top: -0.02, hem: -0.45, border: 0.095 },
-    // Shoulders and arms: feathered pauldrons over rust-orange sleeves, smooth leather right bracer, scaled left gauntlet.
-    { use: 'pauldron', slot: 'plumage', bone: 'armL', size: 1.35 },
-    { use: 'pauldron', slot: 'plumage', bone: 'armR', size: 1.35, side: -1 },
-    { use: 'sleeve', slot: 'sleeve', bone: 'armL', r0: 0.085, r1: 0.115, len: 0.28, seed: 3 },
-    { use: 'sleeve', slot: 'sleeve', bone: 'armR', r0: 0.085, r1: 0.115, len: 0.28, seed: 6 },
-    { use: 'plateBands', slot: 'leather', bone: 'elbowR', from: 0.05, to: 0.27, radius: 0.062, count: 2, flare: 0.12 },
-    { use: 'plateBands', slot: 'gauntlet', bone: 'elbowL', from: 0.03, to: 0.29, radius: 0.068, count: 4, flare: 0.18, cop: 0.072 },
-    { use: 'spikes', slot: 'gauntlet', bone: 'elbowL', size: 0.55, at: [[0.06, -0.08, 0.02], [0.062, -0.16, 0.02], [0.06, -0.24, 0.02]] },
-    // Legs: dark leather cuisses, banded knee-guards with cops, and dark boots.
-    { use: 'plateBands', slot: 'darkLeather', bone: 'kneeL', from: 0.03, to: 0.36, radius: 0.076, count: 3, flare: 0.08, cop: 0.082 },
-    { use: 'plateBands', slot: 'darkLeather', bone: 'kneeR', from: 0.03, to: 0.36, radius: 0.076, count: 3, flare: 0.08, cop: 0.082 },
-    { use: 'boot', slot: 'darkLeather', bone: 'kneeL' },
-    { use: 'boot', slot: 'darkLeather', bone: 'kneeR' },
-    // Hanging red-orange chest cords and short feathered back mantle.
-    { use: 'clothStrip', slot: 'cord', bone: 'tasselL', w: 0.045, len: 0.36, seed: 5 },
-    { use: 'clothStrip', slot: 'cord', bone: 'tasselR', w: 0.05, len: 0.42, seed: 9 },
-    { use: 'capeSegment', slot: 'plumage', bone: 'cloakB', w0: 0.52, w1: 0.62, len: 0.46, bow: 0.85, ragged: true, seed: 4 },
-  ],
+  // v7.32.0: built in Blender (tools/blender/executioner.py), one piece per bone; the kit still builds the greataxe
+  parts: Object.entries({
+    head: ['skin', 'hair', 'patch'], neck: ['skin'],
+    chest: ['plumage', 'plumage.1', 'plumage.2', 'darkLeather', 'leather'], cloakB: ['plumage'],
+    tasselL: ['cord', 'trim'], tasselR: ['cord', 'trim'],
+    spin: ['sash', 'plumage', 'skirt', 'leather'],
+    loinF: ['skirt', 'trim'], loinB: ['skirt', 'trim'], loinL: ['skirt', 'trim'], loinR: ['skirt', 'trim'],
+    armL: ['plumage', 'sleeve'], armR: ['plumage', 'sleeve'],
+    elbowL: ['sleeve', 'gauntlet', 'gauntlet.1', 'iron'], elbowR: ['sleeve', 'leather', 'darkLeather'],
+    legL: ['darkLeather'], legR: ['darkLeather'],
+    kneeL: ['darkLeather', 'darkLeather.1', 'iron'], kneeR: ['darkLeather', 'darkLeather.1', 'iron'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `exec:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'executionerAxe', slots: { blade: 'blade', grip: 'haft', guard: 'iron', wrap: 'cord' } },
   eyes: { color: 0xffe0b8, size: 0.011, spread: 0.042, at: [0, 0.12, 0.108] },
   anim: {
@@ -437,6 +413,8 @@ MODEL_DEFS.ashExecutioner = {
       { bone: 'tasselL', gain: 0.14, k: 58, damp: 4.8, flutter: 0.05 },
       { bone: 'tasselR', gain: 0.16, k: 54, damp: 4.5, flutter: 0.06 },
       { bone: 'cloakB', gain: 0.09, k: 42, damp: 4.2, flutter: 0.04 },
+      { bone: 'loinF', gain: 0.13, k: 60, damp: 5, flutter: 0.04 }, { bone: 'loinB', gain: 0.15, k: 54, damp: 4.8, flutter: 0.05 },
+      { bone: 'loinL', gain: 0.12, k: 58, damp: 5, flutter: 0.04, sideways: 0.8 }, { bone: 'loinR', gain: 0.12, k: 58, damp: 5, flutter: 0.04, sideways: 0.8 },
     ],
   },
 };
