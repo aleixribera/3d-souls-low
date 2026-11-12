@@ -587,6 +587,7 @@ MODEL_DEFS.emptySentinel = {
 // crisscross pale X-lacing and golden embroidered cuffs over bony hands; a multi-strand twisted rope waist girdle with
 // long front tassels and an angled leather belt with a hip satchel; and a floor-length dark outer coat over a cream-gold
 // damask brocade front robe bisected by a rust-amber stripe and wide embroidered bottom hem border, over brown boots.
+// v7.30.0 adds the small handbell LORE.md binds each ringer to, and its soul's cold eyes under the brim.
 MODEL_DEFS.tollWisp = {
   extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.04, limbSides: 5,
   proportions: { shoulderX: 0.30, torsoW: 0.21, torsoD: 0.145, armR: 0.048, legR: 0.068, headR: 0.118, handR: 0.042, footLen: 0.27 },
@@ -613,37 +614,24 @@ MODEL_DEFS.tollWisp = {
     buckle: { tex: 'wardenBrass', tint: 0xc4b08a, decay: 0.45 },
     skin: { tex: 'paleSkin', tint: 0x9e9484, decay: 0.55 },
     void: { tex: 'ashSoot', tint: 0x0c0a08, decay: 0.9 },
+    eye: { glow: 0x9ec4ff },
   },
-  body: { torso: null, pelvis: null, arms: 'mantle', legs: 'coat', head: null, neck: 'void', hands: 'skin', feet: 'leather' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     tasselF: { parent: 'spin', at: [-0.055, 0.02, 0.19] },
     robeB: { parent: 'chest', at: [0, 0.48, -0.18] },
   },
-  parts: [
-    // Enormous wide-brimmed wizard hat with slouching hooked crown, brim border band, and rope hatband with hanging tassels
-    { use: 'wispHat', slot: 'hat', brimTrim: 'brimTrim', rope: 'rope', void: 'void', bone: 'head', size: 1.04 },
-    // Shadowed upper face under the brim and flowing white beard cascading over the chin and throat
-    { use: 'wispBeard', slot: 'beard', void: 'void', bone: 'head' },
-    // Chestnut-brown shoulder capelet, knotted cloth cravat, sage-green shoulder caps, brocade surcoat, and buckled baldric
-    { use: 'wispMantle', slot: 'mantle', brocade: 'brocade', trim: 'trim', coat: 'coat', epaulette: 'epaulette', leather: 'leather', buckle: 'buckle', rope: 'rope', bone: 'chest' },
-    // Loose brown sleeves with pale crisscross X-lacing down the outer sides and wide golden-bordered cuffs over bony fingers
-    { use: 'wispSleeve', slot: 'mantle', lace: 'rope', bone: 'armL', upper: true, side: 1 },
-    { use: 'wispSleeve', slot: 'mantle', lace: 'rope', bone: 'armR', upper: true, side: -1 },
-    { use: 'wispSleeve', slot: 'mantle', trim: 'trim', lace: 'rope', void: 'void', bone: 'elbowL', upper: false, side: 1 },
-    { use: 'wispSleeve', slot: 'mantle', trim: 'trim', lace: 'rope', void: 'void', bone: 'elbowR', upper: false, side: -1 },
-    { use: 'fingers', slot: 'skin', bone: 'elbowL', at: 0.31, len: 0.09, r: 0.009, spread: 0.018 },
-    { use: 'fingers', slot: 'skin', bone: 'elbowR', at: 0.31, len: 0.09, r: 0.009, spread: 0.018 },
-    // Full-length dark outer coat, cream-gold damask brocade front skirt, central vertical rust-amber stripe, wide bottom
-    // embroidered border, 4-coil twisted rope waist girdle, angled leather belt, and left hip satchel
-    { use: 'wispRobe', slot: 'brocade', coat: 'coat', brocade: 'brocade', trim: 'trim', rope: 'rope', leather: 'leather', buckle: 'buckle', bone: 'spin' },
-    // Hanging front rope loops and long braided tassels swaying from the waist knot, plus back coat drapery and leather boots
-    { use: 'wispTassels', slot: 'rope', bone: 'tasselF' },
-    { use: 'capeSegment', slot: 'coat', bone: 'robeB', w0: 0.44, w1: 0.58, len: 0.68, bow: 0.85, ragged: true, seed: 7 },
-    { use: 'boot', slot: 'leather', bone: 'kneeL' },
-    { use: 'boot', slot: 'leather', bone: 'kneeR' },
-  ],
+  // v7.30.0: built in Blender (tools/blender/wisp.py), one piece per bone, with the handbell LORE.md binds each ringer to
+  parts: Object.entries({
+    head: ['hat', 'hat.1', 'brimTrim', 'rope', 'void', 'skin', 'beard'], neck: ['void'],
+    chest: ['coat', 'brocade', 'trim', 'mantle', 'mantle.1', 'epaulette', 'leather', 'buckle'],
+    spin: ['coat', 'brocade', 'trim', 'rope', 'leather', 'leather.1', 'buckle'], tasselF: ['rope'], robeB: ['coat'],
+    legL: ['coat', 'brocade', 'trim'], legR: ['coat', 'brocade', 'trim'], kneeL: ['leather'], kneeR: ['leather'],
+    armL: ['mantle', 'rope'], armR: ['mantle', 'rope'],
+    elbowL: ['mantle', 'trim', 'void', 'void.1', 'skin', 'buckle', 'leather'], elbowR: ['mantle', 'trim', 'void', 'skin'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `wisp:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: null,
-  eyes: null,
+  eyes: { color: 0x9ec4ff, size: 0.011, spread: 0.04, at: [0, 0.1, 0.09] },   // the soul's cold light under the brim
   anim: {
     attackMul: 1,
     idle: { breathRate: 1.4, breath: 0.02, headDrift: 0.08, sway: 0.03, twitch: 0 },

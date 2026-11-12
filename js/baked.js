@@ -27,22 +27,30 @@ function bakedGeometry(name, { tile = 1, plan = false } = {}) {
     g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(new THREE.BufferAttribute(index, 1));
     return g;
   }
-  // One projection per triangle needs its own three corners.
-  const m = index.length, p2 = new Float32Array(m * 3), n2 = new Float32Array(m * 3), uv = new Float32Array(m * 2), seq = m > 65535 ? new Uint32Array(m) : new Uint16Array(m);
+  // One projection per triangle, along its main axis. A corner is the same vertex projected the same way wherever it
+  // recurs (its uv is a function of its position and the axis), so triangles that share a vertex and an axis share it
+  // (v7.30.0); before, every triangle had its own three corners.
+  const m = index.length, AXES = [[2, 1], [0, 2], [0, 1]], slot = new Int32Array(n * 3).fill(-1);
+  const p2 = new Float32Array(m * 3), n2 = new Float32Array(m * 3), uv = new Float32Array(m * 2), seq = m > 65535 ? new Uint32Array(m) : new Uint16Array(m);
+  let used = 0;
   for (let t = 0; t < m; t += 3) {
     const a = index[t] * 3, b = index[t + 1] * 3, c = index[t + 2] * 3;
     const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
     const fx = Math.abs(uy * vz - uz * vy), fy = Math.abs(uz * vx - ux * vz), fz = Math.abs(ux * vy - uy * vx);
-    const s = fx >= fy && fx >= fz ? [2, 1] : fy >= fz ? [0, 2] : [0, 1];
+    const axis = fx >= fy && fx >= fz ? 0 : fy >= fz ? 1 : 2, s = AXES[axis];
     for (let k = 0; k < 3; k++) {
-      const v = index[t + k] * 3, o = t + k; seq[o] = o;
-      p2[o * 3] = pos[v]; p2[o * 3 + 1] = pos[v + 1]; p2[o * 3 + 2] = pos[v + 2];
-      n2[o * 3] = normal[v]; n2[o * 3 + 1] = normal[v + 1]; n2[o * 3 + 2] = normal[v + 2];
-      uv[o * 2] = pos[v + s[0]] / tile; uv[o * 2 + 1] = pos[v + s[1]] / tile;
+      const i = index[t + k], key = i * 3 + axis;
+      if (slot[key] < 0) {
+        const v = i * 3, o = slot[key] = used++;
+        p2[o * 3] = pos[v]; p2[o * 3 + 1] = pos[v + 1]; p2[o * 3 + 2] = pos[v + 2];
+        n2[o * 3] = normal[v]; n2[o * 3 + 1] = normal[v + 1]; n2[o * 3 + 2] = normal[v + 2];
+        uv[o * 2] = pos[v + s[0]] / tile; uv[o * 2 + 1] = pos[v + s[1]] / tile;
+      }
+      seq[t + k] = slot[key];
     }
   }
-  g.setAttribute('position', new THREE.BufferAttribute(p2, 3)); g.setAttribute('normal', new THREE.BufferAttribute(n2, 3));
-  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(new THREE.BufferAttribute(seq, 1));
+  g.setAttribute('position', new THREE.BufferAttribute(p2.slice(0, used * 3), 3)); g.setAttribute('normal', new THREE.BufferAttribute(n2.slice(0, used * 3), 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv.slice(0, used * 2), 2)); g.setIndex(new THREE.BufferAttribute(seq, 1));
   return g;
 }
 // A kit part: `mesh`, modelled at the rig's rest pose in one piece per bone, moved into its bone's frame.

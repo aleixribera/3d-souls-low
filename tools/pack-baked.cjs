@@ -19,6 +19,7 @@ const FILES = {
   'warden': { sources: ['warden'] },
   'bowman': { sources: ['bowman'] },
   'beastman': { sources: ['beastman'] },
+  'wisp': { sources: ['wisp'] },
 };
 
 function readGlb(file) {
