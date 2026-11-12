@@ -89,6 +89,7 @@ if (DEV) (() => {
       case 'dead': e.state = ES.DEAD; tt = tt % (CONFIG.enemy.deathFade + 0.8); break;
       default: e.state = ES.IDLE;
     }
+    lab.rig.place(0, 0, 0, 0);   // as the game does every frame: idle styles that shift the root (twitch) add to a fresh place
     e.pose(tt, { t: now, dt, yaw: 0, px: 0, pz: 5 });
   }
   function simulatePlayer(p, m, dt, now) {

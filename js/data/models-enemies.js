@@ -172,10 +172,11 @@ MODEL_DEFS.ironKnight = {   // broad, upright, heavy: a cracked great helm, one 
   anim: IRONBOUND_ANIM,
 };
 
-// The Undead Knight (after the reference art): full worn plate, mottled grey with rivets. A rounded close helm with a
-// beaked visor over a broad gorget, a swelling breastplate, great three-lamed pauldrons (the left the larger), mail at
-// the joints, banded vambraces, gauntlets and greaves, tassets over dark brown trousers, and a long greatsword whose
-// blade hooks up into a cleaver tip. No shield, no tabard. ironKnight stays as the base of the other Ironbound.
+// The Undead Knight (v7.24.0, built in Blender: tools/blender/knight.py): full worn plate, mottled grey with rivets. A
+// rounded close helm with a beaked visor and a dark eye slit over a broad gorget, a swelling ridged breastplate, great
+// three-lamed pauldrons (the left the larger), mail at the joints, banded vambraces, dark gauntlets and sabatons,
+// tassets and knee cops over dark brown trousers, and a long greatsword whose blade hooks up into a cleaver tip (the kit
+// still builds the sword). No shield, no tabard. ironKnight stays as the base of the other Ironbound.
 MODEL_DEFS.undeadKnight = {
   extends: 'ironKnight', fit: 1.0,
   proportions: { ...IRONBOUND_PROPS, shoulderX: 0.39, torsoW: 0.27, torsoD: 0.19, armR: 0.07, legR: 0.092 },
@@ -183,26 +184,20 @@ MODEL_DEFS.undeadKnight = {
   materials: {
     ...IRONBOUND_MATS,
     plate: { tex: 'knightPlate', tint: 0xc4c6cc, decay: 0.55 },
+    gauntlet: { tex: 'knightPlate', tint: 0x8a8c92, decay: 0.65 },
     mail: { tex: 'knightMail', tint: 0x8a8a8e, decay: 0.7 },
     trousers: { tex: 'rottenCloth', tint: 0x5a4434, decay: 0.75 },
     leather: { tex: 'crackedLeather', tint: 0x5a3e2c, decay: 0.7 },
+    dark: { tex: 'ashSoot', tint: 0x0c0c0e, decay: 0.9 },
     blade: { tex: 'knightPlate', tint: 0xa8aaae, decay: 0.5 },
     guard: { tex: 'knightPlate', tint: 0x8a8c90, decay: 0.6 },
   },
-  body: { torso: 'mail', pelvis: 'trousers', arms: 'mail', legs: 'trousers', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
-  parts: [
-    { use: 'breastplate', slot: 'plate', bone: 'chest' },
-    { use: 'tassets', slot: 'plate', bone: 'spin' },
-    { use: 'closeHelm', slot: 'plate', bone: 'head', size: 1.12 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.55 }, { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.3, side: -1 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.27, radius: 0.058, count: 3, flare: 0.25, cop: 0.068 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.27, radius: 0.058, count: 3, flare: 0.25, cop: 0.068 },
-    { use: 'plateBands', slot: 'plate', bone: 'legL', from: 0.12, to: 0.3, radius: 0.098, count: 1 },
-    { use: 'plateBands', slot: 'plate', bone: 'legR', from: 0.12, to: 0.3, radius: 0.098, count: 1 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.4, radius: 0.072, count: 3, flare: 0.12, cop: 0.08 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.04, to: 0.4, radius: 0.072, count: 3, flare: 0.12, cop: 0.08 },
-    { use: 'belt', slot: 'leather', bone: 'spin' },
-  ],
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  parts: Object.entries({
+    head: ['plate', 'dark'], neck: ['mail'], chest: ['plate'], spin: ['plate', 'leather', 'mail', 'trousers'],
+    armL: ['mail', 'plate'], armR: ['mail', 'plate'], elbowL: ['plate', 'gauntlet'], elbowR: ['plate', 'gauntlet'],
+    legL: ['trousers', 'plate'], legR: ['trousers', 'plate'], kneeL: ['plate', 'gauntlet'], kneeR: ['plate', 'gauntlet'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `knight:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
   weapon: { use: 'knightGreatsword', slots: { blade: 'blade', grip: 'leather', guard: 'guard' } },
   eyes: { color: 0x9ab8ff, size: 0.014, spread: 0.055, at: [0, 0.183, 0.18] },
   anim: { ...IRONBOUND_ANIM, cloth: [] },

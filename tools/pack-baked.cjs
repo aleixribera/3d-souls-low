@@ -13,6 +13,7 @@ const FILES = {
   'wanderer': { sources: ['wanderer'] },
   'hollow': { sources: ['hollow'] },
   'lancer': { sources: ['lancer'] },
+  'knight': { sources: ['knight'] },
 };
 
 function readGlb(file) {

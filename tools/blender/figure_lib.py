@@ -47,10 +47,16 @@ def keep_tris(ob, keep):
         dg = bpy.context.evaluated_depsgraph_get(); me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
         ob.modifiers.clear(); old = ob.data; ob.data = me; bpy.data.meshes.remove(old)
 
-def hard(name, build, thick=0.0, smooth=True):
-    """Exact geometry (plates, sheets, straps). `thick` solidifies a sheet."""
+def hard(name, build, thick=0.0, smooth=True, outward=None):
+    """Exact geometry (plates, sheets, straps). `thick` solidifies a sheet. `outward` (a game point) turns a one-sided
+    sheet's faces away from it, since the game culls back faces."""
     bm = bmesh.new(); build(bm); bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:]); ob = new_obj(name, bm)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    if outward is not None:
+        o = G(*outward); bm.normal_update()
+        flip = [f for f in bm.faces if f.normal.dot(f.calc_center_median() - o) < 0]
+        if flip: bmesh.ops.reverse_faces(bm, faces=flip)
+    ob = new_obj(name, bm)
     if thick: solid(ob, thick)
     return finish(name, ob, smooth)
 
