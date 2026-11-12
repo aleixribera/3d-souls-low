@@ -272,8 +272,8 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    // The Toll Wisp: a hooded robe of blue flame round a small bell. It rings before every shot (the cue to move).
-    id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: 'A robe of blue flame round a little bell. It rings before it shoots. Fragile: close in and cut it down.', autoLock: false,
+    // The Toll Wisp: a bell-ringer's soul in its old robe and wide hat, bound to a handbell (LORE.md). It rings before every shot (the cue to move).
+    id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: "A bell-ringer's soul in its old robe, bound to a handbell. It rings before it shoots. Fragile: close in and cut it down.", autoLock: false,
     scale: 0.9, bulk: 0.96, radius: 0.36, color: 0x8a6432, weapon: 'none', idle: 'sway',
     visual: { skin: 0x9e9484, roughness: 0.75 },
     hp: 60, poise: 20, speed: 2.4, turnRate: 6, trackRate: 3,

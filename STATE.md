@@ -4,13 +4,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 1, item 3, the Toll Wisp's description (a bell-ringer's soul in a robe, bound to a handbell;
-drop "a robe of blue flame"), pass 1 of it. Check: the enemy's description in the Arena list. First check the queued
-runs below; a red one comes first.
+Next: `PLAN.md` stage 1, item 4, `SCORECARD.md`, pass 1 of it: one row per `VISION.md` area, one per Ashmere level
+and one per boss (with 1 and with 3 players), each 1-5 with one sentence and a path of evidence. Check: every row has
+evidence a reader can open. First check the queued runs below; a red one comes first.
 
-Items 1 (the Shover, v7.34.0) and 2 are done. Pass 3 shipped item 2, the shared files: the loop file's Notes table
-names each one and its writer, and `AGENTS.md` opens with `VISION.md`, `PLAN.md` and `STORY.md`. A fresh read-only
-agent given only those notes found the next step, its check, and where cuts, questions and feedback go.
+Items 1 to 3 are done. Pass 4 shipped item 3: the Toll Wisp's Arena description is now "A bell-ringer's soul in its
+old robe, bound to a handbell", seen in Arena > Enemies at desktop and phone width
+(`.scratch/menu/wisp-desc-desktop.png`, `-phone.png`; `.scratch/menu-shot.cjs <menu> <item> <stem>` takes them).
+No release for a text fix: the next release's changelog line mentions it.
 
 ## Works
 
@@ -41,8 +42,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-- CI on main for pass 3's push (docs only). v7.34.0's CI and container runs passed, and `:latest` reads anonymously
-  (pass 3).
+- CI on main for pass 4's push (the Toll Wisp's description). v7.34.0's CI and container runs passed, and `:latest`
+  reads anonymously (pass 3).
 
 ## wip/ branches
 
