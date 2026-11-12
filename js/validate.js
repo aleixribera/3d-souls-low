@@ -288,6 +288,8 @@ function validateData({ visual = true } = {}) {
   if (visual) {
     checkVisualData(need, num);   // optional look fields (section 9b)
     checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
+    for (const [id, M] of Object.entries(MODEL_DEFS)) for (const o of M.parts || [])   // models built in Blender (js/baked.js)
+      if (o.use === 'baked') need(o.mesh in BAKED, `Model "${id}": baked mesh "${o.mesh}" is not packed (run node tools/pack-baked.cjs).`);
   }
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;

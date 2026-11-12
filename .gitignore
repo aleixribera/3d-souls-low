@@ -6,3 +6,4 @@ server/node_modules/
 3d-souls-low/
 node_modules/
 tools/blender/out/
+__pycache__/

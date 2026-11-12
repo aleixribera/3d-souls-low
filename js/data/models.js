@@ -122,6 +122,18 @@ MODEL_DEFS.hollowSoldier = {
 // The player: a worn wanderer, not a hero. Practical layers (cloth, leather jerkin, a mail skirt, one steel pauldron),
 // a hood, a long cape that reacts to movement, a round shield slung on the back, and one faded-red scarf as the accent.
 // The back view matters most: hood, cape and the round shield make the silhouette from behind.
+// v7.21: built in Blender (tools/blender/wanderer.py, packed into js/baked/wanderer.js), one rigid piece per bone named
+// <bone>__<material slot>[.n]: a deep hood and shoulder mantle, the wound scarf drawn over the face, a quilted gambeson
+// under a leather cuirass, a mail skirt under a split coat, a domed iron pauldron with lames, vambraces, tall boots, the
+// cape in three bands on the cloth springs and the planked shield. Only the longsword is still built here.
+{
+  const piecesOf = {
+    spin: ['cloth', 'mail', 'coat', 'strap', 'leather', 'iron'], chest: ['cloth', 'leather', 'hood', 'strap', 'strap.2', 'wood', 'iron'],
+    neck: ['scarf'], head: ['skin', 'scarf', 'hood'], armL: ['cloth', 'iron', 'iron.2'], armR: ['cloth', 'leather'],
+    elbowL: ['cloth', 'leather', 'strap', 'leather.2'], elbowR: ['cloth', 'leather', 'strap', 'leather.2'],
+    legL: ['cloth', 'coat'], legR: ['cloth', 'coat'], kneeL: ['cloth', 'leather', 'strap'], kneeR: ['cloth', 'leather', 'strap'],
+    capeA: ['cape'], capeB: ['cape'], capeC: ['capeHem'], scarfTail: ['scarf'],
+  };
 MODEL_DEFS.wanderer = {
   faction: 'wanderer', budget: 'player', fit: 1.0, limbSides: 8,
   proportions: { shoulderX: 0.3, torsoW: 0.19, torsoD: 0.12, armR: 0.054, legR: 0.075, headR: 0.118, handR: 0.05, footLen: 0.28 },
@@ -142,44 +154,14 @@ MODEL_DEFS.wanderer = {
     coat: { tex: 'rottenCloth', tint: 0x5c5646, decay: 0.5, size: 512, double: true },
     strap: { tex: 'crackedLeather', tint: 0x3e3428, decay: 0.55 },
   },
-  body: { torso: 'cloth', pelvis: 'cloth', arms: 'cloth', legs: 'cloth', head: 'skin', neck: 'skin', hands: 'leather', feet: 'leather' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     capeA: { parent: 'chest', at: [0, 0.55, -0.235] },
     capeB: { parent: 'capeA', at: [0, -0.4, 0] },
     capeC: { parent: 'capeB', at: [0, -0.4, 0] },
     scarfTail: { parent: 'neck', at: [0.04, 0.0, -0.09] },
   },
-  // v6.0 remake (js/kit-premium.js): a quilted gambeson under a boiled-leather cuirass, the coat's split skirt (a back
-  // panel and two tassets that swing with the legs) over a short mail skirt, a deep cowl and shoulder mantle, a wound
-  // red scarf, a layered pauldron on the shield side and a leather one on the sword arm, vambraces, tall folded boots,
-  // a bandolier with a dagger, the planked round shield on the back and a bevelled longsword.
-  parts: [
-    { use: 'gambeson', slot: 'cloth', bone: 'chest' },
-    { use: 'cuirass', slot: 'leather', bone: 'chest', strap: 'strap', metal: 'iron' },
-    { use: 'mailSkirt', slot: 'mail', bone: 'spin' },
-    { use: 'coatBack', slot: 'coat', bone: 'spin', len: 0.58, seed: 3 },
-    { use: 'coatTasset', slot: 'coat', bone: 'legL', side: 1, seed: 5 },
-    { use: 'coatTasset', slot: 'coat', bone: 'legR', side: -1, seed: 6 },
-    { use: 'belt', slot: 'strap', bone: 'spin' },
-    { use: 'pouch', slot: 'leather', bone: 'spin', x: -0.2, z: 0.08 },
-    { use: 'flask', slot: 'iron', bone: 'spin', x: 0.2, z: 0.07 },
-    { use: 'bandolier', slot: 'strap', bone: 'chest', metal: 'iron' },
-    { use: 'cowl', slot: 'hood', bone: 'head', size: 1.04 },
-    { use: 'mantle', slot: 'hood', bone: 'chest', seed: 8 },
-    { use: 'faceWrap', slot: 'scarf', bone: 'head' },
-    { use: 'woundScarf', slot: 'scarf', bone: 'neck' },
-    { use: 'clothStrip', slot: 'scarf', bone: 'scarfTail', w: 0.08, len: 0.4, seed: 5 },
-    { use: 'layeredPauldron', slot: 'iron', bone: 'armL', side: 1, size: 1.12, rivet: 'iron', strap: 'strap' },
-    { use: 'layeredPauldron', slot: 'leather', bone: 'armR', side: -1, size: 0.86, rivet: 'iron', strap: 'strap' },
-    { use: 'vambrace', slot: 'leather', bone: 'elbowL', strap: 'strap' },
-    { use: 'vambrace', slot: 'leather', bone: 'elbowR', strap: 'strap' },
-    { use: 'tallBoot', slot: 'leather', bone: 'kneeL', strap: 'strap', metal: 'iron' },
-    { use: 'tallBoot', slot: 'leather', bone: 'kneeR', strap: 'strap', metal: 'iron' },
-    { use: 'plankShield', slot: 'wood', bone: 'chest', face: 'wood', metal: 'iron', strap: 'strap' },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeA', w0: 0.52, w1: 0.62, len: 0.4, bow: 1.0 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeB', w0: 0.62, w1: 0.74, len: 0.4, bow: 0.8 },
-    { use: 'capeSegment', slot: 'capeHem', bone: 'capeC', w0: 0.74, w1: 0.82, len: 0.34, bow: 0.7, ragged: true, seed: 4 },
-  ],
+  parts: Object.entries(piecesOf).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.28 }))),
   weapon: { use: 'wandererLongsword', slots: { blade: 'blade', grip: 'strap', guard: 'iron' } },
   anim: {
     idle: { breathRate: 1.6, breath: 0.018, headDrift: 0.04, sway: 0.015, twitch: 0 },
@@ -191,6 +173,7 @@ MODEL_DEFS.wanderer = {
             { bone: 'scarfTail', gain: 0.14, k: 55, damp: 4, flutter: 0.08 }],
   },
 };
+}
 
 // Ysolde of Corvel (v5.1, js/lore.js): the one friendly soul. Unarmed and slight, a long blue-grey shawl worn as a
 // hood and trailing down the back, a bellwright's leather apron, rope still round both wrists. No eyes glow: she is

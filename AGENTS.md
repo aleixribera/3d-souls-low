@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.20.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.21.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
@@ -66,13 +66,14 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | To change… | Look in |
 |---|---|
 | Player moves, stats, timings | `js/data/player.js`, `CONFIG.player` |
+| The player's model | `tools/blender/wanderer.py` (rebuild and pack: `docs/wanderer-model-v7.21.0.md`), materials in `MODEL_DEFS.wanderer` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |
 | Executions | `js/execution.js`, `CONFIG.execution` |
 | Boss phases, reactions, follow-ups | `js/enemy.js` (`enterPhase`, `outlast`, `REACTIONS`, `FOLLOW_IF`, `attackById`) |
 | A level | `js/levels/*.js`, listed in `data/levels.js` |
-| Models built in Blender | `tools/blender/*.py`, packed by `tools/pack-baked.cjs` into `js/baked/`, decoded by `js/baked.js`; a level draws them through `scenery` (`js/scenery.js`). Steps in `docs/church-in-the-pass-v7.20.0.md` |
+| Models built in Blender | `tools/blender/*.py`, packed by `tools/pack-baked.cjs` into `js/baked/`, decoded by `js/baked.js`; a level draws them through `scenery` (`js/scenery.js`), a model through `use: 'baked'` parts. Steps in `docs/church-in-the-pass-v7.20.0.md` and `docs/wanderer-model-v7.21.0.md` |
 | Story chapters and saves | `js/data/story.js`, `js/story.js`, `CONFIG.story` |
 | Lore, NPCs, inscriptions | `LORE.md`, then `js/data/lore.js` / `lore-lands.js` |
 | Menus, the title's online card | `js/game-menus.js` (`Game.screens()`, `titleLobby`), `multiplayer.peek()` |

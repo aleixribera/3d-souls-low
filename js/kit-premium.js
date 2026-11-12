@@ -28,7 +28,6 @@
   const stud = r => new THREE.SphereGeometry(r, 6, 4);
   // The torso's own profile (chest frame), as in the body kit, so armour is laid just over it.
   const TORSO = [[0.15, -0.06], [0.168, 0.05], [0.21, 0.22], [0.26, 0.4], [0.29, 0.5], [0.2, 0.575], [0.07, 0.625]];
-  const over = (prof, add) => prof.map(([r, y]) => [r + add, y]);
   // The torso's radius at height y (chest frame, before the model's width and depth).
   const torsoR = y => {
     for (let i = 0; i < TORSO.length - 1; i++) { const [r0, y0] = TORSO[i], [r1, y1] = TORSO[i + 1]; if (y >= y0 && y <= y1) return r0 + (r1 - r0) * (y - y0) / (y1 - y0); }
@@ -45,7 +44,7 @@
     return KIT_GEO.Tube(new THREE.CatmullRomCurve3(pts, closed), 26, r, 4, closed);
   };
 
-  // ---- the wanderer (the player) ---------------------------------------------------------------------------------------
+  // ---- clothing and armour first made for the wanderer (the player is a Blender model since v7.21) ------------------
   // A quilted gambeson: stitched in horizontal bands and vertical channels, a seam down the front, a standing collar.
   P.gambeson = (o, M) => {
     const k = tw(M), prof = resample([[0.19, -0.04], [0.2, 0.05], [0.235, 0.22], [0.285, 0.4], [0.312, 0.5], [0.268, 0.553], [0.17, 0.598], [0.128, 0.618]], 0.022);
@@ -58,39 +57,6 @@
     });
     const collar = lathe([[0.122 * k, 0.6], [0.118 * k, 0.65], [0.126 * k, 0.69], [0.12 * k, 0.695]], 12, 0.9);
     return [uvScale(g, 1.8, 1.4), uvScale(collar, 2, 0.5)];
-  };
-  // A boiled-leather cuirass over it: front and back plates with a raised keel, edges rolled, buckled straps at the sides.
-  P.cuirass = (o, M) => {
-    const k = tw(M), z = oz(M), prof = resample(over(TORSO.slice(1, 5), 0.03).map(([r, y]) => [r * k, y]), 0.03).filter(([, y]) => y >= 0.12 && y <= 0.52);
-    const front = sector(prof, 8, -1.05, 2.1, z), back = sector(prof, 8, Math.PI - 0.95, 1.9, z);
-    deform(front, v => { v.z += 0.014 * Math.max(0, 1 - Math.abs(v.x) / 0.05); });   // the keel
-    const rim = y => torsoStrap(M, y, 0, 0.034, 0.008, 2.1, 0);
-    const straps = [0.24, 0.38].flatMap(y => [-1, 1].map(s => {
-      const r = (0.26 + (y - 0.24) * 0.3) * k + 0.03;
-      return xf(new THREE.BoxGeometry(0.018, 0.03, 0.11), s * r, y, -0.01, 0, 0, 0);
-    }));
-    const buckles = [0.24, 0.38].flatMap(y => [-1, 1].map(s => xf(plate([[-0.016, -0.02], [0.016, -0.02], [0.016, 0.02], [-0.016, 0.02]], 0.006, 0.003),
-      s * (0.26 + (y - 0.24) * 0.3) * k + s * 0.032, y, 0.035, 0, s * Math.PI / 2, 0)));
-    return [uvScale(front, 1.6, 1.2), uvScale(back, 1.6, 1.2), rim(0.5), rim(0.14),
-            ...straps.map(geo => ({ slot: o.strap ?? o.slot, geo })), ...buckles.map(geo => ({ slot: o.metal, geo }))];
-  };
-  // The coat's skirt: a long back panel from the waist (spin frame), split at the sides, ragged at the hem.
-  P.coatBack = o => {
-    const len = o.len ?? 0.56, g = KIT_GEO.Cylinder(0.205, 0.275, len, 14, 6, true, Math.PI - (o.span ?? 1.0), (o.span ?? 1.0) * 2);
-    g.translate(0, -len / 2 + 0.03, 0);
-    deform(g, v => {
-      const t = (0.03 - v.y) / len, a = angle(v);
-      const fold = Math.sin(a * 9 + hash3(1, 2, 3, o.seed ?? 3)) * 0.012 * t; const r = Math.hypot(v.x, v.z) + fold; v.x = Math.sin(a) * r; v.z = Math.cos(a) * r;
-      if (t > 0.96) v.y -= (hash3(Math.round(a * 30), 5, 5, o.seed ?? 3) + 0.5) * 0.06;
-    });
-    return [uvScale(g, 2, len / texMeters)];
-  };
-  // A front tasset of the coat on a thigh (leg frame), so it swings with the leg: front and outer side.
-  P.coatTasset = o => {
-    const s = o.side ?? 1, len = o.len ?? 0.34, g = KIT_GEO.Cylinder(0.098, 0.13, len, 8, 4, true, s > 0 ? -0.25 : -1.65, 1.9);
-    g.translate(0, -len / 2 + 0.03, 0);
-    deform(g, v => { const t = (0.03 - v.y) / len; if (t > 0.95) v.y -= (hash3(Math.round(v.x * 80), Math.round(v.z * 80), 7, o.seed ?? 5) + 0.5) * 0.05; });
-    return [uvScale(g, 1.2, len / texMeters)];
   };
   // A layered pauldron (arm frame): a domed cap, three overlapping lames down the outside of the arm, rivets, a strap.
   P.layeredPauldron = o => {
@@ -145,36 +111,6 @@
     });
     return [uvScale(g, 2.4, 0.8)];
   };
-  // A thick scarf wound twice round the neck (neck frame), lumpy where it folds, a knot at the side.
-  P.woundScarf = o => {
-    const a = KIT_GEO.Torus(0.088, 0.03, 6, 12), b = KIT_GEO.Torus(0.094, 0.026, 6, 12);
-    for (const g of [a, b]) deform(g, v => { const ang = Math.atan2(v.y, v.x), f = 1 + Math.sin(ang * 5) * 0.08; v.x *= f; v.y *= f; });
-    xf(a, 0, 0.02, 0, Math.PI / 2, 0, 0.12, 1, 1, 0.9); xf(b, 0, 0.065, 0.004, Math.PI / 2 - 0.1, 0, -0.08, 1, 1, 0.88);
-    const knot = xf(sphere(0.032, 8, 6), 0.075, 0.03, 0.05, 0, 0, 0, 1, 0.8, 1);
-    return [uvScale(a, 4, 1), uvScale(b, 4, 1), knot];
-  };
-  // A round shield slung on the back (chest frame): radial planks, an iron rim with rivets, a flanged boss, two straps.
-  P.plankShield = o => {
-    const r = o.r ?? 0.24, out = [];
-    const dish = lathe([[0, -0.022], [r * 0.95, -0.02], [r, -0.002], [r * 0.95, 0.018], [r * 0.32, 0.034], [0, 0.04]], 16);
-    deform(dish, v => { const a = Math.atan2(v.z, v.x), plank = Math.pow(Math.abs(Math.cos(a * 4.5)), 40); if (v.y > 0) v.y -= plank * 0.004; });
-    roughen(dish, 0.004, 41);
-    out.push({ slot: o.face, geo: uvScale(dish, 2, 1) });
-    out.push({ slot: o.metal, geo: xf(KIT_GEO.Torus(r - 0.004, 0.012, 4, 20), 0, 0.004, 0, Math.PI / 2, 0, 0) });
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; out.push({ slot: o.metal, geo: xf(stud(0.008), Math.cos(a) * (r - 0.02), 0.022, Math.sin(a) * (r - 0.02)) }); }
-    out.push({ slot: o.metal, geo: lathe([[0, 0.03], [0.075, 0.032], [0.07, 0.04], [0.055, 0.075], [0.03, 0.095], [0, 0.1]], 10) });
-    for (const d of [-0.09, 0.09]) out.push({ slot: o.strap ?? o.face, geo: xf(new THREE.BoxGeometry(0.03, 0.012, r * 1.9), d, 0.042, 0) });
-    const place = x => { xf(x.geo, ...(o.at ?? [0, 0.3, -0.34]), ...(o.rot ?? [-Math.PI / 2, 0, 0.18])); return x; };
-    return out.map(place);
-  };
-  // A bandolier strap across the body (chest frame) with a dagger sheathed on it.
-  P.bandolier = (o, M) => {
-    const k = tw(M), band = torsoStrap(M, 0.3, 0.17, 0.028, 0.011);
-    const sheath = xf(lathe([[0.01, -0.2], [0.022, -0.16], [0.024, 0], [0.026, 0.02]], 8, 0.5), -0.16 * k, 0.2, 0.17, 0.2, 0, 0.7);
-    const hilt = xf(tube(0.011, 0.011, 0.09, 6), -0.178 * k, 0.255, 0.182, 0.2, 0, 0.7);
-    return [band, sheath, { slot: o.metal ?? o.slot, geo: hilt }];
-  };
-
   // The wanderer's longsword: a bevelled blade with a ricasso, curled quillons, a wrapped grip and a wheel pommel.
   W.wandererLongsword = () => {
     const outline = shape([[0.12, -0.04], [0.2, -0.042], [1.0, -0.038], [1.12, -0.02], [1.2, 0], [1.12, 0.02], [1.0, 0.038], [0.2, 0.042], [0.12, 0.04]]);

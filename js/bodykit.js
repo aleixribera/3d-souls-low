@@ -209,12 +209,11 @@ const KIT = (() => {
   function bodyParts(M) {
     if (anatomy) return ultraBody(M);
     const P = M.proportions, B = M.body, out = [];
-    const add = (bone, slot, geo) => out.push({ bone, slot, geo });
+    const add = (bone, slot, geo) => { if (slot) out.push({ bone, slot, geo }); };   // a null slot: that part is left out
     const tw = P.torsoW / 0.2, oz = P.torsoD / P.torsoW;
     if (B.pelvis) add('spin', B.pelvis, uvScale(lathe([[0.1, -0.1], [0.17, -0.06], [0.18, 0.02], [0.16, 0.08]].map(([r, y]) => [r * tw, y]), 8, oz * 1.1), 1.5, 1));
     if (B.torso) add('chest', B.torso, uvScale(lathe([[0.15, -0.06], [0.17, 0.05], [0.21, 0.22], [0.26, 0.4], [0.286, 0.5], [0.25, 0.565], [0.17, 0.605], [0.08, 0.64]].map(([r, y]) => [r * tw, y]), 8, oz), 1.8, 1.2));   // sloped shoulders (v6.0)
     add('neck', B.neck, tube(P.headR * 0.4, P.headR * 0.46, 0.17, 6));
-    xf(out[out.length - 1].geo, 0, 0.0, 0);
     // Skull: the lower half narrows to a jaw; the face is flatter than the back of the head.
     const skull = deform(sphere(P.headR, 10, 7), v => {
       if (v.y < 0) { const k = 1 - 0.38 * (-v.y / P.headR); v.x *= k; v.z *= k; v.z += v.y * 0.1; }
