@@ -22,6 +22,7 @@ const FILES = {
   'wisp': { sources: ['wisp'] },
   'scion': { sources: ['scion'] },
   'executioner': { sources: ['executioner'] },
+  'squire': { sources: ['squire'] },
 };
 
 function readGlb(file) {

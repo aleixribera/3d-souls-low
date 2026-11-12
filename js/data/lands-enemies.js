@@ -120,11 +120,13 @@ MODEL_DEFS.graftedScion = {
   },
 };
 // The Crucible Squire: a young knight of the Crucible in dark bronze half-plate, a horned helm, a small oval shield and a
-// knight's sword; amber growths of the Crucible's old life breaking out of the pauldrons and the back.
+// knight's sword; amber growths of the Crucible's old life breaking out of the pauldrons and the back. v7.33 rebuilt the
+// body in Blender after the same brief; the shield and the sword are still the kit's.
 MODEL_DEFS.crucibleSquire = {
   extends: 'crucibleKnight', budget: 'enemy', fit: 1.0,
   proportions: { ...IRONBOUND_PROPS, shoulderX: 0.37, torsoW: 0.24, torsoD: 0.18, armR: 0.064, legR: 0.088, headR: 0.118 },
   posture: { chest: [0.08, 0, 0], neck: [0.05, 0, 0], head: [0.02, 0, 0], elbowL: [-0.55, 0, 0], elbowR: [-0.35, 0, 0] },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   materials: {
     ...IRONBOUND_MATS,
     plate: { tex: 'crucibleBronze', tint: 0xffffff, decay: 0.5 },
@@ -136,29 +138,20 @@ MODEL_DEFS.crucibleSquire = {
     blade: { tex: 'dentedSteel', tint: 0xc0a080, decay: 0.45 },
     guard: { tex: 'crucibleBronze', tint: 0xd0a070, decay: 0.5 },
     cloth: { tex: 'tatteredFabric', tint: 0x6a3a1c, decay: 0.7, double: true },
+    dark: { tex: 'ashSoot', tint: 0x0c0a08, decay: 0.9 },
     amber: { glow: 0xffa830 },
     eye: { glow: 0xffb050 },
   },
   bones: { loinF: { parent: 'spin', at: [0, -0.04, 0.17] }, loinB: { parent: 'spin', at: [0, -0.04, -0.17] },
            capeA: { parent: 'chest', at: [0, 0.56, -0.2] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] } },
+  // v7.33.0: built in Blender (tools/blender/squire.py), one piece per bone; the kit still builds the shield and the sword
   parts: [
-    { use: 'breastplate', slot: 'plate', bone: 'chest' },
-    { use: 'medallion', slot: 'gilt', bone: 'chest', at: [0, 0.4, 0.2], r: 0.055 },
-    { use: 'neckGuard', slot: 'plate', bone: 'chest' },
-    { use: 'tassets', slot: 'plate', bone: 'spin' },
-    { use: 'crucibleHelm', slot: 'plate', metal: 'gilt', bone: 'head', size: 1.02 },
-    { use: 'layeredPauldron', slot: 'plate', bone: 'armR', side: -1, size: 1.25, rivet: 'gilt', strap: 'grip' },
-    { use: 'layeredPauldron', slot: 'plate', bone: 'armL', side: 1, size: 1.15, rivet: 'gilt', strap: 'grip' },
-    { use: 'crystalCluster', slot: 'amber', bone: 'armR', at: [-0.06, 0.08, -0.02], dir: [-0.6, 1, -0.3], count: 6, size: 1.0, seed: 3 },
-    { use: 'crystalCluster', slot: 'amber', bone: 'chest', at: [0.06, 0.48, -0.2], dir: [0.3, 0.8, -1], count: 7, size: 1.1, seed: 8 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.28, radius: 0.06, count: 3, flare: 0.25, cop: 0.068 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.28, radius: 0.058, count: 3, flare: 0.2, cop: 0.064 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.03, to: 0.42, radius: 0.072, count: 4, flare: 0.14, cop: 0.084 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.03, to: 0.42, radius: 0.072, count: 4, flare: 0.14, cop: 0.084 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.28, len: 0.55, seed: 5 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.32, len: 0.6, seed: 9 },
-    { use: 'capeSegment', slot: 'cloth', bone: 'capeA', w0: 0.5, w1: 0.62, len: 0.42, bow: 1.0 },
-    { use: 'capeSegment', slot: 'cloth', bone: 'capeB', w0: 0.62, w1: 0.7, len: 0.4, bow: 0.7, ragged: true, seed: 4 },
+    ...Object.entries({
+      head: ['plate', 'dark', 'gilt', 'gilt.1'], neck: ['mail'], chest: ['plate', 'gilt', 'gilt.1', 'amber'],
+      capeA: ['cloth'], capeB: ['cloth'], spin: ['grip', 'mail', 'plate'], loinF: ['cloth'], loinB: ['cloth'],
+      armL: ['mail', 'plate', 'gilt'], armR: ['mail', 'plate', 'gilt', 'amber'], elbowL: ['plate', 'guard'], elbowR: ['plate', 'guard'],
+      legL: ['mail', 'plate'], legR: ['mail', 'plate'], kneeL: ['plate', 'guard'], kneeR: ['plate', 'guard'],
+    }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `squire:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
     { use: 'ovalShield', slot: 'shieldFace', metal: 'shieldTrim', bone: 'elbowL', w: 0.62, h: 0.86, at: [0.08, -0.22, 0.2] },
   ],
   weapon: { use: 'knightGreatsword', slots: { blade: 'blade', grip: 'grip', guard: 'guard' } },
