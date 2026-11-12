@@ -125,7 +125,8 @@ are chapter 6, no longer a road apart.
 
 ## What goes
 
-The old second road entire: its eight lands as named, Seren, its eight bosses and their arena category, its enemies
-(Omenkin, Grafted Scion, Crucible Squire, Leyndell Knight, Ashen Warrior, Beastman, Golden Zealot, Cleanrot Knight),
-its messages and tablets, its ending, and its lobby ceremony. Its levels, mechanics and boss engineering stay only as
-raw material for chapters 7 to 14. Saves start fresh with the new story.
+The old second road as a story: its eight lands as named, Seren, its enemies (Omenkin, Grafted Scion, Crucible
+Squire, Leyndell Knight, Ashen Warrior, Beastman, Golden Zealot, Cleanrot Knight), its messages and tablets, its
+ending, and its lobby ceremony. Its levels, mechanics and boss engineering stay as raw material for chapters 7 to 14.
+Its eight bosses leave the story but stay selectable wherever bosses are chosen (the Arena, the boss runs, the co-op
+mode). Saves start fresh with the new story.

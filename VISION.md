@@ -15,8 +15,9 @@ Aleix and his friends. It is not distributed beyond them. They like the bosses m
 
 ## What it has
 
-- **Co-op with friends:** a mode made for playing together, built around the bosses (shape being settled; see
-  `PLAN.md`). The public lobby, friendly bots and the Boss Only / Double / Triple / Quad boss modes stay.
+- **Co-op with friends:** a simple boss rush made for a group (working name The Calling): super cool boss fights,
+  balanced for groups, with every boss in the game to choose from. Every boss, now and later, adapts to the number of
+  players on its own. The public lobby, friendly bots and the Boss Only / Double / Triple / Quad boss runs stay.
 - **The story:** one road, `STORY.md` (*The Hunger That Wears a King*): Ashmere, then the Pass, then Thrale. It
   replaces the two roads the game has today. `LORE.md` is what is in the game now and follows `STORY.md` chapter by
   chapter as it is built.
@@ -24,8 +25,9 @@ Aleix and his friends. It is not distributed beyond them. They like the bosses m
 
 ## Rules
 
-- Everything in the game is original: its world, names, characters, bosses and places. Other games are references
-  for mechanics and feel, never for content.
+- Everything new is original: its world, names, characters, bosses and places. Other games are references for
+  mechanics and feel, never for content. The old second road's eight bosses stay selectable as they are (Aleix,
+  2026-11-13) and get no new art.
 - Real Blender models, Claude-only textures, no stock-AI UI (Aleix's standing rules in `~/.claude/CLAUDE.md`).
 - Engineering rules and invariants: `AGENTS.md`.
 - No area comes first by default. Each stage takes the weakest area for the state of the game, read from
@@ -35,8 +37,8 @@ Aleix and his friends. It is not distributed beyond them. They like the bosses m
 
 ## Stages
 
-1. Finish Ashmere's cast as Blender models under the hardened check; set up the shared files and the scorecard.
-2. The co-op mode, first playable version.
-3. The merged story, rough end to end, then the swap: the old second road and its bosses go.
-4. Deepen by the scorecard: the co-op mode's full version, Ashmere's weaker levels rebuilt, the story's new cast in
-   Blender, polish.
+1. Set up the shared files and the scorecard.
+2. The co-op boss rush, first playable version.
+3. Two tracks side by side: the merged story (rough end to end, then the swap: the old second road goes, its bosses
+   stay selectable), and the bosses, Ashmere's cast in Blender and the co-op mode.
+4. Deepen by the scorecard: Ashmere's weaker levels rebuilt, the story's new cast in Blender, polish.
