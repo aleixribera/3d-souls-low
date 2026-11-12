@@ -1,8 +1,16 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.34.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.34.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
-The game is complete. It has two Story roads:
+Where the game is going lives in three files at the root. Read them before choosing what to build:
+
+- `VISION.md`: what the game is, its areas and its stages. It wins over every other doc, this one included.
+- `PLAN.md`: what comes next, in order, each item with its acceptance check.
+- `STORY.md`: the one story being built, which replaces the two roads below chapter by chapter.
+
+Where the work stands is `STATE.md` (what works, what's broken, open questions), and `BACKLOG.md` holds work found or deferred. Both belong to the iterate loop (`.claude/iterate.md`).
+
+In the game today there are two Story roads:
 
 - **Ashmere:** Levels 1–5 and an ending. Level 1 teaches the controls with lesson cards.
 - **Level 6, the Church in the Pass:** stands apart from both roads, in the Levels menu after the Final Castle.
@@ -16,7 +24,7 @@ This file is the guide. History lives elsewhere (`docs/README.md` indexes all th
 - `docs/feature-history.md`: the full per-feature notes, oldest first. Read the section of a system before changing it.
 - `docs/*-v<version>.md`: the detailed design notes of a release.
 
-**`LORE.md` is the source of truth for the story.** Every in-game story text must agree with it: dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards and credits. Change LORE.md first, then the game.
+**`LORE.md` is the source of truth for the story in the game today.** Every in-game story text must agree with it: dialogues, inscriptions, chapter lines, boss names, level descriptions, ending cards and credits. Change LORE.md first, then the game. To build a chapter of `STORY.md`, move its text into `LORE.md` first, then into the game.
 
 ## Tech stack
 

@@ -4,9 +4,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 3 takes `PLAN.md` stage 1, item 2: the shared files (the loop file's Notes name `VISION.md`, `PLAN.md`,
-`STORY.md`, `STATE.md`, `BACKLOG.md`, `SCORECARD.md`, `.claude/feedback.md`; `AGENTS.md`'s opening points at
-`VISION.md`, `PLAN.md`, `STORY.md`), pass 1 of it. First check the queued runs below; a red one comes first.
+Next: `PLAN.md` stage 1, item 3, the Toll Wisp's description (a bell-ringer's soul in a robe, bound to a handbell;
+drop "a robe of blue flame"), pass 1 of it. Check: the enemy's description in the Arena list. First check the queued
+runs below; a red one comes first.
+
+Items 1 (the Shover, v7.34.0) and 2 are done. Pass 3 shipped item 2, the shared files: the loop file's Notes table
+names each one and its writer, and `AGENTS.md` opens with `VISION.md`, `PLAN.md` and `STORY.md`. A fresh read-only
+agent given only those notes found the next step, its check, and where cuts, questions and feedback go.
 
 ## Works
 
@@ -37,9 +41,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-- The v7.34.0 push: CI on main and the container run for tag v7.34.0. Check both (`gh run list --limit 4`), and that
-  `ghcr.io/aleixribera/3d-souls-low:latest` reads anonymously. v7.33.0's container run passed; its CI run was
-  superseded by the director's pushes.
+- CI on main for pass 3's push (docs only). v7.34.0's CI and container runs passed, and `:latest` reads anonymously
+  (pass 3).
 
 ## wip/ branches
 

@@ -1,6 +1,6 @@
 # Docs index
 
-Start with `../AGENTS.md` (the project guide) and `CHANGELOG.md` (one line per release). `feature-history.md` holds the full per-feature notes, oldest first.
+Start with `../VISION.md` (what the game is), `../PLAN.md` (what comes next), `../AGENTS.md` (the project guide) and `CHANGELOG.md` (one line per release). `feature-history.md` holds the full per-feature notes, oldest first.
 
 ## Running a server
 - `homelab-multiplayer.md` — the public co-op lobby on an Ubuntu host

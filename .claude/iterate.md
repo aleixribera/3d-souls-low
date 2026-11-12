@@ -17,7 +17,20 @@ The loop file for the `iterate` skill. Where it differs from the skill, this fil
 
 ## Notes
 
-- `STATE.md` (repo root): Now, what works, broken, `wip/` branches, Needs Aleix. Cap 8,000 characters.
+The shared files, all at the repo root unless named otherwise. A pass orients from these. Aleix is the owner; the
+director is a separate chat that sets the direction with him and builds nothing.
+
+| File | Holds | Writer |
+|---|---|---|
+| `VISION.md` | What the game is, its areas and stages. Wins over everything. | Aleix (the director with his OK) |
+| `PLAN.md` | The order of work, each item's acceptance check, the answers to "Needs Aleix". | The director |
+| `STORY.md` | The one story being built; `LORE.md` is the story in the game today. | The director with Aleix |
+| `STATE.md` | Now, what works, broken, queued runs, `wip/` branches, Needs Aleix. Cap 8,000 characters. | The loop |
+| `BACKLOG.md` | Work the loop cut, found or deferred, for the director to promote. | The loop |
+| `SCORECARD.md` | One row per `VISION.md` area (one per Ashmere level, one per boss), scored 1-5 with one sentence and a path of evidence. Written by `PLAN.md` stage 1 item 4; until then it doesn't exist. | The loop |
+| `.claude/feedback.md` | Aleix's bugs, complaints and ideas, append-only and dated. | Aleix; the loop marks the pass that took one |
+
+Other notes:
 - Per model: `docs/<name>-model-v<version>.md` (what it is, slots, triangles, rebuild command), one line in
   `docs/CHANGELOG.md`, a section in `docs/feature-history.md`, a row in the AGENTS.md "Where things live" table.
 - Third-party assets: none so far; any would be logged in the model's doc.
