@@ -6,6 +6,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 Pass 3 picks the next item: the Toll Wisp (`MODEL_DEFS.tollWisp`, 12 placements; 3,996 tris on the kit, over budget),
 pass 1 of it. First check the queued runs below; a red one comes first.
+The loop stopped after pass 2 (2026-11-12): the app refuses to start a session from a turn that a background-task
+notification woke, so pass 2 left a "Iterate" card for Aleix to start instead. Hand over from a turn the owner started,
+or before waiting on background jobs.
 
 ## Works
 
