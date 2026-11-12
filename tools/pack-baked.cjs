@@ -11,6 +11,7 @@ const ROOT = path.join(__dirname, '..'), SRC = path.join(ROOT, 'tools/blender/ou
 const FILES = {
   'snow-church': { sources: ['antlered_beast', 'church', 'snow_land'], places: 'snow_land.places.json' },
   'wanderer': { sources: ['wanderer'] },
+  'hollow': { sources: ['hollow'] },
 };
 
 function readGlb(file) {

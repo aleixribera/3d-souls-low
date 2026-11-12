@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.21.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser. Current version: **v7.22.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 The game is complete. It has two Story roads:
 
@@ -67,6 +67,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 |---|---|
 | Player moves, stats, timings | `js/data/player.js`, `CONFIG.player` |
 | The player's model | `tools/blender/wanderer.py` (rebuild and pack: `docs/wanderer-model-v7.21.0.md`), materials in `MODEL_DEFS.wanderer` |
+| The Hollow Soldier's model | `tools/blender/hollow.py` (rebuild and pack: `docs/hollow-model-v7.22.0.md`), materials in `MODEL_DEFS.hollowSoldier` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |

@@ -346,3 +346,9 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
   sentences written for players. Small releases are grouped and the tooling is left out; `docs/CHANGELOG.md` stays the
   developers' list. `js/validate.js` requires the first entry to be `VERSION`, so a release cannot forget it.
 - Check: `Menus: the Changelog` in `tests/suite-lands.js`.
+
+## The Hollow Soldier built in Blender (v7.22.0)
+- The most common enemy (36 placements) was a mannequin of kit primitives. It is now `tools/blender/hollow.py`: one rigid piece per rig bone, named `hollow:<bone>__<slot>[.n]`, packed into `js/baked/hollow.js` and worn through `use: 'baked'` parts like the wanderer. The look keeps the v5.5 brief. The gambeson's skirt is one body-wide surface cut in three (the back on `spin`, a front half on each thigh, overlapping at the middle), so it follows the legs. 2,920 triangles with the kit-built `ruinedSword`, inside the 3,000 enemy budget; the iron is drawn double-sided, so its plates are single sheets.
+- `tools/blender/figure_lib.py` holds the piece helpers both figures use (`soft`, `hard`, `loft`, `sheet`, `shell`, ...). `begin(colours, prefix)` starts a figure. All baked meshes share one `BAKED` table, so a figure whose bone names another already uses takes a prefix (the packer refuses a duplicate name). The wanderer rebuilds byte-identical from the shared helpers.
+- The `mail` material and the kit parts `gambeson`, `quiltSkirt`, `crossStraps`, `satchel`, `morion`, `kneeCop` and `boot` stay in the kit for other models. The parked `wip/2026-10-27-hollow-enemy` branch (a skinned GLB with its own loader) was not used.
+- Checks: the model lab (idle, walk, attacks, death), Level 1 on High and Low, the in-page `odel` and `Hollow` filters. Notes: `docs/hollow-model-v7.22.0.md`. VERSION / LOAD_STAMP: v7.22.0 / 7.22.0.

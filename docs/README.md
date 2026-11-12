@@ -28,4 +28,4 @@ Start with `../AGENTS.md` (the project guide) and `CHANGELOG.md` (one line per r
 - `guiding-light-v7.4.md`
 
 ## Audits and onboarding
-- `onboarding-v7.3.1.md`, `experience-audit-v7.8.9.md`, `game-audit-v7.17.0.md`, `church-in-the-pass-v7.20.0.md` (Level 6, Blender models in the game), `onboarding-v7.19.0.md` (online-first title, lessons inside the levels), `wanderer-model-v7.21.0.md` (the player built in Blender)
+- `onboarding-v7.3.1.md`, `experience-audit-v7.8.9.md`, `game-audit-v7.17.0.md`, `church-in-the-pass-v7.20.0.md` (Level 6, Blender models in the game), `onboarding-v7.19.0.md` (online-first title, lessons inside the levels), `wanderer-model-v7.21.0.md` (the player built in Blender), `hollow-model-v7.22.0.md` (the Hollow Soldier built in Blender)
