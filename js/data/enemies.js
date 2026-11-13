@@ -451,6 +451,18 @@ const ENEMY_DEFS = [
     attacks: R.attacks.map(a => ({ ...a, id: a.id === 'stab' ? 'smilingStab' : 'twoKnives', name: a.id === 'stab' ? 'Smiling Stab' : 'Two Knives' })) });
 }
 
+// The Cinderfolk of Aurel in Ash (Level 11, v7.46.0; LORE.md 10g): the capital's citizens after the hunger, refused,
+// burned the city it could not keep. Burned, and still walking; some lie in the ash until you pass. Slower than a Hollow
+// Soldier and harder to put down. Rough stand-in: the Hollow Soldier's figure and moves, charred, embers for eyes.
+{
+  const H = ENEMY_DEFS.find(d => d.id === 'hollow');
+  ENEMY_DEFS.push({ ...H, id: 'cinderfolk', model: 'cinderfolk', name: 'Cinderfolk',
+    description: 'Citizens of Aurel, burned when the city burned, and still walking. Some lie in the ash until you pass. Slow, hard to put down; a parry pays.',
+    color: 0x4a4440, visual: { ...H.visual, skin: 0x6a625a }, hp: 130, poise: 60, speed: 2.3, turnRate: 4.4, trackRate: 2.0, cooldown: [0.8, 1.6],
+    attacks: H.attacks.map(a => ({ ...a, id: a.id === 'swing' ? 'cinderSwing' : 'fallingBrand', name: a.id === 'swing' ? 'Cinder Swing' : 'Falling Brand',
+      damage: Math.round(a.damage * 1.1), poise: Math.round(a.poise * 1.15) })) });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

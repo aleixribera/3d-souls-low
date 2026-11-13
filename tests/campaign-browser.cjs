@@ -4,7 +4,7 @@ const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const campaign = process.env.ARENA_CAMPAIGN || 'lands';
 assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');
-const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel']
+const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash']
   : ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
 const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combatArena.complete' : 'combatArena.complete.haligtree';
 (async () => {

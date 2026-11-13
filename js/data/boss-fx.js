@@ -94,4 +94,9 @@ const BOSS_FX = {
     stewardsChop: { element: 'steel', impact: 'shatter' }, courtlyCuts: { element: 'steel' }, turningCut: { element: 'steel' }, leapingCut: { element: 'steel', impact: 'quake' },
     hungerShows: { element: 'fire', impact: 'geyser', aura: 0xff6a20 }, emberSlice: { element: 'fire', impact: 'geyser' },
     emberThrust: { element: 'fire', windup: 'gather' }, emberWells: { element: 'fire', impact: 'geyser' } } },
+  // Oswin, the First Crown (Level 11): the ash king's stomps crack the floor; from 40 % the axe is cast down and the
+  // Ember takes his hands.
+  oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire', hunger: 'fire' }, attacks: {
+    crownsRoar: { impact: 'roar' }, firstHunger: { element: 'fire', impact: 'roar' }, groundBreaker: { impact: 'roar' }, kingsLeap: { impact: 'shatter' },
+    emberCleaver: { element: 'fire', impact: 'shatter' }, kingsHold: { impact: 'shatter', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar' } } },
 };

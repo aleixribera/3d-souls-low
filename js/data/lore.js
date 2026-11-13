@@ -296,5 +296,30 @@ const LORE = {
         { kind: 'corpse', pose: 'lying', x: 118, z: 2.4, yaw: 2.2 },   // the one at the stair's foot who stopped smiling
       ],
     },
+    // Chapter 11 (v7.46.0; LORE.md 10g): the same city, burning.
+    'aurel-in-ash': {
+      npcs: [{ x: 10, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'cinder-gate',
+        lines: [
+          'It is the same city. I know that street. I walked it yesterday, and it was gold.',
+          'The steward is dead, and the city would not be kept without him. So it burns.',
+          'There were people in those streets. They are still walking. Don\'t look at their faces.',
+          'The song says the first crown was laid under the throne with the king still wearing it. It never says what he waits for.',
+          'Corvel burned like this. I watched it from a castle window. You watch it as though you had seen it before.',
+          'Go on. I\'ll keep the fire. It is the only one here that is ours.',
+        ],
+        idle: 'The ash is warm. It is still falling.' }],
+      inscriptions: [
+        { id: 'l11-gate', x: 6, z: 3.2, yaw: -Math.PI / 2, mount: 'floor', label: 'Under the ash, in the gate\'s floor',
+          lines: ['"Aurel keeps. Aurel is kept."', 'Someone has written beneath it in soot: "What it cannot keep, it burns."'] },
+        { id: 'l11-yard', x: 96, z: -41.85, yaw: 0, mount: 'wall', label: 'On a lintel in the burnt yard',
+          lines: ['"Oswin, first of the crowned, sleeps beneath the throne until Thrale has need of him."'] },
+        { id: 'l11-throne', x: 189.85, y: 10, z: 17, yaw: -Math.PI / 2, mount: 'wall', label: 'On the throne court\'s wall',
+          lines: ['"Long live the king. Long live the king. Long live the king."'] },
+      ],
+      scenes: [
+        { kind: 'candle', x: 13, z: 3.8 }, { kind: 'corpse', pose: 'lying', x: 26, z: 3, yaw: 0.9 },
+        { kind: 'corpse', pose: 'seated', x: 52, z: -5.2, yaw: 0 }, { kind: 'candle', x: 97.5, z: -41.2 },
+      ],
+    },
   },
 };

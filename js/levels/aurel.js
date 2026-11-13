@@ -11,6 +11,7 @@
 //   court: the Regent Hollis.
 const LEVEL_10 = {
   id: 'aurel', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'aurel-in-ash',   // v7.46.0: on to the same city, burning (chapter 11)
   name: 'Level 10: Aurel, the Gilded City',
   description: 'Thrale\'s capital, still gold, and fed, and smiling. Down the avenue, through the fountain court, up the great stair and over the root out of the chasm, to the throne court where the Regent keeps the city.',
   help: 'Level 10: the citizens smile until you are close, and they carry knives. Archers hold the fountain court\'s north gallery. The great root over the chasm has no rail.',

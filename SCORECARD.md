@@ -38,6 +38,7 @@ Scored from each level's opening frame only (pass 1); a deeper look plays throug
 | 8. Saltgrave | 2 | Rough (v7.40.0): playable to the twin castellans on the tower roof in Story mode, both readable and front-lit at fighting distance, but the twins and Salt Knights wear re-coloured stand-in figures and the hall's kneeling statues read dark. | `docs/scorecard/salt-castellans.jpg`, `salt-statues.jpg`, `salt-gatehouse.jpg` |
 | 9. The Night Gaol | 2 | Rough (v7.42.0): playable to the Ringer of Thrale in the great ring in Story mode, the evergaol's star-hung cells kept, but the Ringer and the Keyless wear re-coloured stand-in figures, read small and dark on the blue floor, and show no chains. | `docs/scorecard/gaol-ringer.jpg`, `gaol-keyless.jpg`, `ringer-lab.jpg` |
 | 10. Aurel, the Gilded City | 2 | Rough (v7.44.0): playable to the Regent Hollis in the throne court in Story mode, the capital's avenue, court and root kept and front-lit gold, but the Regent and the Gilded Thralls wear re-coloured stand-in figures and the Regent reads thin for a boss. | `docs/scorecard/aurel-hollis.jpg`, `aurel-thrall.jpg`, `hollis-lab.jpg` |
+| 11. Aurel in Ash | 2 | Rough (v7.46.0): playable to Oswin in the throne in ash in Story mode, the burned capital's streets, fallen lane and cellars kept, embers underfoot; but Oswin and the Cinderfolk wear re-coloured stand-in figures and the streets are dark enough that a Cinderfolk reads mostly as a silhouette. | `docs/scorecard/ash-oswin.jpg`, `ash-cinderfolk.jpg`, `oswin-lab.jpg` |
 
 ## Bosses: with 1 and with 3 players
 

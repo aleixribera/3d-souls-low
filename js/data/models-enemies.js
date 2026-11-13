@@ -675,6 +675,23 @@ MODEL_DEFS.gildedThrall = {
   weapon: { use: 'curvedKnife', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
   eyes: { ...MODEL_DEFS.rogue.eyes, color: 0xffd890 },
 };
+// The Cinderfolk (Level 11, v7.46.0; LORE.md 10g): the Hollow Soldier's figure as a citizen of Aurel after the burning:
+// skin charred grey-black, clothes burned to the colour of ash, embers where the eyes were. A stand-in until its own
+// Blender figure.
+MODEL_DEFS.cinderfolk = {
+  extends: 'hollowSoldier',
+  materials: {
+    ...MODEL_DEFS.hollowSoldier.materials,
+    skin: { tex: 'rotSkin', tint: 0x6a625a, decay: 0.85 },
+    quilt: { tex: 'ashSoot', tint: 0x6a625c, decay: 0.8 },   // the gambeson burned to soot (a tint keeps a texture's brightness)
+    trousers: { tex: 'rottenCloth', tint: 0x3a3430, decay: 0.85 },
+    strap: { tex: 'crackedLeather', tint: 0x2a2420, decay: 0.85 },
+    iron: { tex: 'rustedIron', tint: 0x5a4a40, decay: 0.8, double: true },
+    blade: { tex: 'rustedIron', tint: 0x7a6658, decay: 0.75 },
+    eye: { glow: 0xff7a2a },
+  },
+  eyes: { color: 0xff7a2a, size: 0.012 },
+};
 // The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
 // over grey-green cloth. A stand-in until its own Blender figure.
 MODEL_DEFS.saltKnight = {

@@ -92,3 +92,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Morgott's, renamed, the conjured gilt weapons kept, fire for the second phase's blood: 3,400 HP (was 4,800); no one
   has fought him by hand yet. The "turning cut" is Morgott's tail swipe, a hit behind him with no tail to show it.
   The city has no smiles yet beyond the words: the thralls' gilt masks are the Rogue's.
+- Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: Oswin's and the Cinderfolk's own figures
+  (stand-ins: the Executioner in ash and old gold with its own axe, the Hollow Soldier charred). Oswin is Godfrey's
+  moves renamed, 3,800 HP (was 4,400); from 40 % only the axe is cast down (`conceal: ['weapon']`) and he burns, where
+  Godfrey also shed a lion and armour the stand-in doesn't have. The kit has no crown for him yet. No one has fought him
+  by hand. The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
+  chapter 10 burned (charred gilt, a dry fountain) so the two chapters read as one city.

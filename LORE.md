@@ -268,6 +268,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* Everything here is gilded. Even the bread, I think.
 
+### Level 11 — Aurel in Ash (inside the ash gate, by the first bonfire)
+1. It is the same city. I know that street. I walked it yesterday, and it was gold.
+2. The steward is dead, and the city would not be kept without him. So it burns.
+3. There were people in those streets. They are still walking. Don't look at their faces.
+4. The song says the first crown was laid under the throne with the king still wearing it. It never says what he waits for.
+5. Corvel burned like this. I watched it from a castle window. You watch it as though you had seen it before.
+6. Go on. I'll keep the fire. It is the only one here that is ours.
+
+*Idle:* The ash is warm. It is still falling.
+
 ---
 
 ## 7. Inscriptions
@@ -323,6 +333,13 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 - **On the fountain's step**: "In Aurel none go hungry."
 - **Over the throne gate** (by the last bonfire): "Hollis, steward of the crown, keeps the city until the king comes home."
 
+### Level 11 — Aurel in Ash
+- **Under the ash, in the gate's floor** (by the first bonfire): "Aurel keeps. Aurel is kept." Someone has written beneath
+  it in soot: "What it cannot keep, it burns."
+- **On a lintel in the burnt yard** (by the second bonfire): "Oswin, first of the crowned, sleeps beneath the throne
+  until Thrale has need of him."
+- **On the throne court's wall** (by the last bonfire): "Long live the king. Long live the king. Long live the king."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -352,8 +369,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 10,
-Aurel, the Gilded City) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 11,
+Aurel in Ash) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -431,6 +448,20 @@ gilt out of the air. Past the worst of his hurt, the gilt cracks and the hunger 
 The **Gilded Thralls** are Aurel's citizens: fed, smiling, gold leaf laid on their faces and hands, a knife in each.
 They smile until you are close.
 
+## 10g. Level 11 — Aurel in Ash (chapter 11 of the Story)
+Chapter 11, after Aurel. The steward is dead, and the city would not be kept without him; the hunger, refused, burns
+what it cannot keep. **Aurel in Ash** is the same city burning: grey and black, ash falling like snow, embers in the
+wind, the Ember's root charred where it arches up behind the plaza and the throne. Halfway down the market lane the
+burnt street gives way into the cellars, where the last of the city hid.
+
+Under the throne lay **Oswin, the First Crown**: the first king of Thrale the Ember ever wore, laid there with the crown
+still on him. He has risen to his throne in the ash. He fights with a great axe, and his stomps crack the floor. Past the
+worst of his hurt he casts the axe down, and the Ember takes his hands: he fights as the man he was before the crown,
+and the bar names him **Oswin, Uncrowned**.
+
+The **Cinderfolk** are Aurel's citizens after the burning: burned, and still walking. Some lie in the ash until you
+pass.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -460,6 +491,9 @@ They smile until you are close.
 | The place of Level 10 | Aurel, the Gilded City, Thrale's capital |
 | The boss of Level 10 | the Regent Hollis |
 | The enemy of Level 10 | the Gilded Thralls |
+| The place of Level 11 | Aurel in Ash, the same city burning |
+| The boss of Level 11 | Oswin, the First Crown; past 40 %: Oswin, Uncrowned |
+| The enemy of Level 11 | the Cinderfolk |
 
 ---
 ---

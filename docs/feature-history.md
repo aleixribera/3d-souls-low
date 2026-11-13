@@ -543,3 +543,12 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Posture: neck 0.9 -> 0.75, head -0.45 -> -0.95, so the skull's face looks down at the player instead of at the floor. `weapon.rest: 0.5` (the v7.43.0 field) lays the club's head on the floor in front of him. Eyes moved into the new sockets.
 - Deleted kit parts with no other user: `ribcage`, `skullFace` (`js/bodykit.js`), `longBone`, `boneHand`, `boneFoot`, `bonePelvis`, `boneNeck` (`js/kit-premium.js`).
 - Checks: the model lab, a frame in the Long Hall at fighting distance, the in-page `model`, `bosses`, `Giant`, `Ultra models` filters, the Node checks. Frames: `docs/scorecard/giant-lab.jpg`, `giant-hall.jpg`.
+
+## Chapter 11, Aurel in Ash, rough (v7.46.0, stage 3 track A item 2)
+- `STORY.md` chapter 11 built rough: playable from its loading line to its boss in Story mode and the Levels menu (after Aurel, `LEVEL_10.next`). Level 11 (`js/levels/aurel-in-ash.js`) is the burned capital's layout kept (the ash street, the market lane that gives way into the cellars, the burnt yard, the cinder avenue, the ruined plaza, the throne in ash), every name of the old road gone, the burnt great tree replaced by two charred arches of the Ember's root (`realm.roots`).
+- Oswin, the First Crown (`js/data/bosses/oswin.js`): Godfrey's whole moveset deep-copied and renamed through one table, four phases (`crowned`, `roaring` at 78 %, `uncrowned` at 40 %, `hunger` at 20 %). Where Godfrey shed the lion and armour, Oswin casts down the axe only (`conceal: ['weapon']`) and burns (`ignite`); the bar reads "Oswin, Uncrowned". 3,800 HP (Godfrey 4,400), `BOSS_FX.oswin`.
+- The Cinderfolk (`js/data/enemies.js`): the Hollow Soldier's moves renamed, 130 HP, poise 60, slower (2.3); several lie in the ash (`behavior: 'slumber'`) until the player passes. The cellar holds Gilded Thralls and an Empty Sentinel, the plaza an elite Executioner.
+- Stand-in figures (`MODEL_DEFS.oswinFirstCrown` in the boss file, `MODEL_DEFS.cinderfolk`): the Executioner's Blender body in ash and old gold with a white mane and its own axe; the Hollow Soldier's charred, ember eyes.
+- Lore: `LORE.md` 6, 7, 9, 10g, 11; Ysolde's six lines, three inscriptions (`js/data/lore.js`); the guidance routes (the burned capital's, renamed). The old road's Ashen Capital is untouched.
+- Tests: `tests/suite-aurel-in-ash.js` (5), the Story order, the Regent going on to chapter 11, Oswin closing the road, lighting count 19.
+- Not yet: Oswin's and the Cinderfolk's own Blender figures, Finn (`BACKLOG.md`).

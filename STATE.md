@@ -4,10 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 20 shipped `PLAN.md` stage 3 track B item 2's Giant Skeleton in Blender (pass 1 of it) and released v7.45.0.
-Check met: the lab sheet `docs/scorecard/giant-lab.jpg` and the Long Hall frame, front-lit at fighting distance,
-`giant-hall.jpg`. The skull now looks at the player (posture) and the club rests on the floor (`weapon.rest`). Pass 19's
-CI was still running at this commit (its container passed). Next: track A, chapter 11 (Aurel in Ash); then track B, Aldric (both phases).
+Pass 21 shipped `PLAN.md` stage 3 track A item 2's chapter 11, Aurel in Ash (pass 1 of it, rough), and released
+v7.46.0. Check met: Story mode goes from the Regent to chapter 11 and Oswin closes the road (in-page `Aurel in Ash`,
+`Story`); frames `docs/scorecard/ash-oswin.jpg` (front-lit at fighting distance), `ash-cinderfolk.jpg`, `oswin-lab.jpg`,
+`cinderfolk-lab.jpg`. Pass 20's CI and container were green. Next: track B, Aldric (both phases); then track A,
+chapter 12 (the Torn Abbey).
 
 ## Works
 
@@ -26,36 +27,35 @@ CI was still running at this commit (its container passed). Next: track A, chapt
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`).
-- Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
-  `grouped` and `isAreaAttack` in `js/enemy.js`; checked by `tests/boss-attention.cjs` (seeded bot fights through
-  `createSimulation({ seed })`), frames `docs/scorecard/boss-attention-1..3.jpg`, `boss-attention.txt`.
-- The Calling, its blessings and its end screen (v7.35.0): `C.calling`, `calling()` / `randomRoster()`, `offerBlessings`
-  / `bless` / `rise`, `noteDeath` / `fightTally` (`server/simulation.js`), `tally` / `runSummary` (`server/index.cjs`),
-  `BLESSINGS` (`js/data/blessings.js`), `#blessingScreen` / `#runSummary` (`js/multiplayer.js`); checked by
-  `tests/calling.cjs`, `tests/blessings.cjs`, `tests/calling-browser.cjs` (frames `docs/scorecard/calling-*`,
-  `blessing-*`, `summary-*.jpg`).
+- Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
+  (`js/enemy.js`); checked by `tests/boss-attention.cjs`, frames `docs/scorecard/boss-attention-1..3.jpg`.
+- The Calling, its blessings and its end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
+  (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
+  `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
   `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
   default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
 - Chapter 7, the Windward Moor (v7.38.0, rough): `js/levels/windward-moor.js`, Old Ostrey (`js/data/bosses/ostrey.js`),
-  `lanternThrall` / `lanternBearer`; in-page `Moor` (6). Second step in `BACKLOG.md`.
+  `lanternThrall` / `lanternBearer`; in-page `Moor` (6). Chapters' second steps are in `BACKLOG.md`.
 - Chapter 8, Saltgrave (v7.40.0, rough): `js/levels/saltgrave.js` (Stormveil's layout), Hale and Harrow
   (`js/data/bosses/castellans.js`, Godrick's moves split and renamed), the opt-in `alone` phase (`checkPhaseAt`; `kin`
   from `Game.spawnZone` and Arena groups; no kin = alone at once), `saltKnight`, statue `of`/`pose: 'kneel'`
   (`js/lore.js`). In-page `Saltgrave` (9), `Story` (24), `Guiding light`; frames by `.scratch/salt-frames.cjs`.
 - Chapter 9, the Night Gaol (v7.42.0, rough): `js/levels/night-gaol.js`, the Ringer (`js/data/bosses/ringer.js`, the
   Crucible Knight's moves renamed), `keyless`; kit weapon `size`. In-page `Night Gaol` (7).
-- Chapter 10, Aurel (v7.44.0, rough): `js/levels/aurel.js` (the capital's layout), the Regent Hollis
-  (`js/data/bosses/hollis.js`, Morgott's moves renamed, fire in phase 2), `gildedThrall`. In-page `Aurel` (5).
+- Chapter 10, Aurel (v7.44.0, rough): `js/levels/aurel.js`, the Regent Hollis (`js/data/bosses/hollis.js`, Morgott's
+  moves renamed), `gildedThrall`. In-page `Aurel` (5).
+- Chapter 11, Aurel in Ash (v7.46.0, rough): `js/levels/aurel-in-ash.js` (the burned capital's layout), Oswin
+  (`js/data/bosses/oswin.js`, Godfrey's moves renamed), `cinderfolk`. In-page
+  `Aurel in Ash` (5). A material's `tint` sets hue only (`js/textures.js` normalises it): darken with another texture.
 - CI: Node checks and four browser shards on every push.
-- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
-  `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
+- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`, and
+  `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss, headless, about a minute).
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
   CLIP=x,y,w,h`, `EVAL=<js>`), `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>` (`HIDEP=1`, `YAWOFF=0.15`,
-  `WAIT=ms`; pick a spot with floor in front of a raised enemy), `lab-probe.cjs <id>` (`TRY=`, `TEX=1`, `NOSHADOW=1`),
-  `normals-probe.cjs`, `salt-frames.cjs`.
+  `WAIT=ms`), `lab-probe.cjs <id>`, `solo-multi.cjs "<filter>" "<filter>" ...` (several in-page filters, one browser).
 
 ## Broken
 
@@ -63,8 +63,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 19's and pass 20's pushes and the v7.45.0 container: check in pass 21. Pass 20 locally: Node, in-page `model`, `bosses`,
-`Giant`, `Ultra models`, `Changelog`.
+CI on pass 21's push and the v7.46.0 container: check in pass 22. Pass 21 locally: Node 22/22, in-page `Aurel`,
+`Story`, `Guiding light`, `Lore`, `Changelog`, `model`, `bosses`, `Ultra models`, `valid`.
 
 ## wip/ branches
 
@@ -83,7 +83,7 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapters 10-14 exist, Story mode ends after Aurel on THE ROAD GOES ON (`STORY.goesOn`), and
+- (overridable) Until chapters 12-14 exist, Story mode ends after Aurel in Ash on THE ROAD GOES ON (`STORY.goesOn`), and
   the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
@@ -92,7 +92,8 @@ In `BACKLOG.md`.
   the moor grants 6 flasks, as Stormhill did.
 - (overridable) Chapter 8's words are the loop's: Ysolde's lines, the three inscriptions, the castellans' split-armour
   story and names (`LORE.md` 6, 7, 10d). Hale and Harrow have 1,700 HP each and Godrick's damage x0.85.
-- (overridable) Chapter 9's words are the loop's: Ysolde's lines, the three inscriptions, the Ringer's story and her
-  knell, the Keyless (`LORE.md` 6, 7, 10, 10e). The Ringer swings a bell on a haft and has 3,000 HP.
-- (overridable) Chapter 10's words are the loop's: Ysolde's lines, the three inscriptions, the Regent's story (left by
-  the hunger to keep Aurel fed; gilt weapons; the hunger shows at 60 %) (`LORE.md` 6, 7, 10f). 3,400 HP.
+- (overridable) Chapters 9 and 10's words are the loop's: Ysolde's lines, the inscriptions, the Ringer's story and
+  knell, the Keyless, the Regent's story (`LORE.md` 6, 7, 10e, 10f). The Ringer 3,000 HP, the Regent 3,400.
+- (overridable) Chapter 11's words are the loop's: Ysolde's lines (one hints she saw Corvel burn from the castle), the
+  three inscriptions (Oswin laid under the throne still crowned; "Long live the king" three times), the bar's second
+  name "Oswin, Uncrowned" (`LORE.md` 6, 7, 10g). Oswin has 3,800 HP.
