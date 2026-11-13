@@ -26,7 +26,10 @@ side by side, and each should feel like the main event.
   sheet.
 - **Boss Rush**, with friends, the lobby's default. It has to play well and be fun and challenging. An endless run of
   bosses: the first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
-  fight, their modifiers shown on screen. Between fights, blessings: common ones are small; rare ones are exciting (skills,
+  fight, their modifiers shown on screen. Difficulty grows exponentially with the fights won, but subtly: fairly easy
+  at first, slowly more challenging for a good while, until it becomes genuinely impossible. It depends only on how
+  far the run has got, never on team size: no enemy or boss gets stronger because more players (or newer players)
+  joined. Between fights, blessings: common ones are small; rare ones are exciting (skills,
   passives, things that change the fight, maybe a companion). Playing earns levels; each level gives a crate, opened
   on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
   Collection page shows what you own. No money and no shop: menus are not where the game is played.

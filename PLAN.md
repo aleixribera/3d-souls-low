@@ -18,7 +18,8 @@ Aleix, 2026-11-13.
 ## Answers to "Needs Aleix"
 
 - The Calling is renamed **Boss Rush** (track B, item 1).
-- Group scaling: health and posture stay as they are (his boss-health complaint is withdrawn).
+- Group scaling goes (Aleix, 2026-11-13, replacing his earlier "keep it"): no enemy or boss scales with team size,
+  anywhere. Boss Rush difficulty scales with fights won instead (track B, item 2).
 - The five blessings: overhauled (track B, item 3).
 - End-screen titles: plain English, the loop's wording.
 - Chapters 6-14's words: the loop's draft stands. Story text is a draft the loop may rewrite.
@@ -90,10 +91,14 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    several, or two teams against each other) or any level, and be fighting in seconds. Check: frames of the title,
    the lobby option and Practice at desktop and phone width; a test starts each mode.
 2. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
-   can come. Each fight is harder than the last, from one `CONFIG` rule;
+   can come. Each fight is harder than the last, from one `CONFIG` rule: exponential in fights won but subtle, fairly
+   easy at first, slowly more challenging for a good while, then genuinely impossible. The team-size multipliers
+   (`CONFIG.group`, `setGroup`, the server's per-tick scaling) are removed for every enemy and boss in every mode; a
+   group of four meets the same boss a solo player does. Bosses still spread their attention over the group
+   (`CONFIG.aggro`);
    modifiers appear after the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss)
    and are shown by name under the boss's bar; every few fights two bosses come at once. The end screen shows bosses
-   beaten. Check: a test of fight 1, 5, 10 and 20's numbers; a frame of a modifier on screen.
+   beaten. Check: a test of fight 1, 5, 10, 20 and 40's numbers (the curve), a test that 1 and 4 players face the same boss, and a frame of a modifier on screen.
 3. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
    change the fight, perhaps a companion. Rarity is shown. Check: the odds in a test; each rare one seen working in a
    fight.
