@@ -1,8 +1,8 @@
 'use strict';
-// Boss Rush's blessings (v7.70.0, js/blessings.js, js/data/blessings.js): kits and levels, each common, rare and
+// Boss Rush's abilities (v7.70.0, js/abilities.js, js/data/abilities.js): kits and levels, each common, rare and
 // legendary measured on real bodies and the boss in the headless simulation, the offers' draw (rarity, last levels,
 // a teammate's legendary, a swift kill's extra card), then the server end to end: the pick between fights, a refused
-// pick, the wait for everyone, a bot's own pick, the blessings carried to the next fight, the server's damage and
+// pick, the wait for everyone, a bot's own pick, the abilities carried to the next fight, the server's damage and
 // health limits, the claims it checks (a jump heavy landing, a perfect dodge, a low bar) and the pick that runs out.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -15,14 +15,14 @@ const near = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6 * Math.max(1, Math
 // The simulation's own globals (Player, CONFIG, parryTiming...): a function made by its realm's Function constructor.
 const realm = sim => name => sim.inspect().Game.update.constructor('return ' + name)();
 
-// ---- 1. Kits, levels and each blessing on a body -------------------------------------------------------------------
+// ---- 1. Kits, levels and each ability on a body -------------------------------------------------------------------
 {
   const sim = createSimulation({ seed: 5 }), g = realm(sim);
   sim.addBot(); sim.start('arena', 'ostrey');
-  const Player = g('Player'), PLAYER_DEF = g('PLAYER_DEF'), CONFIG = g('CONFIG'), ES = g('ES'), BY = g('BLESSING_BY_ID');
-  const kitOf = g('blessingKit'), strikeWith = g('blessingStrike'), perkState = g('blessingPerkState');
+  const Player = g('Player'), PLAYER_DEF = g('PLAYER_DEF'), CONFIG = g('CONFIG'), ES = g('ES'), BY = g('ABILITY_BY_ID');
+  const kitOf = g('abilityKit'), strikeWith = g('abilityStrike'), perkState = g('abilityPerkState');
   const hands = [...sim.inspect().bots.values()][0].body.ctl, S = PLAYER_DEF.stats;
-  const body = ids => { const p = new Player(PLAYER_DEF, 0, 0, 0, 0); p.ctl = hands; p.bless(ids); return p; };
+  const body = ids => { const p = new Player(PLAYER_DEF, 0, 0, 0, 0); p.ctl = hands; p.grantAbilities(ids); return p; };
   const at = (id, level) => BY[id].levels[level - 1];
 
   // Levels: an id held twice is its second level, and never more than its last.
@@ -40,7 +40,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   near(refill(['quick-breath']) / refill([]), 1 + at('quick-breath', 1).staminaRegen, 'Quick Breath refill');
   near(body(['quick-draught']).drinkRate(), 1 + at('quick-draught', 1).flaskSpeed, 'Quick Draught');
 
-  // Keen Eye: a press too early for a plain body parries with the blessing.
+  // Keen Eye: a press too early for a plain body parries with the ability.
   const e = sim.inspect().Game.enemies[0], parryable = e.def.attacks.find(a => g('canParryAttack')(a));
   const early = ids => {
     const p = body(ids); p.x = e.x; p.z = e.z + e.radius + 0.6; p.yaw = Math.PI;   // facing the boss, inside its reach
@@ -68,26 +68,26 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
 
   // Vengeance: hurt, the next blow within its window is stronger, once. Patience: unhurt long enough, the next blow double.
   const vk = kitOf(['vengeance']), vs = perkState();
-  g('blessingHurt')(vk, vs);
+  g('abilityHurt')(vk, vs);
   const venge = strikeWith(vk, vs, e, base);
   near(venge.damage, base.damage * (1 + at('vengeance', 1).damage), 'Vengeance'); assert.equal(venge.empowered, true);
   assert.equal(strikeWith(vk, vs, e, base), base, 'Vengeance is spent');
-  g('blessingHurt')(vk, vs); g('blessingClocks')(vs, at('vengeance', 1).window + 0.1);
+  g('abilityHurt')(vk, vs); g('abilityClocks')(vs, at('vengeance', 1).window + 0.1);
   assert.equal(strikeWith(vk, vs, e, base), base, 'Vengeance runs out');
   const pk = kitOf(['patience']), ps = perkState();
-  g('blessingClocks')(ps, at('patience', 1).after - 0.5); assert.equal(strikeWith(pk, ps, e, base), base, 'Patience: not yet');
-  g('blessingClocks')(ps, 0.6); near(strikeWith(pk, ps, e, base).damage, base.damage * 2, 'Patience');
+  g('abilityClocks')(ps, at('patience', 1).after - 0.5); assert.equal(strikeWith(pk, ps, e, base), base, 'Patience: not yet');
+  g('abilityClocks')(ps, 0.6); near(strikeWith(pk, ps, e, base).damage, base.damage * 2, 'Patience');
   assert.equal(strikeWith(pk, ps, e, base), base, 'Patience starts over');
 
   // Bloodthirst: `hits` landed blows without being hurt heal; a hurt starts the count over.
   const thirsty = body(['bloodthirst']), v = at('bloodthirst', 1);
   thirsty.hp = thirsty.lastHp = 50;
-  for (let i = 0; i < v.hits - 1; i++) g('blessingLanded')(thirsty, base);
+  for (let i = 0; i < v.hits - 1; i++) g('abilityLanded')(thirsty, base);
   assert.equal(thirsty.hp, 50, 'not yet');
-  g('blessingLanded')(thirsty, base); near(thirsty.hp, 50 + thirsty.maxHp * v.heal, 'Bloodthirst heals');
-  for (let i = 0; i < v.hits - 1; i++) g('blessingLanded')(thirsty, base);
-  thirsty.hp -= 10; thirsty.update(CONFIG.step, { x: 0, z: 0, has: false }, [], null);   // hurt: blessingStep notices
-  const before = thirsty.hp; g('blessingLanded')(thirsty, base);
+  g('abilityLanded')(thirsty, base); near(thirsty.hp, 50 + thirsty.maxHp * v.heal, 'Bloodthirst heals');
+  for (let i = 0; i < v.hits - 1; i++) g('abilityLanded')(thirsty, base);
+  thirsty.hp -= 10; thirsty.update(CONFIG.step, { x: 0, z: 0, has: false }, [], null);   // hurt: abilityStep notices
+  const before = thirsty.hp; g('abilityLanded')(thirsty, base);
   assert.ok(thirsty.hp <= before + 1e-9, 'a hurt starts the count over');
 
   // Last Breath: low, a roll costs nothing. Light Step: a cheaper roll.
@@ -101,11 +101,11 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
 {
   const sim = createSimulation({ seed: 9 }), g = realm(sim);
   sim.start('arena', 'ostrey');
-  const Player = g('Player'), PLAYER_DEF = g('PLAYER_DEF'), BY = g('BLESSING_BY_ID'), kitOf = g('blessingKit'), powers = g('blessingPowers');
+  const Player = g('Player'), PLAYER_DEF = g('PLAYER_DEF'), BY = g('ABILITY_BY_ID'), kitOf = g('abilityKit'), powers = g('abilityPowers');
   const e = sim.inspect().Game.enemies[0], fired = [];
-  g('events').on('blessingPower', ev => fired.push(ev));
+  g('events').on('abilityPower', ev => fired.push(ev));
   powers.reset();
-  const holder = ids => { const p = new Player(PLAYER_DEF, e.x, e.z + e.radius + 1, Math.PI, e.y); p.bless(ids); return p; };
+  const holder = ids => { const p = new Player(PLAYER_DEF, e.x, e.z + e.radius + 1, Math.PI, e.y); p.grantAbilities(ids); return p; };
   const fresh = () => { e.hp = e.def.hp; e.posture = 0; e.frozen = 0; fired.length = 0; };
   const step = s => { for (let t = 0; t < s - 1e-9; t += 1 / 60) powers.tick(1 / 60); };
 
@@ -146,39 +146,62 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.trigger('o', moon, moon.kit, 'low', {}); assert.equal(moon.perk.moon, 0, 'not while healthy');
   moon.hp = moon.lastHp = moon.maxHp * ov.below * 0.9;
   powers.trigger('o', moon, moon.kit, 'low', {}); near(moon.perk.moon, ov.time, 'the moon rises');
-  const base = g('makeStrike')(Object.values(PLAYER_DEF.moveset.attacks)[0], false, 0), struck = g('blessingStrike')(moon.kit, moon.perk, e, base);
+  const base = g('makeStrike')(Object.values(PLAYER_DEF.moveset.attacks)[0], false, 0), struck = g('abilityStrike')(moon.kit, moon.perk, e, base);
   near(struck.damage, base.damage * (1 + ov.damage), 'Blood Moon damage');
-  const low = moon.hp; g('blessingLanded')(moon, struck); near(moon.hp, low + struck.damage * ov.drain, 'Blood Moon drink');
+  const low = moon.hp; g('abilityLanded')(moon, struck); near(moon.hp, low + struck.damage * ov.drain, 'Blood Moon drink');
   moon.perk.moon = 0; powers.trigger('o', moon, moon.kit, 'low', {}); assert.equal(moon.perk.moon, 0, 'once a fight');
   moon.hp = low; powers.reset(); powers.trigger('o', moon, moon.kit, 'low', {}); assert.ok(moon.perk.moon > 0, 'a new fight');
 }
 
 // ---- 3. The offers -------------------------------------------------------------------------------------------------
 {
-  const sim = createSimulation({ seed: 11 }), g = realm(sim), BY = g('BLESSING_BY_ID'), B = g('CONFIG').blessings;
+  const sim = createSimulation({ seed: 11 }), g = realm(sim), BY = g('ABILITY_BY_ID'), B = g('CONFIG').abilities;
   const rarity = {};
   for (let round = 0; round < 300; round++) {
     if (round % 30 === 0) {   // a new run: the teammate takes a legendary first
       sim.start('arena', 'ostrey');
-      while (!sim.blessings().mate?.some(id => BY[id].rarity === 'legendary')) {
-        sim.offerBlessings(['mate'], false, 1); const o = sim.blessingOffer('mate');
-        sim.bless('mate', o.find(id => BY[id].rarity === 'legendary') || o[0]);
+      while (!sim.abilities().mate?.some(id => BY[id].rarity === 'legendary')) {
+        sim.offerAbilities(['mate'], false, 1); const o = sim.abilityOffer('mate');
+        sim.pickAbility('mate', o.find(id => BY[id].rarity === 'legendary') || o[0]);
       }
     }
-    sim.offerBlessings(['me'], false, round % 2, round % 8);
-    const offer = sim.blessingOffer('me'), held = sim.blessings().me || [];
+    sim.offerAbilities(['me'], false, round % 2, round % 8);
+    const offer = sim.abilityOffer('me'), held = sim.abilities().me || [];
     assert.equal(offer.length, B.offer + round % 2, 'three cards, four after a swift kill');
     assert.equal(new Set(offer).size, offer.length, 'no card twice');
     if (round % 2) assert.notEqual(BY[offer.at(-1)].rarity, 'common', "a swift kill's extra card is never common");
     for (const id of offer) {
       assert.ok(held.filter(h => h === id).length < BY[id].levels.length, 'never past its last level');
-      assert.ok(!(BY[id].rarity === 'legendary' && sim.blessings().mate.includes(id)), "never a teammate's legendary");
+      assert.ok(!(BY[id].rarity === 'legendary' && sim.abilities().mate.includes(id)), "never a teammate's legendary");
       rarity[BY[id].rarity] = (rarity[BY[id].rarity] || 0) + 1;
     }
-    sim.bless('me', offer[round % offer.length]);
+    sim.pickAbility('me', offer[round % offer.length]);
   }
   assert.ok(rarity.common > rarity.rare && rarity.rare > rarity.legendary && rarity.legendary > 0, `the odds: ${JSON.stringify(rarity)}`);
-  assert.equal(sim.bless('me', 'keen-edge'), false, 'no offer open');
+  assert.equal(sim.pickAbility('me', 'keen-edge'), false, 'no offer open');
+
+  // A legendary on a teammate's open offer is not offered too, nor taken once a teammate holds it.
+  sim.start('arena', 'ostrey');
+  let shared = null;
+  for (let i = 0; i < 400 && !shared; i++) {
+    sim.offerAbilities(['mate'], false, 1, 40); shared = sim.abilityOffer('mate').find(id => BY[id].rarity === 'legendary') || null;
+    if (!shared) sim.pickAbility('mate', sim.abilityOffer('mate')[0]);
+  }
+  assert.ok(shared, 'a legendary offered');
+  for (let i = 0; i < 40; i++) { sim.offerAbilities(['me'], false, 1, 40); assert.ok(!sim.abilityOffer('me').includes(shared), "never a legendary on a teammate's offer"); sim.pickAbility('me', sim.abilityOffer('me')[0]); }
+
+  // Vengeance on the server: a fight's first pose is no wound.
+  sim.start('arena', 'ostrey');
+  for (let i = 0; i < 400 && !(sim.abilities().me || []).includes('vengeance'); i++) {
+    sim.offerAbilities(['me'], false, 1, 8); const o = sim.abilityOffer('me'); sim.pickAbility('me', o.includes('vengeance') ? 'vengeance' : o[0]);
+  }
+  assert.ok(sim.abilities().me.includes('vengeance'), 'Vengeance taken');
+  const R = sim.inspect(), full = sim.maxHpOf('me');
+  sim.setPlayers([{ id: 'me', x: 0, y: 0, z: 0, yaw: 0, hp: full, state: 'idle', poseAge: 0 }]);
+  sim.notePose('me', full);
+  assert.equal(R.holderOf('me').perk.vengeance, 0, 'no free Vengeance at the start of a fight');
+  sim.notePose('me', full - 10);
+  assert.ok(R.holderOf('me').perk.vengeance > 0, 'a real wound wakes it');
 }
 
 // ---- 4. Through the server -----------------------------------------------------------------------------------------
@@ -198,7 +221,7 @@ async function peer(origin, name) {
   return { ws, send, next, queue, id: (await next('welcome')).id };
 }
 (async () => {
-  const app = createServer(), peers = [], g = realm(app.sim), B = g('CONFIG').blessings, BY = g('BLESSING_BY_ID'), S = g('PLAYER_DEF').stats;
+  const app = createServer(), peers = [], g = realm(app.sim), B = g('CONFIG').abilities, BY = g('ABILITY_BY_ID'), S = g('PLAYER_DEF').stats;
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   let session;
@@ -209,16 +232,16 @@ async function peer(origin, name) {
     for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
     app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
   };
-  // Each player's offer is set to known blessings (the draw itself is covered above).
-  const forced = new Map(), offer = app.sim.offerBlessings;
-  app.sim.offerBlessings = (...args) => { offer(...args); for (const [id, list] of forced) { const o = app.sim.blessingOffer(id); if (o) o.splice(0, o.length, ...list); } };
+  // Each player's offer is set to known abilities (the draw itself is covered above).
+  const forced = new Map(), offer = app.sim.offerAbilities;
+  app.sim.offerAbilities = (...args) => { offer(...args); for (const [id, list] of forced) { const o = app.sim.abilityOffer(id); if (o) o.splice(0, o.length, ...list); } };
   try {
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Ember'); peers.push(a, b);
     const owner = [a, b].find(p => p.id === app.leader);
     const bosses = app.sim.catalog().bosses.map(e => e.id), roster = [bosses[0], bosses[3], bosses[5], bosses[7]];
     owner.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster });
     session = (await a.next('start')).session; await b.next('start');
-    assert.deepEqual(session.blessings, {}, 'a run starts with no blessings');
+    assert.deepEqual(session.abilities, {}, 'a run starts with no abilities');
     const bot = app.sim.botList()[0].id;
     for (const p of [a, b]) { p.send({ type: 'ready', epoch: session.epoch }); pose(p); }
     await flush(a); await flush(b);
@@ -226,23 +249,23 @@ async function peer(origin, name) {
     // Round one: a stranger's id and a wrong one are refused; one pick a round; the fight waits for both.
     forced.set(a.id, ['keen-edge', 'iron-blood', 'meteor-fall']); forced.set(b.id, ['quick-breath', 'blood-moon', 'time-rift']);
     finishFight();
-    const offerA = await a.next('blessings'); await b.next('blessings');
+    const offerA = await a.next('abilities'); await b.next('abilities');
     assert.deepEqual(offerA.offer, forced.get(a.id)); assert.deepEqual(offerA.held, []);
     assert.ok(offerA.left > B.pickTime - 1 && offerA.left <= B.pickTime, 'the time left to choose');
-    assert.equal(app.sim.blessings()[bot].length, 1, 'the bot chose at once');
-    a.send({ type: 'bless', epoch: session.epoch, id: 'blood-moon' }); a.send({ type: 'bless', epoch: session.epoch, id: 'nothing' }); await flush(a);
-    assert.equal(a.queue.some(m => m.type === 'blessings'), false, 'a blessing outside the offer is refused');
-    a.send({ type: 'bless', epoch: session.epoch, id: 'keen-edge' });
-    assert.deepEqual((await a.next('blessings')).held, ['keen-edge']);
-    a.send({ type: 'bless', epoch: session.epoch, id: 'iron-blood' }); await flush(a); await wait(200);
-    assert.deepEqual([...app.sim.blessings()[a.id]], ['keen-edge'], 'one pick a round');
+    assert.equal(app.sim.abilities()[bot].length, 1, 'the bot chose at once');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: 'blood-moon' }); a.send({ type: 'pickAbility', epoch: session.epoch, id: 'nothing' }); await flush(a);
+    assert.equal(a.queue.some(m => m.type === 'abilities'), false, 'an ability outside the offer is refused');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: 'keen-edge' });
+    assert.deepEqual((await a.next('abilities')).held, ['keen-edge']);
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: 'iron-blood' }); await flush(a); await wait(200);
+    assert.deepEqual([...app.sim.abilities()[a.id]], ['keen-edge'], 'one pick a round');
     assert.equal(app.session.gauntlet.number, 1, 'the next fight waits for everyone');
-    b.send({ type: 'bless', epoch: session.epoch, id: 'blood-moon' });
+    b.send({ type: 'pickAbility', epoch: session.epoch, id: 'blood-moon' });
     session = (await a.next('start')).session; await b.next('start');
     assert.equal(session.gauntlet.number, 2);
-    assert.deepEqual(session.blessings[a.id], ['keen-edge']); assert.deepEqual(session.blessings[b.id], ['blood-moon']);
-    assert.equal(session.blessings[bot].length, 1, 'every body of the run, the bot included');
-    assert.equal(app.sim.inspect().bots.get(bot).body.kit.ids.length, 1, "the bot's new body holds its blessing");
+    assert.deepEqual(session.abilities[a.id], ['keen-edge']); assert.deepEqual(session.abilities[b.id], ['blood-moon']);
+    assert.equal(session.abilities[bot].length, 1, 'every body of the run, the bot included');
+    assert.equal(app.sim.inspect().bots.get(bot).body.kit.ids.length, 1, "the bot's new body holds its ability");
     for (const p of [a, b]) { p.send({ type: 'ready', epoch: session.epoch }); pose(p); }
     await flush(a); await flush(b);
 
@@ -259,24 +282,30 @@ async function peer(origin, name) {
     // Blood Moon claimed: refused while b is healthy, granted once low, then never again this fight.
     const claim = (id, msg, hp) => {
       app.sim.setPlayers([{ ...session.spawn, id, x: boss.x, z: boss.z + boss.radius + 0.5, y: boss.y, yaw: Math.PI, hp, state: 'idle', poseAge: 0, ...msg.pose }]);
-      app.sim.frame(true); app.sim.blessingClaim(id, msg);
-      return app.sim.frame(true).events.filter(ev => ev.type === 'blessingPower');
+      app.sim.frame(true); app.sim.abilityClaim(id, msg);
+      return app.sim.frame(true).events.filter(ev => ev.type === 'abilityPower');
     };
     assert.equal(claim(b.id, { when: 'low' }, S.maxHp).length, 0, 'a healthy body has no Blood Moon');
     assert.equal(claim(a.id, { when: 'low' }, 1).length, 0, 'nor one without it');
     const moon = claim(b.id, { when: 'low' }, 1);
     assert.equal(moon.length, 1); assert.equal(moon[0].power, 'blood-moon'); assert.equal(moon[0].holder, b.id);
     assert.equal(claim(b.id, { when: 'low' }, 1).length, 0, 'once a fight');
+    // A claim that comes ahead of the pose showing it waits a moment for that pose.
+    app.sim.inspect().abilityPowers.reset();
+    assert.equal(claim(b.id, { when: 'low' }, S.maxHp).length, 0, 'not low yet');
+    app.sim.setPlayers([{ ...session.spawn, id: b.id, x: boss.x, z: boss.z + boss.radius + 0.5, y: boss.y, yaw: Math.PI, hp: 1, state: 'idle', poseAge: 0 }]);
+    app.sim.tick(1 / 60);
+    assert.equal(app.sim.frame(true).events.filter(ev => ev.type === 'abilityPower').length, 1, 'the late pose lets the claim through');
 
     // Round two: a takes Meteor Fall (a legendary a teammate holds is never offered); b lets the time run out.
     forced.set(a.id, ['meteor-fall', 'iron-blood', 'time-rift']); forced.set(b.id, ['iron-blood', 'keen-edge', 'quick-breath']);
-    app.sim.blessingPickTime = 0.5;
+    app.sim.abilityPickTime = 0.5;
     finishFight();
-    await a.next('blessings'); await b.next('blessings');
-    a.send({ type: 'bless', epoch: session.epoch, id: 'meteor-fall' });
+    await a.next('abilities'); await b.next('abilities');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: 'meteor-fall' });
     session = (await a.next('start')).session; await b.next('start');
-    assert.deepEqual(session.blessings[a.id], ['keen-edge', 'meteor-fall']);
-    assert.deepEqual(session.blessings[b.id], ['blood-moon', 'iron-blood'], 'out of time: the first offered');
+    assert.deepEqual(session.abilities[a.id], ['keen-edge', 'meteor-fall']);
+    assert.deepEqual(session.abilities[b.id], ['blood-moon', 'iron-blood'], 'out of time: the first offered');
     for (const p of [a, b]) { p.send({ type: 'ready', epoch: session.epoch }); pose(p); }
     await flush(a); await flush(b);
 
@@ -292,16 +321,27 @@ async function peer(origin, name) {
     assert.equal(claim(a.id, { when: 'land', action: 'light', pose: { state: 'land', attack: 'jumpLight' } }, S.maxHp).length, 0, 'a jump light is no meteor');
     pose(a, { x: boss2.x, z: boss2.z + boss2.radius + 0.5, y: boss2.y, state: 'land', attack: 'jumpHeavy' }); await flush(a);
     boss2.hp = boss2.def.hp;
-    a.send({ type: 'blessing', epoch: session.epoch, when: 'land', action: 'heavy', seq: 1 }); await flush(a);
+    a.send({ type: 'ability', epoch: session.epoch, when: 'land', action: 'heavy', seq: 1 }); await flush(a);
     assert.ok(boss2.hp < boss2.def.hp, 'the meteor lands on the boss');
     const after = boss2.hp;
-    a.send({ type: 'blessing', epoch: session.epoch, when: 'land', action: 'heavy', seq: 2 }); await flush(a);
+    a.send({ type: 'ability', epoch: session.epoch, when: 'land', action: 'heavy', seq: 2 }); await flush(a);
     assert.equal(boss2.hp, after, 'cooling down');
 
     // Time Rift needs a blow that was really out near the dodger: a made-up one is refused.
-    forced.set(b.id, ['time-rift']); app.sim.offerBlessings([b.id], false); assert.equal(app.sim.bless(b.id, 'time-rift'), true);
+    forced.set(b.id, ['time-rift']); app.sim.offerAbilities([b.id], false); assert.equal(app.sim.pickAbility(b.id, 'time-rift'), true);
     app.sim.setPlayers([{ ...session.spawn, id: b.id, x: boss2.x, z: boss2.z + boss2.radius + 0.5, y: boss2.y, yaw: Math.PI, hp: S.maxHp, state: 'roll', poseAge: 0 }]);
-    assert.equal(app.sim.blessingClaim(b.id, { when: 'dodge', enemy: boss2.netId, serial: 999999 }), false, 'no such blow');
-    console.log('BLESSINGS: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon and Meteor Fall claims, the timed-out pick passed.');
+    assert.equal(app.sim.abilityClaim(b.id, { when: 'dodge', enemy: boss2.netId, serial: 999999 }), false, 'no such blow');
+    // ...and the dodger rolling: a real blow claimed standing still is refused, once the wait is out.
+    const swing = boss2.baseDef.attacks.find(x => !x.projectile && !x.rollOnly);
+    boss2.frozen = 0; boss2.beginAttack(swing); app.sim.tick(1 / 60);
+    const serial = boss2.netAttack, beside = state => app.sim.setPlayers([{ ...session.spawn, id: b.id, x: boss2.x, z: boss2.z + boss2.radius + 0.5, y: boss2.y, yaw: Math.PI, hp: S.maxHp, state, poseAge: 0 }]);
+    beside('idle');
+    assert.equal(app.sim.abilityClaim(b.id, { when: 'dodge', enemy: boss2.netId, serial }), false, 'standing still is no dodge');
+    for (let i = 0; i < 40; i++) app.sim.tick(1 / 60);
+    assert.ok(!(boss2.frozen > 0), 'nor once the wait is out');
+    beside('roll');
+    assert.equal(app.sim.abilityClaim(b.id, { when: 'dodge', enemy: boss2.netId, serial }), true, 'rolling through it');
+    assert.ok(boss2.frozen > 0, 'Time Rift');
+    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon and Meteor Fall claims, the timed-out pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -29,16 +29,16 @@ class Player {
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
-    // Boss Rush's blessings (js/blessings.js): the kit they make, its perks' clocks, and who settles its powers (a
-    // server bot's own; unset, blessingReport finds it). lastHp: the health last step, so losing any is noticed.
-    this.kit = NO_KIT; this.perk = blessingPerkState(); this.onBlessing = null; this.lastHp = this.hp; this.lowReported = false;
+    // Boss Rush's abilities (js/abilities.js): the kit they make, its perks' clocks, and who settles its powers (a
+    // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
+    this.kit = NO_KIT; this.perk = abilityPerkState(); this.onAbility = null; this.lastHp = this.hp; this.lowReported = false;
     this.rent = 0; this.rentTime = 0; this.rentBy = null;   // a rend (pass 48): pieces torn off the bar, s until it closes, who holds them
     this.savePrev();
   }
-  // Boss Rush's blessings (BLESSINGS): the kit of the ids held (one per pick, repeated by upgrades), with the health
+  // Boss Rush's abilities (ABILITIES): the kit of the ids held (one per pick, repeated by upgrades), with the health
   // and stamina it gives, both full. Called once, on a fresh body.
-  bless(ids) {
-    this.kit = blessingKit(ids);
+  grantAbilities(ids) {
+    this.kit = abilityKit(ids);
     const S = this.def.stats, m = this.kit.mods;
     this.maxHp = S.maxHp * (1 + m.maxHp); this.maxStamina = S.maxStamina * (1 + m.maxStamina);
     this.hp = this.lastHp = this.maxHp; this.stamina = this.maxStamina;
@@ -146,7 +146,7 @@ class Player {
     this.payload = makeStrike(a, this.riposte > 0, 0);
     if (a.charge && this.perk.bastion > 0) {   // Bastion: a blocked blow readied this heavy, fully charged at once
       this.perk.bastion = 0; this.chargeT = a.charge.hold; this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, 1);
-      events.emit('chargeFull', { actor: this, attack: a }); events.emit('blessingPerk', { body: this, perk: 'block/charge' });
+      events.emit('chargeFull', { actor: this, attack: a }); events.emit('abilityPerk', { body: this, perk: 'block/charge' });
     }
     this.riposte = 0;
     if (!this.freeStamina()) this.spend(a.cost || 0);
@@ -206,7 +206,7 @@ class Player {
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     this.canAct(); this.sinceExhausted = this.exhausted ? 0 : this.sinceExhausted + dt;
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.kit.mods.staminaRegen) * dt);
-    if (this.kit !== NO_KIT) this.blessingStep(dt);
+    if (this.kit !== NO_KIT) this.abilityStep(dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -368,20 +368,20 @@ class Player {
       this.vx *= C.landKeep; this.vz *= C.landKeep;
       this.setState(PS.LAND);
       events.emit('land', { player: this, x: this.x, y: this.y, z: this.z, fx: a.air.fx });
-      blessingReport(this, 'land', { x: this.x, y: this.y, z: this.z, action: Object.keys(M.air).find(k => M.air[k] === a.id) });   // Meteor Fall
+      abilityReport(this, 'land', { x: this.x, y: this.y, z: this.z, action: Object.keys(M.air).find(k => M.air[k] === a.id) });   // Meteor Fall
     }
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
   }
   // A step of the kit's perks: health lost wakes Vengeance and resets the calm and the streak, the clocks run, and a
   // body this low first reports it (Blood Moon).
-  blessingStep(dt) {
+  abilityStep(dt) {
     const st = this.perk;
-    if (this.hp < this.lastHp - 1e-9) blessingHurt(this.kit, st);
+    if (this.hp < this.lastHp - 1e-9) abilityHurt(this.kit, st);
     this.lastHp = this.hp;
-    blessingClocks(st, dt);
+    abilityClocks(st, dt);
     if (!this.lowReported && this.alive()) for (const pw of this.kit.powers) {
-      if (pw.when === 'low' && this.hp <= this.maxHp * pw.v.below) { this.lowReported = true; blessingReport(this, 'low', {}); }
+      if (pw.when === 'low' && this.hp <= this.maxHp * pw.v.below) { this.lowReported = true; abilityReport(this, 'low', {}); }
     }
   }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`

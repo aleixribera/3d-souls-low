@@ -1,12 +1,12 @@
 'use strict';
 // ============================================================================
-// Boss Rush's blessing cards (v7.70.0, PLAN.md Track B item 3, the "Pick 4 · Tall cards" mockup): what a blessing
+// Boss Rush's ability cards (v7.72.0, PLAN.md Track B item 3, the "Pick 4 · Tall cards" mockup): what an ability
 // looks like in the pick. The pick itself (offer, timer, keys, pad) is js/multiplayer.js's; the data
-// js/data/blessings.js. Presentation only: nothing here touches the game.
+// js/data/abilities.js. Presentation only: nothing here touches the game.
 // ============================================================================
-// Each blessing's icon: line drawing in a 48×48 box, stroked in its rarity's colour (no fill). Drawn for this game,
-// in the menus' style; validate.js checks every blessing has one.
-const BLESSING_ICONS = {
+// Each ability's icon: line drawing in a 48×48 box, stroked in its rarity's colour (no fill). Drawn for this game,
+// in the menus' style; validate.js checks every ability has one.
+const ABILITY_ICONS = {
   // Commons
   'keen-edge': '<path d="M12 33 L33 12 L38 10 L36 15 L15 36 Z"/><path d="M9 30 L18 39 M13 35 L8 40"/><path d="M38 27 V35 M34 31 H42"/>',
   'iron-blood': '<path d="M24 40 C14 33 8 27 8 19 A8 8 0 0 1 24 15 A8 8 0 0 1 40 19 C40 27 34 33 24 40 Z"/><path d="M24 21 V31 M19 26 H29"/>',
@@ -36,43 +36,43 @@ const BLESSING_ICONS = {
   'thousand-blades': '<path d="M12 4 V24 L12 29 M8 9 H16"/><path d="M24 10 V32 L24 37 M20 15 H28"/><path d="M36 4 V24 L36 29 M32 9 H40"/><path d="M6 44 H42" stroke-dasharray="2 4"/>',
   'blood-moon': '<path d="M30 6 A17 17 0 1 0 42 32 A13 13 0 1 1 30 6 Z"/><path d="M20 34 C17 38 17 40 20 42 C23 40 23 38 20 34 Z"/><path d="M30 40 V44"/>',
 };
-const BLESSING_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
-const BLESSING_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];
-// One number of a card: a percentage, or in its BLESSING_UNITS unit.
-function blessingAmount(key, x) {
-  const unit = BLESSING_UNITS[key];
+const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
+const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+// One number of a card: a percentage, or in its ABILITY_UNITS unit.
+function abilityAmount(key, x) {
+  const unit = ABILITY_UNITS[key];
   if (unit === 's' || unit === 'm') return `${+x.toFixed(2)} ${unit}`;
   if (unit === 'n') return String(Math.round(x));
   return Math.round(x * 100) + '%';
 }
 // A card's text at `level` as parts ({ text, strong }): each number in bold, as "before → after" on an upgrade.
-function blessingCardText(b, level) {
-  const now = blessingAt(b, level), was = level > 1 ? blessingAt(b, level - 1) : null, parts = [];
+function abilityCardText(b, level) {
+  const now = abilityAt(b, level), was = level > 1 ? abilityAt(b, level - 1) : null, parts = [];
   let from = 0;
   for (const m of b.text.matchAll(/\{(\w+)\}/g)) {
-    const a = blessingAmount(m[1], now[m[1]]), w = was && blessingAmount(m[1], was[m[1]]);
+    const a = abilityAmount(m[1], now[m[1]]), w = was && abilityAmount(m[1], was[m[1]]);
     parts.push({ text: b.text.slice(from, m.index) }, { text: w && w !== a ? `${w} → ${a}` : a, strong: true });
     from = m.index + m[0].length;
   }
   parts.push({ text: b.text.slice(from) });
   return parts.filter(p => p.text);
 }
-// The card for blessing `b` offered to someone holding `held`: a button (the pick sets its click), `key` its number
+// The card for ability `b` offered to someone holding `held`: a button (the pick sets its click), `key` its number
 // key, `swift` true for a swift kill's extra card.
-function blessingCard(b, held, key, swift) {
-  const level = Math.min(blessingLevel(b, held) + 1, b.levels.length), make = (tag, cls, text) => {
+function abilityCard(b, held, key, swift) {
+  const level = Math.min(abilityLevel(b, held) + 1, b.levels.length), make = (tag, cls, text) => {
     const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n;
   };
-  const card = make('button', 'bcard'); card.type = 'button'; card.dataset.blessing = b.id; card.dataset.rarity = b.rarity;
+  const card = make('button', 'bcard'); card.type = 'button'; card.dataset.ability = b.id; card.dataset.rarity = b.rarity;
   const well = make('span', 'bcard-well');
-  well.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${BLESSING_ICONS[b.id] || ''}</svg>`;
+  well.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>`;
   const words = make('span', 'bcard-words'), name = make('strong', 'bcard-name', b.name);
   words.appendChild(name);
-  if (level > 1) name.appendChild(make('span', 'bcard-level', `${BLESSING_LEVEL_MARK[level - 2]} → ${BLESSING_LEVEL_MARK[level - 1]}`));
+  if (level > 1) name.appendChild(make('span', 'bcard-level', `${ABILITY_LEVEL_MARK[level - 2]} → ${ABILITY_LEVEL_MARK[level - 1]}`));
   const text = make('span', 'bcard-text');
-  for (const part of blessingCardText(b, level)) text.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
+  for (const part of abilityCardText(b, level)) text.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
   words.appendChild(text);
-  const foot = make('span', 'bcard-foot'), rarity = make('span', 'bcard-rarity', BLESSING_RARITY_WORD[b.rarity]);
+  const foot = make('span', 'bcard-foot'), rarity = make('span', 'bcard-rarity', ABILITY_RARITY_WORD[b.rarity]);
   if (swift) rarity.appendChild(make('em', 'swift', 'Swift kill'));
   foot.append(rarity, make('kbd', 'ui-key', String(key)));
   words.appendChild(foot);
@@ -82,17 +82,17 @@ function blessingCard(b, held, key, swift) {
 // The pick's look. Tall cards in a row over the HUD; on a narrow or short screen, rows (a 2×2 grid when wide enough).
 (() => {
   const style = document.createElement('style');
-  style.id = 'blessingCards';
-  style.textContent = `#blessingScreen[hidden]{display:none}
-  #blessingScreen{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;position:fixed;inset:0;z-index:46;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  style.id = 'abilityCards';
+  style.textContent = `#abilityScreen[hidden]{display:none}
+  #abilityScreen{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;position:fixed;inset:0;z-index:46;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     box-sizing:border-box;overflow:auto;overscroll-behavior:contain;background:#080a0cdb;color:var(--ui-ink);font:400 15px/1.45 var(--ui-text)}
-  #blessingScreen .blessing-panel{width:min(100%,var(--pick-w,932px))}
-  #blessingScreen .blessing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px}
-  #blessingScreen h2{margin:0;font:400 var(--ui-size-head)/1.1 var(--ui-display);color:var(--ui-ink)}
-  #blessingClock{font:500 15px/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
-  #blessingScreen .blessing-time{height:2px;margin-bottom:18px;background:var(--ui-line)}
-  #blessingTimeFill{display:block;height:100%;background:var(--ui-accent);transform-origin:left}
-  #blessingChoices{display:flex;justify-content:space-between;gap:12px}
+  #abilityScreen .ability-panel{width:min(100%,var(--pick-w,932px))}
+  #abilityScreen .ability-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px}
+  #abilityScreen h2{margin:0;font:400 var(--ui-size-head)/1.1 var(--ui-display);color:var(--ui-ink)}
+  #abilityClock{font:500 15px/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
+  #abilityScreen .ability-time{height:2px;margin-bottom:18px;background:var(--ui-line)}
+  #abilityTimeFill{display:block;height:100%;background:var(--ui-accent);transform-origin:left}
+  #abilityChoices{display:flex;justify-content:space-between;gap:12px}
   .bcard{--rc:var(--body);all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;width:216px;min-height:330px;padding:20px 18px 16px;
     text-align:center;background:var(--ui-panel);border:1px solid var(--ui-line);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .bcard[data-rarity=rare]{--rc:var(--rare)}.bcard[data-rarity=legendary]{--rc:var(--leg)}
@@ -109,14 +109,14 @@ function blessingCard(b, held, key, swift) {
   .bcard:hover:not(:disabled){background:#14171a;border-color:var(--ui-line-hi)}
   .bcard:focus-visible,.bcard[aria-pressed=true]{border-color:var(--ui-accent);outline:1px solid var(--ui-accent);outline-offset:-1px;background:#17150f}
   .bcard:disabled{opacity:.4;cursor:default}
-  #blessingScreen.blessing-pad .ui-key{display:none}
-  #blessingStatus{margin:14px 0 0;color:var(--ui-muted)}#blessingStatus:empty{display:none}
-  @media (hover:none){#blessingChoices .ui-key{display:none}}
+  #abilityScreen.ability-pad .ui-key{display:none}
+  #abilityStatus{margin:14px 0 0;color:var(--ui-muted)}#abilityStatus:empty{display:none}
+  @media (hover:none){#abilityChoices .ui-key{display:none}}
   @media (max-width:900px),(max-height:560px){
-    #blessingScreen{place-items:end center;padding-top:16px}
-    #blessingScreen .blessing-panel{width:min(100%,640px)}
-    #blessingScreen h2{font-size:22px}
-    #blessingChoices{display:grid;grid-template-columns:1fr;gap:8px}
+    #abilityScreen{place-items:end center;padding-top:16px}
+    #abilityScreen .ability-panel{width:min(100%,640px)}
+    #abilityScreen h2{font-size:22px}
+    #abilityChoices{display:grid;grid-template-columns:1fr;gap:8px}
     .bcard{flex-direction:row;align-items:flex-start;gap:14px;width:auto;min-height:44px;padding:14px;text-align:left;border-left:2px solid var(--rc)}
     .bcard-well{width:auto;height:auto;background:none;border:0}
     .bcard-well svg{width:30px;height:30px}
@@ -124,6 +124,6 @@ function blessingCard(b, held, key, swift) {
     .bcard-name{flex-direction:row;align-items:baseline;gap:10px;margin-top:0;font-size:19px}
     .bcard-text{margin-top:5px}
     .bcard-foot{margin-top:0;padding-top:7px;font-size:12px}}
-  @media (max-height:560px) and (min-width:600px){#blessingScreen .blessing-panel{width:min(100%,860px)}#blessingChoices{grid-template-columns:1fr 1fr}}`;
+  @media (max-height:560px) and (min-width:600px){#abilityScreen .ability-panel{width:min(100%,860px)}#abilityChoices{grid-template-columns:1fr 1fr}}`;
   document.head.appendChild(style);
 })();

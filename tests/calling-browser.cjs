@@ -1,8 +1,8 @@
 'use strict';
 // The Calling end to end (v7.35.0): two browsers pick a 3-boss roster by hand, a bot fills the party, the party beats
 // one boss, then the last two together, and everyone lands back in the lobby with the run complete. Between the fights
-// each takes a blessing (one by click, one by key); the fallen get up for the next fight.
-// v7.70.0: the blessings rebuilt (25 of them, js/data/blessings.js): tall cards, the held one's kit after the pick.
+// each takes an ability (one by click, one by key); the fallen get up for the next fight.
+// v7.70.0: the abilities rebuilt (25 of them, js/data/abilities.js): tall cards, the held one's kit after the pick.
 // v7.69.0: the kill moment ("Boss 1 down", slowed and embers), a swift kill's fourth card, the next boss dropping
 // straight in with no loading card, the streak and par under the boss bar, and each boss's time on the end screen.
 const assert = require('node:assert/strict');
@@ -72,11 +72,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
     const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
-    // a is offered these four (the draw itself is tests/blessings.cjs's).
-    const draw = app.sim.offerBlessings;
-    app.sim.offerBlessings = (ids, ...rest) => {
+    // a is offered these four (the draw itself is tests/abilities.cjs's).
+    const draw = app.sim.offerAbilities;
+    app.sim.offerAbilities = (ids, ...rest) => {
       draw(ids, ...rest);
-      const o = app.sim.blessingOffer(aId);
+      const o = app.sim.abilityOffer(aId);
       if (o) o.splice(0, o.length, ...['keen-edge', 'time-rift', 'vengeance', 'iron-blood'].slice(0, o.length));
     };
     finishFight();
@@ -86,27 +86,27 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await b.evaluate(() => killMoment.active && Game.drawSlow < 1), true, 'the kill moment plays');
     await b.waitForTimeout(350);
     await b.screenshot({ path: `${out}/kill-moment.png` });
-    for (const page of [a, b]) await page.locator('#blessingScreen').waitFor({ timeout: 30000 });
+    for (const page of [a, b]) await page.locator('#abilityScreen').waitFor({ timeout: 30000 });
     // Won in seconds, far under par: a swift kill, so a fourth card, marked.
-    assert.equal(await a.locator('#blessingChoices button').count(), 4, 'a swift kill: four blessings to choose from');
-    assert.equal(await a.locator('#blessingChoices button em.swift').count(), 1);
-    assert.equal(await a.locator('#blessingChoices button').last().locator('em.swift').textContent(), 'Swift kill');
+    assert.equal(await a.locator('#abilityChoices button').count(), 4, 'a swift kill: four abilities to choose from');
+    assert.equal(await a.locator('#abilityChoices button em.swift').count(), 1);
+    assert.equal(await a.locator('#abilityChoices button').last().locator('em.swift').textContent(), 'Swift kill');
     await a.waitForTimeout(400);
-    await a.screenshot({ path: `${out}/blessing-desktop.png` });
+    await a.screenshot({ path: `${out}/ability-desktop.png` });
     await a.setViewportSize({ width: 390, height: 844 });
-    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#blessingChoices button')].every(b => b.getBoundingClientRect().bottom <= innerHeight)), 'the pick fits a phone');
-    await a.screenshot({ path: `${out}/blessing-phone.png` });
+    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#abilityChoices button')].every(b => b.getBoundingClientRect().bottom <= innerHeight)), 'the pick fits a phone');
+    await a.screenshot({ path: `${out}/ability-phone.png` });
     await a.setViewportSize({ width: 1280, height: 720 });
-    assert.deepEqual(await a.locator('#blessingChoices button').evaluateAll(bs => bs.map(b => b.dataset.rarity)), ['common', 'legendary', 'rare', 'common']);
-    await a.locator('#blessingChoices button', { hasText: 'Time Rift' }).click();
-    assert.equal(await a.locator('#blessingStatus').textContent(), 'Waiting for the others.');
+    assert.deepEqual(await a.locator('#abilityChoices button').evaluateAll(bs => bs.map(b => b.dataset.rarity)), ['common', 'legendary', 'rare', 'common']);
+    await a.locator('#abilityChoices button', { hasText: 'Time Rift' }).click();
+    assert.equal(await a.locator('#abilityStatus').textContent(), 'Waiting for the others.');
     assert.equal(app.session.epoch, epoch, 'the next fight waits for every pick');
-    const bPick = await b.locator('#blessingChoices button').first().getAttribute('data-blessing');
+    const bPick = await b.locator('#abilityChoices button').first().getAttribute('data-ability');
     await b.keyboard.press('Digit1');
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
     assert.equal(await b.evaluate(() => multiplayer.info.session.drop && !document.getElementById('loading').classList.contains('show')), true, 'the next boss drops straight in, no loading card');
     await Promise.all([ready(a), ready(b)]);
-    assert.equal(await a.locator('#blessingScreen').isVisible(), false);
+    assert.equal(await a.locator('#abilityScreen').isVisible(), false);
     assert.deepEqual(await a.evaluate(() => [...Game.player.kit.ids]), ['time-rift']);
     assert.deepEqual(await b.evaluate(() => [...Game.player.kit.ids]), [bPick], 'the number key took the first');
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /BOSS RUSH · 2\/2/);
@@ -122,12 +122,12 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.screenshot({ path: `${out}/final-fight.png` });
     // a's Time Rift, fired as their dodge claim would fire it: both browsers draw the stopped boss's bubble. A legendary
     // on no enemy (a Meteor's blast) reaches every browser too, with its frame.
-    const R = app.sim.inspect(), fireAs = (kit, when, ctx) => R.blessingPowers.trigger(aId, R.holderOf(aId), kit, when, ctx);
+    const R = app.sim.inspect(), fireAs = (kit, when, ctx) => R.abilityPowers.trigger(aId, R.holderOf(aId), kit, when, ctx);
     fireAs(app.sim.kitOf(aId), 'dodge', { enemy: R.Game.enemies[0] });
-    for (const page of [a, b]) await page.waitForFunction(() => blessingFx.info().bubbles > 0, null, { timeout: 5000 });
+    for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().bubbles > 0, null, { timeout: 5000 });
     fireAs({ powers: [{ id: 'meteor-fall', when: 'land', then: 'blast', action: 'heavy', v: { radius: 1, damage: 1, posture: 1, cooldown: 1 } }] }, 'land', { x: 0, y: 0, z: 0, action: 'heavy' });
-    for (const page of [a, b]) await page.waitForFunction(() => blessingFx.info().meteors > 0, null, { timeout: 5000 });
-    R.blessingPowers.reset();
+    for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().meteors > 0, null, { timeout: 5000 });
+    R.abilityPowers.reset();
     // a falls again: they watch the rest of this fight.
     await a.evaluate(() => { const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
@@ -184,6 +184,6 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await b.locator('#runSummaryLobby').click();
     assert.equal(await b.locator('#runSummary').isVisible(), false);
     assert.deepEqual(errors, []);
-    console.log('BOSS RUSH browsers: hand-picked roster, phone fit, opening card, bot fill, blessings by click and key, fallen rise, last two together, run complete, the end-of-run screen, again and a wipe passed.');
+    console.log('BOSS RUSH browsers: hand-picked roster, phone fit, opening card, bot fill, abilities by click and key, fallen rise, last two together, run complete, the end-of-run screen, again and a wipe passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

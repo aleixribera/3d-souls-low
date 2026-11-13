@@ -56,7 +56,7 @@ const gamepad = {
     for (const c of released) input.up(c);
     if (typeof multiplayer !== 'undefined' && multiplayer.runIntroActive) { input.clear(); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
-    if (typeof multiplayer !== 'undefined' && multiplayer.blessingPad(pressed)) return;
+    if (typeof multiplayer !== 'undefined' && multiplayer.abilityPad(pressed)) return;
     if (typeof multiplayer !== 'undefined' && multiplayer.spectatorPad(pressed)) return;
     if (Game.mode === 'play') this.playInput(pressed, dt);
     else this.menuInput(pressed, dt);

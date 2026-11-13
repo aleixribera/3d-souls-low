@@ -4,7 +4,7 @@
 // ============================================================================
 // What a landed attack carries, built the same way for both sides.
 // charge: 0..1 of a held heavy's `charge.hold`, scaling damage, poise and posture up to `charge.mul`.
-// A blessing's bonus is added when it lands, by whoever owns the enemy (blessingStrike, js/blessings.js).
+// An ability's bonus is added when it lands, by whoever owns the enemy (abilityStrike, js/abilities.js).
 function makeStrike(attack, riposte = false, charge = 0) {
   const E = CONFIG.enemy, R = (riposte && attack.riposte) || {}, Ch = attack.charge;
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
@@ -112,8 +112,8 @@ function resolveCombat(game) {
       game.hitstop = Math.max(game.hitstop, P.hitstop);
       events.emit('parry', { target, player: p });
       const breath = p.kit.perks['parry/stamina'];   // Deep Breath
-      if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('blessingPerk', { body: p, perk: 'parry/stamina' }); }
-      blessingReport(p, 'parry', { enemy: target });
+      if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('abilityPerk', { body: p, perk: 'parry/stamina' }); }
+      abilityReport(p, 'parry', { enemy: target });
       if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); }
     }
   }
@@ -123,15 +123,15 @@ function resolveCombat(game) {
   const enemyHits = p.alive() ? live.filter(e => e.hitbox && !(e.frozen > 0) && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];   // stopped in time: harmless
   // 3. Apply damage, poise loss, knockback and stagger.
   for (const e of playerHits) {
-    const base = p.hitbox.payload, strike = blessingStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
+    const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
     p.hitbox.markHit(e);
     const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.hit(e, base) : e.takeHit(strike, p);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
-    if (strike.empowered) events.emit('blessingPerk', { body: p, perk: 'empower', target: e });
+    if (strike.empowered) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });
     if (!res.blocked && p.kit !== NO_KIT) {
-      blessingLanded(p, strike);
-      if (strike.charge >= 1 && !strike.air) blessingReport(p, 'fullHeavy', { enemy: e });   // Storm King
+      abilityLanded(p, strike);
+      if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
     }
     if (p.rentBy === e && !res.blocked) p.reclaim();   // pass 48: every blow on her tears a piece back (Player.rend)
     if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); }
@@ -142,8 +142,8 @@ function resolveCombat(game) {
       if (!hb.dodged && p.state === PS.ROLL) {   // an execution's untouchable time is no dodge
         hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
         const step = p.kit.perks['dodge/riposte'];   // Counterstep: the next blow is a riposte
-        if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('blessingPerk', { body: p, perk: 'dodge/riposte' }); }
-        blessingReport(p, 'dodge', { enemy: hb.owner });
+        if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('abilityPerk', { body: p, perk: 'dodge/riposte' }); }
+        abilityReport(p, 'dodge', { enemy: hb.owner });
       }
       continue;
     }

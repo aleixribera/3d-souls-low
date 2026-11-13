@@ -1,8 +1,8 @@
 'use strict';
 // ============================================================================
-// Boss Rush's legendaries, drawn (v7.70.0): drawing only
+// Boss Rush's legendaries, drawn (v7.72.0): drawing only
 // ============================================================================
-// Each legendary blessing's power (js/blessings.js, event `blessingPower`, the server's for everyone online) gets its own
+// Each legendary ability's power (js/abilities.js, event `abilityPower`, the server's for everyone online) gets its own
 // look, on every preset; High and Ultra add sparks, embers and lights from js/ultra-fx.js on top:
 //   Meteor Fall    a column of fire falls with the jump, a white-hot burst, a shock ring as wide as the blast hits and a
 //                  molten crater that cools.
@@ -11,11 +11,11 @@
 //                  with a clock turning backwards under it, tinted, until it shatters.
 //   Thousand Blades  ghost copies of the holder's own sword fall on the boss, one each `every` s, for `time` s.
 //   Blood Moon     a red moon over the holder for its time, a crimson aura, and a red slash on each of their blows.
-// The rares' small cues (event `blessingPerk`, the local player's): a flare, motes or a ring. Every mesh is pooled and
+// The rares' small cues (event `abilityPerk`, the local player's): a flare, motes or a ring. Every mesh is pooled and
 // made at load (warmed by visuals.warmUp); nothing is allocated per frame. Flashes stay under 3 Hz. Tuning:
-// VIS.blessingFx.
-const blessingFx = (() => {
-  const F = VIS.blessingFx;
+// VIS.abilityFx.
+const abilityFx = (() => {
+  const F = VIS.abilityFx;
   const add = (color, map = null) => new THREE.MeshBasicMaterial({ color, map, transparent: true, opacity: 0, depthWrite: false,
     blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
   const flat = g => g.rotateX(-Math.PI / 2);
@@ -167,6 +167,7 @@ const blessingFx = (() => {
     hoop.rotation.x = Math.PI / 2; clock.position.y = 0.04; g.add(shell, band, hoop, clock);
     return { g: put(g), shell, band, hoop, clock, e: null, k: 0, broke: false };
   });
+  function bubbleOf(e) { for (const b of bubbles) if (b.e === e) return b; return null; }   // null: a free one
   function rift(d) {
     const w = waves.reduce((a, b) => (a.t > b.t ? a : b)), at = { x: d.x, y: d.y + 1, z: d.z };
     w.t = 0; w.r = d.v.radius; w.m.position.set(d.x, d.y + 0.06, d.z); w.m.visible = true;
@@ -182,8 +183,8 @@ const blessingFx = (() => {
     }
     for (const b of bubbles) if (b.e && !game.enemies.includes(b.e)) b.e = null;
     for (const e of game.enemies) {
-      let b = bubbles.find(s => s.e === e);
-      if (!b && e.frozen > 0 && e.alive()) { b = bubbles.find(s => !s.e); if (b) { b.e = e; b.k = 0; b.broke = false; } }
+      let b = bubbleOf(e);
+      if (!b && e.frozen > 0 && e.alive()) { b = bubbleOf(null); if (b) { b.e = e; b.k = 0; b.broke = false; } }
       if (!b) continue;
       const on = e.frozen > 0 && e.alive();
       b.k = clamp01(b.k + (on ? dt / 0.25 : -dt / 0.3));
@@ -268,6 +269,7 @@ const blessingFx = (() => {
     return { disc: put(disc), ring: put(mesh(RING, MO.color)), body: null, left: 0, time: 1, mote: 0, sky: false };
   });
   const slashes = Array.from({ length: 6 }, () => ({ m: put(mesh(PLANE, MO.color, SLASH)), t: Infinity }));
+  const moteAt = { x: 0, y: 0, z: 0 }, MOON_MOTES = { r: 0.6, speed: 0.3, lift: 1.8, life: [0.6, 1.2], up: 1 };
   function bloodMoon(d) {
     const body = d.body;
     if (!body) return;
@@ -302,7 +304,7 @@ const blessingFx = (() => {
       if (!m.sky) m.disc.position.set(b.x, b.y + MO.height, b.z);
       m.disc.material.opacity = 0.95 * k;
       m.ring.position.set(b.x, b.y + 0.05, b.z); m.ring.scale.set(1.3, 1, 1.3); m.ring.rotation.y = -now * 0.8; m.ring.material.opacity = 0.6 * k;
-      if ((m.mote -= dt) <= 0) { m.mote = MO.motes; ultraFx.moteBurst({ x: b.x, y: b.y + 0.2, z: b.z }, 5, MO.color, { r: 0.6, speed: 0.3, lift: 1.8, life: [0.6, 1.2], up: 1 }); }
+      if ((m.mote -= dt) <= 0) { m.mote = MO.motes; moteAt.x = b.x; moteAt.y = b.y + 0.2; moteAt.z = b.z; ultraFx.moteBurst(moteAt, 5, MO.color, MOON_MOTES); }
       if (b.rig) b.rig.setTint(moonTint, MO.tint * k);
     }
     for (const s of slashes) {
@@ -325,7 +327,7 @@ const blessingFx = (() => {
     else if (d.perk === 'block/charge') { ultraFx.sparkBurst(c, 16, 'gold', null, 0, 0.7); groundFx.ring(p.x, p.z, 1.4, P.charge, 0.5, p.y); }
   }
 
-  events.on('blessingPower', d => {
+  events.on('abilityPower', d => {
     const e = d.enemy;
     if (d.then === 'blast') meteor(d);
     else if (d.then === 'lightning' && e && d.strike) bolt(d, e);
@@ -333,7 +335,7 @@ const blessingFx = (() => {
     else if (d.then === 'blades' && e) blades(d, e);
     else if (d.then === 'bloodMoon') bloodMoon(d);
   });
-  events.on('blessingPerk', perk);
+  events.on('abilityPerk', perk);
   events.on('strike', slash);
   function render(game) {
     const dt = effectSlots.dt();
@@ -347,7 +349,7 @@ const blessingFx = (() => {
     for (const m of moons) m.body = null;
   }
   const moonTrail = [MO.color, CONFIG.VISUALS.ultra.trails.playerBoost * MO.trail];   // the holder's blade trail runs red
-  const trail = b => (moons.some(m => m.body === b && m.left > 0) ? moonTrail : null);
+  function trail(b) { for (const m of moons) if (m.body === b && m.left > 0) return moonTrail; return null; }
   return { attach() { Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
     meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length,
     bubbles: bubbles.filter(b => b.e).length, rains: rains.filter(r => r.e).length, swords: swords.filter(s => s.t !== Infinity).length,

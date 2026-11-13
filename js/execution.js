@@ -33,7 +33,7 @@ const execution = (() => {
     for (const e of enemies) { const s = score(p, e); if (s !== null && s < bestScore) { bestScore = s; best = e; } }
     return best;
   }
-  // `more`: the executioner's Headsman blessing (its kit's `execution`).
+  // `more`: the executioner's Headsman ability (its kit's `execution`).
   function damageFor(e, more = 0) {
     const D = CONFIG.execution.damage, boss = isBossLike(e);
     // `critMul` (v5.5, opt-in per def): a foe that shrugs off part of a critical blow (the Crucible Knight, 0.7).

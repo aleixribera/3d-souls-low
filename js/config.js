@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.71.0';   // shown in the title's footer and the corner of the other menus; each release is tagged with the same name
+const VERSION = 'v7.72.0';   // shown in the title's footer and the corner of the other menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -194,20 +194,20 @@ const CONFIG = {
   pace: { boss: 1, rise: 0.2, scale: 12.5, max: 6, tell: 0.35, tellFloor: 0.6 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
-  // clock. A fight won under par adds `extra` choices to that fight's blessing offer.
+  // clock. A fight won under par adds `extra` choices to that fight's ability offer.
   swift: { par: 45, pair: 0.5, max: 120, extra: 1 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
   killMoment: { slow: 0.3, time: 1.1, embers: 70, emberSpeed: 7 },
-  // Boss Rush's blessings (v7.70.0, `BLESSINGS` in js/data/blessings.js, js/blessings.js): after each fight but the
-  // last, every player is offered `offer` blessings and keeps one for the rest of the run. One already held comes back
+  // Boss Rush's abilities (v7.72.0, `ABILITIES` in js/data/abilities.js, js/abilities.js): after each fight but the
+  // last, every player is offered `offer` abilities and keeps one for the rest of the run. One already held comes back
   // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
   // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,
   // plus `grow` for each fight won (rarer as the run goes on); a rarity with nothing left to offer gives way to the
-  // others. `levels`: how many levels a blessing of that rarity has. A legendary is held by one player of a team at most.
+  // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
   // A swift kill's extra card (CONFIG.swift) is never common.
-  blessings: { offer: 3, pickTime: 30,
+  abilities: { offer: 3, pickTime: 30,
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
@@ -506,7 +506,7 @@ const CONFIG = {
     // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
     // flash and `dust` when it breaks.
     ringWave: { color: 0xf0e2c0, opacity: 0.8, fade: 0.3, pool: 6 },
-    // Boss Rush's legendaries drawn (js/blessing-fx.js). `near`: within this many m of the player a power shakes
+    // Boss Rush's legendaries drawn (js/ability-fx.js). `near`: within this many m of the player a power shakes
     // the camera; `cool`: the colour a meteor's crater cools to. Meteor: its column of fire `column` m tall falls
     // in `fall` s, `width` m wide, the shock ring spreads in `ring` s, the crater (`glow` times as bright) cools by
     // `crater` s. Storm: a bolt from `height` m above the boss, `jitter` m jagged, `width` m wide, gone in `life`
@@ -519,7 +519,7 @@ const CONFIG = {
     // its holder tinted `tint`; each blow's slash `slashSize` m, gone in `slash` s, and their blade trail (Ultra)
     // red at `trail` times its glow. Perks: the rares' small cues. `shake`: [time, amplitude]; `burst`: the Low
     // preset's particles (js/fx.js).
-    blessingFx: {
+    abilityFx: {
       near: 14, cool: 0x2a0c06,
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },

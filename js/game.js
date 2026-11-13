@@ -65,7 +65,7 @@ const Game = {
     return { ...base, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw };
   },
   makeEnemies() {
-    blessingPowers.reset();   // a new set of enemies: no power still striking, every cooldown and once-a-fight ready
+    abilityPowers.reset();   // a new set of enemies: no power still striking, every cooldown and once-a-fight ready
     if (this.kind === 'bossBattle') return bossBattle.spawn(this);
     if (this.kind === 'arena') {
       const s = this.level.enemyStart, ids = [this.duelId, ...this.duelPartners];
@@ -253,7 +253,7 @@ const Game = {
     }
     separateBodies(p, this.enemies);
     resolveCombat(this);
-    blessingPowers.tick(dt);   // a blessing's legendary still striking (js/blessings.js)
+    abilityPowers.tick(dt);   // an ability's legendary still striking (js/abilities.js)
     companions.resolve(this);
     execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);

@@ -1,17 +1,19 @@
 // ============================================================================
-// Boss Rush's blessings (v7.70.0, designed with Aleix): one is picked between fights and kept for the run. A blessing
-// offered again is its next level. The engine half is js/blessings.js; the cards and icons js/blessing-cards.js.
+// Boss Rush's abilities (v7.72.0, designed with Aleix): one is picked between fights and kept for the run. An ability
+// offered again is its next level. The engine half is js/abilities.js; the cards and icons js/ability-cards.js.
 // ============================================================================
-// Every blessing: an `id`, a `name`, a `rarity` (a key of CONFIG.blessings.rarity, which sets how many levels it has), a
+// Every ability: an `id`, a `name`, a `rarity` (a key of CONFIG.abilities.rarity, which sets how many levels it has), a
 // short `text` for the card, and one `levels` entry per level (a level's own numbers, not added to the one before).
-// In `text`, {key} is that key's number at the card's level: a percentage, or in BLESSING_UNITS's unit.
-//   common:    `mods`: every key of a level is a Player number it raises (BLESSING_MODS).
-//   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (BLESSING_PERKS).
-//   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (BLESSING_POWERS). The server
+// In `text`, {key} is that key's number at the card's level: a percentage, or in ABILITY_UNITS's unit.
+//   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS).
+//   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS).
+//   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
 //              resolves it; a legendary is held by one player of a team at most.
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
-const BLESSING_UNITS = { window: 's', after: 's', time: 's', every: 's', cooldown: 's', radius: 'm', hits: 'n', strikes: 'n' };
-const BLESSINGS = [
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', cooldown: 's', radius: 'm', hits: 'n', strikes: 'n' };
+// The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
+const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain'];
+const ABILITIES = [
   // ---- Commons: half plain numbers, half one move made better ----
   { id: 'keen-edge', name: 'Keen Edge', rarity: 'common', text: 'Hits do {damage} more damage.', mods: true,
     levels: [{ damage: 0.08 }, { damage: 0.16 }, { damage: 0.24 }, { damage: 0.32 }] },
@@ -56,7 +58,7 @@ const BLESSINGS = [
   { id: 'patience', name: 'Patience', rarity: 'rare', text: '{after} without getting hit: your next hit does double.',
     perk: { when: 'unhurt', then: 'empower' }, levels: [{ after: 8, damage: 1 }, { after: 6.5, damage: 1 }, { after: 5, damage: 1 }] },
 
-  // ---- Legendaries: one big power each, drawn in its own colour (js/blessing-fx.js) ----
+  // ---- Legendaries: one big power each, drawn in its own colour (js/ability-fx.js) ----
   { id: 'meteor-fall', name: 'Meteor Fall', rarity: 'legendary', text: 'Jump heavy attack: crash down like a meteor, {radius} wide.',
     power: { when: 'land', then: 'blast', action: 'heavy' },
     levels: [{ radius: 4.5, damage: 130, posture: 45, cooldown: 3 }, { radius: 6, damage: 190, posture: 70, cooldown: 3 }] },
@@ -73,4 +75,4 @@ const BLESSINGS = [
     power: { when: 'low', then: 'bloodMoon', once: true },
     levels: [{ below: 0.33, time: 10, damage: 0.4, drain: 0.3 }, { below: 0.33, time: 14, damage: 0.6, drain: 0.45 }] },
 ];
-const BLESSING_BY_ID = Object.fromEntries(BLESSINGS.map(b => [b.id, b]));
+const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

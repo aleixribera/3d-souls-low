@@ -50,26 +50,26 @@ function validateData({ visual = true } = {}) {
   need(Number.isInteger(nav.anchors) && Number.isInteger(nav.maxNodes) && Number.isInteger(nav.searchSteps) && nav.sample <= nav.cell &&
     nav.maxDrop < CONFIG.fall.lethal && nav.progressTime < nav.stuckTime && nav.recoverMin < nav.recoverMax,
     'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
-  // Boss Rush's blessings (v7.70.0, js/blessings.js): every card can be drawn and read.
-  const BL = CONFIG.blessings, RAR = BL.rarity || {};
-  need(Number.isInteger(BL.offer) && BL.offer >= 1 && num(BL.pickTime) && BL.pickTime > 0, 'CONFIG.blessings: offer a whole number of 1 or more, pickTime positive.');
+  // Boss Rush's abilities (v7.70.0, js/abilities.js): every card can be drawn and read.
+  const BL = CONFIG.abilities, RAR = BL.rarity || {};
+  need(Number.isInteger(BL.offer) && BL.offer >= 1 && num(BL.pickTime) && BL.pickTime > 0, 'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive.');
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
-    'CONFIG.blessings.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
-  need(new Set(BLESSINGS.map(b => b.id)).size === BLESSINGS.length, 'Blessing ids must be unique.');
-  for (const r of Object.keys(RAR)) need(BLESSINGS.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Blessings: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
-  for (const b of BLESSINGS) {
-    const where = `Blessing ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);
+    'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
+  need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
+  for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
+  for (const b of ABILITIES) {
+    const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);
     need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name.trim() && typeof b.text === 'string' && b.text.trim(),
       `${where}: an id (a-z, 0-9, -), a name and a text.`);
-    need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.blessings.rarity).`);
+    need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
     need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity === 'legendary'),
       `${where}: one of mods (a common), perk (a rare) or power (a legendary).`);
     if (!R || kinds.length !== 1 || !Array.isArray(b.levels)) { need(Array.isArray(b.levels), `${where}: levels must be a list.`); continue; }
     need(b.levels.length === R.levels, `${where}: ${R.levels} levels for a ${b.rarity}.`);
-    const plan = b.perk ? BLESSING_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? BLESSING_POWERS[b.power.when + '/' + b.power.then] : null;
-    if (b.perk) need(!!plan, `${where}: unknown perk ${b.perk.when}/${b.perk.then} (BLESSING_PERKS).`);
+    const plan = b.perk ? ABILITY_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? ABILITY_POWERS[b.power.when + '/' + b.power.then] : null;
+    if (b.perk) need(!!plan, `${where}: unknown perk ${b.perk.when}/${b.perk.then} (ABILITY_PERKS).`);
     if (b.power) {
-      need(!!plan, `${where}: unknown power ${b.power.when}/${b.power.then} (BLESSING_POWERS).`);
+      need(!!plan, `${where}: unknown power ${b.power.when}/${b.power.then} (ABILITY_POWERS).`);
       need(b.power.action === undefined || Object.hasOwn(PLAYER_DEF.moveset.air, b.power.action), `${where}: power action must be one of the player's air attacks.`);
       need(b.power.once === undefined || typeof b.power.once === 'boolean', `${where}: power once must be true or false.`);
     }
@@ -77,16 +77,18 @@ function validateData({ visual = true } = {}) {
     for (const [i, v] of b.levels.entries()) {
       need(v && Object.keys(v).length && Object.values(v).every(x => num(x) && x > 0), `${where}: level ${i + 1} needs positive numbers.`);
       need(v && Object.keys(v).join() === keys.join(), `${where}: every level has the same numbers.`);
-      if (b.mods) need(v && Object.keys(v).every(k => Object.hasOwn(BLESSING_MODS, k)) && (BLESSING_MODS[keys[0]] !== 'less' || Object.values(v).every(x => x < 1)),
-        `${where}: level ${i + 1}: each number one of BLESSING_MODS (a cut below 1).`);
+      need(v && Object.entries(v).every(([k, x]) => (ABILITY_UNITS[k] !== 'n' || Number.isInteger(x)) && (!ABILITY_SHARES.includes(k) || x <= 1)),
+        `${where}: level ${i + 1}: counts whole, shares (${ABILITY_SHARES.join(', ')}) at most 1.`);
+      if (b.mods) need(v && Object.keys(v).every(k => Object.hasOwn(ABILITY_MODS, k)) && (ABILITY_MODS[keys[0]] !== 'less' || Object.values(v).every(x => x < 1)),
+        `${where}: level ${i + 1}: each number one of ABILITY_MODS (a cut below 1).`);
       if (plan) need(v && plan.every(k => num(v[k])), `${where}: level ${i + 1} needs ${plan.join(', ')}.`);
       if (i && v && b.mods) need(keys.every(k => v[k] > b.levels[i - 1][k]), `${where}: each level gives more than the one before.`);
     }
     for (const m of b.text.matchAll(/\{(\w+)\}/g)) need(keys.includes(m[1]), `${where}: its text names {${m[1]}}, not one of its numbers.`);
     need(!/\{[^}]*$|^[^{]*\}/.test(b.text), `${where}: unbalanced braces in its text.`);
-    if (visual) need(typeof BLESSING_ICONS === 'object' && typeof BLESSING_ICONS[b.id] === 'string', `${where}: no icon in BLESSING_ICONS (js/blessing-cards.js).`);
+    if (visual) need(typeof ABILITY_ICONS === 'object' && typeof ABILITY_ICONS[b.id] === 'string', `${where}: no icon in ABILITY_ICONS (js/ability-cards.js).`);
   }
-  for (const k of Object.keys(BLESSING_UNITS)) need(['s', 'm', 'n'].includes(BLESSING_UNITS[k]), `BLESSING_UNITS ${k}: s, m or n.`);
+  for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
     defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], execution: ['yield', 'late', 'aside'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
@@ -318,8 +320,8 @@ function validateData({ visual = true } = {}) {
     && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1,
     'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more and tellFloor in (0, 1].');
   const SW = CONFIG.swift, KM = CONFIG.killMoment;   // v7.69.0: Boss Rush's par and swift kill, and the kill moment
-  need(SW && num(SW.par) && SW.par > 0 && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.blessings.offer + SW.extra <= BLESSINGS.length,
-    'CONFIG.swift: par above 0, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the blessings there are.');
+  need(SW && num(SW.par) && SW.par > 0 && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.abilities.offer + SW.extra <= ABILITIES.length,
+    'CONFIG.swift: par above 0, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the abilities there are.');
   need(KM && num(KM.slow) && KM.slow > 0 && KM.slow <= 1 && ['time', 'embers', 'emberSpeed'].every(k => num(KM[k]) && KM[k] >= 0),
     'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
   const PR = CONFIG.enemy.postureRest;   // v7.65.0: a boss fights a while between posture breaks

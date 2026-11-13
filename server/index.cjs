@@ -64,8 +64,8 @@ function createServer(options = {}) {
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
   let tallied = false;   // Boss Rush: this fight's win is in the run's tally
-  let blessingFor = null;   // Boss Rush, between fights: s since the blessings were offered (null: not offered)
-  const blessingRound = new Set();   // the players offered blessings this time (a late arrival is offered once)
+  let abilityFor = null;   // Boss Rush, between fights: s since the abilities were offered (null: not offered)
+  const abilityRound = new Set();   // the players offered abilities this time (a late arrival is offered once)
   let tally = null;   // Boss Rush's totals across its fights: { roster, startedAt, beaten, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
@@ -130,7 +130,7 @@ function createServer(options = {}) {
   };
   const error = (p, message) => send(p, { type: 'error', message });
   function stop(message, reason = null, extra = {}) {
-    session = null; blessingFor = null; blessingRound.clear(); tally = null;
+    session = null; abilityFor = null; abilityRound.clear(); tally = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
   }
@@ -159,7 +159,7 @@ function createServer(options = {}) {
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw Object.assign(new Error('Unknown campaign or chapter'), { rejected: true });
     if (campaign) { kind = 'level'; id = campaign.level; }
-    // A later fight of Boss Rush keeps the run's blessings; anything else starts without.
+    // A later fight of Boss Rush keeps the run's abilities; anything else starts without.
     try { session = sim.start(kind, id, gauntlet?.partners || [], !!gauntlet?.roster && gauntlet.fight > 0); } catch (e) {
       // A failure after validation leaves the simulation half-built: end the run properly for everyone.
       if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another level.', 'error');
@@ -167,7 +167,7 @@ function createServer(options = {}) {
     }
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
-    if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's kit
+    if (gauntlet?.roster) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
     if (gauntlet?.roster) session.pace = sim.setRushFight(gauntlet.fight);   // the curve: faster with every fight won
     if (gauntlet?.roster) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
     if (gauntlet?.roster && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
@@ -177,39 +177,39 @@ function createServer(options = {}) {
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
-    arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); blessingFor = null; blessingRound.clear();
+    arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
   }
-  // Boss Rush, between fights (CONFIG.blessings): once the kill moment has played, every connected player is offered
-  // blessings, and the next fight waits until each has chosen or the pick time runs out (then every open offer gets its
-  // first blessing, someone who left included).
-  function blessingsChosen() {
-    if (blessingFor === null) {
-      blessingFor = 0;
+  // Boss Rush, between fights (CONFIG.abilities): once the kill moment has played, every connected player is offered
+  // abilities, and the next fight waits until each has chosen or the pick time runs out (then every open offer gets its
+  // first ability, someone who left included).
+  function abilitiesChosen() {
+    if (abilityFor === null) {
+      abilityFor = 0;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
-      for (const id of ids) blessingRound.add(id);
-      sim.offerBlessings(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1);
+      for (const id of ids) abilityRound.add(id);
+      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1);
       for (const p of clients.values()) sendOffer(p);
     }
-    blessingFor += 1 / C.tickRate;
-    const waiting = [...clients.values()].filter(p => p.hello && sim.blessingOffer(p.id));
-    if (waiting.length && blessingFor < sim.blessingPickTime) return false;
-    sim.settleBlessings();
+    abilityFor += 1 / C.tickRate;
+    const waiting = [...clients.values()].filter(p => p.hello && sim.abilityOffer(p.id));
+    if (waiting.length && abilityFor < sim.abilityPickTime) return false;
+    sim.settleAbilities();
     return true;
   }
   // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
   function offerLate(p) {
-    if (blessingFor === null) return;
-    if (!blessingRound.has(p.id)) { blessingRound.add(p.id); sim.offerBlessings([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1); }
+    if (abilityFor === null) return;
+    if (!abilityRound.has(p.id)) { abilityRound.add(p.id); sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1); }
     sendOffer(p);
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
   function sendOffer(p) {
-    const offer = sim.blessingOffer(p.id);
-    if (p.hello && offer) send(p, { type: 'blessings', offer, left: Math.max(0, sim.blessingPickTime - blessingFor), held: sim.blessings()[p.id] || [], swift: swiftKill() });
+    const offer = sim.abilityOffer(p.id);
+    if (p.hello && offer) send(p, { type: 'abilities', offer, left: Math.max(0, sim.abilityPickTime - abilityFor), held: sim.abilities()[p.id] || [], swift: swiftKill() });
   }
-  // This fight was won under its par (CONFIG.swift): its blessing offer has an extra choice.
+  // This fight was won under its par (CONFIG.swift): its ability offer has an extra choice.
   const swiftKill = () => !!tally?.times.length && tally.times[tally.times.length - 1].swift && tallied;
   // Duplicate claims (one contact per swing and enemy, one parry per attack) are dropped before any work.
   function claim(p, key) {
@@ -290,7 +290,7 @@ function createServer(options = {}) {
     const P = net.pose;
     if (!s || typeof s !== 'object' || !P.required.every(k => net.finite(s[k]))) return;
     // Whitelist fields: remote data never becomes a Player object or arbitrary properties.
-    // Health and stamina within the bars this player's blessings give (Iron Blood, Deep Lungs).
+    // Health and stamina within the bars this player's abilities give (Iron Blood, Deep Lungs).
     const maxHp = sim.maxHpOf(p.id) + 1e-6, maxStamina = sim.maxStaminaOf(p.id) + 1e-6;
     if (!P.states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > maxHp || s.stateTime < 0 || s.attackT < 0) return;
     const limits = { stamina: maxStamina, flasks: sim.playerMaxFlasks, staminaDelay: C.maxCoordinate,
@@ -333,9 +333,9 @@ function createServer(options = {}) {
     }
     if (msg.type === 'control') { control(p, msg); return; }
     if (!session || msg.epoch !== session.epoch) return;
-    if (msg.type === 'bless') {   // a pick from this player's own open offer, while the offers are open
+    if (msg.type === 'pickAbility') {   // a pick from this player's own open offer, while the offers are open
       noteActivity(p);
-      if (blessingFor !== null && sim.bless(p.id, msg.id)) send(p, { type: 'blessings', offer: null, held: sim.blessings()[p.id] || [] });
+      if (abilityFor !== null && sim.pickAbility(p.id, msg.id)) send(p, { type: 'abilities', offer: null, held: sim.abilities()[p.id] || [] });
       return;
     }
     if (msg.type === 'ready') {
@@ -362,9 +362,9 @@ function createServer(options = {}) {
       send(p, { type: 'execution', enemy: net.id(msg.enemy) ? msg.enemy : null, accepted: !!accepted });
     } else if (msg.type === 'executionEnd') {
       if (net.id(msg.enemy)) sim.endExecution(p.id, msg.enemy);
-    } else if (msg.type === 'blessing') {   // a blessing's trigger only this player's browser sees (BLESSING_CLAIMS)
+    } else if (msg.type === 'ability') {   // an ability's trigger only this player's browser sees (ABILITY_CLAIMS)
       if (typeof msg.when === 'string' && (msg.enemy === undefined || net.id(msg.enemy)) && (msg.action === undefined || net.id(msg.action)) &&
-        claim(p, `blessing/${msg.when}/${msg.enemy}/${msg.serial ?? msg.seq}`)) sim.blessingClaim(p.id, msg);
+        claim(p, `ability/${msg.when}/${msg.enemy}/${msg.serial ?? msg.seq}`)) sim.abilityClaim(p.id, msg);
     } else if (msg.type === 'lifesteal') {
       if (net.id(msg.enemy) && claim(p, `heal/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.lifesteal(p.id, msg);
     } else if (msg.type === 'rest') {
@@ -523,10 +523,10 @@ function createServer(options = {}) {
           start('level', session.campaign.next, session.campaign.id);
           break;
         }
-        // Boss Rush: once the kill moment has played, the fight's time is kept and the blessing pick opens in the arena.
+        // Boss Rush: once the kill moment has played, the fight's time is kept and the ability pick opens in the arena.
         if (session.gauntlet && sim.state.completedFor >= (session.gauntlet.roster ? C.rushKillTime : Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime))) {
           if (session.gauntlet.roster && tally && !tallied) { tallyFight(true); tallied = true; }
-          if (session.gauntlet.roster && session.gauntlet.next && !blessingsChosen()) continue;
+          if (session.gauntlet.roster && session.gauntlet.next && !abilitiesChosen()) continue;
           const run = C.gauntlets[session.gauntlet.id];
           // Boss Rush: the fallen rise for the next fight with everyone else; the last fight ends the run.
           if (session.gauntlet.roster) {

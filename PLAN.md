@@ -288,8 +288,15 @@ comes back to item 6 the moment it lands.
    says `ability`; old identifiers are renamed when a pass touches them.
    - **First, the upgrades session** ("Design all upgrades and special upgrades from zero", working with Aleix):
      removes the five old blessings and builds the first set, its data, the tall-card pick screen (item 3's spec) and
-     pacts. While it works, the loop doesn't touch `js/data/blessings.js`, `CONFIG.blessings`, the offer code or the
-     pick screen. When it has shipped (merged into `main`), this item is the loop's, and it comes next in this track.
+     pacts. While it works, the loop doesn't touch `js/data/abilities.js`, `CONFIG.abilities`, `js/abilities.js`,
+     `js/ability-fx.js`, the offer code or the pick screen. It ships in slices; the item becomes the loop's only when
+     this line says **handed over**.
+     - Shipped (v7.72.0): the old five gone; 25 abilities (12 commons, 8 rares, 5 legendaries: Meteor Fall, Storm
+       King, Time Rift, Thousand Blades, Blood Moon) in `js/data/abilities.js`, levels shown as II -> III with
+       was -> now; the tall-card pick "Choose an ability"; each legendary's in-game effect; the server runs the
+       legendaries and checks every claim. Everything renamed from blessing to ability.
+     - Still the session's: the spectacle bar (sound, light, camera weight for legendaries; effects and sound for
+       rares; a touch for commons), pacts, and a first summon with its Blender model.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use.
