@@ -1,0 +1,35 @@
+Boss Rush pace, pass 45 (v7.65.0): fast fights, bots that fall. Measured with node tools/bot-fights.cjs story <trials> 600
+on every Story boss (13); "fell" is bots fallen a fight, "a fall in" the share of fights where one fell.
+
+Solo, one bot at full health all fight (BOTS=1 CLEAN=1, 3 trials), seconds to kill. A bot deals about a third of a
+skilled person's damage, so ~180 s for a bot is ~1 minute for a person.
+                  before  after   health before > after
+  pillagerCaptain   88      92
+  bellWarden       132     141
+  giant             72      75
+  varn             226     180    1800 > 1600 (Aldric 2000 > 1700)
+  antlered         274     188
+  ostrey           186     177
+  hale+harrow      229     178
+  ringer           153     188
+  hollis           215     184    3400 > 2600
+  oswin            217     186    3800 > 3500
+  agathe           246     189    4000 > 3200
+  kindlingTree     288     196    4200 > 2500
+  kingsBlade       472     415    4400 > 3000 (its shield slows a lone bot far more than a person)
+  average          215     184
+
+A party of four (PERSON=1 BOTS=4: a person stand-in and three bots), fight 1:
+  before (group scaling, +50% health a player)   158 s   0.23 fell a fight
+  after                                           58 s   0.16 fell, a fall in 8% of fights   (8 trials, 104 fights)
+Four bots (BOTS=4), fight 1:                      53 s   0.23 fell, a fall in 14%            (6 trials, 78 fights)
+
+Later in a run (PERSON=1 BOTS=4, FIGHT=n sets Boss Rush's pace for n fights won):
+  fight 10  pace x1.18    77 s   0.38 fell, a fall in 29%, 103/104 won
+  fight 20  pace x1.59   116 s   0.81 fell, a fall in 44%,  48/52 won
+  fight 40  pace x4.53   221 s   2.94 fell, a fall in 81%,  14/52 won
+
+Tried and left: a base pace of 1.15 for every boss (fight 1 took 71 s), a gentler curve (rise 0.08: fight 20 at 71 s,
+a fall in 17%), slower bot notice and more boss aggro (falls within noise). Kept: bots' slips doubled, their caution
+and healing start lower (CONFIG.bot.caution, healBelow). Bot falls early in a run
+(target: one every three fights) and by fight 10 (target: most fights) are still short: pass 2.

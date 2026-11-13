@@ -153,6 +153,9 @@ const CONFIG = {
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
            firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
+           // A boss back on its feet after a posture break builds posture at `mul` for `time` s (v7.65.0): it gets to
+           // fight before the next break, however many blades are on it, so a break stays a moment, not a loop.
+           postureRest: { time: 8, mul: 0.25 },
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
@@ -166,13 +169,17 @@ const CONFIG = {
            // A ground ring's hit is active as long as the ring spreads, but the blow that starts it lands at once: its
            // strike pose plays over the first this many s of the active phase (js/attack-anim.js, v7.64.0).
            ringStrike: 0.1 },
-  // A boss against a group (v7.35.0): every boss scales with the players in its session (people and bots, counted up to
-  // `cap`). Each player past the first adds `hp` of its health bar and `posture` of its posture (or stagger) bar, and
-  // takes `breakTime` off a break's length, so a group's extra blows in one break don't melt it. Solo it is unchanged.
-  // A def's `groupScale` overrides any of hp, posture and breakTime, or `groupScale: false` keeps its solo numbers.
-  // The server grows a boss at once when someone arrives, and shrinks it only after the group has been smaller for
-  // `leaveDelay` s, so a stalled connection or a moment in another tab doesn't resize it.
-  group: { cap: 4, hp: 0.5, posture: 0.3, breakTime: 0.1, leaveDelay: 10 },
+  // Pace (v7.65.0): no enemy or boss scales with the number of players, anywhere; a group of four meets the boss a solo
+  // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
+  // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
+  // Strikes keep their own timing. Wind-ups quicken only past the base pace and only gently, (pace / boss)^`tell`, and
+  // never below `tellFloor` of their own length: the same tell, a little sooner (6% by fight 10, 15% by 20, 40% by 40).
+  // Every boss fights at `boss` outside Boss Rush and in its first fight (1.15 made a party's fight 1 last 71 s
+  // instead of 55, tools/bot-fights.cjs, pass 45).
+  // Boss Rush's curve: after `won` fights, pace = boss x (1 + rise x (e^(won / scale) - 1)), at most `max`. Subtle and
+  // exponential: x1.07 by fight 5, x1.18 by 10, x1.6 by 20, then x4.5 by 40, where it leaves no room to answer. It
+  // depends on the fights won alone: never on health, damage or the team's size.
+  pace: { boss: 1, rise: 0.15, scale: 12.5, max: 6, tell: 0.35, tellFloor: 0.6 },
   // Boss Rush's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
   // is offered `offer` different blessings (ones they don't hold yet, while there are enough) and keeps one for the rest
   // of the run. The next fight waits until everyone has chosen, or `pickTime` s; a player who hasn't chosen by then gets
@@ -180,7 +187,7 @@ const CONFIG = {
   // `damage` and `stamina` are fractions more blow damage and stamina refill, `flasks` whole flasks, `parry` a fraction
   // wider parry window (CONFIG.parry lead and grace), `rise` rises per fight: a fresh body where you fell, `riseDelay` s
   // after the death (before a team wipe ends the fight), with `riseHp` of full health.
-  blessings: { offer: 3, pickTime: 25, riseDelay: 2.5, riseHp: 0.5,
+  blessings: { offer: 3, pickTime: 10, riseDelay: 2.5, riseHp: 0.5,
     boons: { damage: 0.15, flasks: 1, stamina: 0.4, parry: 0.5, rise: 1 } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
@@ -672,7 +679,7 @@ const CONFIG = {
     // forcing an exchange. With the enemy on it and someone else close enough to fight (`company` m from the enemy), it
     // gives `hunted` m more room and forces nothing, so the enemy's attention lands where it can be hit from behind.
     // Hurt, it minds every blow: its rolls slip `slip` times as often.
-    caution: { below: 0.4, dry: 0.6, spacing: 1.2, hunted: 1.6, company: 8, safety: 0.25, patience: 2, slip: 0.5 },
+    caution: { below: 0.3, dry: 0.45, spacing: 0.6, hunted: 0.8, company: 8, safety: 0.25, patience: 2, slip: 0.5 },
     // Room: it keeps `player` m from a person and `bot` m from another bot, and out of a person's lane (within `lane`
     // rad of the line from them to the enemy they face, when it is no farther out than they are plus `laneDepth` m);
     // `push` weighs this against where it was walking.
@@ -694,7 +701,7 @@ const CONFIG = {
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another
     probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange
     healRetreatTime: 3,         // seek space briefly; if no safe drink appears, fight for an opening instead (unless the enemy is on someone else)
-    healBelow: 0.55, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap
+    healBelow: 0.4, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap (v7.65.0: later)
     engageRange: 16, wakeRange: 9,             // fights awake enemies within, sleeping ones only this close
     follow: [2.5, 5.5],                       // start following outside the outer gap, walk down to the inner gap
     assignmentTime: 0.5,                     // fair human assignments, with surplus companions at the front

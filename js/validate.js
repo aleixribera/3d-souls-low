@@ -195,12 +195,8 @@ function validateData({ visual = true } = {}) {
     if ('critMul' in d) need(num(d.critMul) && d.critMul > 0 && d.critMul <= 1, `Enemy "${d.id}": critMul must be a number in (0, 1].`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime and hitstop.`);
-    // Group scaling (v7.35.0): false, or any of CONFIG.group's hp, posture and breakTime, which stay 0 or more and keep
-    // a break above zero seconds at CONFIG.group.cap players.
-    if ('groupScale' in d) need(d.groupScale === false || d.groupScale && typeof d.groupScale === 'object'
-      && Object.entries(d.groupScale).every(([k, v]) => ['hp', 'posture', 'breakTime'].includes(k) && num(v) && v >= 0)
-      && (d.groupScale.breakTime ?? 0) * (CONFIG.group.cap - 1) < 1,
-      `Enemy "${d.id}": groupScale must be false or an object of hp, posture and breakTime (0 or more; breakTime x (cap - 1) under 1).`);
+    // Group scaling is gone (v7.65.0): no enemy grows with the team, so a leftover `groupScale` is a mistake.
+    need(!('groupScale' in d), `Enemy "${d.id}": groupScale is gone; no enemy scales with the number of players (CONFIG.pace).`);
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
@@ -246,9 +242,12 @@ function validateData({ visual = true } = {}) {
     need(a.feel === undefined || a.feel === 'heavy', `Player attack "${a.id}": feel must be 'heavy' or left out.`);
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
-  const GS = CONFIG.group;   // group scaling (v7.35.0): a break still lasts above zero seconds at `cap` players
-  need(GS && Number.isInteger(GS.cap) && GS.cap >= 1 && ['hp', 'posture', 'breakTime', 'leaveDelay'].every(k => num(GS[k]) && GS[k] >= 0)
-    && GS.breakTime * (GS.cap - 1) < 1, 'CONFIG.group: cap must be a whole number of 1 or more; hp, posture, breakTime and leaveDelay 0 or more, with breakTime x (cap - 1) under 1.');
+  const PC = CONFIG.pace;   // a boss's pace and Boss Rush's curve (v7.65.0): it only ever speeds a boss up
+  need(PC && num(PC.boss) && PC.boss >= 1 && num(PC.rise) && PC.rise >= 0 && num(PC.scale) && PC.scale > 0 && num(PC.max) && PC.max >= PC.boss
+    && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1,
+    'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more and tellFloor in (0, 1].');
+  const PR = CONFIG.enemy.postureRest;   // v7.65.0: a boss fights a while between posture breaks
+  need(PR && num(PR.time) && PR.time >= 0 && num(PR.mul) && PR.mul >= 0 && PR.mul <= 1, 'CONFIG.enemy.postureRest: time 0 or more and mul from 0 to 1.');
   const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks
   need(AG && ['damage', 'healReach', 'hold', 'margin', 'crowd', 'areaWidth'].every(k => num(AG[k]) && AG[k] >= 0) && num(AG.memory) && AG.memory > 0
     && num(AG.areaMul) && AG.areaMul >= 1, 'CONFIG.aggro: damage, healReach, hold, margin, crowd and areaWidth must be 0 or more, memory above 0 and areaMul 1 or more.');

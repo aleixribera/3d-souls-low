@@ -17,7 +17,6 @@ globalThis.host = (() => {
   const hitBudget = new Map(), lastParry = new Map();
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
-  let groupSize = 1, groupLeft = 0;   // the players every boss is scaled for, and how long fewer have been present
   // Boss Rush's blessings (CONFIG.blessings), kept across a run's fights: ids held and the open offer, by player id,
   // and the rises (Rise Again) each player has taken this fight.
   const blessed = new Map(), offers = new Map(), rises = new Map();
@@ -166,6 +165,13 @@ globalThis.host = (() => {
     for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
     return ids.slice(0, clamp(Math.floor(Number(length)) || C.calling.length, C.calling.minLength, ids.length));
   }
+  // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won. Their health and blows stay
+  // their own. Returns the pace.
+  function setRushFight(won) {
+    const pace = rushPace(won);
+    for (const e of Game.enemies) if (e.isBoss()) e.pace = pace;
+    return pace;
+  }
   // `keepBlessings`: a later fight of the same Calling run; anything else starts with none.
   function start(kind, id, partners = [], keepBlessings = false) {
     // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
@@ -187,7 +193,7 @@ globalThis.host = (() => {
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
-    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0; groupSize = 1; groupLeft = 0;
+    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     if (!keepBlessings) { blessed.clear(); offers.clear(); }
     rises.clear();
@@ -243,7 +249,7 @@ globalThis.host = (() => {
   }
   const boonOf = (id, boon) => (blessed.get(id) || []).reduce((n, b) => n + (BLESSING_BY_ID[b].boon === boon ? CONFIG.blessings.boons[boon] : 0), 0);
   function addBot(profileId) {
-    if (bots.size >= C.maxBots) return null;
+    if (bots.size >= (globalThis.SIM_MAX_BOTS || C.maxBots)) return null;
     const used = new Set([...bots.values()].map(b => b.profile.id));
     const profile = BOT_PROFILES.find(p => p.id === profileId) || BOT_PROFILES.find(p => !used.has(p.id)) || BOT_PROFILES[bots.size % BOT_PROFILES.length];
     const b = { id: 'bot-' + (++botSerial), name: profile.name, profile, brain: null, body: null, deadFor: 0, hitstop: 0, poseSeq: 0 };
@@ -401,13 +407,6 @@ globalThis.host = (() => {
   }
   function tick(dt, holdSimulation = false) {
     time += dt;
-    // Every boss is scaled for everyone in the run, fallen or standing (CONFIG.group): a death doesn't make it easier.
-    // It grows at once and shrinks after `leaveDelay`; before the hold too, so the bars are the group's from the start.
-    const present = Math.max(1, players.length);
-    groupLeft = present >= groupSize ? 0 : groupLeft + dt;
-    if (present > groupSize || groupLeft >= CONFIG.group.leaveDelay) { groupSize = present; groupLeft = 0; }
-    // A broken or executed boss waits: a resize would cut its break short or outgrow the execution cap set at its start.
-    for (const e of Game.enemies) if (e.isBoss() && !e.netExec && e.state !== ES.BROKEN && e.state !== ES.EXECUTED) e.setGroup(groupSize);
     if (holdSimulation) return;
     let living = players.filter(p => p.alive());
     // Contacts and reservations wake it at once; a periodic check also notices any other change.
@@ -480,7 +479,7 @@ globalThis.host = (() => {
       results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
       checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
-      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise, group: e.group,
+      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
       target: e.netTarget, grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
@@ -582,7 +581,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerBlessings, settleBlessings, bless, rise, boonOf, riseDelay: CONFIG.blessings.riseDelay,
     blessingPickTime: CONFIG.blessings.pickTime,

@@ -88,17 +88,17 @@
     description: 'The hunger in the last body it kept: a champion of Ashmere, red scarf, round shield, the King\'s sword. It fights as you fight: three cuts, a held blow, a leap. Blows to its front glance off the shield, and the shield answers. Past half, the Ember shows through.',
     scale: 1.08, bulk: 1.0, radius: 0.42, color: 0x6a645c, weapon: 'sword', idle: 'sway',
     visual: { skin: 0x6a625a, roughness: 0.75, rim: 0.8 },
-    hp: 4400,   // a step past the Kindling Tree's 4,200: the last of the Story
+    hp: 3000,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1); its shield slows a bot alone more than a person
     poise: 200, speed: 3.1, turnRate: 4.0, trackRate: 2.0, approach: 0.7, kite: 0.1,
     cooldown: [0.9, 1.7], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 6,
-    posture: { max: 120, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4.5, breakTime: 3.0, hitstop: 0.2 },   // two parries break it
+    posture: { max: 84, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4.5, breakTime: 3.0, hitstop: 0.2 },   // two parries break it
     // The round shield, as the player holds it: frontal blows while it is not attacking glance off (0.35 of the damage)
     // and fill its guard; a heavy far more. Flank it or punish what it swings.
     guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
              max: 100, heavy: 30, light: 10, decayDelay: 2.5, decay: 8, breakTime: 3.0, hitstop: 0.18 },
     defaultPhases: ['blade', 'emberWorn'],
     phases: {
-      blade: { hp: 4400, attacks: ['firstCut', 'heldBlow', 'leapingBlow', 'runningCut', 'drinkPunish', 'shieldAnswer'] },
+      blade: { hp: 3000, attacks: ['firstCut', 'heldBlow', 'leapingBlow', 'runningCut', 'drinkPunish', 'shieldAnswer'] },
       emberWorn: { at: 0.5, name: 'The King\'s Blade, Ember-Worn', ignite: true, opener: 'emberLeap', cooldown: [0.6, 1.3], approach: 0.85, kite: 0.05, speed: 3.4,
         attacks: ['firstCutBurning', 'heldBlow', 'leapingBlow', 'runningCut', 'drinkPunish', 'shieldAnswer', 'emberLeap'] },
     },

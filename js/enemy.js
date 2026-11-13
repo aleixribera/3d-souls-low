@@ -53,16 +53,13 @@ function isAreaAttack(a) {
   return AREA_ATTACKS.get(a);
 }
 const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
-// A def's numbers against a group of `players` (CONFIG.group, v7.35.0): more health, a longer posture or stagger bar and
-// a shorter break per player past the first. One player, or `groupScale: false`, returns the def itself.
-function groupDef(def, players) {
-  const G = CONFIG.group, k = Math.min(Math.max(1, players | 0), G.cap) - 1;
-  if (k <= 0 || def.groupScale === false) return def;
-  const R = { ...G, ...def.groupScale }, out = { ...def, hp: def.hp * (1 + R.hp * k) };
-  const meter = M => ({ ...M, max: M.max * (1 + R.posture * k), breakTime: M.breakTime * (1 - R.breakTime * k) });
-  for (const key of ['posture', 'stagger', 'guard']) if (def[key]) out[key] = meter(def[key]);
-  return out;
+// Boss Rush's pace after `won` fights (CONFIG.pace): every boss's own pace, rising exponentially with the fights won.
+function rushPace(won) {
+  const P = CONFIG.pace, n = Math.max(0, Number(won) || 0);
+  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp(n / P.scale) - 1)));
 }
+// A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.
+const pacedChance = (chance, pace) => chance >= 1 || pace === 1 ? chance : 1 - Math.pow(1 - chance, pace);
 
 // opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path,
 // zone (the gated zone it belongs to: an alert wakes the whole zone), key (its placement, for bonfire checkpoints)
@@ -86,6 +83,7 @@ class Enemy {
     this.ranged = def.attacks.some(a => a.projectile);   // an archer: shoots from where it stands (js/projectiles.js)
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
+    this.sinceBreak = Infinity;                      // time since its last posture break or execution ended
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
@@ -111,7 +109,7 @@ class Enemy {
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
     // away instead of dying (the opening of Level 5).
     this.baseDef = def; this.boss = opts.boss || null;
-    this.plainDef = def; this.group = 1;   // its def before group scaling, and the players it is scaled for (setGroup)
+    this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -122,8 +120,7 @@ class Enemy {
   enterPhase(i) {
     const base = this.baseDef, P = base.phases[this.phaseIds[i]];
     this.phase = i;
-    this.plainDef = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
-    this.def = groupDef(this.plainDef, this.group);
+    this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
     this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
@@ -131,17 +128,10 @@ class Enemy {
   // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
   // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).
   isBoss() { return isBossDef(this.baseDef) || !!this.boss; }
-  // Scale it for a group of `players` (CONFIG.group; the server calls this for every boss as players come and go). Its
-  // health and meters keep their share of the bar, so someone joining mid-fight neither heals nor wounds it.
-  setGroup(players) {
-    const n = Math.min(Math.max(1, players | 0), CONFIG.group.cap);
-    if (n === this.group) return;
-    const old = this.def, next = groupDef(this.plainDef, n);
-    const share = (value, a, b) => a && b ? value / a.max * b.max : value;
-    this.hp = this.hp / old.hp * next.hp;
-    this.posture = share(this.posture, old.posture, next.posture);
-    this.guardMeter = share(this.guardMeter, old.stagger || old.guard, next.stagger || next.guard);
-    this.def = next; this.group = n;
+  // How fast its wind-ups run at its pace (CONFIG.pace): 1 up to a boss's base pace, then gently quicker, to a floor.
+  tellRate() {
+    const P = CONFIG.pace;
+    return this.pace <= P.boss ? 1 : Math.min(1 / P.tellFloor, Math.pow(this.pace / P.boss, P.tell));
   }
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
@@ -265,9 +255,11 @@ class Enemy {
   step(dt, player) {
     this.checkPhaseAt();
     const d = this.def, E = CONFIG.enemy;
-    this.stateTime += dt;
+    // A faster pace (CONFIG.pace) cuts recoveries short and, past a boss's base pace, quickens its wind-ups a little.
+    this.stateTime += this.state === ES.RECOVER ? dt * this.pace : this.state === ES.WINDUP ? dt * this.tellRate() : dt;
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
+    this.sinceBreak = this.state === ES.BROKEN || this.state === ES.EXECUTED ? 0 : this.sinceBreak + dt;   // CONFIG.enemy.postureRest
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
@@ -368,7 +360,7 @@ class Enemy {
         if (sightLost(this, player)) { this.stepIn = false; this.searchLook = 0; this.setState(ES.SEARCH); break; }
         this.lastSeen = { x: player.x, z: player.z };
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
-        this.cooldown -= dt * crowd.cooldownRate(this);   // slower while other enemies are mid-attack
+        this.cooldown -= dt * crowd.cooldownRate(this) * this.pace;   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
           this.cued = null;   // a kin's cue goes stale
           const shot = this.ranged && this.chooseAttack(dist, toPlayer, dt, true);
@@ -642,7 +634,7 @@ class Enemy {
   // (`if`, FOLLOW_IF) holds and whose `chance` rolls starts at once instead of the recovery: a combo that branches.
   followUp() {
     for (const f of this.attack.followUps || []) {
-      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= f.chance) continue;
+      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= pacedChance(f.chance, this.pace)) continue;
       this.beginAttack(this.attackById(f.attack));
       return true;
     }
@@ -667,7 +659,8 @@ class Enemy {
   addPosture(amount) {
     const P = this.def.posture;
     if (!P || this.state === ES.BROKEN) return false;
-    this.posture = Math.min(P.max, this.posture + amount);
+    const R = CONFIG.enemy.postureRest;
+    this.posture = Math.min(P.max, this.posture + amount * (this.sinceBreak < R.time ? R.mul : 1));
     if (this.posture < P.max) return false;
     this.hitbox = null; this.crack = 1;
     this.setState(ES.BROKEN);

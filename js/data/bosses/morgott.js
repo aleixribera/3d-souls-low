@@ -30,7 +30,7 @@ const MORGOTT = {
   visual: { skin: 0x8a8274, roughness: 0.75, rim: 0.9 },
   hp: 4800, poise: 260, speed: 2.7, turnRate: 3.3, trackRate: 1.7, approach: 0.55, kite: 0.15,
   cooldown: [1.0, 2.0], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
-  posture: { max: 150, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
+  posture: { max: 105, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
   defaultPhases: ['king', 'cursed'],
   phases: {
     // Phase 1: the cursed greatsword, the golden spear, hammer, curved sword and daggers, the rain of swords, the tail.

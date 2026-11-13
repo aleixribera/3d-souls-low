@@ -9,6 +9,9 @@
 // as one; it still plays with a bot's brain). Adds the person's share of the damage, who executed, and what the two
 // bots left to the person (executions, openings), how long they stood behind a boss that was after someone else and
 // how often they drew it off a hurt ally (the brain's tally, where it keeps one).
+// BOTS=n (pass 45): n bodies instead of three (1 to 4; with PERSON=1, one of them is the person stand-in). CLEAN=1:
+// every body is kept at full health, so a fight is a clean run and its time is the boss's health over the party's
+// damage (the solo base-health measure: BOTS=1 CLEAN=1). FIGHT=n: Boss Rush's pace for n fights won (CONFIG.pace).
 const { createSimulation } = require('../server/headless.cjs');
 const fs = require('fs');
 const which = process.argv[2] || 'all', trials = Number(process.argv[3] || 6), limit = Number(process.argv[4] || 600);
@@ -16,22 +19,24 @@ const probe = createSimulation();
 const STORY = ['pillagerCaptain', 'bellWarden', 'giant', 'varn', 'antlered', 'ostrey', 'hale+harrow', 'ringer', 'hollis', 'oswin', 'agathe', 'kindlingTree', 'kingsBlade'];
 const bosses = which === 'all' ? probe.catalog().bosses.map(b => b.id) : which === 'story' ? STORY : which.split(',');
 const rows = [];
-const person = !!process.env.PERSON;
-const zero = () => ({ fights: 0, wins: 0, time: 0, dmg: 0, dealt: 0, rolls: 0, botMin: 0, chains: 0, swingsIn: 0, hitSwinging: 0, fell: 0,
+const person = !!process.env.PERSON, clean = !!process.env.CLEAN, fight = Number(process.env.FIGHT || 0);
+const count = Math.max(1, Math.min(4, Number(process.env.BOTS || 3)));
+const zero = () => ({ fights: 0, wins: 0, time: 0, anyFell: 0, dmg: 0, dealt: 0, rolls: 0, botMin: 0, chains: 0, swingsIn: 0, hitSwinging: 0, fell: 0,
   personDealt: 0, execPerson: 0, execBots: 0, yielded: 0, offered: 0, backup: 0, drew: 0, waiting: 0, judged: 0, needless: 0, swings: 0 });
 const tot = zero();
 // Pass 38: swings = attacks a bot starts a bot-min (a chained combo once); waiting = s a bot-min spent free near the boss without swinging (the brain's tally); needless = the share of
 // rolls at a melee blow whose real hitbox reached neither the spot the bot rolled from nor the bot itself (a tracking boss
 // follows the roll); judged: rolls with a melee blow coming. An upper bound: a roll that took the bot out of a tracking
 // blow's way can look needless too, and a roll at a bolt counts while a melee blow is also winding up.
-const extra = row => `  swings ${(row.swings / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} a bot-min  waiting ${(row.waiting / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} s a bot-min  needless rolls ${row.needless}/${row.judged} (${(100 * row.needless / Math.max(1, row.judged)).toFixed(0)}%)  executions ${person ? `person ${row.execPerson} bots ${row.execBots}` : row.execBots}  left to a person: ${row.yielded} executions ${row.offered} openings  behind a boss on someone else ${(row.backup / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} s a bot-min  drew ${row.drew}` +
+const extra = row => `  swings ${(row.swings / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} a bot-min  waiting ${(row.waiting / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} s a bot-min  needless rolls ${row.needless}/${row.judged} (${(100 * row.needless / Math.max(1, row.judged)).toFixed(0)}%)  executions ${person ? `person ${row.execPerson} bots ${row.execBots}` : row.execBots}  left to a person: ${row.yielded} executions ${row.offered} openings  behind a boss on someone else ${(row.backup / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} s a bot-min  drew ${row.drew}` +
   (person ? `  person's share of damage ${(100 * row.personDealt / Math.max(1, row.dealt)).toFixed(0)}%` : '');
 for (const boss of bosses) {
   const r = { boss, ...zero() };
   const [first, ...partners] = boss.split('+');
   for (let t = 0; t < trials; t++) {
-    const sim = createSimulation({ seed: 1000 + t }); for (let i = 0; i < 3; i++) sim.addBot();
+    const sim = createSimulation({ seed: 1000 + t, maxBots: count }); for (let i = 0; i < count; i++) sim.addBot();
     sim.start('arena', first, partners); sim.setPlayers([]);
+    if (fight) sim.setRushFight(fight);
     const { Game, bots } = sim.inspect(); const bodies = sim.inspect().players, brains = [...bots.values()];
     if (person) delete bodies[0].botId;
     const aids = person ? brains.slice(1) : brains;
@@ -43,6 +48,7 @@ for (const boss of bosses) {
     const blowing = e => e.alive() && e.attack && !e.attack.projectile && (e.state === 'windup' || e.state === 'active');
     for (; time < limit; time += 1 / 60) {
       sim.setPlayers([]); sim.tick(1 / 60);
+      if (clean) for (const b of bodies) if (b.alive()) b.hp = b.maxHp;
       const boss = Game.enemies.find(e => e.alive());
       pending = pending.filter(p => {
         p.watch = p.watch.filter(w => w.e.attack === w.attack && blowing(w.e));
@@ -75,7 +81,7 @@ for (const boss of bosses) {
       if (sim.botsDown()) { result = 'loss'; break; }
     }
     r.fights++; r.time += time; if (result === 'win') r.wins++;
-    r.fell += bodies.filter(b => !b.alive()).length;
+    r.fell += bodies.filter(b => !b.alive()).length; if (bodies.some(b => !b.alive())) r.anyFell++;
     r.dealt += sim.fightTally().filter(row => row.bot).reduce((sum, row) => sum + row.damage, 0);
     if (person) r.personDealt += sim.fightTally().filter(row => row.id === bodies[0].id).reduce((sum, row) => sum + row.damage, 0);
     for (const b of aids) { const t = b.brain.tally || {}; for (const k of ['yielded', 'offered', 'backup', 'drew', 'waiting']) r[k] += t[k] || 0; }
@@ -83,7 +89,7 @@ for (const boss of bosses) {
   }
   for (const k of Object.keys(tot)) tot[k] += r[k];
   rows.push(r);
-  console.log(`${boss.padEnd(16)} wins ${r.wins}/${r.fights}  time ${(r.time / r.fights).toFixed(0)}s  dmg ${(r.dmg / r.fights).toFixed(0)}  fell ${(r.fell / r.fights).toFixed(1)}  alive/bot ${(r.botMin * 60 / r.fights / 3).toFixed(0)}s  dealt ${(r.dealt / r.fights).toFixed(0)} (${(r.dealt / (r.botMin * 60)).toFixed(1)}/s a bot)  falls/10 bot-min ${(r.fell / r.botMin * 10).toFixed(2)}  rolls/bot-min ${(r.rolls / r.botMin).toFixed(1)}  chains ${r.chains}  swings into a string ${r.swingsIn}  hit mid-swing ${r.hitSwinging}` + extra(r));
+  console.log(`${boss.padEnd(16)} wins ${r.wins}/${r.fights}  time ${(r.time / r.fights).toFixed(0)}s  dmg ${(r.dmg / r.fights).toFixed(0)}  fell ${(r.fell / r.fights).toFixed(1)} (a fall in ${(100 * r.anyFell / r.fights).toFixed(0)}%)  alive/bot ${(r.botMin * 60 / r.fights / count).toFixed(0)}s  dealt ${(r.dealt / r.fights).toFixed(0)} (${(r.dealt / (r.botMin * 60)).toFixed(1)}/s a bot)  falls/10 bot-min ${(r.fell / r.botMin * 10).toFixed(2)}  rolls/bot-min ${(r.rolls / r.botMin).toFixed(1)}  chains ${r.chains}  swings into a string ${r.swingsIn}  hit mid-swing ${r.hitSwinging}` + extra(r));
 }
-console.log(`TOTAL            wins ${tot.wins}/${tot.fights}  time ${(tot.time / tot.fights).toFixed(0)}s  dmg ${(tot.dmg / tot.fights).toFixed(0)}  fell ${(tot.fell / tot.fights).toFixed(2)}  alive/bot ${(tot.botMin * 60 / tot.fights / 3).toFixed(0)}s  dealt ${(tot.dealt / tot.fights).toFixed(0)} (${(tot.dealt / (tot.botMin * 60)).toFixed(1)}/s a bot)  falls/10 bot-min ${(tot.fell / tot.botMin * 10).toFixed(2)}  bot deaths ${tot.fell}  rolls/bot-min ${(tot.rolls / tot.botMin).toFixed(1)}  chains ${tot.chains}  swings into a string ${tot.swingsIn}  hit mid-swing ${tot.hitSwinging}` + extra(tot));
+console.log(`TOTAL            wins ${tot.wins}/${tot.fights}  time ${(tot.time / tot.fights).toFixed(0)}s  dmg ${(tot.dmg / tot.fights).toFixed(0)}  fell ${(tot.fell / tot.fights).toFixed(2)} (a fall in ${(100 * tot.anyFell / tot.fights).toFixed(0)}%)  alive/bot ${(tot.botMin * 60 / tot.fights / count).toFixed(0)}s  dealt ${(tot.dealt / tot.fights).toFixed(0)} (${(tot.dealt / (tot.botMin * 60)).toFixed(1)}/s a bot)  falls/10 bot-min ${(tot.fell / tot.botMin * 10).toFixed(2)}  bot deaths ${tot.fell}  rolls/bot-min ${(tot.rolls / tot.botMin).toFixed(1)}  chains ${tot.chains}  swings into a string ${tot.swingsIn}  hit mid-swing ${tot.hitSwinging}` + extra(tot));
 if (process.env.JSON) fs.writeFileSync(process.env.JSON, JSON.stringify({ rows, tot }, null, 1));

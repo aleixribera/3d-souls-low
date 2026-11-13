@@ -29,7 +29,7 @@ const GODFREY = {
   visual: { skin: 0xa88a6c, skinMetal: 0.3, metal: 0.55, roughness: 0.45, rim: 0.9 },
   hp: 4400, poise: 280, speed: 2.5, turnRate: 3.0, trackRate: 1.5, approach: 0.5, kite: 0.1,
   cooldown: [1.2, 2.2], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-  posture: { max: 165, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
+  posture: { max: 115, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
   defaultPhases: ['lord', 'regal', 'loux', 'rage'],
   phases: {
     // Phase 1: the axe; his stomp sends a cone ahead.

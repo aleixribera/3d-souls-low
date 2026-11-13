@@ -74,7 +74,7 @@ const MALIKETH = {
   visual: { skin: 0x3a3430, roughness: 0.8, rim: 0.9 },
   hp: 4600, poise: 240, speed: 2.8, turnRate: 3.4, trackRate: 1.8, approach: 0.55, kite: 0.15,
   cooldown: [1.0, 2.0], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-  posture: { max: 120, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.2, hitstop: 0.2 },
+  posture: { max: 84, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.2, hitstop: 0.2 },
   defaultPhases: ['clergyman', 'blackBlade'],
   phases: {
     // Phase 1: the dagger, the sling and the bestial incantations.

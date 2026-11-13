@@ -17,9 +17,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   nearly untouched. So the bot-duel numbers measure reckless companions, not a group of people; whether The Calling's
   fill-in bots should be steadier than the lobby's is the director's call. In `bot-duel` no human lives, so the bots
   are always in last-stand mode (turning it off changed little).
-- Group scaling counts everyone in the run, but a solo Story companion (`companion` on a road; none since Finn left with
-  the Lands in v7.54.0) doesn't make a boss scale; if one should, it's a `setGroup` call where companions spawn (pass 6).
-  The companion mechanic (`js/companions.js`) stays for Finn's return in the Pass (below); its browser test
+- The companion mechanic (`js/companions.js`) stays for Finn's return in the Pass (below); its browser test
   (`companion-browser.cjs`) and polish-browser's companion-feedback check left with the Lands and want a fixture road.
 - The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
   no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
@@ -132,3 +130,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   lever is a cheaper Low material (Lambert-style lighting), never a lower resolution.
 - Faster High on weak GPUs at 2x: the flame glows and light pools (`glows`) were the other consistent cost in the 4K
   per-pass probe (`git show v7.56.0:docs/render-scale-v7.56.0.md`); cheaper pools (fewer, tighter quads) would cut it.
+- Boss Rush pace (pass 45): a client never learns its boss's pace (`session.pace` is sent but unused), so a person's
+  parry lead (`parryTiming`, `js/combat.js`) is measured on the wind-up's own clock and shrinks with `tellRate()`, to
+  0.072 s at the floor (fight 40). Set `Enemy.pace` on the client from the session, or count the lead in real time.
+  Bot falls are short of the plan's target (`docs/scorecard/boss-rush-pace.txt`): pass 2 of item 2.

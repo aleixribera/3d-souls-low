@@ -221,8 +221,9 @@ for (const profile of profiles) {
     }
   }
   // A slipped roll (BOT_MOODS[].slip, v7.52.0) can be late: in this frozen fixture the blow never opens, so it never fires.
-  // Without the old last-stand forward rolls (pass 32), which never slip, about 3-5% of rolls slip late here.
-  assert.ok(responses >= 2000 * 0.94, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
+  // Without the old last-stand forward rolls (pass 32), which never slip, about 3-5% of rolls slipped late here; with
+  // the slips doubled in v7.65.0 (bots that fall in Boss Rush), about 7%.
+  assert.ok(responses >= 2000 * 0.9, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
   const rate = parries / responses;
   assert.ok(Math.abs(rate - b.profile.parry * 0.1) < 0.025, profile + ' parry rate is one tenth of its former preference (' + (rate * 100).toFixed(1) + '%)');
   console.log(profile + ': parried ' + parries + '/' + responses + ' eligible blows.');
@@ -397,7 +398,7 @@ for (const profile of profiles) {
 function trade(greed) {
   const { sim, b, p, e } = waiting('giant', 'quill');
   b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, greed, forward: 0,
-    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => (greed ? 0.1 : 0.2)); p.ctl = b.brain.hands;   // careful at 0.2: above every mood's slip chance (v7.52.0)
+    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => (greed ? 0.1 : 0.55)); p.ctl = b.brain.hands;   // careful at 0.55: above every mood's slip chance (0.5 at most since v7.65.0)
   p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0; e.cooldown = 30;
   observe(b, p, [e], 2.9);
   e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.4;
@@ -469,8 +470,8 @@ function riskOver(seconds, { allies = [], hp = 1, flasks = null, target, person 
   const alone = riskOver(18), withHuman = riskOver(18, { allies: [{ botId: null, alive: () => true }] });
   assert.ok(alone.risked && withHuman.risked, 'a healthy greedy bot takes greedy trades');
   assert.equal(riskOver(18).late, withHuman.late, 'a bot with no living person beside it is no greedier than one with');
-  assert.equal(riskOver(18, { hp: 0.3 }).risked, false, 'a badly hurt bot takes no greedy trade');
-  assert.equal(riskOver(18, { hp: 0.5, flasks: 0 }).risked, false, 'a hurt bot with no flask left takes no greedy trade');
+  assert.equal(riskOver(18, { hp: 0.25 }).risked, false, 'a badly hurt bot takes no greedy trade');
+  assert.equal(riskOver(18, { hp: 0.4, flasks: 0 }).risked, false, 'a hurt bot with no flask left takes no greedy trade');
   assert.equal(riskOver(18, { target: 'me', person: true }).risked, false, "the boss's mark gives way when someone else can fight it");
   assert.ok(riskOver(18, { target: 'me' }).risked, "alone, the boss's mark still fights");
 }
@@ -508,7 +509,7 @@ console.log('Bot risk: real punishable trades, greedy combo extensions, forward 
 
 
 // Forward rolls are not secretly given extra i-frames: a wide sweep can catch their early roll/blocked landing.
-const rollHits = {};
+const rollHits = {}, slipped = [0, 0];
 for (const forward of [0, 1]) {
   let hits = 0;
   for (let seed = 1; seed <= 32; seed++) {
@@ -520,13 +521,15 @@ for (const forward of [0, 1]) {
       sim.setPlayers([]); sim.tick(dt);
       if (e.state === 'recover') break;
     }
-    hits += Number(p.hp < p.maxHp);
+    // A slipped roll (BOT_MOODS[].slip) is meant to be caught sometimes; this checks the rolls that went as planned.
+    if (b.brain.tally.slips) slipped[forward]++; else hits += Number(p.hp < p.maxHp);
   }
   rollHits[forward] = hits;
 }
+assert.ok(slipped[0] < 32, 'most of these rolls go as planned (' + slipped[0] + ' slipped)');
 assert.equal(rollHits[0], 0, 'the ordinary geometric escape still clears the sweep');
 assert.ok(rollHits[1] > 0 && rollHits[1] < 32, 'forward gambles can succeed or be punished by the same real sweep');
-console.log('Forward rolls: ' + rollHits[1] + '/32 punished; ordinary escapes ' + rollHits[0] + '/32.');
+console.log('Forward rolls: ' + rollHits[1] + '/32 punished; ordinary escapes ' + rollHits[0] + '/32 (' + slipped[0] + ' slipped, not counted).');
 
 // Greed against one target must still react to a different attacker or an incoming bolt.
 {

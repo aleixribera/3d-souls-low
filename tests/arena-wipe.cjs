@@ -45,7 +45,7 @@ async function peer(origin) {
     assert.equal(session.teamWipeOnly, true);
     ready(a); ready(b); await flush(b);
     app.sim.inspect().Game.duel.hp -= 24;
-    // Group scaling (v7.35.0) may resize Margit's bar as poses arrive; her share of it is what must hold.
+    // Her share of the bar is what must hold.
     const duel = app.sim.inspect().Game.duel, share = duel.hp / duel.def.hp;
     pose(a, true); await flush(a);
     // Wait longer than the ordinary respawn delay while a teammate survives.

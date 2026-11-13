@@ -78,7 +78,7 @@ fs.mkdirSync(output, { recursive: true });
     assert.equal(await b.evaluate(() => Game.player.hp), 17, 'incoming snapshots do not overwrite personal health');
     // Contacts are range-checked against the sender's pose on the server: stand at reach until it has seen that pose
     // (untouchable meanwhile, so Margit's swings cannot end the fixture early).
-    await until(() => app.sim.inspect().Game.duel.group === 2);   // both players in: the boss is scaled for two
+    await until(() => app.sim.inspect().players.filter(p => !p.botId).length === 2);   // both players in
     await a.evaluate(() => { const e = Game.duel, p = Game.player; p.invulnerable = () => true; p.x = e.x - 2; p.z = e.z; p.yaw = Math.PI / 2; });
     await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => Math.hypot(p.x - e.x, p.z - e.z) < 3); });
     await a.evaluate(() => {
@@ -123,8 +123,8 @@ fs.mkdirSync(output, { recursive: true });
     assert.deepEqual(defense, { parried: true, dodged: true, vulnerableAfterRoll: true });
     console.log('Delayed client: immediate parry, roll i-frames and damage after i-frames passed.');
     const c = await player('Late friend');
-    // A third player grows her bar; she keeps her share of it (left / full).
-    await c.waitForFunction(share => __arena.multiplayer.info.ready && Game.duel.group === 3 && Math.abs(Game.duel.hp / Game.duel.def.hp - share) < 1e-9, left / full, { timeout: 90000 });
+    // A third player changes nothing: she sees the same bar at the same share (left / full).
+    await c.waitForFunction(share => __arena.multiplayer.info.ready && Math.abs(Game.duel.hp / Game.duel.def.hp - share) < 1e-9, left / full, { timeout: 90000 });
     assert.equal(app.clients.size, 3);
     await a.evaluate(() => multiplayer.show());
     await a.locator('#lobbyManage').click();

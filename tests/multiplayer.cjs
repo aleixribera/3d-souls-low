@@ -114,12 +114,12 @@ function peer(url, origin) {
     const start = await a.next('start'); await b.next('start');
     const epoch = start.session.epoch;
     for (const p of [a, b]) { p.send({ type: 'ready', epoch }); p.send({ type: 'pose', epoch, pose: pose() }); }
-    await a.next('frame', m => m.frame.time > 0 && m.frame.enemies[0].group === 2);   // both in: Margit is scaled for two
-    const full = app.sim.inspect().Game.duel.def.hp;
-    assert.ok(full > 3200, 'two players fight a longer bar than one');
+    await a.next('frame', m => m.frame.time > 0);
+    const duel = app.sim.inspect().Game.duel, full = duel.def.hp;
+    assert.equal(full, duel.baseDef.phases[duel.phaseIds[0]].hp ?? duel.baseDef.hp, 'two players fight the bar one player does (v7.65.0)');
     a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
-    await a.next('frame', m => m.frame.enemies[0].group === 2 && m.frame.enemies[0].hp < full);
+    await a.next('frame', m => m.frame.enemies[0].hp < full);
     assert.equal(app.sim.inspect().Game.duel.hp, full - 24, 'duplicate contacts do not damage twice');
     b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/ostrey', attack: 'heavy', charge: 0, swing: 'old' });
     const c = peer(url, origin); peers.push(c); await c.join();

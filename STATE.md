@@ -11,10 +11,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 45, item 2 "Fast fights, bots that fall", pass 1 of 2): no team-size scaling, the pace curve, bots
-  that fall, solo-measured boss health, sooner breaks, a 10 s blessing pick. Check: `tools/bot-fights.cjs` before and
-  after (solo times, fight 1 with four bodies, bot falls), tests of 1 vs 4 players and of the curve. Pass 2: kill
-  moment, streak HUD, swift kill. Then item 3 (UI: lobby done in pass 43, `js/ui-theme.js`; title, Practice, options,
+- Track B (pass 45, v7.65.0, item 2 pass 1 of 2): no team-size scaling, `CONFIG.pace` curve, sooner breaks with
+  `postureRest`, solo-measured health, 10 s pick. `docs/scorecard/boss-rush-pace.txt`: a party's fight 1 58 s (was
+  158), 116 s at fight 20; bot falls short (a fall in 8% of fights at 1, 29% at 10). Pass 2: more falls, kill moment,
+  streak HUD, swift kill, the pick in the arena, next boss straight in. Then item 3 (UI: lobby done in pass 43, `js/ui-theme.js`; title, Practice, options,
   pause, HUD, Boss Rush screens next). Boss Rush is id `boss-rush`, kind `calling`.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
@@ -33,8 +33,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
-- Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
-  `tick()`; `tests/group-scaling.cjs`, `boss-only-browser.cjs`.
+- Pace, not team size (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate` (`js/enemy.js`), `setRushFight`
+  (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
@@ -85,16 +85,14 @@ In `BACKLOG.md`.
 - (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
-- (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
-  (`CONFIG.group`). Tuned on bots, who fight worse than people; tuned when the Lands bosses still existed. Worth a feel check with friends.
+- (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
+  the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
-  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
+  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 10 s to
   choose. Rise Again is once a fight, not once a run.
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
-  bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
-  each, the Ringer 3,000, the Regent 3,400, Oswin 3,800, Agathe 4,000 (her stand-in keeps the
-  Toll Wisp's tall hat), the Kindling Tree 4,200 (its stand-in is chapter 6's Hunger stood upright), the King's Blade 4,400 (its second bar
-  "the King's Blade, Ember-Worn"; its stand-in is the player's own figure in ash).
+  bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP (v7.65.0): Ostrey 3,000, Hale and Harrow 1,700
+  each, the Ringer 3,000, the Regent 2,600, Oswin 3,500, Agathe 3,200, the Kindling Tree 2,500, the King's Blade 3,000.

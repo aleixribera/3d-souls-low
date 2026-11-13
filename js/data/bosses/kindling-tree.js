@@ -51,9 +51,9 @@
     scale: 2.5, bulk: 1.2, radius: 0.9, color: 0x6a2a14, weapon: 'none', idle: 'sway',
     visual: { skin: 0x7a3a1c, roughness: 0.85, rim: 0.6 },
     holyLight: { color: 0xff8a2a, core: 0xffd890 },   // its marks and its rising: the Ember's red-gold, not Radagon's light
-    hp: 4200,   // Radagon's 5,200 ended the old road; the tree is the thirteenth of the Story, a step past Agathe's 4,000
+    hp: 2500,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     defaultPhases: ['rooted', 'kindled'],
-    phases: { rooted: phase(P.order, { hp: 4200 }), kindled: phase(P.shattering, { name: 'The Kindling Tree, Ablaze', ignite: true }) },
+    phases: { rooted: phase(P.order, { hp: 2500 }), kindled: phase(P.shattering, { name: 'The Kindling Tree, Ablaze', ignite: true }) },
     attacks,
   };
   ENEMY_DEFS.push(TREE); ENEMY_BY_ID[TREE.id] = TREE;

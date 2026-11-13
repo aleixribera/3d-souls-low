@@ -62,11 +62,12 @@ const bot = (() => {
     const a = e.attack;
     if (!a || a.projectile || (e.state !== ES.WINDUP && e.state !== ES.ACTIVE)) return null;   // a bolt is read in flight
     let i = e.hitIndex, hit = a.hits[i], eta;
-    if (e.state === ES.WINDUP) eta = hit.startup - e.stateTime + (e.holdLeft > 0 ? e.holdLeft : 0);
+    // A boss late in a Boss Rush winds up faster (Enemy.tellRate), and the bot reads the quicker tell as a person would.
+    if (e.state === ES.WINDUP) eta = (hit.startup - e.stateTime) / (e.tellRate ? e.tellRate() : 1) + (e.holdLeft > 0 ? e.holdLeft : 0);
     else if (e.hitbox) eta = -e.stateTime;
     else {
       if (i + 1 >= a.hits.length) return null;
-      eta = hit.active + (hit.follow || 0) - e.stateTime + a.hits[i + 1].startup; hit = a.hits[++i];
+      eta = hit.active + (hit.follow || 0) - e.stateTime + a.hits[i + 1].startup / (e.tellRate ? e.tellRate() : 1); hit = a.hits[++i];
     }
     const b = hit.box || a.box;
     if (b.ring) {   // an expanding ring reaches this body a little after it opens: when its outer edge touches it (pass 32: not its middle)
@@ -106,7 +107,10 @@ const bot = (() => {
   function opening(e, me, intent = 'attack') {
     const C = B(), d = e.def, quick = quickest(e), st = e.stateTime;
     if (!e.alive() || ENEMY_GROUPS.hidden.has(e.state)) return Infinity;
-    const cool = Math.max(0, e.cooldown || 0) * C.windowTrust, base = d.cooldown ? d.cooldown[0] * C.windowTrust : 0;
+    // A boss's pace (Enemy.pace) runs its recoveries and cooldown faster and its tell (Enemy.tellRate) its wind-ups:
+    // their seconds are read in real time here.
+    const pace = e.pace > 0 ? e.pace : 1, tell = e.tellRate ? e.tellRate() : 1;
+    const cool = Math.max(0, e.cooldown || 0) * C.windowTrust / pace, base = d.cooldown ? d.cooldown[0] * C.windowTrust / pace : 0;
     // A far enemy must first walk in (its own blows' reach), unless it can dash or leap.
     const long = Math.max(...attacksOf(e).map(a => reach(e, a, a.hits[0], me)));
     const walk = Number.isFinite(long) ? Math.max(0, edge(me, e) + me.radius - long) / Math.max(0.5, d.speed || 2) : 0;
@@ -119,13 +123,13 @@ const bot = (() => {
         }
         const blow = nextBlow(e, me);
         if (blow && edge(me, e) + me.radius + e.radius <= reach(e, blow.attack, blow.hit, me)) return Math.max(0, blow.eta);
-        const left = a.hits.slice(e.hitIndex).reduce((n, h) => n + h.startup + h.active + (h.follow || 0), 0) - st;
+        const left = a.hits.slice(e.hitIndex).reduce((n, h) => n + h.startup / tell + h.active + (h.follow || 0), 0) - (e.state === ES.WINDUP ? st / tell : st);
         // A follow-up skips the recovery: its wind-up starts as the last hit ends.
         let chained = Infinity;
-        for (const f of followsOf(e, a)) chained = Math.min(chained, f.hits[0].startup + Math.max(0, edge(me, e) + me.radius - reach(e, f, f.hits[0], me)) / Math.max(0.5, d.speed || 2));
-        return Math.max(0, left) + Math.min(a.recovery + base + quick + walk, chained);
+        for (const f of followsOf(e, a)) chained = Math.min(chained, f.hits[0].startup / tell + Math.max(0, edge(me, e) + me.radius - reach(e, f, f.hits[0], me)) / Math.max(0.5, d.speed || 2));
+        return Math.max(0, left) + Math.min(a.recovery / pace + base + quick + walk, chained);
       }
-      case ES.RECOVER: return Math.max(0, e.attack ? e.attack.recovery - st : 0) + base + quick + walk;
+      case ES.RECOVER: return Math.max(0, e.attack ? (e.attack.recovery - st) / pace : 0) + base + quick + walk;
       case ES.PARRIED: return Math.max(0, d.parriedTime - st) + base + quick;
       case ES.STAGGER: return Math.max(0, d.staggerTime - st) + base + quick;
       case ES.HURT: return Math.max(0, d.flinchTime - st) + Math.min(cool + quick, quickestReaction(e, me, intent));
@@ -201,7 +205,7 @@ const bot = (() => {
     // offered: openings left to a person; backup: s spent behind an enemy that was after someone else; drew: times it
     // pressed to draw an enemy off a hurt or drinking ally; waiting: s spent free within 3 m of a light's reach of an
     // enemy it could hit, not swinging (waiting out a string, a beat before going in, circling, baiting or regrouping).
-    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0 };
+    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0, slips: 0 };
     let waitedThis = false, nearThis = false, yieldedThis = null, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
     // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
     function holdGap(me, o) {
@@ -369,7 +373,7 @@ const bot = (() => {
         const slip = response === 'roll' && !risky && mood && rng() < mood.slip * (steady ? C.caution.slip : 1) ? (rng() < 0.6 ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
         s = { key, at: hands.time + span(C.notice, rng), plan: response, done: false, walk, risky, slip: slip !== null,
           lead: slip !== null ? slip : response === 'parry' ? span(C.parryLead, rng) : response === 'jump' ? span(jump, rng) : span(early ? C.risk.rollLead : C.rollLead, rng) };
-        seen.set(e, s);
+        seen.set(e, s); if (s.slip) tally.slips++;
       }
       return s;
     }
@@ -628,16 +632,18 @@ const bot = (() => {
       const exec = typeof execution !== 'undefined' ? execution.target(me, enemies) : null;
       // A stagger or a long recovery with a person in reach of it is theirs first: wait off the flank, then join (once
       // they swing, or after `first` s). Not mid-swing, and never over an execution it could take.
-      const big = me.riposte <= 0 && (e.state === ES.STAGGER || e.state === ES.RECOVER && e.attack && e.attack.recovery >= T.punishRecovery);
+      // A boss's recovery runs at its Boss Rush pace (Enemy.pace), so its seconds are counted in real time here.
+      const pace = e.state === ES.RECOVER && e.pace > 0 ? e.pace : 1;
+      const big = me.riposte <= 0 && (e.state === ES.STAGGER || e.state === ES.RECOVER && e.attack && e.attack.recovery / pace >= T.punishRecovery);
       const near = big && person && edge(person, e) <= C.reach + S.near;
       if (!big) offeredThis = sharedThis = null;
       if (near && person.isAttacking && person.isAttacking()) sharedThis = e;
-      if (near && sharedThis !== e && e.stateTime < S.first && me.isFree() && !exec) {
+      if (near && sharedThis !== e && e.stateTime / pace < S.first && me.isFree() && !exec) {
         if (offeredThis !== e) { offeredThis = e; tally.offered++; }
         return { mv: room(me, e, allies, orbit(C.reach, 0.6)), lock: e };
       }
       const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER, ES.BROKEN].includes(e.state) ||
-        e.state === ES.RECOVER && e.attack && e.attack.recovery - e.stateTime >= T.punishRecovery && window >= T.punishWindow ||
+        e.state === ES.RECOVER && e.attack && (e.attack.recovery - e.stateTime) / pace >= T.punishRecovery && window >= T.punishWindow ||
         !person && e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;   // beside a person, it does not rush the kill
       if (opportunity) punishLeft = T.punishCommit;
       const keyOpening = opportunity || punishLeft > 0 && window > commit(A()[me.def.moveset.ground.light]) + spare;

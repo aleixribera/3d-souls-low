@@ -24,12 +24,13 @@ const BOT_DODGES = {
 // gap: the shortest pause inside an enemy's string it swings into (s; null waits out every string);
 // spacing: m it keeps beyond the reach of a string still coming (rolled once a fight); goIn: s it takes to go in once
 // the string is over; patience, greed and reset scale the profile's; heal adds to CONFIG.bot.healBelow;
-// slip is the chance a roll is mistimed (CONFIG.bot.slip): bots are human, not perfect.
+// slip is the chance a roll is mistimed (CONFIG.bot.slip): bots are human, not perfect (doubled in v7.65.0: a decent
+// friend, not a machine).
 const BOT_MOODS = {
-  patient: { gap: null, spacing: [0.8, 1.3], goIn: [0.15, 0.32], patience: 1.3, greed: 0.4, reset: 1.2, heal: 0.05, slip: 0.15 },
-  measured: { gap: 1.1, spacing: [0.5, 0.9], goIn: [0.09, 0.22], patience: 1, greed: 0.65, reset: 1, heal: 0, slip: 0.2 },
-  bold: { gap: 0.8, spacing: [0.25, 0.6], goIn: [0.05, 0.15], patience: 0.7, greed: 0.95, reset: 0.8, heal: -0.05, slip: 0.27 },
-  wary: { gap: null, spacing: [1.1, 1.7], goIn: [0.17, 0.36], patience: 1.15, greed: 0.5, reset: 1.6, heal: 0.1, slip: 0.17 },
+  patient: { gap: null, spacing: [0.8, 1.3], goIn: [0.15, 0.32], patience: 1.3, greed: 0.4, reset: 1.2, heal: 0.05, slip: 0.3 },
+  measured: { gap: 1.1, spacing: [0.5, 0.9], goIn: [0.09, 0.22], patience: 1, greed: 0.65, reset: 1, heal: 0, slip: 0.4 },
+  bold: { gap: 0.8, spacing: [0.25, 0.6], goIn: [0.05, 0.15], patience: 0.7, greed: 0.95, reset: 0.8, heal: -0.05, slip: 0.5 },
+  wary: { gap: null, spacing: [1.1, 1.7], goIn: [0.17, 0.36], patience: 1.15, greed: 0.5, reset: 1.6, heal: 0.1, slip: 0.34 },
 };
 // Traits are 0..1 leanings. Patience is seconds without an exchange before taking the initiative.
 // Pattern weights choose a plan every CONFIG.bot.tacticTime seconds, rather than reconsidering each frame.

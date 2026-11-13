@@ -28,8 +28,9 @@ function validate(context) {
   if (errors.length) throw new Error(`Game data check failed (${errors.length}):\n- ${errors.join('\n- ')}`);
   validated = true;
 }
-// `seed` (tests): a seeded Math.random inside this simulation, so bot fights replay the same way.
-function createSimulation({ seed } = {}) {
+// `seed` (tests): a seeded Math.random inside this simulation, so bot fights replay the same way. `maxBots` (tools):
+// more bots than the lobby allows, for a four-body party of bots.
+function createSimulation({ seed, maxBots } = {}) {
   // An ordinary isolated VM global avoids Node's contextified-property proxy
   // on every shared helper call in terrain, collision and AI hot loops.
   const context = vm.createContext(vm.constants.DONT_CONTEXTIFY);
@@ -38,6 +39,7 @@ function createSimulation({ seed } = {}) {
     location: { hash: '' }, window: { addEventListener() {} },
     projectiles: { fire() {} },
     bindLabel: () => '',   // lesson cards name keys; the server never shows them
+    SIM_MAX_BOTS: Number.isInteger(maxBots) ? maxBots : null,
   });
   // Keep hot numeric operations in the VM's lexical scope. Repeated built-in
   // lookups through a contextified global are much slower than normal scripts.

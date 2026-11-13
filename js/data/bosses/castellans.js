@@ -370,7 +370,7 @@
     scale: 1.75, bulk: 1.15, radius: 0.78, weapon: 'greataxe', idle: 'sway',
     hp: 1700, poise: 220, speed: 2.3, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.15,
     flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-    posture: { max: 120, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
+    posture: { max: 84, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
     attacks,
   };
   // While her sister stands: her own half, and a longer breath between blows. Alone: the whole suit, sooner and closer;

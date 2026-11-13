@@ -57,10 +57,10 @@
     ...GODFREY, id: 'oswin', model: 'oswinFirstCrown', name: 'Oswin, the First Crown',
     description: 'The first king of Thrale the Ember ever wore, risen to his throne in the ash. A great axe, and stomps that crack the burning floor (jump them). At 40% he casts the axe down and the Ember takes his hands: he grabs, and only a roll gets clear.',
     color: 0x6a5a48, visual: { skin: 0x9a948c, skinMetal: 0.1, metal: 0.4, roughness: 0.7, rim: 0.9 },
-    hp: 3800,   // Godfrey's 4,400 crowned the old road; Oswin is the fifth of Thrale's, a step past the Regent's 3,400
+    hp: 3500,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     defaultPhases: ['crowned', 'roaring', 'uncrowned', 'hunger'],
     phases: {
-      crowned: phase(P.lord, { hp: 3800 }), roaring: phase(P.regal, {}),
+      crowned: phase(P.lord, { hp: 3500 }), roaring: phase(P.regal, {}),
       uncrowned: phase(P.loux, BARE), hunger: phase(P.rage, BARE),
     },
     attacks,

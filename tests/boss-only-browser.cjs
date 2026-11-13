@@ -47,11 +47,11 @@ const { config: C } = require('../js/net-protocol.js');
       p.hitbox = null;
     }, hits);
     await a.waitForFunction(() => Game.duel.hp === Game.duel.def.hp - 72);
-    // Group scaling (v7.35.0): two players, so the boss's bars are the server's two-player bars on every client.
-    const served = app.sim.inspect().Game.duel;
-    for (const page of [a, b]) assert.deepEqual(await page.evaluate(() => ({ group: Game.duel.group, hp: Game.duel.def.hp, posture: Game.duel.def.posture.max })),
-      { group: 2, hp: served.def.hp, posture: served.def.posture.max }, 'a client draws the boss on the server\'s group-scaled bars');
-    assert.ok(served.def.hp > served.plainDef.hp, 'two players fight a larger bar than one');
+    // No team-size scaling (v7.65.0): two players meet the boss's own bars, the same on the server and every client.
+    const served = app.sim.inspect().Game.duel, own = served.baseDef.phases?.[served.phaseIds?.[served.phase]]?.hp ?? served.baseDef.hp;
+    for (const page of [a, b]) assert.deepEqual(await page.evaluate(() => ({ hp: Game.duel.def.hp, posture: Game.duel.def.posture.max })),
+      { hp: served.def.hp, posture: served.def.posture.max }, 'a client draws the boss on the server\'s bars');
+    assert.equal(served.def.hp, own, 'two players fight the bar one player does');
     if (process.env.GROUP_SHOT) await a.screenshot({ path: process.env.GROUP_SHOT });
     const allyHealth = a.locator('#onlineAlive').getByRole('meter', { name: 'Ember health', exact: true });
     const worldHealth = a.locator('.online-name').filter({ hasText: 'Ember' }).locator('.ally-health');

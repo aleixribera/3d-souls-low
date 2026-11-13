@@ -220,7 +220,7 @@ MODEL_DEFS.oldOstrey = {
     visual: { skin: 0x8a8274, roughness: 0.8, rim: 0.9 },
     hp: 3000, poise: 240, speed: 2.5, turnRate: 3.0, trackRate: 1.6, approach: 0.5, kite: 0.15,
     cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
-    posture: { max: 130, parry: 65, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
+    posture: { max: 91, parry: 65, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['porter', 'kindled'],
     phases: {
       // The porter: the bar and the closed lantern.

@@ -32,7 +32,7 @@ const GODRICK = {
   visual: { skin: 0x9a8c7c, skinMetal: 0.3, metal: 0.5, roughness: 0.5, rim: 0.9 },
   hp: 4000, poise: 260, speed: 2.4, turnRate: 3.0, trackRate: 1.5, approach: 0.5, kite: 0.1,
   cooldown: [1.2, 2.2], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-  posture: { max: 150, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
+  posture: { max: 105, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
   defaultPhases: ['grafted', 'dragon'],
   phases: {
     // Phase 1: the axe and the storm.

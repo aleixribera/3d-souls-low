@@ -44,7 +44,7 @@
     visual: { skin: 0x5a4632, roughness: 0.85, rim: 0.5 },
     hp: 2600, poise: 240, speed: 3.1, turnRate: 3.4, trackRate: 1.9, approach: 0.8, kite: 0.02,
     cooldown: [0.5, 1.1], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 7,
-    posture: { max: 140, parry: 45, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.22 },
+    posture: { max: 98, parry: 45, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.22 },
     defaultPhases: ['stalk', 'gorge'],
     phases: {
       stalk: { hp: 2600, attacks: ['rake', 'flurry', 'slam', 'charge', 'hindSweep'] },

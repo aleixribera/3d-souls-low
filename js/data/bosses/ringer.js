@@ -206,7 +206,7 @@ MODEL_DEFS.ringerOfThrale = {
     visual: { skin: 0xb0a8a0, roughness: 0.75, rim: 0.9 },
     hp: 3000, poise: 220, speed: 2.6, turnRate: 3.2, trackRate: 1.8, approach: 0.55, kite: 0.1,
     cooldown: [1.0, 2.0], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
-    posture: { max: 125, parry: 62, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
+    posture: { max: 88, parry: 62, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['chained', 'tolling'],
     phases: {
       // Chained: she cannot leave the circle her chain let her reach (8.5 m round where she stands).

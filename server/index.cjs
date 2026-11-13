@@ -163,6 +163,7 @@ function createServer(options = {}) {
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's boons
+    if (gauntlet?.roster) session.pace = sim.setRushFight(gauntlet.fight);   // the curve: faster with every fight won
     if (!gauntlet?.roster) tally = null;
     else if (gauntlet.fight === 0) tally = { roster: gauntlet.roster, startedAt: performance.now(), beaten: 0, players: new Map() };
     if (campaign) session.campaign = campaign;

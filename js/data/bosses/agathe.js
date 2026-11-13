@@ -68,9 +68,9 @@
     description: 'The abbess who held the knife when Thrale\'s monks tried to cut the Ember out of the earth. A great hook, flung stones, and a claw that rends the floor into a line of shockwaves (roll or jump). At half her strength the storm comes at her back, and every blow of the hook rends: a wound that holds your health down until it closes.',
     scale: 1.8, color: 0x2c2c32, idle: 'sway',
     visual: { skin: 0xb0aaa0, roughness: 0.75, rim: 0.9 },
-    hp: 4000,   // Maliketh's 4,600 guarded the old road's throne; Agathe opens Act III, a step past Oswin's 3,800
+    hp: 3200,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     defaultPhases: ['abbess', 'storm'],
-    phases: { abbess: phase(P.clergyman, { hp: 4000 }), storm: phase(storm, { name: 'Agathe, the Storm at Her Back' }) },
+    phases: { abbess: phase(P.clergyman, { hp: 3200 }), storm: phase(storm, { name: 'Agathe, the Storm at Her Back' }) },
     attacks,
   };
   ENEMY_DEFS.push(AGATHE); ENEMY_BY_ID[AGATHE.id] = AGATHE;

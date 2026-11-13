@@ -53,9 +53,9 @@
     description: 'The steward the hunger left to keep Aurel fed: gilded, gracious, cruel. A gilded greatsword, and weapons of gilt drawn out of the air. Past 60% the gilt cracks, the hunger shows through, and his blade burns.',
     scale: 1.85, bulk: 1.05, radius: 0.72, color: 0x8a7448,
     visual: { skin: 0xd8c08a, roughness: 0.6, rim: 0.9 },
-    hp: 3400,   // Morgott's 4,800 was the old road's hardest duel; the Regent is the fourth of Thrale's, a step past the Ringer's 3,000
+    hp: 2600,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     defaultPhases: ['gracious', 'hungry'],
-    phases: { gracious: phase(MORGOTT.phases.king, { hp: 3400 }), hungry: phase(MORGOTT.phases.cursed, {}) },
+    phases: { gracious: phase(MORGOTT.phases.king, { hp: 2600 }), hungry: phase(MORGOTT.phases.cursed, {}) },
     attacks,
   };
   ENEMY_DEFS.push(HOLLIS); ENEMY_BY_ID[HOLLIS.id] = HOLLIS;

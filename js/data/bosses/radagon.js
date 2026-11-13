@@ -38,7 +38,7 @@ const RADAGON = {
   visual: { skin: 0xa8a29a, roughness: 0.8, rim: 1.0 },
   hp: 5200, poise: 270, speed: 2.8, turnRate: 3.4, trackRate: 1.8, approach: 0.55, kite: 0.15,
   cooldown: [1.0, 2.0], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
-  posture: { max: 150, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
+  posture: { max: 105, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
   defaultPhases: ['order', 'shattering'],
   phases: {
     // Phase 1: the hammer, the holy spears, the grab, the rune slam and the teleports.
