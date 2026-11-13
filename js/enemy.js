@@ -39,12 +39,20 @@ const FOLLOW_IF = {
   flank: (e, dist, rel) => REACTIONS.flank(e, null, rel) && dist <= e.attack.range + CONFIG.enemy.followReach,
   behind: (e, dist, rel) => REACTIONS.behind(e, null, rel) && dist <= e.attack.range + CONFIG.enemy.followReach,
 };
-// One of `attacks`, with odds in proportion to their chances (null if they are all 0).
-function pickByChance(attacks) {
-  const total = attacks.reduce((s, a) => s + attackChance(a), 0);
+// One of `attacks`, with odds in proportion to their chances (or `weight`; null if they are all 0).
+function pickByChance(attacks, weight = attackChance) {
+  const total = attacks.reduce((s, a) => s + weight(a), 0);
   let r = Math.random() * total;
-  return total > 0 ? attacks.find(a => (r -= attackChance(a)) < 0) || attacks[attacks.length - 1] : null;
+  return total > 0 ? attacks.find(a => (r -= weight(a)) < 0) || attacks[attacks.length - 1] : null;
 }
+// An area attack (CONFIG.aggro, v7.35.0): a hit at least `areaWidth` m wide, or a ring round its owner. A boss facing a
+// group standing together (`grouped`, set by the server) favours these.
+const AREA_ATTACKS = new WeakMap();
+function isAreaAttack(a) {
+  if (!AREA_ATTACKS.has(a)) AREA_ATTACKS.set(a, (a.hits || []).some(h => { const b = h.box || a.box; return !!b && (!!b.ring || b.w >= CONFIG.aggro.areaWidth); }));
+  return AREA_ATTACKS.get(a);
+}
+const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
 // A def's numbers against a group of `players` (CONFIG.group, v7.35.0): more health, a longer posture or stagger bar and
 // a shorter break per player past the first. One player, or `groupScale: false`, returns the def itself.
 function groupDef(def, players) {
@@ -552,9 +560,10 @@ class Enemy {
     const inReach = this.def.attacks.filter(a => !a.when && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
       && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
     const close = inReach.filter(isClose);
-    if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close);
+    const chance = this.grouped ? groupedChance : attackChance;
+    if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close, chance);
     const mul = crowd.chanceMul(this);
-    for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < attackChance(a) * (a.projectile ? 1 : mul) * dt) return a;
+    for (const a of inReach) if (!strikesAtOnce(a) && Math.random() < chance(a) * (a.projectile ? 1 : mul) * dt) return a;
     return null;
   }
   // Reactions (`when`, v5.3): an attack whose situation holds and whose range window holds the player rolls its chance

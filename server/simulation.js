@@ -222,7 +222,7 @@ globalThis.host = (() => {
         resolveCombat(g);
         b.hitstop = g.hitstop;
       } finally { acting = null; }
-      Game.enemies.forEach((e, i) => creditDamage(b.id, before[i] - e.hp));
+      Game.enemies.forEach((e, i) => { creditDamage(b.id, before[i] - e.hp); noteDamage(e, b.id, before[i] - e.hp); });
       if (p.alive() && !p.invulnerable()) for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
         p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
       }
@@ -307,6 +307,30 @@ globalThis.host = (() => {
       : RESTING.has(e.state) && !(e.huntTime > 0) && e.grounded && !(e.posture > 0) && !(e.guardMeter > 0) && e.poise === e.def.poise
         && (e.state === ES.PATROL || Math.hypot(e.vx, e.vz) < 0.05)));
   }
+  // A boss fights the group (CONFIG.aggro): it remembers who hurt it lately (`e.threat`, damage by player id, fading
+  // over `memory` s). A drinker within `healReach` of its body draws it at once; otherwise the lowest score (distance less recent
+  // damage) wins, once the current target has been held `hold` s and only by `margin` m.
+  function noteDamage(e, id, amount) {
+    if (amount > 0 && e.isBoss()) { e.threat = e.threat || new Map(); e.threat.set(id, (e.threat.get(id) || 0) + amount); }
+  }
+  function fadeThreat(e, dt) {
+    if (!e.threat) return;
+    const keep = Math.exp(-dt / CONFIG.aggro.memory);
+    for (const [id, v] of e.threat) if (v * keep < 0.01) e.threat.delete(id); else e.threat.set(id, v * keep);
+  }
+  function bossTarget(e, valid, current, distance) {
+    const A = CONFIG.aggro, bar = e.def.hp || 1;
+    // A drinker keeps it while still drinking: two drinkers side by side don't flip it every step.
+    if (current && current.state === PS.USE_ITEM && distance(current) - e.radius <= A.healReach) return current;
+    let drinker = null, near = A.healReach;
+    for (const p of valid) if (p.state === PS.USE_ITEM) { const d = distance(p) - e.radius; if (d <= near) { drinker = p; near = d; } }
+    if (drinker) return drinker;
+    const score = p => distance(p) - A.damage * 100 * (e.threat?.get(p.id) || 0) / bar;
+    let best = null, bestScore = Infinity;
+    for (const p of valid) { const s = score(p); if (s < bestScore) { best = p; bestScore = s; } }
+    if (!current || !best || best === current) return best || current;
+    return time - (e.targetSince ?? -Infinity) >= A.hold && bestScore < score(current) - A.margin ? best : current;
+  }
   function tick(dt, holdSimulation = false) {
     time += dt;
     // Every boss is scaled for everyone in the run, fallen or standing (CONFIG.group): a death doesn't make it easier.
@@ -336,7 +360,7 @@ globalThis.host = (() => {
       const absent = proxy({ ...checkpoint, hp: 0, state: PS.DEAD }, null);
       crowd.enemies = [];
       for (const e of Game.enemies) if (!e.netExec) {
-        e.savePrev(); e.netTarget = null; e.update(dt, absent);
+        fadeThreat(e, dt); e.savePrev(); e.netTarget = null; e.update(dt, absent);
         if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
       }
       progress(dt); return;
@@ -346,16 +370,21 @@ globalThis.host = (() => {
     // Choose targets first, then run each player's crowd independently. Fights
     // in separate rooms must not slow one another or circle the first player.
     for (const e of Game.enemies) {
+      fadeThreat(e, dt);
       // Keep an attack's target locked until its recovery. Outside attacks pick a
       // visible player on the same floor, with hysteresis to avoid twitchy retargets.
       const valid = living.filter(p => !e.arena || inArea(e.arena, p.x, p.z));
       let target = valid.find(p => p.id === e.netTarget);
       const score = p => Math.hypot(p.x - e.x, p.z - e.z) + Math.abs(p.y - e.y) * CONFIG.height.reach + (gateBetween(e, p) ? e.notice : 0);
-      if (!target || !e.in('attacking')) {
+      if (e.isBoss()) {
+        if (!target || !e.in('attacking')) target = bossTarget(e, valid, target, score);
+        e.grouped = valid.filter(p => Math.hypot(p.x - e.x, p.z - e.z) - e.radius <= CONFIG.aggro.crowd).length >= 2;
+      } else if (!target || !e.in('attacking')) {
         const scores = new Map(valid.map(p => [p.id, score(p)]));
         target = valid.reduce((best, p) => !best || scores.get(p.id) < scores.get(best.id) * (p.id === e.netTarget ? 1 : C.targetHysteresis) ? p : best, target);
       }
       target = target || living[0];
+      if (target.id !== e.netTarget) e.targetSince = time;
       e.netTarget = target.id; groups.get(target.id).enemies.push(e);
     }
     for (const id of crowdClocks.keys()) if (!groups.has(id)) crowdClocks.delete(id);
@@ -426,7 +455,7 @@ globalThis.host = (() => {
     if (!Number.isFinite(strike.damage) || !Number.isFinite(strike.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
-    creditDamage(id, hp - e.hp);
+    creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
@@ -466,7 +495,7 @@ globalThis.host = (() => {
   }
   function finishExecution(e) {
     const { damage, player } = e.netExec; e.netExec = null;
-    creditDamage(player, Math.min(e.hp, damage));
+    creditDamage(player, Math.min(e.hp, damage)); noteDamage(e, player, Math.min(e.hp, damage));
     e.hp = Math.max(0, e.hp - damage);
     if (e.hp <= 0) { if (!e.outlast()) e.die(); }
     else { e.posture = 0; e.guardMeter = 0; e.setState(ES.STAGGER); }

@@ -4,16 +4,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 2, item 2, bosses fight the group, pass 1 of it: a boss switches targets by a readable rule
-(who hurt it most lately, closest, healing) instead of locking one player, and its sweeps and area attacks punish a
-group standing together. Check: frames and a test of a 3-player fight where the boss changes target at least twice and
-every player gets hit. Targets are picked in `server/simulation.js` `tick()` (nearest with hysteresis, `netTarget`).
+Next: `PLAN.md` stage 2, item 3, the run, pass 1 of it: from the lobby the host starts a run (5 bosses by default,
+random or hand-picked from every boss), bots fill empty slots, the last fight is two bosses at once, the fallen rise
+for the next fight if anyone stands, the run ends when all fall. Check: two browser clients and a bot finish a 3-boss
+run end to end. It grows out of `gauntlet()` / `C.gauntlets` in `server/simulation.js`.
 
-Pass 6 shipped item 1, group scaling (unreleased; stage 2 releases as v7.35.0 when the stage is done, and its
-changelog lines go in then): `CONFIG.group` scales every boss's health (+50% per extra player), posture bar (+30%) and
-break (-10%) for everyone in the run, up to 4; it grows at once and shrinks after 10 s. Three bots now need 48-148 s
-for an Ashmere boss (28/30 won), but beat the Lands' bosses only 13/48 (`docs/scorecard/boss-duels-3-bots-grouped.txt`).
-Notes: `docs/feature-history.md`, last section. The kit-part cleanup in `BACKLOG.md` was due "once stage 1 is done".
+Pass 7 shipped item 2, bosses fight the group (unreleased; stage 2 releases as v7.35.0 when the stage is done, and its
+changelog lines go in then): `CONFIG.aggro` makes a boss turn on a drinker within 10 m, else on whoever hurt it most
+lately, else the closest, holding a target 3 s; area attacks are 3x as likely with 2+ players bunched within 4 m.
+Pass 6 shipped item 1, group scaling (`CONFIG.group`). Notes: `docs/feature-history.md`, the last two sections.
 
 ## Works
 
@@ -34,6 +33,9 @@ Notes: `docs/feature-history.md`, last section. The kit-part cleanup in `BACKLOG
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`). Tests that pinned Margit's solo bar in
   group sessions now read her scaled bar or her share of it.
+- Bosses fight the group (v7.35.0, unreleased): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
+  `grouped` and `isAreaAttack` in `js/enemy.js`; checked by `tests/boss-attention.cjs` (seeded bot fights through
+  `createSimulation({ seed })`), frames `docs/scorecard/boss-attention-1..3.jpg`, `boss-attention.txt`.
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -50,9 +52,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 6's push (group scaling): check it at the start of pass 7. Locally the Node group, the multiplayer, lobby,
-reconnect, arena-wipe, boss-only, bot and spectator browser tests passed; `lobby-polish-browser` failed once on a
-graphics-preset switch and passed on the rerun (flaky, not touched by this change).
+CI on pass 6's push was still running at the end of pass 7 (15 min in); CI on pass 7's push: check both at the start
+of pass 8. Pass 7 locally: the whole Node group (20/20) and the multiplayer, lobby, reconnect, boss-only, bot, spectator
+and arena-wipe browser tests (9/9) passed.
 
 ## wip/ branches
 

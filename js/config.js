@@ -166,6 +166,13 @@ const CONFIG = {
   // The server grows a boss at once when someone arrives, and shrinks it only after the group has been smaller for
   // `leaveDelay` s, so a stalled connection or a moment in another tab doesn't resize it.
   group: { cap: 4, hp: 0.5, posture: 0.3, breakTime: 0.1, leaveDelay: 10 },
+  // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
+  // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
+  // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
+  // constant of `memory` s); the lowest wins. It keeps a target at least `hold` s and changes only for one `margin` m
+  // better. It never turns mid-attack. With two or more players within `crowd` m of its body, its area attacks (a hit `areaWidth` m wide or more, or a
+  // ring round it) are `areaMul` times as likely. Ordinary enemies keep the closest player; one player sees no change.
+  aggro: { damage: 1.5, memory: 8, healReach: 10, hold: 3, margin: 1.5, crowd: 4, areaWidth: 4.5, areaMul: 3 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
   notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 15, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line

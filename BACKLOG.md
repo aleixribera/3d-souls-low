@@ -26,3 +26,5 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   white that washes out the ground and the controls panel (`docs/scorecard/level-the-tower.jpg`, `level-the-church.jpg`).
 - Radagon is unbeaten by one bot or three (0/6 each, `docs/scorecard/boss-duels-*.txt`): check by hand whether a group
   of people can beat it before The Calling offers it.
+- A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
+  server doesn't check flask use. Harmless among friends; worth a check if the lobby ever opens wider (pass 7).

@@ -213,6 +213,9 @@ function validateData({ visual = true } = {}) {
   const GS = CONFIG.group;   // group scaling (v7.35.0): a break still lasts above zero seconds at `cap` players
   need(GS && Number.isInteger(GS.cap) && GS.cap >= 1 && ['hp', 'posture', 'breakTime', 'leaveDelay'].every(k => num(GS[k]) && GS[k] >= 0)
     && GS.breakTime * (GS.cap - 1) < 1, 'CONFIG.group: cap must be a whole number of 1 or more; hp, posture, breakTime and leaveDelay 0 or more, with breakTime x (cap - 1) under 1.');
+  const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks
+  need(AG && ['damage', 'healReach', 'hold', 'margin', 'crowd', 'areaWidth'].every(k => num(AG[k]) && AG[k] >= 0) && num(AG.memory) && AG.memory > 0
+    && num(AG.areaMul) && AG.areaMul >= 1, 'CONFIG.aggro: damage, healReach, hold, margin, crowd and areaWidth must be 0 or more, memory above 0 and areaMul 1 or more.');
   // Executions (js/execution.js): the attack they run, and every tuning number.
   need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
   const X = CONFIG.execution;

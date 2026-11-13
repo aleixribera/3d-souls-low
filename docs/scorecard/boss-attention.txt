@@ -1,0 +1,13 @@
+# Boss attention (pass 7, v7.35.0 unreleased): node tests/boss-attention.cjs
+rule: closest, then the striker, then the drinker, then the closest again; alone, unchanged
+pillagerCaptain  44 s: 8 target changes, 3/3 bots hit, 4/7 area attacks
+bellWarden       57 s: 12 target changes, 3/3 bots hit, 5/7 area attacks
+margit           22 s: 3 target changes, 3/3 bots hit, 0/6 area attacks
+boss attention: ok
+
+# Before the change (closest player, 0.8 hysteresis), three bots, 90 s: target changes per boss
+giant 8, pillagerCaptain 16, bellWarden 35, varn 14, margit 31, godrick 21 (twitching between whoever was nearest)
+# After: giant 7, pillagerCaptain 7, bellWarden 14, varn 8, margit 13, godrick 10; each change has a reason (damage, drinker, closer, fallen)
+
+# Area attacks while grouped (two or more players within 4 m), three bots, 8 bosses x 2 fights of 120 s
+areaMul 3: 154 of 243 attacks (63%)   areaMul 1 (no weighting): 112 of 253 (44%)

@@ -28,7 +28,8 @@ function validate(context) {
   if (errors.length) throw new Error(`Game data check failed (${errors.length}):\n- ${errors.join('\n- ')}`);
   validated = true;
 }
-function createSimulation() {
+// `seed` (tests): a seeded Math.random inside this simulation, so bot fights replay the same way.
+function createSimulation({ seed } = {}) {
   // An ordinary isolated VM global avoids Node's contextified-property proxy
   // on every shared helper call in terrain, collision and AI hot loops.
   const context = vm.createContext(vm.constants.DONT_CONTEXTIFY);
@@ -41,6 +42,7 @@ function createSimulation() {
   // Keep hot numeric operations in the VM's lexical scope. Repeated built-in
   // lookups through a contextified global are much slower than normal scripts.
   vm.runInContext('const Math = globalThis.Math, Number = globalThis.Number;', context);
+  if (Number.isInteger(seed)) vm.runInContext(`{ let s = ${seed} >>> 0; Math.random = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }`, context);
   for (const file of scripts) vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), context, { filename: file });
   validate(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'simulation.js'), 'utf8'), context, { filename: 'server/simulation.js' });
