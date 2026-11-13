@@ -4,8 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 30, item 1, v7.53.0): the story's ending; frames `docs/scorecard/ending-*.jpg`, in-page `Still Mere:`.
-  Next on the track: item 2, Ostrey redone.
+- Track A (pass 37, item 2, Ostrey pass 1 of 2, v7.58.0): his own Blender figure (bar, hanging lantern) and moves;
+  check: on the bridge his tells differ and the lantern opens at 55%. `docs/scorecard/ostrey-*.jpg`, in-page `Moor`.
+  Pass 2 (optional): the bridge level and the lantern-overhead tells. Else next: Hale and Harrow.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 35, v7.57.0): full stats; the aid is behaviour (`CONFIG.bot.support`). `docs/scorecard/bot-aid.txt`.
@@ -27,8 +28,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
-  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from
-  normals; gold and thin shafts want a lower `rim` (v7.39.0).
+  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`).
@@ -45,7 +45,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
   (an enemy's `holyLight`), `kings-blade.js` (the player's own moves from `PLAYER_DEF`, a shield `guard`); each an old
-  boss's moves renamed, but the King's Blade. In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
+  boss's moves renamed, but the King's Blade and Ostrey (v7.58.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
@@ -56,9 +56,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `PERSON=1`: one stands in for a person).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
-- Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
-  CLIP=x,y,w,h`, `EVAL=<js>`), `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>` (`HIDEP=1`, `YAWOFF=0.15`,
-  `WAIT=ms`), `lab-probe.cjs <id>`, `solo-multi.cjs "<filter>" "<filter>" ...` (several in-page filters, one browser).
+- Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs`,
+  `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>`, `lab-probe.cjs <id>`, `solo-multi.cjs "<f>" "<f>" ...`.
 
 ## Broken
 
@@ -66,8 +65,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI on pass 36's lean files, a9c04a6 (pushes cancel each other's CI: look at the newest finished run; notes-only pushes no longer start
-one) and its container. Probes (untracked): `.scratch/ending-frames.cjs`, `title-shots.cjs`, `render-scale.cjs`
+CI and the container of v7.58.0 (pushes cancel each other's CI: look at the newest finished run). Probes (untracked): `.scratch/ending-frames.cjs`, `title-shots.cjs`, `render-scale.cjs`
 (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches

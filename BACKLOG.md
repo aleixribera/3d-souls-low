@@ -50,14 +50,15 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   that join the chest (they read as ball joints with the arms spread, `docs/scorecard/gargoyle-arena-close.jpg`), are its
   second step (stage 4).
 - Chapter 7, the Windward Moor (v7.38.0, pass 13), rough; its second step: the Lantern Thralls following their bearer as a
-  flock (an opt-in `follows` field: they patrol the same stretch today and wake on its alarm); Ostrey's lantern in his
-  hand (the kit `lantern` is hand-built, so it waits for his Blender figure) and his own figure (a stand-in now: the
-  Shover's body re-coloured, no shield, the kit cane in iron); the thralls' and bearer's own figures (re-coloured Hollow
-  Soldier and Toll Wisp now); the moor's knight, warden, lancers and bowmen are Ashmere's, standing in for Thrale's.
+  flock (an opt-in `follows` field: they patrol the same stretch today and wake on its alarm); the thralls' and bearer's
+  own figures (re-coloured Hollow Soldier and Toll Wisp now); the moor's knight, warden, lancers and bowmen are Ashmere's,
+  standing in for Thrale's. Ostrey's own figure and moves shipped in v7.58.0 (pass 37); left from it: the gate bridge
+  itself (a level rework fit for him), the lantern-overhead poses (Lantern Bursts' tell reads weak), the mantle texture
+  (blotchy up close, `docs/scorecard/ostrey-lab.jpg`), Gate Drop's turn into Shoulder the Gate (beyond 6 m, lenient),
+  the lantern up to ~5 degrees off plumb (`updateHang` reads world rotations through the root's uneven scale).
 - Finn joins in the Pass as the champion's former squire (`STORY.md` People; `PLAN.md` track A item 2): not built. The
   companion today is per road (`LANDS_STORY.companion`); Ashmere's road would need it from chapter 6 or 7 on.
-- Old Ostrey reuses Margit's tuning (3,000 HP, posture 130) and the moor gives 6 flasks, as Stormhill did; no one has
-  fought him by hand yet.
+- Old Ostrey (3,000 HP, poise 240) and the moor's 6 flasks: no one has fought him by hand yet.
 - The Empty Sentinel (v7.39.0, pass 14): its upper arms are thin mail tubes under the great pauldrons, and the left
   tasset leaves a patch of the thigh's mail showing beside the front panel (`docs/scorecard/sentinel-lab.jpg`); the kit's
   halberd spends 180 of its ~350 triangles on six grip rings. Second step, stage 4.
