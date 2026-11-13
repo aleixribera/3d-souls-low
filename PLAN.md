@@ -22,8 +22,11 @@ Aleix, 2026-11-13.
 
 - The Calling is renamed **Boss Rush** (track B, item 1).
 - Group scaling goes (Aleix, 2026-11-13, replacing his earlier "keep it"): no enemy or boss scales with team size,
-  anywhere. Boss Rush difficulty scales with fights won instead (track B, item 2).
-- The five blessings: overhauled (track B, item 3).
+  anywhere. Boss Rush difficulty scales with fights won instead (track B, item 3).
+- The five blessings: overhauled (track B, item 4).
+- The UI (2026-11-13): way better to use and look at, before Endless (track B, item 2). Not Souls-like references;
+  mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
+  scene behind the menus.
 - End-screen titles: plain English, the loop's wording.
 - Chapters 6-14's words: the loop's draft stands. Story text is a draft the loop may rewrite.
 - THE ROAD GOES ON stays until the ending ships; after that the story keeps growing until Aleix stops it.
@@ -135,7 +138,31 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    co-op. **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
    several, or two teams against each other) or any level, and be fighting in seconds. Check: frames of the title,
    the lobby option and Practice at desktop and phone width; a test starts each mode.
-2. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
+2. **The UI redesign, the whole game** (Aleix, 2026-11-13: menus and UI way better to use and to look at). It comes
+   before Endless, blessings and crates, so their screens are built on it.
+   - **What's wrong now** (v7.59.0 frames in `docs/scorecard/modes-*` and `.scratch/calling/blessing-desktop.png`):
+     three looks (a serif list on the title and Practice; a web-app lobby with rounded cards, a gold gradient button,
+     a LEADER pill and small all-caps labels; a web-card blessing panel), uneven navigation (key-only hints, Back on
+     some screens only, a title mixing a list and a row of buttons), and clutter (a line of explanation under every
+     option, four overlays stacked after a boss dies, a permanent CONTROLS list in the HUD).
+   - **References, not Souls-like UIs.** Collect screens from games praised for menus that are easy to use and look
+     great, name the patterns they share, and build from those. Show the chosen references to Aleix with the first
+     screen.
+   - **Input:** mouse and keyboard first, and full controller support on every screen: every control reachable and
+     usable with a gamepad, focus always visible, button hints that follow the device used last.
+   - **The best control for each job:** a dropdown, a slider, a value cycled in place, a grid or a list, whichever is
+     best there. Not one style forced everywhere, but one direction across every menu and the HUD: one type
+     system, one palette, one focus style, one way back from every screen.
+   - **Less on screen:** a title stands alone; a line of text only when it says something the screen doesn't already
+     show; one overlay at a time.
+   - **Behind the menus:** a cool live 3D scene of a castle (a real Blender model, baked light), inside the Normal
+     preset's 60 fps on integrated graphics.
+   - **Order:** the lobby first, its desktop and phone frames shown to Aleix under "Needs Aleix" with the references;
+     then the title, Practice, options, pause, the HUD and the Boss Rush screens (blessing pick, end of run). The
+     loop goes on while it waits; his answer redirects it.
+   Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
+   screen checked against the `design-audit` rule book.
+3. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
    can come. Each fight is harder than the last, from one `CONFIG` rule: exponential in fights won but subtle, fairly
    easy at first, slowly more challenging for a good while, then genuinely impossible. The team-size multipliers
    (`CONFIG.group`, `setGroup`, the server's per-tick scaling) are removed for every enemy and boss in every mode; a
@@ -144,23 +171,18 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    modifiers appear after the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss)
    and are shown by name under the boss's bar; every few fights two bosses come at once. The end screen shows bosses
    beaten. Check: a test of fight 1, 5, 10, 20 and 40's numbers (the curve), a test that 1 and 4 players face the same boss, and a frame of a modifier on screen.
-3. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
+4. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
    change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
    offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
    kit. Upgrades happen inside the game, during the run (between fights, in the arena), never in a menu between runs;
    a run's upgrades end with it. It's multiplayer: an ability acts mainly on its owner and the boss, and touches
-   teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
+   teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 3's curve is tuned against a stacked, upgraded team, not a bare one, so
    it still reaches impossible. Check: the odds in a test; each rare one and an upgrade seen working in a fight; a
    test of the curve against a team holding a typical late-run kit.
-4. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
+5. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
    shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,
    eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
    animation and effects; it should make players want another run just to open the next. Check: odds and saving in a
    test; a frame sequence of a crate rolling and landing, and the Collection.
-5. **The UI redesign**, the whole game. References first: screens from popular games praised for their UI (Dark Souls
-   III and Elden Ring for calm, Hades for clarity in a run, Lies of P, Sekiro and others), the patterns they share,
-   and one screen (the title or the lobby) shown to Aleix under "Needs Aleix" before the rest. Plain English,
-   easy to use, the game's dark tone. Check: desktop and phone frames of every screen against the `design-audit` rule
-   book.
