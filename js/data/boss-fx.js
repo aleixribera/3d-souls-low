@@ -70,4 +70,9 @@ const BOSS_FX = {
     varnStomp: { impact: 'shatter' }, varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     knellStomp: { impact: 'blaze' }, tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },
     ashWave: { element: 'fire' }, burningAscent: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; when it catches (the second phase), fire.
+  ostrey: { element: 'steel', aura: 0xffb050, phases: { kindled: 'fire' }, attacks: {
+    barOverhead: { impact: 'shatter', windup: 'gather' }, gateDrop: { impact: 'shatter' },
+    coalToss: { element: 'fire' }, coalDouble: { element: 'fire' }, coalPunish: { element: 'fire' }, coalRetreat: { element: 'fire' }, lanternBash: { element: 'fire' },
+    kindleOpener: { element: 'fire', impact: 'blaze', windup: 'gather' }, burningDrop: { element: 'fire', impact: 'blaze' }, stampSlam: { element: 'fire', impact: 'blaze' } } },
 };

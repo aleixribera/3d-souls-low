@@ -402,6 +402,22 @@ const ENEMY_DEFS = [
     attacks: B.attacks.map(a => a.id === 'bowShot' ? { ...a, id: 'castleShot', projectile: { ...a.projectile, speed: 28 }, range: 34 } : a) });
 }
 
+// The Lantern Thralls of the Windward Moor (Level 7, v7.38.0; LORE.md 10c): blind herd-folk who walk in a flock after one
+// who carries a lantern. Blindness is the levels' short `notice`; the bearer sees, and its alarm (`alert`) brings the
+// flock. Rough stand-ins: the thrall is the Hollow Soldier's figure and moves, the bearer the Toll Wisp's, re-coloured.
+{
+  const H = ENEMY_DEFS.find(d => d.id === 'hollow'), W = ENEMY_DEFS.find(d => d.id === 'wisp');
+  ENEMY_DEFS.push({ ...H, id: 'lanternThrall', model: 'lanternThrall', name: 'Lantern Thrall',
+    description: 'Blind, smiling herd-folk of Thrale who walk close after a lantern. They find you by the lantern\'s eyes, or by your step.',
+    color: 0x7a7464, visual: { ...H.visual, skin: 0xb8b2a4 }, hp: 90, speed: 2.4, turnRate: 4.2, trackRate: 1.9, cooldown: [0.8, 1.6],
+    attacks: H.attacks.map(a => ({ ...a, id: a.id === 'swing' ? 'thrallSwing' : 'thrallOverhead', name: a.id === 'swing' ? 'Herder\'s Swing' : 'Overhead Chop' })) });
+  ENEMY_DEFS.push({ ...W, id: 'lanternBearer', model: 'lanternBearer', name: 'Lantern-Bearer',
+    description: 'The one thrall of the flock who sees, and carries the light the others follow. When it sees you, the flock comes. Its flare can be blocked: close in and cut it down.',
+    color: 0x8a6a3a, hp: 70, autoLock: true,   // the one to cut down first, so lock-on takes it
+    // the handbell's toll before the flare stays the cue to move (its stand-in figure holds the bell)
+    attacks: W.attacks.map(a => a.id === 'wispBolt' ? { ...a, id: 'bearerFlare', name: 'Lantern Flare' } : { ...a, id: 'bearerPush', name: 'Lantern Shove' }) });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

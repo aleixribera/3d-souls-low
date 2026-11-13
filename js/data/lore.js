@@ -189,5 +189,31 @@ const LORE = {
       ],
       scenes: [{ kind: 'corpse', x: 62, y: 3.6, z: 6, yaw: 1.1 }, { kind: 'corpse', x: 104, y: 6, z: -19, yaw: 2.6 }],
     },
+    // Chapter 7 (v7.38.0; LORE.md 10c): Thrale's border.
+    'windward-moor': {
+      npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'moor-shrine',
+        lines: [
+          'Over the top, and down the other side. My grandmother\'s song had a line for this: the heath where the wind lives.',
+          'There are people out on the moor. They walk together, close, after one who carries a lantern. They don\'t look at anything.',
+          'I called to one of them. She smiled at me. She didn\'t stop.',
+          'The song says the Seven came out of this country by night, and a man at the gate let them through. It doesn\'t say what it cost him.',
+          'There\'s a gate at the far end, on a bridge over the gorge. Something stands in it, very tall, with a light.',
+          'I\'ll keep the fire. I\'ve got good at it.',
+        ],
+        idle: 'The wind never stops here. I think it has been blowing since they left.' }],
+      inscriptions: [
+        { id: 'l7-stone', x: 10, z: 8.85, yaw: Math.PI, mount: 'wall', label: 'Border stone',
+          lines: ['"Here the king\'s peace begins. Go softly, and follow the light."'] },
+        { id: 'l7-milestone', x: 33.5, z: 2.5, yaw: Math.PI / 2, mount: 'floor', label: 'Milestone', lines: ['"Aurel, nine days. Keep to the lantern."'] },
+        { id: 'l7-bridge', x: 230, y: 8, z: -1.5, yaw: Math.PI / 2, mount: 'floor', label: 'Cut in the bridge stones',
+          lines: ['"The porter keeps the gate until the king sends word."', 'Scratched beneath it: "No word came."'] },
+      ],
+      scenes: [
+        { kind: 'candle', x: 0.9, z: -1.6 }, { kind: 'candle', x: 1.2, z: -3.9 },
+        { kind: 'corpse', pose: 'seated', x: 106.5, z: 7.2, yaw: Math.PI }, { kind: 'corpse', pose: 'lying', x: 120, z: -6.5, yaw: 0.6 },
+        { kind: 'corpse', pose: 'lying', x: 58, z: -3, yaw: 1.2 },
+        { kind: 'corpse', pose: 'reaching', x: 211, y: 8, z: -1.6, yaw: Math.PI / 2 },
+      ],
+    },
   },
 };

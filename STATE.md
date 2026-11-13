@@ -4,20 +4,19 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 12 shipped `PLAN.md` stage 3 track B item 1's first half, the Gargoyle in Blender (pass 1 of it), and released
-v7.37.0. Check met: 40 baked pieces, 2,992 tris (budget 3,000); lab sheet `docs/scorecard/gargoyle-lab.jpg`, frames in
-play `gargoyle-arena.jpg` (front-lit, facing) and `gargoyle-castle.jpg`. Next: track A item 2, chapter 7 (`STORY.md`),
-rough; then track B's Empty Sentinel.
+Pass 13 shipped `PLAN.md` stage 3 track A item 2's first chapter, chapter 7 the Windward Moor (pass 1 of it, rough),
+and released v7.38.0. Check met: Story mode goes church -> moor -> THE ROAD GOES ON (in-page `Story`, `Moor`); frames
+`docs/scorecard/moor-ostrey.jpg` (Old Ostrey on the gate bridge) and `moor-flock.jpg` (a Lantern Thrall flock). Next:
+track B, the Empty Sentinel in Blender; then track A's chapter 8, Saltgrave.
 
 ## Works
 
 - Baked figures: wanderer, Hollow Soldier, Ashen Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart
   Bowman (v7.28.0), Beastman of Farum Azula (v7.29.0, 2,800 body tris, 2,926 with the scimitar), Toll Wisp (v7.30.0,
-  2,881 tris, a handbell in the left hand; the first figure with no kit part, so baked meshes now share corners), Grafted
+  2,881 tris, no kit part), Grafted
   Scion (v7.31.0, 2,774 body tris, 2,900 with the scimitar), Executioner (v7.32.0, 2,687 body tris, 2,991 with the
-  greataxe; its skirt is four panels on new cloth bones loinF/B/L/R), Crucible Squire (v7.33.0, 2,190 body tris, 2,992
-  with the kit oval shield and greatsword), Shover (v7.34.0, 2,428 body tris, 2,988 with the kit pavise of 560; a
-  kettle hat over a bevor, a barrel cuirass bound in iron hoops), Gargoyle (v7.37.0, 2,992 tris, no weapon; a `tail`
+  greataxe), Crucible Squire (v7.33.0, 2,190 body tris, 2,992
+  with the kit oval shield and greatsword), Shover (v7.34.0, 2,428 body tris, 2,988 with the kit pavise), Gargoyle (v7.37.0, 2,992 tris, no weapon; a `tail`
   bone, wings on `wingL`/`wingR`). `js/baked/*.js`; checked by the in-page `model`
   filter (5 tests), `Shover` (1), `Bowman` (4), `Lands` (15), `Wisp` (1), `Scion`, `Ultra performance` and validation
   at load.
@@ -49,6 +48,10 @@ rough; then track B's Empty Sentinel.
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
   `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
   default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
+- Chapter 7, the Windward Moor (v7.38.0, rough): `js/levels/windward-moor.js` (Stormhill's layout), Old Ostrey
+  (`js/data/bosses/ostrey.js`, Margit's engineering renamed through one table, no golden weapons; stand-in figure the
+  Shover re-coloured), `lanternThrall` / `lanternBearer` (stand-ins: Hollow Soldier, Toll Wisp re-coloured). Checked by
+  the in-page `Moor` (6), `Story` (21) and `Church` tests. Its second step is in `BACKLOG.md`.
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -66,9 +69,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 12's push and the v7.37.0 container workflow: check at the start of pass 13. Pass 11's CI and the v7.36.0
-container were green. Pass 12 locally: the Node group (22/22), the in-page `model` filter (5) and Level 5's scripted
-run.
+CI on pass 13's push and the v7.38.0 container: check in pass 14 (pass 12's CI was still running). Pass 13 locally: the Node group (22/22), the in-page `Story` (21), `Church` (12), `Lore` (7), `Moor` (6),
+`model` (5) and `Levels` filters. `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` now lists chapter 7 but was not run.
 
 ## wip/ branches
 
@@ -94,3 +96,6 @@ The earlier three (order of work, how to see progress, the Toll Wisp's descripti
   (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
+- (overridable) Chapter 7's words are the loop's: Ysolde's six lines, the three inscriptions, Ostrey's and the thralls'
+  descriptions, and the porter's second phase, "the lantern catches" (`LORE.md` 6, 7, 10c). Ostrey has 3,000 HP and
+  the moor grants 6 flasks, as Stormhill did.

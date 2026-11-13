@@ -228,6 +228,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The snow is clean here. I had forgotten snow could be.
 
+### Level 7 — The Windward Moor (in the border shrine, by the first bonfire)
+1. Over the top, and down the other side. My grandmother's song had a line for this: the heath where the wind lives.
+2. There are people out on the moor. They walk together, close, after one who carries a lantern. They don't look at anything.
+3. I called to one of them. She smiled at me. She didn't stop.
+4. The song says the Seven came out of this country by night, and a man at the gate let them through. It doesn't say what it cost him.
+5. There's a gate at the far end, on a bridge over the gorge. Something stands in it, very tall, with a light.
+6. I'll keep the fire. I've got good at it.
+
+*Idle:* The wind never stops here. I think it has been blowing since they left.
+
 ---
 
 ## 7. Inscriptions
@@ -262,6 +272,11 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 - **Over the church door**: "Seven came through. Leave it open behind you."
 - **Below the last icon** (behind the iron gate, once the Hunger is ash): "We held it. We did not own it. — the Seven"
 
+### Level 7 — The Windward Moor
+- **The border stone** (in the shrine, by the first bonfire): "Here the king's peace begins. Go softly, and follow the light."
+- **A milestone on the heath**: "Aurel, nine days. Keep to the lantern."
+- **On the gate bridge** (before the fog): "The porter keeps the gate until the king sends word." Someone has scratched beneath it: "No word came."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -291,8 +306,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after chapter 6 on **THE ROAD GOES ON**: *Thrale lies
-beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 7, the Windward
+Moor) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -314,6 +329,19 @@ found a stag starving in the snow and put it on. The player, nameless as ever, f
 tries the same thing twice over, because the hunger learned that from a king; it only strikes what stands before it,
 because it was only ever a thing that looked ahead.
 
+## 10c. Level 7 — The Windward Moor (chapter 7 of the Story)
+Chapter 7, after the church. Over the pass lies **Thrale**, the country the Seven never named to their children, and
+its border is a storm-held heath: the moor, a gorge cut through it, a cliff road with no rail, and a gate bridge into
+the hills. A storm has sat on the moor since the Seven left.
+
+Its people are **thralls**: alive, fed on, smiling. The **Lantern Thralls** of the moor are blind herd-folk who walk
+in a close flock after one who carries a lantern; they see nothing, and come only where the lantern sees.
+
+**Old Ostrey, the Porter** keeps the gate bridge: a giant in the armour of Thrale's gate-wardens, with an iron gate-bar
+and a lantern, still keeping the border for a king long dead. The song Ysolde knows says a man at the gate let the
+Seven through, the night they carried the Ember out. Whether it was Ostrey, and what it cost him, it never says. When
+he is hurt past bearing, his lantern catches, and he fights by its fire.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -330,6 +358,10 @@ because it was only ever a thing that looked ahead.
 | The player | nameless; once the King's Blade, the champion |
 | The place of Level 6 | the Church in the Pass, first church of the Seven |
 | The beast of Level 6 | the Antlered Hunger |
+| The old country (Acts II and III) | Thrale; its people under the hunger, thralls |
+| The place of Level 7 | the Windward Moor, Thrale's border |
+| The boss of Level 7 | Old Ostrey, the Porter |
+| The enemy of Level 7 | the Lantern Thralls |
 
 ---
 ---

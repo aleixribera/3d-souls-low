@@ -13,8 +13,8 @@
     e.wake?.(); return e;
   };
   test('Church: Level 6 follows the Final Castle, as chapter 6 of the Story (v7.36.0)', () => {
-    expect.ok(A.LEVELS[A.LEVELS.length - 1].id === 'the-church' && A.LEVELS[A.LEVELS.length - 2].id === 'final-castle', 'listed after the castle');
-    expect.ok(A.STORY.chapters.at(-1).level === 'the-church' && A.STORY.chapters.at(-2).level === 'final-castle', 'chapter 6 of Ashmere, after the castle');
+    expect.ok(A.LEVELS[A.LEVELS.indexOf(A.LEVEL_6) - 1].id === 'final-castle', 'listed after the castle');
+    expect.ok(A.STORY.chapters[5].level === 'the-church' && A.STORY.chapters[4].level === 'final-castle', 'chapter 6 of Ashmere, after the castle');
     expect.ok(A.LEVEL_5.next === 'the-church', 'the Levels menu carries on from the castle too');
     expect.ok(Game.screens().levelsAshmere.items.length === A.LEVELS.length + 1, 'the Levels menu lists it');
   });
@@ -73,7 +73,7 @@
     expect.ok(!zone.gate.open && !Game.complete, 'shut at first');
     e.hp = 1; e.deplete(); sim.until(() => Game.complete, 4);
     expect.ok(!e.alive() && zone.gate.open && Game.complete, 'gate open, level complete');
-    expect.ok(Game.nextLevelId() === null, 'nothing follows it');
+    expect.ok(Game.nextLevelId() === 'windward-moor', 'the moor follows it (v7.38.0)');
     expect.ok(p.alive(), 'the player stands');
   });
   test('Church: the seen land is Blender\'s and the room walls stay out of the way', () => {

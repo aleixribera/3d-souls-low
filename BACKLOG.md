@@ -47,3 +47,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Gargoyle (v7.37.0, pass 12) stands upright on its ledges; a crouched perch pose until it springs, and shoulders
   that join the chest (they read as ball joints with the arms spread, `docs/scorecard/gargoyle-arena-close.jpg`), are its
   second step (stage 4).
+- Chapter 7, the Windward Moor (v7.38.0, pass 13), rough; its second step: the Lantern Thralls following their bearer as a
+  flock (an opt-in `follows` field: they patrol the same stretch today and wake on its alarm); Ostrey's lantern in his
+  hand (the kit `lantern` is hand-built, so it waits for his Blender figure) and his own figure (a stand-in now: the
+  Shover's body re-coloured, no shield, the kit cane in iron); the thralls' and bearer's own figures (re-coloured Hollow
+  Soldier and Toll Wisp now); the moor's knight, warden, lancers and bowmen are Ashmere's, standing in for Thrale's.
+- Finn joins in the Pass as the champion's former squire (`STORY.md` People; `PLAN.md` track A item 2): not built. The
+  companion today is per road (`LANDS_STORY.companion`); Ashmere's road would need it from chapter 6 or 7 on.
+- Old Ostrey reuses Margit's tuning (3,000 HP, posture 130) and the moor gives 6 flasks, as Stormhill did; no one has
+  fought him by hand yet.

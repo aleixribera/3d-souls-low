@@ -2163,11 +2163,11 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 6; the church is the last chapter built so far', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 7; the moor is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('the-church') === null, 'nothing after the church yet');
+    expect.ok(S().nextLevelId('windward-moor') === null, 'nothing after the moor yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2266,11 +2266,22 @@
     S().resume(); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `on to chapter 6 (${Game.level.id})`);
   }));
-  test('Story: beating the Antlered Hunger, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+  test('Story: beating the Antlered Hunger goes on to chapter 7, the Windward Moor (v7.38.0)', withSave(() => {
     S().jumpTo('the-church'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'the-church', 'chapter 6 starts');
     const h = Game.enemies.find(e => e.baseDef.id === 'antlered');
     for (let i = 0; i < 4 && h.alive(); i++) { h.deplete(); sim.step(1); sim.until(() => h.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'windward-moor' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'windward-moor' && S().data.level === 'windward-moor', `chapter 7 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('windward-moor')[0] === 'THE WINDWARD MOOR' && /Its gate is still kept/.test(Game.levelCard('windward-moor')[1]), 'its title and line');
+  }));
+  test('Story: beating Old Ostrey, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('windward-moor'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'windward-moor', 'chapter 7 starts');
+    const o = Game.enemies.find(e => e.baseDef.id === 'ostrey');
+    expect.ok(o && o.def.name === 'Old Ostrey, the Porter', 'the porter keeps the gate');
+    for (const z of Game.zones) if (z.id !== 'zone-ostrey') { z.gate.open = true; z.beaten = true; }   // the fights before the bridge, won
+    for (let i = 0; i < 4 && o.alive(); i++) { o.deplete(); sim.step(1); sim.until(() => o.state !== ES.PHASE, 20); }
     sim.until(() => Game.screen === 'storyDone', 20);
     const screen = Game.screens().storyDone;
     expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, `the road's closing screen (${Game.screen})`);
@@ -3345,7 +3356,7 @@
       for (const id of Object.keys(MODEL_DEFS)) base[id] = KIT.modelParts(id).tris;
       KIT.setDetail(CONFIG.VISUALS.ultra.models);
       for (const id of Object.keys(MODEL_DEFS)) {
-        const fixed = (MODEL_DEFS[id].parts || []).some(p => p.use === 'baked');   // a Blender mesh has one detail
+        const fixed = (KIT.resolve(id).parts || []).some(p => p.use === 'baked');   // a Blender mesh has one detail (its own or one it `extends`)
         expect.ok(KIT.modelParts(id).tris > (fixed ? 0 : base[id]), `${id}: more triangles at Ultra detail`);
       }
     } finally { KIT.setDetail(was); }

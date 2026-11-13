@@ -622,3 +622,32 @@ MODEL_DEFS.tollWisp = {
   },
 };
 
+
+// ---- Thrale (Level 7 on; v7.38.0): rough stand-ins until each gets its own Blender figure (PLAN.md stage 3, track A) ---
+// The Lantern Thrall: the Hollow Soldier's figure, bleached: dun, rain-greyed clothes, grey skin, milky blind eyes.
+MODEL_DEFS.lanternThrall = {
+  extends: 'hollowSoldier',
+  materials: {
+    ...MODEL_DEFS.hollowSoldier.materials,
+    skin: { tex: 'rotSkin', tint: 0xb8b0a0, decay: 0.7 },
+    quilt: { tex: 'quiltedGambeson', tint: 0x847e6c, decay: 0.8 },
+    trousers: { tex: 'rottenCloth', tint: 0x5e5a50, decay: 0.8 },
+    strap: { tex: 'crackedLeather', tint: 0x5a5044, decay: 0.85 },
+    eye: { glow: 0xd8dccc },
+  },
+  eyes: { color: 0xd8dccc, size: 0.012 },
+};
+// The Lantern-Bearer: the Toll Wisp's figure in the moor's colours: a storm-grey coat, faded russet mantle, an amber
+// light under the brim; the handbell stands in for its lantern.
+MODEL_DEFS.lanternBearer = {
+  extends: 'tollWisp',
+  materials: {
+    ...MODEL_DEFS.tollWisp.materials,
+    hat: { tex: 'wispHat', tint: 0x5c5850, decay: 0.6, double: true },
+    mantle: { tex: 'wispMantle', tint: 0x8a5a3c, decay: 0.55, double: true },
+    coat: { tex: 'wispCoat', tint: 0x5a6058, decay: 0.65, double: true },
+    brocade: { tex: 'wispBrocade', tint: 0xa89870, decay: 0.5, double: true },
+    eye: { glow: 0xffb050 },
+  },
+  eyes: { color: 0xffb050 },
+};
