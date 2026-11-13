@@ -2,6 +2,8 @@
 // The Calling end to end (v7.35.0): two browsers pick a 3-boss roster by hand, a bot fills the party, the party beats
 // one boss, then the last two together, and everyone lands back in the lobby with the run complete. Between the fights
 // each takes a blessing (one by click, one by key), and the fallen one's Rise Again gets them up in the last fight.
+// v7.69.0: the kill moment ("Boss 1 down", slowed and embers), a swift kill's fourth card, the next boss dropping
+// straight in with no loading card, the streak and par under the boss bar, and each boss's time on the end screen.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
@@ -71,10 +73,23 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
     // a is offered Rise Again (the draw itself is tests/blessings.cjs's).
     const draw = app.sim.offerBlessings;
-    app.sim.offerBlessings = ids => { draw(ids); app.sim.blessingOffer(aId)?.splice(0, 3, 'whetted-edge', 'rise-again', 'keen-ear'); };
+    app.sim.offerBlessings = (ids, ...rest) => {
+      draw(ids, ...rest);
+      const o = app.sim.blessingOffer(aId);
+      if (o) o.splice(0, o.length, ...['whetted-edge', 'rise-again', 'keen-ear', 'second-wind'].slice(0, o.length));
+    };
     finishFight();
+    // The kill moment: "Boss 1 down" at once, the boss's death slowed for the drawing only.
+    await b.locator('#won.show.rush').waitFor({ timeout: 10000 });
+    assert.equal(await b.locator('#wonTitle').textContent(), 'Boss 1 down');
+    assert.equal(await b.evaluate(() => killMoment.active && Game.drawSlow < 1), true, 'the kill moment plays');
+    await b.waitForTimeout(350);
+    await b.screenshot({ path: `${out}/kill-moment.png` });
     for (const page of [a, b]) await page.locator('#blessingScreen').waitFor({ timeout: 30000 });
-    assert.equal(await a.locator('#blessingChoices button').count(), 3, 'three blessings to choose from');
+    // Won in seconds, far under par: a swift kill, so a fourth card, marked.
+    assert.equal(await a.locator('#blessingChoices button').count(), 4, 'a swift kill: four blessings to choose from');
+    assert.equal(await a.locator('#blessingChoices button em.swift').count(), 1);
+    assert.equal(await a.locator('#blessingChoices button').last().locator('em.swift').textContent(), 'Swift kill');
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/blessing-desktop.png` });
     await a.setViewportSize({ width: 390, height: 844 });
@@ -87,6 +102,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const bPick = await b.locator('#blessingChoices button').first().getAttribute('data-blessing');
     await b.keyboard.press('Digit1');
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
+    assert.equal(await b.evaluate(() => multiplayer.info.session.drop && !document.getElementById('loading').classList.contains('show')), true, 'the next boss drops straight in, no loading card');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(await a.locator('#blessingScreen').isVisible(), false);
     assert.deepEqual(await a.evaluate(() => [...Game.player.blessings]), ['rise-again']);
@@ -96,6 +112,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
     assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['bellWarden', 'ostrey'], 'the last two bosses come together');
     await a.waitForTimeout(2500);   // let the fight start before the frame
+    // The streak under the boss bar: the fight, its clock (the server's) and its par.
+    assert.equal(await a.locator('#rushClock').isVisible(), true);
+    assert.equal(await a.locator('#rushFight').textContent(), 'Fight 2');
+    assert.match(await a.locator('#rushTime').textContent(), /^0:0\d$/);
+    assert.equal(await a.locator('#rushPar').textContent(), `par 1:${String(app.session.par - 60).padStart(2, '0')}`);
     await a.screenshot({ path: `${out}/final-fight.png` });
     // Rise Again: a falls and gets up where they fell, at half health, and the server counts them standing.
     const fell = await a.evaluate(() => { const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); return { x: p.x, z: p.z }; });
@@ -115,6 +136,10 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Every boss beaten');
     assert.equal(await a.locator('#runSummaryBeaten').textContent(), '3 / 3');
     assert.match(await a.locator('#runSummaryTime').textContent(), /^\d+:\d\d$/);
+    const times = await a.locator('#runSummaryTimes li').allTextContents();
+    assert.equal(times.length, 2, 'each fight\'s time');
+    assert.match(times[0], /^Pillager Captain0:0\dSwift kill$/);
+    assert.match(times[1], /^Bell Warden & Old Ostrey, the Porter0:\d\d(Swift kill|par 1:\d\d)$/);
     const rows = await a.locator('#runSummaryRows tr').evaluateAll(trs => trs.map(tr => [...tr.cells].map(td => td.textContent)));
     assert.equal(rows.length, 3, 'both players and the bot');
     assert.equal(rows.find(r => r[0] === 'Ash')[2], '2', 'Ash fell in both fights');

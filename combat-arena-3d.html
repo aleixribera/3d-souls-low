@@ -294,6 +294,12 @@
   #eDmg { position: absolute; right: 0; top: 1px; font-size: 15px; letter-spacing: 1px; color: #f0d890; opacity: 0;
     text-shadow: 0 0 4px #000, 0 0 10px #000; transition: opacity 0.4s; font-variant-numeric: tabular-nums; }
   #eDmg.show { opacity: 1; transition: opacity 0.08s; }
+  /* Boss Rush's streak (v7.69.0): the fight, its clock and its par, under the boss bar's slot. */
+  #rushClock { display: flex; justify-content: center; gap: 16px; margin-top: 4px; font-size: 14px; letter-spacing: 2px; color: var(--ink);
+    text-shadow: 0 0 3px #000, 0 0 10px #000; font-variant: small-caps; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #rushClock[hidden] { display: none; }
+  #rushPar { color: var(--gilt); }
+  #rushClock.over #rushPar { color: #8a8170; }
 
   /* Overhead tags, in screen space. */
   #eTags { position: absolute; inset: 0; overflow: hidden; }
@@ -355,6 +361,9 @@
     background: linear-gradient(90deg, transparent, #000000a0 30%, #000000a0 70%, transparent); padding: 12px 0; }
   #won.show, #complete.show { opacity: 1; transition: opacity 2s ease-in 1s; }
   #won.show .small, #complete.show .small { opacity: 1; transition: opacity 1s linear 3s; }
+  /* Boss Rush's kill moment (v7.69.0): "Boss n down" at once; the blessing pick follows, so no hint under it. */
+  #won.rush.show { transition: opacity 0.25s ease-out; }
+  #won.rush .small { display: none; }
   /* Lesson cards (js/lessons.js, v7.19.0): one control at a time, under the boss bar's slot. A smoked plate in a gilt
      hairline with corner ticks, the heading in small caps between two rules, the controls as engraved keycaps (round
      face buttons on a controller). It rises in with a little ember light; once done, a gilt seal stamps on its corner. */
@@ -523,6 +532,7 @@
         <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
         <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
+      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushTime"></span><span id="rushPar"></span></div>
       <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
         <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>
     </div>
@@ -543,7 +553,7 @@
     </div>
     <div id="rested">RESTED</div>
     <div id="died"><div class="big">YOU DIED</div><div class="small" id="diedStatus">Returning to the last bonfire&hellip;</div><div class="small tip" id="diedTip"></div></div>
-    <div id="won"><div class="big">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
+    <div id="won"><div class="big" id="wonTitle">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
     <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
   </div>
 </div>
@@ -721,9 +731,10 @@ const GAME_FILES = [
   'autoquality.js',
   'version-check.js',
   'multiplayer.js',
+  'kill-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.68.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.69.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

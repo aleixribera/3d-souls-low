@@ -63,6 +63,7 @@ function createServer(options = {}) {
   }
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
+  let tallied = false;   // Boss Rush: this fight's win is in the run's tally
   let blessingFor = null;   // Boss Rush, between fights: s since the blessings were offered (null: not offered)
   const blessingRound = new Set();   // the players offered blessings this time (a late arrival is offered once)
   let tally = null;   // Boss Rush's totals across its fights: { roster, startedAt, beaten, players: id -> row }
@@ -133,17 +134,21 @@ function createServer(options = {}) {
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
   }
-  // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight its bosses.
+  // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight its bosses and its time
+  // against par (CONFIG.swift); under par is a swift kill.
   function tallyFight(won) {
     for (const r of sim.fightTally()) {
       const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0 };
       row.name = r.name; row.damage += r.damage; row.deaths += r.deaths; tally.players.set(r.id, row);
     }
-    if (won) tally.beaten += 1 + (session.gauntlet.partners?.length || 0);
+    if (!won) return;
+    const g = session.gauntlet, time = Math.floor(sim.state.fought + 1e-6);   // whole seconds, as the HUD shows them
+    tally.beaten += 1 + (g.partners?.length || 0);
+    tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par });
   }
   // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, and each player's totals, most
   // damage first. The roster lets the leader start the same run again.
-  const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten,
+  const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: [...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths) });
   // For Boss Rush, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
@@ -164,8 +169,11 @@ function createServer(options = {}) {
     if (gauntlet) session.gauntlet = gauntlet;
     if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's boons
     if (gauntlet?.roster) session.pace = sim.setRushFight(gauntlet.fight);   // the curve: faster with every fight won
+    if (gauntlet?.roster) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
+    if (gauntlet?.roster && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.roster) tally = null;
-    else if (gauntlet.fight === 0) tally = { roster: gauntlet.roster, startedAt: performance.now(), beaten: 0, players: new Map() };
+    else if (gauntlet.fight === 0) tally = { roster: gauntlet.roster, startedAt: performance.now(), beaten: 0, times: [], players: new Map() };
+    tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.rising = 0; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
@@ -173,7 +181,7 @@ function createServer(options = {}) {
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
   }
-  // Boss Rush, between fights (CONFIG.blessings): once the results have shown, every connected player is offered
+  // Boss Rush, between fights (CONFIG.blessings): once the kill moment has played, every connected player is offered
   // blessings, and the next fight waits until each has chosen or the pick time runs out (then every open offer gets its
   // first blessing, someone who left included).
   function blessingsChosen() {
@@ -181,7 +189,7 @@ function createServer(options = {}) {
       blessingFor = 0;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) blessingRound.add(id);
-      sim.offerBlessings(ids);
+      sim.offerBlessings(ids, true, swiftKill() ? sim.swiftExtra : 0);
       for (const p of clients.values()) sendOffer(p);
     }
     blessingFor += 1 / C.tickRate;
@@ -193,14 +201,16 @@ function createServer(options = {}) {
   // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
   function offerLate(p) {
     if (blessingFor === null) return;
-    if (!blessingRound.has(p.id)) { blessingRound.add(p.id); sim.offerBlessings([p.id], false); }
+    if (!blessingRound.has(p.id)) { blessingRound.add(p.id); sim.offerBlessings([p.id], false, swiftKill() ? sim.swiftExtra : 0); }
     sendOffer(p);
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
   function sendOffer(p) {
     const offer = sim.blessingOffer(p.id);
-    if (p.hello && offer) send(p, { type: 'blessings', offer, left: Math.max(0, sim.blessingPickTime - blessingFor), held: sim.blessings()[p.id] || [] });
+    if (p.hello && offer) send(p, { type: 'blessings', offer, left: Math.max(0, sim.blessingPickTime - blessingFor), held: sim.blessings()[p.id] || [], swift: swiftKill() });
   }
+  // This fight was won under its par (CONFIG.swift): its blessing offer has an extra choice.
+  const swiftKill = () => !!tally?.times.length && tally.times[tally.times.length - 1].swift && tallied;
   // Duplicate claims (one contact per swing and enemy, one parry per attack) are dropped before any work.
   function claim(p, key) {
     if (p.claims.has(key)) return false;
@@ -484,7 +494,7 @@ function createServer(options = {}) {
           const party = [...clients.values()].filter(participating);
           const allReady = loadNow() - loadStarted >= C.loadTimeout || party.every(p => p.ready && p.pose);
           bossLoadFor = allReady ? bossLoadFor + 1 / C.tickRate : 0;
-          bossStarted = allReady && bossLoadFor >= (session.teamWipeOnly ? C.bossLoadGrace : 0);
+          bossStarted = allReady && bossLoadFor >= (session.drop ? C.rushDropGrace : session.teamWipeOnly ? C.bossLoadGrace : 0);
         }
         const began = performance.now(); sim.tick(1 / C.tickRate, (session.teamWipeOnly || session.opening) && !bossStarted); ticks++;
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
@@ -516,12 +526,13 @@ function createServer(options = {}) {
           start('level', session.campaign.next, session.campaign.id);
           break;
         }
-        if (session.gauntlet && sim.state.completedFor >= Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)) {
+        // Boss Rush: once the kill moment has played, the fight's time is kept and the blessing pick opens in the arena.
+        if (session.gauntlet && sim.state.completedFor >= (session.gauntlet.roster ? C.rushKillTime : Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime))) {
+          if (session.gauntlet.roster && tally && !tallied) { tallyFight(true); tallied = true; }
           if (session.gauntlet.roster && session.gauntlet.next && !blessingsChosen()) continue;
           const run = C.gauntlets[session.gauntlet.id];
           // Boss Rush: the fallen rise for the next fight with everyone else; the last fight ends the run.
           if (session.gauntlet.roster) {
-            if (tally) tallyFight(true);
             if (session.gauntlet.next) start('calling', session.gauntlet.roster, null, session.gauntlet.next);
             else stop(`${C.calling.name} COMPLETE · All ${session.gauntlet.bosses} bosses beaten.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);

@@ -370,7 +370,7 @@ const bot = (() => {
         const early = risky && rng() < C.risk.earlyRollChance;
         // A slip: now and then a roll goes too early (its i-frames run out first) or too late, as a person's would;
         // less often when badly hurt and minding every blow (CONFIG.bot.caution.slip).
-        const slip = response === 'roll' && !risky && mood && rng() < mood.slip * (steady ? C.caution.slip : 1) ? (rng() < 0.6 ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
+        const slip = response === 'roll' && !risky && mood && rng() < mood.slip * (steady ? C.caution.slip : 1) ? (rng() >= C.slip.lateShare ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
         s = { key, at: hands.time + span(C.notice, rng), plan: response, done: false, walk, risky, slip: slip !== null,
           lead: slip !== null ? slip : response === 'parry' ? span(C.parryLead, rng) : response === 'jump' ? span(jump, rng) : span(early ? C.risk.rollLead : C.rollLead, rng) };
         seen.set(e, s); if (s.slip) tally.slips++;

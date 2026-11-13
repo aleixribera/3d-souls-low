@@ -29,6 +29,9 @@
     // fills the party with bots up to `fillTo` (humans and bots).
     calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3, fillTo: 3 }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
+    // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the blessing pick
+    // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.
+    rushKillTime: 2.5, rushDropGrace: 1,
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,
     riseSlack: 0.5,   // s: a Rise Again claim may come this much sooner than CONFIG.blessings.riseDelay (latency)
@@ -108,7 +111,7 @@
         return { patches, removed };
       };
       const enemies = changes('enemies', frame.enemies), gates = changes('gates', frame.gates), traps = changes('traps', frame.traps), people = changes('players', players);
-      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, results: frame.results,
+      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, fought: frame.fought, results: frame.results,
         checkpoint: frame.checkpoint, enemies: enemies.patches, gates: gates.patches, traps: traps.patches,
         events: frame.events, shots: frame.shots, server: frame.server }, players: people.patches,
         removed: { enemies: enemies.removed, gates: gates.removed, traps: traps.removed, players: people.removed } };

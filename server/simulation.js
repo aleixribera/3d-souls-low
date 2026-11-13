@@ -6,6 +6,7 @@ globalThis.host = (() => {
   let epoch = 0, time = 0, attackSerial = 0, bolts = [], eventList = [], history = [];
   let players = [], checkpoint = null;
   let completedFor = 0;
+  let fought = 0;   // s of this fight played (not held for loading, not after the last enemy fell): Boss Rush's clock
   let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
   // Friendly bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared
   // enemies, so a bot keeps fighting whatever any browser tab is doing. id -> { id, name, profile, brain, body, ... }
@@ -191,7 +192,7 @@ globalThis.host = (() => {
     Game.enemies = Game.makeEnemies();
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
-    epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
+    epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
     hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
@@ -220,14 +221,14 @@ globalThis.host = (() => {
     b.body = body; b.deadFor = 0; b.hitstop = 0;
     players = players.map(p => p.id === b.id ? body : p);
   }
-  // Blessings (CONFIG.blessings). An offer: `offer` different ids, not yet held while enough remain. With `withBots`,
-  // every bot is offered too and takes one at once.
-  function offerBlessings(ids, withBots = true) {
+  // Blessings (CONFIG.blessings). An offer: `offer` different ids (`extra` more after a swift kill, CONFIG.swift), not
+  // yet held while enough remain. With `withBots`, every bot is offered too and takes one at once.
+  function offerBlessings(ids, withBots = true, extra = 0) {
     const B = CONFIG.blessings, shuffle = list => { for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; } return list; };
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       if (offers.has(id)) continue;
       const held = blessed.get(id) || [], fresh = shuffle(BLESSINGS.map(b => b.id).filter(b => !held.includes(b)));
-      const offer = fresh.concat(shuffle(BLESSINGS.map(b => b.id).filter(b => held.includes(b)))).slice(0, B.offer);
+      const offer = fresh.concat(shuffle(BLESSINGS.map(b => b.id).filter(b => held.includes(b)))).slice(0, B.offer + extra);
       offers.set(id, offer);
       if (bots.has(id)) bless(id, offer[Math.floor(Math.random() * offer.length)]);
     }
@@ -408,6 +409,7 @@ globalThis.host = (() => {
   function tick(dt, holdSimulation = false) {
     time += dt;
     if (holdSimulation) return;
+    if (!Game.complete) fought += dt;
     let living = players.filter(p => p.alive());
     // Contacts and reservations wake it at once; a periodic check also notices any other change.
     if (living.length || bots.size) sleeping = false;
@@ -475,7 +477,7 @@ globalThis.host = (() => {
     while (history.length && time - history[0].time > C.historySeconds) history.shift();
   }
   function frame(drain = true) {
-    const result = { epoch, time, complete: Game.complete,
+    const result = { epoch, time, complete: Game.complete, fought: Math.floor(fought * 10 + 1e-6) / 10,
       results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
       checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
@@ -585,6 +587,7 @@ globalThis.host = (() => {
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerBlessings, settleBlessings, bless, rise, boonOf, riseDelay: CONFIG.blessings.riseDelay,
     blessingPickTime: CONFIG.blessings.pickTime,
+    rushPar, swiftExtra: CONFIG.swift.extra,
     blessings: () => Object.fromEntries(blessed), blessingOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
@@ -594,7 +597,7 @@ globalThis.host = (() => {
       const F = CONFIG.finale, L = Game.kind === 'level' && Game.level, plain = CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime;
       return L && L.ending ? Math.max(plain, F.death.overlay + (((LORE.endings || {})[L.id] || LORE.ending).length + 1) * F.ending.card) : plain;   // a card's slack
     },
-    get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
+    get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor, fought }; },
     get sleeping() { return sleeping; },
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.
     playerAttack: id => ArenaNet.own(PLAYER_DEF.moveset.attacks, id) ? id : null,

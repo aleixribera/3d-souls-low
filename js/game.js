@@ -290,7 +290,7 @@ const Game = {
       if (b.asleep) { b.rig.root.visible = b.rig.shadow.visible = false; continue; }
       b.rig.place(q.x, q.y, q.z, q.yaw, world.groundAt(q.x, q.z, q.y + 0.05));
       const looking = this.kind === 'bossBattle' && b.battleTarget || companions.focus(this, b);
-      b.pose(b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: looking.x, pz: looking.z });
+      b.pose(b.drawLag ? Math.max(0, b.stateTime + sub - b.drawLag) : b.stateTime + sub, { t, dt: frameDt, yaw: q.yaw, px: looking.x, pz: looking.z });   // drawLag: js/kill-moment.js
     }
     camera.position.lerpVectors(c.prevPos, c.pos, alpha);
     if (this.shake > 0) {
@@ -323,8 +323,9 @@ const Game = {
     });
     updateDust(t);
     swordTrail.update(!visuals.quality().combatFx && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox)), p.rig);
-    groundFx.update(frameDt);
-    updateParticles(frameDt);
+    const fxDt = frameDt * (this.drawSlow || 1);   // the kill moment's drawn slow motion (js/kill-moment.js)
+    groundFx.update(fxDt);
+    updateParticles(fxDt);
     updateDebug(this, hud.showHitboxes(), placed);
     for (const hook of this.renderHooks) {   // drawing-only hooks (effects, developer overlays): one failing never stops the frame
       try { hook(this, placed); } catch (e) { warnOnce(`Render hook ${hook.name || 'anonymous'} failed: ${e && e.message}`); }

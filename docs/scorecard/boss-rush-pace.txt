@@ -33,3 +33,15 @@ Tried and left: a base pace of 1.15 for every boss (fight 1 took 71 s), a gentle
 a fall in 17%), slower bot notice and more boss aggro (falls within noise). Kept: bots' slips doubled, their caution
 and healing start lower (CONFIG.bot.caution, healBelow). Bot falls early in a run
 (target: one every three fights) and by fight 10 (target: most fights) are still short: pass 2.
+
+Pass 46 (v7.69.0, item 2 pass 2): bots slower to notice a wind-up (CONFIG.bot.notice 0.1-0.26 s, was 0.08-0.18), three
+in four slipped rolls late (slip.lateShare), no extra care when hurt (caution.slip 1, below 0.2, dry 0.35), the flask
+later (healBelow 0.25), a steeper curve (pace.rise 0.2: x1.25 by fight 10, x1.8 by 20). PERSON=1 BOTS=4, 8 trials:
+                  pass 45                            pass 46
+  fight 1     58 s  0.16 fell, a fall in  8%     56 s  0.30 fell, a fall in 18%   (204/208 won)
+  four bots   53 s  0.23 fell, a fall in 14%     52 s  0.37 fell, a fall in 22%   (6 trials)
+  fight 10    77 s  0.38 fell, a fall in 29%     79 s  0.82 fell, a fall in 40%   (184/208 won)
+  fight 20   116 s  0.81 fell, a fall in 44%    142 s  1.97 fell, a fall in 65%   (30/52 won, 4 trials)
+Tried on top, within noise (TUNE= in tools/bot-fights.cjs): notice 0.12-0.3 (24% / 36%), healBelow 0.2 with caution
+below 0.15 (20% / 41%). Falls roughly doubled but stay short of the targets (one fight in three early, most by fight
+10): cut, BACKLOG. Fight 20 now runs past the 2-minute line with this party.

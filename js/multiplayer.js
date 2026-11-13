@@ -8,6 +8,7 @@ const multiplayer = (() => {
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
+  const rushView = { fight: 0, beaten: 0, clock: 0, par: 0 };   // what `multiplayer.rush` hands the HUD
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, nameDraft = '', nameLowercase = false;
   let callingPicks = [];   // Boss Rush's hand-picked roster, in fight order
@@ -213,7 +214,7 @@ const multiplayer = (() => {
     el('leaderboardRows').replaceChildren();
   }
   function updateLeaderboard() {
-    const rows = latestFrame?.results;
+    const rows = session?.gauntlet?.roster ? null : latestFrame?.results;   // Boss Rush: the blessing pick follows the kill at once
     if (rows && !leaderboardRows) {
       leaderboardRows = rows;
       el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, ...(session.partners || [])].map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & ');
@@ -266,6 +267,7 @@ const multiplayer = (() => {
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
   runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
   runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Time</dt><dd id="runSummaryTime"></dd></div><div><dt>Bosses beaten</dt><dd id="runSummaryBeaten"></dd></div></dl>'
+    + '<ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
     + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
     + '<div class="summary-actions"><button type="button" id="runSummaryAgain">Again</button><button type="button" id="runSummaryLobby">Lobby</button><p id="runSummaryWait"></p></div></div>';
   document.body.appendChild(runSummary);
@@ -290,6 +292,9 @@ const multiplayer = (() => {
     #runSummary button:hover{border-color:var(--accent-hi)}#runSummary #runSummaryAgain:hover{background:var(--accent-hi);color:#16120b}
     #runSummary button:focus-visible{outline:2px solid var(--accent-hi);outline-offset:3px}
     #runSummaryWait{margin:0;color:var(--muted)}#runSummaryWait:empty{display:none}
+    #runSummaryTimes{margin:0 0 20px;padding:0 0 14px;list-style:none;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}#runSummaryTimes:empty{display:none}
+    #runSummaryTimes li{display:flex;gap:12px;padding:3px 0}#runSummaryTimes li span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+    #runSummaryTimes .par{color:var(--muted)}#runSummaryTimes .swift{color:var(--accent-hi)}
     @media(max-width:480px){#runSummary .summary-panel{padding:20px 16px 16px}#runSummary .summary-facts{gap:24px}#runSummary dd{font-size:22px}#runSummary th:nth-child(2){width:80px}#runSummary th:nth-child(3){width:58px}#runSummary button{flex:1}}`;
   document.head.appendChild(summaryStyle);
   let summary = null;   // the last run's summary while its screen is open
@@ -300,6 +305,15 @@ const multiplayer = (() => {
     el('runSummaryTitle').textContent = data.outcome === 'won' ? 'Every boss beaten' : 'Team wiped';
     el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
     el('runSummaryBeaten').textContent = `${data.beaten} / ${data.bosses}`;
+    // Each boss's time against its par; under par was a swift kill.
+    const times = el('runSummaryTimes'); times.replaceChildren();
+    for (const t of Array.isArray(data.times) ? data.times : []) {
+      const li = document.createElement('li'), seconds = Math.max(0, Math.round(Number(t.time) || 0)), par = Math.max(0, Math.round(Number(t.par) || 0));
+      const parts = [[(t.bosses || []).map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & '), ''], [runClock(seconds), t.swift ? 'swift' : ''],
+        [t.swift ? 'Swift kill' : 'par ' + runClock(par), t.swift ? 'swift' : 'par']];
+      for (const [text, cls] of parts) { const span = document.createElement('span'); span.textContent = text; if (cls) span.className = cls; li.appendChild(span); }
+      times.appendChild(li);
+    }
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
@@ -362,9 +376,10 @@ const multiplayer = (() => {
     #blessingScreen h2{margin:0;font:400 26px/1.25 Georgia,serif;color:var(--gold-hi);text-wrap:balance}
     #blessingClock{color:var(--muted);font-variant-numeric:tabular-nums}
     #blessingScreen .blessing-time{height:2px;margin:12px 0 16px;background:#ffffff14}#blessingTimeFill{display:block;height:100%;background:var(--gold);transform-origin:left}
-    #blessingChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    #blessingChoices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
     #blessingChoices button{position:relative;display:flex;flex-direction:column;gap:6px;min-height:112px;padding:14px 44px 14px 16px;text-align:left;font:inherit;color:var(--ink);background:#0a0d0fb3;border:1px solid var(--line);border-radius:6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;overflow-wrap:anywhere}
     #blessingChoices strong{font:400 19px/1.3 Georgia,serif;color:var(--gold-hi)}#blessingChoices span{color:var(--muted)}
+    #blessingChoices em.swift{margin-top:auto;font:600 12px/1.4 system-ui;font-style:normal;color:var(--gold)}
     #blessingChoices kbd{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:22px;height:22px;border:1px solid #c9a96a55;border-radius:4px;font:600 12px/1 system-ui;color:var(--muted)}
     #blessingChoices button:hover:not(:disabled),#blessingChoices button:focus-visible{border-color:var(--gold);background:#dcbb7414}
     #blessingChoices button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
@@ -387,6 +402,8 @@ const multiplayer = (() => {
       const b = ArenaNet.own(BLESSING_BY_ID, id); if (!b) return;
       const button = document.createElement('button'); button.type = 'button'; button.dataset.blessing = id;
       for (const [tag, text] of [['kbd', String(i + 1)], ['strong', b.name], ['span', blessingText(b)]]) { const n = document.createElement(tag); n.textContent = text; button.appendChild(n); }
+      // A swift kill's extra choice (CONFIG.swift) is the last one, and says so.
+      if (msg.swift && i === msg.offer.length - 1 && i >= CONFIG.blessings.offer) { const tag = document.createElement('em'); tag.className = 'swift'; tag.textContent = 'Swift kill'; button.appendChild(tag); }
       button.onclick = () => chooseBlessing(id);
       list.appendChild(button);
     });
@@ -1090,14 +1107,17 @@ const multiplayer = (() => {
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
-        Game.loadingFirst(...loadingCard, () => {
+        const build = () => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id, session.partners || []);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer(); Game.player.bless(session.blessings?.[self]); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
           loaded = true; updateRoster();
-        });
+        };
+        // Boss Rush's next boss drops straight in (v7.69.0): the arena is rebuilt at once, with no loading card.
+        if (session.drop && Game.mode === 'play') { build(); Game.loading = 0; el('loading').classList.remove('show'); }
+        else Game.loadingFirst(...loadingCard, build);
       };
       begin();
     } else if (msg.type === 'stop') {
@@ -1492,6 +1512,15 @@ const multiplayer = (() => {
     get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
     get listener() { return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
     get gauntlet() { return connected ? session?.gauntlet || null : null; },
+    // Boss Rush's fight (v7.69.0): its number, the bosses beaten once it is won, its clock (the server's, s) and its par.
+    // One object, refilled: the HUD reads it every frame.
+    get rush() {
+      const g = connected && loaded ? session?.gauntlet : null;
+      if (!g?.roster) return null;
+      rushView.fight = g.number; rushView.beaten = g.defeated + 1 + (g.partners?.length || 0);
+      rushView.clock = latestFrame?.fought || 0; rushView.par = session.par || 0;
+      return rushView;
+    },
     get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback, spectatorTarget,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,

@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.68.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.69.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -178,13 +178,21 @@ const CONFIG = {
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
   // Strikes keep their own timing. Wind-ups quicken only past the base pace and only gently, (pace / boss)^`tell`, and
-  // never below `tellFloor` of their own length: the same tell, a little sooner (6% by fight 10, 15% by 20, 40% by 40).
+  // never below `tellFloor` of their own length: the same tell, a little sooner (7% by fight 10, 18% by 20, 40% by 40).
   // Every boss fights at `boss` outside Boss Rush and in its first fight (1.15 made a party's fight 1 last 71 s
   // instead of 55, tools/bot-fights.cjs, pass 45).
   // Boss Rush's curve: after `won` fights, pace = boss x (1 + rise x (e^(won / scale) - 1)), at most `max`. Subtle and
-  // exponential: x1.07 by fight 5, x1.18 by 10, x1.6 by 20, then x4.5 by 40, where it leaves no room to answer. It
+  // exponential: x1.1 by fight 5, x1.25 by 10, x1.8 by 20, then x5.7 by 40, where it leaves no room to answer. It
   // depends on the fights won alone: never on health, damage or the team's size.
-  pace: { boss: 1, rise: 0.15, scale: 12.5, max: 6, tell: 0.35, tellFloor: 0.6 },
+  pace: { boss: 1, rise: 0.2, scale: 12.5, max: 6, tell: 0.35, tellFloor: 0.6 },
+  // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
+  // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
+  // clock. A fight won under par adds `extra` choices to that fight's blessing offer.
+  swift: { par: 45, pair: 0.5, max: 120, extra: 1 },
+  // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
+  // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
+  // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
+  killMoment: { slow: 0.3, time: 1.1, embers: 70, emberSpeed: 7 },
   // Boss Rush's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
   // is offered `offer` different blessings (ones they don't hold yet, while there are enough) and keeps one for the rest
   // of the run. The next fight waits until everyone has chosen, or `pickTime` s; a player who hasn't chosen by then gets
@@ -669,7 +677,7 @@ const CONFIG = {
   // Friendly bots (v7.11, js/bot.js): a bot presses the same actions a player does. Times in s, distances in m
   // (between body edges unless named otherwise). Nothing here is tuned for one enemy: every read comes from attack data.
   bot: {
-    notice: [0.08, 0.18],        // a new wind-up is seen this long after it starts
+    notice: [0.1, 0.26],         // a new wind-up is seen this long after it starts (v7.69.0: slower, less even)
     rollLead: [0.05, 0.12],     // a roll starts this long before the strike opens (its i-frames last CONFIG.player.rollIFrames)
     parryLead: [0.02, 0.07],    // a parry is pressed this long before the strike opens (inside CONFIG.parry.lead)
     threatMargin: 0.7,          // m added to a strike's reach before it counts as a threat
@@ -693,8 +701,8 @@ const CONFIG = {
     // real opening with `safety` s more to spare, keeps `spacing` m more room and waits `patience` times as long before
     // forcing an exchange. With the enemy on it and someone else close enough to fight (`company` m from the enemy), it
     // gives `hunted` m more room and forces nothing, so the enemy's attention lands where it can be hit from behind.
-    // Hurt, it minds every blow: its rolls slip `slip` times as often.
-    caution: { below: 0.3, dry: 0.45, spacing: 0.6, hunted: 0.8, company: 8, safety: 0.25, patience: 2, slip: 0.5 },
+    // Hurt, its rolls slip `slip` times as often (1 since v7.69.0: a decent friend is no steadier when hurt).
+    caution: { below: 0.2, dry: 0.35, spacing: 0.6, hunted: 0.8, company: 8, safety: 0.25, patience: 2, slip: 1 },
     // Room: it keeps `player` m from a person and `bot` m from another bot, and out of a person's lane (within `lane`
     // rad of the line from them to the enemy they face, when it is no farther out than they are plus `laneDepth` m);
     // `push` weighs this against where it was walking.
@@ -716,7 +724,7 @@ const CONFIG = {
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another
     probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange
     healRetreatTime: 3,         // seek space briefly; if no safe drink appears, fight for an opening instead (unless the enemy is on someone else)
-    healBelow: 0.4, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap (v7.65.0: later)
+    healBelow: 0.25, healWindow: 1.6, healGap: 6,   // drinks under this health share when this safe, backing off to this gap (v7.69.0: later)
     engageRange: 16, wakeRange: 9,             // fights awake enemies within, sleeping ones only this close
     follow: [2.5, 5.5],                       // start following outside the outer gap, walk down to the inner gap
     assignmentTime: 0.5,                     // fair human assignments, with surplus companions at the front
@@ -737,7 +745,7 @@ const CONFIG = {
     string: { outrun: 5.5 },
     moodJitter: [0.6, 1.4],     // each fight scales its movement plans' weights by this much
     behindMargin: 0.25,         // rad past square behind an enemy where a blow aimed at someone else is let go
-    slip: { early: [0.3, 0.45], late: [0.04, 0.1] },   // s a slipped roll goes before (or after) the strike opens: BOT_MOODS[].slip
+    slip: { early: [0.3, 0.45], late: [0.04, 0.1], lateShare: 0.75 },   // s a slipped roll goes before (or after, `lateShare` of slips) the strike opens: BOT_MOODS[].slip
     fightGap: 3,                // s with no opponent before the next one starts a new fight (and a new mood)
     // A kneeling enemy is the player's to execute: with a living player within `yield` m of it, a bot waits `aside` m
     // off its flank and goes in only when `late` s (plus its walk) remain of the kneel. Same for a parried enemy.

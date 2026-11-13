@@ -66,9 +66,9 @@ function validateData({ visual = true } = {}) {
     for (const key of fields) need(num(botConfig[group]?.[key]) && botConfig[group][key] >= 0, `Bot ${group}.${key} must be non-negative.`);
   // Temperaments (v7.52.0): ordered positive pairs and positive gaps.
   const pair = r => Array.isArray(r) && r.length === 2 && r.every(num) && r[0] >= 0 && r[1] >= r[0];
-  need(pair(botConfig.moodJitter) && botConfig.moodJitter[0] > 0 && pair(botConfig.slip?.early) && pair(botConfig.slip?.late) &&
+  need(pair(botConfig.moodJitter) && botConfig.moodJitter[0] > 0 && pair(botConfig.slip?.early) && pair(botConfig.slip?.late) && num(botConfig.slip.lateShare) && botConfig.slip.lateShare >= 0 && botConfig.slip.lateShare <= 1 &&
     num(botConfig.behindMargin) && botConfig.behindMargin >= 0 && num(botConfig.fightGap) && botConfig.fightGap > 0,
-    'Bot moodJitter, slip.early and slip.late need ordered pairs; behindMargin and fightGap must be non-negative and positive.');
+    'Bot moodJitter, slip.early and slip.late need ordered pairs and slip.lateShare a share (0..1); behindMargin and fightGap must be non-negative and positive.');
   for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
@@ -275,6 +275,11 @@ function validateData({ visual = true } = {}) {
   need(PC && num(PC.boss) && PC.boss >= 1 && num(PC.rise) && PC.rise >= 0 && num(PC.scale) && PC.scale > 0 && num(PC.max) && PC.max >= PC.boss
     && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1,
     'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more and tellFloor in (0, 1].');
+  const SW = CONFIG.swift, KM = CONFIG.killMoment;   // v7.69.0: Boss Rush's par and swift kill, and the kill moment
+  need(SW && num(SW.par) && SW.par > 0 && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.blessings.offer + SW.extra <= BLESSINGS.length,
+    'CONFIG.swift: par above 0, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the blessings there are.');
+  need(KM && num(KM.slow) && KM.slow > 0 && KM.slow <= 1 && ['time', 'embers', 'emberSpeed'].every(k => num(KM[k]) && KM[k] >= 0),
+    'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
   const PR = CONFIG.enemy.postureRest;   // v7.65.0: a boss fights a while between posture breaks
   need(PR && num(PR.time) && PR.time >= 0 && num(PR.mul) && PR.mul >= 0 && PR.mul <= 1, 'CONFIG.enemy.postureRest: time 0 or more and mul from 0 to 1.');
   const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks

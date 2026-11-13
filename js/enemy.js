@@ -59,6 +59,11 @@ function rushPace(won) {
   const P = CONFIG.pace, n = Math.max(0, Number(won) || 0);
   return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp(n / P.scale) - 1)));
 }
+// Boss Rush's par (CONFIG.swift): the target length in whole s of a fight after `won` fights won, against `bosses` at once.
+function rushPar(won, bosses = 1) {
+  const S = CONFIG.swift;
+  return Math.min(S.max, Math.round(S.par * rushPace(won) / CONFIG.pace.boss * (1 + S.pair * (Math.max(1, bosses) - 1))));
+}
 // A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.
 const pacedChance = (chance, pace) => chance >= 1 || pace === 1 ? chance : 1 - Math.pow(1 - chance, pace);
 

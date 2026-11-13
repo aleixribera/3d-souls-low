@@ -29,6 +29,7 @@ const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
+  rushClock: $('rushClock'), rushFight: $('rushFight'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushKey: -1, wonTitle: $('wonTitle'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
@@ -74,6 +75,10 @@ const hud = {
     }
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
+    // Boss Rush's kill moment (js/kill-moment.js): "Boss n down", with the run's count of bosses beaten.
+    const rush = run && run.roster;
+    this.won.classList.toggle('rush', !!rush);
+    this.wonTitle.textContent = rush ? `Boss ${run.defeated + 1 + (run.partners ? run.partners.length : 0)} down` : 'ENEMY FELLED';
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
       : online ? 'Open the lobby to choose your next fight.' : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
@@ -307,6 +312,7 @@ const hud = {
     this.updateCalm(game, t, dt);
     this.updateVitals(game, dt);
     this.updateBoss(e, dt);
+    this.updateRush();
     this.updateToasts();
     this.updatePrompt(game);
     this.restedTimer = Math.max(0, this.restedTimer - dt);
@@ -325,6 +331,18 @@ const hud = {
     this.wasAlive = p.alive();
     this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
+  },
+  // Boss Rush's streak (v7.69.0): the fight's number, its clock and its par; written only when a second turns over.
+  updateRush() {
+    const r = typeof multiplayer !== 'undefined' && multiplayer.rush;
+    this.rushClock.hidden = !r;
+    if (!r) { this.rushKey = -1; return; }
+    const sec = Math.floor(r.clock), key = (r.fight * 4096 + sec) * 4096 + r.par;
+    if (key === this.rushKey) return;
+    this.rushKey = key;
+    const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    this.rushFight.textContent = `Fight ${r.fight}`; this.rushTime.textContent = clock(sec); this.rushPar.textContent = `par ${clock(r.par)}`;
+    this.rushClock.classList.toggle('over', sec > r.par);
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
   showHitboxes() { return this.helpOpen(); },

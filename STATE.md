@@ -12,11 +12,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 45, v7.65.0, item 2 pass 1 of 2): no team-size scaling, `CONFIG.pace` curve, sooner breaks with
-  `postureRest`, solo-measured health, 10 s pick. `docs/scorecard/boss-rush-pace.txt`: a party's fight 1 58 s (was
-  158), 116 s at fight 20; bot falls short (a fall in 8% of fights at 1, 29% at 10). Pass 2: more falls, kill moment,
-  streak HUD, swift kill, the pick in the arena, next boss straight in. Then item 3 (lobby done, `js/ui-theme.js`; the HUD
-  stays; blessing pick, title, Practice, options, pause, end of run). Boss Rush is id `boss-rush`, kind `calling`.
+- Track B (pass 46, v7.69.0, item 2 done): kill moment, streak, par, swift kill, next boss drops in, end-screen
+  times; bot falls 18% / 40% (fight 1 / 10), cut to BACKLOG. Next: item 3 (lobby done, `js/ui-theme.js`;
+  blessing pick, title, Practice, options, pause, end of run). Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -35,7 +33,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
 - Pace, not team size (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate` (`js/enemy.js`), `setRushFight`
-  (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`.
+  (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`. Between fights (v7.69.0): `CONFIG.swift`,
+  `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
@@ -68,7 +67,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI and the container of v7.63.0 (pushes cancel each other's CI: look at the newest finished run). Probes
+CI and container of v7.69.0 (pushes cancel CI: see the newest run). Probes
 (untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
@@ -89,8 +88,9 @@ In `BACKLOG.md`.
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
-  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 10 s to
-  choose. Rise Again is once a fight, not once a run.
+  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health.
+  Rise Again is once a fight, not once a run.
+- (overridable) Swift kill (v7.69.0): par 45 s, more with pace or a pair, adds a card; a kill says "Boss 7 down".
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.

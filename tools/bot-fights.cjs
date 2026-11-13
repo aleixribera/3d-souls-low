@@ -24,6 +24,11 @@ const count = Math.max(1, Math.min(4, Number(process.env.BOTS || 3)));
 const zero = () => ({ fights: 0, wins: 0, time: 0, anyFell: 0, dmg: 0, dealt: 0, rolls: 0, botMin: 0, chains: 0, swingsIn: 0, hitSwinging: 0, fell: 0,
   personDealt: 0, execPerson: 0, execBots: 0, yielded: 0, offered: 0, backup: 0, drew: 0, waiting: 0, judged: 0, needless: 0, swings: 0 });
 const tot = zero();
+// TUNE='{"bot":{"notice":[0.12,0.3]}}' (pass 46): merged into each fight's CONFIG before its bots join, to try a value
+// without editing js/config.js (objects merge, anything else replaces).
+const tuning = process.env.TUNE ? JSON.parse(process.env.TUNE) : null;
+const merge = (into, from) => { for (const [k, v] of Object.entries(from)) if (v && typeof v === 'object' && !Array.isArray(v)) merge(into[k], v); else into[k] = v; };
+const tune = sim => { if (tuning) merge(sim.inspect().Game.update.constructor('return CONFIG')(), tuning); };
 // Pass 38: swings = attacks a bot starts a bot-min (a chained combo once); waiting = s a bot-min spent free near the boss without swinging (the brain's tally); needless = the share of
 // rolls at a melee blow whose real hitbox reached neither the spot the bot rolled from nor the bot itself (a tracking boss
 // follows the roll); judged: rolls with a melee blow coming. An upper bound: a roll that took the bot out of a tracking
@@ -34,7 +39,7 @@ for (const boss of bosses) {
   const r = { boss, ...zero() };
   const [first, ...partners] = boss.split('+');
   for (let t = 0; t < trials; t++) {
-    const sim = createSimulation({ seed: 1000 + t, maxBots: count }); for (let i = 0; i < count; i++) sim.addBot();
+    const sim = createSimulation({ seed: 1000 + t, maxBots: count }); tune(sim); for (let i = 0; i < count; i++) sim.addBot();
     sim.start('arena', first, partners); sim.setPlayers([]);
     if (fight) sim.setRushFight(fight);
     const { Game, bots } = sim.inspect(); const bodies = sim.inspect().players, brains = [...bots.values()];

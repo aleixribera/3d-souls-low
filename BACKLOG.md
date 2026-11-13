@@ -141,4 +141,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - Boss Rush pace (pass 45): a client never learns its boss's pace (`session.pace` is sent but unused), so a person's
   parry lead (`parryTiming`, `js/combat.js`) is measured on the wind-up's own clock and shrinks with `tellRate()`, to
   0.072 s at the floor (fight 40). Set `Enemy.pace` on the client from the session, or count the lead in real time.
-  Bot falls are short of the plan's target (`docs/scorecard/boss-rush-pace.txt`): pass 2 of item 2.
+- Boss Rush bot falls, cut after item 2's two passes (pass 46, `docs/scorecard/boss-rush-pace.txt`): a fall in 18% of
+  first fights (target one in three) and 40% at fight 10 (target most). Reaction, slip and flask knobs in `CONFIG.bot`
+  are spent (more of them stays within noise); next levers: the moods' slip rate (`BOT_MOODS`, `js/data/bots.js`),
+  bots misreading a string's second blow, or bots chasing a hurt boss. The early bosses (Pillager Captain, Bell
+  Warden, Giant) still never drop a bot. Fight 20 runs 142 s with a person and three bots (`pace.rise` 0.2), past the
+  2-minute line: retune with Endless (item 6), where fights past 13 exist. Par (`CONFIG.swift`) is one rule for every
+  boss (45 s at the base pace); the Giant falls in ~26 s and the King's Blade takes ~72: a per-boss par if swift kills feel
+  lopsided. A reconnect during the blessing pick replays the kill moment (the new arena sees the boss die again).

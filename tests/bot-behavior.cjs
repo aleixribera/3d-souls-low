@@ -69,7 +69,7 @@ function observe(b, p, enemies, seconds) {
   assert.ok(b.brain.hands.peek('light'), 'a rested bot probes even when the theoretical counter window is too short');
 }
 {
-  const { sim, b, p, e } = waiting('kingsBlade', 'quill');
+  const { sim, b, p, e } = waiting('kingsBlade', 'quill', false, 18);   // a seed whose bot does not slip this roll (CONFIG.bot.slip)
   p.z = e.z + e.radius + p.radius + 0.7;
   observe(b, p, [e], 10);
   // A different boss is a threat too: probing the target must never override defence against its partner.
@@ -222,8 +222,8 @@ for (const profile of profiles) {
   }
   // A slipped roll (BOT_MOODS[].slip, v7.52.0) can be late: in this frozen fixture the blow never opens, so it never fires.
   // Without the old last-stand forward rolls (pass 32), which never slip, about 3-5% of rolls slipped late here; with
-  // the slips doubled in v7.65.0 (bots that fall in Boss Rush), about 7%.
-  assert.ok(responses >= 2000 * 0.9, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
+  // the slips doubled in v7.65.0 (bots that fall in Boss Rush), about 7%; with three in four slips late and no steadier rolls when hurt (v7.69.0), about 13%.
+  assert.ok(responses >= 2000 * 0.82, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
   const rate = parries / responses;
   assert.ok(Math.abs(rate - b.profile.parry * 0.1) < 0.025, profile + ' parry rate is one tenth of its former preference (' + (rate * 100).toFixed(1) + '%)');
   console.log(profile + ': parried ' + parries + '/' + responses + ' eligible blows.');
@@ -333,14 +333,14 @@ for (const profile of profiles) {
     b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0 }, seeded(seed * 131)); p.ctl = b.brain.hands;
     p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
     // Late in the wind-up: given the whole of it, a bot now walks out past the stomp's reach instead (v7.52.0).
-    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = 0.95;
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = 0.85;   // 0.95 before v7.69.0's slower notice
     for (let i = 0; i < 2 * 60; i++) {
       sim.setPlayers([]); sim.tick(dt);
       if (p.state === 'jump') { jumps++; break; }
       if (p.state === 'roll') { rolls++; break; }
     }
   }
-  assert.ok(jumps > 0 && rolls > jumps && jumps + rolls === 40, profile + ' sometimes jumps a low stomp, usually rolls, and never gets stuck deciding');
+  assert.ok(jumps > 0 && rolls > jumps && jumps + rolls === 40, `${profile} sometimes jumps a low stomp, usually rolls, and never gets stuck deciding (${jumps} jumps, ${rolls} rolls)`);
   console.log(profile + ': ' + jumps + ' jumps and ' + rolls + ' rolls over 40 eligible low attacks.');
 }
 
@@ -470,8 +470,8 @@ function riskOver(seconds, { allies = [], hp = 1, flasks = null, target, person 
   const alone = riskOver(18), withHuman = riskOver(18, { allies: [{ botId: null, alive: () => true }] });
   assert.ok(alone.risked && withHuman.risked, 'a healthy greedy bot takes greedy trades');
   assert.equal(riskOver(18).late, withHuman.late, 'a bot with no living person beside it is no greedier than one with');
-  assert.equal(riskOver(18, { hp: 0.25 }).risked, false, 'a badly hurt bot takes no greedy trade');
-  assert.equal(riskOver(18, { hp: 0.4, flasks: 0 }).risked, false, 'a hurt bot with no flask left takes no greedy trade');
+  assert.equal(riskOver(18, { hp: 0.15 }).risked, false, 'a badly hurt bot takes no greedy trade');
+  assert.equal(riskOver(18, { hp: 0.3, flasks: 0 }).risked, false, 'a hurt bot with no flask left takes no greedy trade');
   assert.equal(riskOver(18, { target: 'me', person: true }).risked, false, "the boss's mark gives way when someone else can fight it");
   assert.ok(riskOver(18, { target: 'me' }).risked, "alone, the boss's mark still fights");
 }
@@ -516,7 +516,7 @@ for (const forward of [0, 1]) {
     const { sim, b, p, e } = waiting('giant', 'quill');
     b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0, forward, parry: 0, evade: 0, jumpDodge: 0 }, seeded(seed));
     p.ctl = b.brain.hands; p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
-    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.35;
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.5;   // room for the notice (CONFIG.bot.notice) before an early roll
     for (let i = 0; i < 70; i++) {
       sim.setPlayers([]); sim.tick(dt);
       if (e.state === 'recover') break;
@@ -528,7 +528,7 @@ for (const forward of [0, 1]) {
 }
 assert.ok(slipped[0] < 32, 'most of these rolls go as planned (' + slipped[0] + ' slipped)');
 assert.equal(rollHits[0], 0, 'the ordinary geometric escape still clears the sweep');
-assert.ok(rollHits[1] > 0 && rollHits[1] < 32, 'forward gambles can succeed or be punished by the same real sweep');
+assert.ok(rollHits[1] > 0 && rollHits[1] < 32, `forward gambles can succeed or be punished by the same real sweep (${rollHits[1]} of ${32 - slipped[1]} caught)`);
 console.log('Forward rolls: ' + rollHits[1] + '/32 punished; ordinary escapes ' + rollHits[0] + '/32 (' + slipped[0] + ' slipped, not counted).');
 
 // Greed against one target must still react to a different attacker or an incoming bolt.
