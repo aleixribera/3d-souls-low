@@ -59,8 +59,8 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
 2. **Chapters 7-14's bosses redone**, in story order, one pass each (two at most): Ostrey, Hale and Harrow, the
    Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade. Each one gets one idea of its own, its meaning
    and backstory, its own moveset (patterns and combos may come from acclaimed souls-likes, never their names or
-   looks), big effects, high-quality animation and its own Blender figure (the re-coloured stand-in goes). Every
-   attack readable on its tell. Its level is reworked so the place and the fight belong together. Check: the model
+   looks), effects with nothing held back, smooth animation with real acceleration and easing, and its own Blender
+   figure with the best detail and art direction (the re-coloured stand-in goes). Every attack readable on its tell. Its level is reworked so the place and the fight belong together. Check: the model
    check above, then the boss fought in its level.
 3. **Two graphics presets.** Low and High become one **Normal** preset that holds 60 fps on integrated graphics;
    **Ultra** stays for Aleix's PC. Build a stand-in for integrated graphics that any pass can run on this PC in under
@@ -71,7 +71,11 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    may be improved).
 5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
    strength across chapters in a test, and a play-through frame per act.
-6. **Levels that hurt the story** rebuilt or replaced, rarely. Then the stand-in figures (Ysolde, the chapters'
+6. **Telling the story without taking control.** Find the best way to tell this story (places, NPCs, inscriptions,
+   in-world scenes) and remove every moment that takes movement or the camera away from the player: cutscenes, locked
+   cameras, cards that freeze play. Check: play each chapter's story moments with the player moving and turning the
+   camera throughout.
+7. **Levels that hurt the story** rebuilt or replaced, rarely. Then the stand-in figures (Ysolde, the chapters'
    regular enemies) in Blender.
 
 ## Track B: Boss Rush
@@ -92,7 +96,10 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
 4. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
-   shop, no loadout screen. Check: odds and saving in a test; frames of a crate opening and the Collection.
+   shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,
+   eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
+   animation and effects; it should make players want another run just to open the next. Check: odds and saving in a
+   test; a frame sequence of a crate rolling and landing, and the Collection.
 5. **The UI redesign**, the whole game. References first: screens from popular games praised for their UI (Dark Souls
    III and Elden Ring for calm, Hades for clarity in a run, Lies of P, Sekiro and others), the patterns they share,
    and one screen (the title or the lobby) shown to Aleix under "Needs Aleix" before the rest. Plain English,

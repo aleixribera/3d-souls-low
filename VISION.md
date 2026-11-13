@@ -30,6 +30,9 @@ side by side, and each should feel like the main event.
   passives, things that change the fight, maybe a companion). Playing earns levels; each level gives a crate, opened
   on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
   Collection page shows what you own. No money and no shop: menus are not where the game is played.
+- **The crates** must be addictive: players play again just to open the next one. Opening one is a roll, like the old
+  CS case opening (a strip of rewards spinning past and slowing onto one). One reward per crate, shown with its name,
+  description and everything it does. The crates look great: cool animations, cool effects, all of it.
 - **Practice**: one small, fast mode to fight any enemy or boss (one or several, or bosses against each other) or start
   any level. Aleix uses it to test. In the lobby, the leader has a small Mode option for Single, Double, Triple and
   Quad Boss runs.
@@ -39,7 +42,11 @@ side by side, and each should feel like the main event.
 - **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
   its tell. Nothing hits without warning.
 - **Spectacular bosses.** Each boss is its own idea, with its own meaning and backstory, its own moveset, big effects
-  and high-quality animation. No two bosses share attacks.
+  and high-quality animation. No two bosses share attacks. Don't hold back on boss effects.
+- **Exceptional models,** the big bosses most of all: the best detail and art direction.
+- **Smooth animation.** No hard edges: motion follows smooth curves with real-world acceleration and easing.
+- **A compelling story,** told in whatever way works best, without ever taking control from the player: movement and
+  the camera are always theirs.
 - **Learn from the best.** Take what works and what is acclaimed in popular, praised games (Dark Souls 1-3,
   Bloodborne, Sekiro, Lies of P, Elden Ring and others): attack patterns, combos, boss and level design, UI. Build our
   own version of the core idea. Ideas and mechanics only, never their names, characters, looks or story.
