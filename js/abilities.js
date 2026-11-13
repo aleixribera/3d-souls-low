@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Boss Rush's abilities, the engine half (v7.72.0). The data: js/data/abilities.js. The cards: js/ability-cards.js.
+// Boss Rush's abilities, the engine half (v7.73.0). The data: js/data/abilities.js. The cards: js/ability-cards.js.
 // The legendaries' effects: js/ability-fx.js.
 // ============================================================================
 // A body's abilities become its kit (abilityKit): the commons' numbers summed into `mods`, the rares' perks by their

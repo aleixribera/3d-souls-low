@@ -12,10 +12,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 49, v7.71.0, item 3 pass 1): title in the mockups' style on `js/ui-theme.js` (modes as `.ui-row`,
-  primary follows the chosen mode, footer; `Game.menuButtons`, `chooseMode`). `docs/scorecard/title-*.jpg`, in-page
-  `Title:`, `experience-browser`, `lobby-peek-browser`. Castle, Collection, Controls in BACKLOG. Next: Practice,
-  options, pause, end of run. Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
+- Track B (pass 51, item 3 done roughly): every menu in the title's style; Options in categories (`optionsItems`,
+  `menuControl`), pause facts (`pauseFacts`), end of run (`#runSummary`). `docs/scorecard/menus-*.jpg`, in-page
+  `Menus:` (pad walk), `experience-browser`, `calling-browser`. Gaps in BACKLOG. Next: item 9, then 10.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -65,6 +64,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
+- `lobby-polish-browser` (not in CI, fails on v7.71.0 too): High mid-run drops the player to the title (pass 51).
 
 ## Queued runs
 

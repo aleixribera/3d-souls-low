@@ -267,18 +267,18 @@ const story = (() => {
     const line = road.status === 'ok' ? `${road.def.short} · ${first.desc}` : road.status === 'broken' ? first.desc : 'Begin in Ashmere. The controls are taught on the way.';
     return { main: [{ name: 'Story', line, start: again ? 'Continue' : 'Begin', go: first.go, newGame: again ? again.go : null }],
       devItems: devJumps, screens: {
-      story: { title: 'STORY', sub: 'Choose a story, then play.', back: 'main', items: [
+      story: { title: 'Story', back: 'main', items: [
         ...STORIES.flatMap(S => campaigns[S.id].items(game)),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
       ] },
-      storyConfirm: { title: 'NEW GAME?', sub: C.menuTitle, notice: 'Replace this story’s saved game?', back: 'main', items: [
-        { name: 'Cancel', desc: 'Keep your saved game.', cue: 'menuBack', go: () => game.showMenu('main') },
-        { name: 'New', desc: 'Replace the save and start playing.', go: startNew },
+      storyConfirm: { title: 'New game?', notice: `Your saved game in ${C.short} will be replaced.`, back: 'main', items: [
+        { name: 'Cancel', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
+        { name: 'New', desc: '', go: startNew },
       ] },
-      storyDone: { title: A().goesOn() ? 'THE ROAD GOES ON' : 'STORY COMPLETE', sub: C.menuSub, notice: A().goesOn() ? C.goesOn : C.done, items: [
+      storyDone: { title: A().goesOn() ? 'The road goes on' : 'Story complete', notice: A().goesOn() ? C.goesOn : C.done, items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },
       ] },
-      storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'tests',
+      storyJump: { title: 'Jump to a level', back: 'tests',
         items: STORIES.flatMap(S => { const c = campaigns[S.id];
           return c.storyLevels().map(id => ({ name: `${S.short}: ${c.levelName(id)}`, desc: 'Developer: starts a fresh story here (that road\'s save is replaced).',
             go: () => { story.use(S.id); c.jumpTo(id); } })); }) },

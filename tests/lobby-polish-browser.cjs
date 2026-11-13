@@ -112,13 +112,13 @@ const { config: C } = require('../js/net-protocol.js');
     for (const quality of ['high', 'ultra', 'low']) {
       await a.evaluate(quality => { settings.graphics = quality; applySettings(); }, quality);
       await a.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      assert.equal(await a.evaluate(() => multiplayer.active() && Game.mode === 'play'), true, 'preset changes preserve online play');
+      assert.deepEqual(await a.evaluate(() => ({ active: multiplayer.active(), mode: Game.mode })), { active: true, mode: 'play' }, 'preset changes preserve online play');
       assert.deepEqual(await a.evaluate(() => { const gl = renderer.getContext(); gl.finish(); return { lost: gl.isContextLost(), error: gl.getError() }; }),
         { lost: false, error: 0 }, `${quality} renders online without WebGL errors`);
       if (quality !== 'low') await a.screenshot({ path: `.scratch/lobby-polish/combat-${quality}.png` });
     }
     await a.keyboard.press('Escape');
-    assert.equal(await a.locator('#menuTitle').textContent(), 'ONLINE', 'online menu never implies a paused world');
+    assert.equal(await a.locator('#menuTitle').textContent(), 'Online', 'online menu never implies a paused world');
     await a.waitForFunction(() => document.getElementById('onlineParty').hidden);
     await a.keyboard.press('Escape');
     await a.evaluate(() => multiplayer.show()); await a.locator('#lobbyOptions').click();

@@ -1,5 +1,5 @@
 'use strict';
-// Test: Ability Grounds (v7.72.0): the duel arena Boss Rush is fought in, with a mannequin to try its abilities on,
+// Test: Ability Grounds (v7.73.0): the duel arena Boss Rush is fought in, with a mannequin to try its abilities on,
 // alone. Its `abilityLab` opens js/ability-lab.js's list (B): any ability on at any level, a legendary fired with one
 // click. A sparring dummy off to the side swings slowly, for the abilities a parry or a dodge sets off.
 const TEST_ABILITIES = {

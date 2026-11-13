@@ -195,6 +195,7 @@ function frame(now) {
   lastTime = now;
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   multiplayer.heartbeat(now);
+  if (Game.mode === 'pause') Game.tickPause();   // online, pause's run clock goes on (redrawn once a second)
   document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
   if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world

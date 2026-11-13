@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// The ability grounds (v7.72.0): a level with `abilityLab: true` (js/levels/test-abilities.js) lists every Boss Rush
+// The ability grounds (v7.73.0): a level with `abilityLab: true` (js/levels/test-abilities.js) lists every Boss Rush
 // ability beside a mannequin. B opens the list and stops the world; a click on an ability turns it on or up a level
 // (shift-click or right-click: down), a legendary's Fire sets its power off at once. Closed, a short list of what is
 // on stays at the side. Alone only: online, abilities come from the pick (js/multiplayer.js).

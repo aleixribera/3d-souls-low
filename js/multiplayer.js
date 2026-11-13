@@ -269,33 +269,45 @@ const multiplayer = (() => {
   runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Time</dt><dd id="runSummaryTime"></dd></div><div><dt>Bosses beaten</dt><dd id="runSummaryBeaten"></dd></div></dl>'
     + '<ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
     + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
-    + '<div class="summary-actions"><button type="button" id="runSummaryAgain">Again</button><button type="button" id="runSummaryLobby">Lobby</button><p id="runSummaryWait"></p></div></div>';
+    + '<div class="summary-actions"><button type="button" id="runSummaryAgain" class="ui-primary">Run again</button><button type="button" id="runSummaryLobby" class="ui-text-button"><span class="ui-key" id="runSummaryLobbyKey" aria-hidden="true"></span>Lobby</button><p id="runSummaryWait"></p></div></div>';
   document.body.appendChild(runSummary);
+  // The same page as the menus (index.html's #menu): the well, the title top left in the display face, lines instead of
+  // boxes, Again as the one strong action and Lobby as a quiet one with its key.
   const summaryStyle = document.createElement('style');
-  summaryStyle.textContent = `#runSummary[hidden]{display:none}
-    #runSummary{--accent:#dcbb74;--accent-hi:#f3dca3;--ink:#ece4d1;--muted:#a9a798;--line:#ffffff14;position:fixed;inset:0;z-index:121;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;background:#050708e6;color:var(--ink);font:14px/1.5 system-ui}
-    #runSummary.summary-wiped{background:#0b0304eb}#runSummary.summary-wiped .summary-panel{border-top-color:#c94242}#runSummary.summary-wiped h2{color:#e4908a}
-    #runSummary .summary-panel{width:min(620px,100%);max-height:100%;overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:26px 28px 22px;background:#121618;border:1px solid #ffffff1f;border-top:2px solid var(--accent);border-radius:6px;box-shadow:0 24px 80px #000c}
-    #runSummary h2{margin:0;font:400 clamp(28px,6vw,40px)/1.15 Georgia,serif;color:var(--accent-hi);text-wrap:balance}
-    #runSummary .summary-facts{display:flex;gap:36px;margin:18px 0 20px;padding:0 0 16px;border-bottom:1px solid var(--line)}
-    #runSummary dt{color:var(--muted)}#runSummary dd{margin:2px 0 0;font:400 26px/1.2 Georgia,serif;font-variant-numeric:tabular-nums}
+  summaryStyle.textContent = `#runSummary[hidden],#runSummary [hidden]{display:none}
+    #runSummary{position:fixed;inset:0;z-index:121;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;
+      padding:max(56px,env(safe-area-inset-top)) 64px max(32px,env(safe-area-inset-bottom));background:var(--ui-well);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text)}
+    #runSummary .summary-panel{width:min(720px,100%)}
+    @media(min-width:960px){#runSummary .summary-panel{display:grid;width:min(1000px,100%);grid-template-columns:minmax(0,1fr) minmax(0,380px);column-gap:72px;align-items:start}
+      #runSummary h2,#runSummary .summary-facts,#runSummary .summary-actions{grid-column:1/-1}
+      #runSummary table{grid-column:1;grid-row:3}#runSummary #runSummaryTimes{grid-column:2;grid-row:3;margin:28px 0 0}}
+    #runSummary h2{margin:0;font:400 var(--ui-size-title)/1.1 var(--ui-display);color:var(--ui-ink);text-wrap:balance}
+    #runSummary.summary-wiped h2{color:var(--ui-alarm)}
+    #runSummary .summary-facts{display:flex;gap:56px;margin:32px 0 28px}
+    #runSummary dt{font-size:var(--ui-size-hint);color:var(--ui-muted)}
+    #runSummary dd{margin:4px 0 0;font:400 32px/1.1 var(--ui-display);font-variant-numeric:tabular-nums}
+    #runSummaryTimes{margin:0 0 28px;padding:0;list-style:none;border-top:1px solid var(--ui-line);font-variant-numeric:tabular-nums}#runSummaryTimes:empty{display:none}
+    #runSummaryTimes li{display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--ui-line)}
+    #runSummaryTimes li span:first-child{flex:1;min-width:0;overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}
+    #runSummaryTimes .par{min-width:72px;text-align:right;color:var(--ui-muted)}#runSummaryTimes .swift{color:var(--ui-accent-hi)}
     #runSummary table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
-    #runSummary th{padding:0 8px 6px;color:var(--muted);font-weight:500;text-align:right}#runSummary th:first-child,#runSummary td:first-child{text-align:left;padding-left:0}
-    #runSummary th:nth-child(2){width:96px}#runSummary th:nth-child(3){width:72px}
-    #runSummary td{padding:9px 8px;border-top:1px solid var(--line);text-align:right}#runSummary td:last-child,#runSummary th:last-child{padding-right:0}
-    #runSummary td:first-child{overflow-wrap:anywhere}#runSummary td small{margin-left:8px;color:var(--muted);font-size:inherit}
-    #runSummary td:nth-child(2){color:var(--accent-hi);font-weight:600}
-    #runSummary tr[data-self=true] td:first-child{font-weight:600;color:var(--accent-hi)}
-    #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px}
-    #runSummary button{min-width:120px;min-height:44px;padding:0 20px;font:600 15px/1 system-ui;color:var(--ink);background:transparent;border:1px solid #ffffff38;border-radius:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-    #runSummary #runSummaryAgain{color:#16120b;background:var(--accent);border-color:var(--accent)}
-    #runSummary button:hover{border-color:var(--accent-hi)}#runSummary #runSummaryAgain:hover{background:var(--accent-hi);color:#16120b}
-    #runSummary button:focus-visible{outline:2px solid var(--accent-hi);outline-offset:3px}
-    #runSummaryWait{margin:0;color:var(--muted)}#runSummaryWait:empty{display:none}
-    #runSummaryTimes{margin:0 0 20px;padding:0 0 14px;list-style:none;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}#runSummaryTimes:empty{display:none}
-    #runSummaryTimes li{display:flex;gap:12px;padding:3px 0}#runSummaryTimes li span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
-    #runSummaryTimes .par{color:var(--muted)}#runSummaryTimes .swift{color:var(--accent-hi)}
-    @media(max-width:480px){#runSummary .summary-panel{padding:20px 16px 16px}#runSummary .summary-facts{gap:24px}#runSummary dd{font-size:22px}#runSummary th:nth-child(2){width:80px}#runSummary th:nth-child(3){width:58px}#runSummary button{flex:1}}`;
+    #runSummary th{padding:0 8px 8px;font-size:var(--ui-size-hint);font-weight:400;color:var(--ui-muted);text-align:right}
+    #runSummary th:first-child,#runSummary td:first-child{text-align:left;padding-left:0}
+    #runSummary th:nth-child(2){width:110px}#runSummary th:nth-child(3){width:80px}
+    #runSummary td{padding:10px 8px;border-top:1px solid var(--ui-line);text-align:right}#runSummary td:last-child,#runSummary th:last-child{padding-right:0}
+    #runSummary tbody tr:last-child td{border-bottom:1px solid var(--ui-line)}
+    #runSummary td:first-child{overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}#runSummary td small{margin-left:10px;color:var(--ui-muted);font:var(--ui-size-hint)/1 var(--ui-text)}
+    #runSummary tr[data-self=true] td:first-child{color:var(--ui-accent-hi)}
+    #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:36px}
+    #runSummary #runSummaryAgain{width:auto;min-width:220px}
+    #runSummary button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    #runSummary button:focus-visible{outline:2px solid var(--ui-accent-hi);outline-offset:3px}
+    #runSummaryWait{margin:0;color:var(--ui-muted)}#runSummaryWait:empty{display:none}
+    @media(max-width:640px){#runSummary{padding:max(36px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
+      #runSummary h2{font-size:32px}#runSummary .summary-facts{gap:36px;margin:24px 0 20px}#runSummary dd{font-size:26px}
+      #runSummary th:nth-child(2){width:84px}#runSummary th:nth-child(3){width:62px}
+      #runSummary .summary-actions{margin-top:28px}#runSummary #runSummaryAgain{flex:1 1 100%}}
+    @media(hover:none) and (pointer:coarse){#runSummaryLobbyKey{display:none}}`;
   document.head.appendChild(summaryStyle);
   let summary = null;   // the last run's summary while its screen is open
   const runClock = seconds => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -324,6 +336,7 @@ const multiplayer = (() => {
       rows.appendChild(tr);
     }
     panel.inert = true; runSummary.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
+    el('runSummaryLobbyKey').textContent = usingPad() ? 'B' : 'Esc';
     drawRunSummary(); summaryButtons()[0]?.focus({ preventScroll: true });
   }
   // Only the leader can start the run again; the others see who can.

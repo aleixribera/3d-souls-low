@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Boss Rush's legendaries, drawn (v7.72.0): drawing only
+// Boss Rush's legendaries, drawn (v7.73.0): drawing only
 // ============================================================================
 // Each legendary ability's power (js/abilities.js, event `abilityPower`, the server's for everyone online) gets its own
 // look, on every preset; High and Ultra add sparks, embers and lights from js/ultra-fx.js on top:

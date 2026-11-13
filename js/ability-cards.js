@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Boss Rush's ability cards (v7.72.0, PLAN.md Track B item 3, the "Pick 4 · Tall cards" mockup): what an ability
+// Boss Rush's ability cards (v7.73.0, PLAN.md Track B item 3, the "Pick 4 · Tall cards" mockup): what an ability
 // looks like in the pick. The pick itself (offer, timer, keys, pad) is js/multiplayer.js's; the data
 // js/data/abilities.js. Presentation only: nothing here touches the game.
 // ============================================================================

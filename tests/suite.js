@@ -1288,17 +1288,14 @@
       expect.ok(!el.classList.contains('show') && Game.loading === 0, 'then it lifts');
     }
   });
-  test('version: a tiny label shows the version in every menu and hides during play', () => {
-    const label = document.getElementById('version'), seen = () => label.offsetParent !== null && label.textContent === A.VERSION;
+  test('version: the footer shows the version on the title and in pause, and nothing shows it during play', () => {
+    const hint = document.getElementById('menuHint'), seen = () => hint.offsetParent !== null && hint.textContent.includes(A.VERSION);
     expect.ok(/^v\d+\.\d+(\.\d+)?$/.test(A.VERSION), `one version constant (${A.VERSION})`);
-    // The title (v7.71.0) shows it last in its footer of key caps, in place of the corner label.
-    Game.showMenu('main'); const foot = document.getElementById('menuHint');
-    expect.ok(!seen() && foot.offsetParent !== null && foot.lastElementChild?.textContent === A.VERSION, 'on the title, in its footer');
-    Game.showMenu('practiceLevels'); expect.ok(seen(), 'in Practice\'s level list');
+    Game.showMenu('main'); expect.ok(seen(), 'on the title');
+    Game.showMenu('practiceLevels'); expect.ok(!seen(), 'not on the lists under it');
     Game.startLevel('test-crowd'); sim.begin(); sim.step(2, 1);
     expect.ok(!seen(), 'hidden during play');
     Game.pause(false); expect.ok(seen(), 'in the pause menu');
-    Game.showMenu('options'); expect.ok(seen(), 'in the options');
     Game.resume(); expect.ok(!seen(), 'hidden again on resuming');
   });
 
@@ -2266,12 +2263,55 @@
     expect.ok(Game.menuItems[Game.selected].name === 'Fight', `the group opens on Fight (${Game.menuItems[Game.selected].name})`);
     pick('practiceGroup', 'Fight');
     expect.ok(Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === `${boss.id},${foe.id}`, 'the group, fought together');
-    Game.pause(false); pick('pause', 'Back to Menu');
+    Game.pause(false); pick('pause', 'Leave the fight');
     expect.ok(Game.screen === 'practiceGroup', `the pause menu goes back to the group (${Game.screen})`);
     pick('practice', 'Play a level'); pick('practiceLevels', A.LEVELS[0].name);
     expect.ok(Game.kind === 'level' && Game.level.id === A.LEVELS[0].id, 'a level, played on its own');
     pick('practice', 'Boss vs Boss'); expect.ok(Game.screen === 'bossBattle' && Game.screens().bossBattle.back === 'practice', 'two teams of bosses');
     Game.practiceGroup.length = 0; Game.showMenu('main');
+  });
+  test('Menus: the gamepad alone walks the title, Practice, Options and pause', () => {
+    sim.begin();
+    const read = gamepad.read, idle = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 0, 0, 0] };
+    const press = code => {   // one press and release of a pad button
+      const buttons = PAD_BUTTONS.map(c => c === code ? 1 : 0);
+      gamepad.read = () => ({ connected: true, buttons, axes: [0, 0, 0, 0] }); real.poll.call(gamepad, STEP);
+      gamepad.read = () => idle; real.poll.call(gamepad, STEP);
+    };
+    const on = () => (Game.menuItems[Game.selected] || {}).name, until = (code, name, max = 12) => {
+      for (let i = 0; i < max && on() !== name; i++) press(code);
+      expect.ok(on() === name, `the pad reaches ${name} (${on()} on ${Game.screen}, ${Game.mode}${multiplayer.panelOpen ? ', lobby open' : ''})`);
+    };
+    const multiplayerJoin = multiplayer.join, suspended = input.suspended; multiplayer.join = () => {};
+    try {
+      input.suspended = false;   // a headless page may not have focus
+      gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
+      Game.showMenu('main');
+      until('PadDown', 'Practice'); press('PadA'); expect.ok(Game.screen === 'practice', `A starts the chosen mode (${Game.screen})`);
+      press('PadA'); expect.ok(Game.screen === 'practiceBosses', 'and opens a list');
+      press('PadB'); expect.ok(Game.screen === 'practice', 'B goes back a screen');
+      press('PadB'); expect.ok(Game.screen === 'main', 'and back to the title');
+      // The title's footer: down to it, then along it to Options.
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Options'); press('PadA'); expect.ok(Game.screen === 'options', 'Options from the footer');
+      until('PadDown', 'Camera');
+      press('PadRight'); expect.ok(on() === 'Camera motion', `right goes into the category's settings (${on()})`);
+      const motion = settings.cameraMotion;
+      press('PadA'); expect.ok(settings.cameraMotion === !motion, 'A flips an Off/On setting');
+      press('PadA'); press('PadDown');
+      const speed = settings.sensitivity; press('PadRight');
+      expect.ok(on() === 'Camera speed' && settings.sensitivity === Math.min(10, speed + 1), 'right steps a slider');
+      press('PadLeft'); expect.ok(settings.sensitivity === speed, 'left steps it back');
+      press('PadB'); expect.ok(on() === 'Camera', 'B on a setting returns to its category');
+      until('PadDown', 'Reset to defaults'); until('PadRight', 'Back'); press('PadA'); expect.ok(Game.screen === 'main', 'Back in the footer leaves Options');
+      // Pause: Start opens it, Options and back, Start resumes.
+      Game.startFight(ENEMY_DEFS.find(isBossDef).id); Game.tickLoading(CONFIG.loading.time + 0.01);
+      expect.ok(Game.mode === 'play', `a fight (${Game.mode})`);
+      press('PadStart'); expect.ok(Game.mode === 'pause' && Game.screen === 'pause' && on() === 'Resume', 'Start pauses, on Resume');
+      until('PadDown', 'Options'); press('PadA'); expect.ok(Game.screen === 'options', 'Options from pause');
+      press('PadB'); expect.ok(Game.screen === 'pause', 'B goes back to pause');
+      press('PadStart'); expect.ok(Game.mode === 'play', 'Start resumes');
+    } finally { gamepad.read = read; gamepad.release(); multiplayer.join = multiplayerJoin; input.suspended = suspended; Game.showMenu('main'); }
   });
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
@@ -2312,7 +2352,7 @@
     S().newGame(); sim.begin(); Game.mode = 'play';
     Game.pause(false);
     const items = Game.screens().pause.items.map(i => i.name);
-    expect.ok(!items.some(n => /tutorial/i.test(n)) && items.includes('Quit to main menu'), `pause: ${items}`);
+    expect.ok(!items.some(n => /tutorial/i.test(n)) && items.includes('Quit to title'), `pause: ${items}`);
     Game.resume();
     const old = { ...JSON.parse(localStorage.getItem(CONFIG.story.saveKey)), level: 'tutorial', bonfire: 'tutorial-fire', spawn: { x: 9, z: -2, yaw: 0 } };
     localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(old)); S().load();
@@ -2365,7 +2405,7 @@
     const d = { ...S().data, zones: Game.zones.map(z => z.id), completed: true };
     localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load();
     S().resume(); sim.step(1);
-    expect.ok(Game.screen === 'storyDone' && !Game.story && Game.screens().storyDone.title === 'STORY COMPLETE', `the road's closing screen, not a finished level to stand in (${Game.screen}, ${Game.mode})`);
+    expect.ok(Game.screen === 'storyDone' && !Game.story && Game.screens().storyDone.title === 'Story complete', `the road's closing screen, not a finished level to stand in (${Game.screen}, ${Game.mode})`);
     Game.showMenu('main');
   }));
   test('Story: beating the Antlered Hunger goes on to chapter 7, the Windward Moor (v7.38.0)', withSave(() => {
@@ -2482,7 +2522,7 @@
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       expect.ok(!document.getElementById('ending') && Game.screen === 'storyDone', `the way back leads to the road's closing screen (${Game.screen})`);
       const screen = Game.screens().storyDone;
-      expect.ok(screen.title === 'STORY COMPLETE' && screen.notice === A.STORY.done && /ash has stopped falling/.test(screen.notice), `its words (${screen.title})`);
+      expect.ok(screen.title === 'Story complete' && screen.notice === A.STORY.done && /ash has stopped falling/.test(screen.notice), `its words (${screen.title})`);
     } finally {
       Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); Game.showMenu('main');
       if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);
@@ -3407,8 +3447,8 @@
     } finally { settings.lessons = was; }
     trainingAt(null, 'the-tower'); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'Level 4 has none');
     Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'a duel has none');
-    const opt = Game.screens().options.items.map(i => i.name);
-    expect.ok(opt.some(n => /^Lessons: (On|Off)$/.test(n)) && opt.includes('Show lessons again'), `Options: ${opt}`);
+    const opt = Game.screens().options.items.filter(i => i.cat === 'game').map(i => i.name);
+    expect.ok(opt.join() === 'Game,Lessons,Show lessons again', `Options' Game category: ${opt}`);
   }));
   test('Lessons: the REST card points an arrow at its bonfire, and the CONTROLS panel steps aside in Level 1', withLessons(() => {
     trainingAt(null, 'long-hall'); A.lessons.show('rest'); Game.render(1, STEP);

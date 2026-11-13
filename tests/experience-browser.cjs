@@ -49,23 +49,35 @@ const { createServer } = require('../server/index.cjs');
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => Game.screen), 'practice', 'Enter on the chosen mode starts it');
     await page.evaluate(() => Game.showMenu('main'));
-    await page.evaluate(() => { Game.optionsFrom = 'main'; Game.showMenu('options'); });
-    assert.deepEqual(await page.locator('#menuList .n').allTextContents(),
-      ['Camera motion: Off', 'Lessons: On', 'Show lessons again', 'Graphics: Low', 'Check graphics again', 'Back']);
+    // Options: categories on the left, the chosen one's settings beside them, each with its control.
+    await page.evaluate(() => { Game.optionsFrom = 'main'; Game.optionsCategory = 'game'; Game.showMenu('options'); });
+    assert.deepEqual(await page.locator('#menuList .n').allTextContents(), ['Game', 'Camera', 'Graphics', 'Sound']);
+    const shownSettings = () => page.locator('#menuSide .menuBtn:not([hidden])').evaluateAll(bs => bs.map(b => b.getAttribute('aria-label') || b.textContent));
+    assert.deepEqual(await shownSettings(), ['Lessons: On', 'Show lessons again']);
+    await page.keyboard.press('ArrowDown');
+    assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
+    assert.deepEqual(await shownSettings(), ['Camera motion: Off', 'Camera speed: 5', 'Invert camera: Off'], 'moving onto a category shows its settings');
+    await page.keyboard.press('ArrowRight');
+    assert.match(await page.evaluate(() => Game.menuItems[Game.selected].name), /^Camera motion$/, 'right goes into the settings');
     await page.keyboard.press('Space');
     assert.equal(await page.evaluate(() => settings.cameraMotion), true, 'Space activates the focused option exactly once');
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await page.evaluate(() => settings.cameraMotion), false);
     await page.keyboard.press('ArrowLeft');
-    assert.equal(await page.evaluate(() => settings.cameraMotion), true);
+    assert.equal(await page.evaluate(() => settings.cameraMotion), false, 'left is Off');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), true, 'right is On');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => settings.cameraMotion), true, 'right again stays On');
     assert.deepEqual(await page.evaluate(() => {
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
       return { cameraMotion: saved.cameraMotion, legacyShake: 'screenShake' in saved };
     }), { cameraMotion: true, legacyShake: false }, 'saving the unified option retires the old shake preference');
-    await page.keyboard.press('ArrowDown');
-    assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
+    await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowRight');
+    assert.equal(await page.evaluate(() => settings.sensitivity), 6, 'a slider steps with left and right');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.selected].name), 'Camera', 'Escape on a setting goes back to its category');
     await page.keyboard.press('End');
-    assert.equal((await selection()).selected, await page.locator('#menuList button').count() - 1);
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.selected].name), 'Back');
     await page.keyboard.press('Home'); await page.keyboard.press('ArrowDown');
     assert.equal(await page.evaluate(() => {
       const key = new KeyboardEvent('keydown', { code: 'KeyJ', ctrlKey: true, bubbles: true, cancelable: true });
@@ -77,7 +89,7 @@ const { createServer } = require('../server/index.cjs');
     await motionOption.hover({ position: { x: 102, y: 18 } });
     const hovered = await selection();
     assert.equal(hovered.focus, hovered.selected, 'actual pointer movement keeps native focus with selection');
-    assert.match(await page.evaluate(() => Game.menuItems[Game.selected].name), /^Camera motion:/);
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.selected].name), 'Camera motion');
     await page.keyboard.press('Space');
     assert.equal(await page.evaluate(() => settings.cameraMotion), false, 'Space activates the hovered selection too');
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// Boss Rush's abilities (v7.72.0, designed with Aleix): one is picked between fights and kept for the run. An ability
+// Boss Rush's abilities (v7.73.0, designed with Aleix): one is picked between fights and kept for the run. An ability
 // offered again is its next level. The engine half is js/abilities.js; the cards and icons js/ability-cards.js.
 // ============================================================================
 // Every ability: an `id`, a `name`, a `rarity` (a key of CONFIG.abilities.rarity, which sets how many levels it has), a
