@@ -569,3 +569,10 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Tests: `tests/suite-torn-abbey.js` (5), the Story order, Oswin going on to chapter 12, Agathe closing the road, lighting count 20.
 - Frames: `docs/scorecard/abbey-agathe.jpg`, `abbey-brother.jpg`, `agathe-lab.jpg`, `brother-lab.jpg`.
 - Not yet: Agathe's and the Brothers' own Blender figures, Finn (`BACKLOG.md`).
+
+## The Antlered Hunger to the hardened model check (v7.49.0, stage 3 track B item 2)
+- The last Ashmere boss of the track. It was already a Blender model (v7.20.0, `tools/blender/antlered_beast.py`, packed in `js/baked/snow-church.js`), but failed the hardened check: the head read as a lizard's snout, and the rim light turned the quills silver and the antler tips and claws white (`RIM.strength.value = 0` in the lab showed them dark).
+- The skull rebuilt: a broad flat face under a heavy brow, sockets (tilted to scowl) and the nose cut by booleans (`carve()`, as the Giant Skeleton's) with dark backs at the bottom of each hole, cheekbones and their arches, a wide flat-topped muzzle. The eyes sit in the sockets (`at` [0, .1, .28], `spread` .1, `size` .022).
+- Rim: the model `rim: 0.4`, the quills' slot `rim: 0.15` (thin spikes are all edge), the bone slot `rim: 0.5`.
+- 22 pieces, 12,474 triangles in the game (11,880 before), inside the 14,000 boss budget.
+- Checks: the model lab, the in-page `model`, `Church`, `Hunger`, `Ultra models`, `valid` filters. Frames: `docs/scorecard/hunger-lab.jpg`, `hunger-face.jpg`, `hunger-church.jpg`.

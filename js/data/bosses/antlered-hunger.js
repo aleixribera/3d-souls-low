@@ -24,15 +24,15 @@
     armR: ['hide', 'quill'], elbowR: ['hide', 'bone'], legR: ['hide'], kneeR: ['hide', 'bone'],
   };
   MODEL_DEFS.antleredHunger = {
-    faction: 'hunger', budget: 'boss', fit: 1, limbSides: 8,
+    faction: 'hunger', budget: 'boss', fit: 1, limbSides: 8, rim: 0.4,
     proportions: { shoulderX: 0.4, torsoW: 0.3, torsoD: 0.22, armR: 0.07, legR: 0.09, headR: 0.13, handR: 0.08, footLen: 0.4 },
     limbs: { armL: { len: 1.35 }, armR: { len: 1.35 } },
     posture: { chest: [0.72, 0, 0], neck: [0.1, 0, 0], head: [-0.62, 0, 0], armL: [-0.55, 0, -0.14], armR: [-0.55, 0, 0.14], elbowL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0] },
-    materials: { hide, quill: { tex: 'beastQuill', tint: 0xffffff, decay: 0.5 }, bone: { tex: 'bone', tint: 0xd8cdb4, decay: 0.55 }, eye: { glow: 0xff5a20 } },
+    materials: { hide, quill: { tex: 'beastQuill', tint: 0xffffff, decay: 0.5, rim: 0.15 }, bone: { tex: 'bone', tint: 0xd8cdb4, decay: 0.55, rim: 0.5 }, eye: { glow: 0xff5a20 } },
     body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: 'hide', hands: null, feet: null },
     bones: {},
     parts: Object.entries(bonesOf).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `${bone}__${s}`, bone, slot: s.split('.')[0] }))),
-    eyes: { color: 0xff5a20, size: 0.026, spread: 0.09, at: [0, 0.09, 0.26] },
+    eyes: { color: 0xff5a20, size: 0.022, spread: 0.1, at: [0, 0.1, 0.28] },
     anim: { idle: { breathRate: 1.1, breath: 0.03, headDrift: 0.08, sway: 0.03, twitch: 0.02 }, walk: { twist: 0.2, roll: 0.08, headNod: 0.07, elbow: 0.3, drag: 0.1 },
             flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1.2, slump: 1 } },
   };

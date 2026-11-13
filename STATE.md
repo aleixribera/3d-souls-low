@@ -4,16 +4,17 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 23 shipped `PLAN.md` stage 3 track A item 2's chapter 12, the Torn Abbey (rough), and released v7.48.0. Check
-met: Story goes on from Oswin to its loading line, plays to Mother Agathe; frames `docs/scorecard/abbey-agathe.jpg`,
-`abbey-brother.jpg` (front-lit, fighting distance), `agathe-lab.jpg`, `brother-lab.jpg`. Next: track B, the
-Antlered Hunger in Blender; then track A, chapter 13 (the Root of the Ember).
+Pass 24 shipped `PLAN.md` stage 3 track B item 2's last Ashmere boss, the Antlered Hunger (pass 1; it was already a
+Blender model since v7.20.0, so the step was the hardened check), and released v7.49.0. Check met: a stag's skull with
+carved sockets and the ember eyes in them, no flat-white quills or antler tips; frames `docs/scorecard/hunger-lab.jpg`,
+`hunger-face.jpg`, `hunger-church.jpg` (facing the player at fighting distance in the nave). Next: track A, chapter 13
+(the Root of the Ember); then track B item 3, the weakest "bosses" or "co-op" row of `SCORECARD.md`.
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
+  Executioner, Crucible Squire, Shover, Antlered Hunger (v7.49.0 skull: `carve()` in its script), Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
   the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -63,9 +64,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 23's push and the v7.48.0 container: check in pass 24 (pass 22's CI and v7.47.0 container: green).
-Pass 23 locally: Node 22/22, in-page `Torn Abbey`, `Story`, `Guiding light`, `Lore`, `Changelog`, `model`, `bosses`,
-`Ultra models`, `valid`, `Aurel in Ash` (all pass).
+CI on pass 24's push and the v7.49.0 container: check in pass 25 (pass 23's v7.48.0 container green; its CI was still
+running at pass 24's start: check it too). Pass 24 locally: Node 22/22, in-page `model`, `Church`, `Hunger`,
+`Ultra models`, `valid`, `Changelog`, `Lore` (all pass).
 
 ## wip// branches
 

@@ -73,17 +73,42 @@ def neck_q(bm):
 hard('neck__quill', neck_q)
 
 # ---- the skull -------------------------------------------------------------------------------------------------------
+# A stag's skull, not a snout: a broad flat face under a heavy brow, two sockets and the nose cut through it by booleans
+# (dark fills behind them, the ember eyes inside), cheekbones and their arches, a wide flat muzzle.
 Hy, Hz = HEAD + .07, .08
+def ellipsoid(bm, c, rr, roll=0.0, sub=2):
+    """An ellipsoid (radii rr) turned by `roll` about the forward axis (seen from the front, + lifts its +x end)."""
+    m = bmesh.ops.create_icosphere(bm, subdivisions=sub, radius=1.0); cr, sr = math.cos(roll), math.sin(roll)
+    for v in m['verts']:
+        x, y, z = v.co.x * rr[0], v.co.y * rr[1], v.co.z * rr[2]
+        v.co = G(c[0] + x * cr - y * sr, c[1] + x * sr + y * cr, c[2] + z)
+def carve(ob, cutters):
+    """Boolean-subtract ellipsoids (centre, radii, roll) from a finished piece: real holes (the sockets, the nose)."""
+    for c, rr, roll in cutters:
+        bm = bmesh.new(); ellipsoid(bm, c, rr, roll); cut = new_obj('cut', bm)
+        m = ob.modifiers.new('b', 'BOOLEAN'); m.operation = 'DIFFERENCE'; m.object = cut; m.solver = 'EXACT'
+        bpy.context.view_layer.objects.active = ob
+        dg = bpy.context.evaluated_depsgraph_get(); me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
+        ob.modifiers.clear(); old = ob.data; ob.data = me; bpy.data.meshes.remove(old)
+        bpy.data.objects.remove(cut)
+    for p in ob.data.polygons: p.use_smooth = True
+    return ob
+SOCK = [((s * .075, Hy + .02, Hz + .175), (.046, .036, .055), s * .3) for s in (-1, 1)]   # inner corners down: a scowl
+NOSE = ((0, Hy - .08, Hz + .435), (.034, .03, .05), 0.0)
 def skull(bm):
-    blob(bm, (0, Hy + .03, Hz), .13, (1.05, .95, 1.1), 3)                # cranium
-    tube(bm, [(0, Hy + .0, Hz + .08), (0, Hy - .03, Hz + .2), (0, Hy - .07, Hz + .32), (0, Hy - .1, Hz + .4)], [.095, .078, .058, .042], 10, ovals=[(1, .8)] * 4)   # snout
+    blob(bm, (0, Hy + .03, Hz - .01), .13, (1.12, .9, 1.05), 3)          # cranium
+    blob(bm, (0, Hy + .01, Hz + .11), .1, (1.2, .75, .9), 3)             # the broad flat face
+    tube(bm, [(0, Hy - .01, Hz + .12), (0, Hy - .04, Hz + .24), (0, Hy - .07, Hz + .34), (0, Hy - .095, Hz + .43)],
+         [.085, .072, .056, .046], 10, ovals=[(1.3, .72)] * 4)            # the muzzle, wide and flat-topped
     for s in (-1, 1):
-        blob(bm, (s * .085, Hy + .03, Hz + .1), .058, (1, .8, 1), 2)     # brow ridges
+        tube(bm, [(s * .135, Hy + .055, Hz + .06), (s * .085, Hy + .07, Hz + .16), (0, Hy + .055, Hz + .185)], [.026, .03, .026], 8)   # the brow
+        blob(bm, (s * .1, Hy - .045, Hz + .12), .036, (1, .75, 1.3), 2)                                    # the cheekbone
+        tube(bm, [(s * .1, Hy - .045, Hz + .1), (s * .13, Hy - .035, Hz + .0), (s * .12, Hy - .04, Hz - .07)], [.022, .019, .017], 6)   # its arch
         tube(bm, [(s * .07, Hy - .08, Hz + .02), (s * .06, Hy - .13, Hz + .14), (s * .036, Hy - .15, Hz + .3)], [.022, .018, .012], 6)   # the lower jaw
-piece('head__bone', skull, 1100, voxel=.011, noise=.003)
+carve(piece('head__bone', skull, 1300, voxel=.009, noise=.003), SOCK + [NOSE])
 def sockets(bm):
-    for s in (-1, 1): blob(bm, (s * .068, Hy + .012, Hz + .128), .03, (.8, 1, .95), 2)
-    for s in (-1, 1): blob(bm, (s * .03, Hy - .082, Hz + .385), .016, (1, .7, 1.4), 1)
+    for s in (-1, 1): blob(bm, (s * .075, Hy + .02, Hz + .125), .038, (1, .85, .4), 2)   # the dark at the bottom of each socket
+    blob(bm, (0, Hy - .08, Hz + .385), .03, (1.1, 1, .5), 2)                            # and of the nose
     blob(bm, (0, Hy - .1, Hz + .2), .05, (.9, .35, 3), 2)   # the dark of the mouth
 hard('head__quill', sockets)
 def teeth_antlers(bm):

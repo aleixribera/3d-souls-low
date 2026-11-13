@@ -96,6 +96,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | The Pillager Captain's model | `tools/blender/captain.py` (rebuild and pack: `docs/captain-model-v7.41.0.md`), materials in `MODEL_DEFS.pillagerCaptain` |
 | The Bell Warden's model | `tools/blender/bellwarden.py` (rebuild and pack: `docs/bellwarden-model-v7.43.0.md`), materials in `MODEL_DEFS.bellWarden` |
 | The Giant Skeleton's model | `tools/blender/giant.py` (rebuild and pack: `docs/giant-model-v7.45.0.md`), materials in `MODEL_DEFS.giantSkeleton` |
+| The Antlered Hunger's model | `tools/blender/antlered_beast.py` (rebuild and pack: `docs/antlered-model-v7.49.0.md`), materials in `MODEL_DEFS.antleredHunger` (`js/data/bosses/antlered-hunger.js`) |
 | Aldric's model (both phases) | `tools/blender/aldric.py` (rebuild and pack: `docs/aldric-model-v7.47.0.md`), materials in `MODEL_DEFS.varn` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |

@@ -9,6 +9,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   bodykit.js). Remove once stage 1 is done, with any others left unused.
 - The `beastFur` texture projects as vertical streaks that read like wood grain on the Beastman, and is brown where its
   brief says grey. A texture pass (Claude-only) after stage 1.
+- The Antlered Hunger's hide (`beastHide`, the `bark` pattern) reads as gnarled wood more than a stag's hide (v7.49.0,
+  `docs/scorecard/hunger-lab.jpg`); a hide or fur texture of its own in the same texture pass. Ysolde is 3,504
+  triangles, over the 3,000 enemy budget (load warning).
 - Models over budget seen in the load warnings: seren 3,544, ashenWarrior 7,226, omenkin 8,562 (enemy budget 3,000).
   All three belong to the old second road and leave at the swap (`PLAN.md` stage 3), so they get no Blender pass.
 - `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
