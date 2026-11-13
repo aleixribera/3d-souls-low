@@ -36,7 +36,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
 - Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat
   white that washes out the ground and the controls panel (`docs/scorecard/level-the-tower.jpg`, `level-the-church.jpg`).
-- Radagon (and the Kindling Tree, his copy) beat three bots 11/12 and 10/12 even after v7.50.1's fairer Gold Breaker
+- Radagon beat three bots 11/12 and 10/12 even after v7.50.1's fairer Gold Breaker
   (`git show v7.56.0:docs/scorecard/radagon-gold-breaker.txt`); his other big losers for bots, the Rune Slam's two hits, are 1.5 s
   apart, fair to a person. Check by hand whether a group of people can beat him before The Calling offers him.
 - A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
@@ -129,13 +129,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   an undyed cowl). Agathe is Maliketh's moves renamed, 4,000 HP (was 4,600); the robe shed and Black Blade reveal are
   gone, so nothing changes on her body at half health but the storm's light. No one has fought her by hand. The
   Brothers fight with the Beastman's moves, kept as `BEASTMAN_MOVES` in `js/data/move-sources.js` (v7.54.0).
-- Chapter 13, the Root of the Ember (v7.50.0, pass 25), rough; its second step: the Kindling Tree's and the Rootbound's
-  own figures (stand-ins: the Antlered Hunger, chapter 6's boss, stood upright in red-gold wood, so two chapters share one
-  body; the Hollow Soldier in bark, still holding the ruined sword in bark). The tree is Radagon's moves renamed, 4,200 HP
-  (was 5,200); its marks and risings burn red-gold (`holyLight`), but the mark's shape is still the old road's crossing
-  arcs and the thrown thorns are still gold spears: both want an ember shape (a root knot, a thorn). No one has fought it
-  by hand. The Rootbound fight with the Golden Zealot's moves, kept as `ZEALOT_MOVES` in `js/data/move-sources.js`
-  (v7.54.0).
+- The Kindling Tree, pass 2 (pass 50 did pass 1, v7.73.0: Blender figure, rooted then uprooted at 60%, hit `burrow`
+  drawn by `js/root-heave.js`, hit `still`, `rooted`; `docs/scorecard/tree-moves.jpg`, `tree-heave.jpg`). The blind
+  judge put it at 50 to Hollis's 48 and named the model's surface next: the bark is stretched into vertical streaks on
+  the trunk (UVs) and a hard ring shows where the trunk meets the root skirt when it bends. The figure is 20.7k
+  triangles, over the 14k boss budget. Bots treat a burrow like a blink (out of reach) and don't step off the rise's
+  ring on purpose. The strike's trail on the Lash shows at the end of its first swing, high by the crown. The
+  Rootbound still fight with the Golden Zealot's moves (`ZEALOT_MOVES`, `js/data/move-sources.js`) in the Hollow
+  Soldier in bark. No one has fought the tree by hand; health and posture are kept until every boss is reworked.
 - Chapter 14, the Still Mere (v7.51.0, pass 27), rough; its second step: the King's Blade's own figure (stand-in: the
   player's wanderer in ash, so the shield it guards with is still slung on its back; it wants the round shield on the
   arm, and the champion's look of `STORY.md`), a roll or sidestep (no enemy rolls yet: an opt-in evade would make "it
