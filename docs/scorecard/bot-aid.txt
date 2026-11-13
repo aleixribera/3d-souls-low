@@ -1,41 +1,75 @@
-Bots v7.55.0, an aid not a carry: three bots against each of the story's 13 bosses, 10 seeded fights each
-(node tools/bot-fights.cjs story 10). Before = v7.53.0, after = this release; "a > b" reads before > after.
+Bots v7.57.0, normal players that help (pass 35): full player stats again (v7.55.0's 75% damage cut is gone); the
+aid is behaviour only. Three bots against each of the story's 13 bosses, 10 seeded fights each
+(node tools/bot-fights.cjs story 10). Before = v7.55.0, after = this release; "a > b" reads before > after.
 s alive a bot = seconds each bot stood per fight; dmg/s a bot = damage a bot dealt per second standing;
 deaths/10 bot-min = bot deaths per ten minutes a bot stood. A fight is lost on a wipe or at 480 s.
 
 boss            wins          bot deaths  s alive a bot  dmg/s a bot   deaths/10 bot-min  fight s
-pillagerCaptain 10/10 > 10/10 0 > 0       52 > 98        23.0 > 12.3   0.00 > 0.00        52 > 98
-bellWarden      10/10 > 10/10 0 > 0       78 > 141       22.3 > 12.3   0.00 > 0.00        78 > 141
-giant           10/10 > 10/10 0 > 0       48 > 66        26.6 > 19.4   0.00 > 0.00        48 > 66
-varn            8/10 > 10/10  8 > 4       151 > 235      16.4 > 10.8   1.06 > 0.34        165 > 242
-antlered        10/10 > 10/10 1 > 2       132 > 266      13.2 > 6.5    0.15 > 0.15        132 > 273
-ostrey          10/10 > 9/10  0 > 4       117 > 230      17.0 > 8.5    0.00 > 0.35        117 > 264
-hale+harrow     8/10 > 10/10  8 > 4       155 > 328      12.8 > 6.9    1.03 > 0.24        177 > 356
-ringer          10/10 > 10/10 0 > 0       111 > 215      17.9 > 9.3    0.00 > 0.00        111 > 215
-hollis          7/10 > 5/10   15 > 21     137 > 238      15.3 > 8.1    2.19 > 1.77        175 > 344
-oswin           10/10 > 9/10  5 > 9       137 > 210      18.5 > 11.9   0.73 > 0.86        147 > 221
-agathe          10/10 > 7/10  5 > 13      135 > 257      19.7 > 9.8    0.74 > 1.01        145 > 312
-kindlingTree    6/10 > 5/10   15 > 20     177 > 273      14.8 > 8.9    1.69 > 1.46        232 > 345
-kingsBlade      9/10 > 8/10   7 > 0       212 > 480      13.6 > 6.0    0.66 > 0.00        253 > 480
-TOTAL           118 > 113     64 > 77     126 > 234      16.5 > 8.9    0.78 > 0.51        141 > 258
+pillagerCaptain 10/10 > 10/10 0 > 0       98 > 118       12.3 > 10.2   0.00 > 0.00        98 > 118
+bellWarden      10/10 > 10/10 0 > 0       141 > 125      12.3 > 13.9   0.00 > 0.00        141 > 125
+giant           10/10 > 10/10 0 > 0       66 > 55        19.4 > 23.2   0.00 > 0.00        66 > 55
+varn            10/10 > 10/10 4 > 2       235 > 190      10.8 > 13.3   0.34 > 0.21        242 > 195
+antlered        10/10 > 10/10 2 > 0       266 > 210      6.5 > 8.3     0.15 > 0.00        273 > 210
+ostrey          9/10 > 10/10  4 > 2       230 > 183      8.5 > 10.9    0.35 > 0.22        264 > 188
+hale+harrow     10/10 > 9/10  4 > 4       328 > 235      6.9 > 9.3     0.24 > 0.34        356 > 247
+ringer          10/10 > 10/10 0 > 0       215 > 176      9.3 > 11.4    0.00 > 0.00        215 > 176
+hollis          5/10 > 5/10   21 > 17     238 > 163      8.1 > 11.7    1.77 > 2.08        344 > 232
+oswin           9/10 > 10/10  9 > 1       210 > 168      11.9 > 15.0   0.86 > 0.12        221 > 171
+agathe          7/10 > 10/10  13 > 4      257 > 190      9.8 > 14.0    1.01 > 0.42        312 > 196
+kindlingTree    5/10 > 8/10   20 > 13     273 > 230      8.9 > 12.0    1.46 > 1.13        345 > 302
+kingsBlade      8/10 > 9/10   0 > 0       480 > 375      6.0 > 7.8     0.00 > 0.00        480 > 375
+TOTAL           113 > 121     77 > 43     234 > 186      8.9 > 11.3    0.51 > 0.36        258 > 199
 
-Reading: bots deal 46% less damage a second and win 5 fewer fights; each bot dies 35% less often per minute
-standing and stands 1.9x as long a fight. Total deaths rise (64 > 77) only because a bots-only fight lasts 1.8x
-as long and every lost one ends in a wipe; with a person fighting too, fights are shorter. Deaths gather on
-Hollis, Agathe and the Kindling Tree (two-hit staggers and mistimed rolls).
+Reading: with full damage back, bots win 8 more fights, die 44% less (77 > 43; 0.51 > 0.36 deaths per ten
+minutes standing) and deal 27% more damage a second. Seconds alive a bot fall only because fights end 23% sooner:
+a bot now stands 93% of each fight, against 91%. Hollis is the one boss where bots die more often a minute.
 
-AFTER, full counts
-pillagerCaptain  wins 10/10  time 98s  dmg 49  fell 0.0  alive/bot 98s  dealt 3600 (12.3/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 4.0  chains 1  swings into a string 2  hit mid-swing 2
-bellWarden       wins 10/10  time 141s  dmg 56  fell 0.0  alive/bot 141s  dealt 5200 (12.3/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 2.3  chains 0  swings into a string 0  hit mid-swing 8
-giant            wins 10/10  time 66s  dmg 35  fell 0.0  alive/bot 66s  dealt 3840 (19.4/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 2.7  chains 0  swings into a string 0  hit mid-swing 2
-varn             wins 10/10  time 242s  dmg 586  fell 0.4  alive/bot 235s  dealt 7600 (10.8/s a bot)  falls/10 bot-min 0.34  rolls/bot-min 7.8  chains 1  swings into a string 9  hit mid-swing 28
-antlered         wins 10/10  time 273s  dmg 305  fell 0.2  alive/bot 266s  dealt 5200 (6.5/s a bot)  falls/10 bot-min 0.15  rolls/bot-min 6.5  chains 3  swings into a string 3  hit mid-swing 22
-ostrey           wins 9/10  time 264s  dmg 322  fell 0.4  alive/bot 230s  dealt 5856 (8.5/s a bot)  falls/10 bot-min 0.35  rolls/bot-min 7.9  chains 0  swings into a string 19  hit mid-swing 21
-hale+harrow      wins 10/10  time 356s  dmg 493  fell 0.4  alive/bot 328s  dealt 6800 (6.9/s a bot)  falls/10 bot-min 0.24  rolls/bot-min 11.0  chains 121  swings into a string 192  hit mid-swing 29
-ringer           wins 10/10  time 215s  dmg 128  fell 0.0  alive/bot 215s  dealt 6000 (9.3/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 3.8  chains 1  swings into a string 0  hit mid-swing 8
-hollis           wins 5/10  time 344s  dmg 579  fell 2.1  alive/bot 238s  dealt 5774 (8.1/s a bot)  falls/10 bot-min 1.77  rolls/bot-min 9.2  chains 2  swings into a string 41  hit mid-swing 22
-oswin            wins 9/10  time 221s  dmg 595  fell 0.9  alive/bot 210s  dealt 7471 (11.9/s a bot)  falls/10 bot-min 0.86  rolls/bot-min 9.4  chains 20  swings into a string 10  hit mid-swing 16
-agathe           wins 7/10  time 312s  dmg 595  fell 1.3  alive/bot 257s  dealt 7537 (9.8/s a bot)  falls/10 bot-min 1.01  rolls/bot-min 10.1  chains 45  swings into a string 18  hit mid-swing 16
-kindlingTree     wins 5/10  time 345s  dmg 651  fell 2.0  alive/bot 273s  dealt 7324 (8.9/s a bot)  falls/10 bot-min 1.46  rolls/bot-min 9.5  chains 3  swings into a string 65  hit mid-swing 7
-kingsBlade       wins 8/10  time 480s  dmg 310  fell 0.0  alive/bot 480s  dealt 8663 (6.0/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 5.9  chains 7  swings into a string 3  hit mid-swing 38
-TOTAL            wins 113/130  time 258s  dmg 362  fell 0.59  alive/bot 234s  dealt 6220 (8.9/s a bot)  falls/10 bot-min 0.51  bot deaths 77  rolls/bot-min 7.5  chains 204  swings into a string 362  hit mid-swing 219
+With a person (PERSON=1 node tools/bot-fights.cjs story 10: the first of the three has no botId, so the other two
+treat it as a person; it still plays with a bot's brain, so it is a stand-in, not a human):
+                                   v7.55.0      v7.57.0
+wins                               121/130      127/130
+bot deaths (all three bodies)      54           33
+fight s                            204          222
+person's share of the damage       60%          49%    (v7.55.0's bots hit for 75%; now all three hit for 100%)
+executions, person / bots          937 / 132    718 / 176
+executions the bots left           1876         1584
+openings the bots left             -            3333   (a stagger or long recovery, the person in reach: theirs first)
+s behind a boss chasing someone    -            6.1 a bot-min
+drew a boss off a hurt ally        -            406
+The bots still leave the kneel to the person when the person can reach its front in time (unchanged rule); they
+take more kneels (132 > 176), most likely because the stand-in, a bot brain, now also backs up from the boss's back and is more
+often too far from its front. A slower person fight (204 > 222 s) is the price of the openings left to the person.
+The opening rule itself: tests/bot-temperament.cjs, "Openings" (alone the bot swings 0.00 s into a long recovery;
+with a person in reach it waits 0.70 s; when the person swings at 0.25 s it joins at 0.50 s) and "Backup".
+
+AFTER, full counts (three bots)
+pillagerCaptain  wins 10/10  time 118s  dmg 66  fell 0.0  alive/bot 118s  dealt 3600 (10.2/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 3.2  chains 0  swings into a string 4  hit mid-swing 4  executions 45  left to a person: 0 executions 0 openings  behind a boss on someone else 6.6 s a bot-min  drew 20
+bellWarden       wins 10/10  time 125s  dmg 39  fell 0.0  alive/bot 125s  dealt 5200 (13.9/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 1.9  chains 0  swings into a string 0  hit mid-swing 1  executions 66  left to a person: 0 executions 0 openings  behind a boss on someone else 6.1 s a bot-min  drew 14
+giant            wins 10/10  time 55s  dmg 9  fell 0.0  alive/bot 55s  dealt 3840 (23.2/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 2.1  chains 0  swings into a string 0  hit mid-swing 0  executions 52  left to a person: 0 executions 0 openings  behind a boss on someone else 5.4 s a bot-min  drew 2
+varn             wins 10/10  time 195s  dmg 388  fell 0.2  alive/bot 190s  dealt 7600 (13.3/s a bot)  falls/10 bot-min 0.21  rolls/bot-min 7.8  chains 0  swings into a string 9  hit mid-swing 19  executions 84  left to a person: 0 executions 0 openings  behind a boss on someone else 5.6 s a bot-min  drew 60
+antlered         wins 10/10  time 210s  dmg 234  fell 0.0  alive/bot 210s  dealt 5200 (8.3/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 6.7  chains 6  swings into a string 9  hit mid-swing 17  executions 53  left to a person: 0 executions 0 openings  behind a boss on someone else 4.6 s a bot-min  drew 34
+ostrey           wins 10/10  time 188s  dmg 233  fell 0.2  alive/bot 183s  dealt 6000 (10.9/s a bot)  falls/10 bot-min 0.22  rolls/bot-min 7.5  chains 1  swings into a string 16  hit mid-swing 11  executions 69  left to a person: 0 executions 0 openings  behind a boss on someone else 5.9 s a bot-min  drew 43
+hale+harrow      wins 9/10  time 247s  dmg 341  fell 0.4  alive/bot 235s  dealt 6536 (9.3/s a bot)  falls/10 bot-min 0.34  rolls/bot-min 9.8  chains 76  swings into a string 123  hit mid-swing 11  executions 60  left to a person: 0 executions 0 openings  behind a boss on someone else 3.4 s a bot-min  drew 39
+ringer           wins 10/10  time 176s  dmg 71  fell 0.0  alive/bot 176s  dealt 6000 (11.4/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 3.9  chains 3  swings into a string 2  hit mid-swing 1  executions 82  left to a person: 0 executions 0 openings  behind a boss on someone else 5.9 s a bot-min  drew 8
+hollis           wins 5/10  time 232s  dmg 440  fell 1.7  alive/bot 163s  dealt 5709 (11.7/s a bot)  falls/10 bot-min 2.08  rolls/bot-min 9.6  chains 1  swings into a string 15  hit mid-swing 15  executions 55  left to a person: 0 executions 0 openings  behind a boss on someone else 3.7 s a bot-min  drew 48
+oswin            wins 10/10  time 171s  dmg 349  fell 0.1  alive/bot 168s  dealt 7600 (15.0/s a bot)  falls/10 bot-min 0.12  rolls/bot-min 8.4  chains 14  swings into a string 9  hit mid-swing 10  executions 79  left to a person: 0 executions 0 openings  behind a boss on someone else 5.4 s a bot-min  drew 54
+agathe           wins 10/10  time 196s  dmg 369  fell 0.4  alive/bot 190s  dealt 8000 (14.0/s a bot)  falls/10 bot-min 0.42  rolls/bot-min 9.1  chains 29  swings into a string 14  hit mid-swing 12  executions 100  left to a person: 0 executions 0 openings  behind a boss on someone else 5.4 s a bot-min  drew 77
+kindlingTree     wins 8/10  time 302s  dmg 513  fell 1.3  alive/bot 230s  dealt 8277 (12.0/s a bot)  falls/10 bot-min 1.13  rolls/bot-min 10.0  chains 6  swings into a string 47  hit mid-swing 2  executions 79  left to a person: 0 executions 0 openings  behind a boss on someone else 4.3 s a bot-min  drew 47
+kingsBlade       wins 9/10  time 375s  dmg 132  fell 0.0  alive/bot 375s  dealt 8764 (7.8/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 5.6  chains 1  swings into a string 1  hit mid-swing 10  executions 86  left to a person: 0 executions 0 openings  behind a boss on someone else 7.2 s a bot-min  drew 12
+TOTAL            wins 121/130  time 199s  dmg 245  fell 0.33  alive/bot 186s  dealt 6333 (11.3/s a bot)  falls/10 bot-min 0.36  bot deaths 43  rolls/bot-min 7.1  chains 137  swings into a string 249  hit mid-swing 113  executions 910  left to a person: 0 executions 0 openings  behind a boss on someone else 5.4 s a bot-min  drew 458
+
+AFTER, full counts (with a person)
+pillagerCaptain  wins 10/10  time 152s  dmg 99  fell 0.0  alive/bot 152s  dealt 3600 (7.9/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 3.3  chains 0  swings into a string 9  hit mid-swing 0  executions person 33 bots 5  left to a person: 78 executions 113 openings  behind a boss on someone else 7.4 s a bot-min  drew 17  person's share of damage 51%
+bellWarden       wins 10/10  time 136s  dmg 45  fell 0.0  alive/bot 136s  dealt 5200 (12.8/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 1.9  chains 2  swings into a string 0  hit mid-swing 0  executions person 54 bots 10  left to a person: 122 executions 191 openings  behind a boss on someone else 8.6 s a bot-min  drew 1  person's share of damage 54%
+giant            wins 10/10  time 60s  dmg 12  fell 0.0  alive/bot 60s  dealt 3840 (21.3/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 2.4  chains 0  swings into a string 0  hit mid-swing 0  executions person 51 bots 6  left to a person: 111 executions 112 openings  behind a boss on someone else 6.5 s a bot-min  drew 1  person's share of damage 59%
+varn             wins 9/10  time 231s  dmg 356  fell 0.4  alive/bot 199s  dealt 7511 (12.6/s a bot)  falls/10 bot-min 0.40  rolls/bot-min 7.3  chains 0  swings into a string 9  hit mid-swing 11  executions person 69 bots 7  left to a person: 145 executions 240 openings  behind a boss on someone else 5.6 s a bot-min  drew 30  person's share of damage 51%
+antlered         wins 10/10  time 277s  dmg 247  fell 0.1  alive/bot 274s  dealt 5200 (6.3/s a bot)  falls/10 bot-min 0.07  rolls/bot-min 6.3  chains 7  swings into a string 8  hit mid-swing 8  executions person 45 bots 2  left to a person: 86 executions 423 openings  behind a boss on someone else 5.3 s a bot-min  drew 29  person's share of damage 54%
+ostrey           wins 10/10  time 230s  dmg 234  fell 0.3  alive/bot 213s  dealt 6000 (9.4/s a bot)  falls/10 bot-min 0.28  rolls/bot-min 7.1  chains 0  swings into a string 18  hit mid-swing 11  executions person 51 bots 13  left to a person: 109 executions 201 openings  behind a boss on someone else 5.6 s a bot-min  drew 43  person's share of damage 46%
+hale+harrow      wins 10/10  time 245s  dmg 301  fell 0.2  alive/bot 242s  dealt 6800 (9.4/s a bot)  falls/10 bot-min 0.17  rolls/bot-min 9.1  chains 68  swings into a string 122  hit mid-swing 9  executions person 42 bots 21  left to a person: 58 executions 120 openings  behind a boss on someone else 4.5 s a bot-min  drew 30  person's share of damage 42%
+ringer           wins 10/10  time 206s  dmg 71  fell 0.0  alive/bot 206s  dealt 6000 (9.7/s a bot)  falls/10 bot-min 0.00  rolls/bot-min 3.2  chains 0  swings into a string 3  hit mid-swing 1  executions person 71 bots 8  left to a person: 149 executions 226 openings  behind a boss on someone else 6.5 s a bot-min  drew 8  person's share of damage 51%
+hollis           wins 8/10  time 280s  dmg 440  fell 1.2  alive/bot 202s  dealt 6539 (10.8/s a bot)  falls/10 bot-min 1.19  rolls/bot-min 8.1  chains 2  swings into a string 24  hit mid-swing 8  executions person 37 bots 25  left to a person: 84 executions 199 openings  behind a boss on someone else 4.2 s a bot-min  drew 42  person's share of damage 36%
+oswin            wins 10/10  time 182s  dmg 416  fell 0.2  alive/bot 174s  dealt 7600 (14.6/s a bot)  falls/10 bot-min 0.23  rolls/bot-min 8.1  chains 19  swings into a string 4  hit mid-swing 7  executions person 53 bots 25  left to a person: 141 executions 260 openings  behind a boss on someone else 5.6 s a bot-min  drew 48  person's share of damage 46%
+agathe           wins 10/10  time 220s  dmg 408  fell 0.2  alive/bot 212s  dealt 8000 (12.5/s a bot)  falls/10 bot-min 0.19  rolls/bot-min 9.0  chains 51  swings into a string 32  hit mid-swing 3  executions person 85 bots 11  left to a person: 176 executions 290 openings  behind a boss on someone else 6.5 s a bot-min  drew 69  person's share of damage 55%
+kindlingTree     wins 10/10  time 262s  dmg 517  fell 0.6  alive/bot 251s  dealt 8400 (11.1/s a bot)  falls/10 bot-min 0.48  rolls/bot-min 9.0  chains 7  swings into a string 40  hit mid-swing 3  executions person 56 bots 29  left to a person: 159 executions 325 openings  behind a boss on someone else 5.8 s a bot-min  drew 69  person's share of damage 44%
+kingsBlade       wins 10/10  time 402s  dmg 133  fell 0.1  alive/bot 397s  dealt 8800 (7.4/s a bot)  falls/10 bot-min 0.05  rolls/bot-min 5.9  chains 3  swings into a string 0  hit mid-swing 11  executions person 71 bots 14  left to a person: 166 executions 633 openings  behind a boss on someone else 7.6 s a bot-min  drew 19  person's share of damage 52%
+TOTAL            wins 127/130  time 222s  dmg 252  fell 0.25  alive/bot 209s  dealt 6422 (10.2/s a bot)  falls/10 bot-min 0.24  bot deaths 33  rolls/bot-min 6.6  chains 159  swings into a string 269  hit mid-swing 72  executions person 718 bots 176  left to a person: 1584 executions 3333 openings  behind a boss on someone else 6.1 s a bot-min  drew 406  person's share of damage 49%

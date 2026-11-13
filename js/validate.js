@@ -80,13 +80,14 @@ function validateData({ visual = true } = {}) {
     need(Array.isArray(range) && range.length === 2 && range.every(num) && range[0] > 0 && range[1] >= range[0],
       `Bot risk.${key} needs an ordered positive range.`);
   }
-  // An aid, not a carry (pass 32): a damage share, caution and room.
-  need(num(botConfig.damage) && botConfig.damage > 0 && botConfig.damage <= 1, 'Bot damage must be a share in (0, 1].');
-  const CA = botConfig.caution, RM = botConfig.room;
+  // An aid, not a carry (pass 32, pass 35): caution, room and support; a bot keeps a player's full stats.
+  const CA = botConfig.caution, RM = botConfig.room, SU = botConfig.support;
   need(CA && ['below', 'dry', 'slip'].every(k => num(CA[k]) && CA[k] >= 0 && CA[k] <= 1) && ['spacing', 'hunted', 'company', 'safety'].every(k => num(CA[k]) && CA[k] >= 0) && num(CA.patience) && CA.patience >= 1,
     'Bot caution needs below, dry and slip shares (0..1), non-negative spacing, hunted, company and safety, and patience of 1 or more.');
   need(RM && ['player', 'bot', 'lane', 'laneDepth', 'push'].every(k => num(RM[k]) && RM[k] >= 0) && RM.lane < Math.PI,
     'Bot room needs non-negative player, bot, laneDepth and push, and a lane under pi.');
+  need(SU && ['first', 'near', 'slack', 'reposition', 'settle', 'patience'].every(k => num(SU[k]) && SU[k] >= 0) && SU.slack <= SU.reposition && Array.isArray(SU.behind) && SU.behind.length > 0 && SU.behind.every(d => num(d) && d >= 0 && d <= Math.PI / 2) && num(SU.greed) && SU.greed >= 0 && SU.greed <= 1 && SU.patience >= 1,
+    'Bot support needs non-negative first, near, settle, and slack no more than reposition, behind offsets in 0..pi/2, a greed share (0..1) and patience of 1 or more.');
   const jumpRange = botConfig.jumpDodge.lead;
   need(Array.isArray(jumpRange) && jumpRange.length === 2 && jumpRange.every(num) && jumpRange[0] > 0 && jumpRange[1] >= jumpRange[0],
     'Bot jumpDodge.lead needs an ordered positive range.');

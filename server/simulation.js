@@ -600,6 +600,6 @@ globalThis.host = (() => {
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.
     playerAttack: id => ArenaNet.own(PLAYER_DEF.moveset.attacks, id) ? id : null,
     // Test harnesses can inspect state without giving public clients a debug API.
-    inspect: () => ({ Game, world, players, crowd, bot, bots }),
+    inspect: () => ({ Game, world, players, crowd, bot, bots, CONFIG }),
   };
 })();

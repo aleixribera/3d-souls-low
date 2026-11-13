@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.56.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.57.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -655,8 +655,6 @@ const CONFIG = {
     // Risk is chosen on a clock, never re-rolled every frame.
     risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
       combo: 0.9, reserve: 12, earlyRollChance: 0.35, rollLead: [0.12, 0.22] },
-    // An aid, not a carry (pass 32): a bot's blows and executions deal this share of the same move's damage.
-    damage: 0.75,
     // Caution: under `below` of its health (`dry` with no flask left) a bot takes no greedy trade, goes in only for a
     // real opening with `safety` s more to spare, keeps `spacing` m more room and waits `patience` times as long before
     // forcing an exchange. With the enemy on it and someone else close enough to fight (`company` m from the enemy), it
@@ -667,6 +665,17 @@ const CONFIG = {
     // rad of the line from them to the enemy they face, when it is no farther out than they are plus `laneDepth` m);
     // `push` weighs this against where it was walking.
     room: { player: 2.4, bot: 1.6, lane: 0.65, laneDepth: 1.5, push: 1.8 },
+    // Support (pass 35): a bot is a normal player, with a player's full stats; it helps rather than carries by how it
+    // plays. With a person within execution.yield m of its enemy: a stagger or a long recovery the person stands in
+    // reach of (`near` m past a light's reach) is theirs for its first `first` s, or until they swing, and the bot never
+    // fills it with a charged heavy; its greed is scaled by `greed`, its patience before forcing an exchange by
+    // `patience` (the person sets the tempo), and it does not rush the kill.
+    // Backup: with the enemy after someone else, it fights from that one's far side: the first of the `behind` spots
+    // (rad off straight behind the enemy, on the nearer side) where none of the enemy's counters behind or at its flank would
+    // fire, circling there when more than `slack` rad off, and starts no swing but a real opening's while more
+    // than `reposition` rad off (for `settle` s in reach at most); when that one is hurt (under caution.below) or drinking, it presses to draw the enemy
+    // off them, unless it is hurt itself.
+    support: { first: 0.7, near: 1, greed: 0.5, patience: 1.5, behind: [0.5, 1.1, 1.5], slack: 0.3, reposition: 0.6, settle: 2 },
     // clear: m more than `margin` outside a blow's box (at every angle it can still turn: up to maxTurn rad) to let it go by.
     defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2, clear: 0.35, maxTurn: 1.2 },
     jumpDodge: { lead: [0.16, 0.28], clearance: 0.12, timingMargin: 0.02, followMargin: 0.2, maxSpeed: 1.2 },

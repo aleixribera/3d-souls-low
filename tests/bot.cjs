@@ -77,8 +77,8 @@ async function join(origin, name) {
   }
 
   // An aid must contribute and resolve its solo attempt. Winning almost every duel is no longer the balance goal.
-  // Seven minutes: a patient or wary temperament (v7.52.0) waits out every string, and since pass 32 a bot deals
-  // CONFIG.bot.damage of a player's damage and fights carefully when hurt, so a solo duel runs long.
+  // Seven minutes: a patient or wary temperament (v7.52.0) waits out every string, and since pass 32 a bot
+  // fights carefully when hurt, so a solo duel runs long.
   const duel = (boss, profile, limit = 420) => {
     const sim = createSimulation(); sim.addBot(profile); sim.start('arena', boss); sim.setPlayers([]);
     const { Game } = sim.inspect(), e = Game.enemies[0], initialHp = e.hp;

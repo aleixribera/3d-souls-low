@@ -8,7 +8,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Next on the track: item 2, Ostrey redone.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Bots (pass 32, v7.55.0): an aid, not a carry; check `docs/scorecard/bot-aid.txt`.
+- Bots (pass 35, v7.57.0): full stats; the aid is behaviour (`CONFIG.bot.support`). `docs/scorecard/bot-aid.txt`.
 - Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
   `scorecard/`; one `STORY.md` (part one: in the game, `LORE.md`'s numbering; part two: where it goes); `README.md`
   one screen. Old notes: `git show v7.56.0:docs/<file>`. Next in this slot: track B item 1.
@@ -51,8 +51,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
   by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
   `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
-- Bots (v7.52.0, v7.55.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; caution, room, rings:
-  `bot-behavior.cjs`; three-bot fights `node tools/bot-fights.cjs [boss|story|all] [n]` (`story 10`: 25 min).
+- Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings:
+  `bot-behavior.cjs`; three-bot fights `node tools/bot-fights.cjs [boss|story|all] [n]` (`story 10`: 25 min;
+  `PERSON=1`: one stands in for a person).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
@@ -79,8 +80,8 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) Bot strength (v7.55.0): 75% damage (`CONFIG.bot.damage`; 0.8: 117/130, 59 deaths), more caution:
-  113/130 story wins; a bot dies 35% less a minute, but bot-only fights last 1.8x as long.
+- (overridable) Bots at full stats (v7.57.0): 121/130 three-bot wins, 43 deaths; a person gets 80% of executions.
+  Feel check with friends: do they still carry?
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
   (`CONFIG.group`). Tuned on bots, who fight worse than people; tuned when the Lands bosses still existed. Worth a feel check with friends.

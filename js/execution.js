@@ -73,7 +73,7 @@ const execution = (() => {
   }
 
   function impact(p, X) {
-    const e = X.enemy, C = CONFIG.execution, dmg = damageFor(e) * (p.botId ? CONFIG.bot.damage : 1);   // a bot's share (CONFIG.bot.damage)
+    const e = X.enemy, C = CONFIG.execution, dmg = damageFor(e);
     X.impact = true;
     X.lethal = !e.training && e.hp - dmg <= 0;
     if (!(typeof multiplayer !== 'undefined' && multiplayer.active())) e.hp = Math.max(1, e.hp - dmg);   // the bar empties only when the animation lets it

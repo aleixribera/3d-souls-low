@@ -138,16 +138,33 @@ const bot = (() => {
   // Only where the enemy's target is known (the server's netTarget); rings, blinks, leaps and boxes round it count.
   function aimedElsewhere(e, blow, me) {
     const b = blow.hit.box || blow.attack.box;
-    if (!e.netTarget || e.netTarget === me.botId || b.ring || blow.hit.blink || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
+    if (!e.netTarget || e.netTarget === (me.id ?? me.botId) || b.ring || blow.hit.blink || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
     return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) > Math.PI / 2 + B().behindMargin;
   }
   // The enemy's attention is on `me`: the server's netTarget where it is known, else (a solo companion) it faces `me`
   // and nobody else is nearer to it.
   function huntedBy(e, me, allies) {
-    if (e.netTarget !== undefined && e.netTarget !== null) return e.netTarget === me.botId;
+    if (e.netTarget !== undefined && e.netTarget !== null) return e.netTarget === (me.id ?? me.botId);
     const mine = Math.hypot(me.x - e.x, me.z - e.z);
     if (allies.some(a => a.alive() && Number.isFinite(a.x) && Math.hypot(a.x - e.x, a.z - e.z) < mine)) return false;
     return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) < Math.PI / 4;
+  }
+  // Whoever the enemy is after, when it is not `me`: the server's netTarget where it is known, else (a solo companion)
+  // the nearest one it faces, nearer to it than `me`.
+  function quarry(e, me, allies) {
+    const live = a => a.alive() && Number.isFinite(a.x);
+    if (e.netTarget !== undefined && e.netTarget !== null)
+      return e.netTarget === (me.id ?? me.botId) ? null : allies.find(a => live(a) && a.id === e.netTarget) || null;
+    let best = null, near = Math.hypot(me.x - e.x, me.z - e.z);
+    for (const a of allies) if (live(a)) { const d = Math.hypot(a.x - e.x, a.z - e.z); if (d < near) { best = a; near = d; } }
+    return best && Math.abs(angDiff(Math.atan2(best.x - e.x, best.z - e.z), e.yaw)) < Math.PI / 3 ? best : null;
+  }
+  // The positional counters (REACTIONS behind / flank) this enemy's current moves hold.
+  const sideWhens = new WeakMap();
+  function sideCounters(e) {
+    const list = e.def.attacks || e.baseDef.attacks;
+    if (!sideWhens.has(list)) sideWhens.set(list, [...new Set(attacksOf(e).filter(a => a.when === 'behind' || a.when === 'flank').map(a => a.when))]);
+    return sideWhens.get(list);
   }
   // On its floor (a leaping enemy is in the air above it, and still coming).
   const level = (e, me) => e.leaping || Math.abs(e.y - me.y) <= CONFIG.height.reach + 1;
@@ -181,8 +198,10 @@ const bot = (() => {
     const hands = new BotHands(), C = B(), navigator = BotNavigation.create();
     // `profile`: this fight's traits, the base profile scaled by the mood drawn for it (newFight).
     let profile = base, mood = null, moodId = null, spacing = 0, goIn = 0, stringSeen = -Infinity, wasString = false;
-    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0 };
-    let waitedThis = false, nearThis = false, yieldedThis = null, quietSince = 0;
+    // offered: openings left to a person; backup: s spent behind an enemy that was after someone else; drew: times it
+    // pressed to draw an enemy off a hurt or drinking ally.
+    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0 };
+    let waitedThis = false, nearThis = false, yieldedThis = null, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
     // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
     function holdGap(me, o) {
       const s = stringOf(o, me);
@@ -200,8 +219,8 @@ const bot = (() => {
       profile = { ...base, patterns, patience: base.patience * mood.patience, greed: clamp(base.greed * mood.greed, 0, 1),
         reset: base.reset.map(x => x * mood.reset), healBelow: C.healBelow + mood.heal };
       spacing = span(mood.spacing, rng); goIn = span(mood.goIn, rng);
-      side = rng() < 0.75 ? base.side : -base.side;
-      tally.waited = tally.gaps = tally.yielded = tally.executed = 0;
+      side = rng() < 0.75 ? base.side : -base.side; flankSide = side;
+      for (const k of Object.keys(tally)) tally[k] = 0;
     }
     function describe() {
       if (!mood) return 'no fight yet';
@@ -209,7 +228,8 @@ const bot = (() => {
       return `${moodId}: ${mood.gap === null ? 'waits out every string' : `swings into pauses of ${mood.gap} s or more`}, ` +
         `keeps ${spacing.toFixed(1)} m past a string's reach, goes in ${goIn.toFixed(2)} s after, patience ${profile.patience.toFixed(1)} s, ` +
         `greed ${profile.greed.toFixed(2)}, circles ${side > 0 ? 'left' : 'right'}; plans ${plans}. ` +
-        `Waited out ${tally.waited} strings, swung into ${tally.gaps} pauses, left ${tally.yielded} executions to a player, took ${tally.executed}.`;
+        `Waited out ${tally.waited} strings, swung into ${tally.gaps} pauses, left ${tally.yielded} executions and ${tally.offered} openings to a player, took ${tally.executed} executions; ` +
+        `${tally.backup.toFixed(0)} s behind an enemy on someone else, drew it off a hurt ally ${tally.drew} times.`;
     }
     const seen = new WeakMap();   // enemy -> { key, at, plan, done }: what was decided about its current blow
     let target = null, side = profile.side, sideTimer = span(C.strafeSwitch, rng), heavyHold = 0, jumpPlan = 0;
@@ -237,7 +257,7 @@ const bot = (() => {
         const d = Math.hypot(e.x - me.x, e.z - me.z);
         const awake = !(e.in && (e.in('unaware') || e.state === ES.DORMANT));
         if (d > trackingRange(awake ? C.engageRange : C.wakeRange)) continue;
-        const score = d - (e === target ? 2 : 0) - (e.netTarget && e.netTarget === me.botId ? 1.5 : 0);
+        const score = d - (e === target ? 2 : 0) - (e.netTarget && e.netTarget === (me.id ?? me.botId) ? 1.5 : 0);
         if (score < bestScore) { bestScore = score; best = e; }
       }
       return best;
@@ -419,6 +439,19 @@ const bot = (() => {
       wary = careful || shy; steady = careful;
       const roomy = (careful ? CA.spacing : 0) + (shy ? CA.hunted : 0);
       const spare = C.safety + (wary ? CA.safety : 0);   // s left over after its own swing before a blow could open
+      // Support (CONFIG.bot.support): a person near this enemy sets the tempo, and whoever it is after gets backup:
+      // the bot fights from their far side, and presses to draw it off them when they are hurt or drinking.
+      const S = C.support, X = C.execution;
+      let person = null, nearest = X.yield;
+      for (const a of allies) { const d = Math.hypot(a.x - e.x, a.z - e.z); if (!a.botId && a.alive() && d <= nearest) { person = a; nearest = d; } }
+      const hunted = quarry(e, me, allies), flank = behind(me, e, hunted);
+      const rescue = !!hunted && !careful && (hunted.hp < (hunted.maxHp || me.maxHp) * CA.below || hunted.state === PS.USE_ITEM);
+      if (rescue && !rescuing) tally.drew++;
+      rescuing = rescue;
+      if (flank && !flank.far && gap <= C.reach + 2) tally.backup += dt;
+      const patience = profile.patience * (careful ? CA.patience : 1) * (person ? S.patience : 1);
+      // Walk toward a gap of `want` m: round to the enemy's back while it is after someone else, else circling as planned.
+      const orbit = (want, circle) => flank ? strafe(me, to, gap, want, flank.far ? Math.max(circle, 1) : 0, flank.dir) : strafe(me, to, gap, want, circle);
       if ((tacticTimer -= dt) <= 0) chooseTactic();
       decisionLeft = Math.max(0, decisionLeft - dt); resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
       const attacking = me.isAttacking();
@@ -441,10 +474,10 @@ const bot = (() => {
       if (!attackable(e) || wary) riskLeft = 0;
       if (riskWait <= 0 && !wary && me.isFree() && me.canAct() && gap <= C.reach + C.closeGap && attackable(e)) {
         riskWait = span(R.interval, rng);
-        if (rng() < profile.greed) riskLeft = span(R.duration, rng);
+        if (rng() < profile.greed * (person ? S.greed : 1)) riskLeft = span(R.duration, rng);
       }
       const greedy = riskLeft > 0;
-      const pressing = !shy && quietTime >= profile.patience * (careful ? CA.patience : 1);   // hurt, it waits longer before forcing an exchange
+      const pressing = rescue || !shy && quietTime >= patience;   // hurt, or beside a person, it waits longer before forcing an exchange
       const tactic = BOT_TACTICS[pressing || greedy ? 'pressure' : tacticId];
       const settled = 1 - tacticTimer / tacticDuration >= tactic.commitAt;
       const needsHeal = me.hp < me.maxHp * profile.healBelow && flask.count > 0;
@@ -551,16 +584,24 @@ const bot = (() => {
 
       // ---- 4. Offence ----
       const T = C.tempo;
-      const X = C.execution;
-      let player = null, nearest = X.yield;
-      for (const a of allies) { const d = Math.hypot(a.x - e.x, a.z - e.z); if (!a.botId && a.alive() && d <= nearest) { player = a; nearest = d; } }
       // A riposte is the player's too, until late in the opening.
-      const theirs = e.state === ES.PARRIED && me.riposte <= 0 && player && edge(player, e) <= CONFIG.execution.range + 1 &&
+      const theirs = e.state === ES.PARRIED && me.riposte <= 0 && person && edge(person, e) <= CONFIG.execution.range + 1 &&
         e.def.parriedTime - e.stateTime > X.late;
-      if (theirs) return { mv: room(me, e, allies, strafe(me, to, gap, C.spacing + spacing, 1)), lock: e };   // the player's riposte
+      if (theirs) return { mv: room(me, e, allies, orbit(C.spacing + spacing, 1)), lock: e };   // the player's riposte
+      const exec = typeof execution !== 'undefined' ? execution.target(me, enemies) : null;
+      // A stagger or a long recovery with a person in reach of it is theirs first: wait off the flank, then join (once
+      // they swing, or after `first` s). Not mid-swing, and never over an execution it could take.
+      const big = me.riposte <= 0 && (e.state === ES.STAGGER || e.state === ES.RECOVER && e.attack && e.attack.recovery >= T.punishRecovery);
+      const near = big && person && edge(person, e) <= C.reach + S.near;
+      if (!big) offeredThis = sharedThis = null;
+      if (near && person.isAttacking && person.isAttacking()) sharedThis = e;
+      if (near && sharedThis !== e && e.stateTime < S.first && me.isFree() && !exec) {
+        if (offeredThis !== e) { offeredThis = e; tally.offered++; }
+        return { mv: room(me, e, allies, orbit(C.reach, 0.6)), lock: e };
+      }
       const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER, ES.BROKEN].includes(e.state) ||
         e.state === ES.RECOVER && e.attack && e.attack.recovery - e.stateTime >= T.punishRecovery && window >= T.punishWindow ||
-        e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;
+        !person && e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;   // beside a person, it does not rush the kill
       if (opportunity) punishLeft = T.punishCommit;
       const keyOpening = opportunity || punishLeft > 0 && window > commit(A()[me.def.moveset.ground.light]) + spare;
       const retreating = (resetLeft > 0 || wary) && !keyOpening && !pressing && !greedy;
@@ -568,7 +609,6 @@ const bot = (() => {
       const reserve = greedy ? R.reserve : window > 2.5 ? P.rollCost + 2 : C.reserve;
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
       const can = cost => me.canAct() && me.stamina - cost >= reserve;
-      const exec = typeof execution !== 'undefined' ? execution.target(me, enemies) : null;
       // A kneeling enemy is a player's to execute: wait off its flank, and take it only near the end of the kneel.
       const leave = k => {
         const near = allies.find(a => !a.botId && a.alive() && Math.hypot(a.x - k.x, a.z - k.z) <= X.yield);
@@ -612,12 +652,16 @@ const bot = (() => {
         const ready = attackWindow > commit(light) + spare;
         // A quiet neutral opponent is a possibility, not a strike already in flight. Eventually try a single light
         // to start an exchange; actual wind-ups, other enemies, bolts and stamina still veto the commitment.
-        const probe = !shy && quietTime >= profile.patience * (careful ? CA.patience : 1) + C.probeDelay && incomingWindow > commit(light) + spare;
-        if (inReach && free && (ready || probe) && (committed || probe) && (decisionLeft <= 0 || keyOpening)) {
+        const probe = (rescue || !shy && quietTime >= patience + C.probeDelay) && incomingWindow > commit(light) + spare;
+        // Backing someone up, it gets out of the enemy's front before it trades (a real opening is taken where it stands);
+        // after `settle` s in reach without getting there (a wall at the enemy's back), it trades where it is.
+        unplaced = flank && flank.off > S.reposition && inReach ? unplaced + dt : 0;
+        const placed = keyOpening || !flank || flank.off <= S.reposition || unplaced >= S.settle;
+        if (inReach && free && placed && (ready || probe) && (committed || probe) && (decisionLeft <= 0 || keyOpening)) {
           decisionLeft = span(profile.think, rng);
           if (str) tally.gaps++, waitedThis = false;
           const rip = me.riposte > 0;
-          if (ready && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && (rip || rng() < profile.heavy)) {
+          if (ready && !(near && !rip) && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && (rip || rng() < profile.heavy)) {
             hands.press('heavy'); hands.hold('heavy', true); heavyHold = rip ? 0.1 : heavy.charge.hold * (0.5 + 0.5 * rng());
             return { mv: idle, lock: e };
           }
@@ -633,11 +677,31 @@ const bot = (() => {
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
         const recovering = !can(light.cost) || me.stamina < me.maxStamina * T.regroupBelow;
         const motion = recovering || retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
-        if (str && !swingGap) return { mv: room(me, e, allies, strafe(me, to, gap, Math.max(motion.gap, holdGap(me, e)) + roomy, motion.circle)), lock: e };
-        if (settling) return { mv: room(me, e, allies, strafe(me, to, gap, gap, motion.circle * 0.5)), lock: e };   // a beat before going in
-        return { mv: room(me, e, allies, strafe(me, to, gap, motion.gap + (retreating ? roomy : 0), motion.circle)), lock: e };
+        if (str && !swingGap) return { mv: room(me, e, allies, orbit(Math.max(motion.gap, holdGap(me, e)) + roomy, motion.circle)), lock: e };
+        if (settling) return { mv: room(me, e, allies, orbit(gap, motion.circle * 0.5)), lock: e };   // a beat before going in
+        return { mv: room(me, e, allies, orbit(motion.gap + (retreating ? roomy : 0), motion.circle)), lock: e };
       }
       return { mv: idle, lock: e };
+    }
+    // Backup: the enemy's far side from whoever it is after: the first `support.behind` offset from straight behind it
+    // that none of its counters behind or at its flank covers. { dir, off, far }: which way to circle there, how far off
+    // it is (rad), and whether that is more than `slack`.
+    function behind(me, e, hunted) {
+      if (!hunted) return null;
+      const S = B().support, back = Math.atan2(e.x - hunted.x, e.z - hunted.z), whens = sideCounters(e), mine = Math.atan2(me.x - e.x, me.z - e.z);
+      // The closest to straight behind that is open; of its two sides the nearer (on a tie, the side this fight drew).
+      let want = null;
+      for (const d of S.behind) {
+        let best = Infinity;
+        for (const k of [flankSide, -flankSide]) {
+          const at = back + k * d, cost = Math.abs(angDiff(at, mine)) + (k === flankSide ? 0 : S.slack);
+          if (cost < best && !whens.some(w => REACTIONS[w](e, me, angDiff(at, e.yaw)))) { want = at; best = cost; }
+        }
+        if (best < Infinity) break;
+      }
+      if (want === null) return null;   // every spot is covered: no backup, it fights as it would anyway
+      const off = angDiff(want, mine);
+      return { dir: off > 0 ? -1 : 1, off: Math.abs(off), far: Math.abs(off) > S.slack };
     }
     // Out of the way (CONFIG.bot.room): away from a person or bot standing too close, and round the enemy out of a
     // person's lane to it, so a bot never body-blocks the player or stands in their swing.
@@ -659,10 +723,10 @@ const bot = (() => {
       if (!px && !pz) return mv;
       return flat((mv.has ? mv.x : 0) + px * R.push, (mv.has ? mv.z : 0) + pz * R.push);
     }
-    // Walk toward a gap of `want` m, circling to the bot's current side by `circle` (0..1 of CONFIG.bot.strafe).
-    function strafe(me, to, gap, want, circle) {
+    // Walk toward a gap of `want` m, circling to `dir` (the bot's current side) by `circle` (0..1 of CONFIG.bot.strafe).
+    function strafe(me, to, gap, want, circle, dir = side) {
       const C = B(), radial = clamp((gap - want) * 1.2, -1, 1);
-      const tang = rot(to, side * Math.PI / 2), k = C.strafe * circle * (Math.abs(radial) < 0.6 ? 1 : 0.4);
+      const tang = rot(to, dir * Math.PI / 2), k = C.strafe * circle * (Math.abs(radial) < 0.6 ? 1 : 0.4);
       return flat(to.x * radial + tang.x * k, to.z * radial + tang.z * k);
     }
     return { hands, think, profile: base, navigator, describe, get mood() { return moodId; }, get tally() { return { ...tally }; }, get target() { return target; }, get tactic() { return tacticId; }, get risking() { return riskLeft > 0; } };

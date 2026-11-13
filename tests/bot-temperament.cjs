@@ -128,3 +128,67 @@ function kneeling(playerActs, withPlayer = true) {
   assert.ok(alone.botAt !== null && alone.botAt < 1.5, 'with no player near, a bot executes at once');
   console.log(`Executions: the player executes at ${taken.humanAt.toFixed(2)} s and the bot holds off; the player hangs back and the bot executes at ${left.botAt.toFixed(2)} of ${left.breakTime} s; alone it executes at ${alone.botAt.toFixed(2)} s.`);
 }
+
+// ---- 5. Openings are the player's first, and bots back up whoever the boss is after (pass 35) ----
+// The second body stands in for a person again (no botId, scripted). A boss in a long recovery with the person in
+// reach of it: the bot waits CONFIG.bot.support.first s, or until the person swings, before it swings; alone it goes in
+// at once.
+function recovery(withPerson, personSwingsAt = Infinity) {
+  const { sim, list, p, e } = duel('ostrey', 'maren', 7, 2), S = sim.inspect().CONFIG.bot.support;
+  const human = list[1].body;
+  if (withPerson) {
+    delete human.botId;
+    let t = 0;
+    list[1].brain = { hands: list[1].brain.hands, navigator: list[1].brain.navigator, target: null,
+      think(step) { t += step; if (t >= personSwingsAt && t < personSwingsAt + step * 1.5) this.hands.press('light'); return { mv: { x: 0, z: 0, has: false }, lock: e }; } };
+    human.ctl = list[1].brain.hands;
+    human.x = e.x - (e.radius + human.radius + 0.6); human.z = e.z + 0.5; human.y = e.y; human.yaw = Math.PI / 2; human.savePrev();
+  } else { human.x = e.x - 30; human.savePrev(); human.hp = 0; }
+  const swing = e.baseDef.attacks.find(a => !a.projectile && !a.when);
+  e.attack = { ...swing, recovery: 2.5 }; e.hitbox = null; e.setState('recover');
+  let botAt = null, humanAt = null;
+  for (let t = 0; t < 2; t += dt) {
+    sim.setPlayers([]); sim.tick(dt);
+    if (botAt === null && ['attack', 'jump', 'jumpAttack'].includes(p.state)) botAt = t;   // a swing, or a leap into one
+    if (humanAt === null && human.state === 'attack') humanAt = t;
+  }
+  return { botAt, humanAt, first: S.first, tally: list[0].brain.tally };
+}
+{
+  const alone = recovery(false), offered = recovery(true), joined = recovery(true, 0.25);
+  assert.ok(alone.botAt !== null && alone.botAt < alone.first, `alone, a bot punishes a long recovery at once (${alone.botAt})`);
+  assert.ok(offered.botAt === null || offered.botAt >= offered.first - dt, `with a person in reach, it leaves them the first ${offered.first} s (${offered.botAt})`);
+  assert.equal(offered.tally.offered, 1, 'and counts one opening left to the person');
+  assert.ok(joined.humanAt !== null && joined.botAt !== null && joined.botAt >= joined.humanAt, `once the person swings, it joins (${joined.humanAt} then ${joined.botAt})`);
+  console.log(`Openings: alone the bot swings ${alone.botAt.toFixed(2)} s into a long recovery; with a person in reach it waits until ${offered.botAt === null ? 'the end' : offered.botAt.toFixed(2) + ' s'}; when the person swings at ${joined.humanAt.toFixed(2)} s it joins at ${joined.botAt.toFixed(2)} s.`);
+}
+// The boss after the person: the bot walks round to the boss's back (the person's far side) instead of circling in
+// front; against a boss with counters behind and at its flank (Ostrey), to the edge of the back they leave open.
+// The boss is held in place, so only the bot's walk changes the angle.
+function backup(boss, seed) {
+  const { sim, list, b, p, e } = duel(boss, 'maren', seed, 2);
+  const human = list[1].body; delete human.botId;
+  list[1].brain = { hands: list[1].brain.hands, navigator: list[1].brain.navigator, target: null, think() { return { mv: { x: 0, z: 0, has: false }, lock: e }; } };
+  human.ctl = list[1].brain.hands;
+  human.x = e.x; human.z = e.z + e.radius + human.radius + 1; human.y = e.y; human.yaw = Math.PI; human.savePrev();
+  p.x = e.x + e.radius + p.radius + 1.5; p.z = e.z; p.savePrev();
+  e.netTarget = human.id;
+  const x0 = e.x, z0 = e.z;
+  let best = Infinity, end = 0;
+  for (let t = 0; t < 6; t += dt) {
+    sim.setPlayers([]); sim.tick(dt); e.netTarget = human.id; e.x = x0; e.z = z0;
+    const back = Math.atan2(e.x - human.x, e.z - human.z), at = Math.atan2(p.x - e.x, p.z - e.z);
+    end = Math.abs(Math.atan2(Math.sin(at - back), Math.cos(at - back)));
+    if (t > 2) best = Math.min(best, end);
+  }
+  return { best, end, tally: b.brain.tally };
+}
+{
+  const open = [3, 7, 11].map(s => backup('giant', s)), guarded = [3, 7, 11].map(s => backup('ostrey', s));
+  const list = runs => runs.map(r => r.end.toFixed(2)).join(', ');
+  assert.ok(open.every(r => r.best < 0.9), `with the boss on the person, the bot reaches its back (closest ${open.map(r => r.best.toFixed(2)).join(', ')} rad off behind)`);
+  assert.ok(open.every(r => r.end < 1.2), `and fights from there (${list(open)} rad off behind at the end)`);
+  // Ostrey counters within 0.94 rad of straight behind (CONFIG.ai.reactions.behind) and on one flank.
+  assert.ok(guarded.every(r => r.end > 0.94 && r.end < 1.4), `against rear counters it keeps to the open edge of the back (${list(guarded)} rad)`);
+  console.log(`Backup: with the boss on the person, the bot ends ${list(open)} rad off straight behind the Giant Skeleton and ${list(guarded)} behind Ostrey (outside his rear counter); ${open.concat(guarded).map(r => r.tally.backup.toFixed(1)).join(', ')} s at the back.`);
+}
