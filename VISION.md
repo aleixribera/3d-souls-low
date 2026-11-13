@@ -31,7 +31,8 @@ side by side, and each should feel like the main event.
   far the run has got, never on team size: no enemy or boss gets stronger because more players (or newer players)
   joined. Between fights, blessings: common ones are small; rare ones are exciting (skills,
   passives, things that change the fight, maybe a companion). Like a true roguelike, an ability offered again can be
-  taken to upgrade it, level by level, so a run builds up. Players stack strong abilities, and the difficulty curve is
+  taken to upgrade it, level by level, so a run builds up. Upgrades happen inside the game, during the run, not in a
+  menu between runs. Players stack strong abilities, and the difficulty curve is
   balanced with that in mind. Playing earns levels; each level gives a crate, opened
   on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
   Collection page shows what you own. No money and no shop: menus are not where the game is played.
