@@ -304,7 +304,10 @@ comes back to item 6 the moment it lands.
      removes the five old blessings and builds the first set, its data and the tall-card pick screen (item 3's spec);
      no pacts (removed, Aleix, 2026-11-13). While it works, the loop doesn't touch `js/data/blessings.js`,
      `CONFIG.blessings`, the offer code or the pick screen. When it has shipped (merged into `main`), this item is the
-     loop's, and it comes next in this track.
+     loop's, and it comes next in this track. Aleix (2026-11-14): the session finishes what it is in the middle of,
+     properly, starts nothing new, and merges soon (v7.72.0: 25 abilities, 5 legendaries with effects, the pick
+     screen). What it leaves is the loop's, first in this item: sound and camera weight for the legendaries and rares
+     (the spectacle bar below), the first summons, legendaries up to 8 and more, then the pool beyond 30.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use.
