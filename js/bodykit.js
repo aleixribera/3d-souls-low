@@ -1605,7 +1605,7 @@ const KIT = (() => {
       (groups.get(key) || groups.set(key, { slot, weapon, list: [] }).get(key)).list.push(geo);
     };
     for (const p of bodyParts(M)) push(p.bone, p.slot, p.geo);
-    // A part with `weapon: true` (v7.57.0, a weapon built in Blender, on the weapon bone) merges with the weapon, as a kit weapon does.
+    // A part with `weapon: true` (v7.58.0, a weapon built in Blender, on the weapon bone) merges with the weapon, as a kit weapon does.
     for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M, bind)) { if (g.geo) push(o.bone, g.slot, g.geo, !!o.weapon); else push(o.bone, o.slot, g, !!o.weapon); }
     if (M.weapon) {
       const W = KIT_WEAPONS[M.weapon.use](), k = M.weapon.size;   // `size` (v7.42.0, opt-in): a kit weapon made smaller or larger, from the hand
@@ -1713,11 +1713,11 @@ const KIT = (() => {
       rig.glows.push({ mat: halo.material, base: 0.45 });
     }
     if (M.embers) rig.embers = addWeaponEmbers(rig.weapon, M.embers);   // glow at the weapon head / along its edge
-    for (const H of M.halos || []) {   // (v7.57.0, opt-in) a soft light round a lit thing the body carries (a lantern)
+    for (const H of M.halos || []) {   // (v7.58.0, opt-in) a soft light round a lit thing the body carries (a lantern)
       const s = glowSprite(H.color, 1.2, H.size, H.opacity, 0.6); s.position.set(...H.at); rig.bones[H.bone].add(s);
       rig.glows.push({ mat: s.material, base: H.opacity });
     }
-    if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.57.0, opt-in) where a `breath` attack's fire comes from
+    if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.58.0, opt-in) where a `breath` attack's fire comes from
     rig.fit = M.fit ?? 1;
     if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);

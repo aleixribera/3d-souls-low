@@ -54,7 +54,7 @@ const projectiles = (() => {
     // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
     // `look: 'dagger'` (v5.3): a spinning golden dagger (js/spectral.js).
     // `look: 'rock'` (v5.8): a tumbling stone of `size` (Maliketh's pebbles and boulder).
-    // `look: 'coal'` (v7.57.0): a live coal flung from a lantern, lit from inside, its glint kept (Old Ostrey's).
+    // `look: 'coal'` (v7.58.0): a live coal flung from a lantern, lit from inside, its glint kept (Old Ostrey's).
     const slash = A.look === 'slash', dagger = A.look === 'dagger', rock = A.look === 'rock', coal = A.look === 'coal';
     if (coal && !b.coal) {
       b.coal = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x2a140a, emissive: 0xff5a14, emissiveIntensity: 1.5, roughness: 0.9, flatShading: true }));

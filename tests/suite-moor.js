@@ -12,7 +12,7 @@
     expect.ok(A.STORY.chapters[6].level === 'windward-moor' && A.STORY.chapters[6].title === 'THE WINDWARD MOOR', 'chapter 7 of the Story');
     expect.ok(A.LEVEL_6.next === 'windward-moor', 'the Levels menu carries on from the church too');
   });
-  test('Moor: Old Ostrey fights with his own moves, each with its own wind-up (v7.57.0)', () => {
+  test('Moor: Old Ostrey fights with his own moves, each with its own wind-up (v7.58.0)', () => {
     const d = A.ENEMY_BY_ID.ostrey, ids = new Set(d.attacks.map(a => a.id));
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);

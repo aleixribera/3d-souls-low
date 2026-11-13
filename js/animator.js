@@ -10,7 +10,7 @@ class ModelAnimator {
   constructor(rig, A) {
     this.rig = rig; this.A = A; this.walkW = 0; this.glintK = 0; this.ashT = 0; this.seed = Math.random() * 100; this.lastYaw = undefined;
     this.cloth = (A.cloth || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0, va: 0, s: 0, vs: 0, seed: Math.random() * 10 }));
-    // (v7.57.0, opt-in) `hang`: bones that hang plumb from where they are held (a lantern from a fist), swinging on a
+    // (v7.58.0, opt-in) `hang`: bones that hang plumb from where they are held (a lantern from a fist), swinging on a
     // damped spring when the hand moves.
     this.hang = (A.hang || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0, va: 0, s: 0, vs: 0, px: NaN, pz: NaN, vx: 0, vz: 0 }));
   }

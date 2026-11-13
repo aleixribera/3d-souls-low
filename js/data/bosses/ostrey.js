@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Old Ostrey, the Porter (v7.38.0; his own since v7.57.0), the boss of Level 7, js/levels/windward-moor.js (STORY.md 10c)
+// Old Ostrey, the Porter (v7.38.0; his own since v7.58.0), the boss of Level 7, js/levels/windward-moor.js (STORY.md 10c)
 // ============================================================================
 // The porter who let the Seven through. They paid his toll with a coal of the Ember, and it has burned in his lantern
 // since; he keeps the gate the harder for having opened it once. He fights as a porter: the bar laid across the way, the

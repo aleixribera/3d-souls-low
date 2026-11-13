@@ -23,7 +23,7 @@
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // Fields new in v5.4: an attack's `invulnerable` (js/enemy.js) and `breath` (a flame jet drawn along its box, js/flame.js),
-// a phase's `reveal` (model slots shown from that phase). The rest are the v5.3 fields (Margit's, retired in v7.57.0).
+// a phase's `reveal` (model slots shown from that phase). The rest are the v5.3 fields (Margit's, retired in v7.58.0).
 const RING = (from, to, width) => ({ w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from, to, width, time: 0.18 } });
 const GODRICK = {
   id: 'godrick', model: 'godrick', name: 'Godrick the Grafted',
