@@ -9,10 +9,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Pass 2 (optional): the bridge level, the lantern-overhead tells. Else: Hale and Harrow.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Bots (pass 35, v7.57.0): full stats; the aid is behaviour (`CONFIG.bot.support`). `docs/scorecard/bot-aid.txt`.
+- Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
+  `docs/scorecard/bot-aid.txt`. Track B item 1 (Boss Rush rename) is next: `wip/` below.
 - Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
   `scorecard/`; one `STORY.md` (part one: in the game, `LORE.md`'s numbering; part two: where it goes); `README.md`
-  one screen. Old notes: `git show v7.56.0:docs/<file>`. Next in this slot: track B item 1.
+  one screen. Old notes: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
@@ -30,10 +31,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
-  `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
-  draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`).
+  `tick()`; `tests/group-scaling.cjs`, `boss-only-browser.cjs`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
-  (`js/enemy.js`); checked by `tests/boss-attention.cjs`, frames `docs/scorecard/boss-attention-1..3.jpg`.
+  (`js/enemy.js`); `tests/boss-attention.cjs`.
 - The Calling, its blessings and its end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
   (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
@@ -51,9 +51,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
   by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
   `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
-- Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings:
-  `bot-behavior.cjs`; three-bot fights `node tools/bot-fights.cjs [boss|story|all] [n]` (`story 10`: 25 min;
-  `PERSON=1`: one stands in for a person).
+- Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
+  `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (10 min; `PERSON=1`: a person stand-in).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs`,
@@ -65,12 +64,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI and the container of v7.58.0 (pushes cancel each other's CI: look at the newest finished run). Probes (untracked): `.scratch/ending-frames.cjs`, `title-shots.cjs`, `render-scale.cjs`
-(`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
+CI and the container of v7.59.0 (pushes cancel each other's CI: look at the newest finished run). Probes
+(untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
 
-None. `wip/2026-10-27-hollow-enemy` was cut in pass 1 and kept as the tag `archive/2026-10-27-hollow-enemy`.
+- `wip/2026-11-13-boss-rush-practice` (pass 38, track B item 1): title Story / Boss Rush / Practice, the rename,
+  Practice groups; `test:node` passed; browser tests and frames (`.scratch/modes-shots.cjs`) not run. Rebase and
+  re-bump its version (it says 7.58.0, now taken).
 
 ## Backlog
 
@@ -78,7 +79,7 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) Bots at full stats (v7.57.0): 121/130 three-bot wins, 43 deaths; a person gets 80% of executions.
+- (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter

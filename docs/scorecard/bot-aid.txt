@@ -1,5 +1,5 @@
-Bots v7.58.0, roll only at what can reach them, a bit more aggressive (pass 38). Same benchmark, before = v7.57.0
-(its code plus the new counters), after = v7.58.0; "a > b" reads before > after. Full rows: re-run the tool.
+Bots v7.59.0, roll only at what can reach them, a bit more aggressive (pass 38). Same benchmark, before = v7.57.0
+(its code plus the new counters), after = v7.59.0 (before Ostrey's v7.58.0 remake); "a > b" reads before > after. Full rows: re-run the tool.
 needless rolls = rolls at a melee blow whose real hitbox reached neither where the bot rolled from nor the bot (an
 upper bound); waiting = s a bot-min free within 3 m of a light's reach, not swinging; swings = attacks started.
                          three bots              with a person stand-in (PERSON=1)
