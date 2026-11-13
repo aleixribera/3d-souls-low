@@ -12,9 +12,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 46, v7.69.0, item 2 done): kill moment, streak, par, swift kill, next boss drops in, end-screen
-  times; bot falls 18% / 40% (fight 1 / 10), cut to BACKLOG. Next: item 3 (lobby done, `js/ui-theme.js`;
-  blessing pick, title, Practice, options, pause, end of run). Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
+- Track B (pass 49, v7.71.0, item 3 pass 1): title in the mockups' style on `js/ui-theme.js` (modes as `.ui-row`,
+  primary follows the chosen mode, footer; `Game.menuButtons`, `chooseMode`). `docs/scorecard/title-*.jpg`, in-page
+  `Title:`, `experience-browser`, `lobby-peek-browser`. Castle, Collection, Controls in BACKLOG. Next: Practice,
+  options, pause, end of run. Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -72,7 +73,7 @@ CI and container of v7.69.0 (pushes cancel CI: see the newest run). Probes
 
 ## wip// branches
 
-- None.
+- `wip/blessing-tall-cards` (pass 49): the tall-card blessing pick, for the upgrades session (PLAN.md item 6).
 
 ## Backlog
 
@@ -80,8 +81,6 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) The shared UI look (v7.63.0 lobby, `docs/scorecard/lobby-v2/`): Apex's mode list over one Start,
-  Valorant's party column, Destiny 2's device hints. Right before the title follows?
 - (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
