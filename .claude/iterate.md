@@ -69,6 +69,27 @@ node tools/pack-baked.cjs <stem>
   "Releasing"), `npm install --package-lock-only` at root and `server/`, the changelogs, then tag `v*` and push the tag.
   Check the container workflow started.
 
+## Two passes at a time
+
+`PLAN.md` runs two tracks at once, so the loop chat keeps two passes running, each in its own git worktree
+(`isolation: "worktree"`). Never more than two. Feedback and clean-up go first and may take either slot.
+
+- `STATE.md` "Now" has one line per slot. Edit only your own line and your own rows elsewhere. Pull right before you
+  commit it.
+- **Worktree setup:** `node_modules` isn't checked in. Junction it from the main checkout:
+  `cmd /c mklink /J node_modules C:\Users\Aleix\Documents\CLAUDE\3d-souls-low\node_modules`, and the same for
+  `server\node_modules`. The capture scripts live in the main checkout's `.scratch/`; copy the ones you need into your
+  worktree's `.scratch/`. Serve on a free port (8124 or 8125), not 8123.
+- **One browser at a time, across both passes.** This covers screenshots and browser tests (`solo-browser.cjs`, the
+  `*-browser.cjs` tests). Before opening Edge, take the lock:
+  `mkdir C:\Users\Aleix\Documents\CLAUDE\3d-souls-low\.scratch\browser.lock`, then write your pass number into
+  `owner.txt` inside it. If `mkdir` fails, the other pass holds it: wait with `Monitor` until the folder is gone. A
+  lock older than 30 minutes is stale, so take it. Remove the folder as soon as Edge is closed.
+- **Ship:** commit on your worktree branch. Then `git fetch` and `git rebase origin/main`. If the incoming commits
+  touch what you changed, re-run your tests. Bump the version only now (the next one after `origin/main`'s
+  `VERSION`), push with `git push origin HEAD:main`, and then tag. If the push is rejected, rebase again and bump again.
+  At the end your work is on `main`; leave the worktree itself to the loop chat.
+
 ## Feedback
 
 Aleix's messages to a pass, and `.claude/feedback.md` (append-only; each entry dated). Commit new entries in step 1.
