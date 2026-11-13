@@ -218,7 +218,7 @@ function buildTerrain(L) {
       }
     } else for (const p of rectMinus(R.rect, R.pits)) push(slabs, box(p[0], p[1], p[2], p[3], R.lo - H.slab, R.lo, { kind: 'floor', region: R }));
     for (const p of R.roof) push(slabs, box(p[0], p[1], p[2], p[3], R.top, R.top + H.slab, { kind: 'roof', region: R }));
-    // Pillars: stone columns from floor to roof (or, with the room's `pillarHeight`, v7.60.0, stumps that tall).
+    // Pillars: stone columns from floor to roof (or, with the room's `pillarHeight`, v7.62.0, stumps that tall).
     for (const [px, pz, size] of (R.src.pillars || [])) {
       const s = (size ?? R.src.pillarSize ?? CONFIG.rooms.pillarSize) / 2;
       solids.push(Object.assign(box(px - s, px + s, pz - s, pz + s, R.lo, R.src.pillarHeight ? R.lo + R.src.pillarHeight : R.top), { kind: 'pillar', region: R, low: false }));

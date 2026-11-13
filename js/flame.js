@@ -53,7 +53,7 @@ const flame = (() => {
         if (!opening && !e.opener && !R.revealed) {   // not while a phase-1 attack still runs (the opener waits for it)
           R.revealed = true;
           for (const sl of reveal) for (const m of [R.slotMeshes[sl], R.weaponSlotMeshes && R.weaponSlotMeshes[sl]]) if (m) m.visible = true;
-          // the phase's own `revealBurst` (v7.60.0, a suit put on) bursts from the chest; the default from the off arm (a graft)
+          // the phase's own `revealBurst` (v7.62.0, a suit put on) bursts from the chest; the default from the off arm (a graft)
           const B = e.def.revealBurst, at = B ? R.chest : R.elbowL;
           if (at) { at.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, B || F.revealBurst); }
         }

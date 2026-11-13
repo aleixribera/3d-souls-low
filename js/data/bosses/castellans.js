@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Hale and Harrow, the Castellans (v7.40.0; their own since v7.60.0), the bosses of Level 8, js/levels/saltgrave.js (STORY.md 10d)
+// Hale and Harrow, the Castellans (v7.40.0; their own since v7.62.0), the bosses of Level 8, js/levels/saltgrave.js (STORY.md 10d)
 // ============================================================================
 // Twin sisters who split the one suit of armour that came back gilded from Aurel, fought as a pair on the tower roof. The
 // suit decides their fighting: Hale has its top half (the helm, the breastplate, the bearded axe) and fights with the axe;

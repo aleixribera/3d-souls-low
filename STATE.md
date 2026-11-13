@@ -4,7 +4,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 39, item 2, v7.60.0): Hale and Harrow pass 1 of 2 shipped: baked figures (one gilded suit split, the
+- Track A (pass 39, item 2, v7.62.0): Hale and Harrow pass 1 of 2 shipped: baked figures (one gilded suit split, the
   survivor wears it whole), 15 own moves, cued pair moves (`cue`), roof merlons (`pillarHeight`).
   `docs/scorecard/castellans-*.jpg`, in-page `Saltgrave`. Pass 2 (optional) in BACKLOG; else: the Ringer.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
@@ -48,7 +48,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
   (an enemy's `holyLight`), `kings-blade.js` (the player's own moves from `PLAYER_DEF`, a shield `guard`); each an old
-  boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.60.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
+  boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked

@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.62.0', title: 'Hale and Harrow', text: 'Saltgrave\'s castellans are their own now: one gilded suit split between two sisters, Hale with the helm and the bearded axe, Harrow with the gauntlets and greaves, each with moves of her own. They answer each other: when Harrow stamps the stones, Hale\'s cleave is often already coming. The one left standing kneels by her sister and rises in the whole suit.' },
   { version: 'v7.61.0', title: 'New version, reload', text: 'A game left open now notices when the server has a newer version: the title and the pause menu offer New version, Reload. Nothing reloads by itself, and a story saves first.' },
   { version: 'v7.60.0', title: 'Story, Boss Rush, Practice', text: 'The title offers the three ways to play. The Calling is now Boss Rush, and the online lobby starts on it; the leader\'s Mode also offers Single, Double, Triple and Quad Boss, and the story together. Practice replaces the 1v1 Arena and the Levels menu: fight any enemy or boss, build a group of up to six to fight at once, set two teams of bosses on each other, or play any level.' },
   { version: 'v7.59.0', title: 'Bolder Bots', text: 'Bots now roll only when a blow can actually reach them: standing behind a boss, they let a swing aimed the other way go by and keep hitting its back. They also wait less between their attacks, so they swing more often and fights end sooner.' },

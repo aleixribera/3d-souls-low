@@ -155,7 +155,7 @@ class Enemy {
     if (!due) return;
     const hp = this.hp, posture = this.posture, from = this.phase;
     this.enterPhase(this.phase + 1); this.hp = hp; this.posture = posture;
-    // One fought on her own (no kin, v7.60.0) has nobody to grieve: the alone phase starts without its opener.
+    // One fought on her own (no kin, v7.62.0) has nobody to grieve: the alone phase starts without its opener.
     const grieves = !next.alone || (this.kin && this.kin.length > 1);
     this.opener = next.opener && grieves ? this.def.attacks.find(a => a.id === next.opener) : null;
     events.emit('bossPhase', { enemy: this, from, to: this.phase, seamless: true });
@@ -596,7 +596,7 @@ class Enemy {
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
   }
-  // A cue (`cue: { attack, delay, chance, near }`, v7.60.0, a pair of bosses): as this attack starts, each other living
+  // A cue (`cue: { attack, delay, chance, near }`, v7.62.0, a pair of bosses): as this attack starts, each other living
   // member of its group that is chasing within `near` m of its own target and has that attack in its current phase may
   // (`chance`) answer with it `delay` s later, cooldown and the crowd's gap aside: two bodies, one fight. The answer is
   // dropped if she leaves the chase first (any other move, a flinch), or if the player is out of its range by then.
