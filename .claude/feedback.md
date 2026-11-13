@@ -72,3 +72,13 @@ took it (once taken).
   strikes; keep them. Her model and weapon animations need polish: in several attacks the hook is held and rotated
   wrong. Fix the grip and the weapon's angle through every attack (check each tell and strike in the model lab and in
   the abbey), and polish the model (the backlog already notes her face reads as a mask). This is her second pass.
+- 2026-11-14, how a boss's final pass is judged (on top of `VISION.md`, `PLAN.md` track A item 2 and track B item 10,
+  with the Regent Hollis as the bar). Three additions, for every boss redo and polish pass from now on:
+  1. **Grip and angle in motion.** Every attack is checked from wind-up to recovery as a short clip or a frame strip,
+     not one still pose: the weapon's angle and how the hand holds it, all through the swing. (Agathe's hook was held
+     and turned wrong in several attacks and still frames didn't catch it.)
+  2. **Blind side-by-side against Hollis.** A separate judge subagent sees the boss and Hollis unlabelled, scores both
+     on Aleix's list (clear idea, distinct character, good model, clear and fair attacks, cool effects, balanced, ready
+     for Boss Rush) and names the single biggest gap. Fix that gap, judge again.
+  3. **Aleix is the last gate.** A boss is marked final only after Aleix has fought it. The bot measures balance; fun
+     and whether the tells feel fair are his call. Until he has, the boss stays "awaiting Aleix" in `STATE.md`.
