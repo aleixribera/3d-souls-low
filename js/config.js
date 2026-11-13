@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.66.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.67.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -187,7 +187,7 @@ const CONFIG = {
   // `damage` and `stamina` are fractions more blow damage and stamina refill, `flasks` whole flasks, `parry` a fraction
   // wider parry window (CONFIG.parry lead and grace), `rise` rises per fight: a fresh body where you fell, `riseDelay` s
   // after the death (before a team wipe ends the fight), with `riseHp` of full health.
-  blessings: { offer: 3, pickTime: 10, riseDelay: 2.5, riseHp: 0.5,
+  blessings: { offer: 3, pickTime: 30, riseDelay: 2.5, riseHp: 0.5,
     boons: { damage: 0.15, flasks: 1, stamina: 0.4, parry: 0.5, rise: 1 } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.

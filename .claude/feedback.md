@@ -63,3 +63,5 @@ took it (once taken).
   idea, a distinct character, a good model, clear attacks, fair attacks, cool effects, balanced, and ready to be pushed
   hard by Boss Rush. Hollis is the bar for every boss still to be redone (Oswin onward, then Ashmere's five), and for
   any second pass on Ostrey, Hale and Harrow and the Ringer.
+- 2026-11-13: the wait between Boss Rush rounds goes back from 10 to 30 s (`CONFIG.blessings.pickTime`), and still
+  skips as soon as everyone has chosen. This overrides PLAN.md's "10 s clock". Done by the loop chat in v7.67.0.
