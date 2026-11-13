@@ -15,11 +15,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   every `CONFIG.versionCheck.interval` s); a newer `version`/`build` puts "New version — Reload" last on the title and
   in pause. Check: `tests/version-notice-browser.cjs` (older page vs server, reload, mid-fight, phone, no lobby);
   frames `docs/scorecard/version-*.jpg`. Next: the plan's item 2 (updater docs), then Track B item 2, the UI redesign.
-  Item 1 (v7.60.0): title Story / Boss Rush / Practice; Boss Rush (id `boss-rush`, kind `calling`); Practice
-  (`practice*`, `CONFIG.practice`). In-page `Title:`, `lobby-controller-browser`, `lobby-peek-browser`.
-- Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
-  `scorecard/`; one `STORY.md` (part one: in the game, `LORE.md`'s numbering; part two: where it goes); `README.md`
-  one screen. Old notes: `git show v7.56.0:docs/<file>`.
+  Item 1 (v7.60.0): Boss Rush is id `boss-rush`, kind `calling`; Practice is `practice*`, `CONFIG.practice`.
+- Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
