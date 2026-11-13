@@ -3133,9 +3133,22 @@
     Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
     for (const d of [...A.ENEMY_DEFS, ...TRAINING_DEFS]) {
       const M = d.stagger || d.guard; if (!M) continue;
-      const e = sim.spawn(d, 30, 0); e.setState(ES.RISE);
-      e.takeHit(strikeOf('jumpHeavy'), Game.player);
-      expect.near(e.guardMeter, Math.min(M.heavy, M.max), 1e-6, `${d.id}: jump heavy meter`);
+      const e = sim.spawn(d, 30, 0), p = Game.player;
+      if (d.posture) {
+        // A boss with a shield (the King's Blade): an open blow builds posture, and only a blow on the shield fills
+        // its guard, by `blockedMul` of a heavy's share.
+        e.setState(ES.RISE);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.ok(e.posture > 0 && e.guardMeter === 0, `${d.id}: an open jump heavy builds posture, not the guard`);
+        e.posture = 0; e.setState(ES.IDLE); e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+        expect.ok(e.guarding(), `${d.id}: guards from idle`);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.near(e.guardMeter, Math.min(M.heavy * M.blockedMul, M.max), 1e-6, `${d.id}: a blocked jump heavy fills the guard as a heavy`);
+      } else {
+        e.setState(ES.RISE);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.near(e.guardMeter, Math.min(M.heavy, M.max), 1e-6, `${d.id}: jump heavy meter`);
+      }
       sim.clearEnemies();
     }
     expect.ok(strikeOf('jumpLight').damage > 22 && strikeOf('jumpHeavy').damage > 59, 'both jump attacks deal more damage');

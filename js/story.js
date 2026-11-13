@@ -258,7 +258,7 @@ const story = (() => {
     const C = A().def;
     const devJumps = DEV ? [
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level.', go: () => game.showMenu('storyJump') },
-      { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
+      { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('tests'); } },
     ] : [];
     // The title's Story card (v7.19.0) names the road last played, or where a first story begins.
     const last = Object.values(campaigns).filter(c => c.status === 'ok' && !c.data.completed).sort((a, b) => (b.data.savedAt || 0) - (a.data.savedAt || 0))[0];
@@ -276,7 +276,7 @@ const story = (() => {
       storyDone: { title: A().goesOn() ? 'THE ROAD GOES ON' : 'STORY COMPLETE', sub: C.menuSub, notice: A().goesOn() ? C.goesOn : C.done, items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },
       ] },
-      storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'main',
+      storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'tests',
         items: STORIES.flatMap(S => { const c = campaigns[S.id];
           return c.storyLevels().map(id => ({ name: `${S.short}: ${c.levelName(id)}`, desc: 'Developer: starts a fresh story here (that road\'s save is replaced).',
             go: () => { story.use(S.id); c.jumpTo(id); } })); }) },
