@@ -9,6 +9,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Pass 31 (`PLAN.md` clean-up item 1, v7.54.0): the Lands and the Elden Ring bosses left; Boss Rush and the Arena list
   the story's 14 bosses. Checked: in-page `Story boss`, `calling-browser.cjs`, `boss-battle-browser.cjs`.
 - Bots (pass 32, v7.55.0): an aid, not a carry; check `docs/scorecard/bot-aid.txt`.
+- Pass 34 (Broken): CI's one red on main (the King's Blade meter test) and the `#dev` title overlap fixed; the
+  v7.54.0 and v7.55.0 containers published. Next in this slot: `PLAN.md` clean-up item 2.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
@@ -58,16 +60,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
-- In-page `Combat clarity: jump heavies fill every enemy meter` fails on the King's Blade (expected 30, got 0;
-  seen in pass 31, not its change: likely its v7.51 frontal shield `guard` taking the hit).
-- `experience-browser.cjs`: the title's description wraps onto the key hint at 1280x720 with `#dev` (every main item;
-  fails on v7.53.0 too, pass 31).
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI and the v7.54.0 (pass 31) and v7.55.0 (pass 32) containers: check in the next pass. Probes
-(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames).
+CI on pass 34's push: check in the next pass (pushes cancel each other's CI, so look at the newest finished run). Probes
+(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames), `.scratch/title-shots.cjs` (title frames).
 
 ## wip// branches
 
