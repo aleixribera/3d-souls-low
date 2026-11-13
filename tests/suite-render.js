@@ -123,7 +123,7 @@
       slots.acquire(b, () => 3);
       slots.sweep([b]);
       expect.ok(released.length === 1 && released[0] === a && slots.size === 1, 'departed actors released');
-      // A boss effect owner leaving the game frees its drawing (a flame jet: the opt-in `breath`, on no boss since v7.53.0).
+      // A boss effect owner leaving the game frees its drawing (a flame jet: the opt-in `breath`, on no boss since v7.54.0).
       visuals.setQuality('low'); Game.startFight('hale'); Game.loading = 0; sim.begin();
       const e = Game.enemies[0]; e.baseDef = { ...e.baseDef, attacks: [...e.baseDef.attacks, { ...e.baseDef.attacks[0], breath: { len: 6, width: 1.5 } }] };
       flame.prepare(Game.enemies);

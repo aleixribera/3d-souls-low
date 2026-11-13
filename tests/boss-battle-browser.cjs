@@ -109,7 +109,7 @@ const { createServer } = require('../server/index.cjs');
       b.deplete(); Game.hitstop = 0; Game.update(CONFIG.step);
       const retargeted = a.battleTarget === extra;
 
-      set(['ostrey'], ['giant']);
+      set(['varn'], ['giant']);   // Aldric: the one story boss whose next bar refills (the others' phases begin mid-bar)
       const [m, g] = Game.enemies; m.def = { ...m.def, lifesteal: { flat: 40, pct: 0.02 } }; m.hp -= 200; g.x = m.x + 1; g.z = m.z;   // lifesteal is opt-in (v5.9); no boss has it now
       const mh = m.hp; m.hitbox = new Hitbox(m, { w: 8, h: 8, d: 8, y: 2, fwd: 0 }, makeStrike(m.def.attacks[0]));
       resolveTeamCombat(Game); const lifesteal = m.hp > mh;
@@ -118,7 +118,8 @@ const { createServer } = require('../server/index.cjs');
       const phaseHp = m.hp; g.hitbox = new Hitbox(g, { w: 30, h: 20, d: 30, y: 2, fwd: 0 }, makeStrike(g.def.attacks[0]));
       resolveTeamCombat(Game); const phaseSafe = m.hp === phaseHp;
       g.hitbox = null;
-      for (let i = 0; i < 360; i++) { Game.hitstop = 0; Game.update(CONFIG.step); }
+      const kneel = (m.def.transition || CONFIG.enemy.transition) + 1;   // his knell kneels 15 s
+      for (let i = 0; i < kneel / CONFIG.step; i++) { Game.hitstop = 0; Game.update(CONFIG.step); }
       const phaseResumed = m.alive() && m.hp > 0 && m.state !== ES.PHASE;
 
       set(['ostrey', 'giant'], ['giant', 'giant']);

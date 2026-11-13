@@ -20,7 +20,8 @@ took it (once taken).
   the game soon, so no health change is needed.
 - 2026-11-13, decision (relayed by the director from the grilling): remove the Elden Ring bosses and their levels (the
   whole old second road, the Lands Between) now, not later at the swap: "let's make them leave now ... so that the
-  next loops build their own levels and bosses." The director records it in VISION.md and PLAN.md.
+  next loops build their own levels and bosses." The director records it in VISION.md and PLAN.md. Taken by pass 31
+  (v7.54.0).
 - 2026-11-13, follow-up to v7.52.0's bots (they now win 111 of 132 three-bot boss fights): weaken them a bit, but make
   them smarter about the game, their position, the situation and their health, so they stay alive longer. Read as:
   less damage and greed, so they win fewer fights on their own; better positioning and backing off to heal when hurt,
@@ -29,7 +30,7 @@ took it (once taken).
   being renamed "Boss Rush") roster and the Arena boss lists become the story's own bosses only: Ashmere's five
   (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, Antlered Hunger) plus chapters 7-14's (Ostrey, Hale and
   Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade). A story boss built on a Lands boss's
-  moves keeps working as it is for now; each gets its own moveset in later passes.
+  moves keeps working as it is for now; each gets its own moveset in later passes. Taken by pass 31 (v7.54.0).
 - 2026-11-13, complaint (render scale, relayed by the director): "It is crucial that the quality preset never gets a
   lower that 100% render scale setting, it looks incredibly bad, optimize it another way." The director found every
   preset's renderScale is 1, but maxPixelRatio caps Low at 1x and High at 1.5x (js/config.js ~393/397, applied in

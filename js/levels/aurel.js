@@ -1,7 +1,7 @@
 'use strict';
 // Level 10: Aurel, the Gilded City (v7.44.0), chapter 10 of the Story (STORY.md; LORE.md 10f): Thrale's capital, still
 // gold, fed and smiling. Rough (PLAN.md stage 3, track A): built from the old second road's royal capital
-// (removed in v7.53.0) as raw material, its layout kept, every name and character of that road gone; no great
+// (removed in v7.54.0) as raw material, its layout kept, every name and character of that road gone; no great
 // tree over this city, only the Ember's root coming up out of the chasm. x east, z north (toward the throne court).
 //   The city gate (bonfire 1, Ysolde), the avenue between lit houses (Gilded Thralls, smiling, with knives), the
 //   fountain court (the big fight: an Empty Sentinel of the regent's watch and a crowd of thralls, archers on the north

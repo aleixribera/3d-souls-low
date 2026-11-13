@@ -2,7 +2,7 @@
 // ============================================================================
 // Story mode (v4.4): every chapter of a campaign -> its ending -> the title.
 // ============================================================================
-// A campaign is one entry of STORIES (js/data/story.js); there is one since v7.53.0, Ashmere. Each keeps its own save
+// A campaign is one entry of STORIES (js/data/story.js); there is one since v7.54.0, Ashmere. Each keeps its own save
 // slot (`saveKey`); one campaign is active at a time (`story.use(id)`), and every function below acts on it, so the
 // rest of the game never needs to know which story is running.
 // It only connects what exists: levels start through Game.startLevel, chain through Game.nextLevelId, the finale plays

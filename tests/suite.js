@@ -1712,7 +1712,7 @@
   });
 
   // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
-  const MOVE_SOURCES = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.53.0
+  const MOVE_SOURCES = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
   const STORY_BOSS_MOVES = [
     { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
     { id: 'pillagerCaptain', level: 'burning-town', hp: 1800, total: 5, added: 2 },

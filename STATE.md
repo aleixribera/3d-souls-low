@@ -8,23 +8,25 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`LORE.endings['still-mere']`, `LEVEL_14.ending`), the credits and STORY COMPLETE; `goesOn` dropped. Check:
   frames `docs/scorecard/ending-{desktop,phone}-*.jpg`, the in-page `King's Blade's death` and `Still Mere:` tests.
   Next on the track: item 2, Ostrey redone.
+- Pass 31 (`PLAN.md` clean-up item 1, v7.54.0): the Lands and the Elden Ring bosses left; Boss Rush and the Arena list
+  the story's 14 bosses. Checked: in-page `Story boss`, `calling-browser.cjs`, `boss-battle-browser.cjs`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
-  Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Antlered Hunger (v7.49.0 skull: `carve()` in its script), Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
-  the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
+  Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Toll Wisp,
+  Executioner, Shover, Antlered Hunger, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
+  the in-page `model` filter, `Shover`, `Bowman`, `Wisp`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
   renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a per-face
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
-  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from normals; polished
-  gold reads grey under the full rim, and a thin shaft white (v7.39.0: model `rim` .45, a `haft` slot at .4).
+  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from
+  normals; gold and thin shafts want a lower `rim` (v7.39.0).
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`).
@@ -36,8 +38,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
-  `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
-  default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
+  `Story` and `Church` tests and `tests/campaign-browser.cjs` (Ashmere, the one road since v7.54.0); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
 - Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
@@ -46,7 +47,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
-  by the in-page `King's Blade's death` and `Still Mere:` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs`.
+  by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
   `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
 - Bots (v7.52.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; three-bot fights with behaviour
   counts `node tools/bot-fights.cjs [boss|all] [n]` (`MOODS=1` logs each bot's choices), about five minutes for all.
@@ -58,13 +59,16 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
-Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
+- In-page `Combat clarity: jump heavies fill every enemy meter` fails on the King's Blade (expected 30, got 0;
+  seen in pass 31, not its change: likely its v7.51 frontal shield `guard` taking the hit).
+- `experience-browser.cjs`: the title's description wraps onto the key hint at 1280x720 with `#dev` (every main item;
+  fails on v7.53.0 too, pass 31).
+- `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI and the v7.53.0 container (pass 30's ending; the v7.52.0 container published): check in the next pass. Probes
-(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames). Pass 29's probes (untracked): `.scratch/bot-wait-frames.cjs` (a companion
-against one boss move, frames), `giant-duels.cjs` (solo times by mood), `by-move.cjs <boss> <n> [bots]`.
+CI and the v7.54.0 container (pass 31's one road): check in the next pass. Probes
+(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames).
 
 ## wip// branches
 
@@ -77,11 +81,10 @@ In `BACKLOG.md`.
 ## Needs Aleix
 
 - (overridable) Bot strength: three bots now win 111/132 boss fights (60 before), more than "a bit"; raising
-  the slips moved it little. Knobs: `slip` and `greed` in `BOT_MOODS`. The four temperaments are the loop's.
+  the slips moved it little. Knobs: `slip` and `greed` in `BOT_MOODS`.
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
-  (`CONFIG.group`). Tuned on bots, who fight worse than people; at +60% six of the eight Lands bosses beat three bots
-  every time. Worth a feel check with friends.
+  (`CONFIG.group`). Tuned on bots, who fight worse than people; tuned when the Lands bosses still existed. Worth a feel check with friends.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.

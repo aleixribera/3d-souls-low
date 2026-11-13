@@ -13,7 +13,7 @@
     const d = e.radius + p.radius + gap;
     sim.place(e.x + Math.sin(e.yaw) * d, e.z + Math.cos(e.yaw) * d, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
   };
-  // A rot floor in the Long Hall: the opt-in `hazards` of v7.0, on no level since the Haligtree went (v7.53.0).
+  // A rot floor in the Long Hall: the opt-in `hazards` of v7.0, on no level since the Haligtree went (v7.54.0).
   const inRot = () => {
     if (!world.hazards.length) world.hazards.push({ id: 'audit-rot', kind: 'rot', rect: [12, 16, -1, 1], dps: 30, y: 0, timer: 0 });
     const h = world.hazards[0];

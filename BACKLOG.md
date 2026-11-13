@@ -6,7 +6,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   `beastEars`, `furClumps`, and since v7.30.0 `wispHat`, `wispBeard`, `wispMantle`, `wispSleeve`, `wispRobe`, `wispTassels`
   and since v7.31.0 `scionMask`, `scionLimbs`, and since v7.32.0 `eyePatch`, `openCollar`, `featherMantle`, `waistSash`,
   `borderedSkirt`, `boot`, and since v7.33.0 `crystalCluster` (kit-identity.js, kit-premium.js, bodykit.js; the ones in
-  kit-realms.js left with it in v7.53.0). Remove once stage 1 is done, with any others left unused.
+  kit-realms.js left with it in v7.54.0). Remove once stage 1 is done, with any others left unused.
 - The Antlered Hunger's hide (`beastHide`, the `bark` pattern) reads as gnarled wood more than a stag's hide (v7.49.0,
   `docs/scorecard/hunger-lab.jpg`); a hide or fur texture of its own in the same texture pass. Ysolde is 3,504
   triangles, over the 3,000 enemy budget (load warning).
@@ -18,7 +18,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   fill-in bots should be steadier than the lobby's is the director's call. In `bot-duel` no human lives, so the bots
   are always in last-stand mode (turning it off changed little).
 - Group scaling counts everyone in the run, but a solo Story companion (`companion` on a road; none since Finn left with
-  the Lands in v7.53.0) doesn't make a boss scale; if one should, it's a `setGroup` call where companions spawn (pass 6).
+  the Lands in v7.54.0) doesn't make a boss scale; if one should, it's a `setGroup` call where companions spawn (pass 6).
   The companion mechanic (`js/companions.js`) stays for Finn's return in the Pass (below); its browser test
   (`companion-browser.cjs`) and polish-browser's companion-feedback check left with the Lands and want a fixture road.
 - The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
@@ -104,14 +104,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   (stand-ins: the Toll Wisp beardless in black with a glaive, its tall hat reading more ringer than abbess; the Rogue in
   an undyed cowl). Agathe is Maliketh's moves renamed, 4,000 HP (was 4,600); the robe shed and Black Blade reveal are
   gone, so nothing changes on her body at half health but the storm's light. No one has fought her by hand. The
-  Brothers fight with the Beastman's moves, kept as `BEASTMAN_MOVES` in `js/data/move-sources.js` (v7.53.0).
+  Brothers fight with the Beastman's moves, kept as `BEASTMAN_MOVES` in `js/data/move-sources.js` (v7.54.0).
 - Chapter 13, the Root of the Ember (v7.50.0, pass 25), rough; its second step: the Kindling Tree's and the Rootbound's
   own figures (stand-ins: the Antlered Hunger, chapter 6's boss, stood upright in red-gold wood, so two chapters share one
   body; the Hollow Soldier in bark, still holding the ruined sword in bark). The tree is Radagon's moves renamed, 4,200 HP
   (was 5,200); its marks and risings burn red-gold (`holyLight`), but the mark's shape is still the old road's crossing
   arcs and the thrown thorns are still gold spears: both want an ember shape (a root knot, a thorn). No one has fought it
   by hand. The Rootbound fight with the Golden Zealot's moves, kept as `ZEALOT_MOVES` in `js/data/move-sources.js`
-  (v7.53.0).
+  (v7.54.0).
 - Chapter 14, the Still Mere (v7.51.0, pass 27), rough; its second step: the King's Blade's own figure (stand-in: the
   player's wanderer in ash, so the shield it guards with is still slung on its back; it wants the round shield on the
   arm, and the champion's look of `STORY.md`), a roll or sidestep (no enemy rolls yet: an opt-in evade would make "it

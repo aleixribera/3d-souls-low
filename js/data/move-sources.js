@@ -1,8 +1,8 @@
 'use strict';
 // ============================================================================
-// Move sources: two enemies' move sets that the story's own enemies still fight with (v7.53.0)
+// Move sources: two enemies' move sets that the story's own enemies still fight with (v7.54.0)
 // ============================================================================
-// The old second road and its enemies left the game in v7.53.0. Two of its move sets live on, unregistered (no model, not
+// The old second road and its enemies left the game in v7.54.0. Two of its move sets live on, unregistered (no model, not
 // in ENEMY_DEFS, never fought as they are): the Rending Brothers (js/data/bosses/agathe.js) fight with BEASTMAN_MOVES, the
 // Rootbound (js/data/bosses/kindling-tree.js) with ZEALOT_MOVES. Each goes when its story enemy gets moves of its own.
 // Their moves come from the old bosses' move sets (js/data/bosses/maliketh.js, radagon.js), copied and scaled to the

@@ -2,7 +2,7 @@
 // ============================================================================
 // Move source MALIKETH: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// The game's bosses are its own since v7.54.0, so this def has no figure and is in no list: it is never fought as it is.
 // Its moves are copied and renamed by Mother Agathe (agathe.js) and, through BEASTMAN_MOVES (js/data/move-sources.js), her Rending Brothers;
 // js/blackblade.js adds its kit parts (MALIKETH_PARTS) and spectral blades.
 // It goes when they get moves of their own (PLAN.md track A).

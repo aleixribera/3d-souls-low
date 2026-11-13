@@ -1,5 +1,5 @@
 'use strict';
-// Story mode (v4.4): each campaign as content (one road since v7.53.0). js/story.js plays them; this is only their text and order.
+// Story mode (v4.4): each campaign as content (one road since v7.54.0). js/story.js plays them; this is only their text and order.
 //   id, name, short    the campaign's id (its save slot is CONFIG.story.saveKeys[id]), its menu line and a short tag (dev jumps)
 //   menuTitle, menuSub its own menu screen's title and subtitle; description: the line under it in the Story menu
 //   chapters           the campaign in order, each a level id with the title shown over its loading screen and one line
