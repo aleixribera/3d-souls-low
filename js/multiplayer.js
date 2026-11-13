@@ -9,7 +9,7 @@ const multiplayer = (() => {
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
-  let lobbyPadDirection = null, lobbyPadTimer = 0, adventureBeforeEdit = null, nameDraft = '', nameLowercase = false;
+  let lobbyPadDirection = null, lobbyPadTimer = 0, nameDraft = '', nameLowercase = false;
   let callingPicks = [];   // Boss Rush's hand-picked roster, in fight order
   let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
@@ -21,116 +21,126 @@ const multiplayer = (() => {
   const panel = document.createElement('section');
   panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'lobbyTitle');
+  // The lobby (v7.63.0, the first screen on js/ui-theme.js): full screen, edge-anchored. Left: the mode list and its
+  // settings, with the one strong action, Start, under them (focus lands there). Right: the party. Bottom: quiet actions
+  // and the navigation keys for the device used last. The mode list mirrors the hidden select (#lobbyAdventure), which
+  // stays the mode's single source of truth.
   panel.innerHTML = `<div class="lobby-card">
-    <header class="lobby-header"><div><h1 id="lobbyTitle">The public lobby</h1></div>
+    <header class="lobby-header"><h1 id="lobbyTitle" class="ui-title">Lobby</h1>
     <span id="lobbyConnection" class="lobby-connection">Connecting</span></header>
     <p id="lobbyStatus" role="status" aria-live="polite">Connecting…</p>
     <p id="lobbyNotice" role="alert" hidden></p>
     <div class="lobby-layout"><section class="lobby-adventure" aria-labelledby="lobbyAdventureTitle">
-    <h2 id="lobbyAdventureTitle" class="lobby-section-label">Mode</h2>
     <div id="lobbyCurrentLevel" class="online-level" hidden></div>
-    <div id="lobbyLeader"><select id="lobbyAdventure" aria-labelledby="lobbyAdventureTitle" aria-describedby="lobbyAdventureSummary"></select>
-    <p id="lobbyAdventureSummary" class="lobby-summary"></p>
-    <div id="lobbyCalling" hidden><div class="lobby-calling-row"><div><label for="lobbyCallingRoster">Roster</label><select id="lobbyCallingRoster"><option value="random">Random</option><option value="pick">Chosen by hand</option></select></div>
-    <div id="lobbyCallingCount"><label for="lobbyCallingLength">Bosses</label><select id="lobbyCallingLength"></select></div></div>
-    <div id="lobbyCallingPick" role="group" aria-label="Bosses, in the order you meet them" hidden></div></div>
-    <div class="lobby-actions lobby-primary"><button id="lobbyResume">Return to game</button><button id="lobbyStart">Start together</button></div>
-    <div id="lobbyRunActions" class="lobby-actions" role="group" aria-labelledby="lobbyRunTitle" hidden><p id="lobbyRunTitle" class="lobby-group-label">Party controls</p><button id="lobbyRestart">Restart level</button>
-    <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
-    <div id="lobbyWaiting"><p class="lobby-summary">Gathering your party…</p><button id="lobbyGuestResume">Return to game</button></div>
-    <button id="lobbyRetry" hidden>Try again</button>
     <p id="lobbyLiveWarning" class="lobby-hint" hidden>The world keeps running while you are here.</p>
+    <div id="lobbyLeader"><h2 id="lobbyAdventureTitle" class="ui-label">Mode</h2>
+    <select id="lobbyAdventure" class="ui-mirror" tabindex="-1" aria-hidden="true"></select>
+    <div id="lobbyModes" role="group" aria-labelledby="lobbyAdventureTitle"></div>
+    <p id="lobbyAdventureSummary" class="lobby-summary"></p>
+    <div id="lobbyCalling" hidden><div class="lobby-calling-row"><div><label for="lobbyCallingRoster" class="ui-label">Roster</label>
+    <div class="ui-cycle"><button type="button" class="ui-step" data-cycle="lobbyCallingRoster" data-step="-1" tabindex="-1" aria-hidden="true">‹</button><select id="lobbyCallingRoster"><option value="random">Random</option><option value="pick">By hand</option></select><button type="button" class="ui-step" data-cycle="lobbyCallingRoster" data-step="1" tabindex="-1" aria-hidden="true">›</button></div></div>
+    <div id="lobbyCallingCount"><label for="lobbyCallingLength" class="ui-label">Bosses</label>
+    <div class="ui-cycle"><button type="button" class="ui-step" data-cycle="lobbyCallingLength" data-step="-1" tabindex="-1" aria-hidden="true">‹</button><select id="lobbyCallingLength"></select><button type="button" class="ui-step" data-cycle="lobbyCallingLength" data-step="1" tabindex="-1" aria-hidden="true">›</button></div></div></div>
+    <div id="lobbyCallingPick" role="group" aria-label="Bosses, in the order you meet them" hidden></div></div>
+    <div class="lobby-primary"><button id="lobbyResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button><button id="lobbyStart" class="ui-primary">Start together</button></div>
+    <div id="lobbyRunActions" class="lobby-actions" role="group" aria-label="Party controls" hidden><button id="lobbyRestart" class="ui-button">Restart level</button>
+    <button id="lobbyNext" class="ui-button">Next level</button><button id="lobbyReturn" class="ui-button">Return everyone to lobby</button></div></div>
+    <div id="lobbyWaiting"><p class="lobby-waiting-text"></p><button id="lobbyGuestResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button></div>
+    <button id="lobbyRetry" class="ui-primary" hidden>Try again</button>
     </section><section class="lobby-party" aria-labelledby="lobbyPartyTitle">
-    <div class="lobby-section-title"><h2 id="lobbyPartyTitle">Your party</h2><span id="lobbyCount"></span></div>
-    <label for="lobbyName">Your name</label><input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name" spellcheck="false">
+    <div class="lobby-section-title"><h2 id="lobbyPartyTitle">Party</h2><span id="lobbyCount"></span></div>
+    <label for="lobbyName" class="ui-label">Your name</label><input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name" spellcheck="false">
     <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
-    <button id="lobbyManage" class="lobby-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button>
-    <button id="lobbyAddBot" hidden>Add a friendly bot</button><p id="lobbyBotHint" class="lobby-hint" hidden></p>
+    <div class="lobby-party-actions"><button id="lobbyAddBot" class="ui-button" hidden>Add a friendly bot</button>
+    <button id="lobbyManage" class="ui-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button></div>
+    <p id="lobbyBotHint" class="lobby-hint" hidden></p>
     </section></div>
-    <footer class="lobby-footer"><div class="lobby-actions"><button id="lobbyHelp" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
-    <button id="lobbyOptions">Options</button></div><button id="lobbyLeave" class="lobby-text-button">Leave lobby</button></footer>
-    <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><h2 id="lobbyControlsTitle">Basic controls</h2>
-    <p id="lobbyControlsDevice"></p><dl id="lobbyControlsList"></dl>
+    <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
+    <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
+    <button id="lobbyOptions" class="ui-text-button">Options</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
+    <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
+    <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
+    <dl id="lobbyControlsList"></dl>
     <p class="lobby-controls-tip">Attacks, rolls and blocking use stamina. Ease off to let it refill. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
-    <p id="lobbyPadHint" class="lobby-hint"></p>
     </div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby,#onlineParty,#onlineLeaderboard,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
-    #publicLobby{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 18%,#2a2416ee,#0a0b0df8 72%);color:var(--mp-ink);font:14px/1.5 system-ui,sans-serif;padding:24px;overflow:auto;box-sizing:border-box;color-scheme:dark}
+    #publicLobby{position:fixed;inset:0;z-index:90;background:var(--ui-veil);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text);overflow:auto;box-sizing:border-box;color-scheme:dark;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;overscroll-behavior:contain}
+    #publicLobby .lobby-adventure :is(.ui-row,select){scroll-margin-bottom:96px}
     #publicLobby.hidden,#publicLobby [hidden]{display:none!important}#publicLobby *{box-sizing:border-box}
-    #publicLobby .lobby-card{position:relative;width:min(900px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 22px;border:1px solid var(--mp-line-hi);border-radius:10px;background:linear-gradient(160deg,#1e1f1b,#0f1315 70%);box-shadow:0 30px 100px #000a,inset 0 1px 0 #ffffff0d;scrollbar-width:thin;scrollbar-color:#756443 transparent;animation:lobby-arrive .22s ease-out}
-    #publicLobby .lobby-card:before{content:'';position:absolute;left:32px;right:32px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--mp-gold),transparent);opacity:.7}
-    #publicLobby .lobby-header{display:flex;align-items:center;justify-content:space-between;gap:16px}#publicLobby h1{font:400 clamp(28px,4vw,38px)/1.15 Georgia,serif;letter-spacing:.04em;margin:6px 0 0;color:var(--mp-gold-hi)}
-    #publicLobby .lobby-connection{flex:none;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#d7d6c8;background:#ffffff08;border:1px solid #ffffff1a;border-radius:999px;padding:6px 12px}
-    #publicLobby .lobby-connection:before{content:'';width:8px;height:8px;border-radius:50%;background:#c8a95f;box-shadow:0 0 0 3px #c8a95f26}#publicLobby[data-connected=true] .lobby-connection:before{background:var(--mp-good);box-shadow:0 0 0 3px #a9cf8e26}
-    #lobbyStatus{margin:12px 0 22px;padding:10px 14px;border-radius:6px;background:#ffffff06;border:1px solid #ffffff0f;color:#cfcdc0;font-size:13px}
-    #publicLobby .lobby-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,.85fr);gap:20px}
-    #publicLobby .lobby-adventure,#publicLobby .lobby-party{min-width:0;padding:20px;border:1px solid var(--mp-line);border-radius:8px;background:var(--mp-well)}
-    #publicLobby h2{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0;color:var(--mp-gold)}
-    #publicLobby .lobby-section-label{margin-bottom:14px}#publicLobby .lobby-section-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:16px}
-    #lobbyCount{font-size:11px;font-variant-numeric:tabular-nums;color:var(--mp-ink);background:#ffffff0d;border-radius:999px;padding:2px 9px}
-    #publicLobby label{display:block;margin:0 0 7px;color:var(--mp-muted);font-size:12px}
-    #publicLobby input,#publicLobby select{display:block;width:100%;padding:12px;background:#05080acc;color:#f3e8cd;border:1px solid #c9a96a40;font:inherit;border-radius:6px;min-height:44px;transition:border-color .15s}
-    #publicLobby input:hover,#publicLobby select:hover{border-color:#c9a96a80}
-    #publicLobby input:focus-visible,#publicLobby select:focus-visible{outline:2px solid var(--mp-gold-hi);outline-offset:2px}
-    #publicLobby select{font:19px Georgia,serif;padding:13px 40px 13px 14px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mp-gold) 50%),linear-gradient(135deg,var(--mp-gold) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
-    #publicLobby select[size]{background-image:none;padding-right:12px;max-height:220px}#publicLobby select option,#publicLobby select optgroup{background:#161a19;color:#f3e8cd}
-    #publicLobby button{min-height:40px;padding:9px 14px;background:#ffffff08;color:#e0dac8;border:1px solid #c9a96a40;border-radius:6px;cursor:pointer;font:inherit;transition:background .15s,color .15s,border-color .15s,transform .1s}
-    #publicLobby button:hover{background:#dcbb741a;border-color:#c9a96aa0;color:#fff4d8}#publicLobby button:active{transform:translateY(1px)}
-    #publicLobby button:focus-visible,#publicLobby.lobby-pad .pad-selected{outline:2px solid var(--mp-gold-hi);outline-offset:2px;background:#dcbb741f}
-    #publicLobby button:disabled{opacity:.4;cursor:default;transform:none}#publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
-    #publicLobby .lobby-summary{min-height:4.6em;color:#b9b7a9;line-height:1.65;margin:12px 0 18px;font-size:13px;padding-left:12px;border-left:2px solid #c9a96a55}
-    #publicLobby .lobby-primary{margin:0}#publicLobby .lobby-primary button{flex:1 1 160px;min-height:48px;font-size:15px}
-    #publicLobby .lobby-primary #lobbyStart,#publicLobby #lobbyGuestResume{background:linear-gradient(115deg,#ead096,#c09d5c);color:#1d180e;border-color:#efd59c;font-weight:650;box-shadow:0 6px 20px #c09d5c33}
-    #publicLobby .lobby-primary #lobbyStart:hover,#publicLobby #lobbyGuestResume:hover{background:linear-gradient(115deg,#f4dcaa,#cfab68);color:#1d180e}
-    #publicLobby[data-running=true] .lobby-primary #lobbyStart{background:#ffffff08;color:#e0dac8;border-color:#c9a96a40;font-weight:400;box-shadow:none}
-    #publicLobby[data-running=true] #lobbyResume{background:linear-gradient(115deg,#ead096,#c09d5c);color:#1d180e;border-color:#efd59c;font-weight:650;box-shadow:0 6px 20px #c09d5c33}
-    #publicLobby #lobbyRunActions{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--mp-line)}#publicLobby #lobbyRunActions button{flex:1 1 auto;font-size:12px}
-    #publicLobby .lobby-group-label{flex-basis:100%;margin:0 0 2px;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mp-faint)}
-    #publicLobby #lobbyReturn{border-color:#d8938366;color:#ecc2b7}#publicLobby #lobbyReturn:hover{background:#d8938318;border-color:#d89383}
-    #lobbyWaiting .lobby-summary{min-height:0}#publicLobby #lobbyGuestResume{width:100%;min-height:48px}#publicLobby #lobbyRetry{width:100%;min-height:46px}
-    #publicLobby .lobby-player{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:8px 10px;margin-bottom:6px;border:1px solid #ffffff0d;border-radius:6px;background:#ffffff05}
-    #publicLobby .lobby-player:before{content:attr(data-initial);flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#2b2f2c;border:1px solid #ffffff1f;color:#d8d3c2;font:600 13px/1 system-ui}
-    #publicLobby .lobby-player[data-self=true]{border-color:#c9a96a55;background:#dcbb740d}#publicLobby .lobby-player[data-self=true]:before{background:#3a321f;border-color:var(--mp-gold);color:var(--mp-gold-hi)}
-    #publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #publicLobby .lobby-player[data-bot=true]:before{background:#23312c;border-color:#a9cf8e66;color:var(--mp-good)}
-    #publicLobby .lobby-player-role.bot{background:#a9cf8e;}#publicLobby #lobbyAddBot{width:100%;margin-top:8px;border-style:dashed}
-    #publicLobby .lobby-bot-remove{font-size:11px;padding:4px 10px;min-height:32px;margin-left:auto}
-    #publicLobby .lobby-player-role{font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:#1d180e;background:var(--mp-gold);border-radius:999px;padding:2px 8px}
-    #lobbyCalling{margin:0 0 18px}#lobbyCalling .lobby-calling-row{display:flex;gap:10px}#lobbyCalling .lobby-calling-row>div{flex:1 1 0;min-width:0}
-    #publicLobby #lobbyCalling select{font:15px/1.3 Georgia,serif;padding:10px 36px 10px 12px;min-height:44px}
-    #lobbyCallingPick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:12px;max-height:232px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#756443 transparent}
-    #publicLobby #lobbyCallingPick button{display:flex;align-items:center;gap:8px;text-align:left;font-size:12px;padding:6px 10px;min-height:40px}
-    #publicLobby #lobbyCallingPick button:before{content:attr(data-order);flex:none;width:20px;height:20px;display:grid;place-items:center;border:1px solid #c9a96a40;border-radius:4px;font:600 11px/1 system-ui;color:#1d180e}
-    #publicLobby #lobbyCallingPick button[aria-pressed=true]{border-color:var(--mp-gold);background:#dcbb7414;color:#fff4d8}#publicLobby #lobbyCallingPick button[aria-pressed=true]:before{background:var(--mp-gold);border-color:var(--mp-gold)}
-    #lobbyPlayers{max-height:200px;overflow:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent;margin:16px 0 6px}
-    #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px;padding-left:40px}#publicLobby.managing-party .lobby-player-actions{display:flex}
-    #publicLobby .lobby-player button{font-size:11px;padding:4px 10px;min-height:32px}
-    #publicLobby .lobby-text-button{border-color:transparent;background:transparent;font-size:12px;color:var(--mp-muted)}#publicLobby .lobby-text-button:hover{color:var(--mp-ink)}
-    #publicLobby .lobby-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--mp-line)}#publicLobby .lobby-footer .lobby-actions{margin:0}#publicLobby .lobby-footer button{font-size:12px}
-    #publicLobby #lobbyLeave{color:#d6a597}#publicLobby #lobbyLeave:hover{color:#f1c4b6;background:#d8938314}
-    #lobbyNotice{padding:10px 14px;border:1px solid #d1ad664d;border-left:3px solid var(--mp-gold);border-radius:6px;background:#c4a45e12;color:#ecd59d;font-size:13px;margin:-10px 0 20px;overflow-wrap:anywhere}
-    #publicLobby .lobby-hint{font:12px/1.6 system-ui;color:var(--mp-muted);margin:12px 0 0}#lobbyPadHint{text-align:center;margin:14px 0 0}#lobbyPadHint:empty{display:none}
-    #publicLobby .lobby-name-editor{margin:12px 0;padding:14px;border:1px solid var(--mp-line-hi);border-radius:8px;background:#151c1b}
-    #lobbyNameEditor[hidden]{display:none}#lobbyNamePreview{display:block;min-height:1.5em;padding:10px 12px;margin-bottom:12px;border-radius:6px;background:#0b100f;color:#fff0c9;font-size:17px;white-space:pre-wrap;overflow-wrap:anywhere}
-    #lobbyNameKeys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}#publicLobby #lobbyNameKeys button{min-height:40px;padding:6px 0;font:14px system-ui}
-    #publicLobby.editing-name .lobby-layout{grid-template-columns:1fr}#publicLobby.editing-name .lobby-adventure{display:none}
-    #publicLobby #lobbyNameKeys .name-action{grid-column:span 2;font-size:12px}
-    #publicLobby .lobby-controls{margin:18px 0 0;padding:18px;background:var(--mp-well);border:1px solid var(--mp-line);border-radius:8px;font:13px/1.5 system-ui}
-    #lobbyControlsDevice{margin:4px 0 14px;color:var(--mp-muted);font-size:11px}
-    #lobbyControlsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 24px;margin:0}
-    #lobbyControlsList div{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid #ffffff0a}#lobbyControlsList dt{color:#c9cbc1}
-    #lobbyControlsList dd{margin:0;text-align:right;color:#fff1cf;font-weight:600;font-size:12px;background:#ffffff0d;border:1px solid #ffffff17;border-radius:4px;padding:1px 7px}
-    #publicLobby .lobby-controls-tip{margin:12px 0 0;color:#bdbeb3;font-size:12px}
-    @keyframes lobby-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-    @media(max-width:650px){#publicLobby{padding:10px}#publicLobby .lobby-card{padding:22px 16px 16px;max-height:calc(100dvh - 20px)}#publicLobby .lobby-card:before{left:16px;right:16px}#publicLobby .lobby-layout{grid-template-columns:1fr;gap:14px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:16px}#publicLobby .lobby-summary{min-height:0}#lobbyControlsList{grid-template-columns:1fr}#lobbyPlayers{max-height:150px}#publicLobby .lobby-header{align-items:flex-start}#publicLobby .lobby-connection{margin-top:4px}#publicLobby .lobby-footer{margin-top:16px;flex-wrap:wrap}#lobbyStatus{margin:10px 0 16px}}
-    @media(max-height:560px) and (min-width:651px){#publicLobby .lobby-card{padding:18px 24px 14px}#publicLobby h1{font-size:26px}#lobbyStatus{margin:8px 0 12px;padding:6px 12px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:14px}#publicLobby .lobby-summary{min-height:0;font-size:12px;line-height:1.5;margin:8px 0 12px}#publicLobby .lobby-footer{margin-top:12px;padding-top:10px}}
-    @media(max-height:450px) and (min-width:651px){#publicLobby{padding:8px 24px}#publicLobby .lobby-card{padding:12px 20px 10px;max-height:calc(100dvh - 16px)}#publicLobby h1{font-size:22px;margin-top:0}#lobbyStatus{margin:6px 0 8px}#publicLobby .lobby-section-label{margin-bottom:8px}#publicLobby #lobbyLeader select{padding-top:9px;padding-bottom:9px}#publicLobby .lobby-summary{margin:6px 0 8px}#lobbyCalling{margin:0 0 10px}#lobbyCalling label{margin-bottom:4px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:10px 14px}}
+    #publicLobby .lobby-card{min-height:100%;display:grid;grid-template-columns:minmax(0,420px) minmax(24px,1fr) minmax(0,380px);grid-template-rows:auto auto 1fr auto;
+      grid-template-areas:"head head head" "status status status" "setup . party" "foot foot foot";
+      padding:max(28px,5vh) max(16px,5vw) max(16px,3.5vh);animation:lobby-arrive .2s ease-out}
+    #publicLobby .lobby-layout{display:contents}
+    #publicLobby .lobby-header{grid-area:head;display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:max(18px,3.5vh)}
+    #publicLobby .lobby-connection{flex:none;display:inline-flex;align-items:center;gap:8px;font:var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
+    #publicLobby .lobby-connection:before{content:'';width:8px;height:8px;background:var(--ui-accent)}#publicLobby[data-connected=true] .lobby-connection:before{background:var(--ui-good)}
+    #lobbyStatus{grid-area:status;margin:-8px 0 20px;color:var(--ui-muted)}#lobbyStatus:empty{display:none}
+    #lobbyNotice{grid-area:status;align-self:start;margin:-8px 0 20px;padding:8px 14px;border-left:3px solid var(--ui-accent);background:var(--ui-accent-wash);color:var(--ui-accent-hi);overflow-wrap:anywhere}
+    #publicLobby .lobby-adventure{grid-area:setup;min-width:0;display:flex;flex-direction:column}
+    #publicLobby .lobby-party{grid-area:party;min-width:0}
+    #publicLobby h2{margin:0}
+    #lobbyModes{display:flex;flex-direction:column;gap:2px}
+    #publicLobby .lobby-summary{margin:10px 0 0;padding-left:16px;color:var(--ui-muted);line-height:1.5;min-height:3em}
+    #lobbyCalling{margin:16px 0 0}#lobbyCalling .lobby-calling-row{display:flex;gap:12px}#lobbyCalling .lobby-calling-row>div{flex:1 1 0;min-width:0}
+    #lobbyCallingPick{display:flex;flex-direction:column;gap:2px;margin-top:12px;max-height:228px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent}
+    #publicLobby #lobbyCallingPick button{font-size:17px;min-height:38px;padding-left:10px;flex:none}
+    #publicLobby #lobbyCallingPick button:before{content:attr(data-order);flex:none;width:18px;font:600 var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-accent);font-variant-numeric:tabular-nums}
+    #publicLobby .lobby-primary{position:sticky;bottom:0;z-index:1;display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 0;background:#080a0c}
+    #publicLobby[data-running=true] #lobbyStart{background:transparent;color:var(--ui-ink);border:1px solid var(--ui-line);min-height:44px;font-weight:500}
+    #publicLobby[data-running=true] #lobbyStart:hover{background:var(--ui-hover)}
+    #publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}#publicLobby #lobbyRunActions .ui-button{flex:1 1 auto}
+    #publicLobby #lobbyReturn{color:var(--ui-alarm)}
+    #lobbyWaiting{margin-top:8px}#lobbyWaiting .lobby-waiting-text:empty{display:none}#lobbyWaiting .lobby-waiting-text{margin:0 0 16px;font:400 var(--ui-size-row)/1.4 var(--ui-display);color:var(--ui-ink)}
+    #publicLobby #lobbyRetry{margin-top:16px}
+    #publicLobby .online-level{margin:0 0 14px;color:var(--ui-accent-hi);font:600 var(--ui-size-text)/1.4 var(--ui-text);letter-spacing:0;text-transform:none}
+    #publicLobby .lobby-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:16px}
+    #publicLobby .lobby-section-title h2{font:400 var(--ui-size-head)/1.2 var(--ui-display);color:var(--ui-ink)}
+    #lobbyCount{font:var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
+    #publicLobby input{display:block;width:100%;min-height:44px;padding:0 12px;background:var(--ui-well);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:2px;font:400 17px var(--ui-display)}
+    #publicLobby input:hover{border-color:var(--ui-line-hi)}
+    #publicLobby input:focus-visible,#publicLobby input.pad-selected{outline:1px solid var(--ui-accent);outline-offset:-1px;border-color:var(--ui-accent)}
+    #publicLobby input:disabled{opacity:.5}
+    #lobbyPlayers{max-height:min(320px,40vh);overflow:auto;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;margin:18px 0 0;border-top:1px solid var(--ui-line)}
+    #publicLobby .lobby-player{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-height:46px;padding:6px 4px 6px 13px;border-bottom:1px solid var(--ui-line);border-left:3px solid transparent}
+    #publicLobby .lobby-player[data-self=true]{border-left-color:var(--ui-accent)}
+    #publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 18px/1.3 var(--ui-display)}
+    #publicLobby .lobby-player-role{font:600 var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-accent)}#publicLobby .lobby-player-role.bot{color:var(--ui-muted);font-weight:500}
+    #publicLobby .lobby-player button{min-height:34px;padding:0 10px;font-size:var(--ui-size-hint)}
+    #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px}#publicLobby.managing-party .lobby-player-actions{display:flex}
+    #publicLobby .lobby-party-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+    #publicLobby .lobby-hint{margin:10px 0 0;font:var(--ui-size-hint)/1.5 var(--ui-text);color:var(--ui-muted)}#lobbyBotHint:empty{display:none}
+    #publicLobby #lobbyLiveWarning{margin:0 0 14px}
+    #publicLobby .lobby-footer{grid-area:foot;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;margin-top:max(20px,3vh);padding-top:12px;border-top:1px solid var(--ui-line)}
+    #publicLobby .lobby-footer-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:-10px}
+    #lobbyPadHint:empty{display:none}
+    #publicLobby .lobby-name-editor{margin:12px 0;padding:14px;border:1px solid var(--ui-line-hi);background:var(--ui-panel)}
+    #lobbyNamePreview{display:block;min-height:1.5em;padding:10px 12px;margin-bottom:12px;background:var(--ui-well);color:var(--ui-ink);font:400 19px var(--ui-display);white-space:pre-wrap;overflow-wrap:anywhere}
+    #lobbyNameKeys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+    #publicLobby #lobbyNameKeys button{min-height:40px;padding:0;font:500 15px var(--ui-text);color:var(--ui-ink);background:#ffffff08;border:1px solid var(--ui-line);border-radius:2px;cursor:pointer}
+    #publicLobby #lobbyNameKeys button:hover{background:var(--ui-hover)}
+    #publicLobby #lobbyNameKeys button:focus-visible,#publicLobby #lobbyNameKeys button.pad-selected{outline:1px solid var(--ui-accent);outline-offset:-1px;background:#d9b56b33}
+    #publicLobby #lobbyNameKeys .name-action{grid-column:span 2;font-size:var(--ui-size-hint)}
+    #publicLobby.editing-name .lobby-adventure{display:none}#publicLobby.editing-name .lobby-party{grid-column:1/-1;max-width:640px}
+    #publicLobby .lobby-controls{position:fixed;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;
+      padding:24px 28px;background:var(--ui-panel);border:1px solid var(--ui-line-hi);box-shadow:0 0 0 100vmax #000000a8}
+    #publicLobby .lobby-controls-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    #publicLobby .lobby-controls h2{font:400 var(--ui-size-head)/1.2 var(--ui-display);color:var(--ui-ink)}
+    #lobbyControlsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;margin:0}
+    #lobbyControlsList div{display:flex;justify-content:space-between;gap:10px;align-items:center;min-height:38px;border-bottom:1px solid var(--ui-line)}#lobbyControlsList dt{color:var(--ui-ink)}
+    #lobbyControlsList dd{margin:0;text-align:right;color:var(--ui-ink);font:600 var(--ui-size-hint)/1 var(--ui-text);border:1px solid #ffffff40;border-bottom-width:2px;border-radius:3px;padding:4px 7px;background:#ffffff0a}
+    #publicLobby .lobby-controls-tip{margin:14px 0 0;color:var(--ui-muted)}
+    @keyframes lobby-arrive{from{opacity:0}to{opacity:1}}
+    @media (prefers-reduced-motion:reduce){#publicLobby .lobby-card{animation-duration:.01s}}
+    @media(max-width:760px){#publicLobby .lobby-card{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "status" "setup" "party" "foot";padding:max(24px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+      #publicLobby .lobby-party{margin-top:32px}#publicLobby .ui-title{font-size:32px}#lobbyControlsList{grid-template-columns:1fr}#lobbyPlayers{max-height:none}
+      #publicLobby .lobby-summary{min-height:0}#publicLobby .lobby-footer{margin-top:28px}}
+    @media(max-height:640px) and (min-width:761px){#publicLobby .lobby-card{padding-top:20px}#publicLobby .lobby-header{margin-bottom:14px}#publicLobby .ui-title{font-size:32px}
+      #publicLobby #lobbyModes .ui-row{min-height:36px}#publicLobby .lobby-summary{min-height:0;margin-top:6px}#lobbyCalling{margin-top:10px}#publicLobby .lobby-primary{margin-top:16px}}
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;width:210px;max-width:calc(100vw - 36px);box-sizing:border-box;pointer-events:none;color:var(--mp-ink);font:12px/1.5 system-ui;text-shadow:0 1px 2px #000;background:linear-gradient(160deg,#12171acc,#0d1113a8);padding:10px 12px;border:1px solid var(--mp-line);border-radius:8px;box-shadow:0 8px 24px #0006;backdrop-filter:blur(3px)}
     .online-level{margin:0 0 8px;color:var(--mp-gold-hi,#f3dca3);font:600 11px/1.4 system-ui;text-align:left;letter-spacing:.1em;text-transform:uppercase}
-    #publicLobby .online-level{display:inline-block;margin:0 0 14px;padding:3px 10px;border:1px solid var(--mp-line-hi);border-radius:999px;background:#dcbb7412}
     .online-level[hidden]{display:none}
     #onlinePartyDetails{color:var(--mp-muted);font-size:10px;letter-spacing:.04em}#onlinePartyDetails:empty{display:none}
     #onlineAlive{margin-top:6px;text-align:left;font:12px/1.5 system-ui;max-height:24vh;overflow:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent}
@@ -512,39 +522,48 @@ const multiplayer = (() => {
     for (const p of players) if (allyMeters.has(p.id)) updateAllyHealth(allyMeters.get(p.id), p.hp, p.name);
   }
   const el = id => document.getElementById(id);
+  // What the controller and the arrow keys move through: the name keyboard or the controls sheet while one is open,
+  // else the whole lobby (the mirrored mode select and the cyclers' arrow buttons are skipped: they have their own row).
   function lobbyControls() {
-    const root = el('lobbyNameEditor').hidden ? panel : el('lobbyNameEditor');
-    return [...root.querySelectorAll('button,input,select')].filter(node => !node.disabled && !node.hidden && node.offsetParent);
+    const root = !el('lobbyNameEditor').hidden ? el('lobbyNameEditor') : !el('lobbyControls').hidden ? el('lobbyControls') : panel;
+    return [...root.querySelectorAll('button,input,select')].filter(node => !node.disabled && !node.hidden && node.offsetParent
+      && !node.classList.contains('ui-mirror') && !node.classList.contains('ui-step'));
   }
   function focusLobbyControl(node) {
     for (const previous of panel.querySelectorAll('.pad-selected')) previous.classList.remove('pad-selected');
     if (!node) return;
     node.classList.add('pad-selected'); node.focus({ preventScroll: true }); node.scrollIntoView({ block: 'nearest' });
   }
-  function ensureLobbyFocus() {
+  // Focus lands on the screen's one strong action: back to the run, or Start.
+  function ensureLobbyFocus(fresh = false) {
     const controls = lobbyControls();
-    if (controls.includes(document.activeElement)) {
+    if (!fresh && controls.includes(document.activeElement)) {
       if (!document.activeElement.classList.contains('pad-selected')) focusLobbyControl(document.activeElement);
       return document.activeElement;
     }
-    const preferred = [el('lobbyResume'), el('lobbyGuestResume'), el('lobbyAdventure'), el('lobbyRetry'), el('lobbyName')].find(node => controls.includes(node));
+    const preferred = [el('lobbyResume'), el('lobbyGuestResume'), el('lobbyStart'), el('lobbyRetry'),
+      el('lobbyModes').querySelector('[aria-pressed=true]'), el('lobbyLeave')].find(node => controls.includes(node));
     const next = preferred || controls[0]; focusLobbyControl(next); return next;
   }
+  // The keys for the device used last: Back's key sits on the button it presses (Return to game, Close or Leave lobby),
+  // and the footer names the rest (move, change, select; type and delete in the name keyboard).
   function updateLobbyPadHint() {
-    panel.classList.toggle('lobby-pad', usingPad());
-    el('lobbyPadHint').textContent = !usingPad() ? '' : !el('lobbyNameEditor').hidden
-      ? 'D-pad / left stick: move · A / ×: choose · X / □: delete · B / ○: cancel'
-      : adventureBeforeEdit !== null ? 'D-pad / left stick: choose a mode · A / ×: confirm · B / ○: cancel'
-      : 'D-pad / left stick: move · A / ×: select · ← / →: change mode · B / ○: back';
+    const pad = usingPad();
+    panel.classList.toggle('lobby-pad', pad);
+    const back = !el('lobbyControls').hidden ? 'lobbyControlsClose' : el('lobbyNameEditor').hidden
+      ? ['lobbyResume', 'lobbyGuestResume'].find(id => !el(id).hidden && el(id).offsetParent) || 'lobbyLeave' : null;
+    for (const id of ['lobbyResume', 'lobbyGuestResume', 'lobbyLeave', 'lobbyControlsClose'])
+      el(id).querySelector('.ui-key').textContent = id === back ? pad ? 'B' : 'Esc' : '';
+    const hints = el('lobbyPadHint'); hints.textContent = '';
+    const rows = !el('lobbyNameEditor').hidden
+      ? [[pad ? 'D-pad' : '↑ ↓ ← →', 'Move'], [pad ? 'A' : 'Enter', 'Type'], [pad ? 'X' : 'Backspace', 'Delete'], [pad ? 'B' : 'Esc', 'Cancel']]
+      : [[pad ? 'D-pad' : '↑ ↓', 'Move'], ...el('lobbyCalling').offsetParent ? [['← →', 'Change']] : [], [pad ? 'A' : 'Enter', 'Select']];
+    for (const [key, label] of rows) {
+      const item = document.createElement('span'), cap = document.createElement('span');
+      cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hints.appendChild(item);
+    }
   }
   events.on('device', updateLobbyPadHint);
-  function closeAdventurePicker(cancel = false) {
-    // A cancelled pick puts the adventure back without a change event: redraw what depends on it (Boss Rush's controls).
-    const restored = adventureBeforeEdit !== null && cancel && el('lobbyAdventure').value !== adventureBeforeEdit;
-    if (restored) el('lobbyAdventure').value = adventureBeforeEdit;
-    adventureBeforeEdit = null; el('lobbyAdventure').removeAttribute('size'); updateLobbyPadHint();
-    if (restored) updateRoster();
-  }
   function closeNameEditor(save = false, restoreFocus = true) {
     if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
     el('lobbyNameEditor').hidden = true;
@@ -574,16 +593,25 @@ const multiplayer = (() => {
     focusLobbyControl([...keys.children].find(node => node.dataset.nameKey === previous) || keys.firstElementChild);
   }
   function openNameEditor() {
-    closeAdventurePicker(true); nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
+    nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
     panel.classList.add('editing-name');
     el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
+  }
+  // The controls sheet: one overlay over the lobby, with its own Close (Esc / B).
+  // While it is open, the lobby behind it takes no clicks.
+  function setLobbyHelp(open) {
+    el('lobbyControls').hidden = !open; el('lobbyHelp').setAttribute('aria-expanded', String(open));
+    for (const node of panel.querySelectorAll('.lobby-header,#lobbyStatus,#lobbyNotice,.lobby-layout,.lobby-footer')) node.inert = open;
+  }
+  function toggleLobbyHelp(open = el('lobbyControls').hidden) {
+    setLobbyHelp(open); updateLobbyPadHint();
+    focusLobbyControl(open ? el('lobbyControlsClose') : el('lobbyHelp'));
   }
   function lobbyBack() {
     if (!wipeScreen.hidden) return;
     if (summary) { closeRunSummary(); return; }
     if (!el('lobbyNameEditor').hidden) closeNameEditor();
-    else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
-    else if (!el('lobbyControls').hidden) { el('lobbyHelp').click(); el('lobbyHelp').focus(); }
+    else if (!el('lobbyControls').hidden) toggleLobbyHelp(false);
     else if (active()) hide();
     else leave();
   }
@@ -693,7 +721,6 @@ const multiplayer = (() => {
     return true;
   }
   function buildControls() {
-    el('lobbyControlsDevice').textContent = usingPad() ? 'Controller · Xbox / PlayStation' : 'Keyboard & mouse · LMB / RMB = left / right mouse button';
     const rows = [
       ['Move', moveLabel()], ['Look around', usingPad() ? 'Right stick' : 'Mouse · click game first'],
       ['Light attack', bindLabel('light')], ['Heavy attack (hold to charge)', bindLabel('heavy')],
@@ -772,7 +799,7 @@ const multiplayer = (() => {
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
   function show() {
-    closeNameEditor(false, false); closeAdventurePicker(true);
+    closeNameEditor(false, false); setLobbyHelp(false);
     lobbyPadDirection = null; lobbyPadTimer = 0;
     panel.classList.remove('hidden');
     el('menu').inert = true; hud.root.inert = true;
@@ -784,7 +811,7 @@ const multiplayer = (() => {
     updateRoster(); overlayVisibility();
     updateLobbyPadHint(); focusLobbyControl(ensureLobbyFocus());
   }
-  function hide() { closeNameEditor(false, false); closeAdventurePicker(true); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
+  function hide() { closeNameEditor(false, false); setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
   function chapterCard(id) {
     const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
@@ -801,7 +828,7 @@ const multiplayer = (() => {
   }
   function leave(message = '', retry = false) {
     publishPose();
-    closeNameEditor(false, false); closeAdventurePicker(true);
+    closeNameEditor(false, false); setLobbyHelp(false);
     joinAttempt++;
     clearTimeout(reconnectTimer); reconnectTimer = null;
     if (!retry) { reconnectWanted = false; reconnectAttempt = 0; }
@@ -815,7 +842,7 @@ const multiplayer = (() => {
     party.classList.add('hidden'); closePanel(); notice('');
     if (Game.player) Game.clearActors();
     Game.loading = 0; el('loading').classList.remove('show'); Game.showMenu('main');
-    if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').textContent = retry ? 'Leave lobby' : 'Back to main menu'; }
+    if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').lastElementChild.textContent = retry ? 'Leave lobby' : 'Back to main menu'; }
   }
   async function join(retry = false) {
     if (connected) { show(); return; }
@@ -825,7 +852,7 @@ const multiplayer = (() => {
     const attempt = ++joinAttempt;
     starting = true; intentionalClose = false; show(); notice('');
     el('lobbyStatus').textContent = 'Connecting to the public lobby…';
-    el('lobbyLeave').textContent = 'Leave lobby';
+    el('lobbyLeave').lastElementChild.textContent = 'Leave lobby';
     try {
       if (!/^https?:$/.test(location.protocol)) throw new Error('Open the game’s home server link to join the public lobby.');
       const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(C.connectTimeout) });
@@ -877,7 +904,7 @@ const multiplayer = (() => {
     const count = callingByHand() ? names.length : Number(el('lobbyCallingLength').value) || C.calling.length;
     const order = !callingByHand() ? '' : names.length < C.calling.minLength ? ` Pick ${C.calling.minLength - names.length} more.`
       : ` ${names.slice(0, -2).join(', ')}, then ${names.slice(-2).join(' and ')} together.`;
-    return `${count} bosses, one after another; the last two come together. Full refills between fights, and the fallen rise for the next one. A team wipe ends the run. Bots fill the party to ${C.calling.fillTo}.${order}`;
+    return `${count} bosses in a row, the last two together. The fallen rise for the next fight; a team wipe ends the run.${order}`;
   }
   function adventureSummary() {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
@@ -885,19 +912,15 @@ const multiplayer = (() => {
     el('lobbyCalling').hidden = !callingChosen();
     el('lobbyCallingPick').hidden = !callingByHand();
     el('lobbyCallingCount').hidden = callingByHand();   // a hand-picked run is as long as its picks
+    for (const button of el('lobbyModes').children) button.setAttribute('aria-pressed', String(button.dataset.mode === value));
     for (const button of el('lobbyCallingPick').children) {
       const at = callingPicks.indexOf(button.dataset.boss);
       button.setAttribute('aria-pressed', String(at >= 0)); button.dataset.order = at >= 0 ? String(at + 1) : '';
     }
     el('lobbyAdventureSummary').textContent = callingChosen() ? callingSummary() : run
-      ? `${catalog?.bosses.length || ''} bosses${run.size > 1 ? `, ${run.size} at a time` : ''}, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.${run.then ? ` Survive to face ${C.gauntlets[run.then].name}.` : ''}`
-      : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
+      ? `Every boss, ${run.size > 1 ? `${run.size} at a time` : 'one at a time'}${run.then ? `, then ${C.gauntlets[run.then].name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}` : ''}. The fallen watch until the fight ends; a team wipe ends the run.`
+      : campaign ? `${campaign.chapters.length} chapters, together. Checkpoints are shared.`
       : 'Play this encounter together.';
-  }
-  // v7.19.0: plain words for someone who just followed the link. Who else is here, and who decides.
-  function guestStatus() {
-    const others = roster.filter(p => p.id !== self && !p.bot).length, lead = roster.find(p => p.id === leader)?.name || 'The leader';
-    return `You're in${others ? `, with ${others} other player${others > 1 ? 's' : ''}` : ''}. ${lead} leads: they choose the mode and start it for everyone.`;
   }
   // The running adventure, in a few words ("Ashmere: The Long Hall"), or ''.
   function runName() {
@@ -939,9 +962,8 @@ const multiplayer = (() => {
   function updateRoster() {
     const previousFocus = panel.contains(document.activeElement) ? document.activeElement : null, focusKey = previousFocus?.dataset.padKey;
     const owner = connected && self === leader;
-    if (!owner && adventureBeforeEdit !== null) closeAdventurePicker(true);
-    if (connected) el('lobbyStatus').textContent = owner ? session ? 'You lead the party. Your run is in progress.' : 'You lead the party. Choose a mode and start when you are ready.'
-      : leader ? guestStatus() : 'Use your keyboard, mouse or controller to become the leader.';
+    // Connected, the screen says it all (Start, the leader's mark, the waiting line): the status line is for trouble.
+    if (connected) el('lobbyStatus').textContent = owner || leader ? '' : 'Use your keyboard, mouse or controller to become the leader.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
     el('lobbyGuestResume').hidden = !active();
@@ -959,23 +981,23 @@ const multiplayer = (() => {
     const botCount = roster.filter(p => p.bot).length;
     el('lobbyAddBot').hidden = !owner; el('lobbyAddBot').disabled = !connected || botCount >= C.maxBots;
     el('lobbyBotHint').hidden = !owner;
-    el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : 'Bots fight beside you with the same moves: rolls, parries, combos and executions.';
+    el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : '';
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
-    el('lobbyWaiting').firstElementChild.textContent = session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'} Jump back in when you are ready.`
-      : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start. You will be brought in with everyone.`;
-    updateConnection(); adventureSummary();
+    // A boss run already names itself in the status line above.
+    el('lobbyWaiting').firstElementChild.textContent = session?.gauntlet ? '' : session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'}`
+      : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start.`;
+    updateConnection(); adventureSummary(); updateLobbyPadHint();
     const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name, !!p.bot]), self, leader, owner });
     if (signature !== rosterSignature) {
       rosterSignature = signature; el('lobbyPlayers').textContent = '';
       for (const p of roster) {
         const row = document.createElement('div'); row.className = 'lobby-player';
-        row.dataset.self = String(p.id === self); row.dataset.bot = String(!!p.bot); row.dataset.initial = ([...p.name.trim()][0] || '?').toUpperCase();
-        const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
+        row.dataset.self = String(p.id === self); row.dataset.bot = String(!!p.bot);        const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
         if (p.id === leader) { const role = document.createElement('span'); role.className = 'lobby-player-role'; role.textContent = 'Leader'; row.appendChild(role); }
         if (p.bot) {
           const role = document.createElement('span'); role.className = 'lobby-player-role bot'; role.textContent = 'Bot'; row.appendChild(role);
           if (owner) {
-            const button = document.createElement('button'); button.className = 'lobby-bot-remove'; button.textContent = 'Remove';
+            const button = document.createElement('button'); button.className = 'lobby-bot-remove ui-button'; button.textContent = 'Remove';
             button.setAttribute('aria-label', `Remove bot: ${p.name}`); button.dataset.padKey = 'removeBot/' + p.id;
             button.onclick = () => control('removeBot', { player: p.id }); row.appendChild(button);
           }
@@ -983,7 +1005,7 @@ const multiplayer = (() => {
         }
         const actions = document.createElement('div'); actions.className = 'lobby-player-actions'; row.appendChild(actions);
         if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
-          const button = document.createElement('button'); button.textContent = text;
+          const button = document.createElement('button'); button.className = 'ui-button'; button.textContent = text;
           button.setAttribute('aria-label', `${text}: ${p.name}`);
           button.dataset.padKey = action + '/' + p.id;
           button.onclick = () => control(action, { player: p.id }); actions.appendChild(button);
@@ -1024,7 +1046,15 @@ const multiplayer = (() => {
       const titled = name => name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
       const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: titled(run.name) })),
         ...stories.map(entry => ({ kind: 'campaign', id: entry.id, name: STORIES.find(s => s.id === entry.id).lobbyName }))];
-      for (const entry of modes) { const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.name; select.appendChild(option); }
+      el('lobbyModes').textContent = '';
+      for (const entry of modes) {
+        const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.name; select.appendChild(option);
+        // The visible list: one row per mode, mirroring the select.
+        const row = document.createElement('button'); row.type = 'button'; row.className = 'ui-row'; row.textContent = entry.name;
+        row.dataset.mode = option.value; row.dataset.padKey = 'mode/' + option.value;
+        row.onclick = () => { if (select.value !== option.value) { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); } };
+        el('lobbyModes').appendChild(row);
+      }
       // Boss Rush: how many bosses, and every boss in the game to pick from by hand.
       const length = el('lobbyCallingLength'); length.textContent = '';
       for (let n = C.calling.minLength; n <= catalog.bosses.length; n++) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); length.appendChild(option); }
@@ -1032,7 +1062,7 @@ const multiplayer = (() => {
       callingPicks = callingPicks.filter(id => catalog.bosses.some(b => b.id === id));
       el('lobbyCallingPick').textContent = '';
       for (const boss of catalog.bosses) {
-        const button = document.createElement('button'); button.type = 'button'; button.textContent = boss.name;
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'ui-row'; button.textContent = boss.name;
         button.dataset.boss = boss.id; button.dataset.padKey = 'callingBoss/' + boss.id;
         button.onclick = () => {
           const at = callingPicks.indexOf(boss.id);
@@ -1042,7 +1072,8 @@ const multiplayer = (() => {
         el('lobbyCallingPick').appendChild(button);
       }
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
-      el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
+      el('lobbyStatus').textContent = ''; updateRoster();
+      if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
     } else if (msg.type === 'roster') {
       roster = msg.players; leader = msg.leader; updateRoster(); drawRunSummary();
       if (msg.notice && roster.length > 1) notice(msg.notice, true);
@@ -1357,33 +1388,53 @@ const multiplayer = (() => {
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
-  el('lobbyAdventure').onchange = () => { updateRoster(); events.emit('menuAdjust', { dir: 1 }); };
+  el('lobbyAdventure').onchange = () => updateRoster();   // the row's click already sounds
   el('lobbyCallingLength').onchange = el('lobbyCallingRoster').onchange = () => updateRoster();
   el('lobbyManage').onclick = () => {
     const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));
     if (open) el('lobbyPlayers').scrollTop = 0;
   };
-  el('lobbyHelp').onclick = () => {
-    const open = el('lobbyControls').hidden; el('lobbyControls').hidden = !open;
-    el('lobbyHelp').setAttribute('aria-expanded', String(open));
-    if (open) el('lobbyControls').scrollIntoView({ block: 'nearest' });
+  el('lobbyHelp').onclick = () => toggleLobbyHelp();
+  el('lobbyControlsClose').onclick = () => toggleLobbyHelp(false);
+  // A cycler (‹ value ›): its arrows step the select; a click on the value steps forward, never opening a native list.
+  // Left / right stop at the ends; Enter, A and a click step forward and wrap round to the first value.
+  const cycle = (select, step, wrap = false) => {
+    const count = select.options.length;
+    const next = wrap ? (select.selectedIndex + step + count) % count : clamp(select.selectedIndex + step, 0, count - 1);
+    if (next === select.selectedIndex) return;
+    select.selectedIndex = next; select.dispatchEvent(new Event('change', { bubbles: true })); events.emit('menuAdjust', { dir: step });
   };
+  for (const button of panel.querySelectorAll('.ui-step'))
+    button.onclick = () => { const select = el(button.dataset.cycle); focusLobbyControl(select); cycle(select, Number(button.dataset.step)); };
+  for (const select of panel.querySelectorAll('.ui-cycle select')) {
+    select.addEventListener('mousedown', ev => { ev.preventDefault(); if (ev.button !== 0) return; focusLobbyControl(select); cycle(select, 1, true); });
+    select.addEventListener('keydown', ev => { if (ev.code === 'Enter' || ev.code === 'Space') { ev.preventDefault(); cycle(select, 1, true); } });
+  }
   el('lobbyOptions').onclick = () => { closePanel(); Game.optionsFrom = 'lobby'; Game.showMenu('options'); };
-  // Native keyboard focus stays inside the dialog. Roster refreshes retain the
-  // same controls, so a teammate joining never interrupts typing or selection.
+  // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller (left / right change a
+  // cycler); a text box keeps its own arrows. Roster refreshes retain the same controls, so a teammate joining never
+  // interrupts typing or selection.
+  const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   window.addEventListener('keydown', ev => {
     if (panel.classList.contains('hidden') || panel.inert) return;
-    input.use('keyboard');
+    input.use('keyboard');   // announces 'device', which redraws the hints
+    if (ARROWS[ev.code] && document.activeElement?.tagName !== 'INPUT' && !ev.altKey && !ev.ctrlKey && !ev.metaKey) {
+      ev.preventDefault(); lobbyMove(ARROWS[ev.code]); return;
+    }
+    if (ev.code === 'Backspace' && !el('lobbyNameEditor').hidden) { ev.preventDefault(); nameKey('delete'); return; }
     if (ev.code !== 'Tab') return;
     const controls = lobbyControls(), at = controls.indexOf(document.activeElement);
     ev.preventDefault();
     const next = at < 0 ? ev.shiftKey ? controls.length - 1 : 0 : (at + (ev.shiftKey ? -1 : 1) + controls.length) % controls.length;
     focusLobbyControl(controls[next]);
   }, true);
-  panel.addEventListener('focusin', ev => { if (ev.target.matches('button,input,select')) events.emit('menuMove'); });
+  panel.addEventListener('focusin', ev => {
+    // One ring at a time: a mouse click moves focus without going through focusLobbyControl.
+    for (const node of panel.querySelectorAll('.pad-selected')) if (node !== ev.target) node.classList.remove('pad-selected');
+    if (ev.target.matches('button,input,select')) events.emit('menuMove'); });
   panel.addEventListener('click', ev => {
     const button = ev.target.closest('button');
-    if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
+    if (button && !button.disabled && !button.classList.contains('ui-step') && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1), ...(callingChosen() ? callingRequest() : {}) }); };
   el('lobbyAddBot').onclick = () => control('addBot');
@@ -1402,16 +1453,8 @@ const multiplayer = (() => {
       } else focusLobbyControl(candidates.sort((a, b) => Math.abs(Number(a.dataset.nameColumn) - column) - Math.abs(Number(b.dataset.nameColumn) - column))[0]);
       return;
     }
-    if (focus === el('lobbyAdventure') && (adventureBeforeEdit !== null || direction === 'left' || direction === 'right')) {
-      const step = direction === 'up' || direction === 'left' ? -1 : 1;
-      focus.selectedIndex = clamp(focus.selectedIndex + step, 0, focus.options.length - 1);
-      focus.dispatchEvent(new Event('change', { bubbles: true })); return;
-    }
-    // Boss Rush's two small selects change with left / right, like the mode.
-    if ((focus === el('lobbyCallingLength') || focus === el('lobbyCallingRoster')) && (direction === 'left' || direction === 'right')) {
-      focus.selectedIndex = clamp(focus.selectedIndex + (direction === 'left' ? -1 : 1), 0, focus.options.length - 1);
-      focus.dispatchEvent(new Event('change', { bubbles: true })); return;
-    }
+    // Boss Rush's cyclers change with left / right.
+    if (focus.closest('.ui-cycle') && (direction === 'left' || direction === 'right')) { cycle(focus, direction === 'left' ? -1 : 1); return; }
     const current = controls.indexOf(focus), step = direction === 'up' || direction === 'left' ? -1 : 1;
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
@@ -1431,11 +1474,8 @@ const multiplayer = (() => {
     } else if (direction && (lobbyPadTimer -= dt) <= 0) { lobbyPadTimer = C.menuRepeat; lobbyMove(direction); }
     if (pressed.includes('PadA')) {
       const current = document.activeElement || focus;
-      if (current === el('lobbyAdventure')) {
-        if (adventureBeforeEdit === null) { adventureBeforeEdit = current.value; current.size = 8; current.scrollIntoView({ block: 'nearest' }); }
-        else closeAdventurePicker();
-        updateLobbyPadHint();
-      } else if (current === el('lobbyName')) openNameEditor();
+      if (current === el('lobbyName')) openNameEditor();
+      else if (current?.closest?.('.ui-cycle')) cycle(current, 1, true);
       else if (current?.tagName === 'BUTTON') current.click();
     }
   }

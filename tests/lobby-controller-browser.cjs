@@ -49,22 +49,32 @@ const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(i
     assert.equal(await a.locator('#lobbyAdventure option').count(), adventures.length, 'the story and every configured boss run');
     assert.equal(await a.locator('#lobbyAdventure option[value^="level/"]').count(), 0, 'no individual levels in the dropdown');
     assert.equal(await a.getByRole('button', { name: 'Edit name', exact: true }).count(), 0, 'no separate name-edit action');
+    assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyStart', 'focus lands on Start when the lobby opens');
     await a.locator('#lobbyName').click();
     assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'mouse activation keeps normal text entry');
+    assert.equal(await a.locator('#lobbyStart.pad-selected').count(), 0, 'a click takes the focus ring off Start');
     await a.locator('#lobbyName').fill('Leader');
     await a.locator('#lobbyName').dispatchEvent('change');
-    await a.locator('#lobbyAdventure').focus();
-    await pad(a, 0);
-    assert.equal(await a.locator('#lobbyAdventure').getAttribute('size'), '8', 'A opens adventure picker without native popup');
-    await pad(a, 13);
-    assert.notEqual(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id);
-    await pad(a, 1);
-    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id, 'B cancels adventure edits');
-    await a.locator('#lobbyAdventure').selectOption('calling/' + C.calling.id);
-    await pad(a, 0); await pad(a, 13, undefined, true);
-    assert.equal(await a.locator('#lobbyAdventure').inputValue(), adventures.at(-1), 'held D-pad advances to the last adventure');
-    await pad(a, 1);
+    // v7.63.0: the mode is a visible list mirroring the select; Start has the focus; Boss Rush's settings are cyclers.
+    assert.deepEqual(await a.locator('#lobbyModes .ui-row').evaluateAll(rows => rows.map(r => r.dataset.mode)), adventures, 'one row per mode');
+    assert.equal(await a.locator('#lobbyModes .ui-row[aria-pressed=true]').textContent(), 'Boss Rush');
+    await navigate(a, 'lobbyStart');
+    assert.match(await a.locator('#lobbyPadHint').textContent(), /D-pad.*Move.*Change.*A.*Select/, 'hints follow the controller');
+    assert.equal(await a.locator('#lobbyLeave .ui-key').textContent(), 'B', "Back's key sits on Leave lobby");
+    await pad(a, 12);
+    assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyCallingLength', 'up from Start reaches the boss count');
+    await pad(a, 15);
+    assert.equal(await a.locator('#lobbyCallingLength').inputValue(), String(C.calling.length + 1), 'right steps the cycler');
+    await pad(a, 0); await pad(a, 14); await pad(a, 14);
+    assert.equal(await a.locator('#lobbyCallingLength').inputValue(), String(C.calling.length), 'A steps forward, left steps back');
+    await navigate(a, 'mode/gauntlet/boss-only'); await pad(a, 0);
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'A picks the focused mode');
+    assert.equal(await a.locator('#lobbyCalling').isVisible(), false, "Boss Rush's settings go with it");
+    await pad(a, 13, undefined, true);
+    assert.notEqual(await a.evaluate(() => document.activeElement.dataset.padKey), 'mode/gauntlet/boss-pairs', 'held D-pad moves on past the next row');
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'moving never changes the mode');
     await a.locator('#lobbyAdventure').selectOption('campaign/ashmere');
+    await navigate(a, 'mode/campaign/ashmere');
     await pad(a, null, [0, 1, 0, 0]);
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyStart', 'left stick moves focus');
     await pad(a, 3);
@@ -98,10 +108,7 @@ const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(i
     await pad(a, 0);
     await b.waitForFunction(() => multiplayer.info.self === multiplayer.info.leader);
     assert.ok(await a.evaluate(() => !!document.activeElement.offsetParent), 'leadership changes never leave focus in hidden controls');
-    await navigate(b, 'lobbyAdventure');
-    if (await b.locator('#lobbyAdventure').getAttribute('size')) await pad(b, 1);
-    for (let i = 0; i < 100 && await b.locator('#lobbyAdventure').inputValue() !== 'gauntlet/boss-only'; i++)
-      await pad(b, await b.locator('#lobbyAdventure').evaluate(s => s.selectedIndex > [...s.options].findIndex(o => o.value === 'gauntlet/boss-only')) ? 14 : 15);
+    await navigate(b, 'mode/gauntlet/boss-only'); await pad(b, 0);
     assert.equal(await b.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only');
     assert.deepEqual(await b.locator('#lobbyAdventure option').evaluateAll(options => options.map(o => o.value)), adventures);
     await navigate(b, 'lobbyStart'); await pad(b, 0);
@@ -129,6 +136,6 @@ const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(i
     await pad(a, 1);
     assert.equal(await a.evaluate(() => multiplayer.connected), false, 'B leaves idle lobby for main menu');
     assert.deepEqual(errors, []);
-    console.log('Lobby controller: stick/D-pad, held repeat, adventure confirm/cancel, name keyboard, roster focus, leader transfer, start, resume, return and leave passed.');
+    console.log('Lobby controller: stick/D-pad, held repeat, mode list, cyclers, name keyboard, roster focus, leader transfer, start, resume, return and leave passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
