@@ -86,6 +86,9 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
      XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`). Close windows and servers
      when done. Never unlock the screen or change lock or power settings; if it's locked, run headless and say so. If
      `ssh` times out, the laptop is away: use the stand-in below.
+   - Tests run only while the laptop is plugged in: `lt run` exits 76 on battery (its numbers would be throttled).
+     Then wait for power, or ask under "Needs Aleix". Never measure with `LT_ALLOW_BATTERY=1`; that override is only
+     for runs that measure nothing.
    - **The stand-in on this PC:** a throttled run (CPU throttle, resolution, whatever brings it closer) that any pass
      can run in under two minutes. Each time the laptop is measured, tune it until its mean and 1% low per scene land
      within 15% of the laptop's latest numbers; record the factors and both sets of numbers; recalibrate when the
