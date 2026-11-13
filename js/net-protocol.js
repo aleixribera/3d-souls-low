@@ -143,6 +143,14 @@
       this.samples.push(sample);
       if (this.time === null) this.time = sample.time;
     }
+    // After a long main-thread stall (a graphics preset rebuilding its shaders, a hidden tab) the backlog is stale:
+    // jump to the newest sample and drop the skipped ones with their effects, rather than leave the run to reconnect.
+    catchUp() {
+      if (!this.samples.length) return null;
+      const latest = this.samples[this.samples.length - 1];
+      this.samples = [latest]; this.time = latest.time; this.started = false;   // its own effects still show
+      return latest;
+    }
     protected(s) { return ['windup', 'active', 'phase', 'retreat', 'executed'].includes(s.value.state); }
     advance(dt, delay = config.interpolation) {
       if (!this.samples.length) return null;

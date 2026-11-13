@@ -19,6 +19,11 @@ for (let i = 0; i < 20; i++) view = track.advance(1 / 60);
 assert.ok(view.time > 4.8, 'recovery discards accumulated idle delay');
 const other = new EnemyTrack(); other.push(sample(0, 'idle')); other.push(sample(5, 'idle'));
 assert.ok(other.advance(1 / 60).time > 4.8, 'a delayed attacking enemy never stalls another enemy');
+// A stall (a preset change, a hidden tab) catches the track up in place instead of reconnecting (pass 52).
+const stalled = new EnemyTrack(); for (let tick = 0; tick <= 300; tick++) stalled.push(sample(tick / 60, tick < 240 ? 'idle' : 'windup'));
+assert.equal(stalled.catchUp().time, 5); assert.equal(stalled.samples.length, 1);
+view = stalled.advance(1 / 60);
+assert.deepEqual([view.time, view.crossed.map(s => s.time)], [5, [5]], 'only the newest sample presents its effects');
 
 // Fifty seconds of 30 Hz delivery, jitter and short stalls; cycles must remain
 // at real speed rather than accumulate permanent slowdown after each underrun.

@@ -1154,7 +1154,13 @@ const multiplayer = (() => {
           }
         }
         track.push({ time: frame.time, value: s, events: frame.events.filter(d => d.enemy === s.id), shots: frame.shots.filter(d => d.enemy === s.id) });
-        if (track.samples.length > C.maxHistory || frame.time - track.time > C.historySeconds) { retryConnection('Catching up with the current game…'); return; }
+        if (track.samples.length > C.maxHistory || frame.time - track.time > C.historySeconds) {
+          // A stall left this enemy seconds behind: show it where it is now. An attack already under way when it
+          // reappears never lands on this player, as when joining mid-swing (pass 52: this used to reconnect).
+          const latest = track.catchUp().value;
+          const e = Game.enemies.find(e => e.netId === s.id);
+          if (e && latest.attack && [ES.WINDUP, ES.ACTIVE].includes(latest.state)) e.netJoinSerial = latest.serial;
+        }
       }
       applyProgress(frame, msg.full);
     } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
