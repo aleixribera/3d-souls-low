@@ -7,3 +7,4 @@ took it (once taken).
   the enemy to finish its attacks before going in. Right now bots keep walking straight into an attack combo and end up
   in an endless rolling loop. Make them more human, believable and realistic, and a bit stronger in general: they
   should carry a bit more, just a bit. (Answers pass 26's question on companion risk-taking.)
+- 2026-11-13, addition to the bot complaint above: vary their strategy too, not always the same pattern.
