@@ -675,9 +675,9 @@ const CONFIG = {
     // fire, circling there when more than `slack` rad off, and starts no swing but a real opening's while more
     // than `reposition` rad off (for `settle` s in reach at most); when that one is hurt (under caution.below) or drinking, it presses to draw the enemy
     // off them, unless it is hurt itself.
-    support: { first: 0.7, near: 1, greed: 0.5, patience: 1.5, behind: [0.5, 1.1, 1.5], slack: 0.3, reposition: 0.6, settle: 2 },
-    // clear: m more than `margin` outside a blow's box (at every angle it can still turn: up to maxTurn rad) to let it go by.
-    defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2, clear: 0.35, maxTurn: 1.2 },
+    support: { first: 0.7, near: 1, greed: 0.6, patience: 1.25, behind: [0.5, 1.1, 1.5], slack: 0.3, reposition: 0.6, settle: 1.5 },
+    // clear: m more than `margin` outside a blow's box (swept as far as the enemy can still carry and turn it) to let it go by.
+    defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2, clear: 0.35 },
     jumpDodge: { lead: [0.16, 0.28], clearance: 0.12, timingMargin: 0.02, followMargin: 0.2, maxSpeed: 1.2 },
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another
     probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange

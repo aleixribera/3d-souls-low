@@ -1,3 +1,26 @@
+Bots v7.58.0, roll only at what can reach them, a bit more aggressive (pass 38). Same benchmark, before = v7.57.0
+(its code plus the new counters), after = v7.58.0; "a > b" reads before > after. Full rows: re-run the tool.
+needless rolls = rolls at a melee blow whose real hitbox reached neither where the bot rolled from nor the bot (an
+upper bound); waiting = s a bot-min free within 3 m of a light's reach, not swinging; swings = attacks started.
+                         three bots              with a person stand-in (PERSON=1)
+wins                     121/130 > 121/130       127/130 > 126/130
+bot deaths               43 > 45                 33 > 31
+fight s                  199 > 176               222 > 193
+dmg/s a bot              11.3 > 12.8             10.2 > 11.7
+swings a bot-min         7.7 > 8.6               6.9 > 7.4
+rolls a bot-min          7.1 > 5.5               6.6 > 5.5
+needless rolls           2399 (29%) > 1095 (20%) 1900 (33%) > 804 (21%)
+waiting s a bot-min      19.6 > 19.5             21.6 > 20.9
+person's share of damage -                       49% > 51%
+Reading: the roll fix halves the needless rolls (-54%) and cuts rolls 23%; the bots swing 12% more, deal 13% more a
+second and end fights 12% sooner, at the same wins and deaths (deaths swing by ten between identical-seed runs: a
+first after-run before the review's dash-slide fix had 27). Waiting barely moves: time no longer spent rolling away is
+now spent near the boss, mostly waiting out strings (2.7-4.6 s a bot-min) and circling to its back (3.6). Kindling Tree
+is the one boss that got harder: 15/20 > 11/20 wins over 20 fights (Hollis 13/20 > 16/20).
+The rule (js/bot.js clearOf/carry): the box swept by the boss's remaining step, dash, leap, lunge and momentum, at
+every angle it can still turn to; tests/bot-behavior.cjs "Bot reach" (behind the Pillager Captain: no roll at the
+dashing thrust and no damage; a roll at his double spin, and at the thrust from in front). Fails on v7.57.0.
+
 Bots v7.57.0, normal players that help (pass 35): full player stats again (v7.55.0's 75% damage cut is gone); the
 aid is behaviour only. Three bots against each of the story's 13 bosses, 10 seeded fights each
 (node tools/bot-fights.cjs story 10). Before = v7.55.0, after = this release; "a > b" reads before > after.

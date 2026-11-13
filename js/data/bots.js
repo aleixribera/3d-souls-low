@@ -5,7 +5,7 @@
 const BOT_TACTICS = {
   pressure: { gap: 0.7, circle: 0.2, commitAt: 0 },
   flank: { gap: 1.9, circle: 1, commitAt: 0.45 },
-  bait: { gap: 3.4, circle: 0.55, commitAt: 1 },
+  bait: { gap: 3.4, circle: 0.55, commitAt: 0.6 },
   reset: { gap: 3.8, circle: 0.35, commitAt: 1 },
 };
 // Dodge directions are relative to the foe and mirrored by the bot's current preferred side.
@@ -26,10 +26,10 @@ const BOT_DODGES = {
 // the string is over; patience, greed and reset scale the profile's; heal adds to CONFIG.bot.healBelow;
 // slip is the chance a roll is mistimed (CONFIG.bot.slip): bots are human, not perfect.
 const BOT_MOODS = {
-  patient: { gap: null, spacing: [0.8, 1.3], goIn: [0.2, 0.42], patience: 1.3, greed: 0.4, reset: 1.2, heal: 0.05, slip: 0.15 },
-  measured: { gap: 1.3, spacing: [0.5, 0.9], goIn: [0.12, 0.3], patience: 1, greed: 0.65, reset: 1, heal: 0, slip: 0.2 },
-  bold: { gap: 0.95, spacing: [0.25, 0.6], goIn: [0.06, 0.2], patience: 0.7, greed: 0.95, reset: 0.8, heal: -0.05, slip: 0.27 },
-  wary: { gap: null, spacing: [1.1, 1.7], goIn: [0.22, 0.48], patience: 1.15, greed: 0.5, reset: 1.6, heal: 0.1, slip: 0.17 },
+  patient: { gap: null, spacing: [0.8, 1.3], goIn: [0.15, 0.32], patience: 1.3, greed: 0.4, reset: 1.2, heal: 0.05, slip: 0.15 },
+  measured: { gap: 1.1, spacing: [0.5, 0.9], goIn: [0.09, 0.22], patience: 1, greed: 0.65, reset: 1, heal: 0, slip: 0.2 },
+  bold: { gap: 0.8, spacing: [0.25, 0.6], goIn: [0.05, 0.15], patience: 0.7, greed: 0.95, reset: 0.8, heal: -0.05, slip: 0.27 },
+  wary: { gap: null, spacing: [1.1, 1.7], goIn: [0.17, 0.36], patience: 1.15, greed: 0.5, reset: 1.6, heal: 0.1, slip: 0.17 },
 };
 // Traits are 0..1 leanings. Patience is seconds without an exchange before taking the initiative.
 // Pattern weights choose a plan every CONFIG.bot.tacticTime seconds, rather than reconsidering each frame.
@@ -39,15 +39,15 @@ const BOT_MOODS = {
 // moods weigh the BOT_MOODS it draws from, once a fight.
 const BOT_PROFILES = [
   { id: 'quill', name: 'Ser Quill', aggression: 0.7, parry: 0.55, heavy: 0.4, jump: 0.3, side: 1,
-    patience: 4.5, burst: [1, 3], reset: [0.9, 1.6], think: [0.18, 0.34], evade: 0.5, jumpDodge: 0.22, greed: 0.45, forward: 0.4, patterns: { pressure: 0.35, flank: 0.45, bait: 0.2 },
+    patience: 3, burst: [1, 3], reset: [0.7, 1.2], think: [0.18, 0.34], evade: 0.5, jumpDodge: 0.22, greed: 0.5, forward: 0.4, patterns: { pressure: 0.35, flank: 0.45, bait: 0.2 },
     moods: { measured: 0.45, patient: 0.3, bold: 0.25 },
     dodges: { escape: 0.4, across: 0.2, reverse: 0.1, forward: 0.08, inward: 0.15, outward: 0.1, retreat: 0.05 } },
   { id: 'maren', name: 'Maren the Bold', aggression: 0.9, parry: 0.3, heavy: 0.6, jump: 0.5, side: -1,
-    patience: 3, burst: [2, 4], reset: [0.65, 1.25], think: [0.12, 0.27], evade: 0.35, jumpDodge: 0.32, greed: 0.65, forward: 0.6, patterns: { pressure: 0.7, flank: 0.2, bait: 0.1 },
+    patience: 2, burst: [2, 4], reset: [0.5, 0.95], think: [0.12, 0.27], evade: 0.35, jumpDodge: 0.32, greed: 0.7, forward: 0.6, patterns: { pressure: 0.7, flank: 0.2, bait: 0.1 },
     moods: { bold: 0.55, measured: 0.35, wary: 0.1 },
     dodges: { escape: 0.25, across: 0.15, reverse: 0.1, forward: 0.15, inward: 0.35, outward: 0.1, retreat: 0.05 } },
   { id: 'tobin', name: 'Old Tobin', aggression: 0.55, parry: 0.8, heavy: 0.3, jump: 0.15, side: 1,
-    patience: 6, burst: [1, 2], reset: [1.1, 1.9], think: [0.23, 0.42], evade: 0.65, jumpDodge: 0.18, greed: 0.3, forward: 0.3, patterns: { pressure: 0.15, flank: 0.25, bait: 0.6 },
+    patience: 4, burst: [1, 2], reset: [0.8, 1.4], think: [0.23, 0.42], evade: 0.65, jumpDodge: 0.18, greed: 0.35, forward: 0.3, patterns: { pressure: 0.15, flank: 0.25, bait: 0.6 },
     moods: { patient: 0.45, wary: 0.35, measured: 0.2 },
     dodges: { escape: 0.35, across: 0.15, reverse: 0.1, forward: 0.05, inward: 0.1, outward: 0.15, retreat: 0.15 } },
 ];

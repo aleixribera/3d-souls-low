@@ -18,9 +18,13 @@ const bosses = which === 'all' ? probe.catalog().bosses.map(b => b.id) : which =
 const rows = [];
 const person = !!process.env.PERSON;
 const zero = () => ({ fights: 0, wins: 0, time: 0, dmg: 0, dealt: 0, rolls: 0, botMin: 0, chains: 0, swingsIn: 0, hitSwinging: 0, fell: 0,
-  personDealt: 0, execPerson: 0, execBots: 0, yielded: 0, offered: 0, backup: 0, drew: 0 });
+  personDealt: 0, execPerson: 0, execBots: 0, yielded: 0, offered: 0, backup: 0, drew: 0, waiting: 0, judged: 0, needless: 0, swings: 0 });
 const tot = zero();
-const extra = row => `  executions ${person ? `person ${row.execPerson} bots ${row.execBots}` : row.execBots}  left to a person: ${row.yielded} executions ${row.offered} openings  behind a boss on someone else ${(row.backup / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} s a bot-min  drew ${row.drew}` +
+// Pass 38: swings = attacks a bot starts a bot-min (a chained combo once); waiting = s a bot-min spent free near the boss without swinging (the brain's tally); needless = the share of
+// rolls at a melee blow whose real hitbox reached neither the spot the bot rolled from nor the bot itself (a tracking boss
+// follows the roll); judged: rolls with a melee blow coming. An upper bound: a roll that took the bot out of a tracking
+// blow's way can look needless too, and a roll at a bolt counts while a melee blow is also winding up.
+const extra = row => `  swings ${(row.swings / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} a bot-min  waiting ${(row.waiting / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} s a bot-min  needless rolls ${row.needless}/${row.judged} (${(100 * row.needless / Math.max(1, row.judged)).toFixed(0)}%)  executions ${person ? `person ${row.execPerson} bots ${row.execBots}` : row.execBots}  left to a person: ${row.yielded} executions ${row.offered} openings  behind a boss on someone else ${(row.backup / Math.max(1e-9, row.botMin * (person ? 2 / 3 : 1))).toFixed(1)} s a bot-min  drew ${row.drew}` +
   (person ? `  person's share of damage ${(100 * row.personDealt / Math.max(1, row.dealt)).toFixed(0)}%` : '');
 for (const boss of bosses) {
   const r = { boss, ...zero() };
@@ -33,9 +37,20 @@ for (const boss of bosses) {
     const aids = person ? brains.slice(1) : brains;
     const prevHp = bodies.map(b => b.hp), prevState = bodies.map(b => b.state), lastHurt = bodies.map(() => -9), rollAt = bodies.map(() => []), chainLen = bodies.map(() => 0);
     let time = 0, result = 'timeout';
+    // A roll's verdict: { at, ghost (the body where it rolled from), watch: [{ e, attack }] }, settled once every blow
+    // that was coming has ended (or after 4 s): needless if none of their hitboxes ever overlapped the ghost or the body.
+    let pending = [];
+    const blowing = e => e.alive() && e.attack && !e.attack.projectile && (e.state === 'windup' || e.state === 'active');
     for (; time < limit; time += 1 / 60) {
       sim.setPlayers([]); sim.tick(1 / 60);
       const boss = Game.enemies.find(e => e.alive());
+      pending = pending.filter(p => {
+        p.watch = p.watch.filter(w => w.e.attack === w.attack && blowing(w.e));
+        const now = p.body.alive() && { x: p.body.x, y: p.body.y, z: p.body.z, radius: p.body.radius, height: p.body.height, grounded: p.body.grounded };
+        if (p.watch.some(w => w.e.hitbox && (w.e.hitbox.overlaps(p.ghost) || now && w.e.hitbox.overlaps(now)))) { r.judged++; return false; }
+        if (p.watch.length && time - p.at < 4) return true;
+        r.judged++; r.needless++; return false;
+      });
       bodies.forEach((b, i) => {
         if (b.alive()) r.botMin += 1 / 3600;
         if (b.hp < prevHp[i]) { r.dmg += prevHp[i] - b.hp; if (time - lastHurt[i] > 0.25 && (b.state === 'attack' || prevState[i] === 'attack')) r.hitSwinging++; lastHurt[i] = time; }
@@ -46,7 +61,10 @@ for (const boss of bosses) {
           chainLen[i] = last !== undefined && time - last < 1.2 ? chainLen[i] + 1 : 1;
           if (chainLen[i] === 3) r.chains++;
           rollAt[i].push(time);
+          const watch = Game.enemies.filter(blowing).map(e => ({ e, attack: e.attack }));
+          if (watch.length && !(person && i === 0)) pending.push({ at: time, watch, body: b, ghost: { x: b.x, y: b.y, z: b.z, radius: b.radius, height: b.height, grounded: true } });
         }
+        if (b.state === 'attack' && prevState[i] !== 'attack' && !(person && i === 0)) r.swings++;
         if (b.state === 'attack' && prevState[i] !== 'attack' && boss && (boss.state === 'windup' || boss.state === 'active') && boss.attack && !boss.attack.projectile) {
           const more = boss.hitIndex < boss.attack.hits.length - 1 || (boss.attack.followUps || []).some(f => f.chance > 0);
           if (more) r.swingsIn++;
@@ -60,7 +78,7 @@ for (const boss of bosses) {
     r.fell += bodies.filter(b => !b.alive()).length;
     r.dealt += sim.fightTally().filter(row => row.bot).reduce((sum, row) => sum + row.damage, 0);
     if (person) r.personDealt += sim.fightTally().filter(row => row.id === bodies[0].id).reduce((sum, row) => sum + row.damage, 0);
-    for (const b of aids) { const t = b.brain.tally || {}; for (const k of ['yielded', 'offered', 'backup', 'drew']) r[k] += t[k] || 0; }
+    for (const b of aids) { const t = b.brain.tally || {}; for (const k of ['yielded', 'offered', 'backup', 'drew', 'waiting']) r[k] += t[k] || 0; }
     if (process.env.MOODS) for (const b of bots.values()) if (b.brain.mood) console.log(`  ${boss} seed ${1000 + t} ${b.name}: ${b.brain.describe()}`);
   }
   for (const k of Object.keys(tot)) tot[k] += r[k];

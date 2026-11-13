@@ -199,8 +199,9 @@ const bot = (() => {
     // `profile`: this fight's traits, the base profile scaled by the mood drawn for it (newFight).
     let profile = base, mood = null, moodId = null, spacing = 0, goIn = 0, stringSeen = -Infinity, wasString = false;
     // offered: openings left to a person; backup: s spent behind an enemy that was after someone else; drew: times it
-    // pressed to draw an enemy off a hurt or drinking ally.
-    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0 };
+    // pressed to draw an enemy off a hurt or drinking ally; waiting: s spent free within 3 m of a light's reach of an
+    // enemy it could hit, not swinging (waiting out a string, a beat before going in, circling, baiting or regrouping).
+    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0 };
     let waitedThis = false, nearThis = false, yieldedThis = null, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
     // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
     function holdGap(me, o) {
@@ -285,22 +286,58 @@ const bot = (() => {
       const margin = me.radius + C.defence.margin + extra;
       return Math.abs(left) > b.w / 2 + margin || forward < b.fwd - b.d / 2 - margin || forward > b.fwd + b.d / 2 + margin;
     }
-    // Already clear of a blow that cannot come to it: outside its box at every angle the enemy can still turn to before
-    // it locks, with no step, dash, leap, blink or ring to carry it further. A player standing there lets it go by
-    // instead of rolling at each hit of a long string (a breath swept past its flank, a combo aimed elsewhere).
+    // Where an enemy can still carry a blow before it lands, summed over its hits up to that one: how far it can turn
+    // (rad), and how far its steps, dash, leap, lunge and present momentum can move it along its facing (lo..hi m) and
+    // sideways (side m). curve: the part of that travel that can start while it still turns, so its path can bend.
+    // null for a blink, which can put it anywhere.
+    function carry(e, blow) {
+      const a = blow.attack, v = Math.hypot(e.vx || 0, e.vz || 0);
+      // What it is moving at now runs on: an enemy only slows at CONFIG.enemy.accel (a dash slides on through its strike).
+      const out = { turn: 0, lo: 0, hi: v * v / (2 * CONFIG.enemy.accel), side: 0, curve: 0 };
+      for (let j = e.hitIndex; j <= blow.index; j++) {
+        const h = a.hits[j], current = j === e.hitIndex, windup = !current || e.state === ES.WINDUP;
+        if (h.blink) return null;
+        if (windup) {
+          const st = current ? e.stateTime : 0, rate = (a.tracking && a.tracking.rate) || a.track || e.def.trackRate || 0;
+          const until = a.tracking ? h.startup * a.tracking.commit : a.track ? Infinity : h.startup * CONFIG.enemy.windupTrack;
+          // A held wind-up turns longer: what is left of a hold, or the longest one not yet rolled.
+          const rolled = current && e.holdLeft !== null, held = rolled ? Math.max(0, e.holdLeft) : h.hold ? h.hold.time[1] : 0;
+          out.turn += rate * (Math.max(0, Math.min(until, h.startup) - st) + held);
+          const moving = from => Math.max(0, h.startup - Math.max(st, h.startup * from));
+          const go = (from, d) => { if (from < until / h.startup) out.curve += Math.abs(d); return d; };
+          if (h.step) { const t = moving(h.step.from); out.hi += go(h.step.from, h.step.speed * t); out.side += Math.abs(h.step.side || 0) * t; }
+          // A dash does not stop for a hold.
+          if (a.dash && j === 0) out.hi += go(a.dash.from, a.dash.speed * (moving(a.dash.from) + (h.hold && h.hold.at >= a.dash.from ? held : 0)));
+          if (h.leap && (!current || e.leaping || e.leapHit !== j)) { if (h.leap.back) out.lo -= go(h.leap.from, h.leap.back); else out.hi += go(h.leap.from, h.leap.max); }
+        }
+        const past = windup ? 0 : e.stateTime, striking = Math.max(0, h.active - past);   // already into this hit's strike or follow-through
+        const lunge = Math.max(a.lunge || 0, a.dash && j === 0 ? a.dash.speed : 0) * striking;
+        out.hi += lunge;
+        if (a.track) {   // a tracking blow turns through its swing, lunging as it turns
+          out.turn += a.track * Math.max(0, h.active + (j < blow.index ? h.follow || 0 : 0) - past);
+          out.curve += lunge;
+        }
+      }
+      return out;
+    }
+    // Already clear of a blow that cannot reach it: the blow's box, swept along the enemy's facing as far as its steps,
+    // dash, leap and lunge can carry it, misses `me` at every angle the enemy can still turn to before it locks. A player
+    // standing there lets it go by (behind a boss that swings at someone else, a breath swept past its flank) instead of
+    // rolling at each hit. Exact, not sampled: the angles at which the swept box covers my distance from the enemy are
+    // [inLo, inHi] (cut to where its width reaches), and the enemy can face me at any angle from |bearing| - turn to
+    // |bearing| + turn. Travel that can bend while it turns (curve) widens the box by as far as the bend can carry it.
     function clearOf(me, e, blow) {
-      const a = blow.attack, h = blow.hit, b = h.box || a.box;
-      if (b.ring || a.sphere || (a.dash && blow.index === 0) || h.step || h.leap || h.blink || e.leaping) return false;
-      let turn = 0;
-      if (blow.index > e.hitIndex || e.state === ES.WINDUP) {
-        const st = blow.index === e.hitIndex ? e.stateTime : 0, rate = (a.tracking && a.tracking.rate) || a.track || e.def.trackRate || 0;
-        const until = a.tracking ? h.startup * a.tracking.commit : a.track ? h.startup + h.active : h.startup * CONFIG.enemy.windupTrack;
-        // A held wind-up turns longer: what is left of a hold, or the longest one not yet rolled.
-        const rolled = blow.index === e.hitIndex && e.holdLeft !== null, held = rolled ? Math.max(0, e.holdLeft) : h.hold ? h.hold.time[1] : 0;
-        turn = rate * (Math.max(0, until - st) + held);
-      } else if (a.track) turn = a.track * Math.max(0, h.active - e.stateTime);   // a tracking blow turns through its swing
-      if (turn > C.defence.maxTurn) return false;
-      return [-1, -0.5, 0, 0.5, 1].every(k => outsideBox(me, e, blow, me.x, me.z, e.yaw + k * turn, C.defence.clear));
+      const b = blow.hit.box || blow.attack.box, t = !b.ring && carry(e, blow);
+      if (!t) return false;
+      const margin = me.radius + C.defence.margin + C.defence.clear, r = Math.hypot(me.x - e.x, me.z - e.z);
+      const near = b.fwd - b.d / 2 + t.lo - margin, far = b.fwd + b.d / 2 + t.hi + margin;
+      const half = b.w / 2 + t.side + t.curve * Math.sin(Math.min(t.turn, Math.PI / 2)) + margin;
+      if (r < 1e-3 || near > r || far < -r) return near > 0 || far < 0;   // at its centre, or nearer or farther than the box ever is
+      const bearing = Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)), turn = Math.min(Math.PI, t.turn);
+      const from = Math.max(0, bearing - turn), to = Math.min(Math.PI, bearing + turn);
+      const inLo = Math.acos(clamp(far / r, -1, 1)), inHi = Math.acos(clamp(near / r, -1, 1)), side = Math.asin(clamp(half / r, 0, 1));
+      const overlaps = (lo, hi) => Math.max(from, inLo, lo) <= Math.min(to, inHi, hi);
+      return !overlaps(0, side) && !overlaps(Math.PI - side, Math.PI);
     }
     function walkEscape(me, e, blow) {
       const a = blow.attack, h = blow.hit, box = h.box || a.box;
@@ -677,6 +714,7 @@ const bot = (() => {
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
         const recovering = !can(light.cost) || me.stamina < me.maxStamina * T.regroupBelow;
         const motion = recovering || retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
+        if (gap <= C.reach + 3) tally.waiting += dt;
         if (str && !swingGap) return { mv: room(me, e, allies, orbit(Math.max(motion.gap, holdGap(me, e)) + roomy, motion.circle)), lock: e };
         if (settling) return { mv: room(me, e, allies, orbit(gap, motion.circle * 0.5)), lock: e };   // a beat before going in
         return { mv: room(me, e, allies, orbit(motion.gap + (retreating ? roomy : 0), motion.circle)), lock: e };

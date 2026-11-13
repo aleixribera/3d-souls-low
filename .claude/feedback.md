@@ -54,4 +54,4 @@ took it (once taken).
   on the Final Castle) only calibrate the stand-in for integrated graphics; Normal must hold 60 on it.
 - 2026-11-13, bot follow-up after playing v7.57.0: they are good now but wait too much; make them a bit more
   aggressive. And smarter about rolling: they sometimes roll when the attack's hitbox is nowhere near them, for example
-  when they stand behind the boss. A bot rolls only when the swing can actually reach it.
+  when they stand behind the boss. A bot rolls only when the swing can actually reach it. Taken by pass 38 (v7.58.0).

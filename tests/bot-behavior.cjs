@@ -290,6 +290,41 @@ console.log('Bot jump defence: real clearance and no damage against a low stomp;
 }
 console.log('Bot spacing: a safe walking escape avoids damage without a roll; fast follow-ups and projectiles veto jumping.');
 
+// Pass 38 (Aleix, after v7.57.0: "they roll when the hitbox is nowhere near them, e.g. behind the boss"): a bot rolls
+// only at a blow whose real reach and arc (box, dash, lunge, how far the boss can still turn) can cover where it
+// stands. Behind the Pillager Captain, its dashing thrust (tracking hard, then a 6 m dash) goes the other way: no
+// roll, and standing there takes no damage. Its double spin reaches all round: a roll. In front, the thrust: a roll.
+{
+  const firstResponse = (attackId, behind) => {
+    const { sim, b, p, e } = waiting('pillagerCaptain', 'maren');
+    b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 0 }, seeded(5)); p.ctl = b.brain.hands;
+    e.yaw = 0; p.z = e.z + (behind ? -1 : 1) * (e.radius + p.radius + 1.2);
+    const attack = e.baseDef.attacks.find(a => a.id === attackId);
+    e.beginAttack(attack); e.holdLeft = 0;
+    for (let i = 0; i < 2 * 60 && e.state === 'windup'; i++) {
+      b.brain.hands.clear(); b.brain.think(dt, p, [e], []);
+      if (b.brain.hands.peek('roll')) return 'roll';
+      e.stateTime += dt;
+    }
+    return 'none';
+  };
+  assert.equal(firstResponse('captainThrust', true), 'none', 'behind the boss, a frontal dashing thrust gets no roll');
+  assert.equal(firstResponse('captainDoubleSpin', true), 'roll', 'behind the boss, a spin that reaches all round gets a roll');
+  assert.equal(firstResponse('captainThrust', false), 'roll', 'in front of the boss, the same thrust gets a roll');
+  // The real thing: the thrust plays out with the bot free to act behind the boss. It never rolls and is never hit.
+  const { sim, b, p, e } = waiting('pillagerCaptain', 'maren');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 0 }, seeded(5)); p.ctl = b.brain.hands;
+  e.yaw = 0; p.z = e.z - (e.radius + p.radius + 1.2); p.savePrev();
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'captainThrust')); e.holdLeft = 0;
+  const hp = p.hp; let rolled = false;
+  for (let i = 0; i < 3 * 60 && e.state !== 'recover'; i++) {
+    sim.setPlayers([]); sim.tick(dt);
+    if (p.state === 'roll') rolled = true;
+  }
+  assert.ok(!rolled && p.hp === hp, 'a bot behind the boss lets the thrust go by, unhurt (rolled ' + rolled + ', hp ' + hp + ' > ' + p.hp + ')');
+}
+console.log('Bot reach: behind the boss a frontal dash gets no roll and does no harm; a spin that reaches all round, or the thrust in front, gets one.');
+
 for (const profile of profiles) {
   let jumps = 0, rolls = 0;
   for (let seed = 1; seed <= 40; seed++) {
