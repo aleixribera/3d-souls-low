@@ -24,8 +24,8 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(await page.locator('#fpsCounter').isVisible(), true, 'the retired FPS shortcut cannot hide the counter');
     assert.equal(await page.evaluate(() => settings.cameraMotion), false, 'legacy shake Off migrates to combined motion Off');
     const selection = () => page.evaluate(() => ({ selected: Game.selected,
-      focus: [...document.querySelector('#menuList').children].indexOf(document.activeElement),
-      stops: document.querySelectorAll('#menuList button[tabindex="0"]').length }));
+      focus: Game.menuButtons.indexOf(document.activeElement),
+      stops: document.querySelectorAll('#menuBox button[tabindex="0"]').length }));
     // The lobby answers, so the title rests on Boss Rush (Story, Boss Rush, Practice).
     await page.waitForFunction(() => multiplayer.lobby.state === 'online' && Game.selected === 1);
     assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
@@ -35,7 +35,20 @@ const { createServer } = require('../server/index.cjs');
     await page.keyboard.press('Shift+Tab');
     assert.deepEqual(await selection(), { selected: 0, focus: 0, stops: 1 });
     await page.keyboard.press('Shift+Tab');
-    assert.equal((await selection()).selected, await page.locator('#menuList button').count() - 1, 'backward Tab wraps');
+    assert.equal((await selection()).selected, await page.evaluate(() => Game.menuButtons.length - 1), 'backward Tab wraps');
+    // The pointer only points: hovering a mode never chooses it, and the primary drops its Enter cap while Enter would
+    // start the hovered mode instead. A click chooses; Enter then starts it.
+    const title = () => page.evaluate(() => ({ hovered: Game.menuItems[Game.selected].name, chosen: Game.menuItems[Game.titleMode].name,
+      primary: document.querySelector('#menuAct .title-primary .n').textContent, key: document.querySelector('#menuAct .title-primary .ui-key').textContent }));
+    const practiceRow = page.locator('#menuList .title-mode').nth(2);
+    await practiceRow.hover({ position: { x: 40, y: 10 } }); await practiceRow.hover({ position: { x: 44, y: 12 } });
+    const story = await page.evaluate(() => Game.menuItems[0].start);
+    assert.deepEqual(await title(), { hovered: 'Practice', chosen: 'Story', primary: story, key: '' });
+    await practiceRow.click();
+    assert.deepEqual(await title(), { hovered: 'Practice', chosen: 'Practice', primary: 'Choose a fight', key: 'Enter' });
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => Game.screen), 'practice', 'Enter on the chosen mode starts it');
+    await page.evaluate(() => Game.showMenu('main'));
     await page.evaluate(() => { Game.optionsFrom = 'main'; Game.showMenu('options'); });
     assert.deepEqual(await page.locator('#menuList .n').allTextContents(),
       ['Camera motion: Off', 'Lessons: On', 'Show lessons again', 'Graphics: Low', 'Check graphics again', 'Back']);
@@ -77,14 +90,19 @@ const { createServer } = require('../server/index.cjs');
         const issues = await page.evaluate(screen => {
           Game.optionsFrom = 'main'; Game.showMenu(screen);
           const issues = [], box = id => document.getElementById(id).getBoundingClientRect();
+          // Regions may sit side by side (the title on a phone on its side), so they are checked for overlap, not order.
+          const meet = (a, b) => a.width && b.width && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
           for (let i = 0; i < Game.menuItems.length; i++) {
+            if (Game.menuButtons[i].hidden) continue;
             Game.select(i, true);
             const list = box('menuList'), desc = box('menuDesc'), hint = box('menuHint'), title = box('menuTitle');
-            const button = document.getElementById('menuList').children[i].getBoundingClientRect();
-            if (desc.bottom > hint.top - 4) issues.push(`${i}: description overlaps navigation`);
-            if (list.bottom > desc.top || title.bottom > list.top) issues.push(`${i}: menu regions overlap`);
-            if (title.left < 0 || title.right > innerWidth || hint.bottom > innerHeight - 15) issues.push(`${i}: text leaves viewport`);
-            if (button.left < 0 || button.right > innerWidth || button.bottom > list.bottom + 1 || button.top < list.top - 1)
+            const act = box('menuAct'), foot = box('menuFootActions'), button = Game.menuButtons[i].getBoundingClientRect();
+            const own = Game.menuButtons[i].parentElement.getBoundingClientRect();
+            if (desc.bottom > hint.top - 4 || meet(desc, foot)) issues.push(`${i}: description overlaps navigation`);
+            if (meet(list, desc) || meet(title, list) || meet(desc, act) || meet(list, act) || meet(act, foot) || meet(act, hint) || meet(list, foot))
+              issues.push(`${i}: menu regions overlap`);
+            if (title.left < 0 || title.right > innerWidth || hint.bottom > innerHeight - 10 || hint.right > innerWidth) issues.push(`${i}: text leaves viewport`);
+            if (button.left < 0 || button.right > innerWidth || button.bottom > own.bottom + 1 || button.top < own.top - 1 || button.bottom > innerHeight)
               issues.push(`${i}: selected action is clipped`);
           }
           return issues;

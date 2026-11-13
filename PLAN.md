@@ -28,7 +28,7 @@ Aleix, 2026-11-13.
   bosses already get harder. No damage numbers. Some bosses have too much health in Story too: every boss's own
   health is set so a skilled solo player kills it fast, in the same item. Bosses are killable fast with skill but
   harder to face; the Boss Rush curve scales only their attack pace, never damage or health.
-- The five blessings: overhauled (track B, item 6).
+- The five blessings: removed; every upgrade is rebuilt from zero in a separate session (track B, item 6).
 - The coolest Boss Rush out there (Aleix, 2026-11-13, yes to all six of the director's ideas): revive a friend
   mid-fight, Focus, highlights on the end screen (track B, item 4); a Crowned boss every 10th fight (item 5); pacts
   (item 6); a weekly run with a friends' board (item 8). Left out on purpose: damage numbers, stat upgrades between
@@ -128,6 +128,8 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      within 15% of the laptop's latest numbers; record the factors and both sets of numbers; recalibrate when the
      laptop's numbers move.
    Check: the laptop holds 60 fps on Normal on every level and in a four-player Boss Rush fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects and looking very nice, not like a cut-down fallback.
+   **When the laptop can't run** (away, on battery, `lt` refusing; Aleix, 2026-11-13): item 4 goes before this one
+   and this item resumes once the laptop is back.
 4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
    may be improved).
 5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
@@ -143,6 +145,9 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    regular enemies) in Blender.
 
 ## Track B: Boss Rush
+
+Order (Aleix, 2026-11-13): items 3, 4 and 5, then 8; item 6 belongs to the upgrades session; item 7 waits
+until that session has shipped the new upgrades. If item 8 is done before then, the track waits on it too.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
    Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
@@ -177,8 +182,8 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      sloppiness as it goes on (Aleix: the bosses already get harder). Target: early on, about one bot falls every three
      fights; by fight 10 most fights cost at least one. A fallen bot is back for the next fight, like a person.
    - **Dopamine:**
-     - Less waiting: the blessing is picked in the arena on a 10 s clock (`CONFIG.blessings.pickTime` is 25 today),
-       and the next boss drops straight in.
+     - Less waiting: the blessing is picked in the arena, and the next boss drops straight in. The clock is 30 s and
+       skips once everyone has chosen (Aleix, v7.67.0, over an earlier 10 s).
      - A kill moment: a short slow motion and a burst of embers when a boss dies, then one line, "Boss 7 down". Drawn
        only: the simulation and the other players are never slowed; flashes under 3 Hz and `reducedMotion()`.
      - More breaks and executions: posture breaks come about 30% sooner, so the big hit lands more often.
@@ -214,8 +219,9 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    - **The HUD stays** (Aleix, 2026-11-13: "the current UI inside the game is perfect"). Don't restyle it. Item 2's
      streak and par timer join it in its current look.
    - **Simple and functional, no dopamine on menus** (Aleix, 2026-11-13: "stay away from this dopamine, let's focus
-     on simpler functional menus again"). No slam-in titles, glow pulses, shine sweeps, count-ups or crate reels on
-     any menu or card. Motion only where it helps you use the screen: focus moving, a panel opening, a timer draining.
+     on simpler functional menus again"). No slam-in titles, glow pulses, shine sweeps or count-ups on any menu or
+     card. Motion only where it helps you use the screen: focus moving, a panel opening, a timer draining. The one
+     exception is item 7's crate roll, which keeps its animation and effects in the game's style.
    - **Blessing cards get the most care:** each blessing has its own drawn icon in the menus' style (never emoji or
      stock icons), its rarity readable at a glance, its level and change shown plainly (II → III, 30% → 45%), the
      pick timer, number keys and pad buttons.
@@ -241,16 +247,17 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      - End of run: bosses beaten as the title, then Crowned count, time and "Your best run" when it is; highlights
        per player on the left; level and crate rewards as a plain list with icons and rarity on the right; Lobby
        and a primary Run again.
-   - **Order:** the lobby first (done, v7.63.0, approved for every menu); then the blessing pick, the title,
-     Practice, options, pause and the end of run. The loop goes on while it waits; his answer redirects it.
+   - **Order:** the lobby first (done, v7.63.0, approved for every menu); then the title, Practice, options, pause
+     and the end of run. The blessing pick is built by the upgrades session (item 6), from the tall-card spec above. The loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
    screen checked against the `design-audit` rule book.
 4. **Co-op moments** (Aleix, 2026-11-13: the coolest Boss Rush out there). Friends new to the genre should have
-   clutch moments, not wait out a death.
+   clutch moments, not wait out a death. Revive and Focus stay the loop's: Boss Rush's own mechanics, not upgrades;
+   the upgrades session designs around them.
    - **Revive.** A fallen player leaves an ember where they fell. A teammate who stands on it for about 3 s (moving
      off or being hit cancels it) brings them back at a third of their health, once per fall. The boss's attention
      (`CONFIG.aggro`) leans hard on whoever is reviving: the risk is the point. Bots revive too, and a person counts
-     as their first priority after their own life. The `rise` blessing becomes "rise on your own". The server checks
+     as their first priority after their own life. The server checks
      every revive claim (range, time, the ember's owner), like any other claim.
    - **Focus.** Perfect parries and perfect dodges (a roll whose i-frames take a blow) fill a small personal meter
      beside the stamina bar; when it's full, the owner's next heavy blow breaks the boss's posture outright. It touches
@@ -272,7 +279,12 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      fights until the next one, so the endless run has chapters and a goal ("we hit Crowned 2 last time").
    The end screen shows bosses beaten and Crowned reached. Check: a test that the first fights draw only the easier
    bosses and that fight 10, 20 and 30 are Crowned; frames of a modifier on screen and of a Crowned fight.
-6. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
+6. **Upgrades from zero: not the loop's** (Aleix, 2026-11-13: "The current upgrades will be removed, I don't really
+   like how they were thought"). A separate session, "Design all upgrades and special upgrades from zero", removes
+   the five blessings and designs and builds the new upgrades, special upgrades and their pick screen with Aleix,
+   then rewrites this item. Until it has, the loop skips this item and item 3's blessing pick, and doesn't touch
+   `js/data/blessings.js`, `CONFIG.blessings` or the offer code; the rest of Boss Rush may assume a run hands out
+   upgrades, without naming any. Pacts are that session's too (Aleix). The old brief, for that session to keep or drop: Common blessings are small; rare ones are exciting and rare: skills, passives, things that
    change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
    offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
    kit. Upgrades happen inside the game, during the run (between fights, in the arena), never in a menu between runs;
@@ -286,7 +298,8 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    Check: the odds in a test; each rare one and an upgrade seen working in a fight; a test of the curve against a team
    holding a typical late-run kit; a test of a pact vote (majority, tie, timeout) and its pace step; a frame of the
    vote.
-7. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
+7. **Levels and crates** (waits until the upgrades session has shipped the new upgrades; Aleix, 2026-11-13: the
+   roll keeps its animation and effects, in the game's style). Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
    shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,

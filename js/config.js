@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.69.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.71.0';   // shown in the title's footer and the corner of the other menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -174,6 +174,13 @@ const CONFIG = {
   // attack with `when: 'seamed'` be chosen; an erupting hit's wind-up (the seams' tell, js/ember-seams.js) is at least
   // `minTell` s.
   seams: { max: 6, width: 1.4, height: 3.2, callAt: 3, minTell: 1.1 },
+  // Rends (pass 48, Mother Agathe; an attack's or a phase's `rend`, Player.rend): each unblocked blow of the hook tears `cut`
+  // of the bar's maximum away, at most `max` pieces; every blow landed on her tears one back as health, and left there the
+  // wound closes `time` s after the last tear. The storm (a hit's `bolt`, Enemy.noteBolt): its mark follows the target for
+  // the first `lock` of the wind-up (unless the attack's tracking says otherwise), and a bolt's wind-up is at least
+  // `minTell` s (validated).
+  rend: { cut: 0.1, max: 3, time: 22 },
+  storm: { lock: 0.55, minTell: 0.9 },
   // Pace (v7.65.0): no enemy or boss scales with the number of players, anywhere; a group of four meets the boss a solo
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
@@ -537,6 +544,11 @@ const CONFIG = {
     // open (s), its jag (m), the fire wall's colour, height (m), how long it burns and fades (s), flames per seam.
     emberSeams: { color: 0xff6a20, hot: 0xffc070, rest: 0.55, tell: 1.6, open: 0.3, jag: 0.22, crack: 14, width: 0.32,
       fire: 0xff7a28, flames: 14, flameW: 1.3, flameH: 3.2, burn: 0.55, fade: 0.6, close: 0.8, pool: 12 },
+    // Mother Agathe's storm and hook (js/storm-rend.js): the bolt's mark on the floor (`mark` m across), the bolt (`height`
+    // m of jagged light in `segs` pieces, `width` m wide, lit `flash` s), the pieces of you on the hook (`piece` m, drawn
+    // as embers of your own red) and their flight to and from it (`fly` s).
+    stormRend: { mark: 2.6, markColor: 0x9fc4ff, boltColor: 0xd8e8ff, height: 26, segs: 12, width: 0.32, jag: 1.5, flash: 0.28,
+      piece: 0.17, pieceColor: 0xff3424, backColor: 0xffc890, fly: 0.38, stormColor: 0xa8ccff },
     tether: { color: 0xb8c8ff, opacity: 0.7, width: 0.28, fadeIn: 1.5, fadeOut: 1.4, flash: 2.5, dust: 4, links: 72 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },

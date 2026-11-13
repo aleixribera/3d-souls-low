@@ -2194,6 +2194,12 @@
     Game.showMenu('main');
     const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
     expect.ok(names[0] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
+    Game.select(0, false);
+    const second = Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
+    expect.ok(Game.menuItems.find(it => it.size === 'primary').name === 'Continue' && !second.hidden, 'the title offers Continue, and New game beside it');
+    Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'second')), false); Game.confirm();
+    expect.ok(Game.screen === 'storyConfirm', `New game asks before replacing the save (${Game.screen})`);
+    Game.menuBack(); expect.ok(Game.screen === 'main', 'and going back returns to the title');
   }));
   test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', () => {
     sim.begin();   // the stepped clock: a pick's loading card builds the fight at once (alone, the runner's own clock hid this)
@@ -2201,10 +2207,23 @@
       Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
       expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
     };
-    pick('main', 'Story'); expect.ok(Game.screen === 'story', 'Story opens the story');
-    const join = multiplayer.join; let joined = false; multiplayer.join = () => { joined = true; };
-    try { pick('main', 'Boss Rush'); } finally { multiplayer.join = join; }
-    expect.ok(joined, 'Boss Rush joins the public lobby, where it is the default');
+    // The title: moving onto a mode chooses it, and the primary button and the line follow; the primary starts it.
+    Game.showMenu('main');
+    const at = name => Game.menuItems.findIndex(it => it.name === name), primary = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'primary')];
+    const newGame = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
+    Game.select(at('Practice'), false);
+    expect.ok(primary().textContent.startsWith('Choose a fight') && newGame().hidden && Game.menuButtons[at('Practice')].getAttribute('aria-pressed') === 'true',
+      `Practice chosen: ${primary().textContent}`);
+    Game.select(at('Story'), false);
+    expect.ok(/^(Begin|Continue)/.test(primary().textContent) && $('menuDesc').textContent === Game.menuItems[at('Story')].line, `Story chosen: ${primary().textContent}`);
+    Game.select(at('Options'), false);
+    expect.ok(Game.titleMode === at('Story') && /^(Begin|Continue)/.test(primary().textContent), 'moving to the footer keeps the chosen mode');
+    const join = multiplayer.join; let joined = 0; multiplayer.join = () => { joined++; };
+    try {
+      Game.select(at('Boss Rush'), false); Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'primary')), false); Game.confirm();
+      pick('main', 'Boss Rush');
+    } finally { multiplayer.join = join; }
+    expect.ok(joined === 2, `Boss Rush joins the public lobby from its primary button and its row (${joined})`);
     pick('main', 'Practice'); expect.ok(Game.screen === 'practice', 'Practice opens');
     const boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
     pick('practice', 'Fight a boss'); pick('practiceBosses', boss.name);
@@ -2854,7 +2873,7 @@
   test('High loading: selected boss assets and all phase meshes are ready before play', () => {
     try {
       A.visuals.setQuality('high'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
         let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
@@ -3050,7 +3069,7 @@
   test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
     try {
       A.visuals.setQuality('ultra'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         const e = Game.enemies[0];
         expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
@@ -3110,7 +3129,7 @@
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {
       A.visuals.setQuality('low'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
         const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;

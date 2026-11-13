@@ -550,10 +550,17 @@ Ember out of the earth, and the earth came with it: the hill tore loose and has 
 Abbey** is its ruins adrift in rain and lightning over a sea of cloud, a crumbling colonnade, a long bridge with no
 rail. Past the rent, the Ember's root hangs out of the cloud where it was torn from the hill.
 
-**Mother Agathe, the Rending Hand**, was the abbess who held the knife. She did not let go. She fights with a great hook,
-flung stones, and blows that rend the floor into lines of shockwaves. At half her strength the storm comes at her back,
-the bar names her **Agathe, the Storm at Her Back**, and every blow of the hook rends: a wound that holds the player's
-health down until it closes.
+**Mother Agathe, the Rending Hand**, was the abbess who held the knife. She did not let go, and she still does not: what
+her great hook tears out of you, she keeps. A gaunt old woman in a white coif and a black veil that falls into a long torn
+mantle, a storm-grey scapular, a rosary of rough stones and the abbey's sign (a ring with a hook through it); the hook is
+an ash haft taller than a man with a crescent blade as long as an arm, prayer cloths tied under it. Every blow of its
+blade that gets past your guard tears a piece off your health bar, and the piece hangs on the hook as a red coal; every
+blow you land on her tears one back, as health; left there, the wound closes and the bar comes back short. So she is
+fought close. The butt of the haft (her correction, three raps like a staff), the stones she flings and the floor she
+rends into lines of shockwaves never tear anything. At half her strength the storm comes at her back, the bar names her
+**Agathe, the Storm at Her Back**: lightning seams the hook and the sign on her breast, every blow of the hook rends, and
+the storm falls where you stand: a mark on the floor follows you, holds still, and is struck. She fights in the rent,
+what is left of the nave where the hill tore loose: a dark wet floor, broken columns, open to the storm on both sides.
 
 The **Rending Brothers** are her monks, still at the work: they spring from the ruins, cut with hooked knives, fling
 stones and rend the floor.

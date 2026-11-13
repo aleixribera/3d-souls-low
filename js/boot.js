@@ -91,8 +91,8 @@ window.addEventListener('keydown', ev => {
     return;
   }
   if (Game.mode === 'menu' || Game.mode === 'pause') {
-    if (code === 'Tab') { ev.preventDefault(); if (!ev.repeat) Game.menuStep(ev.shiftKey ? 'up' : 'down'); return; }
-    if (code === 'Home' || code === 'End') { ev.preventDefault(); Game.select(code === 'Home' ? 0 : Game.menuItems.length - 1, true); return; }
+    if (code === 'Tab') { ev.preventDefault(); if (!ev.repeat) Game.menuStep(ev.shiftKey ? 'prev' : 'next'); return; }
+    if (code === 'Home' || code === 'End') { ev.preventDefault(); Game.menuTouched = true; Game.select(code === 'Home' ? 0 : Game.menuItems.length - 1, true); return; }
     if (ev.repeat) return;
     const dir = ['up', 'down', 'left', 'right'].find(d => isKey(d, code));
     const handled = dir ? Game.menuStep(dir) || true

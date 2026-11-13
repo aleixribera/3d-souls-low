@@ -167,7 +167,7 @@ function createServer(options = {}) {
     }
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
-    if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's boons
+    if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's kit
     if (gauntlet?.roster) session.pace = sim.setRushFight(gauntlet.fight);   // the curve: faster with every fight won
     if (gauntlet?.roster) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
     if (gauntlet?.roster && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card

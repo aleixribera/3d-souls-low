@@ -1,7 +1,7 @@
 # Run a Level 6 generator headless: blender -b -P tools/blender/run_asset.py -- <script stem> [--export]
 # Builds tools/blender/<stem>.py, writes a preview sheet, and with --export the .blend and .glb in tools/blender/out/.
 import sys, json, importlib, os
-ROOT = r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).replace("\\", "/")   # this checkout (a worktree too)
 sys.path.insert(0, r"C:/Users/Aleix/.claude/skills/blender/scripts"); sys.path.insert(0, ROOT + "/tools/blender")
 import bkit, bpy
 argv = sys.argv[sys.argv.index('--') + 1:]

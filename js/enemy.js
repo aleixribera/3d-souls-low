@@ -398,6 +398,7 @@ class Enemy {
       }
       case ES.WINDUP: {
         const a = this.attack, hit = a.hits[this.hitIndex];
+        if (hit.bolt) this.noteBolt(player);
         // Tracking attacks keep turning for the whole wind-up; others stop part way, so a late dodge works.
         // Delayed attack: at `hold.at` of the wind-up it may freeze, clearly still, for a while before carrying on.
         if (hit.hold && this.holdLeft === null && this.stateTime >= hit.startup * hit.hold.at)
@@ -651,10 +652,29 @@ class Enemy {
       hb.near.x = this.x; hb.near.y = this.y; hb.near.z = this.z;   // until it finds someone: at his feet (where its impact lands)
       return hb;
     }
+    const strike = makeStrike(this.attack);
+    if (hit.damage) strike.damage = hit.damage;
+    if (!hit.bolt && !this.attack.projectile && (this.attack.rend ?? this.def.rend)) { strike.rend = true; strike.rendBy = this; }   // pass 48: the hook keeps what it tears
+    if (hit.bolt) {   // the storm strikes where its mark lay; a mark never seen strikes nothing
+      const B = this.bolt;
+      if (!B || B.key !== this.attackNo * 64 + this.hitIndex) return null;
+      return new Hitbox(this, box, { ...strike, rollOnly: true }, { cut: B, home: false, time: hit.active, bolt: true });
+    }
     const cut = hit.echo && this.cutOf(hit.echo.of);
     if (hit.echo && !cut) return null;
-    return new Hitbox(this, box, hit.damage ? { ...makeStrike(this.attack), damage: hit.damage } : makeStrike(this.attack),
-      cut ? { cut, home: !!hit.echo.home, time: hit.active } : null);
+    return new Hitbox(this, box, strike, cut ? { cut, home: !!hit.echo.home, time: hit.active } : null);
+  }
+  // A hit's `bolt` (pass 48, Mother Agathe's storm): lightning out of the storm onto the spot its target stands on. The mark
+  // follows the target through the first `lock` of the wind-up (the attack's tracking commit, else CONFIG.storm.lock), then
+  // holds still until the strike: step off it. Here on the server or alone, from the target it fights; on a client from
+  // the target the snapshot names (js/multiplayer.js). Drawn by js/storm-rend.js.
+  noteBolt(target) {
+    const a = this.attack, hit = a && a.hits[this.hitIndex];
+    if (!hit || !hit.bolt || this.state !== ES.WINDUP || !target) return;
+    const key = this.attackNo * 64 + this.hitIndex, lock = hit.bolt.lock ?? (a.tracking ? a.tracking.commit : CONFIG.storm.lock);
+    const B = this.bolt || (this.bolt = { x: 0, y: 0, z: 0, yaw: 0, key: -1, locked: false });
+    if (B.key === key && this.stateTime >= hit.startup * lock) { B.locked = true; return; }
+    B.x = target.x; B.y = this.y; B.z = target.z; B.yaw = this.yaw; B.key = key; B.locked = false;
   }
   noteCut() {
     const c = this.cuts[this.hitIndex] || (this.cuts[this.hitIndex] = { x: 0, y: 0, z: 0, yaw: 0, no: -1 });

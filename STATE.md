@@ -4,17 +4,18 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 47, item 2, v7.68.0): Oswin pass 1 of 2 shipped: Blender figure, 17 own moves, the `seam` and `erupt`
-  hit fields (the floor cracks and stays cracked; called up, every crack burns), drawn by `js/ember-seams.js`; also
-  v7.66.0's six red CI tests (old-Hollis assumptions) and `canParryHit`. `docs/scorecard/oswin-lab.jpg`,
-  `aurel-in-ash-oswin.jpg`, in-page `Aurel in Ash`. Pass 2 (bots and seams, figure) in BACKLOG; next: Agathe (ch. 12).
+- Track A (pass 48, item 2, v7.70.0): Agathe pass 1 of 2 shipped: Blender figure, 13 own moves; `rend` (her hook
+  keeps torn health, `Player.rend`/`reclaim`) and hit `bolt` (storm mark, `Enemy.noteBolt`), drawn by
+  `js/storm-rend.js`; the rent's floor and columns. `docs/scorecard/agathe-lab.jpg`, `abbey-agathe.jpg`, in-page
+  `Torn Abbey`. Pass 2 (bots and bolts, figure polish) in BACKLOG; next: the Kindling Tree (ch. 13).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 46, v7.69.0, item 2 done): kill moment, streak, par, swift kill, next boss drops in, end-screen
-  times; bot falls 18% / 40% (fight 1 / 10), cut to BACKLOG. Next: item 3 (lobby done, `js/ui-theme.js`;
-  blessing pick, title, Practice, options, pause, end of run). Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
+- Track B (pass 49, v7.71.0, item 3 pass 1): title in the mockups' style on `js/ui-theme.js` (modes as `.ui-row`,
+  primary follows the chosen mode, footer; `Game.menuButtons`, `chooseMode`). `docs/scorecard/title-*.jpg`, in-page
+  `Title:`, `experience-browser`, `lobby-peek-browser`. Castle, Collection, Controls in BACKLOG. Next: Practice,
+  options, pause, end of run. Boss Rush: id `boss-rush`, kind `calling`, 30 s pick.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -72,7 +73,7 @@ CI and container of v7.69.0 (pushes cancel CI: see the newest run). Probes
 
 ## wip// branches
 
-- None.
+- `wip/blessing-tall-cards` (pass 49): the tall-card blessing pick, for the upgrades session (PLAN.md item 6).
 
 ## Backlog
 
@@ -80,8 +81,6 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) The shared UI look (v7.63.0 lobby, `docs/scorecard/lobby-v2/`): Apex's mode list over one Start,
-  Valorant's party column, Destiny 2's device hints. Right before the title follows?
 - (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).

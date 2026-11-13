@@ -57,6 +57,7 @@ took it (once taken).
   when they stand behind the boss. A bot rolls only when the swing can actually reach it. Taken by pass 38 (v7.58.0).
 - 2026-11-13, after seeing pass 43's lobby (v7.63.0, `docs/scorecard/lobby-v2/`): yes, the title and the other menus
   follow this look (mode list over one big Start, the party as the other column, key hints that follow the device).
+  The title taken by pass 49 (v7.71.0); Practice, options, pause and the end of run follow (PLAN.md Track B item 3).
 - 2026-11-13, on pass 45's question (Kindling Tree 2,500 and King's Blade 3,000 below Agathe's 3,200): fine for now.
   Every boss's health gets adjusted once all the bosses are finished and reworked; until then don't spend passes on it.
 - 2026-11-13, after playing the Regent Hollis (pass 44, v7.66.0): "a perfect example of a well built boss". A clear

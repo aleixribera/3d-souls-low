@@ -260,17 +260,19 @@ const story = (() => {
       { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level.', go: () => game.showMenu('storyJump') },
       { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('tests'); } },
     ] : [];
-    // The title's Story card (v7.19.0) names the road last played, or where a first story begins.
+    // The title's Story mode (v7.70.0): it starts the road last played (Continue), or the first one (Begin); its line
+    // says where that road stands, and New game replaces a save after asking.
     const last = Object.values(campaigns).filter(c => c.status === 'ok' && !c.data.completed).sort((a, b) => (b.data.savedAt || 0) - (a.data.savedAt || 0))[0];
-    const line = last ? `Continue ${last.def.short}: ${last.levelName(last.data.level)}` : 'Begin in Ashmere. The controls are taught on the way.';
-    return { main: [{ name: 'Story', line, desc: `${line}. Saved at every bonfire.`, go: () => game.showMenu('story') }],
+    const road = last || campaigns[STORIES[0].id], [first, again] = road.items(game);
+    const line = road.status === 'ok' ? `${road.def.short} · ${first.desc}` : road.status === 'broken' ? first.desc : 'Begin in Ashmere. The controls are taught on the way.';
+    return { main: [{ name: 'Story', line, start: again ? 'Continue' : 'Begin', go: first.go, newGame: again ? again.go : null }],
       devItems: devJumps, screens: {
       story: { title: 'STORY', sub: 'Choose a story, then play.', back: 'main', items: [
         ...STORIES.flatMap(S => campaigns[S.id].items(game)),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => game.showMenu('main') },
       ] },
-      storyConfirm: { title: 'NEW GAME?', sub: C.menuTitle, notice: 'Replace this story’s saved game?', back: 'story', items: [
-        { name: 'Cancel', desc: 'Keep your saved game.', cue: 'menuBack', go: () => game.showMenu('story') },
+      storyConfirm: { title: 'NEW GAME?', sub: C.menuTitle, notice: 'Replace this story’s saved game?', back: 'main', items: [
+        { name: 'Cancel', desc: 'Keep your saved game.', cue: 'menuBack', go: () => game.showMenu('main') },
         { name: 'New', desc: 'Replace the save and start playing.', go: startNew },
       ] },
       storyDone: { title: A().goesOn() ? 'THE ROAD GOES ON' : 'STORY COMPLETE', sub: C.menuSub, notice: A().goesOn() ? C.goesOn : C.done, items: [
