@@ -28,3 +28,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   of people can beat it before The Calling offers it.
 - A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
   server doesn't check flask use. Harmless among friends; worth a check if the lobby ever opens wider (pass 7).
+- The Calling (pass 8): with a controller, the boss pick list is walked one button at a time; up/down could move by
+  rows, or skip past the list to Start. The bots that fill the party stay after the run (the leader removes them); a
+  restart doesn't top the party back up if a player left. Whether The Calling should be the lobby's default adventure
+  (today BOSS ONLY) is the director's call.
+- `lobby-polish-browser` failed once ("preset changes preserve online play", switching graphics presets mid-fight) and
+  passed on the rerun with no change to that code: flaky (pass 8, 2026-11-13).

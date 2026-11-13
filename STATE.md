@@ -4,15 +4,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 2, item 3, the run, pass 1 of it: from the lobby the host starts a run (5 bosses by default,
-random or hand-picked from every boss), bots fill empty slots, the last fight is two bosses at once, the fallen rise
-for the next fight if anyone stands, the run ends when all fall. Check: two browser clients and a bot finish a 3-boss
-run end to end. It grows out of `gauntlet()` / `C.gauntlets` in `server/simulation.js`.
+Next: `PLAN.md` stage 2, item 4, blessings between fights, pass 1 of it: at a bonfire between bosses each player picks
+one of three blessings (data in `js/data/`, tuning in `CONFIG`) that last the run. Check: a picked blessing's effect
+measured in a test, and the pick screen at desktop and phone width. The Calling's fights advance in `server/index.cjs`
+(the `session.gauntlet.roster` branch); the pause between fights is `C.bossVictoryDelay` / the leaderboard.
 
-Pass 7 shipped item 2, bosses fight the group (unreleased; stage 2 releases as v7.35.0 when the stage is done, and its
-changelog lines go in then): `CONFIG.aggro` makes a boss turn on a drinker within 10 m, else on whoever hurt it most
-lately, else the closest, holding a target 3 s; area attacks are 3x as likely with 2+ players bunched within 4 m.
-Pass 6 shipped item 1, group scaling (`CONFIG.group`). Notes: `docs/feature-history.md`, the last two sections.
+Pass 8 shipped item 3, the run (unreleased; stage 2 releases as v7.35.0 when the stage is done, and its changelog lines
+go in then): The Calling in the lobby, a roster random or by hand, bots fill to three, the last two bosses together.
+Pass 7 shipped item 2 (`CONFIG.aggro`), pass 6 item 1 (`CONFIG.group`). Notes: `docs/feature-history.md`, the last
+three sections.
 
 ## Works
 
@@ -36,6 +36,9 @@ Pass 6 shipped item 1, group scaling (`CONFIG.group`). Notes: `docs/feature-hist
 - Bosses fight the group (v7.35.0, unreleased): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
   `grouped` and `isAreaAttack` in `js/enemy.js`; checked by `tests/boss-attention.cjs` (seeded bot fights through
   `createSimulation({ seed })`), frames `docs/scorecard/boss-attention-1..3.jpg`, `boss-attention.txt`.
+- The Calling (v7.35.0, unreleased): `C.calling`, `calling()` / `randomRoster()` in `server/simulation.js`, the lobby's
+  roster and pick list in `js/multiplayer.js`; checked by `tests/calling.cjs` and `tests/calling-browser.cjs` (two
+  browsers and a bot finish a 3-boss run; frames `docs/scorecard/calling-*.jpg`).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -52,9 +55,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 6's push was still running at the end of pass 7 (15 min in); CI on pass 7's push: check both at the start
-of pass 8. Pass 7 locally: the whole Node group (20/20) and the multiplayer, lobby, reconnect, boss-only, bot, spectator
-and arena-wipe browser tests (9/9) passed.
+CI on pass 8's push: check at the start of pass 9 (pass 7's run was in progress at the start of pass 8; pass 6's was
+cancelled by it). Pass 8 locally: the Node group (21/21) and the multiplayer, lobby, reconnect, boss-only, run-intro and
+campaign browser tests.
 
 ## wip/ branches
 

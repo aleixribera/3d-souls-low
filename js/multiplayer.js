@@ -10,6 +10,7 @@ const multiplayer = (() => {
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, adventureBeforeEdit = null, nameDraft = '', nameLowercase = false;
+  let callingPicks = [];   // The Calling's hand-picked roster, in fight order
   let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
   const labelPosition = new THREE.Vector3();
@@ -30,6 +31,9 @@ const multiplayer = (() => {
     <div id="lobbyCurrentLevel" class="online-level" hidden></div>
     <div id="lobbyLeader"><label for="lobbyAdventure">Choose your adventure</label><select id="lobbyAdventure" aria-describedby="lobbyAdventureSummary"></select>
     <p id="lobbyAdventureSummary" class="lobby-summary"></p>
+    <div id="lobbyCalling" hidden><div class="lobby-calling-row"><div><label for="lobbyCallingRoster">Roster</label><select id="lobbyCallingRoster"><option value="random">Random</option><option value="pick">Chosen by hand</option></select></div>
+    <div id="lobbyCallingCount"><label for="lobbyCallingLength">Bosses</label><select id="lobbyCallingLength"></select></div></div>
+    <div id="lobbyCallingPick" role="group" aria-label="Bosses, in the order you meet them" hidden></div></div>
     <div class="lobby-actions lobby-primary"><button id="lobbyResume">Return to game</button><button id="lobbyStart">Start together</button></div>
     <div id="lobbyRunActions" class="lobby-actions" role="group" aria-labelledby="lobbyRunTitle" hidden><p id="lobbyRunTitle" class="lobby-group-label">Party controls</p><button id="lobbyRestart">Restart level</button>
     <button id="lobbyNext">Next level</button><button id="lobbyReturn">Return everyone to lobby</button></div></div>
@@ -96,6 +100,12 @@ const multiplayer = (() => {
     #publicLobby .lobby-player-role.bot{background:#a9cf8e;}#publicLobby #lobbyAddBot{width:100%;margin-top:8px;border-style:dashed}
     #publicLobby .lobby-bot-remove{font-size:11px;padding:4px 10px;min-height:32px;margin-left:auto}
     #publicLobby .lobby-player-role{font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:#1d180e;background:var(--mp-gold);border-radius:999px;padding:2px 8px}
+    #lobbyCalling{margin:0 0 18px}#lobbyCalling .lobby-calling-row{display:flex;gap:10px}#lobbyCalling .lobby-calling-row>div{flex:1 1 0;min-width:0}
+    #publicLobby #lobbyCalling select{font:15px/1.3 Georgia,serif;padding:10px 36px 10px 12px;min-height:44px}
+    #lobbyCallingPick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:12px;max-height:232px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#756443 transparent}
+    #publicLobby #lobbyCallingPick button{display:flex;align-items:center;gap:8px;text-align:left;font-size:12px;padding:6px 10px;min-height:40px}
+    #publicLobby #lobbyCallingPick button:before{content:attr(data-order);flex:none;width:20px;height:20px;display:grid;place-items:center;border:1px solid #c9a96a40;border-radius:4px;font:600 11px/1 system-ui;color:#1d180e}
+    #publicLobby #lobbyCallingPick button[aria-pressed=true]{border-color:var(--mp-gold);background:#dcbb7414;color:#fff4d8}#publicLobby #lobbyCallingPick button[aria-pressed=true]:before{background:var(--mp-gold);border-color:var(--mp-gold)}
     #lobbyPlayers{max-height:200px;overflow:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent;margin:16px 0 6px}
     #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px;padding-left:40px}#publicLobby.managing-party .lobby-player-actions{display:flex}
     #publicLobby .lobby-player button{font-size:11px;padding:4px 10px;min-height:32px}
@@ -351,8 +361,11 @@ const multiplayer = (() => {
   }
   events.on('device', updateLobbyPadHint);
   function closeAdventurePicker(cancel = false) {
-    if (adventureBeforeEdit !== null && cancel) el('lobbyAdventure').value = adventureBeforeEdit;
+    // A cancelled pick puts the adventure back without a change event: redraw what depends on it (The Calling's controls).
+    const restored = adventureBeforeEdit !== null && cancel && el('lobbyAdventure').value !== adventureBeforeEdit;
+    if (restored) el('lobbyAdventure').value = adventureBeforeEdit;
     adventureBeforeEdit = null; el('lobbyAdventure').removeAttribute('size'); updateLobbyPadHint();
+    if (restored) updateRoster();
   }
   function closeNameEditor(save = false, restoreFocus = true) {
     if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
@@ -669,10 +682,30 @@ const multiplayer = (() => {
     el('lobbyName').disabled = !connected;
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
+  const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
+  const callingByHand = () => callingChosen() && el('lobbyCallingRoster').value === 'pick';
+  // The Calling's roster as the leader has it: the picks, or a length for the server to fill at random.
+  function callingRequest() {
+    return callingByHand() ? { roster: [...callingPicks] } : { length: Number(el('lobbyCallingLength').value) || C.calling.length };
+  }
+  function callingSummary() {
+    const names = callingPicks.map(id => catalog?.bosses.find(b => b.id === id)?.name || id);
+    const count = callingByHand() ? names.length : Number(el('lobbyCallingLength').value) || C.calling.length;
+    const order = !callingByHand() ? '' : names.length < C.calling.minLength ? ` Pick ${C.calling.minLength - names.length} more.`
+      : ` ${names.slice(0, -2).join(', ')}, then ${names.slice(-2).join(' and ')} together.`;
+    return `${count} bosses, one after another; the last two come together. Full refills between fights, and the fallen rise for the next one. A team wipe ends the run. Bots fill the party to ${C.calling.fillTo}.${order}`;
+  }
   function adventureSummary() {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
     const campaign = STORIES.find(s => s.id === id), run = ArenaNet.own(C.gauntlets, id);
-    el('lobbyAdventureSummary').textContent = run
+    el('lobbyCalling').hidden = !callingChosen();
+    el('lobbyCallingPick').hidden = !callingByHand();
+    el('lobbyCallingCount').hidden = callingByHand();   // a hand-picked run is as long as its picks
+    for (const button of el('lobbyCallingPick').children) {
+      const at = callingPicks.indexOf(button.dataset.boss);
+      button.setAttribute('aria-pressed', String(at >= 0)); button.dataset.order = at >= 0 ? String(at + 1) : '';
+    }
+    el('lobbyAdventureSummary').textContent = callingChosen() ? callingSummary() : run
       ? `${catalog?.bosses.length || ''} bosses${run.size > 1 ? `, ${run.size} at a time` : ''}, one shared run. Full refills between fights. Fallen players spectate; a team wipe ends the run.${run.then ? ` Survive to face ${C.gauntlets[run.then].name}.` : ''}`
       : campaign ? `${campaign.chapters.length} chapters. Explore together, share checkpoints, and continue automatically. Fall and return at your checkpoint.`
       : 'Play this encounter together.';
@@ -735,7 +768,7 @@ const multiplayer = (() => {
     el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
     el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session || !!controlPending;
-    el('lobbyStart').disabled = !connected || !!controlPending;
+    el('lobbyStart').disabled = !connected || !!controlPending || callingByHand() && callingPicks.length < C.calling.minLength;
     el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start new adventure' : 'Start together';
     el('lobbyManage').hidden = !owner || roster.filter(p => !p.bot).length < 2;
     const botCount = roster.filter(p => p.bot).length;
@@ -802,10 +835,27 @@ const multiplayer = (() => {
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
-      for (const [label, kind, entries] of [['Stories', 'campaign', stories], ['Challenge', 'gauntlet', Object.entries(C.gauntlets).map(([id, run]) => ({ id, name: run.name }))]]) {
+      const challenges = [{ kind: 'calling', id: C.calling.id, name: 'The Calling' }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: run.name }))];
+      for (const [label, entries] of [['Stories', stories.map(entry => ({ ...entry, kind: 'campaign' }))], ['Challenge', challenges]]) {
         const group = document.createElement('optgroup'); group.label = label;
-        for (const entry of entries) { const option = document.createElement('option'); option.value = `${kind}/${entry.id}`; option.textContent = kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
+        for (const entry of entries) { const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
         select.appendChild(group);
+      }
+      // The Calling: how many bosses, and every boss in the game to pick from by hand.
+      const length = el('lobbyCallingLength'); length.textContent = '';
+      for (let n = C.calling.minLength; n <= catalog.bosses.length; n++) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); length.appendChild(option); }
+      length.value = String(C.calling.length);
+      callingPicks = callingPicks.filter(id => catalog.bosses.some(b => b.id === id));
+      el('lobbyCallingPick').textContent = '';
+      for (const boss of catalog.bosses) {
+        const button = document.createElement('button'); button.type = 'button'; button.textContent = boss.name;
+        button.dataset.boss = boss.id; button.dataset.padKey = 'callingBoss/' + boss.id;
+        button.onclick = () => {
+          const at = callingPicks.indexOf(boss.id);
+          if (at >= 0) callingPicks.splice(at, 1); else callingPicks.push(boss.id);
+          updateRoster();
+        };
+        el('lobbyCallingPick').appendChild(button);
       }
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
       el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
@@ -821,7 +871,7 @@ const multiplayer = (() => {
       const current = session;
       Game.story = false; Game.eldenBoss = null; closePanel();
       const loadingCard = session.kind === 'arena' ? Game.duelCard(session.id, session.partners || []) : Game.levelCard(session.id);
-      el('lobbyAdventure').value = session.gauntlet ? `gauntlet/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
+      el('lobbyAdventure').value = session.gauntlet ? `${session.gauntlet.roster ? 'calling' : 'gauntlet'}/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
@@ -1118,7 +1168,8 @@ const multiplayer = (() => {
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
-  el('lobbyAdventure').onchange = () => { adventureSummary(); events.emit('menuAdjust', { dir: 1 }); };
+  el('lobbyAdventure').onchange = () => { updateRoster(); events.emit('menuAdjust', { dir: 1 }); };
+  el('lobbyCallingLength').onchange = el('lobbyCallingRoster').onchange = () => updateRoster();
   el('lobbyManage').onclick = () => {
     const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));
     if (open) el('lobbyPlayers').scrollTop = 0;
@@ -1145,7 +1196,7 @@ const multiplayer = (() => {
     const button = ev.target.closest('button');
     if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
-  el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
+  el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1), ...(callingChosen() ? callingRequest() : {}) }); };
   el('lobbyAddBot').onclick = () => control('addBot');
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
   el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
@@ -1165,6 +1216,11 @@ const multiplayer = (() => {
     if (focus === el('lobbyAdventure') && (adventureBeforeEdit !== null || direction === 'left' || direction === 'right')) {
       const step = direction === 'up' || direction === 'left' ? -1 : 1;
       focus.selectedIndex = clamp(focus.selectedIndex + step, 0, focus.options.length - 1);
+      focus.dispatchEvent(new Event('change', { bubbles: true })); return;
+    }
+    // The Calling's two small selects change with left / right, like the adventure.
+    if ((focus === el('lobbyCallingLength') || focus === el('lobbyCallingRoster')) && (direction === 'left' || direction === 'right')) {
+      focus.selectedIndex = clamp(focus.selectedIndex + (direction === 'left' ? -1 : 1), 0, focus.options.length - 1);
       focus.dispatchEvent(new Event('change', { bubbles: true })); return;
     }
     const current = controls.indexOf(focus), step = direction === 'up' || direction === 'left' ? -1 : 1;

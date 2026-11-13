@@ -130,9 +130,10 @@ function createServer(options = {}) {
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason }); sendRoster();
   }
+  // For The Calling, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
-    const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : null;
+    const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : kind === 'calling' ? sim.calling(id, boss ?? 0) : null;
     if (gauntlet) { kind = 'arena'; id = gauntlet.boss; }
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw Object.assign(new Error('Unknown campaign or chapter'), { rejected: true });
@@ -184,12 +185,25 @@ function createServer(options = {}) {
     noteActivity(p);
     if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
     if (msg.action === 'start') {
-      if (!['campaign', 'level', 'arena', 'gauntlet'].includes(msg.kind) || !net.id(msg.id)) return;
-      try { start(msg.kind, msg.id, null, undefined, true); } catch (e) {
+      if (!['campaign', 'level', 'arena', 'gauntlet', 'calling'].includes(msg.kind) || !net.id(msg.id)) return;
+      try {
+        if (msg.kind === 'calling') {
+          if (msg.id !== C.calling.id || msg.roster !== undefined && (!Array.isArray(msg.roster) || msg.roster.length > sim.catalog().bosses.length)) return;
+          const roster = msg.roster ? msg.roster.map(String) : sim.randomRoster(msg.length);
+          sim.calling(roster);   // refuse a bad roster before any bot joins
+          // Bots fill the party up to C.calling.fillTo, so a pair of friends still fights as three.
+          const humans = [...clients.values()].filter(c => c.hello).length;
+          let added = false;
+          while (humans + sim.botList().length < C.calling.fillTo && sim.addBot()) added = true;
+          if (added) queueRoster();
+          start('calling', roster, null, 0, true);
+        } else start(msg.kind, msg.id, null, undefined, true);
+      } catch (e) {
         if (!e.rejected) console.error('Start failed:', e);
         error(p, e.rejected ? e.message : 'That adventure could not start. Choose another.');
       }
-    } else if (msg.action === 'restart' && session) session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
+    } else if (msg.action === 'restart' && session) session.gauntlet?.roster ? start('calling', session.gauntlet.roster, null, 0, true)
+      : session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
     else if (msg.action === 'lobby') {
       stop('The leader returned everyone to the lobby.');
     } else if (msg.action === 'next' && session && !session.gauntlet) {
@@ -438,7 +452,11 @@ function createServer(options = {}) {
         }
         if (session.gauntlet && sim.state.completedFor >= Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)) {
           const run = C.gauntlets[session.gauntlet.id];
-          if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
+          // The Calling: the fallen rise for the next fight with everyone else; the last fight ends the run.
+          if (session.gauntlet.roster) {
+            if (session.gauntlet.next) start('calling', session.gauntlet.roster, null, session.gauntlet.next);
+            else stop(`${C.calling.name} COMPLETE · ${session.gauntlet.bosses} bosses defeated. The crown has answered.`, 'run-complete');
+          } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);
           else stop(`${run.name} COMPLETE · Every boss defeated. The whole party conquered the gauntlet!`);

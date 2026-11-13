@@ -13,6 +13,7 @@ These gold title cards introduce a new shared run; they do not replace chapter l
 
 - **STORY 1 · ASHMERE** — “Defeat the Gaoler King.”
 - **STORY 2 · LANDS** — “Claim the Elden Throne.”
+- **THE CALLING** — “Answer every boss that comes. The last two come together.”
 - **BOSS ONLY** — “Defeat every boss.”
 - **DOUBLE BOSSES** — “Defeat every boss, two at a time.”
 - **TRIPLE BOSSES** — “Defeat every boss, three at a time.”

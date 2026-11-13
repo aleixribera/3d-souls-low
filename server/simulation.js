@@ -144,6 +144,24 @@ globalThis.host = (() => {
     return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
       total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
   }
+  // One fight of The Calling (C.calling): `roster` is the run's boss ids in order, fought one at a time except the last
+  // two, who come together. `fight` counts from 0. The same shape as a gauntlet encounter, plus the roster to carry on.
+  function calling(roster, fight = 0) {
+    const R = C.calling, bosses = catalog().bosses;
+    if (!Array.isArray(roster) || roster.length < R.minLength || roster.length > bosses.length ||
+      roster.some(id => typeof id !== 'string' || !bosses.some(e => e.id === id)) || new Set(roster).size !== roster.length) throw rejected('Choose at least ' + R.minLength + ' different bosses for The Calling');
+    const fights = [...roster.slice(0, -2).map(id => [id]), roster.slice(-2)];
+    if (!Number.isInteger(fight) || fight < 0 || fight >= fights.length) throw rejected('Unknown fight of The Calling');
+    const group = fights[fight];
+    return { id: R.id, name: R.name, roster: [...roster], fight, boss: group[0], partners: group.slice(1), number: fight + 1,
+      total: fights.length, defeated: fight, bosses: roster.length, next: fight + 1 < fights.length ? fight + 1 : null };
+  }
+  // A random roster of `length` different bosses from every boss in the game.
+  function randomRoster(length = C.calling.length) {
+    const ids = catalog().bosses.map(e => e.id);
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    return ids.slice(0, clamp(Math.floor(Number(length)) || C.calling.length, C.calling.minLength, ids.length));
+  }
   function start(kind, id, partners = []) {
     // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
     if (!['level', 'arena'].includes(kind)) throw rejected('Unknown game mode');
@@ -514,7 +532,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, describe, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, describe, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
