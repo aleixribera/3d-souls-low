@@ -54,9 +54,7 @@ const multiplayer = (() => {
     <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
-    <div class="lobby-party-actions"><button id="lobbyAddBot" class="ui-button" hidden>Add a friendly bot</button>
-    <button id="lobbyManage" class="ui-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button></div>
-    <p id="lobbyBotHint" class="lobby-hint" hidden></p>
+    <div class="lobby-party-actions"><button id="lobbyManage" class="ui-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button></div>
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
@@ -108,11 +106,11 @@ const multiplayer = (() => {
     #publicLobby .lobby-player{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-height:46px;padding:6px 4px 6px 13px;border-bottom:1px solid var(--ui-line);border-left:3px solid transparent}
     #publicLobby .lobby-player[data-self=true]{border-left-color:var(--ui-accent)}
     #publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 18px/1.3 var(--ui-display)}
-    #publicLobby .lobby-player-role{font:600 var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-accent)}#publicLobby .lobby-player-role.bot{color:var(--ui-muted);font-weight:500}
+    #publicLobby .lobby-player-role{font:600 var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-accent)}
     #publicLobby .lobby-player button{min-height:34px;padding:0 10px;font-size:var(--ui-size-hint)}
     #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px}#publicLobby.managing-party .lobby-player-actions{display:flex}
     #publicLobby .lobby-party-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
-    #publicLobby .lobby-hint{margin:10px 0 0;font:var(--ui-size-hint)/1.5 var(--ui-text);color:var(--ui-muted)}#lobbyBotHint:empty{display:none}
+    #publicLobby .lobby-hint{margin:10px 0 0;font:var(--ui-size-hint)/1.5 var(--ui-text);color:var(--ui-muted)}
     #publicLobby #lobbyLiveWarning{margin:0 0 14px}
     #publicLobby .lobby-footer{grid-area:foot;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;margin-top:max(20px,3vh);padding-top:12px;border-top:1px solid var(--ui-line)}
     #publicLobby .lobby-footer-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:-10px}
@@ -314,7 +312,7 @@ const multiplayer = (() => {
   function showRunSummary(data) {
     summary = data;
     runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
-    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'Every boss beaten' : 'Team wiped';
+    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'Every boss beaten' : (data.players || []).length > 1 ? 'Team wiped' : 'You fell';   // alone, a fall ends the run
     el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
     el('runSummaryBeaten').textContent = `${data.beaten} / ${data.bosses}`;
     // Each boss's time against its par; under par was a swift kill.
@@ -330,7 +328,6 @@ const multiplayer = (() => {
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
       const name = document.createElement('td'); name.textContent = r.name;
-      if (r.bot) { const tag = document.createElement('small'); tag.textContent = 'Bot'; name.appendChild(tag); }
       tr.appendChild(name);
       for (const value of [r.damage, r.deaths]) { const td = document.createElement('td'); td.textContent = Number(value).toLocaleString(); tr.appendChild(td); }
       rows.appendChild(tr);
@@ -536,7 +533,7 @@ const multiplayer = (() => {
     const players = roster.map(p => {
       const state = p.id === self ? Game.player : remotes.get(p.id)?.samples.at(-1);
       const hp = state?.hp ?? p.hp;
-      return { id: p.id, hp, name: p.name + (p.id === self ? ' (you)' : p.bot ? ' (bot)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
+      return { id: p.id, hp, name: p.name + (p.id === self ? ' (you)' : ''), status: hp === null || hp === undefined ? 'Loading' : hp > 0 ? 'Alive' : 'Fallen' };
     });
     const signature = JSON.stringify(players.map(({ id, name, status }) => ({ id, name, status }))), pane = el('onlineAlive');
     if (pane.dataset.players !== signature) {
@@ -1006,33 +1003,21 @@ const multiplayer = (() => {
     el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session || !!controlPending;
     el('lobbyStart').disabled = !connected || !!controlPending || callingByHand() && callingPicks.length < C.calling.minLength;
-    el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start a new run' : 'Start together';
-    el('lobbyManage').hidden = !owner || roster.filter(p => !p.bot).length < 2;
-    const botCount = roster.filter(p => p.bot).length;
-    el('lobbyAddBot').hidden = !owner; el('lobbyAddBot').disabled = !connected || botCount >= C.maxBots;
-    el('lobbyBotHint').hidden = !owner;
-    el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : '';
+    el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start a new run' : roster.length > 1 ? 'Start together' : 'Start';
+    el('lobbyManage').hidden = !owner || roster.length < 2;
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
     // A boss run already names itself in the status line above.
     el('lobbyWaiting').firstElementChild.textContent = session?.gauntlet ? '' : session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'}`
       : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start.`;
     updateConnection(); adventureSummary(); updateLobbyPadHint();
-    const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name, !!p.bot]), self, leader, owner });
+    const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name]), self, leader, owner });
     if (signature !== rosterSignature) {
       rosterSignature = signature; el('lobbyPlayers').textContent = '';
       for (const p of roster) {
         const row = document.createElement('div'); row.className = 'lobby-player';
-        row.dataset.self = String(p.id === self); row.dataset.bot = String(!!p.bot);        const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
+        row.dataset.self = String(p.id === self);
+        const name = document.createElement('span'); name.className = 'lobby-player-name'; name.textContent = `${p.name}${p.id === self ? ' (you)' : ''}`; name.title = name.textContent; row.appendChild(name);
         if (p.id === leader) { const role = document.createElement('span'); role.className = 'lobby-player-role'; role.textContent = 'Leader'; row.appendChild(role); }
-        if (p.bot) {
-          const role = document.createElement('span'); role.className = 'lobby-player-role bot'; role.textContent = 'Bot'; row.appendChild(role);
-          if (owner) {
-            const button = document.createElement('button'); button.className = 'lobby-bot-remove ui-button'; button.textContent = 'Remove';
-            button.setAttribute('aria-label', `Remove bot: ${p.name}`); button.dataset.padKey = 'removeBot/' + p.id;
-            button.onclick = () => control('removeBot', { player: p.id }); row.appendChild(button);
-          }
-          el('lobbyPlayers').appendChild(row); continue;
-        }
         const actions = document.createElement('div'); actions.className = 'lobby-player-actions'; row.appendChild(actions);
         if (owner && p.id !== self) for (const [text, action] of [['Make leader', 'transfer'], ['Remove', 'kick']]) {
           const button = document.createElement('button'); button.className = 'ui-button'; button.textContent = text;
@@ -1236,7 +1221,7 @@ const multiplayer = (() => {
       }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
-      r.name.textContent = s.name + (s.bot ? ' · Bot' : '') + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
+      r.name.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
       updateAllyHealth(r.health, s.hp, s.name);
     }
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
@@ -1479,7 +1464,6 @@ const multiplayer = (() => {
     if (button && !button.disabled && !button.classList.contains('ui-step') && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1), ...(callingChosen() ? callingRequest() : {}) }); };
-  el('lobbyAddBot').onclick = () => control('addBot');
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
   el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
   function lobbyMove(direction) {

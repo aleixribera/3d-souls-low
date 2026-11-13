@@ -46,6 +46,7 @@ async function peer(origin, name) {
   const arrive = async p => { p.send({ type: 'ready', epoch: session.epoch }); pose(p); await flush(p); };
   try {
     const a = await peer(origin, 'Ash'); peers.push(a);
+    app.sim.addBot();   // a test player beside Ash: since pass 52 no bot fills a party
     const bosses = app.sim.catalog().bosses.map(e => e.id), roster = [bosses[0], bosses[3], bosses[5], bosses[7]];
     a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster });
     session = (await a.next('start')).session;

@@ -1,5 +1,5 @@
 'use strict';
-// Friendly bots (v7.11): leader-only controls, roster and frames, real combat credit, team-wipe rules,
+// Bots (v7.11), the loop's test players since pass 52: never in a party; roster and frames, real combat credit, team-wipe rules,
 // and the bot's duel record. node tests/bot.cjs
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -35,21 +35,17 @@ async function join(origin, name) {
   try {
     const a = await join(origin, 'Leader'); peers.push(a);
     const b = await join(origin, 'Guest'); peers.push(b);
-    b.send({ type: 'control', action: 'addBot' });
-    assert.match((await b.next('error')).message, /Only the lobby leader/, 'guests cannot add bots');
-    a.send({ type: 'control', action: 'addBot' });
-    const roster = await b.next('roster', m => m.players.some(p => p.bot));
-    const botRow = roster.players.find(p => p.bot);
-    assert.ok(botRow.name && botRow.ready, 'the bot joins the roster, named and ready');
-    for (let i = 1; i < C.maxBots; i++) { a.send({ type: 'control', action: 'addBot' }); await a.next('roster', m => m.players.filter(p => p.bot).length === i + 1); }
-    a.send({ type: 'control', action: 'addBot' });
-    assert.match((await a.next('error')).message, /at most/, `no more than ${C.maxBots} bots`);
-    b.send({ type: 'control', action: 'removeBot', player: botRow.id });
-    assert.match((await b.next('error')).message, /Only the lobby leader/, 'guests cannot remove bots');
-    a.clear();
-    for (const p of app.sim.botList().slice(1)) a.send({ type: 'control', action: 'removeBot', player: p.id });
-    await a.next('roster', m => m.players.filter(x => x.bot).length === 1);
-    assert.equal(app.sim.botList().length, 1, 'the leader removes bots');
+    // Boss Rush is the party against the bosses (pass 52): no one adds a bot over the wire, the leader included.
+    for (const p of [b, a]) p.send({ type: 'control', action: 'addBot' });
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id });
+    const rush = await a.next('start');
+    assert.equal(app.sim.botList().length, 0, 'no bot joins the lobby or fills a Boss Rush party');
+    assert.equal(rush.session.gauntlet.id, C.calling.id);
+    a.send({ type: 'control', action: 'lobby' }); await a.next('stop');
+
+    // The loop's test players: a bot added to the simulation by hand still fights in a served session.
+    const botRow = app.sim.addBot();
+    assert.ok(botRow.name, 'a test bot is named');
 
     // A boss arena: the guests fall at once; the bot fights on, alone, and the run is not wiped while it stands.
     a.send({ type: 'control', action: 'start', kind: 'arena', id: 'giant' });
@@ -68,8 +64,7 @@ async function join(origin, name) {
       const boss = app.sim.inspect().Game.enemies[0];
       assert.ok(boss.hp < boss.def.hp, 'the bot deals real damage to the shared boss');
     } finally { clearInterval(keep); }
-    a.clear(); a.send({ type: 'control', action: 'removeBot', player: botRow.id });
-    await a.next('roster', m => !m.players.some(p => p.bot));
+    app.sim.clearBots();
     assert.equal(app.sim.inspect().players.filter(p => p.botId).length, 0, 'a removed bot leaves the fight');
   } finally {
     for (const p of peers) p.ws.close();
@@ -94,5 +89,5 @@ async function join(origin, name) {
   const wins = duels.filter(d => d.win).length;
   assert.ok(duels.every(d => !d.timeout), 'solo attempts resolve within seven minutes');
   assert.ok(duels.filter(d => d.damage >= d.initialHp * 0.2).length >= 24, 'bots still make a useful damage contribution');
-  console.log(`Friendly bots: leader-only add/remove, cap, roster, frames, camera, strikes, damage, no wipe while standing, removal passed. Giant Skeleton duels: ${wins}/30.`);
+  console.log(`Bots: none in a lobby or Boss Rush party; a test bot's frames, camera, strikes, damage, no wipe while standing, removal passed. Giant Skeleton duels: ${wins}/30.`);
 })().catch(e => { console.error(e); process.exit(1); });

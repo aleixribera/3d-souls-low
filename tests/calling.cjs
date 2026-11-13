@@ -1,5 +1,5 @@
 'use strict';
-// The Calling (v7.35.0): the leader's co-op boss rush. A chosen or random roster, bots filling the party, one boss at a
+// The Calling (v7.35.0): the leader's co-op boss rush. A chosen or random roster, no bots (pass 52), one boss at a
 // time with the last two together, the fallen rising for the next fight, a refused roster changing nothing.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -61,13 +61,13 @@ async function peer(origin, name) {
     assert.equal(app.session, null, 'a malformed roster starts nothing');
     assert.equal(app.sim.botList().length, 0, 'a refused run adds no bot');
 
-    // A hand-picked roster of three: one fight alone, then the last two together. Two players, so one bot fills in.
+    // A hand-picked roster of three: one fight alone, then the last two together. Two players and no bot (pass 52).
     const roster = [bosses[3], bosses[0], bosses[7]];
     // Every fight's tally gets 10.4 damage more per player, so the run's totals show two fights folded together.
     const tally = app.sim.fightTally; app.sim.fightTally = () => tally().map(r => ({ ...r, damage: r.damage + 10.4 }));
     const opened = await call({ roster });
     assert.equal(opened.opening, true, 'The Calling opens with its own card');
-    assert.equal(app.sim.botList().length, C.calling.fillTo - 2, 'bots fill the party to ' + C.calling.fillTo);
+    assert.equal(app.sim.botList().length, 0, 'no bot fills the party');
     assert.deepEqual(session.gauntlet.roster, roster);
     assert.equal(session.id, roster[0]); assert.deepEqual(session.partners || [], []);
     assert.equal(session.gauntlet.number, 1); assert.equal(session.gauntlet.total, 2);
@@ -83,7 +83,6 @@ async function peer(origin, name) {
     assert.deepEqual(Array.from(app.sim.inspect().Game.enemies, e => e.baseDef.id), roster.slice(1));
     ready(a); ready(b); await flush(b);
     assert.equal(app.clients.get(a.id).pose.hp, 120, 'the fallen rise for the next fight');
-    assert.equal(app.sim.botList().length, 1, 'the bot stays for the whole run');
     finishFight();
     const done = await a.next('stop'); await b.next('stop');
     assert.match(done.message, /BOSS RUSH COMPLETE · All 3 bosses beaten/);
@@ -92,23 +91,21 @@ async function peer(origin, name) {
     const won = done.summary, row = id => won.players.find(r => r.id === id);
     assert.equal(won.outcome, 'won'); assert.equal(won.beaten, 3); assert.equal(won.bosses, 3); assert.deepEqual(won.roster, roster);
     assert.ok(Number.isInteger(won.time) && won.time >= 0, 'the run time is whole seconds');
-    assert.equal(won.players.length, 3, 'both players and the bot');
+    assert.equal(won.players.length, 2, 'both players');
     assert.equal(row(a.id).deaths, 1, 'Ash fell once'); assert.equal(row(b.id).deaths, 0);
-    assert.equal(row(a.id).name, 'Ash'); assert.equal(won.players.filter(r => r.bot).length, 1);
+    assert.equal(row(a.id).name, 'Ash');
     assert.ok(won.players.every(r => r.damage >= 21), 'damage adds up over the fights');
     assert.ok(won.players.every((r, i) => !i || won.players[i - 1].damage >= r.damage), 'most damage first');
     app.sim.fightTally = tally;
     // Again: the leader starts the same roster for the same group.
     await call({ roster: won.roster });
     assert.deepEqual(session.gauntlet.roster, roster); assert.equal(session.gauntlet.number, 1);
-    assert.equal(app.sim.botList().length, 1, 'the same group: no extra bot');
 
     // A random roster: the length the leader chose, every boss different, drawn from every boss in the game.
     await call({ length: 4 });
     const random = session.gauntlet.roster;
     assert.equal(random.length, 4); assert.equal(new Set(random).size, 4); assert.ok(random.every(id => bosses.includes(id)));
     assert.equal(session.gauntlet.total, 3);
-    assert.equal(app.sim.botList().length, 1, 'a party already filled gets no more bots');
     await call({});
     assert.equal(session.gauntlet.roster.length, C.calling.length, 'the default run is ' + C.calling.length + ' bosses');
     await call({ length: 999 });
@@ -122,13 +119,13 @@ async function peer(origin, name) {
     owner().send({ type: 'control', action: 'restart' });
     session = (await a.next('start')).session; await b.next('start');
     assert.equal(session.gauntlet.number, 1); assert.deepEqual(session.gauntlet.roster, whole);
-    app.sim.clearBots(); ready(a); ready(b); await flush(b);
+    ready(a); ready(b); await flush(b);
     app.sim.arenaWipeDelay = 0.1;
     pose(a, true); pose(b, true); await flush(a); await flush(b);
     const wipe = await a.next('stop'); await b.next('stop');
     assert.equal(wipe.reason, 'team-wipe'); assert.match(wipe.message, /TEAM WIPED.*BOSS RUSH/);
     assert.equal(wipe.summary.outcome, 'wiped'); assert.equal(wipe.summary.beaten, 0, 'a restart starts the tally again');
     assert.equal(wipe.summary.bosses, whole.length); assert.equal(wipe.summary.players.find(r => r.id === b.id).deaths, 1);
-    console.log('BOSS RUSH: refused rosters, picked roster, bots fill the party, last two together, the fallen rise, run complete, random and default lengths, restart, wipe, the end-of-run totals and again passed.');
+    console.log('BOSS RUSH: refused rosters, picked roster, no bot in the party, last two together, the fallen rise, run complete, random and default lengths, restart, wipe, the end-of-run totals and again passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
