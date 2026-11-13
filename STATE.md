@@ -11,10 +11,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 41, "new version" item 1, pass 1 of 2): `js/version-check.js` reads `/api/lobby` (title peek, and
+- Track B (pass 41, "new version" item 1 done, v7.61.0): `js/version-check.js` reads `/api/lobby` (title peek, and
   every `CONFIG.versionCheck.interval` s); a newer `version`/`build` puts "New version — Reload" last on the title and
   in pause. Check: `tests/version-notice-browser.cjs` (older page vs server, reload, mid-fight, phone, no lobby);
-  frames `docs/scorecard/version-*.jpg`. Next: the plan's item 2 (updater docs), then Boss Rush item 2, Endless.
+  frames `docs/scorecard/version-*.jpg`. Next: the plan's item 2 (updater docs), then Track B item 2, the UI redesign.
   Item 1 (v7.60.0): title Story / Boss Rush / Practice; Boss Rush (id `boss-rush`, kind `calling`); Practice
   (`practice*`, `CONFIG.practice`). In-page `Title:`, `lobby-controller-browser`, `lobby-peek-browser`.
 - Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
@@ -70,7 +70,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI and the container of v7.60.0 (pushes cancel each other's CI: look at the newest finished run). Probes
+CI and the container of v7.61.0 (pushes cancel each other's CI: look at the newest finished run). Probes
 (untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
