@@ -89,6 +89,9 @@ node tools/pack-baked.cjs <stem>
   touch what you changed, re-run your tests. Bump the version only now (the next one after `origin/main`'s
   `VERSION`), push with `git push origin HEAD:main`, and then tag. If the push is rejected, rebase again and bump again.
   At the end your work is on `main`; leave the worktree itself to the loop chat.
+- **Loop chat, removing a finished worktree:** first unlink the junctions with `cmd /c rmdir <wt>\node_modules` and
+  `<wt>\server\node_modules`. Never let a recursive delete follow them into the main checkout. Then run
+  `git worktree remove --force <wt>` and delete its branch.
 
 ## Feedback
 
