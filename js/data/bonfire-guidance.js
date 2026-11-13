@@ -83,6 +83,14 @@ const BONFIRE_GUIDANCE = {
       [[140,8,-28.5],[140,8,-29],[139,8,-16],[138,0,4],[138,0,62],[133,0,70],[133.5,0,70.5]],
     ] },
   ],
+  "night-gaol": [
+    { id: "night-landing-to-night-isle", from: "night-landing", to: "night-isle", paths: [
+      [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],
+    ] },
+    { id: "night-isle-to-night-last", from: "night-isle", to: "night-last", paths: [
+      [[108,6,-3],[106,6,5],[106,6,44],[106,12,56],[106,12,57],[115,12,65],[131,12,65],[132,12,63],[132,12,62.8]],
+    ] },
+  ],
   "evergaol": [
     { id: "gaol-landing-to-gaol-isle", from: "gaol-landing", to: "gaol-isle", paths: [
       [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],

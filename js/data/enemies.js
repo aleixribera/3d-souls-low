@@ -428,6 +428,18 @@ const ENEMY_DEFS = [
     color: 0xb8b6ac, visual: { ...K.visual, skin: 0xb0aea4 }, hp: 290, poise: 150, turnRate: 2.6, trackRate: 1.0 });
 }
 
+// The Keyless of the Night Gaol (Level 9, v7.42.0; LORE.md 10e): prisoners whose cells fell open long ago, who never went
+// out. They walk in their chains: slower than a Hollow Soldier, harder to stagger, and the chain's weight is in every
+// blow. Rough stand-in: the Hollow Soldier's figure and moves, starlit grey under rusted fetters.
+{
+  const H = ENEMY_DEFS.find(d => d.id === 'hollow');
+  ENEMY_DEFS.push({ ...H, id: 'keyless', model: 'keyless', name: 'Keyless',
+    description: 'Prisoners of the Night Gaol whose doors fell open long ago. They never went out. Slow in their chains, hard to stagger, and the chain\'s weight is in every blow.',
+    color: 0x6a6e78, visual: { ...H.visual, skin: 0x9aa0aa }, hp: 140, poise: 75, speed: 2.1, turnRate: 4.0, trackRate: 1.8, cooldown: [0.9, 1.7],
+    attacks: H.attacks.map(a => ({ ...a, id: a.id === 'swing' ? 'fetterSwing' : 'chainChop', name: a.id === 'swing' ? 'Fetter Swing' : 'Chain Chop',
+      damage: Math.round(a.damage * 1.15), poise: Math.round(a.poise * 1.2) })) });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

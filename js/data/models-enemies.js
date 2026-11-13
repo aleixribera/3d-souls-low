@@ -639,6 +639,23 @@ MODEL_DEFS.lanternBearer = {
   },
   eyes: { color: 0xffb050 },
 };
+// The Keyless (Level 9, v7.42.0; LORE.md 10e): the Hollow Soldier's figure as a prisoner of the Night Gaol: skin grey
+// under the starlight, a faded prison quilt, rusted iron at the straps and plates, a length of fetter for a blade. A
+// stand-in until its own Blender figure.
+MODEL_DEFS.keyless = {
+  extends: 'hollowSoldier',
+  materials: {
+    ...MODEL_DEFS.hollowSoldier.materials,
+    skin: { tex: 'rotSkin', tint: 0xa4a8b0, decay: 0.75 },
+    quilt: { tex: 'quiltedGambeson', tint: 0x6a6c74, decay: 0.8 },
+    trousers: { tex: 'rottenCloth', tint: 0x4a4c56, decay: 0.8 },
+    strap: { tex: 'rustedIron', tint: 0x7a6656, decay: 0.8 },
+    iron: { tex: 'rustedIron', tint: 0x7a6a5c, decay: 0.75, double: true },
+    blade: { tex: 'rustedIron', tint: 0x6a625a, decay: 0.7 },
+    eye: { glow: 0xb8c8ff },
+  },
+  eyes: { color: 0xb8c8ff, size: 0.011 },
+};
 // The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
 // over grey-green cloth. A stand-in until its own Blender figure.
 MODEL_DEFS.saltKnight = {

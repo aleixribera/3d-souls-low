@@ -2163,11 +2163,11 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 8; Saltgrave is the last chapter built so far', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 9; the Night Gaol is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('saltgrave') === null, 'nothing after Saltgrave yet');
+    expect.ok(S().nextLevelId('night-gaol') === null, 'nothing after the Night Gaol yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2286,13 +2286,24 @@
     expect.ok(Game.story && Game.level.id === 'saltgrave' && S().data.level === 'saltgrave', `chapter 8 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('saltgrave')[0] === 'SALTGRAVE' && /a crown that does not answer/.test(Game.levelCard('saltgrave')[1]), 'its title and line');
   }));
-  test('Story: beating the Castellans, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+  test('Story: beating the Castellans goes on to chapter 9, the Night Gaol (v7.42.0)', withSave(() => {
     S().jumpTo('saltgrave'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'saltgrave', 'chapter 8 starts');
     const twins = Game.enemies.filter(e => e.baseDef.id === 'hale' || e.baseDef.id === 'harrow');
     expect.ok(twins.length === 2, 'two castellans hold the roof');
     for (const z of Game.zones) if (z.id !== 'zone-castellans') { z.gate.open = true; z.beaten = true; }   // the fights before the roof, won
     for (const o of twins) for (let i = 0; i < 10 && o.alive(); i++) { o.deplete(); sim.seconds(1); sim.until(() => o.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'night-gaol' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'night-gaol' && S().data.level === 'night-gaol', `chapter 9 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('night-gaol')[0] === 'THE NIGHT GAOL' && /Thrale too had a bell/.test(Game.levelCard('night-gaol')[1]), 'its title and line');
+  }));
+  test('Story: beating the Ringer of Thrale, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('night-gaol'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'night-gaol', 'chapter 9 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'ringer');
+    expect.ok(r && r.def.name === 'The Ringer of Thrale', 'the Ringer keeps the great ring');
+    for (const z of Game.zones) if (z.id !== 'zone-ringer') { z.gate.open = true; z.beaten = true; }   // the cells, won
+    for (let i = 0; i < 4 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
     sim.until(() => Game.screen === 'storyDone', 20);
     const screen = Game.screens().storyDone;
     expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, `the road's closing screen (${Game.screen})`);

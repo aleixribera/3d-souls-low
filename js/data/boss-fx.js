@@ -83,4 +83,9 @@ const BOSS_FX = {
   harrow: { element: 'earth', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
     kneelGate: { impact: 'quake' }, fallingWeight: { impact: 'quake' }, twoSteps: { element: 'steel' }, grindingRun: { element: 'steel' }, rearBackhand: { element: 'steel' },
     galeLeap: { element: 'storm', impact: 'gale' }, wallCuts: { element: 'steel' }, sistersHalf: { impact: 'shatter', windup: 'gather' } } },
+  // The Ringer of Thrale (Level 9): old iron and bronze while she is chained; once she rings the blows (the second phase),
+  // the bell's cold toll.
+  ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {
+    fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' }, bellFalls: { impact: 'toll', windup: 'gather' }, bellFalls2: { impact: 'toll', windup: 'gather' },
+    cellLeap: { impact: 'shatter' }, knell: { element: 'toll', impact: 'toll' }, greatKnell: { element: 'toll', impact: 'toll', windup: 'gather' } } },
 };

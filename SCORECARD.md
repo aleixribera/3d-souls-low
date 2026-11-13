@@ -36,6 +36,7 @@ Scored from each level's opening frame only (pass 1); a deeper look plays throug
 | 6. The Church in the Pass | 3 | The Blender church in a snowy pass; the snow is a flat white that washes out the ground and the HUD panel. | `docs/scorecard/level-the-church.jpg` |
 | 7. The Windward Moor | 2 | Rough (v7.38.0): playable to Old Ostrey in Story mode, a slate storm over Stormhill's old layout, but its thralls and porter wear borrowed, re-coloured figures and the porter reads dark at fighting distance. | `docs/scorecard/moor-ostrey.jpg`, `moor-flock.jpg` |
 | 8. Saltgrave | 2 | Rough (v7.40.0): playable to the twin castellans on the tower roof in Story mode, both readable and front-lit at fighting distance, but the twins and Salt Knights wear re-coloured stand-in figures and the hall's kneeling statues read dark. | `docs/scorecard/salt-castellans.jpg`, `salt-statues.jpg`, `salt-gatehouse.jpg` |
+| 9. The Night Gaol | 2 | Rough (v7.42.0): playable to the Ringer of Thrale in the great ring in Story mode, the evergaol's star-hung cells kept, but the Ringer and the Keyless wear re-coloured stand-in figures, read small and dark on the blue floor, and show no chains. | `docs/scorecard/gaol-ringer.jpg`, `gaol-keyless.jpg`, `ringer-lab.jpg` |
 
 ## Bosses: with 1 and with 3 players
 

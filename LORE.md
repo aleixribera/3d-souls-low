@@ -248,6 +248,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* You can taste the sea in the rain. I had never seen the sea.
 
+### Level 9 — The Night Gaol (on the landing, by the first bonfire)
+1. There is no ground under this place. Only the sky, and the cells hung in it like lanterns.
+2. The song says Thrale had a bell too, once. Someone rang it without leave, and they shut her up here for it.
+3. The prisoners still wear their chains. The doors fell open long ago. Nobody came to tell them.
+4. Mind the bridges. There is nothing at the sides of them, not even wind.
+5. My father used to say you can tell a bellwright by the hands. I should like to see hers.
+6. Go on. I'll keep the fire. It's the only warm thing up here.
+
+*Idle:* The stars are very close here. I keep wanting to reach one down.
+
 ---
 
 ## 7. Inscriptions
@@ -292,6 +302,12 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 - **In the hall of kneeling statues**: "Here the garrison of Saltgrave knelt to the crown. Here it kneels."
 - **On the tower stair** (before the fog): "Hale keeps the helm, Harrow the greaves. Between them, one castellan."
 
+### Level 9 — The Night Gaol
+- **The seal on the landing** (by the first bonfire): "Rang without leave. Kept without end."
+- **Scratched in a cell's floor**: "The door is open. Where would we go?"
+- **Before the great ring** (by the last bonfire): "Here is kept the Ringer of Thrale, until the crown forgives." Someone has
+  scratched beneath it: "It forgot."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -321,8 +337,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 8,
-Saltgrave) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 9,
+the Night Gaol) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -331,6 +347,7 @@ Saltgrave) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters a
 1. **Who rang the Bell the first time, and which ruler came out?** The crack is the only proof it happened.
 2. **Did the queen and the boy truly die of the plague?** Theirs is the one portrait Aldric never cut from its
    frame, and the Ember was already beneath him the winter they died.
+3. **The Ringer of Thrale has a bellwright's hands.** Whose daughter she was, no song says.
 
 ---
 
@@ -371,6 +388,21 @@ falls, the other kneels, takes up her sister's half, and fights on alone.
 The **Salt Knights** are Saltgrave's garrison, their armour crusted white by the sea wind. They keep the walls. In the
 hall below the tower, the ones who stopped keeping them kneel in stone.
 
+## 10e. Level 9 — The Night Gaol (chapter 9 of the Story)
+Chapter 9, after Saltgrave. **The Night Gaol** is Thrale's prison, hung among the stars: cells of old stone on
+nothing, rune circles on their floors, joined by bridges with no rail, climbing to the great ring at the top. Thrale's
+kings put there what they would not see again.
+
+Thrale too had a bell. Long ago, before the Seven left, someone rang it without leave, and the crown shut her in the
+great ring for it, in chains, until the crown should forgive. The crown forgot. **The Ringer of Thrale** is there
+still, still chained, still fighting whoever comes into the ring. The iron that held her to the wall has stood open for
+longer than anyone remembers; she does not know she is free. She swings a bell on a haft, as if she could ring it yet,
+and when she is hurt past half she stops answering the blows and starts ringing them: a knell runs out round her along
+the stones. Who she rang for, and what came out, the song does not say. Her hands are a bellwright's hands.
+
+The **Keyless** are the gaol's other prisoners. Their doors fell open long ago, and they never went out. One warden
+is left, empty in its armour, and still keeps the cells. They walk in their chains, and swing them.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -394,6 +426,9 @@ hall below the tower, the ones who stopped keeping them kneel in stone.
 | The place of Level 8 | Saltgrave, Thrale's border fortress |
 | The bosses of Level 8 | Hale and Harrow, the Castellans |
 | The enemy of Level 8 | the Salt Knights |
+| The place of Level 9 | the Night Gaol, Thrale's prison among the stars |
+| The boss of Level 9 | the Ringer of Thrale |
+| The enemy of Level 9 | the Keyless |
 
 ---
 ---

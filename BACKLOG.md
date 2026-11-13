@@ -70,3 +70,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Pillager Captain (v7.41.0, pass 16): the helm's face reads as a plain bucket from the front (a visor ridge or
   breaths would break it up); the `dentedSteel` plate shows horizontal streaks; the halberd's glowing edge is the kit's
   flat yellow card (`embers.edge`), not a lit blade (`docs/scorecard/captain-lab.jpg`). Its second step, stage 4.
+- Chapter 9, the Night Gaol (v7.42.0, pass 17), rough; its second step: the Ringer's and the Keyless's own figures
+  (stand-ins: the Rogue in gaol-grey with the Bell Warden's maul at 0.6 size, the Hollow Soldier in starlit grey;
+  `docs/scorecard/ringer-lab.jpg`), chains that show on both, the knell drawn as more than the ground ring, a mark on the
+  ring's floor where she was held. The Ringer reads small and dark against the ring's blue floor
+  (`gaol-ringer.jpg`); the Keyless barely read in the cells (`gaol-keyless.jpg`). Her moves are the Crucible Knight's
+  without the shield: 3,000 HP (was 2,600 behind a 70 % shield); no one has fought her by hand yet. `shackledRush` stays
+  unparryable, as the shield bash was.
+- The evergaol's own lore (`js/data/lore-lands.js` 82-83) has three shackles and a corpse inside cell pillars; fixed in
+  the Night Gaol's copy, left in the old road (no more work on it, `PLAN.md`).

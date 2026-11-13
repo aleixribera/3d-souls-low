@@ -15,7 +15,8 @@
     return zone;
   };
   test('Saltgrave: Level 8 follows the moor, as chapter 8 of the Story', () => {
-    expect.ok(A.LEVELS.at(-1).id === 'saltgrave' && A.LEVELS.at(-2).id === 'windward-moor', 'listed after the moor');
+    const i = A.LEVELS.findIndex(l => l.id === 'saltgrave');
+    expect.ok(i > 0 && A.LEVELS[i - 1].id === 'windward-moor', 'listed after the moor');
     expect.ok(A.STORY.chapters[7].level === 'saltgrave' && A.STORY.chapters[7].title === 'SALTGRAVE', 'chapter 8 of the Story');
     expect.ok(A.LEVEL_7.next === 'saltgrave', 'the Levels menu carries on from the moor too');
   });

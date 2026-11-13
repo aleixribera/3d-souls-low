@@ -12,6 +12,7 @@
 //   stair up to the tower roof (y 10): Hale and Harrow, the Castellans, together, in the storm.
 const LEVEL_8 = {
   id: 'saltgrave', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'night-gaol',   // v7.42.0: on to Thrale's gaol among the stars (chapter 9)
   name: 'Level 8: Saltgrave',
   description: 'Thrale\'s border fortress over the sea, in the rain. The great gate is barred: go round by the cliffs, the outer rampart and the hall of statues, up to the tower roof.',
   help: 'Level 8: the great gate is barred, so take the side passage south. Things crouch on the walls over the cliff walk. On the tower roof the castellans fight together: keep one between you and the other.',

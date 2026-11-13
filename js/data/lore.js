@@ -244,5 +244,32 @@ const LORE = {
         { kind: 'corpse', pose: 'reaching', x: 138.3, y: 10, z: 92.2, yaw: 0 },
       ],
     },
+    // Chapter 9 (v7.42.0; LORE.md 10e): Thrale's gaol among the stars.
+    'night-gaol': {
+      npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'night-landing',
+        lines: [
+          'There is no ground under this place. Only the sky, and the cells hung in it like lanterns.',
+          'The song says Thrale had a bell too, once. Someone rang it without leave, and they shut her up here for it.',
+          'The prisoners still wear their chains. The doors fell open long ago. Nobody came to tell them.',
+          'Mind the bridges. There is nothing at the sides of them, not even wind.',
+          'My father used to say you can tell a bellwright by the hands. I should like to see hers.',
+          'Go on. I\'ll keep the fire. It\'s the only warm thing up here.',
+        ],
+        idle: 'The stars are very close here. I keep wanting to reach one down.' }],
+      inscriptions: [
+        { id: 'l9-seal', x: 11, z: 4.5, yaw: -Math.PI / 2, mount: 'floor', label: 'Seal on the landing',
+          lines: ['"Rang without leave. Kept without end."'] },
+        { id: 'l9-cell', x: 92.4, y: 6, z: -6.5, yaw: -Math.PI / 2, mount: 'floor', label: 'Scratched in a cell\'s floor',
+          lines: ['"The door is open. Where would we go?"'] },
+        { id: 'l9-ring', x: 138.6, y: 12, z: 67.5, yaw: Math.PI / 2, mount: 'floor', label: 'Cut before the great ring',
+          lines: ['"Here is kept the Ringer of Thrale, until the crown forgives."', 'Someone has scratched beneath it: "It forgot."'] },
+      ],
+      scenes: [
+        { kind: 'candle', x: 1.6, z: 5.6 },
+        { kind: 'shackles', x: 33.5, z: -7 }, { kind: 'shackles', x: 91, y: 6, z: 7 }, { kind: 'shackles', x: 97.5, y: 12, z: 73 },
+        { kind: 'shackles', x: 176, y: 12, z: 85.2 },   // the ring's wall-iron, long open; she drags the rest of her chain
+        { kind: 'corpse', pose: 'seated', x: 48.2, z: 6.8, yaw: -Math.PI / 2 },
+      ],
+    },
   },
 };
