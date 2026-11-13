@@ -221,7 +221,8 @@ for (const profile of profiles) {
     }
   }
   // A slipped roll (BOT_MOODS[].slip, v7.52.0) can be late: in this frozen fixture the blow never opens, so it never fires.
-  assert.ok(responses >= 2000 * 0.97, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
+  // Without the old last-stand forward rolls (pass 32), which never slip, about 3-5% of rolls slip late here.
+  assert.ok(responses >= 2000 * 0.94, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
   const rate = parries / responses;
   assert.ok(Math.abs(rate - b.profile.parry * 0.1) < 0.025, profile + ' parry rate is one tenth of its former preference (' + (rate * 100).toFixed(1) + '%)');
   console.log(profile + ': parried ' + parries + '/' + responses + ' eligible blows.');
@@ -413,24 +414,62 @@ for (const atWall of [false, true]) {
     atWall ? 'a forward path into the arena wall falls back to an escape' : 'the bot sometimes rolls straight toward the boss');
 }
 
-// Surviving without a human makes the aid press harder, while a living player keeps the normal personality.
-for (const allyKind of ['none', 'bot', 'human']) {
-  const withHuman = allyKind === 'human';
+// An aid, not a carry (pass 32): a lone bot does not press harder once its party has fallen, and a hurt bot with no
+// flask left, or the boss's mark while someone else can fight it, takes no greedy trade.
+function riskOver(seconds, { allies = [], hp = 1, flasks = null, target, person = false } = {}) {
   const { sim, b, p, e } = waiting('giant', 'tobin');
-  // Its mood at a steady 0.5 draw is wary, which scales greed 0.5 to 0.3 (v7.52.0).
-  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0.5, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
-  p.z = e.z + e.radius + p.radius + 0.5; e.cooldown = 30;
-  const allies = allyKind === 'none' ? [] : [{ botId: withHuman ? null : 'ally-bot', alive: () => true }];
-  let riskBefore = false, riskAfter = false;
-  for (let i = 0; i < 18 * 60; i++) {
+  if (person) allies = [{ botId: null, x: e.x, z: e.z - e.radius - 2, radius: 0.4, alive: () => true }];
+  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 1, forward: 0 }, seeded(5)); p.ctl = b.brain.hands;
+  p.z = e.z + e.radius + p.radius + 0.5; e.cooldown = 30; p.hp = p.maxHp * hp;
+  if (flasks !== null) p.item('flask').count = flasks;
+  e.netTarget = target === undefined ? null : target === 'me' ? p.botId : target;
+  let risked = false, late = false;
+  for (let i = 0; i < seconds * 60; i++) {
     b.brain.think(dt, p, [e], allies); b.brain.hands.clear();
-    if (i < 11 * 60) riskBefore ||= b.brain.risking;
-    else riskAfter ||= b.brain.risking;
+    risked ||= b.brain.risking; if (i >= 12 * 60) late ||= b.brain.risking;
   }
-  assert.equal(riskBefore, false, 'last-stand pressure has a grace period');
-  assert.equal(riskAfter, !withHuman, 'only a party with no surviving human increases its risk after the grace period');
+  return { risked, late };
 }
-console.log('Bot risk: real punishable trades, greedy combo extensions, forward dodges, wall vetoes and last-stand urgency passed.');
+{
+  const alone = riskOver(18), withHuman = riskOver(18, { allies: [{ botId: null, alive: () => true }] });
+  assert.ok(alone.risked && withHuman.risked, 'a healthy greedy bot takes greedy trades');
+  assert.equal(riskOver(18).late, withHuman.late, 'a bot with no living person beside it is no greedier than one with');
+  assert.equal(riskOver(18, { hp: 0.3 }).risked, false, 'a badly hurt bot takes no greedy trade');
+  assert.equal(riskOver(18, { hp: 0.5, flasks: 0 }).risked, false, 'a hurt bot with no flask left takes no greedy trade');
+  assert.equal(riskOver(18, { target: 'me', person: true }).risked, false, "the boss's mark gives way when someone else can fight it");
+  assert.ok(riskOver(18, { target: 'me' }).risked, "alone, the boss's mark still fights");
+}
+// Room: a bot steps out of a person's lane to the boss, and never stands on top of them.
+{
+  const { sim, b, p, e } = waiting('giant', 'quill');
+  e.cooldown = 30;
+  const front = e.radius + 1.0;
+  const person = { id: 'p0', x: e.x, y: e.y, z: e.z + front + 0.4, yaw: Math.PI, hp: 100, state: 'idle', stateTime: 0, grounded: true };
+  p.x = e.x + 0.3; p.z = person.z + 1.4; p.vx = p.vz = 0; p.savePrev();
+  let worstLane = Infinity, closest = Infinity;
+  for (let i = 0; i < 6 * 60; i++) {
+    sim.setPlayers([person]); sim.tick(dt); e.cooldown = 30;
+    if (i >= 3 * 60) {
+      const lane = Math.abs(Math.atan2(Math.sin(Math.atan2(p.x - e.x, p.z - e.z) - Math.atan2(person.x - e.x, person.z - e.z)), Math.cos(Math.atan2(p.x - e.x, p.z - e.z) - Math.atan2(person.x - e.x, person.z - e.z))));
+      worstLane = Math.min(worstLane, lane); closest = Math.min(closest, Math.hypot(p.x - person.x, p.z - person.z));
+    }
+  }
+  assert.ok(worstLane > 0.45, `the bot leaves the person's lane to the boss (closest ${worstLane.toFixed(2)} rad off it)`);
+  assert.ok(closest > 1.6, `the bot keeps its distance from the person (closest ${closest.toFixed(2)} m)`);
+  console.log(`Bot room: ${worstLane.toFixed(2)} rad off the person's lane at worst, ${closest.toFixed(2)} m from them at closest.`);
+}
+// A thick ring touches a body when its outer edge arrives, not its middle (pass 32: bots used to roll after Hollis's
+// The Hunger Shows had already caught them, at full health and full stamina).
+for (const dist of [3.8, 6]) {
+  const { sim, b, p, e } = waiting('hollis', 'maren');
+  b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 0, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
+  e.cooldown = 30; e.yaw = 0; p.x = e.x; p.z = e.z + dist; p.vx = p.vz = 0; p.savePrev();
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'hungerShows'));
+  const hp = p.hp;
+  for (let i = 0; i < 5 * 60; i++) { sim.setPlayers([]); sim.tick(dt); }
+  assert.equal(p.hp, hp, `a bot ${dist} m out rolls through both of The Hunger Shows' rings`);
+}
+console.log('Bot risk: real punishable trades, greedy combo extensions, forward dodges, wall vetoes and caution passed.');
 
 
 // Forward rolls are not secretly given extra i-frames: a wide sweep can catch their early roll/blocked landing.

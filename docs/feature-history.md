@@ -603,3 +603,11 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Strings (`stringOf`): wait out an enemy's hits left and follow-ups from past their reach, go in after; roll or walk away from a string, not across it; let a blow aimed elsewhere or out of reach go by (`aimedElsewhere`, `clearOf`); a bow's draw stays a window.
 - Executions and ripostes are the player's while one is within `CONFIG.bot.execution.yield` m; the bot takes one only late in the window.
 - Three-bot boss fights 60/132 to 111/132 wins, damage 519 to 368, roll chains 419 to 146, swings into a string 943 to 260 (`docs/scorecard/bot-temperament.txt`, `tools/bot-fights.cjs`). Design: `docs/bot-temperament-v7.52.0.md`. Tests: `tests/bot-temperament.cjs`; `bot-behavior` and `bot` fixtures adjusted (slip-free draws, a four-minute solo limit for patient bots).
+
+## Bots as an aid, not a carry (v7.55.0, Aleix's 2026-11-13 follow-up)
+- Weaker: a bot's blows and executions deal `CONFIG.bot.damage` (0.75) of the same move's (`Player.strikeBoost`, `execution.impact`); greed is lower in every `BOT_MOODS` temperament; the lone bot's last stand is gone.
+- Caution (`CONFIG.bot.caution`, `think` in `js/bot.js`): under 40% health (60% with no flask) a bot takes no trade, goes in only with more time to spare, keeps more room, waits twice as long before forcing an exchange and slips half as often. With the boss on it and someone else near (`huntedBy`), it gives room and forces nothing, so the boss turns its back on the others.
+- Heal: it drinks at 55%, and backs off to drink for as long as the boss is on someone else.
+- Room (`CONFIG.bot.room`, `room()`): standoff moves push off people and other bots, and sideways off a person's line to the boss.
+- Rings: a ring's eta uses its outer edge, so bots roll thick rings (Hollis's The Hunger Shows) instead of standing in them.
+- Story bosses, three bots, 10 fights each: wins 118 to 113/130, damage a bot 16.5 to 8.9/s, time alive a bot 126 to 234 s, deaths per ten bot-minutes 0.78 to 0.51; total deaths 64 to 77, because bot-only fights last 1.8x as long (`docs/scorecard/bot-aid.txt`, `tools/bot-fights.cjs story`). Tests: `bot-behavior` (caution, room, ring), `boss-attention` (the boss turns on every bot; two of three get hit), `bot` (a seven-minute solo limit).

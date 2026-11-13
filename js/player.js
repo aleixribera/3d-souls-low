@@ -144,6 +144,8 @@ class Player {
     }
     return best;
   }
+  // The extra damage share its strikes carry: a Whetted Edge blessing's boon, and a bot's smaller share (CONFIG.bot.damage).
+  strikeBoost() { return (1 + this.boons.damage) * (this.botId ? CONFIG.bot.damage : 1) - 1; }
   // Shared by ground and jump attacks: aim, riposte bonus, stamina.
   beginAttack(a, mv, face, enemies) {
     const auto = face === null ? this.autoAim(mv, enemies) : null;
@@ -151,7 +153,7 @@ class Player {
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
-    this.payload = makeStrike(a, this.riposte > 0, 0, this.boons.damage);
+    this.payload = makeStrike(a, this.riposte > 0, 0, this.strikeBoost());
     this.riposte = 0;
     this.spend(a.cost || 0);
     this.hitbox = null;
@@ -279,7 +281,7 @@ class Player {
           if (this.ctl.isHeld(ch.action) && this.chargeT < ch.hold) {
             this.chargeT = Math.min(ch.hold, this.chargeT + dt);
             if (this.chargeT >= ch.hold) events.emit('chargeFull', { actor: this, attack: a });
-          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold, this.boons.damage); }
+          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold, this.strikeBoost()); }
         }
         if (this.charge !== 1) this.attackT += dt;
         if (ch && this.charge === 0 && this.attackT >= a.hits[0].startup * ch.at) {

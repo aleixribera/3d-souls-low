@@ -39,7 +39,8 @@ const STEP = 1 / 60;
   console.log('rule: closest, then the striker, then the drinker, then the closest again; alone, unchanged');
 }
 
-// Three bots against bosses: each fight sees the boss change target at least twice, and every bot gets hit. The boss's
+// Three bots against bosses: each fight sees the boss change target at least twice and turn on every bot, and most
+// of them get hit (since pass 32 a careful bot can go a whole fight unscratched). The boss's
 // bar is topped up past half so a quick win doesn't end the fight before everyone has been in it. The fights are seeded
 // (`createSimulation({ seed })`), so they replay the same way every run.
 const lines = [];
@@ -47,19 +48,20 @@ for (const boss of ['pillagerCaptain', 'bellWarden', 'ostrey']) {
   const sim = createSimulation({ seed: 7 }); for (let i = 0; i < 3; i++) sim.addBot();
   sim.start('arena', boss); sim.setPlayers([]);
   const { Game, players } = sim.inspect(), e = Game.enemies.find(e => e.isBoss());
-  const best = players.map(p => p.hp), hit = new Set();
+  const best = players.map(p => p.hp), hit = new Set(), targeted = new Set();
   let last = null, switches = 0, serial = 0, area = 0, attacks = 0, t = 0;
   for (; t < 240 * 60 && e.alive() && !sim.botsDown(); t++) {
     sim.setPlayers([]); sim.tick(STEP);
     if (e.hp < e.def.hp * 0.5) e.hp = e.def.hp * 0.8;
-    if (e.netTarget && e.netTarget !== last) { if (last) switches++; last = e.netTarget; }
+    if (e.netTarget && e.netTarget !== last) { if (last) switches++; last = e.netTarget; targeted.add(last); }
     players.forEach((p, i) => { if (p.hp < best[i]) hit.add(i); best[i] = Math.max(best[i], p.hp); });
     if (e.netAttack !== serial) { serial = e.netAttack; attacks++; if (e.attack && e.attack.hits.some(h => { const b = h.box || e.attack.box; return b && (b.ring || b.w >= RULE.areaWidth); })) area++; }
-    if (switches >= 2 && hit.size === 3) break;
+    if (switches >= 2 && targeted.size === 3 && hit.size >= 2) break;
   }
-  lines.push(`${boss.padEnd(16)} ${(t / 60).toFixed(0)} s: ${switches} target changes, ${hit.size}/3 bots hit, ${area}/${attacks} area attacks`);
+  lines.push(`${boss.padEnd(16)} ${(t / 60).toFixed(0)} s: ${switches} target changes, ${targeted.size}/3 bots targeted, ${hit.size}/3 bots hit, ${area}/${attacks} area attacks`);
   assert.ok(switches >= 2, `${boss}: changed target ${switches} times`);
-  assert.equal(hit.size, 3, `${boss}: hit ${hit.size} of 3 bots`);
+  assert.equal(targeted.size, 3, `${boss}: turned on ${targeted.size} of 3 bots`);
+  assert.ok(hit.size >= 2, `${boss}: hit ${hit.size} of 3 bots`);
 }
 console.log(lines.join('\n'));
 console.log('boss attention: ok');

@@ -4,12 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 30, pass 1 of `PLAN.md` track A item 1, the ending): the King's Blade's death plays the story's ending
-  (`LORE.endings['still-mere']`, `LEVEL_14.ending`), the credits and STORY COMPLETE; `goesOn` dropped. Check:
-  frames `docs/scorecard/ending-{desktop,phone}-*.jpg`, the in-page `King's Blade's death` and `Still Mere:` tests.
+- Track A (pass 30, item 1, v7.53.0): the story's ending; frames `docs/scorecard/ending-*.jpg`, in-page `Still Mere:`.
   Next on the track: item 2, Ostrey redone.
 - Pass 31 (`PLAN.md` clean-up item 1, v7.54.0): the Lands and the Elden Ring bosses left; Boss Rush and the Arena list
   the story's 14 bosses. Checked: in-page `Story boss`, `calling-browser.cjs`, `boss-battle-browser.cjs`.
+- Bots (pass 32, v7.55.0): an aid, not a carry; check `docs/scorecard/bot-aid.txt`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
@@ -49,8 +48,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
   by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
   `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
-- Bots (v7.52.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; three-bot fights with behaviour
-  counts `node tools/bot-fights.cjs [boss|all] [n]` (`MOODS=1` logs each bot's choices), about five minutes for all.
+- Bots (v7.52.0, v7.55.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; caution, room, rings:
+  `bot-behavior.cjs`; three-bot fights `node tools/bot-fights.cjs [boss|story|all] [n]` (`story 10`: 25 min).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
@@ -67,7 +66,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI and the v7.54.0 container (pass 31's one road): check in the next pass. Probes
+CI and the v7.54.0 (pass 31) and v7.55.0 (pass 32) containers: check in the next pass. Probes
 (untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames).
 
 ## wip// branches
@@ -80,8 +79,8 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) Bot strength: three bots now win 111/132 boss fights (60 before), more than "a bit"; raising
-  the slips moved it little. Knobs: `slip` and `greed` in `BOT_MOODS`.
+- (overridable) Bot strength (v7.55.0): 75% damage (`CONFIG.bot.damage`; 0.8: 117/130, 59 deaths), more caution:
+  113/130 story wins; a bot dies 35% less a minute, but bot-only fights last 1.8x as long.
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
   (`CONFIG.group`). Tuned on bots, who fight worse than people; tuned when the Lands bosses still existed. Worth a feel check with friends.

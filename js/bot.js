@@ -69,8 +69,8 @@ const bot = (() => {
       eta = hit.active + (hit.follow || 0) - e.stateTime + a.hits[i + 1].startup; hit = a.hits[++i];
     }
     const b = hit.box || a.box;
-    if (b.ring) {   // an expanding ring reaches this body a little after it opens
-      const d = Math.hypot(e.x - me.x, e.z - me.z);
+    if (b.ring) {   // an expanding ring reaches this body a little after it opens: when its outer edge touches it (pass 32: not its middle)
+      const d = Math.hypot(e.x - me.x, e.z - me.z) - me.radius - b.ring.width / 2;
       eta += b.ring.time * clamp((d - b.ring.from) / Math.max(0.01, b.ring.to - b.ring.from), 0, 1);
     }
     // Blows that follow too closely to roll twice: one roll's i-frames must span them all (`end`).
@@ -140,6 +140,14 @@ const bot = (() => {
     const b = blow.hit.box || blow.attack.box;
     if (!e.netTarget || e.netTarget === me.botId || b.ring || blow.hit.blink || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
     return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) > Math.PI / 2 + B().behindMargin;
+  }
+  // The enemy's attention is on `me`: the server's netTarget where it is known, else (a solo companion) it faces `me`
+  // and nobody else is nearer to it.
+  function huntedBy(e, me, allies) {
+    if (e.netTarget !== undefined && e.netTarget !== null) return e.netTarget === me.botId;
+    const mine = Math.hypot(me.x - e.x, me.z - e.z);
+    if (allies.some(a => a.alive() && Number.isFinite(a.x) && Math.hypot(a.x - e.x, a.z - e.z) < mine)) return false;
+    return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) < Math.PI / 4;
   }
   // On its floor (a leaping enemy is in the air above it, and still coming).
   const level = (e, me) => e.leaping || Math.abs(e.y - me.y) <= CONFIG.height.reach + 1;
@@ -211,7 +219,7 @@ const bot = (() => {
     let lastAttacking = false, lastMove = null, lastMoveTime = 0;
     const newBurst = () => Math.floor(span([profile.burst[0], profile.burst[1] + 1], rng));
     let burstLeft = newBurst();
-    let riskLeft = 0, riskWait = span(C.risk.interval, rng), aloneTime = 0, lastStand = false;
+    let riskLeft = 0, riskWait = span(C.risk.interval, rng), wary = false, steady = false;
 
     function chooseTactic() {
       const all = Object.entries(profile.patterns).filter(([, weight]) => weight > 0);
@@ -297,10 +305,11 @@ const bot = (() => {
           jumpLead(e, blow, me) : null;
         const response = parry ? 'parry' : walk ? 'space' : jump && rng() < profile.jumpDodge ? 'jump' : 'roll';
         // A forward gamble trades one blow; inside a string with more to come it would only roll into the next.
-        const risky = response === 'roll' && !moreAfter(e, blow) && rng() < profile.forward + (lastStand ? C.risk.lastStandBonus : 0);
+        const risky = response === 'roll' && !moreAfter(e, blow) && !wary && rng() < profile.forward;
         const early = risky && rng() < C.risk.earlyRollChance;
-        // A slip: now and then a roll goes too early (its i-frames run out first) or too late, as a person's would.
-        const slip = response === 'roll' && !risky && mood && rng() < mood.slip ? (rng() < 0.6 ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
+        // A slip: now and then a roll goes too early (its i-frames run out first) or too late, as a person's would;
+        // less often when badly hurt and minding every blow (CONFIG.bot.caution.slip).
+        const slip = response === 'roll' && !risky && mood && rng() < mood.slip * (steady ? C.caution.slip : 1) ? (rng() < 0.6 ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
         s = { key, at: hands.time + span(C.notice, rng), plan: response, done: false, walk, risky, slip: slip !== null,
           lead: slip !== null ? slip : response === 'parry' ? span(C.parryLead, rng) : response === 'jump' ? span(jump, rng) : span(early ? C.risk.rollLead : C.rollLead, rng) };
         seen.set(e, s);
@@ -394,7 +403,7 @@ const bot = (() => {
       target = nextTarget;
       if (!target) {
         quietSince += dt;
-        aloneTime = 0; lastStand = false;
+        wary = steady = false;
         hands.hold('block', false); hands.hold('heavy', false);
         if (cheer > 0 && (cheer -= dt) <= 0.2 && me.isFree() && me.canAct()) { hands.press('jump'); cheer = 0; }
         const lead = leader || allies.filter(a => !a.botId && a.alive()).sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
@@ -402,8 +411,14 @@ const bot = (() => {
       }
       navigator.reset();
       const e = target, to = flat(e.x - me.x, e.z - me.z), gap = edge(me, e);
-      aloneTime = allies.some(a => !a.botId && a.alive()) ? 0 : aloneTime + dt;
-      lastStand = aloneTime >= R.lastStandAfter;
+      // Caution (CONFIG.bot.caution): hurt, or out of flasks and not far from it, or the enemy's mark while someone
+      // else is there to fight it. A wary bot trades nothing and goes in only for a real opening, from farther out.
+      const CA = C.caution, flask = me.item('flask'), health = me.hp / me.maxHp;
+      const company = allies.some(a => a.alive() && Number.isFinite(a.x) && Math.hypot(a.x - e.x, a.z - e.z) <= CA.company);
+      const careful = health < CA.below || flask.count === 0 && health < CA.dry, shy = company && huntedBy(e, me, allies);
+      wary = careful || shy; steady = careful;
+      const roomy = (careful ? CA.spacing : 0) + (shy ? CA.hunted : 0);
+      const spare = C.safety + (wary ? CA.safety : 0);   // s left over after its own swing before a blow could open
       if ((tacticTimer -= dt) <= 0) chooseTactic();
       decisionLeft = Math.max(0, decisionLeft - dt); resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
       const attacking = me.isAttacking();
@@ -413,7 +428,7 @@ const bot = (() => {
       }
       if (me.hp < lastHp) { riskLeft = 0; if (resetLeft <= 0) resetPending = true; }
       if (resetPending && me.isFree()) {
-        resetLeft = span(profile.reset, rng) * (lastStand ? R.lastStandReset : 1); resetPending = false; burstLeft = newBurst();
+        resetLeft = span(profile.reset, rng); resetPending = false; burstLeft = newBurst();
       }
       lastAttacking = attacking; lastMove = me.attack; lastMoveTime = me.attackT;
       // Circling is not progress. Only an exchange (or an untouchable transition) renews its patience.
@@ -423,16 +438,16 @@ const bot = (() => {
       riskLeft = Math.max(0, riskLeft - dt); riskWait = Math.max(0, riskWait - dt);
       // A single decision buys a brief greedy exchange, rather than a new coin flip on every safe frame.
       // It can spend its roll reserve, squeeze in another hit, and stay committed when the target winds up.
-      if (!attackable(e)) riskLeft = 0;
-      if (riskWait <= 0 && me.isFree() && me.canAct() && gap <= C.reach + C.closeGap && attackable(e)) {
+      if (!attackable(e) || wary) riskLeft = 0;
+      if (riskWait <= 0 && !wary && me.isFree() && me.canAct() && gap <= C.reach + C.closeGap && attackable(e)) {
         riskWait = span(R.interval, rng);
-        if (rng() < profile.greed + (lastStand ? R.lastStandBonus : 0)) riskLeft = span(R.duration, rng);
+        if (rng() < profile.greed) riskLeft = span(R.duration, rng);
       }
       const greedy = riskLeft > 0;
-      const pressing = quietTime >= profile.patience * (lastStand ? R.lastStandReset : 1);
+      const pressing = !shy && quietTime >= profile.patience * (careful ? CA.patience : 1);   // hurt, it waits longer before forcing an exchange
       const tactic = BOT_TACTICS[pressing || greedy ? 'pressure' : tacticId];
       const settled = 1 - tacticTimer / tacticDuration >= tactic.commitAt;
-      const flask = me.item('flask'), needsHeal = me.hp < me.maxHp * profile.healBelow && flask.count > 0;
+      const needsHeal = me.hp < me.maxHp * profile.healBelow && flask.count > 0;
       healWait = needsHeal ? healWait + dt : 0;
       // The target's string: wait it out from past its reach, then go in a human beat (goIn) after it ends.
       const str = stringOf(e, me);
@@ -529,7 +544,9 @@ const bot = (() => {
           hands.press('flask'); healWait = 0; return { mv: idle, lock: e };
         }
         // A boss may never grant a drink at range. After a brief retreat, fight to earn one instead of fleeing forever.
-        if (!greedy && healWait < C.healRetreatTime && healWindow < C.healWindow + ITEMS.flask.useTime) return { mv: strafe(me, to, gap, C.healGap + 2, 0.3), lock: e };
+        // With the enemy on someone else, keep backing off until it grants one.
+        if (!greedy && (healWait < C.healRetreatTime || company && !huntedBy(e, me, allies)) && healWindow < C.healWindow + ITEMS.flask.useTime)
+          return { mv: room(me, e, allies, strafe(me, to, gap, C.healGap + 2, 0.3)), lock: e };
       }
 
       // ---- 4. Offence ----
@@ -540,13 +557,13 @@ const bot = (() => {
       // A riposte is the player's too, until late in the opening.
       const theirs = e.state === ES.PARRIED && me.riposte <= 0 && player && edge(player, e) <= CONFIG.execution.range + 1 &&
         e.def.parriedTime - e.stateTime > X.late;
-      if (theirs) return { mv: strafe(me, to, gap, C.spacing + spacing, 1), lock: e };   // the player's riposte
+      if (theirs) return { mv: room(me, e, allies, strafe(me, to, gap, C.spacing + spacing, 1)), lock: e };   // the player's riposte
       const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER, ES.BROKEN].includes(e.state) ||
         e.state === ES.RECOVER && e.attack && e.attack.recovery - e.stateTime >= T.punishRecovery && window >= T.punishWindow ||
         e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;
       if (opportunity) punishLeft = T.punishCommit;
-      const keyOpening = opportunity || punishLeft > 0 && window > commit(A()[me.def.moveset.ground.light]) + C.safety;
-      const retreating = resetLeft > 0 && !keyOpening && !pressing && !greedy;
+      const keyOpening = opportunity || punishLeft > 0 && window > commit(A()[me.def.moveset.ground.light]) + spare;
+      const retreating = (resetLeft > 0 || wary) && !keyOpening && !pressing && !greedy;
       const committed = greedy || keyOpening || pressing || !retreating && settled;
       const reserve = greedy ? R.reserve : window > 2.5 ? P.rollCost + 2 : C.reserve;
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
@@ -573,7 +590,7 @@ const bot = (() => {
         const front = { x: e.x + Math.sin(e.yaw) * (e.radius + me.radius + 0.4), z: e.z + Math.cos(e.yaw) * (e.radius + me.radius + 0.4) };
         return { mv: flat(front.x - me.x, front.z - me.z), lock: e };
       }
-      if (!attackable(e)) return { mv: strafe(me, to, gap, C.spacing + 1, 1), lock: e };
+      if (!attackable(e)) return { mv: room(me, e, allies, strafe(me, to, gap, C.spacing + 1, 1)), lock: e };
       const inReach = gap <= C.reach;
       // Mid-string, only a mood that takes pauses swings: into one this long, or a greedy trade against a string's last
       // blow. After the string, a beat (goIn) before going in.
@@ -585,17 +602,17 @@ const bot = (() => {
         const left = commit(me.attack) - me.attackT;
         if (tl.phase !== PHASE.STARTUP && comboChoice === null)
           comboChoice = rng() < (greedy ? R.combo : keyOpening ? T.punishCombo : T.comboBase + profile.aggression * T.comboAggression);
-        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && attackWindow > left + commit(next) + C.safety && can(next.cost) && (!str || swingGap)) {
+        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && attackWindow > left + commit(next) + spare && can(next.cost) && (!str || swingGap)) {
           hands.press('light'); comboChoice = false;
         }
         return { mv: idle, lock: e };
       }
       if (me.isFree()) {
         const light = A()[me.def.moveset.ground.light];
-        const ready = attackWindow > commit(light) + C.safety;
+        const ready = attackWindow > commit(light) + spare;
         // A quiet neutral opponent is a possibility, not a strike already in flight. Eventually try a single light
         // to start an exchange; actual wind-ups, other enemies, bolts and stamina still veto the commitment.
-        const probe = quietTime >= profile.patience + C.probeDelay && incomingWindow > commit(light) + C.safety;
+        const probe = !shy && quietTime >= profile.patience * (careful ? CA.patience : 1) + C.probeDelay && incomingWindow > commit(light) + spare;
         if (inReach && free && (ready || probe) && (committed || probe) && (decisionLeft <= 0 || keyOpening)) {
           decisionLeft = span(profile.think, rng);
           if (str) tally.gaps++, waitedThis = false;
@@ -604,7 +621,7 @@ const bot = (() => {
             hands.press('heavy'); hands.hold('heavy', true); heavyHold = rip ? 0.1 : heavy.charge.hold * (0.5 + 0.5 * rng());
             return { mv: idle, lock: e };
           }
-          if (ready && (rip || rng() < profile.heavy) && attackWindow > commit(heavy) + C.safety && can(heavy.cost)) { hands.press('heavy'); return { mv: idle, lock: e }; }
+          if (ready && (rip || rng() < profile.heavy) && attackWindow > commit(heavy) + spare && can(heavy.cost)) { hands.press('heavy'); return { mv: idle, lock: e }; }
           if (can(light.cost)) { hands.press('light'); return { mv: idle, lock: e }; }
         }
         // Flair: from a step or two out, a long opening can take a leaping heavy.
@@ -616,11 +633,31 @@ const bot = (() => {
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
         const recovering = !can(light.cost) || me.stamina < me.maxStamina * T.regroupBelow;
         const motion = recovering || retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
-        if (str && !swingGap) return { mv: strafe(me, to, gap, Math.max(motion.gap, holdGap(me, e)), motion.circle), lock: e };
-        if (settling) return { mv: strafe(me, to, gap, gap, motion.circle * 0.5), lock: e };   // a beat before going in
-        return { mv: strafe(me, to, gap, motion.gap, motion.circle), lock: e };
+        if (str && !swingGap) return { mv: room(me, e, allies, strafe(me, to, gap, Math.max(motion.gap, holdGap(me, e)) + roomy, motion.circle)), lock: e };
+        if (settling) return { mv: room(me, e, allies, strafe(me, to, gap, gap, motion.circle * 0.5)), lock: e };   // a beat before going in
+        return { mv: room(me, e, allies, strafe(me, to, gap, motion.gap + (retreating ? roomy : 0), motion.circle)), lock: e };
       }
       return { mv: idle, lock: e };
+    }
+    // Out of the way (CONFIG.bot.room): away from a person or bot standing too close, and round the enemy out of a
+    // person's lane to it, so a bot never body-blocks the player or stands in their swing.
+    function room(me, e, allies, mv) {
+      const R = B().room;
+      let px = 0, pz = 0;
+      for (const a of allies) {
+        if (!a.alive() || !Number.isFinite(a.x)) continue;
+        const want = (a.botId ? R.bot : R.player) + (a.radius || 0) + me.radius, dx = me.x - a.x, dz = me.z - a.z, d = Math.hypot(dx, dz);
+        if (d < want && d > 1e-3) { const k = (want - d) / want; px += dx / d * k; pz += dz / d * k; }
+        if (a.botId) continue;
+        const theirs = Math.hypot(a.x - e.x, a.z - e.z), mine = Math.hypot(me.x - e.x, me.z - e.z);
+        if (mine > theirs + R.laneDepth || theirs > B().execution.yield) continue;
+        const at = Math.atan2(me.x - e.x, me.z - e.z), off = angDiff(at, Math.atan2(a.x - e.x, a.z - e.z));
+        if (Math.abs(off) >= R.lane) continue;
+        const s = off >= 0 ? 1 : -1, k = (R.lane - Math.abs(off)) / R.lane;   // round the enemy, away from their line
+        px += Math.cos(at) * s * k; pz -= Math.sin(at) * s * k;
+      }
+      if (!px && !pz) return mv;
+      return flat((mv.has ? mv.x : 0) + px * R.push, (mv.has ? mv.z : 0) + pz * R.push);
     }
     // Walk toward a gap of `want` m, circling to the bot's current side by `circle` (0..1 of CONFIG.bot.strafe).
     function strafe(me, to, gap, want, circle) {

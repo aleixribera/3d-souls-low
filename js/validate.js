@@ -71,15 +71,22 @@ function validateData({ visual = true } = {}) {
   for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
-  for (const key of ['windowSlack', 'minWindow', 'reserve', 'lastStandAfter'])
+  for (const key of ['windowSlack', 'minWindow', 'reserve'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] > 0, `Bot risk.${key} must be positive.`);
-  for (const key of ['combo', 'earlyRollChance', 'lastStandBonus', 'lastStandReset'])
+  for (const key of ['combo', 'earlyRollChance'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] >= 0 && botConfig.risk[key] <= 1, `Bot risk.${key} must be 0..1.`);
   for (const key of ['interval', 'duration', 'rollLead']) {
     const range = botConfig.risk?.[key];
     need(Array.isArray(range) && range.length === 2 && range.every(num) && range[0] > 0 && range[1] >= range[0],
       `Bot risk.${key} needs an ordered positive range.`);
   }
+  // An aid, not a carry (pass 32): a damage share, caution and room.
+  need(num(botConfig.damage) && botConfig.damage > 0 && botConfig.damage <= 1, 'Bot damage must be a share in (0, 1].');
+  const CA = botConfig.caution, RM = botConfig.room;
+  need(CA && ['below', 'dry', 'slip'].every(k => num(CA[k]) && CA[k] >= 0 && CA[k] <= 1) && ['spacing', 'hunted', 'company', 'safety'].every(k => num(CA[k]) && CA[k] >= 0) && num(CA.patience) && CA.patience >= 1,
+    'Bot caution needs below, dry and slip shares (0..1), non-negative spacing, hunted, company and safety, and patience of 1 or more.');
+  need(RM && ['player', 'bot', 'lane', 'laneDepth', 'push'].every(k => num(RM[k]) && RM[k] >= 0) && RM.lane < Math.PI,
+    'Bot room needs non-negative player, bot, laneDepth and push, and a lane under pi.');
   const jumpRange = botConfig.jumpDodge.lead;
   need(Array.isArray(jumpRange) && jumpRange.length === 2 && jumpRange.every(num) && jumpRange[0] > 0 && jumpRange[1] >= jumpRange[0],
     'Bot jumpDodge.lead needs an ordered positive range.');

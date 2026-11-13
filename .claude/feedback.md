@@ -25,7 +25,7 @@ took it (once taken).
 - 2026-11-13, follow-up to v7.52.0's bots (they now win 111 of 132 three-bot boss fights): weaken them a bit, but make
   them smarter about the game, their position, the situation and their health, so they stay alive longer. Read as:
   less damage and greed, so they win fewer fights on their own; better positioning and backing off to heal when hurt,
-  so they die less and live longer.
+  so they die less and live longer. Taken by pass 32 (v7.55.0).
 - 2026-11-13, decision (relayed by the director): nothing replaces the removed Lands bosses. The Boss Rush (The Calling,
   being renamed "Boss Rush") roster and the Arena boss lists become the story's own bosses only: Ashmere's five
   (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, Antlered Hunger) plus chapters 7-14's (Ostrey, Hale and
