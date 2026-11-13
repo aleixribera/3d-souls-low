@@ -4,10 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 13 shipped `PLAN.md` stage 3 track A item 2's first chapter, chapter 7 the Windward Moor (pass 1 of it, rough),
-and released v7.38.0. Check met: Story mode goes church -> moor -> THE ROAD GOES ON (in-page `Story`, `Moor`); frames
-`docs/scorecard/moor-ostrey.jpg` (Old Ostrey on the gate bridge) and `moor-flock.jpg` (a Lantern Thrall flock). Next:
-track B, the Empty Sentinel in Blender; then track A's chapter 8, Saltgrave.
+Pass 14 shipped `PLAN.md` stage 3 track B item 1's second half, the Empty Sentinel in Blender (pass 1 of it), and
+released v7.39.0. Check met: lab sheet `docs/scorecard/sentinel-lab.jpg` (and `-lab-walk`), front-lit Arena frame
+`sentinel-arena.jpg`, Final Castle bridge `sentinel-castle.jpg`; 2,856 tris with the halberd. Next: track A, chapter 8
+(Saltgrave); then track B item 2, the Pillager Captain.
 
 ## Works
 
@@ -17,7 +17,7 @@ track B, the Empty Sentinel in Blender; then track A's chapter 8, Saltgrave.
   Scion (v7.31.0, 2,774 body tris, 2,900 with the scimitar), Executioner (v7.32.0, 2,687 body tris, 2,991 with the
   greataxe), Crucible Squire (v7.33.0, 2,190 body tris, 2,992
   with the kit oval shield and greatsword), Shover (v7.34.0, 2,428 body tris, 2,988 with the kit pavise), Gargoyle (v7.37.0, 2,992 tris, no weapon; a `tail`
-  bone, wings on `wingL`/`wingR`). `js/baked/*.js`; checked by the in-page `model`
+  bone, wings on `wingL`/`wingR`), Empty Sentinel (v7.39.0, 2,508 body tris, 2,856 with the kit halberd). `js/baked/*.js`; checked by the in-page `model`
   filter (5 tests), `Shover` (1), `Bowman` (4), `Lands` (15), `Wisp` (1), `Scion`, `Ultra performance` and validation
   at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -25,7 +25,8 @@ track B, the Empty Sentinel in Blender; then track A's chapter 8, Saltgrave.
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
-  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from normals.
+  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from normals; polished
+  gold reads grey under the full rim, and a thin shaft white (v7.39.0: model `rim` .45, a `haft` slot at .4).
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`). Tests that pinned Margit's solo bar in
@@ -69,8 +70,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 13's push and the v7.38.0 container: check in pass 14 (pass 12's CI was still running). Pass 13 locally: the Node group (22/22), the in-page `Story` (21), `Church` (12), `Lore` (7), `Moor` (6),
-`model` (5) and `Levels` filters. `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` now lists chapter 7 but was not run.
+CI on pass 13's and 14's pushes, and the v7.39.0 container: check in pass 15 (the v7.38.0 container passed). Pass 14
+locally: Node group (22/22), in-page `model`, `Ultra models`, `Execution: light`, `Low performance`.
 
 ## wip/ branches
 
@@ -81,8 +82,6 @@ None. `wip/2026-10-27-hollow-enemy` was cut in pass 1 and kept as the tag `archi
 In `BACKLOG.md`.
 
 ## Needs Aleix
-
-The earlier three (order of work, how to see progress, the Toll Wisp's description) are answered in `PLAN.md`.
 
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter

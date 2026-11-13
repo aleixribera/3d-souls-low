@@ -56,3 +56,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   companion today is per road (`LANDS_STORY.companion`); Ashmere's road would need it from chapter 6 or 7 on.
 - Old Ostrey reuses Margit's tuning (3,000 HP, posture 130) and the moor gives 6 flasks, as Stormhill did; no one has
   fought him by hand yet.
+- The Empty Sentinel (v7.39.0, pass 14): its upper arms are thin mail tubes under the great pauldrons, and the left
+  tasset leaves a patch of the thigh's mail showing beside the front panel (`docs/scorecard/sentinel-lab.jpg`); the kit's
+  halberd spends 180 of its ~350 triangles on six grip rings. Second step, stage 4.

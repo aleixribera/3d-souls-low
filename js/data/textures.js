@@ -99,7 +99,7 @@ const TEXTURE_DEFS = [
   // gold filigree, warm amber-bronze chainmail, weathered ash-white surcoat cloth with dark geometric border embroidery
   // and a tattered hem, and honed silver-gold halberd steel.
   { id: 'sentinelBrass', kind: 'plate', base: 0x685024, alt: 0xc8a456, accent: 0x34240e, rough: [0.24, 0.58], metal: 0.72, bump: 1.25, scratch: 48, stain: 0x24180a, cavity: 0.85, contrast: 0.85 },
-  { id: 'sentinelFiligree', kind: 'feathers', base: 0x58401a, alt: 0xd8b660, accent: 0x241808, rough: [0.22, 0.56], metal: 0.76, bump: 1.65, scratch: 32, stain: 0x201408, cavity: 0.92, contrast: 0.98, scale: 2 },
+  { id: 'sentinelFiligree', kind: 'filigree', base: 0x58401a, alt: 0xd8b660, accent: 0x241808, rough: [0.22, 0.56], metal: 0.76, bump: 1.65, scratch: 32, stain: 0x201408, cavity: 0.92, contrast: 0.98, scale: 1 },
   { id: 'sentinelMail', kind: 'mail', base: 0x462e12, alt: 0x9c7230, accent: 0x221406, rough: [0.36, 0.74], metal: 0.62, bump: 1.45, scratch: 12, stain: 0x1a0e05 },
   { id: 'sentinelCloth', kind: 'cloth', base: 0x8a8d92, alt: 0xc8ccd2, accent: 0x46484c, rough: [0.82, 0.98], metal: 0, bump: 0.95, scratch: 6, stain: 0x34322e, cavity: 0.65, contrast: 0.65 },
   { id: 'sentinelRags', kind: 'tattered', base: 0x82858a, alt: 0xbec2c8, accent: 0x383a3e, rough: [0.85, 1], metal: 0, bump: 1.0, scratch: 6, stain: 0x2c2a26, alpha: true, cavity: 0.7 },

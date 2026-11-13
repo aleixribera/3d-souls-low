@@ -160,6 +160,20 @@ function TEXCORE_FACTORY(S, seeded) {
       out.acc = Math.max(1 - sstep(0.0, 0.22, inside), sstep(0.72 - 0.2 * decay, 0.9, fbm(u, v, 5 * k, 5 * k, 3, 4)) * 0.45);
       out.dark = (1 - sstep(0.0, 0.18, inside)) * 0.7;
     },
+    // Arabesque filigree (v7.39.0, the Empty Sentinel): engraved scrolls on polished plate. Each cell holds a curl that
+    // winds the other way from its neighbours', a vine waves through the rows, and the grooves gather grime.
+    filigree(u, v, k, decay, out) {
+      const cols = 4 * k, rows = 4 * k, x = u * cols, y = v * rows, ix = Math.floor(x), iy = Math.floor(y);
+      const fx = x - ix - 0.5, fy = y - iy - 0.5, turn = (ix + iy) & 1 ? 1 : -1, r = Math.hypot(fx, fy);
+      const t = (Math.atan2(fy, fx) * turn / TAU + 1) - r * 2.8, f = t - Math.floor(t);
+      const curl = (1 - sstep(0.035, 0.09, Math.min(f, 1 - f))) * sstep(0.05, 0.1, r) * (1 - sstep(0.36, 0.44, r));
+      const vine = 1 - sstep(0.025, 0.07, Math.abs(fy - 0.4 * Math.sin(x * Math.PI)) * 0.9);
+      const lines = Math.max(curl, vine), mott = fbm(u, v, 5 * k, 5 * k, 3, 1), fine = fbm(u, v, 32 * k, 32 * k, 2, 3);
+      out.h = 0.62 - lines * 0.42 + fine * 0.1;
+      out.mix = Math.max(0, 0.45 + mott * 0.45 - lines * 0.5);
+      out.acc = sstep(0.7 - 0.2 * decay, 0.9, fbm(u, v, 6 * k, 6 * k, 3, 4)) * decay * 0.6;
+      out.dark = lines * 0.7;
+    },
     // Spectral bone (v5.5, the Giant Skeleton): long streaks, mottled shadow, and bright veins of light along the grain.
     spectral(u, v, k, decay, out) {
       const streak = fbm(u, v, 3 * k, 14 * k, 4, 1), mottle = fbm(u, v, 6 * k, 6 * k, 3, 6);

@@ -487,21 +487,20 @@ MODEL_DEFS.gargoyle = {
   },
 };
 
-// Empty Sentinel (v5.5, after the reference art): a towering giant suit of ornate golden-brass plate and arabesque
-// filigree over warm bronze-amber chainmail. Features a tall narrow ovoid close-helm with a sharp vertical central keel,
-// crown crest tuft, and two columns of breathing perforations over a wide ringed gorget; wide flared golden pauldrons
-// with upturned outer lips and rerebrace lames; a heavy filigree breastplate and waist fauld crossed by a pale ash-white
-// diagonal surcoat drape from the right shoulder to the left hip with double dark geometric border stripes and a deeply
-// tattered knee-length hem; golden hip tassets, domed knee cops, rivet-studded chevron shin rims, engraved greaves, and
-// laminar sabatons; and a giant spiral-fluted golden/steel halberd held in the right hand. No shield.
+// Empty Sentinel (v7.39.0 built in Blender, tools/blender/sentinel.py): a towering suit of ornate golden-brass plate and
+// arabesque filigree over bronze mail, with nobody inside (LORE.md). A tall narrow ovoid close-helm with a sharp keel down
+// its face, a crest tuft on the crown, a filigree brow band, a dark eye slit and two columns of breathing holes, cold light
+// in the dark behind them; a wide ringed gorget; great horizontally flared pauldrons with upturned outer lips, a filigree
+// inlay and two rerebrace lames; a heavy breastplate with a filigree plackart, crossed by a pale surcoat sash from the
+// right shoulder to the left hip with dark border stripes, hanging front and back in panels torn to rags at the knee;
+// barrelled filigree vambraces with projecting couters and flared cuffs, closed gauntlets; filigree tassets and domed
+// knee cops over mail thighs, keeled greaves and laminar sabatons; the kit's spiral-fluted halberd in the right hand.
 MODEL_DEFS.emptySentinel = {
-  extends: 'ironKnight', faction: 'castle', budget: 'enemy', fit: 1.0, limbSides: 5,
+  extends: 'ironKnight', faction: 'castle', budget: 'enemy', fit: 1.0, rim: 0.45,
   proportions: { shoulderX: 0.42, torsoW: 0.27, torsoD: 0.19, armR: 0.072, legR: 0.095, headR: 0.128, handR: 0.066, footLen: 0.33 },
   limbs: {
     armL: { len: 1.04, thick: 1.05 }, elbowL: { len: 1.04, thick: 1.02 },
     armR: { len: 1.04, thick: 1.05 }, elbowR: { len: 1.04, thick: 1.02 },
-    legL: { thick: 1.06 }, kneeL: { thick: 1.04 },
-    legR: { thick: 1.06 }, kneeR: { thick: 1.04 },
   },
   posture: {
     chest: [0.03, 0, 0], neck: [0.04, 0, 0], head: [0.05, 0, 0.02],
@@ -516,39 +515,28 @@ MODEL_DEFS.emptySentinel = {
     cloth: { tex: 'sentinelCloth', tint: 0xdedad2, decay: 0.45, double: true },
     rags: { tex: 'sentinelRags', tint: 0xd8d4cc, decay: 0.52, double: true },
     trim: { tex: 'sentinelTrim', tint: 0xc8c2b8, decay: 0.48, double: true },
-    blade: { tex: 'sentinelSteel', tint: 0xc2c6cc, decay: 0.42 },
-    void: { tex: 'ashSoot', tint: 0x120e0a, decay: 0.85 },
-    eye: { glow: 0xffe29a },
+    blade: { tex: 'sentinelSteel', tint: 0xc2c6cc, decay: 0.42, rim: 0.6 },
+    haft: { tex: 'sentinelBrass', tint: 0xdcb464, decay: 0.42, rim: 0.4 },   // a long thin shaft is all edge: little rim light
+    void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
+    eye: { glow: 0xcfe2ff },
   },
-  body: { torso: null, pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     sashF: { parent: 'spin', at: [0.09, -0.02, 0.185] },
     sashB: { parent: 'spin', at: [0.06, -0.02, -0.185] },
   },
-  parts: [
-    // Tall narrow ovoid golden close-helm with vertical faceplate keel, top crest tuft, and breathing perforations
-    { use: 'sentinelHelm', slot: 'plate', filigree: 'filigree', plume: 'plume', void: 'void', bone: 'head', size: 1.12 },
-    // Heavy golden breastplate, arabesque upper chest plackart, collar rim, and 3 horizontal molded waist lames
-    { use: 'sentinelCuirass', slot: 'plate', filigree: 'filigree', bone: 'chest' },
-    // Pale ash-white diagonal surcoat drape from right shoulder to left hip with double dark geometric border stripes
-    { use: 'sentinelSash', slot: 'cloth', trim: 'trim', bone: 'chest' },
-    // Lower hanging front and back surcoat panels with double dark borders and deeply jagged, tattered knee-length hems
-    { use: 'sentinelSashHem', slot: 'cloth', trim: 'trim', rags: 'rags', bone: 'sashF', w: 0.25, len: 0.68, seed: 5 },
-    { use: 'sentinelSashHem', slot: 'cloth', trim: 'trim', rags: 'rags', bone: 'sashB', w: 0.27, len: 0.72, back: true, seed: 9 },
-    // Wide, horizontally flared golden pauldrons with upturned outer lips, filigree crests, and upper-arm rerebrace lames
-    { use: 'sentinelPauldron', slot: 'plate', filigree: 'filigree', bone: 'armL', size: 1.38, side: 1 },
-    { use: 'sentinelPauldron', slot: 'plate', filigree: 'filigree', bone: 'armR', size: 1.38, side: -1 },
-    // Projecting golden elbow couters, barrelled filigree vambraces, wrist cuffs, and articulated gauntlet plates
-    { use: 'sentinelGauntlet', slot: 'plate', filigree: 'filigree', bone: 'elbowL', side: 1 },
-    { use: 'sentinelGauntlet', slot: 'plate', filigree: 'filigree', bone: 'elbowR', side: -1 },
-    // Molded golden waist belt and curved filigree hip/thigh tasset shields over the bronze chainmail
-    { use: 'sentinelTassets', slot: 'plate', filigree: 'filigree', bone: 'spin' },
-    // Domed filigree knee cops, rivet-studded angled chevron shin rims, engraved golden greaves, and laminar sabatons
-    { use: 'sentinelGreave', slot: 'plate', filigree: 'filigree', bone: 'kneeL', side: 1 },
-    { use: 'sentinelGreave', slot: 'plate', filigree: 'filigree', bone: 'kneeR', side: -1 },
-  ],
-  weapon: { use: 'sentinelHalberd', slots: { blade: 'blade', grip: 'plate', guard: 'filigree' } },
-  eyes: null,
+  // v7.39.0: built in Blender (tools/blender/sentinel.py), one piece per bone; the kit still builds the halberd
+  parts: Object.entries({
+    head: ['plate', 'void', 'filigree', 'plume'], neck: ['mail'],
+    chest: ['plate', 'filigree', 'cloth', 'trim'], spin: ['plate', 'filigree', 'mail'],
+    sashF: ['cloth', 'trim', 'rags'], sashB: ['cloth', 'trim', 'rags'],
+    armL: ['mail', 'plate', 'filigree'], armR: ['mail', 'plate', 'filigree'],
+    elbowL: ['filigree', 'plate'], elbowR: ['filigree', 'plate'],
+    legL: ['mail', 'filigree'], legR: ['mail', 'filigree'],
+    kneeL: ['plate', 'plate.1'], kneeR: ['plate', 'plate.1'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `sentinel:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
+  weapon: { use: 'sentinelHalberd', slots: { blade: 'blade', grip: 'haft', guard: 'filigree' } },
+  eyes: { color: 0xcfe2ff, size: 0.01, spread: 0.045, at: [0, 0.195, 0.126] },
   anim: {
     ...IRONBOUND_ANIM,
     cloth: [
