@@ -211,7 +211,7 @@ const IDLE_STYLES = {
   sway(r, t, w) {   // slow sway, club resting on the ground and dragging
     r.tip.rotation.z += Math.sin(t * 0.45) * 0.04 * w; r.tip.rotation.x += Math.sin(t * 0.31) * 0.025 * w;
     r.armR.rotation.x = lerp(r.armR.rotation.x, -0.05, w);
-    r.weapon.rotation.x = lerp(r.weapon.rotation.x, 1.25, w);
+    r.weapon.rotation.x = lerp(r.weapon.rotation.x, r.weaponRest ?? 1.25, w);   // a long weapon may rest higher (model weapon.rest)
     r.weapon.rotation.y += Math.sin(t * 0.45) * 0.12 * w;
   },
   none() {},

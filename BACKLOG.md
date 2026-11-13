@@ -70,6 +70,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Pillager Captain (v7.41.0, pass 16): the helm's face reads as a plain bucket from the front (a visor ridge or
   breaths would break it up); the `dentedSteel` plate shows horizontal streaks; the halberd's glowing edge is the kit's
   flat yellow card (`embers.edge`), not a lit blade (`docs/scorecard/captain-lab.jpg`). Its second step, stage 4.
+- The Bell Warden (v7.43.0, pass 18): the bell maul is the kit's (10-sided, 355 triangles) and rests at 0.65 rad
+  (`weapon.rest`) so the bell stands on its lip, its lower rim a little into the floor; the eyes' halo blooms white over
+  the helm's window on the tower top; the mail sleeves show the `knightMail` grid (`docs/scorecard/bellwarden-lab.jpg`,
+  `bellwarden-tower.jpg`). The Ringer's 0.6-size maul still rests at the default 1.25 (`sway`): check whether it sinks
+  into the gaol floor and give her a `weapon.rest`. `weapon.rest` and `weapon.size` are checked when a rig is built
+  (`checkModel`), not at load. Second step, stage 4.
 - Chapter 9, the Night Gaol (v7.42.0, pass 17), rough; its second step: the Ringer's and the Keyless's own figures
   (stand-ins: the Rogue in gaol-grey with the Bell Warden's maul at 0.6 size, the Hollow Soldier in starlit grey;
   `docs/scorecard/ringer-lab.jpg`), chains that show on both, the knell drawn as more than the ground ring, a mark on the

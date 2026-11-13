@@ -3,7 +3,7 @@
 // Each boss has one focal point you could draw from memory:
 //   Giant Skeleton   (OLD BONES)  a spectral giant: a huge domed skull hung low, pale glowing bone, a white-hot spine
 //   Pillager Captain (ASHEN HOST) a horned helm, a cloak torn into strips, a halberd whose edge glows
-//   Bell Warden      (IRONBOUND)  a verdigris bronze colossus: bell helm, bell skirt, a temple bell for a hammer
+//   Bell Warden      (IRONBOUND)  a verdigris bronze colossus: bell helm, bell skirt, a temple bell for a hammer (Blender, v7.43.0)
 
 MODEL_DEFS.giantSkeleton = {
   // v5.5, after the reference art: a spectral giant. Pale translucent bone lit from within (strong rim, bright
@@ -105,45 +105,35 @@ MODEL_DEFS.pillagerCaptain = {
 };
 
 MODEL_DEFS.bellWarden = {
-  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8,
+  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8, rim: 0.45,
   proportions: { shoulderX: 0.37, torsoW: 0.265, torsoD: 0.19, armR: 0.085, legR: 0.1, headR: 0.14, handR: 0.075, footLen: 0.34 },
   posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
   materials: {
-    skin: { tex: 'paleSkin', tint: 0x7a7468, decay: 0.8 },
-    bronze: { tex: 'bellBronze', decay: 0.5, size: 512, double: true },
+    bronze: { tex: 'bellBronze', tint: 0x9cb8aa, decay: 0.5, size: 512, double: true },
     trim: { tex: 'wornGilt', decay: 0.4 },
     mail: { tex: 'knightMail', tint: 0x707a79, decay: 0.7 },
     rust: { tex: 'rustedIron', tint: 0x6a7a62, decay: 0.8 },
     iron: { tex: 'dentedSteel', tint: 0x4a5058, decay: 0.8 },
-    cloth: { tex: 'oathLinen', tint: 0xbcb4a0, decay: 0.65, double: true },
+    cloth: { tex: 'oathLinen', tint: 0xbcb4a0, decay: 0.65, double: true, rim: 0.15 },   // edge-on, a strip took the rim as a white line
     leather: { tex: 'crackedLeather', tint: 0x5e6860, decay: 0.7 },
+    void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
     eye: { glow: 0xb8ffd0 },
   },
-  body: { torso: null, pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'iron', hands: 'iron', feet: 'iron' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0.0, -0.02, 0.2] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.2] } },
-  // A chained bellkeeper: cast flutes, burnished rims, recessed face and heavy shackles.
-  parts: [
-    { use: 'castCuirass', slot: 'bronze', trim: 'trim', bone: 'chest', flute: 0.045 },
-    { use: 'carillonSkirt', slot: 'bronze', trim: 'trim', bone: 'spin' },
-    { use: 'carillonHelm', slot: 'bronze', trim: 'trim', dark: 'iron', bone: 'head', size: 1.12 },
-    { use: 'gorget', slot: 'iron', bone: 'neck', size: 1.2 },
-    { use: 'layeredPauldron', slot: 'bronze', rivet: 'trim', bone: 'armL', size: 1.65 },
-    { use: 'layeredPauldron', slot: 'bronze', rivet: 'trim', bone: 'armR', size: 1.65, side: -1 },
-    { use: 'chain', slot: 'iron', bone: 'chest', from: [-0.24, 0.53, 0.17], to: [0.2, 0.12, 0.19], links: 12, sag: 0.04 },
-    { use: 'chain', slot: 'iron', bone: 'chest', from: [0.24, 0.53, 0.17], to: [-0.2, 0.12, 0.19], links: 12, sag: 0.04 },
-    { use: 'plateBands', slot: 'bronze', bone: 'elbowL', from: 0.03, to: 0.23, radius: 0.084, count: 2, flare: 0.18 },
-    { use: 'plateBands', slot: 'bronze', bone: 'elbowR', from: 0.03, to: 0.23, radius: 0.084, count: 2, flare: 0.18 },
-    { use: 'gauntlet', slot: 'iron', bone: 'elbowL', at: 0.33, size: 1.3 },
-    { use: 'gauntlet', slot: 'iron', bone: 'elbowR', at: 0.33, size: 1.3 },
-    { use: 'greave', slot: 'bronze', bone: 'kneeL', size: 1.35 },
-    { use: 'greave', slot: 'bronze', bone: 'kneeR', size: 1.35 },
-    { use: 'manacle', slot: 'iron', trim: 'trim', bone: 'kneeL', r: 0.09, at: 0.35 },
-    { use: 'manacle', slot: 'iron', trim: 'trim', bone: 'kneeR', r: 0.09, at: 0.35 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.15, len: 0.64, seed: 2, dz: 0.09 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.2, len: 0.62, seed: 5, dz: -0.09 },
-  ],
-  weapon: { use: 'bellMaul', slots: { blade: 'bronze', guard: 'rust', grip: 'iron' } },
-  eyes: { color: 0xb8ffd0, size: 0.009, spread: 0.06, at: [0, 0.055, 0.162] },
+  // v7.43.0: built in Blender (tools/blender/bellwarden.py), one piece per bone. A bellkeeper chained in bronze: a bell
+  // for a helm with a barred gaol window, bells for pauldrons and skirt, crossed chains locked at the breast, shackles.
+  parts: Object.entries({
+    head: ['bronze', 'void', 'trim'], neck: ['iron'],
+    chest: ['bronze', 'trim', 'iron'], spin: ['bronze', 'bronze.1', 'trim', 'leather', 'iron'],
+    loinF: ['cloth'], loinB: ['cloth'],
+    armL: ['mail', 'bronze', 'trim'], armR: ['mail', 'bronze', 'trim'],
+    elbowL: ['bronze', 'trim', 'iron', 'iron.1'], elbowR: ['bronze', 'trim', 'iron', 'iron.1'],
+    legL: ['mail'], legR: ['mail'],
+    kneeL: ['bronze', 'iron', 'iron.1'], kneeR: ['bronze', 'iron', 'iron.1'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bell:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
+  weapon: { use: 'bellMaul', rest: 0.65, slots: { blade: 'bronze', guard: 'rust', grip: 'iron' } },   // rest: the bell sits on its lip, not sunk in the floor
+  eyes: { color: 0xb8ffd0, size: 0.016, spread: 0.06, at: [0, 0.062, 0.165] },
   anim: {
     idle: { breathRate: 0.9, breath: 0.014, headDrift: 0.03, sway: 0.01, twitch: 0 }, walk: { twist: 0.07, roll: 0.03, headNod: 0.03, elbow: 0.25, drag: 0 },
     flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1, slump: 0.7 },

@@ -1681,6 +1681,7 @@ const KIT = (() => {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
       for (const slot of Object.values(M.weapon.slots)) if (!(slot in M.materials)) bad(`weapon uses unknown material slot "${slot}".`);
       if ('size' in M.weapon && !(typeof M.weapon.size === 'number' && M.weapon.size > 0.2 && M.weapon.size <= 3)) bad('weapon size must be a number above 0.2, up to 3.');
+      if ('rest' in M.weapon && !(typeof M.weapon.rest === 'number' && M.weapon.rest >= -0.5 && M.weapon.rest <= 1.6)) bad('weapon rest must be an angle from -0.5 to 1.6.');
     }
     for (const [k, v] of Object.entries(M.materials)) if (!('glow' in v) && !(v.tex in TEXLIB.defs)) bad(`material "${k}" uses unknown texture "${v.tex}".`);
     for (const [k, v] of Object.entries(M.materials)) if ('rim' in v && !(typeof v.rim === 'number' && v.rim >= 0 && v.rim <= 2)) bad(`material "${k}": rim must be a number from 0 to 2.`);
@@ -1747,6 +1748,7 @@ const KIT = (() => {
     }
     if (M.embers) rig.embers = addWeaponEmbers(rig.weapon, M.embers);   // glow at the weapon head / along its edge
     rig.fit = M.fit ?? 1;
+    if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);
     rig.warnGlow = makeWarnGlow(); rig.weapon.add(rig.warnGlow);
     // A glint of light that flashes along the weapon as a strike begins (driven by the animator): at the far end of the

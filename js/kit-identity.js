@@ -38,34 +38,8 @@
     return out;
   };
 
-  // The bellkeeper wears a cast bell with a recessed barred opening. The face is
-  // dark inside; small eyes belong behind that opening rather than on its surface.
-  P.carillonHelm = o => {
-    const s = o.size ?? 1, out = [];
-    const crown = lathe([[0.18, 0.13], [0.16, 0.23], [0.115, 0.32], [0.065, 0.37], [0, 0.38]], 20);
-    const skirt = KIT_GEO.Lathe([[0.235, -0.06], [0.21, -0.02], [0.182, 0.12], [0.18, 0.14]].map(p => new THREE.Vector2(...p)), 20, 0.55, TAU - 1.1);
-    out.push(crown, skirt, trim(o.trim, ring(0.181, 0.135)), trim(o.trim, ring(0.235, -0.06)));
-    out.push(trim(o.dark, xf(new THREE.BoxGeometry(0.19, 0.13, 0.014), 0, 0.045, 0.126)));
-    for (const x of [-0.078, -0.039, 0, 0.039, 0.078]) out.push(trim(o.trim,
-      xf(new THREE.BoxGeometry(0.012, 0.145, 0.018), x, 0.04, 0.173 - Math.abs(x) * 0.2)));
-    // Crown suspension loop and four casting ribs.
-    out.push(trim(o.trim, xf(KIT_GEO.Torus(0.042, 0.012, 5, 12), 0, 0.415, 0)));
-    for (let i = 0; i < 4; i++) {
-      const a = Math.PI / 4 + i * Math.PI / 2;
-      out.push(trim(o.trim, cord([[Math.sin(a) * 0.165, 0.22, Math.cos(a) * 0.165],
-        [Math.sin(a) * 0.115, 0.32, Math.cos(a) * 0.115], [Math.sin(a) * 0.05, 0.375, Math.cos(a) * 0.05]], 0.009)));
-    }
-    for (const g of out) (g.geo ?? g).scale(s, s, s);
-    return out;
-  };
-  P.carillonSkirt = o => {
-    const g = lathe([[0.35, -0.46], [0.32, -0.42], [0.275, -0.29], [0.225, -0.1], [0.21, 0.015]], 24, 0.78);
-    deform(g, v => { const a = Math.atan2(v.x, v.z / 0.78), f = 1 + 0.035 * Math.cos(a * 12); v.x *= f; v.z *= f; });
-    return [uvScale(g, 1.7, 0.9), trim(o.trim, ring(0.35, -0.46, 0.78, 0.015)),
-      trim(o.trim, ring(0.324, -0.415, 0.78)), trim(o.trim, ring(0.216, 0.015, 0.78))];
-  };
   // Shackles read as hardware: two thick bands, a hinge, a fastening block and a
-  // hanging ring. Used at the king's wrists and the bellkeeper's ankles.
+  // hanging ring. Used at the king's wrists.
   P.manacle = o => {
     const r = o.r ?? 0.075, y = -(o.at ?? 0.22);
     return [lathe([[r, y - 0.045], [r + 0.012, y - 0.04], [r + 0.012, y + 0.04], [r, y + 0.045]], 12),

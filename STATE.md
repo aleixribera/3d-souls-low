@@ -4,16 +4,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 17 shipped `PLAN.md` stage 3 track A item 2's chapter 9, the Night Gaol (rough, pass 1 of it), and released
-v7.42.0. Check met: Saltgrave's castellans lead to chapter 9 and the Ringer's death closes the road (in-page `Story`),
-the Ringer in her ring `docs/scorecard/gaol-ringer.jpg`, lab `ringer-lab.jpg`, a cell `gaol-keyless.jpg`. Next: track B,
-the Bell Warden in Blender; then track A, chapter 10 (Aurel).
+Pass 18 shipped `PLAN.md` stage 3 track B item 2's Bell Warden in Blender and released v7.43.0. Check met: lab sheet
+`docs/scorecard/bellwarden-lab.jpg`, the tower top `bellwarden-tower.jpg` (front-lit, facing, fighting distance), the
+bell maul resting on its lip (`weapon.rest`). Next: track A, chapter 10 (Aurel); then track B, the Giant Skeleton.
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain. Checked by
+  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle). Checked by
   the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -63,8 +62,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 17's push and the v7.42.0 container: check in pass 18 (v7.41.0's CI and container passed). Pass 17 locally:
-Node (22/22), in-page `Night Gaol`, `Story`, `Saltgrave`, `Lore`, `Guiding light`, `Changelog`, `model`, `Ultra`.
+CI on pass 18's push and the v7.43.0 container: check in pass 19 (v7.42.0's CI and container passed
+and passed). Pass 18 locally: Node (22/22), in-page `model`, `bosses`, `Bell Warden`, `Changelog`, `Ultra`.
 
 ## wip/ branches
 
