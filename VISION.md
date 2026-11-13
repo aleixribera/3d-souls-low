@@ -32,7 +32,8 @@ side by side, and each should feel like the main event.
   joined. Between fights, blessings: common ones are small; rare ones are exciting (skills,
   passives, things that change the fight, maybe a companion). Like a true roguelike, an ability offered again can be
   taken to upgrade it, level by level, so a run builds up. Upgrades happen inside the game, during the run, not in a
-  menu between runs. Players stack strong abilities, and the difficulty curve is
+  menu between runs. It's multiplayer, so one player's abilities don't affect the other players too much: no
+  slowing, moving, linking or taking over a teammate's fight. Players stack strong abilities, and the difficulty curve is
   balanced with that in mind. Playing earns levels; each level gives a crate, opened
   on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
   Collection page shows what you own. No money and no shop: menus are not where the game is played.

@@ -103,7 +103,8 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
    offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
    kit. Upgrades happen inside the game, during the run (between fights, in the arena), never in a menu between runs;
-   a run's upgrades end with it. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
+   a run's upgrades end with it. It's multiplayer: an ability acts mainly on its owner and the boss, and touches
+   teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
    it still reaches impossible. Check: the odds in a test; each rare one and an upgrade seen working in a fight; a
    test of the curve against a team holding a typical late-run kit.
 4. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
