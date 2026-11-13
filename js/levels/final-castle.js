@@ -15,10 +15,11 @@
 //   Section C, the throne approach (y 16 to 24): the ash bridge over the hall roof under three Toll Wisps, the
 //     processional (the gauntlet: four at once in its first hall, alcoves to split them; two heavies in the second),
 //     the royal stair to the final bonfire, and a short run to the fog at the throne room door.
-//   Throne room (y 24): Aldric's second fight, two bars (`throne`, then `knell`), and the ending (js/finale.js).
+//   Throne room (y 24): Aldric's second fight, two bars (`throne`, then `knell`), and the end of Act I (js/finale.js).
 const LEVEL_5 = {
   id: 'final-castle', layout: 'rooms', alert: true, cull: true, wakeZones: true, clearGates: true,
-  ending: true,   // no LEVEL COMPLETE: Aldric's death, the ending and the credits instead (js/finale.js)
+  ending: true,   // no LEVEL COMPLETE: Aldric's death and the cards of the Ember leaving him instead (js/finale.js)
+  next: 'the-church',   // the end of Act I, not of the story: the hunger goes up into the mountains, and so do you
   name: 'Level 5: The Final Castle',
   description: 'The bell has called him out. Face the Gaoler King before his gates, then climb his castle to the throne.',
   help: 'Level 5: the castle of the Gaoler King. Bonfires light as you reach them; the throne room fog seals behind you. Gargoyles grind before they spring; Toll Wisps ring before they shoot.',

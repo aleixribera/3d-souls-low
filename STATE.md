@@ -4,12 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Stage 2 is done and released as v7.35.0. Next: `PLAN.md` stage 3, one item of track A then one of track B. First track A item 1,
-Act I's turn, pass 1 of it: Aldric's death no longer ends the game, the Ember leaves him (`STORY.md`) and the Church in
-the Pass follows in Story mode. Check: in Story mode, beating Aldric leads on to chapter 6 with the new lines.
-
-Pass 10 shipped item 5, the end of a run, and released v7.35.0 (stage 2: group scaling, aggro, The Calling,
-blessings, the end screen). Notes: `docs/feature-history.md`, the last five sections.
+Pass 11 shipped `PLAN.md` stage 3 track A item 1, Act I's turn, and released v7.36.0: Aldric's death plays the Ember
+leaving him (no credits) and Story mode goes on to the Church in the Pass as chapter 6; the road closes after it on THE
+ROAD GOES ON. Next: track B item 1, the Gargoyle in Blender, pass 1 of it (check: `PLAN.md`'s hardened model check).
 
 ## Works
 
@@ -43,6 +40,11 @@ blessings, the end screen). Notes: `docs/feature-history.md`, the last five sect
   `server/simulation.js`, the screen `#runSummary` in `js/multiplayer.js`; checked by `tests/calling.cjs` and
   `tests/calling-browser.cjs` (frames `docs/scorecard/summary-*.jpg`). A dead pose within `C.riseAnswer` of a granted
   Rise Again is not a new fall (`tests/blessings.cjs`).
+- The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
+  `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
+  Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
+  `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
+  default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -59,9 +61,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 10's push and the v7.35.0 container workflow: check at the start of pass 11. Pass 9's CI was green. Pass 10
-locally: the Node group (22/22), calling, blessings, and the calling, multiplayer, reconnect, lobby-controller,
-lobby-polish, arena-wipe and boss-only browser tests.
+CI on pass 11's push and the v7.36.0 container workflow: check at the start of pass 12. Pass 10's CI and the v7.35.0
+container were green. Pass 11 locally: the Node group (22/22), multiplayer-campaign, the in-page Story,
+Church, Lore and Level 5 filters, and the Ashmere campaign browser test.
 
 ## wip/ branches
 
@@ -82,5 +84,8 @@ The earlier three (order of work, how to see progress, the Toll Wisp's descripti
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
+- (overridable) Until chapters 7-14 exist, Story mode ends after the church on THE ROAD GOES ON, "Thrale lies beyond
+  the pass. Its chapters are still being built." (`STORY.goesOn`), and the end-of-Act-I cards are the loop's wording
+  (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.

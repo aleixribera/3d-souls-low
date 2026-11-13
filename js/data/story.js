@@ -6,20 +6,24 @@
 //     linking it to the last. Optional `loadout: { <item id>: { min, max } }` clamps a carried item's capacity on that
 //     chapter (for a level built around a fixed kit).
 //   done               the notice on the STORY COMPLETE screen; credits: who walked beside you and who stood in the way
+//   goesOn             optional: while the road's last chapter has no `ending` (its later chapters not built yet), the
+//                      notice on the THE ROAD GOES ON screen that follows that chapter
 // Adding a level to a campaign: write the level as usual (js/levels/, data/levels.js), then add a chapter where it falls.
 // The order here, not the levels' `next`, drives the campaign. Every line here must agree with LORE.md.
 const STORY = {
   id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story 1 (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
-  description: 'Start here. Five levels, from the prison to the king. The controls are taught on the way.',
+  description: 'Start here. From the prison to the king, and over the pass. The controls are taught on the way.',
   chapters: [
     { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells, in the old hall of judgment. The hall beyond is long, and not empty.' },
     { level: 'sunken-keep', title: 'THE SUNKEN KEEP', line: 'Below the hall the founders\' first keep sinks into the dark. He keeps his prisoners there now, and its wardens hold the doors.' },
     { level: 'burning-town', title: 'THE BURNING TOWN', line: 'Out of the keep at last, into Corvel, the river town of bells, burning.' },
     { level: 'the-tower', title: 'THE TOWER', line: 'Above the ashes, on its cliff, the founders\' watchtower keeps the Bell of Waking.' },
     { level: 'final-castle', title: 'THE FINAL CASTLE', line: 'The bell is rung. By the old law, King Aldric must come out of his gates and answer.' },
+    { level: 'the-church', title: 'THE CHURCH IN THE PASS', line: 'The king is ash, and still the ash falls. Something left him as he died, and went up into the mountains.' },
   ],
   done: 'The ash has stopped falling. The road is walked.',
-  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned'] },
+  goesOn: 'Thrale lies beyond the pass. Its chapters are still being built.',
+  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger'] },
   // What a new story starts with beyond the player's own kit (PLAYER_DEF). Future currencies, upgrades and equipment
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.
   progress: { currency: 0, equipment: {}, upgrades: {} },

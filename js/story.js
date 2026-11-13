@@ -129,11 +129,14 @@ function makeCampaign(C) {
   function bossBeaten(e) {
     beatenBosses.add(e.baseDef.id);
     // The last boss of the road: the finale has started the ending (its listener ran first) - the story is complete.
-    if (Game.level.ending && finale.state && finale.state.ending) { if (data) data.completed = true; save(); }
+    // An ending with a chapter after it (Aldric's, the end of Act I) is not the road's end.
+    if (Game.level.ending && finale.state && finale.state.ending && !nextLevelId(Game.level.id)) { if (data) data.completed = true; save(); }
   }
   // Autosaves (v5.1): a zone won or a shortcut opened is kept at once (its gate stays open on Continue; the kills since
   // the last rest still come back, as after a death), and so is everything when the page is hidden or closed.
   const autosave = () => { if (Game.story && !restoring && Game.kind === 'level' && Game.player && Game.player.alive()) save(); };
+  // The road's last chapter has no ending yet: its later chapters are not built, and the road goes on (`goesOn`).
+  function goesOn() { const L = ALL_LEVELS.find(l => l.id === chapterIds()[chapterIds().length - 1]); return !!(L && !L.ending); }
   function finish() {
     if (data) { data.completed = true; write(data); }
     Game.story = false; Game.reset();
@@ -180,6 +183,10 @@ function makeCampaign(C) {
       if (d.spawn) { Game.spawn = { ...d.spawn }; Game.spawnPlayer(); }
     } finally { restoring = false; }
     save();
+    // Saved after an ending that has a chapter after it (Aldric dead, then a quit or a closed tab during his death or the
+    // cards, or a save from before v7.36.0): every gate stands open and nothing starts that ending again, so go on.
+    const next = nextLevelId(d.level);
+    if (next && Game.level.ending && Game.zones.length && Game.zones.every(z => z.gate.open)) Game.loadingFirst(...card(next), () => begin(next));
   }
   // Game.startLevel calls this in Story mode: each new level is a save point (not while Continue rebuilds one).
   function onLevelStart() {
@@ -213,7 +220,7 @@ function makeCampaign(C) {
   load();
   return {
     def: C, items, newGame, resume, jumpTo, quit, save, erase, load, onLevelStart, nextLevelId, applyProgress, chapter,
-    storyLevels, chapterIds, levelName, card, bossBeaten, autosave, finish,
+    storyLevels, chapterIds, levelName, card, bossBeaten, autosave, finish, goesOn,
     get data() { return data; }, get status() { return status; }, get storageOk() { return storageOk; },
   };
 }
@@ -256,7 +263,7 @@ const story = (() => {
         { name: 'Cancel', desc: 'Keep your saved game.', cue: 'menuBack', go: () => game.showMenu('story') },
         { name: 'New', desc: 'Replace the save and start playing.', go: startNew },
       ] },
-      storyDone: { title: 'STORY COMPLETE', sub: C.menuSub, notice: C.done, items: [
+      storyDone: { title: A().goesOn() ? 'THE ROAD GOES ON' : 'STORY COMPLETE', sub: C.menuSub, notice: A().goesOn() ? C.goesOn : C.done, items: [
         { name: 'Return to title', desc: '', go: () => game.showMenu('main') },
       ] },
       storyJump: { title: 'STORY', sub: 'JUMP TO A LEVEL', back: 'main',
@@ -274,7 +281,7 @@ const story = (() => {
     load() { for (const c of Object.values(campaigns)) c.load(); },
     // Everything else acts on the active campaign.
     newGame: () => A().newGame(), resume: () => A().resume(), jumpTo: id => { const c = owner(id); if (c) active = c; return A().jumpTo(id); },
-    quit: () => A().quit(), save: b => A().save(b), erase: () => A().erase(), onLevelStart: () => A().onLevelStart(),
+    quit: () => A().quit(), finish: () => A().finish(), save: b => A().save(b), erase: () => A().erase(), onLevelStart: () => A().onLevelStart(),
     nextLevelId: id => A().nextLevelId(id), applyProgress: p => A().applyProgress(p), chapter: id => A().chapter(id),
     get data() { return A().data; }, get status() { return A().status; }, get storageOk() { return A().storageOk; },
   };

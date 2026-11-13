@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.35.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.36.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 Where the game is going lives in three files at the root. Read them before choosing what to build:
 
@@ -12,8 +12,8 @@ Where the work stands is `STATE.md` (what works, what's broken, open questions),
 
 In the game today there are two Story roads:
 
-- **Ashmere:** Levels 1–5 and an ending. Level 1 teaches the controls with lesson cards.
-- **Level 6, the Church in the Pass:** stands apart from both roads, in the Levels menu after the Final Castle.
+- **Ashmere:** Levels 1–6. Level 1 teaches the controls with lesson cards. Aldric's death (Level 5) is the end of Act I, not
+  of the story: its cards lead on to Level 6, the Church in the Pass, the last chapter built so far (`STORY.md`).
 - **The Lands Between:** eight lands, one per Elden Ring boss, with its own ending and Finn as a solo companion.
 
 There is also a Levels menu, a 1v1 Arena (Enemies, Bosses, Elden Ring Bosses, Boss vs Boss), and an optional multiplayer server with a public lobby and friendly bots.

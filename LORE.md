@@ -117,7 +117,7 @@ How it is revealed:
 | 3 | The Burning Town | **Corvel**, a river town of bellwrights and tinkers below the cliff. The town the champion would not burn. The Ashbound burned it anyway, a year later. |
 | 4 | The Tower | The Seven's **watchtower**, built to hold the Bell of Waking. Seized by the king; its ringers turned to Toll Wisps; the Bell Warden set over the Bell. |
 | 5 | The Final Castle | Aldric's castle on the founders' hill, with the Ember beneath it. Field of Answer before the gates (where the ruler must come out), the outer ward, the chapel, the great hall with its empty portraits, the ash bridge, the throne. |
-| 6 | The Church in the Pass | The **first church of the Seven**, over the mountains: logs, shingle and their own painted faces. Apart from the Story; see 10b. |
+| 6 | The Church in the Pass | The **first church of the Seven**, over the mountains: logs, shingle and their own painted faces. Chapter 6 of the Story; see 10b. |
 
 ---
 
@@ -136,7 +136,8 @@ What she knows and slowly lets slip:
 Her look: a long blue-grey shawl worn as a hood, a leather bellwright's apron, bare scarred hands, bound wrists.
 Unarmed. She is never hostile, cannot be attacked, and cannot die.
 
-Her arc: hope (Level 1), dread (Level 2), grief (Level 3), resolve (Level 4), farewell and release (Level 5).
+Her arc: hope (Level 1), dread (Level 2), grief (Level 3), resolve (Level 4), farewell and release (Level 5). Then the
+ash goes on falling, and she follows the player over the pass (Level 6).
 
 ---
 
@@ -217,6 +218,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* Go on. I'm not going anywhere. Not any more.
 
+### Level 6 — The Church in the Pass (in the wood, by the first bonfire)
+1. You didn't come down to the river. So I came up after you.
+2. I rang, by the water, the way I said I would. The ash kept falling on the bell.
+3. My grandmother sang of the Seven coming over these mountains, carrying something wrapped in a cloak. The song never says what.
+4. They stopped at a church in the snow, and painted their own faces on its wall, so they would know each other after.
+5. Whatever left him when he fell, it came this way. Up, into the cold. As if it knows the road.
+6. I'll keep the fire. Go on up.
+
+*Idle:* The snow is clean here. I had forgotten snow could be.
+
 ---
 
 ## 7. Inscriptions
@@ -267,16 +278,21 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 
 ---
 
-## 9. The ending
+## 9. The end of Act I: the Ember leaves him
 
-1. Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood, and goes out.
-2. The bell that called him out tolls once more, by no one's hand, and then falls silent.
-3. His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.
-4. And over Ashmere, for the first time in years, the ash stops falling.
-5. Down by the river, someone is ringing something small.
+Aldric's death no longer ends the story (`STORY.md`, the spine). Killing the king does not kill the Ember; it only
+frees the hunger that wore him. These cards follow his death, with no credits, and the road goes on to chapter 6, the
+Church in the Pass.
 
-Then the credits (unchanged flow), which also name Ysolde under *Who walked beside you*.
-Story mode's last screen: *The ash has stopped falling. The road is walked.*
+1. Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood. It does not go out.
+2. Something goes up out of it, like heat over a summer road, through the broken windows and away toward the mountains.
+3. The bell that called him out tolls once more, by no one's hand, and then falls silent.
+4. His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.
+5. And over Ashmere, the ash goes on falling.
+
+The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
+last chapter. Until those chapters are built, Story mode ends after chapter 6 on **THE ROAD GOES ON**: *Thrale lies
+beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -288,10 +304,9 @@ Story mode's last screen: *The ash has stopped falling. The road is walked.*
 
 ---
 
-## 10b. Level 6 — The Church in the Pass (a road of its own)
-A level apart from the Story, reached from the Levels menu after the Final Castle. The ending stands: the Ember is out and
-the ash has stopped. But the Seven called it *the hunger that wears a king*, and when the Ember died the hunger had no king
-left to wear. It went back the way the Seven came, over the mountains, to the **first church of the Seven**: the log
+## 10b. Level 6 — The Church in the Pass (chapter 6 of the Story)
+Chapter 6, after the Final Castle (and after it in the Levels menu). The Seven called the Ember *the hunger that wears a
+king*, and when Aldric fell the hunger had no king left to wear. It went back the way the Seven came, over the mountains, to the **first church of the Seven**: the log
 church in the pass where they stopped, painted their own faces on the wall and swore the first words of the Oath. There it
 found a stag starving in the snow and put it on. The player, nameless as ever, follows the last of it up the pass.
 

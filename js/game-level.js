@@ -58,13 +58,19 @@ Object.assign(Game, {
       this.complete = true;
       events.emit('levelComplete');
     }
-    // Carry straight on into the next level: wait, fade to black, then load it.
-    const next = this.complete && this.nextLevelId();
-    if (next && p.alive()) {
+    // Carry straight on into the next level: wait, fade to black, then load it. A level with an `ending` hands that to
+    // its ending (js/finale.js), which loads the next level after its cards. The last chapter of a Story road that has
+    // no ending yet (the road goes on, unbuilt) closes on its own screen instead (story.finish).
+    const next = this.complete && !this.level.ending && this.nextLevelId();
+    const roadGoesOn = this.complete && this.story && !this.level.ending && !next;
+    if ((next || roadGoesOn) && p.alive()) {
       const N = CONFIG.nextLevel;
       this.nextTimer += dt;
       if (this.nextTimer >= N.delay) $('fade').classList.add('show');
-      if (this.nextTimer >= N.delay + N.fadeTime) this.loadingFirst(...this.levelCard(next), () => this.startLevel(next));
+      if (this.nextTimer >= N.delay + N.fadeTime) {
+        if (next) this.loadingFirst(...this.levelCard(next), () => this.startLevel(next));
+        else story.finish();   // Game.reset lifts the fade under the road's closing screen
+      }
     }
   },
 

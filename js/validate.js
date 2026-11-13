@@ -376,6 +376,9 @@ function validateData({ visual = true } = {}) {
         need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
     }
     need(new Set(storyIds).size === storyIds.length && (C.chapters || []).length > 0, `${w}: each level may appear only once, and there must be a chapter.`);
+    // A road whose last chapter has no `ending` goes on (its later chapters not built yet): it says so in `goesOn`.
+    const lastLevel = ALL_LEVELS.find(l => l.id === storyIds[storyIds.length - 1]);
+    if ('goesOn' in C || (lastLevel && !lastLevel.ending)) need(typeof C.goesOn === 'string' && C.goesOn.length > 0, `${w}: goesOn must be a line of text (needed while its last chapter has no ending).`);
     storyIdsAll.push(...(C.chapters || []).map(c => c && c.level));
   }
   need(new Set(storyIdsAll).size === storyIdsAll.length, 'Story: a level may be a chapter of only one campaign.');

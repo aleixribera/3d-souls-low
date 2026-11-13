@@ -391,6 +391,9 @@ const finale = (() => {
     const E = F.ending;
     const online = onlineGame();
     const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
+    // An ending with a level after it (Aldric's: the end of Act I) is an interlude: its cards, no credits, then that
+    // level. Online, the server carries a campaign on; the way back to the lobby shows after the cards.
+    const next = Game.nextLevelId();
     // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
     const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
     const credits = `<h2>THE ROAD</h2>${road.chapterIds().map(id => `<p>${road.levelName(id)}</p>`).join('')}
@@ -414,12 +417,12 @@ const finale = (() => {
       #ending button { margin-top: 14px; background: none; border: 1px solid #6a5e48; color: #c9b88a; font: inherit; letter-spacing: 3px; padding: 10px 26px; cursor: pointer; }
       #ending button:hover, #ending button:focus { border-color: #c9b88a; outline: none; }
     </style>` + cards.map(c => `<div class="card">${c}</div>`).join('') +
-      `<div class="roll"><h1>COMBAT ARENA 3D</h1>
+      (next ? '' : `<div class="roll"><h1>COMBAT ARENA 3D</h1>
         ${credits}
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
-      <div class="thanks">THANK YOU FOR PLAYING</div>
-      <div class="back">Press any key to return to ${online ? 'the lobby' : 'the title'}<br><button type="button">${online ? 'Return to lobby' : 'Return to title'}</button></div>`;
+      <div class="thanks">THANK YOU FOR PLAYING</div>`) +
+      `<div class="back">Press any key to return to ${online ? 'the lobby' : 'the title'}<br><button type="button">${online ? 'Return to lobby' : 'Return to title'}</button></div>`;
     document.body.appendChild(overlay);
     const cardEls = [...overlay.querySelectorAll('.card')], roll = overlay.querySelector('.roll'), thanks = overlay.querySelector('.thanks'), back = overlay.querySelector('.back');
     let i = 0, canLeave = false;
@@ -427,6 +430,8 @@ const finale = (() => {
       cardEls.forEach((c, k) => c.classList.toggle('show', k === i));
       if (i < cardEls.length) { i++; overlayTimer = setTimeout(nextCard, E.card * 1000); return; }
       cardEls.forEach(c => c.classList.remove('show'));
+      if (next && online) { back.classList.add('show'); canLeave = true; back.querySelector('button').focus(); return; }
+      if (next) { hideEnding(); Game.loadingFirst(...Game.levelCard(next), () => Game.startLevel(next)); return; }
       roll.style.transition = `transform ${E.credits}s linear`;
       requestAnimationFrame(() => { roll.style.transform = `translateY(-${window.innerHeight + roll.offsetHeight + 40}px)`; });
       overlayTimer = setTimeout(() => {

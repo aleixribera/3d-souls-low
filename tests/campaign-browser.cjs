@@ -4,7 +4,7 @@ const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const campaign = process.env.ARENA_CAMPAIGN || 'lands';
 assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');
-const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle']
+const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church']
   : ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
 const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combatArena.complete' : 'combatArena.complete.haligtree';
 (async () => {
@@ -51,15 +51,27 @@ const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combat
           card: [app.sim.campaign(campaign, chapters[i]).title, app.sim.campaign(campaign, chapters[i]).line],
         });
       }
-      if (i === chapters.length - 1) {
+      // Aldric's death mid-road (Ashmere, v7.36.0) plays the end of Act I's cards, then the party goes on to the church.
+      const interlude = i < chapters.length - 1 && chapters[i] === 'final-castle';
+      if (i === chapters.length - 1 || interlude) {
         for (const p of [a, b]) await p.evaluate(() => {
           Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 1.6, overlay: 1.8 });
           Object.assign(CONFIG.finale.ending, { card: 0.05, credits: 4, hold: 0.05 });
         });
       }
       for (const e of app.sim.inspect().Game.enemies) {
-        if (i === chapters.length - 1 && e.phaseIds?.length) e.enterPhase(e.phaseIds.length - 1);
+        if ((i === chapters.length - 1 || interlude) && e.phaseIds?.length) e.enterPhase(e.phaseIds.length - 1);
         e.hp = 0; e.die();
+      }
+      if (interlude) {
+        for (const p of [a, b]) {
+          await p.locator('#ending .back.show').waitFor({ timeout: 20000 });
+          assert.equal(await p.locator('#ending .card').allTextContents().then(cards => cards.join('|')),
+            await p.evaluate(() => LORE.ending.join('|')), 'the end of Act I');
+          assert.equal(await p.locator('#ending .roll').count(), 0, 'no credits mid-road');
+        }
+        console.log('Browsers completed chapter ' + (i + 1) + ': ' + chapters[i] + ' (the interlude; the server carries the party on)');
+        continue;
       }
       if (i > 0 && i < chapters.length - 1) {
         await a.waitForFunction(() => Game.complete);
@@ -74,6 +86,15 @@ const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combat
         await a.locator('#lobbyNext').click();
       }
       console.log('Browsers completed chapter ' + (i + 1) + ': ' + chapters[i]);
+    }
+    if (campaign === 'ashmere') {   // the road goes on past the church, unbuilt: no ending and no credits yet
+      for (const p of [a, b]) {
+        await p.waitForFunction(() => Game.complete);
+        assert.equal(await p.locator('#ending').count(), 0, 'no ending after the church');
+      }
+      assert.deepEqual(errors, []);
+      console.log(`Campaign browsers (ashmere): all ${chapters.length} maps, the end of Act I after Aldric, automatic party travel to the church.`);
+      return;
     }
     for (const p of [a, b]) {
       await p.locator('#ending .back.show').waitFor({ timeout: 20000 });

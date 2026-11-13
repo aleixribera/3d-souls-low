@@ -123,7 +123,8 @@ globalThis.host = (() => {
     const index = level === undefined ? 0 : story.chapters.findIndex(c => c.level === level);
     const chapter = story.chapters[index]; if (!chapter) return null;
     return { id: story.id, name: story.name, intro: LOBBY_INTROS.some(x => x.id === story.id), level: chapter.level, title: chapter.title, line: chapter.line,
-      number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null, done: story.done };
+      number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null,
+      done: ALL_LEVELS.find(l => l.id === story.chapters.at(-1).level)?.ending ? story.done : story.goesOn || story.done };   // the road goes on, unbuilt
   }
   // What a session is, in a few words, for the title screen of someone about to join (v7.19.0): "Ashmere · The Long
   // Hall", "Boss Only", "Duel: Hollow Soldier". Null when nothing runs.
@@ -588,7 +589,12 @@ globalThis.host = (() => {
     blessings: () => Object.fromEntries(blessed), blessingOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
-    campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,
+    // A level with an `ending` and a chapter after it (Aldric's: the end of Act I) moves on only once its death scene and
+    // cards have played in the browsers (js/finale.js), not after the usual level-complete pause.
+    get campaignAdvanceTime() {
+      const F = CONFIG.finale, L = Game.kind === 'level' && Game.level, plain = CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime;
+      return L && L.ending ? Math.max(plain, F.death.overlay + (((LORE.endings || {})[L.id] || LORE.ending).length + 1) * F.ending.card) : plain;   // a card's slack
+    },
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor }; },
     get sleeping() { return sleeping; },
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.

@@ -2153,21 +2153,21 @@
 
   // ---- Story mode (v4.4) -----------------------------------------------------------------------------------------
   // Each test keeps the player's real save: it is put back afterwards.
-  const withSave = fn => () => {
+  const withSave = fn => async () => {
     const key = CONFIG.story.saveKey; let kept = null;
     try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
-    try { fn(); } finally {
+    try { await fn(); } finally {
       Game.story = false;
       try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
       A.story.load();
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 5, and Level 5 ends the road', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 6; the church is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('final-castle') === null, 'nothing after the castle');
+    expect.ok(S().nextLevelId('the-church') === null, 'nothing after the church yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2229,7 +2229,52 @@
   test('Story: the ending marks the story complete and shows its own screen', withSave(() => {
     S().jumpTo('final-castle'); sim.begin();
     A.events.emit('endingDone');
-    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, 'STORY COMPLETE, saved as complete');
+    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, 'saved as complete');
+    Game.showMenu('main');
+  }));
+  // v7.36.0: Aldric's death is the end of Act I, not of the story (STORY.md): the Ember leaves him, and chapter 6 follows.
+  test('Story: Aldric\'s death plays the Ember leaving him, with no credits, and Story mode goes on to the church', withSave(async () => {
+    const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
+    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 6.4, overlay: 6.6 });   // past the usual next-level fade
+    Object.assign(CONFIG.finale.ending, { card: 0.05 });
+    try {
+      S().jumpTo('final-castle'); sim.begin();
+      A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      sim.walkTo(330, 0, 0.6, 10); sim.step(10);
+      const b = Game.enemies.find(e => e.def.id === 'varn');
+      b.deplete(); sim.step(1); sim.until(() => b.state !== ES.PHASE, 25); b.deplete(); sim.step(2);
+      expect.ok(!b.alive() && Game.complete && A.finale.state.ending, 'Aldric is dead and the end of Act I runs');
+      expect.ok(!S().data.completed, 'the story is not complete');
+      sim.seconds(6);
+      expect.ok(Game.level.id === 'final-castle' && !document.getElementById('fade').classList.contains('show'), `the death scene is not cut short by the usual next-level fade (${Game.level.id})`);
+      sim.until(() => document.getElementById('ending'), 5);
+      const overlay = document.getElementById('ending');
+      expect.ok(overlay && !overlay.querySelector('.roll'), 'the cards, with no credits');
+      expect.ok([...overlay.querySelectorAll('.card')].map(c => c.textContent).join('|') === A.LORE.ending.join('|') && /does not go out/.test(A.LORE.ending[0]), 'the Ember does not go out');
+      const t0 = performance.now();
+      while (document.getElementById('ending') && performance.now() - t0 < 5000) await new Promise(r => setTimeout(r, 50));
+      expect.ok(!document.getElementById('ending'), 'the cards end on their own');
+      sim.until(() => Game.level.id === 'the-church' && !Game.pendingLoad, 10); Game.loading = 0;
+      expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `chapter 6 follows in Story mode, saved there (${Game.level.id})`);
+      expect.ok(Game.levelCard('the-church')[0] === 'THE CHURCH IN THE PASS' && /still the ash falls/.test(Game.levelCard('the-church')[1]), 'its title and line');
+    } finally { Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); }
+  }));
+  test('Story: Continue from a Final Castle save with Aldric beaten (cut short, or from before v7.36.0) goes on to the church', withSave(() => {
+    S().jumpTo('final-castle'); sim.begin();
+    const d = { ...S().data, zones: Game.zones.map(z => z.id), completed: true };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load();
+    S().resume(); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `on to chapter 6 (${Game.level.id})`);
+  }));
+  test('Story: beating the Antlered Hunger, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('the-church'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'the-church', 'chapter 6 starts');
+    const h = Game.enemies.find(e => e.baseDef.id === 'antlered');
+    for (let i = 0; i < 4 && h.alive(); i++) { h.deplete(); sim.step(1); sim.until(() => h.state !== ES.PHASE, 20); }
+    sim.until(() => Game.screen === 'storyDone', 20);
+    const screen = Game.screens().storyDone;
+    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, `the road's closing screen (${Game.screen})`);
+    expect.ok(screen.title === 'THE ROAD GOES ON' && screen.notice === A.STORY.goesOn, `its words (${screen.title})`);
     Game.showMenu('main');
   }));
 

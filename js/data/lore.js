@@ -17,13 +17,14 @@
 // The scene kinds js/lore.js can draw (each one a builder there).
 const LORE_SCENES = ['corpse', 'shackles', 'barricade', 'candle', 'sacks', 'crates', 'bell', 'hearth', 'chair', 'rope', 'chains', 'portrait', 'crown', 'statue'];
 const LORE = {
-  // The ending cards (js/finale.js), one after another before the credits (LORE.md, section 9).
+  // The cards after Aldric's death (js/finale.js; LORE.md, section 9): the end of Act I, not of the story. The Ember
+  // leaves him, and the road goes on to the Church in the Pass. A level's own cards go in LORE.endings[<level id>].
   ending: [
-    'Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood, and goes out.',
+    'Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood. It does not go out.',
+    'Something goes up out of it, like heat over a summer road, through the broken windows and away toward the mountains.',
     'The bell that called him out tolls once more, by no one\'s hand, and then falls silent.',
     'His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.',
-    'And over Ashmere, for the first time in years, the ash stops falling.',
-    'Down by the river, someone is ringing something small.',
+    'And over Ashmere, the ash goes on falling.',
   ],
   npc: { id: 'ysolde', name: 'Ysolde of Corvel', model: 'ysolde', scale: 0.96, bulk: 0.94 },
   levels: {
@@ -168,6 +169,16 @@ const LORE = {
       ],
     },
     'the-church': {
+      npcs: [{ x: 8, z: -11, yaw: -0.57, pose: 'stand', bonfire: 'pass-wood',
+        lines: [
+          'You didn\'t come down to the river. So I came up after you.',
+          'I rang, by the water, the way I said I would. The ash kept falling on the bell.',
+          'My grandmother sang of the Seven coming over these mountains, carrying something wrapped in a cloak. The song never says what.',
+          'They stopped at a church in the snow, and painted their own faces on its wall, so they would know each other after.',
+          'Whatever left him when he fell, it came this way. Up, into the cold. As if it knows the road.',
+          'I\'ll keep the fire. Go on up.',
+        ],
+        idle: 'The snow is clean here. I had forgotten snow could be.' }],
       inscriptions: [
         { id: 'l6-cross', x: 80.8, y: 6, z: -18.4, yaw: 0, mount: 'none', label: 'Bent iron cross',
           lines: ['"Those who stopped here on the way over. We came on without them."'] },

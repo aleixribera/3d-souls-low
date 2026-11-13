@@ -39,3 +39,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   (the body just stands up now) (pass 9).
 - Blessings aren't shown anywhere during a fight (the HUD or the party list); players see them only on the pick screen
   (pass 9).
+- Ysolde is still the old hand-built rig (`MODEL_DEFS.ysolde`), not a Blender figure; she now stands in six chapters
+  (`docs/scorecard/act1-ysolde.jpg`, pass 11). Part of "the story's new cast in Blender" (`PLAN.md` stage 4).
+- The Final Castle played online as a single level (not the Ashmere campaign) now ends on the end-of-Act-I cards and
+  "Return to lobby", with no credits; the leader's Next goes on to the church (pass 11). Credits come back with the
+  story's ending (track A item 3).
