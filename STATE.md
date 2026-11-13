@@ -4,8 +4,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Paused by Aleix, 2026-11-13 (resumes at 21:05 today).
-
 - Track A (pass 42, item 2, v7.64.0): the Ringer pass 1 of 2 shipped: Blender figure, 12 own moves (clapper angles as
   `pitch`), phase `tether` circle, knells drawn by `js/ring-waves.js`. `docs/scorecard/ringer-*.jpg`, in-page
   `Night Gaol`. Pass 2 (optional) in BACKLOG; else: the Regent Hollis.
