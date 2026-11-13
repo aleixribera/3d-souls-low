@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 44, item 2, v7.66.0): the Regent Hollis pass 1 of 2 shipped: Blender figure, 13 own moves, the `echo`
-  hit field (a cut hangs and cuts again), drawn by `js/gilt-echo.js`. `docs/scorecard/hollis-lab.jpg`,
-  `aurel-hollis.jpg`, in-page `Aurel`. Pass 2 (bots and echoes, figure) in BACKLOG; else: Oswin (chapter 11).
+- Track A (pass 47, item 2, v7.68.0): Oswin pass 1 of 2 shipped: Blender figure, 17 own moves, the `seam` and `erupt`
+  hit fields (the floor cracks and stays cracked; called up, every crack burns), drawn by `js/ember-seams.js`; also
+  v7.66.0's six red CI tests (old-Hollis assumptions) and `canParryHit`. `docs/scorecard/oswin-lab.jpg`,
+  `aurel-in-ash-oswin.jpg`, in-page `Aurel in Ash`. Pass 2 (bots and seams, figure) in BACKLOG; next: Agathe (ch. 12).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.

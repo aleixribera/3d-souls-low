@@ -31,6 +31,7 @@ const FILES = {
   'castellans': { sources: ['castellans'] },
   'ringer': { sources: ['ringer'] },
   'hollis': { sources: ['hollis'] },
+  'oswin': { sources: ['oswin'] },
 };
 
 function readGlb(file) {

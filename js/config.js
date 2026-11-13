@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.67.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.68.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -169,6 +169,11 @@ const CONFIG = {
            // A ground ring's hit is active as long as the ring spreads, but the blow that starts it lands at once: its
            // strike pose plays over the first this many s of the active phase (js/attack-anim.js, v7.64.0).
            ringStrike: 0.1 },
+  // Seams in the floor (pass 47, Oswin; a hit's `seam` / `erupt`, js/enemy.js noteSeams): at most `max` stay open (the
+  // oldest closes); each erupts as a wall of fire `width` m wide and `height` m tall along it; `callAt` open seams let an
+  // attack with `when: 'seamed'` be chosen; an erupting hit's wind-up (the seams' tell, js/ember-seams.js) is at least
+  // `minTell` s.
+  seams: { max: 6, width: 1.4, height: 3.2, callAt: 3, minTell: 1.1 },
   // Pace (v7.65.0): no enemy or boss scales with the number of players, anywhere; a group of four meets the boss a solo
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
@@ -492,6 +497,10 @@ const CONFIG = {
     // through a whole box (`field`) are this much larger.
     giltEcho: { color: 0xf0b030, flakes: 48, seam: 26, pool: 4, size: 0.15, fieldSize: 1.6, fade: 0.7, warn: 0.4, boost: 1.4,
       dark: 0.35, glint: 1.15, opacity: 1, seamOpacity: 0.6, fling: 3.2, fall: 2.4 },
+    // Oswin's seams (js/ember-seams.js): the crack's colour and glow at rest and at the tell, how long one takes to run
+    // open (s), its jag (m), the fire wall's colour, height (m), how long it burns and fades (s), flames per seam.
+    emberSeams: { color: 0xff6a20, hot: 0xffc070, rest: 0.55, tell: 1.6, open: 0.3, jag: 0.22, crack: 14, width: 0.32,
+      fire: 0xff7a28, flames: 14, flameW: 1.3, flameH: 3.2, burn: 0.55, fade: 0.6, close: 0.8, pool: 12 },
     tether: { color: 0xb8c8ff, opacity: 0.7, width: 0.28, fadeIn: 1.5, fadeOut: 1.4, flash: 2.5, dust: 4, links: 72 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },

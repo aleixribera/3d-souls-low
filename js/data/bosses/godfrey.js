@@ -3,8 +3,8 @@
 // Move source GODFREY: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
 // The game's bosses are its own since v7.54.0, so this def has no figure and is in no list: it is never fought as it is.
-// Its moves are copied and renamed by Oswin (oswin.js) and one move of the Giant Skeleton (js/data/story-boss-moves.js).
-// It goes when they get moves of their own (PLAN.md track A).
+// One of its moves is copied by the Giant Skeleton (js/data/story-boss-moves.js); Oswin has his own since pass 47.
+// It goes when the Skeleton gets moves of its own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {

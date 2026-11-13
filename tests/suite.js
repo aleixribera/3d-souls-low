@@ -2798,7 +2798,7 @@
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
-      for (const id of [PLAYER_DEF.look.model, 'regentHollis']) {   // (Old Ostrey left in v7.58.0, the Castellans in v7.60.0, the Ringer in pass 42: all Blender now, one detail)
+      for (const id of [PLAYER_DEF.look.model]) {   // (Old Ostrey left in v7.58.0, the Castellans in v7.60.0, the Ringer in pass 42, Hollis in pass 44: all Blender now, one detail)
         KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
         KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
         KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
@@ -2854,7 +2854,7 @@
   test('High loading: selected boss assets and all phase meshes are ready before play', () => {
     try {
       A.visuals.setQuality('high'); sim.begin();
-      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
         Game.startFight(id);
         expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
         let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
@@ -3050,7 +3050,7 @@
   test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
     try {
       A.visuals.setQuality('ultra'); sim.begin();
-      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
         Game.startFight(id);
         const e = Game.enemies[0];
         expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
@@ -3110,7 +3110,7 @@
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {
       A.visuals.setQuality('low'); sim.begin();
-      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
         Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
         const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;
@@ -3219,13 +3219,13 @@
       Game.startFight(d.id); Game.loading = 0; sim.begin();
       const e = Game.duel, p = Game.player;
       for (const a of d.attacks) for (let i = 0; i < a.hits.length; i++) {
-        const parryable = !a.rollOnly && !a.projectile && !a.noParry;
+        const parryable = !a.rollOnly && !a.projectile && !a.noParry && !a.hits[i].echo && !a.hits[i].erupt;   // a gilt echo or a wall of fire: never
         e.attack = a; e.hitIndex = i; e.setState(ES.WINDUP); e.stateTime = Math.max(0, a.hits[i].startup - CONFIG.parry.lead / 2); e.yaw = 0;
         p.x = e.x; p.z = e.z + Math.max(0.1, a.box.fwd); p.y = e.y; p.yaw = Math.PI;
         expect.ok((parryTiming(p, e, 0) !== null) === parryable, `${d.id}/${a.id}/${i}: actual parry result`);
         Game.render(0, STEP);
         const color = parryable ? WARN_COLOR : ROLL_ONLY_COLOR;
-        const glow = clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);
+        const glow = a.hits[i].echo ? 0 : clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own
         expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
         const G = parryable ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
         expect.ok(sameColor(e.rig.warnGlow.material.color, new THREE.Color(G.color).multiplyScalar(G.boost)), `${d.id}/${a.id}/${i}: halo colour`);

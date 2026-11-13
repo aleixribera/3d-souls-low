@@ -19,10 +19,12 @@ function makeStrike(attack, riposte = false, charge = 0, boost = 0) {
 // An oriented box in the owner's frame, tested against a target's upright body cylinder.
 // `anchor` (a hit's `echo`, Enemy.makeHitbox): { cut, home, time } places the box where the owner stood and faced at `cut`
 // instead of where it is now; with `home` it slides from there back to the owner over `time` s of the strike.
+// `lines` (a hit's `erupt`, Enemy.makeHitbox): the floor's open seams [{ x0, z0, x1, z1, y }], each a wall of fire
+// CONFIG.seams.width wide and `height` tall along it, instead of the box.
 class Hitbox {
-  constructor(owner, box, payload, anchor = null) {
-    this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor;
-    this.x = 0; this.y = 0; this.z = 0; this.yaw = 0;
+  constructor(owner, box, payload, anchor = null, lines = null) {
+    this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor; this.lines = lines;
+    this.x = 0; this.y = 0; this.z = 0; this.yaw = 0; this.near = { x: 0, y: 0, z: 0 };
   }
   // The frame the box sits in this step (no allocation: it is read on every step).
   place() {
@@ -33,12 +35,14 @@ class Hitbox {
     return this;
   }
   center() {
+    if (this.lines) return this.near;   // where the last seam it was tested against came nearest
     const f = this.place(), b = this.box;
     return { x: f.x + Math.sin(f.yaw) * b.fwd, y: f.y + b.y, z: f.z + Math.cos(f.yaw) * b.fwd };
   }
   overlaps(target) {
     if (this.hit.has(target)) return false;
     if (this.box.ground && !target.grounded) return false;   // a shockwave along the floor (`ground`): anyone in the air is clear of it
+    if (this.lines) return this.overlapsSeams(target);
     const o = this.place(), b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
     const dx = target.x - o.x, dz = target.z - o.z;
     const lz = dx * s + dz * c - b.fwd, lx = dz * s - dx * c;
@@ -52,6 +56,18 @@ class Hitbox {
     const y0 = o.y + b.y - b.h / 2, y1 = o.y + b.y + b.h / 2;
     return y1 > target.y && y0 < target.y + target.height;
   }
+  // Any open seam whose wall of fire holds the target's body: within half its width of the line, above its floor.
+  overlapsSeams(target) {
+    const S = CONFIG.seams, reach = S.width / 2 + target.radius;
+    for (const L of this.lines) {
+      const ax = L.x1 - L.x0, az = L.z1 - L.z0, len2 = ax * ax + az * az || 1;
+      const t = clamp(((target.x - L.x0) * ax + (target.z - L.z0) * az) / len2, 0, 1), px = L.x0 + ax * t, pz = L.z0 + az * t;
+      if (Math.hypot(target.x - px, target.z - pz) > reach || target.y > L.y + S.height || target.y + target.height < L.y - 0.3) continue;
+      this.near.x = px; this.near.y = L.y + 1; this.near.z = pz;
+      return true;
+    }
+    return false;
+  }
   markHit(target) { this.hit.add(target); }
 }
 
@@ -63,8 +79,7 @@ class Hitbox {
 function parryTiming(p, e, extra) {
   const P = CONFIG.parry, wide = 1 + (p.boons?.parry || 0);   // a Keen Ear blessing widens both edges (CONFIG.blessings)
   let rem;
-  if (!canParryAttack(e.attack)) return null;   // roll-only, bolts and `noParry` (blockable): cannot be parried
-  if (e.attack.hits[e.hitIndex].echo) return null;   // a gilt echo (Enemy.makeHitbox) cuts where he is not: the man can be parried, not the memory
+  if (!canParryHit(e.attack, e.hitIndex)) return null;   // roll-only, bolts, `noParry` (blockable), a gilt echo or a wall of fire: cannot be parried
   if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
@@ -118,7 +133,7 @@ function resolveCombat(game) {
       continue;
     }
     hb.markHit(p);
-    const res = p.takeHit(hb.payload, hb.owner);
+    const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.owner);   // a wall of fire pushes away from its seam, not from him
     if (hb.owner.def && hb.owner.def.lifesteal) {
       if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.lifesteal(hb.owner);
       else hb.owner.lifesteal();

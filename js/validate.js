@@ -156,6 +156,22 @@ function validateData({ visual = true } = {}) {
       need(!E || ['sweep', 'chop', 'thrust', 'field'].includes(E.line), `${tag}: hit ${i + 1}'s echo.line must be sweep, chop, thrust or field.`);
       need(!E || !('tilt' in E) || (num(E.tilt) && Math.abs(E.tilt) <= 1.5), `${tag}: hit ${i + 1}'s echo.tilt must be an angle (rad) from -1.5 to 1.5.`);
     });
+    // A hit's `seam` and `erupt` (pass 47, Oswin; js/enemy.js noteSeams): the floor cracked open along a line ahead, and
+    // every open seam erupting at once. The first eruption of an attack has a wind-up of at least CONFIG.seams.minTell s.
+    if (Array.isArray(a.hits)) a.hits.forEach((h, i) => {
+      if (!h) return;
+      if ('seam' in h) need(h.seam && num(h.seam.len) && h.seam.len > 0 && (!('from' in h.seam) || (num(h.seam.from) && h.seam.from >= 0))
+        && (!('spread' in h.seam) || (Array.isArray(h.seam.spread) && h.seam.spread.length > 0 && h.seam.spread.every(v => num(v) && Math.abs(v) <= Math.PI))) && !h.echo && !a.projectile,
+        `${tag}: hit ${i + 1}'s seam needs len (m), optionally from (m ahead) and spread (angles, rad); not with an echo or a projectile.`);
+      if ('erupt' in h) {
+        need(!(h.box || a.box).ground && !(h.box || a.box).ring, `${tag}: an erupt hit stands walls on the seams: give it a plain box (no ground, no ring).`);
+        const E = h.erupt, prev = a.hits[i - 1];
+        need((E === true || (E && typeof E === 'object' && (!('keep' in E) || typeof E.keep === 'boolean'))) && !h.echo && !h.seam && !a.projectile,
+          `${tag}: hit ${i + 1}'s erupt must be true or { keep }; not with an echo, a seam or a projectile.`);
+        need(h.startup >= CONFIG.seams.minTell - 1e-6 || (prev && prev.erupt && prev.erupt.keep),
+          `${tag}: hit ${i + 1}'s eruption needs a wind-up of at least ${CONFIG.seams.minTell} s (the seams' tell), unless it follows one that keeps them.`);
+      }
+    });
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
     for (const h of Array.isArray(a.hits) ? a.hits : []) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);

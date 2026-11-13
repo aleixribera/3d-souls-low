@@ -47,7 +47,7 @@ const lessons = (() => {
     if ('near' in w) { const b = world.bonfires.find(b => b.id === w.near); return !!b && near(p, b, C.nearRange); }
     if ('enemy' in w) return g.enemies.some(e => awake(e) && (e.baseDef || e.def).id === w.enemy && near(p, e, C.seeRange));
     if ('glint' in w) return g.enemies.some(e => awake(e) && e.state === ES.WINDUP && e.attack && near(p, e, C.seeRange)
-      && (canParryAttack(e.attack) ? 'red' : 'blue') === w.glint);
+      && (canParryHit(e.attack, e.hitIndex) ? 'red' : 'blue') === w.glint);
     if ('kneel' in w) return g.enemies.some(e => awake(e) && (e.execReady || e.state === ES.BROKEN && near(p, e, C.kneelRange)));
     if ('group' in w) return !!g.lock && g.lockCandidates().length >= w.group;
     if ('hurt' in w) { const f = p.item('flask'); return p.hp < p.maxHp * w.hurt && !!f && f.count > 0 && p.state !== PS.USE_ITEM; }

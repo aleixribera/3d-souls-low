@@ -1,6 +1,9 @@
 'use strict';
 // Attack-wide parry rules shared by combat and presentation.
 function canParryAttack(a) { return !!a && !a.rollOnly && !a.projectile && !a.noParry; }
+// Hit i of it: a gilt echo (a hit's `echo`) cuts where the man is not, and a wall of fire (`erupt`) stands where the floor
+// is cracked: neither can be parried, though the attack's other hits may be (pass 47).
+function canParryHit(a, i) { const h = a && a.hits && a.hits[i]; return canParryAttack(a) && !(h && (h.echo || h.erupt)); }
 
 // Three.js addons, imported by the loader in combat-arena-3d.html.
 const { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices } = THREE_ADDONS;

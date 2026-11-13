@@ -63,11 +63,14 @@ const BOSS_FX = {
     salute: { element: 'steel' }, measure: { element: 'steel' }, turnCloak: { element: 'steel' }, judgement: { impact: 'pillar', windup: 'gather' },
     giltCracks: { element: 'fire', impact: 'blaze', aura: 0xff6a20, windup: 'gather' }, ravenous: { element: 'fire' },
     callHome: { element: 'fire' }, feast: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
-  // Oswin, the First Crown (Level 11): the ash king's stomps crack the floor; from 40 % the axe is cast down and the
-  // Ember takes his hands.
-  oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire', hunger: 'fire' }, attacks: {
-    crownsRoar: { impact: 'roar' }, firstHunger: { element: 'fire', impact: 'roar' }, groundBreaker: { impact: 'roar' }, kingsLeap: { impact: 'shatter' },
-    emberCleaver: { element: 'fire', impact: 'shatter' }, kingsHold: { impact: 'shatter', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar' } } },
+  // Oswin, the First Crown (Level 11): the ash king's stomps and axe crack the floor, and the cracks stay open (drawn by
+  // js/ember-seams.js on every preset); from 40 % the axe is cast down and the Ember takes his hands.
+  oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire' }, attacks: {
+    tread: { impact: 'quake' }, twinTread: { element: 'fire', impact: 'quake' }, headsman: { impact: 'shatter', windup: 'gather' },
+    threefold: { impact: 'quake' }, kingsLeap: { impact: 'shatter' }, leapPunish: { impact: 'shatter' }, sceptre: { element: 'steel' }, turn: { element: 'steel' }, backhand: { element: 'fire' },
+    longLive: { element: 'fire', impact: 'blaze', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar', windup: 'gather' },
+    emberFists: { element: 'fire', impact: 'quake' }, groundBreaker: { element: 'fire', impact: 'quake', windup: 'gather' },
+    firstHunger: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
   // Mother Agathe, the Rending Hand (Level 12): stone and the torn earth in the first half; then the storm comes at her
   // back and every blow of the hook rends (js/data/bosses/agathe.js, loaded after this file; checked at validation).
   agathe: { element: 'earth', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {

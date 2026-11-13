@@ -30,6 +30,7 @@ const REACTIONS = {
   staggered: (e, p) => p.state === PS.STAGGER || p.state === ES.STAGGER || p.state === ES.BROKEN,
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
   struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
+  seamed: e => e.seams.length >= CONFIG.seams.callAt,   // pass 47: enough of the floor cracked open to call it up (Oswin)
 };
 // Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
 const FOLLOW_IF = {
@@ -106,6 +107,7 @@ class Enemy {
     this.slot = null;                                // its place around the player (js/crowd.js)
     this.leaping = false;                            // airborne in a leaping strike (a hit's `leap`)
     this.attackNo = 0; this.cuts = [];               // attacks begun; where it stood for each hit of this one (`noteCut`, a hit's `echo`)
+    this.seams = []; this.erupting = null; this.seamKey = -1; this.seamNo = 0;   // the floor it has cracked open (a hit's `seam` / `erupt`)
     // Boss phases (v4.3): an enemy def with `phases` fights through the phase ids its placement lists (`boss.phases`,
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
     // away instead of dying (the opening of Level 5).
@@ -525,7 +527,7 @@ class Enemy {
     this.setState(ES.GONE);
     events.emit('bossGone', { enemy: this });
   }
-  die() { this.hitbox = null; this.setState(ES.DEAD); }
+  die() { this.hitbox = null; this.seams.length = 0; this.erupting = null; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
   checkFall() {
     if (!this.alive()) return;
@@ -635,6 +637,13 @@ class Enemy {
   makeHitbox() {
     const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box;
     this.noteCut();
+    if (hit.erupt) {   // every seam it opened erupts at once; none open, nothing happens
+      const lines = this.erupting && this.erupting.length ? this.erupting : null;
+      if (!lines) return null;
+      const hb = new Hitbox(this, box, { ...makeStrike(this.attack), ...(hit.damage ? { damage: hit.damage } : {}), rollOnly: true }, null, lines);   // fire: no guard holds it
+      hb.near.x = this.x; hb.near.y = this.y; hb.near.z = this.z;   // until it finds someone: at his feet (where its impact lands)
+      return hb;
+    }
     const cut = hit.echo && this.cutOf(hit.echo.of);
     if (hit.echo && !cut) return null;
     return new Hitbox(this, box, hit.damage ? { ...makeStrike(this.attack), damage: hit.damage } : makeStrike(this.attack),
@@ -643,6 +652,22 @@ class Enemy {
   noteCut() {
     const c = this.cuts[this.hitIndex] || (this.cuts[this.hitIndex] = { x: 0, y: 0, z: 0, yaw: 0, no: -1 });
     c.x = this.x; c.y = this.y; c.z = this.z; c.yaw = this.yaw; c.no = this.attackNo;
+    this.noteSeams();
+  }
+  // A hit's `seam` (pass 47, Oswin): as it strikes, the floor cracks open along a line ahead of it (`from` m out, `len` m
+  // long, once per angle of `spread`), and stays open, glowing, the oldest closing past CONFIG.seams.max. A hit's `erupt`
+  // takes every open seam (`keep`: leaves them open for another eruption) for its walls of fire (Enemy.makeHitbox,
+  // Hitbox.lines); drawn by js/ember-seams.js. Once per hit: a client notes it the first time it sees the hit strike.
+  noteSeams() {
+    const hit = this.attack && this.attack.hits[this.hitIndex], key = this.attackNo * 64 + this.hitIndex;
+    if (!hit || (!hit.seam && !hit.erupt) || this.seamKey === key) return;
+    this.seamKey = key;
+    if (hit.seam) for (const a of hit.seam.spread || [0]) {
+      const s = Math.sin(this.yaw + a), c = Math.cos(this.yaw + a), F = hit.seam.from || 0, x0 = this.x + s * F, z0 = this.z + c * F;
+      this.seams.push({ x0, z0, x1: x0 + s * hit.seam.len, z1: z0 + c * hit.seam.len, y: this.y, no: ++this.seamNo });
+      if (this.seams.length > CONFIG.seams.max) this.seams.shift();
+    }
+    if (hit.erupt) { this.erupting = this.seams.slice(); if (!hit.erupt.keep) this.seams.length = 0; }
   }
   // Where hit i of the current attack struck, or null if it has not yet (this attack).
   cutOf(i) { const c = this.cuts[i]; return c && c.no === this.attackNo ? c : null; }
@@ -859,7 +884,7 @@ class Enemy {
     }
     if (r.anim) r.anim.update(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
-    r.setWarning(warn, canParryAttack(a) ? WARN_COLOR : ROLL_ONLY_COLOR);   // red: parryable; blue: cannot be parried
+    r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR);   // red: parryable; blue: cannot be parried (this hit)
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);

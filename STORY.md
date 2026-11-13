@@ -534,9 +534,12 @@ wind, the Ember's root charred where it arches up behind the plaza and the thron
 burnt street gives way into the cellars, where the last of the city hid.
 
 Under the throne lay **Oswin, the First Crown**: the first king of Thrale the Ember ever wore, laid there with the crown
-still on him. He has risen to his throne in the ash. He fights with a great axe, and his stomps crack the floor. Past the
-worst of his hurt he casts the axe down, and the Ember takes his hands: he fights as the man he was before the crown,
-and the bar names him **Oswin, Uncrowned**.
+still on him. He has risen to his throne in the ash. The throne court is his grave, and it does not hold: every stamp of
+his foot and every blow of his great axe cracks the floor open along a line, and the crack stays open, glowing with the
+Ember beneath. When enough of it is open he calls on the throne, "Long live the king", and every crack stands up at
+once as a wall of fire. Past the worst of his hurt he casts the axe down into the floor, and the Ember takes his hands:
+he fights as the man he was before the crown, bare-handed and burning, he grabs, and the bar names him **Oswin,
+Uncrowned**.
 
 The **Cinderfolk** are Aurel's citizens after the burning: burned, and still walking. Some lie in the ash until you
 pass.

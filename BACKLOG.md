@@ -94,11 +94,15 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - Chapter 10, Aurel, the Gilded City (v7.44.0, pass 19): the Gilded Thralls' own figures (stand-in: the Rogue in gold
   leaf with two curved knives, `gilded-thrall-lab.jpg`). The city has no smiles yet beyond the words: the thralls' gilt
   masks are the Rogue's. (The Regent is his own since pass 44.)
-- Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: Oswin's and the Cinderfolk's own figures
-  (stand-ins: the Executioner in ash and old gold with its own axe, the Hollow Soldier charred). Oswin is Godfrey's
-  moves renamed, 3,800 HP (was 4,400); from 40 % only the axe is cast down (`conceal: ['weapon']`) and he burns, where
-  Godfrey also shed a lion and armour the stand-in doesn't have. The kit has no crown for him yet. No one has fought him
-  by hand. The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
+- Oswin, pass 2 (pass 47 did pass 1: Blender figure, 17 own moves, the `seam` and `erupt` hit fields, seams drawn by
+  `js/ember-seams.js`; `docs/scorecard/oswin-lab.jpg`, `aurel-in-ash-oswin.jpg`). Bots don't know seams (Track B's
+  area): `js/bot.js` neither steps off a seam before Long Live the King / the First Hunger nor reads an eruption's
+  walls (`e.hitbox.lines`) as reach, and still plans a parry on a gilt echo; `canParryHit` (js/helpers.js) is the
+  per-hit rule to use. A seam runs its full length even through the court's wall (the walls hide it; nothing clamps
+  it to the room). No one has fought him by hand yet; his health and posture are pass 45's, kept until every boss is
+  reworked. Agathe (chapter 12) should not reuse seams: her floor-rending wants its own idea.
+- Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: the Cinderfolk's own figure (stand-in: the
+  Hollow Soldier charred). The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
   chapter 10 burned (charred gilt, a dry fountain) so the two chapters read as one city.
 - Chapter 12, the Torn Abbey (v7.48.0, pass 23), rough; its second step: Agathe's and the Rending Brothers' own figures
   (stand-ins: the Toll Wisp beardless in black with a glaive, its tall hat reading more ringer than abbess; the Rogue in

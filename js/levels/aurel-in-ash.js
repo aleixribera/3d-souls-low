@@ -15,7 +15,7 @@ const LEVEL_11 = {
   next: 'torn-abbey',   // v7.48.0: on to the Torn Abbey (chapter 12)
   name: 'Level 11: Aurel in Ash',
   description: 'The same city, burning: what the hunger cannot keep, it burns. Halfway down the market lane the street gives way; fight out of the cellars and on through the cinders to the throne, where the first king it ever wore has risen.',
-  help: 'Level 11: the burnt streets are not sound. The Cinderfolk lie in the ash until you pass. The first king\'s stomps crack the floor ahead: jump them.',
+  help: 'Level 11: the burnt streets are not sound. The Cinderfolk lie in the ash until you pass. The first king\'s blows crack the throne floor open, and when he calls on the throne the cracks burn: fight where the floor is whole.',
   completeHint: 'The first crown lies in the ash. Below the city, the root is still burning…',
   wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5, flasks: 8,
   atmosphere: { background: 0x1a1614, fog: 0x2e2622, fogDensity: 0.016,
@@ -52,8 +52,10 @@ const LEVEL_11 = {
     { id: 'throne-court', rect: [170, 190, 12, 22], y: 10, open: true, height: 10, floor: 0x3a3430, wall: 0x4a423c, light: 0xffb070,
       braziers: [[188.5, 13.5], [188.5, 20.5]] },
     { id: 'fog-door', rect: [177, 183, 22, 26], y: 10, height: 6, floor: 0x34302c, wall: 0x46403a, dim: true },
-    { id: 'ash-throne', rect: [160, 200, 26, 66], y: 10, open: true, height: 16, floor: 0x3c3632, wall: 0x504840, light: 0xffb070,
-      lamps: [[162, 28], [198, 28], [162, 64], [198, 64]] },
+    // The throne court (pass 47): a dark floor, so the seams Oswin cracks in it read from across the court; broken
+    // columns at its edges, braziers either side of the empty throne.
+    { id: 'ash-throne', rect: [160, 200, 26, 66], y: 10, open: true, height: 16, floor: 0x2a2522, wall: 0x484038, light: 0xffa060, dim: true,
+      pillars: [[163, 36], [197, 36], [163, 52], [197, 52]], braziers: [[172.5, 64.5], [187.5, 64.5]], lamps: [[162, 28], [198, 28]] },
     { id: 'throne-exit', rect: [177, 183, 66, 70], y: 10, height: 5, floor: 0x34302c, wall: 0x46403a, light: 0xffd090, dim: true },
   ],
   ramps: [
@@ -98,7 +100,7 @@ const LEVEL_11 = {
                 { enemy: 'cinderfolk', behavior: 'slumber', spawn: { x: 174, z: -16, yaw: Math.PI } }] },
     // The throne in ash: the first king. He sees the player only inside it (`arena`), so the last bonfire is safe.
     { id: 'zone-oswin', trigger: [160, 200, 27, 66], gate: { x: 180, z: 66, y: 10, along: 'x', width: 6 },
-      enemies: [{ enemy: 'oswin', arena: true, notice: 60, leash: 200, homeLeash: 200, boss: { phases: ['crowned', 'roaring', 'uncrowned', 'hunger'] }, spawn: { x: 180, y: 10, z: 54, yaw: Math.PI } }] },
+      enemies: [{ enemy: 'oswin', arena: true, notice: 60, leash: 200, homeLeash: 200, boss: { phases: ['crowned', 'uncrowned'] }, spawn: { x: 180, y: 10, z: 54, yaw: Math.PI } }] },
   ],
   sealed: [{ id: 'lane-rubble', gate: { x: 96, z: 0, along: 'z', width: 8 } },
            { id: 'oswin-fog', gate: { x: 180, z: 26, y: 10, along: 'x', width: 6 }, fog: 'zone-oswin' }],
