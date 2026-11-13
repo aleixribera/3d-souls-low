@@ -692,6 +692,23 @@ MODEL_DEFS.cinderfolk = {
   },
   eyes: { color: 0xff7a2a, size: 0.012 },
 };
+// The Drowned (Level 14, v7.51.0; LORE.md 10j): the Hollow Soldier's figure as a thrall come up out of the mere: skin
+// blue-grey and swollen with cold, the clothes gone dark with water and weed, rust on every buckle, pale eyes. A stand-in
+// until its own Blender figure.
+MODEL_DEFS.drowned = {
+  extends: 'hollowSoldier',
+  materials: {
+    ...MODEL_DEFS.hollowSoldier.materials,
+    skin: { tex: 'rotSkin', tint: 0x9aaab4, decay: 0.75 },
+    quilt: { tex: 'rottenCloth', tint: 0x5a6a6a, decay: 0.85 },   // the gambeson dark with water
+    trousers: { tex: 'rottenCloth', tint: 0x3a4648, decay: 0.85 },
+    strap: { tex: 'rustedIron', tint: 0x5a5a52, decay: 0.85 },
+    iron: { tex: 'rustedIron', tint: 0x6a6a62, decay: 0.8, double: true },
+    blade: { tex: 'rustedIron', tint: 0x7a7a72, decay: 0.75 },
+    eye: { glow: 0xc8e8ff },
+  },
+  eyes: { color: 0xc8e8ff, size: 0.011 },
+};
 // The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
 // over grey-green cloth. A stand-in until its own Blender figure.
 MODEL_DEFS.saltKnight = {

@@ -11,6 +11,7 @@
 //   the last hollow (bonfire 3), the fog, and the heartwood, a ring of wood over the burning deep: the Kindling Tree.
 const LEVEL_13 = {
   id: 'ember-root', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'still-mere',   // v7.51.0: on to the Still Mere (chapter 14)
   name: 'Level 13: The Root of the Ember',
   description: 'Under everything, the Ember is a root. Inside its first growth: hollows of living red-gold wood, joined by roots over a burning deep. The roots have no rail. Where it began, the root has been given limbs.',
   help: 'Level 13: the roots have no rail: a fall is death. The Rootbound sink into the wood and rise where you stand, throw thorns of fire, and mark the floor to burn: step off the mark.',

@@ -463,6 +463,18 @@ const ENEMY_DEFS = [
       damage: Math.round(a.damage * 1.1), poise: Math.round(a.poise * 1.15) })) });
 }
 
+// The Drowned of the Still Mere (Level 14, v7.51.0; LORE.md 10j): thralls of Thrale who walked into the one water that
+// never burned, so the hunger would have nothing left to hold, and stayed under. They lie in the shallows until you
+// pass. Slow, heavy with water, hard to stagger. Rough stand-in: the Hollow Soldier's figure and moves, waterlogged.
+{
+  const H = ENEMY_DEFS.find(d => d.id === 'hollow');
+  ENEMY_DEFS.push({ ...H, id: 'drowned', model: 'drowned', name: 'Drowned',
+    description: 'Thralls who walked into the one water in Thrale that never burned, so the hunger would have nothing to hold, and stayed under. They lie in the shallows until you pass. Slow, heavy with water, hard to stagger.',
+    color: 0x5a6a72, visual: { ...H.visual, skin: 0x8a9aa2 }, hp: 140, poise: 80, speed: 2.0, turnRate: 4.0, trackRate: 1.8, cooldown: [0.9, 1.7],
+    attacks: H.attacks.map(a => ({ ...a, id: a.id === 'swing' ? 'soddenSwing' : 'fallingWeight', name: a.id === 'swing' ? 'Sodden Swing' : 'Falling Weight',
+      damage: Math.round(a.damage * 1.15), poise: Math.round(a.poise * 1.2) })) });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

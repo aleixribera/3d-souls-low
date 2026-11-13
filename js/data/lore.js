@@ -371,5 +371,30 @@ const LORE = {
         { kind: 'candle', x: 152.5, y: 16, z: 90.5 },
       ],
     },
+    // Chapter 14 (v7.51.0; LORE.md 10j): the one water in Thrale that never burned.
+    'still-mere': {
+      npcs: [{ x: 8, y: 24, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'mere-bough',
+        lines: [
+          'The songs end here. The last verse is only a lake, and a tree with no colour in it.',
+          'Nothing has ever burned here. Feel the cold. It is the first clean thing in Thrale.',
+          'You carry it, don\'t you. I can see the light through your fingers. It is smaller than I thought.',
+          'Someone waits on the ice. I saw them from the bough. They stand the way you stand.',
+          'Whatever it wears, it is not you. You were only ever lent to it.',
+          'Go down. When it is done, I\'ll ring the bell over the water.',
+        ],
+        idle: 'The bell is cold in my hands. Good. Let it be cold.' }],
+      inscriptions: [
+        { id: 'l14-fork', x: 51, y: 24, z: 4, yaw: Math.PI / 2, mount: 'floor', label: 'Cut in the bough fork\'s bark',
+          lines: ['"Here the fire came, and went no further."'] },
+        { id: 'l14-yard', x: 96, z: -42.5, yaw: Math.PI, mount: 'floor', label: 'In the shore yard\'s stones',
+          lines: ['"We walked into the water so it would have nothing left to hold."', 'Beneath it, in another hand: "It is cold. It is clean. Come in."'] },
+        { id: 'l14-shore', x: 194, z: -54, yaw: -Math.PI / 2, mount: 'floor', label: 'In the shore\'s stones',
+          lines: ['"What the fire took, it keeps. What it keeps, it wears."'] },
+      ],
+      scenes: [
+        { kind: 'corpse', pose: 'seated', x: 13, y: 24, z: -6.4, yaw: Math.PI }, { kind: 'corpse', pose: 'lying', x: 192, z: -38, yaw: 1.6 },
+        { kind: 'candle', x: 187.5, z: -56.5 },
+      ],
+    },
   },
 };

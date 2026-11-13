@@ -114,3 +114,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   arcs and the thrown thorns are still gold spears: both want an ember shape (a root knot, a thorn). No one has fought it
   by hand. The Rootbound borrow the Golden Zealot's def at load (`js/data/bosses/kindling-tree.js`): the swap must keep
   it or inline it.
+- Chapter 14, the Still Mere (v7.51.0, pass 27), rough; its second step: the King's Blade's own figure (stand-in: the
+  player's wanderer in ash, so the shield it guards with is still slung on its back; it wants the round shield on the
+  arm, and the champion's look of `STORY.md`), a roll or sidestep (no enemy rolls yet: an opt-in evade would make "it
+  fights as you fight" whole), and the Drowned's own figure (the Hollow Soldier, waterlogged). Its moves are read from
+  `PLAYER_DEF` at load: a change to the player's sword changes the boss's. The ice is a plain floor: a lake surface
+  (cracks, the dark water under it) would sell the place. No one has fought it by hand.

@@ -298,6 +298,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The little bell is cast. I'll ring it when there is water to ring it over.
 
+### Level 14 — The Still Mere (on the white bough, by the first bonfire)
+1. The songs end here. The last verse is only a lake, and a tree with no colour in it.
+2. Nothing has ever burned here. Feel the cold. It is the first clean thing in Thrale.
+3. You carry it, don't you. I can see the light through your fingers. It is smaller than I thought.
+4. Someone waits on the ice. I saw them from the bough. They stand the way you stand.
+5. Whatever it wears, it is not you. You were only ever lent to it.
+6. Go down. When it is done, I'll ring the bell over the water.
+
+*Idle:* The bell is cold in my hands. Good. Let it be cold.
+
 ---
 
 ## 7. Inscriptions
@@ -373,6 +383,12 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
   hand: "We took it so that no one would."
 - **In the last hollow's floor** (by the last bonfire): "It was a root before it was a king. It will be a root after."
 
+### Level 14 — The Still Mere
+- **Cut in the bough fork's bark**: "Here the fire came, and went no further."
+- **In the shore yard's stones** (by the second bonfire): "We walked into the water so it would have nothing left to
+  hold." Beneath it, in another hand: "It is cold. It is clean. Come in."
+- **In the shore's stones** (by the last bonfire): "What the fire took, it keeps. What it keeps, it wears."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -402,8 +418,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 13,
-the Root of the Ember) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until it is built, Story mode ends after the last chapter (chapter 14, the Still Mere) on **THE ROAD
+GOES ON**: *The ice is still. The end of the road is still being built.*
 
 ---
 
@@ -521,6 +537,19 @@ the bar names it **the Kindling Tree, Ablaze**.
 The **Rootbound** are thralls grown into the wood, and gone into it gladly: they sink into the roots and rise where you
 stand, throw thorns of fire, and mark the floor to burn.
 
+## 10j. Level 14 — The Still Mere (chapter 14 of the Story, the last)
+Chapter 14, after the Root of the Ember. There is one water in Thrale that never burned: **the Still Mere**, a frozen
+lake under a white tree. The player comes down the tree's white boughs, through the shore yard and the drowned court,
+carrying the dying Ember to drown it.
+
+**The King's Blade** waits on the ice: the hunger, beaten in every body it wore, in the last one it kept, the champion's
+burned-out memory. Red scarf, round shield, the King's sword. It fights as the player fights: the three cuts, the held
+blow, the leap; its shield turns blows from the front and answers them. Past half the Ember shows through it, and the
+bar names it **the King's Blade, Ember-Worn**. Who it was is never said.
+
+The **Drowned** are thralls who walked into the mere so the hunger would have nothing left to hold, and stayed under.
+They lie in the shallows until you pass.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -559,6 +588,9 @@ stand, throw thorns of fire, and mark the floor to burn.
 | The place of Level 13 | the Root of the Ember, its first growth |
 | The boss of Level 13 | the Kindling Tree; past 60 %: the Kindling Tree, Ablaze |
 | The enemy of Level 13 | the Rootbound |
+| The place of Level 14 | the Still Mere, under the white tree |
+| The boss of Level 14 | the King's Blade; past half: the King's Blade, Ember-Worn |
+| The enemy of Level 14 | the Drowned |
 
 ---
 ---

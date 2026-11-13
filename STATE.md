@@ -4,13 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 26 took `PLAN.md` stage 3 track B item 3, the weakest bosses row (Radagon, 1), pass 1: the Gold Breaker's
-shockwave now opens 0.76 s after the landing (was 0.44 s), so a roll through each fits, as the Elden Shattering got in
-v7.12.2; it hit bots on every use. Released v7.50.1. Check met: in-page `Radagon: the Gold Breaker leaves time…` (real
-rolls, fails on the old timing); three bots 0/12 → 1/12 (Radagon), 2/12 (Kindling Tree), wave damage 986 → 64
-(`docs/scorecard/radagon-gold-breaker.txt`). The bots' drop since v7.12.1 is bisected: v7.13.1's deliberate greed
-(`BACKLOG.md`). Next: track A, chapter 14; then track B's next weakest bosses row (Godrick, Morgott, Godfrey,
-Maliketh, Malenia at 2).
+Pass 27 took `PLAN.md` stage 3 track A item 2, chapter 14 (the last), pass 1: the Still Mere, rough, released v7.51.0.
+Check met: in Story mode the Kindling Tree goes on to it and the King's Blade closes the road (in-page `Story`, `Still
+Mere` 6); frames `docs/scorecard/mere-blade.jpg` (front-lit on the ice), `mere-drowned.jpg`, `kings-blade-lab.jpg`,
+`drowned-lab.jpg`. Three bots lose to it in 91 s on average (the tree: 27 s). Next: track B's next weakest bosses row
+(Godrick, Morgott, Godfrey, Maliketh, Malenia at 2); then track A item 3, the ending.
 
 ## Works
 
@@ -39,20 +37,13 @@ Maliketh, Malenia at 2).
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
   `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
   default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
-- Chapter 7, the Windward Moor (v7.38.0, rough): `js/levels/windward-moor.js`, Old Ostrey (`js/data/bosses/ostrey.js`),
-  `lanternThrall` / `lanternBearer`; in-page `Moor` (6). Chapters' second steps are in `BACKLOG.md`.
-- Chapter 8, Saltgrave (v7.40.0, rough): `js/levels/saltgrave.js` (Stormveil's layout), Hale and Harrow
-  (`js/data/bosses/castellans.js`, Godrick's moves split and renamed), the opt-in `alone` phase (`checkPhaseAt`; `kin`
-  from `Game.spawnZone` and Arena groups; no kin = alone at once), `saltKnight`, statue `of`/`pose: 'kneel'`
-  (`js/lore.js`). In-page `Saltgrave` (9), `Story` (24), `Guiding light`; frames by `.scratch/salt-frames.cjs`.
-- Chapter 9, the Night Gaol (v7.42.0, rough): `js/levels/night-gaol.js`, the Ringer (`js/data/bosses/ringer.js`, the
-  Crucible Knight's moves renamed), `keyless`; kit weapon `size`. In-page `Night Gaol` (7).
-- Chapters 10-12 (v7.44.0-v7.48.0, rough): `js/levels/aurel.js`, `aurel-in-ash.js`, `torn-abbey.js`; bosses in
-  `js/data/bosses/hollis.js`, `oswin.js`, `agathe.js` (Morgott's, Godfrey's, Maliketh's moves renamed). In-page `Aurel`
-  (5), `Aurel in Ash` (5), `Torn Abbey` (7). A material's `tint` sets hue only: darken with another texture.
-- Chapter 13, the Root of the Ember (v7.50.0, rough): `js/levels/ember-root.js`, the Kindling Tree and the Rootbound
-  (`js/data/bosses/kindling-tree.js`: Radagon's and the Golden Zealot's moves), an enemy's opt-in `holyLight` (blink and
-  mark colours: `js/holy.js`, `effect-lighting.js`, `ultra-fx.js`), the `emberbark` ground. In-page `Ember Root` (5).
+- Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
+  `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
+  `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
+  (an enemy's `holyLight`), `kings-blade.js` (the player's own moves from `PLAYER_DEF`, a shield `guard`); each an old
+  boss's moves renamed, but the King's Blade. In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
+  `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
+  another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`, and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss, headless, about a minute).
@@ -66,8 +57,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 26's push and the v7.50.1 container: check in pass 27. Pass 26 locally: Node checks, in-page
-`Radagon`, `Ember Root`, `Changelog`, `valid`.
+CI on pass 27's push and the v7.51.0 container: check in pass 28 (pass 26's CI was still running at 19 min; its
+container published). Pass 27 locally: Node 22/22, in-page `Still Mere`, `Story`, `Guiding light`, `Lore`, `valid`,
+`Changelog`, `Ember Root`, `model`.
 
 ## wip// branches
 
@@ -86,11 +78,13 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapter 14 exists, Story mode ends after the Root of the Ember on THE ROAD GOES ON (`STORY.goesOn`), and
+- (overridable) Until the ending is built, Story mode ends after the Still Mere on THE ROAD GOES ON (`STORY.goesOn`: "The
+  ice is still. The end of the road is still being built."), and
   the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
-- (overridable) Chapters 7-13's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
+- (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
   bar name, enemy descriptions (`LORE.md` 6, 7, 10c-10i). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
   each (Godrick's damage x0.85), the Ringer 3,000, the Regent 3,400, Oswin 3,800, Agathe 4,000 (her stand-in keeps the
-  Toll Wisp's tall hat), the Kindling Tree 4,200 (its stand-in is chapter 6's Hunger stood upright).
+  Toll Wisp's tall hat), the Kindling Tree 4,200 (its stand-in is chapter 6's Hunger stood upright), the King's Blade 4,400 (its second bar
+  "the King's Blade, Ember-Worn"; its stand-in is the player's own figure in ash).

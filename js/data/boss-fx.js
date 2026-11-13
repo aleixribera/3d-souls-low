@@ -114,4 +114,8 @@ const BOSS_FX = {
     threefoldLash: { impact: 'shatter' }, rootStomp: { impact: 'quake' }, emberThorn: { element: 'fire' }, thornVolley: { element: 'fire' } } },
   // The Rootbound (Level 13): wood, and the mark that burns.
   rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
+  // The King's Blade (Level 14): the champion's steel, until the Ember shows through it (the second phase)
+  // (js/data/bosses/kings-blade.js, loaded after this file).
+  kingsBlade: { element: 'steel', aura: 0xff8a40, phases: { emberWorn: 'fire' }, attacks: {
+    heldBlow: { impact: 'shatter', windup: 'gather' }, leapingBlow: { impact: 'quake' }, emberLeap: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
 };
