@@ -11,3 +11,7 @@ took it (once taken).
 - 2026-11-13, addition to the bot complaint above: when an enemy is open to an execution, bots leave it to the player
   and do it themselves only if the player doesn't, at the end of the window. Bots should feel like an aid to the
   player, not a carry.
+- 2026-11-13, complaint (boss health): boss health is too large for most of them; relax it, Aleix's friends are new to
+  the genre. Covers the per-player group scaling (v7.35.0, +50% health per extra player) and the health the loop picked
+  for the new story bosses (Ostrey, the castellans, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's
+  Blade).
