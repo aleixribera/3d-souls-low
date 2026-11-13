@@ -29,7 +29,7 @@ const ultraFx = (() => {
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   const isBoss = e => !!(e.boss || e.baseDef.phases || e.baseDef.posture);
   // js/ultra-boss.js plugs in here: a boss's colour of the moment, its blade ribbon, and whether it draws a ground blow itself.
-  const hooks = { aura: null, trail: null, impact: null, bolt: null };
+  const hooks = { aura: null, trail: null, playerTrail: null, impact: null, bolt: null };
   const auraColor = e => (hooks.aura && hooks.aura(e)) ?? U.auraColors[e.baseDef.id] ?? U.aura.color;
 
   // ---- streaks: sparks (additive, HDR) and blood drops (opaque), stretched along their flight -------------------------
@@ -306,7 +306,7 @@ void main() {
   }
   const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map();
   function trailColor(b) {
-    if (b instanceof Player) return [T.player, T.playerBoost];
+    if (b instanceof Player) return (hooks.playerTrail && hooks.playerTrail(b)) || [T.player, T.playerBoost];
     const a = b.attack, own = hooks.trail && hooks.trail(b);
     if (a && a.rollOnly) return [T.rollOnly, T.enemyBoost * 1.2];
     if (own) return own;

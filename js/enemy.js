@@ -90,6 +90,7 @@ class Enemy {
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.sinceBreak = Infinity;                      // time since its last posture break or execution ended
+    this.frozen = 0;   // s left stopped in time (Time Rift, js/blessings.js): no step, no blow, hit as it stands
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
@@ -257,6 +258,7 @@ class Enemy {
     }
   }
   update(dt, player) {
+    if (this.frozen > 0) { this.frozen = Math.max(0, this.frozen - dt); this.updateFeedback(dt); return; }
     this.step(dt, player);
     this.emitMarkers();
   }

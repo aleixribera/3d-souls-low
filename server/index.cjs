@@ -176,7 +176,7 @@ function createServer(options = {}) {
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
-    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.rising = 0; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); blessingFor = null; blessingRound.clear();
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
@@ -189,7 +189,7 @@ function createServer(options = {}) {
       blessingFor = 0;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) blessingRound.add(id);
-      sim.offerBlessings(ids, true, swiftKill() ? sim.swiftExtra : 0);
+      sim.offerBlessings(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1);
       for (const p of clients.values()) sendOffer(p);
     }
     blessingFor += 1 / C.tickRate;
@@ -201,7 +201,7 @@ function createServer(options = {}) {
   // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
   function offerLate(p) {
     if (blessingFor === null) return;
-    if (!blessingRound.has(p.id)) { blessingRound.add(p.id); sim.offerBlessings([p.id], false, swiftKill() ? sim.swiftExtra : 0); }
+    if (!blessingRound.has(p.id)) { blessingRound.add(p.id); sim.offerBlessings([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1); }
     sendOffer(p);
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
@@ -290,18 +290,19 @@ function createServer(options = {}) {
     const P = net.pose;
     if (!s || typeof s !== 'object' || !P.required.every(k => net.finite(s[k]))) return;
     // Whitelist fields: remote data never becomes a Player object or arbitrary properties.
-    if (!P.states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > sim.playerMaxHp || s.stateTime < 0 || s.attackT < 0) return;
-    const limits = { stamina: sim.playerMaxStamina, flasks: sim.playerMaxFlasks + sim.boonOf(p.id, 'flasks'), staminaDelay: C.maxCoordinate,
-      poise: sim.playerMaxPoise, poiseTimer: C.maxCoordinate, doomTime: C.maxCoordinate, doomDrain: sim.playerMaxHp };
+    // Health and stamina within the bars this player's blessings give (Iron Blood, Deep Lungs).
+    const maxHp = sim.maxHpOf(p.id) + 1e-6, maxStamina = sim.maxStaminaOf(p.id) + 1e-6;
+    if (!P.states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > maxHp || s.stateTime < 0 || s.attackT < 0) return;
+    const limits = { stamina: maxStamina, flasks: sim.playerMaxFlasks, staminaDelay: C.maxCoordinate,
+      poise: sim.playerMaxPoise, poiseTimer: C.maxCoordinate, doomTime: C.maxCoordinate, doomDrain: maxHp };
     if (Object.entries(limits).some(([key, max]) => s[key] !== undefined && (!net.finite(s[key], max) || s[key] < 0)) ||
       s.flasks !== undefined && !Number.isInteger(s.flasks) || s.exhausted !== undefined && typeof s.exhausted !== 'boolean') return;
-    const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'stamina' ? sim.playerMaxStamina : key === 'flasks' ? sim.playerMaxFlasks : key === 'poise' ? sim.playerMaxPoise : 0);
+    const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'stamina' ? maxStamina : key === 'flasks' ? sim.playerMaxFlasks : key === 'poise' ? sim.playerMaxPoise : 0);
     // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
     // shared session clears this player's defeat, including repeated ready messages.
-    // After a granted Rise Again, the poses sent before the client heard the answer still say dead: they are not a fall.
     const down = s.hp <= 0 || s.state === 'dead';
-    if (!down || performance.now() > p.rising) p.rising = 0;
-    if (session.teamWipeOnly && down && !p.arenaDefeated && !p.rising) { p.arenaDefeated = true; p.defeatedAt = performance.now(); sim.noteDeath(p.id); }
+    if (session.teamWipeOnly && down && !p.arenaDefeated) { p.arenaDefeated = true; sim.noteDeath(p.id); }
+    sim.notePose(p.id, s.hp);   // health lost: the perks that wait for it (Vengeance, Patience)
     p.pose = { ...Object.fromEntries(P.required.map(key => [key, s[key]])), state: s.state,
       // Only a real player attack id (own property) is relayed: peers index their attack table with it.
       attack: sim.playerAttack(s.attack), charge: Math.min(2, Math.max(0, Number(s.charge) || 0)),
@@ -337,13 +338,6 @@ function createServer(options = {}) {
       if (blessingFor !== null && sim.bless(p.id, msg.id)) send(p, { type: 'blessings', offer: null, held: sim.blessings()[p.id] || [] });
       return;
     }
-    // Rise Again: a fallen player gets up, no sooner than `riseDelay` after the fall (less a frame or two of latency),
-    // within the rises their blessings give for this fight. The answer says whether to.
-    if (msg.type === 'rise') {
-      const ok = session.teamWipeOnly && p.arenaDefeated && performance.now() - p.defeatedAt >= (sim.riseDelay - C.riseSlack) * 1000 && sim.rise(p.id);
-      if (ok) { p.arenaDefeated = false; p.rising = performance.now() + C.riseAnswer * 1000; }
-      send(p, { type: 'risen', ok: !!ok }); return;
-    }
     if (msg.type === 'ready') {
       // A full baseline is the costly answer: a repeated ready only resynchronises once per `resyncInterval`.
       const now = performance.now(), again = p.ready;
@@ -368,6 +362,9 @@ function createServer(options = {}) {
       send(p, { type: 'execution', enemy: net.id(msg.enemy) ? msg.enemy : null, accepted: !!accepted });
     } else if (msg.type === 'executionEnd') {
       if (net.id(msg.enemy)) sim.endExecution(p.id, msg.enemy);
+    } else if (msg.type === 'blessing') {   // a blessing's trigger only this player's browser sees (BLESSING_CLAIMS)
+      if (typeof msg.when === 'string' && (msg.enemy === undefined || net.id(msg.enemy)) && (msg.action === undefined || net.id(msg.action)) &&
+        claim(p, `blessing/${msg.when}/${msg.enemy}/${msg.serial ?? msg.seq}`)) sim.blessingClaim(p.id, msg);
     } else if (msg.type === 'lifesteal') {
       if (net.id(msg.enemy) && claim(p, `heal/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.lifesteal(p.id, msg);
     } else if (msg.type === 'rest') {

@@ -71,6 +71,7 @@ function registerListeners() {
   blackBlade.attach(); // the cursed sphere and line blasts drawn (`destined`, `sphere` attacks; js/blackblade.js)
   flame.attach();      // flame breath and revealed parts drawn (`breath` attacks, phase `reveal`; js/flame.js)
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (`blink`, `sigil` hits; js/holy.js)
+  blessingFx.attach(); // Boss Rush's legendaries drawn (`blessingPower`, `blessingPerk`; js/blessing-fx.js)
   registerAudioListeners();
 }
 

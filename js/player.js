@@ -3,24 +3,6 @@
 // 5. Player
 // ============================================================================
 // Inventory: { itemId: { count, max } }, created from the player definition.
-// No blessings: every boon a Player reads (bless) at zero.
-const NO_BOONS = Object.freeze({ damage: 0, flasks: 0, stamina: 0, parry: 0, rise: 0 });
-// A blessing's line for the pick screen, its numbers filled in from CONFIG.blessings.
-function blessingText(b) {
-  const B = CONFIG.blessings, v = B.boons[b.boon], pct = x => Math.round(x * 100) + '%';
-  return b.text.replace('{pct}', pct(v)).replace('{n}', String(v)).replace('{hp}', pct(B.riseHp));
-}
-// Rise Again (CONFIG.blessings): a fresh body where `old` fell (at `start` instead after a fall into a pit), with the
-// same blessings and flasks left and `riseHp` of full health; it counts one more rise. The owner swaps it in and frees
-// the old rig.
-function riseBody(old, start) {
-  const at = old.inPit && start ? start : old;
-  const p = new Player(old.def, at.x, at.z, at.yaw ?? old.yaw, at.y ?? old.y);
-  p.bless(old.blessings); p.risen = old.risen + 1; p.hp = p.maxHp * CONFIG.blessings.riseHp;
-  const was = old.inventory.flask, now = p.inventory.flask;
-  if (was && now) now.count = Math.min(now.max, was.count);
-  return p;
-}
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 
 class Player {
@@ -47,19 +29,23 @@ class Player {
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
-    this.boons = NO_BOONS; this.blessings = []; this.risen = 0;   // Boss Rush's blessings held (bless), rises taken (riseBody)
+    // Boss Rush's blessings (js/blessings.js): the kit they make, its perks' clocks, and who settles its powers (a
+    // server bot's own; unset, blessingReport finds it). lastHp: the health last step, so losing any is noticed.
+    this.kit = NO_KIT; this.perk = blessingPerkState(); this.onBlessing = null; this.lastHp = this.hp; this.lowReported = false;
     this.savePrev();
   }
-  // Boss Rush's blessings (CONFIG.blessings, BLESSINGS): sums each held blessing's boon into `boons` and grants the
-  // extra flasks. Called once, on a fresh body.
+  // Boss Rush's blessings (BLESSINGS): the kit of the ids held (one per pick, repeated by upgrades), with the health
+  // and stamina it gives, both full. Called once, on a fresh body.
   bless(ids) {
-    const boons = { ...NO_BOONS };
-    this.blessings = (ids || []).filter(id => Object.hasOwn(BLESSING_BY_ID, id));
-    for (const id of this.blessings) { const b = BLESSING_BY_ID[id]; boons[b.boon] += CONFIG.blessings.boons[b.boon]; }
-    this.boons = Object.freeze(boons);
-    const flask = this.inventory.flask;
-    if (flask && boons.flasks) { flask.max += boons.flasks; flask.count += boons.flasks; }
+    this.kit = blessingKit(ids);
+    const S = this.def.stats, m = this.kit.mods;
+    this.maxHp = S.maxHp * (1 + m.maxHp); this.maxStamina = S.maxStamina * (1 + m.maxStamina);
+    this.hp = this.lastHp = this.maxHp; this.stamina = this.maxStamina;
   }
+  // Last Breath (a `low/freeStamina` perk): this low, rolls and attacks cost nothing.
+  freeStamina() { const v = this.kit.perks['low/freeStamina']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below; }
+  // A flask drunk this many times as fast (Quick Draught).
+  drinkRate() { return 1 + (this.kit ? this.kit.mods.flaskSpeed : 0); }
   alive() { return this.state !== PS.DEAD; }
   in(group) { return PLAYER_GROUPS[group].has(this.state); }
   isFree() { return this.in('free'); }
@@ -86,7 +72,7 @@ class Player {
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
   // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.bossPowers.destined).
   hpCap() { return this.doomTime > 0 ? this.maxHp * (1 - CONFIG.bossPowers.destined.cut) : this.maxHp; }
-  invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames) || this.state === PS.EXECUTE || this.execGrace > 0; }
+  invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames * (1 + (this.kit?.mods.rollIFrames || 0))) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
     return (this.state === PS.ATTACK && this.attackPhase() === PHASE.ACTIVE) || (this.state === PS.JUMP_ATTACK && !!this.hitbox);
@@ -111,7 +97,7 @@ class Player {
       case PS.LAND: return action === 'roll' ? Math.max(0, this.attack.air.impactTime - t) : this.landTime - t;
       case PS.HURT: case PS.STAGGER: return this.stunTime - t;
       case PS.PARRY: return CONFIG.parry.time - t;
-      case PS.USE_ITEM: return this.usingItem.useTime - t;
+      case PS.USE_ITEM: return (this.usingItem.useTime - t * this.drinkRate()) / this.drinkRate();
       default: return Infinity;
     }
   }
@@ -131,7 +117,8 @@ class Player {
   startRoll(mv) {
     this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    this.spend(Math.max(CONFIG.player.rollCost, this.stamina - CONFIG.player.rollCost < 1 ? this.stamina : 0));   // (all but) empty: exhausted
+    const cost = CONFIG.player.rollCost * (1 - this.kit.mods.rollCost);   // Light Step
+    if (!this.freeStamina()) this.spend(Math.max(cost, this.stamina - cost < 1 ? this.stamina : 0));   // (all but) empty: exhausted
     this.hitbox = null; this.setState(PS.ROLL);
   }
   // Heading toward the best nearby enemy in the direction the player means to swing, or null.
@@ -151,9 +138,13 @@ class Player {
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
-    this.payload = makeStrike(a, this.riposte > 0, 0, this.boons.damage);
+    this.payload = makeStrike(a, this.riposte > 0, 0);
+    if (a.charge && this.perk.bastion > 0) {   // Bastion: a blocked blow readied this heavy, fully charged at once
+      this.perk.bastion = 0; this.chargeT = a.charge.hold; this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, 1);
+      events.emit('chargeFull', { actor: this, attack: a }); events.emit('blessingPerk', { body: this, perk: 'block/charge' });
+    }
     this.riposte = 0;
-    this.spend(a.cost || 0);
+    if (!this.freeStamina()) this.spend(a.cost || 0);
     this.hitbox = null;
   }
   // The attack an input starts: the follow-up of a combo still running (or just ended), else the opener.
@@ -208,7 +199,8 @@ class Player {
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     this.canAct(); this.sinceExhausted = this.exhausted ? 0 : this.sinceExhausted + dt;
-    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.boons.stamina) * dt);
+    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.kit.mods.staminaRegen) * dt);
+    if (this.kit !== NO_KIT) this.blessingStep(dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -277,9 +269,9 @@ class Player {
         // carries on, harder by how long it was held.
         if (ch && this.charge === 1) {
           if (this.ctl.isHeld(ch.action) && this.chargeT < ch.hold) {
-            this.chargeT = Math.min(ch.hold, this.chargeT + dt);
+            this.chargeT = Math.min(ch.hold, this.chargeT + dt * (1 + this.kit.mods.chargeSpeed));   // Swift Charge
             if (this.chargeT >= ch.hold) events.emit('chargeFull', { actor: this, attack: a });
-          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold, this.boons.damage); }
+          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold); }
         }
         if (this.charge !== 1) this.attackT += dt;
         if (ch && this.charge === 0 && this.attackT >= a.hits[0].startup * ch.at) {
@@ -327,14 +319,14 @@ class Player {
         break;
       }
       case PS.USE_ITEM: {
-        const I = this.usingItem;
+        const I = this.usingItem, rate = this.drinkRate();   // Quick Draught: the whole drink runs faster
         approachVel(this, 0, 0, C.decel * dt);
         if (I.heal) {   // heal spread over [healStart, healStart + healDuration]
-          const t0 = this.stateTime - dt, t1 = this.stateTime;
+          const t0 = (this.stateTime - dt) * rate, t1 = this.stateTime * rate;
           const healed = clamp(t1 - I.healStart, 0, I.healDuration) - clamp(t0 - I.healStart, 0, I.healDuration);
           this.hp = Math.min(this.hpCap(), this.hp + I.heal * healed / I.healDuration);
         }
-        if (this.stateTime >= I.useTime) this.setState(PS.IDLE);
+        if (this.stateTime * rate >= I.useTime) this.setState(PS.IDLE);
         break;
       }
       case PS.REST: {
@@ -370,9 +362,21 @@ class Player {
       this.vx *= C.landKeep; this.vz *= C.landKeep;
       this.setState(PS.LAND);
       events.emit('land', { player: this, x: this.x, y: this.y, z: this.z, fx: a.air.fx });
+      blessingReport(this, 'land', { x: this.x, y: this.y, z: this.z, action: Object.keys(M.air).find(k => M.air[k] === a.id) });   // Meteor Fall
     }
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
+  }
+  // A step of the kit's perks: health lost wakes Vengeance and resets the calm and the streak, the clocks run, and a
+  // body this low first reports it (Blood Moon).
+  blessingStep(dt) {
+    const st = this.perk;
+    if (this.hp < this.lastHp - 1e-9) blessingHurt(this.kit, st);
+    this.lastHp = this.hp;
+    blessingClocks(st, dt);
+    if (!this.lowReported && this.alive()) for (const pw of this.kit.powers) {
+      if (pw.when === 'low' && this.hp <= this.maxHp * pw.v.below) { this.lowReported = true; blessingReport(this, 'low', {}); }
+    }
   }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
   // health a second; untouchable frames (an execution, a roll's i-frames) keep it off. `timers` (a Map per body) paces
@@ -441,6 +445,8 @@ class Player {
     }
     if (guardBroken) { this.hitbox = null; this.stunTime = B.breakTime; this.poise = this.maxPoise; this.setState(PS.STAGGER); return { blocked: false }; }
     if (blocked) {
+      const bastion = this.kit.perks['block/charge'];
+      if (bastion) this.perk.bastion = bastion.window;
       if (poise > 0) { this.poise = Math.max(1, this.poise - poise); this.poiseTimer = 0; }
       return { blocked: true };
     }
@@ -509,7 +515,7 @@ class Player {
         break;
       }
       case PS.USE_ITEM: {
-        const k = Math.sin(clamp(tt / this.usingItem.useTime, 0, 1) * Math.PI);
+        const k = Math.sin(clamp(tt * this.drinkRate() / this.usingItem.useTime, 0, 1) * Math.PI);
         r.armL.rotation.set(-2.3 * k, 0, -0.5 * k); r.head.rotation.x = -0.4 * k; break;
       }
       case PS.REST: {

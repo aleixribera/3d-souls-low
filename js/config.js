@@ -193,15 +193,15 @@ const CONFIG = {
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
   killMoment: { slow: 0.3, time: 1.1, embers: 70, emberSpeed: 7 },
-  // Boss Rush's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
-  // is offered `offer` different blessings (ones they don't hold yet, while there are enough) and keeps one for the rest
-  // of the run. The next fight waits until everyone has chosen, or `pickTime` s; a player who hasn't chosen by then gets
-  // the first offered. Each blessing adds its `boons` entry to one Player field, and the same blessing twice adds twice:
-  // `damage` and `stamina` are fractions more blow damage and stamina refill, `flasks` whole flasks, `parry` a fraction
-  // wider parry window (CONFIG.parry lead and grace), `rise` rises per fight: a fresh body where you fell, `riseDelay` s
-  // after the death (before a team wipe ends the fight), with `riseHp` of full health.
-  blessings: { offer: 3, pickTime: 30, riseDelay: 2.5, riseHp: 0.5,
-    boons: { damage: 0.15, flasks: 1, stamina: 0.4, parry: 0.5, rise: 1 } },
+  // Boss Rush's blessings (v7.70.0, `BLESSINGS` in js/data/blessings.js, js/blessings.js): after each fight but the
+  // last, every player is offered `offer` blessings and keeps one for the rest of the run. One already held comes back
+  // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
+  // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,
+  // plus `grow` for each fight won (rarer as the run goes on); a rarity with nothing left to offer gives way to the
+  // others. `levels`: how many levels a blessing of that rarity has. A legendary is held by one player of a team at most.
+  // A swift kill's extra card (CONFIG.swift) is never common.
+  blessings: { offer: 3, pickTime: 30,
+    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -499,6 +499,34 @@ const CONFIG = {
     // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
     // flash and `dust` when it breaks.
     ringWave: { color: 0xf0e2c0, opacity: 0.8, fade: 0.3, pool: 6 },
+    // Boss Rush's legendaries drawn (js/blessing-fx.js). `near`: within this many m of the player a power shakes
+    // the camera; `cool`: the colour a meteor's crater cools to. Meteor: its column of fire `column` m tall falls
+    // in `fall` s, `width` m wide, the shock ring spreads in `ring` s, the crater (`glow` times as bright) cools by
+    // `crater` s. Storm: a bolt from `height` m above the boss, `jitter` m jagged, `width` m wide, gone in `life`
+    // s, its scorch `scorch` m across. Rift: the wave spreads in `wave` s, the clock turns `turn` rad/s, a stopped
+    // enemy is tinted `tint`. Blades: `per` ghost swords a blow (`glow` times as bright), `stagger` s apart,
+    // `length` m long, falling `height` m in `fall` s to stand `sink` m deep up to `spread` m out from the boss,
+    // gone `linger` s later, `pool` of them. Moon: `size` m across, `height` m over a teammate holding it (the
+    // holder's own: `skySize` m, `distance` m off where their camera looked, `up` of the way to the top of the view
+    // and `right` of the way across), red motes rising round them every `motes` s, fading in and out over `fade` s,
+    // its holder tinted `tint`; each blow's slash `slashSize` m, gone in `slash` s, and their blade trail (Ultra)
+    // red at `trail` times its glow. Perks: the rares' small cues. `shake`: [time, amplitude]; `burst`: the Low
+    // preset's particles (js/fx.js).
+    blessingFx: {
+      near: 14, cool: 0x2a0c06,
+      meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
+        burst: { count: 40, speed: 9, color: 0xff8a3a } },
+      storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],
+        burst: { count: 24, speed: 7, color: 0xbcd6ff } },
+      rift: { color: 0xb48cff, core: 0xe6dcff, wave: 0.45, turn: -0.9, tint: 0.65, shake: [0.2, 0.12],
+        burst: { count: 26, speed: 5, color: 0xcbb4ff } },
+      blades: { color: 0xfff0c8, glow: 1.6, length: 3.2, sink: 0.6, spread: 1.6, height: 8, fall: 0.22, linger: 0.5, per: 3, stagger: 0.07, pool: 18,
+        burst: { count: 8, speed: 4, color: 0xffe2a0 } },
+      moon: { color: 0xff2a3a, height: 9, size: 4.5, distance: 90, up: 0.62, right: 0.28, skySize: 22, fade: 0.6, tint: 0.12, motes: 0.12, slash: 0.36, slashSize: 3.2, trail: 1.3,
+        burst: { count: 30, speed: 5, color: 0xff3a48 } },
+      perks: { empower: 0xffc070, empowerBurst: { count: 14, speed: 5, color: 0xffc070 }, heal: 0x8fe08a, stamina: 0x8fb8dc,
+        riposte: 0xdfe6f0, charge: 0xd9b56b },
+    },
     // The Regent Hollis's hanging cuts (js/gilt-echo.js): leaves per cut, seam motes, pooled cuts, leaf size (m), how long
     // they fall once let go (s), the tell before the echo strikes (s), the seam's brightness, opacities, fling speed, fall pull.
     // `dark` and `glint`: a leaf's brightness edge-on and face-on (it shimmers as it turns); `fieldSize`: leaves scattered

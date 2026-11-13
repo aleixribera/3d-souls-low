@@ -18,9 +18,10 @@ globalThis.host = (() => {
   const hitBudget = new Map(), lastParry = new Map();
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
-  // Boss Rush's blessings (CONFIG.blessings), kept across a run's fights: ids held and the open offer, by player id,
-  // and the rises (Rise Again) each player has taken this fight.
-  const blessed = new Map(), offers = new Map(), rises = new Map();
+  // Boss Rush's blessings (CONFIG.blessings, js/blessings.js), kept across a run's fights: ids held (one per pick,
+  // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
+  // its own), the perk clocks and their last health (blessingHurt) and their last accepted perfect dodge (Counterstep).
+  const blessed = new Map(), offers = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map();
   const C = ArenaNet.config;
   for (const story of STORIES) {
     if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
@@ -51,6 +52,8 @@ globalThis.host = (() => {
     return { terrain: T, solids: T.solids, slabs: T.slabs, gates,
       traps: (L.traps || []).map(t => ({ ...t, y: t.y ?? 0, region: trapRoom(T, t) })) };
   }
+  // A legendary's damage counts to its holder, as a blow would (a bot's own step already counts what it changed).
+  blessingPowers.credit = (holder, e, amount) => { sleeping = false; if (!acting) { creditDamage(holder, amount); noteDamage(e, holder, amount); } };
   const enemyId = e => e.key || 'duel/' + e.baseDef.id;
   const enemy = id => Game.enemies.find(e => e.netId === id);
   events.onAny((type, d) => {
@@ -58,6 +61,9 @@ globalThis.host = (() => {
     if (acting && type === 'strike' && d.attacker === acting.body && d.target?.netId)
       eventList.push({ type: 'strike', player: acting.id, enemy: d.target.netId, strike: d.strike, blocked: !!d.blocked, at: d.at });
     if (acting && type === 'parry' && d.target?.netId) eventList.push({ type: 'parry', player: acting.id, enemy: d.target.netId });
+    // A legendary fired or striking, for every browser to draw (js/blessing-fx.js).
+    if (type === 'blessingPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'postureBreak', 'enemyBlink', 'impact'].includes(type))
@@ -197,7 +203,7 @@ globalThis.host = (() => {
     hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     if (!keepBlessings) { blessed.clear(); offers.clear(); }
-    rises.clear();
+    kits.clear(); perks.clear(); lastDodge.clear();
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
@@ -211,44 +217,94 @@ globalThis.host = (() => {
     b.brain = bot.create(b.profile);
     b.body = new Player(PLAYER_DEF, x, z, yaw, world.floorY(x, z, s.y));
     b.body.ctl = b.brain.hands; b.body.id = b.body.botId = b.id;
-    b.body.bless(blessed.get(b.id));
+    const body = b.body;
+    body.bless(blessed.get(b.id));
+    body.onBlessing = (when, ctx) => blessingPowers.trigger(b.id, body, body.kit, when, ctx);   // a bot's powers: settled here at once
     b.deadFor = 0; b.hitstop = 0;
   }
-  // A bot with Rise Again gets up where it fell (riseBody), `riseDelay` s after its death.
-  function riseBot(b) {
-    if (!rise(b.id)) return;
-    const body = riseBody(b.body, checkpoint); body.ctl = b.brain.hands; body.id = body.botId = b.id;
-    b.body = body; b.deadFor = 0; b.hitstop = 0;
-    players = players.map(p => p.id === b.id ? body : p);
-  }
-  // Blessings (CONFIG.blessings). An offer: `offer` different ids (`extra` more after a swift kill, CONFIG.swift), not
-  // yet held while enough remain. With `withBots`, every bot is offered too and takes one at once.
-  function offerBlessings(ids, withBots = true, extra = 0) {
-    const B = CONFIG.blessings, shuffle = list => { for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; } return list; };
+  // Blessings (CONFIG.blessings). An offer: `offer` cards (`extra` more after a swift kill, CONFIG.swift, never common),
+  // each of a rarity drawn by its weight after `won` fights won, then one of that rarity this player may still take:
+  // not at its last level, not a legendary a teammate holds, not already on the card before. With `withBots`, every bot
+  // is offered too and takes one at once.
+  function offerBlessings(ids, withBots = true, extra = 0, won = 0) {
+    const B = CONFIG.blessings, pick = list => list[Math.floor(Math.random() * list.length)];
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       if (offers.has(id)) continue;
-      const held = blessed.get(id) || [], fresh = shuffle(BLESSINGS.map(b => b.id).filter(b => !held.includes(b)));
-      const offer = fresh.concat(shuffle(BLESSINGS.map(b => b.id).filter(b => held.includes(b)))).slice(0, B.offer + extra);
+      const held = blessed.get(id) || [], team = new Set([...blessed].filter(([other]) => other !== id).flatMap(([, list]) => list));
+      const open = BLESSINGS.filter(b => blessingLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)));
+      const offer = [];
+      for (let i = 0; i < B.offer + extra; i++) {
+        const left = open.filter(b => !offer.includes(b.id) && (i < B.offer || b.rarity !== 'common'));
+        const weights = Object.entries(B.rarity).map(([r, R]) => [r, left.some(b => b.rarity === r) ? R.weight + R.grow * won : 0]);
+        const total = weights.reduce((n, [, w]) => n + w, 0);
+        if (total <= 0) break;
+        let roll = Math.random() * total, rarity = weights[0][0];
+        for (const [r, w] of weights) { if (w > 0 && roll < w) { rarity = r; break; } roll -= w; }
+        offer.push(pick(left.filter(b => b.rarity === rarity)).id);
+      }
+      if (!offer.length) continue;
       offers.set(id, offer);
-      if (bots.has(id)) bless(id, offer[Math.floor(Math.random() * offer.length)]);
+      if (bots.has(id)) bless(id, pick(offer));
     }
   }
   // Takes one blessing from this player's open offer; false for anything else.
   function bless(id, blessing) {
     const offer = offers.get(id);
     if (!offer || typeof blessing !== 'string' || !offer.includes(blessing)) return false;
-    offers.delete(id); blessed.set(id, [...(blessed.get(id) || []), blessing]);
+    offers.delete(id); blessed.set(id, [...(blessed.get(id) || []), blessing]); kits.delete(id);
     return true;
   }
   // Out of time: everyone still choosing takes the first blessing offered.
   function settleBlessings() { for (const [id, offer] of [...offers]) bless(id, offer[0]); }
-  // A Rise Again claim: allowed while this fight's rises stay under the player's blessings' `rise` boons.
-  function rise(id) {
-    const count = (blessed.get(id) || []).reduce((n, b) => n + (BLESSING_BY_ID[b].boon === 'rise' ? CONFIG.blessings.boons.rise : 0), 0);
-    if ((rises.get(id) || 0) >= count) return false;
-    rises.set(id, (rises.get(id) || 0) + 1); return true;
+  // A player's kit from what they hold, kept until they take another.
+  function kitOf(id) {
+    let kit = kits.get(id);
+    if (!kit) kits.set(id, kit = blessingKit(blessed.get(id)));
+    return kit;
   }
-  const boonOf = (id, boon) => (blessed.get(id) || []).reduce((n, b) => n + (BLESSING_BY_ID[b].boon === boon ? CONFIG.blessings.boons[boon] : 0), 0);
+  const maxHpOf = id => PLAYER_DEF.stats.maxHp * (1 + kitOf(id).mods.maxHp);
+  const maxStaminaOf = id => PLAYER_DEF.stats.maxStamina * (1 + kitOf(id).mods.maxStamina);
+  // A person's perk clocks (a bot's body keeps its own), and its last health from its poses.
+  function perkOf(id) {
+    let st = perks.get(id);
+    if (!st) perks.set(id, st = { ...blessingPerkState(), hp: Infinity });
+    return st;
+  }
+  // A person's pose: health lost wakes the perks that wait for it, as on their own body.
+  function notePose(id, hp) {
+    const kit = kitOf(id);
+    if (kit === NO_KIT) return;
+    const st = perkOf(id);
+    if (hp < st.hp - 1e-6) blessingHurt(kit, st);
+    st.hp = hp;
+  }
+  // What the powers need of a holder: a bot's own body; for a person, their pose's place and health, their bar and their
+  // perk clocks (the Blood Moon's).
+  function holderOf(id) {
+    const p = players.find(p => p.id === id);
+    if (!p) return null;
+    if (p.botId) return p;
+    return { x: p.x, y: p.y, z: p.z, hp: p.hp, maxHp: maxHpOf(id), perk: perkOf(id), alive: () => p.alive() };
+  }
+  // A person's claim of a blessing trigger (BLESSING_CLAIMS): a jump attack landing (from their pose: landing, with that
+  // air attack), a perfect dodge (of a blow that was out near them lately, as a parry's check) or being this low (their
+  // pose's health). Cooldowns and once-a-fight are the powers' own.
+  function blessingClaim(id, msg) {
+    const kit = kitOf(id), p = players.find(p => p.id === id), body = holderOf(id);
+    if (!p || !body || !p.alive() || !BLESSING_CLAIMS.includes(msg.when) || !kit.whens.has(msg.when)) return false;
+    sleeping = false;
+    if (msg.when === 'land') {
+      const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);
+      if (!a || !['land', 'jumpAttack'].includes(p.state) || p.attack !== a) return false;
+      blessingPowers.trigger(id, body, kit, 'land', { x: p.x, y: p.y, z: p.z, action: msg.action });
+    } else if (msg.when === 'dodge') {
+      const e = struckNear(p, msg);
+      if (!e) return false;
+      lastDodge.set(id, time);
+      blessingPowers.trigger(id, body, kit, 'dodge', { enemy: e });
+    } else blessingPowers.trigger(id, body, kit, 'low', {});
+    return true;
+  }
   function addBot(profileId) {
     if (bots.size >= (globalThis.SIM_MAX_BOTS || C.maxBots)) return null;
     const used = new Set([...bots.values()].map(b => b.profile.id));
@@ -276,7 +332,6 @@ globalThis.host = (() => {
         if (!b.deadFor) noteDeath(b.id);
         b.deadFor += dt; p.update(dt, { x: 0, z: 0, has: false }, [], null);
         if (!wipeOnly && b.deadFor >= B.respawnDelay) spawnBot(b, 0);
-        else if (wipeOnly && b.deadFor >= CONFIG.blessings.riseDelay && p.risen < p.boons.rise) riseBot(b);
         continue;
       }
       if (b.hitstop > 0) { b.hitstop = Math.max(0, b.hitstop - dt); continue; }
@@ -416,6 +471,7 @@ globalThis.host = (() => {
     else if ((settleCheck -= dt) <= 0) { settleCheck = C.sleepCheck; sleeping = settled(); }
     if (sleeping) { progress(dt); return; }
     updateBots(dt); flyBolts(dt);
+    for (const st of perks.values()) blessingClocks(st, dt);
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
     for (const e of Game.enemies) if (e.netExec) {
@@ -472,6 +528,8 @@ globalThis.host = (() => {
       for (const other of Game.enemies) if (other !== e && other.alive() && (other.zone && other.zone === e.zone || Math.hypot(other.x - e.x, other.z - e.z) < CONFIG.alert.radius && !sightLost(e, other))) other.wake(p);
     }
     for (let i = 0; i < Game.enemies.length; i++) for (let j = i + 1; j < Game.enemies.length; j++) separatePair(Game.enemies[i], Game.enemies[j], 0.5);
+    blessingPowers.tick(dt);   // lightning and blades still striking
+    for (const e of Game.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
     progress(dt);
     history.push({ time, enemies: Game.enemies.map(e => ({ id: e.netId, attack: e.netAttack, attackId: e.attack?.id, state: e.state, x: e.x, y: e.y, z: e.z, hit: e.hitIndex })) });
     while (history.length && time - history[0].time > C.historySeconds) history.shift();
@@ -481,7 +539,7 @@ globalThis.host = (() => {
       results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
       checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
-      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise,
+      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise, frozen: e.frozen,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
       target: e.netTarget, grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
@@ -518,17 +576,33 @@ globalThis.host = (() => {
     const a = ArenaNet.own(PLAYER_DEF.moveset.attacks, msg.attack);
     if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'execute' || !ArenaNet.finite(msg.charge, C.maxCharge) || msg.charge < 0) return false;
     if (!within(p, e, reachOf(a.box), [a.box.y - a.box.h / 2, a.box.y + a.box.h / 2])) return false;
-    // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer).
-    const riposte = msg.riposte === true && time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack;
-    const strike = makeStrike(a, riposte, msg.charge, boonOf(id, 'damage'));
-    if (!Number.isFinite(strike.damage) || !Number.isFinite(strike.poise) || e.invulnerable() || !spendHit(id, e)) return false;
+    // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer), or with
+    // Counterstep their accepted perfect dodge.
+    const kit = kitOf(id), step = kit.perks['dodge/riposte'];
+    const riposte = msg.riposte === true && (time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack ||
+      !!step && time - (lastDodge.get(id) ?? -Infinity) <= step.window + C.riposteSlack);
+    const base = makeStrike(a, riposte, msg.charge);
+    if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
+    const strike = blessingStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
     const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
+    if (a.charge && msg.charge >= 1 && !result.blocked) blessingPowers.trigger(id, holderOf(id), kit, 'fullHeavy', { enemy: e });   // Storm King
     return true;
+  }
+  // The enemy whose blow (attack `msg.serial`, out lately: winding up or striking) could have reached player `p`, or null.
+  function struckNear(p, msg) {
+    const e = enemy(msg.enemy);
+    if (!e || !e.alive() || e.netExec || !Number.isSafeInteger(msg.serial)) return null;
+    const recent = history.filter(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE)))
+      .map(f => f.enemies.find(s => s.id === msg.enemy));
+    const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
+    if (!a) return null;
+    const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
+    return within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial) ? e : null;
   }
   function parry(id, msg) {
     const e = enemy(msg.enemy), p = players.find(p => p.id === id);
@@ -547,6 +621,7 @@ globalThis.host = (() => {
     lastParry.set(id, time);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
+    blessingPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades
     return true;
   }
   function beginExecution(id, msg) {
@@ -556,7 +631,7 @@ globalThis.host = (() => {
     if (!within(p, e, X.range + p.radius, [-X.floor, p.height + X.floor])) return false;
     const a = PLAYER_DEF.moveset.attacks.execute;
     const duration = a.hits.reduce((n, h) => n + h.startup + h.active + (h.follow || 0), 0) + a.recovery;
-    const damage = execution.damageFor(e);
+    const damage = execution.damageFor(e, kitOf(id).mods.execution);
     if (!Number.isFinite(damage)) return false;
     e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
     e.hitbox = null; e.setState(ES.EXECUTED);
@@ -585,7 +660,7 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
-    offerBlessings, settleBlessings, bless, rise, boonOf, riseDelay: CONFIG.blessings.riseDelay,
+    offerBlessings, settleBlessings, bless, kitOf, maxHpOf, maxStaminaOf, notePose, blessingClaim,
     blessingPickTime: CONFIG.blessings.pickTime,
     rushPar, swiftExtra: CONFIG.swift.extra,
     blessings: () => Object.fromEntries(blessed), blessingOffer: id => offers.get(id) || null,
@@ -602,6 +677,6 @@ globalThis.host = (() => {
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.
     playerAttack: id => ArenaNet.own(PLAYER_DEF.moveset.attacks, id) ? id : null,
     // Test harnesses can inspect state without giving public clients a debug API.
-    inspect: () => ({ Game, world, players, crowd, bot, bots, CONFIG }),
+    inspect: () => ({ Game, world, players, crowd, bot, bots, CONFIG, blessingPowers, holderOf }),
   };
 })();

@@ -363,33 +363,12 @@ const multiplayer = (() => {
     return true;
   }
   // Boss Rush's blessings (CONFIG.blessings): between fights the server offers each player a few, and a click, a number
-  // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out.
+  // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out. The cards and their
+  // look: js/blessing-cards.js.
   const blessingScreen = document.createElement('section'); blessingScreen.id = 'blessingScreen'; blessingScreen.hidden = true;
   blessingScreen.setAttribute('aria-labelledby', 'blessingTitle');
   blessingScreen.innerHTML = '<div class="blessing-panel"><div class="blessing-head"><h2 id="blessingTitle">Choose a blessing</h2><span id="blessingClock"></span></div><div class="blessing-time" aria-hidden="true"><i id="blessingTimeFill"></i></div><div id="blessingChoices" role="group" aria-labelledby="blessingTitle"></div><p id="blessingStatus" aria-live="polite"></p></div>';
   document.body.appendChild(blessingScreen);
-  const blessingStyle = document.createElement('style');
-  blessingStyle.textContent = `#blessingScreen[hidden]{display:none}
-    #blessingScreen{--gold:#dcbb74;--gold-hi:#f3dca3;--ink:#ece4d1;--muted:#a9a798;--line:#c9a96a33;position:fixed;inset:0;z-index:46;display:flex;align-items:flex-end;justify-content:center;padding:18px 18px max(18px,env(safe-area-inset-bottom));box-sizing:border-box;background:#0507088c;color:var(--ink);font:14px/1.5 system-ui}
-    #blessingScreen .blessing-panel{width:min(880px,100%);max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:20px 22px 14px;background:#14181af5;border:1px solid #c9a96a66;border-radius:8px;box-shadow:0 18px 60px #000a}
-    #blessingScreen .blessing-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-    #blessingScreen h2{margin:0;font:400 26px/1.25 Georgia,serif;color:var(--gold-hi);text-wrap:balance}
-    #blessingClock{color:var(--muted);font-variant-numeric:tabular-nums}
-    #blessingScreen .blessing-time{height:2px;margin:12px 0 16px;background:#ffffff14}#blessingTimeFill{display:block;height:100%;background:var(--gold);transform-origin:left}
-    #blessingChoices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
-    #blessingChoices button{position:relative;display:flex;flex-direction:column;gap:6px;min-height:112px;padding:14px 44px 14px 16px;text-align:left;font:inherit;color:var(--ink);background:#0a0d0fb3;border:1px solid var(--line);border-radius:6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;overflow-wrap:anywhere}
-    #blessingChoices strong{font:400 19px/1.3 Georgia,serif;color:var(--gold-hi)}#blessingChoices span{color:var(--muted)}
-    #blessingChoices em.swift{margin-top:auto;font:600 12px/1.4 system-ui;font-style:normal;color:var(--gold)}
-    #blessingChoices kbd{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:22px;height:22px;border:1px solid #c9a96a55;border-radius:4px;font:600 12px/1 system-ui;color:var(--muted)}
-    #blessingChoices button:hover:not(:disabled),#blessingChoices button:focus-visible{border-color:var(--gold);background:#dcbb7414}
-    #blessingChoices button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
-    #blessingChoices button[aria-pressed=true]{border-color:var(--gold);background:#dcbb7424;box-shadow:inset 0 0 0 1px var(--gold)}
-    #blessingChoices button:disabled{opacity:.4;cursor:default}
-    #blessingScreen.blessing-pad kbd{display:none}
-    #blessingStatus{margin:12px 0 0;color:var(--muted)}#blessingStatus:empty{display:none}
-    @media(hover:none){#blessingChoices kbd{display:none}#blessingChoices button{padding-right:16px}}
-    @media(max-width:640px){#blessingChoices{grid-template-columns:1fr}#blessingChoices button{min-height:0}#blessingScreen .blessing-panel{padding:16px 14px 10px}#blessingScreen h2{font-size:22px}}`;
-  document.head.appendChild(blessingStyle);
   let blessing = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
   function openBlessings(msg) {
     if (!msg.offer) {   // the server took this player's pick
@@ -400,13 +379,13 @@ const multiplayer = (() => {
     const list = el('blessingChoices'); list.replaceChildren();
     msg.offer.forEach((id, i) => {
       const b = ArenaNet.own(BLESSING_BY_ID, id); if (!b) return;
-      const button = document.createElement('button'); button.type = 'button'; button.dataset.blessing = id;
-      for (const [tag, text] of [['kbd', String(i + 1)], ['strong', b.name], ['span', blessingText(b)]]) { const n = document.createElement(tag); n.textContent = text; button.appendChild(n); }
       // A swift kill's extra choice (CONFIG.swift) is the last one, and says so.
-      if (msg.swift && i === msg.offer.length - 1 && i >= CONFIG.blessings.offer) { const tag = document.createElement('em'); tag.className = 'swift'; tag.textContent = 'Swift kill'; button.appendChild(tag); }
-      button.onclick = () => chooseBlessing(id);
-      list.appendChild(button);
+      const card = blessingCard(b, blessing.held, i + 1, !!msg.swift && i === msg.offer.length - 1 && i >= CONFIG.blessings.offer);
+      card.onclick = () => chooseBlessing(id);
+      list.appendChild(card);
     });
+    const n = list.children.length;
+    blessingScreen.style.setProperty('--pick-w', `${n * 216 + (n - 1) * 12}px`);   // the row of tall cards, and the title over it
     input.clear(); if (document.pointerLockElement) document.exitPointerLock();
     blessingScreen.hidden = true; drawBlessings();
   }
@@ -431,8 +410,7 @@ const multiplayer = (() => {
       button.setAttribute('aria-pressed', String(button.dataset.blessing === blessing.chosen));
       button.disabled = !!blessing.chosen && button.dataset.blessing !== blessing.chosen;
     }
-    const held = blessing.held.map(id => ArenaNet.own(BLESSING_BY_ID, id)?.name).filter(Boolean);
-    const status = blessing.chosen ? 'Waiting for the others.' : held.length ? 'Already yours: ' + held.join(', ') + '.' : '';
+    const status = blessing.chosen ? 'Waiting for the others.' : '';   // what is already yours shows on its card's level
     if (el('blessingStatus').textContent !== status) el('blessingStatus').textContent = status;
     blessingScreen.classList.toggle('blessing-pad', usingPad());
     if (opening) el('blessingChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
@@ -640,11 +618,7 @@ const multiplayer = (() => {
     <button id="spectatorNext" class="spectator-arrow" aria-label="Next player">&#8594;</button>
     </div><p id="spectatorHint"></p></div><button id="spectatorToggle" aria-controls="spectatorControls" aria-expanded="true">Hide spectator bar</button>`;
   document.body.appendChild(spectator);
-  function waitingForTeamWipe() { return active() && !!session.teamWipeOnly && !!Game.player && !Game.player.alive() && !risesLeft(); }
-  // Rise Again still to come this fight. `rising`: the fallen body waiting on the server's answer, or 'refused' (the
-  // server had no rise left for this player, after a reconnect say): then they wait for the fight's end like anyone.
-  let rising = null;
-  const risesLeft = () => rising !== 'refused' && Game.player.risen < Game.player.boons.rise;
+  function waitingForTeamWipe() { return active() && !!session.teamWipeOnly && !!Game.player && !Game.player.alive(); }
   function spectatorCandidates() {
     const now = performance.now() / 1000;
     return [...remotes].filter(([, r]) => {
@@ -1098,7 +1072,7 @@ const multiplayer = (() => {
       clearControlPending(); notice('');
       finale.cancelEnding();
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
-      session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeBlessings(); rising = null;
+      session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeBlessings();
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
       Game.story = false; closePanel();
@@ -1143,6 +1117,7 @@ const multiplayer = (() => {
         track.push({ time: frame.time, value: s, events: frame.events.filter(d => d.enemy === s.id), shots: frame.shots.filter(d => d.enemy === s.id) });
         if (track.samples.length > C.maxHistory || frame.time - track.time > C.historySeconds) { retryConnection('Catching up with the current game…'); return; }
       }
+      for (const d of frame.events) if (d.type === 'blessingPower' && d.enemy == null) presentBlessing(d, null);
       applyProgress(frame, msg.full);
     } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
     else if (msg.type === 'execution' && active()) {
@@ -1152,7 +1127,6 @@ const multiplayer = (() => {
       } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
       pendingExecution = null;
     } else if (msg.type === 'blessings' && session) openBlessings(msg);   // also while loading back in: shown once loaded
-    else if (msg.type === 'risen' && active()) { if (msg.ok && rising === Game.player && !Game.player.alive()) { Game.risePlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); } rising = msg.ok ? null : 'refused'; }
     else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
   }
@@ -1165,7 +1139,7 @@ const multiplayer = (() => {
     p.hp = clamp(s.hp, 0, p.maxHp); p.stamina = clamp(s.stamina, 0, p.maxStamina);
     p.item('flask').count = clamp(Math.floor(s.flasks), 0, p.item('flask').max);
     for (const key of ['staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
-    p.exhausted = !!s.exhausted; p.grounded = !!s.grounded; p.peak = p.y;
+    p.exhausted = !!s.exhausted; p.grounded = !!s.grounded; p.peak = p.y; p.lastHp = p.hp;   // no health lost by coming back
     for (const key of ['vx', 'vy', 'vz']) p[key] = !p.grounded && ArenaNet.finite(s[key]) ? s[key] : 0;
     p.setState(p.hp <= 0 || s.state === PS.DEAD ? PS.DEAD : p.grounded ? PS.IDLE : PS.FALL);
     p.savePrev(); Game.deathTimer = 0; Game.cam.yaw = p.yaw; Game.updateCamera(0, true);
@@ -1245,7 +1219,7 @@ const multiplayer = (() => {
         ? lerp(s.stateTime, q.stateTime, alpha) : s.stateTime + Math.max(0, time - a.time);
       e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
       e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
-      e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise;
+      e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise; e.frozen = s.frozen || 0;
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
       e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
@@ -1298,6 +1272,14 @@ const multiplayer = (() => {
         : Math.max(0, g.lift - dt / CONFIG.finale.fogClose);
     }
   }
+  // A legendary, anyone's (js/blessing-fx.js draws it): one on an enemy comes with that enemy's sample, one on none (a
+  // Meteor's blast, a Blood Moon) as its frame arrives. The Blood Moon's own part, its drink, is this body's.
+  function presentBlessing(d, e) {
+    if (!ArenaNet.own(BLESSING_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
+    const body = d.holder === self ? Game.player : remotes.get(d.holder)?.body || null;
+    if (d.then === 'bloodMoon' && body === Game.player) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
+    events.emit('blessingPower', { ...d, body, enemy: e });
+  }
   function presentEvents(sample) {
     for (const d of sample.events) {
       const e = Game.enemies.find(e => e.netId === d.enemy);
@@ -1306,6 +1288,7 @@ const multiplayer = (() => {
         if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
       // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
       } else if (d.type === 'parry' && d.player !== self && e) events.emit('parry', { target: e, player: remotes.get(d.player)?.body || d.player });
+      else if (d.type === 'blessingPower' && e) presentBlessing(d, e);
       if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'postureBreak'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });
@@ -1334,8 +1317,6 @@ const multiplayer = (() => {
     if (!p.alive()) {
       Game.deathTimer += dt;
       if (!session.teamWipeOnly && Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
-      // Rise Again (CONFIG.blessings): the server lifts this player's defeat, and a fresh body gets up where it fell.
-      else if (session.teamWipeOnly && risesLeft() && !rising && Game.deathTimer >= CONFIG.blessings.riseDelay) { rising = p; send({ type: 'rise', epoch: session.epoch }); }
       else p.update(dt, { x: 0, z: 0, has: false }, [], null);
     } else if (Game.hitstop > 0) { Game.hitstop = Math.max(0, Game.hitstop - dt); input.hold(dt); }
     else {
@@ -1400,6 +1381,11 @@ const multiplayer = (() => {
   }
   function parry(e) { command('parry', { enemy: e.netId, serial: e.netSerial }); e.netParried = e.netSerial; return e.getParried(); }
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }
+  // A blessing's trigger only this browser sees (BLESSING_CLAIMS, js/blessings.js): the server checks it and fires.
+  function blessingClaim(when, ctx) {
+    if (!BLESSING_CLAIMS.includes(when)) return;   // a parry or a landed heavy: the server sees those itself
+    command('blessing', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}) });
+  }
   function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
   function rest(b) {
     const p = Game.player; p.hp = p.maxHp; p.stamina = p.maxStamina; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
@@ -1502,7 +1488,7 @@ const multiplayer = (() => {
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
   return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
-    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, blessingPad,
+    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, blessingPad, blessingClaim,
     get blessingOpen() { return !blessingScreen.hidden; }, get blessingPending() { return !!blessing; },
     get lobby() { return { ...peekState }; },
     get campaign() { return connected ? session?.campaign || null : null; },
