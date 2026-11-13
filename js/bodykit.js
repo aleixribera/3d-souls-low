@@ -1640,7 +1640,7 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
-    if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -0.5 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -0.5 to 1.6.');
+    if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -1.6 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -1.6 to 1.6.');   // (pass 48) below -0.5 a long haft stands upright, like a crook
     if (M.weapon) {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
       for (const slot of Object.values(M.weapon.slots)) if (!(slot in M.materials)) bad(`weapon uses unknown material slot "${slot}".`);
@@ -1649,6 +1649,7 @@ const KIT = (() => {
     }
     for (const [k, v] of Object.entries(M.materials)) if (!('glow' in v) && !(v.tex in TEXLIB.defs)) bad(`material "${k}" uses unknown texture "${v.tex}".`);
     for (const [k, v] of Object.entries(M.materials)) if ('burn' in v && !(v.burn === true && 'glow' in v)) bad(`material "${k}": burn must be true, on a glow slot.`);
+    for (const [k, v] of Object.entries(M.materials)) if ('storm' in v && !(v.storm === true && 'glow' in v && !v.burn)) bad(`material "${k}": storm must be true, on a glow slot that does not burn.`);
     for (const [k, v] of Object.entries(M.materials)) if ('rim' in v && !(typeof v.rim === 'number' && v.rim >= 0 && v.rim <= 2)) bad(`material "${k}": rim must be a number from 0 to 2.`);
   }
 
@@ -1708,6 +1709,7 @@ const KIT = (() => {
       }
       if (M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
       if (!p.weapon && M.materials[p.slot]?.burn) { mesh.visible = false; (rig.burnMeshes || (rig.burnMeshes = [])).push(mesh); }   // (v7.47.0) drawn only while the boss burns (js/finale.js)
+      if (M.materials[p.slot]?.storm) { mesh.visible = false; (rig.stormMeshes || (rig.stormMeshes = [])).push(mesh); }   // (pass 48) drawn only in a `storm` phase (js/storm-rend.js)
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
     if (M.eyes) {

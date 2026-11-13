@@ -71,11 +71,14 @@ const BOSS_FX = {
     longLive: { element: 'fire', impact: 'blaze', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar', windup: 'gather' },
     emberFists: { element: 'fire', impact: 'quake' }, groundBreaker: { element: 'fire', impact: 'quake', windup: 'gather' },
     firstHunger: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
-  // Mother Agathe, the Rending Hand (Level 12): stone and the torn earth in the first half; then the storm comes at her
-  // back and every blow of the hook rends (js/data/bosses/agathe.js, loaded after this file; checked at validation).
-  agathe: { element: 'earth', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {
-    stormComes: { element: 'storm', impact: 'gale', windup: 'gather' }, rendTheEarth: { impact: 'gale' }, greatRending: { impact: 'gale', windup: 'gather' },
-    theRending: { element: 'black', impact: 'void' } } },
+  // Mother Agathe, the Rending Hand (Level 12): the hook's steel, and the torn earth and stones, in the first half; then
+  // the storm comes at her back: the hook seamed with lightning, and the storm falls where you stand
+  // (js/data/bosses/agathe.js, loaded after this file; checked at validation).
+  agathe: { element: 'steel', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {
+    hookHaul: { impact: 'shatter' }, rendEarth: { element: 'earth', impact: 'quake', windup: 'gather' }, tornStones: { element: 'earth' },
+    cornerstone: { element: 'earth', impact: 'quake', windup: 'gather' },
+    stormComes: { element: 'storm', impact: 'gale', windup: 'gather' }, stormKnows: { element: 'storm', impact: 'gale', windup: 'gather' },
+    stormFurrow: { element: 'storm', impact: 'gale', windup: 'gather' }, stormLeap: { element: 'storm', impact: 'gale' } } },
   // The Rending Brothers (Level 12): the hooked knife, and the floor rent open.
   rendingBrother: { element: 'steel', aura: 0xb8c4d8, attacks: { brotherRend: { element: 'earth', impact: 'gale' } } },
   // The Kindling Tree (Level 13): the root's wood and earth, its marks bursting in the Ember's fire; once it catches

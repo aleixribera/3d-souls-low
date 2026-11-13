@@ -87,6 +87,10 @@ function validateData({ visual = true } = {}) {
     'Bot caution needs below, dry and slip shares (0..1), non-negative spacing, hunted, company and safety, and patience of 1 or more.');
   need(RM && ['player', 'bot', 'lane', 'laneDepth', 'push'].every(k => num(RM[k]) && RM[k] >= 0) && RM.lane < Math.PI,
     'Bot room needs non-negative player, bot, laneDepth and push, and a lane under pi.');
+  const RD = CONFIG.rend, ST = CONFIG.storm;
+  need(RD && Number.isInteger(RD.max) && RD.max >= 1 && num(RD.cut) && RD.cut > 0 && RD.cut * RD.max < 0.6 && num(RD.time) && RD.time > 0,
+    'CONFIG.rend needs max (whole pieces, 1 or more), cut (a fraction; all of them under 0.6 of the bar) and time (s).');
+  need(ST && num(ST.lock) && ST.lock > 0 && ST.lock < 1 && num(ST.minTell) && ST.minTell > 0, 'CONFIG.storm needs lock (0 to 1) and minTell (s).');
   need(SU && ['first', 'near', 'slack', 'reposition', 'settle', 'patience'].every(k => num(SU[k]) && SU[k] >= 0) && SU.slack <= SU.reposition && Array.isArray(SU.behind) && SU.behind.length > 0 && SU.behind.every(d => num(d) && d >= 0 && d <= Math.PI / 2) && num(SU.greed) && SU.greed >= 0 && SU.greed <= 1 && SU.patience >= 1,
     'Bot support needs non-negative first, near, settle, and slack no more than reposition, behind offsets in 0..pi/2, a greed share (0..1) and patience of 1 or more.');
   const jumpRange = botConfig.jumpDodge.lead;
@@ -171,7 +175,17 @@ function validateData({ visual = true } = {}) {
         need(h.startup >= CONFIG.seams.minTell - 1e-6 || (prev && prev.erupt && prev.erupt.keep),
           `${tag}: hit ${i + 1}'s eruption needs a wind-up of at least ${CONFIG.seams.minTell} s (the seams' tell), unless it follows one that keeps them.`);
       }
+      // A `bolt` (pass 48): lightning on the spot its target stood as the mark locked (Enemy.noteBolt); `lock` a fraction of
+      // the wind-up. Never with another way of placing the blow, and never with less than CONFIG.storm.minTell s of mark.
+      if ('bolt' in h) {
+        const B = h.bolt, b = h.box || a.box || {};
+        need((B === true || (B && typeof B === 'object' && (!('lock' in B) || (num(B.lock) && B.lock > 0 && B.lock < 1))))
+          && !h.echo && !h.seam && !h.erupt && !h.leap && !h.blink && !h.step && !b.ring && b.fwd === 0 && !a.projectile,
+          `${tag}: hit ${i + 1}'s bolt must be true or { lock } (0 to 1), its box centred on the mark (fwd 0); not with an echo, seam, erupt, leap, blink, step, ring or projectile.`);
+        need(h.startup >= CONFIG.storm.minTell - 1e-6, `${tag}: hit ${i + 1}'s bolt needs a wind-up of at least ${CONFIG.storm.minTell} s (its mark).`);
+      }
     });
+    if ('rend' in a) need(typeof a.rend === 'boolean', `${tag}: rend must be true or false.`);
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
     for (const h of Array.isArray(a.hits) ? a.hits : []) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);
@@ -249,6 +263,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'opener' in ph) need(aids.has(ph.opener) && (!ph.attacks || ph.attacks.includes(ph.opener)), `${tag}: opener "${ph.opener}" must be one of its attacks, and of the phase's own when it lists them (the phase looks it up there).`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
+        for (const k of ['rend', 'storm']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9

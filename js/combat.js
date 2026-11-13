@@ -19,6 +19,7 @@ function makeStrike(attack, riposte = false, charge = 0, boost = 0) {
 // An oriented box in the owner's frame, tested against a target's upright body cylinder.
 // `anchor` (a hit's `echo`, Enemy.makeHitbox): { cut, home, time } places the box where the owner stood and faced at `cut`
 // instead of where it is now; with `home` it slides from there back to the owner over `time` s of the strike.
+// A `bolt` anchor (pass 48) is the same, a spot the storm strikes (Enemy.noteBolt).
 // `lines` (a hit's `erupt`, Enemy.makeHitbox): the floor's open seams [{ x0, z0, x1, z1, y }], each a wall of fire
 // CONFIG.seams.width wide and `height` tall along it, instead of the box.
 class Hitbox {
@@ -124,6 +125,7 @@ function resolveCombat(game) {
     const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.hit(e, strike) : e.takeHit(strike, p);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
+    if (p.rentBy === e && !res.blocked) p.reclaim();   // pass 48: every blow on her tears a piece back (Player.rend)
     if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); }
   }
   for (const hb of enemyHits) {
@@ -133,7 +135,8 @@ function resolveCombat(game) {
       continue;
     }
     hb.markHit(p);
-    const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.owner);   // a wall of fire pushes away from its seam, not from him
+    // A wall of fire pushes away from its seam, a bolt from where it fell, not from him.
+    const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner);
     if (hb.owner.def && hb.owner.def.lifesteal) {
       if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.lifesteal(hb.owner);
       else hb.owner.lifesteal();

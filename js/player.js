@@ -47,6 +47,7 @@ class Player {
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
+    this.rent = 0; this.rentTime = 0; this.rentBy = null;   // a rend (pass 48): pieces torn off the bar, s until it closes, who holds them
     this.boons = NO_BOONS; this.blessings = []; this.risen = 0;   // Boss Rush's blessings held (bless), rises taken (riseBody)
     this.savePrev();
   }
@@ -85,7 +86,11 @@ class Player {
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
   // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.bossPowers.destined).
-  hpCap() { return this.doomTime > 0 ? this.maxHp * (1 - CONFIG.bossPowers.destined.cut) : this.maxHp; }
+  // Less, too, every piece a rending hook holds of it (CONFIG.rend, Player.rend).
+  hpCap() {
+    const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
+    return this.maxHp * Math.max(0.05, 1 - doom - this.rent * CONFIG.rend.cut);
+  }
   invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
@@ -204,6 +209,7 @@ class Player {
     this.riposte = Math.max(0, this.riposte - dt);
     this.execGrace = Math.max(0, this.execGrace - dt);
     if (this.doomTime > 0) this.updateDoom(dt);
+    if (this.rent > 0) this.updateRent(dt);
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
@@ -418,6 +424,35 @@ class Player {
     this.hp = Math.min(this.hp, this.hpCap());
     if (this.hp <= 0) this.die();
   }
+  // A rend (pass 48, Mother Agathe; an attack's `rend` or her phase's): an unblocked blow of the hook tears a piece off the
+  // health bar (CONFIG.rend.cut of the maximum, at most `max` pieces) and she keeps it on the hook. Every blow landed on
+  // her tears one back, as health (Player.reclaim); left there, the wound closes after `time` s from the last tear and the
+  // bar comes back empty. When she falls, everything she held comes back as health.
+  rend(by) {
+    const R = CONFIG.rend;
+    if (this.rentBy && this.rentBy !== by) this.closeRent();   // one holder at a time
+    this.rentBy = by; this.rentTime = R.time;
+    if (this.rent < R.max) { this.rent++; events.emit('rend', { body: this, enemy: by, piece: this.rent }); }
+    this.hp = Math.min(this.hp, this.hpCap());
+  }
+  reclaim(all = false) {
+    if (this.rent <= 0) return;
+    const n = all ? this.rent : 1, by = this.rentBy;
+    this.rent -= n;
+    if (this.alive()) this.hp = Math.min(this.hpCap(), this.hp + n * CONFIG.rend.cut * this.maxHp);
+    events.emit('reclaim', { body: this, enemy: by, pieces: n, left: this.rent });
+    if (this.rent <= 0) { this.rentBy = null; this.rentTime = 0; }
+  }
+  closeRent() {
+    if (this.rent > 0) events.emit('rentClosed', { body: this, enemy: this.rentBy, pieces: this.rent });
+    this.rent = 0; this.rentTime = 0; this.rentBy = null;
+  }
+  updateRent(dt) {
+    const by = this.rentBy;
+    if (!this.alive()) { this.closeRent(); return; }
+    if (!by || !by.alive()) { this.reclaim(true); return; }   // she fell: all of it comes back
+    if ((this.rentTime -= dt) <= 0) this.closeRent();
+  }
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
   takeHit(strike, from) {
     const B = CONFIG.block, C = CONFIG.player;
@@ -434,6 +469,7 @@ class Player {
     this.kx += dx / d * knock; this.kz += dz / d * knock;
     if (blocked) this.brace = 1; else this.tint = 1;
     if (this.hp <= 0) { this.die(); return { blocked, died: true }; }
+    if (strike.rend && !blocked && strike.rendBy) this.rend(strike.rendBy);
     if (strike.destined && !blocked) {   // a new hit restarts the cut (it never stacks) and the drain
       const D = CONFIG.bossPowers.destined;
       this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());

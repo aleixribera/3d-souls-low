@@ -165,7 +165,7 @@ const Game = {
     const p = this.player, b = this.canRest();
     if (!b || !p.isFree()) return;
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.rest(b); return; }
-    p.hp = p.maxHp; p.stamina = p.maxStamina; p.vx = p.vz = 0;
+    p.closeRent(); p.hp = p.maxHp; p.stamina = p.maxStamina; p.vx = p.vz = 0;   // a rest closes a rent (pass 48)
     p.setState(PS.REST);
     p.refillItems();
     const off = CONFIG.rest.respawnOffset;

@@ -1249,6 +1249,9 @@ const multiplayer = (() => {
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
       e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
+      // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
+      const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];
+      if (wh && wh.bolt) e.noteBolt(s.target === self ? Game.player : remotes.get(s.target)?.body);
       if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
       const boxKey = `${s.serial}/${s.hitIndex}`;
       // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.
@@ -1402,7 +1405,7 @@ const multiplayer = (() => {
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }
   function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
   function rest(b) {
-    const p = Game.player; p.hp = p.maxHp; p.stamina = p.maxStamina; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
+    const p = Game.player; p.closeRent(); p.hp = p.maxHp; p.stamina = p.maxStamina; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
     command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
   }
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;

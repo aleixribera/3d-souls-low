@@ -101,6 +101,13 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   per-hit rule to use. A seam runs its full length even through the court's wall (the walls hide it; nothing clamps
   it to the room). No one has fought him by hand yet; his health and posture are pass 45's, kept until every boss is
   reworked. Agathe (chapter 12) should not reuse seams: her floor-rending wants its own idea.
+- Agathe, pass 2 (pass 48 did pass 1: Blender figure, 13 own moves, `rend` and hit `bolt`, drawn by
+  `js/storm-rend.js`; `docs/scorecard/agathe-lab.jpg`, `abbey-agathe.jpg`). Bots don't know bolts (Track B's area):
+  `js/bot.js` doesn't step off a locked mark (`e.bolt`, `locked`) and doesn't press her to tear pieces back
+  (`body.rent`/`rentBy`). The server's parry claim checks `canParryAttack`, not `canParryHit` for the claimed hit: a
+  future bolt inside a parryable attack could be parried by a modified client. Figure: the face reads as a mask close
+  up, the mantle hangs flat as a board, the habit is brown rather than black; the HUD shows torn pieces in Destined
+  Death's gold, not her red. The rent is not carried in a multiplayer resume. No one has fought her by hand yet.
 - Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: the Cinderfolk's own figure (stand-in: the
   Hollow Soldier charred). The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
   chapter 10 burned (charred gilt, a dry fountain) so the two chapters read as one city.

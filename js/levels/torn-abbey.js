@@ -56,8 +56,11 @@ const LEVEL_12 = {
     { id: 'nave-landing', rect: [230, 244, -8, 8], y: 16, open: true, height: 8, edges: { n: 'rail', s: 'rail', w: 'rail', e: 'rail' }, railHeight: 0.8, floor: 0x54524e, wall: 0x6e6a66, light: 0xffc890,
       braziers: [[242.5, -6.5], [242.5, 6.5]] },
     { id: 'fog-door', rect: [244, 248, -3, 3], y: 16, height: 6, floor: 0x4c4a48, wall: 0x625e5a, dim: true },
-    { id: 'the-rent', rect: [248, 292, -16, 16], y: 16, open: true, height: 14, edges: { n: 'rail', s: 'rail' }, floor: 0x5c5854, wall: 0x726e6a, light: 0xc8d4f0,
-      lamps: [[250, -14.5], [250, 14.5], [290, -14.5], [290, 14.5]] },
+    // The rent (pass 48): what is left of the abbey's nave where the hill tore loose, open to the storm on both sides. A dark
+    // wet floor, so the storm's marks read on it; the nave's broken columns down both sides; a cold light, the lamps low.
+    { id: 'the-rent', rect: [248, 292, -16, 16], y: 16, open: true, dim: true, height: 14, edges: { n: 'rail', s: 'rail' }, floor: 0x34343a, wall: 0x726e6a, light: 0xa8b8e0,
+      lamps: [[250, -14.5], [250, 14.5], [290, -14.5], [290, 14.5]],
+      pillarHeight: 8, pillars: [[256, -12.5, 1.3], [268, -12.5, 1.3], [280, -12.5, 1.3], [256, 12.5, 1.3], [268, 12.5, 1.3], [280, 12.5, 1.3]] },
     { id: 'rent-exit', rect: [292, 296, -3, 3], y: 16, height: 5, floor: 0x4c4a48, wall: 0x625e5a, light: 0xe0e8ff, dim: true },
   ],
   ramps: [
