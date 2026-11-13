@@ -497,8 +497,8 @@ function createServer(options = {}) {
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (tally) { tallyFight(false); stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
-            else if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
+            if (tally) { tallyFight(false); stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
+            else if (session.gauntlet) stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
             else start(session.kind, session.id);
             break;
           }

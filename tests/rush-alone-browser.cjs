@@ -51,6 +51,7 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(await page.locator('#runSummaryTitle').textContent(), 'You fell');
     assert.equal(await page.locator('#runSummaryRows tr').count(), 1, 'the end of the run lists Ash alone');
     assert.equal(app.session, null);
+    assert.match(await page.locator('#lobbyNotice').textContent(), /^YOU FELL · /, 'the lobby says it plainly too');
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(shots, 'summary-alone.png') });
     assert.deepEqual(errors, [], 'no page errors');
