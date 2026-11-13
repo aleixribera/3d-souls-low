@@ -13,7 +13,7 @@
     expect.ok(A.LEVEL_9.next === 'aurel', 'the Levels menu carries on from the Night Gaol too');
   });
   test('Aurel: the Regent keeps Morgott\'s engineering under new names, within the boss rules', () => {
-    const d = A.ENEMY_BY_ID.hollis, ids = new Set(d.attacks.map(a => a.id)), M = A.ENEMY_BY_ID.morgott;
+    const d = A.ENEMY_BY_ID.hollis, ids = new Set(d.attacks.map(a => a.id)), M = MORGOTT;
     expect.ok(d.attacks.length === M.attacks.length, `every move carried over (${d.attacks.length} of ${M.attacks.length})`);
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);

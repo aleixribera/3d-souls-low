@@ -3,7 +3,7 @@
 // Spectral weapons (v5.3): golden weapons conjured for one attack (Margit's holy dagger, hammer and sword)
 // ============================================================================
 // An enemy attack with `spectral: '<id>'` (an id of SPECTRAL_WEAPONS) shows that weapon in the weapon hand from the start
-// of its wind-up to the end of its follow-through, fading in and out (CONFIG.elden.spectral), with a warm light: the cue
+// of its wind-up to the end of its follow-through, fading in and out (CONFIG.bossPowers.spectral), with a warm light: the cue
 // that the blow is holy and cannot be parried. Drawing only: the hitbox is the attack's own box, as for every attack.
 // Each builder returns { geos, look }: geometry along +z from the hand, like KIT_WEAPONS (js/bodykit.js), in metres at
 // scale 1, and `look`: 'holy' (marbled golden light, the holyLight texture) or 'prism' (a pale blade with a shifting sheen).
@@ -64,7 +64,7 @@ function crucibleTail(k) {
 }
 
 const spectral = (() => {
-  const S = CONFIG.elden.spectral, geos = {};
+  const S = CONFIG.bossPowers.spectral, geos = {};
   const shape = id => geos[id] || (geos[id] = SPECTRAL_WEAPONS[id]());
   // 'holy': the marbled holyLight texture lights itself; 'prism': a pale blade whose sheen hue drifts (render, below).
   const material = look => {

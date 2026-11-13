@@ -15,7 +15,7 @@
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000, leaderInputGrace: 2000,
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     loadTimeout: 30 * 1000, rememberedPlayers: 1024,
-    defaultCampaign: 'lands',
+    defaultCampaign: 'ashmere',
     defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
     // Boss runs: `size` bosses fought together per encounter, in catalog order; `then` follows a full victory.
     gauntlets: Object.freeze({

@@ -601,19 +601,17 @@ const GAME_FILES = [
   'data/bosses/morgott.js',
   'data/bosses/godfrey.js',
   'data/bosses/radagon.js',
-  'data/bosses/malenia.js',
   'data/bosses/antlered-hunger.js',
   'data/bosses/ostrey.js',
   'data/bosses/castellans.js',
   'data/bosses/ringer.js',
   'data/bosses/hollis.js',
   'data/bosses/oswin.js',
-  'data/elden-bosses.js',
   'data/story-boss-moves.js',
   'data/boss-fx.js',
-  'data/lands-enemies.js',
-  'data/bosses/agathe.js',   // after the Beastman: her Rending Brothers fight with its moves
-  'data/bosses/kindling-tree.js',   // after the Golden Zealot and Radagon: the Rootbound fight with the Zealot's moves
+  'data/move-sources.js',   // the Beastman's and the Zealot's moves, for the Rending Brothers and the Rootbound
+  'data/bosses/agathe.js',   // after move-sources.js: her Rending Brothers fight with the Beastman's moves
+  'data/bosses/kindling-tree.js',   // after move-sources.js: the Rootbound fight with the Zealot's moves
   'data/bosses/kings-blade.js',   // the player's own moves (PLAYER_DEF) at a boss's pace
   'levels/arena.js',
   'data/boss-battle.js',
@@ -631,14 +629,6 @@ const GAME_FILES = [
   'levels/torn-abbey.js',
   'levels/ember-root.js',
   'levels/still-mere.js',
-  'levels/lands/stormhill.js',
-  'levels/lands/stormveil.js',
-  'levels/lands/evergaol.js',
-  'levels/lands/leyndell.js',
-  'levels/lands/ashen-capital.js',
-  'levels/lands/farum-azula.js',
-  'levels/lands/erdtree.js',
-  'levels/lands/haligtree.js',
   'levels/test-crowd.js',
   'levels/test-heights.js',
   'levels/test-courtyard.js',
@@ -650,7 +640,6 @@ const GAME_FILES = [
   'data/story.js',
   'data/lobby-intros.js',
   'data/lore.js',
-  'data/lore-lands.js',
   'data/changelog.js',
   'states.js',
   'registries.js',
@@ -664,13 +653,12 @@ const GAME_FILES = [
   'bodykit.js',
   'kit-premium.js',
   'kit-identity.js',
-  'kit-realms.js',
   'baked/snow-church.js',
   'baked/wanderer.js',
   'baked/hollow.js',
   'baked/lancer.js',
   'baked/knight.js',
-  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/beastman.js', 'baked/wisp.js', 'baked/scion.js', 'baked/executioner.js', 'baked/squire.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js',
+  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js',
   'baked.js',
   'animator.js',
   'attack-anim.js',
@@ -705,7 +693,6 @@ const GAME_FILES = [
   'flame.js',
   'blackblade.js',
   'holy.js',
-  'scarlet.js',
   'realms.js',
   'scenery.js',
   'ultra-post.js',
@@ -713,7 +700,6 @@ const GAME_FILES = [
   'ultra-boss.js',
   'bonfire-guidance.js',
   'effect-lighting.js',
-  'elden.js',
   'boss-battle.js',
   'quality-benchmark.js',
   'autoquality.js',
@@ -738,7 +724,6 @@ Reload the page, or update the game and its js folder together.`); break; }
 // Developer builds (#dev) also load the stepped-simulation tests: run them with `await __arena.tests.run()`.
 if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite.js', 'tests/');
-  await loadScript('suite-lands.js', 'tests/');   // v7.0: the Lands Between
   await loadScript('suite-lighting.js', 'tests/');
   await loadScript('suite-render.js', 'tests/');   // rendering audit: disposal, model cache, lightning, reduced motion
   await loadScript('suite-audit.js', 'tests/');   // v7.18: the audit fixes

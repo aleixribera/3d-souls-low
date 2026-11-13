@@ -107,7 +107,7 @@ const finale = (() => {
     clear();
     hideEnding();
     game.camFocus = null;
-    // v7.0: any level with a fog gate, sightings or ambush hints is scripted too (the Lands Between's boss lands), not only
+    // v7.0: any level with a fog gate, sightings or ambush hints is scripted too (the later chapters), not only
     // the one with the `ending`; the throne room dressing and its transition stay Level 5's (`finaleRoom`).
     const lv = game.kind === 'level' ? game.level : null;
     L = lv && (lv.ending || (lv.sealed || []).some(s => s.fog) || (lv.spectators || []).length || (lv.hints || []).length) ? lv : null;

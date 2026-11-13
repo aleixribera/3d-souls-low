@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
-const adventures = ['campaign/ashmere', 'campaign/lands', 'calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id)];
+const adventures = ['campaign/ashmere', 'calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id)];
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -43,8 +43,8 @@ const adventures = ['campaign/ashmere', 'campaign/lands', 'calling/' + C.calling
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0, null, { timeout: 90000 });
   try {
     const a = await player('Leader'), b = await player('Friend');
-    assert.deepEqual(await a.locator('#lobbyAdventure optgroup[label="Stories"] option').allTextContents(), ['Story 1 (Ashmere)', 'Story 2 (Lands)']);
-    assert.equal(await a.locator('#lobbyAdventure option').count(), adventures.length, 'two stories and every configured boss run');
+    assert.deepEqual(await a.locator('#lobbyAdventure optgroup[label="Stories"] option').allTextContents(), ['Story (Ashmere)']);
+    assert.equal(await a.locator('#lobbyAdventure option').count(), adventures.length, 'the story and every configured boss run');
     assert.equal(await a.locator('#lobbyAdventure option[value^="level/"]').count(), 0, 'no individual levels in the dropdown');
     assert.equal(await a.getByRole('button', { name: 'Edit name', exact: true }).count(), 0, 'no separate name-edit action');
     await a.locator('#lobbyName').click();
@@ -62,7 +62,7 @@ const adventures = ['campaign/ashmere', 'campaign/lands', 'calling/' + C.calling
     await pad(a, 0); await pad(a, 13, undefined, true);
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), adventures.at(-1), 'held D-pad advances to the last adventure');
     await pad(a, 1);
-    await a.locator('#lobbyAdventure').selectOption('campaign/lands');
+    await a.locator('#lobbyAdventure').selectOption('campaign/ashmere');
     await pad(a, null, [0, 1, 0, 0]);
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyStart', 'left stick moves focus');
     await pad(a, 3);

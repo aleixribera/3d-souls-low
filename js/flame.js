@@ -10,7 +10,7 @@
 // phase's opener (an `invulnerable` attack, the arm chop) strikes, with a burst of fire. A phase's `conceal: ['<slot>' | 'weapon']`
 // hides them the same way (v5.5, Godfrey casting off Serosh, his armour and his axe), with a burst of dust.
 const flame = (() => {
-  const F = CONFIG.elden.flame, V3 = THREE.Vector3, from = new V3(), to = new V3(), dir = new V3(), Z = new V3(0, 0, 1);
+  const F = CONFIG.bossPowers.flame, V3 = THREE.Vector3, from = new V3(), to = new V3(), dir = new V3(), Z = new V3(0, 0, 1);
   const coneGeo = (r, len) => new THREE.ConeGeometry(r, len, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, len / 2);
   const UNIT = coneGeo(0.5, 1);
   // Every jet made, by its owner (js/effect-slots.js): dropped, its materials freed, once the owner leaves the game.

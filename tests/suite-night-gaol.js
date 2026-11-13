@@ -13,7 +13,7 @@
     expect.ok(A.LEVEL_8.next === 'night-gaol', 'the Levels menu carries on from Saltgrave too');
   });
   test('Night Gaol: the Ringer keeps the Crucible Knight\'s engineering, within the boss rules, with no shield and no aspects', () => {
-    const d = A.ENEMY_BY_ID.ringer, ids = new Set(d.attacks.map(a => a.id)), C = A.ENEMY_BY_ID.crucibleKnight;
+    const d = A.ENEMY_BY_ID.ringer, ids = new Set(d.attacks.map(a => a.id)), C = CRUCIBLE_KNIGHT;
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     expect.ok(d.attacks.every(a => !a.spectral && !a.when?.startsWith('shield')) && !d.guard && !d.offhand, 'no greatshield, no golden wings or tail');
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);

@@ -14,7 +14,7 @@
     expect.ok(A.LEVEL_12.next === 'ember-root', 'the Levels menu carries on from the Torn Abbey too');
   });
   test('Ember Root: the Kindling Tree keeps Radagon\'s engineering under new names, within the boss rules', () => {
-    const d = A.ENEMY_BY_ID.kindlingTree, ids = new Set(d.attacks.map(a => a.id)), R = A.ENEMY_BY_ID.radagon;
+    const d = A.ENEMY_BY_ID.kindlingTree, ids = new Set(d.attacks.map(a => a.id)), R = RADAGON;
     expect.ok(d.attacks.length === R.attacks.length, `every move carried over (${d.attacks.length} of ${R.attacks.length})`);
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);
@@ -23,7 +23,7 @@
     expect.ok(K.at === 0.6 && K.opener === 'heartwoodBreaks' && K.name === 'The Kindling Tree, Ablaze' && K.ignite, 'at 60 % it catches');
     expect.ok(!OLD.test(JSON.stringify(d.attacks.map(a => a.name)) + JSON.stringify(Object.values(d.phases).map(p => p.name || '')) + d.name + d.description),
       'no names of the old road');
-    expect.ok(d.holyLight && d.holyLight.color !== CONFIG.elden.holy.color, 'its marks burn in the Ember\'s light, not the old gold');
+    expect.ok(d.holyLight && d.holyLight.color !== CONFIG.bossPowers.holy.color, 'its marks burn in the Ember\'s light, not the old gold');
     expect.ok(BOSS_FX.kindlingTree && BOSS_FX.kindlingTree.phases.kindled === 'fire', 'its effects are written, fire once it catches');
     expect.ok(R.name === 'Radagon of the Golden Order' && !R.holyLight && R.attacks.some(a => a.id === 'goldBreaker'), 'Radagon himself is untouched');
   });
@@ -35,7 +35,7 @@
     expect.ok(!L.realm.halos && L.realm.grounds[0].kind === 'emberbark', 'no rings of light; the floor is the root\'s red-gold wood');
     const B = A.ENEMY_BY_ID.rootbound;
     expect.ok(!OLD.test(B.name + B.description + JSON.stringify(B.attacks.map(a => a.name))) && B.attacks.every(a => /^root/.test(a.id)), 'the Rootbound\'s own names');
-    expect.ok(A.ENEMY_BY_ID.goldenZealot.attacks.every(a => /^gz/.test(a.id)), 'the Golden Zealot itself is untouched');
+    expect.ok(ZEALOT_MOVES.attacks.every(a => /^gz/.test(a.id)), 'the Golden Zealot\'s moves themselves are untouched');
     start();
     expect.ok(Game.enemies.filter(e => e.baseDef.id === 'rootbound').length >= 6, 'Rootbound in the hollows');
   });

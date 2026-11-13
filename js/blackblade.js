@@ -12,7 +12,7 @@
 // No lights are added (a new light recompiles every shader).
 const blackBlade = (() => {
   Object.assign(KIT.parts, MALIKETH_PARTS);   // his blades and muzzle (js/data/bosses/maliketh.js)
-  const B = CONFIG.elden.blackBlade, at = new THREE.Vector3();
+  const B = CONFIG.bossPowers.blackBlade, at = new THREE.Vector3();
   // One Destined Death sphere per enemy that casts it (js/effect-slots.js), freed once that enemy leaves the game.
   const spheres = effectSlots.slots((S, e) => {
     scene.remove(S.g); for (const m of S.g.children) if (m.material) { m.material.dispose(); m.geometry.dispose(); }

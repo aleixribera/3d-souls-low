@@ -1052,7 +1052,7 @@ const multiplayer = (() => {
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeBlessings(); rising = null;
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
-      Game.story = false; Game.eldenBoss = null; closePanel();
+      Game.story = false; closePanel();
       const loadingCard = session.kind === 'arena' ? Game.duelCard(session.id, session.partners || []) : Game.levelCard(session.id);
       el('lobbyAdventure').value = session.gauntlet ? `${session.gauntlet.roster ? 'calling' : 'gauntlet'}/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {

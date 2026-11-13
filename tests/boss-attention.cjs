@@ -43,7 +43,7 @@ const STEP = 1 / 60;
 // bar is topped up past half so a quick win doesn't end the fight before everyone has been in it. The fights are seeded
 // (`createSimulation({ seed })`), so they replay the same way every run.
 const lines = [];
-for (const boss of ['pillagerCaptain', 'bellWarden', 'margit']) {
+for (const boss of ['pillagerCaptain', 'bellWarden', 'ostrey']) {
   const sim = createSimulation({ seed: 7 }); for (let i = 0; i < 3; i++) sim.addBot();
   sim.start('arena', boss); sim.setPlayers([]);
   const { Game, players } = sim.inspect(), e = Game.enemies.find(e => e.isBoss());

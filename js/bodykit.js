@@ -428,14 +428,6 @@ const KIT = (() => {
       return [xf(KIT_GEO.Cylinder(r, r, 0.02, 12), x, y, z, Math.PI / 2, 0, 0), xf(KIT_GEO.Torus(r * 0.75, 0.01, 3, 12), x, y, z + 0.012),
               ...[0, 1, 2, 3].map(i => xf(new THREE.BoxGeometry(0.012, r * 1.5, 0.012), x, y, z + 0.014, 0, 0, i * Math.PI / 4))];
     },
-    // Radagon's Elden Ring sigil (v5.7): a glowing rune burned into the chest (chest frame), the Ring's crossing arcs
-    // over a vertical stroke and a crossbar, a hair proud of the skin; `glow` slot, `size` scales it.
-    eldenRune(o) {
-      const s = o.size ?? 1, [x, y, z] = o.at ?? [0.04, 0.4, 0.22], arc = (r, a0, a1, cy) => xf(KIT_GEO.Torus(r * s, 0.008 * s, 3, 16, a1 - a0), x, y + cy * s, z, 0, 0, a0);
-      return [arc(0.1, 0.3, Math.PI * 2 - 0.3, 0.02), arc(0.065, Math.PI * 0.1, Math.PI * 1.1, 0.07), arc(0.065, Math.PI * 1.1, Math.PI * 2.1, -0.04),
-              xf(new THREE.BoxGeometry(0.012 * s, 0.34 * s, 0.01), x, y - 0.03 * s, z), xf(new THREE.BoxGeometry(0.16 * s, 0.01 * s, 0.01), x, y + 0.1 * s, z),
-              ...[-1, 1].map(k => xf(new THREE.BoxGeometry(0.008 * s, 0.09 * s, 0.01), x + k * 0.03 * s, y - 0.17 * s, z, 0, 0, k * 0.5))];
-    },
     // The gold border of a cape section: two bands (`trim` m wide) down its edges, curved exactly as capeSegment,
     // a hair behind its outer face. Same fields as capeSegment.
     capeTrim(o) {

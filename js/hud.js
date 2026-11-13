@@ -75,7 +75,7 @@ const hud = {
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
-      : online ? 'Open the lobby to choose your next fight.' : game.eldenBoss ? CONFIG.elden.victoryHint : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
+      : online ? 'Open the lobby to choose your next fight.' : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
     const road = online && multiplayer.campaign;
     $('completeHint').textContent = road ? road.next ? 'Next chapter incoming… Your party continues together.' : 'Adventure complete. Open the lobby to choose what comes next.'

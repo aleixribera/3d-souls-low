@@ -13,7 +13,7 @@
     expect.ok(A.LEVEL_10.next === 'aurel-in-ash', 'the Levels menu carries on from Aurel too');
   });
   test('Aurel in Ash: Oswin keeps Godfrey\'s engineering under new names, within the boss rules', () => {
-    const d = A.ENEMY_BY_ID.oswin, ids = new Set(d.attacks.map(a => a.id)), G = A.ENEMY_BY_ID.godfrey;
+    const d = A.ENEMY_BY_ID.oswin, ids = new Set(d.attacks.map(a => a.id)), G = GODFREY;
     expect.ok(d.attacks.length === G.attacks.length, `every move carried over (${d.attacks.length} of ${G.attacks.length})`);
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);

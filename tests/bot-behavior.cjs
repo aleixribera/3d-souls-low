@@ -37,7 +37,7 @@ console.log('Bot initiative: ' + count + ' boss/profile/health combinations, slo
 // plan for a useful interval, then change it, instead of re-rolling its approach every fixed step.
 const movement = {};
 for (const profile of profiles) {
-  const { sim, b, p, e } = waiting('malenia', profile);
+  const { sim, b, p, e } = waiting('kingsBlade', profile);
   b.brain = sim.inspect().bot.create(b.profile, () => 0.5); p.ctl = b.brain.hands;
   const to = { x: e.x - p.x, z: e.z - p.z }, dist = Math.hypot(to.x, to.z);
   const first = b.brain.think(dt, p, [e], []).mv;
@@ -58,7 +58,7 @@ function observe(b, p, enemies, seconds) {
   for (let i = 0; i < seconds * 60; i++) { b.brain.think(dt, p, enemies, []); b.brain.hands.clear(); }
 }
 {
-  const { b, p, e } = waiting('malenia', 'quill');
+  const { b, p, e } = waiting('kingsBlade', 'quill');
   p.z = e.z + e.radius + p.radius + 0.7;
   p.stamina = 0; p.exhausted = true;
   observe(b, p, [e], 10);
@@ -69,7 +69,7 @@ function observe(b, p, enemies, seconds) {
   assert.ok(b.brain.hands.peek('light'), 'a rested bot probes even when the theoretical counter window is too short');
 }
 {
-  const { sim, b, p, e } = waiting('malenia', 'quill');
+  const { sim, b, p, e } = waiting('kingsBlade', 'quill');
   p.z = e.z + e.radius + p.radius + 0.7;
   observe(b, p, [e], 10);
   // A different boss is a threat too: probing the target must never override defence against its partner.

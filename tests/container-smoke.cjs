@@ -33,14 +33,14 @@ const version = fs.readFileSync('js/config.js', 'utf8').match(/const VERSION = '
         try {
           const m = JSON.parse(data);
           const send = value => ws.send(JSON.stringify(value));
-          if (m.type === 'welcome') send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+          if (m.type === 'welcome') send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
           if (m.type === 'start') {
             send({ type: 'ready', epoch: m.session.epoch });
             send({ type: 'pose', epoch: m.session.epoch, pose: { ...m.session.spawn, hp: 120, state: 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } });
           }
           if (m.type === 'frame') {
             const f = decoder.decode(m).frame;
-            assert.equal(f.enemies[0].def, 'margit');
+            assert.equal(f.enemies[0].def, 'ostrey');
             if (f.time > 0.1) { clearTimeout(timeout); resolve(); }
           }
         } catch (e) { clearTimeout(timeout); reject(e); }

@@ -46,7 +46,7 @@ const { createServer } = require('../server/index.cjs');
   }, index);
   try {
     const a = await player('Observer'), b = await player('Knight'), c = await player('Tarnished');
-    await selectAdventure(a, 'arena/margit'); await a.locator('#lobbyStart').click();
+    await selectAdventure(a, 'arena/ostrey'); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b), ready(c)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     const bId = await b.evaluate(() => multiplayer.info.self), cId = await c.evaluate(() => multiplayer.info.self);

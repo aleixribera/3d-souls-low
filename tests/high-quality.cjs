@@ -8,7 +8,7 @@ const { chromium } = require('./browser.cjs');
 const root = path.resolve(process.env.AUDIT_ROOT || path.join(__dirname, '..'));
 const output = path.resolve(process.argv[2] || '.scratch/high-quality');
 const variants = (process.argv[3] || 'low,high,no-reflections,base-geometry,fire,full-warmup,ultra').split(',');
-const scenes = ['long-hall', 'burning-town', 'final-castle', 'godrick', 'godrick-fire', 'malenia-rot'];
+const scenes = ['long-hall', 'burning-town', 'final-castle', 'hale', 'tree-ablaze'];
 fs.mkdirSync(output, { recursive: true });
 const server = http.createServer((req, res) => {
   if (req.url === '/favicon.ico') return res.writeHead(204).end();
@@ -66,20 +66,20 @@ const server = http.createServer((req, res) => {
           };
           const start = performance.now();
           try {
-            if (id.startsWith('godrick')) elden.start('godrick');
-            else if (id === 'malenia-rot') elden.start('malenia');
+            if (id === 'hale') Game.startFight('hale');
+            else if (id === 'tree-ablaze') Game.startFight('kindlingTree');
             else Game.startLevel(id);
           } finally { visuals.warmUp = originalWarm; }
           const loadMs = performance.now() - start;
           const retryStart = performance.now(); Game.reset(); const retryMs = performance.now() - retryStart;
           Game.loading = 0; document.getElementById('loading').classList.remove('show');
           for (let i = 0; i < 12; i++) Game.update(CONFIG.step);
-          if (id === 'godrick-fire' || id === 'malenia-rot') {
-            const e = Game.duel, phase = id === 'godrick-fire' ? 'dragon' : 'rot';
+          if (id === 'tree-ablaze') {
+            const e = Game.duel, phase = 'kindled';
             const from = e.phase;
             e.enterPhase(e.phaseIds.indexOf(phase));
             events.emit('bossPhase', { enemy: e, from, to: e.phase, seamless: true });
-            const attack = e.def.attacks.find(a => a.id === (id === 'godrick-fire' ? 'flameSweep' : 'aeonia'));
+            const attack = e.def.attacks.find(a => !a.projectile && a.hits && a.hits.length);
             if (!attack) throw new Error('Missing trial attack for ' + id);
             e.beginAttack(attack); e.strike(Game.player); e.stateTime = attack.hits[0].active * 0.5;
             // Frame the boss and attack footprint. Simulation is held while effects keep rendering.

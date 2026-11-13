@@ -23,13 +23,13 @@ Object.assign(Game, {
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
-          const back = this.kind === 'bossBattle' ? 'bossBattle' : this.eldenBoss ? 'elden' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
-          this.eldenBoss = null; if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
+          const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
+          if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
     const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
     const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
     return {
-      ...S.screens, ...elden.screens(this), ...bossBattle.screens(this),
+      ...S.screens, ...bossBattle.screens(this),
       // v7.19.0: the title leads with the two ways to play. Online first: everyone who opens the link plays in one public
       // lobby, and the card says who is in it right now (multiplayer.lobby, asked while the title shows).
       main: { title: 'COMBAT ARENA 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 0 : 1, items: [
@@ -37,8 +37,8 @@ Object.assign(Game, {
           desc: 'Everyone who opens this link plays in the same public lobby. The leader picks the adventure and everyone goes in together.',
           go: () => multiplayer.join() },
         { ...S.main[0], size: 'hero', kicker: 'PLAY ALONE', label: 'Story' },
-        { name: '1v1 Arena', size: 'small', desc: 'Duel a single opponent: the enemies of both roads, the bosses of Ashmere, or the bosses of Elden Ring.', go: () => this.showMenu('arena') },
-        { name: 'Levels', size: 'small', desc: 'Play a level on its own from any story.', go: () => this.showMenu('levels') },
+        { name: '1v1 Arena', size: 'small', desc: 'Duel a single opponent: any enemy or boss of the story.', go: () => this.showMenu('arena') },
+        { name: 'Levels', size: 'small', desc: 'Play a level of the story on its own.', go: () => this.showMenu('levels') },
         { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Changelog', size: 'small', desc: 'What each version of the game changed.', go: () => this.showMenu('changelog') },
         ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }, ...S.devItems.map(it => ({ ...it, size: 'small' }))] : []),
@@ -47,26 +47,19 @@ Object.assign(Game, {
         items: [...finale.devItems(), ...lore.devItems(),
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [
-        { name: 'Ashmere  ›', desc: 'The levels of Ashmere, from the Long Hall to the Church in the Pass.', go: () => this.showMenu('levelsAshmere') },
-        { name: 'The Lands Between  ›', desc: 'The levels of the second road, from Stormhill to the Haligtree.', go: () => this.showMenu('levelsLands') },
+      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [...LEVELS.map(levelItem),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
-      levelsAshmere: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · ASHMERE', back: 'levels', items: [...LEVELS.map(levelItem),
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
-      levelsLands: { title: 'COMBAT ARENA 3D', sub: 'LEVELS · THE LANDS BETWEEN', back: 'levels', items: [...LANDS_LEVELS.map(levelItem),
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('levels') }] },
       changelog: { title: 'COMBAT ARENA 3D', sub: 'CHANGELOG', back: 'main', items: [   // js/data/changelog.js, newest first
         ...CHANGELOG.map(c => ({ name: `${c.version}  ·  ${c.title}`, desc: c.text })),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       arena: { title: 'COMBAT ARENA 3D', sub: '1V1 ARENA', back: 'main', items: [
-        { name: 'Enemies', desc: 'The common foes of both roads, one at a time.', go: () => this.showMenu('enemies') },
-        { name: 'Bosses', desc: 'The bosses of Ashmere: the Giant Skeleton, the Pillager Captain, the Bell Warden, Aldric and the Antlered Hunger.', go: () => this.showMenu('bosses') },
-        elden.mainItem(this),
+        { name: 'Enemies', desc: 'The common foes of the story, one at a time.', go: () => this.showMenu('enemies') },
+        { name: 'Bosses', desc: 'The bosses of the story, from the Pillager Captain to the King\'s Blade.', go: () => this.showMenu('bosses') },
         { name: 'Boss vs Boss', desc: 'Build two teams of up to six bosses and watch them battle.', go: () => this.showMenu('bossBattle') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'arena',
         items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
-      bosses: { title: 'COMBAT ARENA 3D', sub: 'THE BOSSES OF ASHMERE', back: 'arena',
+      bosses: { title: 'COMBAT ARENA 3D', sub: 'THE BOSSES', back: 'arena',
         items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
       pause: { title: online ? 'ONLINE' : 'PAUSED', sub: online ? 'THE WORLD KEEPS RUNNING' : '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
@@ -252,7 +245,7 @@ Object.assign(Game, {
   // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
   startFight(id, partners = []) {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    this.kind = 'arena'; this.duelId = id; this.duelPartners = partners; this.eldenBoss = null;   // js/elden.js sets it again for its own fights
+    this.kind = 'arena'; this.duelId = id; this.duelPartners = partners;
     this.level = L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     this.enterPlay(); this.reset(); this.showLoading(...this.duelCard(id, partners));
   },
@@ -262,7 +255,7 @@ Object.assign(Game, {
     return defs.length > 1 ? [`Duel: ${defs.map(d => d.name).join(' & ')}`, `${defs.length} bosses at once. Fight them together.`] : [`Duel: ${defs[0].name}`, defs[0].description];
   },
   startLevel(id) {
-    this.kind = 'level'; this.eldenBoss = null; this.duelPartners = []; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
+    this.kind = 'level'; this.duelPartners = []; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();
     const ch = this.story && story.chapter(id);
     const onlineCard = typeof multiplayer !== 'undefined' && multiplayer.chapterCard(id);
     if (ch) { this.showLoading(ch.title, ch.line); this.loading = CONFIG.story.titleTime; story.onLevelStart(); }   // Souls-style title over the load

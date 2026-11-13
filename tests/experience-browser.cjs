@@ -70,7 +70,7 @@ const { createServer } = require('../server/index.cjs');
       { width: 800, height: 600 }, { width: 844, height: 390 }, { width: 640, height: 360 },
       { width: 390, height: 740 }, { width: 320, height: 568 }]) {
       await page.setViewportSize(viewport);
-      for (const screen of ['main', 'story', 'options', 'arena', 'levelsLands', 'storyConfirm', 'storyDone']) {
+      for (const screen of ['main', 'story', 'options', 'arena', 'levels', 'storyConfirm', 'storyDone']) {
         const issues = await page.evaluate(screen => {
           Game.optionsFrom = 'main'; Game.showMenu(screen);
           const issues = [], box = id => document.getElementById(id).getBoundingClientRect();
@@ -152,12 +152,12 @@ const { createServer } = require('../server/index.cjs');
     // Inspect the actual game at each quality; these captures retain the established art direction.
     for (const quality of ['low', 'high', 'ultra']) {
       await page.evaluate(quality => {
-        settings.graphics = quality; applySettings(); Game.startLevel('stormhill'); Game.loading = 0;
+        settings.graphics = quality; applySettings(); Game.startLevel('windward-moor'); Game.loading = 0;
         document.getElementById('loading').classList.remove('show');
         for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
         Game.render(1, CONFIG.step);
       }, quality);
-      await page.screenshot({ path: `${output}/stormhill-${quality}.png` });
+      await page.screenshot({ path: `${output}/windward-moor-${quality}.png` });
       assert.deepEqual(await page.evaluate(() => { const gl = renderer.getContext(); gl.finish();
         return { lost: gl.isContextLost(), error: gl.getError() }; }), { lost: false, error: 0 });
     }

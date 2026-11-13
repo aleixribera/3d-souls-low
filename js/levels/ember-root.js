@@ -1,7 +1,7 @@
 'use strict';
 // Level 13: the Root of the Ember (v7.50.0), chapter 13 of the Story (STORY.md; LORE.md 10i): inside the Ember's first
 // growth, under everything. Rough (PLAN.md stage 3, track A): built from the old second road's throne level
-// (js/levels/lands/erdtree.js) as raw material, its layout kept, every name and character of that road gone; no rings of
+// (removed in v7.53.0) as raw material, its layout kept, every name and character of that road gone; no rings of
 // light, a burning deep under the roots instead of a golden abyss, and the light from the west so what the player walks
 // toward is front-lit. The roots have no rail; the hollows a low lip. x east, z north; floors climb 0 -> 8 -> 16.
 //   The first hollow (bonfire 1, Ysolde), the first root to the ember hollow (a Rootbound, the first of its kind, with an

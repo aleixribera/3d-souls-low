@@ -76,7 +76,7 @@ function peer(url, origin) {
   assert.equal(observed.find(o => o.enemy === second.netId).target, 'b');
   assert.ok(observed.every(o => o.rate === 1), 'unrelated distant attack does not slow a local enemy cooldown');
   assert.ok(observed.every(o => !o.others.includes(o.enemy === first.netId ? second.netId : first.netId)), 'crowds belong to the actual target');
-  sim.start('arena', 'margit'); sim.setPlayers([{ ...pose(6, -3), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
+  sim.start('arena', 'ostrey'); sim.setPlayers([{ ...pose(6, -3), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
   for (let i = 0; i < 60; i++) sim.tick(1 / 60);
   const e = sim.inspect().Game.duel;
   assert.equal(e.netTarget, 'a', 'server selects nearby player');
@@ -108,20 +108,20 @@ function peer(url, origin) {
     const a = peer(url, origin); peers.push(a); const wa = await a.join();
     const b = peer(url, origin); peers.push(b); const wb = await b.join();
     assert.equal(wa.leader, wa.id); assert.equal(wb.leader, wa.id);
-    b.send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+    b.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
     assert.match((await b.next('error')).message, /leader/);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
     const start = await a.next('start'); await b.next('start');
     const epoch = start.session.epoch;
     for (const p of [a, b]) { p.send({ type: 'ready', epoch }); p.send({ type: 'pose', epoch, pose: pose() }); }
     await a.next('frame', m => m.frame.time > 0 && m.frame.enemies[0].group === 2);   // both in: Margit is scaled for two
     const full = app.sim.inspect().Game.duel.def.hp;
     assert.ok(full > 3200, 'two players fight a longer bar than one');
-    a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/margit', attack: 'light', charge: 0, swing: 'one' });
-    a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/margit', attack: 'light', charge: 0, swing: 'one' });
+    a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
+    a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     await a.next('frame', m => m.frame.enemies[0].group === 2 && m.frame.enemies[0].hp < full);
     assert.equal(app.sim.inspect().Game.duel.hp, full - 24, 'duplicate contacts do not damage twice');
-    b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/margit', attack: 'heavy', charge: 0, swing: 'old' });
+    b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/ostrey', attack: 'heavy', charge: 0, swing: 'old' });
     const c = peer(url, origin); peers.push(c); await c.join();
     assert.equal((await c.next('start')).session.epoch, epoch, 'late join gets current session');
     c.send({ type: 'ready', epoch });

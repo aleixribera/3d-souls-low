@@ -2,10 +2,8 @@
 const assert = require('node:assert/strict');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
-const campaign = process.env.ARENA_CAMPAIGN || 'lands';
-assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');
-const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere']
-  : ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
+const campaign = 'ashmere';   // the one road since v7.54.0
+const chapters = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere'];
 const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`;   // the road's last level (finale.js storeKey)
 (async () => {
   const app = createServer({ dev: true });
@@ -20,7 +18,7 @@ const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
-      for (const suffix of ['', '.lands']) localStorage.setItem('combatArena.story' + suffix, 'offline-save-sentinel');
+      localStorage.setItem('combatArena.story', 'offline-save-sentinel');
     }, name);
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
@@ -98,8 +96,7 @@ const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`
       assert.equal(await p.evaluate(() => multiplayer.info.session.epoch), epoch, 'credits keep the party session');
       assert.equal(await p.locator('#lobbyNext').isDisabled(), true, 'last chapter cannot wrap');
       assert.equal(await p.evaluate(() => Game.story), false);
-      assert.deepEqual(await p.evaluate(() => ['', '.lands'].map(s => localStorage.getItem('combatArena.story' + s))),
-        Array(2).fill('offline-save-sentinel'), 'co-op never writes solo saves');
+      assert.equal(await p.evaluate(() => localStorage.getItem('combatArena.story')), 'offline-save-sentinel', 'co-op never writes solo saves');
       assert.equal(await p.evaluate(key => localStorage.getItem(key), completionKey), null, 'co-op never writes solo completion');
     }
     const late = await player('Late friend');

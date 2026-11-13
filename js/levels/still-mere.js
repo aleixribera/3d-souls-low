@@ -1,7 +1,7 @@
 'use strict';
 // Level 14: the Still Mere (v7.51.0), chapter 14 of the Story (STORY.md; LORE.md 10j): the one place in Thrale where
 // fire never took, a frozen lake under a white tree. The player carries the dying Ember down to drown it. Rough (PLAN.md
-// stage 3, track A): built from the old second road's last level (js/levels/lands/haligtree.js) as raw material, its
+// stage 3, track A): built from the old second road's last level (removed in v7.53.0) as raw material, its
 // layout kept, every name and character of that road gone; no rot and no scarlet flowers: shallow water where the rot
 // lay, and the Drowned under it. The light comes from the west, so what the player walks toward is front-lit.
 // x east, z north; floors fall 24 -> 16 -> 0.

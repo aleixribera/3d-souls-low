@@ -3,7 +3,7 @@
 const AUTO_QUALITY_SCENE = {
   actors: [
     { model: 'wanderer', scale: 1, bulk: 1, x: 0, z: 3 },
-    { model: 'godrick', scale: 2.1, bulk: 1, x: 0, z: -2 },
+    { model: 'oldOstrey', scale: 2.1, bulk: 1, x: 0, z: -2 },
     { model: 'hollowSoldier', scale: 1, bulk: 1, x: -4, z: 0 },
     { model: 'hollowSoldier', scale: 1, bulk: 1, x: 4, z: 0 },
     { model: 'hollowSoldier', scale: 1, bulk: 1, x: -3, z: -5 },

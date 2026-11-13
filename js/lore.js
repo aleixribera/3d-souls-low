@@ -147,7 +147,7 @@ const lore = (() => {
     L = data; group = new THREE.Group(); scene.add(group);
     st = { npcs: [], inscriptions: [], scenes: [], talk: null, near: null, clock: 0 };
     for (const D of L.npcs || []) {   // one or more places she waits in this level (Level 5 has two)
-      const N = D.who ? LORE.cast[D.who] : LORE.npc;   // v7.0: a level's NPC may be another of the cast (Seren, in the Lands Between)
+      const N = D.who ? LORE.cast[D.who] : LORE.npc;   // v7.0: a level's NPC may be another of the cast (LORE.cast, by `who`)
       const rig = new Rig({ scale: N.scale, bulk: N.bulk, color: 0x5a6a7a, weapon: 'sword', model: N.model });
       if (rig.weapon) rig.weapon.visible = false;
       if (D.spirit) ghost(rig, C.spirit.opacity);   // only her grace is left: a translucent, faintly golden shape

@@ -28,7 +28,7 @@ const { createServer } = require('../server/index.cjs');
       try {
         // Keep combat/credits out of this check while running the actual online update.
         Game.mode = 'ending';
-        for (const def of [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS, ...TRAINING_DEFS]) {
+        for (const def of [...ENEMY_DEFS, ...TRAINING_DEFS]) {
           const e = new Enemy(def, { behavior: 'gated', x: 0, y: 0, z: 0, yaw: 0 });
           Game.enemies = [e];
           try {

@@ -58,12 +58,12 @@ const until = async (test, message, limit = 4000) => {
   };
   try {
     const a = await add('Leader'), b = await add('Friend');
-    a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'lands' });
+    a.send({ type: 'control', action: 'start', kind: 'level', id: 'windward-moor' });
     const { session } = await a.next('start');
     ready(a, session); ready(b, session); await b.next('frame', m => m.frame.time > 0);
-    const { Game, world } = app.sim.inspect(), zone = Game.zones.find(z => z.id === 'zone-heath');
+    const { Game, world } = app.sim.inspect(), zone = Game.zones.find(z => z.id === 'zone-moor');
     for (const e of zone.actors) { e.hp = 0; e.die(); }
-    const boss = Game.enemies.find(e => e.baseDef.id === 'margit');
+    const boss = Game.enemies.find(e => e.baseDef.id === 'ostrey');
     boss.hp -= 24; const bossShare = boss.hp / boss.def.hp;   // her share of a bar that grows with the group (v7.35.0)
     await b.next('frame', m => m.frame.gates.some(g => g.id === zone.id && g.open));
 

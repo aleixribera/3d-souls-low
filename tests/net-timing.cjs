@@ -64,7 +64,7 @@ assert.deepEqual(decoder.decode(cameraFrame).players[0].view, camera, 'rendered 
 const deadFrame = encoder.encode(frame, [{ id: 'player', name: 'Friend', hp: 0, view: null }]);
 assert.equal(decoder.decode(deadFrame).players[0].view, null, 'death clears camera data');
 const left = decoder.decode(encoder.encode(frame, [])); assert.equal(left.players.length, 0, 'disconnect removes a player by ID');
-sim.start('arena', 'margit'); const restarted = encoder.encode(sim.frame(false), []);
+sim.start('arena', 'ostrey'); const restarted = encoder.encode(sim.frame(false), []);
 assert.equal(restarted.full, true); assert.equal(decoder.decode(restarted).frame.enemies.length, 1, 'new epoch clears old actors');
 const raw = Buffer.byteLength(JSON.stringify(first)), packed = zlib.deflateRawSync(JSON.stringify(first), { level: C.compressionLevel }).length;
 assert.ok(packed < raw / 3, 'Funnel traffic compresses efficiently');

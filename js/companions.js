@@ -36,7 +36,7 @@ const companions = (() => {
       return;
     }
     const live = game.enemies.filter(e => e.alive());
-    // Like an online ally, Finn may enter an encounter after the human seals its fog.
+    // Like an online ally, a companion may enter an encounter after the human seals its fog.
     // Only his own input/physics see this entry allowance; the human and enemies retain the closed gate.
     const entry = [];
     for (const s of game.level.sealed || []) if (s.fog) {
@@ -55,7 +55,7 @@ const companions = (() => {
     }
   }
   // Hold the actual attack target through its wind-up/active/recovery. Separate crowds keep the
-  // enemies fighting Finn from circling or throttling the ones fighting the human elsewhere.
+  // enemies fighting a companion from circling or throttling the ones fighting the human elsewhere.
   function updateEnemies(game, dt) {
     const c = game.companion, living = actors(game).filter(p => p.alive());
     // An attack started outside the crowd pass (a perch pounce woken by an alert) still counts on its target's clock.

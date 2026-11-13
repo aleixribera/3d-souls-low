@@ -3,10 +3,10 @@
 (() => {
   const { test, expect, sim } = __arena.tests;
   const start = id => { Game.startLevel(id); Game.loading = 0; sim.begin(); };
-  test('Guiding light: all twenty-two campaign levels have connected bonfire references and floor-safe paths', () => {
+  test('Guiding light: all fourteen story levels have connected bonfire references and floor-safe paths', () => {
     expect.ok(validateBonfireGuidance().length === 0, validateBonfireGuidance().join(' | '));
-    const levels = [...LEVELS, ...LANDS_LEVELS].filter(L => L.bonfires.length > 1);
-    expect.ok(levels.length === 22, 'all campaign levels with multiple bonfires');
+    const levels = LEVELS.filter(L => L.bonfires.length > 1);
+    expect.ok(levels.length === 14, 'all story levels with multiple bonfires');
     for (const L of levels) {
       const routes = BONFIRE_GUIDANCE[L.id], TR = L.layout === 'rooms' ? terrainFor(L) : null;
       expect.ok(routes.length === L.bonfires.length - 1, `${L.id}: links every bonfire`);
@@ -43,7 +43,7 @@
         expect.ok(positions.every((v, i) => s.mesh.geometry.attributes.position.array[i] === v), `${q}: fixed pocket positions`);
         expect.ok(before.join() === [model.x, model.y, model.z, model.hp].join(), `${q}: drawing does not move or damage the player`);
       }
-      elden.start('margit'); expect.ok(bonfireGuidance.info() === null, 'no route leaks into duels');
+      Game.startFight('ostrey'); expect.ok(bonfireGuidance.info() === null, 'no route leaks into duels');
     } finally { settings.graphics = saved; applySettings(); }
   });
   test('Guiding light: coloured attacks light the world with fixed bounded lights on every preset', () => {
@@ -51,7 +51,7 @@
     try {
       sim.begin();
       for (const q of ['low', 'high', 'ultra']) {
-        visuals.setQuality(q); elden.start('margit'); Game.loading = 0;
+        visuals.setQuality(q); Game.startFight('hollis'); Game.loading = 0;
         const e = Game.enemies[0], a = e.baseDef.attacks.find(a => a.spectral);
         e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup / 2;
         e.x = Game.player.x + 3; e.z = Game.player.z; e.rig.root.visible = true;
@@ -61,7 +61,7 @@
         expect.ok(info.lights.some(l => l.visible && l.intensity > 0), `${q}: spectral weapon casts light`);
         expect.ok(lights.every(l => !l.castShadow), `${q}: no cube shadow maps`);
         expect.ok(lights.some(l => l.intensity > 0 && l.color.r > l.color.b), `${q}: golden light colour`);
-        elden.start('margit'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on same-arena retry`);
+        Game.startFight('hollis'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on same-arena retry`);
         Game.startLevel('long-hall'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on level change`);
       }
     } finally { settings.graphics = saved; applySettings(); }
@@ -81,7 +81,7 @@
     expect.ok(bonfireGuidance.info().route === null, 'a restored final checkpoint has no backwards trail');
   });
   test('Guiding light: lightning illuminates surfaces directionally and clears on changing realms', () => {
-    start('stormveil'); realms.strike();
+    start('saltgrave'); realms.strike();
     // Realm weather runs on the render clock, with the light in the same frame.
     Game.render(1, CONFIG.step); Game.render(1, CONFIG.step);
     expect.ok(effectLighting.info().storm > 0, 'a directional flash reaches world and character materials');

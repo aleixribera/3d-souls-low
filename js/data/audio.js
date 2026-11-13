@@ -251,7 +251,7 @@ const AUDIO = {
       { noise: 'brown', filter: { type: 'lowpass', freq: 500, to: 120 }, at: 0.35, a: 0.02, d: 1.6, gain: 1 },
       { wave: 'sine', freq: 50, to: 26, at: 0.35, a: 0.004, d: 1.3, gain: 0.8 },
     ] },
-    // v7.0, the Lands Between: thunder far off over Stormhill and Farum Azula (a crack, then a long rolling rumble), and the
+    // v7.0: thunder far off (a level's realm `lightning`) (a crack, then a long rolling rumble), and the
     // scarlet rot eating at the feet (a wet hiss under a low burn).
     thunder: { bus: 'sfx', priority: 1, cooldown: 1.5, max: 2, verb: 0.7, heat: 0.2, jitter: 300, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2400, to: 600, q: 0.5 }, a: 0.002, d: 0.35, gain: 0.25 },

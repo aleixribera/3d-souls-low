@@ -40,31 +40,6 @@ const { createServer } = require('../server/index.cjs');
     assert.ok(cameraResult.reset, 'a new body clears the previous camera impulse');
     console.log('Camera: identical half-second response at 30/60/144 Hz, unchanged simulation camera, clean restart.');
 
-    const feedback = await page.evaluate(() => {
-      Game.startLevel('stormhill'); Game.loading = 0;
-      settings.cameraMotion = false; Game.render(1, 0); settings.cameraMotion = true; Game.render(1, 0);
-      const c = Game.companion.body, enemy = Game.enemies[0], shakes = {};
-      for (const type of ['parry', 'execution', 'executionPull', 'land']) {
-        Game.shake = Game.shakeAmp = 0;
-        events.emit(type, { player: c, enemy, target: enemy, at: { x: c.x, y: c.y, z: c.z }, exit: { x: c.x, y: c.y, z: c.z },
-          x: c.x, y: c.y, z: c.z, fx: PLAYER_DEF.moveset.attacks.jumpHeavy.air.fx });
-        shakes[type] = Game.shake === 0;
-      }
-      Game.render(1, CONFIG.step);
-      const spring = Object.values(cameraFeel.state()).every(v => v === 0);
-      const original = audio.play, sounds = [];
-      try {
-        audio.play = (id, options) => sounds.push({ id, pos: options && options.pos });
-        events.emit('itemUsed', { player: c, item: 'flask' }); events.emit('dodge', { player: c });
-        events.emit('itemUsed', { player: Game.player, item: 'flask' });
-      } finally { audio.play = original; }
-      return { shakes, spring, sounds, position: { x: c.x, y: c.y, z: c.z } };
-    });
-    for (const [event, quiet] of Object.entries(feedback.shakes)) assert.ok(quiet, event + ' belongs to Finn');
-    assert.ok(feedback.spring);
-    assert.deepEqual(feedback.sounds.slice(0, 2).map(s => s.pos), [feedback.position, feedback.position]);
-    assert.equal(feedback.sounds[2].pos, null);
-    console.log('Companion feedback: parry/critical/landing isolation and spatial flask/dodge sounds passed.');
 
     const output = '.scratch/polish'; fs.mkdirSync(output, { recursive: true });
     const particles = await page.evaluate(() => {
@@ -101,7 +76,7 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(particles.count, 100); assert.equal(particles.submissions, 1);
     assert.equal(particles.savedSubmissions, 99, 'the same 100 visible particles save 99 drawing submissions');
     for (const key of ['warm', 'live', 'color', 'fades', 'expires', 'bounded', 'reset']) assert.ok(particles[key], key);
-    fs.writeFileSync(`${output}/results.json`, JSON.stringify({ cameraResult, feedback, particles }, null, 2));
+    fs.writeFileSync(`${output}/results.json`, JSON.stringify({ cameraResult, particles }, null, 2));
     console.log('Particles: 100 cubes in one submission, prepared shader, individual colour/fade, bounded pool and clean expiry/reset.');
 
     const navigation = await page.evaluate(() => {
@@ -122,7 +97,7 @@ const { createServer } = require('../server/index.cjs');
     console.log('Navigation: consuming the final waypoint and following again never dereferences an empty route.');
 
     const thunder = await page.evaluate(() => {
-      Game.startLevel('farum-azula'); Game.loading = 0;
+      Game.startLevel('torn-abbey'); Game.loading = 0;
       const originalPlay = audio.play, originalTimer = window.setTimeout, originalClear = window.clearTimeout;
       const callbacks = new Map(), cancelled = new Set(), sounds = [];
       try {

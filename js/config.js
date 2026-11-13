@@ -135,12 +135,12 @@ const CONFIG = {
   // screen lineBase + perChar per character (clamped to lineMin..lineMax), then lineGap of empty screen.
   lore: { talkRange: 3.2, readRange: 2.2, leaveRange: 9, faceRange: 8, floorGap: 2.5, threatRange: 25, sceneRange: 38, glowRange: 8,
           lineBase: 1.6, perChar: 0.058, lineMin: 2.4, lineMax: 8.5, lineGap: 0.45, turnRate: 4, solidPad: 0.45,
-          // v7.0: an NPC placed as a `spirit` (Seren after the Erdtree burns): translucent, hovering, a pale gold glow behind her.
+          // v7.0: an NPC placed as a `spirit` (a ghost): translucent, hovering, a pale gold glow behind it.
           spirit: { opacity: 0.5, halo: 0xffe2a0, haloSize: 4.2, haloOpacity: 0.5, hover: 0.08 } },
   // Hazard floors (v7.0, a level's `hazards`, js/game.js): the `hazard` event (sound, a flash of the health bar) every `tick` s.
   hazards: { tick: 0.5 },
   // saveKeys: one save slot per campaign of STORIES (js/data/story.js); saveKey is Ashmere's, kept for old saves.
-  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story', lands: 'combatArena.story.lands' }, saveVersion: 1, titleTime: 3.2 },
+  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story' }, saveVersion: 1, titleTime: 3.2 },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -223,12 +223,11 @@ const CONFIG = {
         // Reactions (an attack's `when`, v5.3): `behind` past this angle (rad) from its facing; `flank` between these
         // angles at its left (rad, + is left).
         reactions: { behind: 2.2, flank: [0.6, 1.9], shielded: 0.8, struck: 0.6 } },
-  // Elden Ring Bosses mode (v5.3, js/elden.js; the boss list is ELDEN_BOSSES in js/data/elden-bosses.js): `victoryTime` s
-  // of the victory banner before Retry / Boss select shows (v5.4); `deathMenu` s after the death before the same choice.
-  // Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light `intensity`.
-  // Flame breath (v5.4, js/flame.js, drawing only): jet colours (outer, middle, core), `opacity`, `flicker` (0..1 of the
-  // width), fades (s), the light, embers per second along it, and the bursts as the jet burns and the grafted head appears.
-  elden: { flasks: 8, victoryTime: 5, deathMenu: 3.6, victoryHint: 'Retry or choose another boss…',
+  // Boss powers: the tuning of the opt-in powers some bosses' attacks carry (`destined`, `spectral`, `breath`, `blink`,
+  // `sigil`). Spectral (golden) weapons: `fadeIn` / `fadeOut` s as they appear and vanish, their `color`, `glow` and light
+  // `intensity`. Flame breath (v5.4, js/flame.js, drawing only): jet colours (outer, middle, core), `opacity`, `flicker`
+  // (0..1 of the width), fades (s), the light, embers per second along it, and the bursts as the jet burns and a head appears.
+  bossPowers: {
            // Destined Death (v5.8, Maliketh; an attack's `destined`, js/player.js): an unblocked hit cuts the player's maximum
            // health by `cut` for `time` s (a new hit restarts it, never stacks) and drains `drain` of the maximum over `drainTime` s.
            destined: { cut: 0.12, time: 15, drain: 0.04, drainTime: 3 },
@@ -243,8 +242,6 @@ const CONFIG = {
                     light: 4, lightRange: 9, embers: 30, emberBurst: { color: 0xff7a28, count: 3, speed: 3 },
                     revealBurst: { color: 0xff6a20, count: 40, speed: 6 },
                     concealBurst: { color: 0xc8b890, count: 50, speed: 5 } },   // a phase's `conceal` (v5.5, Godfrey)
-           // Scarlet rot (v5.9, Malenia, js/scarlet.js): the crimson burst at her chest when a blow of hers heals her.
-           scarlet: { stealBurst: { color: 0xff2a3a, count: 14, speed: 3 } },
            // Holy light (v5.7, Radagon, js/holy.js): `blinkTime` s a teleport (a hit's `blink`) takes unseen; its flash (`burst`,
            // a ring `ring` m wide that fades in `ringTime` s); a hit's `sigil` rune glows on the floor through its wind-up,
            // brightening to `sigilPeak` as it nears the strike, then erupts in a pillar `pillar` m tall for `pillarTime` s.
@@ -513,7 +510,7 @@ const CONFIG = {
     // Embers (atmosphere `embers` 0..2): at most `max` sparks in a box round the camera.
     embers: { max: 700, box: [32, 16, 32], size: 0.06, maxPx: 5, color: 0xff7a30, boost: 2.4 },
     // The Ultra preset (quality.ultra). Rendering (js/ultra-post.js) and effects (js/ultra-fx.js), drawing only.
-    // The Lands Between's set pieces (v7.0, a level's `realm`, js/realms.js; drawing only). Counts follow the preset:
+    // A level's set pieces (v7.0, its `realm`, js/realms.js; drawing only). Counts follow the preset:
     // particles x `particles` (x `ultraBoost` on Ultra), scenery x `lowShare` on Low and x `ultraBoost` on Ultra.
     // `coverRate`: how fast weather fades under a roof. tree: per kind its bark, crown and glow colours, its haze, the
     // trunk's share of the height, boughs and crown blobs per bough, the cap over the top, veins of light in the bark.
@@ -615,13 +612,11 @@ const CONFIG = {
       // catches it. Enemy trails take their boss colour from `trailColors` (by enemy id), else `enemy` / roll-only blue.
       trails: { samples: 26, sub: 4, life: 0.16, player: 0xfff0d0, playerBoost: 1.8, enemy: 0xff9a6a, enemyBoost: 1.5, rollOnly: 0x6ac0ff, opacity: 0.85,
                 max: 8 },
-      trailColors: { margit: 0xffd27a, morgott: 0xffc060, radagon: 0xffd890, godrick: 0xff8a30, maliketh: 0xff3a3a,
-                     malenia: 0xff4a38, godfrey: 0xffb050, crucibleKnight: 0xffc880, varn: 0xff7a3a },
+      trailColors: { varn: 0xff7a3a },
       // Boss auras: motes per second round a living boss, in its colour (`auraColors` by enemy id, else `aura`); a burning
       // (`ignite`) phase adds rising embers. `stepDust`: big bodies (scale >= `from`) kick dust as they move fast.
       aura: { rate: 22, color: 0xffd8a0, ember: 0xff6a20, igniteRate: 55, size: 1.1 },
-      auraColors: { margit: 0xffd27a, morgott: 0xffc060, radagon: 0xffe0a0, godrick: 0xff9a40, maliketh: 0xff2a2a,
-                    malenia: 0xff5040, godfrey: 0xffc070, crucibleKnight: 0xffd090, varn: 0xff8040 },
+      auraColors: { varn: 0xff8040 },
       stepDust: { from: 1.4, speed: 2.2, every: 0.32 },
       // Fire: torches, braziers and bonfires drawn as rising procedural flame instead of cones.
       fire: { width: 2.2, height: 1.5, boost: 2.6, core: 0xffe6a0, mid: 0xff8a2a, edge: 0xb02a08 },

@@ -16,13 +16,13 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
 // ---- Shared simulation: wire ids, reach, rate and riposte -----------------------------------------
 {
   const sim = createSimulation();
-  sim.start('arena', 'margit');
+  sim.start('arena', 'ostrey');
   const { Game } = sim.inspect(), e = Game.duel, level = Game.level, enemies = Game.enemies;
   sim.setPlayers([{ ...pose(e.x - 1.5, e.z), id: 'a' }]);
   for (const id of PROTO) {
     assert.equal(sim.hit('a', { enemy: e.netId, attack: id, charge: 0 }), false, 'prototype attack id ' + id);
     assert.throws(() => sim.start('arena', id), err => err.rejected === true, 'prototype opponent ' + id);
-    assert.throws(() => sim.start('arena', 'margit', [id]), err => err.rejected === true, 'prototype partner ' + id);
+    assert.throws(() => sim.start('arena', 'ostrey', [id]), err => err.rejected === true, 'prototype partner ' + id);
     assert.throws(() => sim.gauntlet(undefined, id), err => err.rejected === true, 'prototype boss run ' + id);
     assert.equal(sim.playerAttack(id), null, 'prototype pose attack ' + id);
     assert.equal(sim.beginExecution('a', { enemy: id }), false);
@@ -159,7 +159,7 @@ function connect(url, origin, headers = {}) {
     a.send({ type: 'control', action: 'start', kind: 'arena', id: '__proto__' });
     assert.match((await a.next('error')).message, /Unknown level or opponent/);
     assert.equal(app.session, null);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
     const { session } = await a.next('start');
     a.send({ type: 'control', action: 'start', kind: 'arena', id: 'toString' });
     assert.match((await a.next('error')).message, /Unknown level or opponent/);
@@ -168,7 +168,7 @@ function connect(url, origin, headers = {}) {
     a.send({ type: 'pose', epoch: session.epoch, pose: pose(0, 0, { attack: 'constructor', state: 'attack' }) });
     a.send({ type: 'ping' }); await a.next('pong');
     assert.equal(app.clients.get(wa.id).pose.attack, null, 'relayed poses carry only real attack ids');
-    a.send({ type: 'hit', epoch: session.epoch, seq: 1, enemy: 'duel/margit', attack: '__proto__', charge: 0, swing: 's1' });
+    a.send({ type: 'hit', epoch: session.epoch, seq: 1, enemy: 'duel/ostrey', attack: '__proto__', charge: 0, swing: 's1' });
     a.send({ type: 'execute', epoch: session.epoch, seq: 2, enemy: 'constructor' });
     assert.equal((await a.next('execution')).accepted, false);
     assert.ok(Number.isFinite(app.sim.inspect().Game.duel.hp));

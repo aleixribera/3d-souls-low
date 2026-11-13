@@ -5,15 +5,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - Kit parts no model uses since v7.28.0/v7.29.0: `quiver`, `archerHarness`, `cowl`, `fittedDoublet`, `wolfMuzzle`,
   `beastEars`, `furClumps`, and since v7.30.0 `wispHat`, `wispBeard`, `wispMantle`, `wispSleeve`, `wispRobe`, `wispTassels`
   and since v7.31.0 `scionMask`, `scionLimbs`, and since v7.32.0 `eyePatch`, `openCollar`, `featherMantle`, `waistSash`,
-  `borderedSkirt`, `boot`, and since v7.33.0 `crystalCluster` (kit-identity.js, kit-premium.js, kit-realms.js,
-  bodykit.js). Remove once stage 1 is done, with any others left unused.
-- The `beastFur` texture projects as vertical streaks that read like wood grain on the Beastman, and is brown where its
-  brief says grey. A texture pass (Claude-only) after stage 1.
+  `borderedSkirt`, `boot`, and since v7.33.0 `crystalCluster` (kit-identity.js, kit-premium.js, bodykit.js; the ones in
+  kit-realms.js left with it in v7.53.0). Remove once stage 1 is done, with any others left unused.
 - The Antlered Hunger's hide (`beastHide`, the `bark` pattern) reads as gnarled wood more than a stag's hide (v7.49.0,
   `docs/scorecard/hunger-lab.jpg`); a hide or fur texture of its own in the same texture pass. Ysolde is 3,504
   triangles, over the 3,000 enemy budget (load warning).
-- Models over budget seen in the load warnings: seren 3,544, ashenWarrior 7,226, omenkin 8,562 (enemy budget 3,000).
-  All three belong to the old second road and leave at the swap (`PLAN.md` stage 3), so they get no Blender pass.
 - `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
   without the v7.34.0 change: flaky (pass 2, 2026-11-13).
 - Bots lose to bosses far more since v7.13.1 by design (bisected, pass 26): companions take greedy exchanges and forward
@@ -21,8 +17,10 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   nearly untouched. So the bot-duel numbers measure reckless companions, not a group of people; whether The Calling's
   fill-in bots should be steadier than the lobby's is the director's call. In `bot-duel` no human lives, so the bots
   are always in last-stand mode (turning it off changed little).
-- Group scaling counts everyone in the run, but the Lands road's solo companion Finn (Story mode) doesn't make a boss
-  scale; if a companion should, it's a `setGroup` call where companions spawn (pass 6).
+- Group scaling counts everyone in the run, but a solo Story companion (`companion` on a road; none since Finn left with
+  the Lands in v7.53.0) doesn't make a boss scale; if one should, it's a `setGroup` call where companions spawn (pass 6).
+  The companion mechanic (`js/companions.js`) stays for Finn's return in the Pass (below); its browser test
+  (`companion-browser.cjs`) and polish-browser's companion-feedback check left with the Lands and want a fixture road.
 - The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
   no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
 - Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat
@@ -106,14 +104,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   (stand-ins: the Toll Wisp beardless in black with a glaive, its tall hat reading more ringer than abbess; the Rogue in
   an undyed cowl). Agathe is Maliketh's moves renamed, 4,000 HP (was 4,600); the robe shed and Black Blade reveal are
   gone, so nothing changes on her body at half health but the storm's light. No one has fought her by hand. The
-  Brothers borrow the Beastman's def at load (`js/data/bosses/agathe.js`): the swap must keep it or inline it.
+  Brothers fight with the Beastman's moves, kept as `BEASTMAN_MOVES` in `js/data/move-sources.js` (v7.53.0).
 - Chapter 13, the Root of the Ember (v7.50.0, pass 25), rough; its second step: the Kindling Tree's and the Rootbound's
   own figures (stand-ins: the Antlered Hunger, chapter 6's boss, stood upright in red-gold wood, so two chapters share one
   body; the Hollow Soldier in bark, still holding the ruined sword in bark). The tree is Radagon's moves renamed, 4,200 HP
   (was 5,200); its marks and risings burn red-gold (`holyLight`), but the mark's shape is still the old road's crossing
   arcs and the thrown thorns are still gold spears: both want an ember shape (a root knot, a thorn). No one has fought it
-  by hand. The Rootbound borrow the Golden Zealot's def at load (`js/data/bosses/kindling-tree.js`): the swap must keep
-  it or inline it.
+  by hand. The Rootbound fight with the Golden Zealot's moves, kept as `ZEALOT_MOVES` in `js/data/move-sources.js`
+  (v7.53.0).
 - Chapter 14, the Still Mere (v7.51.0, pass 27), rough; its second step: the King's Blade's own figure (stand-in: the
   player's wanderer in ash, so the shield it guards with is still slung on its back; it wants the round shield on the
   arm, and the champion's look of `STORY.md`), a roll or sidestep (no enemy rolls yet: an opt-in evade would make "it
@@ -124,6 +122,10 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   breaks into ash, a sword of boxes left standing: `js/finale.js` `updateEnding`), not the one in `STORY.md` (it kneels
   in the shallows, the scarf floats, the player holds the Ember under and the ice closes): an opt-in per-level death
   scene, and a Blender sword for the one left standing (`docs/scorecard/ending-desktop-kneel.jpg`). The fourth card and
-  `STORY.md`'s credits name Finn, who doesn't walk the Ashmere road yet (companions are per road, `LANDS_STORY.companion`);
+  `STORY.md`'s credits name Finn, who doesn't walk the Ashmere road yet (companions are per road, a road's `companion`);
   once he does, the credits list him on their own (`R.companion`). STORY COMPLETE's subtitle is the road's old
   `menuSub`, THE GAOLER KING (`docs/scorecard/ending-desktop-complete.jpg`).
+- Opt-in mechanics no content uses since the Lands left (v7.54.0): `lifesteal` (Malenia), hazard floors (`hazards`,
+  the rot) and flame `breath` (Godrick). Their tests now lay their own fixture (a patched def, a rot rect in the Long
+  Hall). Give one to a new boss or remove each with its test. The seven move-source files in `js/data/bosses/`
+  (Margit to Radagon, no figure, in no list) go once their story bosses have moves of their own (track A).

@@ -1,7 +1,7 @@
 'use strict';
 // Level 11: Aurel in Ash (v7.46.0), chapter 11 of the Story (STORY.md; LORE.md 10g): the same city burning. The steward
 // is dead and the city would not be kept without him; the hunger, refused, burns what it cannot keep. Rough (PLAN.md
-// stage 3, track A): built from the old second road's burned capital (js/levels/lands/ashen-capital.js) as raw material,
+// stage 3, track A): built from the old second road's burned capital (removed in v7.53.0) as raw material,
 // its layout kept, every name and character of that road gone; no great tree, only the Ember's root, charred, arching
 // up behind the plaza and the throne. x east, z north.
 //   The ash gate (bonfire 1, Ysolde), the ash street (Cinderfolk, burned and still walking; some lie in the ash until

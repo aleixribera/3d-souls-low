@@ -58,7 +58,7 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
       await shot(page, `level-${id}`);
       console.log(id, JSON.stringify(report.levels[id]));
     }
-    if (want('bosses')) for (const id of await page.evaluate(() => [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].filter(isBossDef).map(d => d.id))) {
+    if (want('bosses')) for (const id of await page.evaluate(() => ENEMY_DEFS.filter(isBossDef).map(d => d.id))) {
       await page.evaluate(id => Game.startFight(id), id); await settle(page, 500);
       // The player stands at fighting distance on the boss's lit side, every body frozen mid-idle, locked on.
       await page.evaluate(() => {

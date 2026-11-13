@@ -40,7 +40,7 @@ async function peer(origin) {
   const flush = async p => { p.send({ type: 'ping' }); await p.next('pong'); };
   try {
     const a = await add(), b = await add();
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
     session = (await a.next('start')).session; await b.next('start');
     assert.equal(session.teamWipeOnly, true);
     ready(a); ready(b); await flush(b);
@@ -59,7 +59,7 @@ async function peer(origin) {
     const oldEpoch = session.epoch;
     session = (await a.next('start')).session; await b.next('start');
     assert.ok(session.epoch > oldEpoch, 'full wipe starts a fresh shared attempt');
-    assert.equal(session.id, 'margit');
+    assert.equal(session.id, 'ostrey');
     assert.equal(app.sim.inspect().Game.duel.hp, app.sim.inspect().Game.duel.def.hp, 'boss health resets');
     ready(a); ready(b); await flush(b);
     assert.equal(app.clients.get(a.id).pose.hp, 120, 'new attempt restores the party');

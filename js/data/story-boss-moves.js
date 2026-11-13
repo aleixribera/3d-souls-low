@@ -1,5 +1,5 @@
 'use strict';
-// One / two / two additional moves for the skeleton / captain / Warden, borrowed from Elden Ring Bosses.
+// One / two / two additional moves for the skeleton / captain / Warden, borrowed from the move sources (js/data/bosses/).
 // Load after those definitions and before validation. Copy nested data so story tuning never changes a source boss.
 // Timings, tracking, movement and key poses come from the source; damage is tuned to the story encounter.
 {

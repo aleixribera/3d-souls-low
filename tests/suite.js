@@ -1440,8 +1440,8 @@
   });
 
   test('lock-on: melee fighters with projectile moves remain automatic targets in every lock path', () => {
-    const mixed = [...A.ENEMY_DEFS, ...A.ELDEN_BOSS_DEFS].filter(d => d.autoLock !== false && d.attacks.some(a => a.projectile));
-    expect.ok(mixed.some(d => d.id === 'varn') && mixed.some(d => d.id === 'margit'), 'covers story and Elden Ring bosses');
+    const mixed = A.ENEMY_DEFS.filter(d => d.autoLock !== false && d.attacks.some(a => a.projectile));
+    expect.ok(mixed.some(d => d.id === 'varn') && mixed.some(d => d.id === 'ostrey'), 'covers the story\'s bosses');
     for (const d of mixed) {
       const e = retargetRange([['mixed', d.id, 16, 0, true]]).mixed;
       // Some bosses gain their projectile later. Eligibility follows the entity, across phase changes.
@@ -1711,7 +1711,8 @@
     expect.ok(d.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
   });
 
-  // ---- Story boss moves borrowed from the existing Elden Ring bosses -------------------------------------------
+  // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
+  const MOVE_SOURCES = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.53.0
   const STORY_BOSS_MOVES = [
     { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
     { id: 'pillagerCaptain', level: 'burning-town', hp: 1800, total: 5, added: 2 },
@@ -1734,7 +1735,7 @@
   });
   test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
     for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
-      const source = A.ENEMY_BY_ID[a.origin.enemy].attacks.find(s => s.id === a.origin.attack);
+      const source = MOVE_SOURCES.find(d => d.id === a.origin.enemy).attacks.find(s => s.id === a.origin.attack);
       expect.ok(source && a !== source && a.hits !== source.hits && a.box !== source.box && a.tracking !== source.tracking, `${a.id}: independent copy`);
       expect.ok(a.pose === source.pose && JSON.stringify(a.tracking) === JSON.stringify(source.tracking) && a.recovery === source.recovery, `${a.id}: source animation and timing`);
       expect.ok(!a.followUps, `${a.id}: no branches into the source boss's other moves`);
@@ -1794,7 +1795,7 @@
     expect.ok(A.LEVEL_3.id === 'burning-town' && A.LEVELS[at - 1] === A.LEVEL_2 && A.LEVELS[at + 1] === A.LEVEL_4, `order: ${names.join(' | ')}`);
     expect.ok(A.LEVEL_3.name === 'Level 3: The Burning Town' && A.LEVEL_4.name === 'Level 4: The Tower', 'names');
     expect.ok(A.LEVEL_2.next === 'burning-town' && A.LEVEL_3.next === 'the-tower', 'Level 2 -> the town -> the Tower');
-    Game.showMenu('levelsAshmere');
+    Game.showMenu('levels');
     const shown = [...document.querySelectorAll('#menuList .menuBtn .n')].map(n => n.textContent);
     expect.ok(shown.indexOf('Level 3: The Burning Town') + 1 === shown.indexOf('Level 4: The Tower'), `menu: ${shown.join(' | ')}`);
     expect.ok(/sacked|burn/i.test(A.LEVEL_3.description) && /Tower/.test(A.LEVEL_3.completeHint), 'its story: the sacked town, then on to the Tower');
@@ -2664,589 +2665,6 @@
     expect.ok(d.alive(), 'the dummy never dies');
   }));
 
-  // ---- Elden Ring Bosses: Margit, the Fell Omen (v5.3) ------------------------------------------------------------
-  const startMargit = () => { A.elden.start('margit'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Elden: the main menu leads to the boss select, built from the boss list, with a way back', () => {
-    const main = Game.screens().arena.items.map(i => i.name);   // v7.0: inside the 1v1 Arena
-    expect.ok(main.includes('Elden Ring Bosses') && main.includes('Enemies'), `1v1 Arena menu: ${main.join(', ')}`);
-    const sel = Game.screens().elden.items;
-    expect.ok(sel.length === A.ELDEN_BOSSES.length + 1 && sel[0].name.startsWith('Margit, the Fell Omen') && sel[sel.length - 1].name === 'Back', 'one card per boss, then Back');
-    expect.ok(!A.ENEMY_DEFS.some(d => d.id === 'margit'), 'Margit is not in the Enemies list');
-  });
-  test('Elden: Margit loads in the Enemies arena with his name on the bar', () => {
-    const { e } = startMargit();
-    expect.ok(Game.kind === 'arena' && Game.level === A.ARENA && Game.eldenBoss === 'margit', 'a duel in ARENA');
-    expect.ok(e.def.name === 'Margit, the Fell Omen' && e.def.phaseId === 'omen' && e.hp === 3200, `bar: ${e.def.name}, ${e.hp}`);
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Margit, the Fell Omen', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Elden: every Margit strike leaves a roll\'s i-frames a margin; golden attacks cannot be parried', () => {
-    const D = A.ENEMY_BY_ID.margit;
-    for (const a of D.attacks) for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-    for (const a of D.attacks.filter(a => a.spectral && !a.projectile)) expect.ok(a.noParry, `${a.id}: golden, so not parryable`);
-    expect.ok(D.posture.parry * 2 >= D.posture.max && D.posture.parry < D.posture.max, 'two parries break his stance, one does not');
-  });
-  test('Elden: Margit\'s hits land and deal scaled damage; a roll goes through them', () => {
-    let { p, e } = startMargit(); faceOff(e, p, 2.5); quiet(e);
-    const hp0 = p.hp, thrust = e.def.attacks.find(a => a.id === 'caneThrust');
-    e.beginAttack(thrust); sim.until(() => e.state === ES.RECOVER || p.hp < hp0, 3);
-    expect.ok(hp0 - p.hp > 0 && hp0 - p.hp <= 30, `the staff stab hit for ${hp0 - p.hp}`);
-    ({ p, e } = startMargit()); faceOff(e, p, 2.5); quiet(e);
-    const hp1 = p.hp; e.beginAttack(thrust);
-    sim.until(() => e.state === ES.WINDUP && e.stateTime >= thrust.hits[0].startup - CONFIG.player.rollIFrames * 0.5, 3);
-    sim.press('roll'); sim.seconds(0.6);
-    expect.ok(p.hp === hp1, 'rolled through the stab');
-  });
-  test('Elden: at 60% Margit turns golden on the same bar and opens with the hammer', () => {
-    const { p, e } = startMargit(); sturdy(p); faceOff(e, p, 3);
-    e.hp = e.def.hp * 0.59; sim.step(2);
-    expect.ok(e.def.phaseId === 'golden' && Math.abs(e.hp - 3200 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    expect.ok(log.includes('bossPhase'), 'bossPhase event');
-    sim.until(() => e.attack && e.attack.id === 'hammerOpener', 4);
-    expect.ok(e.attack && e.attack.id === 'hammerOpener', 'the hammer opener came first');
-    expect.below(e.def.cooldown[1], A.ENEMY_BY_ID.margit.cooldown[1], 'shorter waits in phase 2');
-  });
-  test('Elden: standing behind Margit draws the tail; drinking at range draws a dagger', () => {
-    let { p, e } = startMargit(); sturdy(p); faceOff(e, p, 2);
-    e.setState(ES.CHASE); e.cooldown = 5;   // in the fight, and in no hurry to attack otherwise
-    sim.until(() => { p.x = e.x - Math.sin(e.yaw) * 2; p.z = e.z - Math.cos(e.yaw) * 2; return e.attack && e.attack.id === 'tailSwipe'; }, 4);   // the player keeps to his back
-    expect.ok(e.attack && e.attack.id === 'tailSwipe', 'tail swipe at the player behind');
-    ({ p, e } = startMargit()); sturdy(p); faceOff(e, p, 9); e.setState(ES.CHASE); e.cooldown = 5;
-    sim.step(1); sim.press('flask'); sim.until(() => e.attack && e.attack.id === 'daggerPunish', 2);
-    expect.ok(e.attack && e.attack.id === 'daggerPunish', `a dagger at the drinking player (player ${p.state})`);
-  });
-  test('Elden: backing off the charged overhead turns it into the running sweep', () => {
-    const { p, e } = startMargit(); sturdy(p); faceOff(e, p, 3); quiet(e);
-    const oh = e.def.attacks.find(a => a.id === 'caneOverhead'); e.beginAttack(oh); sim.step(2);
-    p.x = e.x + Math.sin(e.yaw) * 8; p.z = e.z + Math.cos(e.yaw) * 8;
-    sim.until(() => e.attack.id !== 'caneOverhead', 4);
-    expect.ok(e.attack.id === 'runningSweep', `became ${e.attack.id}`);
-  });
-  test('Elden: victory and death both offer Retry and Boss select', () => {
-    let { p, e } = startMargit();
-    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
-    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.mode} ${Game.screen}`);
-    expect.ok(Game.screens().eldenWon.items.map(i => i.name).join() === 'Retry,Boss select', 'win choices');
-    Game.screens().eldenWon.items[1].go();
-    expect.ok(Game.mode === 'menu' && Game.screen === 'elden' && !Game.eldenBoss, `back at the select: ${Game.screen}`);
-    ({ p, e } = startMargit());
-    p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
-    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
-    const items = Game.screens().eldenDeath.items.map(i => i.name);
-    expect.ok(items.join() === 'Retry,Boss select', items.join());
-    Game.screens().eldenDeath.items[0].go(); Game.loading = 0; sim.begin();
-    expect.ok(Game.mode === 'play' && Game.player.alive() && Game.duel.hp === 3200 && Game.eldenBoss === 'margit', 'retry: a fresh fight');
-    p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
-    Game.screens().eldenDeath.items[1].go();
-    expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
-  });
-  // ---- Elden Ring Bosses: Godfrey, First Elden Lord (v5.5) -------------------------------------------------------
-  const startGodfrey = () => { A.elden.start('godfrey'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Godfrey: on the boss select, loads at full bar with his axe, armour and lion', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Godfrey, First Elden Lord')), 'a card for Godfrey');
-    const { p, e } = startGodfrey();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'godfrey' && e.def.phaseId === 'lord' && e.hp === 4400, `bar ${e.def.phaseId} ${e.hp}`);
-    expect.ok(e.rig.slotMeshes.lion.visible && e.rig.weaponMeshes.every(m => m.visible), 'lion and axe shown');
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Godfrey, First Elden Lord', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Godfrey: nothing parried, the grabs unblockable, stomps along the floor, every strike under the roll', () => {
-    const D = A.ENEMY_BY_ID.godfrey, by = id => D.attacks.find(a => a.id === id);
-    for (const a of D.attacks) {
-      expect.ok(a.noParry, `${a.id}: unparryable`);
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-    }
-    for (const id of ['powerBomb', 'louxLunge']) expect.ok(by(id).rollOnly, `${id}: unblockable`);
-    for (const id of ['stomp', 'stompWide', 'regalRoar', 'doubleStomp', 'doubleStompWide', 'louxRage'])
-      for (const h of by(id).hits) expect.ok((h.box || by(id).box).ground, `${id}: a jump clears it`);
-    expect.ok(by('seroshShed').invulnerable, 'the change is untouchable');
-  });
-  test('Godfrey: every attack starts, strikes and ends without errors', () => {
-    for (const a of A.ENEMY_BY_ID.godfrey.attacks) {
-      const { p, e } = startGodfrey(); sturdy(p); faceOff(e, p, 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
-      expect.ok(struck, `${a.id} struck`);
-    }
-  });
-  test('Godfrey: phases at 78 / 40 / 20 %; at 40 % he becomes Hoarah Loux and casts off the axe after the opener', () => {
-    const { p, e } = startGodfrey(); sturdy(p); faceOff(e, p, 3); quiet(e);
-    e.hp = 4400 * 0.77; sim.step(2); expect.ok(e.def.phaseId === 'regal' && e.opener && e.opener.id === 'regalRoar', `78%: ${e.def.phaseId}`);
-    e.hp = 4400 * 0.39; sim.step(2);
-    expect.ok(e.def.phaseId === 'loux' && e.def.name === 'Hoarah Loux, Warrior', `40%: ${e.def.phaseId}`);
-    Game.render(1, STEP); expect.ok(e.rig.weaponMeshes.every(m => m.visible) || !e.opener, 'axe kept until the opener');
-    const o = e.opener; e.opener = null; e.beginAttack(o);   // as the AI starts a phase's opener (Enemy.update)
-    sim.step(2); Game.render(1, STEP); expect.ok(e.rig.weaponMeshes.every(m => m.visible), 'axe kept through the wind-up');
-    sim.until(() => e.state === ES.ACTIVE, 8);
-    sim.step(2); Game.render(1, STEP);
-    expect.ok(!e.rig.slotMeshes.lion.visible && e.rig.weaponMeshes.every(m => !m.visible), 'lion and axe gone');
-    e.hp = 4400 * 0.19; sim.step(2); expect.ok(e.def.phaseId === 'rage' && e.opener && e.opener.id === 'louxRage', `20%: ${e.def.phaseId}`);
-  });
-  // ---- Elden Ring Bosses: Radagon of the Golden Order (v5.7) ---------------------------------------------------
-  const startRadagon = () => { A.elden.start('radagon'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Radagon: on the boss select, loads in the arena at full bar with his name', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Radagon of the Golden Order')), 'a card for Radagon');
-    const { e } = startRadagon();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'radagon' && e.def.phaseId === 'order' && e.hp === 5200, `bar ${e.def.phaseId} ${e.hp}`);
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Radagon of the Golden Order', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Radagon: hammer swings glint and parry, holy attacks do not; three parries break him; strikes leave a roll a margin', () => {
-    const D = A.ENEMY_BY_ID.radagon, by = id => D.attacks.find(a => a.id === id);
-    for (const id of ['hammerCombo', 'hammerTwo', 'stompChop']) expect.ok(!by(id).noParry && !by(id).rollOnly, `${id} parryable`);
-    for (const id of ['runeSlam', 'runeBurst', 'goldenGrab', 'teleportStrike', 'teleportAway', 'goldBreaker', 'eldenShattering', 'spearThrust', 'blinkPunish'])
-      expect.ok(by(id).noParry || by(id).rollOnly, `${id} not parryable`);
-    expect.ok(by('goldenGrab').rollOnly, 'the grab cannot be blocked');
-    expect.ok(Math.ceil(D.posture.max / D.posture.parry) === 3, 'three parries');
-    for (const a of D.attacks) for (const h of a.hits) {
-      expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-      if (h.blink) expect.ok(h.startup * h.blink.from + (h.blink.time ?? CONFIG.elden.holy.blinkTime) < h.startup, `${a.id}: the teleport ends before the strike`);
-    }
-  });
-  test('Radagon: every attack starts, strikes and ends without errors, inside the arena', () => {
-    for (const a of A.ENEMY_BY_ID.radagon.attacks) {
-      const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 2 : 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; Game.render(1, STEP); return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-      expect.ok(world.groundAt(e.x, e.z, e.y + 1) > -Infinity, `${a.id}: still on the arena floor`);
-    }
-  });
-  test('Radagon: the teleport strike vanishes, reappears before the player (untouchable meanwhile) and sweeps', () => {
-    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 10); quiet(e);
-    e.beginAttack(e.def.attacks.find(a => a.id === 'teleportStrike'));
-    let hidden = false, untouchable = false;
-    sim.until(() => { Game.render(1, STEP); if (e.blinkLeft > 0) { hidden = hidden || !e.rig.root.visible; untouchable = untouchable || e.invulnerable(); } return e.hitIndex === 2; }, 4);
-    const d = Math.hypot(p.x - e.x, p.z - e.z);
-    expect.ok(hidden && untouchable, `hidden ${hidden}, untouchable ${untouchable}`);
-    expect.ok(d < 4, `reappeared ${d.toFixed(2)} m from the player`);
-    sim.step(5); Game.render(1, STEP); expect.ok(e.rig.root.visible, 'seen again');
-  });
-  test('Radagon: the rune slam etches a glowing rune that erupts later where it was etched', () => {
-    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 3); quiet(e);
-    e.beginAttack(e.def.attacks.find(a => a.id === 'runeSlam'));
-    sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP, 4); sim.step(5); Game.render(1, STEP);
-    const S = e.rig.holySigil;
-    expect.ok(S && S.g.visible && !S.pillar.visible, 'the rune glows, no pillar yet');
-    sim.until(() => e.state === ES.ACTIVE, 3); Game.render(1, STEP);
-    expect.ok(S.pillar.visible, 'then the pillar');
-  });
-  test('Radagon: Elden Shattering leaves time to roll the last slam and shockwave separately', () => {
-    const { p, e } = startRadagon(); faceOff(e, p, 2); quiet(e);
-    const a = e.baseDef.attacks.find(a => a.id === 'eldenShattering');
-    const slam = a.hits[2], wave = a.hits[3], hp = p.hp;
-    // Start as the third hit lands, after its leap, to isolate the final pair of impacts.
-    e.beginAttack(a); e.hitIndex = 2; e.leapHit = 2; e.stateTime = slam.startup - 0.05;
-    sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
-    expect.ok(sim.until(() => e.hitIndex === 2 && e.state === ES.ACTIVE, 1) >= 0, 'the third slam lands');
-    expect.ok(e.hitbox && e.hitbox.dodged, 'the first roll passes through the real slam hitbox');
-    expect.ok(sim.until(() => e.hitIndex === 3 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0,
-      'the final shockwave is about to open');
-    expect.ok(p.isFree(), 'the first roll has ended with time to start a second dodge');
-    sim.press('roll');
-    expect.ok(sim.until(() => e.hitIndex === 3 && e.hitbox && e.hitbox.dodged, 1) >= 0,
-      'the second roll passes through the expanding shockwave');
-    expect.ok(sim.until(() => e.state === ES.RECOVER, 2) >= 0, 'the combo reaches recovery');
-    expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
-    sim.move(null);
-  });
-  test('Radagon: the Gold Breaker leaves time to roll the landing and its shockwave separately', () => {
-    const { p, e } = startRadagon(); faceOff(e, p, 2); quiet(e);
-    const a = e.baseDef.attacks.find(a => a.id === 'goldBreaker');
-    const slam = a.hits[0], wave = a.hits[1], hp = p.hp;
-    // Start just before the landing, after the leap, so the slam comes down where the player stands.
-    e.beginAttack(a); e.leapHit = 0; e.stateTime = slam.startup - 0.05;
-    sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
-    expect.ok(sim.until(() => e.hitIndex === 0 && e.state === ES.ACTIVE, 1) >= 0, 'the hammer lands');
-    expect.ok(e.hitbox && e.hitbox.dodged, 'the first roll passes through the real landing hitbox');
-    expect.ok(sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0,
-      'the shockwave is about to open');
-    expect.ok(p.isFree(), 'the first roll has ended with time to start a second dodge');
-    sim.press('roll');
-    expect.ok(sim.until(() => e.hitIndex === 1 && e.hitbox && e.hitbox.dodged, 1) >= 0,
-      'the second roll passes through the expanding shockwave');
-    expect.ok(sim.until(() => e.state === ES.RECOVER, 2) >= 0, 'the attack reaches recovery');
-    expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
-    sim.move(null);
-  });
-  // v7.51.1: the same for every boss whose leap lands and then sends a ring along the floor (Margit, Godrick, Morgott,
-  // Godfrey, the Antlered Hunger and the story bosses built on their moves).
-  test('Bosses: every leap landing and the ring after it can be rolled one after the other', () => {
-    const pairs = [];
-    for (const d of Object.values(A.ENEMY_BY_ID)) for (const a of d.attacks || []) if (typeof a === 'object' && Array.isArray(a.hits))
-      a.hits.forEach((h, i) => { const n = a.hits[i + 1]; if (h.leap && n && (n.box || a.box).ring) pairs.push([d.id, a.id, i]); });
-    expect.ok(pairs.length >= 10, `${pairs.length} leaps end in a ring`);
-    for (const [id, attackId, i] of pairs) {
-      const tag = `${id} ${attackId}`;
-      Game.startFight(id); Game.loading = 0; sim.begin();
-      const p = Game.player, e = Game.duel; faceOff(e, p, 2); quiet(e);
-      const a = e.baseDef.attacks.find(x => x.id === attackId), slam = a.hits[i], wave = a.hits[i + 1], hp = p.hp;
-      e.beginAttack(a); e.hitIndex = i; e.leapHit = i; e.stateTime = slam.startup - 0.05;
-      sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
-      expect.ok(sim.until(() => e.hitIndex === i && e.hitbox && e.hitbox.dodged, 1) >= 0, `${tag}: the first roll passes through the landing`);
-      expect.ok(sim.until(() => e.hitIndex === i + 1 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0 && p.isFree(),
-        `${tag}: the first roll has ended before the ring opens`);
-      sim.move(e.x - p.x, e.z - p.z); sim.press('roll');   // back in, through the ring as it spreads
-      expect.ok(sim.until(() => e.hitIndex === i + 1 && e.hitbox && e.hitbox.dodged, 1) >= 0, `${tag}: the second roll passes through the ring (${Math.hypot(p.x - e.x, p.z - e.z).toFixed(1)} m, hp ${p.hp}/${hp}, state ${e.state} ${e.hitIndex})`);
-      sim.until(() => e.hitIndex !== i + 1 || e.state !== ES.ACTIVE, 1);   // the ring's own time; later hits (Malenia's bloom) aside
-      expect.near(p.hp, hp, 0.001, `${tag}: both evaded without damage`);
-      sim.move(null);
-    }
-  });
-  test('Radagon: at 60% the Gold Breaker opens phase 2, faster, with the Elden Shattering', () => {
-    const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 6);
-    e.hp = 5200 * 0.59; sim.step(2);
-    expect.ok(e.def.phaseId === 'shattering' && Math.abs(e.hp - 5200 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'goldBreaker', 4);
-    expect.ok(e.attack && e.attack.id === 'goldBreaker', 'the Gold Breaker');
-    expect.ok(e.def.attacks.some(a => a.id === 'eldenShattering') && e.def.cooldown[1] < A.ENEMY_BY_ID.radagon.cooldown[1], 'the Shattering, and faster');
-  });
-  test('Radagon: victory offers Retry and Boss select; leaving drops his runes from the scene', () => {
-    let { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 3); quiet(e);
-    e.beginAttack(e.def.attacks.find(a => a.id === 'runeBurst')); sim.step(10); Game.render(1, STEP);
-    const g = e.rig.holySigil.g;
-    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
-    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.screen}`);
-    Game.screens().eldenWon.items[0].go(); Game.loading = 0; sim.begin(); Game.render(1, STEP);
-    expect.ok(Game.duel.hp === 5200 && Game.eldenBoss === 'radagon' && !g.parent, 'retry: a fresh fight, the old rune gone');
-    p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
-    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
-    Game.screens().eldenDeath.items[1].go();
-    expect.ok(Game.screen === 'elden' && !Game.eldenBoss, 'back at the boss select');
-  });
-  // ---- Elden Ring Bosses: Godrick the Grafted (v5.4) --------------------------------------------------------------
-  const startGodrick = () => { A.elden.start('godrick'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Godrick: on the boss select, loads in the arena at full bar, bigger than anyone', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Godrick the Grafted')), 'a card for Godrick');
-    const { p, e } = startGodrick();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'godrick' && e.def.phaseId === 'grafted' && e.hp === 4000, `bar ${e.def.phaseId} ${e.hp}`);
-    expect.ok(e.def.scale > A.ENEMY_BY_ID.margit.scale && e.radius >= 0.9, 'the biggest body');
-    expect.ok(e.rig.slotMeshes.dragon && !e.rig.slotMeshes.dragon.visible, 'no dragon head in phase 1');
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Godrick the Grafted', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Godrick: no attack can be parried; every strike leaves a roll a margin', () => {
-    const D = A.ENEMY_BY_ID.godrick;
-    for (const a of D.attacks) {
-      expect.ok(a.noParry, `${a.id}: unparryable`);
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-    }
-    const ids = new Set(D.attacks.map(a => a.id));
-    for (const id of ['stormcaller', 'stormBlade', 'stormLeap', 'jumpSlam', 'kneel', 'dragSlash', 'rampage', 'doubleStep', 'backhand', 'armChop',
-                      'flameSweep', 'dragonGrab', 'flameKneel', 'flameStorm', 'flameBlade', 'flameLeap', 'fireMarch']) expect.ok(ids.has(id), `has ${id}`);
-  });
-  test('Godrick: every attack starts, strikes and ends without errors', () => {
-    for (const a of A.ENEMY_BY_ID.godrick.attacks) {
-      const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
-      Game.render(1, STEP);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-    }
-  });
-  test('Godrick: the stormcaller branches: close into the leap slam, far into the storm blades', () => {
-    let { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 2.5); quiet(e);
-    e.beginAttack(e.def.attacks.find(a => a.id === 'stormcaller'));
-    const seen = new Set(); sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 2.5; p.z = e.z + Math.cos(e.yaw) * 2.5; seen.add(e.attack && e.attack.id); return seen.has('stormLeap') || seen.has('stormBlade') || e.state === ES.RECOVER; }, 5);   // the player stays close (the spins knock them back)
-    expect.ok(seen.has('stormLeap') || e.state === ES.RECOVER, `close: ${[...seen].join(',')}`);
-    ({ p, e } = startGodrick()); sturdy(p); faceOff(e, p, 3); quiet(e);
-    e.beginAttack(e.def.attacks.find(a => a.id === 'stormcaller'));
-    sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 12; p.z = e.z + Math.cos(e.yaw) * 12; return e.attack.id !== 'stormcaller' || e.state === ES.RECOVER; }, 5);
-    expect.ok(e.attack.id === 'stormBlade' || e.state === ES.RECOVER, `far: ${e.attack.id}`);
-  });
-  test('Godrick: the rampage strides in at the player, swinging from side to side', () => {
-    const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 7); quiet(e);
-    const x0 = e.x, z0 = e.z, d0 = Math.hypot(p.x - e.x, p.z - e.z), sides = [];
-    e.beginAttack(e.def.attacks.find(a => a.id === 'rampage'));
-    let last = -1, px = e.x, pz = e.z;
-    sim.until(() => {
-      if (e.state === ES.WINDUP && e.hitIndex !== last) { last = e.hitIndex; px = e.x; pz = e.z; }
-      if (e.state === ES.ACTIVE && sides.length === e.hitIndex) { const s = e.yaw + Math.PI / 2; sides.push(Math.sign((e.x - px) * Math.sin(s) + (e.z - pz) * Math.cos(s))); }
-      return e.state === ES.RECOVER;
-    }, 8);
-    expect.ok(Math.hypot(e.x - x0, e.z - z0) > 2 && Math.hypot(p.x - e.x, p.z - e.z) < d0 - 1.5, `moved ${Math.hypot(e.x - x0, e.z - z0).toFixed(2)} m toward the player`);
-    expect.ok(sides.length === 5 && sides.every((v, i) => i === 0 || v === -sides[i - 1]), `side to side: ${sides.join(',')}`);
-  });
-  test('Godrick: at 60% the arm chop (untouchable), the dragon head, then the flame sweep', () => {
-    const { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 6);
-    e.hp = 4000 * 0.59; sim.step(2);
-    expect.ok(e.def.phaseId === 'dragon' && Math.abs(e.hp - 4000 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'armChop', 4);
-    expect.ok(e.attack && e.attack.id === 'armChop' && e.invulnerable(), 'the arm chop, untouchable');
-    const hp = e.hp; e.takeHit(strikeOf('heavy'), p); expect.ok(e.hp === hp, 'blows pass through the chop');
-    sim.until(() => e.attack.id === 'flameSweep', 5); Game.render(1, STEP);
-    expect.ok(e.attack.id === 'flameSweep' && !e.invulnerable(), `then ${e.attack.id}`);
-    expect.ok(e.rig.slotMeshes.dragon.visible, 'the dragon head shows');
-    expect.ok(e.def.ignite && e.def.cooldown[1] < A.ENEMY_BY_ID.godrick.cooldown[1], 'burning, and faster');
-  });
-  test('Godrick: the flame sweep burns ahead, not at his side', () => {
-    let { p, e } = startGodrick(); sturdy(p); faceOff(e, p, 4); quiet(e);
-    const sweep = e.def.attacks.find(a => a.id === 'flameSweep') || A.ENEMY_BY_ID.godrick.attacks.find(a => a.id === 'flameSweep');
-    let hp0 = p.hp; e.beginAttack(sweep); sim.until(() => e.state === ES.RECOVER, 5);
-    expect.ok(p.hp < hp0, 'ahead: burned');
-    ({ p, e } = startGodrick()); sturdy(p); faceOff(e, p, 4); quiet(e); hp0 = p.hp; e.beginAttack(sweep);
-    sim.until(() => { const s = e.yaw + Math.PI / 2; p.x = e.x + Math.sin(s) * 3.5; p.z = e.z + Math.cos(s) * 3.5; return e.state === ES.RECOVER; }, 5);
-    expect.ok(p.hp === hp0, 'at his flank: untouched');
-  });
-
-  // ---- Elden Ring Bosses: Maliketh, the Black Blade (v5.8) --------------------------------------------------------
-  const startMaliketh = () => { A.elden.start('maliketh'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  const mkAttack = (e, id) => e.def.attacks.find(a => a.id === id) || A.ENEMY_BY_ID.maliketh.attacks.find(a => a.id === id);
-  test('Maliketh: on the boss select, loads as the robed Beast Clergyman at full bar', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Maliketh')), 'a card for Maliketh');
-    const { e } = startMaliketh();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'maliketh' && e.def.phaseId === 'clergyman' && e.hp === 4600, `bar ${e.def.phaseId} ${e.hp}`);
-    const S = e.rig.slotMeshes;
-    expect.ok(S.robe.visible && S.cinq.visible && !S.blackBlade.visible && !S.mane.visible, 'robes and dagger, no Black Blade yet');
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Beast Clergyman', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Maliketh: only his golden attacks parry; every strike leaves a roll a margin; the Black Blade carries Destined Death', () => {
-    const D = A.ENEMY_BY_ID.maliketh, P2 = new Set(D.phases.blackBlade.attacks);
-    for (const a of D.attacks) {
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-      const golden = a.id === 'corkscrew' || a.id === 'spinFlip';
-      expect.ok(!!a.noParry === !golden, `${a.id}: ${golden ? 'parryable (gold)' : 'unparryable'}`);
-      if (golden) expect.ok(a.markers && a.markers.some(m => m.parry), `${a.id}: glints as the parry opens`);
-      if (P2.has(a.id) && a.id !== 'shedRobes') expect.ok(a.destined, `${a.id}: Destined Death`);
-      if (!P2.has(a.id)) expect.ok(!a.destined, `${a.id}: none in phase 1`);
-    }
-  });
-  test('Maliketh: every attack starts, strikes and ends without errors', () => {
-    for (const a of A.ENEMY_BY_ID.maliketh.attacks) {
-      const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
-      Game.render(1, STEP);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-    }
-  });
-  test('Maliketh: the sling fans five pebbles; the boulder arcs', () => {
-    const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 8); quiet(e); projectiles.clear();
-    e.beginAttack(mkAttack(e, 'sling')); sim.until(() => e.state === ES.ACTIVE, 3);
-    expect.ok(projectiles.live().length === 5, `${projectiles.live().length} pebbles`);
-    projectiles.clear(); e.beginAttack(mkAttack(e, 'gurranqStone')); sim.until(() => e.state === ES.ACTIVE, 4);
-    const b = projectiles.live()[0];
-    expect.ok(b && b.rock && b.rock.visible && b.g > 0 && b.vy > 0, 'a stone thrown upward in an arc');
-  });
-  test('Maliketh: at 50% he sheds the robes (untouchable), is renamed, then opens with the waves', () => {
-    const { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 6);
-    e.hp = 4600 * 0.49; sim.step(2);
-    expect.ok(e.def.phaseId === 'blackBlade' && Math.abs(e.hp - 4600 * 0.49) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'shedRobes', 4);
-    expect.ok(e.attack && e.attack.id === 'shedRobes' && e.invulnerable(), 'the robe shed, untouchable');
-    const hp = e.hp; e.takeHit(strikeOf('heavy'), p); expect.ok(e.hp === hp, 'blows pass through the shed');
-    sim.until(() => e.attack.id === 'bladeWaves', 5); Game.render(1, STEP);
-    const S = e.rig.slotMeshes;
-    expect.ok(e.attack.id === 'bladeWaves' && !e.invulnerable(), `then ${e.attack.id}`);
-    expect.ok(S.blackBlade.visible && S.mane.visible && S.armor.visible && !S.robe.visible && !S.cinq.visible, 'the Black Blade and armour, the robes gone');
-    sim.step(2); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Maliketh, the Black Blade', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Maliketh: Destined Death cuts the health ceiling, drains, caps flasks, and a retry starts clean', () => {
-    let { p, e } = startMaliketh(); quiet(e);
-    const D = CONFIG.elden.destined, combo = mkAttack(e, 'bladeCombo');
-    p.takeHit(makeStrike(mkAttack(e, 'multiSlash')), e);
-    expect.ok(p.doomTime === 0 && p.hpCap() === p.maxHp, 'the Clergyman\'s dagger: no curse');
-    p.hp = p.maxHp; p.takeHit({ ...makeStrike(combo), damage: 1 }, e);
-    expect.ok(p.doomTime === D.time && Math.abs(p.hpCap() - p.maxHp * (1 - D.cut)) < 1e-6 && p.hp <= p.hpCap(), `cap ${p.hpCap()}, hp ${p.hp}`);
-    const before = p.hp; sim.step(Math.round(D.drainTime / STEP) + 5);
-    expect.ok(Math.abs(before - p.hp - p.maxHp * D.drain) < 0.5, `drained ${(before - p.hp).toFixed(2)}`);
-    p.takeHit({ ...makeStrike(combo), damage: 1 }, e);
-    expect.ok(Math.abs(p.hpCap() - p.maxHp * (1 - D.cut)) < 1e-6, 'a second hit does not stack');
-    p.hp = p.hpCap() - 1; p.usingItem = { heal: 999, healStart: 0, healDuration: 0.1, useTime: 0.2 }; p.setState(PS.USE_ITEM); sim.step(20);
-    expect.ok(p.hp <= p.hpCap() + 1e-6, `a flask heals to the ceiling only (${p.hp.toFixed(1)} / ${p.hpCap().toFixed(1)})`);
-    ({ p, e } = startMaliketh());
-    expect.ok(p.doomTime === 0 && p.hpCap() === p.maxHp && p.hp === p.maxHp, 'retry: a clean player');
-  });
-  test('Maliketh: the Destined Death sphere shreds in front of the planted blade, never behind him', () => {
-    let { p, e } = startMaliketh(); sturdy(p); faceOff(e, p, 3); quiet(e);
-    const sphere = mkAttack(e, 'deathSphere'); let hp0 = p.hp; e.beginAttack(sphere);
-    sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 3; p.z = e.z + Math.cos(e.yaw) * 3; return e.state === ES.RECOVER; }, 6);
-    expect.ok(p.hp < hp0, 'in front: shredded');
-    ({ p, e } = startMaliketh()); sturdy(p); faceOff(e, p, 3); quiet(e); hp0 = p.hp; e.beginAttack(sphere);
-    sim.until(() => { p.x = e.x - Math.sin(e.yaw) * 2.2; p.z = e.z - Math.cos(e.yaw) * 2.2; return e.state === ES.RECOVER; }, 6);
-    expect.ok(p.hp === hp0, 'behind him: untouched');
-  });
-
-  // ---- Elden Ring Bosses: the Crucible Knight (v5.5) --------------------------------------------------------------
-  const startCrucible = () => { A.elden.start('crucibleKnight'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  const ckAttack = (e, id) => e.def.attacks.find(a => a.id === id) || A.ENEMY_BY_ID.crucibleKnight.attacks.find(a => a.id === id);
-  test('Crucible: on the boss select, loads in the arena at full bar with his name', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Crucible Knight')), 'a card for the Crucible Knight');
-    const { e } = startCrucible();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'crucibleKnight' && e.def.phaseId === 'knight' && e.hp === 2600, `bar ${e.def.phaseId} ${e.hp}`);
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Crucible Knight', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Crucible: sword blows parryable, shield, stomp and aspects not; every strike leaves a roll a margin', () => {
-    const D = A.ENEMY_BY_ID.crucibleKnight, unparry = ['stomp', 'stomp2', 'shieldBash', 'counterBash', 'wingsDive', 'tailSwipe', 'tailDouble'];
-    for (const a of D.attacks) {
-      expect.ok(!!a.noParry === unparry.includes(a.id), `${a.id}: noParry ${!!a.noParry}`);
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-    }
-    expect.ok(D.posture.parry >= D.posture.max, 'one parry breaks his stance');
-  });
-  test('Crucible: every attack starts, strikes and ends without errors', () => {
-    for (const a of A.ENEMY_BY_ID.crucibleKnight.attacks) {
-      const { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 12);
-      Game.render(1, STEP);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-    }
-  });
-  test('Crucible: the shield blocks frontal blows and draws the counter bash; the flank takes full damage', () => {
-    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 2); quiet(e);
-    let hp = e.hp; const r = e.takeHit(strikeOf('light'), p);
-    expect.ok(r.blocked && hp - e.hp < strikeOf('light').damage * 0.5, `blocked: ${hp - e.hp}`);
-    e.cooldown = 99; sim.until(() => e.attack && e.attack.id === 'counterBash', 1.5);
-    expect.ok(e.attack && e.attack.id === 'counterBash', `answered with ${e.attack && e.attack.id}`);
-    ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 2); quiet(e);
-    const s = e.yaw + Math.PI / 2; p.x = e.x + Math.sin(s) * 2; p.z = e.z + Math.cos(s) * 2;
-    hp = e.hp; e.takeHit(strikeOf('light'), p);
-    expect.ok(hp - e.hp === strikeOf('light').damage, `flank: ${hp - e.hp}`);
-  });
-  test('Crucible: drinking at range draws the lunging thrust; the stomp always chains into a sword blow', () => {
-    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 7); e.setState(ES.CHASE); e.cooldown = 5;
-    sim.step(1); sim.press('flask'); sim.until(() => e.attack && e.attack.id === 'healThrust', 2);
-    expect.ok(e.attack && e.attack.id === 'healThrust', `drinking: ${e.attack && e.attack.id}`);
-    ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 3); quiet(e);
-    e.beginAttack(ckAttack(e, 'stomp'));
-    sim.until(() => e.attack.id !== 'stomp' || e.state === ES.RECOVER, 4);
-    expect.ok(['uppercut', 'overheadSlam', 'doubleSpin'].includes(e.attack.id), `stomp -> ${e.attack.id} (${e.state})`);
-  });
-  test('Crucible: at 50% the wings dive opens phase 2; close finishers end in the tail', () => {
-    let { p, e } = startCrucible(); sturdy(p); faceOff(e, p, 7);
-    e.hp = 2600 * 0.49; sim.step(2);
-    expect.ok(e.def.phaseId === 'aspect' && Math.abs(e.hp - 2600 * 0.49) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'wingsDive' && e.state === ES.WINDUP && e.stateTime > 0.4, 4);
-    Game.render(1, STEP); Game.render(1, STEP);
-    expect.ok(e.attack && e.attack.id === 'wingsDive', `opener ${e.attack && e.attack.id}`);
-    expect.ok(e.rig.spectral && e.rig.spectral.wings && e.rig.spectral.wings.visible, 'golden wings shown');
-    expect.ok(e.def.cooldown[1] < A.ENEMY_BY_ID.crucibleKnight.cooldown[1], 'faster');
-    let tail = 0;
-    for (let i = 0; i < 6 && !tail; i++) {
-      ({ p, e } = startCrucible()); sturdy(p); faceOff(e, p, 2.5); e.hp = 2600 * 0.49; sim.step(2); quiet(e);
-      e.beginAttack(ckAttack(e, 'doubleSpin2'));
-      sim.until(() => { p.x = e.x + Math.sin(e.yaw) * 2.5; p.z = e.z + Math.cos(e.yaw) * 2.5; if (e.attack.id === 'tailSwipe') tail++; return tail || e.state === ES.RECOVER; }, 5);
-    }
-    expect.ok(tail, 'the double spin ends in a tail sweep');
-  });
-  test('Crucible: an execution on him deals 0.7 of a boss execution', () => {
-    const { e } = startCrucible();
-    const D = CONFIG.execution.damage, base = PLAYER_DEF.moveset.attacks.light.damage * D.bossLightMul;
-    expect.ok(Math.abs(execution.damageFor(e) - Math.min(base * 0.7, e.def.hp * D.bossCap)) < 1e-6, `${execution.damageFor(e)}`);
-  });
-  test('Crucible: victory offers Retry and Boss select; death retries a fresh fight', () => {
-    let { p, e } = startCrucible();
-    e.hp = 0; e.die(); sim.seconds(CONFIG.elden.victoryTime + 0.5);
-    expect.ok(Game.screen === 'eldenWon', `after the win: ${Game.screen}`);
-    ({ p, e } = startCrucible());
-    p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.elden.deathMenu + 0.3);
-    expect.ok(Game.screen === 'eldenDeath', `death screen: ${Game.screen}`);
-    Game.screens().eldenDeath.items[0].go(); Game.loading = 0; sim.begin();
-    expect.ok(Game.duel.hp === 2600 && Game.eldenBoss === 'crucibleKnight', 'retry: a fresh fight');
-  });
-
-  // ---- Elden Ring Bosses: Morgott, the Omen King (v5.5) -----------------------------------------------------------
-  const startMorgott = () => { A.elden.start('morgott'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Morgott: on the boss select, loads in the arena at full bar with his name', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Morgott, the Omen King')), 'a card for Morgott');
-    const { e } = startMorgott();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'morgott' && e.def.phaseId === 'king' && e.hp === 4800, `bar ${e.def.phaseId} ${e.hp}`);
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Morgott, the Omen King', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Morgott: golden and bloodflame attacks cannot be parried; three parries break him; every strike leaves a roll a margin', () => {
-    const D = A.ENEMY_BY_ID.morgott;
-    for (const a of D.attacks) {
-      if (a.spectral || a.when === 'behind' || ['defilement', 'bloodSlice', 'bloodyThrust', 'geysers'].includes(a.id)) expect.ok(a.noParry || a.projectile, `${a.id}: unparryable`);
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-    }
-    expect.ok(D.posture.max / D.posture.parry === 3, 'three parries');
-  });
-  test('Morgott: every attack starts, strikes and ends without errors, inside the arena', () => {
-    for (const a of A.ENEMY_BY_ID.morgott.attacks) {
-      const { p, e } = startMorgott(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 14);
-      Game.render(1, STEP);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-      expect.ok(Math.hypot(e.x, e.z) < 40, `${a.id}: stays in the arena`);
-    }
-  });
-  test('Morgott: at 60% the Defilement Burst (untouchable), then burning and faster', () => {
-    const { p, e } = startMorgott(); sturdy(p); faceOff(e, p, 8);
-    e.hp = 4800 * 0.59; sim.step(2);
-    expect.ok(e.def.phaseId === 'cursed' && Math.abs(e.hp - 4800 * 0.59) < 1, `phase ${e.def.phaseId}, hp ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'defilement', 4);
-    expect.ok(e.attack && e.attack.id === 'defilement' && e.invulnerable(), 'the burst, untouchable');
-    expect.ok(e.def.ignite && e.def.cooldown[1] < A.ENEMY_BY_ID.morgott.cooldown[1], 'burning, and faster');
-  });
-
-  // ---- Elden Ring Bosses: Malenia, Blade of Miquella (v5.9) -------------------------------------------------------
-  const startMalenia = () => { A.elden.start('malenia'); Game.loading = 0; sim.begin(); return { p: Game.player, e: Game.duel }; };
-  test('Malenia: on the boss select, loads in the arena at full bar with her name', () => {
-    expect.ok(Game.screens().elden.items.some(i => i.name.startsWith('Malenia, Blade of Miquella')), 'a card for Malenia');
-    const { e } = startMalenia();
-    expect.ok(Game.level === A.ARENA && e.def.id === 'malenia' && e.def.phaseId === 'blade' && e.hp === MAL.hp1, `bar ${e.def.phaseId} ${e.hp}`);
-    sim.step(30); Game.render(1, STEP);
-    expect.ok(A.hud.eName.textContent === 'Malenia, Blade of Miquella', `boss bar: "${A.hud.eName.textContent}"`);
-  });
-  test('Malenia: parry rules, three parries, roll margins; only a full Waterfowl Dance can kill a full-health player', () => {
-    const D = A.ENEMY_BY_ID.malenia, unparry = ['dance', 'dance2', 'grab', 'kick', 'aeoniaOpen', 'aeonia', 'phantoms'];
-    for (const a of D.attacks) {
-      expect.ok(!!a.noParry === unparry.includes(a.id), `${a.id}: noParry ${!!a.noParry}`);
-      for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
-      const total = a.hits.reduce((s, h) => s + (h.damage || a.damage), 0);
-      if (a.id.startsWith('dance')) expect.ok(total > 120, `${a.id}: ${total} kills if all land`);
-      else expect.ok(total < 120, `${a.id}: full combo ${total} leaves the player standing`);
-    }
-    expect.ok(D.posture.max / D.posture.parry === 3, 'three parries');
-  });
-  test('Malenia: every attack starts, strikes and ends without errors, inside the arena', () => {
-    for (const a of A.ENEMY_BY_ID.malenia.attacks) {
-      const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, a.minRange ? a.minRange + 1 : 3); quiet(e);
-      e.beginAttack(a); let struck = false;
-      sim.until(() => { if (e.state === ES.ACTIVE) struck = true; return struck && e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 20);
-      Game.render(1, STEP);
-      expect.ok(struck, `${a.id} reached its strike (state ${e.state})`);
-      expect.ok(Math.hypot(e.x, e.z) < 40, `${a.id}: stays in the arena`);
-    }
-  });
-  test('Malenia: a blow that lands heals her, even on a raised guard', () => {
-    for (const guard of [false, true]) {
-      const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, 2.4); quiet(e);
-      e.hp = 3000; if (guard) p.setState(PS.BLOCK);
-      e.beginAttack(e.def.attacks.find(a => a.id === 'sweep'));
-      sim.until(() => e.state === ES.RECOVER, 4);
-      expect.ok(e.hp > 3000, `${guard ? 'blocked' : 'open'}: healed to ${e.hp}`);
-    }
-  });
-  test('Malenia: Waterfowl Dance only below 75% in phase 1; phase 2 refills to 80%, sheds the helm and opens with the Aeonia', () => {
-    const { p, e } = startMalenia(); sturdy(p); faceOff(e, p, 4);
-    const pick = () => e.def.attacks.filter(a => !a.when && (!a.hpBelow || e.hp <= e.def.hp * a.hpBelow)).map(a => a.id);
-    expect.ok(!pick().includes('dance'), 'no dance at full health');
-    e.hp = MAL.hp1 * 0.74; expect.ok(pick().includes('dance'), 'the dance below 75%');
-    e.deplete();
-    expect.ok(e.def.phaseId === 'rot' && e.state === ES.PHASE, `phase ${e.def.phaseId} ${e.state}`);
-    sim.until(() => e.state !== ES.PHASE, MAL.transition + 1);
-    expect.ok(Math.abs(e.hp - MAL.hp2 * MAL.fill2) < 1, `refilled to ${e.hp}`);
-    sim.until(() => e.attack && e.attack.id === 'aeoniaOpen', 2);
-    expect.ok(e.attack && e.attack.id === 'aeoniaOpen' && e.invulnerable(), 'opens with the Aeonia, untouchable');
-    sim.until(() => e.state === ES.ACTIVE, 4); Game.render(1, STEP);   // shown as the dive strikes (js/flame.js)
-    expect.ok(e.rig.slotMeshes.wings.visible && !e.rig.slotMeshes.helm.visible, 'wings shown, helm gone');
-  });
-
-  test('Elden: an Enemies duel is unchanged (no Elden flow, the old win text)', () => {
-    A.elden.start('margit'); Game.startFight('hollow'); Game.loading = 0; sim.begin();
-    expect.ok(!Game.eldenBoss && Game.duel.def.id === 'hollow', 'a plain duel');
-    expect.ok(!document.getElementById('wonHint').textContent.includes('boss select'), 'the old win hint');
-    const p = Game.player; p.hp = 0; p.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.3);
-    expect.ok(Game.mode === 'play' && Game.player.alive(), 'death respawns in the arena as before');
-  });
-
   // ---- v6.0 the Ultra preset ----------------------------------------------------------------------------------------
   // Quality changes made here go back to the player's own setting afterwards.
   const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
@@ -3343,7 +2761,7 @@
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
-      for (const id of [PLAYER_DEF.look.model, 'godrick', 'margit']) {
+      for (const id of [PLAYER_DEF.look.model, 'castellanHale', 'oldOstrey']) {
         KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
         KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
         KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
@@ -3359,7 +2777,7 @@
   test('High loading: small scene warm-up keeps live targets full-size and restores hidden phase visibility', () => {
     const render = renderer.render, sizes = [];
     try {
-      A.visuals.setQuality('high'); A.elden.start('maliketh'); sim.begin();
+      A.visuals.setQuality('high'); Game.startFight('agathe'); sim.begin();
       const roots = [];
       scene.traverse(o => { if (o.isSkinnedMesh) roots.push([o, o.visible, o.frustumCulled]); });
       const rt = A.visuals.composer.renderTarget1, size = [rt.width, rt.height];
@@ -3378,7 +2796,7 @@
   });
   test('High effects: decorative budgets reduce density while impacts remain visual only', () => {
     try {
-      A.visuals.setQuality('high'); A.elden.start('godrick'); sim.begin();
+      A.visuals.setQuality('high'); Game.startFight('hale'); sim.begin();
       const p = Game.player, e = Game.duel, state = [p.hp, e.hp, e.posture, p.x, e.x];
       const at = { x: p.x, y: p.y + 1, z: p.z };
       ultraFx.sparkBurst(at, 100); ultraFx.bloodSpray(at, [1, 0, 0], 100);
@@ -3399,8 +2817,8 @@
   test('High loading: selected boss assets and all phase meshes are ready before play', () => {
     try {
       A.visuals.setQuality('high'); sim.begin();
-      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
-        A.elden.start(id);
+      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+        Game.startFight(id);
         expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
         let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
         expect.ok(legacy === 0, `${id}: fixed light count`);
@@ -3438,7 +2856,7 @@
   test('High effects: delayed boss decorations cannot cross a level or quality change', () => {
     const schedule = window.setTimeout, callbacks = [];
     try {
-      A.visuals.setQuality('high'); A.elden.start('godrick'); sim.begin();
+      A.visuals.setQuality('high'); Game.startFight('hale'); sim.begin();
       window.setTimeout = fn => { callbacks.push(fn); return 0; };
       ultraBoss.IMPACT.toll(Game.duel.x, Game.duel.y, Game.duel.z, 2, { el: FX_ELEMENTS.toll, scale: 1 });
       window.setTimeout = schedule;
@@ -3472,7 +2890,7 @@
     } finally { restoreQuality(); }
   });
   test('Ultra: a storm of combat events is drawn without errors and never touches the fight', () => {
-    A.elden.start('margit'); Game.loading = 0; sim.begin();
+    Game.startFight('ostrey'); Game.loading = 0; sim.begin();
     try {
       A.visuals.setQuality('ultra');
       const p = Game.player, e = Game.enemies[0], hp = [p.hp, e.hp, e.posture], at = { x: e.x, y: e.y + 1.4, z: e.z }, warn0 = ultraWarnings().length;
@@ -3501,11 +2919,11 @@
       }
     }
   });
-  test('Ultra: Godrick and Malenia fight 15 s with every effect on, no effect failing', () => {
+  test('Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing', () => {
     try {
       A.visuals.setQuality('ultra');
-      for (const id of ['godrick', 'malenia']) {
-        A.elden.start(id); Game.loading = 0; sim.begin();
+      for (const id of ['hale', 'kindlingTree']) {
+        Game.startFight(id); Game.loading = 0; sim.begin();
         const warn0 = ultraWarnings().length;
         sim.seconds(15, 3);
         expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
@@ -3595,8 +3013,8 @@
   test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
     try {
       A.visuals.setQuality('ultra'); sim.begin();
-      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
-        A.elden.start(id);
+      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+        Game.startFight(id);
         const e = Game.enemies[0];
         expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
         let enabled = 0;
@@ -3610,7 +3028,7 @@
     } finally { restoreQuality(); }
   });
   test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {
-    A.elden.start('margit'); Game.loading = 0; sim.begin();
+    Game.startFight('ostrey'); Game.loading = 0; sim.begin();
     const saved = settings.cameraMotion;
     try {
       settings.cameraMotion = true; sim.step(10, 1);
@@ -3635,8 +3053,8 @@
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {
       A.visuals.setQuality('low'); sim.begin();
-      for (const [id, field] of [['margit', 'spectral'], ['godrick', 'flameJet'], ['radagon', 'holySigil'], ['maliketh', 'deathSphere']]) {
-        A.elden.start(id);
+      for (const [id, field] of [['hollis', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'deathSphere']]) {
+        Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
         const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;
         const enemy = Game.enemies[0], shot = enemy.baseDef.attacks.find(a => a.projectile);
@@ -3744,7 +3162,7 @@
         checked++;
       }
     }
-    expect.above(checked, 100, 'checked every strike, including the Skeleton and all Elden Ring bosses');
+    expect.above(checked, 100, 'checked every strike of every boss, the Skeleton included');
   });
   test('Combat clarity: Aldric landing pounds hit on the floor and clear a jump', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin();
@@ -3779,15 +3197,14 @@
     expect.near(Game.zoomTarget, zoom, 1e-6, 'wheel and former zoom key cannot alter camera distance');
   }));
 
-  // ---- Lessons (v7.19.0): the controls taught inside Level 1, a little in Levels 2 and 3, and catch-up in Stormhill ---
+  // ---- Lessons (v7.19.0): the controls taught inside Level 1, and a little in Levels 2 and 3 -------------------------
   const card = () => A.lessons.card ? A.lessons.card.id : null;
   const lessonsIn = id => (A.ALL_LEVELS.find(l => l.id === id).lessons || []).map(e => e.lesson);
-  test('Lessons: Level 1 teaches the basics first, in order; Levels 2 and 3 add one each; Stormhill catches up; the rest have none', () => {
+  test('Lessons: Level 1 teaches the basics first, in order; Levels 2 and 3 add one each; the rest have none', () => {
     const hall = lessonsIn('long-hall');
     expect.ok(hall.join() === 'move,light,roll,lock,block,flask,heavy,jumpAttack,stance,execute,parry,rest,switch,dodge', `Level 1's course: ${hall}`);
     expect.ok(lessonsIn('sunken-keep').join() === 'shield' && lessonsIn('burning-town').join() === 'blue', 'one lesson in Level 2 and one in Level 3');
-    expect.ok(lessonsIn('stormhill').join() === 'move,light,roll,lock,block,blue,flask,rest', `Stormhill catches up: ${lessonsIn('stormhill')}`);
-    const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town', 'stormhill'].includes(l.id)).map(l => l.id);
+    const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town'].includes(l.id)).map(l => l.id);
     expect.ok(others.length === 0, `no other level teaches: ${others}`);
     expect.ok(!A.ALL_LEVELS.some(l => l.id === 'tutorial') && !A.STORY.chapters.some(c => c.level === 'tutorial'), 'the Training Hall is gone from the road');
   });

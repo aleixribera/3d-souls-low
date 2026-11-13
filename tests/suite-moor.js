@@ -18,11 +18,11 @@
     expect.ok(d.attacks.every(a => !a.spectral && !/^(cane|dagger|hammer|sword)/.test(a.id)), 'his own moves, no conjured weapons');
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);
     for (const a of d.attacks) for (const f of a.followUps || []) expect.ok(ids.has(f.attack), `${a.id} follows up into ${f.attack}`);
-    const by = id => d.attacks.find(a => a.id === id), M = id => A.ENEMY_BY_ID.margit.attacks.find(a => a.id === id);
+    const by = id => d.attacks.find(a => a.id === id), M = id => MARGIT.attacks.find(a => a.id === id);
     expect.ok(by('barCombo').followUps.length === M('caneCombo').followUps.length && by('barCombo').followUps[0].attack === 'barDrive', 'the combo still branches into the drive');
     expect.ok(by('barThrust').followUps.every(f => f.attack === 'lanternBash') && by('barOverhead').hits[0].abort.into === 'porterCharge', 'the jab and the raised bar keep their branches');
     expect.ok(d.phases.kindled.at === 0.6 && d.phases.kindled.opener === 'kindleOpener', 'the lantern catches at 60 %');
-    expect.ok(A.ENEMY_BY_ID.margit.attacks.some(a => a.spectral), 'Margit himself is untouched');
+    expect.ok(MARGIT.attacks.some(a => a.spectral), 'Margit himself is untouched');
   });
   test('Moor: the flock is blind and its bearer sees', () => {
     start();

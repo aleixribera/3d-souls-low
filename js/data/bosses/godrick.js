@@ -1,23 +1,10 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Godrick the Grafted (v5.4)
+// Move source GODRICK: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Godrick lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/godrick-stats.txt.
-//
-// Conversion to this game's scale (not Elden Ring's numbers). The player has 120 HP, a light hit does 18 and a heavy 38,
-// a roll is invulnerable for 0.3 s. Aldric (throne + knell, 3800 HP over two bars) and Margit (3200, one bar) are the
-// toughest duels. In Elden Ring Godrick has 6080 HP against Margit's 4174 (x1.46); a straight copy (4660) would make the
-// fight a slog at 18 a hit, so he sits just above Aldric:
-//   - one bar of 4000 HP; at 60 % (2400 HP left, the reference's threshold) the second phase starts on the same bar (`at`);
-//   - stance 105 -> posture 150 (Margit's 90 -> 130); he cannot be parried at all (`noParry` on every attack), only blocked
-//     or rolled, so the posture fills from heavy blows and executions are the reward for breaking it;
-//   - axe blows 20-36, slams and leaps 50-62, shockwaves 28-46 (roll-only, jumpable), fire ticks 12-14, the grab 62;
-//     every strike's active time stays at or under 0.2 s (a roll clears it with a margin; a test checks);
-//   - the arm chop (the phase change) is untouchable through its wind-up and strike (`invulnerable`), and only hurts
-//     someone standing right next to him; then the opening flame sweep, whose flanks are safe.
-// Ratios kept from the reference: the leaping slams and the shockwave finishers leave the big openings, the rampage is
-// open only after its fifth cut, the drag and the double step are short openings, and the stormcaller branches.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by Hale and Harrow (castellans.js) and one move of the Pillager Captain (js/data/story-boss-moves.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -33,85 +20,6 @@
   ATTACK_POSES.godrickLeapRing = { hits: [h('heavyOverhead'), h('enemyStomp')] };
   ATTACK_POSES.godrickMarch = { hits: [...rep('enemyBash', 4), h('lightOverhead')] };
 }
-
-// ---- model (from the reference art): a hulking, stooped lord in mismatched silver and gilded plate under a teal tabard
-// and cape bordered in gold embroidery, red rags at the hips, a gold medallion, a wild white mane under a low gold
-// circlet over a pale, lined face; pale grafted arms with long hooked claws reaching out of his back and flanks; a long
-// gilded great axe with two crescent bits back to back.
-MODEL_DEFS.godrick = {
-  faction: 'grafted', budget: 'boss', fit: 1.02, limbSides: 8,
-  proportions: { shoulderX: 0.44, torsoW: 0.3, torsoD: 0.22, armR: 0.085, legR: 0.1, headR: 0.125, handR: 0.08, footLen: 0.34 },
-  limbs: { armR: { len: 1.04, thick: 1.12 }, armL: { len: 1.06, thick: 1.15 }, legL: { thick: 1.1 }, legR: { thick: 1.1 } },
-  posture: { chest: [0.28, 0, 0.04], neck: [0.16, 0, 0], head: [-0.2, 0, 0], elbowL: [-0.4, 0, 0], elbowR: [-0.45, 0, 0] },   // a deep forward stoop
-  hidden: ['dragon', 'dragonGlow'],   // the grafted dragon head: shown from the second phase (its `reveal`, js/flame.js)
-  materials: {
-    skin: { tex: 'paleSkin', tint: 0xb4a898, decay: 0.9 },
-    graft: { tex: 'paleSkin', tint: 0xc0b4a2, decay: 0.95 },
-    plate: { tex: 'dentedSteel', tint: 0xa49c88, decay: 0.6, size: 512 },
-    gold: { tex: 'dentedSteel', tint: 0xc09a4a, decay: 0.45, size: 512 },
-    robe: { tex: 'rottenCloth', tint: 0x2e5048, decay: 0.6, size: 512, double: true },
-    cape: { tex: 'rottenCloth', tint: 0x355a50, decay: 0.6, size: 512, double: true },
-    capeHem: { tex: 'tatteredFabric', tint: 0x355a50, decay: 0.7, size: 512, double: true },
-    trim: { tex: 'dentedSteel', tint: 0xd0a850, decay: 0.25, double: true },
-    rag: { tex: 'tatteredFabric', tint: 0x9a4040, decay: 0.7, double: true },
-    hair: { tex: 'rottenCloth', tint: 0xe6e0d2, decay: 0.25, double: true },
-    blade: { tex: 'rustedIron', tint: 0x9a7e52, decay: 0.35, size: 512 },
-    haft: { tex: 'dentedSteel', tint: 0xb08a40, decay: 0.5 },
-    dragon: { tex: 'bone', tint: 0x6a5a48, decay: 0.9 },
-    dragonGlow: { glow: 0xff7a20 },
-    eye: { glow: 0xffd890 },
-  },
-  body: { torso: 'robe', pelvis: 'plate', arms: 'plate', legs: 'plate', head: 'skin', neck: 'skin', hands: 'gold', feet: 'plate' },
-  bones: {
-    loinF: { parent: 'spin', at: [0, -0.02, 0.22] }, loinB: { parent: 'spin', at: [0, -0.02, -0.22] },
-    ragL: { parent: 'spin', at: [0.2, -0.02, 0.1] }, ragR: { parent: 'spin', at: [-0.2, -0.02, 0.12] },
-    beard: { parent: 'head', at: [0, 0.03, 0.12] }, mane: { parent: 'head', at: [0, 0, 0] },
-    capeA: { parent: 'chest', at: [0, 0.6, -0.27] }, capeB: { parent: 'capeA', at: [0, -0.44, 0] }, capeC: { parent: 'capeB', at: [0, -0.44, 0] }, capeD: { parent: 'capeC', at: [0, -0.4, 0] },
-  },
-  parts: [
-    // Armour: a teal tabard over the chest, mismatched silver and gilded plates on the shoulders, forearms and shins.
-    { use: 'jerkin', slot: 'robe', bone: 'chest' }, { use: 'breastHalf', slot: 'plate', bone: 'chest', side: -1 },
-    { use: 'medallion', slot: 'gold', bone: 'chest', at: [0.13, 0.42, 0.24], r: 0.075 },
-    { use: 'chain', slot: 'gold', bone: 'chest', from: [-0.26, 0.56, 0.12], to: [0.24, 0.3, 0.22], links: 10, sag: 0.03 },
-    { use: 'belt', slot: 'gold', bone: 'spin' },
-    { use: 'pauldron', slot: 'plate', bone: 'armL', size: 2.1 }, { use: 'pauldron', slot: 'gold', bone: 'armR', size: 1.9, side: -1 },
-    { use: 'spikes', slot: 'gold', bone: 'armL', size: 1.0 },
-    { use: 'wraps', slot: 'gold', bone: 'elbowR', from: 0.04, to: 0.3, radius: 0.095, count: 3 }, { use: 'wraps', slot: 'plate', bone: 'elbowL', from: 0.04, to: 0.22, radius: 0.095, count: 2 },
-    { use: 'wraps', slot: 'plate', bone: 'kneeL', from: 0.04, to: 0.34, radius: 0.11, count: 3 }, { use: 'wraps', slot: 'gold', bone: 'kneeR', from: 0.04, to: 0.34, radius: 0.11, count: 3 },
-    // The head: a pale face, a wild white mane and beard, the gold circlet.
-    { use: 'mane', slot: 'hair', bone: 'mane', count: 22, len: 0.5 },
-    { use: 'circlet', slot: 'gold', bone: 'head', r: 0.135, y: 0.17 },
-    { use: 'clothStrip', slot: 'hair', bone: 'beard', w: 0.18, len: 0.3, seed: 4 },
-    // The grafts: pale arms with long hooked claws, sewn onto his back and flanks, one reaching over his shoulder.
-    { use: 'graftedArms', slot: 'graft', bone: 'chest', r: 0.085, hand: 0.3, arms: [
-      [[0.24, 0.5, -0.2], [0.62, 0.42, -0.36], [0.86, 0.02, -0.12]], [[-0.24, 0.5, -0.2], [-0.66, 0.46, -0.32], [-0.9, 0.08, -0.04]],
-      [[0.1, 0.28, -0.26], [0.32, -0.06, -0.5], [0.4, -0.46, -0.3]],
-      [[0.04, 0.6, -0.2], [0.14, 0.98, -0.36], [0.34, 1.2, -0.18]] ] },
-    { use: 'graftedArms', slot: 'graft', bone: 'spin', r: 0.075, hand: 0.27, arms: [[[-0.24, 0.04, -0.14], [-0.56, -0.24, -0.2], [-0.62, -0.62, 0.0]]] },
-    { use: 'dragonHead', slot: 'dragon', glow: 'dragonGlow', bone: 'elbowL', size: 1.25 },
-    // Cloth: a long teal tabard front and back with gold borders, red rags at the hips, a teal cape bordered in gold.
-    { use: 'clothStrip', slot: 'robe', bone: 'loinF', w: 0.42, len: 1.0, seed: 3 },
-    { use: 'clothStrip', slot: 'trim', bone: 'loinF', w: 0.07, len: 0.98, seed: 3, dx: 0.16, dz: 0.012 }, { use: 'clothStrip', slot: 'trim', bone: 'loinF', w: 0.07, len: 0.98, seed: 3, dx: -0.16, dz: 0.012 },
-    { use: 'clothStrip', slot: 'robe', bone: 'loinB', w: 0.44, len: 1.05, seed: 7 },
-    { use: 'clothStrip', slot: 'rag', bone: 'ragL', w: 0.2, len: 0.7, seed: 11, turn: 1.0 }, { use: 'clothStrip', slot: 'rag', bone: 'ragR', w: 0.22, len: 0.62, seed: 13, turn: -1.0 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeA', w0: 0.7, w1: 0.84, len: 0.44, bow: 1.0 }, { use: 'capeTrim', slot: 'trim', bone: 'capeA', w0: 0.7, w1: 0.84, len: 0.44, bow: 1.0, trim: 0.1 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeB', w0: 0.84, w1: 0.98, len: 0.44, bow: 0.8 }, { use: 'capeTrim', slot: 'trim', bone: 'capeB', w0: 0.84, w1: 0.98, len: 0.44, bow: 0.8, trim: 0.1 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeC', w0: 0.98, w1: 1.08, len: 0.42, bow: 0.6 }, { use: 'capeTrim', slot: 'trim', bone: 'capeC', w0: 0.98, w1: 1.08, len: 0.42, bow: 0.6, trim: 0.1 },
-    { use: 'capeSegment', slot: 'capeHem', bone: 'capeD', w0: 1.08, w1: 1.14, len: 0.36, bow: 0.5, ragged: true, seed: 5 },
-  ],
-  weapon: { use: 'twinAxe', slots: { blade: 'blade', grip: 'haft', guard: 'gold' } },
-  embers: { head: [0, 0, 1.48], edge: { size: [0.05, 0.85, 0.45], at: [0, 0, 1.05] } },   // only while he burns (phase 2)
-  eyes: { color: 0xffd890, size: 0.02, spread: 0.06, at: [0, 0.12, 0.12] },
-  anim: {
-    idle: { breathRate: 0.85, breath: 0.024, headDrift: 0.06, sway: 0.025, twitch: 0 }, walk: { twist: 0.14, roll: 0.07, headNod: 0.05, elbow: 0.25, drag: 0.12 },
-    flinch: { head: 0.3, chest: 0.3, arms: 0.3 }, death: { buckle: 1.2, slump: 1 },
-    cloth: [{ bone: 'loinF', gain: 0.1, k: 60, damp: 5, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 52, damp: 4.6, flutter: 0.04 },
-            { bone: 'ragL', gain: 0.16, k: 50, damp: 4, flutter: 0.07 }, { bone: 'ragR', gain: 0.16, k: 48, damp: 4, flutter: 0.07 },
-            { bone: 'beard', gain: 0.1, k: 70, damp: 6, flutter: 0.02 }, { bone: 'mane', gain: 0.05, k: 60, damp: 5, flutter: 0.03 },
-            { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 34, damp: 3.6, flutter: 0.05 },
-            { bone: 'capeC', gain: 0.08, k: 30, damp: 3.2, flutter: 0.07, sideways: 1.2 }, { bone: 'capeD', gain: 0.1, k: 24, damp: 2.8, flutter: 0.09, sideways: 1.4 }],
-  },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // Fields new in v5.4: an attack's `invulnerable` (js/enemy.js) and `breath` (a flame jet drawn along its box, js/flame.js),

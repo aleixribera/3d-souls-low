@@ -9,7 +9,7 @@
 // its own roots and comes up again, and its marks and bursts are the Ember's red-gold (`holyLight`, js/holy.js). At 60 %
 // it catches (`ignite`). Its figure is a stand-in: the Antlered Hunger's Blender body stood upright in red-gold wood,
 // the antlers for boughs. Its own Blender figure comes later (BACKLOG.md).
-// Loaded after js/data/lands-enemies.js: the Rootbound are the Golden Zealot's engineering on another body.
+// Loaded after js/data/move-sources.js: the Rootbound fight with ZEALOT_MOVES on another body.
 {
   const H = MODEL_DEFS.antleredHunger;
   MODEL_DEFS.kindlingTree = {
@@ -61,9 +61,9 @@
 
 // The Rootbound (Level 13; LORE.md 10i): thralls grown into the wood, and gone into it gladly. They sink into the roots
 // and rise where you stand, throw thorns of fire and mark the floor to burn. Rough: the Golden Zealot's moves
-// (js/data/lands-enemies.js) on the Hollow Soldier's Blender figure, its skin and clothes gone to bark.
+// (ZEALOT_MOVES, js/data/move-sources.js) on the Hollow Soldier's Blender figure, its skin and clothes gone to bark.
 {
-  const Z = ENEMY_BY_ID.goldenZealot, NAMES = { gzHammer: ['rootLash', 'Lashing Branch'], gzSpear: ['rootThorn', 'Ember Thorn'],
+  const Z = ZEALOT_MOVES, NAMES = { gzHammer: ['rootLash', 'Lashing Branch'], gzSpear: ['rootThorn', 'Ember Thorn'],
     gzBlink: ['rootRise', 'Up from the Roots'], gzRune: ['rootMark', 'The Kindling Mark'] };
   const ROOTBOUND = { ...Z, id: 'rootbound', model: 'rootbound', name: 'Rootbound',
     description: 'A thrall of Thrale grown into the Ember\'s wood, and gone into it gladly. It sinks into the roots and rises where you stand, throws thorns of fire, and its blow marks the floor to burn a moment later: step off it.',

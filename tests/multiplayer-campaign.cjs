@@ -6,7 +6,8 @@ const { createServer } = require('../server/index.cjs');
 const { build } = require('../server/headless.cjs');
 const { WebSocket } = require('../server/node_modules/ws');
 const { config: C, FrameDecoder } = require('../js/net-protocol.js');
-const chapters = ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
+const chapters = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel',
+  'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere'];
 function peer(url) {
   const ws = new WebSocket(url, { origin: url.replace('ws:', 'http:').replace('/lobby', '') }), decoder = new FrameDecoder(), queue = [], waiting = [];
   ws.on('message', data => {
@@ -39,19 +40,19 @@ function peer(url) {
     assert.equal((await lobby()).playing, null, 'an empty lobby plays nothing');
     const [a, welcome] = await add(), [b] = await add();
     assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'gauntlet', id: 'boss-only' });
-    assert.deepEqual(welcome.catalog.campaigns.map(c => c.id), ['ashmere', 'lands'], 'only the two story roads are available online');
-    assert.equal(welcome.catalog.campaigns.find(c => c.id === 'lands').chapters, 8);
+    assert.deepEqual(welcome.catalog.campaigns.map(c => c.id), ['ashmere'], 'only the story road is available online');
+    assert.equal(welcome.catalog.campaigns[0].chapters, chapters.length);
     a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'unknown' });
     assert.match((await a.next('error')).message, /Unknown campaign/);
-    a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'lands' });
+    a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'ashmere' });
     let session = (await a.next('start')).session;
     await b.next('start');
     for (let i = 0; i < chapters.length; i++) {
       assert.equal(session.id, chapters[i]);
       assert.equal(session.kind, 'level');
-      assert.equal(session.campaign.id, 'lands');
+      assert.equal(session.campaign.id, 'ashmere');
       assert.equal(session.campaign.number, i + 1);
-      assert.equal(session.campaign.total, 8);
+      assert.equal(session.campaign.total, chapters.length);
       assert.equal(session.campaign.next, chapters[i + 1] || null);
       assert.ok(session.campaign.title && session.campaign.line);
       if (i === 0) {
@@ -109,6 +110,6 @@ function peer(url) {
         assert.equal(app.sim.state.epoch, session.epoch, 'campaign does not wrap or enter another road');
       }
     }
-    console.log('Default Elden Ring campaign: all eight chapters, party auto-advance, leader controls, restart, late join and final completion passed.');
+    console.log('Ashmere campaign: all ' + chapters.length + ' chapters, party auto-advance, leader controls, restart, late join and final completion passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

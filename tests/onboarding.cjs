@@ -37,15 +37,15 @@ const server = http.createServer((req, res) => {
     await page.getByRole('button', { name: 'Options', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: /^Fullscreen:/ }).count(), 0, 'Options omits the fullscreen control');
     assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'opening Options respects leaving fullscreen');
-    // Prepare both saved campaigns, keeping all starting actions on the same screen.
+    // Prepare a saved game, keeping all starting actions on the same screen.
     await page.evaluate(() => {
       Game.manualClock = true;
-      for (const id of ['ashmere', 'lands']) { story.use(id); story.newGame(false); }
+      story.use('ashmere'); story.newGame(false);
       Game.showMenu('main'); Game.showMenu('story');
       document.getElementById('loading').classList.remove('show');
     });
     const labels = await page.locator('#menuList .n').allTextContents();
-    assert.deepEqual(labels, ['Continue', 'New', 'Continue', 'New', 'Back']);
+    assert.deepEqual(labels, ['Continue', 'New', 'Back']);
     for (const [width, height] of [[1280, 720], [800, 600], [640, 480]]) {
       await page.setViewportSize({ width, height });
       const boxes = await page.locator('#menuList .menuBtn').evaluateAll(btns => btns.map(b => {
@@ -55,12 +55,12 @@ const server = http.createServer((req, res) => {
       await page.screenshot({ path: path.join(out, `story-${width}.png`) });
     }
     await page.setViewportSize({ width: 1280, height: 720 });
-    // A real controller confirmation loads the selected campaign directly.
+    // A real controller confirmation loads the saved game directly.
     await page.evaluate(() => {
-      Game.select(Game.menuItems.findIndex(i => i.campaign === 'lands' && i.name === 'Continue'));
+      Game.select(Game.menuItems.findIndex(i => i.campaign === 'ashmere' && i.name === 'Continue'));
       gamepad.menuInput(['PadA'], CONFIG.step);
     });
-    assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.level.id === 'stormhill'));
+    assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.level.id === STORY.chapters[0].level));
     // A new game needs only an overwrite confirmation; Cancel preserves it.
     await page.evaluate(() => { Game.showMenu('main'); Game.showMenu('story'); });
     const kept = await page.evaluate(() => localStorage.getItem(CONFIG.story.saveKeys.ashmere));

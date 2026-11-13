@@ -152,7 +152,7 @@ function validateData({ visual = true } = {}) {
   };
   // Enemies
   const ids = new Set();
-  for (const d of [...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS, ...ELDEN_BOSS_DEFS]) {
+  for (const d of [...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS]) {
     const aidList = new Set(d.attacks.map(a => a && a.id));   // follow-ups and aborts name attacks of the same enemy
     for (const a of d.attacks) if (a) {
       for (const f of a.followUps || []) need(aidList.has(f.attack), `Enemy "${d.id}" attack "${a.id}": follow-up "${f.attack}" is not one of its attacks.`);
@@ -219,15 +219,6 @@ function validateData({ visual = true } = {}) {
       need(!!L && L.layout === 'rooms', `Enemy "${d.id}": arena "${d.arena}" must be a room level.`);
       need(ok(d.playerStart) && ok(d.enemyStart), `Enemy "${d.id}": playerStart and enemyStart need x, z and yaw on a floor of "${d.arena}".`);
     }
-  }
-  // Elden Ring Bosses (v5.3): every entry names a boss def and carries the text of its card.
-  const ebIds = new Set();
-  for (const b of ELDEN_BOSSES) {
-    const tag = `Elden Ring boss "${b.id}"`;
-    need(typeof b.id === 'string' && !ebIds.has(b.id), `${tag}: missing or duplicate id.`); ebIds.add(b.id);
-    need(ELDEN_BOSS_DEFS.some(d => d.id === b.enemy), `${tag}: enemy "${b.enemy}" is not in ELDEN_BOSS_DEFS.`);
-    need(['name', 'title', 'description'].every(k => typeof b[k] === 'string' && b[k].length > 0), `${tag}: needs a name, title and description.`);
-    if ('difficulty' in b) need(Number.isInteger(b.difficulty) && b.difficulty >= 1 && b.difficulty <= 5, `${tag}: difficulty must be a whole number from 1 to 5.`);
   }
   // Player and items
   const M = PLAYER_DEF.moveset;
@@ -332,7 +323,7 @@ function validateData({ visual = true } = {}) {
   need(D.textDelay + D.textFade <= D.respawnDelay && D.hintDelay < D.respawnDelay, 'CONFIG.death: the YOU DIED text must finish before the respawn.');
   if (visual) {
     checkVisualData(need, num);   // optional look fields (section 9b)
-    checkRealmData(need, num);    // the Lands Between's set pieces (js/realms.js, v7.0)
+    checkRealmData(need, num);    // levels' set pieces (js/realms.js, v7.0)
     for (const [id, M] of Object.entries(MODEL_DEFS)) for (const o of M.parts || [])   // models built in Blender (js/baked.js)
       if (o.use === 'baked') need(o.mesh in BAKED, `Model "${id}": baked mesh "${o.mesh}" is not packed (run node tools/pack-baked.cjs).`);
     // A baked model sets every body piece to null; a model extending it without its own `body` would lose its limbs.

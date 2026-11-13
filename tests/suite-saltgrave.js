@@ -32,7 +32,7 @@
     }
     expect.ok(A.ENEMY_BY_ID.hale.phases.helm.attacks.includes('galeWheel') && !A.ENEMY_BY_ID.harrow.phases.greaves.attacks.includes('galeWheel'), 'the wheel is Hale\'s');
     expect.ok(A.ENEMY_BY_ID.harrow.phases.greaves.attacks.includes('kneelGate') && !A.ENEMY_BY_ID.hale.phases.helm.attacks.includes('kneelGate'), 'the stamps are Harrow\'s');
-    expect.ok(A.ENEMY_BY_ID.godrick.attacks.some(a => a.id === 'flameSweep'), 'Godrick himself is untouched');
+    expect.ok(GODRICK.attacks.some(a => a.id === 'flameSweep'), 'Godrick himself is untouched');
   });
   test('Saltgrave: the twins fight together; when one falls the other takes up her half, on the same bar', () => {
     start(); arrive();

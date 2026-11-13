@@ -1,31 +1,11 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Maliketh, the Black Blade (v5.8)
+// Move source MALIKETH: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Maliketh lives here: his key poses, his two blades (kit parts), his model and his moveset. The
-// boss list (js/data/elden-bosses.js) names him; the mode (js/elden.js) fights him in the Enemies arena; the robe shed,
-// the Destined Death sphere and the line blasts are drawn by js/blackblade.js. Reference: docs/maliketh.txt.
-//
-// Conversion to this game's scale (not Elden Ring's numbers). The player has 120 HP, a light hit does 18 and a heavy 53,
-// a roll is invulnerable for 0.3 s. Margit has 3200 HP (4174 in ER) and Godrick 4000 (6080). Maliketh has 10620 in ER,
-// but a straight ratio (8100) would be a slog at 18 a hit, and his second form takes far less of a beating in ER
-// (absorptions 20-40 %), so:
-//   - one bar of 4600 HP; at 50 % (the reference's threshold, 2300 left, nothing refills) he sheds the robes (`at`):
-//     the Beast Clergyman becomes Maliketh, the Black Blade, renamed on the bar;
-//   - stance 80 -> posture 120 (Margit 90 -> 130). The Clergyman cannot be parried at all. Maliketh can be parried only
-//     on his golden attacks (the corkscrew dive and the spinning sweep, which glint gold as the window opens): our parry
-//     stands in for the Blasphemous Claw, and a parry stuns him long (`parriedTime` 3.2 s, the reference's 4.5 s);
-//   - Destined Death (`destined` on an attack, CONFIG.elden.destined, js/player.js): every Black Blade hit and wave
-//     that lands unblocked cuts the player's maximum health by 12 % for 15 s (a new hit restarts the time, never
-//     stacks) and drains 4 % over 3 s. Flasks heal only to the cut ceiling. It is the player's own state, so a retry
-//     (a new player) starts clean;
-//   - Clergyman: dagger cuts 18, pebbles 11 each (a fan of five), the boulder 48, shockwaves 30-36 (along the floor: jump
-//     or roll), the stab and uplift 32. Maliketh: blade 30-50, waves 26, the sphere 14 a tick (six), the line blast 44;
-//     every strike's `active` stays at or under 0.2 s (a roll clears it; a test checks).
-// Ratios kept from the reference: the boulder, the radial claw, the sphere (from behind) and the overhead slam (from the
-// flanks) leave the big openings; the dagger string (after the 4th cut), the linear claw, the stab and uplift, a whiffed
-// dive and the spinning sweep short ones; the sling and the aerial waves none. Point-blank under the Clergyman's chest
-// after a dagger string he somersaults away scattering pebbles; drinking at range draws a sling.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by Mother Agathe (agathe.js) and, through BEASTMAN_MOVES (js/data/move-sources.js), her Rending Brothers;
+// js/blackblade.js adds its kit parts (MALIKETH_PARTS) and spectral blades.
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -76,77 +56,6 @@ const MALIKETH_PARTS = {};
     return [muzzle, jaw, ...fangs];
   };
 }
-
-// ---- model (after the reference art): a tall, stooped beast-man. As the Clergyman: drowned in a dark brown-black
-// hooded robe and shawls, a muzzle under the hood, a broad dagger in the hand. Shed (phase 2): ribbed black plate over a
-// lean dark body, spiked pauldrons, a huge wild mane of grey-white hair, and the Black Blade seamed with crimson light.
-MODEL_DEFS.maliketh = {
-  faction: 'beast', budget: 'boss', fit: 1.02, limbSides: 8,
-  proportions: { shoulderX: 0.4, torsoW: 0.26, torsoD: 0.2, armR: 0.07, legR: 0.085, headR: 0.12, handR: 0.07, footLen: 0.3 },
-  limbs: { armR: { len: 1.1 }, armL: { len: 1.1 }, legL: { len: 1.05 }, legR: { len: 1.05 } },
-  posture: { chest: [0.3, 0, 0.02], neck: [0.12, 0, 0], head: [-0.16, 0, 0], elbowL: [-0.45, 0, 0], elbowR: [-0.4, 0, 0] },   // hunched
-  // Shown from the robe shed on (phase `blackBlade`'s `reveal`); the robe slots go at the same moment (its `conceal`).
-  hidden: ['armor', 'mane', 'blackBlade', 'bladeGlow'],
-  materials: {
-    hide: { tex: 'ashSoot', tint: 0x2a2624, decay: 0.8 },
-    robe: { tex: 'rottenCloth', tint: 0x3a3028, decay: 0.75, size: 512, double: true },
-    robeDark: { tex: 'tatteredFabric', tint: 0x241e1a, decay: 0.8, size: 512, double: true },
-    hood: { tex: 'margitBurlap', tint: 0x4a3e32, decay: 0.7, double: true },
-    cinq: { tex: 'rustedIron', tint: 0x8a8070, decay: 0.5 },
-    armor: { tex: 'knightPlate', tint: 0x2a2a2e, decay: 0.5, size: 512 },
-    mane: { tex: 'margitFur', tint: 0xb8b4ae, decay: 0.4, double: true },
-    blackBlade: { tex: 'dentedSteel', tint: 0x1a1618, decay: 0.3, size: 512 },
-    bladeGlow: { glow: 0xc01828 },
-    eye: { glow: 0xffb040 },
-  },
-  body: { torso: 'hide', pelvis: 'hide', arms: 'hide', legs: 'hide', head: 'hide', neck: 'hide', hands: 'hide', feet: 'hide' },
-  bones: {
-    loinF: { parent: 'spin', at: [0, -0.02, 0.2] }, loinB: { parent: 'spin', at: [0, -0.02, -0.2] },
-    hemF: { parent: 'loinF', at: [0, -0.5, 0.02] }, hemB: { parent: 'loinB', at: [0, -0.5, -0.02] },
-    shawlF: { parent: 'chest', at: [0, 0.52, 0.17] }, mane: { parent: 'head', at: [0, 0, 0] }, maneB: { parent: 'head', at: [0, 0.08, -0.1] },
-    capeA: { parent: 'chest', at: [0, 0.58, -0.22] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] },
-  },
-  parts: [
-    // The Clergyman's robes (hidden at the shed).
-    { use: 'robeSkirt', slot: 'robe', bone: 'spin', len: 1.02, top: 0.24, hem: 0.5, seed: 5 },
-    { use: 'robeSkirt', slot: 'robeDark', bone: 'spin', len: 0.72, top: 0.27, hem: 0.52, seed: 9 },
-    { use: 'jerkin', slot: 'robe', bone: 'chest' }, { use: 'hunch', slot: 'hood', bone: 'chest', size: 1.15 },
-    { use: 'hood', slot: 'hood', bone: 'head', size: 1.55, tail: 1.8, close: 0.1 },
-    { use: 'sleeve', slot: 'robeDark', bone: 'armL', len: 0.42, r1: 0.15, seed: 4 }, { use: 'sleeve', slot: 'robeDark', bone: 'armR', len: 0.42, r1: 0.15, seed: 5 },
-    { use: 'capeSegment', slot: 'hood', bone: 'shawlF', w0: 0.52, w1: 0.62, len: 0.38, bow: -0.9, ragged: true, seed: 12 },
-    { use: 'clothStrip', slot: 'robe', bone: 'loinF', w: 0.42, len: 0.55, seed: 2 }, { use: 'clothStrip', slot: 'robeDark', bone: 'hemF', w: 0.4, len: 0.42, seed: 3 },
-    { use: 'clothStrip', slot: 'robe', bone: 'loinB', w: 0.44, len: 0.6, seed: 8 }, { use: 'clothStrip', slot: 'robeDark', bone: 'hemB', w: 0.42, len: 0.45, seed: 9 },
-    { use: 'capeSegment', slot: 'robe', bone: 'capeA', w0: 0.66, w1: 0.8, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'robe', bone: 'capeB', w0: 0.8, w1: 0.92, len: 0.42, bow: 0.8 },
-    { use: 'capeSegment', slot: 'robeDark', bone: 'capeC', w0: 0.92, w1: 1.0, len: 0.4, bow: 0.6, ragged: true, seed: 4 },
-    { use: 'cinquedea', slot: 'cinq', bone: 'weapon' },
-    // Always: the beast's muzzle (under the hood, then under the mane).
-    { use: 'beastSnout', slot: 'hide', bone: 'head', size: 1.1 },
-    // Maliketh (shown at the shed): ribbed black plate, spiked pauldrons, the mane, the Black Blade.
-    { use: 'breastHalf', slot: 'armor', bone: 'chest' }, { use: 'breastHalf', slot: 'armor', bone: 'chest', side: -1 },
-    { use: 'tassets', slot: 'armor', bone: 'spin' },
-    { use: 'pauldron', slot: 'armor', bone: 'armL', size: 1.6 }, { use: 'pauldron', slot: 'armor', bone: 'armR', size: 1.6, side: -1 },
-    { use: 'spikes', slot: 'armor', bone: 'armL', size: 1.2 }, { use: 'spikes', slot: 'armor', bone: 'armR', size: 1.2 },
-    { use: 'plateBands', slot: 'armor', bone: 'elbowL', from: 0.02, to: 0.3, radius: 0.08, count: 4, flare: 0.2 },
-    { use: 'plateBands', slot: 'armor', bone: 'elbowR', from: 0.02, to: 0.3, radius: 0.08, count: 4, flare: 0.2 },
-    { use: 'plateBands', slot: 'armor', bone: 'kneeL', from: 0.02, to: 0.4, radius: 0.095, count: 5, flare: 0.15, cop: 0.07 },
-    { use: 'plateBands', slot: 'armor', bone: 'kneeR', from: 0.02, to: 0.4, radius: 0.095, count: 5, flare: 0.15, cop: 0.07 },
-    { use: 'plateBands', slot: 'armor', bone: 'legL', from: 0.04, to: 0.36, radius: 0.1, count: 3 },
-    { use: 'plateBands', slot: 'armor', bone: 'legR', from: 0.04, to: 0.36, radius: 0.1, count: 3 },
-    { use: 'mane', slot: 'mane', bone: 'mane', count: 30, len: 0.62 },
-    { use: 'clothStrip', slot: 'mane', bone: 'maneB', w: 0.36, len: 0.7, seed: 41 },
-    { use: 'blackBlade', slot: 'blackBlade', glow: 'bladeGlow', bone: 'weapon' },
-  ],
-  eyes: { color: 0xffb040, size: 0.02, spread: 0.065, at: [0, 0.1, 0.13] },
-  anim: {
-    idle: { breathRate: 1.0, breath: 0.026, headDrift: 0.08, sway: 0.03, twitch: 0.2 }, walk: { twist: 0.16, roll: 0.06, headNod: 0.06, elbow: 0.3, drag: 0.15 },
-    flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1.2, slump: 1 },
-    cloth: [{ bone: 'loinF', gain: 0.12, k: 60, damp: 5, flutter: 0.04 }, { bone: 'loinB', gain: 0.15, k: 52, damp: 4.6, flutter: 0.05 },
-            { bone: 'hemF', gain: 0.1, k: 44, damp: 4, flutter: 0.06 }, { bone: 'hemB', gain: 0.12, k: 40, damp: 3.8, flutter: 0.07 },
-            { bone: 'mane', gain: 0.05, k: 60, damp: 5, flutter: 0.04 }, { bone: 'maneB', gain: 0.1, k: 46, damp: 4, flutter: 0.06 },
-            { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 36, damp: 3.8, flutter: 0.045 },
-            { bone: 'capeC', gain: 0.08, k: 30, damp: 3.2, flutter: 0.07, sideways: 1.2 }],
-  },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // Fields new in v5.8: an attack's `destined` (Destined Death on the player, js/player.js) and `sphere` (the Destined

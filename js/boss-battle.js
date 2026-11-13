@@ -3,7 +3,7 @@
 const bossBattle = {
   teams: { a: [], b: [] }, serial: 0, picking: 'a', match: null,
   winner: null, wonTime: 0, groups: new Map(), hudRows: [],
-  catalog() { return [...ENEMY_DEFS.filter(isBossDef), ...ELDEN_BOSS_DEFS]; },
+  catalog() { return ENEMY_DEFS.filter(isBossDef); },
   team(id) { return BOSS_TEAMS.find(t => t.id === id); },
   valid(teams) {
     const ids = new Set(this.catalog().map(d => d.id));
@@ -50,7 +50,7 @@ const bossBattle = {
   start(game) {
     if (!this.valid(this.teams)) return false;
     this.match = Object.fromEntries(BOSS_TEAMS.map(t => [t.id, this.teams[t.id].map(s => ({ ...s }))]));
-    game.kind = 'bossBattle'; game.story = false; game.eldenBoss = null; game.duelId = null; game.duelPartners = [];
+    game.kind = 'bossBattle'; game.story = false; game.duelId = null; game.duelPartners = [];
     game.level = BOSS_BATTLE_ARENA;
     game.enterPlay(); game.reset(); game.showLoading('Boss vs Boss', 'Two teams. Last team standing wins.');
     return true;

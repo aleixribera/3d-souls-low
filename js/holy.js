@@ -5,9 +5,9 @@
 // A teleport (a hit's `blink`, js/enemy.js) hides the body while it rushes unseen and flashes gold where it leaves and
 // where it appears (event `enemyBlink`). A hit's `sigil: r` draws a golden rune of radius r on the floor where its box
 // lands, from the start of its wind-up, brightening toward the strike, then a pillar of light as it erupts. The hitbox is
-// the hit's own box, as for every attack: the rune only shows where it already is. Tuning: CONFIG.elden.holy.
+// the hit's own box, as for every attack: the rune only shows where it already is. Tuning: CONFIG.bossPowers.holy.
 const holy = (() => {
-  const H = CONFIG.elden.holy, flashes = [];
+  const H = CONFIG.bossPowers.holy, flashes = [];
   const add = (color) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
   // Shared geometry (unit radius, flat on the floor): two rings, the Elden Ring's crossing arcs and a vertical stroke.
   const flat = g => g.rotateX(-Math.PI / 2);
@@ -27,7 +27,7 @@ const holy = (() => {
 
   // ---- teleport flashes: a small reused pool of floor rings ----
   // An enemy def's opt-in `holyLight: { color, core }` (v7.50.0, the Kindling Tree) draws its flashes and runes in
-  // another light; without it, the Golden Order's gold (CONFIG.elden.holy).
+  // another light; without it, the Golden Order's gold (CONFIG.bossPowers.holy).
   const bursts = new Map();   // one burst spec per colour, made once
   const burstOf = color => { if (!bursts.has(color)) bursts.set(color, { ...H.burst, color }); return bursts.get(color); };
   function flash(x, y, z, L) {

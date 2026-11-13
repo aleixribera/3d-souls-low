@@ -1,10 +1,10 @@
 'use strict';
 // ============================================================================
-// Story mode (v4.4; two campaigns since v7.0): every chapter of a campaign -> its ending -> the title.
+// Story mode (v4.4): every chapter of a campaign -> its ending -> the title.
 // ============================================================================
-// A campaign is one entry of STORIES (js/data/story.js): Ashmere (the Gaoler King) and the Lands Between (the Elden
-// Throne). Each keeps its own save slot (`saveKey`); one campaign is active at a time (`story.use(id)`), and every
-// function below acts on it, so the rest of the game never needs to know which story is running.
+// A campaign is one entry of STORIES (js/data/story.js); there is one since v7.53.0, Ashmere. Each keeps its own save
+// slot (`saveKey`); one campaign is active at a time (`story.use(id)`), and every function below acts on it, so the
+// rest of the game never needs to know which story is running.
 // It only connects what exists: levels start through Game.startLevel, chain through Game.nextLevelId, the finale plays
 // the ending. While `Game.story` is on it saves to localStorage on every rest, on every level start and when quitting to
 // the menu, and Continue rebuilds the last checkpoint from that save.
@@ -257,13 +257,13 @@ const story = (() => {
   function screens(game) {
     const C = A().def;
     const devJumps = DEV ? [
-      { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level of either road.', go: () => game.showMenu('storyJump') },
+      { name: 'Story: jump to a level', desc: 'Developer: a fresh story starting at any level.', go: () => game.showMenu('storyJump') },
       { name: 'Story: clear the saves', desc: 'Developer: deletes all story saves.', go: () => { for (const c of Object.values(campaigns)) c.erase(); game.showMenu('main'); } },
     ] : [];
     // The title's Story card (v7.19.0) names the road last played, or where a first story begins.
     const last = Object.values(campaigns).filter(c => c.status === 'ok' && !c.data.completed).sort((a, b) => (b.data.savedAt || 0) - (a.data.savedAt || 0))[0];
     const line = last ? `Continue ${last.def.short}: ${last.levelName(last.data.level)}` : 'Begin in Ashmere. The controls are taught on the way.';
-    return { main: [{ name: 'Story', line, desc: `${line}. Two roads, saved at every bonfire.`, go: () => game.showMenu('story') }],
+    return { main: [{ name: 'Story', line, desc: `${line}. Saved at every bonfire.`, go: () => game.showMenu('story') }],
       devItems: devJumps, screens: {
       story: { title: 'STORY', sub: 'Choose a story, then play.', back: 'main', items: [
         ...STORIES.flatMap(S => campaigns[S.id].items(game)),

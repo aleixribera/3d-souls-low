@@ -1,6 +1,6 @@
 'use strict';
 // Level 9: The Night Gaol (v7.42.0), chapter 9 of the Story (STORY.md; LORE.md 10e): Thrale's gaol, hung among the
-// stars. Rough (PLAN.md stage 3, track A): built from the old second road's evergaol (js/levels/lands/evergaol.js) as raw
+// stars. Rough (PLAN.md stage 3, track A): built from the old second road's evergaol (removed in v7.53.0) as raw
 // material, its layout kept, every name and character of that road gone. Cells of old stone on nothing, rune circles on
 // their floors, joined by bridges with no rail at all; a fall from anywhere is a fall into the sky. x east, z north;
 // floors climb 0 -> 6 -> 12.

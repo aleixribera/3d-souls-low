@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { createSimulation } = require('../server/headless.cjs');
 const { config: C, FrameEncoder, FrameDecoder } = require('../js/net-protocol.js');
 const sim = createSimulation();
-function begin(kind = 'arena', id = 'margit') {
+function begin(kind = 'arena', id = 'ostrey') {
   sim.start(kind, id);
   sim.registerPlayer('ash', 'Ash'); sim.registerPlayer('ember', 'Ember'); sim.registerPlayer('idle', 'Idle');
   const e = sim.inspect().Game.enemies[0];
@@ -51,7 +51,7 @@ e = begin(); e.setState('phase');
 assert.equal(hit('ash', e), false, 'invulnerable contacts are rejected');
 assert.equal(complete().find(r => r.id === 'ash').damage, 0);
 
-e = begin('arena', 'malenia');
+e = begin(); e.def = { ...e.def, lifesteal: { flat: 40, pct: 0.02 } };   // the opt-in lifesteal of v5.9, no longer on any boss
 hit('ash', e); e.lifesteal(); hit('ash', e);
 assert.equal(complete()[0].damage, 48, 'healing never subtracts previously earned damage');
 

@@ -1,8 +1,8 @@
 'use strict';
 // ============================================================================
-// Realms (v7.0): the set pieces of the Lands Between (drawing only)
+// Realms (v7.0): a level's set pieces (drawing only)
 // ============================================================================
-// A level may carry a `realm` (js/levels/lands/*.js): the things that make each land its own, all drawn and none touched.
+// A level may carry a `realm` (js/levels/*.js): the things that make each place its own, all drawn and none touched.
 //   tree      { kind: 'golden' | 'burnt' | 'haligtree', x, z, y?, height, width }: a colossal tree on the horizon (the
 //             Erdtree aglow, the Erdtree burnt to a black husk with embers in its bark, the pale Haligtree)
 //   stars     { count?, color?, band?: [colour, colour] }: a night sky of stars and a band of coloured mist (the Evergaol)

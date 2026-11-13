@@ -67,7 +67,7 @@ fs.mkdirSync(output, { recursive: true });
     await b.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Aleix/ }).getByRole('button', { name: 'Make leader' }).click();
     await a.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
     console.log('Keyboard/controller activity, five-minute AFK handoff and lobby controls on both browsers passed.');
-    await selectAdventure(a, 'arena/margit');
+    await selectAdventure(a, 'arena/ostrey');
     await a.locator('#lobbyStart').click();
     for (const p of [a, b]) await p.waitForFunction(() => __arena.multiplayer.info.ready && __arena.multiplayer.info.receivedFrames > 2 && __arena.multiplayer.info.remotes === 1, { timeout: 90000 });
     console.log('Two browsers joined Margit, including one with 150 ms delayed incoming messages.');

@@ -85,8 +85,8 @@ function walk(f, seconds, maxStep = 0.16) {
 for (const [level, from, to, seconds] of [
   ['sunken-keep', [5, 0, 0], [78, 0, 42], 40],
   ['the-tower', [58, 6, 24], [100, 22, 0], 75],
-  ['stormhill', [140, 0, 0], [226, 8, -4.5], 40],
-  ['haligtree', [119, 0, -46], [164, 0, -47], 20],
+  ['windward-moor', [140, 0, 0], [226, 8, -4.5], 40],
+  ['still-mere', [119, 0, -46], [164, 0, -47], 20],
   ['final-castle', [8, 0, 0], [315.5, 24, -2], 150],
 ]) {
   const f = setup(level, from, to); f.world.traps = [];
@@ -113,8 +113,8 @@ for (const [level, from, to, seconds] of [
 // The campaigns require drops of four, five and eight metres. They use normal falling/damage.
 for (const [level, from, to, damage] of [
   ['the-tower', [21, 0, 0], [27, -4, -14], false],
-  ['ashen-capital', [64, 0, 0], [87, -5, -8], true],
-  ['farum-azula', [88, 8, 0], [108, 0, -10], true],
+  ['aurel-in-ash', [64, 0, 0], [87, -5, -8], true],
+  ['torn-abbey', [88, 8, 0], [108, 0, -10], true],
 ]) {
   const f = setup(level, from, to);
   for (const t of f.world.traps) { t.state = 'sprung'; f.world.openHole(t.region, t.collapse); }

@@ -12,7 +12,7 @@
 // blow of the hook rends. Her figure is a stand-in: the Toll Wisp's Blender body (a long robe, a tall hat) without the
 // beard, in an abbess's black and storm-grey, a glaive for the great hook. Her own Blender figure comes later
 // (BACKLOG.md).
-// Loaded after js/data/lands-enemies.js: the Rending Brothers are the Beastman's engineering on another body.
+// Loaded after js/data/move-sources.js: the Rending Brothers fight with BEASTMAN_MOVES on another body.
 {
   const W = MODEL_DEFS.tollWisp;
   MODEL_DEFS.motherAgathe = {
@@ -78,9 +78,9 @@
 
 // The Rending Brothers (Level 12; LORE.md 10h): the monks who cut at the hill with her. They spring from the ruins, cut
 // four times with a hooked knife, fling stones and rend the floor into a line of shockwaves. Rough: the Beastman's moves
-// (js/data/lands-enemies.js) on the Rogue's Blender figure in an undyed cowl, one hooked knife.
+// (BEASTMAN_MOVES, js/data/move-sources.js) on the Rogue's Blender figure in an undyed cowl, one hooked knife.
 {
-  const B = ENEMY_BY_ID.beastman, NAMES = { bmSlash: ['brotherCuts', 'Four Cuts'], bmClaw: ['brotherRend', 'Rend the Earth'],
+  const B = BEASTMAN_MOVES, NAMES = { bmSlash: ['brotherCuts', 'Four Cuts'], bmClaw: ['brotherRend', 'Rend the Earth'],
     bmSling: ['brotherStones', 'Flung Stones'], bmLunge: ['brotherLunge', 'Lunging Hook'], bmPounce: ['brotherLeap', 'Leaping Hook'] };
   const BROTHER = { ...B, id: 'rendingBrother', model: 'rendingBrother', name: 'Rending Brother',
     description: 'A monk of the Torn Abbey, who cut at the hill with his abbess. He springs from the ruins, cuts four times with a hooked knife, flings stones, and rends the floor into a line of shockwaves (roll or jump).',

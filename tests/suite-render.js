@@ -39,7 +39,7 @@
       const live = KIT.modelParts(PLAYER_DEF.look.model);   // the player's body was built at the current detail
       const other = JSON.stringify(was) === JSON.stringify(Q.ultra.modelDetail) ? Q.low.modelDetail : Q.ultra.modelDetail;
       KIT.setDetail(other);
-      const temp = KIT.modelParts('godfrey');
+      const temp = KIT.modelParts('oswinFirstCrown');
       let freed = 0; for (const p of temp.parts) p.geo.addEventListener('dispose', () => freed++);
       expect.ok([...KIT.cache.values()].includes(temp), 'built and cached at the trial detail');
       KIT.setDetail(was);
@@ -47,7 +47,7 @@
       expect.ok([...KIT.cache.values()].includes(live), 'the live player body keeps its entry');
       // A rig built at a trial detail holds its entry until disposed (the Auto benchmark's pattern).
       KIT.setDetail(other, { prewarm: false, evict: false });
-      const entry = KIT.modelParts('margit'), rig = new Rig({ model: 'margit', scale: 1, bulk: 1 });
+      const entry = KIT.modelParts('oldOstrey'), rig = new Rig({ model: 'oldOstrey', scale: 1, bulk: 1 });
       KIT.setDetail(was, { prewarm: false, evict: false });
       expect.ok(entry.users === 1 && [...KIT.cache.values()].includes(entry), 'the trial rig keeps its model while alive');
       rig.dispose();
@@ -59,7 +59,7 @@
     const saved = settings.cameraMotion;
     try {
       settings.cameraMotion = true; reducedMotion.force(false);
-      visuals.setQuality('ultra'); start('stormveil'); frames(2);
+      visuals.setQuality('ultra'); start('saltgrave'); frames(2);
       const st = realms.state, objects = st.group.children.length;
       expect.ok(st.bolts.length === CONFIG.VISUALS.realms.lightning.pool, 'a fixed pool of bolts');
       expect.ok(st.bolts.every(b => ultraPost.excluded(b.m)), 'bolts are in the no-depth set');
@@ -123,9 +123,10 @@
       slots.acquire(b, () => 3);
       slots.sweep([b]);
       expect.ok(released.length === 1 && released[0] === a && slots.size === 1, 'departed actors released');
-      // A boss effect owner leaving the game frees its drawing (Godrick's flame jet).
-      visuals.setQuality('low'); elden.start('godrick'); Game.loading = 0; sim.begin();
-      const e = Game.enemies[0]; flame.prepare(Game.enemies);
+      // A boss effect owner leaving the game frees its drawing (a flame jet: the opt-in `breath`, on no boss since v7.53.0).
+      visuals.setQuality('low'); Game.startFight('hale'); Game.loading = 0; sim.begin();
+      const e = Game.enemies[0]; e.baseDef = { ...e.baseDef, attacks: [...e.baseDef.attacks, { ...e.baseDef.attacks[0], breath: { len: 6, width: 1.5 } }] };
+      flame.prepare(Game.enemies);
       const jet = e.rig.flameJet; watch(jet.layers[0].material);
       Game.enemies.length = 0; Game.render(1, CONFIG.step);
       expect.ok(disposed.has(jet.layers[0].material) && !jet.g.parent && e.rig.flameJet === null, 'jet removed with its owner');

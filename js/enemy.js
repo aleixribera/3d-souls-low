@@ -418,7 +418,7 @@ class Enemy {
         // in `time` s to `dist` m in front of the player (or `back` m away from them), facing them as it reappears.
         // A fast move, not a jump cut, so walls and ledges stop it like any step (integrateBody).
         if (hit.blink && this.blinkHit !== this.hitIndex && this.stateTime >= hit.startup * hit.blink.from) {
-          const B = hit.blink, T = B.time ?? CONFIG.elden.holy.blinkTime, far = B.back ? -B.back : Math.max(0, dist - B.dist);
+          const B = hit.blink, T = B.time ?? CONFIG.bossPowers.holy.blinkTime, far = B.back ? -B.back : Math.max(0, dist - B.dist);
           this.yaw = toPlayer; this.blinkHit = this.hitIndex; this.blinkLeft = T;
           this.vx = Math.sin(toPlayer) * far / T; this.vz = Math.cos(toPlayer) * far / T;
           events.emit('enemyBlink', { enemy: this, out: true });

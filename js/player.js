@@ -84,8 +84,8 @@ class Player {
   }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
-  // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.elden.destined).
-  hpCap() { return this.doomTime > 0 ? this.maxHp * (1 - CONFIG.elden.destined.cut) : this.maxHp; }
+  // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.bossPowers.destined).
+  hpCap() { return this.doomTime > 0 ? this.maxHp * (1 - CONFIG.bossPowers.destined.cut) : this.maxHp; }
   invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
   isCommitted() {
@@ -408,7 +408,7 @@ class Player {
 
   // Destined Death (v5.8): the health ceiling stays cut while it lasts, and the drain runs out over `drainTime`.
   updateDoom(dt) {
-    const D = CONFIG.elden.destined;
+    const D = CONFIG.bossPowers.destined;
     this.doomTime = Math.max(0, this.doomTime - dt);
     if (!this.alive()) return;
     if (this.doomDrain > 0) {
@@ -435,7 +435,7 @@ class Player {
     if (blocked) this.brace = 1; else this.tint = 1;
     if (this.hp <= 0) { this.die(); return { blocked, died: true }; }
     if (strike.destined && !blocked) {   // a new hit restarts the cut (it never stacks) and the drain
-      const D = CONFIG.elden.destined;
+      const D = CONFIG.bossPowers.destined;
       this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());
       events.emit('destinedDeath', { body: this });
     }

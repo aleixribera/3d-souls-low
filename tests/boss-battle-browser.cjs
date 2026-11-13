@@ -22,7 +22,7 @@ const { createServer } = require('../server/index.cjs');
     const start = page.getByRole('button', { name: 'Start battle', exact: true });
     assert.equal(await start.getAttribute('aria-disabled'), 'true', 'empty teams cannot start');
     const catalog = await page.evaluate(() => bossBattle.catalog().map(d => ({ id: d.id, name: d.name })));
-    assert.equal(catalog.length, 13, 'all five Ashmere and eight Elden Ring bosses are available');
+    assert.equal(catalog.length, 14, 'every boss of the story is available, the castellans Hale and Harrow each on their own');
     for (const team of ['Team 1', 'Team 2']) {
       await page.getByRole('button', { name: `Add boss to ${team}`, exact: true }).click();
       await page.getByRole('button', { name: catalog[0].name, exact: true }).click();
@@ -109,8 +109,8 @@ const { createServer } = require('../server/index.cjs');
       b.deplete(); Game.hitstop = 0; Game.update(CONFIG.step);
       const retargeted = a.battleTarget === extra;
 
-      set(['malenia'], ['giant']);
-      const [m, g] = Game.enemies; m.hp -= 200; g.x = m.x + 1; g.z = m.z;
+      set(['ostrey'], ['giant']);
+      const [m, g] = Game.enemies; m.def = { ...m.def, lifesteal: { flat: 40, pct: 0.02 } }; m.hp -= 200; g.x = m.x + 1; g.z = m.z;   // lifesteal is opt-in (v5.9); no boss has it now
       const mh = m.hp; m.hitbox = new Hitbox(m, { w: 8, h: 8, d: 8, y: 2, fwd: 0 }, makeStrike(m.def.attacks[0]));
       resolveTeamCombat(Game); const lifesteal = m.hp > mh;
       m.deplete(); Game.hitstop = 0; Game.update(CONFIG.step);
@@ -121,7 +121,7 @@ const { createServer } = require('../server/index.cjs');
       for (let i = 0; i < 360; i++) { Game.hitstop = 0; Game.update(CONFIG.step); }
       const phaseResumed = m.alive() && m.hp > 0 && m.state !== ES.PHASE;
 
-      set(['margit', 'giant'], ['giant', 'giant']);
+      set(['ostrey', 'giant'], ['giant', 'giant']);
       const [shooter, friend, near, far] = Game.enemies;
       friend.x = 2; friend.z = 0; const friendHp = friend.hp;
       shooter.x = 0; shooter.z = 0; shooter.yaw = Math.PI / 2;

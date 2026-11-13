@@ -37,7 +37,7 @@ async function join(origin, name) {
     assert.equal(a.welcome.leader, a.id, 'a socket that never joins cannot hold leadership'); silent.terminate();
     const b = await join(origin, 'Friend'); peers.push(b);
     const c = await join(origin, 'Other friend'); peers.push(c);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'margit' });
+    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
     const { session } = await a.next('start');
     const pose = { ...session.spawn, hp: 120, state: 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true };
     for (const p of peers) { p.send({ type: 'ready', epoch: session.epoch }); p.send({ type: 'pose', epoch: session.epoch, pose }); }

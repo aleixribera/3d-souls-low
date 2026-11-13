@@ -1,27 +1,10 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: the Crucible Knight (v5.5)
+// Move source CRUCIBLE_KNIGHT: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes the Crucible Knight lives here: his key poses, his model and his moveset. The boss list
-// (js/data/elden-bosses.js) names him; the mode (js/elden.js) fights him in the Enemies arena. Reference:
-// docs/crucible-knight-stats.txt.
-//
-// Conversion to this game's scale (not Elden Ring's numbers). The player has 120 HP, a light hit does 18 and a heavy 53,
-// a roll is invulnerable for 0.3 s. Margit (3200 HP, 4174 in ER) and Godrick (4000, 6080 in ER) are the other duels. The
-// Crucible Knight has 2782 HP in ER (x0.67 of Margit), but 35 % absorption everywhere and a greatshield that eats frontal
-// blows, so he sits a little under Margit on paper and plays as long:
-//   - one bar of 2600 HP; at 50 % (1300 HP left, the reference's threshold) the Crucible aspects wake on the same bar
-//     (`at`), opening with the Wings dive so the change is plain to see;
-//   - stance 80 -> posture 115 (Margit 90 -> 130); ONE parry breaks it (`parry` = `max`, the reference's "1 parry"), and
-//     an execution on him deals 0.7 of the usual (`critMul`, the reference's 30 % critical resistance);
-//   - shield guard (`guard`): while not attacking, blows from the front are blocked (0.3 of the damage) and each blocked
-//     blow may be answered at once by the counter Shield Bash (`when: 'shielded'`). The guard meter breaks him too;
-//   - greatsword blows 20-44, the stomp's shockwave 26 (along the floor: jump it), shield bashes 24, the tail 32 and the
-//     great tail 42, the Wings dive 54; every strike's `active` stays at or under 0.2 s (a roll clears it; a test checks);
-//   - parryable: every greatsword swing and thrust (they glint). Not parryable: the shield bashes, the stomp and the aspects.
-// Ratios kept from the reference: the overhead slam (sword planted), the double spin, the whiffed bash, the Wings landing
-// and the double tail leave the big openings; the thrusts, the diagonal pair and the single tail short ones; the stomp
-// never: it always chains into a sword blow. Phase 2: no longer pauses after his finishers, a tail sweep follows if close.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by the Ringer of Thrale (ringer.js) and one move of the Pillager Captain (js/data/story-boss-moves.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -29,51 +12,6 @@
   ATTACK_POSES.crucibleDiagonal = { hits: [h('lightDiagonal'), h('lightBackhand')] };
   ATTACK_POSES.crucibleDoubleSpin = { hits: [h('enemySpin'), h('enemySpin')] };
 }
-
-// ---- model (from the reference art): a towering knight in ornate golden-bronze plate worked with roots and vortices, a
-// tall closed helm with lyre horns and a crest spike, dark mail between the plates, a great oval shield on the left arm
-// and a long straight greatsword. Built on the Shield Warden's frame (same skeleton and shield arm).
-MODEL_DEFS.crucibleKnight = {
-  extends: 'ironWarden', fit: 1.0, budget: 'boss',
-  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.4, torsoW: 0.27, torsoD: 0.2, armR: 0.07, legR: 0.095, headR: 0.12 },
-  posture: { chest: [0.04, 0, 0], neck: [0.04, 0, 0], head: [0.02, 0, 0], elbowL: [-0.5, 0, 0], elbowR: [-0.3, 0, 0] },
-  materials: {
-    ...IRONBOUND_MATS,
-    plate: { tex: 'dentedSteel', tint: 0xb07a40, decay: 0.55, size: 512 },
-    gilt: { tex: 'dentedSteel', tint: 0xc89850, decay: 0.4 },
-    mail: { tex: 'knightMail', tint: 0x4a4038, decay: 0.8 },
-    shieldFace: { tex: 'rustedIron', tint: 0xb08050, decay: 0.45, size: 512 },
-    shieldTrim: { tex: 'dentedSteel', tint: 0xc08a48, decay: 0.45 },
-    grip: { tex: 'crackedLeather', tint: 0x4a3020, decay: 0.6 },
-    blade: { tex: 'dentedSteel', tint: 0xb07850, decay: 0.45, size: 512 },
-    guard: { tex: 'dentedSteel', tint: 0xa87040, decay: 0.5 },
-    cloth: { tex: 'rottenCloth', tint: 0x2e2a26, decay: 0.75, double: true },
-  },
-  body: { torso: 'mail', pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
-  bones: { loinF: { parent: 'spin', at: [0, -0.04, 0.18] }, loinB: { parent: 'spin', at: [0, -0.04, -0.18] } },
-  parts: [
-    { use: 'breastplate', slot: 'plate', bone: 'chest' },
-    { use: 'medallion', slot: 'gilt', bone: 'chest', at: [0, 0.4, 0.21], r: 0.07 },   // the vortex boss on the breast
-    { use: 'neckGuard', slot: 'plate', bone: 'chest' },
-    { use: 'tassets', slot: 'plate', bone: 'spin' },
-    { use: 'crucibleHelm', slot: 'plate', metal: 'gilt', bone: 'head', size: 1.12 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.6, side: -1 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.5 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.03, to: 0.28, radius: 0.066, count: 3, flare: 0.28, cop: 0.075 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.03, to: 0.28, radius: 0.064, count: 3, flare: 0.22, cop: 0.07 },
-    { use: 'plateBands', slot: 'plate', bone: 'legL', from: 0.08, to: 0.34, radius: 0.1, count: 3 },
-    { use: 'plateBands', slot: 'plate', bone: 'legR', from: 0.08, to: 0.34, radius: 0.1, count: 3 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeL', from: 0.03, to: 0.42, radius: 0.076, count: 4, flare: 0.14, cop: 0.09 },
-    { use: 'plateBands', slot: 'plate', bone: 'kneeR', from: 0.03, to: 0.42, radius: 0.076, count: 4, flare: 0.14, cop: 0.09 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinF', w: 0.3, len: 0.6, seed: 5 },
-    { use: 'clothStrip', slot: 'cloth', bone: 'loinB', w: 0.34, len: 0.66, seed: 9 },
-    { use: 'ovalShield', slot: 'shieldFace', metal: 'shieldTrim', bone: 'elbowL', w: 0.84, h: 1.18, at: [0.08, -0.24, 0.24] },
-  ],
-  weapon: { use: 'wardenGreatsword', slots: { blade: 'blade', grip: 'grip', guard: 'guard' } },
-  eyes: { color: 0xffc880, size: 0.012, spread: 0.04, at: [0, 0.15, 0.17] },
-  anim: { ...IRONBOUND_ANIM,
-    cloth: [{ bone: 'loinF', gain: 0.1, k: 60, damp: 5, flutter: 0.03 }, { bone: 'loinB', gain: 0.12, k: 54, damp: 4.6, flutter: 0.04 }] },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // New in v5.5: the `shielded` reaction (a blow taken on his guard, js/enemy.js), `critMul` (js/execution.js), spectral

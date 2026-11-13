@@ -13,13 +13,15 @@
     const d = e.radius + p.radius + gap;
     sim.place(e.x + Math.sin(e.yaw) * d, e.z + Math.cos(e.yaw) * d, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
   };
+  // A rot floor in the Long Hall: the opt-in `hazards` of v7.0, on no level since the Haligtree went (v7.53.0).
   const inRot = () => {
+    if (!world.hazards.length) world.hazards.push({ id: 'audit-rot', kind: 'rot', rect: [12, 16, -1, 1], dps: 30, y: 0, timer: 0 });
     const h = world.hazards[0];
     sim.place((h.rect[0] + h.rect[1]) / 2, (h.rect[2] + h.rect[3]) / 2, h.y);
   };
 
-  test('Audit: a death in the scarlet rot plays the whole death sequence, and the next one waits for its respawn too', () => {
-    Game.startLevel('haligtree'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+  test('Audit: a death in a rot floor plays the whole death sequence, and the next one waits for its respawn too', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies();
     for (let round = 0; round < 2; round++) {
       log.length = 0; inRot(); Game.player.hp = 1;
       sim.until(() => !Game.player.alive(), 3); sim.step(1);
@@ -69,12 +71,12 @@
   });
 
   test('Audit: a phase may branch (abort, follow-up) into a move only its base def lists', () => {
-    const e = new A.Enemy(A.ENEMY_BY_ID.margit, { x: 0, z: 0, yaw: 0, behavior: 'arena', notice: 30 });
+    const e = new A.Enemy(A.ENEMY_BY_ID.ostrey, { x: 0, z: 0, yaw: 0, behavior: 'arena', notice: 30 });
     try {
       const base = e.baseDef.attacks.find(a => !e.def.attacks.includes(a)) || e.baseDef.attacks[0];
       expect.ok(e.attackById(base.id) === base, 'found through the base def');
       expect.ok(e.attackById('no-such-move') === undefined, 'an unknown id is still unknown');
-      expect.ok(e.isBoss(), 'Margit is a boss by the one rule');
+      expect.ok(e.isBoss(), 'Ostrey is a boss by the one rule');
     } finally { e.rig.dispose(); }
   });
 

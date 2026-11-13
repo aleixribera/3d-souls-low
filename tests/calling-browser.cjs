@@ -46,9 +46,9 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const picks = a.locator('#lobbyCallingPick button');
     assert.equal(await picks.count(), app.sim.catalog().bosses.length, 'every boss in the game can be picked');
     assert.equal(await a.locator('#lobbyStart').isDisabled(), true, 'a hand-picked run needs three bosses');
-    for (const name of ['Pillager Captain', 'Bell Warden', 'Margit, the Fell Omen']) await picks.filter({ hasText: name }).click();
-    assert.equal(await picks.filter({ hasText: 'Margit' }).getAttribute('data-order'), '3');
-    assert.match(await a.locator('#lobbyAdventureSummary').textContent(), /Pillager Captain, then Bell Warden and Margit, the Fell Omen together\./);
+    for (const name of ['Pillager Captain', 'Bell Warden', 'Old Ostrey, the Porter']) await picks.filter({ hasText: name }).click();
+    assert.equal(await picks.filter({ hasText: 'Old Ostrey' }).getAttribute('data-order'), '3');
+    assert.match(await a.locator('#lobbyAdventureSummary').textContent(), /Pillager Captain, then Bell Warden and Old Ostrey, the Porter together\./);
     await a.screenshot({ path: `${out}/lobby-desktop.png` });
     await a.setViewportSize({ width: 390, height: 844 });
     await a.locator('#lobbyCallingPick').scrollIntoViewIfNeeded();
@@ -62,7 +62,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await a.locator('#runIntroTitle').textContent(), 'THE CALLING');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(app.sim.botList().length, 1, 'a bot fills the third place');
-    assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'margit']);
+    assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'ostrey']);
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 1\/2/);
     const bId = await b.evaluate(() => multiplayer.info.self);
     blows([await a.evaluate(() => multiplayer.info.self), bId]);
@@ -94,7 +94,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 2\/2/);
     blows([aId, bId]);
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
-    assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['bellWarden', 'margit'], 'the last two bosses come together');
+    assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['bellWarden', 'ostrey'], 'the last two bosses come together');
     await a.waitForTimeout(2500);   // let the fight start before the frame
     await a.screenshot({ path: `${out}/final-fight.png` });
     // Rise Again: a falls and gets up where they fell, at half health, and the server counts them standing.
@@ -133,7 +133,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     // Again: the same roster from its first fight, for the same group; both summaries close.
     await a.locator('#runSummaryAgain').click();
     await Promise.all([ready(a), ready(b)]);
-    assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'margit']);
+    assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'ostrey']);
     assert.equal(app.session.gauntlet.number, 1);
     assert.equal(await b.locator('#runSummary').isVisible(), false);
     // A wipe ends the run on the same screen, in red.

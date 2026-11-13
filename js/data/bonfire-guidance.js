@@ -51,22 +51,6 @@ const BONFIRE_GUIDANCE = {
       [[203,16,-4],[292,16,-2],[312,24,-2],[314,24,-4]],
     ] },
   ],
-  "stormhill": [
-    { id: "storm-chapel-to-storm-gatefront", from: "storm-chapel", to: "storm-gatefront", paths: [
-      [[2.5,0,-6.5],[2,0,-7],[6,0,-4],[55,0,-3],[130,0,-3],[131,0,-6],[133,0,-16],[133,0,-15.5]],
-    ] },
-    { id: "storm-gatefront-to-storm-bridge", from: "storm-gatefront", to: "storm-bridge", paths: [
-      [[133,0,-15.5],[133,0,-16],[159,0,-13],[170,0,-2],[190,8,-2],[222,8,-2],[224,8,-6],[224,8,-6.2]],
-    ] },
-  ],
-  "stormveil": [
-    { id: "veil-gate-to-veil-tower", from: "veil-gate", to: "veil-tower", paths: [
-      [[13.5,0,-4.3],[13,0,-4],[31,0,-14],[36,0,-23],[70,0,-23],[86,8,-27],[136,8,-27],[140,8,-29],[140,8,-28.5]],
-    ] },
-    { id: "veil-tower-to-veil-liftside", from: "veil-tower", to: "veil-liftside", paths: [
-      [[140,8,-28.5],[140,8,-29],[139,8,-16],[138,0,4],[138,0,62],[133,0,70],[133.5,0,70.5]],
-    ] },
-  ],
   "windward-moor": [
     { id: "moor-shrine-to-moor-gatefront", from: "moor-shrine", to: "moor-gatefront", paths: [
       [[2.5,0,-6.5],[2,0,-7],[6,0,-4],[55,0,-3],[130,0,-3],[131,0,-6],[133,0,-16],[133,0,-15.5]],
@@ -130,56 +114,6 @@ const BONFIRE_GUIDANCE = {
       [[3,24,-4.5],[3,24,-5],[14,24,-2],[72,24,-2],[92,16,-2],[93,16,-2],[102,16,-12],[102,0,-40],[90,0,-52]],
     ] },
     { id: "mere-yard-to-mere-shore", from: "mere-yard", to: "mere-shore", paths: [
-      [[90,0,-52],[104,0,-47],[164,0,-47],[184,0,-47],[186,0,-38]],
-    ] },
-  ],
-  "evergaol": [
-    { id: "gaol-landing-to-gaol-isle", from: "gaol-landing", to: "gaol-isle", paths: [
-      [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],
-    ] },
-    { id: "gaol-isle-to-gaol-last", from: "gaol-isle", to: "gaol-last", paths: [
-      [[108,6,-3],[106,6,5],[106,6,44],[106,12,56],[106,12,57],[115,12,65],[131,12,65],[132,12,63],[132,12,62.8]],
-    ] },
-  ],
-  "leyndell": [
-    { id: "ley-gate-to-ley-plaza", from: "ley-gate", to: "ley-plaza", paths: [
-      [[13.5,0,-4.5],[13,0,-5],[42,0,-3],[120,0,-3],[120,0,-2.8]],
-    ] },
-    { id: "ley-plaza-to-ley-throne", from: "ley-plaza", to: "ley-throne", paths: [
-      [[120,0,-2.8],[120,0,-3],[122,0,-3],[142,10,3],[157,10,16],[157,10,46],[153,10,54],[153.5,10,54.5]],
-    ] },
-  ],
-  "ashen-capital": [
-    { id: "ash-gate-to-ash-yard", from: "ash-gate", to: "ash-yard", paths: [
-      [[11.5,0,-3.5],[11,0,-4],[34,0,-3],[71,0,-3]],
-      [[71,-5,-3],[85,-5,-12],[85,0,-28],[78,0,-31],[78,0,-30.5]],
-    ] },
-    { id: "ash-yard-to-ash-throne", from: "ash-yard", to: "ash-throne", paths: [
-      [[78,0,-30.5],[78,0,-31],[160,0,-31],[177,0,-10],[177,10,12],[171,10,20],[171.5,10,20.5]],
-    ] },
-  ],
-  "farum-azula": [
-    { id: "farum-arrival-to-farum-terrace", from: "farum-arrival", to: "farum-terrace", paths: [
-      [[3,0,-4.5],[3,0,-5],[16,0,-1],[64,0,-1],[80,8,-2],[105,8,-2]],
-      [[105,0,-2],[114,0,-9],[130,8,-9],[132,8,-2]],
-    ] },
-    { id: "farum-terrace-to-farum-spire", from: "farum-terrace", to: "farum-spire", paths: [
-      [[132,8,-2],[214,8,-2],[230,16,-2],[231,16,-3],[232,16,-6]],
-    ] },
-  ],
-  "erdtree": [
-    { id: "tree-hollow-to-tree-amber", from: "tree-hollow", to: "tree-amber", paths: [
-      [[3,0,-5.5],[3,0,-6],[17,0,-1],[72,0,-1],[90,8,1],[103,8,14],[103,8,40],[97,8,52],[97.5,8,52.5]],
-    ] },
-    { id: "tree-amber-to-tree-throne", from: "tree-amber", to: "tree-throne", paths: [
-      [[97.5,8,52.5],[97,8,52],[101,8,53],[102,8,54],[104,16,72],[105,16,73],[120,16,83],[150,16,83],[151,16,82],[151,16,77],[151.5,16,77.5]],
-    ] },
-  ],
-  "haligtree": [
-    { id: "halig-ledge-to-halig-elphael", from: "halig-ledge", to: "halig-elphael", paths: [
-      [[3,24,-4.5],[3,24,-5],[14,24,-2],[72,24,-2],[92,16,-2],[93,16,-2],[102,16,-12],[102,0,-40],[90,0,-52]],
-    ] },
-    { id: "halig-elphael-to-halig-lake", from: "halig-elphael", to: "halig-lake", paths: [
       [[90,0,-52],[104,0,-47],[164,0,-47],[184,0,-47],[186,0,-38]],
     ] },
   ],

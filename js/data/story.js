@@ -1,5 +1,5 @@
 'use strict';
-// Story mode (v4.4; two roads since v7.0): each campaign as content. js/story.js plays them; this is only their text and order.
+// Story mode (v4.4): each campaign as content (one road since v7.53.0). js/story.js plays them; this is only their text and order.
 //   id, name, short    the campaign's id (its save slot is CONFIG.story.saveKeys[id]), its menu line and a short tag (dev jumps)
 //   menuTitle, menuSub its own menu screen's title and subtitle; description: the line under it in the Story menu
 //   chapters           the campaign in order, each a level id with the title shown over its loading screen and one line
@@ -11,7 +11,7 @@
 // Adding a level to a campaign: write the level as usual (js/levels/, data/levels.js), then add a chapter where it falls.
 // The order here, not the levels' `next`, drives the campaign. Every line here must agree with LORE.md.
 const STORY = {
-  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story 1 (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
+  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
   description: 'Start here. From the prison to the king, and over the pass. The controls are taught on the way.',
   chapters: [
     { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells, in the old hall of judgment. The hall beyond is long, and not empty.' },
@@ -35,25 +35,4 @@ const STORY = {
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.
   progress: { currency: 0, equipment: {}, upgrades: {} },
 };
-// The second road (v7.0): the Lands Between, one land for each boss of the Elden Ring Bosses mode, in that order. Harder
-// than Ashmere from its first step; every land grants more flasks (the levels' `flasks`). LORE.md, part II.
-const LANDS_STORY = {
-  id: 'lands', name: 'The Lands Between: The Elden Throne', short: 'Lands', lobbyName: 'Story 2 (Lands)', menuTitle: 'THE LANDS BETWEEN', menuSub: 'THE ELDEN THRONE',
-  description: 'Harder. Eight levels, each with an Elden Ring boss. Finn fights beside you. Best after Ashmere.',
-  companion: { id: 'finn', name: 'Finn', profile: 'quill', color: 0x788d9f },
-  chapters: [
-    { level: 'stormhill', title: 'STORMHILL', line: 'The Elden Ring lies shattered, and the demigods who took its shards have gone mad with them. Grace has called you back from death, Tarnished. The road to the throne begins at Stormveil, and the Fell Omen keeps its gate.' },
-    { level: 'stormveil', title: 'STORMVEIL CASTLE', line: 'Past the Omen stands the castle of Godrick the Grafted, who sews the limbs of the fallen onto his own body, and keeps a Great Rune he never earned.' },
-    { level: 'evergaol', title: 'THE STORMHILL EVERGAOL', line: 'One Great Rune will not open the capital. The second lies sealed in an evergaol, a prison of stars, with the last knight of the Crucible set to guard it for ever.' },
-    { level: 'leyndell', title: 'LEYNDELL, ROYAL CAPITAL', line: 'Two runes, and the capital\'s gate opens. Under the Erdtree the golden city waits, and its last defender: Morgott, the Omen King.' },
-    { level: 'ashen-capital', title: 'LEYNDELL, ASHEN CAPITAL', line: 'The Erdtree\'s thorns would let no one in, so Seren gave it her flame. The tree burned, and the city with it. In the ash, the first Elden Lord has come home to his throne.' },
-    { level: 'farum-azula', title: 'CRUMBLING FARUM AZULA', line: 'The ash has cleared the way, but the throne\'s doors hold: Death itself is sealed behind them. Its keeper, the Black Blade, waits in Farum Azula, the dragons\' city torn loose from time.' },
-    { level: 'erdtree', title: 'THE ELDEN THRONE', line: 'Destined Death is free. Inside the burnt Erdtree, at the foot of the throne, the Golden Order still has a body, and its name is Radagon.' },
-    { level: 'haligtree', title: 'THE HALIGTREE', line: 'The Ring will not mend: one shard is missing. Malenia, Blade of Miquella, carried it to the Haligtree in the frozen north, where the scarlet rot blooms.' },
-  ],
-  done: 'The Elden Ring is whole. Somewhere, a maiden\'s lantern is lit again.',
-  credits: { companion: 'Seren, the Grace-Bearer', foes: ['Margit, the Fell Omen', 'Godrick the Grafted', 'The Crucible Knight', 'Morgott, the Omen King',
-    'Godfrey, First Elden Lord', 'Maliketh, the Black Blade', 'Radagon of the Golden Order', 'Malenia, Blade of Miquella'] },
-  progress: { currency: 0, equipment: {}, upgrades: {} },
-};
-const STORIES = [STORY, LANDS_STORY];
+const STORIES = [STORY];

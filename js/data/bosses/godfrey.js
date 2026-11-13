@@ -1,25 +1,10 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Godfrey, First Elden Lord / Hoarah Loux, Warrior (v5.5)
+// Move source GODFREY: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Godfrey lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/godfrey.txt.
-//
-// Conversion to this game's scale (not Elden Ring's numbers). The player has 120 HP, a light hit does 18 and a heavy 53,
-// a roll is invulnerable for 0.3 s. Margit 3200 HP, Godrick 4000. In Elden Ring Godfrey (21903, Leyndell Ash) is a late
-// boss far above both; at 18 a hit a straight ratio would be a slog of several hundred hits, so he sits a step above Godrick:
-//   - one bar of 4400 HP, four phases on it (`at`): `lord` (the axe), `regal` from 78 % (after the Regal Roar every stomp
-//     is a ring round him), `loux` from 40 % (the reference's threshold: he casts off Serosh, the armour and the axe and
-//     fights bare-handed, "Hoarah Loux, Warrior" on the bar), `rage` from 20 % (Hoarah Loux's Rage: his stomps go wide);
-//   - stance 120 -> posture 165 (Godrick 105 -> 150); nothing can be parried (`noParry` on every attack), only blocked
-//     or rolled; the grabs (Power Bomb, Loux's Lunge) are `rollOnly`: unblockable, as in the reference;
-//   - axe blows 26-34, leaps and the axe dive 58-62, the grabs 56-64, stomps and shockwaves 28-38 (along the floor:
-//     `ground`, so a jump clears them), claws 18; every strike's active time stays at or under 0.2 s (a test checks);
-//   - the phase change (`seroshShed`) is untouchable through its wind-up and strike (`invulnerable`) and only shoves
-//     someone right beside him; the axe, armour and lion vanish as it lands (the phase's `conceal`, js/flame.js).
-// Punish windows kept from the reference: the axe dive, the Regal Roar, the fissure (flanks), the triple combo, the
-// Power Bomb, the Lunge and the Earthshaker leave long recoveries; the hoist, the flurry and the double stomp short ones;
-// the plain stomp has none (it branches straight into an axe swing).
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by Oswin (oswin.js) and one move of the Giant Skeleton (js/data/story-boss-moves.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -32,71 +17,6 @@
   ATTACK_POSES.louxShake = { hits: [h('enemyBash'), h('heavyOverhead'), h('enemyStomp')] };
   ATTACK_POSES.louxFlurry = { hits: [A.clawRake.hits[0], A.clawRake.hits[1], A.clawRake.hits[0], A.clawRake.hits[1], h('lightOverhead')] };
 }
-
-// ---- model (from the reference art): a towering old warlord in ornate silver-gilt plate and mail, a dark blue cape, a
-// brown sash, a gold circlet over a white mane and long forked beard; the ghostly lion Serosh on his back; a huge single-
-// bitted axe. In the second phase the lion, the armour and the axe are gone (the phase's `conceal`): a bare-chested giant.
-MODEL_DEFS.godfrey = {
-  faction: 'lord', budget: 'boss', fit: 1.02, limbSides: 8,
-  proportions: { shoulderX: 0.46, torsoW: 0.31, torsoD: 0.22, armR: 0.09, legR: 0.105, headR: 0.12, handR: 0.08, footLen: 0.34 },
-  limbs: { armR: { len: 1.02, thick: 1.15 }, armL: { len: 1.02, thick: 1.15 }, legL: { thick: 1.12 }, legR: { thick: 1.12 } },
-  posture: { chest: [-0.04, 0, 0], head: [-0.04, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },   // upright, a lord
-  materials: {
-    skin: { tex: 'paleSkin', tint: 0xc49a78, decay: 0.8 },
-    armour: { tex: 'dentedSteel', tint: 0xb4aa98, decay: 0.45, size: 512 },
-    gold: { tex: 'dentedSteel', tint: 0xc8a050, decay: 0.3, size: 512 },
-    mail: { tex: 'dentedSteel', tint: 0x8a8478, decay: 0.7 },
-    cape: { tex: 'rottenCloth', tint: 0x26304e, decay: 0.55, size: 512, double: true },
-    sash: { tex: 'tatteredFabric', tint: 0x7a5a40, decay: 0.7, double: true },
-    rag: { tex: 'tatteredFabric', tint: 0x8a3a30, decay: 0.7, double: true },
-    hair: { tex: 'rottenCloth', tint: 0xe8e0d0, decay: 0.2, double: true },
-    lion: { tex: 'margitFur', tint: 0xb8a878, decay: 0.3, double: true },
-    blade: { tex: 'dentedSteel', tint: 0xc0b498, decay: 0.4, size: 512 },
-    haft: { tex: 'rustedIron', tint: 0x6a4a30, decay: 0.5 },
-    eye: { glow: 0xffe0a0 },
-  },
-  body: { torso: null, pelvis: 'sash', arms: 'skin', legs: 'skin', head: 'skin', neck: 'skin', hands: 'skin', feet: 'armour' },
-  bones: {
-    loinF: { parent: 'spin', at: [0, -0.02, 0.22] }, loinB: { parent: 'spin', at: [0, -0.02, -0.22] },
-    beard: { parent: 'head', at: [0, 0.0, 0.12] }, mane: { parent: 'head', at: [0, 0, 0] },
-    lion: { parent: 'chest', at: [0.18, 0.95, -0.4] }, lionMane: { parent: 'chest', at: [0.1, 0.7, -0.36] },
-    capeA: { parent: 'chest', at: [0, 0.6, -0.27] }, capeB: { parent: 'capeA', at: [0, -0.46, 0] }, capeC: { parent: 'capeB', at: [0, -0.46, 0] },
-  },
-  parts: [
-    { use: 'muscleTorso', slot: 'skin', bone: 'chest', bulk: 1.15 },   // v6.0: a sculpted bare torso (js/kit-premium.js)
-    // Armour (phase 1 only): breastplate, big rounded pauldrons, bracers, tassets and mail skirt, greaves.
-    { use: 'breastplate', slot: 'armour', bone: 'chest' },
-    { use: 'medallion', slot: 'gold', bone: 'chest', at: [0, 0.4, 0.25], r: 0.08 },
-    { use: 'roundPauldron', slot: 'armour', bone: 'armL', size: 1.9 }, { use: 'roundPauldron', slot: 'armour', bone: 'armR', size: 1.9, side: -1 },
-    { use: 'wraps', slot: 'armour', bone: 'elbowL', from: 0.04, to: 0.3, radius: 0.1, count: 3 }, { use: 'wraps', slot: 'armour', bone: 'elbowR', from: 0.04, to: 0.3, radius: 0.1, count: 3 },
-    { use: 'wraps', slot: 'armour', bone: 'kneeL', from: 0.04, to: 0.36, radius: 0.12, count: 3 }, { use: 'wraps', slot: 'armour', bone: 'kneeR', from: 0.04, to: 0.36, radius: 0.12, count: 3 },
-    { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'tassets', slot: 'armour', bone: 'spin' },
-    // Always: the sash, the belt, the hip rags; the white mane, forked beard and gold circlet.
-    { use: 'belt', slot: 'gold', bone: 'spin' },
-    { use: 'clothStrip', slot: 'sash', bone: 'loinF', w: 0.3, len: 0.85, seed: 3 }, { use: 'clothStrip', slot: 'rag', bone: 'loinB', w: 0.4, len: 0.8, seed: 7 },
-    { use: 'mane', slot: 'hair', bone: 'mane', count: 18, len: 0.42 },
-    { use: 'circlet', slot: 'gold', bone: 'head', r: 0.13, y: 0.16 },
-    { use: 'clothStrip', slot: 'hair', bone: 'beard', w: 0.14, len: 0.36, seed: 4 },
-    // Serosh, the lion on his back (phase 1 only): a vast pale mane round a shaggy head above his left shoulder.
-    { use: 'mane', slot: 'lion', bone: 'lion', count: 28, len: 1.0 }, { use: 'mane', slot: 'lion', bone: 'lionMane', count: 24, len: 0.8 },
-    { use: 'furTail', slot: 'lion', bone: 'lion', size: 1.2 },
-    // The dark blue cape (phase 1 only).
-    { use: 'capeSegment', slot: 'cape', bone: 'capeA', w0: 0.72, w1: 0.86, len: 0.46, bow: 1.0 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeB', w0: 0.86, w1: 0.98, len: 0.46, bow: 0.8 },
-    { use: 'capeSegment', slot: 'cape', bone: 'capeC', w0: 0.98, w1: 1.04, len: 0.4, bow: 0.6, ragged: true, seed: 5 },
-  ],
-  weapon: { use: 'greatAxe', slots: { blade: 'blade', grip: 'haft', guard: 'gold' } },
-  eyes: { color: 0xffe0a0, size: 0.018, spread: 0.06, at: [0, 0.12, 0.12] },
-  anim: {
-    idle: { breathRate: 0.8, breath: 0.026, headDrift: 0.05, sway: 0.02, twitch: 0 }, walk: { twist: 0.14, roll: 0.06, headNod: 0.05, elbow: 0.25, drag: 0.1 },
-    flinch: { head: 0.3, chest: 0.3, arms: 0.3 }, death: { buckle: 1.2, slump: 1 },
-    cloth: [{ bone: 'loinF', gain: 0.1, k: 60, damp: 5, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 52, damp: 4.6, flutter: 0.04 },
-            { bone: 'beard', gain: 0.1, k: 70, damp: 6, flutter: 0.02 }, { bone: 'mane', gain: 0.05, k: 60, damp: 5, flutter: 0.03 },
-            { bone: 'lion', gain: 0.04, k: 30, damp: 3, flutter: 0.08 }, { bone: 'lionMane', gain: 0.05, k: 30, damp: 3, flutter: 0.08 },
-            { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 34, damp: 3.6, flutter: 0.05 },
-            { bone: 'capeC', gain: 0.08, k: 30, damp: 3.2, flutter: 0.07, sideways: 1.2 }],
-  },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // New field (v5.5): a phase's `conceal` (model slots, or 'weapon', hidden once its invulnerable opener strikes; js/flame.js).

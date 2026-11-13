@@ -17,7 +17,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
 // ---- 1. Each blessing on a body ------------------------------------------------------------------------------------
 {
   const sim = createSimulation(), g = realm(sim);
-  sim.addBot(); sim.start('arena', 'margit');
+  sim.addBot(); sim.start('arena', 'ostrey');
   const Player = g('Player'), PLAYER_DEF = g('PLAYER_DEF'), CONFIG = g('CONFIG'), B = CONFIG.blessings, ES = g('ES');
   const hands = [...sim.inspect().bots.values()][0].body.ctl;
   const body = ids => { const p = new Player(PLAYER_DEF, 0, 0, 0, 0); p.ctl = hands; p.bless(ids); return p; };
@@ -56,8 +56,8 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.equal(sim.blessings()[bot.id].length, 1, 'an offer to one late player gives no bot a second blessing');
   assert.equal(sim.blessings().late.length, 1, 'out of time: an open offer is settled, its player present or not');
   const s2 = createSimulation({ seed: 7 }), g2 = realm(s2), id = s2.addBot().id;
-  for (let round = 0; !(s2.blessings()[id] || []).includes('rise-again') && round < 5; round++) { s2.start('arena', 'margit', [], round > 0); s2.offerBlessings([]); }
-  s2.start('arena', 'margit', [], true);
+  for (let round = 0; !(s2.blessings()[id] || []).includes('rise-again') && round < 5; round++) { s2.start('arena', 'ostrey', [], round > 0); s2.offerBlessings([]); }
+  s2.start('arena', 'ostrey', [], true);
   const riser = () => s2.inspect().bots.get(id).body;
   assert.ok(riser().blessings.includes('rise-again'), 'a bot takes Rise Again within a few offers');
   const fell = riser(); fell.x += 1; fell.die();

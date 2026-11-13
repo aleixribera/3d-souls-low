@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
       });
       if (process.env.AUDIT_NATIVE) await page.evaluate(() => { CONFIG.VISUALS.quality.low.renderScale = 1; });
       const results = [];
-      for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'final-castle', 'margit', 'godrick', 'radagon', 'maliketh', 'malenia']) {
+      for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'final-castle', 'ostrey', 'hale', 'kindlingTree', 'agathe', 'kingsBlade']) {
         const row = await page.evaluate(async id => {
           Game.manualClock = true; visuals.setQuality('low');
           let seed = 12345;
@@ -63,7 +63,7 @@ const server = http.createServer((req, res) => {
             obj[key] = function (...args) { const t = performance.now(); try { return fn.apply(this, args); } finally { phases[key] = (phases[key] || 0) + performance.now() - t; } };
           }
           const t = performance.now(), textures = TEXLIB.count();
-          if (ELDEN_BOSSES.some(b => b.id === id)) elden.start(id); else Game.startLevel(id);
+          if (ENEMY_BY_ID[id]) Game.startFight(id); else Game.startLevel(id);
           const loadMs = performance.now() - t;
           for (const [obj, key, fn] of originals) obj[key] = fn;
           const t1 = performance.now(); Game.reset(); const retryMs = performance.now() - t1;
@@ -100,7 +100,7 @@ const server = http.createServer((req, res) => {
     if (process.argv[3] === 'MODELS') {
       await page.waitForFunction(() => typeof MODELLAB !== 'undefined' && MODELLAB.open);
       const rows = [];
-      for (const id of ['hollowSoldier', 'undeadKnight', 'ashExecutioner', 'giantSkeleton', 'margit', 'godrick', 'malenia']) {
+      for (const id of ['hollowSoldier', 'undeadKnight', 'ashExecutioner', 'giantSkeleton', 'oldOstrey', 'castellanHale', 'kingsBlade']) {
         for (const detail of ['before', 'after']) {
           const result = await page.evaluate(({ id, detail }) => {
             Game.mode = 'play'; Game.manualClock = true;
@@ -127,11 +127,11 @@ const server = http.createServer((req, res) => {
           const original = obj[key];
           obj[key] = function (...args) { const t = performance.now(); try { return original.apply(this, args); } finally { stages[label] = (stages[label] || 0) + performance.now() - t; } };
         }
-        for (const [kind, id] of [...LEVELS.map(l => ['level', l.id]), ...ENEMY_DEFS.map(e => ['enemy', e.id]), ...ELDEN_BOSSES.map(b => ['boss', b.id])]) {
+        for (const [kind, id] of [...LEVELS.map(l => ['level', l.id]), ...ENEMY_DEFS.map(e => ['enemy', e.id])]) {
           for (const pass of ['first', 'repeat']) {
             for (const key of Object.keys(stages)) delete stages[key];
             const t = performance.now(), textures = TEXLIB.count(), models = KIT.cache.size;
-            if (kind === 'level') Game.startLevel(id); else if (kind === 'boss') elden.start(id); else Game.startFight(id);
+            if (kind === 'level') Game.startLevel(id); else Game.startFight(id);
             rows.push({ kind, id, pass, ms: performance.now() - t, ...stages, textures: TEXLIB.count() - textures, models: KIT.cache.size - models });
           }
         }
@@ -153,13 +153,13 @@ const server = http.createServer((req, res) => {
     });
     console.log(JSON.stringify(hardware));
     const results = [];
-    for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'godrick', 'malenia']) {
+    for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'hale', 'kingsBlade']) {
       const result = await page.evaluate(async id => {
         let seed = 12345;
         Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
         Game.manualClock = true;
         visuals.setQuality('ultra');
-        if (['godrick', 'malenia'].includes(id)) elden.start(id); else Game.startLevel(id);
+        if (['hale', 'kingsBlade'].includes(id)) Game.startFight(id); else Game.startLevel(id);
         Game.loading = 0;
         document.getElementById('loading').classList.remove('show');
         for (let i = 0; i < 12; i++) { Game.update(CONFIG.step); Game.render(1, CONFIG.step); }

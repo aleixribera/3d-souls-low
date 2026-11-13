@@ -1,7 +1,7 @@
 'use strict';
 // Level 12: the Torn Abbey (v7.48.0), chapter 12 of the Story (STORY.md; LORE.md 10h), the first of Act III: where
 // Thrale's monks tried to cut the Ember out of the earth and tore the hill loose into the storm. Rough (PLAN.md stage 3,
-// track A): built from the old second road's ruins adrift (js/levels/lands/farum-azula.js) as raw material, its layout
+// track A): built from the old second road's ruins adrift (removed in v7.53.0) as raw material, its layout
 // kept, every name and character of that road gone; no dragon, a storm instead of the endless sunset, rain and lightning,
 // and the Ember's torn root hanging in the cloud past the nave. Most edges are open: a fall is a fall into the storm.
 // x east, z north.

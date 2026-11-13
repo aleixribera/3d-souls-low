@@ -1,19 +1,10 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Margit, the Fell Omen (v5.3)
+// Move source MARGIT: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Margit lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/margit-stats.txt.
-//
-// Scaled to this game, not to Elden Ring's numbers: the player has 120 HP, a light hit does 18 and a heavy 38, and a roll
-// is invulnerable for 0.3 s. Margit stands a little above Aldric (the throne + knell duel, 3800 HP over two bars):
-//   - one bar of 3200 HP; at 60 % (1920 HP left) the second phase begins on the same bar (`at`), opening with the hammer;
-//   - posture 130, a parry adds 65: two parries break his stance (the reference's "2 parries"), heavy blows build it too;
-//   - cane blows 22-46 damage, golden (holy) weapons 34-60, the daggers 16-18; every strike's active time stays at or under
-//     0.2 s, so a roll always clears it with a margin (the boss test);
-//   - the cane can be parried (it glints); the golden weapons and the tail cannot (`noParry`), but they can be blocked.
-// Ratios kept from the reference: the hammer slams hit hardest, the charged overhead and the leaping plunge leave the big
-// openings, the thrust and the daggers are fast with almost no opening, and the delayed swings (`hold`) are his identity.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by Old Ostrey (js/data/bosses/ostrey.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -31,75 +22,6 @@
   ATTACK_POSES.margitSwordCombo = { hits: [h('enemyThrust'), h('hollowSwing'), h('hollowOverhead')] };
   ATTACK_POSES.margitCross = { hits: [h('enemySpin')] };
 }
-
-// ---- model (v5.3.1, after the game's look): a hunched giant buried in layered rags of faded red and brown burlap, a deep
-// hood, a crown of twisted horn over long white hair, grey wrinkled skin, long bare arms and bare feet, a rope sash, a
-// ram's spiral horn of growth behind the right shoulder and a thick matted tail curling up round his right side.
-MODEL_DEFS.margit = {
-  faction: 'goldenOmen', budget: 'boss', fit: 1.08, limbSides: 8,
-  proportions: { shoulderX: 0.36, torsoW: 0.24, torsoD: 0.18, armR: 0.058, legR: 0.08, headR: 0.13, handR: 0.07, footLen: 0.36 },
-  limbs: { armL: { len: 1.14, thick: 0.95 }, armR: { len: 1.1 } },   // long arms, the off hand longer still
-  posture: { chest: [0.6, 0, 0.04], neck: [0.32, 0, 0], head: [-0.3, 0, 0], elbowL: [-0.35, 0, 0], elbowR: [-0.4, 0, 0] },   // bent low over the cane
-  materials: {
-    skin: { tex: 'margitSkin', tint: 0xffffff, decay: 0.75, size: 512 },
-    robe: { tex: 'margitBurlap', tint: 0xffffff, decay: 0.7, size: 512, double: true },
-    hood: { tex: 'margitBurlap', tint: 0xc0a088, decay: 0.75, size: 512, double: true },
-    rags: { tex: 'margitRags', tint: 0xffffff, decay: 0.8, size: 512, double: true },
-    ragsDark: { tex: 'margitRags', tint: 0x8a6a60, decay: 0.85, size: 512, double: true },
-    hair: { tex: 'rottenCloth', tint: 0xe8e2d4, decay: 0.3, double: true },
-    rope: { tex: 'margitBurlap', tint: 0xd8b878, decay: 0.4 },
-    horn: { tex: 'margitHorn', tint: 0xffffff, decay: 0.6 },
-    fur: { tex: 'margitFur', tint: 0xffffff, decay: 0.6, size: 512 },
-    wood: { tex: 'barkMoss', tint: 0x9a8a78, decay: 0.35 },
-    iron: { tex: 'rustedIron', tint: 0x6a5e50, decay: 0.7 },
-    eye: { glow: 0xffd36a },
-  },
-  body: { torso: 'robe', pelvis: 'robe', arms: 'skin', legs: 'robe', head: 'skin', neck: 'skin', hands: 'skin', feet: 'skin' },
-  bones: {
-    loinF: { parent: 'spin', at: [0, -0.02, 0.2] }, loinB: { parent: 'spin', at: [0, -0.02, -0.2] },
-    loinL: { parent: 'spin', at: [0.22, -0.02, 0.02] }, loinR: { parent: 'spin', at: [-0.22, -0.02, 0.02] },
-    hemF: { parent: 'loinF', at: [0, -0.5, 0.02] }, hemB: { parent: 'loinB', at: [0, -0.5, -0.02] },
-    hairB: { parent: 'head', at: [0, 0.1, -0.08] }, hairL: { parent: 'head', at: [0.11, 0.06, 0.02] }, hairR: { parent: 'head', at: [-0.11, 0.06, 0.02] },
-    shawlF: { parent: 'chest', at: [0, 0.52, 0.18] },
-    capeA: { parent: 'chest', at: [0, 0.58, -0.22] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] }, capeD: { parent: 'capeC', at: [0, -0.38, 0] },
-    sleeveL: { parent: 'armL', at: [0.02, -0.08, 0] }, sleeveR: { parent: 'armR', at: [-0.02, -0.08, 0] },
-  },
-  parts: [
-    { use: 'robeSkirt', slot: 'robe', bone: 'spin', len: 0.98, top: 0.24, hem: 0.46, seed: 3 },
-    { use: 'robeSkirt', slot: 'rags', bone: 'spin', len: 0.7, top: 0.27, hem: 0.5, seed: 7 },
-    { use: 'jerkin', slot: 'robe', bone: 'chest' }, { use: 'hunch', slot: 'hood', bone: 'chest', size: 1.1 },
-    { use: 'sleeve', slot: 'rags', bone: 'armL', len: 0.4, seed: 4 }, { use: 'sleeve', slot: 'rags', bone: 'armR', len: 0.4, seed: 5 },
-    { use: 'ropeSash', slot: 'rope', bone: 'spin', y: 0.06 },
-    { use: 'hood', slot: 'hood', bone: 'head', size: 1.45, tail: 1.6, close: 0.15 },
-    { use: 'hornCrown', slot: 'horn', bone: 'head', size: 1.05, count: 9 },
-    { use: 'clothStrip', slot: 'hair', bone: 'hairB', w: 0.22, len: 0.55, seed: 21 },
-    { use: 'clothStrip', slot: 'hair', bone: 'hairL', w: 0.06, len: 0.32, seed: 22, turn: Math.PI / 2 }, { use: 'clothStrip', slot: 'hair', bone: 'hairR', w: 0.06, len: 0.32, seed: 23, turn: Math.PI / 2 },
-    { use: 'pauldron', slot: 'rags', bone: 'armL', size: 1.05 }, { use: 'pauldron', slot: 'rags', bone: 'armR', size: 1.05, side: -1 },
-    { use: 'clothStrip', slot: 'rags', bone: 'sleeveL', w: 0.2, len: 0.42, seed: 31, turn: Math.PI / 2 }, { use: 'clothStrip', slot: 'rags', bone: 'sleeveR', w: 0.2, len: 0.42, seed: 32, turn: Math.PI / 2 },
-    { use: 'capeSegment', slot: 'hood', bone: 'shawlF', w0: 0.5, w1: 0.6, len: 0.36, bow: -0.9, ragged: true, seed: 12 },
-    { use: 'wraps', slot: 'ragsDark', bone: 'elbowL', from: 0.02, to: 0.16, radius: 0.075, count: 2 }, { use: 'wraps', slot: 'ragsDark', bone: 'elbowR', from: 0.02, to: 0.16, radius: 0.075, count: 2 },
-    { use: 'clothStrip', slot: 'robe', bone: 'loinF', w: 0.42, len: 0.55, seed: 2 }, { use: 'clothStrip', slot: 'rags', bone: 'hemF', w: 0.4, len: 0.42, seed: 3 },
-    { use: 'clothStrip', slot: 'robe', bone: 'loinB', w: 0.44, len: 0.6, seed: 8 }, { use: 'clothStrip', slot: 'rags', bone: 'hemB', w: 0.42, len: 0.45, seed: 9 },
-    { use: 'clothStrip', slot: 'ragsDark', bone: 'loinL', w: 0.3, len: 0.95, seed: 14, turn: Math.PI / 2 }, { use: 'clothStrip', slot: 'ragsDark', bone: 'loinR', w: 0.3, len: 0.95, seed: 15, turn: Math.PI / 2 },
-    { use: 'capeSegment', slot: 'rags', bone: 'capeA', w0: 0.66, w1: 0.8, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'rags', bone: 'capeB', w0: 0.8, w1: 0.92, len: 0.42, bow: 0.8 },
-    { use: 'capeSegment', slot: 'ragsDark', bone: 'capeC', w0: 0.92, w1: 1.0, len: 0.4, bow: 0.6 },
-    { use: 'capeSegment', slot: 'ragsDark', bone: 'capeD', w0: 1.0, w1: 1.06, len: 0.38, bow: 0.5, ragged: true, seed: 4 },
-    { use: 'ramHorn', slot: 'horn', bone: 'chest', size: 1.1, side: -1 },
-    { use: 'furTail', slot: 'fur', bone: 'spin', size: 1.05, side: -1 },
-  ],
-  weapon: { use: 'cane', slots: { grip: 'wood', blade: 'iron', guard: 'wood' } },
-  eyes: { color: 0xffd36a, size: 0.018, spread: 0.07, at: [0, 0.12, 0.15] },
-  anim: {
-    idle: { breathRate: 0.9, breath: 0.022, headDrift: 0.06, sway: 0.025, twitch: 0 }, walk: { twist: 0.14, roll: 0.05, headNod: 0.04, elbow: 0.3, drag: 0.2 },
-    flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1.2, slump: 1 },
-    cloth: [{ bone: 'loinF', gain: 0.12, k: 60, damp: 5, flutter: 0.04 }, { bone: 'loinB', gain: 0.15, k: 52, damp: 4.6, flutter: 0.05 },
-            { bone: 'hemF', gain: 0.1, k: 44, damp: 4, flutter: 0.06 }, { bone: 'hemB', gain: 0.12, k: 40, damp: 3.8, flutter: 0.07 },
-            { bone: 'loinL', gain: 0.12, k: 50, damp: 4.5, flutter: 0.06, sideways: 1.2 }, { bone: 'loinR', gain: 0.12, k: 50, damp: 4.5, flutter: 0.06, sideways: 1.2 },
-            { bone: 'hairB', gain: 0.08, k: 60, damp: 5, flutter: 0.03 }, { bone: 'sleeveL', gain: 0.1, k: 50, damp: 4.6, flutter: 0.05 }, { bone: 'sleeveR', gain: 0.1, k: 50, damp: 4.6, flutter: 0.05 },
-            { bone: 'capeA', gain: 0.08, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.07, k: 36, damp: 3.8, flutter: 0.045 },
-            { bone: 'capeC', gain: 0.07, k: 32, damp: 3.4, flutter: 0.06, sideways: 1.2 }, { bone: 'capeD', gain: 0.1, k: 24, damp: 2.8, flutter: 0.09, sideways: 1.4 }],
-  },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // New fields (v5.3, js/enemy.js): `when` (a reaction: behind, flank, healing, staggered), `followUps` (a combo branches),

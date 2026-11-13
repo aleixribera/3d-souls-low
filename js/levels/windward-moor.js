@@ -1,6 +1,6 @@
 'use strict';
 // Level 7: The Windward Moor (v7.38.0), chapter 7 of the Story (STORY.md; LORE.md 10c): Thrale's border, over the pass.
-// Rough (PLAN.md stage 3, track A): built from the old second road's first level (js/levels/lands/stormhill.js) as raw
+// Rough (PLAN.md stage 3, track A): built from the old second road's first level (removed in v7.53.0) as raw
 // material, its layout kept, every name and character of that road gone. x runs east toward Thrale, z north.
 //   The border shrine (y 0): the start, bonfire 1, Ysolde. Steps out onto the moor (y 0, open, long grass, ruined
 //     shepherds' huts): a flock of Lantern Thralls walks it after its bearer; at its far side a barricade and its fight.

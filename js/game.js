@@ -10,7 +10,6 @@ const Game = {
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
   duelPartners: [],           // further arena opponents fought at once (online boss groups)
-  eldenBoss: null,       // Elden Ring Bosses mode (js/elden.js): the ELDEN_BOSSES entry being fought, else null
   selected: 0,
   companion: null,       // optional local campaign ally (js/companions.js)
   allies() { return companions.actors(this); },
@@ -116,7 +115,7 @@ const Game = {
     const s = this.spawn, y = world.floorY(s.x, s.z, s.y);
     this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
     story.applyProgress(this.player);   // Story mode: carried capacities (nothing otherwise)
-    // v7.0: a level may grant more flasks (`flasks`: at least this many, the Lands Between's ramp); a carried larger stock stays.
+    // v7.0: a level may grant more flasks (`flasks`: at least this many); a carried larger stock stays.
     const fl = this.kind === 'level' && this.level.flasks, it = fl && this.player.inventory.flask;
     if (it && it.max < fl) it.max = it.count = fl;
     companions.reset(this);
@@ -229,7 +228,6 @@ const Game = {
     if (!p.alive()) {
       // Death: the world slows to a stop, then the player returns to the last rested bonfire.
       this.deathTimer += dt; this.hitstop = Math.max(0, this.hitstop - dt);   // the killing blow's hit-pause still ends
-      if (this.eldenBoss && elden.onDeath(this)) return;   // Elden Ring Bosses: Retry / Boss select instead of the respawn
       if (this.deathTimer >= CONFIG.death.respawnDelay) {   // back at the bonfire; the world resets as when resting
         this.spawnPlayer(); this.setLock(null); this.retarget = true;
         this.respawnEnemies();
@@ -264,7 +262,6 @@ const Game = {
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
     if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }
-    else if (this.eldenBoss) elden.update(this, dt);
     // Last, so a death from any cause this step (a blow, a fall, Destined Death, a hazard floor) starts the death sequence.
     if (!p.alive() && this.deathOf !== p) this.onPlayerDeath();
     this.updateCamera(dt, false);

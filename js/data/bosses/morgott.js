@@ -1,21 +1,10 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Morgott, the Omen King (v5.5)
+// Move source MORGOTT: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Morgott lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/morgott.txt.
-//
-// Conversion (all tuning is in MORGOTT below). The player has 120 HP, a light hit does 18, a heavy 53, a roll is
-// invulnerable for 0.3 s. Elden Ring's bosses come down to this game's scale against each other, not by a fixed factor:
-// Margit (ER 4174 HP) is 3200 here, Godrick (ER 6080) 4000. Morgott (ER 10399) is the hardest of the three, so:
-//   - one bar of 4800 HP (about 1.2x Godrick, 1.5x Margit: ~90 light hits, a long duel); at 60 % (2880 HP left) the
-//     second phase starts on the same bar (`at`), opening with the Defilement Burst;
-//   - posture 150 and a parry adds 50: three parries break his stance (the reference's "3 parries"; Margit takes two);
-//   - damage a step above Margit (ER Morgott hits ~15 % harder): sword 26-48, golden weapons 36-62, daggers 17-19,
-//     bloodflame 50-66. The relative order of the reference holds: hammer and bloodflame dashes hardest, the flurry's cuts
-//     and the daggers lightest;
-//   - the Cursed Greatsword's physical blows can be parried (they glint); every golden conjuration, the tail, the
-//     bloodflame and the burst cannot (`noParry`), but can be blocked; every strike's `active` stays at or under 0.2 s.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by the Regent Hollis (hollis.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -30,21 +19,6 @@
   ATTACK_POSES.morgottBloodSlice = { hits: [h('hollowSwing'), h('enemyStomp')] };
   ATTACK_POSES.morgottBurst = { hits: [h('enemyStomp'), h('enemyStomp')] };
 }
-
-// ---- model: Margit's body (the same Omen, a king's darker rags), the Cursed Greatsword in place of the cane ------------
-MODEL_DEFS.morgott = {
-  extends: 'margit',
-  materials: {
-    ...MODEL_DEFS.margit.materials,
-    robe: { tex: 'margitBurlap', tint: 0x9a8a7a, decay: 0.75, size: 512, double: true },
-    hood: { tex: 'margitBurlap', tint: 0x8a7464, decay: 0.8, size: 512, double: true },
-    rags: { tex: 'margitRags', tint: 0x9a7a70, decay: 0.85, size: 512, double: true },
-    ragsDark: { tex: 'margitRags', tint: 0x5a4440, decay: 0.9, size: 512, double: true },
-    blade: { tex: 'rustedIron', tint: 0x5a4a44, decay: 0.85 },
-    leather: { tex: 'margitBurlap', tint: 0x4a3a30, decay: 0.6 },
-  },
-  weapon: { use: 'greatSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 const morgottGlint = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));

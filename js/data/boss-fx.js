@@ -23,44 +23,6 @@ const FX_ELEMENTS = {
   toll:  { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
 };
 const BOSS_FX = {
-  // Margit: grey cane work (steel) until his golden weapons of light; his plunge already calls the light down.
-  margit: { element: 'steel', aura: 0xffd27a, phases: { golden: 'holy' }, attacks: {
-    caneOverhead: { impact: 'shatter', windup: 'gather' }, canePlunge: { element: 'holy', impact: 'pillar' },
-    daggerToss: { element: 'holy' }, daggerDouble: { element: 'holy' }, daggerPunish: { element: 'holy' }, daggerRetreat: { element: 'holy' },
-    daggerSlash: { element: 'holy' }, crossSlash: { element: 'holy', windup: 'gather' },
-    hammerOpener: { element: 'holy', impact: 'pillar' }, hammerLeap: { element: 'holy', impact: 'pillar' }, hammerStomp: { element: 'holy', impact: 'pillar' },
-    spinSweep: { element: 'holy' }, swordFlurry: { element: 'holy' }, swordCombo: { element: 'holy', impact: 'pillar' } } },
-  // Godrick: storm winds round his axe; once the dragon arm wakes, everything burns.
-  godrick: { element: 'storm', aura: 0xffb070, phases: { dragon: 'fire' }, attacks: {
-    kneel: { impact: 'gale' }, stormLeap: { impact: 'gale' }, jumpSlam: { element: 'earth', impact: 'quake' }, rampage: { element: 'steel' },
-    doubleStep: { element: 'steel' }, backhand: { element: 'steel' }, dragSlash: { element: 'steel' },
-    armChop: { element: 'blood', impact: 'geyser' }, flameSweep: { element: 'fire' }, dragonGrab: { element: 'fire', windup: 'gather' },
-    flameLeap: { element: 'fire', impact: 'blaze' }, flameKneel: { element: 'fire', impact: 'blaze' } } },
-  // The Crucible Knight: amber bronze and the old gold of the Crucible's aspects.
-  crucibleKnight: { element: 'earth', aura: 0xffd090, phases: { aspect: 'earth' }, attacks: {
-    stomp: { impact: 'quake' }, stomp2: { impact: 'quake' }, overheadSlam: { impact: 'shatter', windup: 'gather' }, overheadSlam2: { impact: 'shatter', windup: 'gather' },
-    wingsDive: { element: 'holy', impact: 'pillar' }, tailSwipe: { element: 'holy' }, tailDouble: { element: 'holy', windup: 'gather' } } },
-  // Morgott: the omen king's golden conjurations, then the cursed blood boils out of him.
-  morgott: { element: 'holy', aura: 0xffc060, phases: { cursed: 'holy' }, attacks: {
-    chopThrust: { element: 'steel', impact: 'shatter' }, sweepSlash: { element: 'steel' }, tailSwipe: { element: 'steel' }, leapPunish: { element: 'steel', impact: 'quake' },
-    defilement: { element: 'blood', impact: 'geyser', aura: 0xff2a14 }, bloodSlice: { element: 'blood', impact: 'geyser' },
-    bloodyThrust: { element: 'blood', windup: 'gather' }, geysers: { element: 'blood', impact: 'geyser' } } },
-  // Godfrey: the earth itself answers the first Elden Lord; Hoarah Loux roars it apart.
-  godfrey: { element: 'earth', aura: 0xffc070, attacks: {
-    regalRoar: { impact: 'roar' }, louxRage: { impact: 'roar' }, earthshaker: { impact: 'roar' }, axeDive: { impact: 'shatter' },
-    fissure: { impact: 'shatter' }, powerBomb: { impact: 'shatter', windup: 'gather' }, seroshShed: { impact: 'roar' } } },
-  // Maliketh: a grey beast-priest's stone and claws, then the Black Blade's crimson Destined Death.
-  maliketh: { element: 'bone', aura: 0xc8b8a0, phases: { blackBlade: 'black' }, attacks: {
-    shedRobes: { element: 'black', impact: 'void' }, beastClaw: { impact: 'gale' }, gurranqClaw: { impact: 'gale', windup: 'gather' } } },
-  // Radagon: the Golden Order's light in every blow.
-  radagon: { element: 'holy', aura: 0xffe0a0, attacks: {
-    goldBreaker: { impact: 'pillar', windup: 'gather' }, eldenShattering: { impact: 'pillar', windup: 'gather' }, runeSlam: { impact: 'pillar' },
-    runeBurst: { impact: 'pillar' }, spearThrust: { impact: 'pillar' }, hammerCombo: { impact: 'shatter' }, stompChop: { impact: 'shatter' } } },
-  // Malenia: a clean steel blade until the scarlet rot blooms; the Waterfowl and Aeonia are rot whatever the phase.
-  malenia: { element: 'steel', aura: 0xff5040, phases: { rot: 'rot' }, attacks: {
-    dance: { element: 'rot', impact: 'bloom' }, dance2: { element: 'rot', impact: 'bloom' }, slamRot: { element: 'rot', impact: 'bloom' },
-    aeoniaOpen: { element: 'rot', impact: 'bloom', windup: 'gather' }, aeonia: { element: 'rot', impact: 'bloom', windup: 'gather' }, phantoms: { element: 'rot' } } },
-  // The story's bosses.
   giant: { element: 'bone', aura: 0xd8d0c0, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
     giantBonebreaker: { impact: 'shatter' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, attacks: { captainOverhead: { element: 'fire', impact: 'blaze', windup: 'gather' } } },

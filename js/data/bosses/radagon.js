@@ -1,25 +1,11 @@
 'use strict';
 // ============================================================================
-// Elden Ring Bosses: Radagon of the Golden Order (v5.7)
+// Move source RADAGON: an old boss's moves, key poses and phases (not a fighter)
 // ============================================================================
-// Everything that makes Radagon lives here: his key poses, his model and his moveset. The boss list (js/data/elden-bosses.js)
-// names him; the mode (js/elden.js) fights him in the Enemies arena. Reference: docs/radagon.txt. His holy light (teleport
-// flashes, floor runes, pillars) is drawn by js/holy.js; the teleport itself is a hit's `blink` (js/enemy.js).
-//
-// Conversion (all tuning is in RADAGON below). The player has 120 HP, a light hit does 18, a heavy 53, a roll is
-// invulnerable for 0.3 s. Elden Ring's bosses come down to this game's scale against each other, not by a fixed factor:
-// Margit (ER 4174 HP) is 3200 here, Godrick (ER 6080) 4000, Morgott (ER 10399) 4800. Radagon (ER 13347) is the last and
-// hardest, so:
-//   - one bar of 5200 HP (~1.1x Morgott: ~100 light hits); at 60 % (3120 HP left) the second phase starts on the same bar
-//     (`at`) with the Gold Breaker, and he adds the Elden Shattering, the spear detonation and more teleports;
-//   - posture 150, a parry adds 50: three parries break his stance (the reference's "3 parries"); ER stance 120 -> 150
-//     like Godrick's 105 -> 150 scale-up for a long fight;
-//   - damage a step above Morgott (endgame): hammer 30-50, holy spears 36-40, teleport flashes 24, runes and pillars 40-48,
-//     Gold Breaker 66, the Shattering's last slam 64, the Golden Grab 70 (roll only). Ratios kept from the reference: the
-//     grab and the leaps hit hardest, the flashes and spear volleys lightest;
-//   - the hammer's swings can be parried (they glint); spears, shockwaves, runes, teleports, the grab and the Gold Breaker
-//     cannot (`noParry` / projectiles / `rollOnly`); every strike's `active` stays at or under 0.2 s (a roll clears it).
-// Readable: every big blow has a long wind-up; the runes glow where they will erupt before they do.
+// The game's bosses are its own since v7.53.0, so this def has no figure and is in no list: it is never fought as it is.
+// Its moves are copied and renamed by the Kindling Tree (kindling-tree.js), the Rootbound (through ZEALOT_MOVES,
+// js/data/move-sources.js) and two moves of the Bell Warden (js/data/story-boss-moves.js).
+// It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------
 {
@@ -36,60 +22,6 @@
   ATTACK_POSES.radagonShatter = { hits: [h('heavyOverhead'), h('heavyOverhead'), h('heavyOverhead'), h('enemyStomp')] };
   ATTACK_POSES.radagonSpearThrust = { hits: [h('enemyThrust'), h('enemyStomp')] };
 }
-
-// ---- model: tall and lean, grey stone-cracked skin, long red hair, the Elden Ring burning gold on his chest, a dark ragged
-// skirt from the hips to the feet, gold on the hammer arm and belt, Marika's stone hammer flecked with golden light.
-MODEL_DEFS.radagon = {
-  faction: 'goldenOrder', budget: 'boss', fit: 1.0, limbSides: 8,
-  proportions: { shoulderX: 0.38, torsoW: 0.25, torsoD: 0.18, armR: 0.07, legR: 0.085, headR: 0.115, handR: 0.07, footLen: 0.32 },
-  limbs: { armR: { len: 1.06, thick: 1.05 }, armL: { len: 1.06 } },
-  posture: { chest: [0.06, 0, 0], neck: [0.04, 0, 0], head: [-0.05, 0, 0], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },   // upright, regal
-  materials: {
-    skin: { tex: 'margitSkin', tint: 0xdcd6ce, decay: 0.6, size: 512 },
-    skirt: { tex: 'margitRags', tint: 0x484846, decay: 0.85, size: 512, double: true },
-    skirtDark: { tex: 'margitRags', tint: 0x2c2c2c, decay: 0.9, size: 512, double: true },
-    hair: { tex: 'rottenCloth', tint: 0xd04a22, decay: 0.2, double: true },
-    gold: { tex: 'dentedSteel', tint: 0xd8b05a, decay: 0.3 },
-    stone: { tex: 'gargoyleStone', tint: 0x8a8278, decay: 0.7 },
-    rune: { glow: 0xffc850 },
-    eye: { glow: 0xffd890 },
-  },
-  body: { torso: null, pelvis: 'skirt', arms: 'skin', legs: 'skirt', head: 'skin', neck: 'skin', hands: 'skin', feet: 'skin' },
-  bones: {
-    loinF: { parent: 'spin', at: [0, -0.04, 0.2] }, loinB: { parent: 'spin', at: [0, -0.04, -0.2] },
-    loinL: { parent: 'spin', at: [0.2, -0.04, 0.02] }, loinR: { parent: 'spin', at: [-0.2, -0.04, 0.02] },
-    hemF: { parent: 'loinF', at: [0, -0.55, 0.02] }, hemB: { parent: 'loinB', at: [0, -0.55, -0.02] },
-    hairB: { parent: 'head', at: [0, 0.12, -0.08] }, hairL: { parent: 'head', at: [0.12, 0.08, -0.05] }, hairR: { parent: 'head', at: [-0.12, 0.08, -0.05] },
-  },
-  parts: [
-    { use: 'muscleTorso', slot: 'skin', bone: 'chest', bulk: 1.0 },   // v6.0: a sculpted bare torso (js/kit-premium.js)
-    // A long skirt of dark rags knotted at the hips, falling to the feet.
-    { use: 'robeSkirt', slot: 'skirt', bone: 'spin', len: 1.05, top: 0.24, hem: 0.44, seed: 11 },
-    { use: 'robeSkirt', slot: 'skirtDark', bone: 'spin', len: 0.5, top: 0.27, hem: 0.36, seed: 13 },
-    { use: 'ropeSash', slot: 'skirtDark', bone: 'spin', y: 0.04 },
-    { use: 'clothStrip', slot: 'skirt', bone: 'loinF', w: 0.4, len: 0.6, seed: 2 }, { use: 'clothStrip', slot: 'skirtDark', bone: 'hemF', w: 0.38, len: 0.45, seed: 3 },
-    { use: 'clothStrip', slot: 'skirt', bone: 'loinB', w: 0.42, len: 0.6, seed: 8 }, { use: 'clothStrip', slot: 'skirtDark', bone: 'hemB', w: 0.4, len: 0.48, seed: 9 },
-    { use: 'clothStrip', slot: 'skirtDark', bone: 'loinL', w: 0.26, len: 1.0, seed: 14, turn: Math.PI / 2 }, { use: 'clothStrip', slot: 'skirtDark', bone: 'loinR', w: 0.26, len: 1.0, seed: 15, turn: Math.PI / 2 },
-    // The Elden Ring burning on his chest; gold on the hammer arm.
-    { use: 'eldenRune', slot: 'rune', bone: 'chest', at: [0.05, 0.4, 0.2], size: 1.2 },
-    { use: 'wraps', slot: 'gold', bone: 'elbowR', from: 0.04, to: 0.26, radius: 0.08, count: 3 },
-    // Long red hair, falling over the shoulders.
-    { use: 'sweptHair', slot: 'hair', bone: 'head', size: 1.1 },
-    { use: 'clothStrip', slot: 'hair', bone: 'hairB', w: 0.26, len: 0.75, seed: 21 },
-    { use: 'clothStrip', slot: 'hair', bone: 'hairL', w: 0.1, len: 0.6, seed: 22, turn: Math.PI / 2 }, { use: 'clothStrip', slot: 'hair', bone: 'hairR', w: 0.1, len: 0.6, seed: 23, turn: Math.PI / 2 },
-  ],
-  weapon: { use: 'marikaHammer', slots: { blade: 'stone', grip: 'stone', guard: 'gold' } },
-  embers: { head: [0, 0, 1.38], edge: { size: [0.06, 0.06, 1.3], at: [0, 0, 0.6] } },   // golden light seeping out of the haft and head
-  eyes: { color: 0xffd890, size: 0.014, spread: 0.06, at: [0, 0.1, 0.13] },
-  anim: {
-    idle: { breathRate: 0.8, breath: 0.018, headDrift: 0.04, sway: 0.015, twitch: 0 }, walk: { twist: 0.1, roll: 0.03, headNod: 0.03, elbow: 0.2, drag: 0.1 },
-    flinch: { head: 0.25, chest: 0.25, arms: 0.3 }, death: { buckle: 1.0, slump: 1 },
-    cloth: [{ bone: 'loinF', gain: 0.1, k: 60, damp: 5, flutter: 0.04 }, { bone: 'loinB', gain: 0.12, k: 52, damp: 4.6, flutter: 0.05 },
-            { bone: 'hemF', gain: 0.1, k: 44, damp: 4, flutter: 0.06 }, { bone: 'hemB', gain: 0.12, k: 40, damp: 3.8, flutter: 0.07 },
-            { bone: 'loinL', gain: 0.1, k: 50, damp: 4.5, flutter: 0.06, sideways: 1.2 }, { bone: 'loinR', gain: 0.1, k: 50, damp: 4.5, flutter: 0.06, sideways: 1.2 },
-            { bone: 'hairB', gain: 0.1, k: 50, damp: 4.2, flutter: 0.05 }, { bone: 'hairL', gain: 0.08, k: 55, damp: 4.5, flutter: 0.04 }, { bone: 'hairR', gain: 0.08, k: 55, damp: 4.5, flutter: 0.04 }],
-  },
-};
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 // New fields (v5.7, js/enemy.js): a hit's `blink: { from, dist | back, time? }` (a teleport: unseen and untouchable while it

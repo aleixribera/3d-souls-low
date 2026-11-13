@@ -116,7 +116,7 @@ globalThis.host = (() => {
     return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
       campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
       defaultAdventure: { ...C.defaultAdventure },
-      bosses: [...ENEMY_DEFS, ...ELDEN_BOSS_DEFS].filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
+      bosses: ENEMY_DEFS.filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
   }
   function campaign(id, level) {
     const story = STORIES.find(s => s.id === id); if (!story) return null;

@@ -33,7 +33,7 @@ function withMood(boss, profile, want) {
 {
   const drawn = {}, lines = [], firsts = [];
   for (const profile of ['quill', 'maren', 'tobin']) for (let seed = 1; seed <= 12; seed++) {
-    const { b, p, e } = duel('godrick', profile, seed);
+    const { b, p, e } = duel('hale', profile, seed);
     b.brain.think(dt, p, [e], []);
     (drawn[profile] = drawn[profile] || new Set()).add(b.brain.mood);
     if (seed <= 2) { lines.push(`${b.profile.name}, fight ${seed}: ${b.brain.describe()}`); firsts.push(b.brain.mood); }
@@ -45,10 +45,10 @@ function withMood(boss, profile, want) {
   console.log(`Temperaments: ${Object.entries(drawn).map(([k, v]) => `${k} ${[...v].sort().join('/')}`).join(', ')}.`);
 }
 
-// ---- 2. Waiting out a string: Godrick's "Kneel!" (two rings with a pause between) ----
+// ---- 2. Waiting out a string: Harrow's Kneel at the Gate (two rings with a pause between) ----
 {
-  const { sim, b, p, e } = withMood('godrick', 'maren', m => m === 'patient' || m === 'wary');
-  const kneel = e.baseDef.attacks.find(a => a.id === 'kneel');
+  const { sim, b, p, e } = withMood('harrow', 'maren', m => m === 'patient' || m === 'wary');
+  const kneel = e.baseDef.attacks.find(a => a.id === 'kneelGate');
   e.beginAttack(kneel);
   let swungMid = false, swungAfter = false, farthest = 0, time = 0;
   for (; time < 8; time += dt) {
@@ -63,13 +63,13 @@ function withMood(boss, profile, want) {
   console.log(`Kneel: a ${b.brain.mood} Maren waits out both rings (out to ${farthest.toFixed(1)} m), then strikes in the recovery.`);
 }
 
-// ---- 3. Getting out of a string, not rolling across it: Godrick's Stormcaller (three spins round him); unhurt, so no rolls is no free pass ----
+// ---- 3. Getting out of a string, not rolling across it: Hale's Gale Wheel (three spins round him); unhurt, so no rolls is no free pass ----
 {
   let rollsMax = 0, outside = 0, untouched = 0;
   for (const seed of [3, 5, 8, 13]) {
-    const { sim, p, e } = duel('godrick', 'quill', seed);
+    const { sim, p, e } = duel('hale', 'quill', seed);
     p.z = e.z + e.radius + p.radius + 0.4; p.savePrev();
-    const storm = e.baseDef.attacks.find(a => a.id === 'stormcaller');
+    const storm = e.baseDef.attacks.find(a => a.id === 'galeWheel');
     e.beginAttack(storm);
     let rolls = 0, prev = p.state; const hp = p.hp;
     for (let t = 0; t < 3 && e.attack === storm; t += dt) {
@@ -90,7 +90,7 @@ function withMood(boss, profile, want) {
 // ---- 4. Executions are the player's ----
 // The second bot's body stands in for a person: no botId, its presses scripted here.
 function kneeling(playerActs, withPlayer = true) {
-  const { sim, list, b, p, e } = duel('margit', 'maren', 7, 2);
+  const { sim, list, b, p, e } = duel('ostrey', 'maren', 7, 2);
   const human = list[1].body;
   if (withPlayer) {
     delete human.botId;
