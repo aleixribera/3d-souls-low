@@ -6,7 +6,7 @@ globalThis.host = (() => {
   let epoch = 0, time = 0, attackSerial = 0, bolts = [], eventList = [], history = [];
   let players = [], checkpoint = null;
   let completedFor = 0;
-  let damage = new Map(), results = null;
+  let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
   // Friendly bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared
   // enemies, so a bot keeps fighting whatever any browser tab is doing. id -> { id, name, profile, brain, body, ... }
   const bots = new Map();
@@ -185,7 +185,7 @@ globalThis.host = (() => {
     for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
-    damage = new Map(); results = null; followers.clear(); assignLeft = 0; partyKey = '';
+    damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
     hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0; groupSize = 1; groupLeft = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     if (!keepBlessings) { blessed.clear(); offers.clear(); }
@@ -265,6 +265,7 @@ globalThis.host = (() => {
     for (const b of bots.values()) {
       const p = b.body; if (!p) continue;
       if (!p.alive()) {
+        if (!b.deadFor) noteDeath(b.id);
         b.deadFor += dt; p.update(dt, { x: 0, z: 0, has: false }, [], null);
         if (!wipeOnly && b.deadFor >= B.respawnDelay) spawnBot(b, 0);
         else if (wipeOnly && b.deadFor >= CONFIG.blessings.riseDelay && p.risen < p.boons.rise) riseBot(b);
@@ -315,7 +316,12 @@ globalThis.host = (() => {
     if (results) return;
     const row = damage.get(id);
     damage.set(id, { id, name, damage: row?.damage || 0 });
+    if (bots.has(id)) fightBots.add(id);   // still a bot in the tally if it leaves the party mid-fight
   }
+  // A fall in this fight: a bot's here, a person's from the server when their pose first reports them dead.
+  function noteDeath(id) { if (!results) deaths.set(id, (deaths.get(id) || 0) + 1); }
+  // This fight's damage and falls per player, for The Calling's run totals.
+  const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0, bot: fightBots.has(row.id) }));
   function creditDamage(id, amount) {
     const row = damage.get(id);
     if (row && !results) row.damage += Math.max(0, amount);
@@ -575,7 +581,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, describe, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerBlessings, settleBlessings, bless, rise, boonOf, riseDelay: CONFIG.blessings.riseDelay,
     blessingPickTime: CONFIG.blessings.pickTime,

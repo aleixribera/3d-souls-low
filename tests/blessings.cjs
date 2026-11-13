@@ -167,6 +167,8 @@ async function peer(origin, name) {
     assert.equal(await rise(a), false, 'not before riseDelay');
     app.sim.riseDelay = C.riseSlack;
     assert.equal(await rise(a), true); assert.equal(await rise(b), false);
+    down(a); await flush(a);
+    assert.equal(app.clients.get(a.id).arenaDefeated, false, 'a dead pose sent before the answer arrived is not a new fall');
     pose(a, { hp: 60 }); pose(b, { hp: 60 }); await flush(a); await flush(b);
     assert.equal(app.clients.get(a.id).arenaDefeated, false, 'Rise Again lifts the defeat');
     assert.equal(app.clients.get(a.id).pose.hp, 60, 'and the risen body is relayed');

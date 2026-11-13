@@ -4,14 +4,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 2, item 5, the end of a run, pass 1 of it: time, bosses beaten, deaths and damage per player, and
-"again" for the same group. Check: frames of the screen after a win and after a wipe. The run ends in `server/index.cjs`
-(`stop(... 'run-complete')` and the team-wipe branch); the client's wipe screen is `showTeamWipe` in `js/multiplayer.js`.
-Then stage 2 is done: release v7.35.0 with its changelog lines (AGENTS.md "Releasing").
+Stage 2 is done and released as v7.35.0. Next: `PLAN.md` stage 3, one item of track A then one of track B. First track A item 1,
+Act I's turn, pass 1 of it: Aldric's death no longer ends the game, the Ember leaves him (`STORY.md`) and the Church in
+the Pass follows in Story mode. Check: in Story mode, beating Aldric leads on to chapter 6 with the new lines.
 
-Pass 9 shipped item 4, blessings between fights (unreleased): pick one of three after each fight but the last, kept for
-the run, Rise Again once a fight. Pass 8 item 3 (the run), pass 7 item 2 (`CONFIG.aggro`), pass 6 item 1
-(`CONFIG.group`). Notes: `docs/feature-history.md`, the last four sections.
+Pass 10 shipped item 5, the end of a run, and released v7.35.0 (stage 2: group scaling, aggro, The Calling,
+blessings, the end screen). Notes: `docs/feature-history.md`, the last five sections.
 
 ## Works
 
@@ -28,19 +26,23 @@ the run, Rise Again once a fight. Pass 8 item 3 (the run), pass 7 item 2 (`CONFI
   renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a per-face
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
-- Group scaling (v7.35.0, unreleased): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
+- Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`). Tests that pinned Margit's solo bar in
   group sessions now read her scaled bar or her share of it.
-- Bosses fight the group (v7.35.0, unreleased): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
+- Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
   `grouped` and `isAreaAttack` in `js/enemy.js`; checked by `tests/boss-attention.cjs` (seeded bot fights through
   `createSimulation({ seed })`), frames `docs/scorecard/boss-attention-1..3.jpg`, `boss-attention.txt`.
-- The Calling (v7.35.0, unreleased): `C.calling`, `calling()` / `randomRoster()` in `server/simulation.js`, the lobby's
+- The Calling (v7.35.0): `C.calling`, `calling()` / `randomRoster()` in `server/simulation.js`, the lobby's
   roster and pick list in `js/multiplayer.js`; checked by `tests/calling.cjs` and `tests/calling-browser.cjs` (two
   browsers and a bot finish a 3-boss run; frames `docs/scorecard/calling-*.jpg`).
-- Blessings (v7.35.0, unreleased): `CONFIG.blessings`, `BLESSINGS` (`js/data/blessings.js`), `Player.bless` /
+- Blessings (v7.35.0): `CONFIG.blessings`, `BLESSINGS` (`js/data/blessings.js`), `Player.bless` /
   `riseBody`, the server's `offerBlessings` / `bless` / `rise`, the pick screen `#blessingScreen`; checked by
   `tests/blessings.cjs` and `tests/calling-browser.cjs` (frames `docs/scorecard/blessing-*.jpg`).
+- The end of a Calling run (v7.35.0): `tally` / `runSummary` in `server/index.cjs`, `noteDeath` / `fightTally` in
+  `server/simulation.js`, the screen `#runSummary` in `js/multiplayer.js`; checked by `tests/calling.cjs` and
+  `tests/calling-browser.cjs` (frames `docs/scorecard/summary-*.jpg`). A dead pose within `C.riseAnswer` of a granted
+  Rise Again is not a new fall (`tests/blessings.cjs`).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -57,8 +59,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 9's push: check at the start of pass 10. Pass 8's push was green. Pass 9 locally: the Node group, blessings,
-calling, and the multiplayer, lobby, reconnect, boss-only, run-intro and calling browser tests.
+CI on pass 10's push and the v7.35.0 container workflow: check at the start of pass 11. Pass 9's CI was green. Pass 10
+locally: the Node group (22/22), calling, blessings, and the calling, multiplayer, reconnect, lobby-controller,
+lobby-polish, arena-wipe and boss-only browser tests.
 
 ## wip/ branches
 
@@ -79,3 +82,5 @@ The earlier three (order of work, how to see progress, the Toll Wisp's descripti
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
+- (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
+  time counts from the leader's start, the opening card and blessing picks included.

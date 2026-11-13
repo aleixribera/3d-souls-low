@@ -32,6 +32,7 @@
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,
     riseSlack: 0.5,   // s: a Rise Again claim may come this much sooner than CONFIG.blessings.riseDelay (latency)
+    riseAnswer: 2,   // s: after a granted Rise Again, dead poses this long are the ones sent before the answer arrived
     spectatorFov: [10, 150],
     // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
     // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.

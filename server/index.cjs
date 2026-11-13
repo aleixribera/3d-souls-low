@@ -65,6 +65,7 @@ function createServer(options = {}) {
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
   let blessingFor = null;   // The Calling, between fights: s since the blessings were offered (null: not offered)
   const blessingRound = new Set();   // the players offered blessings this time (a late arrival is offered once)
+  let tally = null;   // The Calling's totals across its fights: { roster, startedAt, beaten, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
@@ -127,11 +128,24 @@ function createServer(options = {}) {
     sim.setPlayers([...clients.values()].filter(p => p.foreground && freshPose(p)).map(p => ({ ...p.pose, id: p.id, poseAge: (now - p.lastPose) / 1000 })));
   };
   const error = (p, message) => send(p, { type: 'error', message });
-  function stop(message, reason = null) {
-    session = null; blessingFor = null; blessingRound.clear();
+  function stop(message, reason = null, extra = {}) {
+    session = null; blessingFor = null; blessingRound.clear(); tally = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
-    broadcast({ type: 'stop', message, reason }); sendRoster();
+    broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
   }
+  // The Calling's end of a fight: its damage and falls join the run's totals, and a won fight its bosses.
+  function tallyFight(won) {
+    for (const r of sim.fightTally()) {
+      const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0 };
+      row.name = r.name; row.damage += r.damage; row.deaths += r.deaths; tally.players.set(r.id, row);
+    }
+    if (won) tally.beaten += 1 + (session.gauntlet.partners?.length || 0);
+  }
+  // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, and each player's totals, most
+  // damage first. The roster lets the leader start the same run again.
+  const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten,
+    time: Math.round((performance.now() - tally.startedAt) / 1000),
+    players: [...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths) });
   // For The Calling, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
@@ -149,9 +163,11 @@ function createServer(options = {}) {
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (gauntlet?.roster) session.blessings = sim.blessings();   // player id -> blessing ids held, for every body's boons
+    if (!gauntlet?.roster) tally = null;
+    else if (gauntlet.fight === 0) tally = { roster: gauntlet.roster, startedAt: performance.now(), beaten: 0, players: new Map() };
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
-    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.rising = 0; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); blessingFor = null; blessingRound.clear();
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
@@ -271,7 +287,10 @@ function createServer(options = {}) {
     const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'stamina' ? sim.playerMaxStamina : key === 'flasks' ? sim.playerMaxFlasks : key === 'poise' ? sim.playerMaxPoise : 0);
     // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
     // shared session clears this player's defeat, including repeated ready messages.
-    if (session.teamWipeOnly && (s.hp <= 0 || s.state === 'dead') && !p.arenaDefeated) { p.arenaDefeated = true; p.defeatedAt = performance.now(); }
+    // After a granted Rise Again, the poses sent before the client heard the answer still say dead: they are not a fall.
+    const down = s.hp <= 0 || s.state === 'dead';
+    if (!down || performance.now() > p.rising) p.rising = 0;
+    if (session.teamWipeOnly && down && !p.arenaDefeated && !p.rising) { p.arenaDefeated = true; p.defeatedAt = performance.now(); sim.noteDeath(p.id); }
     p.pose = { ...Object.fromEntries(P.required.map(key => [key, s[key]])), state: s.state,
       // Only a real player attack id (own property) is relayed: peers index their attack table with it.
       attack: sim.playerAttack(s.attack), charge: Math.min(2, Math.max(0, Number(s.charge) || 0)),
@@ -311,7 +330,7 @@ function createServer(options = {}) {
     // within the rises their blessings give for this fight. The answer says whether to.
     if (msg.type === 'rise') {
       const ok = session.teamWipeOnly && p.arenaDefeated && performance.now() - p.defeatedAt >= (sim.riseDelay - C.riseSlack) * 1000 && sim.rise(p.id);
-      if (ok) p.arenaDefeated = false;
+      if (ok) { p.arenaDefeated = false; p.rising = performance.now() + C.riseAnswer * 1000; }
       send(p, { type: 'risen', ok: !!ok }); return;
     }
     if (msg.type === 'ready') {
@@ -475,7 +494,8 @@ function createServer(options = {}) {
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
+            if (tally) { tallyFight(false); stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
+            else if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
             else start(session.kind, session.id);
             break;
           }
@@ -500,8 +520,9 @@ function createServer(options = {}) {
           const run = C.gauntlets[session.gauntlet.id];
           // The Calling: the fallen rise for the next fight with everyone else; the last fight ends the run.
           if (session.gauntlet.roster) {
+            if (tally) tallyFight(true);
             if (session.gauntlet.next) start('calling', session.gauntlet.roster, null, session.gauntlet.next);
-            else stop(`${C.calling.name} COMPLETE · ${session.gauntlet.bosses} bosses defeated. The crown has answered.`, 'run-complete');
+            else stop(`${C.calling.name} COMPLETE · ${session.gauntlet.bosses} bosses defeated. The crown has answered.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);

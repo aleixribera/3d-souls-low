@@ -251,6 +251,93 @@ const multiplayer = (() => {
       if (connected) { show(); if (!usingPad()) el('lobbyLeave').focus(); }
     }, C.teamWipeScreenTime * 1000);
   }
+  // The end of a Calling run, won or wiped: its time, bosses beaten, and each player's damage and falls. It stays until
+  // the player closes it (Escape, B, Lobby) or the leader starts the same run again for the same group.
+  const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
+  runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
+  runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Time</dt><dd id="runSummaryTime"></dd></div><div><dt>Bosses beaten</dt><dd id="runSummaryBeaten"></dd></div></dl>'
+    + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
+    + '<div class="summary-actions"><button type="button" id="runSummaryAgain">Again</button><button type="button" id="runSummaryLobby">Lobby</button><p id="runSummaryWait"></p></div></div>';
+  document.body.appendChild(runSummary);
+  const summaryStyle = document.createElement('style');
+  summaryStyle.textContent = `#runSummary[hidden]{display:none}
+    #runSummary{--accent:#dcbb74;--accent-hi:#f3dca3;--ink:#ece4d1;--muted:#a9a798;--line:#ffffff14;position:fixed;inset:0;z-index:121;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;background:#050708e6;color:var(--ink);font:14px/1.5 system-ui}
+    #runSummary.summary-wiped{background:#0b0304eb}#runSummary.summary-wiped .summary-panel{border-top-color:#c94242}#runSummary.summary-wiped h2{color:#e4908a}
+    #runSummary .summary-panel{width:min(620px,100%);max-height:100%;overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:26px 28px 22px;background:#121618;border:1px solid #ffffff1f;border-top:2px solid var(--accent);border-radius:6px;box-shadow:0 24px 80px #000c}
+    #runSummary h2{margin:0;font:400 clamp(28px,6vw,40px)/1.15 Georgia,serif;color:var(--accent-hi);text-wrap:balance}
+    #runSummary .summary-facts{display:flex;gap:36px;margin:18px 0 20px;padding:0 0 16px;border-bottom:1px solid var(--line)}
+    #runSummary dt{color:var(--muted)}#runSummary dd{margin:2px 0 0;font:400 26px/1.2 Georgia,serif;font-variant-numeric:tabular-nums}
+    #runSummary table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
+    #runSummary th{padding:0 8px 6px;color:var(--muted);font-weight:500;text-align:right}#runSummary th:first-child,#runSummary td:first-child{text-align:left;padding-left:0}
+    #runSummary th:nth-child(2){width:96px}#runSummary th:nth-child(3){width:72px}
+    #runSummary td{padding:9px 8px;border-top:1px solid var(--line);text-align:right}#runSummary td:last-child,#runSummary th:last-child{padding-right:0}
+    #runSummary td:first-child{overflow-wrap:anywhere}#runSummary td small{margin-left:8px;color:var(--muted);font-size:inherit}
+    #runSummary td:nth-child(2){color:var(--accent-hi);font-weight:600}
+    #runSummary tr[data-self=true] td:first-child{font-weight:600;color:var(--accent-hi)}
+    #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px}
+    #runSummary button{min-width:120px;min-height:44px;padding:0 20px;font:600 15px/1 system-ui;color:var(--ink);background:transparent;border:1px solid #ffffff38;border-radius:4px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    #runSummary #runSummaryAgain{color:#16120b;background:var(--accent);border-color:var(--accent)}
+    #runSummary button:hover{border-color:var(--accent-hi)}#runSummary #runSummaryAgain:hover{background:var(--accent-hi);color:#16120b}
+    #runSummary button:focus-visible{outline:2px solid var(--accent-hi);outline-offset:3px}
+    #runSummaryWait{margin:0;color:var(--muted)}#runSummaryWait:empty{display:none}
+    @media(max-width:480px){#runSummary .summary-panel{padding:20px 16px 16px}#runSummary .summary-facts{gap:24px}#runSummary dd{font-size:22px}#runSummary th:nth-child(2){width:80px}#runSummary th:nth-child(3){width:58px}#runSummary button{flex:1}}`;
+  document.head.appendChild(summaryStyle);
+  let summary = null;   // the last run's summary while its screen is open
+  const runClock = seconds => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  function showRunSummary(data) {
+    summary = data;
+    runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
+    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'The crown answered' : 'Team wiped';
+    el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
+    el('runSummaryBeaten').textContent = `${data.beaten} / ${data.bosses}`;
+    const rows = el('runSummaryRows'); rows.replaceChildren();
+    for (const r of data.players || []) {
+      const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
+      const name = document.createElement('td'); name.textContent = r.name;
+      if (r.bot) { const tag = document.createElement('small'); tag.textContent = 'Bot'; name.appendChild(tag); }
+      tr.appendChild(name);
+      for (const value of [r.damage, r.deaths]) { const td = document.createElement('td'); td.textContent = Number(value).toLocaleString(); tr.appendChild(td); }
+      rows.appendChild(tr);
+    }
+    panel.inert = true; runSummary.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
+    drawRunSummary(); summaryButtons()[0]?.focus({ preventScroll: true });
+  }
+  // Only the leader can start the run again; the others see who can.
+  function drawRunSummary() {
+    if (!summary) return;
+    const owner = connected && self === leader;
+    el('runSummaryAgain').hidden = !owner;
+    el('runSummaryWait').textContent = owner || !connected ? '' : `${roster.find(p => p.id === leader)?.name || 'The leader'} can start this run again.`;
+  }
+  const summaryButtons = () => [el('runSummaryAgain'), el('runSummaryLobby')].filter(b => !b.hidden);
+  function closeRunSummary(focusLobby = true) {
+    if (!summary) return;
+    summary = null; runSummary.hidden = true; panel.inert = false;
+    if (focusLobby && connected && !usingPad()) el('lobbyLeave').focus();
+  }
+  function moveSummaryFocus(step) {
+    const buttons = summaryButtons(), at = buttons.indexOf(document.activeElement);
+    buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
+  }
+  runSummary.querySelector('#runSummaryAgain').onclick = () => {
+    const again = summary?.roster; closeRunSummary(false);
+    if (again) control('start', { kind: 'calling', id: C.calling.id, roster: again });
+  };
+  runSummary.querySelector('#runSummaryLobby').onclick = () => closeRunSummary();
+  window.addEventListener('keydown', ev => {
+    if (runSummary.hidden || ev.code === 'Escape') return;
+    userActivity(ev); ev.stopImmediatePropagation();
+    if (ev.code === 'Tab') { ev.preventDefault(); moveSummaryFocus(ev.shiftKey ? -1 : 1); }
+    else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); moveSummaryFocus(ev.code === 'ArrowLeft' || ev.code === 'ArrowUp' ? -1 : 1); }
+  }, true);
+  function summaryPad(pressed) {
+    if (runSummary.hidden) return false;
+    if (pressed.includes('PadB')) closeRunSummary();
+    else if (pressed.includes('PadLeft') || pressed.includes('PadUp')) moveSummaryFocus(-1);
+    else if (pressed.includes('PadRight') || pressed.includes('PadDown')) moveSummaryFocus(1);
+    else if (pressed.includes('PadA') && summaryButtons().includes(document.activeElement)) document.activeElement.click();
+    return true;
+  }
   // The Calling's blessings (CONFIG.blessings): between fights the server offers each player a few, and a click, a number
   // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out.
   const blessingScreen = document.createElement('section'); blessingScreen.id = 'blessingScreen'; blessingScreen.hidden = true;
@@ -493,6 +580,7 @@ const multiplayer = (() => {
   }
   function lobbyBack() {
     if (!wipeScreen.hidden) return;
+    if (summary) { closeRunSummary(); return; }
     if (!el('lobbyNameEditor').hidden) closeNameEditor();
     else if (adventureBeforeEdit !== null) closeAdventurePicker(true);
     else if (!el('lobbyControls').hidden) { el('lobbyHelp').click(); el('lobbyHelp').focus(); }
@@ -703,7 +791,7 @@ const multiplayer = (() => {
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { clearLeaderboard(); clearTeamWipe(); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
+  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -955,7 +1043,7 @@ const multiplayer = (() => {
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
       el('lobbyStatus').textContent = 'Connected. Anyone with this link can join.'; updateRoster();
     } else if (msg.type === 'roster') {
-      roster = msg.players; leader = msg.leader; updateRoster();
+      roster = msg.players; leader = msg.leader; updateRoster(); drawRunSummary();
       if (msg.notice && roster.length > 1) notice(msg.notice, true);
     } else if (msg.type === 'start') {
       clearControlPending(); notice('');
@@ -986,7 +1074,8 @@ const multiplayer = (() => {
       finale.cancelEnding();
       session = null; loaded = false; resetStream(); clearRemotes(); closeBlessings(); Game.loading = 0; el('loading').classList.remove('show');
       if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
-      if (msg.reason === 'team-wipe') showTeamWipe(endedRun);
+      if (msg.summary) showRunSummary(msg.summary);
+      else if (msg.reason === 'team-wipe') showTeamWipe(endedRun);
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
       const packet = decoder.decode(msg), frame = packet.frame;
       if (latestFrame && frame.time <= latestFrame.time) return;
@@ -1326,7 +1415,7 @@ const multiplayer = (() => {
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
   function pad(pressed, dt = CONFIG.step) {
-    if (!wipeScreen.hidden) return;
+    if (!wipeScreen.hidden || summaryPad(pressed)) return;
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }

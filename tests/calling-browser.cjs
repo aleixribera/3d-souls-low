@@ -27,6 +27,14 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     return page;
   }
   const finishFight = () => { for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } };
+  // A blow from each player at the first boss, through the server's own hit check, so the run's damage is real.
+  const blows = ids => {
+    const boss = app.sim.inspect().Game.enemies[0], attack = Object.values(app.sim.inspect().PLAYER_DEF?.moveset.attacks || {}).find(x => x.id !== 'execute')?.id || 'light';
+    for (const [i, id] of ids.entries()) {
+      app.sim.setPlayers([{ ...app.session.spawn, id, x: boss.x, z: boss.z + boss.radius + 0.5, y: boss.y, yaw: Math.PI, hp: 120, state: 'idle', poseAge: 0 }]);
+      for (let n = 0; n <= i; n++) app.sim.hit(id, { enemy: boss.netId, attack, charge: 0 });
+    }
+  };
   try {
     fs.mkdirSync(out, { recursive: true });
     const a = await player('Ash'), b = await player('Ember');
@@ -56,6 +64,8 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(app.sim.botList().length, 1, 'a bot fills the third place');
     assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'margit']);
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 1\/2/);
+    const bId = await b.evaluate(() => multiplayer.info.self);
+    blows([await a.evaluate(() => multiplayer.info.self), bId]);
     await a.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
     const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
@@ -82,6 +92,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.deepEqual(await a.evaluate(() => [...Game.player.blessings]), ['rise-again']);
     assert.deepEqual(await b.evaluate(() => [...Game.player.blessings]), [bPick], 'the number key took the first');
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 2\/2/);
+    blows([aId, bId]);
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
     assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['bellWarden', 'margit'], 'the last two bosses come together');
     await a.waitForTimeout(2500);   // let the fight start before the frame
@@ -99,8 +110,51 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });
     assert.match(await a.locator('#lobbyNotice').textContent(), /THE CALLING COMPLETE · 3 bosses defeated/);
     assert.equal(app.session, null);
-    await a.screenshot({ path: `${out}/complete.png` });
+    // The end of the run: time, bosses beaten, and each player's damage and deaths; the leader can go again.
+    for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 10000 });
+    assert.equal(await a.locator('#runSummaryTitle').textContent(), 'The crown answered');
+    assert.equal(await a.locator('#runSummaryBeaten').textContent(), '3 / 3');
+    assert.match(await a.locator('#runSummaryTime').textContent(), /^\d+:\d\d$/);
+    const rows = await a.locator('#runSummaryRows tr').evaluateAll(trs => trs.map(tr => [...tr.cells].map(td => td.textContent)));
+    assert.equal(rows.length, 3, 'both players and the bot');
+    assert.equal(rows.find(r => r[0] === 'Ash')[2], '2', 'Ash fell in both fights');
+    assert.equal(rows.find(r => r[0] === 'Ember')[2], '0');
+    assert.ok(['Ash', 'Ember'].every(name => Number(rows.find(r => r[0] === name)[1].replace(/\D/g, '')) > 0), 'both players dealt damage');
+    assert.ok(rows.some(r => r[0].endsWith('Bot')), 'the bot is marked');
+    assert.equal(await a.locator('#runSummaryAgain').isVisible(), true, 'the leader can go again');
+    assert.equal(await b.locator('#runSummaryAgain').isVisible(), false);
+    assert.equal(await b.locator('#runSummaryWait').textContent(), 'Ash can start this run again.');
+    await a.waitForTimeout(300);
+    await a.screenshot({ path: `${out}/summary-won-desktop.png` });
+    await b.setViewportSize({ width: 390, height: 844 });
+    assert.ok(await b.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('#runSummaryLobby').getBoundingClientRect().bottom <= innerHeight), 'the summary fits a phone');
+    await b.screenshot({ path: `${out}/summary-won-phone.png` });
+    await b.setViewportSize({ width: 1280, height: 720 });
+    // Again: the same roster from its first fight, for the same group; both summaries close.
+    await a.locator('#runSummaryAgain').click();
+    await Promise.all([ready(a), ready(b)]);
+    assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'margit']);
+    assert.equal(app.session.gauntlet.number, 1);
+    assert.equal(await b.locator('#runSummary').isVisible(), false);
+    // A wipe ends the run on the same screen, in red.
+    app.sim.clearBots(); app.sim.arenaWipeDelay = 0.1;
+    for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
+    for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 30000 });
+    assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Team wiped');
+    assert.equal(await a.locator('#runSummaryBeaten').textContent(), '0 / 3');
+    assert.ok((await a.locator('#runSummaryRows tr').allTextContents()).some(t => t.includes('Bot')), 'a bot that left mid-fight is still marked');
+    assert.equal(await a.locator('#teamWipeScreen').isVisible(), false, 'the summary replaces the short wipe card');
+    await a.waitForTimeout(300);
+    await a.screenshot({ path: `${out}/summary-wiped-desktop.png` });
+    await a.setViewportSize({ width: 390, height: 844 });
+    await a.screenshot({ path: `${out}/summary-wiped-phone.png` });
+    await a.setViewportSize({ width: 1280, height: 720 });
+    await a.keyboard.press('Escape');
+    assert.equal(await a.locator('#runSummary').isVisible(), false, 'Escape closes it into the lobby');
+    assert.equal(await a.locator('#publicLobby').evaluate(el => el.inert), false);
+    await b.locator('#runSummaryLobby').click();
+    assert.equal(await b.locator('#runSummary').isVisible(), false);
     assert.deepEqual(errors, []);
-    console.log('THE CALLING browsers: hand-picked roster, phone fit, opening card, bot fill, blessings by click and key, fallen rise, last two together, Rise Again, run complete passed.');
+    console.log('THE CALLING browsers: hand-picked roster, phone fit, opening card, bot fill, blessings by click and key, fallen rise, last two together, Rise Again, run complete, the end-of-run screen, again and a wipe passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
