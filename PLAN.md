@@ -100,8 +100,11 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    and are shown by name under the boss's bar; every few fights two bosses come at once. The end screen shows bosses
    beaten. Check: a test of fight 1, 5, 10, 20 and 40's numbers (the curve), a test that 1 and 4 players face the same boss, and a frame of a modifier on screen.
 3. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
-   change the fight, perhaps a companion. Rarity is shown. Check: the odds in a test; each rare one seen working in a
-   fight.
+   change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
+   offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
+   kit. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
+   it still reaches impossible. Check: the odds in a test; each rare one and an upgrade seen working in a fight; a
+   test of the curve against a team holding a typical late-run kit.
 4. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no

@@ -30,7 +30,9 @@ side by side, and each should feel like the main event.
   at first, slowly more challenging for a good while, until it becomes genuinely impossible. It depends only on how
   far the run has got, never on team size: no enemy or boss gets stronger because more players (or newer players)
   joined. Between fights, blessings: common ones are small; rare ones are exciting (skills,
-  passives, things that change the fight, maybe a companion). Playing earns levels; each level gives a crate, opened
+  passives, things that change the fight, maybe a companion). Like a true roguelike, an ability offered again can be
+  taken to upgrade it, level by level, so a run builds up. Players stack strong abilities, and the difficulty curve is
+  balanced with that in mind. Playing earns levels; each level gives a crate, opened
   on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
   Collection page shows what you own. No money and no shop: menus are not where the game is played.
 - **The crates** must be addictive: players play again just to open the next one. Opening one is a roll, like the old
