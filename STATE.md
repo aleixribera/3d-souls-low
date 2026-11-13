@@ -62,9 +62,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI and the v7.52.0 container: check in pass 30 (v7.51.1's container failed on its changelog; v7.52.0
-supersedes it). Pass 29 locally: `bot-behavior`, `bot-temperament`, `bot-follow`, `bot`, `bot-browser`,
-`group-scaling`, `calling`, `boss-attention`. Probes (untracked): `.scratch/bot-wait-frames.cjs` (a companion
+CI and the v7.53.0 container (pass 30's ending; the v7.52.0 container published): check in the next pass. Probes
+(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames). Pass 29's probes (untracked): `.scratch/bot-wait-frames.cjs` (a companion
 against one boss move, frames), `giant-duels.cjs` (solo times by mood), `by-move.cjs <boss> <n> [bots]`.
 
 ## wip// branches
