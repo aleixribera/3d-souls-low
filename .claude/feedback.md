@@ -55,3 +55,5 @@ took it (once taken).
 - 2026-11-13, bot follow-up after playing v7.57.0: they are good now but wait too much; make them a bit more
   aggressive. And smarter about rolling: they sometimes roll when the attack's hitbox is nowhere near them, for example
   when they stand behind the boss. A bot rolls only when the swing can actually reach it. Taken by pass 38 (v7.58.0).
+- 2026-11-13, after seeing pass 43's lobby (v7.63.0, `docs/scorecard/lobby-v2/`): yes, the title and the other menus
+  follow this look (mode list over one big Start, the party as the other column, key hints that follow the device).
