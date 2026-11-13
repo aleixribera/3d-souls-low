@@ -46,3 +46,8 @@ took it (once taken).
   calibration point for `PLAN.md`'s Normal preset (Low and High merge into Normal, plus Ultra): Normal must hold 60 on
   this laptop, so it starts from Low's cost and takes back only the parts of High's look that fit in the budget. Ties
   the stand-in for integrated graphics to these numbers.
+- 2026-11-13, correction by the loop chat to its own reading of the laptop entry above: ignore "starts from Low's cost
+  and takes back only the parts of High's look". `VISION.md` and `PLAN.md` (Story track item 3) rule: Normal keeps every
+  one of Ultra's effects, each toned down slightly and never switched off; lighting is baked everywhere, in every preset,
+  in place of most real-time lights and shadows; never below 100% render scale. The laptop numbers (Low 60, High 30-40
+  on the Final Castle) only calibrate the stand-in for integrated graphics; Normal must hold 60 on it.
