@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// The Regent Hollis (v7.44.0), the boss of Level 10, js/levels/aurel.js (LORE.md 10f)
+// The Regent Hollis (v7.44.0), the boss of Level 10, js/levels/aurel.js (STORY.md 10f)
 // ============================================================================
 // The steward the hunger left to keep its city fed when it went over the mountains in the Seven's keeping: gilded,
 // gracious, cruel. Rough (PLAN.md stage 3, track A): his fight reuses the engineering of Morgott's

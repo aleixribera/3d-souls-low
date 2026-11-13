@@ -1,5 +1,5 @@
 'use strict';
-// The scorecard's frames (SCORECARD.md): the title menu at desktop and phone width, one frame per Ashmere level from
+// Evidence frames: the title menu at desktop and phone width, one frame per Ashmere level from
 // its start (with frame time, draw calls and triangles on High), and one frame per boss in the 1v1 Arena, front-lit at
 // fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|menu ...]
 // One headless Edge, closed at the end; idle priority through tests/low-priority.cjs.

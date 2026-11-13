@@ -1,5 +1,5 @@
 'use strict';
-// Level 13: the Root of the Ember (v7.50.0), chapter 13 of the Story (STORY.md; LORE.md 10i): inside the Ember's first
+// Level 13: the Root of the Ember (v7.50.0), chapter 13 of the Story (STORY.md 10i): inside the Ember's first
 // growth, under everything. Rough (PLAN.md stage 3, track A): built from the old second road's throne level
 // (removed in v7.54.0) as raw material, its layout kept, every name and character of that road gone; no rings of
 // light, a burning deep under the roots instead of a golden abyss, and the light from the west so what the player walks

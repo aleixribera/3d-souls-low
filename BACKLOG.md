@@ -13,7 +13,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
   without the v7.34.0 change: flaky (pass 2, 2026-11-13).
 - Bots lose to bosses far more since v7.13.1 by design (bisected, pass 26): companions take greedy exchanges and forward
-  rolls (`docs/bot-risk-v7.13.1.md`); with both at 0 one bot beats the Bell Warden, Margit and the Pillager Captain 6/6,
+  rolls (`git show v7.13.1:docs/bot-risk-v7.13.1.md`); with both at 0 one bot beats the Bell Warden, Margit and the Pillager Captain 6/6,
   nearly untouched. So the bot-duel numbers measure reckless companions, not a group of people; whether The Calling's
   fill-in bots should be steadier than the lobby's is the director's call. In `bot-duel` no human lives, so the bots
   are always in last-stand mode (turning it off changed little).
@@ -26,7 +26,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat
   white that washes out the ground and the controls panel (`docs/scorecard/level-the-tower.jpg`, `level-the-church.jpg`).
 - Radagon (and the Kindling Tree, his copy) beat three bots 11/12 and 10/12 even after v7.50.1's fairer Gold Breaker
-  (`docs/scorecard/radagon-gold-breaker.txt`); his other big losers for bots, the Rune Slam's two hits, are 1.5 s
+  (`git show v7.56.0:docs/scorecard/radagon-gold-breaker.txt`); his other big losers for bots, the Rune Slam's two hits, are 1.5 s
   apart, fair to a person. Check by hand whether a group of people can beat him before The Calling offers him.
 - A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
   server doesn't check flask use. Harmless among friends; worth a check if the lobby ever opens wider (pass 7).
@@ -133,4 +133,4 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   and Low now draws native, so a 3x phone draws nine times its old pixels. Untested on a phone; if too slow, the next
   lever is a cheaper Low material (Lambert-style lighting), never a lower resolution.
 - Faster High on weak GPUs at 2x: the flame glows and light pools (`glows`) were the other consistent cost in the 4K
-  per-pass probe (`docs/render-scale-v7.56.0.md`); cheaper pools (fewer, tighter quads) would cut it.
+  per-pass probe (`git show v7.56.0:docs/render-scale-v7.56.0.md`); cheaper pools (fewer, tighter quads) would cut it.

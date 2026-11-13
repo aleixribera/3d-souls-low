@@ -1,4 +1,4 @@
-# The Executioner, one of the Ashbound (LORE.md: the king's own army, turned). One rigid mesh per game bone (js/rig.js
+# The Executioner, one of the Ashbound (STORY.md: the king's own army, turned). One rigid mesh per game bone (js/rig.js
 # skeleton at scale 1, MODEL_DEFS.ashExecutioner), named exec:<bone>__<material slot>[.n], so every key pose, the walk,
 # the cloth swing and the death drive it. Rest pose: upright, arms hanging (the posture bends the elbows in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().

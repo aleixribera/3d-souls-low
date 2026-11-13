@@ -7,10 +7,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 30, item 1, v7.53.0): the story's ending; frames `docs/scorecard/ending-*.jpg`, in-page `Still Mere:`.
   Next on the track: item 2, Ostrey redone.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
-  `js/visuals.js`); numbers, close-ups: `docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
+  `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 32, v7.55.0): an aid, not a carry; check `docs/scorecard/bot-aid.txt`.
-- Pass 34 (Broken): CI's one red on main (the King's Blade meter test) and the `#dev` title overlap fixed; the
-  v7.54.0 and v7.55.0 containers published. Next in this slot: `PLAN.md` clean-up item 2.
+- Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
+  `scorecard/`; one `STORY.md` (part one: in the game, `LORE.md`'s numbering; part two: where it goes); `README.md`
+  one screen. Old notes: `git show v7.56.0:docs/<file>`. Next in this slot: track B item 1.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
@@ -86,11 +87,11 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) The ending's cards are the loop's wording of `STORY.md` "The ending" (`LORE.md` 9b).
+- (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
-  bar name, enemy descriptions (`LORE.md` 6, 7, 10c-10i). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
+  bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
   each (Godrick's damage x0.85), the Ringer 3,000, the Regent 3,400, Oswin 3,800, Agathe 4,000 (her stand-in keeps the
   Toll Wisp's tall hat), the Kindling Tree 4,200 (its stand-in is chapter 6's Hunger stood upright), the King's Blade 4,400 (its second bar
   "the King's Blade, Ember-Worn"; its stand-in is the player's own figure in ash).

@@ -1,6 +1,6 @@
 # Public co-op lobby on your Ubuntu server
 
-**Recommended:** switch once to the [published container and quick updates](container-updates.md). Your stack is `/opt/homelab/stacks/combat-arena`; the older source-install instructions below are retained for v7.7.1.
+**Recommended:** switch once to the [published container and quick updates](container-updates.md). Your stack is `/opt/homelab/stacks/combat-arena`; the source-install instructions below are the older route.
 
 This deployment runs on **your separate Ubuntu home server**, not your Windows gaming PC. The existing Tailscale address `100.95.233.56` is useful for copying files and SSH. Players will use the public HTTPS address printed by Tailscale Funnel.
 
@@ -8,7 +8,7 @@ The game and the single lobby run together in one Docker Compose service. Browse
 
 ## Updating your existing server
 
-Your running game uses **host port 3080** and **https://aleix.tailfef0f7.ts.net:8443/**. Follow [the v7.7.1 update guide](update-v7.7.1.md), which preserves your settings and existing Funnel mapping. The steps below are for a fresh installation.
+Your running game uses **host port 3080** and **https://aleix.tailfef0f7.ts.net:8443/**. Update it with [the published container](container-updates.md), which keeps your settings and existing Funnel mapping. The steps below are for a fresh installation.
 
 ## 1. Connect to Ubuntu from your Windows PC
 
@@ -116,7 +116,7 @@ docker compose up -d --build
 
 The last two commands stop/start the deployment and end any current online session. Do updates between sessions. After an update, everyone should reload the page. The lobby rejects pages from a different build.
 
-For the existing archive installation, follow [the v7.7.1 update guide](update-v7.7.1.md). It downloads the tagged GitHub release, backs up the current directory and rebuilds just this service. Do not run `git pull` inside the archive-only directory; it is not a checkout.
+For an archive installation, move to [the published container](container-updates.md). Do not run `git pull` inside the archive-only directory; it is not a checkout.
 
 To turn off **only this** public proxy, keeping unrelated Tailscale services intact:
 

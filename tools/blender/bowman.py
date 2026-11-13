@@ -6,7 +6,7 @@
 # head (0, 1.69, 0); arms at x +-.31, y 1.55; left elbow y 1.226, wrist .902; right elbow 1.25, wrist .95. The bow's grip
 # runs along z through the right wrist (the kit builds the bow). Hips x +-.15, y .90, knees .45.
 # Cloth bones (they swing): loinF (.02, .93, .13), loinB (-.03, .93, -.13).
-# The look (v5.5's brief, LORE.md's Hollowed): a hunched archer of the walls, a gaunt sunken face in a deep canvas cowl,
+# The look (v5.5's brief, STORY.md's Hollowed): a hunched archer of the walls, a gaunt sunken face in a deep canvas cowl,
 # a short ragged mantle, a fitted canvas doublet with a leather harness across it, a quiver on the back bristling with
 # fletched arrows, bare sinewy arms out of short sleeves, a leather bracer on the bow arm and rag wraps on the other,
 # canvas breeches, wrapped shins and turnshoes. Enemy budget: about 3,000 triangles with the bow.

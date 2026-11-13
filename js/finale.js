@@ -391,7 +391,7 @@ const finale = (() => {
     if (document.pointerLockElement) document.exitPointerLock();
     const E = F.ending;
     const online = onlineGame();
-    const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from LORE.md)
+    const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from STORY.md)
     // An ending with a level after it (Aldric's: the end of Act I) is an interlude: its cards, no credits, then that
     // level. Online, the server carries a campaign on; the way back to the lobby shows after the cards.
     const next = Game.nextLevelId();

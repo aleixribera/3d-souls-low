@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// The Ringer of Thrale (v7.42.0), the boss of Level 9, js/levels/night-gaol.js (LORE.md 10e)
+// The Ringer of Thrale (v7.42.0), the boss of Level 9, js/levels/night-gaol.js (STORY.md 10e)
 // ============================================================================
 // The one who rang Thrale's own bell, long ago, and was shut away for it: still chained in the great ring of the Night
 // Gaol, still fighting, not knowing she is free. Rough (PLAN.md stage 3, track A): her fight reuses the engineering of

@@ -5,7 +5,7 @@
 # Bones at rest: spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0); arms at x +-.38, y 1.55,
 # elbows y 1.25, wrists y .95 (the greatsword's grip runs along z through the right wrist; the kit's greatshield hangs
 # off the left forearm); hips x +-.15, y .90, knees .45.
-# The look (LORE.md: the king's old household guard, set to hold the deep gaol): heavy blued plate. A tall flat-topped
+# The look (STORY.md: the king's old household guard, set to hold the deep gaol): heavy blued plate. A tall flat-topped
 # tower helm with a cross of slits and a riveted brow, a standing collar, a broad squared cuirass with a plackart over
 # the belly, round pauldrons (the sword arm's the larger, spiked), mail at the joints, vambraces and dark gauntlets,
 # tassets and a ring of gaol keys at the belt, cuisses, knee cops, greaves and dark sabatons.

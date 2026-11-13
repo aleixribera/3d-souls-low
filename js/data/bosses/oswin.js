@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Oswin, the First Crown (v7.46.0), the boss of Level 11, js/levels/aurel-in-ash.js (LORE.md 10g)
+// Oswin, the First Crown (v7.46.0), the boss of Level 11, js/levels/aurel-in-ash.js (STORY.md 10g)
 // ============================================================================
 // The first king of Thrale the Ember ever wore, risen to his throne in the ash when the hunger, refused, burned the city it
 // could not keep. Rough (PLAN.md stage 3, track A): his fight reuses the engineering of Godfrey's

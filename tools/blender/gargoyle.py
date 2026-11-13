@@ -1,4 +1,4 @@
-# The Gargoyle, the castle's carved guardian woken by the Ember's heat (LORE.md). One rigid mesh per game bone (js/rig.js
+# The Gargoyle, the castle's carved guardian woken by the Ember's heat (STORY.md). One rigid mesh per game bone (js/rig.js
 # skeleton at scale 1, MODEL_DEFS.gargoyle), named gargoyle:<bone>__<material slot>[.n], so every key pose, the walk and
 # the death drive it. Rest pose: upright, arms hanging (the model's posture hunches the chest hard and tilts the wings
 # back in the game).

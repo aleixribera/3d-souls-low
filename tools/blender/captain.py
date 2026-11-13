@@ -1,4 +1,4 @@
-# The Pillager Captain, the Ashbound's commander (LORE.md: the king's own army, turned, taken by the burned towns for
+# The Pillager Captain, the Ashbound's commander (STORY.md: the king's own army, turned, taken by the burned towns for
 # invaders). One rigid mesh per game bone (js/rig.js skeleton at scale 1, MODEL_DEFS.pillagerCaptain), named
 # captain:<bone>__<material slot>[.n], so every key pose, the walk, the cloth swing and the death drive it. The game scales
 # him 1.45x. Rest pose: upright, arms hanging (the model's posture leans him a little and bends the elbows in the game).

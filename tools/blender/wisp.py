@@ -1,16 +1,16 @@
-# The Toll Wisp, the soul of one of the tower's old bell-ringers (LORE.md). One rigid mesh per game bone (js/rig.js skeleton
+# The Toll Wisp, the soul of one of the tower's old bell-ringers (STORY.md). One rigid mesh per game bone (js/rig.js skeleton
 # at scale 1, MODEL_DEFS.tollWisp), named wisp:<bone>__<material slot>[.n], so every key pose, the walk and the death drive it.
 # Rest pose: upright, arms hanging (the model's posture stoops it a little in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().
 # Bones at rest (shoulderX .30, both arms 4% longer): spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0);
 # arms at x +-.30, y 1.55, elbows y 1.238, wrists .926. Hips x +-.15, y .90, knees .45.
 # Cloth bones (they swing): tasselF (-.055, .97, .19), robeB (0, 1.48, -.18).
-# The look (v5.5's brief on MODEL_DEFS.tollWisp, LORE.md's Toll Wisps): a weathered wandering ringer in an enormous
+# The look (v5.5's brief on MODEL_DEFS.tollWisp, STORY.md's Toll Wisps): a weathered wandering ringer in an enormous
 # wide-brimmed felt hat with a slouching hooked crown, a patterned brim border and a rope hatband with tassels; a face lost
 # in shadow over a flowing white beard; a chestnut shoulder capelet with a knotted cravat, sage shoulder caps and a buckled
 # baldric; wide sleeves with pale X-lacing and gold cuffs over bony hands; a twisted rope girdle with long front tassels, an
 # angled belt and a hip satchel; a floor-length dark coat open over a cream-gold brocade robe with a rust-amber stripe and a
-# wide hem border, over boots. LORE.md binds each ringer to a small bell of its own: a handbell in the left hand.
+# wide hem border, over boots. STORY.md binds each ringer to a small bell of its own: a handbell in the left hand.
 # Enemy budget: about 3,000 triangles (no weapon).
 import sys, math
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")

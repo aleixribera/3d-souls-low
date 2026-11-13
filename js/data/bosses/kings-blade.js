@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// The King's Blade (v7.51.0), the boss of Level 14, js/levels/still-mere.js (LORE.md 10j)
+// The King's Blade (v7.51.0), the boss of Level 14, js/levels/still-mere.js (STORY.md 10j)
 // ============================================================================
 // The hunger, beaten in every body it wore, in the last one it kept: the champion's burned-out memory. Red scarf, round
 // shield, the King's sword. It fights as the player fights: its moves are the player's own (PLAYER_DEF), read from the

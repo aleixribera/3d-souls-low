@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// The Kindling Tree (v7.50.0), the boss of Level 13, js/levels/ember-root.js (LORE.md 10i), and the Rootbound
+// The Kindling Tree (v7.50.0), the boss of Level 13, js/levels/ember-root.js (STORY.md 10i), and the Rootbound
 // ============================================================================
 // The Ember's own root, given limbs: under everything the Ember is a root, and this is where it began. Rough (PLAN.md
 // stage 3, track A): its fight reuses the engineering of Radagon's (js/data/bosses/radagon.js: the three-blow lash, the
@@ -59,7 +59,7 @@
   ENEMY_DEFS.push(TREE); ENEMY_BY_ID[TREE.id] = TREE;
 }
 
-// The Rootbound (Level 13; LORE.md 10i): thralls grown into the wood, and gone into it gladly. They sink into the roots
+// The Rootbound (Level 13; STORY.md 10i): thralls grown into the wood, and gone into it gladly. They sink into the roots
 // and rise where you stand, throw thorns of fire and mark the floor to burn. Rough: the Golden Zealot's moves
 // (ZEALOT_MOVES, js/data/move-sources.js) on the Hollow Soldier's Blender figure, its skin and clothes gone to bark.
 {

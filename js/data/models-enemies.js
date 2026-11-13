@@ -488,7 +488,7 @@ MODEL_DEFS.gargoyle = {
 };
 
 // Empty Sentinel (v7.39.0 built in Blender, tools/blender/sentinel.py): a towering suit of ornate golden-brass plate and
-// arabesque filigree over bronze mail, with nobody inside (LORE.md). A tall narrow ovoid close-helm with a sharp keel down
+// arabesque filigree over bronze mail, with nobody inside (STORY.md). A tall narrow ovoid close-helm with a sharp keel down
 // its face, a crest tuft on the crown, a filigree brow band, a dark eye slit and two columns of breathing holes, cold light
 // in the dark behind them; a wide ringed gorget; great horizontally flared pauldrons with upturned outer lips, a filigree
 // inlay and two rerebrace lames; a heavy breastplate with a filigree plackart, crossed by a pale surcoat sash from the
@@ -552,7 +552,7 @@ MODEL_DEFS.emptySentinel = {
 // crisscross pale X-lacing and golden embroidered cuffs over bony hands; a multi-strand twisted rope waist girdle with
 // long front tassels and an angled leather belt with a hip satchel; and a floor-length dark outer coat over a cream-gold
 // damask brocade front robe bisected by a rust-amber stripe and wide embroidered bottom hem border, over brown boots.
-// v7.30.0 adds the small handbell LORE.md binds each ringer to, and its soul's cold eyes under the brim.
+// v7.30.0 adds the small handbell STORY.md binds each ringer to, and its soul's cold eyes under the brim.
 MODEL_DEFS.tollWisp = {
   extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.04, limbSides: 5,
   proportions: { shoulderX: 0.30, torsoW: 0.21, torsoD: 0.145, armR: 0.048, legR: 0.068, headR: 0.118, handR: 0.042, footLen: 0.27 },
@@ -586,7 +586,7 @@ MODEL_DEFS.tollWisp = {
     tasselF: { parent: 'spin', at: [-0.055, 0.02, 0.19] },
     robeB: { parent: 'chest', at: [0, 0.48, -0.18] },
   },
-  // v7.30.0: built in Blender (tools/blender/wisp.py), one piece per bone, with the handbell LORE.md binds each ringer to
+  // v7.30.0: built in Blender (tools/blender/wisp.py), one piece per bone, with the handbell STORY.md binds each ringer to
   parts: Object.entries({
     head: ['hat', 'hat.1', 'brimTrim', 'rope', 'void', 'skin', 'beard'], neck: ['void'],
     chest: ['coat', 'brocade', 'trim', 'mantle', 'mantle.1', 'epaulette', 'leather', 'buckle'],
@@ -639,7 +639,7 @@ MODEL_DEFS.lanternBearer = {
   },
   eyes: { color: 0xffb050 },
 };
-// The Keyless (Level 9, v7.42.0; LORE.md 10e): the Hollow Soldier's figure as a prisoner of the Night Gaol: skin grey
+// The Keyless (Level 9, v7.42.0; STORY.md 10e): the Hollow Soldier's figure as a prisoner of the Night Gaol: skin grey
 // under the starlight, a faded prison quilt, rusted iron at the straps and plates, a length of fetter for a blade. A
 // stand-in until its own Blender figure.
 MODEL_DEFS.keyless = {
@@ -656,7 +656,7 @@ MODEL_DEFS.keyless = {
   },
   eyes: { color: 0xb8c8ff, size: 0.011 },
 };
-// The Gilded Thrall (Level 10, v7.44.0; LORE.md 10f): the Rogue's figure as a citizen of Aurel: gold leaf on the mask
+// The Gilded Thrall (Level 10, v7.44.0; STORY.md 10f): the Rogue's figure as a citizen of Aurel: gold leaf on the mask
 // and skin, an ochre hood, gilt on the scale and steel, a curved knife in each hand. A stand-in until its own Blender figure.
 MODEL_DEFS.gildedThrall = {
   extends: 'rogue',
@@ -675,7 +675,7 @@ MODEL_DEFS.gildedThrall = {
   weapon: { use: 'curvedKnife', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
   eyes: { ...MODEL_DEFS.rogue.eyes, color: 0xffd890 },
 };
-// The Cinderfolk (Level 11, v7.46.0; LORE.md 10g): the Hollow Soldier's figure as a citizen of Aurel after the burning:
+// The Cinderfolk (Level 11, v7.46.0; STORY.md 10g): the Hollow Soldier's figure as a citizen of Aurel after the burning:
 // skin charred grey-black, clothes burned to the colour of ash, embers where the eyes were. A stand-in until its own
 // Blender figure.
 MODEL_DEFS.cinderfolk = {
@@ -692,7 +692,7 @@ MODEL_DEFS.cinderfolk = {
   },
   eyes: { color: 0xff7a2a, size: 0.012 },
 };
-// The Drowned (Level 14, v7.51.0; LORE.md 10j): the Hollow Soldier's figure as a thrall come up out of the mere: skin
+// The Drowned (Level 14, v7.51.0; STORY.md 10j): the Hollow Soldier's figure as a thrall come up out of the mere: skin
 // blue-grey and swollen with cold, the clothes gone dark with water and weed, rust on every buckle, pale eyes. A stand-in
 // until its own Blender figure.
 MODEL_DEFS.drowned = {
@@ -709,7 +709,7 @@ MODEL_DEFS.drowned = {
   },
   eyes: { color: 0xc8e8ff, size: 0.011 },
 };
-// The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
+// The Salt Knight (Level 8, v7.40.0; STORY.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
 // over grey-green cloth. A stand-in until its own Blender figure.
 MODEL_DEFS.saltKnight = {
   extends: 'undeadKnight',
@@ -721,7 +721,7 @@ MODEL_DEFS.saltKnight = {
     trousers: { tex: 'rottenCloth', tint: 0x48544e, decay: 0.8 },
   },
 };
-// Hale and Harrow, the Castellans (Level 8, v7.40.0; LORE.md 10d): one suit of armour split between twin sisters, in
+// Hale and Harrow, the Castellans (Level 8, v7.40.0; STORY.md 10d): one suit of armour split between twin sisters, in
 // salt-crusted iron and Saltgrave's sea-grey. Stand-ins until their own Blender figures: Hale, who has the helm, the
 // breastplate and the axe, wears the Empty Sentinel's figure; Harrow, bare-headed in the gauntlets and greaves, the
 // Executioner's.

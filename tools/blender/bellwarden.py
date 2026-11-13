@@ -1,4 +1,4 @@
-# The Bell Warden, the king's guard over the Bell of Waking (LORE.md: a bellkeeper chained in bronze, set at the top of
+# The Bell Warden, the king's guard over the Bell of Waking (STORY.md: a bellkeeper chained in bronze, set at the top of
 # the Seven's watchtower). One rigid mesh per game bone (js/rig.js skeleton at scale 1, MODEL_DEFS.bellWarden), named
 # bell:<bone>__<material slot>[.n], so every key pose, the walk, the cloth swing and the death drive it. The game scales
 # him 1.9x (bulk 1.25). Rest pose: upright, arms hanging (the model's posture leans him and bends the elbows in the game).

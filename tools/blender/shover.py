@@ -1,4 +1,4 @@
-# The Shover, the Ironbound brute behind a wall of a shield (LORE.md: the king's old household guard, kept at their posts
+# The Shover, the Ironbound brute behind a wall of a shield (STORY.md: the king's old household guard, kept at their posts
 # past death). One rigid mesh per game bone (js/rig.js skeleton at scale 1, MODEL_DEFS.ironShover), named
 # shover:<bone>__<material slot>[.n], so every key pose, the walk and the death drive it. Rest pose: upright, arms hanging
 # (the model's posture hunches the chest and bends the elbows in the game).

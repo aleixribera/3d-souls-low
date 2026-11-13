@@ -1,5 +1,5 @@
 'use strict';
-// Level 7: The Windward Moor (v7.38.0), chapter 7 of the Story (STORY.md; LORE.md 10c): Thrale's border, over the pass.
+// Level 7: The Windward Moor (v7.38.0), chapter 7 of the Story (STORY.md 10c): Thrale's border, over the pass.
 // Rough (PLAN.md stage 3, track A): built from the old second road's first level (removed in v7.54.0) as raw
 // material, its layout kept, every name and character of that road gone. x runs east toward Thrale, z north.
 //   The border shrine (y 0): the start, bonfire 1, Ysolde. Steps out onto the moor (y 0, open, long grass, ruined

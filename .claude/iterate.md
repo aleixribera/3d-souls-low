@@ -7,7 +7,7 @@ The loop file for the `iterate` skill. Where it differs from the skill, this fil
 - `VISION.md`: what the game is, in Aleix's words. Wins over everything, this file included.
 - `.claude/feedback.md`: Aleix's bugs, complaints and ideas. They come first.
 - `~/.claude/CLAUDE.md`: Aleix's standing rules (real Blender models, Claude-only textures, no stock-AI UI, ship without asking).
-- Everything else agents wrote (`AGENTS.md`, `STORY.md`, `LORE.md`, docs, notes) is a draft, not a rule.
+- Everything else agents wrote (`AGENTS.md`, `STORY.md`, docs, notes) is a draft, not a rule.
 
 ## Plan
 
@@ -23,16 +23,15 @@ director is a separate chat that sets the direction with him and builds nothing.
 |---|---|---|
 | `VISION.md` | What the game is, its areas and stages. Wins over everything. | Aleix (the director with his OK) |
 | `PLAN.md` | The order of work, each item's acceptance check, the answers to "Needs Aleix". | The director |
-| `STORY.md` | The one story being built; `LORE.md` is the story in the game today. | The director with Aleix |
+| `STORY.md` | The story: part one is what is in the game (every in-game text agrees with it), part two where it is going. | The director with Aleix; a pass moves a piece into part one when it ships |
 | `STATE.md` | Now, what works, broken, queued runs, `wip/` branches, Needs Aleix. Cap 8,000 characters. | The loop |
 | `BACKLOG.md` | Work the loop cut, found or deferred, for the director to promote. | The loop |
-| `SCORECARD.md` | One row per `VISION.md` area (one per Ashmere level, one per boss), scored 1-5 with one sentence and a path of evidence. Written by `PLAN.md` stage 1 item 4; until then it doesn't exist. | The loop |
 | `.claude/feedback.md` | Aleix's bugs, complaints and ideas, append-only and dated. | Aleix; the loop marks the pass that took one |
 
 Other notes:
-- Per model: `docs/<name>-model-v<version>.md` (what it is, slots, triangles, rebuild command), one line in
-  `docs/CHANGELOG.md`, a section in `docs/feature-history.md`, a row in the AGENTS.md "Where things live" table.
-- Third-party assets: none so far; any would be logged in the model's doc.
+- No per-release or per-model docs: the commit message holds the details, and the in-game changelog
+  (`js/data/changelog.js`) is the one changelog. A model's notes are its `tools/blender/<name>.py` header.
+- Third-party assets: none so far; any would be logged in the header of the file that uses it.
 
 ## Build
 
@@ -65,9 +64,9 @@ node tools/pack-baked.cjs <stem>
 ## Ship and release
 
 - Commit to `main` and push; CI runs on the push. Stage only this pass's files.
-- Every finished model is a minor release (v7.N.0), as v7.21–v7.27 were: the four version spots (AGENTS.md
-  "Releasing"), `npm install --package-lock-only` at root and `server/`, the changelogs, then tag `v*` and push the tag.
-  Check the container workflow started.
+- A release whenever a pass ships something players notice (`PLAN.md`): the four version spots (AGENTS.md
+  "Release"), `npm install --package-lock-only` at root and `server/`, one entry in `js/data/changelog.js`, then tag
+  `v*` and push the tag. Check the container workflow started.
 
 ## Two passes at a time
 

@@ -29,8 +29,7 @@ const PLAYER_DEF = {
     ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
     air: { light: 'jumpLight', heavy: 'jumpHeavy' },
     attacks: {
-      // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery. Was 0.22 / 0.12 / 0.34
-      // (docs/combat-timings-v4.1.md).
+      // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery. Was 0.22 / 0.12 / 0.34.
       // Light combo: diagonal -> backhand -> overhead finisher (`next`: the attack a press during this one chains into).
       // Damage 18 -> 24 per hit: a full combo deals 72 versus a tapped heavy's 53, for 48 versus 40 stamina.
       light: { id: 'light', anim: 'sweep', pose: 'lightDiagonal', hits: [{ startup: 0.3, active: 0.1, follow: 0.14 }], recovery: 0.26, cost: 16,
@@ -49,7 +48,7 @@ const PLAYER_DEF = {
                 damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.6, hitstop: 0.08, riposte: { damage: 2.4 },
                 box: { w: 1.4, h: 2.2, d: 2.2, fwd: 1.35, y: 1.2 } },
       // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage.
-      // Was 0.56 / 0.16, recovery 0.64 (docs/combat-timings-v4.1.md).
+      // Was 0.56 / 0.16, recovery 0.64.
       heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.62, active: 0.14, follow: 0.22 }], recovery: 0.5, cost: 40,
                charge: { action: 'heavy', at: 0.7, hold: 0.9, mul: 1.5, hitstopMul: 1.4 },
                markers: [{ at: 'windup', t: 0.8, event: 'sound', sound: 'swingHeavy', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],

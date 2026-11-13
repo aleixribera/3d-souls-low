@@ -1,6 +1,6 @@
 'use strict';
 // The changelog shown in the game (title > Changelog), newest first: what each release changed, told to players.
-// docs/CHANGELOG.md is the developers' list; this one leaves out the tooling and groups small releases.
+// The one changelog: it leaves out the tooling and groups small releases (the git history has the rest).
 //   version  the label: one release ('v7.21.0') or a span ('v7.11 – v7.15'). The first entry is always the running
 //            VERSION (validate.js checks it), so a release adds its line here when it bumps the version.
 //   title    a few words

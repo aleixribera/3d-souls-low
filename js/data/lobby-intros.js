@@ -1,5 +1,5 @@
 'use strict';
-// New public runs only. Canonical copy: LORE.md, Public-lobby opening ceremonies.
+// New public runs only. Canonical copy: STORY.md, Public-lobby opening ceremonies.
 const LOBBY_INTROS = [
   { id: 'ashmere', title: 'STORY · ASHMERE', goal: 'Defeat the Gaoler King.' },
   { id: 'the-calling', title: 'THE CALLING', goal: 'Answer every boss that comes. The last two come together.' },

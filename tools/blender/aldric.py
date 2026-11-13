@@ -1,4 +1,4 @@
-# Aldric, the Gaoler King (LORE.md section 2): the last king to swear the Oath of the Open Hand, who broke the Seven's seal
+# Aldric, the Gaoler King (STORY.md section 2): the last king to swear the Oath of the Open Hand, who broke the Seven's seal
 # and took the Ember. Level 5's boss (the Field of Answer, then the throne room), the end of Act I. One rigid mesh per game
 # bone (js/rig.js skeleton at scale 1, MODEL_DEFS.varn), named aldric:<bone>__<material slot>[.n], so every key pose, the
 # walk, the cloth swing and the death drive it. The game scales him 1.75x (bulk 1.25). Rest pose: upright, arms hanging

@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Mother Agathe, the Rending Hand (v7.48.0), the boss of Level 12, js/levels/torn-abbey.js (LORE.md 10h), and the
+// Mother Agathe, the Rending Hand (v7.48.0), the boss of Level 12, js/levels/torn-abbey.js (STORY.md 10h), and the
 // Rending Brothers, her monks
 // ============================================================================
 // The abbess who held the knife when Thrale's monks tried to cut the Ember out of the earth and tore the hill loose into
@@ -76,7 +76,7 @@
   ENEMY_DEFS.push(AGATHE); ENEMY_BY_ID[AGATHE.id] = AGATHE;
 }
 
-// The Rending Brothers (Level 12; LORE.md 10h): the monks who cut at the hill with her. They spring from the ruins, cut
+// The Rending Brothers (Level 12; STORY.md 10h): the monks who cut at the hill with her. They spring from the ruins, cut
 // four times with a hooked knife, fling stones and rend the floor into a line of shockwaves. Rough: the Beastman's moves
 // (BEASTMAN_MOVES, js/data/move-sources.js) on the Rogue's Blender figure in an undyed cowl, one hooked knife.
 {

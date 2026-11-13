@@ -3,7 +3,6 @@
 // Attacks are four-phase (js/attack-anim.js; format in js/data/player.js): `pose` key poses, `tracking` (turn rate and
 // the share of each wind-up spent turning before the aim locks), parry glints at the window, and optional `hold` on a
 // hit: a delayed attack that freezes, clearly still, at `at` of its wind-up for `time` s with `chance`.
-// Timings before v4.2: docs/combat-timings-v4.1.md.
 const ENEMY_DEFS = [
   {
     id: 'hollow', name: 'Hollow Soldier', description: 'A shambling swordsman. Readable, honest, a fair first duel.',
@@ -13,7 +12,7 @@ const ENEMY_DEFS = [
     cooldown: [0.63, 1.4], flinchTime: 0.24, staggerTime: 1.1, parriedTime: 1.7,
     attacks: [
       // Four-phase (js/attack-anim.js): tracks the player for `tracking.commit` of the wind-up, then locks its aim;
-      // the blade glints as the parry window opens. Was 0.62 / 0.14, recovery 0.65 (docs/combat-timings-v4.1.md).
+      // the blade glints as the parry window opens. Was 0.62 / 0.14, recovery 0.65.
       { id: 'swing', name: 'Sword Swing', anim: 'sweep', pose: 'hollowSwing', hits: [{ startup: 0.75, active: 0.12, follow: 0.18 }], recovery: 0.55,
         tracking: { rate: 3.0, commit: 0.7 }, markers: [{ event: 'glint', parry: true }],
         damage: 20, poise: 20, knock: 4, lunge: 1.6, range: 1.9,
@@ -73,7 +72,7 @@ const ENEMY_DEFS = [
     // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit. (v4.2.1: chainMul 1.5 -> 1.35, parry -15%.)
     posture: { max: 100, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     // v4.2.4: its sweep and stomp were active 0.24 / 0.2 s over boxes too wide to roll out of, so a roll's 0.3 s of
-    // invulnerability had almost no margin; now 0.12 s, the rest added to the follow-through (docs/combat-timings-v4.1.md).
+    // invulnerability had almost no margin; now 0.12 s, the rest added to the follow-through.
     attacks: [
       { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.12, follow: 0.42 }], recovery: 1.3,
         damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
@@ -272,7 +271,7 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    // The Toll Wisp: a bell-ringer's soul in its old robe and wide hat, bound to a handbell (LORE.md). It rings before every shot (the cue to move).
+    // The Toll Wisp: a bell-ringer's soul in its old robe and wide hat, bound to a handbell (STORY.md). It rings before every shot (the cue to move).
     id: 'wisp', model: 'tollWisp', name: 'Toll Wisp', description: "A bell-ringer's soul in its old robe, bound to a handbell. It rings before it shoots. Fragile: close in and cut it down.", autoLock: false,
     scale: 0.9, bulk: 0.96, radius: 0.36, color: 0x8a6432, weapon: 'none', idle: 'sway',
     visual: { skin: 0x9e9484, roughness: 0.75 },
@@ -402,7 +401,7 @@ const ENEMY_DEFS = [
     attacks: B.attacks.map(a => a.id === 'bowShot' ? { ...a, id: 'castleShot', projectile: { ...a.projectile, speed: 28 }, range: 34 } : a) });
 }
 
-// The Lantern Thralls of the Windward Moor (Level 7, v7.38.0; LORE.md 10c): blind herd-folk who walk in a flock after one
+// The Lantern Thralls of the Windward Moor (Level 7, v7.38.0; STORY.md 10c): blind herd-folk who walk in a flock after one
 // who carries a lantern. Blindness is the levels' short `notice`; the bearer sees, and its alarm (`alert`) brings the
 // flock. Rough stand-ins: the thrall is the Hollow Soldier's figure and moves, the bearer the Toll Wisp's, re-coloured.
 {
@@ -418,7 +417,7 @@ const ENEMY_DEFS = [
     attacks: W.attacks.map(a => a.id === 'wispBolt' ? { ...a, id: 'bearerFlare', name: 'Lantern Flare' } : { ...a, id: 'bearerPush', name: 'Lantern Shove' }) });
 }
 
-// The Salt Knights of Saltgrave (Level 8, v7.40.0; LORE.md 10d): the fortress's garrison, their armour crusted white by
+// The Salt Knights of Saltgrave (Level 8, v7.40.0; STORY.md 10d): the fortress's garrison, their armour crusted white by
 // the sea wind. Heavier than Ashmere's knights and slower to turn. Rough stand-in: the Undead Knight's figure and moves,
 // salt-white.
 {
@@ -428,7 +427,7 @@ const ENEMY_DEFS = [
     color: 0xb8b6ac, visual: { ...K.visual, skin: 0xb0aea4 }, hp: 290, poise: 150, turnRate: 2.6, trackRate: 1.0 });
 }
 
-// The Keyless of the Night Gaol (Level 9, v7.42.0; LORE.md 10e): prisoners whose cells fell open long ago, who never went
+// The Keyless of the Night Gaol (Level 9, v7.42.0; STORY.md 10e): prisoners whose cells fell open long ago, who never went
 // out. They walk in their chains: slower than a Hollow Soldier, harder to stagger, and the chain's weight is in every
 // blow. Rough stand-in: the Hollow Soldier's figure and moves, starlit grey under rusted fetters.
 {
@@ -440,7 +439,7 @@ const ENEMY_DEFS = [
       damage: Math.round(a.damage * 1.15), poise: Math.round(a.poise * 1.2) })) });
 }
 
-// The Gilded Thralls of Aurel (Level 10, v7.44.0; LORE.md 10f): the capital's citizens, fed and smiling, gold leaf laid
+// The Gilded Thralls of Aurel (Level 10, v7.44.0; STORY.md 10f): the capital's citizens, fed and smiling, gold leaf laid
 // on their faces and hands, a knife in each. They smile until you are close. Quick and fragile like the Rogue, a little
 // harder to put down. Rough stand-in: the Rogue's figure and moves, in gold leaf and ochre, two curved knives.
 {
@@ -451,7 +450,7 @@ const ENEMY_DEFS = [
     attacks: R.attacks.map(a => ({ ...a, id: a.id === 'stab' ? 'smilingStab' : 'twoKnives', name: a.id === 'stab' ? 'Smiling Stab' : 'Two Knives' })) });
 }
 
-// The Cinderfolk of Aurel in Ash (Level 11, v7.46.0; LORE.md 10g): the capital's citizens after the hunger, refused,
+// The Cinderfolk of Aurel in Ash (Level 11, v7.46.0; STORY.md 10g): the capital's citizens after the hunger, refused,
 // burned the city it could not keep. Burned, and still walking; some lie in the ash until you pass. Slower than a Hollow
 // Soldier and harder to put down. Rough stand-in: the Hollow Soldier's figure and moves, charred, embers for eyes.
 {
@@ -463,7 +462,7 @@ const ENEMY_DEFS = [
       damage: Math.round(a.damage * 1.1), poise: Math.round(a.poise * 1.15) })) });
 }
 
-// The Drowned of the Still Mere (Level 14, v7.51.0; LORE.md 10j): thralls of Thrale who walked into the one water that
+// The Drowned of the Still Mere (Level 14, v7.51.0; STORY.md 10j): thralls of Thrale who walked into the one water that
 // never burned, so the hunger would have nothing left to hold, and stayed under. They lie in the shallows until you
 // pass. Slow, heavy with water, hard to stagger. Rough stand-in: the Hollow Soldier's figure and moves, waterlogged.
 {

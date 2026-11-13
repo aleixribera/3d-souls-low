@@ -1,31 +1,9 @@
-# Docs index
+# Docs
 
-Start with `../VISION.md` (what the game is), `../PLAN.md` (what comes next), `../AGENTS.md` (the project guide) and `CHANGELOG.md` (one line per release). `feature-history.md` holds the full per-feature notes, oldest first. `scorecard/` holds the evidence behind `../SCORECARD.md` (frames, level timings, bot fights against every boss).
+What the game is: `../VISION.md`. What comes next: `../PLAN.md`. The story: `../STORY.md`. The engineering guide:
+`../AGENTS.md`. What changed in each release: the in-game changelog (`../js/data/changelog.js`) and the git history.
 
-## Running a server
-- `homelab-multiplayer.md` — the public co-op lobby on an Ubuntu host
-- `container-updates.md` — pulling new images and the automatic updater
-- `update-v7.7.1.md` — the one-time v7.7.1 migration (historical)
-- `how-online-works.html` — a visual explanation of the multiplayer model
-
-## Combat and bosses
-- `combat-timings-v4.1.md` — log of every attack timing change (keep it current)
-- `combat-clarity-v7.3.md`, `enemy-feedback-v7.8.10.md`
-- Boss references: `margit-stats.txt`, `godrick-stats.txt`, `crucible-knight-stats.txt`, `morgott.txt`, `radagon.txt`, `godfrey.txt`, `maliketh.txt`, `malenia.txt`
-- `prompt-new-bosses.txt` — the brief used to add a boss
-
-## Multiplayer, lobby and bots
-- `multiplayer-v7.7.md`, `multiplayer-v7.7.1.md`, `lobby-leader-v7.7.3.md`, `campaign-v7.7.4.md`, `public-lobby-v7.7.6.md`
-- `lobby-spectating.md`, `lobby-recovery.md`, `golden-beginnings-v7.8.3.md`, `public-lobby-polish-v7.8.8.md`
-- `boss-only-v7.8.0.md`, `double-bosses-v7.9.0.md`, `damage-leaderboard-v7.8.11.md`, `lobby-redesign-v7.10.1.md`, `persistent-lobby-v7.14.0.md`
-- `friendly-bots-v7.11.0.md`, `bot-behavior-v7.12.1.md`, `bot-rhythm-v7.13.0.md`, `bot-risk-v7.13.1.md`, `bot-following-v7.15.0.md`, `bot-temperament-v7.52.0.md` (temperaments, waiting out strings, executions left to the player)
-- `boss-vs-boss-v7.12.0.md`, `solo-companion-v7.16.0.md`
-
-## Graphics and performance
-- `splendor-v7.6.md` — preset budgets
-- `auto-quality-v7.0.1.md`, `auto-quality-v7.0.4.md`, `auto-quality-v7.1.md` (+ results JSON)
-- `performance-audit.md`, `low-performance-audit.md`, `high-quality-report.md` (+ results JSON)
-- `guiding-light-v7.4.md`
-
-## Audits and onboarding
-- `onboarding-v7.3.1.md`, `experience-audit-v7.8.9.md`, `game-audit-v7.17.0.md`, `church-in-the-pass-v7.20.0.md` (Level 6, Blender models in the game), `onboarding-v7.19.0.md` (online-first title, lessons inside the levels), `wanderer-model-v7.21.0.md` (the player built in Blender), `hollow-model-v7.22.0.md` (the Hollow Soldier built in Blender), `lancer-model-v7.23.0.md` (the Ashen Lancer built in Blender), `knight-model-v7.24.0.md` (the Undead Knight built in Blender), `rogue-model-v7.25.0.md` (the Rogue built in Blender), `duelist-model-v7.26.0.md` (the Pale Duelist built in Blender), `warden-model-v7.27.0.md` (the Shield Warden built in Blender), `bowman-model-v7.28.0.md` (the Rampart Bowman built in Blender), `beastman-model-v7.29.0.md` (the Beastman of Farum Azula built in Blender)
+- `homelab-multiplayer.md`: the public co-op lobby on an Ubuntu host.
+- `container-updates.md`: pulling new images and the automatic updater.
+- `how-online-works.html`: a picture of the multiplayer model.
+- `scorecard/`: frames and measurements the loop's passes saved as evidence.

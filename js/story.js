@@ -206,7 +206,7 @@ function makeCampaign(C) {
 
   // ---- menus --------------------------------------------------------------------------------------------------------
   // A chapter's title in title case, the small words kept small past the first ("The Church in the Pass", "Aurel, the
-  // Gilded City", as LORE.md names them).
+  // Gilded City", as STORY.md names them).
   const SMALL = new Set(['a', 'an', 'and', 'at', 'in', 'of', 'on', 'the', 'to']);
   function levelName(id) {
     const c = chapter(id); if (!c) return id;

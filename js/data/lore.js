@@ -1,6 +1,6 @@
 'use strict';
 // Lore (v5.1): the NPC, the inscriptions and the wordless scenes of each level. js/lore.js plays them; this is only
-// their content. Every line here must agree with LORE.md (the story's source of truth): change the story there first.
+// their content. Every line here must agree with STORY.md (part one: the story in the game): change the story there first.
 //   npc         who the recurring NPC is: name on the subtitles, model (js/data/models.js), size
 //   levels      per level id:
 //     (y: the floor height, 0 if left out; give it on any upper floor)
@@ -13,11 +13,11 @@
 //     inscriptions [{ id, x, y?, z, yaw, mount: 'wall'|'floor'|'none', label, lines: [...] }]
 //     scenes      [{ kind, x, y?, z, yaw?, ... }]: drawn only, near the player (see SCENE kinds in js/lore.js)
 //   The cell of Level 1 is an alcove of its own in js/levels/long-hall.js ('cell-8').
-// Adding a dialogue or inscription: write it in LORE.md, then add it here under its level. Lore never blocks progress.
+// Adding a dialogue or inscription: write it in STORY.md, then add it here under its level. Lore never blocks progress.
 // The scene kinds js/lore.js can draw (each one a builder there).
 const LORE_SCENES = ['corpse', 'shackles', 'barricade', 'candle', 'sacks', 'crates', 'bell', 'hearth', 'chair', 'rope', 'chains', 'portrait', 'crown', 'statue'];
 const LORE = {
-  // The cards after Aldric's death (js/finale.js; LORE.md, section 9): the end of Act I, not of the story. The Ember
+  // The cards after Aldric's death (js/finale.js; STORY.md, section 9): the end of Act I, not of the story. The Ember
   // leaves him, and the road goes on to the Church in the Pass. A level's own cards go in LORE.endings[<level id>].
   ending: [
     'Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood. It does not go out.',
@@ -26,7 +26,7 @@ const LORE = {
     'His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.',
     'And over Ashmere, the ash goes on falling.',
   ],
-  // The story's own ending (LORE.md, section 9b): the King's Blade's death on the Still Mere, then the credits.
+  // The story's own ending (STORY.md, section 9b): the King's Blade's death on the Still Mere, then the credits.
   endings: {
     'still-mere': [
       'The King\'s Blade kneels in the shallows. The red scarf comes loose, and floats.',
@@ -199,7 +199,7 @@ const LORE = {
       ],
       scenes: [{ kind: 'corpse', x: 62, y: 3.6, z: 6, yaw: 1.1 }, { kind: 'corpse', x: 104, y: 6, z: -19, yaw: 2.6 }],
     },
-    // Chapter 7 (v7.38.0; LORE.md 10c): Thrale's border.
+    // Chapter 7 (v7.38.0; STORY.md 10c): Thrale's border.
     'windward-moor': {
       npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'moor-shrine',
         lines: [
@@ -225,7 +225,7 @@ const LORE = {
         { kind: 'corpse', pose: 'reaching', x: 211, y: 8, z: -1.6, yaw: Math.PI / 2 },
       ],
     },
-    // Chapter 8 (v7.40.0; LORE.md 10d): Thrale's border fortress.
+    // Chapter 8 (v7.40.0; STORY.md 10d): Thrale's border fortress.
     saltgrave: {
       npcs: [{ x: 7, z: 2.5, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'salt-gate',
         lines: [
@@ -254,7 +254,7 @@ const LORE = {
         { kind: 'corpse', pose: 'reaching', x: 138.3, y: 10, z: 92.2, yaw: 0 },
       ],
     },
-    // Chapter 9 (v7.42.0; LORE.md 10e): Thrale's gaol among the stars.
+    // Chapter 9 (v7.42.0; STORY.md 10e): Thrale's gaol among the stars.
     'night-gaol': {
       npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'night-landing',
         lines: [
@@ -281,7 +281,7 @@ const LORE = {
         { kind: 'corpse', pose: 'seated', x: 48.2, z: 6.8, yaw: -Math.PI / 2 },
       ],
     },
-    // Chapter 10 (v7.44.0; LORE.md 10f): Thrale's capital, still gold.
+    // Chapter 10 (v7.44.0; STORY.md 10f): Thrale's capital, still gold.
     aurel: {
       npcs: [{ x: 11.5, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'aurel-gate',
         lines: [
@@ -306,7 +306,7 @@ const LORE = {
         { kind: 'corpse', pose: 'lying', x: 118, z: 2.4, yaw: 2.2 },   // the one at the stair's foot who stopped smiling
       ],
     },
-    // Chapter 11 (v7.46.0; LORE.md 10g): the same city, burning.
+    // Chapter 11 (v7.46.0; STORY.md 10g): the same city, burning.
     'aurel-in-ash': {
       npcs: [{ x: 10, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'cinder-gate',
         lines: [
@@ -331,7 +331,7 @@ const LORE = {
         { kind: 'corpse', pose: 'seated', x: 52, z: -5.2, yaw: 0 }, { kind: 'candle', x: 97.5, z: -41.2 },
       ],
     },
-    // Chapter 12 (v7.48.0; LORE.md 10h): the abbey torn loose into the storm.
+    // Chapter 12 (v7.48.0; STORY.md 10h): the abbey torn loose into the storm.
     'torn-abbey': {
       npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'abbey-landing',
         lines: [
@@ -356,7 +356,7 @@ const LORE = {
         { kind: 'candle', x: 233.5, y: 16, z: -7.2 },
       ],
     },
-    // Chapter 13 (v7.50.0; LORE.md 10i): inside the Ember's first growth.
+    // Chapter 13 (v7.50.0; STORY.md 10i): inside the Ember's first growth.
     'ember-root': {
       npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'root-first',
         lines: [
@@ -381,7 +381,7 @@ const LORE = {
         { kind: 'candle', x: 152.5, y: 16, z: 90.5 },
       ],
     },
-    // Chapter 14 (v7.51.0; LORE.md 10j): the one water in Thrale that never burned.
+    // Chapter 14 (v7.51.0; STORY.md 10j): the one water in Thrale that never burned.
     'still-mere': {
       npcs: [{ x: 8, y: 24, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'mere-bough',
         lines: [

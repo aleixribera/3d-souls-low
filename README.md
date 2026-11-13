@@ -1,244 +1,34 @@
-# Combat Arena 3D — v7.19.0: A Friendlier Start
+# Combat Arena 3D
 
-**v7.19.0:** The title screen now leads with **Play Online**: a live badge shows how many friends are in the public lobby and what they are playing, so whoever opens your link knows to join you. **Story** sits beside it for playing alone. The Training Hall is gone: Level 1 teaches the controls where you first need them, with small cards that show your own keys or controller buttons and go away once you have done the move (Level 2 and 3 add one each; Stormhill catches up players who start in the Lands). Options can turn lessons off or show them again. See [the notes](docs/onboarding-v7.19.0.md).
+A Souls-like in the browser, alone or with friends online.
 
-**v7.18.0:** A whole-project audit. Every kind of death (falls, scarlet rot, scripted) now plays the full death sequence, enemy wind-up sounds such as the Toll Wisp's bell ring again, a dying executor releases the victim, and lock-on no longer depends on camera shake. The multiplayer server range- and rate-checks every hit, execution, parry and rest, limits connections per address, validates the game data at startup, sleeps empty arenas and serves cached, compressed files. Rendering frees stage materials and old model detail, pools lightning and blood decals, keeps flashes under 3 Hz and follows reduced-motion preferences. Tests run on every push in CI (`npm test`). Developer guide: [AGENTS.md](AGENTS.md); history: [the changelog](docs/CHANGELOG.md).
+## Play
 
-**v7.17.0:** Camera motion responds consistently at different display rates, and Finn's own parries, criticals and landings no longer shake your view. Combat particles share one drawing submission, HUD labels are clearer, reduced-motion preferences are respected, and delayed thunder ends with its level. Fixed a companion route crash found while testing every Lands route. Finn also joins standalone Lands levels and returns at the current checkpoint after 4.8 seconds if you survive. See [the audit](docs/game-audit-v7.17.0.md).
+- In the browser: https://aleixribera.github.io/3d-souls-low/ (single player), or open `combat-arena-3d.html` from
+  a checkout. Nothing to install.
+- **Story** is the one road: Ashmere, then over the pass into Thrale. It saves itself at every bonfire you rest at.
+  **Play Online** joins the public lobby on a server (below). The title menu also lets you fight any enemy, boss or
+  level on its own.
+- Fight like a Souls game: watch the wind-up, roll through or parry the strike, punish the recovery, mind your
+  stamina. Bonfires refill your health and flasks and are your checkpoints.
 
-**v7.16.0:** Finn accompanies you through all eight levels of the single-player Lands campaign. He follows routes, fights with the existing bot brain, and has his own health, stamina and flasks. If he falls, he returns when you rest, respawn or enter the next land. Ashmere, training, standalone levels, arena and multiplayer keep their existing parties. See [the notes](docs/solo-companion-v7.16.0.md).
-
-**v7.15.0:** Idle bots follow human players through normal levels, split evenly across the party. Extra bots—and a lone bot—support whoever is closest to the remaining enemies. Companions walk routes around walls and hazards, use stairs and required drops, and wait at closed gates. Distance and floor changes no longer teleport them; only sustained failed movement can trigger a short unstick. See [the notes](docs/bot-following-v7.15.0.md).
-
-**v7.14.0:** Online runs keep simulating with inactive or absent players, and bots continue after everyone leaves. Away leaders hand control to an active player; stalled loading tabs cannot block the party forever. Returning from the same browser restores your name, position, health, stamina and flasks in the current encounter. Volume defaults to 5, with the former saved value of 8 lowered to 5. See [the notes](docs/persistent-lobby-v7.14.0.md).
-
-**v7.13.1:** Bots sometimes chase an extra hit or combo and roll forward to stay close, leaving real openings for bosses to punish. When no human remains, they press harder after a short grace period so solo attempts resolve sooner. See [the notes](docs/bot-risk-v7.13.1.md).
-
-**v7.13.0:** Companions fight in varied bursts, back out and reposition, then press real openings. Parry choices fall to one tenth of their former frequency; walking clear and rolling are their main defences, with occasional jumps over low attacks. See [the notes](docs/bot-rhythm-v7.13.0.md).
-
-**v7.12.2:** Radagon's four-hit Elden Shattering combo leaves more time between its third slam and final shockwave, allowing two separate dodges. See [the timing change](docs/combat-timings-v4.1.md).
-
-**v7.12.1:** Friendly bots alternate between pressure, flanking and baiting, with a different mix for each companion. They take the initiative after a quiet standoff, vary their rolling directions, and seek healing space briefly before fighting for an opening. Bots, enemies and player lock-on track opponents across the whole arena. See [the notes](docs/bot-behavior-v7.12.1.md).
-
-**v7.12.0:** 1v1 Arena → **Boss vs Boss** lets you build two teams of up to six bosses and watch them fight. Choose from all 12 bosses, add multiple copies, and remove bosses by selecting their team entry. Bosses target and damage only the opposing team, using their normal moves and phases. Team health bars, an automatic spectator camera, rematches and team editing are included. See [the notes](docs/boss-vs-boss-v7.12.0.md).
-
-**v7.10.2:** Fights against several bosses at once show a BOSSES tip beside the HEALING one: how many bosses still stand and the switch-target key. It hides once one boss remains.
-
-**v7.10.1:** The online lobby, party panel, nameplates, damage leaderboard, spectator bar and TEAM WIPED screen are redesigned with one consistent look. See [the notes](docs/lobby-redesign-v7.10.1.md).
-
-**v7.10.0:** The lobby adds TRIPLE BOSSES and QUAD BOSSES: the 12 bosses three or four at a time. Surviving runs chain BOSS ONLY → DOUBLE → TRIPLE → QUAD BOSSES. See [the notes](docs/double-bosses-v7.9.0.md).
-
-**v7.9.0:** The public lobby adds DOUBLE BOSSES: all 12 bosses in catalog order, fought two at a time in one arena (bosses 1 and 2, then 3 and 4, …), with the same loading grace, refills, spectating, team-wipe and leaderboard rules as BOSS ONLY. A party that survives BOSS ONLY is carried straight into it. See [the notes](docs/double-bosses-v7.9.0.md).
-
-**v7.8.11:** Multiplayer victories show each player ranked by total damage dealt during that level or boss. Results appear one second after victory and stay for six seconds before automatic progression. Boss loading cards now keep one consistent message. This release also simplifies Options, combines camera motion and shake, keeps FPS visible, ties hitboxes to F1 help, and adds a healing reminder once per level. See [the changes and checks](docs/damage-leaderboard-v7.8.11.md).
-
-**v7.8.10:** Enemy posture-break flashes and hit recoil now fade correctly in multiplayer, including during execution holds and gaps in enemy playback. All enemies and bosses share the same feedback countdowns as solo play. See [the fix and checks](docs/enemy-feedback-v7.8.10.md).
-
-**v7.8.9:** An experience audit improves menu readability in short and narrow windows, keyboard focus and navigation, safe solo pause on focus loss, controller recovery, and mouse attacks when pointer capture is refused. Camera shake has its own option. Settings and checkpoints reject malformed data safely, failed saves give a brief notice, and shader warm-up finishes pending variants before character cleanup. The two roads, lore, combat timings and visual identity are preserved. See [the audit](docs/experience-audit-v7.8.9.md).
-
-**v7.8.8:** A redesigned public lobby puts the adventure and Start action first, with a compact party list, optional controls and management, and direct access to Options. Clearer connection recovery, keyboard/controller focus, a quieter online HUD, smoother teammate walking and spectator-centered audio improve the full co-op flow. Controls tips no longer replay between bosses or chapters. See [the audit](docs/public-lobby-polish-v7.8.8.md).
-
-A Souls-like 3D action game that runs straight from one HTML file in your browser (Three.js from a CDN, no build step, nothing to download or install). Open `combat-arena-3d.html` and play.
-
-**v7.8.7:** A translucent controls panel shows Attack, Heavy attack, Dodge, Jump, Heal and Lock on for the first 30 seconds of play. It follows keyboard/controller input and stays hidden in the tutorial. The alternate Story V2 road and its encounter tuning have been removed; Ashmere and the Lands Between remain the two campaigns. BOSS ONLY remains the public lobby default.
-
-**v7.8.6:** BOSS ONLY is now the default selected adventure when joining the public lobby. Both stories remain available in the dropdown.
-
-**v7.8.5:** Gold opening screens now show only the selected mode and one short goal.
-
-**v7.8.4:** Public-lobby teammates now have health bars beneath their world nameplates and in the players-alive panel. They update with damage, healing and revival, and remain visible while spectating.
-
-**v7.8.3:** New public story and BOSS ONLY runs begin with a gold five-second opening ceremony: a glowing crest, drifting embers, and a distinct title for each road. Combat waits for the whole party to finish loading and see the opening. Chapter travel and late joins keep their normal flow.
-
-**v7.8.2:** Returning to an abandoned public lobby now shows the adventure controls. The last deliberate leave clears the run immediately; connection drops keep a 60-second reconnect window. Parties with players still connected keep their progress.
-
-**v7.8.1:** Team wipes now get a dramatic four-second crimson death screen with the defeated-boss count before returning the party to the lobby.
-
-**v7.8.0:** BOSS ONLY replaces individual public-lobby boss choices with a twelve-boss gauntlet. Fallen players automatically spectate without pause, and a compact panel tracks who is alive. Each boss waits three seconds after everyone loads. Victory advances the party after five seconds with full health and flasks; a team wipe returns everyone to the lobby to retry from boss one. See [the release notes](docs/boss-only-v7.8.0.md).
-
-**v7.7.9:** The public lobby Adventure dropdown offers Story 1 (Ashmere), Story 2 (Lands), and boss fights. Individual levels are no longer listed. Story 2 remains selected by default.
-
-**v7.7.8:** Escape and the controller Menu/Options button now open the normal pause menu during public games, including while spectating. Choose Lobby for player and leader controls, Options for settings, or Leave lobby to return to solo play. The online world keeps running while menus are open.
-
-**v7.7.7:** Lobby name editing now starts from the name field: type directly with mouse/keyboard, or focus it and press A/Cross to open the controller keyboard. The separate Edit name button and Y/Triangle shortcut are removed.
-
-**v7.7.6:** Public lobbies now support full controller navigation, an adventure picker and an on-screen name keyboard. The current story level number is visible during play; arena choices contain bosses only. Boss attempts restart after a full team wipe, and defeated players automatically spectate a surviving teammate's camera with mouse, keyboard or controller switching. Lobby reconnects preserve shared progress. See [the release notes](docs/public-lobby-v7.7.6.md).
-
-**v7.7.5:** The public lobby shows basic controls and a stamina tip before play. Bindings follow the active keyboard/mouse or controller input, with a single-column layout on small screens.
-
-**v7.7.4:** The public lobby defaults to the full eight-chapter Elden Ring campaign. Start together in Stormhill; completed chapters automatically carry the party through the story to the Haligtree, its ending and credits. Late joins and chapter restarts preserve the current campaign, and solo saves stay separate. See [the campaign and update guide](docs/campaign-v7.7.4.md).
-
-**v7.7.3:** After five minutes without player input, leadership passes to another active player. The inactive player stays connected and the current run continues. If everyone is idle, the next person to provide input becomes leader. See [the behavior and update command](docs/lobby-leader-v7.7.3.md).
-
-**v7.7.2:** Releases publish a ready-to-run container to GitHub Container Registry. Update your homelab with `docker compose pull && docker compose up -d`; an optional timer checks every 15 minutes and defers while players are connected. See the [one-time switch and update guide](docs/container-updates.md).
-
-**v7.7.1:** Fixes accumulating co-op playback delay, server simulation overhead, gate/barricade animations and obstacle hunting. Shared updates use compressed changes instead of repeated full snapshots; the HUD separates ping from playback delay. See the [release notes](docs/multiplayer-v7.7.1.md) and [exact update commands for your Ubuntu server on port 3080](docs/update-v7.7.1.md).
-
-**v7.7:** **Join public lobby** connects to one co-op lobby on the home server. Play any level or arena opponent together, with leader controls, shared enemies and health bars, late joins and individual checkpoint respawns. Personal movement and defensive outcomes run immediately on each player's browser. Hosting uses Docker Compose and a public Tailscale Funnel link; see [the Ubuntu server setup](docs/homelab-multiplayer.md) and [the multiplayer design](docs/multiplayer-v7.7.md). Solo play still opens directly from the HTML file; multiplayer requires the server.
-
-**v7.4:** Subtle, stationary pockets of golden motes flow toward the next bonfire across both campaigns. Routes follow doorways, stairs and scripted drops, advance at bonfires, and resume from your checkpoint. Lightning lights the scenery and characters directionally. Spectral weapons, flame breath, holy runes, crimson effects and projectiles illuminate nearby surfaces on every graphics preset through a small shared light pool. Light attacks now deal 24 damage each (72 per combo); heavy and execution damage are preserved. See [the release notes](docs/guiding-light-v7.4.md).
-
-**v7.3.2:** Fullscreen now lives in the existing startup script. The game no longer requests a separate `js/fullscreen.js`, avoiding the startup error when that request is blocked or the new file is absent from a local copy. Fullscreen behavior is unchanged. Script cache keys are updated for this release.
-
-**v7.3.1:** Fullscreen starts on the first click or key press; Escape exits, and Options can turn it on again. Story shows both campaigns’ **Continue** and **New** actions together, with **Tutorial: On/Off**. New starts playing directly; replacing a save asks once. Jump attacks and executions keep their full instructions visible. The tutorial bonfire has a direction arrow and distance, including a “Turn around” cue when it is behind you. Melee enemies with projectile moves auto-lock normally; archers and Toll Wisps still require manual targeting. See [the release notes](docs/onboarding-v7.3.1.md).
-
-**v7.3:** Shorter tutorial prompts, with complete action sequences kept together since v7.3.1. Camera zoom controls are removed. Stamina regenerates 20% faster with the same cooldowns and delays. Rising enemies take normal poise and stagger-meter damage. Jump attacks deal more damage (light 28, heavy 74), and jump heavies fill guard/stagger meters as heavy attacks. Aldric's leap landing shockwaves can be jumped. All enemies and bosses use the same parry rules for their warning glow: red means parryable; blue means unparryable (some blue attacks can still be blocked).
-
-**v7.1:** Auto now tests real game character models and lit 3D scenery at each preset’s actual resolution, including MSAA, bloom and Ultra shadow/depth work. It no longer extrapolates from a tiny shader score or rejects dedicated GPUs because of browser CPU/RAM hints. Check graphics again shows the detected GPU, measured frame cost and reason for the result. See [the benchmark notes](docs/auto-quality-v7.1.md).
-
-**v7.0.5:** refreshed script cache keys ensure the desktop Auto correction actually reaches existing browsers. Options now offers **Check graphics again**; returning to Auto also runs a fresh check. Benchmark results are kept only for the current page.
-
-**v7.0.4:** Auto's Ultra cutoff is recalibrated for recognized strong GPUs after the RTX 5060 was incorrectly assigned High at high pixel density. The conservative laptop rules and High cutoff are unchanged. See [the desktop calibration](docs/auto-quality-v7.0.4.md).
-
-**v7.0.3:** keyboard and controller menu selection stays on the intended option when the list scrolls beneath a stationary mouse pointer. Mouse movement and clicks still select options normally.
-
-**v7.0.2:** arrival guides stand visibly along the route; archers and mages require manual lock-on; tree glow no longer blacks out High or Ultra views; Stormveil corridor walls and the Ashen Capital cellar walls are restored. Levels now groups Ashmere and the Lands Between separately, without the tutorial.
-
-**v7.0.1:** Auto graphics is more conservative on laptops: older integrated GPUs and limited CPU/RAM start on Low; higher presets require faster benchmark results and account for resolution and pixel density. Saved manual choices remain unchanged. See [the Auto selector notes](docs/auto-quality-v7.0.1.md).
-
-**v7.0:** a second Story road, **The Lands Between: The Elden Throne** — eight new lands, one for each Elden Ring boss, from the storm over Stormhill to the scarlet rot under the Haligtree, with eight new enemies, a new guide and its own ending. The main menu is tidier: **Story** holds both roads, and **1v1 Arena** holds the Enemies, Ashmere's Bosses and the Elden Ring Bosses.
-
-**v6.2:** doubled health and borrowed Elden Ring moves for the three story bosses before Aldric, with the Bell Warden's Skyfall area shockwave removed for balance. Low graphics now render at native resolution, with shared texture maps, simpler character shaders and improved loading.
-
-**The story.** Ashmere was green once. Now ash falls on it from a sky that never clears, and its king keeps a prison under his castle. You wake in one of its cells with no memory of how you came there. You break out of the Long Hall and the Sunken Keep, fight through Corvel, the river town the invaders burned, and climb the old watchtower to ring the Bell of Waking: by the old law, whoever rings it calls the king out to answer. In the last level he answers. Five levels, a tutorial, three bosses before the last, and an ending.
-
-**A fellow prisoner.** In the cell beside yours waits **Ysolde of Corvel**, and you will meet her again in every level, always somewhere safe, near a bonfire. Walk up and press **Talk** once: she speaks as subtitles at the bottom of the screen, line after line, while you keep full control (walk, look round, rest). Walk away or let an enemy find you and her words fade; come back and Talk to hear her again. A few carved stones, plaques and statues can be read the same way, and the levels hold small scenes that tell what happened there without a word. All of it is optional; none of it blocks the road. There are no items to collect and no journal: what you learn, you have to remember.
-
-Keyboard and mouse, or a gamepad (standard Xbox-style layout). There are no touch controls. The game plays best with a gamepad: every level and duel opens on a short loading screen that says so, with a small controller icon. The version shows in the bottom-right corner of the menus.
-
-## Modes
-
-The main menu: **Play Online** (the public lobby, with a live count of who is in), **Story** (Ashmere: The Gaoler King), **1v1 Arena** (Enemies, Bosses, Boss vs Boss), **Levels** (any level of the story on its own) and **Options**. The Lands Between and its eight Elden Ring bosses were removed in v7.54.0.
-
-- **Story → Ashmere: The Gaoler King** (the first road) — the whole of Ashmere as one campaign. It starts in Level 1, which teaches the controls as you go (lesson cards; **Options → Lessons** turns them off), then runs Level 1 → 5 without stopping: each level fades to black and opens on its title (THE BURNING TOWN) and a line of story while it loads. Aldric's death brings the ending, the credits and STORY COMPLETE. The game saves itself in your browser on every rest at a bonfire, at the start of every level and when you quit to the menu; **Continue** puts you back at the last bonfire you rested at, with everything you had beaten there still beaten and every shortcut still open. **New** asks before it overwrites a save. Nothing is downloaded and there is no account; in a private window the story still plays, it just isn't saved. In Story mode there is no restart key: death takes you back to the bonfire.
-- **Lessons** (v7.19.0) — small cards at the top of the screen teach each control where Level 1 first needs it: walk, swing your sword and roll out of the cell, lock on to the first Hollow and block its red-glinting blow, heal, charge a heavy, break the Knight's stance and execute it, rest at the bonfire (an arrow points to it), switch targets, and roll into the Giant's swing. Each card shows your own keys or controller buttons and goes once you have done it, in order, the basics first; a card you have done before never shows again. Online party runs show them too.
-- **Levels → Ashmere → Level 1: The Long Hall** — four gated opponents in order, optional enemies in between, two bonfires.
-- **Levels → Ashmere → Level 2: The Sunken Keep** — rooms joined by corridors, four room fights (two of them against pairs), the Shield Warden, two bonfires.
-- **Levels → Ashmere → Level 3: The Burning Town** — the town below the Tower, sacked and set alight by the invaders, at sunset. About 10 minutes, climbing in terraces from the lower gate (where the Keep comes out) to the upper town gate, with a massive castle on the horizon ahead, the sun setting behind it. Street by street, each fight's barricade falls once it is won: a lone Ashen Lancer, the sacked market, a Lancer below with an optional Rampart Bowman on a balcony above (reached through the stair house; jump its low rail to drop back down), a Pale Duelist round a bend in an alley, the fountain square, and the church square under a Bowman on the church gallery. The Pillager Captain holds the upper square. Two bonfires (the second in the tavern), a shortcut stair from the fountain square down to the first, a sleeping Knight in a yard, and one drop that hurts.
-- **Levels → Ashmere → Level 4: The Tower** — a cliff-top keep, about 15 minutes: a gatehouse, then a passage toward a bonfire glowing behind a portcullis, until its floor gives way into the undercroft: an ambush of two Hollows and an Executioner, whose gate opens on the stairs up to that bonfire. Then a crowd fight in an open courtyard under rampart archers, the ramparts, the Executioner in the tower hall, a postern shortcut, walkways spiralling up the outside of the tower over the courtyard and the cliff, and the Bell Warden on top. Four bonfires.
-- **Levels → Ashmere → Level 5: The Final Castle** — the longest level and the game's final test, about 30–40 minutes on a first run. It opens straight into the fight with **Aldric, the Gaoler King** on the field before his castle; break him and he leaps onto his walls and is gone, his gate gives way, and the first bonfire lights. Then the outer ward (a courtyard under a wall walk of archers, the barracks and their shortcut, and the **Empty Sentinel** holding the moat bridge), the inner keep (the great hall and its kitchen, the ramparts with Gargoyles on the walk), and the throne approach (an ash bridge under Toll Wisps, then the processional gauntlet). You glimpse Aldric twice on the way. Four bonfires; the last is a short run from the fog at the throne room door. In the throne room he fights again, and when his bar breaks the bell tolls, the glass bursts, the pillars fall and he rises as **Aldric, the Ember-Crowned**: a new bar, new attacks and fire. Beat him for the ending and the credits.
-- **1v1 Arena → Enemies** — duel a single common foe of the story in the arena. **1v1 Arena → Bosses** — Ashmere's bosses. Before v7.0 the Enemies list held both, including the Ashen Lancer, Executioner, Pale Duelist, Rampart Bowman, Shover, Gargoyle, Empty Sentinel, Toll Wisp, the Pillager Captain, the Bell Warden and Aldric (his throne room fight, both bars).
-## Graphics: Ultra (v6.0)
-
-**Options → Graphics** offers **Auto**, Low, High and **Ultra**. On the very first launch the game tests your graphics card for a moment and picks a preset for you (Auto), and says so on the title screen; you can change it at any time in Options (on the title screen or in the pause menu). Options with ‹ › arrows can be stepped either way.
-
-Auto now favors smooth play on weaker laptops. Older integrated graphics start on Low, modern integrated graphics can earn High, and dedicated or unrecognized GPUs can earn Ultra by passing the 3D frame test. A saved Auto choice is reassessed when the page reloads; an explicit Low, High or Ultra choice stays as you set it.
-
-**Low** renders at 100% resolution with a pixel ratio capped at 1. Shared surface maps, simpler character shader work and faster loading preserve its existing model and texture detail. Enemies, hidden boss phases and required attack effects are prepared before gameplay. See [the LOW performance audit](docs/low-performance-audit.md) for measurements and limits.
-
-**High** is the balanced preset: modern sparks, blood, weapon ribbons and elemental boss effects with smaller decorative budgets; intermediate player/boss geometry, native textures, cached metal reflections and fine grain. It retains 100% resolution, the 1.5 pixel-ratio cap, 4× anti-aliasing, full scenery and eight stage lights. Menu preparation focuses on the player, and a small loading render prepares the selected cast, hidden phases and effects before play. Shadows, ambient occlusion, volumetrics, ambient procedural fire and screen refraction remain exclusive to Ultra. See [the HIGH review](docs/high-quality-report.md).
-
-**Ultra** is for a dedicated graphics card: real moon shadows; ambient occlusion in every corner; light that glows in the fog round torches and braziers, and shafts of moonlight through the ruins outdoors; reflections on armour and steel; smooth, sculpted character models. Combat gets its own effects: steel sparks off a guard, blood that sprays and stains the floor, shockwaves that bend the air on heavy blows, star flares on parries, flashes of light, dust and flying stone from slams, smooth glowing weapon trails, souls rising from the fallen. Every boss has its own element (holy light, fire, blood, scarlet rot, the Black Blade's crimson, storm winds, earth), and each attack shows it: power gathering in the weapon before a heavy blow, light pillars, rings of fire, blood geysers, rot blooming, whirlwinds and roars that shake the arena. Gates grind and throw sparks, barricades burst into splinters, collapsing floors rain stone, and bonfires flare up as they catch.
-
-The performance pass removes torch cube shadows and full-screen lens blur, uses softer bloom at half resolution and 4× anti-aliasing, and reduces excess model subdivision. Model buffers preserve shared vertices, textures use their native 256/512px resolution, and character meshes and Ultra boss effects are prepared while loading. See [the performance audit](docs/performance-audit.md) for measurements, tradeoffs and verification.
-
-Every preset also gets the v6.0 changes: a closer camera that leads into your movement, gentle camera motion with your swings, rolls and the blows you take (**Options → Camera motion** turns it off), a remade player model, remade armour and cloth for every enemy and boss (sloped shoulders, riveted layered pauldrons, plate lames, folded capes and torn cloth, spiral bandages, helms with eye slits), the Giant Skeleton rebuilt bone by bone, Godrick's grafted arms, Margit's tail, sculpted torsos for Radagon and Godfrey and a fitted cuirass for Malenia, calmer floors and walls, better-lit levels (the Tutorial, the Long Hall, the Sunken Keep, the Tower and the field before the Final Castle), a lighter and faster menu, and a level's title card that shows at once while it loads.
-
-## Characters (v4.1: Bone and Ash)
-
-Every character is now a procedural model built in code (still no downloads): the player is a hooded wanderer with a swaying cape, a round shield on the back and a faded-red scarf; the enemies belong to four factions, each with its own silhouette and palette.
-
-- **Hollowed** (hoods, rags, amber eyes): Hollow Soldier, Fast Rogue, Pale Duelist, Rampart Bowman.
-- **Ironbound** (plate, mail, slate tabards, pale blue eyes): Undead Knight, Shield Warden, Shover, and the Bell Warden boss (a bronze colossus with a temple bell for a hammer).
-- **Ashen Host** (soot mail, peaked hoods, ember eyes): Ashen Lancer, Executioner, and the Pillager Captain boss (horned helm, torn cloak, glowing halberd).
-- **Old Bones**: the Giant Skeleton, with a cracked skull, one open side of ribs and a thigh-bone club.
-
-Bodies breathe, shift their weight into wind-ups and strikes, flinch, buckle and break up into glowing ash when they die; cloaks, scarves and tabards sway; weapons glint as a strike begins. Gameplay is unchanged: hitboxes, timings and AI are exactly as before. The training dummies and the Test Grounds enemies keep the old plain bodies.
-
-## How to play
-
-Open `combat-arena-3d.html` in any modern browser (Chrome, Edge, Firefox, Safari). Nothing to install and nothing to download: the whole game, its models, textures and sounds are made in code as it loads. Pick **Story** from the main menu and say yes to the tutorial on a first run.
-
-Fight like a Souls game: watch the wind-up, roll through or parry the strike, punish the recovery, and keep an eye on your stamina. Rest at bonfires to refill your health and flasks; they are your checkpoints.
-
-## Executions (v5.2: The Kneeling Dead)
-
-Some enemies carry a meter under their health bar: a **stagger** meter (Undead Knight, Executioner, Empty Sentinel), a **guard** meter (the shield-bearers: Shield Warden, Shover) or, on bosses, **posture** (Giant Skeleton, Pillager Captain, Bell Warden, Aldric). Fill it (heavy attacks fill it fastest; on bosses, parries and quick chains of hits too) and the enemy drops to one knee for a few seconds.
-
-While it kneels, step in front of it: its body glows a faint red and **Execute** shows at the bottom of the screen. Press **light attack** and you drive your sword through its chest and out of its back, hold it there, then rip it free.
-
-- An execution deals 90 damage to normal enemies; a healthy enemy can survive it.
-- Bosses take 324 damage before critical resistance, never more than half a bar. Boss health bars are twice as long as before and their posture drains half as fast, so a boss fight is a long, hard duel; a bonfire always waits before it. If that empties the bar, the boss falls, changes phase or retreats once the execution is over, never in the middle of it.
-- You can't be hurt during an execution, by anything, and for a moment after it. Other enemies keep fighting, so look around when you stand up.
-- From behind, from the side or too far away, light attack is just a light attack. If you wait too long, the enemy gets back up.
-
-## Combat (v4.2: Weight of Steel)
-
-Every attack now has four phases: wind-up, strike (the only moment it can hit), follow-through and recovery, drawn from whole-body key poses.
-
-- **You:** a three-hit light combo (24 damage per hit, 72 total, at 16 stamina per hit); a heavy dealing 53 damage for 40 stamina that you can hold to charge (the body coils, trembles and glows at full charge, up to 1.5x damage); only a slight steer during a wind-up; a roll only cancels a swing in its recovery. One Souls-style input buffer: a press is kept only near the end of what you're doing, and the latest press wins.
-- **Enemies:** they turn to track you early in a wind-up, then lock their aim (the commit point): dodge sideways after that and the blow won't follow. Red warning glows mean a strike can be parried; blue means it cannot. A blade glint marks the exact moment the parry window opens. Some blue strikes can be blocked; rolling works against both types. Some enemies hold a wind-up still to bait a roll (delayed attacks). Combos end on their biggest wind-up, and big misses leave a punishable recovery. Bosses use larger, slower, more dramatic versions.
-- **Impact:** hit-pause and a shudder on the body you hit, camera shake scaled by the blow, weapon trails during strikes, cloth that swings with the body, flinches sized to the damage, staggers and parries that throw the body open, and walking that leans with acceleration and turns.
-- **Dev keys** (`#dev`): **F4** fills the nearest enemy's stagger, guard or posture meter (it kneels at once, ready to execute), **F6** slow motion (25%), **F7** tracking colours (yellow = still turning, red = committed) and your attack phase. **F1** shows help and hitboxes in every build.
-
-Timings before and after are in `docs/combat-timings-v4.1.md`.
-
-## Bosses
-
-Every boss can be broken and executed (see Executions).
-
-- **Giant Skeleton** (Level 1, the last of the Long Hall's gated fights) — **1920 HP** (doubled). A towering ruin of bone with a thigh-bone club: slow sweeps and a stomp, plus one new move, **Bonebreaker Chain** (Godfrey's Triple Axe Combo). Block or roll the chain's two sweeps and delayed chop; punish after the last blow.
-- **Pillager Captain** (Level 3) — **1800 HP** (doubled). Halberd thrusts from afar, a three-cut combo to parry, a burning overhead to roll, plus two new moves: **Dragging Halberd** (Godrick's Dragging Slash) and **Double Halberd Spin** (the Crucible Knight's Double Spin Slash). Block or roll the drag; the double spin can also be parried. Punish after the last cut.
-- **Bell Warden** (Level 4) — **2600 HP** (doubled). A bronze colossus with a temple bell for a hammer: sweeps, an unblockable slam, a push off the tower, a charge, plus two new moves: **Bell Hammer Chain** and **Stomp and Toll**, taken from Radagon's Hammer Combo and Foot Stomp/Overhead Chop. Both can be parried. The Skyfall Toll area shockwave has been removed.
-- **Aldric, the Gaoler King** (Level 5, outside and in the throne room) — a sweep, a two-step cleave, a delayed overhead, a lunge from range, a shoulder barge, an unblockable stomp, and the **Judgement Leap**: a long crouch, a leap along his locked aim and a crash that rings the ground (then he is open for a while). In the throne room he presses harder.
-- **Aldric, the Ember-Crowned** (his second phase) — faster, longer combos, fiercer tracking in his wind-ups (the commit points are as honest as ever), and four new attacks: the four-cut Tolling Chain, the Ash Wave thrown along the floor, the Burning Ascent into a leaping crash, and **The Last Toll**: the bell rings three times and three rings of fire sweep the room (roll each as it reaches you), then a blast at his feet. His armour cracks and burns, embers stream off him, and the boss drum quickens.
-
-## Controls
-
-| Action | Keys | Gamepad (Xbox / PlayStation) |
+| Action | Keys | Gamepad |
 |---|---|---|
-| Move | W A S D / Arrow keys | Left stick (analog: tilt slightly to walk slowly) |
-| Camera | Mouse (click the view to capture it) | Right stick |
-| Jump (costs stamina) | Space | A / ✕ |
-| Roll | Shift | B / ○ |
-| Light attack (in front of a kneeling enemy: execute) | J / Left mouse | RB / R1 |
-| Heavy attack | K / Right mouse | RT / R2 |
-| Jump attack | Light or heavy while airborne | Light or heavy while airborne |
-| Block (hold) | L / C | LB / L1 |
-| Parry | E | LT / L2 |
-| Lock-on | Q | Right stick click (R3) |
-| Switch target | Tab (the nearest enemy in front, then the next further away) | Flick the right stick left or right |
-| Rest at bonfire | F | Y / △ |
-| Use flask | G | X / □ |
-| Talk / read | T | D-pad right |
-| Restart fight / level (not in Story mode) | R, twice (once on the death or victory screen) | View / Share, twice |
-| Pause and options (incl. Graphics: High / Low) | Escape | Menu / Options |
-| Help / hitboxes | F1 | — |
-| Menus | Arrows or W/S, Enter, Escape | D-pad or left stick, A / ✕, B / ○ |
+| Move / camera | WASD / mouse | Left / right stick |
+| Light / heavy attack (light on a kneeling enemy: execute) | J or left mouse / K or right mouse | RB / RT |
+| Roll / jump | Shift / Space | B / A |
+| Block (hold) / parry | L or C / E | LB / LT |
+| Lock on / switch target | Q / Tab | R3 / flick the right stick |
+| Rest at a bonfire / drink a flask / talk | F / G / T | Y / X / D-pad right |
+| Pause and options / help | Escape / F1 | Menu / — |
 
-On-screen prompts show keys or gamepad buttons, whichever you used last.
+## Host
 
-! IMPORTANT ! More controls and features exist, this list was only used for the prototyping versions of the game
+- **On this PC, with the lobby:** Node 22.8 or newer, then `npm run setup` once and `npm run serve`. It prints the
+  address to open.
+- **On a server:** the published image `ghcr.io/aleixribera/3d-souls-low:latest`. Copy `compose.yaml` to the server
+  and run `docker compose up -d`; the game listens on `127.0.0.1:3080` (set `GAME_PORT` and `MAX_PLAYERS` in `.env`).
+  Put an HTTPS proxy in front of it for friends. Aleix's homelab setup: `docs/homelab-multiplayer.md` and
+  `docs/container-updates.md`.
 
-Options contains **Camera motion: On/Off**, **Graphics**, and **Check graphics again**. Camera motion controls swing and shake together; if either former camera setting was Off, the combined setting starts Off. The FPS counter is always visible. Hitboxes appear only while F1 help is open. Fullscreen, mouse sensitivity, camera inversion, FPS, hitboxes, HUD scale and sound volume have no menu controls; existing sensitivity, inversion, HUD scale and volume preferences are preserved.
-
-## Testing
-
-Open the page with `#dev` at the end of the address (`combat-arena-3d.html#dev`). That adds the Test Grounds menu (developer rooms and test duels) and loads the automated tests. In the browser console (F12), run:
-
-```js
-await __arena.tests.run()
-```
-
-It plays the real game with a manual clock (scripted movement, no rendering delay) and prints `N/N passed`. `__arena.tests.run('heights')` runs only the tests whose name contains a word.
-
-Story shortcuts (`#dev`): the main menu adds **Story: jump to a level** (a fresh story starting at any level) and **Story: clear the saves**. From the console: `__arena.story`.
-
-Level 5 shortcuts (`#dev`): **Test Grounds** lists jumps to the field and to each of Level 5's bonfires (the fights before them already won). In a fight, **F10** empties the current boss bar (starts Aldric's retreat, his phase change, or his death and the ending).
-
-Lore shortcuts (`#dev`): **Test Grounds** lists **Lore: Ysolde in ...**, one jump per level that starts it next to her. From the console: `__arena.lore`, `__arena.LORE`.
-
-Developer viewers (open with `#dev`): **F8** shows the texture library, **F9** the model lab (four views and a silhouette test; step through each attack and reaction; toggle the `elite` variant). From the console: `MODELLAB.open('ironKnight')`.
-
-## Adding content
-
-The game data lives in `js/data/` and `js/levels/` and is checked when the page loads; a broken reference shows a readable error instead of starting.
-
-- **Enemies:** add an entry with a unique `id` to `ENEMY_DEFS` (any position). Animations, weapons and idle styles must exist in `ANIMS`, `WEAPONS` and `IDLE_STYLES`. Attacks get their look from `pose` (key poses in `js/data/attack-poses.js`) plus `tracking`, glint `markers` and optional `hold`: see AGENTS.md.
-- **Models:** give an enemy `model: '<id>'` and describe its look in `js/data/models*.js` (proportions, posture, material slots, parts from `KIT_PARTS`, a weapon from `KIT_WEAPONS`; a model can `extends` another). Textures are recipes in `js/data/textures.js`. A level placement can add `variant: 'elite'` for a darker, spiked, auraed version. See AGENTS.md.
-- **Sounds:** every sound is a recipe of noise and tone layers in `js/data/audio.js`, built live by the engine in `js/audio.js` (no audio files). Add a recipe, then play it from an event listener at the bottom of `js/audio.js`. Master volume uses the default or an existing saved preference.
-- **Levels:** add a file to `js/levels/`, list it in `GAME_FILES` in `combat-arena-3d.html`, and add the level to `LEVELS` in `js/data/levels.js`. Zones, alcoves and enemies refer to each other by id. Room levels can add houses, props (kinds in `js/data/props.js`) and barricade gates; see AGENTS.md.
-- **Items:** add to `ITEMS` and to `PLAYER_DEF.inventory`.
-- **Lore:** the story's source of truth is `LORE.md`. Dialogues, inscriptions, scenes and the ending cards are data in `js/data/lore.js`; write them in LORE.md first. See AGENTS.md.
-- **Story mode:** to put a level in a campaign, add a chapter `{ level, title, line }` where it falls in `STORY.chapters` or `LANDS_STORY.chapters` (`js/data/story.js`). A new road is one more entry of `STORIES` with its own save key in `CONFIG.story.saveKeys`. See AGENTS.md for the save format.
-- **Set pieces (v7.0):** a level's `realm` draws its sky and scenery (a colossal tree, stars, lightning, weather, a sea of clouds, floating ruins, a dragon, rings of light, rune circles, liquid pools, giant roots, flowers, grace beams, natural ground): see `js/realms.js`.
+For developers: `AGENTS.md`.

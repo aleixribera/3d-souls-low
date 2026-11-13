@@ -1,5 +1,5 @@
 'use strict';
-// Level 11: Aurel in Ash (v7.46.0), chapter 11 of the Story (STORY.md; LORE.md 10g): the same city burning. The steward
+// Level 11: Aurel in Ash (v7.46.0), chapter 11 of the Story (STORY.md 10g): the same city burning. The steward
 // is dead and the city would not be kept without him; the hunger, refused, burns what it cannot keep. Rough (PLAN.md
 // stage 3, track A): built from the old second road's burned capital (removed in v7.54.0) as raw material,
 // its layout kept, every name and character of that road gone; no great tree, only the Ember's root, charred, arching

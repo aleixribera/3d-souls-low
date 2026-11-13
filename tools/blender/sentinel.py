@@ -1,5 +1,5 @@
 # The Empty Sentinel, the Ironbound's giant: a suit of armour whose wearer was fed to the Ember whole, still standing its
-# post (LORE.md). One rigid mesh per game bone (js/rig.js skeleton at scale 1, MODEL_DEFS.emptySentinel), named
+# post (STORY.md). One rigid mesh per game bone (js/rig.js skeleton at scale 1, MODEL_DEFS.emptySentinel), named
 # sentinel:<bone>__<material slot>[.n], so every key pose, the walk and the death drive it. The game scales it 1.65x.
 # Rest pose: upright, arms hanging (the model's posture leans it a little in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().

@@ -1,5 +1,5 @@
 'use strict';
-// Level 8: Saltgrave (v7.40.0), chapter 8 of the Story (STORY.md; LORE.md 10d): Thrale's border fortress, on a cliff
+// Level 8: Saltgrave (v7.40.0), chapter 8 of the Story (STORY.md 10d): Thrale's border fortress, on a cliff
 // over the sea, in the rain. Rough (PLAN.md stage 3, track A): built from the old second road's castle level
 // (removed in v7.54.0) as raw material, its layout kept, every name and character of that road gone.
 // x runs east, z north.

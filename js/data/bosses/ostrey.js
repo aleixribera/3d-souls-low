@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Old Ostrey, the Porter (v7.38.0), the boss of Level 7, js/levels/windward-moor.js (LORE.md 10c)
+// Old Ostrey, the Porter (v7.38.0), the boss of Level 7, js/levels/windward-moor.js (STORY.md 10c)
 // ============================================================================
 // A giant gatekeeper still keeping Thrale's border for a king long dead: an iron gate-bar and a lantern. Rough (PLAN.md
 // stage 3, track A): his fight reuses the engineering of Margit's (js/data/bosses/margit.js: the delayed swings, the

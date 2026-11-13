@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================================
-// Hale and Harrow, the Castellans (v7.40.0), the bosses of Level 8, js/levels/saltgrave.js (LORE.md 10d)
+// Hale and Harrow, the Castellans (v7.40.0), the bosses of Level 8, js/levels/saltgrave.js (STORY.md 10d)
 // ============================================================================
 // Twin sisters who split one suit of armour, fought as a pair on the tower roof. Rough (PLAN.md stage 3, track A): the
 // engineering of Godrick's fight (js/data/bosses/godrick.js) split between them and renamed, the grafted dragon taken
