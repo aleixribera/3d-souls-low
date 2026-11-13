@@ -129,3 +129,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   the rot) and flame `breath` (Godrick). Their tests now lay their own fixture (a patched def, a rot rect in the Long
   Hall). Give one to a new boss or remove each with its test. The seven move-source files in `js/data/bosses/`
   (Margit to Radagon, no figure, in no list) go once their story bosses have moves of their own (track A).
+- Low on dense phones (v7.56.0): touch devices go straight to Low without a frame test (`capFor`, `js/autoquality.js`),
+  and Low now draws native, so a 3x phone draws nine times its old pixels. Untested on a phone; if too slow, the next
+  lever is a cheaper Low material (Lambert-style lighting), never a lower resolution.
+- Faster High on weak GPUs at 2x: the flame glows and light pools (`glows`) were the other consistent cost in the 4K
+  per-pass probe (`docs/render-scale-v7.56.0.md`); cheaper pools (fewer, tighter quads) would cut it.

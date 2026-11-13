@@ -6,8 +6,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Track A (pass 30, item 1, v7.53.0): the story's ending; frames `docs/scorecard/ending-*.jpg`, in-page `Still Mere:`.
   Next on the track: item 2, Ostrey redone.
-- Pass 31 (`PLAN.md` clean-up item 1, v7.54.0): the Lands and the Elden Ring bosses left; Boss Rush and the Arena list
-  the story's 14 bosses. Checked: in-page `Story boss`, `calling-browser.cjs`, `boss-battle-browser.cjs`.
+- Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
+  `js/visuals.js`); numbers, close-ups: `docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 32, v7.55.0): an aid, not a carry; check `docs/scorecard/bot-aid.txt`.
 - Pass 34 (Broken): CI's one red on main (the King's Blade meter test) and the `#dev` title overlap fixed; the
   v7.54.0 and v7.55.0 containers published. Next in this slot: `PLAN.md` clean-up item 2.
@@ -64,8 +64,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI on pass 34's push: check in the next pass (pushes cancel each other's CI, so look at the newest finished run). Probes
-(untracked): `.scratch/ending-frames.cjs` (`VIEW=WxH TAG=x`, the ending's frames), `.scratch/title-shots.cjs` (title frames).
+CI on v7.56.0 (pushes cancel each other's CI: look at the newest finished run; notes-only pushes no longer start
+one) and its container. Probes (untracked): `.scratch/ending-frames.cjs`, `title-shots.cjs`, `render-scale.cjs`
+(`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
 

@@ -35,7 +35,8 @@ took it (once taken).
   lower that 100% render scale setting, it looks incredibly bad, optimize it another way." The director found every
   preset's renderScale is 1, but maxPixelRatio caps Low at 1x and High at 1.5x (js/config.js ~393/397, applied in
   js/visuals.js ~1417), so on a scaled screen they draw below native resolution and get stretched. No preset, and no
-  auto-quality step, may render below the screen's own resolution; the speed has to come from elsewhere.
+  auto-quality step, may render below the screen's own resolution; the speed has to come from elsewhere. Taken by
+  pass 33 (v7.56.0).
 - 2026-11-13, correction to v7.55.0's bots: bots are normal players. They keep 100% of the player's stats and attacks
   (undo the 75% damage cut and any other stat handicap). The only things to tune are how smart they are and how they
   act in each situation. They should be more of a help and less of a carry through behaviour alone (leaving openings

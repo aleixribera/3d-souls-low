@@ -611,3 +611,13 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Room (`CONFIG.bot.room`, `room()`): standoff moves push off people and other bots, and sideways off a person's line to the boss.
 - Rings: a ring's eta uses its outer edge, so bots roll thick rings (Hollis's The Hunger Shows) instead of standing in them.
 - Story bosses, three bots, 10 fights each: wins 118 to 113/130, damage a bot 16.5 to 8.9/s, time alive a bot 126 to 234 s, deaths per ten bot-minutes 0.78 to 0.51; total deaths 64 to 77, because bot-only fights last 1.8x as long (`docs/scorecard/bot-aid.txt`, `tools/bot-fights.cjs story`). Tests: `bot-behavior` (caution, room, ring), `boss-attention` (the boss turns on every bot; two of three get hit), `bot` (a seven-minute solo limit).
+
+## Native resolution on every preset (v7.56.0, Aleix's 2026-11-13 complaint)
+
+- No preset or Auto choice draws below the screen's own resolution. `qualityDraw(q, dpr)` (`js/visuals.js`) is the
+  rule, used by `visuals.resize` and `qualityBenchmark.measure`; `maxPixelRatio` and `renderScale` are removed.
+- Speed from elsewhere: bloom and the AO / light buffers stop at the preset's `softRatio` (`soft`, passed to the resize
+  hooks); the post target's MSAA is `denseMsaa` from `CONFIG.VISUALS.denseScreen` (High 0 at 2x); Low `lights` 3.
+- `js/boot.js` redraws when the pixel ratio changes (matchMedia `resolution`), not only on window resizes.
+- In-page: `Graphics: every preset draws at the native resolution of a scaled screen`, `High: modern presentation`,
+  `Low performance`. Frame times and close-ups: `docs/render-scale-v7.56.0.md`.
