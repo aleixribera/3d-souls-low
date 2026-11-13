@@ -302,19 +302,12 @@ comes back to item 6 the moment it lands.
    says `ability`; old identifiers are renamed when a pass touches them.
    - **First, the upgrades session** ("Design all upgrades and special upgrades from zero", working with Aleix):
      removes the five old blessings and builds the first set, its data and the tall-card pick screen (item 3's spec);
-     no pacts (removed, Aleix, 2026-11-13). While it works, the loop doesn't touch `js/data/abilities.js`,
-     `CONFIG.abilities`, `js/abilities.js`, `js/ability-fx.js`, the offer code or the pick screen. When it has shipped
-     (merged into `main`), this item is the loop's, and it comes next in this track. Aleix (2026-11-14): the session
-     finishes what it is in the middle of, properly, starts nothing new, and merges soon.
-     - Shipped (v7.72.0), **handed over**: the old five gone; 25 abilities (12 commons, 8 rares, 5 legendaries:
-       Meteor Fall, Storm King, Time Rift, Thousand Blades, Blood Moon) in `js/data/abilities.js`, levels shown as
-       II -> III with was -> now; the tall-card pick "Choose an ability"; each legendary's in-game effect, Storm King
-       as a lightning dragon out of the blade; a sound for every legendary, the rares' trigger and the pick; camera
-       weight per legendary; the server runs the legendaries and checks every claim. Practice > Try abilities (Aleix,
-       2026-11-14): the duel arena with a mannequin, B lists every ability to switch on at any level and fires a
-       legendary on demand; use it to see and hear new ones.
-     - What it leaves is the loop's, first in this item: light and polish on the spectacle bar below (rares' own
-       effects, commons' touch), the first summons, legendaries up to 8 and more, then the pool beyond 30.
+     no pacts (removed, Aleix, 2026-11-13). While it works, the loop doesn't touch `js/data/blessings.js`,
+     `CONFIG.blessings`, the offer code or the pick screen. When it has shipped (merged into `main`), this item is the
+     loop's, and it comes next in this track. Aleix (2026-11-14): the session finishes what it is in the middle of,
+     properly, starts nothing new, and merges soon (v7.72.0: 25 abilities, 5 legendaries with effects, the pick
+     screen). What it leaves is the loop's, first in this item: sound and camera weight for the legendaries and rares
+     (the spectacle bar below), the first summons, legendaries up to 8 and more, then the pool beyond 30.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use.
