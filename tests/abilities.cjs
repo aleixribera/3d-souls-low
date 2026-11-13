@@ -120,11 +120,11 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.trigger('m', meteor, meteor.kit, 'land', { x: e.x + mv.radius + e.radius + 1, y: e.y, z: e.z, action: 'heavy' });
   assert.equal(e.hp, hp, 'out of its reach');
 
-  // Storm King: `strikes` bolts, one every `every` s.
+  // Storm King: `strikes` bolts, the first `lead` s after the heavy, then one every `every` s.
   fresh(); const storm = holder(['storm-king']), sv = BY['storm-king'].levels[0];
   powers.trigger('s', storm, storm.kit, 'fullHeavy', { enemy: e });
-  step(sv.every * 0.5); assert.equal(e.hp, e.def.hp, 'the first bolt is still coming');
-  step(sv.every * sv.strikes);
+  step(sv.lead * 0.9); assert.equal(e.hp, e.def.hp, 'the first bolt is still coming');
+  step(sv.lead * 0.2 + sv.every * sv.strikes);
   assert.equal(fired.filter(f => f.strike).length, sv.strikes, 'every bolt'); assert.ok(e.hp < e.def.hp);
 
   // Time Rift: the boss stands still and its blows do nothing until the time is up.
@@ -234,7 +234,13 @@ async function peer(origin, name) {
   };
   // Each player's offer is set to known abilities (the draw itself is covered above).
   const forced = new Map(), offer = app.sim.offerAbilities;
-  app.sim.offerAbilities = (...args) => { offer(...args); for (const [id, list] of forced) { const o = app.sim.abilityOffer(id); if (o) o.splice(0, o.length, ...list); } };
+  // The players' offers first, set to `forced`, then the bots': a bot takes one at once, and with the forced offers
+  // open it never takes a legendary the test hands a player (it did now and then, at random, and broke Time Rift's pick).
+  app.sim.offerAbilities = (ids, withBots = true, ...rest) => {
+    offer(ids, false, ...rest);
+    for (const [id, list] of forced) { const o = app.sim.abilityOffer(id); if (o) o.splice(0, o.length, ...list); }
+    if (withBots) offer(app.sim.botList().map(x => x.id), false, ...rest);
+  };
   try {
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Ember'); peers.push(a, b);
     const owner = [a, b].find(p => p.id === app.leader);

@@ -36,7 +36,7 @@ const ABILITY_PERKS = {
 //                        `drain` of what they deal.
 // A level's `cooldown` s spaces its triggers; `once: true` fires once a fight.
 const ABILITY_POWERS = {
-  'land/blast': ['radius', 'damage', 'posture', 'cooldown'], 'fullHeavy/lightning': ['strikes', 'every', 'damage', 'posture', 'cooldown'],
+  'land/blast': ['radius', 'damage', 'posture', 'cooldown'], 'fullHeavy/lightning': ['strikes', 'lead', 'every', 'damage', 'posture', 'cooldown'],
   'dodge/freeze': ['time', 'radius', 'cooldown'], 'parry/blades': ['time', 'every', 'damage', 'posture', 'cooldown'],
   'low/bloodMoon': ['below', 'time', 'damage', 'drain'],
 };
@@ -124,7 +124,7 @@ function abilityReport(body, when, ctx) {
 // Run where the enemies are owned: the server (every player's and bot's), or the game alone. Each power fired emits
 // `abilityPower` { power: the ability id, then, holder, body?, enemy?, x, y, z, v: its level's numbers, strike? }:
 // the server sends it to every browser and js/ability-fx.js draws it. Lightning emits once more per bolt (`strike`:
-// its number); damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
+// its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const abilityPowers = (() => {
   const running = [];   // { pw, holder, enemy, left, next, n }: the powers still striking (lightning, blades)
   const ready = new Map();   // holder + '/' + ability id -> the clock time it may fire again (Infinity: once, spent)
@@ -162,9 +162,9 @@ const abilityPowers = (() => {
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, v.posture, holder, pw.id); break;
       case 'freeze':
-        for (const o of enemies) if (near(o, x, y, z, v.radius) && !o.training) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
+        for (const o of enemies) if (near(o, x, y, z, v.radius)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
         break;
-      case 'lightning': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.every, n: 0 }); break;
+      case 'lightning': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.lead, n: 0 }); break;
       case 'blades': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
       case 'bloodMoon': if (body && body.perk) { body.perk.moon = v.time; body.perk.moonV = v; } break;
     }

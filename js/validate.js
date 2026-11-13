@@ -357,8 +357,17 @@ function validateData({ visual = true } = {}) {
     if ('completeHint' in L) need(typeof L.completeHint === 'string' && L.completeHint.length > 0, `${where}: completeHint must be a line of text.`);
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if ('lessons' in L) validateLessons(L, where, need);
+    if ('abilityLab' in L) need(L.abilityLab === true, `${where}: abilityLab must be true or left out.`);
     for (const k of ['wakeZones', 'clearGates', 'steer', 'fullTracking']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num, visual); continue; }
+    if (L.layout === 'arena') {   // a level in the duel arena (the Ability Grounds): training dummies inside its walls
+      const inA = s => !!s && num(s.x) && num(s.z) && Math.abs(s.x) < L.halfX && Math.abs(s.z) < L.halfZ;
+      need(num(L.halfX) && num(L.halfZ) && inA(L.playerStart) && Array.isArray(L.dispersed) && !('gated' in L),
+        `${where}: an arena level needs halfX, halfZ, a playerStart inside them and a dispersed list, and no gated zones.`);
+      for (const s of L.dispersed || []) need(s.enemy in ENEMY_BY_ID && BEHAVIORS[s.behavior]?.training && inA(s) && num(s.yaw),
+        `${where} enemy "${s.enemy}" (${s.behavior}): an arena level holds training dummies (dummy, sparring) with x, z and yaw inside it.`);
+      continue;
+    }
     need(!('houses' in L) && !('props' in L), `${where}: houses and props belong in room levels.`);
     const inX = x => num(x) && x > 0 && x < L.length, inZ = z => num(z) && Math.abs(z) < L.halfZ;
     need(inX(L.start.x) && inZ(L.start.z), `${where}: start point is outside the hall.`);

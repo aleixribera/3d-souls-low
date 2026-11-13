@@ -34,11 +34,14 @@ const CONFIG = {
     // of stiffness `omega` (1/s). Offsets in m, rolls in rad, fov in degrees. A swing nudges forward (`swing`, heavies
     // `heavy` and dip), a roll widens and dips, a blow taken pushes away from the attacker (scaled by damage over
     // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / breaks / executions punch the
-    // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. Never past `maxRoll` / `maxFov`.
+    // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. A legendary's power (its `then`, a
+    // lightning bolt `strike`) kicks [fov, dip] in `powers`, in full for its holder, fading out to `powerNear` m for
+    // the rest. Never past `maxRoll` / `maxFov`.
     feel: { omega: 13, swing: 0.05, heavy: 0.1, heavyDip: 0.04, swingRoll: 0.006, rollFov: 3, rollDip: 0.06,
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
-            strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6 },
+            strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26,
+            powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -510,20 +513,24 @@ const CONFIG = {
     // the camera; `cool`: the colour a meteor's crater cools to. Meteor: its column of fire `column` m tall falls
     // in `fall` s, `width` m wide, the shock ring spreads in `ring` s, the crater (`glow` times as bright) cools by
     // `crater` s. Storm: a bolt from `height` m above the boss, `jitter` m jagged, `width` m wide, gone in `life`
-    // s, its scorch `scorch` m across. Rift: the wave spreads in `wave` s, the clock turns `turn` rad/s, a stopped
+    // s, its scorch `scorch` m across; first its dragon, `dragon`: glowing `color`, a body `length` of its path long, `width` m thick,
+    // `jitter` m crackling, rising `rise` m and coiling `coil` m out and `turns` times round the boss, writhing `wave` m,
+    // a head `head` m with open jaws, gone `linger` s after it lands. Rift: the wave spreads in `wave` s, the clock turns `turn` rad/s, a stopped
     // enemy is tinted `tint`. Blades: `per` ghost swords a blow (`glow` times as bright), `stagger` s apart,
     // `length` m long, falling `height` m in `fall` s to stand `sink` m deep up to `spread` m out from the boss,
     // gone `linger` s later, `pool` of them. Moon: `size` m across, `height` m over a teammate holding it (the
     // holder's own: `skySize` m, `distance` m off where their camera looked, `up` of the way to the top of the view
     // and `right` of the way across), red motes rising round them every `motes` s, fading in and out over `fade` s,
     // its holder tinted `tint`; each blow's slash `slashSize` m, gone in `slash` s, and their blade trail (Ultra)
-    // red at `trail` times its glow. Perks: the rares' small cues. `shake`: [time, amplitude]; `burst`: the Low
+    // red at `trail` times its glow. Perks: the rares' small cues; `picked`: the ring round the player as a pick is made, in
+    // its rarity's colour. `shake`: [time, amplitude]; `burst`: the Low
     // preset's particles (js/fx.js).
     abilityFx: {
       near: 14, cool: 0x2a0c06,
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },
       storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],
+        dragon: { color: 0x3d6dff, length: 0.5, width: 0.2, rise: 3, coil: 2.8, turns: 1.5, wave: 0.45, head: 0.5, linger: 0.22, jitter: 0.28 },
         burst: { count: 24, speed: 7, color: 0xbcd6ff } },
       rift: { color: 0xb48cff, core: 0xe6dcff, wave: 0.45, turn: -0.9, tint: 0.65, shake: [0.2, 0.12],
         burst: { count: 26, speed: 5, color: 0xcbb4ff } },
@@ -532,7 +539,7 @@ const CONFIG = {
       moon: { color: 0xff2a3a, height: 9, size: 4.5, distance: 90, up: 0.62, right: 0.28, skySize: 22, fade: 0.6, tint: 0.12, motes: 0.12, slash: 0.36, slashSize: 3.2, trail: 1.3,
         burst: { count: 30, speed: 5, color: 0xff3a48 } },
       perks: { empower: 0xffc070, empowerBurst: { count: 14, speed: 5, color: 0xffc070 }, heal: 0x8fe08a, stamina: 0x8fb8dc,
-        riposte: 0xdfe6f0, charge: 0xd9b56b },
+        riposte: 0xdfe6f0, charge: 0xd9b56b, picked: { common: 0xcfc8b6, rare: 0x8fb8dc, legendary: 0xe59a5c } },
     },
     // The Regent Hollis's hanging cuts (js/gilt-echo.js): leaves per cut, seam motes, pooled cuts, leaf size (m), how long
     // they fall once let go (s), the tell before the echo strikes (s), the seam's brightness, opacities, fling speed, fall pull.

@@ -25,7 +25,7 @@ Object.assign(Game, {
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
           // Back to the Practice list the fight was started from.
           const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? this.practiceFromGroup ? 'practiceGroup'
-            : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? 'practiceLevels' : 'main';
+            : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? this.level.abilityLab ? 'practice' : 'practiceLevels' : 'main';
           if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
     // A newer version on the server (js/version-check.js): a reload button last in pause and on the title.
@@ -72,6 +72,7 @@ Object.assign(Game, {
         { name: 'Fight several at once', desc: `Choose up to ${P.maxGroup} enemies and bosses, then fight them all together.`, go: () => this.showMenu('practiceGroup') },
         { name: 'Boss vs Boss', desc: 'Build two teams of up to six bosses and watch them battle.', go: () => this.showMenu('bossBattle') },
         { name: 'Play a level', desc: 'Any level of the story, on its own.', go: () => this.showMenu('practiceLevels') },
+        { name: 'Try abilities', desc: TEST_ABILITIES.description, go: () => this.loadingFirst(TEST_ABILITIES.name, TEST_ABILITIES.description, () => this.startLevel(TEST_ABILITIES.id)) },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Each list is titled by what it does; the only line under a title is the group's live count.
       practiceBosses: { title: adding ? 'ADD A BOSS' : 'FIGHT A BOSS', sub: adding ? `${group.length} / ${P.maxGroup}` : '', back: adding ? 'practiceGroup' : 'practice',

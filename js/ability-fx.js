@@ -6,7 +6,8 @@
 // look, on every preset; High and Ultra add sparks, embers and lights from js/ultra-fx.js on top:
 //   Meteor Fall    a column of fire falls with the jump, a white-hot burst, a shock ring as wide as the blast hits and a
 //                  molten crater that cools.
-//   Storm King     a jagged bolt from the sky onto the boss for each strike, a scorch ring and a blue flash.
+//   Storm King     a dragon of lightning tears out of the holder's blade, climbs and coils down onto the boss as the
+//                  first bolt lands; then a jagged bolt from the sky for each strike, a scorch ring and a blue flash.
 //   Time Rift      a violet wave out to the rift's reach, then each stopped enemy (its `frozen`) sits in a slow bubble
 //                  with a clock turning backwards under it, tinted, until it shatters.
 //   Thousand Blades  ghost copies of the holder's own sword fall on the boss, one each `every` s, for `time` s.
@@ -119,8 +120,26 @@ const abilityFx = (() => {
   function shape(m, list, n, width) {
     const a = m.geometry.attributes.position.array;
     for (let i = 0; i < n; i++) {
-      const p = list[i], w = width * (1 - 0.5 * i / n);
-      a.set([p.x - w, p.y, p.z, p.x + w, p.y, p.z, p.x, p.y, p.z - w, p.x, p.y, p.z + w], i * 12);
+      const p = list[i], w = width * (1 - 0.5 * i / n), o = i * 12;
+      a[o] = p.x - w; a[o + 1] = p.y; a[o + 2] = p.z; a[o + 3] = p.x + w; a[o + 4] = p.y; a[o + 5] = p.z;
+      a[o + 6] = p.x; a[o + 7] = p.y; a[o + 8] = p.z - w; a[o + 9] = p.x; a[o + 10] = p.y; a[o + 11] = p.z + w;
+    }
+    m.geometry.attributes.position.needsUpdate = true; m.geometry.computeBoundingSphere();
+  }
+  // The same ribbon along any path (the dragon's): its two strips stand across the path, one level, one upright, and
+  // thin from `width` at the first point to `width * end` at the last.
+  const tan = new THREE.Vector3(), flatSide = new THREE.Vector3(), upSide = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  function tube(m, list, n, width, end) {
+    const a = m.geometry.attributes.position.array;
+    for (let i = 0; i < n; i++) {
+      const p = list[i], w = width * lerp(1, end, i / (n - 1)), o = i * 12;
+      tan.subVectors(list[Math.min(i + 1, n - 1)], list[Math.max(i - 1, 0)]);
+      flatSide.crossVectors(tan, UP); if (flatSide.lengthSq() < 1e-6) flatSide.set(1, 0, 0);
+      flatSide.normalize(); upSide.crossVectors(flatSide, tan).normalize();
+      a[o] = p.x - flatSide.x * w; a[o + 1] = p.y - flatSide.y * w; a[o + 2] = p.z - flatSide.z * w;
+      a[o + 3] = p.x + flatSide.x * w; a[o + 4] = p.y + flatSide.y * w; a[o + 5] = p.z + flatSide.z * w;
+      a[o + 6] = p.x - upSide.x * w; a[o + 7] = p.y - upSide.y * w; a[o + 8] = p.z - upSide.z * w;
+      a[o + 9] = p.x + upSide.x * w; a[o + 10] = p.y + upSide.y * w; a[o + 11] = p.z + upSide.z * w;
     }
     m.geometry.attributes.position.needsUpdate = true; m.geometry.computeBoundingSphere();
   }
@@ -147,6 +166,86 @@ const abilityFx = (() => {
     const c = chestOf(e);
     spawnBurst(c, S.burst); ultraFx.sparkBurst(c, 34, 'storm', null, 0, 1.2); ultraFx.flashAt(c, S.color, 40, 22);
     light(c, S.color, 18, 20); shake(S.shake, e.x, e.z);
+  }
+  // The dragon: out of the holder's blade, up `rise` m over the way to the boss, then coiling `turns` times round it
+  // and down into its chest, in the `lead` s the first bolt takes. Its head leads; a body `length` of the path long
+  // writhes behind it, crackling every frame; its head has open jaws and two whiskers trailing back.
+  const DG = S.dragon, DSEGS = 28, WSEGS = 6;
+  const dragons = Array.from({ length: 2 }, () => {
+    const core = ribbon(DSEGS, S.core), glow = ribbon(DSEGS, DG.color), whiskers = [ribbon(WSEGS, DG.color), ribbon(WSEGS, DG.color)];
+    const jaws = [ribbon(WSEGS, S.core), ribbon(WSEGS, S.core)], head = mesh(SPHERE, S.core), halo = mesh(SPHERE, DG.color);
+    const parts = [core, glow, ...whiskers, ...jaws, head, halo];
+    for (const m of parts) put(m);
+    return { core, glow, whiskers, jaws, head, halo, parts, t: Infinity, time: 1, e: null, from: new THREE.Vector3(), a0: 0, side: 1, mote: 0 };
+  });
+  const dpts = Array.from({ length: DSEGS }, () => new THREE.Vector3()), wpts = Array.from({ length: WSEGS }, () => new THREE.Vector3());
+  const hd = new THREE.Vector3(), back = new THREE.Vector3(), headAt = { x: 0, y: 0, z: 0 };
+  const DRAGON_MOTES = { r: 0.25, speed: 1.2, lift: 0.3, life: [0.2, 0.5], size: 0.8 };
+  function dragon(d, e) {
+    const g = dragons.reduce((a, c) => (a.t > c.t ? a : c)), b = d.body;
+    g.t = 0; g.time = d.v.lead; g.e = e; g.side = rnd() < 0.5 ? -1 : 1; g.mote = 0;
+    if (b) g.from.set(b.x + Math.sin(b.yaw || 0) * 0.9, b.y + (b.height || 1.8) * 0.75, b.z + Math.cos(b.yaw || 0) * 0.9);   // the blade, raised
+    else g.from.set(e.x, e.y + (e.height || 2) + S.height, e.z);   // a holder out of sight: down from the sky
+    g.a0 = Math.atan2(g.from.z - e.z, g.from.x - e.x);
+    for (const m of g.parts) m.visible = false;   // shown from its first drawn frame, shaped
+    const c = { x: g.from.x, y: g.from.y, z: g.from.z };
+    ultraFx.sparkBurst(c, 28, 'storm', null, 0, 1); ultraFx.flashAt(c, S.color, 26, 12); light(c, S.color, 12, 12);
+  }
+  // A point `s` (0 the blade, 1 the boss's chest) along a dragon's path at time `now`, into `out`.
+  function path(g, s, now, out) {
+    const e = g.e, chest = e.y + (e.height || 2) * 0.6, r0 = (e.radius || 1) + DG.coil, top = Math.max(g.from.y, chest) + DG.rise;
+    const ax = e.x + Math.cos(g.a0) * r0, az = e.z + Math.sin(g.a0) * r0;   // where the climb ends and the coil begins
+    if (s < 0.45) {   // the climb: a curve up from the blade to over the coil's start
+      const k = s / 0.45, i = 1 - k, mx = (g.from.x + ax) / 2, mz = (g.from.z + az) / 2;
+      out.set(i * i * g.from.x + 2 * i * k * mx + k * k * ax, i * i * g.from.y + 2 * i * k * (top + DG.rise * 0.3) + k * k * top, i * i * g.from.z + 2 * i * k * mz + k * k * az);
+    } else {   // the coil: round the boss, closing in and coming down
+      const k = (s - 0.45) / 0.55, a = g.a0 + g.side * k * DG.turns * Math.PI * 2, r = r0 * (1 - k * k);
+      out.set(e.x + Math.cos(a) * r, lerp(top, chest, Math.pow(k, 1.4)), e.z + Math.sin(a) * r);
+    }
+    const w = DG.wave * Math.sin(s * 22 - now * 14) * (1 - s * s);   // the writhe, across the way it goes
+    out.y += w; out.x -= Math.sin(g.a0) * w * 0.6; out.z += Math.cos(g.a0) * w * 0.6;
+    return out;
+  }
+  function drawDragons(dt) {
+    const now = effectSlots.time();
+    for (const g of dragons) {
+      if (g.t === Infinity) continue;
+      g.t += dt;
+      if (g.t >= g.time + DG.linger || !g.e) { g.t = Infinity; g.e = null; for (const m of g.parts) m.visible = false; continue; }
+      const k = clamp01(g.t / g.time), h = k * (2 - k);   // fast out of the blade, slowing as it coils
+      const landed = g.t >= g.time, gone = landed ? clamp01((g.t - g.time) / DG.linger) : 0, fade = 1 - gone * gone;
+      const len = DG.length * (1 - gone) + 0.001;   // landed, the tail runs in after the head
+      for (let i = 0; i < DSEGS; i++) {
+        path(g, Math.max(0, h - len * i / (DSEGS - 1)), now, dpts[i]);
+        if (i) { dpts[i].x += (rnd() - 0.5) * DG.jitter; dpts[i].y += (rnd() - 0.5) * DG.jitter; dpts[i].z += (rnd() - 0.5) * DG.jitter; }
+      }
+      tube(g.core, dpts, DSEGS, DG.width * 0.4, 0.15); tube(g.glow, dpts, DSEGS, DG.width * 1.8, 0.25);
+      g.core.material.opacity = 0.9 * fade; g.glow.material.opacity = 0.6 * fade;
+      // The head, and its whiskers swept back and out from it.
+      hd.copy(dpts[0]); back.subVectors(dpts[0], dpts[2]);
+      if (back.lengthSq() < 1e-8) back.set(0, -1, 0); back.normalize();
+      flatSide.crossVectors(back, UP); if (flatSide.lengthSq() < 1e-6) flatSide.set(1, 0, 0); flatSide.normalize();
+      for (let n = 0; n < 2; n++) {
+        const out = n ? 1 : -1, wm = g.whiskers[n];
+        for (let i = 0; i < WSEGS; i++) {
+          const q = i / (WSEGS - 1), sway = Math.sin(now * 16 + q * 4 + n * 2) * 0.25 * q;
+          wpts[i].copy(hd).addScaledVector(back, -q * DG.head * 2.6).addScaledVector(flatSide, out * (0.15 + q * DG.head * 1.1)).addScaledVector(UP, 0.1 + q * 0.35 + sway);
+        }
+        tube(wm, wpts, WSEGS, DG.width * 0.35, 0.1); wm.material.opacity = 0.8 * fade;
+        // A jaw: forward out of the head, the upper one up, the lower one down, opening and snapping a little.
+        const jm = g.jaws[n], gape = (0.35 + 0.15 * Math.sin(now * 22)) * out;
+        for (let i = 0; i < WSEGS; i++) {
+          const q = i / (WSEGS - 1);
+          wpts[i].copy(hd).addScaledVector(back, q * DG.head * 1.7).addScaledVector(UP, gape * q * DG.head * 1.4 * (1 - 0.35 * q));
+        }
+        tube(jm, wpts, WSEGS, DG.width * 0.45, 0.2); jm.material.opacity = fade;
+      }
+      const pulse = 1 + 0.12 * Math.sin(now * 40);
+      g.head.position.copy(hd); g.head.scale.setScalar(DG.head * 0.3 * pulse * (1 - gone) + 0.001); g.head.material.opacity = fade;
+      g.halo.position.copy(hd); g.halo.scale.setScalar(DG.head * 0.8 * pulse); g.halo.material.opacity = 0.25 * fade;
+      for (const m of g.parts) m.visible = true;
+      if (!landed && (g.mote -= dt) <= 0) { g.mote = 0.03; headAt.x = hd.x; headAt.y = hd.y; headAt.z = hd.z; ultraFx.moteBurst(headAt, 3, DG.color, DRAGON_MOTES); }
+    }
   }
   function drawBolts(dt) {
     for (const b of bolts) {
@@ -331,19 +430,28 @@ const abilityFx = (() => {
     const e = d.enemy;
     if (d.then === 'blast') meteor(d);
     else if (d.then === 'lightning' && e && d.strike) bolt(d, e);
+    else if (d.then === 'lightning' && e) dragon(d, e);
     else if (d.then === 'freeze') rift(d);
     else if (d.then === 'blades' && e) blades(d, e);
     else if (d.then === 'bloodMoon') bloodMoon(d);
   });
   events.on('abilityPerk', perk);
+  events.on('abilityPicked', d => {
+    const p = Game.player, color = F.perks.picked[d.rarity];
+    if (!p || color === undefined) return;
+    const c = chestOf(p), big = d.rarity === 'legendary' ? 1.6 : d.rarity === 'rare' ? 1.25 : 1;
+    groundFx.ring(p.x, p.z, 1.6 * big, color, 0.6, p.y);
+    ultraFx.moteBurst(c, Math.round(18 * big), color, { r: 0.5, speed: 1, lift: 1.6 * big, life: [0.6, 1.3] });
+  });
   events.on('strike', slash);
   function render(game) {
     const dt = effectSlots.dt();
-    drawMeteors(dt); drawBolts(dt); drawRift(game, dt); drawBlades(game, dt); drawMoons(game, dt);
+    drawMeteors(dt); drawDragons(dt); drawBolts(dt); drawRift(game, dt); drawBlades(game, dt); drawMoons(game, dt);
   }
   function clear() {
     for (const o of made) o.visible = false;
-    for (const s of [...meteors, ...bolts, ...waves, ...slashes, ...swords]) s.t = Infinity;
+    for (const s of [...meteors, ...bolts, ...dragons, ...waves, ...slashes, ...swords]) s.t = Infinity;
+    for (const g of dragons) g.e = null;
     for (const b of bubbles) b.e = null;
     for (const r of rains) r.e = null;
     for (const m of moons) m.body = null;
@@ -351,7 +459,7 @@ const abilityFx = (() => {
   const moonTrail = [MO.color, CONFIG.VISUALS.ultra.trails.playerBoost * MO.trail];   // the holder's blade trail runs red
   function trail(b) { for (const m of moons) if (m.body === b && m.left > 0) return moonTrail; return null; }
   return { attach() { Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
-    meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length,
+    meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length, dragons: dragons.filter(g => g.t !== Infinity).length,
     bubbles: bubbles.filter(b => b.e).length, rains: rains.filter(r => r.e).length, swords: swords.filter(s => s.t !== Infinity).length,
     moons: moons.filter(m => m.body).length, slashes: slashes.filter(s => s.t !== Infinity).length }) };
 })();

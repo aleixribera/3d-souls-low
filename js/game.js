@@ -264,6 +264,7 @@ const Game = {
     if (!p.alive() && this.deathOf !== p) this.onPlayerDeath();
     this.updateCamera(dt, false);
     if (typeof lessons !== 'undefined') lessons.update(this, dt);   // reads only: which card to show (js/lessons.js)
+    if (typeof abilityLab !== 'undefined') abilityLab.update(this);   // the ability grounds' kit and fired powers (js/ability-lab.js)
   },
 
   render(alpha, frameDt = CONFIG.step) {

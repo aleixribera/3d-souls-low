@@ -10,7 +10,7 @@
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
 //              resolves it; a legendary is held by one player of a team at most.
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
-const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', cooldown: 's', radius: 'm', hits: 'n', strikes: 'n' };
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', radius: 'm', hits: 'n', strikes: 'n' };
 // The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
 const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain'];
 const ABILITIES = [
@@ -64,7 +64,7 @@ const ABILITIES = [
     levels: [{ radius: 4.5, damage: 130, posture: 45, cooldown: 3 }, { radius: 6, damage: 190, posture: 70, cooldown: 3 }] },
   { id: 'storm-king', name: 'Storm King', rarity: 'legendary', text: 'Full heavy hit: lightning strikes the boss {strikes} times.',
     power: { when: 'fullHeavy', then: 'lightning' },
-    levels: [{ strikes: 3, every: 0.45, damage: 55, posture: 14, cooldown: 4 }, { strikes: 5, every: 0.4, damage: 65, posture: 16, cooldown: 4 }] },
+    levels: [{ strikes: 3, lead: 0.75, every: 0.45, damage: 55, posture: 14, cooldown: 4 }, { strikes: 5, lead: 0.75, every: 0.4, damage: 65, posture: 16, cooldown: 4 }] },
   { id: 'time-rift', name: 'Time Rift', rarity: 'legendary', text: 'Perfect dodge: time stops for the boss for {time}.',
     power: { when: 'dodge', then: 'freeze' },
     levels: [{ time: 2.5, radius: 9, cooldown: 14 }, { time: 3.5, radius: 9, cooldown: 11 }] },

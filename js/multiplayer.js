@@ -392,6 +392,7 @@ const multiplayer = (() => {
   function chooseAbility(id) {
     if (!ability || ability.chosen || !active()) return;
     ability.chosen = id; send({ type: 'pickAbility', id, epoch: session.epoch }); drawAbilities();
+    events.emit('abilityPicked', { id, rarity: ABILITY_BY_ID[id]?.rarity });   // a note and a ring round the player
   }
   function closeAbilities() { ability = null; abilityScreen.hidden = true; }
   function moveAbilityFocus(step) {

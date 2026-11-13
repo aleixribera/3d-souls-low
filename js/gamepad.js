@@ -58,6 +58,7 @@ const gamepad = {
     if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.abilityPad(pressed)) return;
     if (typeof multiplayer !== 'undefined' && multiplayer.spectatorPad(pressed)) return;
+    if (typeof abilityLab !== 'undefined' && abilityLab.pad(pressed)) return;   // the ability grounds' list
     if (Game.mode === 'play') this.playInput(pressed, dt);
     else this.menuInput(pressed, dt);
   },

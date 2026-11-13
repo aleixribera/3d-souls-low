@@ -85,6 +85,7 @@ window.addEventListener('keydown', ev => {
   }
   input.use('keyboard');
   if (multiplayer.spectatorKey(ev)) return;
+  if (abilityLab.key(ev)) return;   // B: the ability grounds' list
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
