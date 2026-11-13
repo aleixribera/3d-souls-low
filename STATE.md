@@ -65,7 +65,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI on v7.56.0 (pushes cancel each other's CI: look at the newest finished run; notes-only pushes no longer start
+CI on pass 36's lean files, a9c04a6 (pushes cancel each other's CI: look at the newest finished run; notes-only pushes no longer start
 one) and its container. Probes (untracked): `.scratch/ending-frames.cjs`, `title-shots.cjs`, `render-scale.cjs`
 (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
