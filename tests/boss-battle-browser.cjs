@@ -17,7 +17,7 @@ const { createServer } = require('../server/index.cjs');
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, null, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; fullscreen.attempted = true; });
-    await page.getByRole('button', { name: 'Practice', exact: true }).click();
+    await page.getByRole('button', { name: 'Practice', exact: true }).click(); await page.keyboard.press('Enter');   // a click chooses the mode, Enter starts it
     await page.getByRole('button', { name: 'Boss vs Boss', exact: true }).click();
     const start = page.getByRole('button', { name: 'Start battle', exact: true });
     assert.equal(await start.getAttribute('aria-disabled'), 'true', 'empty teams cannot start');
@@ -49,7 +49,7 @@ const { createServer } = require('../server/index.cjs');
         const bad = [];
         for (let i = 0; i < Game.menuItems.length; i++) {
           Game.select(i, true);
-          const r = $('menuList').children[i].getBoundingClientRect(), list = $('menuList').getBoundingClientRect();
+          const b = Game.menuButtons[i], r = b.getBoundingClientRect(), list = b.parentElement.getBoundingClientRect();
           if (r.left < 0 || r.right > innerWidth || r.top < list.top - 1 || r.bottom > list.bottom + 1) bad.push(Game.menuItems[i].name);
         }
         return bad;
@@ -144,7 +144,7 @@ const { createServer } = require('../server/index.cjs');
     await page.getByRole('button', { name: 'Rematch', exact: true }).click();
     assert.equal(await page.evaluate(() => !bossBattle.winner && Game.enemies.length === 4 && Game.enemies.every(e => e.hp === e.def.hp)), true);
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Back to Menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Leave the battle', exact: true }).click();
     assert.equal(await page.evaluate(() => Game.screen), 'bossBattle');
     await page.evaluate(() => { Game.startFight('giant'); Game.loading = 0; Game.render(1, CONFIG.step); });
     assert.equal(await page.evaluate(() => !hud.root.classList.contains('boss-battle') && Game.player.rig.root.visible && Game.enemies.length === 1), true);

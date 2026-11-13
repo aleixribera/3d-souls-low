@@ -18,66 +18,107 @@
   .companion-health { display: block; width: 64px; height: 3px; margin-top: 4px; background: #10151bd9; border: 1px solid #a4b5bf55; }
   .companion-health i { display: block; height: 100%; background: #8ea47a; }
 
-  /* Menus (Dark Souls III title screen): pure black, a big cracked white title with a thin broken line through its middle,
-     and a short centred list low on the screen with chevrons above and below. The selected line sits in a gold horizontal
-     glow; its description is shown under the list. */
-  #menu { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: #000; }
-  #menu.overlay { background: #000000d0; }
+  /* Menus (Track B item 3, the mockups' menu style on js/ui-theme.js, like the title below): the screen's title top-left,
+     its entries as rows under it, the selected entry's note beside them, and a footer with Back on the left and the keys
+     on the right. Pause puts the run's state beside its rows (.pause-menu); Options puts the chosen category's settings
+     there (.options-menu). In a game the menu is a veil over the held frame. */
+  #menu { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: var(--ui-well); color: var(--ui-ink);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  #menu.overlay { background: #080a0cc7; }
   #menu.hidden { display: none; }
-  #menuBox { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
-    padding: 26vh 5vw max(96px, 12vh); background: none; border: none; box-shadow: none; }
-  #menuBox h1 { position: relative; z-index: 0; margin: 0; padding: 0 0.04em; text-align: center; font-weight: bold; white-space: nowrap;
-    font-family: 'Trajan Pro', 'Cinzel', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
-    font-size: clamp(24px, 7.6vw, 124px); max-width: 100%; letter-spacing: 0.01em; line-height: 1.05; color: #f4f2ee;
-    text-shadow: 0 0 1px #fff4, 0 0 24px #ffffff10; }   /* static: no live filters, the menus cost nothing to draw */
-  /* the thin horizontal line through the title, a little wider than the lettering, broken in places */
-  #menuBox h1::before { content: ''; position: absolute; z-index: 1; left: -6%; right: -6%; top: 50%; height: 2px; margin-top: -1px;
-    background: linear-gradient(90deg, #fff0 0, #ffffffb0 6%, #ffffffe0 50%, #ffffffb0 94%, #fff0 100%);
-    -webkit-mask-image: linear-gradient(90deg, #000 0 12%, #0000 12% 12.6%, #000 12.6% 46%, #0000 46% 46.4%, #000 46.4% 71%, #0000 71% 72%, #000 72% 100%);
-            mask-image: linear-gradient(90deg, #000 0 12%, #0000 12% 12.6%, #000 12.6% 46%, #0000 46% 46.4%, #000 46.4% 71%, #0000 71% 72%, #000 72% 100%);
-    pointer-events: none; }
-  #menuBox h1::after { content: none; }
-  #menuBox .sub { margin-top: 0.4em; text-align: center; font-size: 15px; color: #9a968c; letter-spacing: 6px; min-height: 1em; }
-  #menu.overlay #menuBox h1 { font-size: clamp(30px, 5.2vw, 84px); }
-  #menu.overlay #menuBox { padding-top: 18vh; }
-  .menuArrow { flex: none; width: 9px; height: 9px; margin: 4vh 0 4px; border-top: 1px solid #c9c5bb; border-left: 1px solid #c9c5bb;
-    transform: translateY(3px) rotate(45deg); opacity: 0.8; transition: opacity 0.25s; pointer-events: none; }
-  .menuArrow.down { margin: 4px 0 0; transform: translateY(-3px) rotate(225deg); }
-  .menuArrow.off { opacity: 0.15; }
-  #menuList { margin-top: 0; display: flex; flex-direction: column; align-items: center; width: 100%; max-height: 190px;
-    min-height: 36px; overflow-y: auto; scrollbar-width: none; padding: 10px 0; scroll-padding-block: 10px;
-    -webkit-mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 22px), transparent);
-            mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 22px), transparent); }
-  #menuList::-webkit-scrollbar { display: none; }
+  #menuBox { position: absolute; inset: 0; display: grid; box-sizing: border-box; padding: 56px 64px 104px; align-content: start; justify-content: start;
+    grid-template-columns: minmax(0, 380px) minmax(0, 440px); column-gap: 96px; grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "title title" "sub sub" "notice notice" "list desc"; }
+  #menuBox h1 { grid-area: title; margin: 0; font: 400 var(--ui-size-title)/1.1 var(--ui-display); letter-spacing: .01em; color: var(--ui-ink); text-wrap: balance; }
+  #menuBox .sub { grid-area: sub; margin-top: 10px; font: 500 var(--ui-size-text)/1.4 var(--ui-text); color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+  #menuBox .sub:empty, #menuBox .notice:empty, .menuArrow, #version { display: none; }
+  #menuBox .notice { grid-area: notice; max-width: 640px; max-height: 30vh; margin-top: 18px; overflow-y: auto; white-space: pre-line;
+    font: 400 17px/1.6 var(--ui-text); color: #cfc8b6; }
+  #menuList { grid-area: list; align-self: start; display: flex; flex-direction: column; gap: 2px; min-height: 0; max-height: calc(100% - 32px); margin-top: 32px;
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #ffffff30 transparent; }
   #menuList:empty { display: none; }
-  .menuBtn { position: relative; flex: none; display: block; width: min(760px, 100%); min-height: 36px; box-sizing: border-box; margin: 0; padding: 7px 16px;
-    text-align: center; background: none; border: none; color: #d6d3cb; cursor: pointer; font-family: inherit; outline: none;
-    transition: color 0.12s; }
-  .menuBtn::before { content: ''; position: absolute; left: 50%; top: 50%; width: 300px; height: 40px; margin: -20px 0 0 -150px; opacity: 0;
-    transition: opacity 0.12s; pointer-events: none;
-    background: radial-gradient(ellipse 50% 50% at 50% 50%, #b8892a99 0%, #b8892a55 45%, #b8892a00 100%); }
-  .menuBtn .n { position: relative; font-size: 19px; letter-spacing: 0.5px; line-height: 1.2; }
+  .menuBtn { position: relative; flex: none; }   /* the row's look is .ui-row's (js/ui-theme.js) */
+  .menuBtn .n { flex: 1; min-width: 0; }
   .menuBtn .d { display: none; }
-  .menuBtn:hover, .menuBtn.sel { color: #fff; }
-  /* adjustable options: arrows either side of the line, brighter on the selected one */
-  .menuBtn.adj { display: flex; align-items: center; justify-content: center; gap: 18px; }
-  .menuBtn.adj .n { order: 1; } .menuBtn .al { order: 0; } .menuBtn .ar { order: 2; }
-  .menuBtn .al, .menuBtn .ar { position: relative; font-size: 22px; line-height: 1; color: #c9a85e; opacity: 0.35; padding: 0 6px; cursor: pointer; transition: opacity 0.12s; }
-  .menuBtn.sel .al, .menuBtn.sel .ar, .menuBtn:hover .al, .menuBtn:hover .ar { opacity: 1; }
-  .menuBtn.sel::before { opacity: 1; }
-  .menuBtn:focus-visible .n { text-decoration: underline; text-decoration-color: #c9a85e; text-underline-offset: 5px; }
-  #menuDesc { flex: none; max-width: min(640px, 90vw); min-height: 3em; margin-top: 12px; text-align: center; font-size: 13px; line-height: 1.5; letter-spacing: 0.5px; color: #b2aa98; }
-  #menuBox .hint { position: absolute; left: 5vw; right: 5vw; bottom: max(28px, 4vh); margin: 0; text-align: center; font-size: 12px; line-height: 1.6; letter-spacing: 1px; color: #a39b88; }
-  #menuBox .notice { flex-shrink: 1; min-height: 0; max-height: 25vh; overflow-y: auto; margin-top: 8vh; text-align: center; font-size: 17px; line-height: 1.8; letter-spacing: 1px; color: #bdb9ad; white-space: pre-line; }
-  #menuBox .notice:empty { display: none; }
-  @media (max-height: 650px) {
-    #menu #menuBox, #menu.overlay #menuBox, #menu.story-menu #menuBox { padding-top: 5vh; padding-bottom: 84px; }
-    #menu #menuBox h1 { font-size: clamp(24px, 8vh, 46px); }
-    #menuBox .sub { font-size: 12px; letter-spacing: 2px; line-height: 1.5; }
-    .menuArrow { margin-top: 14px; }
-    #menuBox .notice { margin-top: 16px; font-size: 14px; }
-    #menuDesc { margin-top: 8px; font-size: 12px; max-height: 4.5em; overflow-y: auto; }
-    #menuBox .hint { font-size: 11px; bottom: 28px; }
+  .menuBtn.unavailable { color: var(--ui-muted); opacity: .55; cursor: default; }
+  #menu .ui-row.sel { outline: 1px solid var(--ui-accent); outline-offset: -1px; color: var(--ui-ink); }
+  #menu .ui-row.sel:not([aria-pressed=true]) { background: #d9b56b24; }
+  #menu .ui-primary.sel { outline: 2px solid var(--ui-ink); outline-offset: 3px; }
+  #menu .ui-text-button.sel { color: var(--ui-ink); outline: 1px solid var(--ui-accent); outline-offset: -1px; background: #d9b56b24; }
+  #menuDesc { grid-area: desc; align-self: start; min-height: 0; max-height: 100%; margin-top: 40px; overflow-y: auto;
+    font: 400 var(--ui-size-text)/1.6 var(--ui-text); color: #cfc8b6; text-wrap: pretty; }
+  #menuSide { grid-area: side; min-width: 0; }
+  #menuSide:empty { display: none; }
+  #menuFoot { position: absolute; left: 64px; right: 64px; bottom: 24px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px 24px; padding-top: 12px; border-top: 1px solid var(--ui-line); }
+  #menuFootActions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: -10px; }
+  #menuBox #menuHint { margin: 0 0 0 auto; font: 400 var(--ui-size-hint)/1.4 var(--ui-text); color: var(--ui-muted); }
+  /* Pause: the rows and the selected one's note on the left, the run's state on the right. */
+  #menu.pause-menu #menuBox { grid-template-columns: minmax(0, 360px) minmax(0, 420px); column-gap: 136px; grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    grid-template-areas: "title side" "sub side" "notice side" "list side" "desc side"; }
+  #menu.pause-menu #menuDesc { margin-top: 16px; color: var(--ui-muted); }
+  #menu.pause-menu #menuSide { margin-top: 14px; }
+  .menu-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 28px; margin: 0; font: 400 var(--ui-size-text)/1.35 var(--ui-text);
+    color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+  .menu-facts dt { margin: 0; } .menu-facts dd { margin: 0; color: var(--ui-ink); overflow-wrap: anywhere; } .menu-facts dd span { color: var(--ui-muted); }
+  .menu-facts .over { color: var(--ui-alarm); }
+  .menu-side-note { margin: 22px 0 0; font: 400 var(--ui-size-text)/1.5 var(--ui-text); color: var(--ui-muted); }
+  /* Options: categories as rows on the left, the chosen one's settings as rows on the right, each with the control that
+     fits it (a value cycled in place, a slider with its number, an Off/On pair), and the focused one's help under them. */
+  #menu.options-menu #menuBox { grid-template-columns: minmax(0, 240px) minmax(0, 640px); column-gap: 72px; grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    grid-template-areas: "title title" "sub sub" "notice notice" "list side" "list desc"; }
+  #menu.options-menu #menuSide { margin-top: 32px; border-top: 1px solid var(--ui-line); }
+  #menu.options-menu #menuDesc { margin-top: 14px; padding-left: 16px; color: var(--ui-muted); }
+  .menuBtn.setting { justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--ui-line); font-size: 18px; }
+  .menuBtn.setting[hidden] { display: none; }
+  .menuBtn .v { flex: none; display: flex; align-items: center; width: 240px; font: 500 var(--ui-size-text)/1 var(--ui-text); color: var(--ui-ink); }
+  .menuBtn .v.cyc { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; min-height: 42px; border: 1px solid var(--ui-line); background: var(--ui-well);
+    font: 400 17px/1 var(--ui-display); text-align: center; }
+  .menuBtn .v.cyc > span { display: grid; place-items: center; min-width: 0; height: 100%; }
+  .menuBtn .v.cyc .al, .menuBtn .v.cyc .ar { color: var(--ui-accent); font: 18px/1 var(--ui-text); }
+  .menuBtn .v.cyc .al:hover, .menuBtn .v.cyc .ar:hover { background: var(--ui-hover); color: var(--ui-accent-hi); }
+  .menuBtn .v.seg > span { flex: 1; display: grid; place-items: center; height: 42px; border: 1px solid var(--ui-line); color: var(--ui-muted); }
+  .menuBtn .v.seg > span + span { border-left: 0; }
+  .menuBtn .v.seg > span.on { background: var(--ui-accent-wash); border-color: var(--ui-accent); color: var(--ui-accent-hi); }
+  .menuBtn .v.seg > span:not(.on):hover { color: var(--ui-ink); background: var(--ui-hover); }
+  .menuBtn .v.slide { gap: 14px; }
+  .menuBtn .v.slide .track { position: relative; flex: 1; height: 24px; }
+  .menuBtn .v.slide .track::before { content: ''; position: absolute; left: 0; right: 0; top: 10px; height: 4px; background: var(--ui-line); }
+  .menuBtn .v.slide .track i { position: absolute; left: 0; top: 10px; height: 4px; background: var(--ui-accent); }
+  .menuBtn .v.slide .track b { position: absolute; top: 4px; width: 14px; height: 16px; margin-left: -7px; background: var(--ui-ink); }
+  .menuBtn .v.slide .num { width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {   /* a phone upright: one column, the note and the side panel under the rows */
+    #menuBox, #menu.pause-menu #menuBox, #menu.options-menu #menuBox { padding: 40px 20px 150px; grid-template-columns: minmax(0, 1fr); column-gap: 0;
+      grid-template-rows: auto auto auto minmax(0, max-content) auto; grid-template-areas: "title" "sub" "notice" "list" "desc"; }
+    #menu.pause-menu #menuBox { grid-template-rows: auto auto auto auto auto auto; grid-template-areas: "title" "sub" "notice" "list" "desc" "side"; }
+    #menu.options-menu #menuBox { grid-template-rows: auto auto auto auto auto auto; grid-template-areas: "title" "sub" "notice" "list" "side" "desc"; overflow-y: auto; }
+    #menuBox h1 { font-size: 32px; }
+    #menuList { margin-top: 22px; max-height: calc(100% - 22px); }
+    #menuDesc { margin-top: 16px; max-height: 7.5em; }
+    #menu.pause-menu #menuSide { margin-top: 28px; }
+    #menu.options-menu #menuList { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 4px; max-height: none; }
+    #menu.options-menu #menuList .ui-row { width: auto; padding: 0 10px 0 9px; font-size: 16px; }
+    #menu.options-menu #menuSide { margin-top: 18px; }
+    #menu.options-menu #menuDesc { padding-left: 0; }
+    .menuBtn.setting { gap: 10px; font-size: 16px; padding-right: 8px; }
+    .menuBtn .v { width: min(180px, 52%); }
+    #menuFoot { left: 20px; right: 20px; bottom: max(28px, env(safe-area-inset-bottom)); }
+  }
+  @media (max-height: 500px) and (min-width: 560px) {   /* a phone on its side: tighter edges and type */
+    #menuBox { padding: 18px 32px 80px; column-gap: 48px; }
+    #menu.pause-menu #menuBox, #menu.options-menu #menuBox { column-gap: 48px; }
+    #menuBox h1 { font-size: 28px; }
+    #menuList, #menu.options-menu #menuSide { margin-top: 14px; }
+    #menuList { max-height: calc(100% - 14px); }
+    #menuBox .notice { max-height: 22vh; margin-top: 10px; }
+    #menuDesc { margin-top: 20px; }
+    #menuList .ui-row { min-height: 38px; }
+    .menuBtn.setting { min-height: 46px; }
+    #menuFoot { left: 32px; right: 32px; bottom: 10px; padding-top: 6px; }
+  }
+  @media (hover: none) and (pointer: coarse) {   /* a touch screen has no keys to hint */
+    #menu:not(.title-menu) #menuHint, #menu .menu-back .ui-key { display: none; }
+    #menuList .ui-row { min-height: 44px; }   /* a finger's size, a phone on its side included */
   }
 
   /* The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the name top-left, the modes as rows under it, the
@@ -95,7 +136,6 @@
   #menu.title-menu #menuDesc { grid-area: desc; max-width: none; min-height: 1.5em; margin-top: 14px; text-align: left;
     font: 400 var(--ui-size-text)/1.5 var(--ui-text); letter-spacing: 0; color: var(--ui-muted); }
   #menuAct:empty, #menuFootActions:empty { display: none; }
-  #menuFoot { display: contents; }
   #menu.title-menu #menuAct { grid-area: act; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 18px; }
   #menu.title-menu #menuAct [hidden] { display: none; }
   #menu.title-menu .title-mode { min-height: 46px; }
@@ -103,13 +143,6 @@
   #menu.title-menu .title-primary { justify-content: space-between; }
   #menu.title-menu .title-second { margin-left: -10px; }
   #menu.title-menu .title-update { color: var(--ui-accent-hi); }
-  #menu.title-menu .ui-row.sel { outline: 1px solid var(--ui-accent); outline-offset: -1px; color: var(--ui-ink); }
-  #menu.title-menu .ui-row.sel:not([aria-pressed=true]) { background: #d9b56b24; }
-  #menu.title-menu .ui-primary.sel { outline: 2px solid var(--ui-ink); outline-offset: 3px; }
-  #menu.title-menu .ui-text-button.sel { color: var(--ui-ink); outline: 1px solid var(--ui-accent); outline-offset: -1px; background: #d9b56b24; }
-  #menu.title-menu #menuFoot { position: absolute; left: 64px; right: 64px; bottom: 24px; display: flex; align-items: center;
-    justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding-top: 12px; border-top: 1px solid var(--ui-line); }
-  #menuFootActions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: -10px; }
   #menu.title-menu #menuBox #menuHint { position: static; margin: 0; text-align: left; font: 400 var(--ui-size-hint)/1.4 var(--ui-text); letter-spacing: 0; color: var(--ui-muted); }
   @media (max-width: 640px) {   /* a phone upright: tighter edges, a smaller name, the footer's two halves stacked */
     #menu.title-menu #menuBox { padding: 48px 20px 170px; }
@@ -135,7 +168,6 @@
   .menuBtn.update .n::before { content: ''; display: inline-block; width: 7px; height: 7px; margin: 0 10px 2px 0; border-radius: 50%;
     vertical-align: middle; background: #ff7a45; box-shadow: 0 0 8px 1px #ff5a2a99; }
   .menuBtn.update.sel .n, .menuBtn.update:hover .n { color: #ffe2b0; }
-  #menuList:has(.menuBtn.update) { max-height: 230px; }
 
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
   body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
@@ -386,14 +418,10 @@
   #lesson.still, #lesson.still.show.enter, #lesson.still .lesson-seal { animation: none; transform: none; }
   #hud.narrow #lesson { padding: 11px 18px 13px; }
   #hud.narrow #lessonText { font-size: 14px; }
-  #menu.story-menu #menuBox { padding-top: 7vh; }
-  #menu.story-menu h1 { font-size: clamp(34px, 6vw, 70px); }
-  #menu.story-menu .sub { letter-spacing: 1px; }
-  #menu.story-menu #menuList { max-height: none; min-height: 0; flex-shrink: 1; padding-top: 30px; mask-image: none; -webkit-mask-image: none; }
   #menu.story-menu .campaign-start { margin-top: 34px; }
-  #menu.story-menu .campaign-start:first-child { margin-top: 0; }
-  #menu.story-menu .campaign-start::after { content: attr(data-group); position: absolute; left: 0; right: 0; bottom: 100%;
-    font-size: 14px; letter-spacing: 2px; color: #c9b26a; padding-bottom: 7px; pointer-events: none; }
+  #menu.story-menu .campaign-start:first-child { margin-top: 26px; }
+  #menu.story-menu .campaign-start::after { content: attr(data-group); position: absolute; left: 16px; bottom: 100%; padding-bottom: 6px;
+    font: 500 var(--ui-size-hint)/1.4 var(--ui-text); color: var(--ui-muted); pointer-events: none; }
   #rested { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; letter-spacing: 10px;
     color: #e0b060; text-shadow: 0 0 18px #000; opacity: 0; transition: opacity 0.8s; }
   #rested.show { opacity: 1; transition: opacity 0.4s; }
@@ -408,17 +436,12 @@
   #hud.narrow #complete .big { font-size: 34px; letter-spacing: 6px; }
   #hud.narrow #won .big, #hud.narrow #rested { font-size: 26px; letter-spacing: 6px; }
   /* Boss team builder: two rosters, with shared start/back actions below them. */
-  #menu.boss-team-menu #menuBox { padding-top: 7vh; }
-  #menu.boss-team-menu h1 { font-size: clamp(28px, 6vw, 70px); }
-  #menu.boss-team-menu .sub { letter-spacing: 2px; font-size: 12px; }
-  #menu.boss-team-menu #menuList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch; gap: 3px 18px; max-width: 880px; max-height: none; flex-shrink: 1;
-    mask-image: none; -webkit-mask-image: none; padding: 10px 0; }
-  #menu.boss-team-menu .menuBtn { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #ffffff12; background: #ffffff04; }
-  #menu.boss-team-menu .menuBtn .n { font-size: clamp(13px, 1.7vw, 18px); overflow-wrap: anywhere; }
-  #menu.boss-team-menu .menuBtn::before { width: 100%; left: 0; margin-left: 0; }
-  #menu.boss-team-menu [data-team="a"] { grid-column: 1; color: #80c9ed; }
-  #menu.boss-team-menu [data-team="b"] { grid-column: 2; color: #efab7b; }
+  #menu.boss-team-menu #menuBox { grid-template-columns: minmax(0, 880px); grid-template-rows: auto auto auto minmax(0, max-content) auto;
+    grid-template-areas: "title" "sub" "notice" "list" "desc"; }
+  #menu.boss-team-menu #menuList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 2px 32px; }
+  #menu.boss-team-menu #menuDesc { margin-top: 16px; color: var(--ui-muted); }
+  #menu.boss-team-menu [data-team="a"] { grid-column: 1; color: #8fc4e6; }
+  #menu.boss-team-menu [data-team="b"] { grid-column: 2; color: #eaa97a; }
   #menu.boss-team-menu .menuBtn:not([data-team]) { grid-column: 1 / -1; }
   .menuBtn.unavailable { opacity: 0.5; cursor: default; }
   #hud.boss-battle #stage { display: none; }
@@ -438,8 +461,7 @@
   .eTag[data-team="b"] .hp { background: #efab7b; }
   .eTag[data-team="a"]::after, .eTag[data-team="b"]::after { content: attr(data-name); position: absolute;
     bottom: 10px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #fff; text-shadow: 0 1px 3px #000; }
-  @media (max-height: 650px) { #menu.boss-team-menu #menuBox { padding-top: 3vh; padding-bottom: 80px; }
-    #menu.boss-team-menu .menuBtn { padding: 6px; min-height: 30px; }
+  @media (max-height: 650px) {
     #hud.boss-battle #bossBattleHud { top: 10px; } #bossBattleHud section { padding: 6px; }
     #bossBattleHud h2 { margin-bottom: 6px; } .battle-health { margin-top: 5px; } }
   @media (prefers-reduced-motion: reduce) {
@@ -547,6 +569,7 @@
     <div id="menuList" aria-label="Game menu"></div>
     <div class="menuArrow down" id="menuDown"></div>
     <div id="menuDesc"></div>
+    <div id="menuSide"></div>
     <div id="menuAct"></div>
     <div id="menuFoot"><div id="menuFootActions"></div><div class="hint" id="menuHint"></div></div>
   </div>

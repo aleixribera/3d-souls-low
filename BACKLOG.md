@@ -7,6 +7,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   the mode list (nothing to collect yet) and Controls in the footer (no Controls screen yet; Options has the lessons).
   The `story` screen is no longer reached from the title (Story starts the road last played; New game asks first); a
   second road would need its own way in.
+- The menus' missing parts (pass 51, `docs/scorecard/menus-*.jpg`): pause has no Controls row (no Controls screen
+  yet) and shows blessings as names, not icons (the icons come with the upgrades session); the end of run has no
+  Crowned count, no "Your best run" (no record kept yet) and no rewards column (no crates yet), so the per-boss times
+  take the right side. A gamepad-only walk of every screen (PLAN.md item 3's check) is still to write: the keys and
+  pad share `Game.menuStep`, and `experience-browser` walks Options by keys.
 - The blessing pick in tall cards (rarity, drawn icons, level I → II, pad keys, phone 2×2) is built and tested on
   `wip/blessing-tall-cards` (pass 49), parked when the pick moved to the upgrades-from-zero session (PLAN.md item 6).
 

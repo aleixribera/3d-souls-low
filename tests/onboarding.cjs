@@ -46,7 +46,7 @@ const server = http.createServer((req, res) => {
       document.getElementById('loading').classList.remove('show');
     });
     const labels = await page.locator('#menuList .n').allTextContents();
-    assert.deepEqual(labels, ['Continue', 'New', 'Back']);
+    assert.deepEqual(labels, ['Continue', 'New']);
     for (const [width, height] of [[1280, 720], [800, 600], [640, 480]]) {
       await page.setViewportSize({ width, height });
       const boxes = await page.locator('#menuList .menuBtn').evaluateAll(btns => btns.map(b => {

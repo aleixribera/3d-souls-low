@@ -7,22 +7,21 @@
 Object.assign(Game, {
   // ---- menus -----------------------------------------------------------------------------------
   screens() {
-    const onOff = v => v ? 'On' : 'Off';
     const S = story.screens(this);
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     const pauseItems = online ? [
-        { name: 'Resume', desc: 'The online world keeps running while menus are open.', go: () => this.resume() },
-        { name: 'Lobby', desc: 'Players, the mode and the leader\'s controls.', go: () => multiplayer.show() },
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Lobby', desc: 'The players, and the leader\'s controls.', go: () => multiplayer.show() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
       ] : this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
-        { name: 'Quit to main menu', desc: 'Saves first. Continue returns you to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
+        { name: 'Quit to title', desc: 'Saves first. Continue brings you back to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
-        { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
+        { name: this.kind === 'level' ? 'Leave the level' : this.kind === 'bossBattle' ? 'Leave the battle' : 'Leave the fight', desc: '', cue: 'menuBack', go: () => {
           // Back to the Practice list the fight was started from.
           const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? this.practiceFromGroup ? 'practiceGroup'
             : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? 'practiceLevels' : 'main';
@@ -40,6 +39,7 @@ Object.assign(Game, {
       if (group.length < P.maxGroup) group.push(d.id);
       this.practiceAdding = false; this.showMenu('practiceGroup');
     } });
+    const options = this.optionsItems();
     const pickBack = { name: 'Back', desc: '', cue: 'menuBack', go: () => { this.practiceAdding = false; this.showMenu(adding ? 'practiceGroup' : 'practice'); } };
     return {
       ...S.screens, ...bossBattle.screens(this),
@@ -58,28 +58,29 @@ Object.assign(Game, {
         ...(DEV ? [{ name: 'Test Grounds', size: 'foot', go: () => this.showMenu('tests') }] : []),
         ...(update('title') ? [update('title')] : []),
       ] },
-      tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
+      tests: { title: 'Test grounds', back: 'main',
         items: [...S.devItems, ...finale.devItems(), ...lore.devItems(),   // the story's jumps live here, off the title
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
-                ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
-      changelog: { title: 'COMBAT ARENA 3D', sub: 'CHANGELOG', back: 'main', items: [   // js/data/changelog.js, newest first
+                ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) })),
+                { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      changelog: { title: 'Changelog', back: 'main', items: [   // js/data/changelog.js, newest first
         ...CHANGELOG.map(c => ({ name: `${c.version}  ·  ${c.title}`, desc: c.text })),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Practice: any enemy, boss or level, fighting within two picks. It replaced the 1v1 Arena and the Levels menu.
-      practice: { title: 'PRACTICE', sub: '', back: 'main', items: [
+      practice: { title: 'Practice', back: 'main', items: [
         { name: 'Fight a boss', desc: 'Any boss of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceBosses'); } },
         { name: 'Fight an enemy', desc: 'Any common foe of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceEnemies'); } },
-        { name: 'Fight several at once', desc: `Choose up to ${P.maxGroup} enemies and bosses, then fight them all together.`, go: () => this.showMenu('practiceGroup') },
-        { name: 'Boss vs Boss', desc: 'Build two teams of up to six bosses and watch them battle.', go: () => this.showMenu('bossBattle') },
+        { name: 'Fight several at once', desc: `Up to ${P.maxGroup} enemies and bosses, all against you together.`, go: () => this.showMenu('practiceGroup') },
+        { name: 'Boss vs Boss', desc: 'Two teams of up to six bosses fight each other while you watch.', go: () => this.showMenu('bossBattle') },
         { name: 'Play a level', desc: 'Any level of the story, on its own.', go: () => this.showMenu('practiceLevels') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Each list is titled by what it does; the only line under a title is the group's live count.
-      practiceBosses: { title: adding ? 'ADD A BOSS' : 'FIGHT A BOSS', sub: adding ? `${group.length} / ${P.maxGroup}` : '', back: adding ? 'practiceGroup' : 'practice',
+      practiceBosses: { title: adding ? 'Add a boss' : 'Fight a boss', sub: adding ? `${group.length} / ${P.maxGroup} in the group` : '', back: adding ? 'practiceGroup' : 'practice',
         items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), pickBack] },
-      practiceEnemies: { title: adding ? 'ADD AN ENEMY' : 'FIGHT AN ENEMY', sub: adding ? `${group.length} / ${P.maxGroup}` : '', back: adding ? 'practiceGroup' : 'practice',
+      practiceEnemies: { title: adding ? 'Add an enemy' : 'Fight an enemy', sub: adding ? `${group.length} / ${P.maxGroup} in the group` : '', back: adding ? 'practiceGroup' : 'practice',
         items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), pickBack] },
       // Opens on Fight once the group has someone in it, else on adding a boss.
-      practiceGroup: { title: 'SEVERAL AT ONCE', sub: `${group.length} / ${P.maxGroup}`, back: 'practice', focus: group.length ? group.length + 2 : 0, items: [
+      practiceGroup: { title: 'Several at once', sub: `${group.length} / ${P.maxGroup}`, back: 'practice', focus: group.length ? group.length + 2 : 0, items: [
         ...group.map((id, i) => ({ name: `${ENEMY_BY_ID[id].name}  ×`, label: `Remove ${ENEMY_BY_ID[id].name}`, desc: 'Remove from the group.',
           go: () => { group.splice(i, 1); this.showMenu('practiceGroup', true); } })),
         ...[['Add a boss', 'practiceBosses'], ['Add an enemy', 'practiceEnemies']].map(([name, screen]) => ({ name: `+ ${name}`, disabled: group.length >= P.maxGroup,
@@ -88,29 +89,50 @@ Object.assign(Game, {
         { name: 'Fight', disabled: !group.length, desc: group.length > 1 ? `Fight all ${group.length} at once.` : group.length ? 'Fight it alone, or add more first.' : 'Add at least one enemy or boss.',
           go: () => { const [first, ...rest] = group; this.practiceFromGroup = true; this.loadingFirst(...this.duelCard(first, rest), () => this.startFight(first, rest)); } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
-      practiceLevels: { title: 'PLAY A LEVEL', sub: '', back: 'practice', items: [...LEVELS.map(levelItem),
+      practiceLevels: { title: 'Play a level', back: 'practice', items: [...LEVELS.map(levelItem),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
-      pause: { title: online ? 'ONLINE' : 'PAUSED', sub: online ? 'THE WORLD KEEPS RUNNING' : '', overlay: true, items: pauseItems },
-      options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
-        { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Camera swing and shake from attacks, rolls, impacts and collapsing floors. Turn off for a steadier view.',
-          adjust: () => { settings.cameraMotion = settings.cameraMotion === false; } },
-        { name: `Lessons: ${onOff(settings.lessons !== false)}`, desc: 'Cards that teach the controls the first time a level needs them. Each shows once, until you have done it.',
-          adjust: () => { settings.lessons = settings.lessons === false; } },
-        { name: 'Show lessons again', desc: 'Forget which lessons you have learned, so every card shows again.',
-          go: () => { lessons.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
-        { name: `Graphics: ${autoQuality.label(settings.graphics)}`, desc: 'Auto picks for this machine. Ultra: real shadows, volumetric light, full effects. High: bloom, light shafts. Low: integrated graphics.',
-          adjust: d => {
-            const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
-            settings.graphics = c[(i + d + c.length) % c.length];
-            if (settings.graphics === 'auto') autoQuality.recheck();
-          } },
-        { name: 'Check graphics again', desc: autoQuality.summary(),
-          go: () => {
-            settings.graphics = 'auto'; autoQuality.recheck(); saveSettings(); applySettings(); this.showMenu('options', true);
-          } },
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause') },
-      ] },
+      // Pause (the mockups' "Pause"): its rows on the left, what the run or the fight stands at on the right
+      // (pauseFacts). Online the world goes on, so the screen is named for the run instead of "Paused".
+      pause: { title: online ? multiplayer.rush ? 'Boss Rush' : 'Online' : 'Paused', layout: 'pause', overlay: true, items: pauseItems },
+      // Options (the mockups' "Options"): categories on the left, the chosen one's settings beside them (optionsItems).
+      options: { title: 'Options', layout: 'options', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby',
+        back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: options,
+        focus: Math.max(0, options.findIndex(it => it.size === 'cat' && it.cat === this.optionsCategory)) },
     };
+  },
+  // Options' entries. A setting's `kind` is its control: 'toggle' (Off/On), 'cycle' (‹ value ›) or 'slider' (`min`..`max`
+  // with its number); a setting without one is an action. Its `desc` is the help line, only where it tells you something.
+  optionsItems() {
+    const toggle = (cat, name, key, desc, on = v => v !== false) => ({ size: 'set', cat, name, kind: 'toggle', value: on(settings[key]), desc,
+      adjust: d => { settings[key] = d ? d > 0 : !on(settings[key]); } });   // left is Off, right is On, Enter flips
+    const slider = (cat, name, key, min, max, desc) => ({ size: 'set', cat, name, kind: 'slider', value: settings[key], min, max, desc,
+      adjust: d => { settings[key] = clamp(Math.round(Number(settings[key])) + d, min, max); } });
+    const back = this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause';
+    return [
+      ...[['game', 'Game'], ['camera', 'Camera'], ['graphics', 'Graphics'], ['sound', 'Sound']].map(([cat, name]) => ({ size: 'cat', cat, name, desc: '',
+        go: () => { this.chooseCategory(cat); this.select(this.menuItems.findIndex(it => it.size === 'set' && it.cat === cat)); } })),
+      toggle('game', 'Lessons', 'lessons', 'Cards that teach the controls the first time a level needs them.'),
+      { size: 'set', cat: 'game', name: 'Show lessons again', desc: 'Forget which lessons you have learned, so every card shows again.',
+        go: () => { lessons.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
+      toggle('camera', 'Camera motion', 'cameraMotion', 'Swing and shake from attacks, rolls and impacts. Off for a steadier view.'),
+      slider('camera', 'Camera speed', 'sensitivity', 1, 10, 'How fast the mouse and the right stick turn the camera.'),
+      toggle('camera', 'Invert camera', 'invert', '', v => v === true),
+      { size: 'set', cat: 'graphics', name: 'Quality', kind: 'cycle', value: autoQuality.label(settings.graphics),
+        desc: 'Auto picks for this machine. Ultra adds real shadows and volumetric light; Low suits integrated graphics.',
+        adjust: d => {
+          const c = autoQuality.choices(), i = Math.max(0, c.indexOf(settings.graphics));
+          settings.graphics = c[(i + d + c.length) % c.length];
+          if (settings.graphics === 'auto') autoQuality.recheck();
+        } },
+      { size: 'set', cat: 'graphics', name: 'Check graphics again', desc: autoQuality.summary(),
+        go: () => { settings.graphics = 'auto'; autoQuality.recheck(); saveSettings(); applySettings(); this.showMenu('options', true); } },
+      slider('sound', 'Volume', 'volume', 0, 10, ''),
+      { name: 'Reset to defaults', size: 'foot', desc: '', go: () => {
+        const graphics = settings.graphics;   // the quality stays: changing it rebuilds the shaders, and Auto already chose it
+        Object.assign(settings, readSettings(null), { graphics }); saveSettings(); applySettings(); this.showMenu('options', true);
+      } },
+      { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(back) },
+    ];
   },
   // The title's Boss Rush line: what the public lobby looks like from here (multiplayer.lobby).
   titleLobby() {
@@ -162,31 +184,37 @@ Object.assign(Game, {
     } else this.mode = 'pause';
     this.screen = screen; this.clearControls(); this.setLock(null);
     if (document.pointerLockElement) document.exitPointerLock();
-    $('menu').classList.toggle('title-menu', s.layout === 'title');
-    $('menu').classList.toggle('still', reducedMotion());
-    $('menu').classList.toggle('story-menu', screen === 'story');
-    $('menu').classList.toggle('boss-team-menu', screen === 'bossBattle');
-    $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
-    hud.root.classList.toggle('hidden', !inGame);
-    $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
-    for (const id of ['menuList', 'menuAct', 'menuFootActions']) $(id).textContent = '';
+    const layout = s.layout || 'list', title = layout === 'title', menu = $('menu');
+    menu.classList.toggle('title-menu', title);
+    menu.classList.toggle('pause-menu', layout === 'pause');
+    menu.classList.toggle('options-menu', layout === 'options');
+    menu.classList.toggle('still', reducedMotion());
+    menu.classList.toggle('story-menu', screen === 'story');
+    menu.classList.toggle('boss-team-menu', screen === 'bossBattle');
+    menu.classList.remove('hidden'); menu.classList.toggle('overlay', !!s.overlay);
+    hud.root.classList.add('hidden');   // in a game, pause and options veil the held frame without the HUD (resume brings it back)
+    $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub || ''; $('menuNotice').textContent = s.notice || '';
+    for (const id of ['menuList', 'menuAct', 'menuFootActions', 'menuSide']) $(id).textContent = '';
     this.menuItems = s.items;   // what select() and adjust() read, so a key press never rebuilds every screen
-    this.menuButtons = [];      // every button in item order, wherever it sits (the title spreads them over three places)
-    const title = s.layout === 'title';
+    this.menuButtons = [];      // every button in item order, wherever it sits (the title and Options spread them out)
+    this.menuLayout = layout; this.lastColumn = 'list';
     // The title's pieces take the shared UI pieces (js/ui-theme.js): modes are rows, the primary starts the chosen one,
-    // the rest are quiet text buttons in the footer.
+    // the rest are quiet text buttons in the footer. Every other screen: entries are rows, Back is a footer button with
+    // its key, and Options' settings are rows beside their categories, each with its control.
     const titleClass = { mode: 'title-mode ui-row', primary: 'title-primary ui-primary', second: 'title-second ui-text-button',
       foot: 'title-foot ui-text-button', update: 'title-foot title-update ui-text-button' };
     s.items.forEach((it, i) => {
-      const b = document.createElement('button');
+      const b = document.createElement('button'), at = this.itemPlace(it);
       b.type = 'button';
-      if (!title || it.size === 'mode' || it.desc) b.setAttribute('aria-describedby', 'menuDesc');
-      b.className = title ? titleClass[it.size] : 'menuBtn' + (it.adjust ? ' adj' : '') + (it.size ? ` ${it.size}` : '');
-      b.innerHTML = title ? '<span class="n"></span>' : `<div class="n"></div><div class="d"></div>`;
-      b.children[0].textContent = it.name; if (!title) b.children[1].textContent = it.desc;
+      if (title ? it.size === 'mode' || it.desc : at !== 'foot') b.setAttribute('aria-describedby', 'menuDesc');
+      b.className = title ? titleClass[it.size] : at === 'foot' ? 'ui-text-button' + (this.isBackItem(it) ? ' menu-back' : '')
+        : 'menuBtn ui-row' + (it.size === 'set' ? ' setting' : '') + (it.size ? ` ${it.size}` : '');
+      b.innerHTML = '<span class="n"></span>';
       if (title && it.size === 'primary') { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.appendChild(key); }
+      if (!title && this.isBackItem(it)) { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.prepend(key); }
+      if (it.kind) b.appendChild(this.menuControl(it, i));
+      if ((title && it.size === 'mode') || it.size === 'cat') b.setAttribute('aria-pressed', 'false');
       if (title && it.size === 'mode') {
-        b.setAttribute('aria-pressed', 'false');
         if (it.reachable === false && it.lobbyState !== 'checking') b.classList.add('offline');
         b.addEventListener('dblclick', () => { this.select(i); this.confirm(); });   // a double click starts the mode, as Enter does
       }
@@ -195,47 +223,129 @@ Object.assign(Game, {
       if (it.team) b.dataset.team = it.team;
       if (it.row) b.style.gridRow = it.row;
       if (it.disabled) { b.setAttribute('aria-disabled', 'true'); b.classList.add('unavailable'); }
+      this.fillRow(b, it);
       b.addEventListener('focus', () => this.select(i));
-      if (it.adjust) for (const [cls, d] of [['al', -1], ['ar', 1]]) {   // ‹ › : the setting can be stepped either way (clickable)
-        const a = document.createElement('span'); a.className = cls; a.textContent = d < 0 ? '‹' : '›';
-        a.addEventListener('click', ev => { ev.stopPropagation(); this.select(i); this.adjust(d); });
-        b.appendChild(a);
-      }
-      // A click on a title mode only chooses it, as in the lobby; every other button does its job.
-      b.addEventListener('click', () => { this.menuTouched = true; this.select(i); if (!title || it.size !== 'mode') this.confirm(); });
-      // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it, and on the
-      // title the pointer only points: it never changes the chosen mode.
+      // A click on a title mode or an Options category only chooses it; every other button does its job.
+      b.addEventListener('click', () => { this.menuTouched = true; this.select(i); if (!(title && it.size === 'mode') && it.size !== 'cat') this.confirm(); });
+      // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it, and the
+      // pointer only points: it never changes the title's chosen mode or the chosen category.
       b.addEventListener('mousemove', ev => {
         if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
         events.emit('menuMove'); this.menuTouched = true;
         this.hovering = true; try { this.select(i); } finally { this.hovering = false; }
       });
-      (!title || it.size === 'mode' ? list : $(it.size === 'primary' || it.size === 'second' ? 'menuAct' : 'menuFootActions')).appendChild(b);
+      (title ? it.size === 'mode' ? list : $(it.size === 'primary' || it.size === 'second' ? 'menuAct' : 'menuFootActions')
+        : at === 'foot' ? $('menuFootActions') : at === 'side' ? $('menuSide') : list).appendChild(b);
       this.menuButtons.push(b);
     });
+    if (layout === 'pause') { this.pauseKey = null; this.tickPause(); }
     this.showMenuHint();
     if (!keepSelection) this.menuTouched = false;
     if (title) this.chooseMode(keepSelection && this.titleMode != null ? this.titleMode : s.focus);   // a redraw keeps the chosen mode
+    if (layout === 'options') this.chooseCategory(this.optionsCategory);
     this.select(keepSelection ? this.selected : s.focus ?? Math.max(0, s.items.findIndex(it => !it.disabled)), true);
     if (screen === 'main' && typeof multiplayer !== 'undefined') multiplayer.peek();   // who is online right now
   },
-  // Key or button names follow the device used last, so this is redone when it changes.
-  showMenuHint() {
-    const screen = this.screen, own = this.screens()[screen].hint, hint = $('menuHint');
-    hint.classList.toggle('ui-hints', screen === 'main');
-    if (own) { hint.textContent = own; return; }
-    if (screen === 'main') {   // the title's footer: key caps for moving and choosing, then the version
-      const pad = usingPad(); hint.textContent = '';
-      for (const [key, label] of [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select'], ['', VERSION]]) {
-        const item = document.createElement('span'), cap = document.createElement('span');
-        cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hint.appendChild(item);
-      }
-      this.titleKeys();
-      return;
+  // Where an entry sits off the title: Back (and any `size: 'foot'` entry) in the footer, Options' settings beside their
+  // categories, everything else in the list.
+  isBackItem(it) { return it.name === 'Back' && it.cue === 'menuBack'; },
+  itemPlace(it) { return it.size === 'foot' || this.isBackItem(it) ? 'foot' : it.size === 'set' ? 'side' : 'list'; },
+  // An Options setting's control (its `kind`): an Off/On pair, a value cycled in place (‹ value ›) or a slider with its
+  // number. Each part takes a click; the keys and the pad change the focused setting with left and right.
+  menuControl(it, i) {
+    const v = document.createElement('span');
+    v.className = 'v ' + { toggle: 'seg', cycle: 'cyc', slider: 'slide' }[it.kind]; v.setAttribute('aria-hidden', 'true');
+    const cur = () => this.menuItems[i];
+    const part = (cls, text, fn) => {
+      const p = document.createElement('span'); p.className = cls; p.textContent = text; v.appendChild(p);
+      if (fn) p.addEventListener('click', ev => { ev.stopPropagation(); this.menuTouched = true; this.select(i); fn(ev); });
+      return p;
+    };
+    if (it.kind === 'toggle') { part('off', 'Off', () => { if (cur().value) this.adjust(-1); }); part('on-side', 'On', () => { if (!cur().value) this.adjust(1); }); }
+    else if (it.kind === 'cycle') { part('al', '‹', () => this.adjust(-1)); part('val', ''); part('ar', '›', () => this.adjust(1)); }
+    else {
+      const track = part('track', '', ev => {
+        const r = track.getBoundingClientRect(), x = cur(), f = clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
+        const want = Math.round(x.min + f * (x.max - x.min));
+        if (want !== x.value) this.adjust(want - x.value);
+      });
+      track.append(document.createElement('i'), document.createElement('b'));
+      part('num', '');
     }
-    hint.textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
-      (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
-      ` · ${menuLabel('back')} to go back`;
+    return v;
+  },
+  // An entry's name, and a setting's control showing its value.
+  fillRow(b, it) {
+    b.querySelector('.n').textContent = it.name;
+    const v = it.kind && b.querySelector('.v');
+    if (!v) return;
+    if (it.kind === 'toggle') { v.children[0].classList.toggle('on', !it.value); v.children[1].classList.toggle('on', !!it.value); }
+    else if (it.kind === 'cycle') v.children[1].textContent = it.value;
+    else {
+      const f = `${((it.value - it.min) / (it.max - it.min) * 100).toFixed(1)}%`;
+      v.querySelector('i').style.width = f; v.querySelector('b').style.left = f; v.querySelector('.num').textContent = it.value;
+    }
+    b.setAttribute('aria-label', `${it.name}: ${it.kind === 'toggle' ? it.value ? 'On' : 'Off' : it.value}`);
+  },
+  // Options' chosen category: its row is pressed and only its settings show.
+  chooseCategory(id) {
+    const items = this.menuItems || [], btns = this.menuButtons || [];
+    if (!items.some(it => it.size === 'cat' && it.cat === id)) id = (items.find(it => it.size === 'cat') || {}).cat;
+    this.optionsCategory = id;
+    items.forEach((it, k) => {
+      if (it.size === 'cat') btns[k].setAttribute('aria-pressed', String(it.cat === id));
+      else if (it.size === 'set') btns[k].hidden = it.cat !== id;
+    });
+  },
+  // Pause's right side: what the run, the level or the fight stands at. Online it is redrawn when a second turns over.
+  pauseFacts() {
+    const rows = [], mp = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer : null, r = mp && mp.rush;
+    const clock = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec) % 60).padStart(2, '0')}`;
+    if (r) rows.push(['Fight', String(r.fight)], ['Time', clock(r.clock), ` / par ${clock(r.par)}`, r.clock > r.par]);
+    else if (this.kind === 'level' && this.level) rows.push([this.story ? 'Chapter' : 'Level', this.level.name]);
+    else if (this.kind === 'arena' && this.duelId) rows.push(['Fighting', [this.duelId, ...(this.duelPartners || [])].map(id => ENEMY_BY_ID[id].name).join(', ')]);
+    if (mp) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);
+    const held = ((this.player && this.player.blessings) || []).map(id => BLESSING_BY_ID[id] && BLESSING_BY_ID[id].name).filter(Boolean);
+    if (held.length) rows.push(['Blessings', held.join(', ')]);
+    return { rows, note: mp ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
+  },
+  tickPause() {
+    if (this.screen !== 'pause' || this.mode !== 'pause') return;
+    const mp = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer : null, r = mp && mp.rush;
+    const key = (r ? r.fight * 1e5 + Math.floor(r.clock) : 0) + (mp ? mp.info.players.length * 1e9 : 0);   // a new second, or the party changed
+    if (key === this.pauseKey) return;
+    this.pauseKey = key;
+    const side = $('menuSide'), f = this.pauseFacts();
+    side.textContent = '';
+    if (f.rows.length) {
+      const dl = document.createElement('dl'); dl.className = 'menu-facts';
+      for (const [label, value, extra, over] of f.rows) {
+        const dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = label; dd.textContent = value;
+        if (extra) { const span = document.createElement('span'); span.textContent = extra; dd.appendChild(span); }
+        if (over) dd.classList.add('over');
+        dl.append(dt, dd);
+      }
+      side.appendChild(dl);
+    }
+    if (f.note) { const p = document.createElement('p'); p.className = 'menu-side-note'; p.textContent = f.note; side.appendChild(p); }
+  },
+  // The footer's keys follow the device used last, so this is redone when it changes: the hints on the right (with the
+  // version on the title and in pause) and the key on Back.
+  showMenuHint() {
+    const s = this.screens()[this.screen], hint = $('menuHint'), layout = s.layout || 'list', pad = usingPad();
+    for (const b of this.menuButtons || []) if (b.classList.contains('menu-back')) b.querySelector('.ui-key').textContent = pad ? 'B' : 'Esc';
+    hint.classList.add('ui-hints'); hint.textContent = '';
+    if (s.hint) { hint.textContent = s.hint; return; }
+    const keys = [[pad ? 'D-pad' : '↑ ↓', 'Move']];
+    if (layout === 'options') keys.push(['← →', 'Change']);
+    keys.push([pad ? 'A' : 'Enter', 'Select']);
+    if (layout === 'title' || layout === 'pause') keys.push(['', VERSION]);
+    for (const [key, label] of keys) {
+      const item = document.createElement('span'), cap = document.createElement('span');
+      cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hint.appendChild(item);
+    }
+    if (layout === 'title') this.titleKeys();
   },
   // The primary button shows the confirm key while it is what that key does: on the chosen mode or on the button itself.
   titleKeys() {
@@ -255,7 +365,7 @@ Object.assign(Game, {
       events.emit('menuMove'); this.select(to, true);
       return;
     }
-    if (this.screens()[this.screen].layout === 'title' && it) {
+    if (this.menuLayout === 'title' && it) {
       // Rows: each mode, the primary, New game (when shown), then the footer's entries together. Up and down go row
       // to row (wrapping); left and right go along the footer.
       const rows = [];
@@ -268,8 +378,26 @@ Object.assign(Game, {
       if (to !== this.selected) { events.emit('menuMove'); this.select(to, true); }
       return;
     }
-    if (dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1), true); }
-    else this.adjust(dir === 'left' ? -1 : 1);
+    // Every other screen has columns: the list, Options' settings beside it, and the footer as one row under both. Up
+    // and down go along a column and pass through the footer at either end; left and right change a setting, go
+    // between a category and its settings, or go along the footer.
+    const place = i => this.itemPlace(items[i]), column = p => items.map((_, i) => i).filter(i => shown(i) && place(i) === p);
+    const here = it ? place(this.selected) : 'list', col = column(here), k = col.indexOf(this.selected), foot = column('foot');
+    let to = this.selected;
+    if (dir === 'up' || dir === 'down') {
+      const d = dir === 'down' ? 1 : -1;
+      if (here === 'foot') { const back = column(this.lastColumn); if (back.length) to = back[d > 0 ? 0 : back.length - 1]; }
+      else if (col[k + d] != null) to = col[k + d];
+      else to = foot.length ? foot[0] : col[(k + d + col.length) % col.length];
+    } else {
+      const d = dir === 'left' ? -1 : 1;
+      if (here === 'foot') to = col[(k + d + col.length) % col.length];
+      else if (it && it.adjust) { if (!(it.kind === 'toggle' && (d > 0) === !!it.value)) this.adjust(d); return; }
+      else if (it && it.size === 'cat' && d > 0) { this.chooseCategory(it.cat); const set = column('side'); if (set.length) to = set[0]; }
+      else if (here === 'side' && d < 0) to = items.findIndex(x => x.size === 'cat' && x.cat === this.optionsCategory);
+    }
+    if (here !== 'foot') this.lastColumn = here;
+    if (to !== this.selected && to >= 0) { events.emit('menuMove'); this.select(to, true); }
   },
   select(i, focus = true) {
     const btns = this.menuButtons || [], n = btns.length, title = this.screen === 'main';
@@ -279,25 +407,28 @@ Object.assign(Game, {
     if (focus && cur && document.activeElement !== cur) cur.focus({ preventScroll: true });
     if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const it = (this.menuItems || [])[this.selected];
+    if (it && it.size === 'cat' && !this.hovering) this.chooseCategory(it.cat);
+    if (it && this.itemPlace(it) !== 'foot') this.lastColumn = this.itemPlace(it);
     if (title) { if (it && it.size === 'mode' && !this.hovering) this.chooseMode(this.selected); this.titleLine(); this.titleKeys(); }
     else $('menuDesc').textContent = it ? it.desc || '' : '';
-    $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
-  confirm() { const it = (this.menuItems || [])[this.selected]; if (!it || it.disabled) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
+  confirm() { const it = (this.menuItems || [])[this.selected]; if (!it || it.disabled) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(it.kind === 'toggle' ? 0 : 1); },
   adjust(d) {
     const it = this.menuItems[this.selected];
     if (!it || !it.adjust) return;
     it.adjust(d); saveSettings(); applySettings();
     events.emit('menuAdjust', { dir: d });
-    // Only the labels change: rewrite them in place (the list, its buttons and the selection stay).
+    // Only the values change: rewrite them in place (the list, its buttons and the selection stay).
     const items = this.screens()[this.screen].items, btns = this.menuButtons;
     this.menuItems = items;
-    items.forEach((x, i) => { if (btns[i]) btns[i].children[0].textContent = x.name; });
+    items.forEach((x, i) => { if (btns[i]) this.fillRow(btns[i], x); });
     $('menuDesc').textContent = items[this.selected] ? items[this.selected].desc || '' : '';
   },
+  // Esc or pad B: pause resumes; on an Options setting it goes back to its category first; elsewhere one screen back.
   menuBack() {
-    const s = this.screens()[this.screen];
+    const s = this.screens()[this.screen], it = (this.menuItems || [])[this.selected];
     if (this.screen === 'pause') this.resume();
+    else if (it && it.size === 'set') { events.emit('menuMove'); this.select(this.menuItems.findIndex(x => x.size === 'cat' && x.cat === this.optionsCategory), true); }
     else if (s.back) { events.emit('menuBack'); this.showMenu(s.back); }
   },
   // fromPointer: triggered by losing mouse capture rather than by the pause key.
