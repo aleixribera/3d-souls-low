@@ -13,11 +13,9 @@ Paused by Aleix, 2026-11-13 (resumes at 21:05 today).
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 41, "new version" item 1 done, v7.61.0): `js/version-check.js` reads `/api/lobby` (title peek, and
-  every `CONFIG.versionCheck.interval` s); a newer `version`/`build` puts "New version — Reload" last on the title and
-  in pause. Check: `tests/version-notice-browser.cjs` (older page vs server, reload, mid-fight, phone, no lobby);
-  frames `docs/scorecard/version-*.jpg`. Next: the plan's item 2 (updater docs), then Track B item 2, the UI redesign.
-  Item 1 (v7.60.0): Boss Rush is id `boss-rush`, kind `calling`; Practice is `practice*`, `CONFIG.practice`.
+- Track B (pass 43, v7.63.0): "new version" done. UI redesign pass 1: the lobby on `js/ui-theme.js`; checks
+  `tests/lobby-controller-browser.cjs`, `lobby-polish-browser.cjs`. Next: title, Practice, options, pause, HUD, Boss
+  Rush screens; a castle scene behind the menus. Boss Rush is id `boss-rush`, kind `calling`.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -69,7 +67,7 @@ Paused by Aleix, 2026-11-13 (resumes at 21:05 today).
 
 ## Queued runs
 
-CI and the container of v7.61.0 (pushes cancel each other's CI: look at the newest finished run). Probes
+CI and the container of v7.63.0 (pushes cancel each other's CI: look at the newest finished run). Probes
 (untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
@@ -82,6 +80,8 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
+- (overridable) The shared UI look (v7.63.0 lobby, `docs/scorecard/lobby-v2/`): Apex's mode list over one Start,
+  Valorant's party column, Destiny 2's device hints. Right before the title follows?
 - (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
