@@ -15,3 +15,6 @@ took it (once taken).
   the genre. Covers the per-player group scaling (v7.35.0, +50% health per extra player) and the health the loop picked
   for the new story bosses (Ostrey, the castellans, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's
   Blade).
+- 2026-11-13, correction to the boss health complaint above: withdrawn. The normal (non-Elden Ring) bosses' health,
+  group scaling included, is right: keep it as it is. Only the Elden Ring bosses felt too tanky, and they are leaving
+  the game soon, so no health change is needed.
