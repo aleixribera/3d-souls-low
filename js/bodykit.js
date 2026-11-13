@@ -1640,6 +1640,7 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
+    if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -0.5 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -0.5 to 1.6.');
     if (M.weapon) {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
       for (const slot of Object.values(M.weapon.slots)) if (!(slot in M.materials)) bad(`weapon uses unknown material slot "${slot}".`);
@@ -1723,6 +1724,7 @@ const KIT = (() => {
     }
     if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.58.0, opt-in) where a `breath` attack's fire comes from
     rig.fit = M.fit ?? 1;
+    if (M.weaponRest != null) rig.weaponRest = M.weaponRest;   // (pass 42, opt-in) the same for a weapon baked into the figure
     if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);
     rig.warnGlow = makeWarnGlow(); rig.weapon.add(rig.warnGlow);

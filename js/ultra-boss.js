@@ -214,9 +214,8 @@ void main() {
     const L = look(e);
     if (!L) return;
     const a = d.attack, h = a.hits[d.hitIndex] || a.hits[0], box = h.box || a.box, y = e.y;
-    if (box && box.ring) {   // the ring hitbox, drawn as it spreads, its edge throwing the element outward
+    if (box && box.ring) {   // the ring hitbox (drawn where it is by js/ring-waves.js), its edge throwing the element outward
       const R = box.ring, t = R.time || 0.2;
-      groundRing(e.x, y, e.z, R.from, R.to, t * 2.2, L.el.glow, Math.max(BB.ringWidth, (R.width || 0.5) * 0.8), 1);
       const n = fx.count('ring', Math.round(24 + R.to * 6));
       for (let i = 0; i < n; i++) {
         const ang = i / n * Math.PI * 2, sp = (R.to - R.from) / t * rand(0.5, 0.9), life = t * rand(1.2, 2);

@@ -501,9 +501,13 @@ kings put there what they would not see again.
 Thrale too had a bell. Long ago, before the Seven left, someone rang it without leave, and the crown shut her in the
 great ring for it, in chains, until the crown should forgive. The crown forgot. **The Ringer of Thrale** is there
 still, still chained, still fighting whoever comes into the ring. The iron that held her to the wall has stood open for
-longer than anyone remembers; she does not know she is free. She swings a bell on a haft, as if she could ring it yet,
-and when she is hurt past half she stops answering the blows and starts ringing them: a knell runs out round her along
-the stones. Who she rang for, and what came out, the song does not say. Her hands are a bellwright's hands.
+longer than anyone remembers; she does not know she is free. They shut a scold's bridle on her head, a little bell on
+its crown so the wardens could hear where she was, and they took the clapper out of Thrale's bell so it could not be
+rung again: she has it still, on a chain from her own fetter, and she strikes the stones with it as if they were the
+bell. Every blow is a knell that runs out along the floor. A circle is cut round the middle of the ring, the length of
+her old chain, and she will not cross it; she calls across it to anyone who stands off. Hurt past half, she steps over
+the line for the first time, and the circle breaks. Who she rang for, and what came out, the song does not say. Her
+hands are a bellwright's hands.
 
 The **Keyless** are the gaol's other prisoners. Their doors fell open long ago, and they never went out. One warden
 is left, empty in its armour, and still keeps the cells. They walk in their chains, and swing them.

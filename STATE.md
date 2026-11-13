@@ -6,9 +6,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 Paused by Aleix, 2026-11-13 (resumes at 21:05 today).
 
-- Track A (pass 39, item 2, v7.62.0): Hale and Harrow pass 1 of 2 shipped: baked figures (one gilded suit split, the
-  survivor wears it whole), 15 own moves, cued pair moves (`cue`), roof merlons (`pillarHeight`).
-  `docs/scorecard/castellans-*.jpg`, in-page `Saltgrave`. Pass 2 (optional) in BACKLOG; else: the Ringer.
+- Track A (pass 42, item 2, v7.64.0): the Ringer pass 1 of 2 shipped: Blender figure, 12 own moves (clapper angles as
+  `pitch`), phase `tether` circle, knells drawn by `js/ring-waves.js`. `docs/scorecard/ringer-*.jpg`, in-page
+  `Night Gaol`. Pass 2 (optional) in BACKLOG; else: the Regent Hollis.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.

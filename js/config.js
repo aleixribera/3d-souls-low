@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.63.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.64.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -162,7 +162,10 @@ const CONFIG = {
            followReach: 1,      // `flank` / `behind` follow-ups reach this many m past the attack's range
            // A ground ring after a leap's landing (v7.51.1): it opens at least a roll (`player.rollTime`) plus this many s
            // after the landing opens, so a roll through the landing ends in time for a second roll through the ring.
-           ringAfterLanding: 0.14 },
+           ringAfterLanding: 0.14,
+           // A ground ring's hit is active as long as the ring spreads, but the blow that starts it lands at once: its
+           // strike pose plays over the first this many s of the active phase (js/attack-anim.js, v7.64.0).
+           ringStrike: 0.1 },
   // A boss against a group (v7.35.0): every boss scales with the players in its session (people and bots, counted up to
   // `cap`). Each player past the first adds `hp` of its health bar and `posture` of its posture (or stagger) bar, and
   // takes `breakTime` off a break's length, so a group's extra blows in one break don't melt it. Solo it is unchanged.
@@ -472,6 +475,11 @@ const CONFIG = {
     // Every unparryable attack has a cold blue blade. Roll-only attacks also show a faint ground ring
     // as the wind-up starts (`ring`: size, `opacity`: its peak).
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
+    // A ring hitbox (a knell along the floor) drawn where it is, as wide as it hits, on every preset (js/ring-waves.js);
+    // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
+    // flash and `dust` when it breaks.
+    ringWave: { color: 0xf0e2c0, opacity: 0.8, fade: 0.3, pool: 6 },
+    tether: { color: 0xb8c8ff, opacity: 0.7, width: 0.28, fadeIn: 1.5, fadeOut: 1.4, flash: 2.5, dust: 4, links: 72 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },
              shaft: { k: 0.22 } },   // warm (or pale) light pools on the floor
@@ -629,7 +637,7 @@ const CONFIG = {
       fire: { width: 2.2, height: 1.5, boost: 2.6, core: 0xffe6a0, mid: 0xff8a2a, edge: 0xb02a08 },
       // Boss attacks (js/ultra-boss.js with js/data/boss-fx.js): a heavy wind-up (from `heavy` damage, or held, leaping,
       // ringing or striking the ground) gathers `gather` motes/s into the weapon; a swing sheds `shed` motes per frame;
-      // ring hitboxes draw a ground ring `ringWidth` m wide; impacts scale with the blow's ring size.
+      // impact rings are `ringWidth` m wide (ring hitboxes: js/ring-waves.js); impacts scale with the blow's ring size.
       boss: { heavy: 40, gather: 55, gatherGlow: 1.5, shed: 3, trailBoost: 1.4, ringWidth: 0.55, rings: 12, pillars: 6, fires: 28,
               pillar: { time: 1.0, height: 11, radius: 0.9 }, fireTime: [0.6, 1.3] },
       // What each blow looks like. Damage scales a hit's spray between `light` and `heavy` damage.

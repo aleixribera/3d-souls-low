@@ -49,11 +49,14 @@ const BOSS_FX = {
     stampStones: { impact: 'quake' }, hammerOfHands: { impact: 'quake', windup: 'gather' }, fallingWeight: { impact: 'quake' }, knuckleHeel: { element: 'steel' },
     crownCleave: { element: 'storm', impact: 'shatter', windup: 'gather' }, wallTurns: { element: 'storm', impact: 'gale' }, offTheRampart: { element: 'storm', impact: 'gale' },
     saltWind: { element: 'storm' }, sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
-  // The Ringer of Thrale (Level 9): old iron and bronze while she is chained; once she rings the blows (the second phase),
-  // the bell's cold toll.
+  // The Ringer of Thrale (Level 9): old iron while she is chained, her knells the pale toll of a bell; over the line,
+  // all of it rings.
   ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {
-    fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' }, bellFalls: { impact: 'toll', windup: 'gather' }, bellFalls2: { impact: 'toll', windup: 'gather' },
-    cellLeap: { impact: 'shatter' }, knell: { element: 'toll', impact: 'toll' }, greatKnell: { element: 'toll', impact: 'toll', windup: 'gather' } } },
+    strikeHour: { impact: 'shatter', windup: 'gather' }, strikeHour2: { impact: 'toll', windup: 'gather' }, risingToll: { windup: 'gather' },
+    fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' },
+    callAcross: { element: 'toll', impact: 'toll', windup: 'gather' }, callPunish: { element: 'toll', impact: 'toll' },
+    overTheLine: { element: 'toll', impact: 'toll', windup: 'gather' }, nineTailors: { element: 'toll', impact: 'toll' },
+    peal: { impact: 'toll' }, outOfTheRing: { impact: 'shatter' } } },
   // The Regent Hollis (Level 10): gilt drawn out of the air; past 60 % the hunger shows through the cracked gilt and his
   // blade burns with the Ember.
   hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {

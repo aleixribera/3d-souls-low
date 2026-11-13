@@ -76,7 +76,10 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null) {
   else { from = after(H[H.length - 1]); to = null; }
   const ease = EASE[(P.ease && P.ease[PHASE_EASE_KEY[tl.phase]]) || S.ease[PHASE_EASE_KEY[tl.phase]]];
   const lagOf = name => (P.lag && P.lag[name]) ?? S.lag[name] ?? 0;
-  const at = name => { const lag = lagOf(name); return ease(clamp((clamp(tl.p, 0, 1) - lag) / (1 - lag), 0, 1)); };
+  // A ground ring lives as long as it spreads; the blow that starts it lands in CONFIG.enemy.ringStrike s.
+  const B = tl.phase === PHASE.ACTIVE && a.hits[i] ? a.hits[i].box || a.box : null;
+  const p = B && B.ring ? Math.min(1, tl.p * a.hits[i].active / CONFIG.enemy.ringStrike) : tl.p;
+  const at = name => { const lag = lagOf(name); return ease(clamp((clamp(p, 0, 1) - lag) / (1 - lag), 0, 1)); };
   const sc = a.poseScale ?? 1;   // bigger bodies (bosses) exaggerate the same key poses
   const val = (pose, name) => pose && pose[name];
   const cw = !P.charge || charge <= 0 ? 0 : tl.phase === PHASE.STARTUP ? charge : tl.phase === PHASE.ACTIVE ? charge * (1 - at('chest')) : 0;

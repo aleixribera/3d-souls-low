@@ -75,16 +75,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Bell Warden (v7.43.0, pass 18): the bell maul is the kit's (10-sided, 355 triangles) and rests at 0.65 rad
   (`weapon.rest`) so the bell stands on its lip, its lower rim a little into the floor; the eyes' halo blooms white over
   the helm's window on the tower top; the mail sleeves show the `knightMail` grid (`docs/scorecard/bellwarden-lab.jpg`,
-  `bellwarden-tower.jpg`). The Ringer's 0.6-size maul still rests at the default 1.25 (`sway`): check whether it sinks
-  into the gaol floor and give her a `weapon.rest`. `weapon.rest` and `weapon.size` are checked when a rig is built
-  (`checkModel`), not at load. Second step, stage 4.
-- Chapter 9, the Night Gaol (v7.42.0, pass 17), rough; its second step: the Ringer's and the Keyless's own figures
-  (stand-ins: the Rogue in gaol-grey with the Bell Warden's maul at 0.6 size, the Hollow Soldier in starlit grey;
-  `docs/scorecard/ringer-lab.jpg`), chains that show on both, the knell drawn as more than the ground ring, a mark on the
-  ring's floor where she was held. The Ringer reads small and dark against the ring's blue floor
-  (`gaol-ringer.jpg`); the Keyless barely read in the cells (`gaol-keyless.jpg`). Her moves are the Crucible Knight's
-  without the shield: 3,000 HP (was 2,600 behind a 70 % shield); no one has fought her by hand yet. `shackledRush` stays
-  unparryable, as the shield bash was.
+  `bellwarden-tower.jpg`). `weapon.rest` and `weapon.size` are checked when a rig is built (`checkModel`), not at load.
+  Second step, stage 4.
+- The Ringer, pass 2 (pass 42 did pass 1, v7.64.0: Blender figure, 12 own moves, the `tether` circle, knells drawn by
+  `js/ring-waves.js`; `docs/scorecard/ringer-*`): her torso reads boxy and her fists like mittens in the lab; the
+  clapper is 2.7 m, so any new floor blow needs its `pitch` checked against the floor (the weapon bone's world position
+  and direction); non-ring blows (the Hour Struck, Over the Line's first) land a little after their hit, as their
+  active is short and the swing long. No one has fought her by hand yet. The Keyless barely read in the cells
+  (`gaol-keyless.jpg`).
 - The evergaol's own lore (`js/data/lore-lands.js` 82-83) has three shackles and a corpse inside cell pillars; fixed in
   the Night Gaol's copy, left in the old road (no more work on it, `PLAN.md`).
 - Chapter 10, Aurel, the Gilded City (v7.44.0, pass 19), rough; its second step: the Regent's and the Gilded Thralls'

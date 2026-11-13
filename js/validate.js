@@ -204,6 +204,7 @@ function validateData({ visual = true } = {}) {
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
+    need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
     if ('phases' in d) {
       const P = d.phases, aids = new Set(d.attacks.map(a => a && a.id));
@@ -224,6 +225,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'opener' in ph) need(aids.has(ph.opener) && (!ph.attacks || ph.attacks.includes(ph.opener)), `${tag}: opener "${ph.opener}" must be one of its attacks, and of the phase's own when it lists them (the phase looks it up there).`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
+        if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);
         if (ph && 'name' in ph) need(typeof ph.name === 'string' && ph.name.length > 0, `${tag}: name must be text.`);

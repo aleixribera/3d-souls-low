@@ -83,8 +83,9 @@ const LEVEL_9 = {
       enemies: [{ enemy: 'knight', variant: 'elite', spawn: { x: 102, y: 12, z: 66, yaw: Math.PI } }, { enemy: 'keyless', variant: 'elite', spawn: { x: 109, y: 12, z: 62, yaw: Math.PI } },
                 { enemy: 'lanternThrall', variant: 'elite', spawn: { x: 109, y: 12, z: 71, yaw: Math.PI } }] },
     // The great ring: the Ringer, still chained. She sees the player only inside it (`arena`), so the last bonfire is safe.
+    // She stands at its centre, inside the circle her chain let her reach (her first phase's `tether`, 8.5 m).
     { id: 'zone-ringer', trigger: [147, 186, 46, 86], gate: { x: 186, z: 66, y: 12, along: 'z', width: 3 },
-      enemies: [{ enemy: 'ringer', arena: true, notice: 60, leash: 200, homeLeash: 200, boss: { phases: ['chained', 'tolling'] }, spawn: { x: 176, y: 12, z: 66, yaw: -Math.PI / 2 } }] },
+      enemies: [{ enemy: 'ringer', arena: true, notice: 60, leash: 200, homeLeash: 200, boss: { phases: ['chained', 'tolling'] }, spawn: { x: 166, y: 12, z: 66, yaw: -Math.PI / 2 } }] },
   ],
   sealed: [{ id: 'ringer-fog', gate: { x: 146, z: 66, y: 12, along: 'z', width: 3 }, fog: 'zone-ringer' }],
   dispersed: [

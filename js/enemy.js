@@ -481,8 +481,18 @@ class Enemy {
     else if (this.state === ES.SEARCH && this.lastSeen) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.lastSeen.x - this.x, this.lastSeen.z - this.z));
     approachVel(this, tx, tz, E.accel * dt);
     integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
+    if (d.tether) this.keepTether(d.tether);
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6 / d.scale;
+  }
+  // A phase's `tether` (pass 42, the Ringer): it cannot go more than that many m from its home (where it was placed),
+  // whatever moves it (steps, lunges, leaps, knockback); pressed against the edge it slides along it.
+  keepTether(r) {
+    const dx = this.x - this.home.x, dz = this.z - this.home.z, d = Math.hypot(dx, dz);
+    if (d <= r) return;
+    const nx = dx / d, nz = dz / d, out = this.vx * nx + this.vz * nz;
+    this.x = this.home.x + nx * r; this.z = this.home.z + nz * r;
+    if (out > 0) { this.vx -= out * nx; this.vz -= out * nz; }
   }
   // Still turning to follow the player (the F7 debug colours show it). With `tracking`, only until its commit point
   // in each wind-up, then locked: the strike goes where it was aimed. Legacy: the early wind-up, or all of a `track` attack.
