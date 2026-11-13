@@ -62,8 +62,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 18's push and the v7.43.0 container: check in pass 19 (v7.42.0's CI and container passed
-and passed). Pass 18 locally: Node (22/22), in-page `model`, `bosses`, `Bell Warden`, `Changelog`, `Ultra`.
+CI on pass 18's push and the v7.43.0 container: check in pass 19 (v7.42.0's CI and container passed).
+Pass 18 locally: Node (22/22), in-page `model`, `bosses`, `Bell Warden`, `Changelog`, `Ultra`.
 
 ## wip/ branches
 
