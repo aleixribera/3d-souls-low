@@ -10,7 +10,7 @@ Aleix, 2026-11-13.
   players come back.
 - A pass has full authority over what it works on: balance, numbers, windows, frequency, the code underneath. If an
   item sits on a weak foundation (an old system, a stand-in, a shaky rule), the pass fixes or rebuilds that first, as
-  part of the item, instead of building on top of it. This overrides the iterate skill's "finish before redesigning".
+  part of the item, instead of building on top of it (the iterate skill now says the same).
 
 - Aleix's feedback (`.claude/feedback.md`) comes first, always.
 - Then the clean-up below, then **two tracks in parallel**: two passes at a time, one per track, each in its own git
