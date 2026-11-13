@@ -519,8 +519,10 @@ north of the city, a chasm with the Ember's root grown up out of it and over, gi
 throne court lies past the root.
 
 When the hunger went over the mountains in the Seven's keeping, it left a steward to keep its city fed until it came
-home. **The Regent Hollis** kept it. He is gilded, gracious and cruel: he bows before he cuts, and he draws weapons of
-gilt out of the air. Past the worst of his hurt, the gilt cracks and the hunger shows through him, and his blade burns.
+home. **The Regent Hollis** kept it. He is gilded, gracious and cruel. Aurel lays its faces in gold leaf, and so did
+he, so long that the gilt remembers what he does with it: every cut he makes hangs in the air in gold leaf after him, and
+a beat later it cuts again where it hangs. He bows while it falls. Past the worst of his hurt, the gilt cracks and the
+hunger shows through him: his cuts hang as embers, and he calls them home to him, through whoever stands between.
 
 The **Gilded Thralls** are Aurel's citizens: fed, smiling, gold leaf laid on their faces and hands, a knife in each.
 They smile until you are close.

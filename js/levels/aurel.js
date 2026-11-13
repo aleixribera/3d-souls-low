@@ -48,8 +48,11 @@ const LEVEL_10 = {
     { id: 'great-root', rect: [156, 164, 16, 46], y: 10, open: true, height: 8, edges: { e: 'open', w: 'open' }, floor: 0x8a6a3a, wall: 0x9a7a48 },
     { id: 'throne-gate', rect: [152, 168, 46, 56], y: 10, open: true, height: 10, floor: 0xa89c80, wall: 0xc8bc9c, light: 0xffd8a0, braziers: [[166.5, 47.5], [166.5, 54.5]] },
     { id: 'fog-door', rect: [157, 163, 56, 60], y: 10, height: 6, floor: 0x9a8e74, wall: 0xc0b494, dim: true },
-    { id: 'throne-court', rect: [140, 180, 60, 100], y: 10, open: true, height: 16, floor: 0xb8aa88, wall: 0xd4c6a2, light: 0xffe8b0,
-      lamps: [[142, 62], [178, 62], [142, 98], [178, 98]] },
+    // The Regent's court (pass 44): a gilded floor between two colonnades, braziers before the empty throne wall, and the
+    // city's gold leaf falling through it, the same leaf that hangs where his blade has been.
+    { id: 'throne-court', rect: [140, 180, 60, 100], y: 10, open: true, dim: true, height: 16, floor: 0x7a6448, wall: 0xd4c6a2, light: 0xffe0a0,
+      lamps: [[142, 62], [178, 62], [142, 98], [178, 98]], braziers: [[152, 97], [168, 97]],
+      pillars: [[146.5, 68, 1.4], [146.5, 78, 1.4], [146.5, 88, 1.4], [173.5, 68, 1.4], [173.5, 78, 1.4], [173.5, 88, 1.4]] },
     { id: 'throne-exit', rect: [157, 163, 100, 104], y: 10, height: 5, floor: 0x9a8e74, wall: 0xc0b494, light: 0xffe8c0, dim: true },
   ],
   ramps: [

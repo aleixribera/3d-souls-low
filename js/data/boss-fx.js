@@ -57,12 +57,12 @@ const BOSS_FX = {
     callAcross: { element: 'toll', impact: 'toll', windup: 'gather' }, callPunish: { element: 'toll', impact: 'toll' },
     overTheLine: { element: 'toll', impact: 'toll', windup: 'gather' }, nineTailors: { element: 'toll', impact: 'toll' },
     peal: { impact: 'toll' }, outOfTheRing: { impact: 'shatter' } } },
-  // The Regent Hollis (Level 10): gilt drawn out of the air; past 60 % the hunger shows through the cracked gilt and his
-  // blade burns with the Ember.
+  // The Regent Hollis (Level 10): gold leaf and the light off it; past the worst of his hurt the gilt cracks and the
+  // hunger burns through it (his hanging cuts themselves are drawn by js/gilt-echo.js, on every preset).
   hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {
-    stewardsChop: { element: 'steel', impact: 'shatter' }, courtlyCuts: { element: 'steel' }, turningCut: { element: 'steel' }, leapingCut: { element: 'steel', impact: 'quake' },
-    hungerShows: { element: 'fire', impact: 'geyser', aura: 0xff6a20 }, emberSlice: { element: 'fire', impact: 'geyser' },
-    emberThrust: { element: 'fire', windup: 'gather' }, emberWells: { element: 'fire', impact: 'geyser' } } },
+    salute: { element: 'steel' }, measure: { element: 'steel' }, turnCloak: { element: 'steel' }, judgement: { impact: 'pillar', windup: 'gather' },
+    giltCracks: { element: 'fire', impact: 'blaze', aura: 0xff6a20, windup: 'gather' }, ravenous: { element: 'fire' },
+    callHome: { element: 'fire' }, feast: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
   // Oswin, the First Crown (Level 11): the ash king's stomps crack the floor; from 40 % the axe is cast down and the
   // Ember takes his hands.
   oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire', hunger: 'fire' }, attacks: {

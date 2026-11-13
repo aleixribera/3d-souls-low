@@ -1227,14 +1227,15 @@ const multiplayer = (() => {
       e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
       e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise;
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
-      e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
+      e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
       if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
       const boxKey = `${s.serial}/${s.hitIndex}`;
+      // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.
+      if (e.state === ES.ACTIVE && e.attack && e.netCutKey !== boxKey) { e.netCutKey = boxKey; e.noteCut(); }
       if (s.hitbox && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {
         if (e.netBoxKey !== boxKey || !e.hitbox) {
-          const hit = e.attack.hits[s.hitIndex];
-          e.hitbox = new Hitbox(e, hit.box || e.attack.box, hit.damage ? { ...makeStrike(e.attack), damage: hit.damage } : makeStrike(e.attack)); e.netBoxKey = boxKey;
+          e.hitbox = e.makeHitbox(); e.netBoxKey = boxKey;   // notes where it stands for a later `echo` too
         }
       } else e.hitbox = null;
       if (e.state === ES.DEAD && priorState !== ES.DEAD && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }

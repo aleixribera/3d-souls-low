@@ -105,6 +105,7 @@ class Enemy {
     this.backingOff = false;                         // too close: backing off to its hold distance
     this.slot = null;                                // its place around the player (js/crowd.js)
     this.leaping = false;                            // airborne in a leaping strike (a hit's `leap`)
+    this.attackNo = 0; this.cuts = [];               // attacks begun; where it stood for each hit of this one (`noteCut`, a hit's `echo`)
     // Boss phases (v4.3): an enemy def with `phases` fights through the phase ids its placement lists (`boss.phases`,
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
     // away instead of dying (the opening of Level 5).
@@ -433,7 +434,7 @@ class Enemy {
         if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * dt);
         const striking = this.stateTime < this.attack.hits[this.hitIndex].active;
         if (!striking) this.hitbox = null;
-        if (striking) { tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge; }
+        if (striking && !this.attack.hits[this.hitIndex].echo) { tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge; }
         this.endStrikeWhenDone();
         break;
       }
@@ -491,6 +492,7 @@ class Enemy {
   isTracking() {
     const a = this.attack;
     if (!a || (this.state !== ES.WINDUP && this.state !== ES.ACTIVE)) return false;
+    if (a.hits[this.hitIndex].echo) return false;   // the gilt cuts where it hangs: he does not turn
     if (a.tracking) return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * a.tracking.commit;
     if (a.track) return true;
     return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * CONFIG.enemy.windupTrack;
@@ -594,6 +596,7 @@ class Enemy {
     if (attack.cue) this.cueKin(attack.cue);
     this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
+    this.attackNo++;
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
@@ -614,15 +617,35 @@ class Enemy {
     // A hit may bring its own `box` (with `ring`: an expanding ring round the owner) and its own `impact`.
     const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box, impact = hit.impact || this.attack.impact;
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
-    else this.hitbox = new Hitbox(this, box, hit.damage ? { ...makeStrike(this.attack), damage: hit.damage } : makeStrike(this.attack));   // a hit's own `damage` (v5.9)
+    else this.hitbox = this.makeHitbox();
     if (this.leaping) { this.vx = this.vz = 0; }
     if (impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
-      const f = box.fwd;   // where the hitbox is centred
-      events.emit('impact', { x: this.x + Math.sin(this.yaw) * f, y: this.y, z: this.z + Math.cos(this.yaw) * f, fx: impact, enemy: this });
+      const c = this.hitbox ? this.hitbox.center() : { x: this.x + Math.sin(this.yaw) * box.fwd, z: this.z + Math.cos(this.yaw) * box.fwd };   // where the hitbox is centred
+      events.emit('impact', { x: c.x, y: this.y, z: c.z, fx: impact, enemy: this });
     }
     this.setState(ES.ACTIVE);
     events.emit('attackPhase', { actor: this, attack: this.attack, phase: PHASE.ACTIVE, hitIndex: this.hitIndex });   // the swing sound
   }
+  // The current hit's hitbox (a hit's own `box` and `damage`, v5.9), as its strike opens: here, and on a client for the
+  // server's enemies (js/multiplayer.js). Notes where it stands first (`noteCut`).
+  // A hit's `echo` (pass 44, the Regent Hollis): the gilt his blade left in the air cuts again. Its box is placed where he
+  // stood and faced as hit `echo.of` of this same attack struck, not where he is now (he neither turns nor lunges through
+  // an echo); with `home` it is drawn back to him over its `active` s. js/gilt-echo.js draws it hanging there. An echo
+  // whose cut was never seen (a client that missed it) cuts nothing: never an unwarned blow at his feet.
+  makeHitbox() {
+    const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box;
+    this.noteCut();
+    const cut = hit.echo && this.cutOf(hit.echo.of);
+    if (hit.echo && !cut) return null;
+    return new Hitbox(this, box, hit.damage ? { ...makeStrike(this.attack), damage: hit.damage } : makeStrike(this.attack),
+      cut ? { cut, home: !!hit.echo.home, time: hit.active } : null);
+  }
+  noteCut() {
+    const c = this.cuts[this.hitIndex] || (this.cuts[this.hitIndex] = { x: 0, y: 0, z: 0, yaw: 0, no: -1 });
+    c.x = this.x; c.y = this.y; c.z = this.z; c.yaw = this.yaw; c.no = this.attackNo;
+  }
+  // Where hit i of the current attack struck, or null if it has not yet (this attack).
+  cutOf(i) { const c = this.cuts[i]; return c && c.no === this.attackNo ? c : null; }
   endStrikeWhenDone() {
     const h = this.attack.hits[this.hitIndex];
     if (this.stateTime < h.active + (h.follow || 0)) return;
@@ -783,7 +806,7 @@ class Enemy {
         } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
         else if (this.state === ES.ACTIVE) poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex);
         else poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex);
-        if (this.state === ES.WINDUP) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);
+        if (this.state === ES.WINDUP && !a.hits[this.hitIndex].echo) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own (js/gilt-echo.js)
         break;
       case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt, this.hitK || 1); break;
       case ES.STAGGER: flinchPose(r, true, tt / d.staggerTime, tt); break;

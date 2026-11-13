@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.65.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.66.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -486,6 +486,12 @@ const CONFIG = {
     // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
     // flash and `dust` when it breaks.
     ringWave: { color: 0xf0e2c0, opacity: 0.8, fade: 0.3, pool: 6 },
+    // The Regent Hollis's hanging cuts (js/gilt-echo.js): leaves per cut, seam motes, pooled cuts, leaf size (m), how long
+    // they fall once let go (s), the tell before the echo strikes (s), the seam's brightness, opacities, fling speed, fall pull.
+    // `dark` and `glint`: a leaf's brightness edge-on and face-on (it shimmers as it turns); `fieldSize`: leaves scattered
+    // through a whole box (`field`) are this much larger.
+    giltEcho: { color: 0xf0b030, flakes: 48, seam: 26, pool: 4, size: 0.15, fieldSize: 1.6, fade: 0.7, warn: 0.4, boost: 1.4,
+      dark: 0.35, glint: 1.15, opacity: 1, seamOpacity: 0.6, fling: 3.2, fall: 2.4 },
     tether: { color: 0xb8c8ff, opacity: 0.7, width: 0.28, fadeIn: 1.5, fadeOut: 1.4, flash: 2.5, dust: 4, links: 72 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },

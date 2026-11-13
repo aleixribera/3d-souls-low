@@ -495,15 +495,15 @@ function riskOver(seconds, { allies = [], hp = 1, flasks = null, target, person 
   console.log(`Bot room: ${worstLane.toFixed(2)} rad off the person's lane at worst, ${closest.toFixed(2)} m from them at closest.`);
 }
 // A thick ring touches a body when its outer edge arrives, not its middle (pass 32: bots used to roll after Hollis's
-// The Hunger Shows had already caught them, at full health and full stamina).
+// ring burst had already caught them, at full health and full stamina; since pass 44 it is The Gilt Cracks).
 for (const dist of [3.8, 6]) {
   const { sim, b, p, e } = waiting('hollis', 'maren');
   b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 0, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
   e.cooldown = 30; e.yaw = 0; p.x = e.x; p.z = e.z + dist; p.vx = p.vz = 0; p.savePrev();
-  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'hungerShows'));
+  e.beginAttack(e.baseDef.attacks.find(a => a.id === 'giltCracks'));
   const hp = p.hp;
   for (let i = 0; i < 5 * 60; i++) { sim.setPlayers([]); sim.tick(dt); }
-  assert.equal(p.hp, hp, `a bot ${dist} m out rolls through both of The Hunger Shows' rings`);
+  assert.equal(p.hp, hp, `a bot ${dist} m out rolls through The Gilt Cracks' ring`);
 }
 console.log('Bot risk: real punishable trades, greedy combo extensions, forward dodges, wall vetoes and caution passed.');
 

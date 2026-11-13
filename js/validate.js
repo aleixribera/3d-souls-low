@@ -145,6 +145,17 @@ function validateData({ visual = true } = {}) {
       const gap = h.active + (h.follow || 0) + next.startup, want = CONFIG.player.rollTime + CONFIG.enemy.ringAfterLanding;
       need(gap >= want - 1e-6, `${tag}: the ring after the landing of hit ${i + 1} opens ${gap.toFixed(2)} s after it; it needs ${want.toFixed(2)} s (a roll through each).`);
     });
+    // A hit's `echo` (pass 44): the cut of an earlier hit of the same attack (`of`), struck again where it hangs; `home`
+    // draws it back to the owner; `line` is how its gilt hangs (js/gilt-echo.js) and `tilt` the cut's slant (rad).
+    if (Array.isArray(a.hits)) a.hits.forEach((h, i) => {
+      if (!h || !('echo' in h)) return;
+      const E = h.echo;
+      need(E && Number.isInteger(E.of) && E.of >= 0 && E.of < i && !(a.hits[E.of] || {}).echo && !h.leap && !h.blink && !h.step && !(h.box || a.box || {}).ring && !a.projectile,
+        `${tag}: hit ${i + 1}'s echo needs of (an earlier hit's index, itself no echo); not with a leap, blink, step, ring or projectile.`);
+      need(!E || !('home' in E) || typeof E.home === 'boolean', `${tag}: hit ${i + 1}'s echo.home must be true or false.`);
+      need(!E || ['sweep', 'chop', 'thrust', 'field'].includes(E.line), `${tag}: hit ${i + 1}'s echo.line must be sweep, chop, thrust or field.`);
+      need(!E || !('tilt' in E) || (num(E.tilt) && Math.abs(E.tilt) <= 1.5), `${tag}: hit ${i + 1}'s echo.tilt must be an angle (rad) from -1.5 to 1.5.`);
+    });
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
     for (const h of Array.isArray(a.hits) ? a.hits : []) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);
@@ -201,6 +212,7 @@ function validateData({ visual = true } = {}) {
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
     need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
+    if ('echoColor' in d) need(Number.isInteger(d.echoColor) && d.echoColor >= 0 && d.echoColor <= 0xffffff, `Enemy "${d.id}": echoColor must be a colour (0xrrggbb).`);   // pass 44
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
     if ('phases' in d) {
       const P = d.phases, aids = new Set(d.attacks.map(a => a && a.id));
@@ -222,6 +234,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
+        if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);
         if (ph && 'name' in ph) need(typeof ph.name === 'string' && ph.name.length > 0, `${tag}: name must be text.`);

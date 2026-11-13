@@ -81,15 +81,19 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   and direction); non-ring blows (the Hour Struck, Over the Line's first) land a little after their hit, as their
   active is short and the swing long. No one has fought her by hand yet. The Keyless barely read in the cells
   (`gaol-keyless.jpg`).
+- The Regent Hollis, pass 2 (pass 44 did pass 1: Blender figure, 13 own moves, the `echo` hit field, gilt drawn by
+  `js/gilt-echo.js`; `docs/scorecard/hollis-lab.jpg`, `aurel-hollis.jpg`). Bots don't know echoes (pass 45's area):
+  `js/bot.js` 357 plans a parry on an echo hit (`parryTiming` refuses it), and its reach/escape/aimedElsewhere geometry
+  measures from him, not from the cut (`e.cutOf(h.echo.of)`), so a bot at the cut after Called Home's leap is hit. The
+  server's parry check (`server/simulation.js` ~540) doesn't reject a claim during an echo (honest clients never send
+  one). Block and knockback for an echo come from him, not the cut. Figure: the mantle reads as a slab from the side,
+  limbs thin, collar tall. The gold gilt is pale on the bright court in `high`; the embers read well. No one has fought
+  him by hand yet.
 - The evergaol's own lore (`js/data/lore-lands.js` 82-83) has three shackles and a corpse inside cell pillars; fixed in
   the Night Gaol's copy, left in the old road (no more work on it, `PLAN.md`).
-- Chapter 10, Aurel, the Gilded City (v7.44.0, pass 19), rough; its second step: the Regent's and the Gilded Thralls'
-  own figures (stand-ins: the Pale Duelist at 1.85 in gold leaf and crimson with the kit greatsword, the Rogue in gold
-  leaf with two curved knives; `docs/scorecard/hollis-lab.jpg`, `gilded-thrall-lab.jpg`). The Regent reads thin for a
-  boss at that size and the kit greatsword still shows a streaked, wood-like grain (`aurel-hollis.jpg`). His moves are
-  Morgott's, renamed, the conjured gilt weapons kept, fire for the second phase's blood: 3,400 HP (was 4,800); no one
-  has fought him by hand yet. The "turning cut" is Morgott's tail swipe, a hit behind him with no tail to show it.
-  The city has no smiles yet beyond the words: the thralls' gilt masks are the Rogue's.
+- Chapter 10, Aurel, the Gilded City (v7.44.0, pass 19): the Gilded Thralls' own figures (stand-in: the Rogue in gold
+  leaf with two curved knives, `gilded-thrall-lab.jpg`). The city has no smiles yet beyond the words: the thralls' gilt
+  masks are the Rogue's. (The Regent is his own since pass 44.)
 - Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: Oswin's and the Cinderfolk's own figures
   (stand-ins: the Executioner in ash and old gold with its own axe, the Hollow Soldier charred). Oswin is Godfrey's
   moves renamed, 3,800 HP (was 4,400); from 40 % only the axe is cast down (`conceal: ['weapon']`) and he burns, where

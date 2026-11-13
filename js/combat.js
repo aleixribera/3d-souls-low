@@ -17,20 +17,33 @@ function makeStrike(attack, riposte = false, charge = 0, boost = 0) {
   };
 }
 // An oriented box in the owner's frame, tested against a target's upright body cylinder.
+// `anchor` (a hit's `echo`, Enemy.makeHitbox): { cut, home, time } places the box where the owner stood and faced at `cut`
+// instead of where it is now; with `home` it slides from there back to the owner over `time` s of the strike.
 class Hitbox {
-  constructor(owner, box, payload) { this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); }
+  constructor(owner, box, payload, anchor = null) {
+    this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor;
+    this.x = 0; this.y = 0; this.z = 0; this.yaw = 0;
+  }
+  // The frame the box sits in this step (no allocation: it is read on every step).
+  place() {
+    const o = this.owner, A = this.anchor;
+    if (!A) { this.x = o.x; this.y = o.y; this.z = o.z; this.yaw = o.yaw; return this; }
+    const k = A.home ? clamp(o.stateTime / Math.max(0.01, A.time), 0, 1) : 0;
+    this.x = lerp(A.cut.x, o.x, k); this.y = lerp(A.cut.y, o.y, k); this.z = lerp(A.cut.z, o.z, k); this.yaw = A.cut.yaw;
+    return this;
+  }
   center() {
-    const o = this.owner, b = this.box;
-    return { x: o.x + Math.sin(o.yaw) * b.fwd, y: o.y + b.y, z: o.z + Math.cos(o.yaw) * b.fwd };
+    const f = this.place(), b = this.box;
+    return { x: f.x + Math.sin(f.yaw) * b.fwd, y: f.y + b.y, z: f.z + Math.cos(f.yaw) * b.fwd };
   }
   overlaps(target) {
     if (this.hit.has(target)) return false;
     if (this.box.ground && !target.grounded) return false;   // a shockwave along the floor (`ground`): anyone in the air is clear of it
-    const o = this.owner, b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
+    const o = this.place(), b = this.box, s = Math.sin(o.yaw), c = Math.cos(o.yaw);
     const dx = target.x - o.x, dz = target.z - o.z;
     const lz = dx * s + dz * c - b.fwd, lx = dz * s - dx * c;
     if (b.ring) {   // an expanding ring round the box's centre: from `from` to `to` m over `time` s of the strike, `width` m thick
-      const R = b.ring, r = lerp(R.from, R.to, clamp(o.stateTime / R.time, 0, 1));
+      const R = b.ring, r = lerp(R.from, R.to, clamp(this.owner.stateTime / R.time, 0, 1));
       if (Math.abs(Math.hypot(lx, lz) - r) > R.width / 2 + target.radius) return false;
     } else {
       const ex = lx - clamp(lx, -b.w / 2, b.w / 2), ez = lz - clamp(lz, -b.d / 2, b.d / 2);
@@ -51,6 +64,7 @@ function parryTiming(p, e, extra) {
   const P = CONFIG.parry, wide = 1 + (p.boons?.parry || 0);   // a Keen Ear blessing widens both edges (CONFIG.blessings)
   let rem;
   if (!canParryAttack(e.attack)) return null;   // roll-only, bolts and `noParry` (blockable): cannot be parried
+  if (e.attack.hits[e.hitIndex].echo) return null;   // a gilt echo (Enemy.makeHitbox) cuts where he is not: the man can be parried, not the memory
   if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
