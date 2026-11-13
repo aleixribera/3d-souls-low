@@ -204,12 +204,12 @@ const MARGIT = {
       hits: [{ startup: 1.2, active: 0.14, follow: 0.3, box: { w: 6.0, h: 2.0, d: 4.0, fwd: 2.0, y: 1.1 } },
              { startup: 1.3, active: 0.16, follow: 0.5, leap: { from: 0.35, max: 9, short: 1.2 }, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.8, y: 1.0 },
                impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.18 } },
-             { startup: 0.05, active: 0.18, follow: 0.2, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7, width: 1.6, time: 0.18 } } }],
+             { startup: 0.1, active: 0.18, follow: 0.2, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7, width: 1.6, time: 0.18 } }, impact: { ring: 4.0, crack: 0, dust: 12, shake: 0.1 } }],
       recovery: 1.6, damage: 40, poise: 70, knock: 9, lunge: 1.2, range: 3.8, box: { w: 6.0, h: 2.0, d: 4.0, fwd: 2.0, y: 1.1 } },
     // Replaces the cane plunge: a high leap that tracks, a crash and a shockwave. Major opening.
     { id: 'hammerLeap', name: 'Hammer Leap Slam', anim: 'chop', pose: 'margitHammerSlam', spectral: 'hammer', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.4, minRange: 4, chance: 0.35,
       hits: [{ startup: 1.6, active: 0.16, follow: 0.3, leap: { from: 0.4, max: 13, short: 1.2 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } },
-             { startup: 0.05, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } } }],
+             { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } }, impact: { ring: 4.5, crack: 0, dust: 14, shake: 0.12 } }],
       recovery: 1.8, damage: 56, poise: 90, knock: 11, lunge: 0, range: 13, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.8, y: 1.0 } },
     // Lifts a leg, winds the hammer overhead (held), slams it straight down. A finisher: a major opening, nothing after.
     { id: 'hammerStomp', name: 'Hammer Stomp & Slam', anim: 'chop', pose: 'margitHammerSlam', spectral: 'hammer', noParry: true, tracking: { rate: 2.0, commit: 0.5 }, poseScale: 1.35, chance: 0.4,

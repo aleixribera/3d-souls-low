@@ -186,7 +186,7 @@ const RADAGON = {
     // the shockwave waits 0.76 s after the landing opens, so a roll through each fits (v7.50.1, like the Shattering's).
     { id: 'goldBreaker', name: 'Gold Breaker', anim: 'chop', pose: 'radagonBreaker', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.45, chance: 0.3,
       hits: [{ startup: 2.0, active: 0.16, follow: 0.2, leap: { from: 0.35, max: 14, short: 0.6 }, sigil: 4, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.25 } },
-             { startup: 0.4, active: 0.18, follow: 1.2, box: RADAGON_RING(1.5, 9, 1.8) }],
+             { startup: 0.4, active: 0.18, follow: 1.2, box: RADAGON_RING(1.5, 9, 1.8), impact: { ring: 5.0, crack: 0, dust: 16, shake: 0.14 } }],
       recovery: 1.6, damage: 66, poise: 100, knock: 12, lunge: 0, range: 14, box: { w: 4.6, h: 2.6, d: 4.6, fwd: 0.8, y: 1.0 } },
     // Elden Shattering: a narrow line of shockwaves, a wide half-circle, then a leap and a blast all round him. The pauses
     // between the first blows are traps; after the third slam there is time for a separate roll through its shockwave.
@@ -195,7 +195,7 @@ const RADAGON = {
       hits: [{ startup: 1.2, active: 0.15, follow: 0.15, box: { w: 2.2, h: 0.6, d: 9, fwd: 4.5, y: 0.3 }, impact: { ring: 2.6, crack: 2.4, dust: 16, shake: 0.14 } },
              { startup: 1.1, active: 0.16, follow: 0.15, box: { w: 12, h: 0.6, d: 6.5, fwd: 2.8, y: 0.3 }, impact: { ring: 3.4, crack: 2.4, dust: 18, shake: 0.16 } },
              { startup: 1.5, active: 0.16, follow: 0.1, leap: { from: 0.3, max: 3, short: 2.0 }, sigil: 4, impact: { ring: 6.0, crack: 3.2, dust: 30, shake: 0.25 } },
-             { startup: 0.5, active: 0.18, follow: 1.0, box: RADAGON_RING(0, 12, 3) }],
+             { startup: 0.5, active: 0.18, follow: 1.0, box: RADAGON_RING(0, 12, 3), impact: { ring: 6.5, crack: 0, dust: 18, shake: 0.16 } }],
       recovery: 2.0, damage: 48, poise: 80, knock: 10, lunge: 0, range: 7, box: { w: 3.0, h: 2.6, d: 3.4, fwd: 1.4, y: 1.1 } },
     // A conjured golden spear driven into the ground; a second later its line bursts. His rear flank is safe.
     { id: 'spearThrust', name: 'Spear Thrust, Detonation', anim: 'thrust', pose: 'radagonSpearThrust', spectral: 'sword', noParry: true, tracking: { rate: 2.8, commit: 0.65 }, poseScale: 1.2, chance: 0.35,

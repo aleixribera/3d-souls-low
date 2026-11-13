@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.51.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.51.1';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -158,7 +158,10 @@ const CONFIG = {
            patrolSpeedMul: 0.42, returnSpeedMul: 0.8, homeArrive: 0.6,
            transition: 3,       // a refilled boss phase's kneel (s) when its phase sets no `transition`
            retreatSpeed: 24,    // a `boss.retreat` leap's top speed (m/s) when it sets no `speed`
-           followReach: 1 },    // `flank` / `behind` follow-ups reach this many m past the attack's range
+           followReach: 1,      // `flank` / `behind` follow-ups reach this many m past the attack's range
+           // A ground ring after a leap's landing (v7.51.1): it opens at least a roll (`player.rollTime`) plus this many s
+           // after the landing opens, so a roll through the landing ends in time for a second roll through the ring.
+           ringAfterLanding: 0.14 },
   // A boss against a group (v7.35.0): every boss scales with the players in its session (people and bots, counted up to
   // `cap`). Each player past the first adds `hp` of its health bar and `posture` of its posture (or stagger) bar, and
   // takes `breakTime` off a break's length, so a group's extra blows in one break don't melt it. Solo it is unchanged.

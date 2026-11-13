@@ -221,7 +221,7 @@ const GODRICK = {
     // The leaping slam, burning: a ring of fire bursts from where it lands. Still the big opening.
     { id: 'flameLeap', name: 'Flaming Leap Slam', anim: 'chop', pose: 'godrickLeapRing', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.45, chance: 0,
       hits: [{ startup: 1.15, active: 0.16, follow: 0.2, leap: { from: 0.3, max: 11, short: 1.6 }, impact: { ring: 5.0, crack: 2.6, dust: 26, shake: 0.2 } },
-             { startup: 0.05, active: 0.18, follow: 0.5, box: RING(1.5, 6.5, 1.6) }],
+             { startup: 0.4, active: 0.18, follow: 0.5, box: RING(1.5, 6.5, 1.6), impact: { ring: 3.6, crack: 0, dust: 12, shake: 0.12 } }],
       recovery: 1.8, damage: 60, poise: 90, knock: 11, lunge: 0, range: 11, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 } },
     // Kneel in three: small, medium, then a blast across most of the arena. Recovery only after the third.
     { id: 'flameKneel', name: 'Flaming "Kneel!"', anim: 'stomp', pose: 'godrickKneel3', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, poseScale: 1.35, chance: 0.45,

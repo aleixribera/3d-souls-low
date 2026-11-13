@@ -1,0 +1,18 @@
+Leap landings and their rings, v7.51.0 -> v7.51.1 (iterate pass 28, 2026-11-13).
+A ring after a leap's landing now opens 0.76 s after the landing opens (was 0.36-0.71 s), so a 0.62 s roll through the
+landing ends in time to roll the ring. Found by .scratch/leap-gaps.cjs (every boss), now a load check in js/validate.js.
+
+Damage to three steady bots (greed and forward rolls at 0), Godrick, 6 fights (.scratch/by-move.cjs godrick 6 3):
+  before: 3/6 wins, fell 1.7/3; Flaming Leap Slam's ring the largest, 624 damage in 11 hits
+  after:  3/6 wins, fell 1.8/3; the ring no longer among the top five (the Flaming Stormcaller's third cut leads, 334)
+Godfrey, three steady bots, after: 6/6 wins, fell 0.7/3.
+
+node tests/bot-duel.cjs godrick,morgott,godfrey,margit,antlered 6 600, the lobby's bots as they are (greedy):
+              1 bot before / after          3 bots before / after
+  godrick     0/6 / 0/6                     1/6, 2.7 fell / 1/6, 2.7 fell
+  morgott     0/6 / 0/6                     0/6, 3.0 fell / 2/6, 2.5 fell
+  godfrey     0/6 / 0/6                     0/6, 3.0 fell / 0/6, 3.0 fell
+  margit      0/6 / 0/6                     5/6, 1.0 fell / 6/6, 0.7 fell
+  antlered    0/6 / 0/6                     4/6, 1.2 fell / 3/6, 1.5 fell
+Six fights each: small samples. The greedy bots still lose mostly to their own trades (they read the pause between
+Godrick's two "Kneel!" rings as an opening and swing into the second) and to rolling sideways inside a Stormcaller.

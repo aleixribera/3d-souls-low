@@ -147,7 +147,7 @@ const GODFREY = {
     // crouched over the planted axe for a long while.
     { id: 'axeDive', name: 'Jumping Axe Dive', anim: 'chop', pose: 'godfreyDive', noParry: true, tracking: { rate: 2.2, commit: 0.45 }, poseScale: 1.4, minRange: 6, chance: 0.5,
       hits: [{ startup: 1.4, active: 0.16, follow: 0.15, leap: { from: 0.3, max: 16, short: 1.8 }, impact: { ring: 5.0, crack: 2.6, dust: 28, shake: 0.22 } },
-             { startup: 0.05, active: 0.18, follow: 0.6, box: GF_RING(1.5, 6, 1.6) }],
+             { startup: 0.45, active: 0.18, follow: 0.6, box: GF_RING(1.5, 6, 1.6), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.12 } }],
       recovery: 2.0, damage: 58, poise: 90, knock: 11, lunge: 0, range: 16, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 } },
     // Fissure Slam: the axe whirled and driven into the earth, a long pause, then pushed deeper: a line of golden energy
     // erupts straight ahead the length of the arena. Not along the floor (a jump does not clear it): step to his side.

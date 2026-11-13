@@ -4,11 +4,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 27 took `PLAN.md` stage 3 track A item 2, chapter 14 (the last), pass 1: the Still Mere, rough, released v7.51.0.
-Check met: in Story mode the Kindling Tree goes on to it and the King's Blade closes the road (in-page `Story`, `Still
-Mere` 6); frames `docs/scorecard/mere-blade.jpg` (front-lit on the ice), `mere-drowned.jpg`, `kings-blade-lab.jpg`,
-`drowned-lab.jpg`. Three bots lose to it in 91 s on average (the tree: 27 s). Next: track B's next weakest bosses row
-(Godrick, Morgott, Godfrey, Maliketh, Malenia at 2); then track A item 3, the ending.
+Pass 28 took `PLAN.md` stage 3 track B item 3 (the weakest bosses row, Godrick), pass 1, and released v7.51.1: every
+leap landing followed by a ground ring leaves 0.76 s to the ring, so a roll through each fits (`CONFIG.enemy.
+ringAfterLanding`, checked at load): Godrick, Godfrey, Margit, Morgott, the Antlered Hunger and their story copies; each
+such ring (and Radagon's) now draws its own ground ring. Check met: in-page `leap landing` rolls every pair with real
+inputs (fails on the old timing); frames `docs/scorecard/godrick-flame-leap-ring.jpg`, `margit-hammer-leap-ring.jpg`;
+numbers `docs/scorecard/leap-rings.txt`. Next: Aleix's bots complaint in `.claude/feedback.md` (2026-11-13: better
+spacing, wait out a combo, no roll loops, a bit stronger); pass 28 saw both faults (bots swing into the pause between
+Godrick's two Kneel rings; roll sideways inside a Stormcaller). Then track A item 3, the ending.
 
 ## Works
 
@@ -57,9 +60,10 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 27's push and the v7.51.0 container: check in pass 28 (pass 26's CI was still running at 19 min; its
-container published). Pass 27 locally: Node 22/22, in-page `Still Mere`, `Story`, `Guiding light`, `Lore`, `valid`,
-`Changelog`, `Ember Root`, `model`.
+CI on pass 28's push and the v7.51.1 container: check in pass 29 (pass 27's v7.51.0 container published). Pass 28
+locally: Node 22/22; in-page `leap landing`, `Margit`, `Godrick`, `Morgott`, `Godfrey`, `Radagon`, `Hunger`, `Moor`,
+`Aurel`, `Ember Root`, `valid`, `Ultra`. Probes (untracked): `.scratch/by-move.cjs <boss> <n> [bots]` (damage by move),
+`hit-states.cjs` (a bot's states before each hit), `leap-gaps.cjs`, `leap-ring-frames.cjs <boss> <attack> <out> [q]`.
 
 ## wip// branches
 

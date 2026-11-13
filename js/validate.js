@@ -118,6 +118,13 @@ function validateData({ visual = true } = {}) {
       && (!('if' in f) || f.if in FOLLOW_IF)), `${tag}: followUps must list { attack, chance (0 to 1), if? (${Object.keys(FOLLOW_IF).join(', ')}) }.`);
     if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
       `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
+    // A leap's landing then a ground ring (v7.51.1): room for a roll through each (`CONFIG.enemy.ringAfterLanding`).
+    if (Array.isArray(a.hits)) a.hits.forEach((h, i) => {
+      const next = a.hits[i + 1], box = next && (next.box || a.box);
+      if (!h || !h.leap || !box || !box.ring) return;
+      const gap = h.active + (h.follow || 0) + next.startup, want = CONFIG.player.rollTime + CONFIG.enemy.ringAfterLanding;
+      need(gap >= want - 1e-6, `${tag}: the ring after the landing of hit ${i + 1} opens ${gap.toFixed(2)} s after it; it needs ${want.toFixed(2)} s (a roll through each).`);
+    });
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
     for (const h of Array.isArray(a.hits) ? a.hits : []) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);

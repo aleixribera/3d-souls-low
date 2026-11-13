@@ -72,7 +72,7 @@
       // Over the pillars and down on the player: the long opening of the second phase.
       { id: 'leap', name: 'The Fall', anim: 'chop', pose: 'hungerCrash', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.35, minRange: 5, chance: 0.5,
         hits: [{ startup: 1.4, active: 0.16, follow: 0.3, leap: { from: 0.4, max: 15, short: 1.4 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } },
-               { startup: 0.05, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } } }],
+               { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } }, impact: { ring: 4.5, crack: 0, dust: 14, shake: 0.12 } }],
         recovery: 1.5, damage: 50, poise: 90, knock: 10, lunge: 0, range: 16, box: { w: 5.0, h: 2.6, d: 5.0, fwd: 0.8, y: 1.0 } },
       // Throws back the skull and screams: a ring of force through the floor. Jump or roll it. Opens the second phase.
       { id: 'roar', name: 'The Roar', anim: 'overhead', pose: 'hungerRoar', noParry: true, tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.0, minRange: 0.1, chance: 0.2,

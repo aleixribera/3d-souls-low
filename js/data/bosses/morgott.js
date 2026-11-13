@@ -88,7 +88,7 @@ const MORGOTT = {
     // Leaps high, tracks, drives the hammer down with a holy shockwave; stuck in the ground after: a major opening.
     { id: 'hammerLeap', name: 'Golden Hammer Leaping Slam', anim: 'chop', pose: 'morgottHammerLeap', spectral: 'hammer', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.4, minRange: 4, chance: 0.35,
       hits: [{ startup: 1.6, active: 0.16, follow: 0.3, leap: { from: 0.4, max: 13, short: 1.2 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } },
-             { startup: 0.05, active: 0.18, follow: 0.6, box: MORGOTT_RING(1.5, 8, 1.6) }],
+             { startup: 0.3, active: 0.18, follow: 0.6, box: MORGOTT_RING(1.5, 8, 1.6), impact: { ring: 4.5, crack: 0, dust: 14, shake: 0.12 } }],
       recovery: 1.9, damage: 62, poise: 95, knock: 11, lunge: 0, range: 13, box: { w: 5.0, h: 2.4, d: 5.0, fwd: 0.8, y: 1.0 } },
     // The hammer on his shoulder, a low sweep from his right; weaves into a sword slash or a leap back.
     { id: 'hammerSweep', name: 'Golden Hammer Sweep', anim: 'sweep', pose: 'hollowSwing', spectral: 'hammer', noParry: true, tracking: { rate: 2.6, commit: 0.6 }, poseScale: 1.3, chance: 0.4,

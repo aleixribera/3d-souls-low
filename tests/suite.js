@@ -2840,6 +2840,30 @@
     expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
     sim.move(null);
   });
+  // v7.51.1: the same for every boss whose leap lands and then sends a ring along the floor (Margit, Godrick, Morgott,
+  // Godfrey, the Antlered Hunger and the story bosses built on their moves).
+  test('Bosses: every leap landing and the ring after it can be rolled one after the other', () => {
+    const pairs = [];
+    for (const d of Object.values(A.ENEMY_BY_ID)) for (const a of d.attacks || []) if (typeof a === 'object' && Array.isArray(a.hits))
+      a.hits.forEach((h, i) => { const n = a.hits[i + 1]; if (h.leap && n && (n.box || a.box).ring) pairs.push([d.id, a.id, i]); });
+    expect.ok(pairs.length >= 10, `${pairs.length} leaps end in a ring`);
+    for (const [id, attackId, i] of pairs) {
+      const tag = `${id} ${attackId}`;
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const p = Game.player, e = Game.duel; faceOff(e, p, 2); quiet(e);
+      const a = e.baseDef.attacks.find(x => x.id === attackId), slam = a.hits[i], wave = a.hits[i + 1], hp = p.hp;
+      e.beginAttack(a); e.hitIndex = i; e.leapHit = i; e.stateTime = slam.startup - 0.05;
+      sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
+      expect.ok(sim.until(() => e.hitIndex === i && e.hitbox && e.hitbox.dodged, 1) >= 0, `${tag}: the first roll passes through the landing`);
+      expect.ok(sim.until(() => e.hitIndex === i + 1 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0 && p.isFree(),
+        `${tag}: the first roll has ended before the ring opens`);
+      sim.move(e.x - p.x, e.z - p.z); sim.press('roll');   // back in, through the ring as it spreads
+      expect.ok(sim.until(() => e.hitIndex === i + 1 && e.hitbox && e.hitbox.dodged, 1) >= 0, `${tag}: the second roll passes through the ring (${Math.hypot(p.x - e.x, p.z - e.z).toFixed(1)} m, hp ${p.hp}/${hp}, state ${e.state} ${e.hitIndex})`);
+      sim.until(() => e.hitIndex !== i + 1 || e.state !== ES.ACTIVE, 1);   // the ring's own time; later hits (Malenia's bloom) aside
+      expect.near(p.hp, hp, 0.001, `${tag}: both evaded without damage`);
+      sim.move(null);
+    }
+  });
   test('Radagon: at 60% the Gold Breaker opens phase 2, faster, with the Elden Shattering', () => {
     const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 6);
     e.hp = 5200 * 0.59; sim.step(2);

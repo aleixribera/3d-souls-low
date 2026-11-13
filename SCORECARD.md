@@ -56,10 +56,10 @@ column is `docs/scorecard/boss-duels-3-bots-grouped.txt`, and the unscaled run i
 | Aldric (both phases) | 4 | 0/6 | 5/6, 148 s, 1.5 fell | A long group fight that costs falls and is sometimes lost. |
 | The Antlered Hunger | 4 | 1/6, 178 s | 5/6, 91 s, 0.5 fell | Won most of the time, with a fall every other fight. |
 | Margit | 4 | 0/6 | 6/6, 103 s, 0.5 fell | A group fight with risk: all three get hit, one sometimes falls. |
-| Godrick | 2 | 0/6 | 0/6, all 3 fell | Scaled, three bots can't beat it (4/6 unscaled); untested by people. |
+| Godrick | 2 | 0/6 | 1/6, 166 s, 2.7 fell | Since v7.51.1 the Flaming Leap's ring can be rolled after the landing (it was the most damage to steady bots); three steady bots win 3/6, the lobby's greedy ones still lose (`docs/scorecard/leap-rings.txt`, `godrick-flame-leap-ring.jpg`). |
 | Crucible Knight | 4 | 1/6, 223 s | 4/6, 127 s, 1.3 fell | Slow alone; a real group fight now. |
-| Morgott | 2 | 0/6 | 1/6, 171 s, 2.7 fell | Scaled, nearly unbeatable for bots (3/6 unscaled). |
-| Godfrey | 2 | 0/6 | 1/6, 181 s, 2.8 fell | Scaled, nearly unbeatable for bots (6/6 unscaled). |
+| Morgott | 2 | 0/6 | 2/6, 185 s, 2.5 fell | Scaled, still hard for bots; since v7.51.1 the Hammer Leap's ring can be rolled after the landing (`docs/scorecard/leap-rings.txt`). |
+| Godfrey | 2 | 0/6 | 0/6, 3.0 fell | Steady bots win 6/6 since v7.51.1's rollable Axe Dive ring, the lobby's greedy ones 0/6: the loss is theirs (`docs/scorecard/leap-rings.txt`). |
 | Maliketh | 2 | 0/6 | 1/6, 170 s, 2.8 fell | Scaled, nearly unbeatable for bots (5/6 unscaled). |
 | Radagon | 2 | 0/12 | 1/12, 188 s, 2.8 fell | Since v7.50.1 the Gold Breaker's shockwave leaves time to roll it after the landing (it hit bots on every use); still the hardest for bots, untested by people (`docs/scorecard/radagon-gold-breaker.txt`). |
 | Malenia | 2 | 0/6 | 0/6, all 3 fell | Scaled, unbeaten by bots (3/6 unscaled). |
