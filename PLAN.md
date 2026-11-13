@@ -28,7 +28,11 @@ Aleix, 2026-11-13.
   bosses already get harder. No damage numbers. Some bosses have too much health in Story too: every boss's own
   health is set so a skilled solo player kills it fast, in the same item. Bosses are killable fast with skill but
   harder to face; the Boss Rush curve scales only their attack pace, never damage or health.
-- The five blessings: overhauled (track B, item 5).
+- The five blessings: overhauled (track B, item 6).
+- The coolest Boss Rush out there (Aleix, 2026-11-13, yes to all six of the director's ideas): revive a friend
+  mid-fight, Focus, highlights on the end screen (track B, item 4); a Crowned boss every 10th fight (item 5); pacts
+  (item 6); a weekly run with a friends' board (item 8). Left out on purpose: damage numbers, stat upgrades between
+  runs, a separate arena for every boss.
 - The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
   scene behind the menus.
@@ -179,7 +183,7 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      - A visible streak: the fight count and each boss's time on the HUD and the end screen.
      - **Swift kill** (the director's pick, for flow): beat a boss under its par time (shown on the HUD beside the
        clock, from the fight-length target) and that fight's blessing offer gains one extra choice (one rarity up
-       once item 5 brings rarity). Skill pays straight back into the run; nobody is punished for missing it.
+       once item 6 brings rarity). Skill pays straight back into the run; nobody is punished for missing it.
      - No damage numbers.
    Check: before-and-after numbers (`node tools/bot-fights.cjs`, `PERSON=1` for a person stand-in): fight 1's length
    for a person with three bots and for four bots, bot falls per fight, and every boss's solo time, against the
@@ -210,25 +214,56 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
    screen checked against the `design-audit` rule book.
-4. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
+4. **Co-op moments** (Aleix, 2026-11-13: the coolest Boss Rush out there). Friends new to the genre should have
+   clutch moments, not wait out a death.
+   - **Revive.** A fallen player leaves an ember where they fell. A teammate who stands on it for about 3 s (moving
+     off or being hit cancels it) brings them back at a third of their health, once per fall. The boss's attention
+     (`CONFIG.aggro`) leans hard on whoever is reviving: the risk is the point. Bots revive too, and a person counts
+     as their first priority after their own life. The `rise` blessing becomes "rise on your own". The server checks
+     every revive claim (range, time, the ember's owner), like any other claim.
+   - **Focus.** Perfect parries and perfect dodges (a roll whose i-frames take a blow) fill a small personal meter
+     beside the stamina bar; when it's full, the owner's next heavy blow breaks the boss's posture outright. It touches
+     only its owner and the boss, never a teammate. Boss Rush's own mechanic, not a blessing; the whole fill-and-spend
+     cycle readable at a glance.
+   - **Highlights.** The end screen gives each player one title from their run, the most notable of theirs ("Revived 4
+     friends", "12 perfect parries", "Fastest kill: 38 s", ...), in the same view as the run's numbers (and item 7's
+     crate roll later), not a screen of its own.
+   Check: a test of a revive (claim checked, boss attention moves, cancel on a hit) and of Focus filling and breaking
+   posture; frames of an ember mid-revive, the Focus meter full, and the end screen's highlights with four players.
+5. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
    can come, each fight harder on item 2's curve: fairly easy at first, slowly more challenging for a good while, then
    genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
    the first few fights (faster, an extra phase of new moves, burning ground, a second boss; none adds damage or
-   health) and are shown by name
-   under the boss's bar; every few fights two bosses come at once. The end screen shows bosses beaten. Check: a test
-   that the first fights draw only the easier bosses, and a frame of a modifier on screen.
-5. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
+   health) and are shown by name under the boss's bar; every few fights two bosses come at once.
+   - **Crowned bosses.** Every 10th fight is a Crowned boss: its own new final phase (new moves, by `VISION.md`'s
+     rules: each telegraphed, none shared with another boss), the arena changed for that fight (light, ground,
+     hazards: baked, inside Normal's budget), and a guaranteed rare blessing for winning. The HUD shows how many
+     fights until the next one, so the endless run has chapters and a goal ("we hit Crowned 2 last time").
+   The end screen shows bosses beaten and Crowned reached. Check: a test that the first fights draw only the easier
+   bosses and that fight 10, 20 and 30 are Crowned; frames of a modifier on screen and of a Crowned fight.
+6. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
    change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
    offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
    kit. Upgrades happen inside the game, during the run (between fights, in the arena), never in a menu between runs;
    a run's upgrades end with it. It's multiplayer: an ability acts mainly on its owner and the boss, and touches
    teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
-   it still reaches impossible. Check: the odds in a test; each rare one and an upgrade seen working in a fight; a
-   test of the curve against a team holding a typical late-run kit.
-6. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
+   it still reaches impossible.
+   - **Pacts.** After fight 5, 15, 25 and every ten on, the team votes on one pact: the bosses get faster for the
+     rest of the run (a step up item 2's pace curve, shown by name with the modifiers), and everyone gets a legendary
+     blessing now. Majority wins; a tie or no vote by the blessing clock means no pact. The end screen lists the pacts
+     taken.
+   Check: the odds in a test; each rare one and an upgrade seen working in a fight; a test of the curve against a team
+   holding a typical late-run kit; a test of a pact vote (majority, tie, timeout) and its pace step; a frame of the
+   vote.
+7. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
    shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,
    eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
    animation and effects; it should make players want another run just to open the next. Check: odds and saving in a
    test; a frame sequence of a crate rolling and landing, and the Collection.
+8. **The weekly run.** Each week, a Weekly mode beside Boss Rush: the same boss order, modifiers and blessing offers
+   for everyone (one seed from the week). A small board in the lobby shows the best fight reached and the fastest
+   kills of this week's runs, by lobby name, kept by the server on Aleix's home server (a file on a mounted volume so container
+   updates keep it; no accounts, no data beyond the lobby name and the numbers). Check: a test that two runs on the same week's seed meet the same bosses
+   and offers, and that the board survives a server restart; a frame of the board.
