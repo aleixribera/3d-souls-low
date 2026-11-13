@@ -59,3 +59,7 @@ took it (once taken).
   follow this look (mode list over one big Start, the party as the other column, key hints that follow the device).
 - 2026-11-13, on pass 45's question (Kindling Tree 2,500 and King's Blade 3,000 below Agathe's 3,200): fine for now.
   Every boss's health gets adjusted once all the bosses are finished and reworked; until then don't spend passes on it.
+- 2026-11-13, after playing the Regent Hollis (pass 44, v7.66.0): "a perfect example of a well built boss". A clear
+  idea, a distinct character, a good model, clear attacks, fair attacks, cool effects, balanced, and ready to be pushed
+  hard by Boss Rush. Hollis is the bar for every boss still to be redone (Oswin onward, then Ashmere's five), and for
+  any second pass on Ostrey, Hale and Harrow and the Ringer.
