@@ -366,46 +366,75 @@ const multiplayer = (() => {
   // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out.
   const blessingScreen = document.createElement('section'); blessingScreen.id = 'blessingScreen'; blessingScreen.hidden = true;
   blessingScreen.setAttribute('aria-labelledby', 'blessingTitle');
-  blessingScreen.innerHTML = '<div class="blessing-panel"><div class="blessing-head"><h2 id="blessingTitle">Choose a blessing</h2><span id="blessingClock"></span></div><div class="blessing-time" aria-hidden="true"><i id="blessingTimeFill"></i></div><div id="blessingChoices" role="group" aria-labelledby="blessingTitle"></div><p id="blessingStatus" aria-live="polite"></p></div>';
+  blessingScreen.innerHTML = '<div class="bl-panel"><div class="bl-head"><h2 id="blessingTitle">Choose a blessing</h2><span id="blessingClock"></span></div><div class="bl-time" aria-hidden="true"><i id="blessingTimeFill"></i></div><div id="blessingChoices" role="group" aria-labelledby="blessingTitle"></div><p id="blessingStatus" aria-live="polite"></p></div>';
   document.body.appendChild(blessingScreen);
+  // The pick (PLAN.md Track B item 3, the director's "Pick 4 · Tall cards"): the HUD under a dark veil, the title and
+  // the seconds left over a thin draining line, then three or four upright cards in a row (a 2 x 2 grid on a phone).
+  // Each card: its icon in a well edged in the rarity's colour, the name, the level change, what it does with the change
+  // strong, and the rarity and number key at its foot. Gold means focused or yours; rarity has its own colours.
   const blessingStyle = document.createElement('style');
   blessingStyle.textContent = `#blessingScreen[hidden]{display:none}
-    #blessingScreen{--gold:#dcbb74;--gold-hi:#f3dca3;--ink:#ece4d1;--muted:#a9a798;--line:#c9a96a33;position:fixed;inset:0;z-index:46;display:flex;align-items:flex-end;justify-content:center;padding:18px 18px max(18px,env(safe-area-inset-bottom));box-sizing:border-box;background:#0507088c;color:var(--ink);font:14px/1.5 system-ui}
-    #blessingScreen .blessing-panel{width:min(880px,100%);max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:20px 22px 14px;background:#14181af5;border:1px solid #c9a96a66;border-radius:8px;box-shadow:0 18px 60px #000a}
-    #blessingScreen .blessing-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-    #blessingScreen h2{margin:0;font:400 26px/1.25 Georgia,serif;color:var(--gold-hi);text-wrap:balance}
-    #blessingClock{color:var(--muted);font-variant-numeric:tabular-nums}
-    #blessingScreen .blessing-time{height:2px;margin:12px 0 16px;background:#ffffff14}#blessingTimeFill{display:block;height:100%;background:var(--gold);transform-origin:left}
-    #blessingChoices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
-    #blessingChoices button{position:relative;display:flex;flex-direction:column;gap:6px;min-height:112px;padding:14px 44px 14px 16px;text-align:left;font:inherit;color:var(--ink);background:#0a0d0fb3;border:1px solid var(--line);border-radius:6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;overflow-wrap:anywhere}
-    #blessingChoices strong{font:400 19px/1.3 Georgia,serif;color:var(--gold-hi)}#blessingChoices span{color:var(--muted)}
-    #blessingChoices em.swift{margin-top:auto;font:600 12px/1.4 system-ui;font-style:normal;color:var(--gold)}
-    #blessingChoices kbd{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:22px;height:22px;border:1px solid #c9a96a55;border-radius:4px;font:600 12px/1 system-ui;color:var(--muted)}
-    #blessingChoices button:hover:not(:disabled),#blessingChoices button:focus-visible{border-color:var(--gold);background:#dcbb7414}
-    #blessingChoices button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
-    #blessingChoices button[aria-pressed=true]{border-color:var(--gold);background:#dcbb7424;box-shadow:inset 0 0 0 1px var(--gold)}
-    #blessingChoices button:disabled{opacity:.4;cursor:default}
-    #blessingScreen.blessing-pad kbd{display:none}
-    #blessingStatus{margin:12px 0 0;color:var(--muted)}#blessingStatus:empty{display:none}
-    @media(hover:none){#blessingChoices kbd{display:none}#blessingChoices button{padding-right:16px}}
-    @media(max-width:640px){#blessingChoices{grid-template-columns:1fr}#blessingChoices button{min-height:0}#blessingScreen .blessing-panel{padding:16px 14px 10px}#blessingScreen h2{font-size:22px}}`;
+    #blessingScreen{position:fixed;inset:0;z-index:46;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:max(16px,min(150px,18vh)) 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;
+      background:#080a0cc7;color:var(--ui-ink);font:400 var(--ui-size-text)/1.45 var(--ui-text);overflow:auto;overscroll-behavior:contain}
+    #blessingScreen .bl-panel{width:max-content;max-width:100%}
+    #blessingScreen .bl-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px}
+    #blessingScreen h2{margin:0;font:400 var(--ui-size-head)/1.1 var(--ui-display);color:var(--ui-ink)}
+    #blessingClock{font:500 14px/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
+    #blessingScreen .bl-time{height:2px;margin-bottom:18px;background:var(--ui-line)}
+    #blessingTimeFill{display:block;height:100%;background:var(--ui-accent);transform-origin:left}
+    #blessingChoices{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,216px);gap:12px}
+    .bl-card{display:flex;flex-direction:column;align-items:center;min-height:330px;box-sizing:border-box;margin:0;padding:20px 18px 16px;
+      text-align:center;font:inherit;color:var(--ui-ink);background:var(--ui-panel);border:1px solid var(--ui-line);border-radius:0;cursor:pointer;
+      touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:border-color .12s,background-color .12s}
+    .bl-card:hover:not(:disabled){border-color:var(--ui-line-hi)}
+    .bl-card:focus{outline:none}
+    .bl-card:focus-visible,.bl-card.bl-focus{border-color:var(--ui-accent);outline:1px solid var(--ui-accent);outline-offset:-1px;background:#17150f}
+    .bl-card[aria-pressed=true]{border-color:var(--ui-accent);outline:1px solid var(--ui-accent);outline-offset:-1px;background:#1d1a12}
+    .bl-card:disabled{opacity:.4;cursor:default}
+    .bl-well{display:grid;place-items:center;flex:none;width:96px;height:96px;box-sizing:border-box;background:var(--ui-well);border:1px solid var(--ui-line);border-bottom:2px solid var(--rc)}
+    .bl-well svg{width:56px;height:56px;fill:none;stroke:var(--rc);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+    .bl-name{margin-top:18px;font:400 22px/1.15 var(--ui-display);color:var(--ui-ink);text-wrap:balance}
+    .bl-level{margin-top:6px;font:500 14px/1 var(--ui-text);color:var(--ui-accent)}
+    .bl-level:empty{visibility:hidden}.bl-level:empty::before{content:'\\2013'}
+    .bl-text{margin-top:12px;font:400 14px/1.45 var(--ui-text);color:var(--ui-body);text-wrap:pretty;overflow-wrap:anywhere}
+    .bl-text b{font-weight:600;color:var(--ui-ink);white-space:nowrap}
+    .bl-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin-top:auto;padding-top:10px;font:500 13px/1.2 var(--ui-text);color:var(--rc);text-align:left}
+    #blessingStatus{margin:14px 0 0;font:400 var(--ui-size-text)/1.4 var(--ui-text);color:var(--ui-muted)}#blessingStatus:empty{display:none}
+    .bl-foot .ui-key.bl-unseen{visibility:hidden}
+    @media (hover:none){#blessingScreen:not(.bl-pad) .bl-foot .ui-key{display:none}}
+    @media (max-width:760px){#blessingScreen{place-items:end center;padding-top:16px}#blessingScreen .bl-panel{width:100%}#blessingChoices{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .bl-card{min-height:250px;padding:16px 12px 12px}.bl-well{width:72px;height:72px}.bl-well svg{width:44px;height:44px}
+      .bl-name{margin-top:12px;font-size:19px}.bl-text{margin-top:8px}#blessingScreen h2{font-size:22px}}
+    @media (max-height:560px) and (min-width:761px){#blessingScreen{padding-top:16px}.bl-card{min-height:0;padding:12px 14px}.bl-well{width:64px;height:64px}.bl-well svg{width:40px;height:40px}
+      .bl-name{margin-top:10px;font-size:19px}.bl-text{margin-top:6px}.bl-foot{padding-top:8px}#blessingScreen .bl-time{margin-bottom:12px}}
+    @media (prefers-reduced-motion:reduce){.bl-card{transition:none}}`;
   document.head.appendChild(blessingStyle);
   let blessing = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
   function openBlessings(msg) {
     if (!msg.offer) {   // the server took this player's pick
-      if (blessing) { blessing.held = msg.held || []; blessing.chosen = blessing.chosen || blessing.held[blessing.held.length - 1] || null; drawBlessings(); }
+      if (blessing) { blessing.held = msg.held || []; blessing.yours = null; blessing.chosen = blessing.chosen || blessing.held[blessing.held.length - 1] || null; drawBlessings(); }
       return;
     }
-    blessing = { offer: msg.offer, held: msg.held || [], chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '' };
+    blessing = { offer: msg.offer, held: msg.held || [], chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '', cards: [], pad: null };
     const list = el('blessingChoices'); list.replaceChildren();
+    const part = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
     msg.offer.forEach((id, i) => {
       const b = ArenaNet.own(BLESSING_BY_ID, id); if (!b) return;
-      const button = document.createElement('button'); button.type = 'button'; button.dataset.blessing = id;
-      for (const [tag, text] of [['kbd', String(i + 1)], ['strong', b.name], ['span', blessingText(b)]]) { const n = document.createElement(tag); n.textContent = text; button.appendChild(n); }
-      // A swift kill's extra choice (CONFIG.swift) is the last one, and says so.
-      if (msg.swift && i === msg.offer.length - 1 && i >= CONFIG.blessings.offer) { const tag = document.createElement('em'); tag.className = 'swift'; tag.textContent = 'Swift kill'; button.appendChild(tag); }
+      const had = blessing.held.filter(h => h === id).length;
+      const button = part('button', 'bl-card'); button.type = 'button'; button.dataset.blessing = id;
+      button.style.setProperty('--rc', `var(--ui-${b.rarity})`);
+      const well = part('span', 'bl-well'), svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      svg.setAttribute('viewBox', '0 0 48 48'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('d', b.icon); svg.appendChild(path); well.appendChild(svg);
+      const text = part('span', 'bl-text');
+      for (const run of blessingParts(b, had)) text.appendChild(run.strong ? part('b', '', run.text) : document.createTextNode(run.text));
+      // The foot: the rarity, "Swift kill" on a swift kill's extra choice (CONFIG.swift, always the last), the key.
+      const swift = msg.swift && i === msg.offer.length - 1 && i >= CONFIG.blessings.offer;
+      const foot = part('span', 'bl-foot');
+      foot.append(part('span', 'bl-rarity', b.rarity[0].toUpperCase() + b.rarity.slice(1) + (swift ? ' · Swift kill' : '')), part('span', 'ui-key', String(i + 1)));
+      button.append(well, part('span', 'bl-name', b.name), part('span', 'bl-level', had ? `${romanLevel(had)} → ${romanLevel(had + 1)}` : ''), text, foot);
       button.onclick = () => chooseBlessing(id);
-      list.appendChild(button);
+      button.addEventListener('focus', () => drawBlessings());
+      list.appendChild(button); blessing.cards.push({ button, key: foot.lastChild, id, n: String(i + 1), chosen: null });
     });
     input.clear(); if (document.pointerLockElement) document.exitPointerLock();
     blessingScreen.hidden = true; drawBlessings();
@@ -427,14 +456,24 @@ const multiplayer = (() => {
     const left = Math.max(0, (blessing.deadline - performance.now()) / 1000), clock = Math.ceil(left) + '\u00a0s';
     if (clock !== blessing.clock) { blessing.clock = clock; el('blessingClock').textContent = clock; }
     el('blessingTimeFill').style.transform = `scaleX(${(left / CONFIG.blessings.pickTime).toFixed(3)})`;
-    for (const button of el('blessingChoices').children) {
-      button.setAttribute('aria-pressed', String(button.dataset.blessing === blessing.chosen));
-      button.disabled = !!blessing.chosen && button.dataset.blessing !== blessing.chosen;
+    // Key caps follow the device: the number keys, or the pad's A, kept in every foot (same height) but shown on the
+    // focused card only. Cards and caps are kept from the opening, so a frame allocates nothing here.
+    const pad = usingPad();
+    if (pad !== blessing.pad) { blessing.pad = pad; blessingScreen.classList.toggle('bl-pad', pad); for (const c of blessing.cards) c.key.textContent = pad ? keyLabel(MENU_PAD.confirm) : c.n; }
+    for (const c of blessing.cards) {
+      const chosen = c.id === blessing.chosen, off = !!blessing.chosen && !chosen, focused = !blessing.chosen && document.activeElement === c.button;
+      if (c.button.disabled !== off) c.button.disabled = off;
+      if (c.chosen !== chosen) { c.chosen = chosen; c.button.setAttribute('aria-pressed', String(chosen)); }
+      if (c.button.classList.contains('bl-focus') !== focused) c.button.classList.toggle('bl-focus', focused);   // also when a pad moved it
+      c.key.classList.toggle('bl-unseen', !!blessing.chosen || (pad && !focused));
     }
-    const held = blessing.held.map(id => ArenaNet.own(BLESSING_BY_ID, id)?.name).filter(Boolean);
-    const status = blessing.chosen ? 'Waiting for the others.' : held.length ? 'Already yours: ' + held.join(', ') + '.' : '';
+    if (blessing.yours == null) {   // what this player holds that isn't on a card already (a card shows its level)
+      const count = new Map(); for (const id of blessing.held) count.set(id, (count.get(id) || 0) + 1);
+      const names = [...count].filter(([id]) => !blessing.offer.includes(id)).map(([id, n]) => { const b = ArenaNet.own(BLESSING_BY_ID, id); return b && b.name + (n > 1 ? ' ' + romanLevel(n) : ''); }).filter(Boolean);
+      blessing.yours = names.length ? 'Yours: ' + names.join(', ') + '.' : '';
+    }
+    const status = blessing.chosen ? 'Waiting for the others.' : blessing.yours;
     if (el('blessingStatus').textContent !== status) el('blessingStatus').textContent = status;
-    blessingScreen.classList.toggle('blessing-pad', usingPad());
     if (opening) el('blessingChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
   }
   // While the pick is open the game hears no keys: a number takes that blessing, arrows move between them, Enter or

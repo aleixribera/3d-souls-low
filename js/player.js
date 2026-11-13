@@ -5,11 +5,19 @@
 // Inventory: { itemId: { count, max } }, created from the player definition.
 // No blessings: every boon a Player reads (bless) at zero.
 const NO_BOONS = Object.freeze({ damage: 0, flasks: 0, stamina: 0, parry: 0, rise: 0 });
-// A blessing's line for the pick screen, its numbers filled in from CONFIG.blessings.
-function blessingText(b) {
-  const B = CONFIG.blessings, v = B.boons[b.boon], pct = x => Math.round(x * 100) + '%';
-  return b.text.replace('{pct}', pct(v)).replace('{n}', String(v)).replace('{hp}', pct(B.riseHp));
+// A blessing's line for the pick card, its numbers filled in from CONFIG.blessings for the next time it is taken when
+// `had` are held already: a list of { text, strong } runs, the size strong ("15%", or "15% → 30%" when it levels up).
+function blessingParts(b, had = 0) {
+  const B = CONFIG.blessings, step = B.boons[b.boon], pct = x => Math.round(x * 100) + '%';
+  const size = f => (had > 0 ? f(step * had) + ' → ' : '') + f(step * (had + 1));
+  const fill = { pct: size(pct), n: size(String), s: step * (had + 1) === 1 ? '' : 's', hp: pct(B.riseHp) };
+  return b.text.split(/(\{\w+\})/).filter(Boolean).map(part => {
+    const key = /^\{(\w+)\}$/.exec(part)?.[1];
+    return key === 'pct' || key === 'n' ? { text: fill[key], strong: true } : { text: key ? fill[key] ?? part : part };
+  });
 }
+// Levels on the pick card: I, II, III, ...
+const romanLevel = n => [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].reduce((s, [v, r]) => { while (n >= v) { s += r; n -= v; } return s; }, '');
 // Rise Again (CONFIG.blessings): a fresh body where `old` fell (at `start` instead after a fall into a pit), with the
 // same blessings and flasks left and `riseHp` of full health; it counts one more rise. The owner swaps it in and frees
 // the old rig.

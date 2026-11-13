@@ -73,8 +73,12 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
     // a is offered Rise Again (the draw itself is tests/blessings.cjs's).
     const draw = app.sim.offerBlessings;
-    app.sim.offerBlessings = (ids, ...rest) => {
-      draw(ids, ...rest);
+    app.sim.offerBlessings = (ids, withBots, extra) => {
+      draw(ids, withBots, extra);
+      // a already holds Whetted Edge once, so its card offers the next level.
+      if (app.sim.blessingOffer(aId) && !app.sim.blessings()[aId]) {
+        app.sim.blessingOffer(aId).splice(0, 1, 'whetted-edge'); app.sim.bless(aId, 'whetted-edge'); draw([aId], false, extra);
+      }
       const o = app.sim.blessingOffer(aId);
       if (o) o.splice(0, o.length, ...['whetted-edge', 'rise-again', 'keen-ear', 'second-wind'].slice(0, o.length));
     };
@@ -85,16 +89,32 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await b.evaluate(() => killMoment.active && Game.drawSlow < 1), true, 'the kill moment plays');
     await b.waitForTimeout(350);
     await b.screenshot({ path: `${out}/kill-moment.png` });
-    for (const page of [a, b]) await page.locator('#blessingScreen').waitFor({ timeout: 30000 });
+    for (const page of [a, b]) await page.locator("#blessingScreen").waitFor({ timeout: 30000 }).catch(e => { throw new Error(e.message + " page errors: " + errors.join(" | ")); });
     // Won in seconds, far under par: a swift kill, so a fourth card, marked.
     assert.equal(await a.locator('#blessingChoices button').count(), 4, 'a swift kill: four blessings to choose from');
-    assert.equal(await a.locator('#blessingChoices button em.swift').count(), 1);
-    assert.equal(await a.locator('#blessingChoices button').last().locator('em.swift').textContent(), 'Swift kill');
+    // Tall cards (v7.70.0): each with its own drawn icon, its rarity at the foot, the swift one marked beside it.
+    assert.deepEqual(await a.locator('#blessingChoices .bl-rarity').allTextContents(), ['Common', 'Common', 'Common', 'Common · Swift kill']);
+    assert.equal(new Set(await a.locator('#blessingChoices .bl-well path').evaluateAll(ps => ps.map(p => p.getAttribute('d')))).size, 4, 'four different icons');
+    assert.deepEqual(await a.locator('#blessingChoices .ui-key').allTextContents(), ['1', '2', '3', '4'], 'the number keys');
+    // Offered again, Whetted Edge shows its next level and the change.
+    assert.deepEqual(await a.locator('#blessingChoices .bl-level').allTextContents(), ['I → II', '', '', '']);
+    assert.equal(await a.locator('#blessingChoices .bl-text b').first().textContent(), '15% → 30%');
+    const card = await a.locator('#blessingChoices button').first().boundingBox();
+    assert.ok(card.height > card.width * 1.3, 'the cards stand upright');
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/blessing-desktop.png` });
     await a.setViewportSize({ width: 390, height: 844 });
-    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#blessingChoices button')].every(b => b.getBoundingClientRect().bottom <= innerHeight)), 'the pick fits a phone');
+    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#blessingChoices button')].every(b => { const r = b.getBoundingClientRect(); return r.bottom <= innerHeight && r.right <= innerWidth; })), 'the pick fits a phone');
     await a.screenshot({ path: `${out}/blessing-phone.png` });
+    // A phone on its side, with a pad: one row, the focused card alone shows the pad's button.
+    await a.setViewportSize({ width: 844, height: 390 });
+    await a.evaluate(() => input.use('pad'));
+    await a.waitForTimeout(200);
+    const caps = await a.locator('#blessingChoices .ui-key').evaluateAll(ks => ks.map(k => getComputedStyle(k).visibility === 'visible' ? k.textContent : ''));
+    assert.ok(caps[0] && caps[0] !== '1' && caps.slice(1).every(c => c === ''), `only the focused card shows the pad button: ${caps}`);
+    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#blessingChoices button')].every(b => { const r = b.getBoundingClientRect(); return r.bottom <= innerHeight && r.right <= innerWidth; })), 'the pick fits a phone on its side');
+    await a.screenshot({ path: `${out}/blessing-landscape-pad.png` });
+    await a.evaluate(() => input.use('keyboard'));
     await a.setViewportSize({ width: 1280, height: 720 });
     await a.locator('#blessingChoices button', { hasText: 'Rise Again' }).click();
     assert.equal(await a.locator('#blessingStatus').textContent(), 'Waiting for the others.');
@@ -105,7 +125,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await b.evaluate(() => multiplayer.info.session.drop && !document.getElementById('loading').classList.contains('show')), true, 'the next boss drops straight in, no loading card');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(await a.locator('#blessingScreen').isVisible(), false);
-    assert.deepEqual(await a.evaluate(() => [...Game.player.blessings]), ['rise-again']);
+    assert.deepEqual(await a.evaluate(() => [...Game.player.blessings]), ['whetted-edge', 'rise-again']);
     assert.deepEqual(await b.evaluate(() => [...Game.player.blessings]), [bPick], 'the number key took the first');
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /BOSS RUSH · 2\/2/);
     blows([aId, bId]);

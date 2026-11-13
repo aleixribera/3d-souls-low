@@ -13,7 +13,8 @@
   style.id = 'uiTheme';
   style.textContent = `:root{--ui-veil:#080a0cf0;--ui-panel:#101316;--ui-well:#06080a;--ui-line:#ffffff1a;--ui-line-hi:#d9b56b59;
     --ui-ink:#ece5d3;--ui-muted:#aaa493;--ui-accent:#d9b56b;--ui-accent-hi:#f1d9a1;--ui-accent-ink:#17130b;--ui-accent-wash:#d9b56b17;
-    --ui-hover:#ffffff0c;--ui-alarm:#e0806a;--ui-good:#a5cc8c;
+    --ui-hover:#ffffff0c;--ui-alarm:#e0806a;--ui-good:#a5cc8c;--ui-body:#cfc8b6;
+    --ui-common:#cfc8b6;--ui-rare:#8fb8dc;--ui-legendary:#e59a5c;
     --ui-display:'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;--ui-text:'Segoe UI',system-ui,-apple-system,sans-serif;
     --ui-size-hint:13px;--ui-size-text:15px;--ui-size-row:19px;--ui-size-head:24px;--ui-size-title:40px}
   .ui-title{margin:0;font:400 var(--ui-size-title)/1.1 var(--ui-display);color:var(--ui-ink);letter-spacing:.01em}

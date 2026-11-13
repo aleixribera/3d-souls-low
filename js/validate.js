@@ -60,6 +60,11 @@ function validateData({ visual = true } = {}) {
   need(new Set(BLESSINGS.map(b => b.id)).size === BLESSINGS.length, 'Blessing ids must be unique.');
   for (const b of BLESSINGS) need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name && typeof b.text === 'string' && b.text &&
     Object.hasOwn(BL.boons, b.boon), `Blessing ${b.id} needs an id, a name, a text and one of CONFIG.blessings.boons.`);
+  // The pick's cards (v7.70.0): a rarity from the list and an icon of plain SVG path commands on the 48-unit grid.
+  need(Array.isArray(BL.rarities) && BL.rarities.length > 0 && BL.rarities.every(r => /^[a-z]+$/.test(r)), 'Blessings rarities must be a list of lowercase words.');
+  for (const b of BLESSINGS) need((b.text.match(/\{\w+\}/g) || []).every(t => ['{pct}', '{n}', '{s}', '{hp}'].includes(t)), `Blessing ${b.id}'s text may only use {pct}, {n}, {s} and {hp}.`);
+  for (const b of BLESSINGS) need(BL.rarities.includes(b.rarity) && typeof b.icon === 'string' && /^M[MLHVCSQTAZ0-9 .,-]+$/.test(b.icon),
+    `Blessing ${b.id} needs a rarity from CONFIG.blessings.rarities and an icon of SVG path commands.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
     defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], execution: ['yield', 'late', 'aside'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))

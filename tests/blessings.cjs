@@ -36,6 +36,16 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.deepEqual({ ...flasks(['spare-draught']) }, { count: 4 + B.boons.flasks, max: 4 + B.boons.flasks });
   assert.equal(flasks(['spare-draught', 'spare-draught']).max, 4 + 2 * B.boons.flasks, 'the same blessing twice adds twice');
 
+  // The pick card's words (v7.70.0): the size strong, and its change when the blessing levels up.
+  const parts = g('blessingParts'), text = (b, had) => parts(b, had).map(p => p.text).join(''), BY = g('BLESSING_BY_ID'), roman = g('romanLevel');
+  assert.equal(text(BY['whetted-edge']), 'Your blows deal 15% more damage.');
+  assert.equal(text(BY['whetted-edge'], 2), 'Your blows deal 30% → 45% more damage.');
+  assert.deepEqual([...parts(BY['keen-ear'], 1).filter(p => p.strong).map(p => p.text)], ['50% → 100%']);
+  assert.equal(text(BY['spare-draught']), 'Carry 1 more flask, full at every fight.');
+  assert.equal(text(BY['spare-draught'], 1), 'Carry 1 → 2 more flasks, full at every fight.');
+  assert.equal(text(BY['rise-again'], 1), 'Rise where you fell, with 50% health, 1 → 2 times a fight.');
+  assert.deepEqual([1, 2, 3, 4, 9].map(roman), ['I', 'II', 'III', 'IV', 'IX']);
+
   // Keen Ear: a press that comes too early for a plain body parries with the blessing.
   const e = sim.inspect().Game.enemies[0], strike = e.def.attacks.find(a => g('canParryAttack')(a));
   const early = ids => {
