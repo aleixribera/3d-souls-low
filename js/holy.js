@@ -26,13 +26,17 @@ const holy = (() => {
   }
 
   // ---- teleport flashes: a small reused pool of floor rings ----
-  function flash(x, y, z) {
+  // An enemy def's opt-in `holyLight: { color, core }` (v7.50.0, the Kindling Tree) draws its flashes and runes in
+  // another light; without it, the Golden Order's gold (CONFIG.elden.holy).
+  const bursts = new Map();   // one burst spec per colour, made once
+  const burstOf = color => { if (!bursts.has(color)) bursts.set(color, { ...H.burst, color }); return bursts.get(color); };
+  function flash(x, y, z, L) {
     let f = flashes.find(f => f.t >= H.ringTime);
     if (!f) { f = { mesh: new THREE.Mesh(RING, add(H.color)), t: 0 }; scene.add(f.mesh); flashes.push(f); }
-    f.t = 0; f.mesh.position.set(x, y + 0.05, z); f.mesh.visible = true;
-    spawnBurst({ x, y: y + 1.6, z }, H.burst);
+    f.t = 0; f.mesh.position.set(x, y + 0.05, z); f.mesh.visible = true; f.mesh.material.color.setHex(L ? L.color : H.color);
+    spawnBurst({ x, y: y + 1.6, z }, L ? burstOf(L.color) : H.burst);
   }
-  events.on('enemyBlink', d => { const e = d.enemy; flash(e.x, e.y, e.z); });
+  events.on('enemyBlink', d => { const e = d.enemy; flash(e.x, e.y, e.z, e.baseDef.holyLight); });
 
   // ---- sigils: one per enemy that uses them, made on first need (js/effect-slots.js), freed once it leaves the game ----
   const sigils = effectSlots.slots((S, e) => {
@@ -41,7 +45,10 @@ const holy = (() => {
   });
   function sigilFor(e) {
     if (e.rig.holySigil) return e.rig.holySigil;
-    return (e.rig.holySigil = sigils.acquire(e, makeSigil));
+    const S = sigils.acquire(e, makeSigil), L = e.baseDef.holyLight;   // a slot may be reused: colour it for this owner
+    S.rune.material.color.setHex(L ? L.color : H.color); S.light.color.setHex(L ? L.color : H.color);
+    S.pillar.material.color.setHex(L ? L.core : H.core);
+    return (e.rig.holySigil = S);
   }
   function makeSigil() {
     const g = new THREE.Group(), rune = new THREE.Mesh(RUNE, add(H.color)), pillar = new THREE.Mesh(PILLAR, add(H.core));

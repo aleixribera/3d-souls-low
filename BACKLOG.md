@@ -106,3 +106,10 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   an undyed cowl). Agathe is Maliketh's moves renamed, 4,000 HP (was 4,600); the robe shed and Black Blade reveal are
   gone, so nothing changes on her body at half health but the storm's light. No one has fought her by hand. The
   Brothers borrow the Beastman's def at load (`js/data/bosses/agathe.js`): the swap must keep it or inline it.
+- Chapter 13, the Root of the Ember (v7.50.0, pass 25), rough; its second step: the Kindling Tree's and the Rootbound's
+  own figures (stand-ins: the Antlered Hunger, chapter 6's boss, stood upright in red-gold wood, so two chapters share one
+  body; the Hollow Soldier in bark, still holding the ruined sword in bark). The tree is Radagon's moves renamed, 4,200 HP
+  (was 5,200); its marks and risings burn red-gold (`holyLight`), but the mark's shape is still the old road's crossing
+  arcs and the thrown thorns are still gold spears: both want an ember shape (a root knot, a thorn). No one has fought it
+  by hand. The Rootbound borrow the Golden Zealot's def at load (`js/data/bosses/kindling-tree.js`): the swap must keep
+  it or inline it.

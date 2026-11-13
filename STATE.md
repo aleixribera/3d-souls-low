@@ -4,11 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 24 shipped `PLAN.md` stage 3 track B item 2's last Ashmere boss, the Antlered Hunger (pass 1; it was already a
-Blender model since v7.20.0, so the step was the hardened check), and released v7.49.0. Check met: a stag's skull with
-carved sockets and the ember eyes in them, no flat-white quills or antler tips; frames `docs/scorecard/hunger-lab.jpg`,
-`hunger-face.jpg`, `hunger-church.jpg` (facing the player at fighting distance in the nave). Next: track A, chapter 13
-(the Root of the Ember); then track B item 3, the weakest "bosses" or "co-op" row of `SCORECARD.md`.
+Pass 25 shipped `PLAN.md` stage 3 track A item 2, chapter 13, the Root of the Ember (pass 1, rough), and released
+v7.50.0. Check met: Story mode goes on from the Torn Abbey into chapter 13 and its boss, the Kindling Tree, finishes the
+level; frames `docs/scorecard/root-tree.jpg`, `root-rootbound.jpg`, `tree-lab.jpg`, `rootbound-lab.jpg`. Next: track B
+item 3, the weakest "bosses" or "co-op" row of `SCORECARD.md`; then track A, chapter 14.
 
 ## Works
 
@@ -45,12 +44,12 @@ carved sockets and the ember eyes in them, no flat-white quills or antler tips; 
   (`js/lore.js`). In-page `Saltgrave` (9), `Story` (24), `Guiding light`; frames by `.scratch/salt-frames.cjs`.
 - Chapter 9, the Night Gaol (v7.42.0, rough): `js/levels/night-gaol.js`, the Ringer (`js/data/bosses/ringer.js`, the
   Crucible Knight's moves renamed), `keyless`; kit weapon `size`. In-page `Night Gaol` (7).
-- Chapter 10, Aurel (v7.44.0, rough): `js/levels/aurel.js`, the Regent Hollis (`js/data/bosses/hollis.js`, Morgott's
-  moves renamed), `gildedThrall`. In-page `Aurel` (5).
-- Chapter 11, Aurel in Ash (v7.46.0, rough): `js/levels/aurel-in-ash.js`, Oswin (`js/data/bosses/oswin.js`, Godfrey's
-  moves), `cinderfolk`. In-page `Aurel in Ash` (5). A material's `tint` sets hue only: darken with another texture.
-- Chapter 12, the Torn Abbey (v7.48.0, rough): `js/levels/torn-abbey.js`, Mother Agathe and the Rending Brothers
-  (`js/data/bosses/agathe.js`, loaded after `lands-enemies.js`: Maliketh's and the Beastman's moves). In-page `Torn Abbey` (7).
+- Chapters 10-12 (v7.44.0-v7.48.0, rough): `js/levels/aurel.js`, `aurel-in-ash.js`, `torn-abbey.js`; bosses in
+  `js/data/bosses/hollis.js`, `oswin.js`, `agathe.js` (Morgott's, Godfrey's, Maliketh's moves renamed). In-page `Aurel`
+  (5), `Aurel in Ash` (5), `Torn Abbey` (7). A material's `tint` sets hue only: darken with another texture.
+- Chapter 13, the Root of the Ember (v7.50.0, rough): `js/levels/ember-root.js`, the Kindling Tree and the Rootbound
+  (`js/data/bosses/kindling-tree.js`: Radagon's and the Golden Zealot's moves), an enemy's opt-in `holyLight` (blink and
+  mark colours: `js/holy.js`, `effect-lighting.js`, `ultra-fx.js`), the `emberbark` ground. In-page `Ember Root` (5).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`, and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss, headless, about a minute).
@@ -64,9 +63,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 24's push and the v7.49.0 container: check in pass 25 (pass 23's v7.48.0 container green; its CI was still
-running at pass 24's start: check it too). Pass 24 locally: Node 22/22, in-page `model`, `Church`, `Hunger`,
-`Ultra models`, `valid`, `Changelog`, `Lore` (all pass).
+CI on pass 25's push and the v7.50.0 container: check in pass 26 (pass 24's v7.49.0 container green, its CI still
+running at pass 25's end; pass 23's CI was cancelled by pass 24's push). Pass 25 locally: Node 22/22, in-page `Ember
+Root`, `Story`, `Torn Abbey`, `Guiding light`, `Lore`, `valid`, `Changelog`, `model`, `Radagon`, `Ultra`, `light` (all pass).
 
 ## wip// branches
 
@@ -85,11 +84,11 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapters 13-14 exist, Story mode ends after the Torn Abbey on THE ROAD GOES ON (`STORY.goesOn`), and
+- (overridable) Until chapter 14 exists, Story mode ends after the Root of the Ember on THE ROAD GOES ON (`STORY.goesOn`), and
   the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
-- (overridable) Chapters 7-12's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
-  bar name, enemy descriptions (`LORE.md` 6, 7, 10c-10h). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
+- (overridable) Chapters 7-13's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
+  bar name, enemy descriptions (`LORE.md` 6, 7, 10c-10i). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
   each (Godrick's damage x0.85), the Ringer 3,000, the Regent 3,400, Oswin 3,800, Agathe 4,000 (her stand-in keeps the
-  Toll Wisp's tall hat).
+  Toll Wisp's tall hat), the Kindling Tree 4,200 (its stand-in is chapter 6's Hunger stood upright).

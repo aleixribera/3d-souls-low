@@ -576,3 +576,14 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Rim: the model `rim: 0.4`, the quills' slot `rim: 0.15` (thin spikes are all edge), the bone slot `rim: 0.5`.
 - 22 pieces, 12,474 triangles in the game (11,880 before), inside the 14,000 boss budget.
 - Checks: the model lab, the in-page `model`, `Church`, `Hunger`, `Ultra models`, `valid` filters. Frames: `docs/scorecard/hunger-lab.jpg`, `hunger-face.jpg`, `hunger-church.jpg`.
+
+## Chapter 13, the Root of the Ember, rough (v7.50.0, stage 3 track A item 2)
+- `STORY.md` chapter 13 built rough: playable from its loading line to its boss in Story mode and the Levels menu (after the Torn Abbey, `LEVEL_12.next`). Level 13 (`js/levels/ember-root.js`) is the old throne level's layout kept (the first hollow, the first root, the ember hollow, the rising root, the sap hollow, the second root past an elite Empty Sentinel, the amber hollow, the root spiral, the grafting, the last root, the last hollow, the heartwood over the deep), every name of the old road gone; no rings of light, a burning deep under the roots instead of the golden abyss, light from the west so what the player walks toward is front-lit. A new realm ground, `emberbark` (`CONFIG.VISUALS.realm.ground`, red-brown grain with a faint ember glow), and a texture, `emberBark` (fingerprints recorded).
+- The Kindling Tree (`js/data/bosses/kindling-tree.js`): Radagon's whole moveset deep-copied and renamed through one table, two phases (`rooted`, `kindled` at 60 %, opened by "The Heartwood Breaks", named "The Kindling Tree, Ablaze" and `ignite`). 4,200 HP (Radagon 5,200), `BOSS_FX.kindlingTree` (earth, then fire). Its teleports read as sinking into its roots and rising.
+- An enemy def's opt-in `holyLight: { color, core }` (validated) colours its blink flashes, floor marks, pillars and their light in `js/holy.js`; without it, the old gold. The tree and the Rootbound burn red-gold. The mark's shape is still the old road's crossing arcs (`BACKLOG.md`).
+- The Rootbound: the Golden Zealot's moves renamed (`root*`), on the Hollow Soldier's Blender figure in bark (`emberBark`, `churchLog`, model `rim` .5), a blade of the root's wood. The file loads after `js/data/lands-enemies.js`; the swap must keep the Zealot's def as raw material or inline it.
+- Stand-in figures: `MODEL_DEFS.kindlingTree` (the Antlered Hunger stood upright in red-gold wood, its antlers for boughs), `MODEL_DEFS.rootbound`.
+- Lore: `LORE.md` 6, 7, 9, 10i, 11; Ysolde's six lines, three inscriptions (`js/data/lore.js`); the guidance routes (the old layout's, renamed). The old road's Elden Throne is untouched.
+- Tests: `tests/suite-ember-root.js` (5), the Story order, Agathe going on to chapter 13, the tree closing the road, lighting count 21.
+- Frames: `docs/scorecard/root-tree.jpg`, `root-rootbound.jpg`, `tree-lab.jpg`, `rootbound-lab.jpg`.
+- Not yet: the tree's and the Rootbound's own Blender figures, Finn (`BACKLOG.md`).

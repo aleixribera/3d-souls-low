@@ -13,6 +13,7 @@
 //   3), the fog, and the rent where the hill tore: Mother Agathe, the Rending Hand.
 const LEVEL_12 = {
   id: 'torn-abbey', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'ember-root',   // v7.50.0: on to the Root of the Ember (chapter 13)
   name: 'Level 12: The Torn Abbey',
   description: 'Where Thrale\'s monks tried to cut the hunger out of the earth, and the earth came with it: ruins adrift in the storm. The colonnade crumbles under your feet; the long bridge has no rail. The abbess waits where the hill tore.',
   help: 'Level 12: most edges are open to the storm: a fall is death. The Rending Brothers spring from the ruins and rend the floor into lines of shockwaves (roll or jump them).',

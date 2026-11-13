@@ -55,7 +55,7 @@ const effectLighting = (() => {
     idle.length = 0;
   });
   quality();
-  events.on('enemyBlink', d => flash(d.enemy, FX_ELEMENTS.holy.glow, C.intensity));
+  events.on('enemyBlink', d => flash(d.enemy, d.enemy.baseDef?.holyLight?.color ?? FX_ELEMENTS.holy.glow, C.intensity));   // opt-in holyLight (js/holy.js)
   events.on('parry', d => { if (!visuals.quality().combatFx && Game.player) flash(d.player || Game.player, FX_ELEMENTS.holy.glow, C.intensity); });
   events.on('execution', d => { if (!visuals.quality().combatFx && d.at) flash(d.at, FX_ELEMENTS.fire.glow, C.intensity); });
   // An effect that wants light this frame, as a reused candidate record (scored by power and nearness to the player p;

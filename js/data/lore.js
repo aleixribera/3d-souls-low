@@ -346,5 +346,30 @@ const LORE = {
         { kind: 'candle', x: 233.5, y: 16, z: -7.2 },
       ],
     },
+    // Chapter 13 (v7.50.0; LORE.md 10i): inside the Ember's first growth.
+    'ember-root': {
+      npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'root-first',
+        lines: [
+          'The song stops at the abbey. After it there is one word, under. I think this is under.',
+          'The wood is warm. Put your hand to it and it beats, a little, like something asleep.',
+          'The ones grown into the walls were people once. The wood took them in, and I don\'t think they fought it.',
+          'It was never a fire. A fire is only what a root looks like when it is burning.',
+          'If the root dies, what it holds goes cold. I don\'t know how much it holds. Go on anyway.',
+          'I\'ll keep the fire. It is the only one down here that isn\'t hungry.',
+        ],
+        idle: 'The little bell is cast. I\'ll ring it when there is water to ring it over.' }],
+      inscriptions: [
+        { id: 'l13-ember', x: 47, z: 4, yaw: Math.PI / 2, mount: 'floor', label: 'Cut in the ember hollow\'s floor',
+          lines: ['"Seven came down with lamps. Seven went up. They carried one coal more than they brought."'] },
+        { id: 'l13-amber', x: 110, y: 8, z: 46, yaw: Math.PI, mount: 'floor', label: 'In the amber hollow\'s floor',
+          lines: ['"Let no one of us carry it alone."', 'Beneath it, in another hand: "We took it so that no one would."'] },
+        { id: 'l13-last', x: 160, y: 16, z: 88, yaw: -Math.PI / 2, mount: 'floor', label: 'In the last hollow\'s floor',
+          lines: ['"It was a root before it was a king. It will be a root after."'] },
+      ],
+      scenes: [
+        { kind: 'corpse', pose: 'seated', x: 13, z: -6.4, yaw: Math.PI }, { kind: 'corpse', pose: 'lying', x: 158, y: 16, z: 80, yaw: 1.6 },
+        { kind: 'candle', x: 152.5, y: 16, z: 90.5 },
+      ],
+    },
   },
 };

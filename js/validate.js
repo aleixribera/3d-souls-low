@@ -175,6 +175,8 @@ function validateData({ visual = true } = {}) {
       && (d.groupScale.breakTime ?? 0) * (CONFIG.group.cap - 1) < 1,
       `Enemy "${d.id}": groupScale must be false or an object of hp, posture and breakTime (0 or more; breakTime x (cap - 1) under 1).`);
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
+    if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
+      `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
     if ('phases' in d) {
       const P = d.phases, aids = new Set(d.attacks.map(a => a && a.id));

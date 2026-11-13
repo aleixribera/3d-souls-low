@@ -288,6 +288,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The storm never moves off. It has sat on this hill since the hill came loose.
 
+### Level 13 — The Root of the Ember (in the first hollow, by the first bonfire)
+1. The song stops at the abbey. After it there is one word, under. I think this is under.
+2. The wood is warm. Put your hand to it and it beats, a little, like something asleep.
+3. The ones grown into the walls were people once. The wood took them in, and I don't think they fought it.
+4. It was never a fire. A fire is only what a root looks like when it is burning.
+5. If the root dies, what it holds goes cold. I don't know how much it holds. Go on anyway.
+6. I'll keep the fire. It is the only one down here that isn't hungry.
+
+*Idle:* The little bell is cast. I'll ring it when there is water to ring it over.
+
 ---
 
 ## 7. Inscriptions
@@ -356,6 +366,13 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
   another hand: "Mother, it is coming up with us."
 - **In the nave landing's floor** (by the last bonfire): "Agathe, abbess, who held the knife. She did not let go."
 
+### Level 13 — The Root of the Ember
+- **Cut in the ember hollow's floor**: "Seven came down with lamps. Seven went up. They carried one coal more than they
+  brought."
+- **In the amber hollow's floor** (by the second bonfire): "Let no one of us carry it alone." Beneath it, in another
+  hand: "We took it so that no one would."
+- **In the last hollow's floor** (by the last bonfire): "It was a root before it was a king. It will be a root after."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -385,8 +402,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 12,
-the Torn Abbey) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 13,
+the Root of the Ember) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -492,6 +509,18 @@ health down until it closes.
 The **Rending Brothers** are her monks, still at the work: they spring from the ruins, cut with hooked knives, fling
 stones and rend the floor.
 
+## 10i. Level 13 — The Root of the Ember (chapter 13 of the Story)
+Chapter 13, after the Torn Abbey. Under everything, the Ember is a root, and the root is still growing. **The Root of
+the Ember** is the inside of its first growth: hollows of living red-gold wood, warm to the hand, joined by roots with
+no rail over a burning deep. Here the Seven came down with lamps, long ago, and went up again carrying a coal.
+
+**The Kindling Tree** is the Ember's own root, given limbs, where it began. Its boughs lash, its thorns fly, its mark in
+the floor burns a moment later, and it sinks into its roots to rise where the player stands. At 60 % it catches, and
+the bar names it **the Kindling Tree, Ablaze**.
+
+The **Rootbound** are thralls grown into the wood, and gone into it gladly: they sink into the roots and rise where you
+stand, throw thorns of fire, and mark the floor to burn.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -527,6 +556,9 @@ stones and rend the floor.
 | The place of Level 12 | the Torn Abbey, torn loose into the storm |
 | The boss of Level 12 | Mother Agathe, the Rending Hand; past half: Agathe, the Storm at Her Back |
 | The enemy of Level 12 | the Rending Brothers |
+| The place of Level 13 | the Root of the Ember, its first growth |
+| The boss of Level 13 | the Kindling Tree; past 60 %: the Kindling Tree, Ablaze |
+| The enemy of Level 13 | the Rootbound |
 
 ---
 ---

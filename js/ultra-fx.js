@@ -553,9 +553,9 @@ void main() {
   when('fallDamage', d => dustRing(d.body.x, d.body.y, d.body.z, 9, 1, U.puffs.dust, 0.9));
   when('boltStopped', d => { sparkBurst(d.bolt, 14, 'clash', null, 0, 0.6); puff(d.bolt.x, d.bolt.y, d.bolt.z, U.puffs.dust, 0.2, 0.7, 0.6, null, 0.3); });
   when('enemyBlink', d => {
-    const c = chest(d.enemy);
-    moteBurst(c, 70, 0xffe0a0, { r: d.enemy.radius, speed: 3.5, lift: 0.8, life: [0.5, 1.2], size: 1.1 });
-    flashAt(c, 0xffd890, 12, 10); ultraPost.wave(c, 0.8, 1);
+    const c = chest(d.enemy), L = d.enemy.baseDef?.holyLight;   // opt-in holyLight (js/holy.js): its own colours
+    moteBurst(c, 70, L ? L.color : 0xffe0a0, { r: d.enemy.radius, speed: 3.5, lift: 0.8, life: [0.5, 1.2], size: 1.1 });
+    flashAt(c, L ? L.core : 0xffd890, 12, 10); ultraPost.wave(c, 0.8, 1);
   });
   when('lifesteal', d => {   // the stolen life flows from the player to her
     const p = chest(Game.player), e = chest(d.enemy), n = 16;

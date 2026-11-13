@@ -19,14 +19,14 @@
 //   blooms    [{ x, y?, z, r, count? }]: scarlet rot flowers scattered on a floor
 //   beams     colour: a pillar of grace light over every bonfire, seen from afar (the way on)
 //   pillars   [{ x, z, y0, y1, r, color }]: colossal columns on the horizon
-//   grounds   [{ kind: 'earth' | 'snow' | 'bark' | 'goldbark' | 'palebark' | 'ash', rooms: [ids] }]: a natural surface laid
+//   grounds   [{ kind: 'earth' | 'snow' | 'bark' | 'goldbark' | 'emberbark' | 'palebark' | 'ash', rooms: [ids] }]: a natural surface laid
 //             over those rooms' floors (earth and grass on a heath, the grain of a branch, snow, ash with embers in it); it
 //             leaves out trap floors, and sits under blood and cracks
 // Tuning: CONFIG.VISUALS.realms. Quality: particle counts follow the preset's `particles` (more on Ultra), floaters,
 // stars and the tree's crown follow it too. Lightning shares a persistent directional surface light
 // with js/effect-lighting.js; its small ambient fill is summed without changing shader light counts.
 const REALM_KEYS = ['tree', 'stars', 'lightning', 'weather', 'clouds', 'floaters', 'dragon', 'halos', 'runes', 'pools', 'roots', 'blooms', 'beams', 'pillars', 'grounds'];
-const REALM_GROUNDS = ['earth', 'snow', 'bark', 'goldbark', 'palebark', 'ash'];
+const REALM_GROUNDS = ['earth', 'snow', 'bark', 'goldbark', 'emberbark', 'palebark', 'ash'];
 const REALM_WEATHER = ['rain', 'snow', 'leaves', 'motes', 'spores', 'ash', 'petals'];
 const REALM_TREES = ['golden', 'burnt', 'haligtree'];
 const REALM_POOLS = ['rot', 'gold', 'water'];

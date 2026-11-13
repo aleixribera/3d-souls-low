@@ -106,4 +106,12 @@ const BOSS_FX = {
     theRending: { element: 'black', impact: 'void' } } },
   // The Rending Brothers (Level 12): the hooked knife, and the floor rent open.
   rendingBrother: { element: 'steel', aura: 0xb8c4d8, attacks: { brotherRend: { element: 'earth', impact: 'gale' } } },
+  // The Kindling Tree (Level 13): the root's wood and earth, its marks bursting in the Ember's fire; once it catches
+  // (the second phase), everything burns (js/data/bosses/kindling-tree.js, loaded after this file).
+  kindlingTree: { element: 'earth', aura: 0xff9a50, phases: { kindled: 'fire' }, attacks: {
+    heartwoodBreaks: { element: 'fire', impact: 'blaze', windup: 'gather' }, greatKindling: { element: 'fire', impact: 'blaze', windup: 'gather' },
+    kindlingSlam: { element: 'fire', impact: 'blaze' }, markBurns: { element: 'fire', impact: 'blaze' }, thornThrust: { element: 'fire', impact: 'blaze' },
+    threefoldLash: { impact: 'shatter' }, rootStomp: { impact: 'quake' }, emberThorn: { element: 'fire' }, thornVolley: { element: 'fire' } } },
+  // The Rootbound (Level 13): wood, and the mark that burns.
+  rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
 };

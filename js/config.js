@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.49.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.50.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -553,6 +553,7 @@ const CONFIG = {
         snow: { size: 256, tile: 6, base: 0xc8ced8, alt: 0xe4e8ee, accent: 0x9aa2b0, accentMix: 0.35, rough: 0.85 },
         bark: { size: 256, tile: 5, base: 0x6e5840, alt: 0x957a5a, accent: 0x3a2e22, accentMix: 0.5, rough: 0.95, grain: 9 },
         goldbark: { size: 256, tile: 5, base: 0x8a6628, alt: 0xb08a42, accent: 0xe8bc64, accentMix: 0.25, rough: 0.7, grain: 9 },
+        emberbark: { size: 256, tile: 5, base: 0x4a2a1c, alt: 0x7a5034, accent: 0xc87a3a, accentMix: 0.3, rough: 0.8, grain: 9, ember: 0.35 },
         palebark: { size: 256, tile: 5, base: 0x9a8e7e, alt: 0xd0c4b0, accent: 0x6a5e50, accentMix: 0.45, rough: 0.9, grain: 9 },
         ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 } },
       // Distant bolt geometry/lifetime. Shared surface lighting is tuned in effectLight.storm.
