@@ -14,8 +14,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track B (pass 45, v7.65.0, item 2 pass 1 of 2): no team-size scaling, `CONFIG.pace` curve, sooner breaks with
   `postureRest`, solo-measured health, 10 s pick. `docs/scorecard/boss-rush-pace.txt`: a party's fight 1 58 s (was
   158), 116 s at fight 20; bot falls short (a fall in 8% of fights at 1, 29% at 10). Pass 2: more falls, kill moment,
-  streak HUD, swift kill, the pick in the arena, next boss straight in. Then item 3 (UI: lobby done in pass 43, `js/ui-theme.js`; title, Practice, options,
-  pause, HUD, Boss Rush screens next). Boss Rush is id `boss-rush`, kind `calling`.
+  streak HUD, swift kill, the pick in the arena, next boss straight in. Then item 3 (lobby done, `js/ui-theme.js`; the HUD
+  stays; blessing pick, title, Practice, options, pause, end of run). Boss Rush is id `boss-rush`, kind `calling`.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.

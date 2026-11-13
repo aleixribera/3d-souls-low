@@ -1730,7 +1730,7 @@
     }
     expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave');
     const aldric = A.ENEMY_BY_ID.varn;
-    expect.ok(aldric.hp === 1800 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1800 && aldric.phases.knell.hp === 2000, 'Aldric health unchanged');
+    expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1600 && aldric.phases.knell.hp === 1700, 'Aldric health as set in v7.65.0');
     expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');
   });
   test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
@@ -2083,7 +2083,7 @@
     sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
     sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
     expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
-    expect.ok(b.hp === b.def.hp && b.def.hp === 2000, 'a fresh full bar');
+    expect.ok(b.hp === b.def.hp && b.def.hp === 1700, 'a fresh full bar');
     expect.ok(!F.room.windows[0].mesh.visible && F.room.pillars.every(P => P.t > 0), 'the glass burst and the pillars fell');
     b.deplete(); sim.step(2);
     expect.ok(!b.alive() && Game.zones.find(z => z.id === 'zone-throne').gate.open && !!F.ending, 'his last bar: dead, the ending runs');
