@@ -22,9 +22,13 @@ Aleix, 2026-11-13.
 
 - The Calling is renamed **Boss Rush** (track B, item 1).
 - Group scaling goes (Aleix, 2026-11-13, replacing his earlier "keep it"): no enemy or boss scales with team size,
-  anywhere. Boss Rush difficulty scales with fights won instead (track B, item 3).
-- The five blessings: overhauled (track B, item 4).
-- The UI (2026-11-13): way better to use and look at, before Endless (track B, item 2). Not Souls-like references;
+  anywhere. Boss Rush difficulty scales with fights won instead (track B, item 2).
+- Bosses are damage sponges and bots never die (2026-11-13): short fights, bosses that press harder rather than last
+  longer, bots that can fall, and more reward moments (track B, item 2). Bots don't get sloppier as a run goes on: the
+  bosses already get harder. No damage numbers. Some bosses have too much health in Story too: every boss's own
+  health is set to about a 2-minute solo fight, in the same item.
+- The five blessings: overhauled (track B, item 5).
+- The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
   scene behind the menus.
 - End-screen titles: plain English, the loop's wording.
@@ -138,7 +142,43 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    co-op. **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
    several, or two teams against each other) or any level, and be fighting in seconds. Check: frames of the title,
    the lobby option and Practice at desktop and phone width; a test starts each mode.
-2. **The UI redesign, the whole game** (Aleix, 2026-11-13: menus and UI way better to use and to look at). It comes
+2. **Fast fights, bots that fall** (Aleix, 2026-11-13: bosses are damage sponges and bots never die; make it more
+   frenetic, with more dopamine). Next in this track: the next track-B pass takes it, ahead of item 3's remaining
+   screens, which resume after it.
+   - **Why:** bots count as players in `CONFIG.group`, so one person with three bots fights a boss at 2.5 times its
+     health; `docs/scorecard/bot-aid.txt` has three bots beating the Pillager Captain and the Bell Warden 10 of 10 in
+     about two minutes, with no bot falling.
+   - **Team-size scaling goes** for every enemy and boss in every mode (`CONFIG.group`, `groupDef`/`setGroup`, the
+     server's scaling in `tick()`): a group of four, bots or people, meets the same boss a solo player does.
+   - **Fight length:** about 45-60 s for a full party at fight 1, never above about 2 minutes late in a run. A person
+     with three bots plays the same as four people.
+   - **Base health, story too** (Aleix: some bosses have too much health in Story as well). Every boss's own `hp` is
+     set so one person who has learned it beats it in about 2 minutes on a clean run, the long outliers first; Boss
+     Rush's fight-1 numbers come from the curve on top of that. Measure every boss against one body alone
+     (`tools/bot-fights.cjs` always fields three today: give it a solo option), list the times before and after, and
+     bring the slow ones into line.
+   - **The curve** (one `CONFIG` rule, exponential in fights won but subtle, as `VISION.md` says): boss health grows
+     slowly and stops at about 1.5 times; the rest comes from damage, speed and aggression (shorter pauses between
+     attacks, longer strings) and, with item 4, the modifiers. Late in a run a boss still dies in about a minute, but
+     every hit taken is huge.
+   - **Bots play like a decent friend, not a machine.** Full player stats stay (v7.57.0). Slower, less even reactions,
+     about twice the mistimed rolls, a later flask and less backing off. They play the same all run: no extra
+     sloppiness as it goes on (Aleix: the bosses already get harder). Target: early on, about one bot falls every three
+     fights; by fight 10 most fights cost at least one. A fallen bot is back for the next fight, like a person.
+   - **Dopamine:**
+     - Less waiting: the blessing is picked in the arena on a 10 s clock (`CONFIG.blessings.pickTime` is 25 today),
+       and the next boss drops straight in.
+     - A kill moment: a short slow motion and a burst of embers when a boss dies, then one line, "Boss 7 down". Drawn
+       only: the simulation and the other players are never slowed; flashes under 3 Hz and `reducedMotion()`.
+     - More breaks and executions: posture breaks come about 30% sooner, so the big hit lands more often.
+     - A visible streak: the fight count and each boss's time on the HUD and the end screen.
+     - No damage numbers.
+   Check: before-and-after numbers (`node tools/bot-fights.cjs`, `PERSON=1` for a person stand-in): fight 1's length
+   for a person with three bots and for four bots, bot falls per fight, and every boss's solo time, against the
+   targets above; a test that 1
+   and 4 players face the same boss; a test of the curve at fight 1, 5, 10, 20 and 40; frames of the kill moment and
+   of the streak on the HUD.
+3. **The UI redesign, the whole game** (Aleix, 2026-11-13: menus and UI way better to use and to look at). It comes
    before Endless, blessings and crates, so their screens are built on it.
    - **What's wrong now** (v7.59.0 frames in `docs/scorecard/modes-*` and `.scratch/calling/blessing-desktop.png`):
      three looks (a serif list on the title and Practice; a web-app lobby with rounded cards, a gold gradient button,
@@ -162,24 +202,21 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
    screen checked against the `design-audit` rule book.
-3. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
-   can come. Each fight is harder than the last, from one `CONFIG` rule: exponential in fights won but subtle, fairly
-   easy at first, slowly more challenging for a good while, then genuinely impossible. The team-size multipliers
-   (`CONFIG.group`, `setGroup`, the server's per-tick scaling) are removed for every enemy and boss in every mode; a
-   group of four meets the same boss a solo player does. Bosses still spread their attention over the group
-   (`CONFIG.aggro`);
-   modifiers appear after the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss)
-   and are shown by name under the boss's bar; every few fights two bosses come at once. The end screen shows bosses
-   beaten. Check: a test of fight 1, 5, 10, 20 and 40's numbers (the curve), a test that 1 and 4 players face the same boss, and a frame of a modifier on screen.
-4. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
+4. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
+   can come, each fight harder on item 2's curve: fairly easy at first, slowly more challenging for a good while, then
+   genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
+   the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss) and are shown by name
+   under the boss's bar; every few fights two bosses come at once. The end screen shows bosses beaten. Check: a test
+   that the first fights draw only the easier bosses, and a frame of a modifier on screen.
+5. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
    change the fight, perhaps a companion. Rarity is shown. Like a true roguelike, an ability you already hold can be
    offered again as its next upgrade level (shown as such, with what the new level adds), so a run builds a strong
    kit. Upgrades happen inside the game, during the run (between fights, in the arena), never in a menu between runs;
    a run's upgrades end with it. It's multiplayer: an ability acts mainly on its owner and the boss, and touches
-   teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 3's curve is tuned against a stacked, upgraded team, not a bare one, so
+   teammates only lightly (a small shared buff at most), never slowing, moving or linking them. Players stack strong abilities: item 2's curve is tuned against a stacked, upgraded team, not a bare one, so
    it still reaches impossible. Check: the odds in a test; each rare one and an upgrade seen working in a fight; a
    test of the curve against a team holding a typical late-run kit.
-5. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
+6. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
    end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
    joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
    shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,
