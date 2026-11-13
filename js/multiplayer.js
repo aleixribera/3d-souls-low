@@ -833,6 +833,7 @@ const multiplayer = (() => {
       const info = await response.json();
       if (!starting || attempt !== joinAttempt) return;
       if (info.players >= info.capacity) throw new Error(`The public lobby is full (${info.capacity} players). ${retry ? 'Waiting for a place to open.' : 'Try again when a place opens.'}`);
+      if (typeof versionCheck !== 'undefined') versionCheck.note(info);
       const pageBuild = document.querySelector('meta[name="arena-build"]')?.content;
       if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; needsReload = true; throw new Error('The game has updated. Reload this page before joining.'); }
       if (!starting || attempt !== joinAttempt) return;
@@ -927,6 +928,7 @@ const multiplayer = (() => {
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) setPeek({ state: 'absent' });
       else {
         const info = await response.json();
+        if (typeof versionCheck !== 'undefined') versionCheck.note(info);
         setPeek({ state: 'online', players: Math.max(0, Number(info.players) | 0), capacity: Math.max(0, Number(info.capacity) | 0),
           playing: typeof info.playing === 'string' && info.playing ? info.playing.slice(0, 80) : null });
       }

@@ -289,6 +289,9 @@ const CONFIG = {
   // The title screen's look at the public lobby (js/multiplayer.js peek): every `interval` s while the title shows,
   // giving up on one request after `timeout` s.
   titleLobby: { interval: 8, timeout: 4 },
+  // A newer version on the server (js/version-check.js): asked every `interval` s off the title (the title's own look
+  // at the lobby asks more often), giving up on one request after `timeout` s.
+  versionCheck: { interval: 180, timeout: 6 },
   nextLevel: { delay: 4.5, fadeTime: 1.2 },   // level with `next`: wait after LEVEL COMPLETE, then fade to black and load it
   // Level 5's script (js/finale.js, v4.3): Aldric's fights, the throne room's transition, the ending.
   finale: {

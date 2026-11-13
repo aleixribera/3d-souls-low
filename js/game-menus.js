@@ -28,6 +28,10 @@ Object.assign(Game, {
             : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? 'practiceLevels' : 'main';
           if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
+    // A newer version on the server (js/version-check.js): a reload button last in pause and on the title.
+    const update = where => typeof versionCheck !== 'undefined' && versionCheck.item(where);
+    const pauseUpdate = update(online ? 'online' : this.story ? 'story' : 'fight');
+    if (pauseUpdate) pauseItems.push(pauseUpdate);
     const P = CONFIG.practice, group = this.practiceGroup, adding = this.practiceAdding;
     const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
     // Practice's opponent lists: a pick starts the fight at once, or, while building a group, joins the group.
@@ -51,6 +55,7 @@ Object.assign(Game, {
         { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Changelog', size: 'small', desc: 'What each version of the game changed.', go: () => this.showMenu('changelog') },
         ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
+        ...(update('title') ? [update('title')] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
         items: [...S.devItems, ...finale.devItems(), ...lore.devItems(),   // the story's jumps live here, off the title
@@ -206,11 +211,15 @@ Object.assign(Game, {
     const items = this.menuItems || [], it = items[this.selected];
     this.menuTouched = true;
     if (this.screens()[this.screen].layout === 'title' && it) {
-      const heroes = items.filter(x => x.size === 'hero').length, small = it.size !== 'hero';
-      let to = this.selected;
-      if (dir === 'down') to = small ? 0 : this.selected + 1;
-      else if (dir === 'up') to = small ? heroes - 1 : this.selected - 1;
-      else to = small ? heroes + (this.selected - heroes + (dir === 'left' ? -1 : 1) + items.length - heroes) % (items.length - heroes) : this.selected + (dir === 'left' ? -1 : 1);
+      // Rows: each card alone, the small entries together, then the new-version button. Up and down go row to row
+      // (wrapping); left and right go along a row, or from a card to its neighbour in the list.
+      const rows = [];
+      items.forEach((x, i) => { const key = x.size === 'hero' ? `card${i}` : x.size || 'small', row = rows.find(r => r.key === key);
+        if (row) row.at.push(i); else rows.push({ key, at: [i] }); });
+      const r = Math.max(0, rows.findIndex(row => row.at.includes(this.selected))), row = rows[r].at;
+      const to = dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
+        : row.length > 1 ? row[(row.indexOf(this.selected) + (dir === 'left' ? -1 : 1) + row.length) % row.length]
+        : rows[r].key.startsWith('card') ? this.selected + (dir === 'left' ? -1 : 1) : this.selected;
       events.emit('menuMove'); this.select(to, true);
       return;
     }

@@ -120,6 +120,16 @@
   #menu.title-menu .menuBtn.small.sel, #menu.title-menu .menuBtn.small:hover { border-color: #c9a85e;
     background: radial-gradient(ellipse at 50% 50%, #b8892a55, #b8892a10 75%); }
   #menu.title-menu #menuDesc { margin-top: 14px; max-width: min(600px, 90vw); }
+  /* A newer version on the server (js/version-check.js): an ember-lit row last on the title and in pause. */
+  .menuBtn.update .n { color: #f3c98a; }
+  .menuBtn.update .n::before { content: ''; display: inline-block; width: 7px; height: 7px; margin: 0 10px 2px 0; border-radius: 50%;
+    vertical-align: middle; background: #ff7a45; box-shadow: 0 0 8px 1px #ff5a2a99; }
+  .menuBtn.update.sel .n, .menuBtn.update:hover .n { color: #ffe2b0; }
+  #menuList:has(.menuBtn.update) { max-height: 230px; }
+  #menu.title-menu .menuBtn.update { grid-column: 1 / -1; min-height: 44px; padding: 10px 14px; border: 1px solid #b8683a80; background: #24120a; }
+  #menu.title-menu .menuBtn.update .n { font-size: 16px; }
+  #menu.title-menu .menuBtn.update.sel, #menu.title-menu .menuBtn.update:hover { border-color: #e39a5c;
+    background: radial-gradient(ellipse at 50% 50%, #b8582a55, #24120a 75%); }
   @media (max-height: 820px) {   /* three cards and the small row fit a laptop screen under the title */
     #menu.title-menu #menuBox { padding-top: 9vh; }
     #menu.title-menu #menuList { margin-top: 4vh; gap: 8px; }
@@ -705,6 +715,7 @@ const GAME_FILES = [
   'boss-battle.js',
   'quality-benchmark.js',
   'autoquality.js',
+  'version-check.js',
   'multiplayer.js',
   'boot.js',
 ];
