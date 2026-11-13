@@ -182,7 +182,9 @@ function validateData({ visual = true } = {}) {
       for (const [pid, ph] of Object.entries(P || {})) {
         const tag = `Enemy "${d.id}" phase "${pid}"`;
         // A mid-bar phase (`at`, v5.3) shares the bar it starts on; any other phase is a full bar of its own.
-        if (ph && 'at' in ph) need(num(ph.at) && ph.at > 0 && ph.at < 1 && !('hp' in ph), `${tag}: at must be a fraction of the bar (0 to 1), with no hp of its own.`);
+        if (ph && 'at' in ph) need(num(ph.at) && ph.at > 0 && ph.at < 1 && !('hp' in ph) && !('alone' in ph), `${tag}: at must be a fraction of the bar (0 to 1), with no hp of its own and no alone.`);
+        // v7.40.0: an `alone` phase begins on the same bar once the rest of its zone has fallen (a pair of bosses).
+        else if (ph && 'alone' in ph) need(ph.alone === true && !('hp' in ph) && Object.keys(P)[0] !== pid, `${tag}: alone must be true, with no hp of its own, and not the first phase.`);
         else need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
         if (visual && ph && 'reveal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.reveal) && !!M && ph.reveal.every(sl => (M.hidden || []).includes(sl)),
           `${tag}: reveal must list material slots its model hides (its "hidden").`); }
@@ -414,7 +416,10 @@ function validateData({ visual = true } = {}) {
       need(typeof I.id === 'string' && !inscIds.has(I.id), `${tag}: inscription ids must be unique strings ("${I.id}").`); inscIds.add(I.id);
       need(num(I.x) && num(I.z) && num(I.yaw) && ['wall', 'floor', 'none'].includes(I.mount) && typeof I.label === 'string' && lines(I.lines), `${tag} inscription "${I.id}": needs x, z, yaw, mount, label and lines.`);
     }
-    for (const S of D.scenes || []) need(LORE_SCENES.includes(S.kind) && num(S.x) && num(S.z), `${tag}: scene "${S.kind}" must be one of ${LORE_SCENES.join(', ')} with x and z.`);
+    for (const S of D.scenes || []) {
+      need(LORE_SCENES.includes(S.kind) && num(S.x) && num(S.z), `${tag}: scene "${S.kind}" must be one of ${LORE_SCENES.join(', ')} with x and z.`);
+      if ('of' in S) need(S.kind === 'statue' && !!ENEMY_BY_ID[S.of] && !!ENEMY_BY_ID[S.of].model, `${tag}: a scene's of must be on a statue and name an enemy with a model ("${S.of}").`);   // v7.40.0
+    }
   }
   errors.push(...validateBonfireGuidance());
   return errors;

@@ -215,5 +215,34 @@ const LORE = {
         { kind: 'corpse', pose: 'reaching', x: 211, y: 8, z: -1.6, yaw: Math.PI / 2 },
       ],
     },
+    // Chapter 8 (v7.40.0; LORE.md 10d): Thrale's border fortress.
+    saltgrave: {
+      npcs: [{ x: 7, z: 2.5, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'salt-gate',
+        lines: [
+          'The great gate is barred from inside. Whoever holds this place does not want it come at.',
+          'There\'s a way round, along the cliffs. The sea is a long way down, and very loud.',
+          'The song has two sisters in it, at Saltgrave. One suit of armour between them, and never both asleep at once.',
+          'The knights on the walls are white with salt. One of them saluted me. Then it remembered what it was for.',
+          'They kneel every evening, the song says, facing Aurel, and wait to be told they may stop.',
+          'Go round. I\'ll keep the fire.',
+        ],
+        idle: 'You can taste the sea in the rain. I had never seen the sea.' }],
+      inscriptions: [
+        { id: 'l8-gate', x: 9, z: 5.85, yaw: Math.PI, mount: 'wall', label: 'Notice on the gatehouse wall',
+          lines: ['"Shut by the castellans\' order, until the king rides in."'] },
+        { id: 'l8-hall', x: 141.5, z: 36, yaw: 0, mount: 'floor', label: 'Cut in the hall\'s threshold',
+          lines: ['"Here the garrison of Saltgrave knelt to the crown. Here it kneels."'] },
+        { id: 'l8-stair', x: 141.5, y: 10, z: 91.5, yaw: 0, mount: 'floor', label: 'Cut in the top stair',
+          lines: ['"Hale keeps the helm, Harrow the greaves. Between them, one castellan."'] },
+      ],
+      scenes: [
+        { kind: 'candle', x: 1.2, z: -2 }, { kind: 'candle', x: 1.4, z: 2.2 },
+        // The hall of kneeling statues: the garrison in stone, three to a side, heads bowed.
+        ...[43, 48, 53].flatMap(z => [{ kind: 'statue', of: 'saltKnight', pose: 'kneel', x: 130.2, z, yaw: Math.PI / 2 },
+                                      { kind: 'statue', of: 'saltKnight', pose: 'kneel', x: 149.8, z, yaw: -Math.PI / 2 }]),
+        { kind: 'corpse', pose: 'seated', x: 30.8, z: -27.2, yaw: 0 }, { kind: 'corpse', pose: 'lying', x: 112, y: 8, z: -26.5, yaw: 1.4 },
+        { kind: 'corpse', pose: 'reaching', x: 138.3, y: 10, z: 92.2, yaw: 0 },
+      ],
+    },
   },
 };

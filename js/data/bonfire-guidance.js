@@ -67,6 +67,22 @@ const BONFIRE_GUIDANCE = {
       [[140,8,-28.5],[140,8,-29],[139,8,-16],[138,0,4],[138,0,62],[133,0,70],[133.5,0,70.5]],
     ] },
   ],
+  "windward-moor": [
+    { id: "moor-shrine-to-moor-gatefront", from: "moor-shrine", to: "moor-gatefront", paths: [
+      [[2.5,0,-6.5],[2,0,-7],[6,0,-4],[55,0,-3],[130,0,-3],[131,0,-6],[133,0,-16],[133,0,-15.5]],
+    ] },
+    { id: "moor-gatefront-to-moor-bridge", from: "moor-gatefront", to: "moor-bridge", paths: [
+      [[133,0,-15.5],[133,0,-16],[159,0,-13],[170,0,-2],[190,8,-2],[222,8,-2],[224,8,-6],[224,8,-6.2]],
+    ] },
+  ],
+  "saltgrave": [
+    { id: "salt-gate-to-salt-tower", from: "salt-gate", to: "salt-tower", paths: [
+      [[13.5,0,-4.3],[13,0,-4],[31,0,-14],[36,0,-23],[70,0,-23],[86,8,-27],[136,8,-27],[140,8,-29],[140,8,-28.5]],
+    ] },
+    { id: "salt-tower-to-salt-stair", from: "salt-tower", to: "salt-stair", paths: [
+      [[140,8,-28.5],[140,8,-29],[139,8,-16],[138,0,4],[138,0,62],[133,0,70],[133.5,0,70.5]],
+    ] },
+  ],
   "evergaol": [
     { id: "gaol-landing-to-gaol-isle", from: "gaol-landing", to: "gaol-isle", paths: [
       [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],

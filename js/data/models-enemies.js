@@ -639,3 +639,54 @@ MODEL_DEFS.lanternBearer = {
   },
   eyes: { color: 0xffb050 },
 };
+// The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
+// over grey-green cloth. A stand-in until its own Blender figure.
+MODEL_DEFS.saltKnight = {
+  extends: 'undeadKnight',
+  materials: {
+    ...MODEL_DEFS.undeadKnight.materials,
+    plate: { tex: 'knightPlate', tint: 0xd8d6cc, decay: 0.9 },
+    gauntlet: { tex: 'knightPlate', tint: 0xa8a69c, decay: 0.85 },
+    mail: { tex: 'knightMail', tint: 0x8c8c86, decay: 0.8 },
+    trousers: { tex: 'rottenCloth', tint: 0x48544e, decay: 0.8 },
+  },
+};
+// Hale and Harrow, the Castellans (Level 8, v7.40.0; LORE.md 10d): one suit of armour split between twin sisters, in
+// salt-crusted iron and Saltgrave's sea-grey. Stand-ins until their own Blender figures: Hale, who has the helm, the
+// breastplate and the axe, wears the Empty Sentinel's figure; Harrow, bare-headed in the gauntlets and greaves, the
+// Executioner's.
+MODEL_DEFS.castellanHale = {
+  extends: 'emptySentinel', budget: 'boss',
+  materials: {
+    ...MODEL_DEFS.emptySentinel.materials,
+    plate: { tex: 'knightPlate', tint: 0xc8c6bc, decay: 0.75 },
+    filigree: { tex: 'sentinelFiligree', tint: 0x8e908a, decay: 0.6 },
+    mail: { tex: 'knightMail', tint: 0x7a7c78, decay: 0.75 },
+    plume: { tex: 'sentinelMail', tint: 0x3a4442, decay: 0.7 },
+    cloth: { tex: 'sentinelCloth', tint: 0x52625e, decay: 0.6, double: true },
+    rags: { tex: 'sentinelRags', tint: 0x4a5854, decay: 0.65, double: true },
+    trim: { tex: 'sentinelTrim', tint: 0x9a9c94, decay: 0.55, double: true },
+    blade: { tex: 'rustedIron', tint: 0x8a8680, decay: 0.5, rim: 0.6 },
+    haft: { tex: 'dentedSteel', tint: 0x4a4a48, decay: 0.6, rim: 0.4 },
+    eye: { glow: 0xc8d4dc },
+  },
+  weapon: { use: 'twinAxe', slots: { blade: 'blade', grip: 'haft', guard: 'filigree' } },
+  eyes: { ...MODEL_DEFS.emptySentinel.eyes, color: 0xc8d4dc },
+};
+MODEL_DEFS.castellanHarrow = {
+  extends: 'ashExecutioner', budget: 'boss',
+  materials: {
+    ...MODEL_DEFS.ashExecutioner.materials,
+    hair: { tex: 'margitFur', tint: 0x5a4a3e, decay: 0.4 },
+    plumage: { tex: 'execPlumage', tint: 0x9a9c94, decay: 0.5, double: true },
+    sleeve: { tex: 'rottenCloth', tint: 0x52625e, decay: 0.55, double: true },
+    sash: { tex: 'rottenCloth', tint: 0x9a9c94, decay: 0.5, double: true },
+    cord: { tex: 'rottenCloth', tint: 0x3a4442, decay: 0.5, double: true },
+    skirt: { tex: 'execSkirt', tint: 0x6a726c, decay: 0.55, double: true },
+    trim: { tex: 'execTrim', tint: 0xa8aaa2, decay: 0.45, double: true },
+    gauntlet: { tex: 'knightPlate', tint: 0xc8c6bc, decay: 0.75 },
+    iron: { tex: 'knightPlate', tint: 0xb4b2a8, decay: 0.7 },
+    eye: { glow: 0xc8d4dc },
+  },
+  eyes: { ...MODEL_DEFS.ashExecutioner.eyes, color: 0xc8d4dc },
+};

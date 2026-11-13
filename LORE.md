@@ -238,6 +238,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The wind never stops here. I think it has been blowing since they left.
 
+### Level 8 — Saltgrave (in the gatehouse, by the first bonfire)
+1. The great gate is barred from inside. Whoever holds this place does not want it come at.
+2. There's a way round, along the cliffs. The sea is a long way down, and very loud.
+3. The song has two sisters in it, at Saltgrave. One suit of armour between them, and never both asleep at once.
+4. The knights on the walls are white with salt. One of them saluted me. Then it remembered what it was for.
+5. They kneel every evening, the song says, facing Aurel, and wait to be told they may stop.
+6. Go round. I'll keep the fire.
+
+*Idle:* You can taste the sea in the rain. I had never seen the sea.
+
 ---
 
 ## 7. Inscriptions
@@ -277,6 +287,11 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 - **A milestone on the heath**: "Aurel, nine days. Keep to the lantern."
 - **On the gate bridge** (before the fog): "The porter keeps the gate until the king sends word." Someone has scratched beneath it: "No word came."
 
+### Level 8 — Saltgrave
+- **The barred gate** (in the gatehouse, by the first bonfire): "Shut by the castellans' order, until the king rides in."
+- **In the hall of kneeling statues**: "Here the garrison of Saltgrave knelt to the crown. Here it kneels."
+- **On the tower stair** (before the fog): "Hale keeps the helm, Harrow the greaves. Between them, one castellan."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -306,8 +321,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 7, the Windward
-Moor) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 8,
+Saltgrave) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -342,6 +357,20 @@ and a lantern, still keeping the border for a king long dead. The song Ysolde kn
 Seven through, the night they carried the Ember out. Whether it was Ostrey, and what it cost him, it never says. When
 he is hurt past bearing, his lantern catches, and he fights by its fire.
 
+## 10d. Level 8 — Saltgrave (chapter 8 of the Story)
+Chapter 8, after the moor. **Saltgrave** is the border fortress of Thrale, on a cliff over the sea, in a rain that
+never lifts: its great gate barred from inside, a cliff walk round to the outer rampart, an inner ward, a hall of
+kneeling statues, and the tower roof. Two castellans hold it for a crown that does not answer, and have held it a very
+long time.
+
+**Hale and Harrow, the Castellans**, are twin sisters. When Thrale's kings began to forget, the fortress's arms were
+sent to Aurel to be gilded, and one suit of armour came back. The sisters split it: Hale took the helm, the breastplate
+and the axe; Harrow the gauntlets, the greaves and the weight. They fight as one castellan in two bodies. When one
+falls, the other kneels, takes up her sister's half, and fights on alone.
+
+The **Salt Knights** are Saltgrave's garrison, their armour crusted white by the sea wind. They keep the walls. In the
+hall below the tower, the ones who stopped keeping them kneel in stone.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -362,6 +391,9 @@ he is hurt past bearing, his lantern catches, and he fights by its fire.
 | The place of Level 7 | the Windward Moor, Thrale's border |
 | The boss of Level 7 | Old Ostrey, the Porter |
 | The enemy of Level 7 | the Lantern Thralls |
+| The place of Level 8 | Saltgrave, Thrale's border fortress |
+| The bosses of Level 8 | Hale and Harrow, the Castellans |
+| The enemy of Level 8 | the Salt Knights |
 
 ---
 ---

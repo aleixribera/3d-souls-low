@@ -21,10 +21,11 @@ const STORY = {
     { level: 'final-castle', title: 'THE FINAL CASTLE', line: 'The bell is rung. By the old law, King Aldric must come out of his gates and answer.' },
     { level: 'the-church', title: 'THE CHURCH IN THE PASS', line: 'The king is ash, and still the ash falls. Something left him as he died, and went up into the mountains.' },
     { level: 'windward-moor', title: 'THE WINDWARD MOOR', line: 'Over the pass lies the country the Seven never named to their children. Its gate is still kept.' },
+    { level: 'saltgrave', title: 'SALTGRAVE', line: 'Two castellans hold Saltgrave for a crown that does not answer. They have held it a very long time.' },
   ],
   done: 'The ash has stopped falling. The road is walked.',
   goesOn: 'Thrale lies beyond the pass. Its chapters are still being built.',
-  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger', 'Old Ostrey, the Porter'] },
+  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger', 'Old Ostrey, the Porter', 'Hale and Harrow, the Castellans'] },
   // What a new story starts with beyond the player's own kit (PLAYER_DEF). Future currencies, upgrades and equipment
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.
   progress: { currency: 0, equipment: {}, upgrades: {} },

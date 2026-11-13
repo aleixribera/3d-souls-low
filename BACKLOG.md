@@ -59,3 +59,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Empty Sentinel (v7.39.0, pass 14): its upper arms are thin mail tubes under the great pauldrons, and the left
   tasset leaves a patch of the thigh's mail showing beside the front panel (`docs/scorecard/sentinel-lab.jpg`); the kit's
   halberd spends 180 of its ~350 triangles on six grip rings. Second step, stage 4.
+- Chapter 8, Saltgrave (v7.40.0, pass 15), rough; its second step: Hale's, Harrow's and the Salt Knights' own figures
+  (stand-ins: the Empty Sentinel, the Executioner and the Undead Knight re-coloured; Hale shows the Sentinel's gold
+  bands); a twin's fall drawn as more than a seamless phase change (the survivor's kneel is Godrick's arm-chop wind-up);
+  the hall's kneeling statues read dark, their swords held up rather than point-down (`docs/scorecard/salt-statues.jpg`);
+  rain falls inside the roofed gatehouse, as it did in Stormveil (`salt-gatehouse.jpg`). No one has fought the pair by
+  hand yet (1,700 HP each, Godrick's damage x0.85).
+- A castellan fought alone (Arena, Boss vs Boss, a Calling roster without her sister) begins as the whole castellan at
+  once, kneeling into `sistersHalf` (pass 15); a lone-castellan opening without the kneel may read better.

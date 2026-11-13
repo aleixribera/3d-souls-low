@@ -16,7 +16,7 @@ Evidence lives in `docs/scorecard/` (v7.34.0, 2026-11-13). To take it again:
 |---|---|---|---|
 | Combat feel | 3 | Timings, parries, rolls and executions are specified and tested, but no play feedback is on record yet. | `docs/combat-timings-v4.1.md`, `tests/suite.js` (261 in-page tests), `.claude/feedback.md` |
 | Characters and art | 3 | The wanderer, 15 enemies (the Empty Sentinel since v7.39.0) and the Antlered Hunger are Blender models; Aldric, the Bell Warden, the Pillager Captain and the Giant Skeleton are still hand-built geometry. | `docs/scorecard/boss-*.jpg`, `docs/scorecard/sentinel-*.jpg`, `js/baked/` |
-| Levels and content | 3 | Seven levels (the seventh rough), each with its own light and look; from their opening frames most read as plain corridors and squares (rows below). | `docs/scorecard/level-*.jpg` |
+| Levels and content | 3 | Eight levels (the seventh and eighth rough), each with its own light and look; from their opening frames most read as plain corridors and squares (rows below). | `docs/scorecard/level-*.jpg` |
 | Bosses | 2 | Every boss scales with the group and turns between its fighters by a readable rule (the striker, a drinker, else the closest), favouring area attacks on a bunched group, but three bots beat the Lands' bosses only 13/48 times. | `docs/scorecard/boss-duels-1-bot.txt`, `boss-duels-3-bots-grouped.txt`, `boss-attention.txt`, `boss-attention-3.jpg` |
 | Co-op and multiplayer | 4 | The Calling's first playable version is whole: any bosses or a random roster, bots to three, bosses that scale with the group and turn on it, the last two together, a blessing between fights, and an end screen with time, bosses beaten, each player's damage and deaths, and Again; tuned on bots, not yet played by friends. | `tests/calling-browser.cjs`, `docs/scorecard/calling-final-fight.jpg`, `docs/scorecard/blessing-desktop.jpg`, `docs/scorecard/summary-won-desktop.jpg` |
 | Menus and HUD | 3 | The title and HUD read cleanly at desktop and phone width, but the title cards carry eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") Aleix's rules forbid. | `docs/scorecard/menu-title-desktop.jpg`, `menu-title-phone.jpg` |
@@ -35,6 +35,7 @@ Scored from each level's opening frame only (pass 1); a deeper look plays throug
 | 5. The Final Castle | 3 | A dark courtyard under a red sky with the castle's silhouette; the ground is a bare plane with grass tufts. | `docs/scorecard/level-final-castle.jpg` |
 | 6. The Church in the Pass | 3 | The Blender church in a snowy pass; the snow is a flat white that washes out the ground and the HUD panel. | `docs/scorecard/level-the-church.jpg` |
 | 7. The Windward Moor | 2 | Rough (v7.38.0): playable to Old Ostrey in Story mode, a slate storm over Stormhill's old layout, but its thralls and porter wear borrowed, re-coloured figures and the porter reads dark at fighting distance. | `docs/scorecard/moor-ostrey.jpg`, `moor-flock.jpg` |
+| 8. Saltgrave | 2 | Rough (v7.40.0): playable to the twin castellans on the tower roof in Story mode, both readable and front-lit at fighting distance, but the twins and Salt Knights wear re-coloured stand-in figures and the hall's kneeling statues read dark. | `docs/scorecard/salt-castellans.jpg`, `salt-statues.jpg`, `salt-gatehouse.jpg` |
 
 ## Bosses: with 1 and with 3 players
 

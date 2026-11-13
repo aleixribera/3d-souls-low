@@ -27,14 +27,14 @@ const ultraBoss = (() => {
     const spec = BOSS_FX[e.baseDef.id];
     if (!spec && !fx.isBoss(e)) return null;
     const a = spec && spec.attacks && e.attack ? spec.attacks[e.attack.id] : null;
-    const name = (a && a.element) || (spec && spec.phases && spec.phases[e.phase]) || (spec ? spec.element : 'steel');
+    const name = (a && a.element) || (spec && spec.phases && spec.phases[e.def?.phaseId]) || (spec ? spec.element : 'steel');
     return { spec, a, name, el: FX_ELEMENTS[name] || STEEL, scale: e.baseDef.scale || 1 };
   }
   fx.hooks.aura = e => {
     const L = look(e);
     if (!L || !L.spec) return null;
     if (L.a && L.a.aura) return L.a.aura;
-    return L.spec.phases && L.spec.phases[e.phase] && L.spec.phases[e.phase] !== L.spec.element ? L.el.mote : L.spec.aura ?? L.el.mote;
+    return L.spec.phases && L.spec.phases[e.def?.phaseId] && L.spec.phases[e.def?.phaseId] !== L.spec.element ? L.el.mote : L.spec.aura ?? L.el.mote;
   };
   fx.hooks.trail = b => { const L = look(b); return L ? [L.el.trail, U.trails.enemyBoost * BB.trailBoost] : null; };
   fx.hooks.bolt = bolt => {

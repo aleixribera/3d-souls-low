@@ -604,6 +604,7 @@ const GAME_FILES = [
   'data/bosses/malenia.js',
   'data/bosses/antlered-hunger.js',
   'data/bosses/ostrey.js',
+  'data/bosses/castellans.js',
   'data/elden-bosses.js',
   'data/story-boss-moves.js',
   'data/boss-fx.js',
@@ -617,6 +618,7 @@ const GAME_FILES = [
   'levels/final-castle.js',
   'levels/the-church.js',
   'levels/windward-moor.js',
+  'levels/saltgrave.js',
   'levels/lands/stormhill.js',
   'levels/lands/stormveil.js',
   'levels/lands/evergaol.js',
@@ -706,7 +708,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.39.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.40.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -730,6 +732,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-audit.js', 'tests/');   // v7.18: the audit fixes
   await loadScript('suite-church.js', 'tests/');   // v7.20: Level 6
   await loadScript('suite-moor.js', 'tests/');   // v7.38.0: Level 7
+  await loadScript('suite-saltgrave.js', 'tests/');   // v7.40.0: Level 8
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours

@@ -4,10 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 14 shipped `PLAN.md` stage 3 track B item 1's second half, the Empty Sentinel in Blender (pass 1 of it), and
-released v7.39.0. Check met: lab sheet `docs/scorecard/sentinel-lab.jpg` (and `-lab-walk`), front-lit Arena frame
-`sentinel-arena.jpg`, Final Castle bridge `sentinel-castle.jpg`; 2,856 tris with the halberd. Next: track A, chapter 8
-(Saltgrave); then track B item 2, the Pillager Captain.
+Pass 15 shipped `PLAN.md` stage 3 track A item 2's next chapter, chapter 8 Saltgrave, rough (pass 1 of it), and
+released v7.40.0. Check met: Story mode goes on from the moor to Saltgrave; the twin castellans readable on the tower
+roof (`docs/scorecard/salt-castellans.jpg`), the kneeling statues (`salt-statues.jpg`), Ysolde (`salt-gatehouse.jpg`).
+Also fixed CI's `Guiding light` failure (the moor had no bonfire routes since v7.38.0). Next: track B item 2, the
+Pillager Captain; then chapter 9.
 
 ## Works
 
@@ -45,20 +46,19 @@ released v7.39.0. Check met: lab sheet `docs/scorecard/sentinel-lab.jpg` (and `-
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
   `Story` (18) and `Church` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs` (not run by CI: the
   default is lands); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
-- Chapter 7, the Windward Moor (v7.38.0, rough): `js/levels/windward-moor.js` (Stormhill's layout), Old Ostrey
-  (`js/data/bosses/ostrey.js`, Margit's engineering renamed through one table, no golden weapons; stand-in figure the
-  Shover re-coloured), `lanternThrall` / `lanternBearer` (stand-ins: Hollow Soldier, Toll Wisp re-coloured). Checked by
-  the in-page `Moor` (6), `Story` (21) and `Church` tests. Its second step is in `BACKLOG.md`.
+- Chapter 7, the Windward Moor (v7.38.0, rough): `js/levels/windward-moor.js`, Old Ostrey (`js/data/bosses/ostrey.js`),
+  `lanternThrall` / `lanternBearer`; in-page `Moor` (6). Second step in `BACKLOG.md`.
+- Chapter 8, Saltgrave (v7.40.0, rough): `js/levels/saltgrave.js` (Stormveil's layout), Hale and Harrow
+  (`js/data/bosses/castellans.js`, Godrick's moves split and renamed), the opt-in `alone` phase (`checkPhaseAt`; `kin`
+  from `Game.spawnZone` and Arena groups; no kin = alone at once), `saltKnight`, statue `of`/`pose: 'kneel'`
+  (`js/lore.js`). In-page `Saltgrave` (7), `Story` (22), `Guiding light`; frames by `.scratch/salt-frames.cjs`.
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
-- Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab, 1600x640), `lab-zoom.cjs`
-  (same with `DSF=2 CLIP=x,y,w,h`, CSS pixels of the 1600 view), `enemy-play.cjs <q> <dist> <levelId> <enemyId[#n]>`
-  (a frame in a level; `HIDEP=1` hides the player; `YAWOFF=0.15` puts the camera nearly in front of the enemy's
-  facing, default 0.55; it sets the player to a raised enemy's y, but it can still fall off a ledge, so pick a spot
-  with floor in front: the Tower's west-stair Shover works), `lab-probe.cjs <id>` (hides each mesh in turn; `TRY=`,
-  `TEX=1`, `NOSHADOW=1` modes), `normals-probe.cjs`. `enemy-play.cjs` takes `arena` as the level (a 1v1 duel) and
-  `WAIT=ms`; `lab-zoom.cjs` takes `EVAL=<js>` run in the page before the shot.
+- Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
+  CLIP=x,y,w,h`, `EVAL=<js>`), `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>` (`HIDEP=1`, `YAWOFF=0.15`,
+  `WAIT=ms`; pick a spot with floor in front of a raised enemy), `lab-probe.cjs <id>` (`TRY=`, `TEX=1`, `NOSHADOW=1`),
+  `normals-probe.cjs`, `salt-frames.cjs`.
 
 ## Broken
 
@@ -66,8 +66,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 13's and 14's pushes, and the v7.39.0 container: check in pass 15 (the v7.38.0 container passed). Pass 14
-locally: Node group (22/22), in-page `model`, `Ultra models`, `Execution: light`, `Low performance`.
+CI on pass 15's push and the v7.40.0 container: check in pass 16 (the v7.39.0 container passed; CI on pass 14's
+STATE push failed only on `Guiding light`, fixed in pass 15). Pass 15 locally: Node group (22/22), in-page
+`Saltgrave`, `Story`, `Moor`, `Lore`, `Ultra`, `Guiding light`.
 
 ## wip/ branches
 
@@ -86,11 +87,12 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapters 7-14 exist, Story mode ends after the church on THE ROAD GOES ON, "Thrale lies beyond
-  the pass. Its chapters are still being built." (`STORY.goesOn`), and the end-of-Act-I cards are the loop's wording
-  (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
+- (overridable) Until chapters 9-14 exist, Story mode ends after Saltgrave on THE ROAD GOES ON (`STORY.goesOn`), and
+  the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
 - (overridable) Chapter 7's words are the loop's: Ysolde's six lines, the three inscriptions, Ostrey's and the thralls'
   descriptions, and the porter's second phase, "the lantern catches" (`LORE.md` 6, 7, 10c). Ostrey has 3,000 HP and
   the moor grants 6 flasks, as Stormhill did.
+- (overridable) Chapter 8's words are the loop's: Ysolde's lines, the three inscriptions, the castellans' split-armour
+  story and names (`LORE.md` 6, 7, 10d). Hale and Harrow have 1,700 HP each and Godrick's damage x0.85.

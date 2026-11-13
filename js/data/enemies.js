@@ -418,6 +418,16 @@ const ENEMY_DEFS = [
     attacks: W.attacks.map(a => a.id === 'wispBolt' ? { ...a, id: 'bearerFlare', name: 'Lantern Flare' } : { ...a, id: 'bearerPush', name: 'Lantern Shove' }) });
 }
 
+// The Salt Knights of Saltgrave (Level 8, v7.40.0; LORE.md 10d): the fortress's garrison, their armour crusted white by
+// the sea wind. Heavier than Ashmere's knights and slower to turn. Rough stand-in: the Undead Knight's figure and moves,
+// salt-white.
+{
+  const K = ENEMY_DEFS.find(d => d.id === 'knight');
+  ENEMY_DEFS.push({ ...K, id: 'saltKnight', model: 'saltKnight', name: 'Salt Knight',
+    description: 'Saltgrave\'s garrison, still keeping the walls, armour crusted white by the sea wind. Heavy, slow to turn: step round it.',
+    color: 0xb8b6ac, visual: { ...K.visual, skin: 0xb0aea4 }, hp: 290, poise: 150, turnRate: 2.6, trackRate: 1.0 });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

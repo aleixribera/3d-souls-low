@@ -2163,11 +2163,11 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 7; the moor is the last chapter built so far', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 8; Saltgrave is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('windward-moor') === null, 'nothing after the moor yet');
+    expect.ok(S().nextLevelId('saltgrave') === null, 'nothing after Saltgrave yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2275,13 +2275,24 @@
     expect.ok(Game.story && Game.level.id === 'windward-moor' && S().data.level === 'windward-moor', `chapter 7 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('windward-moor')[0] === 'THE WINDWARD MOOR' && /Its gate is still kept/.test(Game.levelCard('windward-moor')[1]), 'its title and line');
   }));
-  test('Story: beating Old Ostrey, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+  test('Story: beating Old Ostrey goes on to chapter 8, Saltgrave (v7.40.0)', withSave(() => {
     S().jumpTo('windward-moor'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'windward-moor', 'chapter 7 starts');
     const o = Game.enemies.find(e => e.baseDef.id === 'ostrey');
     expect.ok(o && o.def.name === 'Old Ostrey, the Porter', 'the porter keeps the gate');
     for (const z of Game.zones) if (z.id !== 'zone-ostrey') { z.gate.open = true; z.beaten = true; }   // the fights before the bridge, won
     for (let i = 0; i < 4 && o.alive(); i++) { o.deplete(); sim.step(1); sim.until(() => o.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'saltgrave' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'saltgrave' && S().data.level === 'saltgrave', `chapter 8 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('saltgrave')[0] === 'SALTGRAVE' && /a crown that does not answer/.test(Game.levelCard('saltgrave')[1]), 'its title and line');
+  }));
+  test('Story: beating the Castellans, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('saltgrave'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'saltgrave', 'chapter 8 starts');
+    const twins = Game.enemies.filter(e => e.baseDef.id === 'hale' || e.baseDef.id === 'harrow');
+    expect.ok(twins.length === 2, 'two castellans hold the roof');
+    for (const z of Game.zones) if (z.id !== 'zone-castellans') { z.gate.open = true; z.beaten = true; }   // the fights before the roof, won
+    for (const o of twins) for (let i = 0; i < 10 && o.alive(); i++) { o.deplete(); sim.seconds(1); sim.until(() => o.state !== ES.PHASE, 20); }
     sim.until(() => Game.screen === 'storyDone', 20);
     const screen = Game.screens().storyDone;
     expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, `the road's closing screen (${Game.screen})`);
@@ -3332,7 +3343,7 @@
     for (const [id, B] of Object.entries(BOSS_FX)) {
       const d = ENEMY_BY_ID[id], phases = [null, ...Object.keys(d.phases || {})];
       for (const ph of phases) for (const aid of Object.keys(B.attacks || {})) {
-        const L = ultraBoss.look({ baseDef: d, phase: ph, attack: { id: aid }, boss: true });
+        const L = ultraBoss.look({ baseDef: d, def: { phaseId: ph }, attack: { id: aid }, boss: true });
         expect.ok(L && L.el && BOSS_FX_IMPACTS.includes((L.a && L.a.impact) || L.el.impact), `${id}/${ph}/${aid}: a look and an impact`);
       }
     }

@@ -75,4 +75,12 @@ const BOSS_FX = {
     barOverhead: { impact: 'shatter', windup: 'gather' }, gateDrop: { impact: 'shatter' },
     coalToss: { element: 'fire' }, coalDouble: { element: 'fire' }, coalPunish: { element: 'fire' }, coalRetreat: { element: 'fire' }, lanternBash: { element: 'fire' },
     kindleOpener: { element: 'fire', impact: 'blaze', windup: 'gather' }, burningDrop: { element: 'fire', impact: 'blaze' }, stampSlam: { element: 'fire', impact: 'blaze' } } },
+  // Hale and Harrow (Level 8): the sea wind round Hale's axe, iron and stone under Harrow's greaves; taking up her sister's
+  // half is a grief, not a fire: storm for both once alone.
+  hale: { element: 'storm', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
+    galeLeap: { impact: 'gale' }, wallCuts: { element: 'steel' }, grindingRun: { element: 'steel' }, rearBackhand: { element: 'steel' },
+    kneelGate: { impact: 'gale' }, fallingWeight: { element: 'earth', impact: 'quake' }, twoSteps: { element: 'steel' }, sistersHalf: { impact: 'shatter', windup: 'gather' } } },
+  harrow: { element: 'earth', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
+    kneelGate: { impact: 'quake' }, fallingWeight: { impact: 'quake' }, twoSteps: { element: 'steel' }, grindingRun: { element: 'steel' }, rearBackhand: { element: 'steel' },
+    galeLeap: { element: 'storm', impact: 'gale' }, wallCuts: { element: 'steel' }, sistersHalf: { impact: 'shatter', windup: 'gather' } } },
 };

@@ -12,6 +12,7 @@
 //   The bridge yard (y 8, bonfire 3), then the fog and the gate bridge: Old Ostrey, the Porter, in his gate.
 const LEVEL_7 = {
   id: 'windward-moor', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'saltgrave',   // v7.40.0: on to Thrale's border fortress (chapter 8)
   name: 'Level 7: The Windward Moor',
   description: 'Over the pass, Thrale\'s border: a storm-held moor, a gorge, a cliff road with no rail and a gate bridge, still kept.',
   help: 'Level 7: win each fight to open the way on. The thralls are blind: their bearer sees for them. The cliff road has no rail: keep to its wall.',

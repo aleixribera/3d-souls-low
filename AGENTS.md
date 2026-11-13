@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.38.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.40.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 Where the game is going lives in three files at the root. Read them before choosing what to build:
 
@@ -12,9 +12,9 @@ Where the work stands is `STATE.md` (what works, what's broken, open questions),
 
 In the game today there are two Story roads:
 
-- **Ashmere:** Levels 1–7. Level 1 teaches the controls with lesson cards. Aldric's death (Level 5) is the end of Act I, not
-  of the story: its cards lead on to Level 6, the Church in the Pass, and over it to Level 7, the Windward Moor, Thrale's
-  border and the last chapter built so far (`STORY.md`).
+- **Ashmere:** Levels 1–8. Level 1 teaches the controls with lesson cards. Aldric's death (Level 5) is the end of Act I, not
+  of the story: its cards lead on to Level 6, the Church in the Pass, over it to Level 7, the Windward Moor, Thrale's
+  border, and to Level 8, Saltgrave, its border fortress and the last chapter built so far (`STORY.md`).
 - **The Lands Between:** eight lands, one per Elden Ring boss, with its own ending and Finn as a solo companion.
 
 There is also a Levels menu, a 1v1 Arena (Enemies, Bosses, Elden Ring Bosses, Boss vs Boss), and an optional multiplayer server with a public lobby and friendly bots.
@@ -96,7 +96,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |
 | Executions | `js/execution.js`, `CONFIG.execution` |
 | A boss against a group (health, posture, breaks per player) | `CONFIG.group`, `groupDef` and `setGroup` (`js/enemy.js`), a def's `groupScale`; the server scales each tick |
-| Boss phases, reactions, follow-ups | `js/enemy.js` (`enterPhase`, `outlast`, `REACTIONS`, `FOLLOW_IF`, `attackById`) |
+| Boss phases, reactions, follow-ups | `js/enemy.js` (`enterPhase`, `outlast`, `REACTIONS`, `FOLLOW_IF`, `attackById`); a pair of bosses: an `alone` phase (`checkPhaseAt`, `kin` from `Game.spawnZone`) |
 | A level | `js/levels/*.js`, listed in `data/levels.js` |
 | Models built in Blender | `tools/blender/*.py`, packed by `tools/pack-baked.cjs` into `js/baked/`, decoded by `js/baked.js`; a level draws them through `scenery` (`js/scenery.js`), a model through `use: 'baked'` parts. Steps in `docs/church-in-the-pass-v7.20.0.md` and `docs/wanderer-model-v7.21.0.md` |
 | Story chapters and saves | `js/data/story.js`, `js/story.js`, `CONFIG.story` |

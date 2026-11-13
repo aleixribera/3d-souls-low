@@ -8,7 +8,7 @@
   const start = () => { Game.startLevel('windward-moor'); Game.loading = 0; sim.begin(); };
   const ostrey = () => Game.enemies.find(e => e.baseDef.id === 'ostrey');
   test('Moor: Level 7 follows the church, as chapter 7 of the Story', () => {
-    expect.ok(A.LEVELS.at(-1).id === 'windward-moor' && A.LEVELS.at(-2).id === 'the-church', 'listed after the church');
+    expect.ok(A.LEVELS[A.LEVELS.indexOf(A.LEVEL_7) - 1].id === 'the-church', 'listed after the church');
     expect.ok(A.STORY.chapters[6].level === 'windward-moor' && A.STORY.chapters[6].title === 'THE WINDWARD MOOR', 'chapter 7 of the Story');
     expect.ok(A.LEVEL_6.next === 'windward-moor', 'the Levels menu carries on from the church too');
   });

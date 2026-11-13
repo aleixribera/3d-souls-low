@@ -105,16 +105,20 @@ const lore = (() => {
         box(g, 0.025, 0.1, 0.025, gold, Math.cos(a) * 0.16 + side, 0.1, Math.sin(a) * 0.16);
       }
     },
-    statue(s, g) {   // the champion: hooded, a round shield, the scarf painted red, the face struck off
-      const stone = mat(0x6a6660);
+    // The champion: hooded, a round shield, the scarf painted red, the face struck off. v7.40.0: `of` (an enemy id) carves
+    // that enemy's figure instead, all in stone, and `pose: 'kneel'` kneels it on its plinth (Saltgrave's hall).
+    statue(s, g) {
+      const stone = mat(0x6a6660), E = s.of && ENEMY_BY_ID[s.of];
       box(g, 1.4, 0.9, 1.0, stone, 0, 0.45, 0); box(g, 1.6, 0.12, 1.2, stone, 0, 0.94, 0);
-      const r = new Rig({ scale: 1.15, bulk: 1, color: 0x6a6660, weapon: 'sword', model: PLAYER_DEF.look.model });
+      const r = new Rig(E ? { scale: E.scale, bulk: E.bulk, color: 0x6a6660, weapon: E.weapon, model: E.model }
+        : { scale: 1.15, bulk: 1, color: 0x6a6660, weapon: 'sword', model: PLAYER_DEF.look.model });
       for (const m of r.mats) {
-        const red = m.color && m.color.r > m.color.g * 1.6 && m.color.r > 0.3;
-        if (m.color) m.color.setHex(red ? 0x9a4436 : 0xb0aca4);
+        const red = !E && m.color && m.color.r > m.color.g * 1.6 && m.color.r > 0.3;
+        if (m.color) m.color.setHex(red ? 0x9a4436 : E && m.isMeshBasicMaterial ? 0x2a2826 : 0xb0aca4);   // unlit (an enemy's eyes): a dark slit
         if (m.emissive) m.emissive.setHex(0);
       }
-      const scar = box(new THREE.Group(), 0.2, 0.2, 0.08, mat(0x3a3836), 0, 0.12, 0.1); r.head.add(scar);   // the hacked-off face
+      if (E) for (const halo of r.glows || []) halo.base = 0;   // and no halo: stone does not see
+      if (!E) { const scar = box(new THREE.Group(), 0.2, 0.2, 0.08, mat(0x3a3836), 0, 0.12, 0.1); r.head.add(scar); }   // the hacked-off face
       r.statue = true;
       return { rig: r, lift: 1.0 };
     },
@@ -256,8 +260,11 @@ const lore = (() => {
       if (!on) continue;
       const r = s.rig, D = s.def;
       r.reset(); r.setOpacity(1);
-      if (r.statue) {   // the champion, on guard
-        r.armL.rotation.x = -0.6; r.armR.rotation.x = -0.2; r.head.rotation.x = 0.12;
+      if (r.statue) {   // the champion, on guard; or kneeling, the blade's point to the plinth, head bowed
+        if (D.pose === 'kneel') {
+          r.spin.position.y = 0.52; r.legL.rotation.x = -1.45; r.kneeL.rotation.x = 1.45; r.legR.rotation.x = 0.1; r.kneeR.rotation.x = 1.5;
+          r.armL.rotation.x = r.armR.rotation.x = -1.3; r.head.rotation.x = 0.45;   // hands on the hilt, held out before it
+        } else { r.armL.rotation.x = -0.6; r.armR.rotation.x = -0.2; r.head.rotation.x = 0.12; }
         r.place(D.x, s.y + s.lift, D.z, D.yaw || 0, s.y + s.lift);
         r.shadow.visible = false;
         continue;

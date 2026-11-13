@@ -73,6 +73,7 @@ const Game = {
         return new Enemy(ENEMY_BY_ID[id], { ...s, z, y: world.floorY(s.x, z, s.y), behavior: 'arena', notice: CONFIG.notice.arena });
       });
       this.duel = list[0];
+      for (const e of list) e.kin = list;   // a pair of bosses fought together waits on each other (an `alone` phase)
       return list;
     }
     // A dispersed enemy tied to a zone (`zone`) is not brought back once that zone's gate is open: its area is won.
@@ -194,6 +195,7 @@ const Game = {
       .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss,
         arena: m.arena ? z.trigger : null }));
     z.actors = [...kept, ...fresh];
+    for (const a of z.actors) a.kin = z.actors;   // its zone's fighters: an `alone` boss phase waits for the rest to fall
     z.beaten = z.members.length > 0 && fresh.length === 0;   // every member beaten (before a rest, or a boss): its gate opens
     this.enemies.push(...fresh);
   },

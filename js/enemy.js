@@ -146,10 +146,13 @@ class Enemy {
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
   // on the same bar (no kneel, no refill). Its `opener` (an attack id) is the first thing it does.
+  // An `alone` phase (v7.40.0, a pair of bosses) begins the same way once every other member of its group (`kin`, set
+  // by Game.spawnZone and the Arena's group fight) has fallen; one fought on its own (no kin) begins it at once.
   checkPhaseAt() {
     if (!this.phaseIds || this.lastPhase() || !this.alive() || this.state === ES.PHASE || this.state === ES.EXECUTED) return;
     const next = this.baseDef.phases[this.phaseIds[this.phase + 1]];
-    if (!next.at || this.hp > this.def.hp * next.at) return;
+    const due = next.alone ? (this.kin || [this]).every(k => k === this || !k.alive()) : next.at && this.hp <= this.def.hp * next.at;
+    if (!due) return;
     const hp = this.hp, posture = this.posture, from = this.phase;
     this.enterPhase(this.phase + 1); this.hp = hp; this.posture = posture;
     this.opener = next.opener ? this.def.attacks.find(a => a.id === next.opener) : null;
@@ -159,7 +162,8 @@ class Enemy {
   // stay alive (and untouchable). Returns true if it lives on.
   outlast() {
     this.hp = 0; this.hitbox = null;
-    if (!this.lastPhase() && !this.baseDef.phases[this.phaseIds[this.phase + 1]].at) {   // a mid-bar phase never refills an empty bar
+    const next = !this.lastPhase() && this.baseDef.phases[this.phaseIds[this.phase + 1]];
+    if (next && !next.at && !next.alone) {   // a mid-bar phase never refills an empty bar (nor one that waits to be left alone)
       const from = this.phase;
       this.enterPhase(this.phase + 1); this.hp = 0;   // the new bar fills through the transition
       this.setState(ES.PHASE);
