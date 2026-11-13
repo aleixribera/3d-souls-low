@@ -52,3 +52,6 @@ took it (once taken).
   one of Ultra's effects, each toned down slightly and never switched off; lighting is baked everywhere, in every preset,
   in place of most real-time lights and shadows; never below 100% render scale. The laptop numbers (Low 60, High 30-40
   on the Final Castle) only calibrate the stand-in for integrated graphics; Normal must hold 60 on it.
+- 2026-11-13, bot follow-up after playing v7.57.0: they are good now but wait too much; make them a bit more
+  aggressive. And smarter about rolling: they sometimes roll when the attack's hitbox is nowhere near them, for example
+  when they stand behind the boss. A bot rolls only when the swing can actually reach it.
