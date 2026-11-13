@@ -51,7 +51,7 @@
     try {
       sim.begin();
       for (const q of ['low', 'high', 'ultra']) {
-        visuals.setQuality(q); Game.startFight('kindlingTree'); Game.loading = 0;
+        visuals.setQuality(q); Game.startFight('rootbound'); Game.loading = 0;
         const e = Game.enemies[0], a = e.baseDef.attacks.find(a => a.spectral);
         e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup / 2;
         e.x = Game.player.x + 3; e.z = Game.player.z; e.rig.root.visible = true;
@@ -61,7 +61,7 @@
         expect.ok(info.lights.some(l => l.visible && l.intensity > 0), `${q}: spectral weapon casts light`);
         expect.ok(lights.every(l => !l.castShadow), `${q}: no cube shadow maps`);
         expect.ok(lights.some(l => l.intensity > 0 && l.color.r > l.color.b), `${q}: golden light colour`);
-        Game.startFight('kindlingTree'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on same-arena retry`);
+        Game.startFight('rootbound'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on same-arena retry`);
         Game.startLevel('long-hall'); expect.ok(effectLighting.info().activeEffects === 0, `${q}: clear on level change`);
       }
     } finally { settings.graphics = saved; applySettings(); }

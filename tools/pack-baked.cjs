@@ -33,6 +33,7 @@ const FILES = {
   'hollis': { sources: ['hollis'] },
   'oswin': { sources: ['oswin'] },
   'agathe': { sources: ['agathe'] },
+  'kindling-tree': { sources: ['kindling_tree'] },
 };
 
 function readGlb(file) {

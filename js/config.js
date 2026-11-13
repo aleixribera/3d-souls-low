@@ -181,6 +181,9 @@ const CONFIG = {
   // `minTell` s (validated).
   rend: { cut: 0.1, max: 3, time: 22 },
   storm: { lock: 0.55, minTell: 0.9 },
+  // A hit's `burrow` (pass 50, the Kindling Tree): its heave stops `near` m short of the player's body (it rises beside
+  // them, not in them), and holds still over the spot it will rise from for at least `minTell` s before the rise (validated).
+  burrow: { near: 2.0, minTell: 0.6 },
   // Pace (v7.65.0): no enemy or boss scales with the number of players, anywhere; a group of four meets the boss a solo
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
@@ -521,6 +524,10 @@ const CONFIG = {
     // as embers of your own red) and their flight to and from it (`fly` s).
     stormRend: { mark: 2.6, markColor: 0x9fc4ff, boltColor: 0xd8e8ff, height: 26, segs: 12, width: 0.32, jag: 1.5, flash: 0.28,
       piece: 0.17, pieceColor: 0xff3424, backColor: 0xffc890, fly: 0.38, stormColor: 0xa8ccff },
+    // The Kindling Tree's burrow (js/root-heave.js): it sinks `depth` of its height and rises in `rise` s; clods of root and
+    // earth heave up behind the head every `step` m and settle in `life` s; the spot it rises from shows its reach as a
+    // ring (`ring` colour) that brightens and tightens once it holds still.
+    rootHeave: { depth: 1.05, rise: 0.32, step: 0.55, life: 1.8, clod: 0.42, clodColor: 0x3a1a0e, glowColor: 0xff7a24, ring: 0xffa040 },
     tether: { color: 0xb8c8ff, opacity: 0.7, width: 0.28, fadeIn: 1.5, fadeOut: 1.4, flash: 2.5, dust: 4, links: 72 },
     flameGlow: { size: 4.2, opacity: 0.55, hdr: 1.7, pierce: 0.6 },   // halo around every flame; flames get brighter for bloom
     pools: { torch: { radius: 3.2, k: 0.18 }, brazier: { radius: 2.4, k: 0.14 }, bonfire: { radius: 3.8, k: 0.26 },

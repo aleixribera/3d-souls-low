@@ -192,7 +192,12 @@ class Enemy {
   }
   deplete() { if (this.alive() && !this.invulnerable()) { this.hp = 0; if (!this.outlast()) this.die(); } }
   // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
-  invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
+  // Under the floor in a hit's `burrow` (pass 50): from its `from` of the wind-up until it rises (js/root-heave.js).
+  burrowed() {
+    const h = this.attack && this.state === ES.WINDUP ? this.attack.hits[this.hitIndex] : null;
+    return !!(h && h.burrow && this.stateTime >= h.startup * h.burrow.from);
+  }
+  invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || this.burrowed() || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
@@ -435,6 +440,19 @@ class Enemy {
           tx = this.vx; tz = this.vz; this.blinkLeft -= dt;
           if (this.blinkLeft <= 0) { this.blinkLeft = 0; this.vx = this.vz = 0; this.yaw = toPlayer; events.emit('enemyBlink', { enemy: this, out: false }); }
         }
+        // A hit's `burrow` (pass 50, the Kindling Tree): from `from` of its wind-up it is under the floor and cannot be
+        // touched; the heave of its root runs through the floor after the player at `speed` m/s, turning at most `turn`
+        // rad/s, until `lock` of the wind-up. There it holds still while the floor swells over it (step off it), and it
+        // rises as the hit strikes. A walk under the floor like any step, so walls and ledges stop it (integrateBody).
+        if (hit.burrow && this.stateTime >= hit.startup * hit.burrow.from) {
+          const B = hit.burrow;
+          if (this.burrowHit !== this.hitIndex) { this.burrowHit = this.hitIndex; this.burrowYaw = toPlayer; }
+          // Its own pace at once, and dead still once it stops: no run-up and no slide (the tell is where it stopped).
+          // It stops `near` m short of the player's body, so it rises beside them (the ring still takes them), never in them.
+          const sp = this.stateTime < hit.startup * B.lock && dist > this.radius + player.radius + CONFIG.burrow.near ? B.speed : 0;
+          if (sp) this.burrowYaw = turnToward(this.burrowYaw, toPlayer, B.turn * dt);
+          tx = this.vx = Math.sin(this.burrowYaw) * sp; tz = this.vz = Math.cos(this.burrowYaw) * sp;
+        }
         if (this.stateTime >= hit.startup) this.strike(player);
         break;
       }
@@ -501,6 +519,7 @@ class Enemy {
     const a = this.attack;
     if (!a || (this.state !== ES.WINDUP && this.state !== ES.ACTIVE)) return false;
     if (a.hits[this.hitIndex].echo) return false;   // the gilt cuts where it hangs: he does not turn
+    if (a.hits[this.hitIndex].still) return false;   // pass 50: a blow that falls where the last one was aimed (a mark that burns)
     if (a.tracking) return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * a.tracking.commit;
     if (a.track) return true;
     return this.state === ES.WINDUP && this.stateTime < a.hits[this.hitIndex].startup * CONFIG.enemy.windupTrack;
@@ -603,7 +622,7 @@ class Enemy {
   beginAttack(attack) {
     if (attack.cue) this.cueKin(attack.cue);
     this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
-    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
@@ -769,7 +788,7 @@ class Enemy {
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
     this.struckTime = 0;   // the `struck` reaction (v5.9)
-    this.kx += kx; this.kz += kz;
+    if (!this.def.rooted) { this.kx += kx; this.kz += kz; }   // a rooted phase (pass 50) is not knocked back either
     if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
     if (P) {
