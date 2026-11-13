@@ -64,7 +64,9 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    check above, then the boss fought in its level.
 3. **Two graphics presets.** Low and High become one **Normal** preset that holds 60 fps on integrated graphics;
    **Ultra** stays for Aleix's PC. Render scale stays at 100% or more in every preset, auto-quality included: the speed
-   comes from elsewhere (draw calls, shadows, effects' cost, level of detail, culling). Build a stand-in for integrated graphics that any pass can run on this PC in under
+   comes from elsewhere (draw calls, shadows, effects' cost, level of detail, culling). Today every preset's
+   `renderScale` is 1, but `maxPixelRatio` caps Low at 1x and High at 1.5x, so on a scaled screen (a laptop at 125-150%)
+   they draw below the screen's own resolution and get stretched: that counts as below 100% and goes. Build a stand-in for integrated graphics that any pass can run on this PC in under
    two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
    it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
    fight.
