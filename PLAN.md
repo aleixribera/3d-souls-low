@@ -71,10 +71,14 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    **Ultra** stays for Aleix's PC. Render scale stays at 100% or more in every preset, auto-quality included: the speed
    comes from elsewhere (draw calls, shadows, effects' cost, level of detail, culling). Today every preset's
    `renderScale` is 1, but `maxPixelRatio` caps Low at 1x and High at 1.5x, so on a scaled screen (a laptop at 125-150%)
-   they draw below the screen's own resolution and get stretched: that counts as below 100% and goes. Build a stand-in for integrated graphics that any pass can run on this PC in under
+   they draw below the screen's own resolution and get stretched: that counts as below 100% and goes. Normal keeps
+   every one of Ultra's effects, each toned down slightly (fewer particles, cheaper passes), never switched off.
+   **Baked lighting** everywhere: every level, boss arena and Boss Rush arena gets baked light (lightmaps, baked in
+   Blender or a bake step; light probes or baked ambient occlusion for the moving characters), in every preset, in
+   place of most real-time lights and shadows. Build a stand-in for integrated graphics that any pass can run on this PC in under
    two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
    it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
-   fight.
+   fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects.
 4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
    may be improved).
 5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
