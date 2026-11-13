@@ -63,7 +63,8 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    figure with the best detail and art direction (the re-coloured stand-in goes). Every attack readable on its tell. Its level is reworked so the place and the fight belong together. Check: the model
    check above, then the boss fought in its level.
 3. **Two graphics presets.** Low and High become one **Normal** preset that holds 60 fps on integrated graphics;
-   **Ultra** stays for Aleix's PC. Build a stand-in for integrated graphics that any pass can run on this PC in under
+   **Ultra** stays for Aleix's PC. Render scale stays at 100% or more in every preset, auto-quality included: the speed
+   comes from elsewhere (draw calls, shadows, effects' cost, level of detail, culling). Build a stand-in for integrated graphics that any pass can run on this PC in under
    two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
    it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
    fight.

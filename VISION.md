@@ -52,7 +52,8 @@ side by side, and each should feel like the main event.
   own version of the core idea. Ideas and mechanics only, never their names, characters, looks or story.
 - **The UI** fits the game's dark tone, is easy to use and looks great. Plain English in menus, the HUD and end screens.
 - **Smooth on integrated graphics:** at least 60 fps on the Normal preset. Two presets: Normal for everyone, Ultra for
-  Aleix's PC. Models may be as detailed as they need to be within that.
+  Aleix's PC. Models may be as detailed as they need to be within that. No preset ever renders below 100% render
+  scale (it looks terrible): find the speed elsewhere.
 
 ## Rules
 
