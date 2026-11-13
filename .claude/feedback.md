@@ -8,3 +8,6 @@ took it (once taken).
   in an endless rolling loop. Make them more human, believable and realistic, and a bit stronger in general: they
   should carry a bit more, just a bit. (Answers pass 26's question on companion risk-taking.)
 - 2026-11-13, addition to the bot complaint above: vary their strategy too, not always the same pattern.
+- 2026-11-13, addition to the bot complaint above: when an enemy is open to an execution, bots leave it to the player
+  and do it themselves only if the player doesn't, at the end of the window. Bots should feel like an aid to the
+  player, not a carry.
