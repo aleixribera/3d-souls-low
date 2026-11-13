@@ -30,3 +30,8 @@ took it (once taken).
   (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, Antlered Hunger) plus chapters 7-14's (Ostrey, Hale and
   Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade). A story boss built on a Lands boss's
   moves keeps working as it is for now; each gets its own moveset in later passes.
+- 2026-11-13, complaint (render scale, relayed by the director): "It is crucial that the quality preset never gets a
+  lower that 100% render scale setting, it looks incredibly bad, optimize it another way." The director found every
+  preset's renderScale is 1, but maxPixelRatio caps Low at 1x and High at 1.5x (js/config.js ~393/397, applied in
+  js/visuals.js ~1417), so on a scaled screen they draw below native resolution and get stretched. No preset, and no
+  auto-quality step, may render below the screen's own resolution; the speed has to come from elsewhere.
