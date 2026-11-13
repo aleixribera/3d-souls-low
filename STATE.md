@@ -11,15 +11,11 @@ released v7.39.0. Check met: lab sheet `docs/scorecard/sentinel-lab.jpg` (and `-
 
 ## Works
 
-- Baked figures: wanderer, Hollow Soldier, Ashen Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart
-  Bowman (v7.28.0), Beastman of Farum Azula (v7.29.0, 2,800 body tris, 2,926 with the scimitar), Toll Wisp (v7.30.0,
-  2,881 tris, no kit part), Grafted
-  Scion (v7.31.0, 2,774 body tris, 2,900 with the scimitar), Executioner (v7.32.0, 2,687 body tris, 2,991 with the
-  greataxe), Crucible Squire (v7.33.0, 2,190 body tris, 2,992
-  with the kit oval shield and greatsword), Shover (v7.34.0, 2,428 body tris, 2,988 with the kit pavise), Gargoyle (v7.37.0, 2,992 tris, no weapon; a `tail`
-  bone, wings on `wingL`/`wingR`), Empty Sentinel (v7.39.0, 2,508 body tris, 2,856 with the kit halberd). `js/baked/*.js`; checked by the in-page `model`
-  filter (5 tests), `Shover` (1), `Bowman` (4), `Lands` (15), `Wisp` (1), `Scion`, `Ultra performance` and validation
-  at load.
+- Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
+  Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
+  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel. Checked by
+  the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
+  validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
   renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a per-face
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
