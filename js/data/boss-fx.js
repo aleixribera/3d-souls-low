@@ -32,11 +32,12 @@ const BOSS_FX = {
     varnStomp: { impact: 'shatter' }, varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     knellStomp: { impact: 'blaze' }, tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },
     ashWave: { element: 'fire' }, burningAscent: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
-  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; when it catches (the second phase), fire.
+  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire.
   ostrey: { element: 'steel', aura: 0xffb050, phases: { kindled: 'fire' }, attacks: {
-    barOverhead: { impact: 'shatter', windup: 'gather' }, gateDrop: { impact: 'shatter' },
-    coalToss: { element: 'fire' }, coalDouble: { element: 'fire' }, coalPunish: { element: 'fire' }, coalRetreat: { element: 'fire' }, lanternBash: { element: 'fire' },
-    kindleOpener: { element: 'fire', impact: 'blaze', windup: 'gather' }, burningDrop: { element: 'fire', impact: 'blaze' }, stampSlam: { element: 'fire', impact: 'blaze' } } },
+    gateDrop: { impact: 'shatter', windup: 'gather' }, threeKnocks: { impact: 'shatter' }, shoulderGate: { impact: 'shatter' },
+    lanternCoals: { element: 'fire' }, coalPunish: { element: 'fire' }, lanternSwing: { element: 'fire' }, emberRain: { element: 'fire' },
+    lanternBursts: { element: 'fire', impact: 'blaze', windup: 'gather' }, lanternBreath: { element: 'fire', windup: 'gather' },
+    burningDrop: { element: 'fire', impact: 'blaze' }, kindledSweep: { element: 'fire' } } },
   // Hale and Harrow (Level 8): the sea wind round Hale's axe, iron and stone under Harrow's greaves; taking up her sister's
   // half is a grief, not a fire: storm for both once alone.
   hale: { element: 'storm', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {

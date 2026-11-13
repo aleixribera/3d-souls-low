@@ -124,6 +124,8 @@ function validateData({ visual = true } = {}) {
       `${tag}: projectile spread must list angles (rad).`);
     if (a.projectile && 'colors' in a.projectile) need(Array.isArray(a.projectile.colors) && a.projectile.colors.length === 2 && a.projectile.colors.every(num),
       `${tag}: projectile colors must be [core, rim] (hex numbers).`);
+    if (a.projectile && 'look' in a.projectile) need(['arrow', 'slash', 'dagger', 'rock', 'coal'].includes(a.projectile.look),
+      `${tag}: projectile look must be arrow, slash, dagger, rock or coal.`);
     if (visual && 'spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
     if ('hpBelow' in a) need(num(a.hpBelow) && a.hpBelow > 0 && a.hpBelow <= 1, `${tag}: hpBelow must be a fraction of the bar (0 to 1).`);   // v5.9 (Malenia)
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);

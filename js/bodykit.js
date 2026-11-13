@@ -1605,7 +1605,8 @@ const KIT = (() => {
       (groups.get(key) || groups.set(key, { slot, weapon, list: [] }).get(key)).list.push(geo);
     };
     for (const p of bodyParts(M)) push(p.bone, p.slot, p.geo);
-    for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M, bind)) { if (g.geo) push(o.bone, g.slot, g.geo); else push(o.bone, o.slot, g); }
+    // A part with `weapon: true` (v7.57.0, a weapon built in Blender, on the weapon bone) merges with the weapon, as a kit weapon does.
+    for (const o of M.parts) for (const g of KIT_PARTS[o.use](o, M, bind)) { if (g.geo) push(o.bone, g.slot, g.geo, !!o.weapon); else push(o.bone, o.slot, g, !!o.weapon); }
     if (M.weapon) {
       const W = KIT_WEAPONS[M.weapon.use](), k = M.weapon.size;   // `size` (v7.42.0, opt-in): a kit weapon made smaller or larger, from the hand
       for (const key of Object.keys(W)) for (const g of W[key]) push('weapon', M.weapon.slots[key], k ? g.scale(k, k, k) : g, true);
@@ -1630,7 +1631,14 @@ const KIT = (() => {
       if (!(o.use in KIT_PARTS)) bad(`unknown part "${o.use}".`);
       if (!(o.slot in M.materials)) bad(`part "${o.use}" uses unknown material slot "${o.slot}".`);
       if (o.bone && !['spin', 'chest', 'neck', 'head', 'armL', 'armR', 'elbowL', 'elbowR', 'legL', 'legR', 'kneeL', 'kneeR', 'weapon'].includes(o.bone) && !(M.bones && o.bone in M.bones)) bad(`part "${o.use}" is on unknown bone "${o.bone}".`);
+      if ('weapon' in o && !(o.weapon === true && o.bone === 'weapon')) bad(`part "${o.mesh || o.use}": weapon must be true, on the weapon bone.`);
     }
+    const known = b => ['spin', 'chest', 'neck', 'head', 'armL', 'armR', 'elbowL', 'elbowR', 'legL', 'legR', 'kneeL', 'kneeR', 'weapon'].includes(b) || !!(M.bones && b in M.bones);
+    if ('breathFrom' in M && !known(M.breathFrom)) bad(`breathFrom names unknown bone "${M.breathFrom}".`);
+    for (const H of M.halos || []) if (!(known(H.bone) && Array.isArray(H.at) && H.at.length === 3 && Number.isInteger(H.color) && H.size > 0 && H.opacity > 0 && H.opacity <= 1))
+      bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
+    for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
+      bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
     if (M.weapon) {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
       for (const slot of Object.values(M.weapon.slots)) if (!(slot in M.materials)) bad(`weapon uses unknown material slot "${slot}".`);
@@ -1671,9 +1679,11 @@ const KIT = (() => {
       if (!('glow' in spec)) rig.bodyMats.push(mats[slot]);   // hit tint: the body, never the weapon
     }
     // The weapon's own copies of its slots' materials (see modelParts).
-    if (M.weapon) for (const slot of new Set(Object.values(M.weapon.slots))) weaponMats[slot] = makeMat(M.materials[slot]);
-    rig.weaponMat = M.weapon ? weaponMats[M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0]] : new THREE.MeshStandardMaterial();
-    if (!M.weapon) rig.mats.push(rig.weaponMat);
+    const bakedWeapon = M.parts.filter(o => o.weapon).map(o => o.slot);   // a weapon built in Blender (`weapon: true` parts)
+    for (const slot of new Set([...(M.weapon ? Object.values(M.weapon.slots) : []), ...bakedWeapon])) weaponMats[slot] = makeMat(M.materials[slot]);
+    const mainSlot = M.weapon ? M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0] : bakedWeapon[0];
+    rig.weaponMat = mainSlot ? weaponMats[mainSlot] : new THREE.MeshStandardMaterial();
+    if (!mainSlot) rig.mats.push(rig.weaponMat);
     rig.weaponBase = new THREE.Color(0xffffff);
     // Bones (THREE.Bone, one skeleton per body) and the shared skinned geometry: one mesh per material.
     rig.root = new THREE.Group();
@@ -1703,6 +1713,11 @@ const KIT = (() => {
       rig.glows.push({ mat: halo.material, base: 0.45 });
     }
     if (M.embers) rig.embers = addWeaponEmbers(rig.weapon, M.embers);   // glow at the weapon head / along its edge
+    for (const H of M.halos || []) {   // (v7.57.0, opt-in) a soft light round a lit thing the body carries (a lantern)
+      const s = glowSprite(H.color, 1.2, H.size, H.opacity, 0.6); s.position.set(...H.at); rig.bones[H.bone].add(s);
+      rig.glows.push({ mat: s.material, base: H.opacity });
+    }
+    if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.57.0, opt-in) where a `breath` attack's fire comes from
     rig.fit = M.fit ?? 1;
     if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);

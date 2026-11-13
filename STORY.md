@@ -473,6 +473,12 @@ and a lantern, still keeping the border for a king long dead. The song Ysolde kn
 Seven through, the night they carried the Ember out. Whether it was Ostrey, and what it cost him, it never says. When
 he is hurt past bearing, his lantern catches, and he fights by its fire.
 
+*What the song leaves out (never said in the game, only shown):* it was Ostrey. The Seven paid the porter's toll with a
+coal of the Ember, and it has burned in his lantern ever since, behind a shut door. He keeps the gate the harder for
+having opened it once: he fights as a porter keeps a door, the bar laid across the way, the gate dropped, three knocks,
+the lantern held up to see who comes, coals for those who stand off. Hurt past bearing he opens the lantern, and what
+the Seven paid him with comes out: he breathes its fire, and it runs along the ground from where he strikes.
+
 ## 10d. Level 8 — Saltgrave (chapter 8 of the Story)
 Chapter 8, after the moor. **Saltgrave** is the border fortress of Thrale, on a cliff over the sea, in a rain that
 never lifts: its great gate barred from inside, a cliff walk round to the outer rampart, an inner ward, a hall of

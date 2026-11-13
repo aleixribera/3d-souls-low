@@ -12,17 +12,32 @@
     expect.ok(A.STORY.chapters[6].level === 'windward-moor' && A.STORY.chapters[6].title === 'THE WINDWARD MOOR', 'chapter 7 of the Story');
     expect.ok(A.LEVEL_6.next === 'windward-moor', 'the Levels menu carries on from the church too');
   });
-  test('Moor: every hit of Old Ostrey obeys the boss rules, and none of Margit\'s golden weapons is left', () => {
+  test('Moor: Old Ostrey fights with his own moves, each with its own wind-up (v7.57.0)', () => {
     const d = A.ENEMY_BY_ID.ostrey, ids = new Set(d.attacks.map(a => a.id));
     for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
-    expect.ok(d.attacks.every(a => !a.spectral && !/^(cane|dagger|hammer|sword)/.test(a.id)), 'his own moves, no conjured weapons');
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);
     for (const a of d.attacks) for (const f of a.followUps || []) expect.ok(ids.has(f.attack), `${a.id} follows up into ${f.attack}`);
-    const by = id => d.attacks.find(a => a.id === id), M = id => MARGIT.attacks.find(a => a.id === id);
-    expect.ok(by('barCombo').followUps.length === M('caneCombo').followUps.length && by('barCombo').followUps[0].attack === 'barDrive', 'the combo still branches into the drive');
-    expect.ok(by('barThrust').followUps.every(f => f.attack === 'lanternBash') && by('barOverhead').hits[0].abort.into === 'porterCharge', 'the jab and the raised bar keep their branches');
-    expect.ok(d.phases.kindled.at === 0.6 && d.phases.kindled.opener === 'kindleOpener', 'the lantern catches at 60 %');
-    expect.ok(MARGIT.attacks.some(a => a.spectral), 'Margit himself is untouched');
+    expect.ok(typeof MARGIT === 'undefined' && d.attacks.every(a => !a.spectral && a.pose && a.pose.startsWith('ostrey')), 'no borrowed moves: every pose is his');
+    // A wind-up reads by the arms: no two of his moves share the first wind-up of the bar arm and the lantern arm.
+    const tell = a => JSON.stringify(['armR', 'elbowR', 'weapon', 'armL', 'elbowL', 'spin'].map(b => ATTACK_POSES[a.pose].hits[0].windup[b]));
+    const seen = new Map();
+    for (const a of d.attacks) { const t = tell(a), other = seen.get(t); expect.ok(!other || other.pose === a.pose, `${a.id} and ${other && other.id} share a wind-up`); seen.set(t, a); }
+    expect.ok(d.phases.kindled.ignite && d.phases.kindled.opener === 'lanternBursts' && d.phases.kindled.attacks.includes('lanternBreath'), 'the lantern opens: he burns, and breathes its fire');
+  });
+  test('Moor: his figure carries the bar as a weapon and the lantern hangs plumb, its fire hidden until he burns', () => {
+    const e = new A.Enemy(A.ENEMY_BY_ID.ostrey, { x: 0, z: 0, yaw: 0, behavior: 'arena', notice: 30 }), r = e.rig;
+    try {
+      expect.ok(MODEL_DEFS.oldOstrey.parts.some(p => p.weapon && p.mesh === 'ostrey:weapon__bar') && r.weaponMeshes?.some(m => m.material === r.weaponMat), 'the baked bar is his weapon');
+      expect.ok(r.breathFrom === r.bones.lantern && r.bones.lantern.children.some(c => c.isSprite), 'breath and halo come from the lantern');
+      expect.ok(r.burnMeshes.length > 0 && r.burnMeshes.every(m => !m.visible), 'the fire is shut in the lantern');
+      // Raise his arm overhead: the lantern still hangs down (its bone keeps plumb under the fist).
+      const q = new THREE.Quaternion(), down = new THREE.Vector3();
+      r.armL.rotation.x = -3.0;
+      for (let i = 0; i < 120; i++) r.anim.updateHang(e, { yaw: 0 }, 1 / 60);
+      r.root.updateMatrixWorld(true);
+      r.bones.lantern.getWorldQuaternion(q); down.set(0, -1, 0).applyQuaternion(q);
+      expect.ok(down.y < -0.8, `the lantern hangs (its axis ${down.y.toFixed(2)} down)`);
+    } finally { r.dispose?.(); }
   });
   test('Moor: the flock is blind and its bearer sees', () => {
     start();

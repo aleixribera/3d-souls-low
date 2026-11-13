@@ -52,9 +52,15 @@ const projectiles = (() => {
   // Build the complete visual pool during loading as well as configuring a fired bolt.
   function prepareLook(b, A) {
     // `look: 'slash'` (v4.3.1): a crescent of cutting light flung from a blade instead of an arrow (Aldric's Ash Wave).
-    // `look: 'dagger'` (v5.3): a spinning golden dagger (Margit's, js/spectral.js).
+    // `look: 'dagger'` (v5.3): a spinning golden dagger (js/spectral.js).
     // `look: 'rock'` (v5.8): a tumbling stone of `size` (Maliketh's pebbles and boulder).
-    const slash = A.look === 'slash', dagger = A.look === 'dagger', rock = A.look === 'rock';
+    // `look: 'coal'` (v7.57.0): a live coal flung from a lantern, lit from inside, its glint kept (Old Ostrey's).
+    const slash = A.look === 'slash', dagger = A.look === 'dagger', rock = A.look === 'rock', coal = A.look === 'coal';
+    if (coal && !b.coal) {
+      b.coal = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x2a140a, emissive: 0xff5a14, emissiveIntensity: 1.5, roughness: 0.9, flatShading: true }));
+      b.mesh.add(b.coal);
+    }
+    if (b.coal) { b.coal.visible = coal; if (coal) b.coal.scale.set(A.size, A.size * 0.85, A.size); }
     if (rock && !b.rock) {
       b.rock = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x5a5048, roughness: 0.95, flatShading: true }));
       b.mesh.add(b.rock);
@@ -76,10 +82,11 @@ const projectiles = (() => {
       // `colors: [core, rim]` (v5.8): a slash of another light (Maliketh's crimson waves).
       if (slash) { b.slash.scale.setScalar(A.size * 2.4); const [core, rim] = A.colors || [0xffd8a0, 0xff6a20]; b.slash.children[0].material.color.set(core); b.slash.children[1].material.color.set(rim); }
     }
-    for (const c of b.mesh.children) if (c !== b.slash && c !== b.dagger && c !== b.rock) c.visible = !slash && !dagger && !rock;
+    for (const c of b.mesh.children) if (c !== b.slash && c !== b.dagger && c !== b.rock && c !== b.coal) c.visible = (!slash && !dagger && !rock && !coal) || (coal && c === b.glow);
     if (!b.glow) {   // a soft glint on the head so a bolt reads in the dark (made on first use: glowSprite lives in visuals)
-      b.glow = glowSprite(P.glow, 1.4, P.glowSize, 0.7, 0.6); b.glow.position.z = P.length / 2 + 0.06; b.mesh.add(b.glow);
+      b.glow = glowSprite(P.glow, 1.4, P.glowSize, 0.7, 0.6); b.mesh.add(b.glow);
     }
+    b.glow.position.z = coal ? 0 : P.length / 2 + 0.06;   // a coal glows from its heart, an arrow from its head
     b.mesh.userData.warmUp = true;
     for (const child of b.mesh.children) if (child.isGroup) child.userData.warmUp = true;
   }

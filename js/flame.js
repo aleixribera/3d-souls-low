@@ -77,7 +77,8 @@ const flame = (() => {
       if (!J.g.visible || !a || !a.breath) continue;
       // From the dragon's mouth (the off hand) to the far end of the hit's box.
       const box = a.hits[e.hitIndex].box || a.box, s = Math.sin(e.yaw), c = Math.cos(e.yaw);
-      if (R.elbowL) R.elbowL.getWorldPosition(from); else from.set(e.x + s, e.y + 1.4, e.z + c);
+      const src = R.breathFrom || R.elbowL;   // the model's `breathFrom` bone (a lantern), else the off hand
+      if (src) src.getWorldPosition(from); else from.set(e.x + s, e.y + 1.4, e.z + c);
       to.set(e.x + s * (box.fwd + box.d / 2), e.y + box.y * 0.6, e.z + c * (box.fwd + box.d / 2));
       dir.subVectors(to, from); const len = Math.max(0.5, Math.min(a.breath.len, dir.length()));
       J.g.position.copy(from); J.g.quaternion.setFromUnitVectors(Z, dir.normalize());

@@ -10,6 +10,35 @@ class ModelAnimator {
   constructor(rig, A) {
     this.rig = rig; this.A = A; this.walkW = 0; this.glintK = 0; this.ashT = 0; this.seed = Math.random() * 100; this.lastYaw = undefined;
     this.cloth = (A.cloth || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0, va: 0, s: 0, vs: 0, seed: Math.random() * 10 }));
+    // (v7.57.0, opt-in) `hang`: bones that hang plumb from where they are held (a lantern from a fist), swinging on a
+    // damped spring when the hand moves.
+    this.hang = (A.hang || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0, va: 0, s: 0, vs: 0, px: NaN, pz: NaN, vx: 0, vz: 0 }));
+  }
+  updateHang(actor, ctx, dt) {
+    const r = this.rig, H = ModelAnimator.scratch, G = ANIM_SETTINGS;
+    r.root.updateMatrixWorld(true); r.root.getWorldQuaternion(H.root);
+    const yaw = ctx.yaw ?? 0, sn = Math.sin(yaw), cs = Math.cos(yaw), frozen = actor?.hitstop > 0;
+    for (const h of this.hang) {
+      const b = h.bone, K = h.c; b.getWorldPosition(H.pos);
+      let fwd = 0, side = 0;
+      // The hand's acceleration, in the body's frame, pushes the hanging thing the other way. A hit-pause holds the
+      // last motion (no jolt when the body stops), and a jump of over a metre in a frame (a teleport, a respawn, the
+      // first frame) only re-seeds it.
+      if (frozen) { /* hold */ } else if (dt > 1e-4 && h.px === h.px && Math.hypot(H.pos.x - h.px, H.pos.z - h.pz) < 1) {
+        const vx = (H.pos.x - h.px) / dt, vz = (H.pos.z - h.pz) / dt, ax = (vx - h.vx) / dt, az = (vz - h.vz) / dt;
+        h.vx = vx; h.vz = vz; fwd = clamp(ax * sn + az * cs, -60, 60); side = clamp(ax * cs - az * sn, -60, 60);
+      } else { h.vx = 0; h.vz = 0; }
+      if (!frozen) { h.px = H.pos.x; h.pz = H.pos.z; }
+      let left = dt;
+      while (left > 1e-5) {
+        const s = Math.min(left, G.maxClothDt); left -= s;
+        h.va += (-K.k * (h.a - fwd * K.gain) - K.damp * h.va) * s; h.a += h.va * s;
+        h.vs += (-K.k * (h.s + side * K.gain) - K.damp * h.vs) * s; h.s += h.vs * s;
+      }
+      H.e.set(clamp(h.a, -G.clothClamp, G.clothClamp), 0, clamp(h.s, -G.clothClamp, G.clothClamp));
+      b.parent.getWorldQuaternion(H.parent);
+      b.quaternion.copy(H.parent.invert()).multiply(H.root).multiply(H.q.setFromEuler(H.e));
+    }
   }
   add(name, v, w = 1) {
     if (!v || !w) return;
@@ -31,6 +60,7 @@ class ModelAnimator {
   // ash that rises while a body dissolves.
   finish(actor, ctx, dt, dead) {
     const r = this.rig, g = r.glint;
+    if (this.hang.length) this.updateHang(actor, ctx, dt);
     if (g) {
       const k = this.glintK * r.alphaK; g.sprite.visible = k > 0.01; g.sprite.material.opacity = k * 0.9; g.sprite.scale.setScalar(g.size * (0.6 + 0.8 * this.glintK));
     }
@@ -165,3 +195,5 @@ class ModelAnimator {
     for (const c of this.cloth) { c.bone.rotation.x = clamp(c.a, -G.clothClamp, G.clothClamp); c.bone.rotation.z = clamp(c.s, -G.clothClamp, G.clothClamp); }
   }
 }
+// Scratch for updateHang (drawing allocates nothing per frame).
+ModelAnimator.scratch = { root: new THREE.Quaternion(), parent: new THREE.Quaternion(), q: new THREE.Quaternion(), pos: new THREE.Vector3(), e: new THREE.Euler() };

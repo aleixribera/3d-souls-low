@@ -62,7 +62,7 @@ const MALIKETH_PARTS = {};
 // Death sphere drawn at `fwd` m, radius `r`, js/blackblade.js), a hit's `line` (a golden blast drawn along its box),
 // a projectile's `spread` (several bolts fanned by these angles, rad) and `look: 'rock'`, and `colors` for a slash
 // (js/projectiles.js); a phase's `conceal` (model slots hidden as its `reveal` shows its own). The rest are the v5.3 and
-// v5.4 fields (see margit.js and godrick.js).
+// v5.4 fields (see godrick.js).
 const MALIKETH_RING = (from, to, width) => ({ w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from, to, width, time: 0.2 } });
 const MALIKETH_GLINT = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));
 const PEBBLES = { speed: 19, gravity: 4, size: 0.2, look: 'rock', spread: [-0.32, -0.16, 0, 0.16, 0.32] };

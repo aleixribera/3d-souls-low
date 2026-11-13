@@ -1712,7 +1712,7 @@
   });
 
   // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
-  const MOVE_SOURCES = [MARGIT, GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
+  const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, MORGOTT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
   const STORY_BOSS_MOVES = [
     { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
     { id: 'pillagerCaptain', level: 'burning-town', hp: 1800, total: 5, added: 2 },
@@ -2766,7 +2766,7 @@
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
-      for (const id of [PLAYER_DEF.look.model, 'castellanHale', 'oldOstrey']) {
+      for (const id of [PLAYER_DEF.look.model, 'castellanHale']) {   // (Old Ostrey left in v7.57.0: all Blender now, one detail)
         KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
         KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
         KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
