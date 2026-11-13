@@ -78,7 +78,7 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    place of most real-time lights and shadows. Build a stand-in for integrated graphics that any pass can run on this PC in under
    two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
    it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
-   fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects.
+   fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects and looking very nice, not like a cut-down fallback.
 4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
    may be improved).
 5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy

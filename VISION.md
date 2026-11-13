@@ -65,7 +65,7 @@ side by side, and each should feel like the main event.
   Aleix's PC. Models may be as detailed as they need to be within that. No preset ever renders below 100% render
   scale (it looks terrible): find the speed elsewhere. Normal has all of Ultra's cool effects, just toned down
   slightly so they run as well as possible on low-end PCs. Lighting is baked for everything: levels, boss arenas,
-  Boss Rush, every preset.
+  Boss Rush, every preset. Normal must look very nice too, while being super cheap to run.
 
 ## Rules
 
