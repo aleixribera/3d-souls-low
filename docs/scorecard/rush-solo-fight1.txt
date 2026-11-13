@@ -1,0 +1,16 @@
+# Boss Rush fight 1 alone, pass 52 (item 9's check; item 10's 'before' table)
+# BOTS=1 PERSON=1 node tools/bot-fights.cjs story 3 (FIGHT=0, 1x pace): one bot body as the person stand-in; a fall ends the fight
+pillagerCaptain  wins 2/3  time 92s  damage taken 70  falls 0.3
+bellWarden  wins 2/3  time 169s  damage taken 68  falls 0.3
+giant  wins 3/3  time 72s  damage taken 21  falls 0.0
+varn  wins 0/3  time 112s  damage taken 135  falls 1.0
+antlered  wins 1/3  time 133s  damage taken 105  falls 0.7
+ostrey  wins 2/3  time 152s  damage taken 132  falls 0.3
+hale+harrow  wins 0/3  time 89s  damage taken 165  falls 1.0
+ringer  wins 0/3  time 113s  damage taken 165  falls 1.0
+hollis  wins 2/3  time 132s  damage taken 64  falls 0.3
+oswin  wins 0/3  time 93s  damage taken 225  falls 1.0
+agathe  wins 0/3  time 105s  damage taken 188  falls 1.0
+kindlingTree  wins 0/3  time 130s  damage taken 210  falls 1.0
+kingsBlade  wins 0/3  time 190s  damage taken 135  falls 1.0
+TOTAL  wins 12/39  time 122s  damage taken 129  falls 0.69

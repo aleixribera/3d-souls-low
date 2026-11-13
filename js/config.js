@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.74.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.75.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -206,7 +206,7 @@ const CONFIG = {
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
   killMoment: { slow: 0.3, time: 1.1, embers: 70, emberSpeed: 7 },
-  // Boss Rush's abilities (v7.74.0, `ABILITIES` in js/data/abilities.js, js/abilities.js): after each fight but the
+  // Boss Rush's abilities (v7.75.0, `ABILITIES` in js/data/abilities.js, js/abilities.js): after each fight but the
   // last, every player is offered `offer` abilities and keeps one for the rest of the run. One already held comes back
   // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
   // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,

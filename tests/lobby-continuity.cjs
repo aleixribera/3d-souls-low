@@ -114,7 +114,7 @@ const until = async (test, message, limit = 4000) => {
     replacement.send({ type: 'control', action: 'transfer', player: impostor.id }); await replacement.activity();
     impostor.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
     const run = (await impostor.next('start')).session;
-    impostor.send({ type: 'control', action: 'addBot' }); await impostor.activity();
+    app.sim.addBot();   // a test player (no party gets a bot since pass 52)
     assert.equal(app.sim.botList().length, 1);
     // Neither human finishes loading. Even a fresh/reconnecting loader cannot extend the overall wait forever.
     replacement.send({ type: 'presence', foreground: false }); await replacement.activity();

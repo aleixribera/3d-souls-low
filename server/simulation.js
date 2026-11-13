@@ -8,8 +8,8 @@ globalThis.host = (() => {
   let completedFor = 0;
   let fought = 0;   // s of this fight played (not held for loading, not after the last enemy fell): Boss Rush's clock
   let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
-  // Friendly bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared
-  // enemies, so a bot keeps fighting whatever any browser tab is doing. id -> { id, name, profile, brain, body, ... }
+  // Bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared enemies. Since
+  // pass 52 no player's party gets one: they are the loop's test players (tools/bot-fights.cjs, the tests). id -> { id, name, profile, brain, body, ... }
   const bots = new Map();
   let followers = new Map(), assignLeft = 0, partyKey = '';
   let botSerial = 0, wipeOnly = false, acting = null;

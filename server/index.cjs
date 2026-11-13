@@ -250,12 +250,8 @@ function createServer(options = {}) {
         if (msg.kind === 'calling') {
           if (msg.id !== C.calling.id || msg.roster !== undefined && (!Array.isArray(msg.roster) || msg.roster.length > sim.catalog().bosses.length)) return;
           const roster = msg.roster ? msg.roster.map(String) : sim.randomRoster(msg.length);
-          sim.calling(roster);   // refuse a bad roster before any bot joins
-          // Bots fill the party up to C.calling.fillTo, so a pair of friends still fights as three.
-          const humans = [...clients.values()].filter(c => c.hello).length;
-          let added = false;
-          while (humans + sim.botList().length < C.calling.fillTo && sim.addBot()) added = true;
-          if (added) queueRoster();
+          sim.calling(roster);   // refuse a bad roster before anything starts
+          // Boss Rush is the party against the bosses (PLAN.md track B item 9): no bot ever fills it.
           start('calling', roster, null, 0, true);
         } else start(msg.kind, msg.id, null, undefined, true);
       } catch (e) {
@@ -273,10 +269,6 @@ function createServer(options = {}) {
     } else if (msg.action === 'transfer' && clients.has(msg.player) && clients.get(msg.player).hello) {
       if (!isActive(clients.get(msg.player), activityNow())) { error(p, 'That player is inactive. They must provide input before becoming leader.'); return; }
       leader = msg.player; sendRoster();
-    } else if (msg.action === 'addBot') {
-      if (!sim.addBot()) error(p, `A party can have at most ${C.maxBots} bots.`); else queueRoster();
-    } else if (msg.action === 'removeBot' && net.id(msg.player)) {
-      if (sim.removeBot(msg.player)) queueRoster();
     } else if (msg.action === 'kick' && msg.player !== p.id && clients.has(msg.player)) {
       // One removal per cooldown, and a returning player is not removed again within `kickRepeat`.
       const now = performance.now();
@@ -502,8 +494,8 @@ function createServer(options = {}) {
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (tally) { tallyFight(false); stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
-            else if (session.gauntlet) stop(`TEAM WIPED · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
+            if (tally) { tallyFight(false); stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
+            else if (session.gauntlet) stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
             else start(session.kind, session.id);
             break;
           }

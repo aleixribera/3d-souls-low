@@ -42,8 +42,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
   server doesn't check flask use. Harmless among friends; worth a check if the lobby ever opens wider (pass 7).
 - The Calling (pass 8): with a controller, the boss pick list is walked one button at a time; up/down could move by
-  rows, or skip past the list to Start. The bots that fill the party stay after the run (the leader removes them); a
-  restart doesn't top the party back up if a player left. Whether The Calling should be the lobby's default adventure
+  rows, or skip past the list to Start. (Bots no longer fill a party: pass 52.) Whether The Calling should be the lobby's default adventure
   (today BOSS ONLY) is the director's call.
 - `lobby-polish-browser` failed once ("preset changes preserve online play", switching graphics presets mid-fight) and
   passed on the rerun with no change to that code: flaky (pass 8, 2026-11-13).
@@ -170,3 +169,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   2-minute line: retune with Endless (item 6), where fights past 13 exist. Par (`CONFIG.swift`) is one rule for every
   boss (45 s at the base pace); the Giant falls in ~26 s and the King's Blade takes ~72: a per-boss par if swift kills feel
   lopsided. A reconnect during the blessing pick replays the kill moment (the new arena sees the boss die again).
+- Pass 52 (item 9): the server still lists bots added through `sim.addBot` (tests, tools) in the roster, and the lobby
+  draws them as people (Make leader / Remove do nothing). Dev only; drop bots from `roster()` if it ever shows.
+- Pass 52: alone at 1x the lone test bot loses to 8 of 13 bosses every time (`docs/scorecard/rush-solo-fight1.txt`):
+  item 10's first job. A solo fall shows "You fell"; a party where one player went away also gets YOU FELL in the
+  lobby notice (the server counts the party that took part).

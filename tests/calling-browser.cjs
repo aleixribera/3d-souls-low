@@ -1,5 +1,5 @@
 'use strict';
-// The Calling end to end (v7.35.0): two browsers pick a 3-boss roster by hand, a bot fills the party, the party beats
+// The Calling end to end (v7.35.0): two browsers pick a 3-boss roster by hand (no bot joins, pass 52), the party beats
 // one boss, then the last two together, and everyone lands back in the lobby with the run complete. Between the fights
 // each takes an ability (one by click, one by key); the fallen get up for the next fight.
 // v7.70.0: the abilities rebuilt (25 of them, js/data/abilities.js): tall cards, the held one's kit after the pick.
@@ -64,7 +64,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.locator('#runIntroScreen').waitFor({ timeout: 90000 });
     assert.equal(await a.locator('#runIntroTitle').textContent(), 'BOSS RUSH');
     await Promise.all([ready(a), ready(b)]);
-    assert.equal(app.sim.botList().length, 1, 'a bot fills the third place');
+    assert.equal(app.sim.botList().length, 0, 'no bot fills the party');
     assert.deepEqual([...app.session.gauntlet.roster], ['pillagerCaptain', 'bellWarden', 'ostrey']);
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /BOSS RUSH · 1\/2/);
     const bId = await b.evaluate(() => multiplayer.info.self);
@@ -145,11 +145,10 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.match(times[0], /^Pillager Captain0:0\dSwift kill$/);
     assert.match(times[1], /^Bell Warden & Old Ostrey, the Porter0:\d\d(Swift kill|par 1:\d\d)$/);
     const rows = await a.locator('#runSummaryRows tr').evaluateAll(trs => trs.map(tr => [...tr.cells].map(td => td.textContent)));
-    assert.equal(rows.length, 3, 'both players and the bot');
+    assert.equal(rows.length, 2, 'both players');
     assert.equal(rows.find(r => r[0] === 'Ash')[2], '2', 'Ash fell in both fights');
     assert.equal(rows.find(r => r[0] === 'Ember')[2], '0');
     assert.ok(['Ash', 'Ember'].every(name => Number(rows.find(r => r[0] === name)[1].replace(/\D/g, '')) > 0), 'both players dealt damage');
-    assert.ok(rows.some(r => r[0].endsWith('Bot')), 'the bot is marked');
     assert.equal(await a.locator('#runSummaryAgain').isVisible(), true, 'the leader can go again');
     assert.equal(await b.locator('#runSummaryAgain').isVisible(), false);
     assert.equal(await b.locator('#runSummaryWait').textContent(), 'Ash can start this run again.');
@@ -166,12 +165,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(app.session.gauntlet.number, 1);
     assert.equal(await b.locator('#runSummary').isVisible(), false);
     // A wipe ends the run on the same screen, in red.
-    app.sim.clearBots(); app.sim.arenaWipeDelay = 0.1;
+    app.sim.arenaWipeDelay = 0.1;
     for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 30000 });
     assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Team wiped');
     assert.equal(await a.locator('#runSummaryBeaten').textContent(), '0 / 3');
-    assert.ok((await a.locator('#runSummaryRows tr').allTextContents()).some(t => t.includes('Bot')), 'a bot that left mid-fight is still marked');
     assert.equal(await a.locator('#teamWipeScreen').isVisible(), false, 'the summary replaces the short wipe card');
     await a.waitForTimeout(300);
     await a.screenshot({ path: `${out}/summary-wiped-desktop.png` });
@@ -184,6 +182,6 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await b.locator('#runSummaryLobby').click();
     assert.equal(await b.locator('#runSummary').isVisible(), false);
     assert.deepEqual(errors, []);
-    console.log('BOSS RUSH browsers: hand-picked roster, phone fit, opening card, bot fill, abilities by click and key, fallen rise, last two together, run complete, the end-of-run screen, again and a wipe passed.');
+    console.log('BOSS RUSH browsers: hand-picked roster, phone fit, opening card, no bot, abilities by click and key, fallen rise, last two together, run complete, the end-of-run screen, again and a wipe passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

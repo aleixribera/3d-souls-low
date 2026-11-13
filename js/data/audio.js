@@ -216,7 +216,7 @@ const AUDIO = {
       { wave: 'sine', freq: 440, partials: [[1, 0.6, 1], [2.76, 0.12, 0.4]], at: 0.15, a: 0.001, d: 2.4, gain: 0.07 },
     ] },
 
-    // ---- Boss Rush's abilities (v7.74.0): each legendary its own sound, the rares a small chime, the pick a note ----
+    // ---- Boss Rush's abilities (v7.75.0): each legendary its own sound, the rares a small chime, the pick a note ----
     // Meteor Fall: a white-hot crack, a sub boom that crunches, fire roaring up, stones raining after.
     abilityBlast: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.55, heat: 1, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [2200, 3200], q: 0.7 }, a: 0.0005, d: 0.03, dv: 0.4, gain: 0.9, drive: 3 },

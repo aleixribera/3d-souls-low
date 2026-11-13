@@ -25,9 +25,9 @@
       'boss-quads': Object.freeze({ name: 'QUAD BOSS', size: 4, then: null }),
     }),
     // Boss Rush (v7.35.0 as The Calling; the lobby's default since v7.60.0): a co-op run of bosses the leader shapes. `length` bosses (from `minLength` to every boss in the
-    // game), random or chosen by hand, fought one at a time except the last two, who come together. Starting one
-    // fills the party with bots up to `fillTo` (humans and bots).
-    calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3, fillTo: 3 }),
+    // game), random or chosen by hand, fought one at a time except the last two, who come together. No bot joins:
+    // it is the party against the bosses, alone or with friends (pass 52).
+    calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3 }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the ability pick
     // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.
@@ -140,6 +140,14 @@
       if (this.samples.length && sample.time <= this.samples[this.samples.length - 1].time) return;
       this.samples.push(sample);
       if (this.time === null) this.time = sample.time;
+    }
+    // After a long main-thread stall (a graphics preset rebuilding its shaders, a hidden tab) the backlog is stale:
+    // jump to the newest sample and drop the skipped ones with their effects, rather than leave the run to reconnect.
+    catchUp() {
+      if (!this.samples.length) return null;
+      const latest = this.samples[this.samples.length - 1];
+      this.samples = [latest]; this.time = latest.time; this.started = false;   // its own effects still show
+      return latest;
     }
     protected(s) { return ['windup', 'active', 'phase', 'retreat', 'executed'].includes(s.value.state); }
     advance(dt, delay = config.interpolation) {

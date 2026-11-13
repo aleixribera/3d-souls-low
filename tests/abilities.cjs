@@ -245,6 +245,7 @@ async function peer(origin, name) {
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Ember'); peers.push(a, b);
     const owner = [a, b].find(p => p.id === app.leader);
     const bosses = app.sim.catalog().bosses.map(e => e.id), roster = [bosses[0], bosses[3], bosses[5], bosses[7]];
+    app.sim.addBot();   // a test player beside Ash and Ember: since pass 52 no bot fills a party
     owner.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster });
     session = (await a.next('start')).session; await b.next('start');
     assert.deepEqual(session.abilities, {}, 'a run starts with no abilities');
