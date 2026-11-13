@@ -55,8 +55,7 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 8's push: check at the start of pass 9 (pass 7's run was in progress at the start of pass 8; pass 6's was
-cancelled by it). Pass 8 locally: the Node group (21/21) and the multiplayer, lobby, reconnect, boss-only, run-intro and
+CI on pass 8's push (`b23fbe4` and the commit before): check at the start of pass 9. Pass 7's push was green. Pass 8 locally: the Node group (21/21) and the multiplayer, lobby, reconnect, boss-only, run-intro and
 campaign browser tests.
 
 ## wip/ branches
