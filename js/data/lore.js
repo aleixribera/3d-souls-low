@@ -26,6 +26,16 @@ const LORE = {
     'His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.',
     'And over Ashmere, the ash goes on falling.',
   ],
+  // The story's own ending (LORE.md, section 9b): the King's Blade's death on the Still Mere, then the credits.
+  endings: {
+    'still-mere': [
+      'The King\'s Blade kneels in the shallows. The red scarf comes loose, and floats.',
+      'You wade out with the Ember and hold it under. It does not fight you. The ice closes over it.',
+      'Over Thrale the storm breaks. Over the mountains, over Ashmere, the ash stops falling.',
+      'Finn stays at the water\'s edge. He does not say the name he knows.',
+      'Down by the river, someone is ringing something small.',
+    ],
+  },
   npc: { id: 'ysolde', name: 'Ysolde of Corvel', model: 'ysolde', scale: 0.96, bulk: 0.94 },
   levels: {
     'long-hall': {

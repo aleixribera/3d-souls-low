@@ -4,13 +4,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 29 took Aleix's bots complaint (`.claude/feedback.md`, 2026-11-13, three entries), pass 1, and released
-v7.52.0: a temperament per bot and per fight (`BOT_MOODS`), strings waited out from past their reach, rolls away from a
-string, mistimed rolls now and then, executions and ripostes left to the player. Check met: three-bot fights 60/132 to
-111/132 wins, damage 519 to 368, roll chains 419 to 146, swings into a string 943 to 260
-(`docs/scorecard/bot-temperament.txt`); Kneel frames `docs/scorecard/bots-kneel-before-after.jpg`; the three
-execution cases in `tests/bot-temperament.cjs`. Next: `PLAN.md` track A item 3, the ending.
-Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before commit.
+- Track A (pass 30, pass 1 of `PLAN.md` track A item 1, the ending): the King's Blade's death plays the story's ending
+  (`LORE.endings['still-mere']`, `LEVEL_14.ending`), the credits and STORY COMPLETE; `goesOn` dropped. Check:
+  frames `docs/scorecard/ending-{desktop,phone}-*.jpg`, the in-page `King's Blade's death` and `Still Mere:` tests.
+  Next on the track: item 2, Ostrey redone.
+- Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
+  commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
 
 ## Works
 
@@ -46,6 +45,9 @@ Trap: a changelog text with an apostrophe must be written with Edit as `\'` and 
   boss's moves renamed, but the King's Blade. In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
+- The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
+  by the in-page `King's Blade's death` and `Still Mere:` tests and `ARENA_CAMPAIGN=ashmere node tests/campaign-browser.cjs`.
+  `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
 - Bots (v7.52.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; three-bot fights with behaviour
   counts `node tools/bot-fights.cjs [boss|all] [n]` (`MOODS=1` logs each bot's choices), about five minutes for all.
 - CI: Node checks and four browser shards on every push.
@@ -84,9 +86,7 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until the ending is built, Story mode ends after the Still Mere on THE ROAD GOES ON (`STORY.goesOn`: "The
-  ice is still. The end of the road is still being built."), and
-  the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
+- (overridable) The ending's cards are the loop's wording of `STORY.md` "The ending" (`LORE.md` 9b).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second

@@ -2281,6 +2281,14 @@
     S().resume(); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `on to chapter 6 (${Game.level.id})`);
   }));
+  test('Story: Continue from a Still Mere save with the King\'s Blade beaten closes the road on STORY COMPLETE again', withSave(() => {
+    S().jumpTo('still-mere'); sim.begin();
+    const d = { ...S().data, zones: Game.zones.map(z => z.id), completed: true };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load();
+    S().resume(); sim.step(1);
+    expect.ok(Game.screen === 'storyDone' && !Game.story && Game.screens().storyDone.title === 'STORY COMPLETE', `the road's closing screen, not a finished level to stand in (${Game.screen}, ${Game.mode})`);
+    Game.showMenu('main');
+  }));
   test('Story: beating the Antlered Hunger goes on to chapter 7, the Windward Moor (v7.38.0)', withSave(() => {
     S().jumpTo('the-church'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'the-church', 'chapter 6 starts');
@@ -2367,18 +2375,39 @@
     expect.ok(Game.story && Game.level.id === 'still-mere' && S().data.level === 'still-mere', `chapter 14 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('still-mere')[0] === 'THE STILL MERE' && /Something wearing your face is waiting/.test(Game.levelCard('still-mere')[1]), 'its title and line');
   }));
-  test('Story: beating the King\'s Blade, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
-    S().jumpTo('still-mere'); sim.begin(); Game.loading = 0;
-    expect.ok(Game.story && Game.level.id === 'still-mere', 'chapter 14 starts');
-    const r = Game.enemies.find(e => e.baseDef.id === 'kingsBlade');
-    expect.ok(r && r.def.name === 'The King\'s Blade', 'the one who waits keeps the ice');
-    for (const z of Game.zones) if (z.id !== 'zone-blade') { z.gate.open = true; z.beaten = true; }   // the mere, won
-    for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
-    sim.until(() => Game.screen === 'storyDone', 20);
-    const screen = Game.screens().storyDone;
-    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, `the road's closing screen (${Game.screen})`);
-    expect.ok(screen.title === 'THE ROAD GOES ON' && screen.notice === A.STORY.goesOn, `its words (${screen.title})`);
-    Game.showMenu('main');
+  test('Story: the King\'s Blade\'s death plays the story\'s ending, the mere\'s cards and the credits, and closes the road on STORY COMPLETE', withSave(async () => {
+    const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
+    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 0.6, overlay: 0.8 });
+    Object.assign(CONFIG.finale.ending, { card: 0.05, credits: 0.1, hold: 0.05 });
+    const doneKey = 'combatArena.complete.still-mere', kept = localStorage.getItem(doneKey);   // the Levels menu's mark
+    try {
+      S().jumpTo('still-mere'); sim.begin(); Game.loading = 0;
+      expect.ok(Game.story && Game.level.id === 'still-mere', 'chapter 14 starts');
+      const r = Game.enemies.find(e => e.baseDef.id === 'kingsBlade');
+      expect.ok(r && r.def.name === 'The King\'s Blade', 'the one who waits keeps the ice');
+      for (const z of Game.zones) if (z.id !== 'zone-blade') { z.gate.open = true; z.beaten = true; }   // the mere, won
+      r.hp = r.def.hp * 0.45; sim.step(0.5); sim.until(() => r.state !== ES.PHASE && r.def.phaseId === 'emberWorn' && !r.invulnerable(), 12);   // past half: the Ember shows
+      for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE && !r.invulnerable(), 20); }
+      expect.ok(!r.alive() && A.finale.state && A.finale.state.ending, `the King's Blade is dead and the ending runs (phase ${r.def.phaseId})`);
+      expect.ok(S().data.completed && !S().active.goesOn(), 'the story is complete: the road no longer goes on');
+      sim.until(() => document.getElementById('ending'), 5);
+      const overlay = document.getElementById('ending');
+      const cards = [...overlay.querySelectorAll('.card')].map(c => c.textContent);
+      expect.ok(cards.join('|') === A.LORE.endings['still-mere'].join('|') && /ringing something small/.test(cards.at(-1)), `the mere's cards, ending on the small bell (${cards.length})`);
+      const roll = overlay.querySelector('.roll');
+      const heads = roll ? [...roll.querySelectorAll('h2')].map(h => h.textContent) : [];
+      expect.ok(heads.slice(0, 3).join() === 'THE ROAD,WHO WALKED BESIDE YOU,THOSE WHO STOOD IN THE WAY', `the credits (${heads})`);
+      expect.ok(/The Still Mere/.test(roll.textContent) && /Ysolde of Corvel/.test(roll.textContent) && /The King's Blade/.test(roll.textContent), 'the road, Ysolde and the last foe are named');
+      const t0 = performance.now();
+      while (!overlay.querySelector('.back.show') && performance.now() - t0 < 5000) await new Promise(res => setTimeout(res, 50));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      expect.ok(!document.getElementById('ending') && Game.screen === 'storyDone', `the way back leads to the road's closing screen (${Game.screen})`);
+      const screen = Game.screens().storyDone;
+      expect.ok(screen.title === 'STORY COMPLETE' && screen.notice === A.STORY.done && /ash has stopped falling/.test(screen.notice), `its words (${screen.title})`);
+    } finally {
+      Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); Game.showMenu('main');
+      if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);
+    }
   }));
 
   // ---- Lore (v5.1): Ysolde, inscriptions, scenes, the seamless subtitles -----------------------------------------

@@ -6,7 +6,7 @@ const campaign = process.env.ARENA_CAMPAIGN || 'lands';
 assert.ok(['lands', 'ashmere'].includes(campaign), 'ARENA_CAMPAIGN names an existing road');
 const chapters = campaign === 'ashmere' ? ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere']
   : ['stormhill', 'stormveil', 'evergaol', 'leyndell', 'ashen-capital', 'farum-azula', 'erdtree', 'haligtree'];
-const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combatArena.complete' : 'combatArena.complete.haligtree';
+const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`;   // the road's last level (finale.js storeKey)
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -86,15 +86,6 @@ const ending = chapters.at(-1), completionKey = campaign === 'ashmere' ? 'combat
         await a.locator('#lobbyNext').click();
       }
       console.log('Browsers completed chapter ' + (i + 1) + ': ' + chapters[i]);
-    }
-    if (campaign === 'ashmere') {   // the road goes on past the church, unbuilt: no ending and no credits yet
-      for (const p of [a, b]) {
-        await p.waitForFunction(() => Game.complete);
-        assert.equal(await p.locator('#ending').count(), 0, 'no ending after the church');
-      }
-      assert.deepEqual(errors, []);
-      console.log(`Campaign browsers (ashmere): all ${chapters.length} maps, the end of Act I after Aldric, automatic party travel to the church.`);
-      return;
     }
     for (const p of [a, b]) {
       await p.locator('#ending .back.show').waitFor({ timeout: 20000 });

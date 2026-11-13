@@ -12,10 +12,10 @@
 //   (bonfire 3), the fog, and the ice: the King's Blade.
 const LEVEL_14 = {
   id: 'still-mere', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  ending: true,   // the story's end: no LEVEL COMPLETE; the King's Blade kneels, then the mere's cards and the credits (js/finale.js)
   name: 'Level 14: The Still Mere',
   description: 'There is one water in Thrale that never burned: a frozen lake under a white tree. Down the white boughs, through the drowned court, to the shore. Something waits on the ice, wearing your face.',
   help: 'Level 14: the boughs have no rail: a fall is death. The Drowned lie under the shallows until you pass. On the ice, the one who waits fights as you fight: its shield turns blows from the front, so circle it, or hit it as it swings.',
-  completeHint: 'It kneels in the shallows. The Ember is in your hands, and the water is still…',
   wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5, flasks: 9,
   atmosphere: { background: 0x2a3038, fog: 0x8a94a0, fogDensity: 0.0095,
                 moon: { color: 0xf0f4ff, intensity: 2.3, position: [-30, 40, 16] },

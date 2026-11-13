@@ -30,7 +30,6 @@ const STORY = {
     { level: 'still-mere', title: 'THE STILL MERE', line: 'There is one water in Thrale that never burned. Carry it down. Something wearing your face is waiting.' },
   ],
   done: 'The ash has stopped falling. The road is walked.',
-  goesOn: 'The ice is still. The end of the road is still being built.',
   credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger', 'Old Ostrey, the Porter', 'Hale and Harrow, the Castellans', 'The Ringer of Thrale', 'The Regent Hollis', 'Oswin, the First Crown', 'Mother Agathe, the Rending Hand', 'The Kindling Tree', 'The King\'s Blade'] },
   // What a new story starts with beyond the player's own kit (PLAYER_DEF). Future currencies, upgrades and equipment
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.

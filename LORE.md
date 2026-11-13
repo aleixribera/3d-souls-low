@@ -417,9 +417,22 @@ Church in the Pass.
 4. His keys lie in the ash: every cell of the Long Hall and the Sunken Keep. No one will be thrown into that dark again.
 5. And over Ashmere, the ash goes on falling.
 
-The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until it is built, Story mode ends after the last chapter (chapter 14, the Still Mere) on **THE ROAD
-GOES ON**: *The ice is still. The end of the road is still being built.*
+The story's own ending follows the last chapter: section 9b.
+
+## 9b. The end of the story: the Still Mere
+
+The King's Blade's last bar breaks on the ice of the Still Mere (chapter 14). It kneels and burns out, the champion's
+sword left standing where it knelt. Then these cards, and the credits:
+
+1. The King's Blade kneels in the shallows. The red scarf comes loose, and floats.
+2. You wade out with the Ember and hold it under. It does not fight you. The ice closes over it.
+3. Over Thrale the storm breaks. Over the mountains, over Ashmere, the ash stops falling.
+4. Finn stays at the water's edge. He does not say the name he knows.
+5. Down by the river, someone is ringing something small.
+
+The credits name the fourteen chapters under *The road*, Ysolde of Corvel under *Who walked beside you* (and Finn, once
+he walks the road beside the player), and the thirteen who stood in the way. Story mode's last screen, **STORY
+COMPLETE**: *The ash has stopped falling. The road is walked.*
 
 ---
 

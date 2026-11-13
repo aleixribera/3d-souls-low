@@ -17,7 +17,9 @@ const { createServer } = require('../server/index.cjs');
     if (!(width > 0 && height > 0)) throw new Error(`ARENA_VIEWPORT must be WxH, not "${process.env.ARENA_VIEWPORT}"`);
     const page = await browser.newPage({ viewport: { width, height } });
     page.on('console', m => { if (['error', 'warning'].includes(m.type())) messages.push(m.text()); });
-    page.on('pageerror', e => messages.push(e.stack));
+    // A script that throws while the page loads (a test suite with a syntax error) would silently drop its tests: fail.
+    const loadErrors = []; let loading = true;
+    page.on('pageerror', e => { messages.push(e.stack); if (loading) loadErrors.push(e.message); });
     // One line per test as it ends, so a run cut short by a timeout still shows how far it got and what was slow.
     let done = 0;
     await page.exposeFunction('__testProgress', ({ name, ok, ms }) => {
@@ -25,7 +27,13 @@ const { createServer } = require('../server/index.cjs');
     });
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
-    await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
+    const loadFailed = () => new Error(`the page threw while loading:\n  ${loadErrors.join('\n  ')}`);
+    try {
+      await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
+      await page.waitForFunction(() => typeof MODELLAB !== 'undefined', { timeout: 120000 });   // loaded after every suite
+    } catch (e) { throw loadErrors.length ? loadFailed() : e; }
+    loading = false;
+    if (loadErrors.length) throw loadFailed();
     // ARENA_SHARD=k/n (1-based k): run only that slice of the suite, as one of n parallel CI jobs.
     const m = /^(\d+)\/(\d+)$/.exec(process.env.ARENA_SHARD || ''), shard = m ? [m[1] - 1, +m[2]] : null;
     if (process.env.ARENA_SHARD && !(shard && shard[0] >= 0 && shard[0] < shard[1])) throw new Error(`ARENA_SHARD must be k/n with 1 <= k <= n, not "${process.env.ARENA_SHARD}"`);

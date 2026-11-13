@@ -120,3 +120,10 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   fights as you fight" whole), and the Drowned's own figure (the Hollow Soldier, waterlogged). Its moves are read from
   `PLAYER_DEF` at load: a change to the player's sword changes the boss's. The ice is a plain floor: a lake surface
   (cracks, the dark water under it) would sell the place. No one has fought it by hand.
+- The story's ending (pass 30), rough; its second step: the King's Blade dies Aldric's death (kneels, blazes white,
+  breaks into ash, a sword of boxes left standing: `js/finale.js` `updateEnding`), not the one in `STORY.md` (it kneels
+  in the shallows, the scarf floats, the player holds the Ember under and the ice closes): an opt-in per-level death
+  scene, and a Blender sword for the one left standing (`docs/scorecard/ending-desktop-kneel.jpg`). The fourth card and
+  `STORY.md`'s credits name Finn, who doesn't walk the Ashmere road yet (companions are per road, `LANDS_STORY.companion`);
+  once he does, the credits list him on their own (`R.companion`). STORY COMPLETE's subtitle is the road's old
+  `menuSub`, THE GAOLER KING (`docs/scorecard/ending-desktop-complete.jpg`).

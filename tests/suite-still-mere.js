@@ -46,6 +46,7 @@
     expect.ok(Game.enemies.filter(e => e.baseDef.id === 'drowned').length >= 7, 'Drowned on the boughs and in the court');
   });
   test('Still Mere: killing the King\'s Blade opens the ice and finishes the level', () => {
+    const doneKey = 'combatArena.complete.still-mere', kept = localStorage.getItem(doneKey);
     start();
     const e = blade(), p = Game.player, zone = Game.zones.find(z => z.id === 'zone-blade');
     expect.ok(e && zone && !zone.gate.open && !Game.complete, 'shut at first');
@@ -58,6 +59,9 @@
     for (let i = 0; i < 6 && e.alive(); i++) { e.deplete(); sim.step(1); sim.until(() => e.state !== ES.PHASE && !e.invulnerable(), 20); }
     sim.until(() => Game.complete, 10);
     expect.ok(!e.alive() && zone.gate.open && Game.complete, `gate open, level complete (hp ${Math.round(e.hp)})`);
+    expect.ok(A.finale.state && A.finale.state.ending, 'and the story\'s ending begins (js/finale.js)');
+    A.finale.cancelEnding();
+    if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);   // the Levels menu's mark
   });
   test('Still Mere: the King\'s Blade strikes the player in a fair fight, and its shield turns a blow from the front', () => {
     start();

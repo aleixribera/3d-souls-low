@@ -183,10 +183,14 @@ function makeCampaign(C) {
       if (d.spawn) { Game.spawn = { ...d.spawn }; Game.spawnPlayer(); }
     } finally { restoring = false; }
     save();
-    // Saved after an ending that has a chapter after it (Aldric dead, then a quit or a closed tab during his death or the
-    // cards, or a save from before v7.36.0): every gate stands open and nothing starts that ending again, so go on.
+    // Saved after an ending (Aldric dead, then a quit or a closed tab during his death or the cards, or a save from before
+    // v7.36.0; or the road's own last boss): every gate stands open and nothing starts that ending again, so go on to
+    // the next chapter, or close the road on its own screen.
     const next = nextLevelId(d.level);
-    if (next && Game.level.ending && Game.zones.length && Game.zones.every(z => z.gate.open)) Game.loadingFirst(...card(next), () => begin(next));
+    if (Game.level.ending && Game.zones.length && Game.zones.every(z => z.gate.open)) {
+      if (next) Game.loadingFirst(...card(next), () => begin(next));
+      else finish();
+    }
   }
   // Game.startLevel calls this in Story mode: each new level is a save point (not while Continue rebuilds one).
   function onLevelStart() {
@@ -201,7 +205,13 @@ function makeCampaign(C) {
   function quit() { save(); Game.story = false; Game.reset(); Game.showMenu('main'); }
 
   // ---- menus --------------------------------------------------------------------------------------------------------
-  function levelName(id) { const c = chapter(id); return c ? c.title.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase()) : id; }
+  // A chapter's title in title case, the small words kept small past the first ("The Church in the Pass", "Aurel, the
+  // Gilded City", as LORE.md names them).
+  const SMALL = new Set(['a', 'an', 'and', 'at', 'in', 'of', 'on', 'the', 'to']);
+  function levelName(id) {
+    const c = chapter(id); if (!c) return id;
+    return c.title.toLowerCase().split(' ').map((w, i) => i > 0 && SMALL.has(w) ? w : w.replace(/\w/, ch => ch.toUpperCase())).join(' ');
+  }
   // A story level's title card, shown before the build (Game.loadingFirst): its chapter title and line.
   const card = id => { const ch = chapter(id), L = ALL_LEVELS.find(l => l.id === id); return ch ? [ch.title, ch.line] : [L ? L.name : '', L ? L.description : '']; };
   // Both campaigns share one screen. Continue loads immediately; New only confirms replacing a save.
