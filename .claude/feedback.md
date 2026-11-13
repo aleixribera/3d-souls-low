@@ -25,3 +25,8 @@ took it (once taken).
   them smarter about the game, their position, the situation and their health, so they stay alive longer. Read as:
   less damage and greed, so they win fewer fights on their own; better positioning and backing off to heal when hurt,
   so they die less and live longer.
+- 2026-11-13, decision (relayed by the director): nothing replaces the removed Lands bosses. The Boss Rush (The Calling,
+  being renamed "Boss Rush") roster and the Arena boss lists become the story's own bosses only: Ashmere's five
+  (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, Antlered Hunger) plus chapters 7-14's (Ostrey, Hale and
+  Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade). A story boss built on a Lands boss's
+  moves keeps working as it is for now; each gets its own moveset in later passes.
