@@ -50,5 +50,5 @@ agents: a draft, changed whenever the code changes.
    files, then `npm install --package-lock-only` at the root and in `server/`.
 2. Add a players' entry at the top of `js/data/changelog.js` (its first entry must be `VERSION`).
 3. Commit, push, then push a `v*` tag. `.github/workflows/container.yaml` publishes
-   `ghcr.io/aleixribera/3d-souls-low:<version>` and `:latest`; check that it started. The homelab updater pulls it
+   `ghcr.io/aleixribera/3d-souls-low:<version>` and `:latest`; check that it started. The homelab's `hl` pulls it
    when the lobby is empty (`docs/container-updates.md`).

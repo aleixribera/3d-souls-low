@@ -38,8 +38,6 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm --prefix server ci --no-audit --no-fund
-      - name: Check shell scripts
-        run: bash -n deploy/update.sh
       - name: Run the node group
         run: node tests/run-all.cjs --group node
       - name: Upload test logs

@@ -58,7 +58,6 @@ jobs:
         run: npm --prefix server ci
       - name: Test shared simulation and deployment
         run: |
-          bash -n deploy/update.sh
           node tests/run-all.cjs --group node
           docker compose config --quiet
       - name: Set up multi-platform emulation
