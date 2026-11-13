@@ -2196,6 +2196,7 @@
     expect.ok(names[0] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
   }));
   test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', () => {
+    sim.begin();   // the stepped clock: a pick's loading card builds the fight at once (alone, the runner's own clock hid this)
     const pick = (screen, name) => {
       Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
       expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
