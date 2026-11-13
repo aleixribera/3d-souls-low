@@ -172,6 +172,12 @@ rootStyle.setProperty('--dying-fade', CONFIG.death.slowTime + 's');
 rootStyle.setProperty('--fade-time', CONFIG.nextLevel.fadeTime + 's');
 registerListeners();
 window.addEventListener('resize', resize);
+// Moving to a screen of another scale (or zooming) changes the pixel ratio without always resizing the window. The
+// scene follows the screen's own resolution (qualityDraw, js/visuals.js), so redraw at the new ratio.
+(function watchPixelRatio() {
+  try { matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => { resize(); watchPixelRatio(); }, { once: true }); }
+  catch (e) { /* no matchMedia: window resizes still apply */ }
+})();
 resize();
 autoQuality.firstRun();   // first launch only: the preset this machine should start on (js/autoquality.js)
 applySettings();

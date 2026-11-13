@@ -50,7 +50,6 @@ const server = http.createServer((req, res) => {
         const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
         return { gpu: ext && gl.getParameter(ext.UNMASKED_RENDERER_WEBGL), dpr: devicePixelRatio };
       });
-      if (process.env.AUDIT_NATIVE) await page.evaluate(() => { CONFIG.VISUALS.quality.low.renderScale = 1; });
       const results = [];
       for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'final-castle', 'ostrey', 'hale', 'kindlingTree', 'agathe', 'kingsBlade']) {
         const row = await page.evaluate(async id => {

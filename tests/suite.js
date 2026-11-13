@@ -2754,7 +2754,12 @@
     expect.ok(high.combatFx && high.reflections && !low.combatFx && !low.reflections, 'High adds modern effects and cached metal');
     for (const key of ['shadows', 'ao']) expect.ok(high[key] && ultra[key] && !low[key], `${key} scales across High and Ultra`);
     for (const key of ['volumetrics', 'refraction']) expect.ok(!high[key] && ultra[key], `${key} stays Ultra only`);
-    expect.ok(high.renderScale === 1 && high.maxPixelRatio === 1.5 && high.msaa === 4 && high.lights === 8, 'High keeps resolution, AA and lights');
+    expect.ok(high.msaa === 4 && high.lights === 8, 'High keeps AA and lights');
+    for (const q of [low, high, ultra]) for (const dpr of [0.8, 1, 1.25, 1.5, 2, 3]) {
+      const d = qualityDraw(q, dpr);
+      expect.ok(d.ratio === dpr, `${q.label} at pixel ratio ${dpr}: the scene at the screen's own resolution`);
+      expect.ok(d.soft === Math.min(1, q.softRatio / dpr) && d.msaa === (dpr >= CONFIG.VISUALS.denseScreen ? q.denseMsaa : q.msaa), `${q.label} at ${dpr}: soft buffers and MSAA`);
+    }
     expect.ok(!high.proceduralFire && ultra.proceduralFire && high.modelDetail.tex === 1, 'native textures; ambient procedural fire stays Ultra');
     expect.ok(CONFIG.VISUALS.grain.amount <= 0.006 && CONFIG.VISUALS.grain.ultra <= CONFIG.VISUALS.grain.amount, 'fine grain preserves material detail');
   });
@@ -3046,9 +3051,29 @@
     try {
       A.visuals.setQuality('low');
       const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-      expect.ok(size.x === Math.floor(innerWidth * Math.min(devicePixelRatio, 1)) && size.y === Math.floor(innerHeight * Math.min(devicePixelRatio, 1)), '100% rendering, capped at one pixel per CSS pixel');
+      expect.ok(size.x === Math.floor(innerWidth * devicePixelRatio) && size.y === Math.floor(innerHeight * devicePixelRatio), '100% rendering: one pixel per screen pixel');
       for (const target of [A.visuals.composer.renderTarget1, A.visuals.composer.renderTarget2]) expect.ok(target.width === 1 && target.height === 1, 'unused HDR targets stay at 1x1');
     } finally { restoreQuality(); }
+  });
+  test('Graphics: every preset draws at the native resolution of a scaled screen', () => {
+    const dpr = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+    try {
+      for (const ratio of [1.5, 2]) {
+        Object.defineProperty(window, 'devicePixelRatio', { value: ratio, configurable: true });
+        for (const name of ['low', 'high', 'ultra']) {
+          A.visuals.setQuality(name);
+          const size = renderer.getDrawingBufferSize(new THREE.Vector2()), q = CONFIG.VISUALS.quality[name];
+          expect.ok(size.x === Math.floor(innerWidth * ratio) && size.y === Math.floor(innerHeight * ratio), `${name} at ${ratio}x: ${size.x}x${size.y}, the screen's own pixels`);
+          if (q.post) {
+            const rt = A.visuals.composer.renderTarget1, msaa = qualityDraw(q, ratio).msaa;
+            expect.ok(Math.round(rt.width) === Math.round(innerWidth * ratio) && rt.samples === Math.min(msaa, renderer.capabilities.maxSamples || 4), `${name} at ${ratio}x: the scene target at full size, ${msaa}x MSAA`);
+          }
+        }
+      }
+    } finally {
+      if (dpr) Object.defineProperty(window, 'devicePixelRatio', dpr); else delete window.devicePixelRatio;
+      restoreQuality();
+    }
   });
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {

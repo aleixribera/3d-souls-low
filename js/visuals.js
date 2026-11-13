@@ -25,6 +25,14 @@ const reducedMotion = (() => {
   fn.force = v => { forced = v === null || v === undefined ? null : !!v; };
   return fn;
 })();
+// What a preset draws on a screen of pixel ratio `dpr`. The scene is always drawn at the screen's own resolution: no
+// preset or Auto choice draws below it (Aleix, 2026-11-13). The speed comes from elsewhere: the soft buffers (bloom,
+// ambient occlusion, light) stop at the preset's `softRatio` (`soft`: their share of the drawn size), and a dense
+// screen's small pixels take the preset's `denseMsaa`. Shared with the Auto graphics test (js/quality-benchmark.js).
+function qualityDraw(q, dpr) {
+  const ratio = dpr > 0 ? dpr : 1;
+  return { ratio, soft: Math.min(1, q.softRatio / ratio), msaa: ratio >= VIS.denseScreen ? q.denseMsaa : q.msaa };
+}
 const ATMOSPHERE_KEYS = ['background', 'fog', 'fogDensity', 'moon', 'ambient', 'hemi', 'exposure', 'ash', 'dust', 'rim',
   'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers', 'interior'];
 
@@ -35,6 +43,7 @@ function checkVisualData(need, num) {
   const amount = (v, max = 2) => num(v) && v >= 0 && v <= max;
   const Q = VIS.quality;
   const auto = VIS.autoQuality;
+  need(num(VIS.denseScreen) && VIS.denseScreen > 1, 'CONFIG.VISUALS.denseScreen: the pixel ratio (> 1) from which a screen is dense.');
   need(auto && ['passes', 'rounds', 'warmFrames', 'referenceWidth', 'referenceHeight', 'phoneWidth']
     .every(k => Number.isInteger(auto[k]) && auto[k] > 0)
     && auto.frameMs && ['high', 'ultra'].every(k => num(auto.frameMs[k]) && auto.frameMs[k] > 0), 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
@@ -54,10 +63,10 @@ function checkVisualData(need, num) {
     for (const k of Object.keys(q)) need(k in Q.high, `CONFIG.VISUALS.quality.${n}: unknown key "${k}" (not in "high").`);
   }
   for (const [n, q] of Object.entries(Q || {}))
-    need(num(q.renderScale) && q.renderScale > 0.25 && q.renderScale <= 1 && num(q.bloomScale) && q.bloomScale > 0 && q.bloomScale <= 1 && Number.isInteger(q.lights) && q.lights >= 1
+    need(num(q.softRatio) && q.softRatio >= 1 && num(q.bloomScale) && q.bloomScale > 0 && q.bloomScale <= 1 && Number.isInteger(q.lights) && q.lights >= 1
       && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean' && typeof q.ultra === 'boolean'
-      && Number.isInteger(q.msaa) && q.msaa >= 0 && num(q.particles) && q.particles >= 0 && num(q.embers) && q.embers >= 0,
-      `CONFIG.VISUALS.quality.${n}: renderScale (0.25..1], bloomScale (0..1], lights (whole, >= 1), msaa (whole, >= 0), particles and embers (>= 0), antialias, simpleSurfaces, glows and ultra (true / false).`);
+      && Number.isInteger(q.msaa) && q.msaa >= 0 && Number.isInteger(q.denseMsaa) && q.denseMsaa >= 0 && q.denseMsaa <= q.msaa && num(q.particles) && q.particles >= 0 && num(q.embers) && q.embers >= 0,
+      `CONFIG.VISUALS.quality.${n}: softRatio (>= 1), bloomScale (0..1], lights (whole, >= 1), msaa and denseMsaa (whole, >= 0, denseMsaa <= msaa), particles and embers (>= 0), antialias, simpleSurfaces, glows and ultra (true / false).`);
   for (const [name, q] of Object.entries(Q)) {
     const prefix = `CONFIG.VISUALS.quality.${name}`;
     for (const key of ['combatFx', 'proceduralFire', 'reflections', 'shadows', 'ao', 'volumetrics', 'refraction'])
@@ -1348,8 +1357,6 @@ const visuals = (() => {
       const previous = quality;
       quality = Q[name] || Q[VIS.defaultQuality];
       bloom.enabled = quality.bloom;
-      const samples = Math.min(quality.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
-      for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
       for (const h of hooks.quality) h(quality);
       KIT.setDetail(quality.modelDetail, { prewarm: quality === previous });   // drops unused models of the old detail
       if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low (one restart)
@@ -1414,15 +1421,17 @@ const visuals = (() => {
     },
     resize(w, h) {
       w = Math.max(1, w); h = Math.max(1, h);
-      const pr = Math.min(window.devicePixelRatio || 1, quality.maxPixelRatio) * quality.renderScale;
+      const draw = qualityDraw(quality, window.devicePixelRatio), pr = draw.ratio;
       renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
+      const samples = Math.min(draw.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
+      for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
       // LOW never draws these passes. Keep dormant targets tiny, including after switching down from Ultra.
-      const pw = quality.post ? w : 1, ph = quality.post ? h : 1, ppr = quality.post ? pr : 1;
+      const pw = quality.post ? w : 1, ph = quality.post ? h : 1, ppr = quality.post ? pr : 1, soft = quality.bloomScale * draw.soft;
       composer.setPixelRatio(ppr); composer.setSize(pw, ph);
-      bloom.setSize(Math.max(1, Math.round(pw * ppr * quality.bloomScale)), Math.max(1, Math.round(ph * ppr * quality.bloomScale)));   // a soft glow: drawn smaller
+      bloom.setSize(Math.max(1, Math.round(pw * ppr * soft)), Math.max(1, Math.round(ph * ppr * soft)));   // a soft glow: drawn smaller
       grade.uniforms.uRes.value.set(w * pr, h * pr);
       PT_SCALE.value = h * pr / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.camera.fov) / 2));
-      for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr));
+      for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr), draw.soft);
     },
     setInterior,
     moonScale() { return look && look.moon ? lerp(look.moon, look.moonIn, interiorK) / look.moon : 1; },   // the interior's share of the moon: js/ultra-post.js splits what is left

@@ -9,10 +9,10 @@ const qualityBenchmark = (() => {
     // a clean error queue; run() still rejects errors from the benchmark itself.
     while (gl.getError() !== gl.NO_ERROR) { /* discard errors from prior rendering */ }
     const q = CONFIG.VISUALS.quality[preset];
-    const ratio = Math.min(device.pixelRatio || 1, q.maxPixelRatio) * q.renderScale;
+    const draw = qualityDraw(q, device.pixelRatio), ratio = draw.ratio;   // the preset's actual draw on this screen
     const width = Math.max(1, Math.round(device.width * ratio)), height = Math.max(1, Math.round(device.height * ratio));
     const target = new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType,
-      samples: Math.min(q.msaa, renderer.capabilities.maxSamples || q.msaa) });
+      samples: Math.min(draw.msaa, renderer.capabilities.maxSamples || draw.msaa) });
     const state = { target: renderer.getRenderTarget(), viewport: renderer.getViewport(new THREE.Vector4()),
       scissor: renderer.getScissor(new THREE.Vector4()), scissorTest: renderer.getScissorTest(),
       tone: renderer.toneMapping, exposure: renderer.toneMappingExposure, colorSpace: renderer.outputColorSpace,
@@ -89,7 +89,7 @@ const qualityBenchmark = (() => {
       const render = new RenderPass(test, cam); composer.addPass(render);
       if (q.ao || q.volumetrics) {
         const budget = CONFIG.VISUALS.cinematic[preset];
-        const w = Math.max(1, Math.round(width * budget.aoScale)), h = Math.max(1, Math.round(height * budget.aoScale));
+        const w = Math.max(1, Math.round(width * budget.aoScale * draw.soft)), h = Math.max(1, Math.round(height * budget.aoScale * draw.soft));
         normalTarget = own(new THREE.WebGLRenderTarget(w, h, { depthTexture: own(new THREE.DepthTexture(w, h)) }));
         const normal = own(new THREE.MeshNormalMaterial());
         const prepass = new class extends Pass {
@@ -114,7 +114,7 @@ c*=.8+.2*occ/float(TAPS);c+=vec3(.015,.012,.008)*(1.-d)*n.y;gl_FragColor=vec4(c,
         }); composer.addPass(light); passes.push(light);
       }
       const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), CONFIG.VISUALS.bloom.strength, CONFIG.VISUALS.bloom.radius, CONFIG.VISUALS.bloom.threshold);
-      composer.addPass(bloom); bloom.setSize(Math.round(width * q.bloomScale), Math.round(height * q.bloomScale)); passes.push(bloom);
+      composer.addPass(bloom); bloom.setSize(Math.round(width * q.bloomScale * draw.soft), Math.round(height * q.bloomScale * draw.soft)); passes.push(bloom);
       const grade = new ShaderPass(GRADE_SHADER); composer.addPass(grade); passes.push(grade);
       const times = []; let drawCalls = 0, triangles = 0;
       const run = count => {

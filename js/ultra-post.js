@@ -14,7 +14,7 @@ const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
   const quality = () => visuals.quality();
   const budget = () => VIS.cinematic[quality().label.toLowerCase()];
-  let on = false, W = 1, H = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
+  let on = false, W = 1, H = 1, soft = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
   const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
 
@@ -34,7 +34,8 @@ const ultraPost = (() => {
   const visRT = rt(MAXL, 1);   // one texel per light: how much of it is in view (not behind a wall)
   function makeTargets() {
     for (const t of [gbuf, lightA, lightB]) if (t) { t.dispose(); if (t.depthTexture) t.depthTexture.dispose(); }
-    const hw = Math.max(1, Math.round(W * budget().aoScale)), hh = Math.max(1, Math.round(H * budget().aoScale));
+    const k = budget().aoScale * soft;   // the light buffer: a share of the screen, capped on dense screens (qualityDraw)
+    const hw = Math.max(1, Math.round(W * k)), hh = Math.max(1, Math.round(H * k));
     gbuf = rt(hw, hh, { depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh) });
     lightA = rt(hw, hh, { type: THREE.HalfFloatType }); lightB = rt(hw, hh, { type: THREE.HalfFloatType });
     for (const m of [lightMat, blurMat, visMat]) { m.uniforms.tDepth.value = gbuf.depthTexture; }
@@ -411,8 +412,8 @@ void main() {
   }
 
   visuals.hooks.quality.push(setQuality);
-  visuals.hooks.resize.push((w, h) => {
-    W = w; H = h;
+  visuals.hooks.resize.push((w, h, softShare = 1) => {
+    W = w; H = h; soft = softShare;
     if (on) makeTargets();
     else if (gbuf) {
       for (const t of [gbuf, lightA, lightB]) { t.dispose(); if (t.depthTexture) t.depthTexture.dispose(); }

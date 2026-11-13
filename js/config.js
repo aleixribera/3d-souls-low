@@ -379,23 +379,26 @@ const CONFIG = {
                    strong: 'rtx|rx [6-9][0-9]{3}|apple m[0-9] (pro|max|ultra)|arc a7|radeon pro w',
                    message: 'Recommended graphics applied: {preset}. You can change it any time in Options.' },
     // Graphics option presets. Every preset lists the same keys (checked at load).
+    denseScreen: 2,   // a screen with this pixel ratio or more is dense (each preset's `denseMsaa`)
     quality: {
-      // renderScale: fraction of the pixel ratio actually drawn (the canvas is stretched to fit). antialias: the
-      // canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
+      // Every preset draws the scene at the screen's own resolution: none caps the pixel ratio (Aleix, 2026-11-13).
+      // softRatio: the pixel ratio the soft buffers (bloom, ambient occlusion, light) stop at, so a dense screen costs
+      // them nothing more. denseMsaa: the post target's MSAA on a dense screen (pixel ratio >= `denseScreen`), whose
+      // small pixels need fewer samples. antialias: the canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
       // High shares modern combat effects, surface reflections and budgeted shadows/AO.
       // Ultra adds sculpted anatomy, denser AO, volumetrics, procedural ambient fire and refraction.
       // `ultra` identifies the preset for compatibility; features read their own flags. Graphics cycles in this order.
-      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, maxPixelRatio: 1, msaa: 0, renderScale: 1, antialias: false, bloomScale: 1,
-              lights: 4, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
+      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, softRatio: 1, msaa: 0, denseMsaa: 0, antialias: false, bloomScale: 1,
+              lights: 3, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
               modelDetail: { geo: 1, tex: 1, anatomy: false }, combatFx: false, fxBudget: 'low', proceduralFire: false,
               reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
-      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 1.5, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
+      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, softRatio: 1, msaa: 4, denseMsaa: 0, antialias: false, bloomScale: 0.5,
               lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
               modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'high', proceduralFire: false,
               reflections: true, shadows: true, ao: true, volumetrics: false, refraction: false, warmupSize: 32 },
-      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, maxPixelRatio: 2, msaa: 4, renderScale: 1, antialias: false, bloomScale: 0.5,
+      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, softRatio: 2, msaa: 4, denseMsaa: 4, antialias: false, bloomScale: 0.5,
                lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true,
                modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
                reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 0 },

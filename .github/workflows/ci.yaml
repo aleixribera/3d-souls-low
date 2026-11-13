@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # Notes-only pushes (state, plan, feedback, docs) test nothing, and each would cancel the code run in progress.
+    paths-ignore: ['**.md', '.claude/**']
   pull_request:
 
 permissions:

@@ -5,7 +5,7 @@
 const canvas = document.getElementById('view');
 // The canvas's MSAA cannot change after this, so it follows the graphics setting saved when the page loads.
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: (CONFIG.VISUALS.quality[settings.graphics] || CONFIG.VISUALS.quality[CONFIG.VISUALS.defaultQuality]).antialias });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(window.devicePixelRatio || 1);   // the screen's own resolution; visuals.resize keeps it so
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
 
