@@ -26,7 +26,8 @@ Aleix, 2026-11-13.
 - Bosses are damage sponges and bots never die (2026-11-13): short fights, bosses that press harder rather than last
   longer, bots that can fall, and more reward moments (track B, item 2). Bots don't get sloppier as a run goes on: the
   bosses already get harder. No damage numbers. Some bosses have too much health in Story too: every boss's own
-  health is set to about a 2-minute solo fight, in the same item.
+  health is set so a skilled solo player kills it fast, in the same item. Bosses are killable fast with skill but
+  harder to face; the Boss Rush curve scales only their attack pace, never damage or health.
 - The five blessings: overhauled (track B, item 5).
 - The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
@@ -150,17 +151,21 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      about two minutes, with no bot falling.
    - **Team-size scaling goes** for every enemy and boss in every mode (`CONFIG.group`, `groupDef`/`setGroup`, the
      server's scaling in `tick()`): a group of four, bots or people, meets the same boss a solo player does.
+   - **Killable fast with skill, hard to face** (Aleix, 2026-11-13). Health is never the obstacle; the pattern is. A
+     skilled player who punishes the openings beats a boss fast, and a weaker one takes longer because they find fewer
+     openings, not because the bar is long. Bosses get harder to face, in every mode: shorter idle gaps, more mix-ups
+     between their own strings, and openings that must be earned, every attack still telegraphed (`VISION.md`, fair
+     but challenging).
    - **Fight length:** about 45-60 s for a full party at fight 1, never above about 2 minutes late in a run. A person
      with three bots plays the same as four people.
    - **Base health, story too** (Aleix: some bosses have too much health in Story as well). Every boss's own `hp` is
-     set so one person who has learned it beats it in about 2 minutes on a clean run, the long outliers first; Boss
-     Rush's fight-1 numbers come from the curve on top of that. Measure every boss against one body alone
-     (`tools/bot-fights.cjs` always fields three today: give it a solo option), list the times before and after, and
-     bring the slow ones into line.
-   - **The curve** (one `CONFIG` rule, exponential in fights won but subtle, as `VISION.md` says): boss health grows
-     slowly and stops at about 1.5 times; the rest comes from damage, speed and aggression (shorter pauses between
-     attacks, longer strings) and, with item 4, the modifiers. Late in a run a boss still dies in about a minute, but
-     every hit taken is huge.
+     set so one skilled person on a clean run beats it in about a minute, the long outliers first. Measure every boss
+     against one body alone (`tools/bot-fights.cjs` always fields three today: give it a solo option), list the times
+     before and after, and bring the slow ones into line.
+   - **The curve** (one `CONFIG` rule, exponential in fights won but subtle, as `VISION.md` says) scales only the
+     boss's pace: faster attack patterns (shorter wind-up-to-wind-up gaps and recoveries, quicker follow-ups, longer
+     strings), each tell staying readable. Not its health, not its damage (Aleix). The genuinely impossible end comes
+     from patterns too fast to answer, not from one-shots or a long bar.
    - **Bots play like a decent friend, not a machine.** Full player stats stay (v7.57.0). Slower, less even reactions,
      about twice the mistimed rolls, a later flask and less backing off. They play the same all run: no extra
      sloppiness as it goes on (Aleix: the bosses already get harder). Target: early on, about one bot falls every three
@@ -172,12 +177,15 @@ left open, and any solo play in it, stays on the old build and nothing says so.
        only: the simulation and the other players are never slowed; flashes under 3 Hz and `reducedMotion()`.
      - More breaks and executions: posture breaks come about 30% sooner, so the big hit lands more often.
      - A visible streak: the fight count and each boss's time on the HUD and the end screen.
+     - **Swift kill** (the director's pick, for flow): beat a boss under its par time (shown on the HUD beside the
+       clock, from the fight-length target) and that fight's blessing offer gains one extra choice (one rarity up
+       once item 5 brings rarity). Skill pays straight back into the run; nobody is punished for missing it.
      - No damage numbers.
    Check: before-and-after numbers (`node tools/bot-fights.cjs`, `PERSON=1` for a person stand-in): fight 1's length
    for a person with three bots and for four bots, bot falls per fight, and every boss's solo time, against the
    targets above; a test that 1
-   and 4 players face the same boss; a test of the curve at fight 1, 5, 10, 20 and 40; frames of the kill moment and
-   of the streak on the HUD.
+   and 4 players face the same boss; a test of the curve at fight 1, 5, 10, 20 and 40 (pace changes, health and
+   damage don't); frames of the kill moment, the streak on the HUD and a swift-kill offer.
 3. **The UI redesign, the whole game** (Aleix, 2026-11-13: menus and UI way better to use and to look at). It comes
    before Endless, blessings and crates, so their screens are built on it.
    - **What's wrong now** (v7.59.0 frames in `docs/scorecard/modes-*` and `.scratch/calling/blessing-desktop.png`):
@@ -205,7 +213,8 @@ left open, and any solo play in it, stays on the old build and nothing says so.
 4. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
    can come, each fight harder on item 2's curve: fairly easy at first, slowly more challenging for a good while, then
    genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
-   the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss) and are shown by name
+   the first few fights (faster, an extra phase of new moves, burning ground, a second boss; none adds damage or
+   health) and are shown by name
    under the boss's bar; every few fights two bosses come at once. The end screen shows bosses beaten. Check: a test
    that the first fights draw only the easier bosses, and a frame of a modifier on screen.
 5. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
