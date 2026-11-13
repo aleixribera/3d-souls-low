@@ -2,9 +2,9 @@
 // New public runs only. Canonical copy: STORY.md, Public-lobby opening ceremonies.
 const LOBBY_INTROS = [
   { id: 'ashmere', title: 'STORY · ASHMERE', goal: 'Defeat the Gaoler King.' },
-  { id: 'the-calling', title: 'THE CALLING', goal: 'Answer every boss that comes. The last two come together.' },
-  { id: 'boss-only', title: 'BOSS ONLY', goal: 'Defeat every boss.' },
-  { id: 'boss-pairs', title: 'DOUBLE BOSSES', goal: 'Defeat every boss, two at a time.' },
-  { id: 'boss-triples', title: 'TRIPLE BOSSES', goal: 'Defeat every boss, three at a time.' },
-  { id: 'boss-quads', title: 'QUAD BOSSES', goal: 'Defeat every boss, four at a time.' },
+  { id: 'boss-rush', title: 'BOSS RUSH', goal: 'Answer every boss that comes. The last two come together.' },
+  { id: 'boss-only', title: 'SINGLE BOSS', goal: 'Defeat every boss.' },
+  { id: 'boss-pairs', title: 'DOUBLE BOSS', goal: 'Defeat every boss, two at a time.' },
+  { id: 'boss-triples', title: 'TRIPLE BOSS', goal: 'Defeat every boss, three at a time.' },
+  { id: 'boss-quads', title: 'QUAD BOSS', goal: 'Defeat every boss, four at a time.' },
 ];

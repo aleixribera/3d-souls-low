@@ -23,7 +23,7 @@ const { createServer } = require('../server/index.cjs');
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive, null, { timeout: 90000 });
   try {
     const a = await player('Ash'), b = await player('Ember');
-    for (const [choice, title, goal] of [['campaign/ashmere', 'STORY · ASHMERE', 'Defeat the Gaoler King.'], ['gauntlet/boss-only', 'BOSS ONLY', 'Defeat every boss.']]) {
+    for (const [choice, title, goal] of [['campaign/ashmere', 'STORY · ASHMERE', 'Defeat the Gaoler King.'], ['gauntlet/boss-only', 'SINGLE BOSS', 'Defeat every boss.']]) {
       await a.evaluate(() => multiplayer.show());
       await a.locator('#lobbyAdventure').selectOption(choice); await a.locator('#lobbyStart').click();
       await Promise.all([a, b].map(p => p.locator('#runIntroScreen').waitFor({ timeout: 90000 })));

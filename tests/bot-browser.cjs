@@ -30,6 +30,7 @@ const { createServer } = require('../server/index.cjs');
     await b.waitForFunction(() => document.querySelector('#lobbyPlayers .lobby-player[data-bot=true] .lobby-player-role.bot'));
     assert.equal(await b.locator('.lobby-bot-remove').count(), 0, 'only the leader can remove it');
     if (shots) await a.screenshot({ path: path.join(shots, 'bot-lobby.png') });
+    await a.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');
     await a.locator('#lobbyStart').click();
     const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && multiplayer.info.receivedFrames > 2, null, { timeout: 90000 });
     await Promise.all([ready(a), ready(b)]);

@@ -26,9 +26,12 @@ const { createServer } = require('../server/index.cjs');
     const selection = () => page.evaluate(() => ({ selected: Game.selected,
       focus: [...document.querySelector('#menuList').children].indexOf(document.activeElement),
       stops: document.querySelectorAll('#menuList button[tabindex="0"]').length }));
-    assert.deepEqual(await selection(), { selected: 0, focus: 0, stops: 1 });
-    await page.keyboard.press('Tab');
+    // The lobby answers, so the title rests on Boss Rush (Story, Boss Rush, Practice).
+    await page.waitForFunction(() => multiplayer.lobby.state === 'online' && Game.selected === 1);
     assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
+    await page.keyboard.press('Tab');
+    assert.deepEqual(await selection(), { selected: 2, focus: 2, stops: 1 });
+    await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Shift+Tab');
     assert.deepEqual(await selection(), { selected: 0, focus: 0, stops: 1 });
     await page.keyboard.press('Shift+Tab');
@@ -70,7 +73,7 @@ const { createServer } = require('../server/index.cjs');
       { width: 800, height: 600 }, { width: 844, height: 390 }, { width: 640, height: 360 },
       { width: 390, height: 740 }, { width: 320, height: 568 }]) {
       await page.setViewportSize(viewport);
-      for (const screen of ['main', 'story', 'options', 'arena', 'levels', 'storyConfirm', 'storyDone']) {
+      for (const screen of ['main', 'story', 'options', 'practice', 'practiceLevels', 'practiceGroup', 'storyConfirm', 'storyDone']) {
         const issues = await page.evaluate(screen => {
           Game.optionsFrom = 'main'; Game.showMenu(screen);
           const issues = [], box = id => document.getElementById(id).getBoundingClientRect();
@@ -164,6 +167,7 @@ const { createServer } = require('../server/index.cjs');
     await page.evaluate(() => { settings.graphics = 'low'; applySettings(); Game.showMenu('main'); Game.manualClock = false; });
     await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
+    await page.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');
     await page.locator('#lobbyStart').click();
     await page.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive, null, { timeout: 90000 });
     await page.evaluate(() => window.dispatchEvent(new Event('blur')));

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
-const adventures = ['campaign/ashmere', 'calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id)];
+const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id), 'campaign/ashmere'];
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -43,7 +43,9 @@ const adventures = ['campaign/ashmere', 'calling/' + C.calling.id, ...Object.key
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0, null, { timeout: 90000 });
   try {
     const a = await player('Leader'), b = await player('Friend');
-    assert.deepEqual(await a.locator('#lobbyAdventure optgroup[label="Stories"] option').allTextContents(), ['Story (Ashmere)']);
+    assert.deepEqual(await a.locator('#lobbyAdventure option[value^="campaign/"]').allTextContents(), ['Story (Ashmere)']);
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id, 'Boss Rush is the default');
+    assert.equal(await a.locator('#lobbyAdventure option').first().textContent(), 'Boss Rush');
     assert.equal(await a.locator('#lobbyAdventure option').count(), adventures.length, 'the story and every configured boss run');
     assert.equal(await a.locator('#lobbyAdventure option[value^="level/"]').count(), 0, 'no individual levels in the dropdown');
     assert.equal(await a.getByRole('button', { name: 'Edit name', exact: true }).count(), 0, 'no separate name-edit action');
@@ -54,11 +56,11 @@ const adventures = ['campaign/ashmere', 'calling/' + C.calling.id, ...Object.key
     await a.locator('#lobbyAdventure').focus();
     await pad(a, 0);
     assert.equal(await a.locator('#lobbyAdventure').getAttribute('size'), '8', 'A opens adventure picker without native popup');
-    await pad(a, 12);
-    assert.notEqual(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only');
+    await pad(a, 13);
+    assert.notEqual(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id);
     await pad(a, 1);
-    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'B cancels adventure edits');
-    await a.locator('#lobbyAdventure').selectOption('campaign/ashmere');
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id, 'B cancels adventure edits');
+    await a.locator('#lobbyAdventure').selectOption('calling/' + C.calling.id);
     await pad(a, 0); await pad(a, 13, undefined, true);
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), adventures.at(-1), 'held D-pad advances to the last adventure');
     await pad(a, 1);
@@ -98,7 +100,8 @@ const adventures = ['campaign/ashmere', 'calling/' + C.calling.id, ...Object.key
     assert.ok(await a.evaluate(() => !!document.activeElement.offsetParent), 'leadership changes never leave focus in hidden controls');
     await navigate(b, 'lobbyAdventure');
     if (await b.locator('#lobbyAdventure').getAttribute('size')) await pad(b, 1);
-    for (let i = 0; i < 100 && await b.locator('#lobbyAdventure').inputValue() !== 'gauntlet/boss-only'; i++) await pad(b, 15);
+    for (let i = 0; i < 100 && await b.locator('#lobbyAdventure').inputValue() !== 'gauntlet/boss-only'; i++)
+      await pad(b, await b.locator('#lobbyAdventure').evaluate(s => s.selectedIndex > [...s.options].findIndex(o => o.value === 'gauntlet/boss-only')) ? 14 : 15);
     assert.equal(await b.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only');
     assert.deepEqual(await b.locator('#lobbyAdventure option').evaluateAll(options => options.map(o => o.value)), adventures);
     await navigate(b, 'lobbyStart'); await pad(b, 0);

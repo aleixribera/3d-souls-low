@@ -15,6 +15,7 @@ const { createServer } = require('../server/index.cjs');
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
+    await page.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');
     await page.locator('#lobbyStart').click();
     await page.waitForFunction(() => multiplayer.info.ready && multiplayer.info.receivedFrames > 2, null, { timeout: 90000 });
     const results = await page.evaluate(() => {

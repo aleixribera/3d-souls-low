@@ -47,10 +47,10 @@ class Player {
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
-    this.boons = NO_BOONS; this.blessings = []; this.risen = 0;   // The Calling's blessings held (bless), rises taken (riseBody)
+    this.boons = NO_BOONS; this.blessings = []; this.risen = 0;   // Boss Rush's blessings held (bless), rises taken (riseBody)
     this.savePrev();
   }
-  // The Calling's blessings (CONFIG.blessings, BLESSINGS): sums each held blessing's boon into `boons` and grants the
+  // Boss Rush's blessings (CONFIG.blessings, BLESSINGS): sums each held blessing's boon into `boons` and grants the
   // extra flasks. Called once, on a fresh body.
   bless(ids) {
     const boons = { ...NO_BOONS };

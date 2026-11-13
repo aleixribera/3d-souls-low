@@ -37,6 +37,7 @@ function validateData({ visual = true } = {}) {
   need(CONFIG.bossBattle.maxTeam === 6, 'Boss battle team limit must be six.');
   for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
+  need(Number.isInteger(CONFIG.practice.maxGroup) && CONFIG.practice.maxGroup >= 2, 'Practice: maxGroup must be a whole number, 2 or more.');
   for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
   need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
@@ -49,7 +50,7 @@ function validateData({ visual = true } = {}) {
   need(Number.isInteger(nav.anchors) && Number.isInteger(nav.maxNodes) && Number.isInteger(nav.searchSteps) && nav.sample <= nav.cell &&
     nav.maxDrop < CONFIG.fall.lethal && nav.progressTime < nav.stuckTime && nav.recoverMin < nav.recoverMax,
     'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
-  // The Calling's blessings (v7.35.0): a known boon each, unique ids, enough to fill an offer.
+  // Boss Rush's blessings (v7.35.0): a known boon each, unique ids, enough to fill an offer.
   const BL = CONFIG.blessings;
   need(Number.isInteger(BL.offer) && BL.offer >= 1 && BL.offer <= BLESSINGS.length, 'Blessings offer must be a whole number from 1 to the number of blessings.');
   for (const key of ['pickTime', 'riseDelay']) need(num(BL[key]) && BL[key] > 0, `Blessings ${key} must be positive.`);

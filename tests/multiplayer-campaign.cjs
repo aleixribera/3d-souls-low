@@ -39,7 +39,7 @@ function peer(url) {
   try {
     assert.equal((await lobby()).playing, null, 'an empty lobby plays nothing');
     const [a, welcome] = await add(), [b] = await add();
-    assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'gauntlet', id: 'boss-only' });
+    assert.deepEqual(welcome.catalog.defaultAdventure, { kind: 'calling', id: 'boss-rush' });
     assert.deepEqual(welcome.catalog.campaigns.map(c => c.id), ['ashmere'], 'only the story road is available online');
     assert.equal(welcome.catalog.campaigns[0].chapters, chapters.length);
     a.send({ type: 'control', action: 'start', kind: 'campaign', id: 'unknown' });

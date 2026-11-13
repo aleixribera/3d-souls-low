@@ -63,9 +63,9 @@ function createServer(options = {}) {
   }
   let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
-  let blessingFor = null;   // The Calling, between fights: s since the blessings were offered (null: not offered)
+  let blessingFor = null;   // Boss Rush, between fights: s since the blessings were offered (null: not offered)
   const blessingRound = new Set();   // the players offered blessings this time (a late arrival is offered once)
-  let tally = null;   // The Calling's totals across its fights: { roster, startedAt, beaten, players: id -> row }
+  let tally = null;   // Boss Rush's totals across its fights: { roster, startedAt, beaten, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
@@ -133,7 +133,7 @@ function createServer(options = {}) {
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
   }
-  // The Calling's end of a fight: its damage and falls join the run's totals, and a won fight its bosses.
+  // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight its bosses.
   function tallyFight(won) {
     for (const r of sim.fightTally()) {
       const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0 };
@@ -146,7 +146,7 @@ function createServer(options = {}) {
   const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: [...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths) });
-  // For The Calling, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
+  // For Boss Rush, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
     const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : kind === 'calling' ? sim.calling(id, boss ?? 0) : null;
@@ -154,7 +154,7 @@ function createServer(options = {}) {
     const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
     if ((kind === 'campaign' || campaignId) && !campaign) throw Object.assign(new Error('Unknown campaign or chapter'), { rejected: true });
     if (campaign) { kind = 'level'; id = campaign.level; }
-    // A later fight of The Calling keeps the run's blessings; anything else starts without.
+    // A later fight of Boss Rush keeps the run's blessings; anything else starts without.
     try { session = sim.start(kind, id, gauntlet?.partners || [], !!gauntlet?.roster && gauntlet.fight > 0); } catch (e) {
       // A failure after validation leaves the simulation half-built: end the run properly for everyone.
       if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another level.', 'error');
@@ -172,7 +172,7 @@ function createServer(options = {}) {
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
   }
-  // The Calling, between fights (CONFIG.blessings): once the results have shown, every connected player is offered
+  // Boss Rush, between fights (CONFIG.blessings): once the results have shown, every connected player is offered
   // blessings, and the next fight waits until each has chosen or the pick time runs out (then every open offer gets its
   // first blessing, someone who left included).
   function blessingsChosen() {
@@ -518,11 +518,11 @@ function createServer(options = {}) {
         if (session.gauntlet && sim.state.completedFor >= Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)) {
           if (session.gauntlet.roster && session.gauntlet.next && !blessingsChosen()) continue;
           const run = C.gauntlets[session.gauntlet.id];
-          // The Calling: the fallen rise for the next fight with everyone else; the last fight ends the run.
+          // Boss Rush: the fallen rise for the next fight with everyone else; the last fight ends the run.
           if (session.gauntlet.roster) {
             if (tally) tallyFight(true);
             if (session.gauntlet.next) start('calling', session.gauntlet.roster, null, session.gauntlet.next);
-            else stop(`${C.calling.name} COMPLETE · ${session.gauntlet.bosses} bosses defeated. The crown has answered.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
+            else stop(`${C.calling.name} COMPLETE · All ${session.gauntlet.bosses} bosses beaten.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);

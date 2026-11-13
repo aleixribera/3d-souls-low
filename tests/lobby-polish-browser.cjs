@@ -87,6 +87,7 @@ const { config: C } = require('../js/net-protocol.js');
     assert.deepEqual(await a.locator('#lobbyName').evaluate(node => [document.activeElement === node, node.selectionStart, node.selectionEnd]), [true, 1, 2], 'roster update preserves keyboard focus and selection');
     await a.locator('#lobbyManage').click();
     assert.equal(await a.locator('#lobbyPlayers .lobby-player-actions button').first().isVisible(), true);
+    await a.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');
     await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};

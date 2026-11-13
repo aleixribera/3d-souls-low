@@ -16,18 +16,18 @@
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     loadTimeout: 30 * 1000, rememberedPlayers: 1024,
     defaultCampaign: 'ashmere',
-    defaultAdventure: Object.freeze({ kind: 'gauntlet', id: 'boss-only' }),
+    defaultAdventure: Object.freeze({ kind: 'calling', id: 'boss-rush' }),
     // Boss runs: `size` bosses fought together per encounter, in catalog order; `then` follows a full victory.
     gauntlets: Object.freeze({
-      'boss-only': Object.freeze({ name: 'BOSS ONLY', size: 1, then: 'boss-pairs' }),
-      'boss-pairs': Object.freeze({ name: 'DOUBLE BOSSES', size: 2, then: 'boss-triples' }),
-      'boss-triples': Object.freeze({ name: 'TRIPLE BOSSES', size: 3, then: 'boss-quads' }),
-      'boss-quads': Object.freeze({ name: 'QUAD BOSSES', size: 4, then: null }),
+      'boss-only': Object.freeze({ name: 'SINGLE BOSS', size: 1, then: 'boss-pairs' }),
+      'boss-pairs': Object.freeze({ name: 'DOUBLE BOSS', size: 2, then: 'boss-triples' }),
+      'boss-triples': Object.freeze({ name: 'TRIPLE BOSS', size: 3, then: 'boss-quads' }),
+      'boss-quads': Object.freeze({ name: 'QUAD BOSS', size: 4, then: null }),
     }),
-    // The Calling (v7.35.0): a co-op boss rush the leader shapes. `length` bosses (from `minLength` to every boss in the
+    // Boss Rush (v7.35.0 as The Calling; the lobby's default since v7.60.0): a co-op run of bosses the leader shapes. `length` bosses (from `minLength` to every boss in the
     // game), random or chosen by hand, fought one at a time except the last two, who come together. Starting one
     // fills the party with bots up to `fillTo` (humans and bots).
-    calling: Object.freeze({ id: 'the-calling', name: 'THE CALLING', length: 5, minLength: 3, fillTo: 3 }),
+    calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3, fillTo: 3 }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,

@@ -10,7 +10,7 @@ const multiplayer = (() => {
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, adventureBeforeEdit = null, nameDraft = '', nameLowercase = false;
-  let callingPicks = [];   // The Calling's hand-picked roster, in fight order
+  let callingPicks = [];   // Boss Rush's hand-picked roster, in fight order
   let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
   const labelPosition = new THREE.Vector3();
@@ -22,14 +22,14 @@ const multiplayer = (() => {
   panel.id = 'publicLobby'; panel.className = 'hidden'; panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'lobbyTitle');
   panel.innerHTML = `<div class="lobby-card">
-    <header class="lobby-header"><div><p class="lobby-kicker">PLAYING ONLINE · EVERYONE ON THIS LINK</p><h1 id="lobbyTitle">The public lobby</h1></div>
+    <header class="lobby-header"><div><h1 id="lobbyTitle">The public lobby</h1></div>
     <span id="lobbyConnection" class="lobby-connection">Connecting</span></header>
     <p id="lobbyStatus" role="status" aria-live="polite">Connecting…</p>
     <p id="lobbyNotice" role="alert" hidden></p>
     <div class="lobby-layout"><section class="lobby-adventure" aria-labelledby="lobbyAdventureTitle">
-    <h2 id="lobbyAdventureTitle" class="lobby-section-label">Adventure</h2>
+    <h2 id="lobbyAdventureTitle" class="lobby-section-label">Mode</h2>
     <div id="lobbyCurrentLevel" class="online-level" hidden></div>
-    <div id="lobbyLeader"><label for="lobbyAdventure">Choose your adventure</label><select id="lobbyAdventure" aria-describedby="lobbyAdventureSummary"></select>
+    <div id="lobbyLeader"><select id="lobbyAdventure" aria-labelledby="lobbyAdventureTitle" aria-describedby="lobbyAdventureSummary"></select>
     <p id="lobbyAdventureSummary" class="lobby-summary"></p>
     <div id="lobbyCalling" hidden><div class="lobby-calling-row"><div><label for="lobbyCallingRoster">Roster</label><select id="lobbyCallingRoster"><option value="random">Random</option><option value="pick">Chosen by hand</option></select></div>
     <div id="lobbyCallingCount"><label for="lobbyCallingLength">Bosses</label><select id="lobbyCallingLength"></select></div></div>
@@ -63,7 +63,6 @@ const multiplayer = (() => {
     #publicLobby .lobby-card{position:relative;width:min(900px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 22px;border:1px solid var(--mp-line-hi);border-radius:10px;background:linear-gradient(160deg,#1e1f1b,#0f1315 70%);box-shadow:0 30px 100px #000a,inset 0 1px 0 #ffffff0d;scrollbar-width:thin;scrollbar-color:#756443 transparent;animation:lobby-arrive .22s ease-out}
     #publicLobby .lobby-card:before{content:'';position:absolute;left:32px;right:32px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--mp-gold),transparent);opacity:.7}
     #publicLobby .lobby-header{display:flex;align-items:center;justify-content:space-between;gap:16px}#publicLobby h1{font:400 clamp(28px,4vw,38px)/1.15 Georgia,serif;letter-spacing:.04em;margin:6px 0 0;color:var(--mp-gold-hi)}
-    #publicLobby .lobby-kicker{font-size:10px;font-weight:600;letter-spacing:.24em;color:var(--mp-gold);margin:0}
     #publicLobby .lobby-connection{flex:none;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#d7d6c8;background:#ffffff08;border:1px solid #ffffff1a;border-radius:999px;padding:6px 12px}
     #publicLobby .lobby-connection:before{content:'';width:8px;height:8px;border-radius:50%;background:#c8a95f;box-shadow:0 0 0 3px #c8a95f26}#publicLobby[data-connected=true] .lobby-connection:before{background:var(--mp-good);box-shadow:0 0 0 3px #a9cf8e26}
     #lobbyStatus{margin:12px 0 22px;padding:10px 14px;border-radius:6px;background:#ffffff06;border:1px solid #ffffff0f;color:#cfcdc0;font-size:13px}
@@ -128,6 +127,7 @@ const multiplayer = (() => {
     @keyframes lobby-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     @media(max-width:650px){#publicLobby{padding:10px}#publicLobby .lobby-card{padding:22px 16px 16px;max-height:calc(100dvh - 20px)}#publicLobby .lobby-card:before{left:16px;right:16px}#publicLobby .lobby-layout{grid-template-columns:1fr;gap:14px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:16px}#publicLobby .lobby-summary{min-height:0}#lobbyControlsList{grid-template-columns:1fr}#lobbyPlayers{max-height:150px}#publicLobby .lobby-header{align-items:flex-start}#publicLobby .lobby-connection{margin-top:4px}#publicLobby .lobby-footer{margin-top:16px;flex-wrap:wrap}#lobbyStatus{margin:10px 0 16px}}
     @media(max-height:560px) and (min-width:651px){#publicLobby .lobby-card{padding:18px 24px 14px}#publicLobby h1{font-size:26px}#lobbyStatus{margin:8px 0 12px;padding:6px 12px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:14px}#publicLobby .lobby-summary{min-height:0;font-size:12px;line-height:1.5;margin:8px 0 12px}#publicLobby .lobby-footer{margin-top:12px;padding-top:10px}}
+    @media(max-height:450px) and (min-width:651px){#publicLobby{padding:8px 24px}#publicLobby .lobby-card{padding:12px 20px 10px;max-height:calc(100dvh - 16px)}#publicLobby h1{font-size:22px;margin-top:0}#lobbyStatus{margin:6px 0 8px}#publicLobby .lobby-section-label{margin-bottom:8px}#publicLobby #lobbyLeader select{padding-top:9px;padding-bottom:9px}#publicLobby .lobby-summary{margin:6px 0 8px}#lobbyCalling{margin:0 0 10px}#lobbyCalling label{margin-bottom:4px}#publicLobby .lobby-adventure,#publicLobby .lobby-party{padding:10px 14px}}
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;width:210px;max-width:calc(100vw - 36px);box-sizing:border-box;pointer-events:none;color:var(--mp-ink);font:12px/1.5 system-ui;text-shadow:0 1px 2px #000;background:linear-gradient(160deg,#12171acc,#0d1113a8);padding:10px 12px;border:1px solid var(--mp-line);border-radius:8px;box-shadow:0 8px 24px #0006;backdrop-filter:blur(3px)}
     .online-level{margin:0 0 8px;color:var(--mp-gold-hi,#f3dca3);font:600 11px/1.4 system-ui;text-align:left;letter-spacing:.1em;text-transform:uppercase}
     #publicLobby .online-level{display:inline-block;margin:0 0 14px;padding:3px 10px;border:1px solid var(--mp-line-hi);border-radius:999px;background:#dcbb7412}
@@ -221,7 +221,7 @@ const multiplayer = (() => {
   }
   const wipeScreen = document.createElement('section'); wipeScreen.id = 'teamWipeScreen'; wipeScreen.hidden = true;
   wipeScreen.tabIndex = -1; wipeScreen.setAttribute('role', 'alert'); wipeScreen.setAttribute('aria-label', 'Team wiped');
-  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker" id="teamWipeKicker">BOSS ONLY · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
+  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker" id="teamWipeKicker">BOSS RUSH · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
   document.body.appendChild(wipeScreen);
   const wipeStyle = document.createElement('style');
   wipeStyle.textContent = `#teamWipeScreen[hidden]{display:none}
@@ -243,7 +243,7 @@ const multiplayer = (() => {
   function clearTeamWipe() { clearTimeout(wipeTimer); wipeTimer = null; wipeScreen.hidden = true; panel.inert = false; }
   function showTeamWipe(run) {
     clearTeamWipe();
-    el('teamWipeKicker').textContent = `${run?.name || 'BOSS ONLY'} · RUN ENDED`;
+    el('teamWipeKicker').textContent = `${run?.name || 'BOSS RUSH'} · RUN ENDED`;
     el('teamWipeScore').textContent = run ? `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}` : '';
     panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
     wipeTimer = setTimeout(() => {
@@ -287,7 +287,7 @@ const multiplayer = (() => {
   function showRunSummary(data) {
     summary = data;
     runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
-    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'The crown answered' : 'Team wiped';
+    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'Every boss beaten' : 'Team wiped';
     el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
     el('runSummaryBeaten').textContent = `${data.beaten} / ${data.bosses}`;
     const rows = el('runSummaryRows'); rows.replaceChildren();
@@ -338,7 +338,7 @@ const multiplayer = (() => {
     else if (pressed.includes('PadA') && summaryButtons().includes(document.activeElement)) document.activeElement.click();
     return true;
   }
-  // The Calling's blessings (CONFIG.blessings): between fights the server offers each player a few, and a click, a number
+  // Boss Rush's blessings (CONFIG.blessings): between fights the server offers each player a few, and a click, a number
   // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out.
   const blessingScreen = document.createElement('section'); blessingScreen.id = 'blessingScreen'; blessingScreen.hidden = true;
   blessingScreen.setAttribute('aria-labelledby', 'blessingTitle');
@@ -534,12 +534,12 @@ const multiplayer = (() => {
     panel.classList.toggle('lobby-pad', usingPad());
     el('lobbyPadHint').textContent = !usingPad() ? '' : !el('lobbyNameEditor').hidden
       ? 'D-pad / left stick: move · A / ×: choose · X / □: delete · B / ○: cancel'
-      : adventureBeforeEdit !== null ? 'D-pad / left stick: choose adventure · A / ×: confirm · B / ○: cancel'
-      : 'D-pad / left stick: move · A / ×: select · ← / →: change adventure · B / ○: back';
+      : adventureBeforeEdit !== null ? 'D-pad / left stick: choose a mode · A / ×: confirm · B / ○: cancel'
+      : 'D-pad / left stick: move · A / ×: select · ← / →: change mode · B / ○: back';
   }
   events.on('device', updateLobbyPadHint);
   function closeAdventurePicker(cancel = false) {
-    // A cancelled pick puts the adventure back without a change event: redraw what depends on it (The Calling's controls).
+    // A cancelled pick puts the adventure back without a change event: redraw what depends on it (Boss Rush's controls).
     const restored = adventureBeforeEdit !== null && cancel && el('lobbyAdventure').value !== adventureBeforeEdit;
     if (restored) el('lobbyAdventure').value = adventureBeforeEdit;
     adventureBeforeEdit = null; el('lobbyAdventure').removeAttribute('size'); updateLobbyPadHint();
@@ -867,7 +867,7 @@ const multiplayer = (() => {
   }
   const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
   const callingByHand = () => callingChosen() && el('lobbyCallingRoster').value === 'pick';
-  // The Calling's roster as the leader has it: the picks, or a length for the server to fill at random.
+  // Boss Rush's roster as the leader has it: the picks, or a length for the server to fill at random.
   function callingRequest() {
     return callingByHand() ? { roster: [...callingPicks] } : { length: Number(el('lobbyCallingLength').value) || C.calling.length };
   }
@@ -896,7 +896,7 @@ const multiplayer = (() => {
   // v7.19.0: plain words for someone who just followed the link. Who else is here, and who decides.
   function guestStatus() {
     const others = roster.filter(p => p.id !== self && !p.bot).length, lead = roster.find(p => p.id === leader)?.name || 'The leader';
-    return `You're in${others ? `, with ${others} other player${others > 1 ? 's' : ''}` : ''}. ${lead} leads: they choose the adventure and start it for everyone.`;
+    return `You're in${others ? `, with ${others} other player${others > 1 ? 's' : ''}` : ''}. ${lead} leads: they choose the mode and start it for everyone.`;
   }
   // The running adventure, in a few words ("Ashmere: The Long Hall"), or ''.
   function runName() {
@@ -938,7 +938,7 @@ const multiplayer = (() => {
     const previousFocus = panel.contains(document.activeElement) ? document.activeElement : null, focusKey = previousFocus?.dataset.padKey;
     const owner = connected && self === leader;
     if (!owner && adventureBeforeEdit !== null) closeAdventurePicker(true);
-    if (connected) el('lobbyStatus').textContent = owner ? session ? 'You lead the party. Your adventure is in progress.' : 'You lead the party. Choose an adventure and start when you are ready.'
+    if (connected) el('lobbyStatus').textContent = owner ? session ? 'You lead the party. Your run is in progress.' : 'You lead the party. Choose a mode and start when you are ready.'
       : leader ? guestStatus() : 'Use your keyboard, mouse or controller to become the leader.';
     el('lobbyLeader').hidden = !owner;
     el('lobbyResume').hidden = !active();
@@ -952,14 +952,14 @@ const multiplayer = (() => {
     el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session || !!controlPending;
     el('lobbyStart').disabled = !connected || !!controlPending || callingByHand() && callingPicks.length < C.calling.minLength;
-    el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start new adventure' : 'Start together';
+    el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start a new run' : 'Start together';
     el('lobbyManage').hidden = !owner || roster.filter(p => !p.bot).length < 2;
     const botCount = roster.filter(p => p.bot).length;
     el('lobbyAddBot').hidden = !owner; el('lobbyAddBot').disabled = !connected || botCount >= C.maxBots;
     el('lobbyBotHint').hidden = !owner;
     el('lobbyBotHint').textContent = botCount >= C.maxBots ? `The party has its ${C.maxBots} bots.` : 'Bots fight beside you with the same moves: rolls, parries, combos and executions.';
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
-    el('lobbyWaiting').firstElementChild.textContent = session ? `${runName() ? `${runName()} is underway.` : 'Your party is already in an adventure.'} Jump back in when you are ready.`
+    el('lobbyWaiting').firstElementChild.textContent = session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'} Jump back in when you are ready.`
       : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start. You will be brought in with everyone.`;
     updateConnection(); adventureSummary();
     const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name, !!p.bot]), self, leader, owner });
@@ -999,7 +999,7 @@ const multiplayer = (() => {
     const road = session?.campaign;
     const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
     const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
-    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS ONLY'} · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS RUSH'} · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
     for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
       const tag = el(id);
       tag.hidden = !connected || !levelTag;
@@ -1017,14 +1017,13 @@ const multiplayer = (() => {
       try { localStorage.setItem('combatArena.onlineToken', resumeToken); localStorage.setItem('combatArena.onlineName', el('lobbyName').value); } catch {}
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
+      // The leader's Mode: Boss Rush first (the lobby's default), the fixed boss runs, then the story played together.
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
-      const challenges = [{ kind: 'calling', id: C.calling.id, name: 'The Calling' }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: run.name }))];
-      for (const [label, entries] of [['Stories', stories.map(entry => ({ ...entry, kind: 'campaign' }))], ['Challenge', challenges]]) {
-        const group = document.createElement('optgroup'); group.label = label;
-        for (const entry of entries) { const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.kind === 'campaign' ? STORIES.find(s => s.id === entry.id)?.lobbyName || entry.name : entry.name; group.appendChild(option); }
-        select.appendChild(group);
-      }
-      // The Calling: how many bosses, and every boss in the game to pick from by hand.
+      const titled = name => name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: titled(run.name) })),
+        ...stories.map(entry => ({ kind: 'campaign', id: entry.id, name: STORIES.find(s => s.id === entry.id).lobbyName }))];
+      for (const entry of modes) { const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.name; select.appendChild(option); }
+      // Boss Rush: how many bosses, and every boss in the game to pick from by hand.
       const length = el('lobbyCallingLength'); length.textContent = '';
       for (let n = C.calling.minLength; n <= catalog.bosses.length; n++) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); length.appendChild(option); }
       length.value = String(C.calling.length);
@@ -1406,7 +1405,7 @@ const multiplayer = (() => {
       focus.selectedIndex = clamp(focus.selectedIndex + step, 0, focus.options.length - 1);
       focus.dispatchEvent(new Event('change', { bubbles: true })); return;
     }
-    // The Calling's two small selects change with left / right, like the adventure.
+    // Boss Rush's two small selects change with left / right, like the mode.
     if ((focus === el('lobbyCallingLength') || focus === el('lobbyCallingRoster')) && (direction === 'left' || direction === 'right')) {
       focus.selectedIndex = clamp(focus.selectedIndex + (direction === 'left' ? -1 : 1), 0, focus.options.length - 1);
       focus.dispatchEvent(new Event('change', { bubbles: true })); return;

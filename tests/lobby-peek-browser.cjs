@@ -24,12 +24,12 @@ const { createServer } = require('../server/index.cjs');
     return page;
   }
   const badge = page => page.locator('#menuList .menuBtn.hero .b');
-  const card = page => page.locator('#menuList .menuBtn.hero').first();
+  const card = page => page.locator('#menuList .menuBtn.hero').nth(1);
   try {
     const a = await open('Ash');
     await a.waitForFunction(() => multiplayer.lobby.state === 'online');
     assert.match(await badge(a).first().textContent(), /Nobody inside yet/);
-    assert.equal(await a.evaluate(() => [Game.menuItems[0].name, Game.menuItems[1].name, Game.selected].join()), 'Play Online,Story,0', 'the online card comes first, and is chosen when the lobby answers');
+    assert.equal(await a.evaluate(() => [Game.menuItems[0].name, Game.menuItems[1].name, Game.menuItems[2].name, Game.selected].join()), 'Story,Boss Rush,Practice,1', 'Story, Boss Rush, Practice; Boss Rush is chosen when the lobby answers');
     assert.match(await card(a).getAttribute('aria-label'), /Join public lobby/);
     // A friend joins and starts a run: the card says so, without the title being touched.
     const b = await open('Birch');

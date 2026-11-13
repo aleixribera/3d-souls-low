@@ -3,10 +3,11 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.59.0';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.60.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
+  practice: { maxGroup: 6 },   // Practice's 'several at once': the most opponents in one group
   bossBattle: {
     maxTeam: 6, notice: 100, spacing: 4, startX: 7, rowWidth: 20,
     victoryTime: 2.5,
@@ -169,7 +170,7 @@ const CONFIG = {
   // The server grows a boss at once when someone arrives, and shrinks it only after the group has been smaller for
   // `leaveDelay` s, so a stalled connection or a moment in another tab doesn't resize it.
   group: { cap: 4, hp: 0.5, posture: 0.3, breakTime: 0.1, leaveDelay: 10 },
-  // The Calling's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
+  // Boss Rush's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
   // is offered `offer` different blessings (ones they don't hold yet, while there are enough) and keeps one for the rest
   // of the run. The next fight waits until everyone has chosen, or `pickTime` s; a player who hasn't chosen by then gets
   // the first offered. Each blessing adds its `boons` entry to one Player field, and the same blessing twice adds twice:

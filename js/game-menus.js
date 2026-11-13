@@ -12,7 +12,7 @@ Object.assign(Game, {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     const pauseItems = online ? [
         { name: 'Resume', desc: 'The online world keeps running while menus are open.', go: () => this.resume() },
-        { name: 'Lobby', desc: 'Players, level selection and leader controls.', go: () => multiplayer.show() },
+        { name: 'Lobby', desc: 'Players, the mode and the leader\'s controls.', go: () => multiplayer.show() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
       ] : this.story ? [
@@ -23,22 +23,31 @@ Object.assign(Game, {
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         { name: 'Back to Menu', desc: 'Abandons the current fight or level.', cue: 'menuBack', go: () => {
-          const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? (isBossDef(ENEMY_BY_ID[this.duelId]) ? 'bosses' : 'enemies') : 'main';
+          // Back to the Practice list the fight was started from.
+          const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? this.practiceFromGroup ? 'practiceGroup'
+            : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? 'practiceLevels' : 'main';
           if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
+    const P = CONFIG.practice, group = this.practiceGroup, adding = this.practiceAdding;
     const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
-    const duelItem = d => ({ name: d.name, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) });
+    // Practice's opponent lists: a pick starts the fight at once, or, while building a group, joins the group.
+    const duelItem = d => ({ name: d.name, desc: d.description, go: () => {
+      if (!adding) { this.practiceFromGroup = false; this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)); return; }
+      if (group.length < P.maxGroup) group.push(d.id);
+      this.practiceAdding = false; this.showMenu('practiceGroup');
+    } });
+    const pickBack = { name: 'Back', desc: '', cue: 'menuBack', go: () => { this.practiceAdding = false; this.showMenu(adding ? 'practiceGroup' : 'practice'); } };
     return {
       ...S.screens, ...bossBattle.screens(this),
-      // v7.19.0: the title leads with the two ways to play. Online first: everyone who opens the link plays in one public
-      // lobby, and the card says who is in it right now (multiplayer.lobby, asked while the title shows).
-      main: { title: 'COMBAT ARENA 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 0 : 1, items: [
-        { ...this.titleLobby(), size: 'hero', kicker: 'PLAY WITH FRIENDS', name: 'Play Online',
-          desc: 'Everyone who opens this link plays in the same public lobby. The leader picks the adventure and everyone goes in together.',
+      // The title: the game's three modes, then a row of small entries. Boss Rush is played in the public lobby, and its
+      // card says who is in it right now (multiplayer.lobby, asked while the title shows); it is chosen when the lobby answers.
+      main: { title: 'COMBAT ARENA 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
+        { ...S.main[0], size: 'hero', label: 'Story' },
+        { ...this.titleLobby(), size: 'hero', online: true, name: 'Boss Rush',
+          desc: 'Played in the public lobby that everyone on this link shares. The leader starts the run.',
           go: () => multiplayer.join() },
-        { ...S.main[0], size: 'hero', kicker: 'PLAY ALONE', label: 'Story' },
-        { name: '1v1 Arena', size: 'small', desc: 'Duel a single opponent: any enemy or boss of the story.', go: () => this.showMenu('arena') },
-        { name: 'Levels', size: 'small', desc: 'Play a level of the story on its own.', go: () => this.showMenu('levels') },
+        { name: 'Practice', size: 'hero', label: 'Practice', line: 'Any enemy, boss or level, straight away',
+          desc: 'One foe or several at once, two teams of bosses against each other, or a level on its own.', go: () => this.showMenu('practice') },
         { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Changelog', size: 'small', desc: 'What each version of the game changed.', go: () => this.showMenu('changelog') },
         ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
@@ -47,20 +56,34 @@ Object.assign(Game, {
         items: [...S.devItems, ...finale.devItems(), ...lore.devItems(),   // the story's jumps live here, off the title
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) }))] },
-      levels: { title: 'COMBAT ARENA 3D', sub: 'LEVELS', back: 'main', items: [...LEVELS.map(levelItem),
-        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       changelog: { title: 'COMBAT ARENA 3D', sub: 'CHANGELOG', back: 'main', items: [   // js/data/changelog.js, newest first
         ...CHANGELOG.map(c => ({ name: `${c.version}  ·  ${c.title}`, desc: c.text })),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
-      arena: { title: 'COMBAT ARENA 3D', sub: '1V1 ARENA', back: 'main', items: [
-        { name: 'Enemies', desc: 'The common foes of the story, one at a time.', go: () => this.showMenu('enemies') },
-        { name: 'Bosses', desc: 'The bosses of the story, from the Pillager Captain to the King\'s Blade.', go: () => this.showMenu('bosses') },
+      // Practice: any enemy, boss or level, fighting within two picks. It replaced the 1v1 Arena and the Levels menu.
+      practice: { title: 'PRACTICE', sub: '', back: 'main', items: [
+        { name: 'Fight a boss', desc: 'Any boss of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceBosses'); } },
+        { name: 'Fight an enemy', desc: 'Any common foe of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceEnemies'); } },
+        { name: 'Fight several at once', desc: `Choose up to ${P.maxGroup} enemies and bosses, then fight them all together.`, go: () => this.showMenu('practiceGroup') },
         { name: 'Boss vs Boss', desc: 'Build two teams of up to six bosses and watch them battle.', go: () => this.showMenu('bossBattle') },
+        { name: 'Play a level', desc: 'Any level of the story, on its own.', go: () => this.showMenu('practiceLevels') },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
-      enemies: { title: 'COMBAT ARENA 3D', sub: 'CHOOSE YOUR OPPONENT', back: 'arena',
-        items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
-      bosses: { title: 'COMBAT ARENA 3D', sub: 'THE BOSSES', back: 'arena',
-        items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('arena') }] },
+      // Each list is titled by what it does; the only line under a title is the group's live count.
+      practiceBosses: { title: adding ? 'ADD A BOSS' : 'FIGHT A BOSS', sub: adding ? `${group.length} / ${P.maxGroup}` : '', back: adding ? 'practiceGroup' : 'practice',
+        items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), pickBack] },
+      practiceEnemies: { title: adding ? 'ADD AN ENEMY' : 'FIGHT AN ENEMY', sub: adding ? `${group.length} / ${P.maxGroup}` : '', back: adding ? 'practiceGroup' : 'practice',
+        items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), pickBack] },
+      // Opens on Fight once the group has someone in it, else on adding a boss.
+      practiceGroup: { title: 'SEVERAL AT ONCE', sub: `${group.length} / ${P.maxGroup}`, back: 'practice', focus: group.length ? group.length + 2 : 0, items: [
+        ...group.map((id, i) => ({ name: `${ENEMY_BY_ID[id].name}  ×`, label: `Remove ${ENEMY_BY_ID[id].name}`, desc: 'Remove from the group.',
+          go: () => { group.splice(i, 1); this.showMenu('practiceGroup', true); } })),
+        ...[['Add a boss', 'practiceBosses'], ['Add an enemy', 'practiceEnemies']].map(([name, screen]) => ({ name: `+ ${name}`, disabled: group.length >= P.maxGroup,
+          desc: group.length >= P.maxGroup ? 'The group is full. Remove one to add another.' : 'The same one may be added more than once.',
+          go: () => { this.practiceAdding = true; this.showMenu(screen); } })),
+        { name: 'Fight', disabled: !group.length, desc: group.length > 1 ? `Fight all ${group.length} at once.` : group.length ? 'Fight it alone, or add more first.' : 'Add at least one enemy or boss.',
+          go: () => { const [first, ...rest] = group; this.practiceFromGroup = true; this.loadingFirst(...this.duelCard(first, rest), () => this.startFight(first, rest)); } },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
+      practiceLevels: { title: 'PLAY A LEVEL', sub: '', back: 'practice', items: [...LEVELS.map(levelItem),
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
       pause: { title: online ? 'ONLINE' : 'PAUSED', sub: online ? 'THE WORLD KEEPS RUNNING' : '', overlay: true, items: pauseItems },
       options: { title: 'OPTIONS', sub: 'LEFT / RIGHT TO ADJUST', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby', back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: [
         { name: `Camera motion: ${onOff(settings.cameraMotion !== false)}`, desc: 'Camera swing and shake from attacks, rolls, impacts and collapsing floors. Turn off for a steadier view.',
@@ -90,23 +113,24 @@ Object.assign(Game, {
     const badge = L.state === 'checking' ? 'Looking for the lobby…'
       : L.state === 'online' ? live ? `${n} playing now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : 'Nobody inside yet. Start a run, then share this link.'
       : L.state === 'offline' ? 'The lobby is not answering right now.' : 'Online play is on the home server link.';
-    return { line: 'Join your friends in the public lobby', badge, badgeState: live ? 'live' : L.state === 'online' ? 'open' : L.state,
-      reachable: L.state === 'online', label: `Play Online: Join public lobby. ${badge}` };
+    return { line: 'Boss after boss with your friends', badge, badgeState: live ? 'live' : L.state === 'online' ? 'open' : L.state,
+      reachable: L.state === 'online', label: `Boss Rush: Join public lobby. ${badge}` };
   },
   // A new answer from the lobby: rewrite the online card in place (the list and the selection stay), and move to it
   // if the player has not chosen anything yet.
   refreshTitleLobby() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
-    const t = this.titleLobby(), b = $('menuList').children[0];
+    const at = (this.menuItems || []).findIndex(it => it.online), t = this.titleLobby(), b = $('menuList').children[at];
     if (!b || !b.classList.contains('hero')) return;
     b.querySelector('.b').textContent = t.badge; b.querySelector('.b').dataset.state = t.badgeState;
     b.classList.toggle('offline', !t.reachable && t.badgeState !== 'checking');
     b.setAttribute('aria-label', t.label);
-    if (this.menuItems && this.menuItems[0]) Object.assign(this.menuItems[0], t);
-    if (!this.menuTouched) this.select(t.reachable ? 0 : 1, document.activeElement && $('menuList').contains(document.activeElement));
+    Object.assign(this.menuItems[at], t);
+    if (!this.menuTouched) this.select(t.reachable ? at : 0, document.activeElement && $('menuList').contains(document.activeElement));
   },
   showMenu(screen, keepSelection) {
     if (screen === 'lobby') { multiplayer.show(); return; }
+    if (screen === 'practice' || screen === 'practiceGroup') this.practiceAdding = false;   // Esc from a list being added from
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
     const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()));
@@ -134,8 +158,11 @@ Object.assign(Game, {
       b.className = 'menuBtn' + (it.adjust ? ' adj' : '') + (it.size ? ` ${it.size}` : '');
       b.innerHTML = `<div class="n"></div><div class="d"></div>`;
       b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
-      if (it.size === 'hero') {   // a title card: a kicker over the name, a line under it, and a live badge
-        for (const [cls, text] of [['k', it.kicker], ['l', it.line], ['b', it.badge]]) {
+      // The title's row of small entries shares one line of the 12-column grid, however many there are.
+      if (it.size === 'small' && s.layout === 'title') b.style.gridColumn = `span ${Math.max(1, Math.floor(12 / s.items.filter(x => x.size === 'small').length))}`;
+      if (it.size === 'hero') {   // a title card: the name, a line under it, and a live badge
+        for (const [cls, text] of [['l', it.line], ['b', it.badge]]) {
+          if (!text) continue;   // only the Boss Rush card has a badge
           const el = document.createElement('div'); el.className = cls; el.textContent = text || '';
           if (cls === 'b') { el.dataset.state = it.badgeState || ''; el.setAttribute('aria-hidden', 'true'); }
           b.appendChild(el);
@@ -252,7 +279,7 @@ Object.assign(Game, {
   // Loading card for a duel, or for a group of opponents fought together.
   duelCard(id, partners = []) {
     const defs = [id, ...partners].map(i => ENEMY_BY_ID[i]);
-    return defs.length > 1 ? [`Duel: ${defs.map(d => d.name).join(' & ')}`, `${defs.length} bosses at once. Fight them together.`] : [`Duel: ${defs[0].name}`, defs[0].description];
+    return defs.length > 1 ? [`Duel: ${defs.map(d => d.name).join(' & ')}`, `${defs.length} ${defs.every(isBossDef) ? 'bosses' : 'foes'} at once. Fight them together.`] : [`Duel: ${defs[0].name}`, defs[0].description];
   },
   startLevel(id) {
     this.kind = 'level'; this.duelPartners = []; this.level = ALL_LEVELS.find(l => l.id === id); this.enterPlay(); this.reset();

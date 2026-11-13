@@ -1,5 +1,5 @@
 // ============================================================================
-// The Calling's blessings (v7.35.0): one is chosen between fights and kept for the run (CONFIG.blessings).
+// Boss Rush's blessings (v7.35.0): one is chosen between fights and kept for the run (CONFIG.blessings).
 // `boon` is the Player field it adds to; its size is CONFIG.blessings.boons[boon]. In `text`, {pct} is that size as a
 // percentage, {n} as a whole number and {hp} CONFIG.blessings.riseHp as a percentage (blessingText, js/player.js).
 // ============================================================================

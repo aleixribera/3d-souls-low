@@ -66,7 +66,7 @@ async function peer(origin) {
       ready(a); ready(b); await flush(b);
       assert.equal(app.clients.get(a.id).pose.hp, 120, 'next boss clears defeat for everyone');
     }
-    // Surviving a run carries the party into the next larger group: DOUBLE, TRIPLE, then QUAD BOSSES.
+    // Surviving a run carries the party into the next larger group: DOUBLE, TRIPLE, then QUAD BOSS.
     for (const [run, size] of [['boss-pairs', 2], ['boss-triples', 3], ['boss-quads', 4]]) {
       const opened = await a.next('start'); session = opened.session; await b.next('start');
       assert.equal(opened.opening, true, run + ' opens with its own ceremony');
@@ -88,7 +88,7 @@ async function peer(origin) {
         session = (await a.next('start')).session; await b.next('start');
       }
     }
-    assert.match((await a.next('stop')).message, /QUAD BOSSES COMPLETE/); await b.next('stop');
+    assert.match((await a.next('stop')).message, /QUAD BOSS COMPLETE/); await b.next('stop');
     assert.equal(app.session, null);
     await begin(); ready(a); ready(b); await flush(b);
     app.sim.arenaWipeDelay = 0.1;

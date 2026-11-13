@@ -29,11 +29,11 @@ const bossBattle = {
         } })),
     ]);
     return {
-      bossBattle: { title: 'BOSS VS BOSS', sub: 'TWO TEAMS · UP TO SIX BOSSES EACH', back: 'arena', items: [
+      bossBattle: { title: 'BOSS VS BOSS', sub: 'TWO TEAMS · UP TO SIX BOSSES EACH', back: 'practice', items: [
         ...items,
         { name: 'Start battle', row: String(max + 3), disabled: !ready, desc: ready ? 'Watch the two teams fight to the last boss.' : 'Add at least one boss to each team to start.',
           go: () => game.loadingFirst('Boss vs Boss', 'Two teams. Last team standing wins.', () => this.start(game)) },
-        { name: 'Back', row: String(max + 4), desc: '', cue: 'menuBack', go: () => game.showMenu('arena') },
+        { name: 'Back', row: String(max + 4), desc: '', cue: 'menuBack', go: () => game.showMenu('practice') },
       ] },
       bossBattlePick: { title: 'ADD A BOSS', sub: `${this.team(this.picking).name.toUpperCase()} · ${this.teams[this.picking].length} / ${max}`, back: 'bossBattle',
         items: [...this.catalog().map(d => ({ name: d.name, desc: d.description, go: () => {
@@ -43,7 +43,7 @@ const bossBattle = {
         sub: 'BOSS VS BOSS', overlay: true, items: [
           { name: 'Rematch', desc: 'Replay this match with the same teams.', go: () => game.loadingFirst('Boss vs Boss', 'Rematch', () => { game.enterPlay(); game.reset(); game.showLoading('Boss vs Boss', 'Rematch'); }) },
           { name: 'Edit teams', desc: 'Change bosses on either team.', go: () => game.showMenu('bossBattle') },
-          { name: 'Arena menu', desc: '', cue: 'menuBack', go: () => game.showMenu('arena') },
+          { name: 'Practice', desc: '', cue: 'menuBack', go: () => game.showMenu('practice') },
         ] },
     };
   },

@@ -9,7 +9,10 @@ const Game = {
   story: false,          // Story mode (js/story.js): levels chain through STORY's chapters and progress is saved
   level: null,           // the level (or ARENA) being played
   duelId: null, duel: null,   // arena opponent
-  duelPartners: [],           // further arena opponents fought at once (online boss groups)
+  duelPartners: [],           // further arena opponents fought at once (online boss groups, Practice's group)
+  practiceGroup: [],          // Practice: the enemy and boss ids of the group being built, in order
+  practiceAdding: false,      // Practice: an opponent list is open to add to the group, not to start a fight
+  practiceFromGroup: false,   // Practice: the fight under way was started from the group (its pause menu goes back there)
   selected: 0,
   companion: null,       // optional local campaign ally (js/companions.js)
   allies() { return companions.actors(this); },

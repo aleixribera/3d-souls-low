@@ -1267,7 +1267,7 @@
     const label = document.getElementById('version'), seen = () => label.offsetParent !== null && label.textContent === A.VERSION;
     expect.ok(/^v\d+\.\d+(\.\d+)?$/.test(A.VERSION), `one version constant (${A.VERSION})`);
     Game.showMenu('main'); expect.ok(seen(), 'on the main menu');
-    Game.showMenu('levels'); expect.ok(seen(), 'in the Levels menu');
+    Game.showMenu('practiceLevels'); expect.ok(seen(), 'in Practice\'s level list');
     Game.startLevel('test-crowd'); sim.begin(); sim.step(2, 1);
     expect.ok(!seen(), 'hidden during play');
     Game.pause(false); expect.ok(seen(), 'in the pause menu');
@@ -1795,7 +1795,7 @@
     expect.ok(A.LEVEL_3.id === 'burning-town' && A.LEVELS[at - 1] === A.LEVEL_2 && A.LEVELS[at + 1] === A.LEVEL_4, `order: ${names.join(' | ')}`);
     expect.ok(A.LEVEL_3.name === 'Level 3: The Burning Town' && A.LEVEL_4.name === 'Level 4: The Tower', 'names');
     expect.ok(A.LEVEL_2.next === 'burning-town' && A.LEVEL_3.next === 'the-tower', 'Level 2 -> the town -> the Tower');
-    Game.showMenu('levels');
+    Game.showMenu('practiceLevels');
     const shown = [...document.querySelectorAll('#menuList .menuBtn .n')].map(n => n.textContent);
     expect.ok(shown.indexOf('Level 3: The Burning Town') + 1 === shown.indexOf('Level 4: The Tower'), `menu: ${shown.join(' | ')}`);
     expect.ok(/sacked|burn/i.test(A.LEVEL_3.description) && /Tower/.test(A.LEVEL_3.completeHint), 'its story: the sacked town, then on to the Tower');
@@ -2187,14 +2187,45 @@
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
-    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 2).join() === 'Play Online,Story', 'Play Online, then Story, whatever the save');
+    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 3).join() === 'Story,Boss Rush,Practice', 'Story, Boss Rush, Practice, whatever the save');
     S().newGame(); sim.begin();
     expect.ok(Game.story && Game.level.id === 'long-hall', 'a new story starts in Level 1');
     expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
     Game.showMenu('main');
     const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
-    expect.ok(names[1] === 'Story' && names.includes('Levels') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
+    expect.ok(names[0] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
   }));
+  test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', () => {
+    const pick = (screen, name) => {
+      Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
+      expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
+    };
+    pick('main', 'Story'); expect.ok(Game.screen === 'story', 'Story opens the story');
+    const join = multiplayer.join; let joined = false; multiplayer.join = () => { joined = true; };
+    try { pick('main', 'Boss Rush'); } finally { multiplayer.join = join; }
+    expect.ok(joined, 'Boss Rush joins the public lobby, where it is the default');
+    pick('main', 'Practice'); expect.ok(Game.screen === 'practice', 'Practice opens');
+    const boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
+    pick('practice', 'Fight a boss'); pick('practiceBosses', boss.name);
+    expect.ok(Game.mode === 'play' && Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === boss.id, `a boss, fought at once (${Game.kind})`);
+    pick('practice', 'Fight an enemy'); pick('practiceEnemies', foe.name);
+    expect.ok(Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === foe.id, 'an enemy, fought at once');
+    Game.practiceGroup.length = 0;
+    pick('practice', 'Fight several at once');
+    expect.ok(Game.menuItems.find(it => it.name === 'Fight').disabled, 'an empty group cannot start');
+    pick('practiceGroup', '+ Add a boss'); pick('practiceBosses', boss.name);
+    pick('practiceGroup', '+ Add an enemy'); pick('practiceEnemies', foe.name);
+    expect.ok(Game.screen === 'practiceGroup' && Game.practiceGroup.join() === `${boss.id},${foe.id}`, 'picks join the group and come back to it');
+    expect.ok(Game.menuItems[Game.selected].name === 'Fight', `the group opens on Fight (${Game.menuItems[Game.selected].name})`);
+    pick('practiceGroup', 'Fight');
+    expect.ok(Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === `${boss.id},${foe.id}`, 'the group, fought together');
+    Game.pause(false); pick('pause', 'Back to Menu');
+    expect.ok(Game.screen === 'practiceGroup', `the pause menu goes back to the group (${Game.screen})`);
+    pick('practice', 'Play a level'); pick('practiceLevels', A.LEVELS[0].name);
+    expect.ok(Game.kind === 'level' && Game.level.id === A.LEVELS[0].id, 'a level, played on its own');
+    pick('practice', 'Boss vs Boss'); expect.ok(Game.screen === 'bossBattle' && Game.screens().bossBattle.back === 'practice', 'two teams of bosses');
+    Game.practiceGroup.length = 0; Game.showMenu('main');
+  });
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
     const z = Game.zones[0];

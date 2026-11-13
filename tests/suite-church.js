@@ -16,7 +16,7 @@
     expect.ok(A.LEVELS[A.LEVELS.indexOf(A.LEVEL_6) - 1].id === 'final-castle', 'listed after the castle');
     expect.ok(A.STORY.chapters[5].level === 'the-church' && A.STORY.chapters[4].level === 'final-castle', 'chapter 6 of Ashmere, after the castle');
     expect.ok(A.LEVEL_5.next === 'the-church', 'the Levels menu carries on from the castle too');
-    expect.ok(Game.screens().levels.items.length === A.LEVELS.length + 1, 'the Levels menu lists it');
+    expect.ok(Game.screens().practiceLevels.items.length === A.LEVELS.length + 1, 'Practice lists it');
   });
   test('Church: every hit of the Hunger obeys the boss rules', () => {
     const d = A.ENEMY_BY_ID.antlered;

@@ -18,11 +18,11 @@ Voice: archaic, understated, melancholic, tender in places. No modern words, no 
 These gold title cards introduce a new shared run; they do not replace chapter loading lines or change the story.
 
 - **STORY · ASHMERE** — “Defeat the Gaoler King.”
-- **THE CALLING** — “Answer every boss that comes. The last two come together.”
-- **BOSS ONLY** — “Defeat every boss.”
-- **DOUBLE BOSSES** — “Defeat every boss, two at a time.”
-- **TRIPLE BOSSES** — “Defeat every boss, three at a time.”
-- **QUAD BOSSES** — “Defeat every boss, four at a time.”
+- **BOSS RUSH** — “Answer every boss that comes. The last two come together.”
+- **SINGLE BOSS** — “Defeat every boss.”
+- **DOUBLE BOSS** — “Defeat every boss, two at a time.”
+- **TRIPLE BOSS** — “Defeat every boss, three at a time.”
+- **QUAD BOSS** — “Defeat every boss, four at a time.”
 
 ---
 
@@ -451,7 +451,7 @@ COMPLETE**: *The ash has stopped falling. The road is walked.*
 ---
 
 ## 10b. Level 6 — The Church in the Pass (chapter 6 of the Story)
-Chapter 6, after the Final Castle (and after it in the Levels menu). The Seven called the Ember *the hunger that wears a
+Chapter 6, after the Final Castle (and after it in Practice's level list). The Seven called the Ember *the hunger that wears a
 king*, and when Aldric fell the hunger had no king left to wear. It went back the way the Seven came, over the mountains, to the **first church of the Seven**: the log
 church in the pass where they stopped, painted their own faces on the wall and swore the first words of the Oath. There it
 found a stag starving in the snow and put it on. The player, nameless as ever, follows the last of it up the pass.

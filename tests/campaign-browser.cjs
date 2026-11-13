@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
+const { config: C } = require('../js/net-protocol.js');
 const campaign = 'ashmere';   // the one road since v7.54.0
 const chapters = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere'];
 const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`;   // the road's last level (finale.js storeKey)
@@ -33,7 +34,7 @@ const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`
   }
   try {
     const a = await player('Leader'), b = await player('Friend');
-    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'boss gauntlet is selected by default');
+    assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'calling/' + C.calling.id, 'Boss Rush is selected by default');
     await a.locator('#lobbyAdventure').selectOption(`campaign/${campaign}`);
     await a.locator('#lobbyStart').click();
     for (let i = 0; i < chapters.length; i++) {

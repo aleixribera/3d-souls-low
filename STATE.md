@@ -10,7 +10,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
-  `docs/scorecard/bot-aid.txt`. Track B item 1 (Boss Rush rename) is next: `wip/` below.
+  `docs/scorecard/bot-aid.txt`.
+- Track B (pass 40, item 1 done, v7.60.0): title Story / Boss Rush / Practice; Boss Rush (id `boss-rush`, internal kind
+  `calling`) is the lobby's default; Practice (`practice*` screens, `CONFIG.practice`) replaced the Arena and Levels.
+  In-page `Title:`, `lobby-controller-browser`, `lobby-peek-browser`; frames `docs/scorecard/modes-*.jpg`
+ . Next: item 2, Endless.
 - Pass 36 (clean-up item 2, lean files): `docs/` keeps only the homelab guides, `how-online-works.html` and
   `scorecard/`; one `STORY.md` (part one: in the game, `LORE.md`'s numbering; part two: where it goes); `README.md`
   one screen. Old notes: `git show v7.56.0:docs/<file>`.
@@ -34,7 +38,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `tick()`; `tests/group-scaling.cjs`, `boss-only-browser.cjs`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
-- The Calling, its blessings and its end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
+- Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
   (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
@@ -64,14 +68,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-CI and the container of v7.59.0 (pushes cancel each other's CI: look at the newest finished run). Probes
+CI and the container of v7.60.0 (pushes cancel each other's CI: look at the newest finished run). Probes
 (untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
 
 ## wip// branches
 
-- `wip/2026-11-13-boss-rush-practice` (pass 38, track B item 1): title Story / Boss Rush / Practice, the rename,
-  Practice groups; `test:node` passed; browser tests and frames (`.scratch/modes-shots.cjs`) not run. Rebase and
-  re-bump its version (it says 7.58.0, now taken).
+- None.
 
 ## Backlog
 
@@ -81,7 +83,7 @@ In `BACKLOG.md`.
 
 - (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
   Feel check with friends: do they still carry?
-- (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
+- (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
   (`CONFIG.group`). Tuned on bots, who fight worse than people; tuned when the Lands bosses still existed. Worth a feel check with friends.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught

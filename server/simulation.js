@@ -18,7 +18,7 @@ globalThis.host = (() => {
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
   let groupSize = 1, groupLeft = 0;   // the players every boss is scaled for, and how long fewer have been present
-  // The Calling's blessings (CONFIG.blessings), kept across a run's fights: ids held and the open offer, by player id,
+  // Boss Rush's blessings (CONFIG.blessings), kept across a run's fights: ids held and the open offer, by player id,
   // and the rises (Rise Again) each player has taken this fight.
   const blessed = new Map(), offers = new Map(), rises = new Map();
   const C = ArenaNet.config;
@@ -28,7 +28,7 @@ globalThis.host = (() => {
   }
   if (!STORIES.some(s => s.id === C.defaultCampaign)) throw new Error('Unknown default multiplayer campaign: ' + C.defaultCampaign);
   const choice = C.defaultAdventure;
-  if (!(choice.kind === 'gauntlet' && C.gauntlets[choice.id] || choice.kind === 'campaign' && STORIES.some(s => s.id === choice.id && s.lobbyName)))
+  if (!(choice.kind === 'gauntlet' && C.gauntlets[choice.id] || choice.kind === 'calling' && choice.id === C.calling.id || choice.kind === 'campaign' && STORIES.some(s => s.id === choice.id && s.lobbyName)))
     throw new Error('Unknown default lobby adventure: ' + choice.kind + '/' + choice.id);
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
@@ -148,14 +148,14 @@ globalThis.host = (() => {
     return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
       total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
   }
-  // One fight of The Calling (C.calling): `roster` is the run's boss ids in order, fought one at a time except the last
+  // One fight of Boss Rush (C.calling): `roster` is the run's boss ids in order, fought one at a time except the last
   // two, who come together. `fight` counts from 0. The same shape as a gauntlet encounter, plus the roster to carry on.
   function calling(roster, fight = 0) {
     const R = C.calling, bosses = catalog().bosses;
     if (!Array.isArray(roster) || roster.length < R.minLength || roster.length > bosses.length ||
-      roster.some(id => typeof id !== 'string' || !bosses.some(e => e.id === id)) || new Set(roster).size !== roster.length) throw rejected('Choose at least ' + R.minLength + ' different bosses for The Calling');
+      roster.some(id => typeof id !== 'string' || !bosses.some(e => e.id === id)) || new Set(roster).size !== roster.length) throw rejected('Choose at least ' + R.minLength + ' different bosses for Boss Rush');
     const fights = [...roster.slice(0, -2).map(id => [id]), roster.slice(-2)];
-    if (!Number.isInteger(fight) || fight < 0 || fight >= fights.length) throw rejected('Unknown fight of The Calling');
+    if (!Number.isInteger(fight) || fight < 0 || fight >= fights.length) throw rejected('Unknown fight of Boss Rush');
     const group = fights[fight];
     return { id: R.id, name: R.name, roster: [...roster], fight, boss: group[0], partners: group.slice(1), number: fight + 1,
       total: fights.length, defeated: fight, bosses: roster.length, next: fight + 1 < fights.length ? fight + 1 : null };
@@ -321,7 +321,7 @@ globalThis.host = (() => {
   }
   // A fall in this fight: a bot's here, a person's from the server when their pose first reports them dead.
   function noteDeath(id) { if (!results) deaths.set(id, (deaths.get(id) || 0) + 1); }
-  // This fight's damage and falls per player, for The Calling's run totals.
+  // This fight's damage and falls per player, for Boss Rush's run totals.
   const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0, bot: fightBots.has(row.id) }));
   function creditDamage(id, amount) {
     const row = damage.get(id);

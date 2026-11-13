@@ -72,7 +72,7 @@ async function peer(origin, name) {
     assert.equal(session.id, roster[0]); assert.deepEqual(session.partners || [], []);
     assert.equal(session.gauntlet.number, 1); assert.equal(session.gauntlet.total, 2);
     assert.equal(session.teamWipeOnly, true);
-    assert.equal(app.sim.describe(session), 'The Calling');
+    assert.equal(app.sim.describe(session), 'Boss Rush');
     ready(a); ready(b); await flush(b);
     pose(a, true); await flush(a); pose(a); await flush(a);
     assert.equal(app.clients.get(a.id).pose.hp, 0, 'a fallen player stays down for the rest of the fight');
@@ -86,7 +86,7 @@ async function peer(origin, name) {
     assert.equal(app.sim.botList().length, 1, 'the bot stays for the whole run');
     finishFight();
     const done = await a.next('stop'); await b.next('stop');
-    assert.match(done.message, /THE CALLING COMPLETE · 3 bosses defeated/);
+    assert.match(done.message, /BOSS RUSH COMPLETE · All 3 bosses beaten/);
     assert.equal(app.session, null);
     // The end of the run: its time, every boss beaten, and each player's damage and deaths over both fights.
     const won = done.summary, row = id => won.players.find(r => r.id === id);
@@ -126,9 +126,9 @@ async function peer(origin, name) {
     app.sim.arenaWipeDelay = 0.1;
     pose(a, true); pose(b, true); await flush(a); await flush(b);
     const wipe = await a.next('stop'); await b.next('stop');
-    assert.equal(wipe.reason, 'team-wipe'); assert.match(wipe.message, /TEAM WIPED.*THE CALLING/);
+    assert.equal(wipe.reason, 'team-wipe'); assert.match(wipe.message, /TEAM WIPED.*BOSS RUSH/);
     assert.equal(wipe.summary.outcome, 'wiped'); assert.equal(wipe.summary.beaten, 0, 'a restart starts the tally again');
     assert.equal(wipe.summary.bosses, whole.length); assert.equal(wipe.summary.players.find(r => r.id === b.id).deaths, 1);
-    console.log('THE CALLING: refused rosters, picked roster, bots fill the party, last two together, the fallen rise, run complete, random and default lengths, restart, wipe, the end-of-run totals and again passed.');
+    console.log('BOSS RUSH: refused rosters, picked roster, bots fill the party, last two together, the fallen rise, run complete, random and default lengths, restart, wipe, the end-of-run totals and again passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
