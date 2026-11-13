@@ -60,7 +60,8 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade. Each one gets one idea of its own, its meaning
    and backstory, its own moveset (patterns and combos may come from acclaimed souls-likes, never their names or
    looks), effects with nothing held back, smooth animation with real acceleration and easing, and its own Blender
-   figure with the best detail and art direction (the re-coloured stand-in goes). Every attack readable on its tell. Its level is reworked so the place and the fight belong together. Check: the model
+   figure with the best detail and art direction (the re-coloured stand-in goes). Every attack readable on its tell, and
+   each attack's wind-up different from the boss's others. Its level is reworked so the place and the fight belong together. Check: the model
    check above, then the boss fought in its level.
 3. **Two graphics presets.** Low and High become one **Normal** preset that holds 60 fps on integrated graphics;
    **Ultra** stays for Aleix's PC. Render scale stays at 100% or more in every preset, auto-quality included: the speed

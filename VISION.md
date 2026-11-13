@@ -40,7 +40,8 @@ side by side, and each should feel like the main event.
 ## How it should feel
 
 - **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
-  its tell. Nothing hits without warning.
+  its tell. Nothing hits without warning. Each of a boss's attacks has its own wind-up, so players rarely mistake one
+  attack for another.
 - **Spectacular bosses.** Each boss is its own idea, with its own meaning and backstory, its own moveset, big effects
   and high-quality animation. No two bosses share attacks. Don't hold back on boss effects.
 - **Exceptional models,** the big bosses most of all: the best detail and art direction.
