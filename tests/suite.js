@@ -847,7 +847,9 @@
   });
   test('attack chance: stepping in, a boss uses all its close attacks, not only its longest', () => {
     Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); starts.length = 0;
-    sim.seconds(120);
+    // v7.44.0: 120 -> 400 s. The slam (chance 0.45) is rare beside the hammer chain; after v7.43.0's Blender figure
+    // shifted the seeded draws, 120 s held no slam (400 s: chain 37, charge 7, chop 6, sweep 5, shove 3, slam 3).
+    sim.seconds(400);
     const used = new Set(starts.map(s => s.attack.id));
     expect.ok(['bellSweep', 'bellSlam', 'bellShove'].every(id => used.has(id)), `close attacks used: ${[...used].join(', ')}`);
   });
@@ -2163,11 +2165,11 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 9; the Night Gaol is the last chapter built so far', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 10; Aurel is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('night-gaol') === null, 'nothing after the Night Gaol yet');
+    expect.ok(S().nextLevelId('aurel') === null, 'nothing after Aurel yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2297,12 +2299,23 @@
     expect.ok(Game.story && Game.level.id === 'night-gaol' && S().data.level === 'night-gaol', `chapter 9 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('night-gaol')[0] === 'THE NIGHT GAOL' && /Thrale too had a bell/.test(Game.levelCard('night-gaol')[1]), 'its title and line');
   }));
-  test('Story: beating the Ringer of Thrale, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+  test('Story: beating the Ringer of Thrale goes on to chapter 10, Aurel (v7.44.0)', withSave(() => {
     S().jumpTo('night-gaol'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'night-gaol', 'chapter 9 starts');
     const r = Game.enemies.find(e => e.baseDef.id === 'ringer');
     expect.ok(r && r.def.name === 'The Ringer of Thrale', 'the Ringer keeps the great ring');
     for (const z of Game.zones) if (z.id !== 'zone-ringer') { z.gate.open = true; z.beaten = true; }   // the cells, won
+    for (let i = 0; i < 4 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'aurel' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel' && S().data.level === 'aurel', `chapter 10 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('aurel')[0] === 'AUREL, THE GILDED CITY' && /Its regent will be glad/.test(Game.levelCard('aurel')[1]), 'its title and line');
+  }));
+  test('Story: beating the Regent Hollis, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('aurel'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel', 'chapter 10 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'hollis');
+    expect.ok(r && r.def.name === 'The Regent Hollis', 'the Regent keeps the throne court');
+    for (const z of Game.zones) if (z.id !== 'zone-hollis') { z.gate.open = true; z.beaten = true; }   // the city, won
     for (let i = 0; i < 4 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
     sim.until(() => Game.screen === 'storyDone', 20);
     const screen = Game.screens().storyDone;

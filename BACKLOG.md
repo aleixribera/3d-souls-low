@@ -85,3 +85,10 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   unparryable, as the shield bash was.
 - The evergaol's own lore (`js/data/lore-lands.js` 82-83) has three shackles and a corpse inside cell pillars; fixed in
   the Night Gaol's copy, left in the old road (no more work on it, `PLAN.md`).
+- Chapter 10, Aurel, the Gilded City (v7.44.0, pass 19), rough; its second step: the Regent's and the Gilded Thralls'
+  own figures (stand-ins: the Pale Duelist at 1.85 in gold leaf and crimson with the kit greatsword, the Rogue in gold
+  leaf with two curved knives; `docs/scorecard/hollis-lab.jpg`, `gilded-thrall-lab.jpg`). The Regent reads thin for a
+  boss at that size and the kit greatsword still shows a streaked, wood-like grain (`aurel-hollis.jpg`). His moves are
+  Morgott's, renamed, the conjured gilt weapons kept, fire for the second phase's blood: 3,400 HP (was 4,800); no one
+  has fought him by hand yet. The "turning cut" is Morgott's tail swipe, a hit behind him with no tail to show it.
+  The city has no smiles yet beyond the words: the thralls' gilt masks are the Rogue's.

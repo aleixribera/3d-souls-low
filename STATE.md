@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 18 shipped `PLAN.md` stage 3 track B item 2's Bell Warden in Blender and released v7.43.0. Check met: lab sheet
-`docs/scorecard/bellwarden-lab.jpg`, the tower top `bellwarden-tower.jpg` (front-lit, facing, fighting distance), the
-bell maul resting on its lip (`weapon.rest`). Next: track A, chapter 10 (Aurel); then track B, the Giant Skeleton.
+Pass 19 shipped `PLAN.md` stage 3 track A item 2's chapter 10, Aurel, the Gilded City (rough), and released v7.44.0.
+Check met: Story goes Ringer -> Aurel -> THE ROAD GOES ON (in-page `Story`), the Regent front-lit at fighting distance
+`docs/scorecard/aurel-hollis.jpg`, a thrall `aurel-thrall.jpg`. Also fixed pass 18's red CI (an attack-chance test's
+window). Next: track B, the Giant Skeleton; then track A, chapter 11 (Aurel in Ash).
 
 ## Works
 
@@ -24,8 +25,7 @@ bell maul resting on its lip (`weapon.rest`). Next: track A, chapter 10 (Aurel);
   gold reads grey under the full rim, and a thin shaft white (v7.39.0: model `rim` .45, a `haft` slot at .4).
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
-  draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`). Tests that pinned Margit's solo bar in
-  group sessions now read her scaled bar or her share of it.
+  draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`).
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` / `noteDamage` in `server/simulation.js`,
   `grouped` and `isAreaAttack` in `js/enemy.js`; checked by `tests/boss-attention.cjs` (seeded bot fights through
   `createSimulation({ seed })`), frames `docs/scorecard/boss-attention-1..3.jpg`, `boss-attention.txt`.
@@ -45,9 +45,10 @@ bell maul resting on its lip (`weapon.rest`). Next: track A, chapter 10 (Aurel);
   (`js/data/bosses/castellans.js`, Godrick's moves split and renamed), the opt-in `alone` phase (`checkPhaseAt`; `kin`
   from `Game.spawnZone` and Arena groups; no kin = alone at once), `saltKnight`, statue `of`/`pose: 'kneel'`
   (`js/lore.js`). In-page `Saltgrave` (9), `Story` (24), `Guiding light`; frames by `.scratch/salt-frames.cjs`.
-- Chapter 9, the Night Gaol (v7.42.0, rough): `js/levels/night-gaol.js` (the evergaol's layout), the Ringer of Thrale
-  (`js/data/bosses/ringer.js`, the Crucible Knight's moves renamed, no shield, knells), `keyless`; a model's kit weapon
-  `size` (`js/bodykit.js`). In-page `Night Gaol` (7).
+- Chapter 9, the Night Gaol (v7.42.0, rough): `js/levels/night-gaol.js`, the Ringer (`js/data/bosses/ringer.js`, the
+  Crucible Knight's moves renamed), `keyless`; kit weapon `size`. In-page `Night Gaol` (7).
+- Chapter 10, Aurel (v7.44.0, rough): `js/levels/aurel.js` (the capital's layout), the Regent Hollis
+  (`js/data/bosses/hollis.js`, Morgott's moves renamed, fire in phase 2), `gildedThrall`. In-page `Aurel` (5).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -62,8 +63,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 18's push and the v7.43.0 container: check in pass 19 (v7.42.0's CI and container passed).
-Pass 18 locally: Node (22/22), in-page `model`, `bosses`, `Bell Warden`, `Changelog`, `Ultra`.
+CI on pass 19's push and the v7.44.0 container: check in pass 20 (pass 18's CI failed on `attack chance: stepping in`,
+fixed here; its v7.43.0 container passed). Pass 19 locally: Node (22/22), in-page `Aurel`, `Story`, `Night Gaol`,
+`Guiding light`, `Lore`, `Changelog`, `model`, `bosses`, `Ultra`, `attack chance`.
 
 ## wip/ branches
 
@@ -82,7 +84,7 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapters 10-14 exist, Story mode ends after the Night Gaol on THE ROAD GOES ON (`STORY.goesOn`), and
+- (overridable) Until chapters 10-14 exist, Story mode ends after Aurel on THE ROAD GOES ON (`STORY.goesOn`), and
   the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
@@ -93,3 +95,5 @@ In `BACKLOG.md`.
   story and names (`LORE.md` 6, 7, 10d). Hale and Harrow have 1,700 HP each and Godrick's damage x0.85.
 - (overridable) Chapter 9's words are the loop's: Ysolde's lines, the three inscriptions, the Ringer's story and her
   knell, the Keyless (`LORE.md` 6, 7, 10, 10e). The Ringer swings a bell on a haft and has 3,000 HP.
+- (overridable) Chapter 10's words are the loop's: Ysolde's lines, the three inscriptions, the Regent's story (left by
+  the hunger to keep Aurel fed; gilt weapons; the hunger shows at 60 %) (`LORE.md` 6, 7, 10f). 3,400 HP.

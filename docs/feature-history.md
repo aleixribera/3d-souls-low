@@ -525,3 +525,12 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Chains are links (`link()`, `chain()`, `hanging()`), each a closed tube turned a quarter from the last; the chest chains follow the cuirass's surface (`chest_at`).
 - `weapon.rest` (opt-in, `js/bodykit.js`, validated): the angle the `sway` idle (`js/registries.js`) lays a weapon at, 1.25 by default. The 4 m bell maul at 1.25 sank 1.2 m into the tower floor (measured on the rig's weapon bone); at 0.65 the bell stands on its lip.
 - Verdigris tint on the bronze, model rim 0.45, linen rim 0.15. 36 pieces, 10,712 triangles, 11,067 with the maul (boss budget 14,000). Checks: the model lab, a frame on the tower top, the in-page `model`, `bosses` and `Bell Warden` filters, the Node checks. Notes: `docs/bellwarden-model-v7.43.0.md`. VERSION / LOAD_STAMP: v7.43.0 / 7.43.0.
+
+## Chapter 10, Aurel, the Gilded City, rough (v7.44.0, stage 3 track A item 2)
+- `STORY.md` chapter 10 built rough: playable from its loading line to its boss in Story mode and the Levels menu (after the Night Gaol, `LEVEL_9.next`). Level 10 (`js/levels/aurel.js`) is the royal capital's layout kept (avenue, fountain court, great stair, terrace, the root over the chasm, the throne court), every name of the old road gone, and no great tree over it: only the Ember's root out of the chasm.
+- The Regent Hollis (`js/data/bosses/hollis.js`): Morgott's whole moveset deep-copied and renamed through one table, the conjured gilt weapons (`spectral`) kept, the second phase (`hungry`, at 60 %) opened by the untouchable burst, its blood turned to the Ember's fire in `BOSS_FX.hollis`. 3,400 HP.
+- The Gilded Thralls (`js/data/enemies.js`): the Rogue's moves renamed, 80 HP, poise 30, scale 0.9; ten or more in the streets.
+- Stand-in figures (`MODEL_DEFS.regentHollis` in the boss file, `MODEL_DEFS.gildedThrall`): the Pale Duelist's Blender body in gold leaf and crimson with a pale gilt greatsword, the Rogue's in gold leaf (`wornGilt` on the mask, scale and steel) with two curved knives.
+- Lore: `LORE.md` 6, 7, 9, 10f, 11; Ysolde's six lines, three inscriptions (`js/data/lore.js`); a bonfire guidance route per stretch (the capital's, renamed). The old road's Leyndell is untouched.
+- Tests: `tests/suite-aurel.js` (5), the Story order, the Ringer going on to Aurel, the Regent closing the road, lighting count 18. Frames: `docs/scorecard/aurel-hollis.jpg`, `aurel-thrall.jpg`, `hollis-lab.jpg`, `gilded-thrall-lab.jpg`.
+- Not yet: the Regent's and the thralls' own Blender figures, Finn (`BACKLOG.md`).

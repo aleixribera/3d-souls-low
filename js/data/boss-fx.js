@@ -88,4 +88,10 @@ const BOSS_FX = {
   ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {
     fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' }, bellFalls: { impact: 'toll', windup: 'gather' }, bellFalls2: { impact: 'toll', windup: 'gather' },
     cellLeap: { impact: 'shatter' }, knell: { element: 'toll', impact: 'toll' }, greatKnell: { element: 'toll', impact: 'toll', windup: 'gather' } } },
+  // The Regent Hollis (Level 10): gilt drawn out of the air; past 60 % the hunger shows through the cracked gilt and his
+  // blade burns with the Ember.
+  hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {
+    stewardsChop: { element: 'steel', impact: 'shatter' }, courtlyCuts: { element: 'steel' }, turningCut: { element: 'steel' }, leapingCut: { element: 'steel', impact: 'quake' },
+    hungerShows: { element: 'fire', impact: 'geyser', aura: 0xff6a20 }, emberSlice: { element: 'fire', impact: 'geyser' },
+    emberThrust: { element: 'fire', windup: 'gather' }, emberWells: { element: 'fire', impact: 'geyser' } } },
 };

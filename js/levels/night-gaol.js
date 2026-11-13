@@ -11,6 +11,7 @@
 //   ring: the Ringer of Thrale, still chained.
 const LEVEL_9 = {
   id: 'night-gaol', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'aurel',   // v7.44.0: on to Thrale's capital (chapter 10)
   name: 'Level 9: The Night Gaol',
   description: 'Thrale\'s gaol, hung among the stars: stone cells on nothing, bridges with no rail, prisoners who never left. In the great ring, the one who rang Thrale\'s bell.',
   help: 'Level 9: the bridges have no rail and the sky has no floor. The cells have a low kerb: jump it only if you mean to. Wisps ring from the floating rocks: their bolts reach you on the bridges.',

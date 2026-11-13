@@ -440,6 +440,17 @@ const ENEMY_DEFS = [
       damage: Math.round(a.damage * 1.15), poise: Math.round(a.poise * 1.2) })) });
 }
 
+// The Gilded Thralls of Aurel (Level 10, v7.44.0; LORE.md 10f): the capital's citizens, fed and smiling, gold leaf laid
+// on their faces and hands, a knife in each. They smile until you are close. Quick and fragile like the Rogue, a little
+// harder to put down. Rough stand-in: the Rogue's figure and moves, in gold leaf and ochre, two curved knives.
+{
+  const R = ENEMY_DEFS.find(d => d.id === 'rogue');
+  ENEMY_DEFS.push({ ...R, id: 'gildedThrall', model: 'gildedThrall', name: 'Gilded Thrall',
+    description: 'A citizen of Aurel, fed and smiling, gold leaf on the face and hands, a knife in each. Quick and fragile: the cuts glint, and a parry pays.',
+    scale: 0.9, color: 0xa88a48, visual: { ...R.visual, skin: 0xd8c08a }, hp: 80, poise: 30,
+    attacks: R.attacks.map(a => ({ ...a, id: a.id === 'stab' ? 'smilingStab' : 'twoKnives', name: a.id === 'stab' ? 'Smiling Stab' : 'Two Knives' })) });
+}
+
 // Training dummies (developer rooms and tests; the Training Hall that used them is gone since v7.19.0): same humanoid primitives. They never move or aggro, never die,
 // stagger or lose poise. The sparring dummy repeats one slow, telegraphed swing; the dodge dummy is the same
 // dummy with exactly the same cadence, but its swing is roll-only (a blue glow and ring: roll through it).

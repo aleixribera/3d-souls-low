@@ -656,6 +656,25 @@ MODEL_DEFS.keyless = {
   },
   eyes: { color: 0xb8c8ff, size: 0.011 },
 };
+// The Gilded Thrall (Level 10, v7.44.0; LORE.md 10f): the Rogue's figure as a citizen of Aurel: gold leaf on the mask
+// and skin, an ochre hood, gilt on the scale and steel, a curved knife in each hand. A stand-in until its own Blender figure.
+MODEL_DEFS.gildedThrall = {
+  extends: 'rogue',
+  materials: {
+    ...MODEL_DEFS.rogue.materials,
+    skin: { tex: 'paleSkin', tint: 0xd0b478, decay: 0.45 },
+    scales: { tex: 'wornGilt', tint: 0xe0c070, decay: 0.4 },   // gold leaf laid over the scale
+    leather: { tex: 'rogueLeather', tint: 0x8a6a3a, decay: 0.55 },
+    hood: { tex: 'rogueHood', tint: 0xd8b878, decay: 0.45, double: true },
+    mask: { tex: 'wornGilt', tint: 0xe0bc68, decay: 0.4, double: true, rim: 0.6 },   // the smile, laid on in gold leaf
+    steel: { tex: 'wornGilt', tint: 0xc8a458, decay: 0.45 },
+    strap: { tex: 'rogueLeather', tint: 0x6a5030, decay: 0.6 },
+    blade: { tex: 'rustedIron', tint: 0xc0bab0, decay: 0.35 },
+    eye: { glow: 0xffd890 },
+  },
+  weapon: { use: 'curvedKnife', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
+  eyes: { ...MODEL_DEFS.rogue.eyes, color: 0xffd890 },
+};
 // The Salt Knight (Level 8, v7.40.0; LORE.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
 // over grey-green cloth. A stand-in until its own Blender figure.
 MODEL_DEFS.saltKnight = {

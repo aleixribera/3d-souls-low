@@ -271,5 +271,30 @@ const LORE = {
         { kind: 'corpse', pose: 'seated', x: 48.2, z: 6.8, yaw: -Math.PI / 2 },
       ],
     },
+    // Chapter 10 (v7.44.0; LORE.md 10f): Thrale's capital, still gold.
+    aurel: {
+      npcs: [{ x: 11.5, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'aurel-gate',
+        lines: [
+          'Aurel. My mother sang it as a word for gold. I thought it was only a word.',
+          'They are all smiling. Every one of them. Nobody here has been hungry in a very long time.',
+          'Don\'t let them come close. The gold is on their hands, and so are the knives.',
+          'The song has a steward in it, left to keep the city until the king came home. The king never came. He kept it anyway.',
+          'Something grows up out of the chasm, under the throne. It is warm to stand near. I didn\'t like it.',
+          'Go on. I\'ll keep the fire. I\'d rather they didn\'t look at me.',
+        ],
+        idle: 'Everything here is gilded. Even the bread, I think.' }],
+      inscriptions: [
+        { id: 'l10-gate', x: 11, z: 4.5, yaw: -Math.PI / 2, mount: 'floor', label: 'Cut in the city gate\'s floor',
+          lines: ['"Aurel keeps. Aurel is kept."'] },
+        { id: 'l10-fountain', x: 86, z: -4.5, yaw: -Math.PI / 2, mount: 'floor', label: 'On the fountain\'s step',
+          lines: ['"In Aurel none go hungry."'] },
+        { id: 'l10-throne', x: 152.15, y: 10, z: 50, yaw: Math.PI / 2, mount: 'wall', label: 'Over the throne gate',
+          lines: ['"Hollis, steward of the crown, keeps the city until the king comes home."'] },
+      ],
+      scenes: [
+        { kind: 'candle', x: 14.6, z: 5.5 }, { kind: 'sacks', x: 72, z: 16.5, yaw: 0.4 }, { kind: 'crates', x: 107, z: -17.2, yaw: 0.2 },
+        { kind: 'corpse', pose: 'lying', x: 118, z: 2.4, yaw: 2.2 },   // the one at the stair's foot who stopped smiling
+      ],
+    },
   },
 };

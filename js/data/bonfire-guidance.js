@@ -91,6 +91,14 @@ const BONFIRE_GUIDANCE = {
       [[108,6,-3],[106,6,5],[106,6,44],[106,12,56],[106,12,57],[115,12,65],[131,12,65],[132,12,63],[132,12,62.8]],
     ] },
   ],
+  "aurel": [
+    { id: "aurel-gate-to-aurel-stair", from: "aurel-gate", to: "aurel-stair", paths: [
+      [[13.5,0,-4.5],[13,0,-5],[42,0,-3],[120,0,-3],[120,0,-2.8]],
+    ] },
+    { id: "aurel-stair-to-aurel-throne", from: "aurel-stair", to: "aurel-throne", paths: [
+      [[120,0,-2.8],[120,0,-3],[122,0,-3],[142,10,3],[157,10,16],[157,10,46],[153,10,54],[153.5,10,54.5]],
+    ] },
+  ],
   "evergaol": [
     { id: "gaol-landing-to-gaol-isle", from: "gaol-landing", to: "gaol-isle", paths: [
       [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],

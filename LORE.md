@@ -258,6 +258,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The stars are very close here. I keep wanting to reach one down.
 
+### Level 10 — Aurel, the Gilded City (inside the city gate, by the first bonfire)
+1. Aurel. My mother sang it as a word for gold. I thought it was only a word.
+2. They are all smiling. Every one of them. Nobody here has been hungry in a very long time.
+3. Don't let them come close. The gold is on their hands, and so are the knives.
+4. The song has a steward in it, left to keep the city until the king came home. The king never came. He kept it anyway.
+5. Something grows up out of the chasm, under the throne. It is warm to stand near. I didn't like it.
+6. Go on. I'll keep the fire. I'd rather they didn't look at me.
+
+*Idle:* Everything here is gilded. Even the bread, I think.
+
 ---
 
 ## 7. Inscriptions
@@ -308,6 +318,11 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 - **Before the great ring** (by the last bonfire): "Here is kept the Ringer of Thrale, until the crown forgives." Someone has
   scratched beneath it: "It forgot."
 
+### Level 10 — Aurel, the Gilded City
+- **Cut in the city gate's floor** (by the first bonfire): "Aurel keeps. Aurel is kept."
+- **On the fountain's step**: "In Aurel none go hungry."
+- **Over the throne gate** (by the last bonfire): "Hollis, steward of the crown, keeps the city until the king comes home."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -337,8 +352,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 9,
-the Night Gaol) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 10,
+Aurel, the Gilded City) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -403,6 +418,19 @@ the stones. Who she rang for, and what came out, the song does not say. Her hand
 The **Keyless** are the gaol's other prisoners. Their doors fell open long ago, and they never went out. One warden
 is left, empty in its armour, and still keeps the cells. They walk in their chains, and swing them.
 
+## 10f. Level 10 — Aurel, the Gilded City (chapter 10 of the Story)
+Chapter 10, after the Night Gaol. **Aurel** is Thrale's capital, and it is still gold: white stone hardly weathered,
+gold leaf on the roofs, flaking in the warm air; an avenue between lit houses, a fountain court, a great stair, and,
+north of the city, a chasm with the Ember's root grown up out of it and over, gilded where the city could reach it. The
+throne court lies past the root.
+
+When the hunger went over the mountains in the Seven's keeping, it left a steward to keep its city fed until it came
+home. **The Regent Hollis** kept it. He is gilded, gracious and cruel: he bows before he cuts, and he draws weapons of
+gilt out of the air. Past the worst of his hurt, the gilt cracks and the hunger shows through him, and his blade burns.
+
+The **Gilded Thralls** are Aurel's citizens: fed, smiling, gold leaf laid on their faces and hands, a knife in each.
+They smile until you are close.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -429,6 +457,9 @@ is left, empty in its armour, and still keeps the cells. They walk in their chai
 | The place of Level 9 | the Night Gaol, Thrale's prison among the stars |
 | The boss of Level 9 | the Ringer of Thrale |
 | The enemy of Level 9 | the Keyless |
+| The place of Level 10 | Aurel, the Gilded City, Thrale's capital |
+| The boss of Level 10 | the Regent Hollis |
+| The enemy of Level 10 | the Gilded Thralls |
 
 ---
 ---

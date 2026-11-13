@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.43.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.44.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 Where the game is going lives in three files at the root. Read them before choosing what to build:
 
@@ -12,10 +12,10 @@ Where the work stands is `STATE.md` (what works, what's broken, open questions),
 
 In the game today there are two Story roads:
 
-- **Ashmere:** Levels 1–9. Level 1 teaches the controls with lesson cards. Aldric's death (Level 5) is the end of Act I, not
+- **Ashmere:** Levels 1–10. Level 1 teaches the controls with lesson cards. Aldric's death (Level 5) is the end of Act I, not
   of the story: its cards lead on to Level 6, the Church in the Pass, over it to Level 7, the Windward Moor, Thrale's
-  border, to Level 8, Saltgrave, its border fortress, and to Level 9, the Night Gaol, the last chapter built so far
-  (`STORY.md`).
+  border, to Level 8, Saltgrave, its border fortress, to Level 9, the Night Gaol, and to Level 10, Aurel, Thrale's
+  gilded capital, the last chapter built so far (`STORY.md`).
 - **The Lands Between:** eight lands, one per Elden Ring boss, with its own ending and Finn as a solo companion.
 
 There is also a Levels menu, a 1v1 Arena (Enemies, Bosses, Elden Ring Bosses, Boss vs Boss), and an optional multiplayer server with a public lobby and friendly bots.
