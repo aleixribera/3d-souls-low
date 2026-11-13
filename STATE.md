@@ -11,9 +11,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
   `docs/scorecard/bot-aid.txt`.
-- Track B (pass 43, v7.63.0): "new version" done. UI redesign pass 1: the lobby on `js/ui-theme.js`; checks
-  `tests/lobby-controller-browser.cjs`, `lobby-polish-browser.cjs`. Next: title, Practice, options, pause, HUD, Boss
-  Rush screens; a castle scene behind the menus. Boss Rush is id `boss-rush`, kind `calling`.
+- Track B (pass 45, item 2 "Fast fights, bots that fall", pass 1 of 2): no team-size scaling, the pace curve, bots
+  that fall, solo-measured boss health, sooner breaks, a 10 s blessing pick. Check: `tools/bot-fights.cjs` before and
+  after (solo times, fight 1 with four bodies, bot falls), tests of 1 vs 4 players and of the curve. Pass 2: kill
+  moment, streak HUD, swift kill. Then item 3 (UI: lobby done in pass 43, `js/ui-theme.js`; title, Practice, options,
+  pause, HUD, Boss Rush screens next). Boss Rush is id `boss-rush`, kind `calling`.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
