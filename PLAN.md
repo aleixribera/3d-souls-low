@@ -218,7 +218,29 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      any menu or card. Motion only where it helps you use the screen: focus moving, a panel opening, a timer draining.
    - **Blessing cards get the most care:** each blessing has its own drawn icon in the menus' style (never emoji or
      stock icons), its rarity readable at a glance, its level and change shown plainly (II → III, 30% → 45%), the
-     pick timer, number keys and pad buttons. The director's mockup canvas holds the layouts Aleix chooses from.
+     pick timer, number keys and pad buttons.
+   - **Chosen (Aleix, 2026-11-13): tall cards for the blessing pick, and the mockups' menu style.** The mockups are
+     on the director's canvas, https://claude.ai/artifact/GRG2DQeaNTRnTFM7cRdz7L (read it with the Artifact tool):
+     "Pick 4 · Tall cards", "Title", "Pause", "Options" and "End of run". Build from them.
+     - Blessing pick: the HUD stays visible under a dark veil. The title "Choose a blessing" sits on the left with the
+       seconds left on the right, and a thin gold line under it runs down with the timer. Below sit three or four
+       upright cards in a row, about 216×330 at 1280×720. Each card has, top to bottom: its icon in a square well
+       whose bottom edge is the rarity colour; the name (display face); the level change in gold when it has one
+       (II → III); what it does, with the change in bold (30% → 45%); and at the foot the rarity word in its colour
+       and the number key (pad: the focused card takes A). The focused card gets the gold outline. Rarity colours: common in
+       the body ink, rare a cool blue, legendary ember orange; gold stays "focused / yours" only. A Swift kill's extra
+       card says so beside its rarity. On a phone the cards go to a 2×2 grid.
+     - Title: the game's name top-left, the mode list below it (Story, Boss Rush, Practice, Collection), one line about
+       the chosen mode when it says something (chapter, time played), one big primary button. The castle stands behind
+       the right half. Footer: Options, Controls, Changelog on the left, key hints and the version on the right.
+     - Pause: "Paused" with Resume, Options, Controls and Leave the run as rows on the left; the run's state on the
+       right (fight, time against par, party, blessings held with their icons). Esc resumes.
+     - Options: categories as rows on the left; each setting is one row with the control that fits it (a value
+       cycled in place, a slider with its number, an Off/On pair); one line of help only where it tells you
+       something; footer Back and Reset to defaults.
+     - End of run: bosses beaten as the title, then Crowned count, time and "Your best run" when it is; highlights
+       per player on the left; level and crate rewards as a plain list with icons and rarity on the right; Lobby
+       and a primary Run again.
    - **Order:** the lobby first (done, v7.63.0, approved for every menu); then the blessing pick, the title,
      Practice, options, pause and the end of run. The loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
