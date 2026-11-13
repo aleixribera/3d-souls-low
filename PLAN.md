@@ -33,9 +33,17 @@ Aleix, 2026-11-13.
   effects and sounds too, smaller; the feel is anime techniques (2026-11-13).
 - Allied bots leave Boss Rush (2026-11-13): it's you against the bosses, alone or with friends; summon abilities give
   the ally feeling instead (track B, items 9 and 6). Focus is dropped.
+- Difficulty (2026-11-13): every boss is re-tuned so its own base speed is slower and roughly as hard as every other
+  boss, 1v1, measured with the test bot; that new base is "1x". Boss Rush starts there, not too easy, and climbs
+  faster than before: a skilled solo player falls around fight 10-12 without abilities, and only a rare great kit
+  reaches about 20. Crowned bosses every 5 fights. Story tunes its own bosses for the player's experience, and its
+  levels and some enemies need reworks (track B, item 10; track A, items 5 and 7).
 - The coolest Boss Rush out there (Aleix, 2026-11-13, yes to all six of the director's ideas): revive a friend
-  mid-fight and highlights on the end screen (track B, item 4; Focus later dropped); a Crowned boss every 10th fight (item 5); pacts
-  (item 6); a weekly run with a friends' board (item 8). Left out on purpose: damage numbers, stat upgrades between
+  mid-fight and highlights on the end screen (track B, item 4; Focus later dropped); a Crowned boss every 5th fight
+  (item 5; first every 10th); a weekly run with a friends' board (item 8). Pacts were in this list too and are
+  removed (2026-11-13): runs are too short for them, they landed on the Crowned fights, and a vote screen is menu
+  friction. A Crowned win offers a legendary instead; a voluntary harder-for-more choice waits until runs are
+  played and someone asks for one, and would then be picked once before a run, never voted mid-run. Left out on purpose: damage numbers, stat upgrades between
   runs, a separate arena for every boss.
 - The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
@@ -136,13 +144,17 @@ left open, and any solo play in it, stays on the old build and nothing says so.
    and this item resumes once the laptop is back.
 4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
    may be improved).
-5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
+5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Story's bosses are tuned for
+   the player's experience on top of track B's 1x (Aleix, 2026-11-13): slower in the first chapters if that plays
+   better, climbing chapter by chapter to the finale, every boss beatable 1v1 by a friend new to the genre in a few
+   tries. Check: flask count and enemy
    strength across chapters in a test, and a play-through frame per act.
 6. **Telling the story without taking control.** Find the best way to tell this story (places, NPCs, inscriptions,
    in-world scenes) and remove every moment that takes movement or the camera away from the player: cutscenes, locked
    cameras, cards that freeze play. Check: play each chapter's story moments with the player moving and turning the
    camera throughout.
-7. **The old levels' flaws.** Levels 1-6 and the rough chapters are old and some have clear flaws. Any pass whose
+7. **The old levels' flaws.** Levels 1-6 and the rough chapters are old and some have clear flaws; some regular
+   enemies need reworks too (Aleix, 2026-11-13: "story mode levels and some enemies need reworks"). Any pass whose
    item touches a level treats them as weak foundations and improves, redesigns or reworks the level as part of the
    item; this item then takes the worst one left, one at a time. Rebuilding a level from zero is allowed when it's
    really needed, never the default. Then the stand-in figures (Ysolde, the chapters'
@@ -150,7 +162,8 @@ left open, and any solo play in it, stays on the old build and nothing says so.
 
 ## Track B: Boss Rush
 
-Order (Aleix, 2026-11-13): item 9 (Boss Rush alone, bots out), then item 3 (the menus), then item 6 (abilities) as
+Order (Aleix, 2026-11-13): item 9 (Boss Rush alone, bots out), then item 10 (one difficulty, the new curve), then
+item 3 (the menus), then item 6 (abilities) as
 soon as the upgrades session has shipped it, ahead of everything below, then items 4, 5 and 8, then item 7 (crates,
 after the abilities). If the track reaches item 6 before that session has shipped, it goes on with the next item and
 comes back to item 6 the moment it lands.
@@ -164,7 +177,7 @@ comes back to item 6 the moment it lands.
    frenetic, with more dopamine). Next in this track: the next track-B pass takes it, ahead of item 3's remaining
    screens, which resume after it. Since then allied bots have left Boss Rush (item 9): the parts below about bots
    in a party (bots that fall, a person with three bots) no longer apply; what's left of them is dropped, and the
-   fight-length targets are measured alone.
+   fight-length targets are measured alone. Item 10 replaces this item's curve numbers and base health.
    - **Why:** bots count as players in `CONFIG.group`, so one person with three bots fights a boss at 2.5 times its
      health; `docs/scorecard/bot-aid.txt` has three bots beating the Pillager Captain and the Bell Warden 10 of 10 in
      about two minutes, with no bot falling.
@@ -273,30 +286,35 @@ comes back to item 6 the moment it lands.
    Check: a test of a revive (claim checked, boss attention moves, cancel on a hit); frames of an ember mid-revive and
    of the end screen's highlights alone and with four players.
 5. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
-   can come, each fight harder on item 2's curve: fairly easy at first, slowly more challenging for a good while, then
-   genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
+   can come, each fight harder on item 10's curve: fair at first, real by fight 10-12 without abilities, about 20 with
+   a great kit, then genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
    the first few fights (faster, an extra phase of new moves, burning ground, a second boss; none adds damage or
    health) and are shown by name under the boss's bar; every few fights two bosses come at once.
-   - **Crowned bosses.** Every 10th fight is a Crowned boss: its own new final phase (new moves, by `VISION.md`'s
-     rules: each telegraphed, none shared with another boss), the arena changed for that fight (light, ground,
-     hazards: baked, inside Normal's budget), and a guaranteed rare ability for winning. The HUD shows how many
-     fights until the next one, so the endless run has chapters and a goal ("we hit Crowned 2 last time").
+   - **Crowned bosses.** Every 5th fight is a Crowned boss (Aleix, 2026-11-13, over every 10th): its own new final
+     phase (new moves, by `VISION.md`'s rules: each telegraphed, none shared with another boss), the arena changed for
+     that fight (light, ground, hazards: baked, inside Normal's budget), and for winning, an ability pick of 4 with at
+     least one legendary (Aleix, 2026-11-13, in place of pacts). The HUD shows how many fights until the next one, so
+     the endless run has chapters and a goal ("we hit Crowned 2 last time").
    The end screen shows bosses beaten and Crowned reached. Check: a test that the first fights draw only the easier
-   bosses and that fight 10, 20 and 30 are Crowned; frames of a modifier on screen and of a Crowned fight.
+   bosses and that fights 5, 10 and 15 are Crowned; frames of a modifier on screen and of a Crowned fight.
 6. **Abilities** (Aleix, 2026-11-13). The one name from now on, in the game's text, the code and these files: an
    *ability*, never a blessing, upgrade, boon, skill or power. The pick screen says "Choose an ability"; new code
    says `ability`; old identifiers are renamed when a pass touches them.
    - **First, the upgrades session** ("Design all upgrades and special upgrades from zero", working with Aleix):
-     removes the five old blessings and builds the first set, its data, the tall-card pick screen (item 3's spec) and
-     pacts. While it works, the loop doesn't touch `js/data/abilities.js`, `CONFIG.abilities`, `js/abilities.js`,
-     `js/ability-fx.js`, the offer code or the pick screen. It ships in slices; the item becomes the loop's only when
-     this line says **handed over**.
-     - Shipped (v7.72.0): the old five gone; 25 abilities (12 commons, 8 rares, 5 legendaries: Meteor Fall, Storm
-       King, Time Rift, Thousand Blades, Blood Moon) in `js/data/abilities.js`, levels shown as II -> III with
-       was -> now; the tall-card pick "Choose an ability"; each legendary's in-game effect; the server runs the
-       legendaries and checks every claim. Everything renamed from blessing to ability.
-     - Still the session's: the spectacle bar (sound, light, camera weight for legendaries; effects and sound for
-       rares; a touch for commons), pacts, and a first summon with its Blender model.
+     removes the five old blessings and builds the first set, its data and the tall-card pick screen (item 3's spec);
+     no pacts (removed, Aleix, 2026-11-13). While it works, the loop doesn't touch `js/data/abilities.js`,
+     `CONFIG.abilities`, `js/abilities.js`, `js/ability-fx.js`, the offer code or the pick screen. When it has shipped
+     (merged into `main`), this item is the loop's, and it comes next in this track. Aleix (2026-11-14): the session
+     finishes what it is in the middle of, properly, starts nothing new, and merges soon.
+     - Shipped (v7.72.0), **handed over**: the old five gone; 25 abilities (12 commons, 8 rares, 5 legendaries:
+       Meteor Fall, Storm King, Time Rift, Thousand Blades, Blood Moon) in `js/data/abilities.js`, levels shown as
+       II -> III with was -> now; the tall-card pick "Choose an ability"; each legendary's in-game effect, Storm King
+       as a lightning dragon out of the blade; a sound for every legendary, the rares' trigger and the pick; camera
+       weight per legendary; the server runs the legendaries and checks every claim. Practice > Try abilities (Aleix,
+       2026-11-14): the duel arena with a mannequin, B lists every ability to switch on at any level and fires a
+       legendary on demand; use it to see and hear new ones.
+     - What it leaves is the loop's, first in this item: light and polish on the spectacle bar below (rares' own
+       effects, commons' touch), the first summons, legendaries up to 8 and more, then the pool beyond 30.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use.
@@ -322,13 +340,9 @@ comes back to item 6 the moment it lands.
      arena, and end with it. An ability acts on its owner and the boss and touches teammates only lightly (a small
      shared buff at most), never slowing, moving or linking them. Item 2's pace curve is tuned against a stacked kit,
      solo and in a party, so it still reaches impossible.
-   - **Pacts** (built first by the upgrades session): after fight 5, 15, 25 and every ten on, the team votes on one
-     pact: the bosses step up item 2's pace curve for the rest of the run (shown by name with the modifiers) and
-     everyone gets a legendary ability now. Majority wins; a tie or no vote by the pick clock means no pact. Alone,
-     you decide. The end screen lists the pacts taken.
    Check: the odds in a test; every legendary and summon seen working in a real fight, alone and in a party of four,
    with frames of each one's moment; rare ones seen with their effect and sound; a test of the curve against a
-   late-run kit; a test of a pact vote (majority, tie, timeout) and its pace step.
+   late-run kit.
 7. **Levels and crates** (waits until the upgrades session has shipped the new abilities; Aleix, 2026-11-13: the
    roll keeps its animation and effects, in the game's style). Playing earns levels, kept per browser. Each level-up
    gives one crate, opened on the
@@ -356,3 +370,28 @@ comes back to item 6 the moment it lands.
    - The temporary-ally feeling comes back through summon abilities (item 6), not bots.
    Check: no bot in any Boss Rush party or lobby; a run started alone and one with two people; fight 1's solo time
    against the target; the Practice team fight and Story companions still work.
+10. **One difficulty for every boss, and the new curve** (Aleix, 2026-11-13). Right after item 9.
+   - **A new 1x.** Every boss is re-tuned in its own data (idle gaps, recoveries, string lengths, mix-ups; its `hp`
+     as item 2 set it) so that its base is slower than today and about as hard as every other boss, 1v1. That tuned
+     base is the new `CONFIG.pace.boss` 1: no global multiplier stands in for it. Boss Rush doesn't fuss over the
+     player's feelings boss by boss: the test bot measures it (`tools/bot-fights.cjs`, solo, `PERSON=1` as the person
+     stand-in), and every boss lands within a narrow band of fight time and falls taken, the outliers fixed first.
+   - **Boss Rush starts at 1x, not too easy.** Fight 1 is a fair fight for a newcomer and quick for a skilled player;
+     the first few fights stay friendly, and it gets real early.
+   - **The curve climbs faster.** Same shape and rule as item 2 (exponential in fights won, speed only: never health
+     or damage, tells always readable, the modifiers and Crowned phases on top), re-tuned to these targets for one
+     skilled player alone:
+     - no abilities: falls around fight 10-12;
+     - with abilities: about 20, and only a rare, great kit gets there;
+     - beyond that it is impossible, whatever the kit.
+     Friends get further (nothing scales with team size); that's fine.
+   - **Abilities count.** Measure each target twice with the test bot: with no abilities, and with a strong kit
+     (scripted picks from item 6's pool, the best a lucky run could hold). Until item 6 has shipped, measure the
+     no-ability target alone and come back to the kit one once it lands; every big addition to the pool re-checks it.
+   - **Practice** fights at 1x by default, with a setting to face a boss at the speed of any later fight, to learn it
+     slow or rehearse a late run.
+   - **Story** is tuned for the player's experience, not the bot (track A, item 5): its bosses may sit below 1x
+     early and climb chapter by chapter to the finale.
+   Check: a table of every boss's solo time and falls before and after, alone at 1x; the bot's fight reached across
+   several runs, with no abilities and with a strong kit, against the targets; a test of the curve's speed at fights
+   1, 5, 10, 15 and 20 (speed changes; health and damage don't); a frame of Practice's speed setting.
