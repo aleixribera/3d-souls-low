@@ -10,11 +10,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   awaits Aleix. Pass 2s in BACKLOG; next: the King's Blade (ch. 14).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.
-  `docs/scorecard/bot-aid.txt`.
-- Track B (pass 51, item 3 done roughly): every menu in the title's style; Options in categories (`optionsItems`,
-  `menuControl`), pause facts (`pauseFacts`), end of run (`#runSummary`). `docs/scorecard/menus-*.jpg`, in-page
-  `Menus:` (pad walk), `experience-browser`, `calling-browser`. Gaps in BACKLOG. Next: item 9, then 10.
+- Track B (pass 52, v7.74.0): item 9 done: no bot in the lobby or any party (bots are test players only:
+  `sim.addBot`); alone it says Start and a fall ends the run ("You fell"). `rush-alone-browser`, `calling*`, `bot`.
+  Fight 1 alone at 1x: the lone bot wins 12/39, 8 bosses beat it every time (`docs/scorecard/rush-solo-fight1.txt`,
+  item 10's before table). Also: a preset change online no longer reconnects (`EnemyTrack.catchUp`). Next: item 10.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -37,6 +36,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
+- Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`; in-page `Menus:`.
 - Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
   (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
@@ -64,7 +64,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- `lobby-polish-browser` (not in CI, fails on v7.71.0 too): High mid-run drops the player to the title (pass 51).
+- `lobby-polish-browser` (not in CI): passes since pass 52; one run timed out on a click (flaky, as pass 8 saw).
 
 ## Queued runs
 
@@ -81,8 +81,6 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) Bots (v7.59.0): 121/130 three-bot wins, 45 deaths; a person gets 82% of executions.
-  Feel check with friends: do they still carry?
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
