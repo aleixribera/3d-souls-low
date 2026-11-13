@@ -35,7 +35,9 @@ Aleix, 2026-11-13.
   runs, a separate arena for every boss.
 - The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
-  scene behind the menus.
+  scene behind the menus. Later the same day, after seeing 20 mockup directions: the HUD in the game now is perfect
+  and stays; the work is the blessing cards and how they're presented, and the menus. Simple, functional menus in
+  the approved lobby look; no reward effects (slams, glows, count-ups, shines).
 - End-screen titles: plain English, the loop's wording.
 - Chapters 6-14's words: the loop's draft stands. Story text is a draft the loop may rewrite.
 - THE ROAD GOES ON stays until the ending ships; after that the story keeps growing until Aleix stops it.
@@ -209,8 +211,16 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      show; one overlay at a time.
    - **Behind the menus:** a cool live 3D scene of a castle (a real Blender model, baked light), inside the Normal
      preset's 60 fps on integrated graphics.
-   - **Order:** the lobby first, its desktop and phone frames shown to Aleix under "Needs Aleix" with the references;
-     then the title, Practice, options, pause, the HUD and the Boss Rush screens (blessing pick, end of run). The
+   - **The HUD stays** (Aleix, 2026-11-13: "the current UI inside the game is perfect"). Don't restyle it. Item 2's
+     streak and par timer join it in its current look.
+   - **Simple and functional, no dopamine on menus** (Aleix, 2026-11-13: "stay away from this dopamine, let's focus
+     on simpler functional menus again"). No slam-in titles, glow pulses, shine sweeps, count-ups or crate reels on
+     any menu or card. Motion only where it helps you use the screen: focus moving, a panel opening, a timer draining.
+   - **Blessing cards get the most care:** each blessing has its own drawn icon in the menus' style (never emoji or
+     stock icons), its rarity readable at a glance, its level and change shown plainly (II → III, 30% → 45%), the
+     pick timer, number keys and pad buttons. The director's mockup canvas holds the layouts Aleix chooses from.
+   - **Order:** the lobby first (done, v7.63.0, approved for every menu); then the blessing pick, the title,
+     Practice, options, pause and the end of run. The
      loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
    screen checked against the `design-audit` rule book.
