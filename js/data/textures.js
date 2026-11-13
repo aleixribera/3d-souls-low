@@ -87,7 +87,6 @@ const TEXTURE_DEFS = [
   // deep carved stone relief with black crevices, layered stone wing feathers, and verdigris-patinated dark bronze brow filigree.
   { id: 'gargoyleStone', kind: 'stone', base: 0x1e1c1a, alt: 0x423e3a, accent: 0x0a0908, rough: [0.38, 0.82], metal: 0.28, bump: 1.5, scratch: 26, stain: 0x0c0b0a, cavity: 0.9, contrast: 0.95 },
   { id: 'gargoyleCarved', kind: 'plate', base: 0x1a1816, alt: 0x3e3a36, accent: 0x080706, rough: [0.35, 0.78], metal: 0.32, bump: 1.6, scratch: 32, stain: 0x0a0908, cavity: 0.95, contrast: 1.0 },
-  { id: 'gargoyleWing', kind: 'feathers', base: 0x181615, alt: 0x3a3632, accent: 0x080706, rough: [0.42, 0.86], metal: 0.22, bump: 1.8, scratch: 18, stain: 0x090807, cavity: 0.92, contrast: 1.05 },
   { id: 'gargoyleBronze', kind: 'rust', base: 0x242822, alt: 0x46584c, accent: 0x527868, rough: [0.35, 0.75], metal: 0.45, bump: 1.4, scratch: 22, stain: 0x121614, cavity: 0.85, contrast: 0.9 },
   // The Toll Wisp (v5.5, after the reference art): deep espresso-black weathered felt hat, warm chestnut-brown shoulder
   // mantle and laced sleeves, cream-gold damask brocade front robe, burnt-amber embroidered trim, and dark olive-charcoal outer coat.

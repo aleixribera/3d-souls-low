@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 11 shipped `PLAN.md` stage 3 track A item 1, Act I's turn, and released v7.36.0: Aldric's death plays the Ember
-leaving him (no credits) and Story mode goes on to the Church in the Pass as chapter 6; the road closes after it on THE
-ROAD GOES ON. Next: track B item 1, the Gargoyle in Blender, pass 1 of it (check: `PLAN.md`'s hardened model check).
+Pass 12 shipped `PLAN.md` stage 3 track B item 1's first half, the Gargoyle in Blender (pass 1 of it), and released
+v7.37.0. Check met: 40 baked pieces, 2,992 tris (budget 3,000); lab sheet `docs/scorecard/gargoyle-lab.jpg`, frames in
+play `gargoyle-arena.jpg` (front-lit, facing) and `gargoyle-castle.jpg`. Next: track A item 2, chapter 7 (`STORY.md`),
+rough; then track B's Empty Sentinel.
 
 ## Works
 
@@ -16,13 +17,16 @@ ROAD GOES ON. Next: track B item 1, the Gargoyle in Blender, pass 1 of it (check
   Scion (v7.31.0, 2,774 body tris, 2,900 with the scimitar), Executioner (v7.32.0, 2,687 body tris, 2,991 with the
   greataxe; its skirt is four panels on new cloth bones loinF/B/L/R), Crucible Squire (v7.33.0, 2,190 body tris, 2,992
   with the kit oval shield and greatsword), Shover (v7.34.0, 2,428 body tris, 2,988 with the kit pavise of 560; a
-  kettle hat over a bevor, a barrel cuirass bound in iron hoops). `js/baked/*.js`; checked by the in-page `model`
+  kettle hat over a bevor, a barrel cuirass bound in iron hoops), Gargoyle (v7.37.0, 2,992 tris, no weapon; a `tail`
+  bone, wings on `wingL`/`wingR`). `js/baked/*.js`; checked by the in-page `model`
   filter (5 tests), `Shover` (1), `Bowman` (4), `Lands` (15), `Wisp` (1), `Scion`, `Ultra performance` and validation
   at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
   renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a per-face
   reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
+  A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
+  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; `RIM.strength.value = 0` in the lab tells rim from normals.
 - Group scaling (v7.35.0): `CONFIG.group`, `groupDef`/`setGroup` (`js/enemy.js`), the server's scaling in
   `tick()`; checked by `tests/group-scaling.cjs` (every boss at 1-5 players) and `boss-only-browser.cjs` (two clients
   draw the server's two-player bars, `docs/scorecard/boss-only-2p-grouped.jpg`). Tests that pinned Margit's solo bar in
@@ -53,7 +57,8 @@ ROAD GOES ON. Next: track B item 1, the Gargoyle in Blender, pass 1 of it (check
   (a frame in a level; `HIDEP=1` hides the player; `YAWOFF=0.15` puts the camera nearly in front of the enemy's
   facing, default 0.55; it sets the player to a raised enemy's y, but it can still fall off a ledge, so pick a spot
   with floor in front: the Tower's west-stair Shover works), `lab-probe.cjs <id>` (hides each mesh in turn; `TRY=`,
-  `TEX=1`, `NOSHADOW=1` modes), `normals-probe.cjs`.
+  `TEX=1`, `NOSHADOW=1` modes), `normals-probe.cjs`. `enemy-play.cjs` takes `arena` as the level (a 1v1 duel) and
+  `WAIT=ms`; `lab-zoom.cjs` takes `EVAL=<js>` run in the page before the shot.
 
 ## Broken
 
@@ -61,9 +66,9 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 11's push and the v7.36.0 container workflow: check at the start of pass 12. Pass 10's CI and the v7.35.0
-container were green. Pass 11 locally: the Node group (22/22), multiplayer-campaign, the in-page Story,
-Church, Lore and Level 5 filters, and the Ashmere campaign browser test.
+CI on pass 12's push and the v7.37.0 container workflow: check at the start of pass 13. Pass 11's CI and the v7.36.0
+container were green. Pass 12 locally: the Node group (22/22), the in-page `model` filter (5) and Level 5's scripted
+run.
 
 ## wip/ branches
 

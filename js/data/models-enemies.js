@@ -427,13 +427,14 @@ MODEL_DEFS.ashExecutioner = {
 };
 
 // ---- Level 5: the castle's own creatures (v4.3). None of them is a living person. ----------------------------------
-// Gargoyle (v5.5, after the reference art): dark soot-stained obsidian/basalt stone with specular highlights on worn
-// edges, an ornate verdigris-patinated brow crown over a roaring fanged demon/hound maw, carved gothic scroll relief on
-// the chest and abdomen, long muscular arms spread wide with curved stone talons, four-taloned raptor feet, a hanging
-// stone tail between the legs, and massive gothic stone wings rising high with inward-curling shoulder volutes, hooked
-// wingtip horns, branching skeletal veins, and tiered rows of carved stone covert feathers.
+// Gargoyle (v7.37.0 built in Blender, tools/blender/gargoyle.py): dark soot-stained basalt; a roaring fanged hound-demon
+// head under a verdigris bronze brow crown, horns swept back; a carved muscular torso with a bronze collar and sternum
+// medallion, spikes down the spine; long arms with stone forearm plates and curved talons; hocked legs on four-taloned
+// raptor feet; a stone tail with a spade tip; great stone wings with a volute at the root, a hooked horn at the wrist,
+// four fingers fanning a scalloped membrane and two tiers of carved covert feathers. The membrane takes little rim
+// light (`rim` on its slot): seen edge-on, a broad sheet would otherwise read flat white.
 MODEL_DEFS.gargoyle = {
-  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.12, limbSides: 4,
+  extends: 'hollowBase', faction: 'castle', budget: 'enemy', fit: 1.12, limbSides: 4, rim: 0.6,
   proportions: { shoulderX: 0.35, torsoW: 0.23, torsoD: 0.17, armR: 0.064, legR: 0.092, headR: 0.138, handR: 0.056, footLen: 0.28 },
   limbs: {
     armL: { len: 1.24, thick: 1.05 }, elbowL: { len: 1.22, thick: 0.96 },
@@ -450,38 +451,28 @@ MODEL_DEFS.gargoyle = {
   materials: {
     stone: { tex: 'gargoyleStone', tint: 0x948e88, decay: 0.65 },
     carved: { tex: 'gargoyleCarved', tint: 0x8c8680, decay: 0.68 },
-    wing: { tex: 'gargoyleWing', tint: 0x88827c, decay: 0.7, double: true },
+    wing: { tex: 'gargoyleStone', tint: 0x8a847e, decay: 0.7, double: true, rim: 0.15 },
     bronze: { tex: 'gargoyleBronze', tint: 0x9ab4a6, decay: 0.55 },
     teeth: { tex: 'bone', tint: 0x9a9288, decay: 0.6 },
     void: { tex: 'ashSoot', tint: 0x0c0b0a, decay: 0.9 },
     eye: { glow: 0x6a7870 },
   },
-  body: { torso: null, pelvis: 'stone', arms: 'stone', legs: 'carved', head: null, neck: 'carved', hands: 'stone', feet: 'stone' },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     wingL: { parent: 'chest', at: [0.14, 0.52, -0.15] },
     wingR: { parent: 'chest', at: [-0.14, 0.52, -0.15] },
+    tail: { parent: 'spin', at: [0, 0, -0.14] },
   },
-  parts: [
-    // Roaring fanged stone demon head with verdigris-patinated brow crown and deep dark sockets/maw
-    { use: 'gargoyleHead', slot: 'carved', bronze: 'bronze', void: 'void', teeth: 'teeth', bone: 'head' },
-    // Carved gothic chest cuirass and pectoral/abdominal scroll relief + patinated collarbone trim
-    { use: 'gargoyleChest', slot: 'carved', trim: 'bronze', bone: 'chest' },
-    { use: 'spineBumps', slot: 'carved', bone: 'chest' },
-    // Ornate V-shield abdomen/groin plate and hanging stone tail between the legs
-    { use: 'gargoylePelvis', slot: 'carved', bone: 'spin' },
-    { use: 'gargoyleTail', slot: 'stone', bone: 'spin' },
-    // Forearm ridges and long curved stone hand talons
-    { use: 'gargoyleClaws', slot: 'stone', bone: 'elbowL', side: 1 },
-    { use: 'gargoyleClaws', slot: 'stone', bone: 'elbowR', side: -1 },
-    // Pointed knee cops, shin crests, and 4-taloned raptor feet
-    { use: 'gargoyleFoot', slot: 'carved', bone: 'kneeL' },
-    { use: 'gargoyleFoot', slot: 'carved', bone: 'kneeR' },
-    // Massive gothic bat-feathered stone wings with inward shoulder volute hooks, branching stone veins, and tip horns
-    { use: 'gargoyleWing', slot: 'stone', wing: 'wing', bone: 'wingL', side: 1, size: 1.02 },
-    { use: 'gargoyleWing', slot: 'stone', wing: 'wing', bone: 'wingR', side: -1, size: 1.02 },
-  ],
+  // v7.37.0: built in Blender (tools/blender/gargoyle.py), one piece per bone
+  parts: Object.entries({
+    head: ['carved', 'carved.1', 'void', 'teeth', 'stone', 'stone.1', 'bronze'], neck: ['carved'],
+    chest: ['carved', 'bronze', 'bronze.1', 'stone'], spin: ['stone', 'carved'], tail: ['stone', 'carved'],
+    armL: ['stone'], armR: ['stone'], elbowL: ['stone', 'carved', 'stone.1', 'carved.1'], elbowR: ['stone', 'carved', 'stone.1', 'carved.1'],
+    legL: ['stone'], legR: ['stone'], kneeL: ['stone', 'carved', 'carved.1'], kneeR: ['stone', 'carved', 'carved.1'],
+    wingL: ['wing', 'stone', 'carved'], wingR: ['wing', 'stone', 'carved'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `gargoyle:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: null,
-  eyes: { color: 0x6a7870, size: 0.008, spread: 0.052, at: [0, 0.13, 0.11] },
+  eyes: { color: 0x6a7870, size: 0.008, spread: 0.05, at: [0, 0.13, 0.1] },
   anim: {
     attackMul: 1,
     idle: { breathRate: 0.4, breath: 0.005, headDrift: 0.12, sway: 0.01, twitch: 0.6 },
@@ -491,6 +482,7 @@ MODEL_DEFS.gargoyle = {
     cloth: [
       { bone: 'wingL', gain: 0.04, k: 85, damp: 7.5, flutter: 0.008 },
       { bone: 'wingR', gain: 0.04, k: 85, damp: 7.5, flutter: 0.008 },
+      { bone: 'tail', gain: 0.05, k: 70, damp: 6, flutter: 0.006 },
     ],
   },
 };

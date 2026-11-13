@@ -44,3 +44,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Final Castle played online as a single level (not the Ashmere campaign) now ends on the end-of-Act-I cards and
   "Return to lobby", with no credits; the leader's Next goes on to the church (pass 11). Credits come back with the
   story's ending (track A item 3).
+- The Gargoyle (v7.37.0, pass 12) stands upright on its ledges; a crouched perch pose until it springs, and shoulders
+  that join the chest (they read as ball joints with the arms spread, `docs/scorecard/gargoyle-arena-close.jpg`), are its
+  second step (stage 4).
