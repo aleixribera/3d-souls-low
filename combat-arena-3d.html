@@ -612,6 +612,7 @@ const GAME_FILES = [
   'data/story-boss-moves.js',
   'data/boss-fx.js',
   'data/lands-enemies.js',
+  'data/bosses/agathe.js',   // after the Beastman: her Rending Brothers fight with its moves
   'levels/arena.js',
   'data/boss-battle.js',
   'levels/long-hall.js',
@@ -625,6 +626,7 @@ const GAME_FILES = [
   'levels/night-gaol.js',
   'levels/aurel.js',
   'levels/aurel-in-ash.js',
+  'levels/torn-abbey.js',
   'levels/lands/stormhill.js',
   'levels/lands/stormveil.js',
   'levels/lands/evergaol.js',
@@ -714,7 +716,7 @@ const GAME_FILES = [
   'multiplayer.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.47.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.48.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -742,6 +744,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-night-gaol.js', 'tests/');   // v7.42.0: Level 9
   await loadScript('suite-aurel.js', 'tests/');   // v7.44.0: Level 10
   await loadScript('suite-aurel-in-ash.js', 'tests/');   // v7.46.0: Level 11
+  await loadScript('suite-torn-abbey.js', 'tests/');   // v7.48.0: Level 12
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours

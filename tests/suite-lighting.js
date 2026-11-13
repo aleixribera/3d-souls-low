@@ -3,10 +3,10 @@
 (() => {
   const { test, expect, sim } = __arena.tests;
   const start = id => { Game.startLevel(id); Game.loading = 0; sim.begin(); };
-  test('Guiding light: all nineteen campaign levels have connected bonfire references and floor-safe paths', () => {
+  test('Guiding light: all twenty campaign levels have connected bonfire references and floor-safe paths', () => {
     expect.ok(validateBonfireGuidance().length === 0, validateBonfireGuidance().join(' | '));
     const levels = [...LEVELS, ...LANDS_LEVELS].filter(L => L.bonfires.length > 1);
-    expect.ok(levels.length === 19, 'all campaign levels with multiple bonfires');
+    expect.ok(levels.length === 20, 'all campaign levels with multiple bonfires');
     for (const L of levels) {
       const routes = BONFIRE_GUIDANCE[L.id], TR = L.layout === 'rooms' ? terrainFor(L) : null;
       expect.ok(routes.length === L.bonfires.length - 1, `${L.id}: links every bonfire`);

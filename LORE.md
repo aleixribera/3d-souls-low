@@ -278,6 +278,16 @@ a short idle line when the player comes near again; talking again replays the fu
 
 *Idle:* The ash is warm. It is still falling.
 
+### Level 12 — The Torn Abbey (on the landing, by the first bonfire)
+1. This was an abbey. The song calls it the house that held the knife. I thought the knife was a way of speaking.
+2. They meant to cut it out of the earth, the thing the Seven would carry away. The earth would not let it go. It came up with it.
+3. The hill has been falling ever since, very slowly. Mind the floors. They are older than the storm.
+4. The brothers are still here, and still have their hooks. I don't think they know any more what they are cutting.
+5. The abbess held the knife. The song never says she put it down.
+6. Go on. I'll keep the fire. Something is pulling at these stones from underneath.
+
+*Idle:* The storm never moves off. It has sat on this hill since the hill came loose.
+
 ---
 
 ## 7. Inscriptions
@@ -340,6 +350,12 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
   until Thrale has need of him."
 - **On the throne court's wall** (by the last bonfire): "Long live the king. Long live the king. Long live the king."
 
+### Level 12 — The Torn Abbey
+- **Cut in the colonnade's floor**: "Cut it out, and Thrale is whole."
+- **On the terrace wall** (by the second bonfire): "The root goes down further than the hill. Cut deeper." Beneath it, in
+  another hand: "Mother, it is coming up with us."
+- **In the nave landing's floor** (by the last bonfire): "Agathe, abbess, who held the knife. She did not let go."
+
 ---
 
 ## 8. Environmental scenes (no words)
@@ -369,8 +385,8 @@ Church in the Pass.
 5. And over Ashmere, the ash goes on falling.
 
 The story's own ending (the mere, the credits, *someone is ringing something small*) is `STORY.md`'s and comes with its
-last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 11,
-Aurel in Ash) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
+last chapter. Until those chapters are built, Story mode ends after the last chapter built (chapter 12,
+the Torn Abbey) on **THE ROAD GOES ON**: *Thrale lies beyond the pass. Its chapters are still being built.*
 
 ---
 
@@ -462,6 +478,20 @@ and the bar names him **Oswin, Uncrowned**.
 The **Cinderfolk** are Aurel's citizens after the burning: burned, and still walking. Some lie in the ash until you
 pass.
 
+## 10h. Level 12 — The Torn Abbey (chapter 12 of the Story, the first of Act III)
+Chapter 12, after Aurel in Ash: the first of Act III, the Root and the Mere. Long ago Thrale's monks tried to cut the
+Ember out of the earth, and the earth came with it: the hill tore loose and has hung in the storm ever since. **The Torn
+Abbey** is its ruins adrift in rain and lightning over a sea of cloud, a crumbling colonnade, a long bridge with no
+rail. Past the rent, the Ember's root hangs out of the cloud where it was torn from the hill.
+
+**Mother Agathe, the Rending Hand**, was the abbess who held the knife. She did not let go. She fights with a great hook,
+flung stones, and blows that rend the floor into lines of shockwaves. At half her strength the storm comes at her back,
+the bar names her **Agathe, the Storm at Her Back**, and every blow of the hook rends: a wound that holds the player's
+health down until it closes.
+
+The **Rending Brothers** are her monks, still at the work: they spring from the ruins, cut with hooked knives, fling
+stones and rend the floor.
+
 ## 11. Names (fixed)
 
 | Thing | Name |
@@ -494,6 +524,9 @@ pass.
 | The place of Level 11 | Aurel in Ash, the same city burning |
 | The boss of Level 11 | Oswin, the First Crown; past 40 %: Oswin, Uncrowned |
 | The enemy of Level 11 | the Cinderfolk |
+| The place of Level 12 | the Torn Abbey, torn loose into the storm |
+| The boss of Level 12 | Mother Agathe, the Rending Hand; past half: Agathe, the Storm at Her Back |
+| The enemy of Level 12 | the Rending Brothers |
 
 ---
 ---

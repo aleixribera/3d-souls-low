@@ -25,10 +25,11 @@ const STORY = {
     { level: 'night-gaol', title: 'THE NIGHT GAOL', line: 'Thrale too had a bell. The one who rang it was never let out.' },
     { level: 'aurel', title: 'AUREL, THE GILDED CITY', line: 'Aurel is gold, and fed, and smiling. Its regent will be glad to see you.' },
     { level: 'aurel-in-ash', title: 'AUREL IN ASH', line: 'A city that will not be kept is burned. You have seen this done before, though you do not remember it.' },
+    { level: 'torn-abbey', title: 'THE TORN ABBEY', line: 'The monks of Thrale tried once to cut the hunger out of the earth. The earth came with it.' },
   ],
   done: 'The ash has stopped falling. The road is walked.',
   goesOn: 'Thrale lies beyond the pass. Its chapters are still being built.',
-  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger', 'Old Ostrey, the Porter', 'Hale and Harrow, the Castellans', 'The Ringer of Thrale', 'The Regent Hollis', 'Oswin, the First Crown'] },
+  credits: { companion: 'Ysolde of Corvel', foes: ['The Pillager Captain', 'The Bell Warden', 'Aldric, the Gaoler King', 'Aldric, the Ember-Crowned', 'The Antlered Hunger', 'Old Ostrey, the Porter', 'Hale and Harrow, the Castellans', 'The Ringer of Thrale', 'The Regent Hollis', 'Oswin, the First Crown', 'Mother Agathe, the Rending Hand'] },
   // What a new story starts with beyond the player's own kit (PLAYER_DEF). Future currencies, upgrades and equipment
   // go here and in js/story.js (captureProgress / applyProgress); unknown fields in an old save are kept, never read.
   progress: { currency: 0, equipment: {}, upgrades: {} },

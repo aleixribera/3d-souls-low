@@ -98,3 +98,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Godfrey also shed a lion and armour the stand-in doesn't have. The kit has no crown for him yet. No one has fought him
   by hand. The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
   chapter 10 burned (charred gilt, a dry fountain) so the two chapters read as one city.
+- Chapter 12, the Torn Abbey (v7.48.0, pass 23), rough; its second step: Agathe's and the Rending Brothers' own figures
+  (stand-ins: the Toll Wisp beardless in black with a glaive, its tall hat reading more ringer than abbess; the Rogue in
+  an undyed cowl). Agathe is Maliketh's moves renamed, 4,000 HP (was 4,600); the robe shed and Black Blade reveal are
+  gone, so nothing changes on her body at half health but the storm's light. No one has fought her by hand. The
+  Brothers borrow the Beastman's def at load (`js/data/bosses/agathe.js`): the swap must keep it or inline it.

@@ -99,4 +99,11 @@ const BOSS_FX = {
   oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire', hunger: 'fire' }, attacks: {
     crownsRoar: { impact: 'roar' }, firstHunger: { element: 'fire', impact: 'roar' }, groundBreaker: { impact: 'roar' }, kingsLeap: { impact: 'shatter' },
     emberCleaver: { element: 'fire', impact: 'shatter' }, kingsHold: { impact: 'shatter', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar' } } },
+  // Mother Agathe, the Rending Hand (Level 12): stone and the torn earth in the first half; then the storm comes at her
+  // back and every blow of the hook rends (js/data/bosses/agathe.js, loaded after this file; checked at validation).
+  agathe: { element: 'earth', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {
+    stormComes: { element: 'storm', impact: 'gale', windup: 'gather' }, rendTheEarth: { impact: 'gale' }, greatRending: { impact: 'gale', windup: 'gather' },
+    theRending: { element: 'black', impact: 'void' } } },
+  // The Rending Brothers (Level 12): the hooked knife, and the floor rent open.
+  rendingBrother: { element: 'steel', aura: 0xb8c4d8, attacks: { brotherRend: { element: 'earth', impact: 'gale' } } },
 };

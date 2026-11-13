@@ -4,11 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 22 shipped `PLAN.md` stage 3 track B item 2's Aldric (both phases) in Blender and released v7.47.0. Check met:
-8,225 triangles; lab sheets `docs/scorecard/aldric-lab.jpg` and
-`aldric-lab-burning.jpg`; front-lit at fighting distance `aldric-field.jpg` (Gaoler King) and `aldric-throne.jpg`
-(Ember-Crowned, cracks lit). Next: track A, chapter 12 (the Torn Abbey); then track B,
-the Antlered Hunger.
+Pass 23 shipped `PLAN.md` stage 3 track A item 2's chapter 12, the Torn Abbey (rough), and released v7.48.0. Check
+met: Story goes on from Oswin to its loading line, plays to Mother Agathe; frames `docs/scorecard/abbey-agathe.jpg`,
+`abbey-brother.jpg` (front-lit, fighting distance), `agathe-lab.jpg`, `brother-lab.jpg`. Next: track B, the
+Antlered Hunger in Blender; then track A, chapter 13 (the Root of the Ember).
 
 ## Works
 
@@ -47,9 +46,10 @@ the Antlered Hunger.
   Crucible Knight's moves renamed), `keyless`; kit weapon `size`. In-page `Night Gaol` (7).
 - Chapter 10, Aurel (v7.44.0, rough): `js/levels/aurel.js`, the Regent Hollis (`js/data/bosses/hollis.js`, Morgott's
   moves renamed), `gildedThrall`. In-page `Aurel` (5).
-- Chapter 11, Aurel in Ash (v7.46.0, rough): `js/levels/aurel-in-ash.js` (the burned capital's layout), Oswin
-  (`js/data/bosses/oswin.js`, Godfrey's moves renamed), `cinderfolk`. In-page
-  `Aurel in Ash` (5). A material's `tint` sets hue only (`js/textures.js` normalises it): darken with another texture.
+- Chapter 11, Aurel in Ash (v7.46.0, rough): `js/levels/aurel-in-ash.js`, Oswin (`js/data/bosses/oswin.js`, Godfrey's
+  moves), `cinderfolk`. In-page `Aurel in Ash` (5). A material's `tint` sets hue only: darken with another texture.
+- Chapter 12, the Torn Abbey (v7.48.0, rough): `js/levels/torn-abbey.js`, Mother Agathe and the Rending Brothers
+  (`js/data/bosses/agathe.js`, loaded after `lands-enemies.js`: Maliketh's and the Beastman's moves). In-page `Torn Abbey` (7).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`, and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss, headless, about a minute).
@@ -63,10 +63,11 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 21's push (running at pass 22's start) and pass 22's push, and the v7.47.0 container: check in pass 23.
-Pass 22 locally: Node 22/22, in-page `Aldric`, `model`, `bosses`, `Ultra`, `valid`, `Changelog`, `Level 5`, `Story` (70/70).
+CI on pass 23's push and the v7.48.0 container: check in pass 24 (pass 22's CI and v7.47.0 container: green).
+Pass 23 locally: Node 22/22, in-page `Torn Abbey`, `Story`, `Guiding light`, `Lore`, `Changelog`, `model`, `bosses`,
+`Ultra models`, `valid`, `Aurel in Ash` (all pass).
 
-## wip/ branches
+## wip// branches
 
 None. `wip/2026-10-27-hollow-enemy` was cut in pass 1 and kept as the tag `archive/2026-10-27-hollow-enemy`.
 
@@ -83,17 +84,11 @@ In `BACKLOG.md`.
 - (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
   +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
   choose. Rise Again is once a fight, not once a run.
-- (overridable) Until chapters 12-14 exist, Story mode ends after Aurel in Ash on THE ROAD GOES ON (`STORY.goesOn`), and
+- (overridable) Until chapters 13-14 exist, Story mode ends after the Torn Abbey on THE ROAD GOES ON (`STORY.goesOn`), and
   the end-of-Act-I cards are the loop's wording (`LORE.md` section 9), as are Ysolde's lines in the church (section 6).
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
   time counts from the leader's start, the opening card and blessing picks included.
-- (overridable) Chapter 7's words are the loop's: Ysolde's six lines, the three inscriptions, Ostrey's and the thralls'
-  descriptions, and the porter's second phase, "the lantern catches" (`LORE.md` 6, 7, 10c). Ostrey has 3,000 HP and
-  the moor grants 6 flasks, as Stormhill did.
-- (overridable) Chapter 8's words are the loop's: Ysolde's lines, the three inscriptions, the castellans' split-armour
-  story and names (`LORE.md` 6, 7, 10d). Hale and Harrow have 1,700 HP each and Godrick's damage x0.85.
-- (overridable) Chapters 9 and 10's words are the loop's: Ysolde's lines, the inscriptions, the Ringer's story and
-  knell, the Keyless, the Regent's story (`LORE.md` 6, 7, 10e, 10f). The Ringer 3,000 HP, the Regent 3,400.
-- (overridable) Chapter 11's words are the loop's: Ysolde's lines (one hints she saw Corvel burn from the castle), the
-  three inscriptions (Oswin laid under the throne still crowned; "Long live the king" three times), the bar's second
-  name "Oswin, Uncrowned" (`LORE.md` 6, 7, 10g). Oswin has 3,800 HP.
+- (overridable) Chapters 7-12's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
+  bar name, enemy descriptions (`LORE.md` 6, 7, 10c-10h). HP: Ostrey 3,000 (moor: 6 flasks), Hale and Harrow 1,700
+  each (Godrick's damage x0.85), the Ringer 3,000, the Regent 3,400, Oswin 3,800, Agathe 4,000 (her stand-in keeps the
+  Toll Wisp's tall hat).

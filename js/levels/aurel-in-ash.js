@@ -12,6 +12,7 @@
 //   throne in ash: Oswin, the First Crown, risen.
 const LEVEL_11 = {
   id: 'aurel-in-ash', layout: 'rooms', alert: true, cull: true, wakeZones: true, steer: true,
+  next: 'torn-abbey',   // v7.48.0: on to the Torn Abbey (chapter 12)
   name: 'Level 11: Aurel in Ash',
   description: 'The same city, burning: what the hunger cannot keep, it burns. Halfway down the market lane the street gives way; fight out of the cellars and on through the cinders to the throne, where the first king it ever wore has risen.',
   help: 'Level 11: the burnt streets are not sound. The Cinderfolk lie in the ash until you pass. The first king\'s stomps crack the floor ahead: jump them.',

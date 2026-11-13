@@ -2178,11 +2178,11 @@
     }
   };
   const S = () => A.story;
-  test('Story: the chapters run Level 1 ... Level 11; Aurel in Ash is the last chapter built so far', withSave(() => {
+  test('Story: the chapters run Level 1 ... Level 12; the Torn Abbey is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
-    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash'];
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey'];
     order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
-    expect.ok(S().nextLevelId('aurel-in-ash') === null, 'nothing after Aurel in Ash yet');
+    expect.ok(S().nextLevelId('torn-abbey') === null, 'nothing after the Torn Abbey yet');
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
@@ -2334,12 +2334,23 @@
     expect.ok(Game.story && Game.level.id === 'aurel-in-ash' && S().data.level === 'aurel-in-ash', `chapter 11 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('aurel-in-ash')[0] === 'AUREL IN ASH' && /You have seen this done before/.test(Game.levelCard('aurel-in-ash')[1]), 'its title and line');
   }));
-  test('Story: beating Oswin, the First Crown, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+  test('Story: beating Oswin, the First Crown, goes on to chapter 12, the Torn Abbey (v7.48.0)', withSave(() => {
     S().jumpTo('aurel-in-ash'); sim.begin(); Game.loading = 0;
     expect.ok(Game.story && Game.level.id === 'aurel-in-ash', 'chapter 11 starts');
     const r = Game.enemies.find(e => e.baseDef.id === 'oswin');
     expect.ok(r && r.def.name === 'Oswin, the First Crown', 'the first king keeps the throne in ash');
     for (const z of Game.zones) if (z.id !== 'zone-oswin') { z.gate.open = true; z.beaten = true; }   // the city, won
+    for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'torn-abbey' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'torn-abbey' && S().data.level === 'torn-abbey', `chapter 12 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('torn-abbey')[0] === 'THE TORN ABBEY' && /The earth came with it/.test(Game.levelCard('torn-abbey')[1]), 'its title and line');
+  }));
+  test('Story: beating Mother Agathe, the last chapter built, closes the road on THE ROAD GOES ON', withSave(() => {
+    S().jumpTo('torn-abbey'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'torn-abbey', 'chapter 12 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'agathe');
+    expect.ok(r && r.def.name === 'Mother Agathe, the Rending Hand', 'the abbess keeps the rent');
+    for (const z of Game.zones) if (z.id !== 'zone-agathe') { z.gate.open = true; z.beaten = true; }   // the abbey, won
     for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
     sim.until(() => Game.screen === 'storyDone', 20);
     const screen = Game.screens().storyDone;

@@ -108,6 +108,15 @@ const BONFIRE_GUIDANCE = {
       [[78,0,-30.5],[78,0,-31],[160,0,-31],[177,0,-10],[177,10,12],[171,10,20],[171.5,10,20.5]],
     ] },
   ],
+  "torn-abbey": [
+    { id: "abbey-landing-to-abbey-terrace", from: "abbey-landing", to: "abbey-terrace", paths: [
+      [[3,0,-4.5],[3,0,-5],[16,0,-1],[64,0,-1],[80,8,-2],[105,8,-2]],
+      [[105,0,-2],[114,0,-9],[130,8,-9],[132,8,-2]],
+    ] },
+    { id: "abbey-terrace-to-abbey-nave", from: "abbey-terrace", to: "abbey-nave", paths: [
+      [[132,8,-2],[214,8,-2],[230,16,-2],[231,16,-3],[232,16,-6]],
+    ] },
+  ],
   "evergaol": [
     { id: "gaol-landing-to-gaol-isle", from: "gaol-landing", to: "gaol-isle", paths: [
       [[3,0,-4.5],[3,0,-5],[14,0,-1],[62,0,-1],[74,6,-1],[104,6,-1],[108,6,-3]],

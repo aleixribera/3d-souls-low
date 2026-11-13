@@ -321,5 +321,30 @@ const LORE = {
         { kind: 'corpse', pose: 'seated', x: 52, z: -5.2, yaw: 0 }, { kind: 'candle', x: 97.5, z: -41.2 },
       ],
     },
+    // Chapter 12 (v7.48.0; LORE.md 10h): the abbey torn loose into the storm.
+    'torn-abbey': {
+      npcs: [{ x: 8, z: -1.2, yaw: -Math.PI / 2, pose: 'stand', bonfire: 'abbey-landing',
+        lines: [
+          'This was an abbey. The song calls it the house that held the knife. I thought the knife was a way of speaking.',
+          'They meant to cut it out of the earth, the thing the Seven would carry away. The earth would not let it go. It came up with it.',
+          'The hill has been falling ever since, very slowly. Mind the floors. They are older than the storm.',
+          'The brothers are still here, and still have their hooks. I don\'t think they know any more what they are cutting.',
+          'The abbess held the knife. The song never says she put it down.',
+          'Go on. I\'ll keep the fire. Something is pulling at these stones from underneath.',
+        ],
+        idle: 'The storm never moves off. It has sat on this hill since the hill came loose.' }],
+      inscriptions: [
+        { id: 'l12-colonnade', x: 82.5, y: 8, z: -2, yaw: Math.PI / 2, mount: 'floor', label: 'Cut in the colonnade\'s floor',
+          lines: ['"Cut it out, and Thrale is whole."'] },
+        { id: 'l12-terrace', x: 144, y: 8, z: 3.85, yaw: Math.PI, mount: 'wall', label: 'On the terrace wall',
+          lines: ['"The root goes down further than the hill. Cut deeper."', 'Beneath it, in another hand: "Mother, it is coming up with us."'] },
+        { id: 'l12-nave', x: 240, y: 16, z: 1.5, yaw: -Math.PI / 2, mount: 'floor', label: 'In the nave landing\'s floor',
+          lines: ['"Agathe, abbess, who held the knife. She did not let go."'] },
+      ],
+      scenes: [
+        { kind: 'corpse', pose: 'seated', x: 13, z: -6.4, yaw: Math.PI }, { kind: 'corpse', pose: 'lying', x: 236, y: 16, z: 5, yaw: 1.6 },
+        { kind: 'candle', x: 233.5, y: 16, z: -7.2 },
+      ],
+    },
   },
 };

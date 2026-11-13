@@ -1,6 +1,6 @@
 'use strict';
 // Levels menu order.
-const LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10, LEVEL_11];
+const LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10, LEVEL_11, LEVEL_12];
 // Developer rooms for trying out mechanics: listed under Test Grounds, shown only when the page is opened with #dev.
 const TEST_LEVELS = [TEST_CROWD, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, TEST_TRAINING];
 // The Lands Between (v7.0): the second road's levels, in its order (the Levels menu lists them apart).
