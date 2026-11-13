@@ -21,3 +21,7 @@ took it (once taken).
 - 2026-11-13, decision (relayed by the director from the grilling): remove the Elden Ring bosses and their levels (the
   whole old second road, the Lands Between) now, not later at the swap: "let's make them leave now ... so that the
   next loops build their own levels and bosses." The director records it in VISION.md and PLAN.md.
+- 2026-11-13, follow-up to v7.52.0's bots (they now win 111 of 132 three-bot boss fights): weaken them a bit, but make
+  them smarter about the game, their position, the situation and their health, so they stay alive longer. Read as:
+  less damage and greed, so they win fewer fights on their own; better positioning and backing off to heal when hurt,
+  so they die less and live longer.
