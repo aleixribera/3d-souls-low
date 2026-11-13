@@ -112,7 +112,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | Menus, the title's online card | `js/game-menus.js` (`Game.screens()`, `titleLobby`), `multiplayer.peek()` |
 | The in-game changelog (title > Changelog) | `js/data/changelog.js` (newest first; the first entry must be `VERSION`) |
 | Lessons (the controls taught in levels) | `js/data/lessons.js` (`LESSONS`, triggers), a level's `lessons`, `js/lessons.js`, `CONFIG.lessons` |
-| Bots | `js/bot.js`, `js/bot-navigation.js`, `js/data/bots.js`, `CONFIG.bot` |
+| Bots | `js/bot.js`, `js/bot-navigation.js`, `js/data/bots.js` (profiles and their temperaments, `BOT_MOODS`), `CONFIG.bot`; measure with `node tools/bot-fights.cjs` (`docs/bot-temperament-v7.52.0.md`) |
 | Multiplayer | `server/simulation.js`, `server/index.cjs`, `js/multiplayer.js`, `js/net-protocol.js` |
 | Graphics presets | `CONFIG.VISUALS.quality` (low / high / ultra), `js/autoquality.js` |
 | Drawn effects' clock and per-owner slots | `js/effect-slots.js` (`real()`, `dt()` slowed in hit-pause, `slots(release)`), `CONFIG.VISUALS.effectClock` |

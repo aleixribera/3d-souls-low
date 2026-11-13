@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.51.1';   // shown in the corner of the menus; each release is tagged with the same name
+const VERSION = 'v7.52.0';   // shown in the corner of the menus; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -658,7 +658,8 @@ const CONFIG = {
     risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
       combo: 0.9, reserve: 12, earlyRollChance: 0.35, rollLead: [0.12, 0.22],
       lastStandAfter: 12, lastStandBonus: 0.25, lastStandReset: 0.55 },
-    defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2 },
+    // clear: m more than `margin` outside a blow's box (at every angle it can still turn: up to maxTurn rad) to let it go by.
+    defence: { walkMargin: 0.18, walkLead: 0.45, margin: 0.2, clear: 0.35, maxTurn: 1.2 },
     jumpDodge: { lead: [0.16, 0.28], clearance: 0.12, timingMargin: 0.02, followMargin: 0.2, maxSpeed: 1.2 },
     tacticTime: [2, 4],         // commit to a movement pattern before choosing another
     probeDelay: 1.2,            // after its patience runs out, close in before trying a light to start an exchange
@@ -678,5 +679,16 @@ const CONFIG = {
       tickSamples: 1500, directTime: 0.25, lookTime: 0.2 },
     respawnDelay: 4.8,
     chargeWindow: 2.2,          // a long opening it fills with a charged heavy
+    // An enemy's string (v7.52.0): the hits left in its attack and the follow-ups it may chain. A bot backs out past
+    // the string's reach (plus its mood's spacing) when that is at most `outrun` m of edge gap, and rolls away
+    // from a string with more to come rather than across it.
+    string: { outrun: 5.5 },
+    moodJitter: [0.6, 1.4],     // each fight scales its movement plans' weights by this much
+    behindMargin: 0.25,         // rad past square behind an enemy where a blow aimed at someone else is let go
+    slip: { early: [0.3, 0.45], late: [0.04, 0.1] },   // s a slipped roll goes before (or after) the strike opens: BOT_MOODS[].slip
+    fightGap: 3,                // s with no opponent before the next one starts a new fight (and a new mood)
+    // A kneeling enemy is the player's to execute: with a living player within `yield` m of it, a bot waits `aside` m
+    // off its flank and goes in only when `late` s (plus its walk) remain of the kneel. Same for a parried enemy.
+    execution: { yield: 9, late: 0.6, aside: 1.6 },
   },
 };

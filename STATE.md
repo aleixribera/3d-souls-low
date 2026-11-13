@@ -4,14 +4,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 28 took `PLAN.md` stage 3 track B item 3 (the weakest bosses row, Godrick), pass 1, and released v7.51.1: every
-leap landing followed by a ground ring leaves 0.76 s to the ring, so a roll through each fits (`CONFIG.enemy.
-ringAfterLanding`, checked at load): Godrick, Godfrey, Margit, Morgott, the Antlered Hunger and their story copies; each
-such ring (and Radagon's) now draws its own ground ring. Check met: in-page `leap landing` rolls every pair with real
-inputs (fails on the old timing); frames `docs/scorecard/godrick-flame-leap-ring.jpg`, `margit-hammer-leap-ring.jpg`;
-numbers `docs/scorecard/leap-rings.txt`. Next: Aleix's bots complaint in `.claude/feedback.md` (2026-11-13: better
-spacing, wait out a combo, no roll loops, a bit stronger); pass 28 saw both faults (bots swing into the pause between
-Godrick's two Kneel rings; roll sideways inside a Stormcaller). Then track A item 3, the ending.
+Pass 29 took Aleix's bots complaint (`.claude/feedback.md`, 2026-11-13, three entries), pass 1, and released
+v7.52.0: a temperament per bot and per fight (`BOT_MOODS`), strings waited out from past their reach, rolls away from a
+string, mistimed rolls now and then, executions and ripostes left to the player. Check met: three-bot fights 60/132 to
+111/132 wins, damage 519 to 368, roll chains 419 to 146, swings into a string 943 to 260
+(`docs/scorecard/bot-temperament.txt`); Kneel frames `docs/scorecard/bots-kneel-before-after.jpg`; the three
+execution cases in `tests/bot-temperament.cjs`. Next: `PLAN.md` track A item 3, the ending.
+Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before commit.
 
 ## Works
 
@@ -47,9 +46,10 @@ Godrick's two Kneel rings; roll sideways inside a Stormcaller). Then track A ite
   boss's moves renamed, but the King's Blade. In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
+- Bots (v7.52.0): temperaments, strings, executions: `tests/bot-temperament.cjs`; three-bot fights with behaviour
+  counts `node tools/bot-fights.cjs [boss|all] [n]` (`MOODS=1` logs each bot's choices), about five minutes for all.
 - CI: Node checks and four browser shards on every push.
-- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`, and
-  `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss, headless, about a minute).
+- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs` (`DSF=2
   CLIP=x,y,w,h`, `EVAL=<js>`), `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>` (`HIDEP=1`, `YAWOFF=0.15`,
   `WAIT=ms`), `lab-probe.cjs <id>`, `solo-multi.cjs "<filter>" "<filter>" ...` (several in-page filters, one browser).
@@ -60,10 +60,10 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 28's push and the v7.51.1 container: check in pass 29 (pass 27's v7.51.0 container published). Pass 28
-locally: Node 22/22; in-page `leap landing`, `Margit`, `Godrick`, `Morgott`, `Godfrey`, `Radagon`, `Hunger`, `Moor`,
-`Aurel`, `Ember Root`, `valid`, `Ultra`. Probes (untracked): `.scratch/by-move.cjs <boss> <n> [bots]` (damage by move),
-`hit-states.cjs` (a bot's states before each hit), `leap-gaps.cjs`, `leap-ring-frames.cjs <boss> <attack> <out> [q]`.
+CI and the v7.52.0 container: check in pass 30 (v7.51.1's container failed on its changelog; v7.52.0
+supersedes it). Pass 29 locally: `bot-behavior`, `bot-temperament`, `bot-follow`, `bot`, `bot-browser`,
+`group-scaling`, `calling`, `boss-attention`. Probes (untracked): `.scratch/bot-wait-frames.cjs` (a companion
+against one boss move, frames), `giant-duels.cjs` (solo times by mood), `by-move.cjs <boss> <n> [bots]`.
 
 ## wip// branches
 
@@ -75,6 +75,8 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
+- (overridable) Bot strength: three bots now win 111/132 boss fights (60 before), more than "a bit"; raising
+  the slips moved it little. Knobs: `slip` and `greed` in `BOT_MOODS`. The four temperaments are the loop's.
 - (overridable) The co-op boss rush's working name, The Calling (`PLAN.md` stage 2).
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
   (`CONFIG.group`). Tuned on bots, who fight worse than people; at +60% six of the eight Lands bosses beat three bots

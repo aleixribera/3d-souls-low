@@ -1,0 +1,80 @@
+Bots v7.52.0: three bots against each boss, 6 seeded fights each (node tools/bot-fights.cjs all 6).
+dmg = damage the party took per fight; chains = 3+ rolls each within 1.2 s; swings into a string = a swing started while the boss had more blows coming; hit mid-swing = hits taken while swinging.
+
+BEFORE (v7.51.1)
+giant            wins 6/6  time 42s  dmg 34  fell 0.0  rolls/bot-min 5.2  chains 3  swings into a string 1  hit mid-swing 1
+pillagerCaptain  wins 6/6  time 47s  dmg 181  fell 0.0  rolls/bot-min 7.7  chains 2  swings into a string 14  hit mid-swing 15
+bellWarden       wins 6/6  time 81s  dmg 259  fell 0.7  rolls/bot-min 8.0  chains 11  swings into a string 7  hit mid-swing 26
+varn             wins 3/6  time 124s  dmg 540  fell 1.5  rolls/bot-min 8.1  chains 2  swings into a string 30  hit mid-swing 57
+antlered         wins 5/6  time 123s  dmg 488  fell 1.2  rolls/bot-min 16.3  chains 39  swings into a string 17  hit mid-swing 53
+ostrey           wins 3/6  time 110s  dmg 478  fell 2.0  rolls/bot-min 12.9  chains 1  swings into a string 49  hit mid-swing 53
+hale             wins 6/6  time 61s  dmg 268  fell 0.0  rolls/bot-min 13.3  chains 19  swings into a string 44  hit mid-swing 30
+harrow           wins 6/6  time 61s  dmg 268  fell 0.0  rolls/bot-min 13.3  chains 19  swings into a string 44  hit mid-swing 30
+ringer           wins 1/6  time 115s  dmg 612  fell 2.5  rolls/bot-min 12.4  chains 14  swings into a string 38  hit mid-swing 61
+hollis           wins 0/6  time 88s  dmg 488  fell 3.0  rolls/bot-min 15.7  chains 36  swings into a string 50  hit mid-swing 39
+oswin            wins 1/6  time 172s  dmg 717  fell 2.8  rolls/bot-min 14.6  chains 27  swings into a string 42  hit mid-swing 66
+agathe           wins 2/6  time 127s  dmg 586  fell 2.0  rolls/bot-min 11.7  chains 16  swings into a string 32  hit mid-swing 42
+kindlingTree     wins 2/6  time 147s  dmg 649  fell 2.5  rolls/bot-min 13.8  chains 18  swings into a string 85  hit mid-swing 45
+kingsBlade       wins 3/6  time 156s  dmg 617  fell 1.7  rolls/bot-min 10.1  chains 11  swings into a string 34  hit mid-swing 101
+margit           wins 3/6  time 124s  dmg 416  fell 1.5  rolls/bot-min 12.2  chains 5  swings into a string 55  hit mid-swing 44
+godrick          wins 0/6  time 147s  dmg 765  fell 3.0  rolls/bot-min 16.3  chains 47  swings into a string 73  hit mid-swing 64
+crucibleKnight   wins 5/6  time 111s  dmg 510  fell 1.2  rolls/bot-min 12.5  chains 18  swings into a string 30  hit mid-swing 60
+morgott          wins 0/6  time 129s  dmg 615  fell 3.0  rolls/bot-min 15.1  chains 40  swings into a string 75  hit mid-swing 48
+godfrey          wins 1/6  time 164s  dmg 785  fell 2.7  rolls/bot-min 14.0  chains 29  swings into a string 46  hit mid-swing 68
+maliketh         wins 1/6  time 146s  dmg 717  fell 2.7  rolls/bot-min 11.6  chains 13  swings into a string 50  hit mid-swing 52
+radagon          wins 0/6  time 114s  dmg 670  fell 3.0  rolls/bot-min 13.7  chains 24  swings into a string 82  hit mid-swing 50
+malenia          wins 0/6  time 166s  dmg 765  fell 3.0  rolls/bot-min 15.7  chains 25  swings into a string 45  hit mid-swing 70
+TOTAL            wins 60/132  time 116s  dmg 519  fell 1.81  rolls/bot-min 12.8  chains 419  swings into a string 943  hit mid-swing 1075
+
+AFTER (v7.52.0)
+giant            wins 6/6  time 48s  dmg 52  fell 0.0  rolls/bot-min 1.9  chains 0  swings into a string 1  hit mid-swing 1
+pillagerCaptain  wins 6/6  time 52s  dmg 31  fell 0.0  rolls/bot-min 2.9  chains 0  swings into a string 0  hit mid-swing 3
+bellWarden       wins 6/6  time 78s  dmg 71  fell 0.0  rolls/bot-min 3.0  chains 0  swings into a string 0  hit mid-swing 7
+varn             wins 6/6  time 153s  dmg 535  fell 0.2  rolls/bot-min 6.0  chains 0  swings into a string 4  hit mid-swing 40
+antlered         wins 6/6  time 132s  dmg 326  fell 0.2  rolls/bot-min 7.3  chains 1  swings into a string 2  hit mid-swing 28
+ostrey           wins 6/6  time 116s  dmg 213  fell 0.0  rolls/bot-min 7.3  chains 0  swings into a string 1  hit mid-swing 12
+hale             wins 6/6  time 65s  dmg 115  fell 0.0  rolls/bot-min 10.8  chains 13  swings into a string 8  hit mid-swing 7
+harrow           wins 6/6  time 65s  dmg 115  fell 0.0  rolls/bot-min 10.8  chains 13  swings into a string 8  hit mid-swing 7
+ringer           wins 6/6  time 108s  dmg 111  fell 0.0  rolls/bot-min 6.0  chains 0  swings into a string 1  hit mid-swing 11
+hollis           wins 5/6  time 178s  dmg 476  fell 1.2  rolls/bot-min 7.8  chains 1  swings into a string 7  hit mid-swing 19
+oswin            wins 6/6  time 147s  dmg 385  fell 0.5  rolls/bot-min 9.3  chains 6  swings into a string 6  hit mid-swing 32
+agathe           wins 6/6  time 155s  dmg 512  fell 0.8  rolls/bot-min 9.3  chains 11  swings into a string 17  hit mid-swing 17
+kindlingTree     wins 4/6  time 215s  dmg 509  fell 1.3  rolls/bot-min 9.5  chains 3  swings into a string 60  hit mid-swing 19
+kingsBlade       wins 5/6  time 273s  dmg 500  fell 1.0  rolls/bot-min 5.1  chains 0  swings into a string 2  hit mid-swing 78
+margit           wins 6/6  time 121s  dmg 248  fell 0.2  rolls/bot-min 7.6  chains 2  swings into a string 4  hit mid-swing 12
+godrick          wins 4/6  time 238s  dmg 568  fell 1.5  rolls/bot-min 12.4  chains 37  swings into a string 19  hit mid-swing 30
+crucibleKnight   wins 6/6  time 115s  dmg 265  fell 0.2  rolls/bot-min 5.7  chains 0  swings into a string 2  hit mid-swing 50
+morgott          wins 4/6  time 236s  dmg 504  fell 1.8  rolls/bot-min 8.1  chains 5  swings into a string 14  hit mid-swing 16
+godfrey          wins 5/6  time 187s  dmg 572  fell 1.2  rolls/bot-min 10.4  chains 10  swings into a string 8  hit mid-swing 30
+maliketh         wins 4/6  time 216s  dmg 656  fell 1.7  rolls/bot-min 11.0  chains 12  swings into a string 14  hit mid-swing 23
+radagon          wins 2/6  time 318s  dmg 594  fell 2.0  rolls/bot-min 9.6  chains 3  swings into a string 41  hit mid-swing 21
+malenia          wins 0/6  time 378s  dmg 742  fell 3.0  rolls/bot-min 12.7  chains 29  swings into a string 41  hit mid-swing 89
+TOTAL            wins 111/132  time 163s  dmg 368  fell 0.76  rolls/bot-min 8.6  chains 146  swings into a string 260  hit mid-swing 552
+
+TEMPERAMENTS: two fights each against Godrick and Margit (MOODS=1 node tools/bot-fights.cjs godrick,margit 2)
+  godrick seed 1000 Ser Quill: bold: swings into pauses of 0.95 s or more, keeps 0.3 m past a string's reach, goes in 0.11 s after, patience 3.1 s, greed 0.54, circles right; plans pressure 0.35, flank 0.47, bait 0.13. Waited out 7 strings, swung into 4 pauses, left 0 executions to a player, took 3.
+  godrick seed 1000 Maren the Bold: bold: swings into pauses of 0.95 s or more, keeps 0.5 m past a string's reach, goes in 0.18 s after, patience 2.1 s, greed 0.78, circles right; plans pressure 0.52, flank 0.14, bait 0.08. Waited out 8 strings, swung into 1 pauses, left 0 executions to a player, took 0.
+  godrick seed 1000 Old Tobin: wary: waits out every string, keeps 1.3 m past a string's reach, goes in 0.28 s after, patience 6.9 s, greed 0.18, circles right; plans pressure 0.11, flank 0.22, bait 0.60. Waited out 38 strings, swung into 0 pauses, left 0 executions to a player, took 2.
+  godrick seed 1001 Ser Quill: patient: waits out every string, keeps 1.1 m past a string's reach, goes in 0.30 s after, patience 5.9 s, greed 0.23, circles right; plans pressure 0.35, flank 0.57, bait 0.23. Waited out 17 strings, swung into 0 pauses, left 0 executions to a player, took 3.
+  godrick seed 1001 Maren the Bold: measured: swings into pauses of 1.3 s or more, keeps 0.8 m past a string's reach, goes in 0.21 s after, patience 3.0 s, greed 0.52, circles right; plans pressure 0.71, flank 0.13, bait 0.10. Waited out 10 strings, swung into 8 pauses, left 0 executions to a player, took 4.
+  godrick seed 1001 Old Tobin: wary: waits out every string, keeps 1.1 m past a string's reach, goes in 0.29 s after, patience 6.9 s, greed 0.18, circles right; plans pressure 0.10, flank 0.25, bait 0.56. Waited out 18 strings, swung into 0 pauses, left 0 executions to a player, took 2.
+  margit seed 1000 Ser Quill: bold: swings into pauses of 0.95 s or more, keeps 0.3 m past a string's reach, goes in 0.11 s after, patience 3.1 s, greed 0.54, circles right; plans pressure 0.35, flank 0.47, bait 0.13. Waited out 12 strings, swung into 2 pauses, left 0 executions to a player, took 3.
+  margit seed 1000 Maren the Bold: bold: swings into pauses of 0.95 s or more, keeps 0.5 m past a string's reach, goes in 0.18 s after, patience 2.1 s, greed 0.78, circles left; plans pressure 0.52, flank 0.14, bait 0.08. Waited out 10 strings, swung into 3 pauses, left 0 executions to a player, took 3.
+  margit seed 1000 Old Tobin: wary: waits out every string, keeps 1.3 m past a string's reach, goes in 0.28 s after, patience 6.9 s, greed 0.18, circles left; plans pressure 0.11, flank 0.22, bait 0.60. Waited out 13 strings, swung into 0 pauses, left 0 executions to a player, took 2.
+  margit seed 1001 Ser Quill: patient: waits out every string, keeps 1.1 m past a string's reach, goes in 0.30 s after, patience 5.9 s, greed 0.23, circles right; plans pressure 0.35, flank 0.57, bait 0.23. Waited out 25 strings, swung into 0 pauses, left 0 executions to a player, took 1.
+  margit seed 1001 Maren the Bold: measured: swings into pauses of 1.3 s or more, keeps 0.8 m past a string's reach, goes in 0.21 s after, patience 3.0 s, greed 0.52, circles left; plans pressure 0.71, flank 0.13, bait 0.10. Waited out 23 strings, swung into 2 pauses, left 0 executions to a player, took 3.
+  margit seed 1001 Old Tobin: wary: waits out every string, keeps 1.1 m past a string's reach, goes in 0.29 s after, patience 6.9 s, greed 0.18, circles right; plans pressure 0.10, flank 0.25, bait 0.56. Waited out 25 strings, swung into 0 pauses, left 0 executions to a player, took 4.
+
+node tests/bot-temperament.cjs
+  Ser Quill, fight 1: bold: swings into pauses of 0.95 s or more, keeps 0.5 m past a string's reach, goes in 0.12 s after, patience 3.1 s, greed 0.54, circles right; plans pressure 0.48, flank 0.37, bait 0.22. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+  Ser Quill, fight 2: patient: waits out every string, keeps 1.0 m past a string's reach, goes in 0.37 s after, patience 5.9 s, greed 0.23, circles left; plans pressure 0.46, flank 0.50, bait 0.20. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+  Maren the Bold, fight 1: wary: waits out every string, keeps 1.5 m past a string's reach, goes in 0.33 s after, patience 3.4 s, greed 0.39, circles left; plans pressure 0.96, flank 0.16, bait 0.11. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+  Maren the Bold, fight 2: bold: swings into pauses of 0.95 s or more, keeps 0.4 m past a string's reach, goes in 0.17 s after, patience 2.1 s, greed 0.78, circles right; plans pressure 0.91, flank 0.22, bait 0.10. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+  Old Tobin, fight 1: measured: swings into pauses of 1.3 s or more, keeps 0.8 m past a string's reach, goes in 0.20 s after, patience 6.0 s, greed 0.24, circles right; plans pressure 0.21, flank 0.21, bait 0.65. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+  Old Tobin, fight 2: wary: waits out every string, keeps 1.3 m past a string's reach, goes in 0.42 s after, patience 6.9 s, greed 0.18, circles left; plans pressure 0.20, flank 0.28, bait 0.60. Waited out 0 strings, swung into 0 pauses, left 0 executions to a player, took 0.
+Temperaments: quill bold/measured/patient, maren bold/measured/wary, tobin measured/patient/wary.
+Kneel: a wary Maren waits out both rings (out to 7.0 m), then strikes in the recovery.
+Stormcaller: at most 0 rolls, outside the spin in 4/4 fights, unhurt in 4/4.
+Executions: the player executes at 1.58 s and the bot holds off; the player hangs back and the bot executes at 2.50 of 3.2 s; alone it executes at 0.00 s.
+
+Frames: docs/scorecard/bots-kneel-before-after.jpg (Finn against Godrick's Kneel!: before he swings into the pause and the second ring staggers him, 120 to 88 hp; after he backs out, rolls the ring and goes in 0.3 s into the recovery).

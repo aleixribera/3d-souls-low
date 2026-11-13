@@ -82,6 +82,26 @@ const bot = (() => {
     }
     return { attack: a, hit, index: i, eta, end, active: Math.min(hit.active, b.ring ? b.ring.time : hit.active) };
   }
+  // The follow-ups an attack may chain at once as its last hit ends (no recovery between): their moves.
+  const follows = new WeakMap();
+  function followsOf(e, a) {
+    let list = follows.get(a);
+    if (!list) follows.set(a, list = (a.followUps || []).filter(f => f.chance > 0).map(f => e.baseDef.attacks.find(m => m.id === f.attack)).filter(Boolean));
+    return list;
+  }
+  // A string: an enemy mid-attack, with the hits it has left and the follow-ups it may chain. `more`: a blow after
+  // the next one; `reach`: the farthest of them that can be outrun lands (centre to the edge of `me`, as reach()).
+  // A shot's draw is no string: its wind-up stays a window to punish.
+  function stringOf(e, me) {
+    const a = e.attack;
+    if (!a || a.projectile || (e.state !== ES.WINDUP && e.state !== ES.ACTIVE)) return null;
+    const next = followsOf(e, a), from = e.state === ES.ACTIVE && !e.hitbox ? e.hitIndex + 1 : e.hitIndex;
+    const most = B().string.outrun + me.radius + e.radius;   // a leap or blink that lands anywhere is no reason to back off
+    let r = 0;
+    for (let i = e.hitIndex; i < a.hits.length; i++) { const x = reach(e, a, a.hits[i], me); if (x <= most) r = Math.max(r, x); }
+    for (const f of next) if (!f.projectile) for (const h of f.hits) { const x = reach(e, f, h, me); if (x <= most) r = Math.max(r, x); }
+    return { more: a.hits.length - from > 1 || next.length > 0, reach: r };
+  }
   // Seconds of safety this enemy grants: until a blow from it could open on `me`. Infinity when it cannot reach.
   function opening(e, me, intent = 'attack') {
     const C = B(), d = e.def, quick = quickest(e), st = e.stateTime;
@@ -100,7 +120,10 @@ const bot = (() => {
         const blow = nextBlow(e, me);
         if (blow && edge(me, e) + me.radius + e.radius <= reach(e, blow.attack, blow.hit, me)) return Math.max(0, blow.eta);
         const left = a.hits.slice(e.hitIndex).reduce((n, h) => n + h.startup + h.active + (h.follow || 0), 0) - st;
-        return Math.max(0, left) + a.recovery + base + quick + walk;
+        // A follow-up skips the recovery: its wind-up starts as the last hit ends.
+        let chained = Infinity;
+        for (const f of followsOf(e, a)) chained = Math.min(chained, f.hits[0].startup + Math.max(0, edge(me, e) + me.radius - reach(e, f, f.hits[0], me)) / Math.max(0.5, d.speed || 2));
+        return Math.max(0, left) + Math.min(a.recovery + base + quick + walk, chained);
       }
       case ES.RECOVER: return Math.max(0, e.attack ? e.attack.recovery - st : 0) + base + quick + walk;
       case ES.PARRIED: return Math.max(0, d.parriedTime - st) + base + quick;
@@ -110,6 +133,13 @@ const bot = (() => {
       case ES.EXECUTED: case ES.PHASE: return Infinity;
       default: return Math.min(cool + quick + walk, quickestReaction(e, me, intent) + walk);
     }
+  }
+  // A blow swung at someone else, in front of the enemy while `me` stands behind it: a player watching it lets it go.
+  // Only where the enemy's target is known (the server's netTarget); rings, blinks, leaps and boxes round it count.
+  function aimedElsewhere(e, blow, me) {
+    const b = blow.hit.box || blow.attack.box;
+    if (!e.netTarget || e.netTarget === me.botId || b.ring || blow.hit.blink || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
+    return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) > Math.PI / 2 + B().behindMargin;
   }
   // On its floor (a leaping enemy is in the air above it, and still coming).
   const level = (e, me) => e.leaping || Math.abs(e.y - me.y) <= CONFIG.height.reach + 1;
@@ -139,8 +169,40 @@ const bot = (() => {
     return [low, high];
   }
 
-  function create(profile, rng = Math.random) {
+  function create(base, rng = Math.random) {
     const hands = new BotHands(), C = B(), navigator = BotNavigation.create();
+    // `profile`: this fight's traits, the base profile scaled by the mood drawn for it (newFight).
+    let profile = base, mood = null, moodId = null, spacing = 0, goIn = 0, stringSeen = -Infinity, wasString = false;
+    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0 };
+    let waitedThis = false, nearThis = false, yieldedThis = null, quietSince = 0;
+    // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
+    function holdGap(me, o) {
+      const s = stringOf(o, me);
+      return Math.max(B().spacing + spacing, s ? Math.min(B().string.outrun, s.reach + spacing - me.radius - o.radius) : 0);
+    }
+    const pick = (weights, r) => {
+      const all = Object.entries(weights).filter(([, w]) => w > 0);
+      let roll = r * all.reduce((sum, [, w]) => sum + w, 0);
+      return (all.find(([, w]) => (roll -= w) < 0) || all[all.length - 1])[0];
+    };
+    function newFight() {
+      moodId = pick(base.moods, rng()); mood = BOT_MOODS[moodId];
+      const patterns = {};
+      for (const [id, w] of Object.entries(base.patterns)) patterns[id] = w * span(C.moodJitter, rng);
+      profile = { ...base, patterns, patience: base.patience * mood.patience, greed: clamp(base.greed * mood.greed, 0, 1),
+        reset: base.reset.map(x => x * mood.reset), healBelow: C.healBelow + mood.heal };
+      spacing = span(mood.spacing, rng); goIn = span(mood.goIn, rng);
+      side = rng() < 0.75 ? base.side : -base.side;
+      tally.waited = tally.gaps = tally.yielded = tally.executed = 0;
+    }
+    function describe() {
+      if (!mood) return 'no fight yet';
+      const plans = Object.entries(profile.patterns).map(([id, w]) => `${id} ${w.toFixed(2)}`).join(', ');
+      return `${moodId}: ${mood.gap === null ? 'waits out every string' : `swings into pauses of ${mood.gap} s or more`}, ` +
+        `keeps ${spacing.toFixed(1)} m past a string's reach, goes in ${goIn.toFixed(2)} s after, patience ${profile.patience.toFixed(1)} s, ` +
+        `greed ${profile.greed.toFixed(2)}, circles ${side > 0 ? 'left' : 'right'}; plans ${plans}. ` +
+        `Waited out ${tally.waited} strings, swung into ${tally.gaps} pauses, left ${tally.yielded} executions to a player, took ${tally.executed}.`;
+    }
     const seen = new WeakMap();   // enemy -> { key, at, plan, done }: what was decided about its current blow
     let target = null, side = profile.side, sideTimer = span(C.strafeSwitch, rng), heavyHold = 0, jumpPlan = 0;
     let wasAlive = new WeakSet(), cheer = 0;
@@ -187,13 +249,30 @@ const bot = (() => {
       }
       return true;
     }
-    function outsideBox(me, e, blow, x = me.x, z = me.z) {
+    function outsideBox(me, e, blow, x = me.x, z = me.z, yaw = e.yaw, extra = 0) {
       const b = blow.hit.box || blow.attack.box;
       if (b.ring) return false;
-      const s = Math.sin(e.yaw), c = Math.cos(e.yaw), lunge = (blow.attack.lunge || 0) * blow.hit.active;
+      const s = Math.sin(yaw), c = Math.cos(yaw), lunge = (blow.attack.lunge || 0) * blow.hit.active;
       const dx = x - e.x - s * lunge, dz = z - e.z - c * lunge, forward = dx * s + dz * c, left = dz * s - dx * c;
-      const margin = me.radius + C.defence.margin;
+      const margin = me.radius + C.defence.margin + extra;
       return Math.abs(left) > b.w / 2 + margin || forward < b.fwd - b.d / 2 - margin || forward > b.fwd + b.d / 2 + margin;
+    }
+    // Already clear of a blow that cannot come to it: outside its box at every angle the enemy can still turn to before
+    // it locks, with no step, dash, leap, blink or ring to carry it further. A player standing there lets it go by
+    // instead of rolling at each hit of a long string (a breath swept past its flank, a combo aimed elsewhere).
+    function clearOf(me, e, blow) {
+      const a = blow.attack, h = blow.hit, b = h.box || a.box;
+      if (b.ring || a.sphere || (a.dash && blow.index === 0) || h.step || h.leap || h.blink || e.leaping) return false;
+      let turn = 0;
+      if (blow.index > e.hitIndex || e.state === ES.WINDUP) {
+        const st = blow.index === e.hitIndex ? e.stateTime : 0, rate = (a.tracking && a.tracking.rate) || a.track || e.def.trackRate || 0;
+        const until = a.tracking ? h.startup * a.tracking.commit : a.track ? h.startup + h.active : h.startup * CONFIG.enemy.windupTrack;
+        // A held wind-up turns longer: what is left of a hold, or the longest one not yet rolled.
+        const rolled = blow.index === e.hitIndex && e.holdLeft !== null, held = rolled ? Math.max(0, e.holdLeft) : h.hold ? h.hold.time[1] : 0;
+        turn = rate * (Math.max(0, until - st) + held);
+      } else if (a.track) turn = a.track * Math.max(0, h.active - e.stateTime);   // a tracking blow turns through its swing
+      if (turn > C.defence.maxTurn) return false;
+      return [-1, -0.5, 0, 0.5, 1].every(k => outsideBox(me, e, blow, me.x, me.z, e.yaw + k * turn, C.defence.clear));
     }
     function walkEscape(me, e, blow) {
       const a = blow.attack, h = blow.hit, box = h.box || a.box;
@@ -217,14 +296,18 @@ const bot = (() => {
           enemies.every(o => o === e || !o.alive() || !level(o, me) || gateBetween(o, me) || opening(o, me) > 2 * CONFIG.player.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin) ?
           jumpLead(e, blow, me) : null;
         const response = parry ? 'parry' : walk ? 'space' : jump && rng() < profile.jumpDodge ? 'jump' : 'roll';
-        const risky = response === 'roll' && rng() < profile.forward + (lastStand ? C.risk.lastStandBonus : 0);
+        // A forward gamble trades one blow; inside a string with more to come it would only roll into the next.
+        const risky = response === 'roll' && !moreAfter(e, blow) && rng() < profile.forward + (lastStand ? C.risk.lastStandBonus : 0);
         const early = risky && rng() < C.risk.earlyRollChance;
-        s = { key, at: hands.time + span(C.notice, rng), plan: response, done: false, walk, risky,
-          lead: response === 'parry' ? span(C.parryLead, rng) : response === 'jump' ? span(jump, rng) : span(early ? C.risk.rollLead : C.rollLead, rng) };
+        // A slip: now and then a roll goes too early (its i-frames run out first) or too late, as a person's would.
+        const slip = response === 'roll' && !risky && mood && rng() < mood.slip ? (rng() < 0.6 ? span(C.slip.early, rng) : -span(C.slip.late, rng)) : null;
+        s = { key, at: hands.time + span(C.notice, rng), plan: response, done: false, walk, risky, slip: slip !== null,
+          lead: slip !== null ? slip : response === 'parry' ? span(C.parryLead, rng) : response === 'jump' ? span(jump, rng) : span(early ? C.risk.rollLead : C.rollLead, rng) };
         seen.set(e, s);
       }
       return s;
     }
+    const moreAfter = (e, blow) => blow.index < blow.attack.hits.length - 1 || followsOf(e, blow.attack).length > 0;
     // Ordinary rolls seek an escape. Risky ones drive forward to keep pressure, accepting body contact and
     // unsafe landing positions; real collision and the remaining attack decide whether that gamble pays off.
     // Walls and ledges still veto a path. Rings/breaths keep their appropriate directional response.
@@ -232,10 +315,16 @@ const bot = (() => {
       const C = B().roll, P = CONFIG.player, to = flat(e.x - me.x, e.z - me.z), b = blow.hit.box || blow.attack.box;
       const turn = rng() < C.reverseChance ? -side : side;
       if (b.ring) return rot(to, turn * span(C.ringAngle, rng));
-      if (blow.attack.breath || blow.attack.sphere) return rot(to, Math.PI + turn * span(C.retreatAngle, rng));
+      if (blow.attack.sphere) return rot(to, Math.PI + turn * span(C.retreatAngle, rng));   // a breath is left sideways, out of its box
       const s = Math.sin(e.yaw), c = Math.cos(e.yaw), dx = me.x - e.x, dz = me.z - e.z;
       const lz = dx * s + dz * c, lx = dz * s - dx * c;
       const sideways = b.w / 2 - Math.abs(lx), ahead = b.fwd + b.d / 2 - lz;
+      // Past the first blow of a string with more to come, roll away from it (a little off straight back), so the
+      // next blow finds it further out rather than still inside: no roll-after-roll loop across a combo.
+      const fullTravel = P.rollSpeed * P.rollTime * (1 - P.rollSlow / 3);
+      const back = rot(to, Math.PI + turn * span(C.retreatAngle, rng) * 0.5);
+      const clearBack = () => clearPath(me, { x: me.x + back.x * fullTravel, z: me.z + back.z * fullTravel, y: me.y, height: me.height });
+      if (!risky && blow.index > 0 && moreAfter(e, blow) && clearBack()) return back;
       const dir = Math.abs(lx) > 0.3 ? Math.sign(lx) : side;
       const escape = sideways < ahead + 0.5 ? { x: -c * dir, z: s * dir } : { x: s, z: c };
       // Integral of the player's quadratic roll slowdown, up to the end of its invulnerable part.
@@ -250,13 +339,18 @@ const bot = (() => {
         // A safe escape cannot pass through a body; a forward gamble accepts that collision.
         const near = clamp(-(dx * v.x + dz * v.z), 0, travel);
         if (!risky && Math.hypot(dx + v.x * near, dz + v.z * near) < me.radius + e.radius + C.margin) return false;
-        const fullTravel = P.rollSpeed * P.rollTime * (1 - P.rollSlow / 3);
         if (!clearPath(me, { x: me.x + v.x * fullTravel, z: me.z + v.z * fullTravel, y: me.y, height: me.height })) return false;
         if (risky) return true;
         const ex = end.x - e.x, ez = end.z - e.z, forward = ex * s + ez * c, left = ez * s - ex * c;
         return Math.abs(left) > b.w / 2 + margin || forward < b.fwd - b.d / 2 - margin || forward > b.fwd + b.d / 2 + margin;
       });
-      if (!candidates.length) return risky ? rollDir(me, e, blow, false) : escape;
+      if (!candidates.length) {
+        if (risky) return rollDir(me, e, blow, false);
+        // Nothing clears the box this roll. With more of the string to come, roll away from it rather than across,
+        // so the next blow finds it further out, not still inside (the roll-after-roll loop).
+        if (moreAfter(e, blow) && clearBack()) return back;
+        return escape;
+      }
       let roll = rng() * candidates.reduce((sum, d) => sum + d.weight, 0);
       return (candidates.find(d => (roll -= d.weight) < 0) || candidates[candidates.length - 1]).v;
     }
@@ -289,6 +383,9 @@ const bot = (() => {
       }
       const nextTarget = chooseTarget(me, enemies);
       if (nextTarget !== target) {
+        // A new fight (the first opponent, or one after a quiet spell) draws a new temperament.
+        if (nextTarget && (!mood || quietSince >= C.fightGap)) newFight();
+        quietSince = 0; stringSeen = -Infinity; wasString = false;
         quietTime = healWait = tacticTimer = resetLeft = decisionLeft = punishLeft = 0; tacticId = null;
         resetPending = false; burstLeft = newBurst(); comboChoice = null; lastAttacking = false;
         riskLeft = 0; riskWait = span(R.interval, rng);
@@ -296,6 +393,7 @@ const bot = (() => {
       }
       target = nextTarget;
       if (!target) {
+        quietSince += dt;
         aloneTime = 0; lastStand = false;
         hands.hold('block', false); hands.hold('heavy', false);
         if (cheer > 0 && (cheer -= dt) <= 0.2 && me.isFree() && me.canAct()) { hands.press('jump'); cheer = 0; }
@@ -334,8 +432,19 @@ const bot = (() => {
       const pressing = quietTime >= profile.patience * (lastStand ? R.lastStandReset : 1);
       const tactic = BOT_TACTICS[pressing || greedy ? 'pressure' : tacticId];
       const settled = 1 - tacticTimer / tacticDuration >= tactic.commitAt;
-      const flask = me.item('flask'), needsHeal = me.hp < me.maxHp * C.healBelow && flask.count > 0;
+      const flask = me.item('flask'), needsHeal = me.hp < me.maxHp * profile.healBelow && flask.count > 0;
       healWait = needsHeal ? healWait + dt : 0;
+      // The target's string: wait it out from past its reach, then go in a human beat (goIn) after it ends.
+      const str = stringOf(e, me);
+      if (str) {
+        if (!wasString) { waitedThis = true; nearThis = false; }
+        nearThis = nearThis || gap <= C.reach + 2;
+        stringSeen = hands.time; wasString = true;
+      } else {
+        if (wasString && waitedThis && nearThis) tally.waited++;
+        wasString = false;
+      }
+      const settling = !str && hands.time - stringSeen < goIn;
 
       // ---- 1. Defence: the most urgent blow (from any enemy) that can land on it ----
       let urgent = null;
@@ -343,7 +452,7 @@ const bot = (() => {
       for (const o of enemies) {
         if (!o.alive() || !level(o, me) || gateBetween(o, me)) continue;
         const blow = nextBlow(o, me);
-        if (!blow || Math.hypot(o.x - me.x, o.z - me.z) > reach(o, blow.attack, blow.hit, me)) continue;
+        if (!blow || Math.hypot(o.x - me.x, o.z - me.z) > reach(o, blow.attack, blow.hit, me) || aimedElsewhere(o, blow, me) || clearOf(me, o, blow)) continue;
         const s = plan(o, blow, me, enemies, bolt);
         if (s.done || hands.time < s.at) continue;
         if (!urgent || blow.eta < urgent.blow.eta) urgent = { enemy: o, blow, s };
@@ -354,13 +463,13 @@ const bot = (() => {
         if (me.isFree()) { hands.hold('block', true); return { mv: idle, lock: e }; }
       }
       // Greed can trade with the target, but does not ignore another opponent or a projectile to do it.
-      const trading = urgent && greedy && urgent.enemy === e &&
+      const trading = urgent && greedy && urgent.enemy === e && !moreAfter(e, urgent.blow) && mood.gap !== null &&
         (me.state === PS.ATTACK || me.isFree() && gap <= C.reach && urgent.blow.eta >= R.minWindow) &&
         (!bolt || bolt.eta > commit(A()[me.def.moveset.ground.light]) + C.safety) &&
         enemies.every(o => o === e || !o.alive() || !level(o, me) || gateBetween(o, me) || opening(o, me) > commit(A()[me.def.moveset.ground.light]) + C.safety);
       if (urgent && !trading) {
         const { blow, s, enemy } = urgent;
-        const iFrames = P.rollIFrames - 0.02, lead = s.risky ? s.lead : Math.max(0.01, Math.min(s.lead, iFrames - (blow.end - blow.eta)));
+        const iFrames = P.rollIFrames - 0.02, lead = s.risky || s.slip ? s.lead : Math.max(0.01, Math.min(s.lead, iFrames - (blow.end - blow.eta)));
         if (s.plan === 'space') {
           if (outsideBox(me, enemy, blow)) return { mv: idle, lock: enemy };
           if (me.isFree() && blow.eta > lead) return { mv: { ...s.walk, has: true }, lock: enemy };
@@ -388,7 +497,7 @@ const bot = (() => {
           if (!blow.attack.rollOnly && me.in('free')) { hands.hold('block', true); return { mv: idle, lock: enemy }; }   // no stamina: guard
         }
         // A blow is coming soon: hold off new swings and keep it in front.
-        if (blow.eta < 0.9) return { mv: strafe(me, flat(enemy.x - me.x, enemy.z - me.z), edge(me, enemy), C.spacing + 0.6, 1), lock: enemy };
+        if (blow.eta < 0.9) return { mv: strafe(me, flat(enemy.x - me.x, enemy.z - me.z), edge(me, enemy), holdGap(me, enemy), 1), lock: enemy };
       }
 
       // ---- 2. The window: how long until any nearby enemy could hurt it ----
@@ -425,6 +534,13 @@ const bot = (() => {
 
       // ---- 4. Offence ----
       const T = C.tempo;
+      const X = C.execution;
+      let player = null, nearest = X.yield;
+      for (const a of allies) { const d = Math.hypot(a.x - e.x, a.z - e.z); if (!a.botId && a.alive() && d <= nearest) { player = a; nearest = d; } }
+      // A riposte is the player's too, until late in the opening.
+      const theirs = e.state === ES.PARRIED && me.riposte <= 0 && player && edge(player, e) <= CONFIG.execution.range + 1 &&
+        e.def.parriedTime - e.stateTime > X.late;
+      if (theirs) return { mv: strafe(me, to, gap, C.spacing + spacing, 1), lock: e };   // the player's riposte
       const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER, ES.BROKEN].includes(e.state) ||
         e.state === ES.RECOVER && e.attack && e.attack.recovery - e.stateTime >= T.punishRecovery && window >= T.punishWindow ||
         e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;
@@ -436,20 +552,40 @@ const bot = (() => {
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
       const can = cost => me.canAct() && me.stamina - cost >= reserve;
       const exec = typeof execution !== 'undefined' ? execution.target(me, enemies) : null;
-      if (exec && me.isFree()) { hands.press('light'); return { mv: idle, lock: exec }; }
-      if (e.state === ES.BROKEN) {   // kneeling: get in front of it for the execution
+      // A kneeling enemy is a player's to execute: wait off its flank, and take it only near the end of the kneel.
+      const leave = k => {
+        const near = allies.find(a => !a.botId && a.alive() && Math.hypot(a.x - k.x, a.z - k.z) <= X.yield);
+        if (!near || k.state !== ES.BROKEN) return false;
+        const d = k.def, left = (d.posture || d.guard || d.stagger).breakTime - k.stateTime;
+        const front = { x: k.x + Math.sin(k.yaw) * (k.radius + me.radius + 0.4), z: k.z + Math.cos(k.yaw) * (k.radius + me.radius + 0.4) };
+        return left > X.late + Math.hypot(front.x - me.x, front.z - me.z) / P.walkSpeed;
+      };
+      if (e.state !== ES.BROKEN) yieldedThis = null;
+      if (exec && me.isFree() && !leave(exec)) { hands.press('light'); tally.executed++; return { mv: idle, lock: exec }; }
+      if (e.state === ES.BROKEN) {
+        if (leave(e)) {
+          if (yieldedThis !== e) { yieldedThis = e; tally.yielded++; }
+          const a = e.yaw + side * Math.PI / 2, r = e.radius + me.radius + X.aside;
+          const spot = { x: e.x + Math.sin(a) * r, z: e.z + Math.cos(a) * r }, d = Math.hypot(spot.x - me.x, spot.z - me.z);
+          return { mv: d > 0.3 ? flat(spot.x - me.x, spot.z - me.z) : idle, lock: e };
+        }
+        // Kneeling and nobody else takes it: get in front of it for the execution.
         const front = { x: e.x + Math.sin(e.yaw) * (e.radius + me.radius + 0.4), z: e.z + Math.cos(e.yaw) * (e.radius + me.radius + 0.4) };
         return { mv: flat(front.x - me.x, front.z - me.z), lock: e };
       }
       if (!attackable(e)) return { mv: strafe(me, to, gap, C.spacing + 1, 1), lock: e };
       const inReach = gap <= C.reach;
+      // Mid-string, only a mood that takes pauses swings: into one this long, or a greedy trade against a string's last
+      // blow. After the string, a beat (goIn) before going in.
+      const swingGap = !!str && mood.gap !== null && (window >= mood.gap || greedy && !str.more);
+      const free = me.riposte > 0 || (str ? swingGap : !settling || [ES.PARRIED, ES.STAGGER].includes(e.state));
       // Chain the combo: in a light's follow-through, press again if the window still holds the next swing.
       if (me.state === PS.ATTACK && me.attack && me.attack.next && inReach) {
         const next = A()[me.attack.next.light], tl = attackTimeline(me.attack, me.attackT);
         const left = commit(me.attack) - me.attackT;
         if (tl.phase !== PHASE.STARTUP && comboChoice === null)
           comboChoice = rng() < (greedy ? R.combo : keyOpening ? T.punishCombo : T.comboBase + profile.aggression * T.comboAggression);
-        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && attackWindow > left + commit(next) + C.safety && can(next.cost)) {
+        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && attackWindow > left + commit(next) + C.safety && can(next.cost) && (!str || swingGap)) {
           hands.press('light'); comboChoice = false;
         }
         return { mv: idle, lock: e };
@@ -460,8 +596,9 @@ const bot = (() => {
         // A quiet neutral opponent is a possibility, not a strike already in flight. Eventually try a single light
         // to start an exchange; actual wind-ups, other enemies, bolts and stamina still veto the commitment.
         const probe = quietTime >= profile.patience + C.probeDelay && incomingWindow > commit(light) + C.safety;
-        if (inReach && (ready || probe) && (committed || probe) && (decisionLeft <= 0 || keyOpening)) {
+        if (inReach && free && (ready || probe) && (committed || probe) && (decisionLeft <= 0 || keyOpening)) {
           decisionLeft = span(profile.think, rng);
+          if (str) tally.gaps++, waitedThis = false;
           const rip = me.riposte > 0;
           if (ready && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && (rip || rng() < profile.heavy)) {
             hands.press('heavy'); hands.hold('heavy', true); heavyHold = rip ? 0.1 : heavy.charge.hold * (0.5 + 0.5 * rng());
@@ -472,13 +609,15 @@ const bot = (() => {
         }
         // Flair: from a step or two out, a long opening can take a leaping heavy.
         const jh = A().jumpHeavy;
-        if (!inReach && committed && !retreating && decisionLeft <= 0 && gap < 3.2 && window > 2.0 && can(P.jumpCost + jh.cost) && rng() < profile.jump * dt * 14) {
+        if (!inReach && !str && !settling && committed && !retreating && decisionLeft <= 0 && gap < 3.2 && window > 2.0 && can(P.jumpCost + jh.cost) && rng() < profile.jump * dt * 14) {
           hands.press('jump'); decisionLeft = span(profile.think, rng); jumpPlan = 1.2; return { mv: { ...to, has: true }, lock: e };
         }
         // Keep the chosen tempo even when a hypothetical opening is large: bait, flank, press, or regroup.
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
         const recovering = !can(light.cost) || me.stamina < me.maxStamina * T.regroupBelow;
         const motion = recovering || retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
+        if (str && !swingGap) return { mv: strafe(me, to, gap, Math.max(motion.gap, holdGap(me, e)), motion.circle), lock: e };
+        if (settling) return { mv: strafe(me, to, gap, gap, motion.circle * 0.5), lock: e };   // a beat before going in
         return { mv: strafe(me, to, gap, motion.gap, motion.circle), lock: e };
       }
       return { mv: idle, lock: e };
@@ -489,7 +628,7 @@ const bot = (() => {
       const tang = rot(to, side * Math.PI / 2), k = C.strafe * circle * (Math.abs(radial) < 0.6 ? 1 : 0.4);
       return flat(to.x * radial + tang.x * k, to.z * radial + tang.z * k);
     }
-    return { hands, think, profile, navigator, get target() { return target; }, get tactic() { return tacticId; }, get risking() { return riskLeft > 0; } };
+    return { hands, think, profile: base, navigator, describe, get mood() { return moodId; }, get tally() { return { ...tally }; }, get target() { return target; }, get tactic() { return tacticId; }, get risking() { return riskLeft > 0; } };
   }
   return { create, nextBlow, opening, reach, jumpLead, navigation: BotNavigation };
 })();

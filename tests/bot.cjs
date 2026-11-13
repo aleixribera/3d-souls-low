@@ -77,7 +77,8 @@ async function join(origin, name) {
   }
 
   // An aid must contribute and resolve its solo attempt. Winning almost every duel is no longer the balance goal.
-  const duel = (boss, profile, limit = 180) => {
+  // Four minutes: a patient or wary temperament (v7.52.0) waits out every string, and a solo duel runs long.
+  const duel = (boss, profile, limit = 240) => {
     const sim = createSimulation(); sim.addBot(profile); sim.start('arena', boss); sim.setPlayers([]);
     const { Game } = sim.inspect(), e = Game.enemies[0], initialHp = e.hp;
     for (let t = 0; t < limit * 60; t++) {
@@ -90,7 +91,7 @@ async function join(origin, name) {
   const profiles = ['quill', 'maren', 'tobin'];
   const duels = Array.from({ length: 30 }, (_, i) => duel('giant', profiles[i % 3]));
   const wins = duels.filter(d => d.win).length;
-  assert.ok(duels.every(d => !d.timeout), 'solo attempts resolve within three minutes');
+  assert.ok(duels.every(d => !d.timeout), 'solo attempts resolve within four minutes');
   assert.ok(duels.filter(d => d.damage >= d.initialHp * 0.2).length >= 24, 'bots still make a useful damage contribution');
   console.log(`Friendly bots: leader-only add/remove, cap, roster, frames, camera, strikes, damage, no wipe while standing, removal passed. Giant Skeleton duels: ${wins}/30.`);
 })().catch(e => { console.error(e); process.exit(1); });

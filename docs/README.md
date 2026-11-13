@@ -18,7 +18,7 @@ Start with `../VISION.md` (what the game is), `../PLAN.md` (what comes next), `.
 - `multiplayer-v7.7.md`, `multiplayer-v7.7.1.md`, `lobby-leader-v7.7.3.md`, `campaign-v7.7.4.md`, `public-lobby-v7.7.6.md`
 - `lobby-spectating.md`, `lobby-recovery.md`, `golden-beginnings-v7.8.3.md`, `public-lobby-polish-v7.8.8.md`
 - `boss-only-v7.8.0.md`, `double-bosses-v7.9.0.md`, `damage-leaderboard-v7.8.11.md`, `lobby-redesign-v7.10.1.md`, `persistent-lobby-v7.14.0.md`
-- `friendly-bots-v7.11.0.md`, `bot-behavior-v7.12.1.md`, `bot-rhythm-v7.13.0.md`, `bot-risk-v7.13.1.md`, `bot-following-v7.15.0.md`
+- `friendly-bots-v7.11.0.md`, `bot-behavior-v7.12.1.md`, `bot-rhythm-v7.13.0.md`, `bot-risk-v7.13.1.md`, `bot-following-v7.15.0.md`, `bot-temperament-v7.52.0.md` (temperaments, waiting out strings, executions left to the player)
 - `boss-vs-boss-v7.12.0.md`, `solo-companion-v7.16.0.md`
 
 ## Graphics and performance

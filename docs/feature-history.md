@@ -597,3 +597,9 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Tests: `tests/suite-still-mere.js` (6), the Story order, the Kindling Tree going on to chapter 14, the King's Blade closing the road, lighting count 22.
 - Frames: `docs/scorecard/mere-blade.jpg`, `mere-drowned.jpg`, `kings-blade-lab.jpg`, `drowned-lab.jpg`.
 - Not yet: the ending (`PLAN.md` track A item 3), its own Blender figures, a roll for the King's Blade, Finn (`BACKLOG.md`).
+
+## Wiser bots (v7.52.0, Aleix's 2026-11-13 complaint)
+- A temperament per bot and per fight (`BOT_MOODS`, profiles' `moods`, `newFight` in `js/bot.js`): when to swing into a pause, spacing past a string's reach, the beat before going in, patience, greed, heal threshold and how often a roll is mistimed (`slip`).
+- Strings (`stringOf`): wait out an enemy's hits left and follow-ups from past their reach, go in after; roll or walk away from a string, not across it; let a blow aimed elsewhere or out of reach go by (`aimedElsewhere`, `clearOf`); a bow's draw stays a window.
+- Executions and ripostes are the player's while one is within `CONFIG.bot.execution.yield` m; the bot takes one only late in the window.
+- Three-bot boss fights 60/132 to 111/132 wins, damage 519 to 368, roll chains 419 to 146, swings into a string 943 to 260 (`docs/scorecard/bot-temperament.txt`, `tools/bot-fights.cjs`). Design: `docs/bot-temperament-v7.52.0.md`. Tests: `tests/bot-temperament.cjs`; `bot-behavior` and `bot` fixtures adjusted (slip-free draws, a four-minute solo limit for patient bots).

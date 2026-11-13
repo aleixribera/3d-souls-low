@@ -6,11 +6,11 @@ took it (once taken).
 - 2026-11-13, complaint (bots): Make the bots smarter. Not perfect dodging every time: better spacing, and waiting for
   the enemy to finish its attacks before going in. Right now bots keep walking straight into an attack combo and end up
   in an endless rolling loop. Make them more human, believable and realistic, and a bit stronger in general: they
-  should carry a bit more, just a bit. (Answers pass 26's question on companion risk-taking.)
-- 2026-11-13, addition to the bot complaint above: vary their strategy too, not always the same pattern.
+  should carry a bit more, just a bit. (Answers pass 26's question on companion risk-taking.) Taken by pass 29 (v7.52.0).
+- 2026-11-13, addition to the bot complaint above: vary their strategy too, not always the same pattern. Taken by pass 29 (v7.52.0).
 - 2026-11-13, addition to the bot complaint above: when an enemy is open to an execution, bots leave it to the player
   and do it themselves only if the player doesn't, at the end of the window. Bots should feel like an aid to the
-  player, not a carry.
+  player, not a carry. Taken by pass 29 (v7.52.0).
 - 2026-11-13, complaint (boss health): boss health is too large for most of them; relax it, Aleix's friends are new to
   the genre. Covers the per-player group scaling (v7.35.0, +50% health per extra player) and the health the loop picked
   for the new story bosses (Ostrey, the castellans, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's

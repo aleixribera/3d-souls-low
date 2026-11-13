@@ -61,8 +61,13 @@ function validateData({ visual = true } = {}) {
     Object.hasOwn(BL.boons, b.boon), `Blessing ${b.id} needs an id, a name, a text and one of CONFIG.blessings.boons.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
-    defence: ['walkMargin', 'walkLead', 'margin'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
+    defence: ['walkMargin', 'walkLead', 'margin', 'clear', 'maxTurn'], string: ['outrun'], execution: ['yield', 'late', 'aside'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
     for (const key of fields) need(num(botConfig[group]?.[key]) && botConfig[group][key] >= 0, `Bot ${group}.${key} must be non-negative.`);
+  // Temperaments (v7.52.0): ordered positive pairs and positive gaps.
+  const pair = r => Array.isArray(r) && r.length === 2 && r.every(num) && r[0] >= 0 && r[1] >= r[0];
+  need(pair(botConfig.moodJitter) && botConfig.moodJitter[0] > 0 && pair(botConfig.slip?.early) && pair(botConfig.slip?.late) &&
+    num(botConfig.behindMargin) && botConfig.behindMargin >= 0 && num(botConfig.fightGap) && botConfig.fightGap > 0,
+    'Bot moodJitter, slip.early and slip.late need ordered pairs; behindMargin and fightGap must be non-negative and positive.');
   for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);

@@ -220,7 +220,8 @@ for (const profile of profiles) {
       }
     }
   }
-  assert.equal(responses, 2000, 'every eligible blow gets a defensive response');
+  // A slipped roll (BOT_MOODS[].slip, v7.52.0) can be late: in this frozen fixture the blow never opens, so it never fires.
+  assert.ok(responses >= 2000 * 0.97, 'every eligible blow but a rare late slip gets a defensive response: ' + responses);
   const rate = parries / responses;
   assert.ok(Math.abs(rate - b.profile.parry * 0.1) < 0.025, profile + ' parry rate is one tenth of its former preference (' + (rate * 100).toFixed(1) + '%)');
   console.log(profile + ': parried ' + parries + '/' + responses + ' eligible blows.');
@@ -294,7 +295,8 @@ for (const profile of profiles) {
     const { sim, b, p, e } = waiting('giant', profile);
     b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0 }, seeded(seed * 131)); p.ctl = b.brain.hands;
     p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
-    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0;
+    // Late in the wind-up: given the whole of it, a bot now walks out past the stomp's reach instead (v7.52.0).
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = 0.95;
     for (let i = 0; i < 2 * 60; i++) {
       sim.setPlayers([]); sim.tick(dt);
       if (p.state === 'jump') { jumps++; break; }
@@ -359,7 +361,7 @@ for (const profile of profiles) {
 function trade(greed) {
   const { sim, b, p, e } = waiting('giant', 'quill');
   b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, greed, forward: 0,
-    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => 0.1); p.ctl = b.brain.hands;
+    heavy: 0, jump: 0, parry: 0, evade: 0, jumpDodge: 0 }, () => (greed ? 0.1 : 0.2)); p.ctl = b.brain.hands;   // careful at 0.2: above every mood's slip chance (v7.52.0)
   p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0; e.cooldown = 30;
   observe(b, p, [e], 2.9);
   e.beginAttack(e.baseDef.attacks.find(a => a.id === 'sweep')); e.stateTime = e.attack.hits[0].startup - 0.4;
@@ -415,7 +417,8 @@ for (const atWall of [false, true]) {
 for (const allyKind of ['none', 'bot', 'human']) {
   const withHuman = allyKind === 'human';
   const { sim, b, p, e } = waiting('giant', 'tobin');
-  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0.3, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
+  // Its mood at a steady 0.5 draw is wary, which scales greed 0.5 to 0.3 (v7.52.0).
+  b.brain = sim.inspect().bot.create({ ...b.profile, greed: 0.5, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;
   p.z = e.z + e.radius + p.radius + 0.5; e.cooldown = 30;
   const allies = allyKind === 'none' ? [] : [{ botId: withHuman ? null : 'ally-bot', alive: () => true }];
   let riskBefore = false, riskAfter = false;
