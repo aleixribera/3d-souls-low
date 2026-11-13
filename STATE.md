@@ -4,17 +4,17 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 21 shipped `PLAN.md` stage 3 track A item 2's chapter 11, Aurel in Ash (pass 1 of it, rough), and released
-v7.46.0. Check met: Story mode goes from the Regent to chapter 11 and Oswin closes the road (in-page `Aurel in Ash`,
-`Story`); frames `docs/scorecard/ash-oswin.jpg` (front-lit at fighting distance), `ash-cinderfolk.jpg`, `oswin-lab.jpg`,
-`cinderfolk-lab.jpg`. Pass 20's CI and container were green. Next: track B, Aldric (both phases); then track A,
-chapter 12 (the Torn Abbey).
+Pass 22 shipped `PLAN.md` stage 3 track B item 2's Aldric (both phases) in Blender and released v7.47.0. Check met:
+8,225 triangles; lab sheets `docs/scorecard/aldric-lab.jpg` and
+`aldric-lab-burning.jpg`; front-lit at fighting distance `aldric-field.jpg` (Gaoler King) and `aldric-throne.jpg`
+(Ember-Crowned, cracks lit). Next: track A, chapter 12 (the Torn Abbey); then track B,
+the Antlered Hunger.
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`). Checked by
+  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
   the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -63,8 +63,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 21's push and the v7.46.0 container: check in pass 22. Pass 21 locally: Node 22/22, in-page `Aurel`,
-`Story`, `Guiding light`, `Lore`, `Changelog`, `model`, `bosses`, `Ultra models`, `valid`.
+CI on pass 21's push (running at pass 22's start) and pass 22's push, and the v7.47.0 container: check in pass 23.
+Pass 22 locally: Node 22/22, in-page `Aldric`, `model`, `bosses`, `Ultra`, `valid`, `Changelog`, `Level 5`, `Story` (70/70).
 
 ## wip/ branches
 

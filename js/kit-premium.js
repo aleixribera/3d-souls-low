@@ -74,13 +74,6 @@
     }
     return out;
   };
-  // A vambrace on the forearm (elbow frame): a tapered leather sleeve, two straps, a flared cuff at the wrist.
-  P.vambrace = o => {
-    const k = o.size ?? 1, sleeve = lathe(resample([[0.046, -0.29], [0.05, -0.27], [0.052, -0.2], [0.056, -0.1], [0.054, -0.06]], 0.02).map(([r, y]) => [r * k, y]), 10, 0.92);
-    const cuff = lathe([[0.05 * k, -0.31], [0.06 * k, -0.29], [0.052 * k, -0.26]], 10, 0.9);
-    const straps = [-0.12, -0.22].map(y => xf(KIT_GEO.Torus(0.057 * k, 0.006, 3, 10), 0, y, 0, Math.PI / 2, 0, 0, 1, 1, 0.92));
-    return [uvScale(sleeve, 1.4, 0.8), uvScale(cuff, 1.4, 0.3), ...straps.map(geo => ({ slot: o.strap ?? o.slot, geo }))];
-  };
   // A tall boot over the shin (knee frame): the shaft, its top folded down into a cuff, two buckled straps.
   P.tallBoot = o => {
     const k = o.size ?? 1, shaft = lathe(resample([[0.046, -0.45], [0.05, -0.38], [0.058, -0.24], [0.066, -0.14], [0.066, -0.1]], 0.02).map(([r, y]) => [r * k, y]), 10, 1);
@@ -470,13 +463,7 @@
     return out;
   };
 
-  // ---- warlord plate (the Pillager Captain, Aldric, the Bell Warden) -------------------------------------------------------
-  // A gorget (neck frame): three overlapping lames round the throat and the top of the chest.
-  P.gorget = o => {
-    const s = o.size ?? 1, out = [];
-    for (let i = 0; i < 3; i++) { const r = (0.1 + i * 0.026) * s, y = -i * 0.03 * s; out.push(lathe([[r + 0.02 * s, y - 0.035 * s], [r, y], [r - 0.006 * s, y + 0.02 * s]], 14, 0.9)); }
-    return out;
-  };
+  // ---- warlord plate --------------------------------------------------------------------------------------------------
   // A couter (elbow frame): a pointed cup over the joint with a fan-shaped wing on the outside.
   P.couter = o => {
     const s = o.size ?? 1, sd = o.side ?? 1, cup = KIT_GEO.Sphere(0.055 * s, 10, 6, 0, TAU, 0, Math.PI / 2);

@@ -135,62 +135,51 @@ MODEL_DEFS.bellWarden = {
 };
 
 // ---- Level 5 (v4.3) -------------------------------------------------------------------------------------------------
-// Aldric, the Gaoler King: the castle's lord. Ironbound plate gone dark bronze, a slate tabard with the castle's tarnished
-// gold stripe, a crown of shackles (a ring of chain round the helm and short iron spikes), chains across the chest, a
-// long ash-grey cloak and the great gaoler's blade. Embers along the blade light only in his second phase (js/finale.js).
+// Aldric, the Gaoler King: the castle's lord, the last king to swear the Oath of the Open Hand. Ironbound plate gone dark
+// bronze, a slate tabard with the castle's tarnished gold stripe, a crown of shackles, the Oath's lock at his breast with
+// a chain of office hung to it, a long ash-grey cloak and the great gaoler's blade. In his second phase (the Ember-Crowned)
+// the plate cracks and the Ember shows through (`burn`), and embers run along the blade (js/finale.js).
 MODEL_DEFS.varn = {
-  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8,
+  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8, rim: 0.45,
   proportions: { shoulderX: 0.38, torsoW: 0.26, torsoD: 0.18, armR: 0.078, legR: 0.095, headR: 0.135, handR: 0.07, footLen: 0.33 },
   posture: { chest: [0.06, 0, 0], neck: [0.04, 0, 0], head: [-0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
   materials: {
-    skin: { tex: 'paleSkin', tint: 0x6a6258, decay: 0.8 },
     plate: { tex: 'gaolerPlate', decay: 0.45, size: 512 },
     gilt: { tex: 'wornGilt', decay: 0.5 },
     dark: { tex: 'dentedSteel', tint: 0x3a3836, decay: 0.8 },
     iron: { tex: 'rustedIron', tint: 0x5a5048, decay: 0.8 },
     mail: { tex: 'knightMail', tint: 0x777b82, decay: 0.65 },
-    tabard: { tex: 'oathLinen', tint: 0x485d7a, decay: 0.5, double: true },
-    stripe: { tex: 'rottenCloth', tint: 0x9a7a3a, decay: 0.6, double: true },
-    cloak: { tex: 'oathLinen', tint: 0xa4a1a0, decay: 0.6, size: 512, double: true },
-    cloakHem: { tex: 'tatteredFabric', tint: 0x4a4644, decay: 0.7, size: 512, double: true },
+    tabard: { tex: 'oathLinen', tint: 0x485d7a, decay: 0.5, double: true, rim: 0.15 },
+    stripe: { tex: 'rottenCloth', tint: 0x9a7a3a, decay: 0.6, double: true, rim: 0.15 },
+    cloak: { tex: 'oathLinen', tint: 0xa4a1a0, decay: 0.6, size: 512, double: true, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
+    cloakHem: { tex: 'tatteredFabric', tint: 0x4a4644, decay: 0.7, size: 512, double: true, rim: 0.15 },
     leather: { tex: 'crackedLeather', tint: 0x4e4a44, decay: 0.75 },
     blade: { tex: 'dentedSteel', tint: 0x8a8a8e, decay: 0.55, size: 512 },
+    void: { tex: 'ashSoot', tint: 0x141210, decay: 0.4 },
+    burn: { glow: 0xff7a28, burn: true },   // the Ember in the cracks: drawn only while he burns
     eye: { glow: 0xffc070 },
   },
-  body: { torso: null, pelvis: 'mail', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
   bones: {
     loinF: { parent: 'spin', at: [0.0, -0.02, 0.19] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.19] },
     capeA: { parent: 'chest', at: [0, 0.58, -0.25] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] }, capeD: { parent: 'capeC', at: [0, -0.36, 0] },
   },
-  parts: [
-    { use: 'castCuirass', slot: 'plate', trim: 'gilt', bone: 'chest', flute: 0.018 }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'greatHelm', slot: 'plate', bone: 'head', size: 1.1 },
-    { use: 'gaolerCrown', slot: 'gilt', iron: 'iron', bone: 'head' },
-    { use: 'gorget', slot: 'dark', bone: 'neck', size: 1.25 },
-    { use: 'layeredPauldron', slot: 'plate', rivet: 'gilt', bone: 'armL', size: 1.85 },
-    { use: 'layeredPauldron', slot: 'plate', rivet: 'gilt', bone: 'armR', size: 1.45, side: -1 },
-    { use: 'oathLock', slot: 'gilt', dark: 'dark', bone: 'chest', z: 0.235 },
-    { use: 'chain', slot: 'iron', bone: 'chest', from: [-0.24, 0.54, 0.19], to: [0.22, 0.2, 0.215], links: 10, sag: 0.04 },
-    { use: 'chain', slot: 'iron', bone: 'chest', from: [0.24, 0.54, 0.19], to: [-0.22, 0.2, 0.215], links: 10, sag: 0.04 },
-    { use: 'vambrace', slot: 'plate', strap: 'gilt', bone: 'elbowL', size: 1.35 },
-    { use: 'vambrace', slot: 'plate', strap: 'gilt', bone: 'elbowR', size: 1.35 },
-    { use: 'manacle', slot: 'dark', trim: 'iron', bone: 'elbowL', r: 0.073, at: 0.26 },
-    { use: 'manacle', slot: 'dark', trim: 'iron', bone: 'elbowR', r: 0.073, at: 0.26 },
-    { use: 'gauntlet', slot: 'plate', bone: 'elbowL', at: 0.33, size: 1.25 },
-    { use: 'gauntlet', slot: 'plate', bone: 'elbowR', at: 0.33, size: 1.25 },
-    { use: 'kneeCop', slot: 'gilt', bone: 'kneeL', r: 0.08 },
-    { use: 'kneeCop', slot: 'gilt', bone: 'kneeR', r: 0.08 },
-    { use: 'greave', slot: 'plate', bone: 'kneeL', size: 1.25 },
-    { use: 'greave', slot: 'plate', bone: 'kneeR', size: 1.25 },
-    { use: 'clothStrip', slot: 'tabard', bone: 'loinF', w: 0.32, len: 0.72, seed: 3 }, { use: 'clothStrip', slot: 'stripe', bone: 'loinF', w: 0.06, len: 0.66, seed: 3, dz: 0.012 },
-    { use: 'clothStrip', slot: 'tabard', bone: 'loinB', w: 0.34, len: 0.8, seed: 6 },
-    { use: 'capeSegment', slot: 'cloak', bone: 'capeA', w0: 0.6, w1: 0.72, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'cloak', bone: 'capeB', w0: 0.72, w1: 0.86, len: 0.42, bow: 0.8 },
-    { use: 'capeSegment', slot: 'cloak', bone: 'capeC', w0: 0.86, w1: 0.96, len: 0.36, bow: 0.6 },
-    { use: 'capeSegment', slot: 'cloakHem', bone: 'capeD', w0: 0.96, w1: 1.0, len: 0.34, bow: 0.5, ragged: true, seed: 9 },
-  ],
+  // v7.47.0: built in Blender (tools/blender/aldric.py), one piece per bone: a closed great helm with a dark eye slit and
+  // breaths on the right cheek, the crown of shackles (seven gilt tines, an iron shackle under each); a cast cuirass with
+  // gilt borders, the Oath's lock (the Open Hand in gilt, a keyhole) and a chain of office; layered pauldrons, the left
+  // heavier; manacles at both wrists, a broken chain off the left; the tabard, the gilt knee cops, the long cloak torn below
+  // the knee; and the `burn` cracks over the helm, the cuirass and the pauldrons.
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  parts: Object.entries({
+    head: ['plate', 'void', 'dark', 'gilt', 'iron', 'burn'], neck: ['mail', 'dark'],
+    chest: ['plate', 'gilt', 'dark', 'gilt.1', 'void', 'iron', 'burn'], spin: ['leather', 'gilt', 'plate', 'mail'],
+    loinF: ['tabard', 'stripe'], loinB: ['tabard'], capeA: ['cloak'], capeB: ['cloak'], capeC: ['cloak'], capeD: ['cloakHem'],
+    armL: ['mail', 'plate', 'gilt', 'burn'], armR: ['mail', 'plate', 'gilt', 'burn'],
+    elbowL: ['plate', 'plate.1', 'gilt', 'iron', 'plate.2'], elbowR: ['plate', 'plate.1', 'gilt', 'iron', 'plate.2'],
+    legL: ['mail', 'plate', 'gilt'], legR: ['mail', 'plate', 'gilt'], kneeL: ['plate', 'plate.1'], kneeR: ['plate', 'plate.1'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `aldric:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'greatSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
   embers: { head: [0, 0, 1.5], edge: { size: [0.04, 0.16, 1.2], at: [0, 0, 0.85] } },
-  eyes: { color: 0xffc070, size: 0.012, spread: 0.055, at: [0, 0.14, 0.19] },
+  eyes: { color: 0xffc070, size: 0.013, spread: 0.055, at: [0, 0.146, 0.15] },   // behind the eye slit
   anim: {
     idle: { breathRate: 0.95, breath: 0.014, headDrift: 0.03, sway: 0.01, twitch: 0 }, walk: { twist: 0.08, roll: 0.03, headNod: 0.03, elbow: 0.25, drag: 0 },
     flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1, slump: 0.6 },

@@ -1646,6 +1646,7 @@ const KIT = (() => {
       if ('rest' in M.weapon && !(typeof M.weapon.rest === 'number' && M.weapon.rest >= -0.5 && M.weapon.rest <= 1.6)) bad('weapon rest must be an angle from -0.5 to 1.6.');
     }
     for (const [k, v] of Object.entries(M.materials)) if (!('glow' in v) && !(v.tex in TEXLIB.defs)) bad(`material "${k}" uses unknown texture "${v.tex}".`);
+    for (const [k, v] of Object.entries(M.materials)) if ('burn' in v && !(v.burn === true && 'glow' in v)) bad(`material "${k}": burn must be true, on a glow slot.`);
     for (const [k, v] of Object.entries(M.materials)) if ('rim' in v && !(typeof v.rim === 'number' && v.rim >= 0 && v.rim <= 2)) bad(`material "${k}": rim must be a number from 0 to 2.`);
   }
 
@@ -1699,6 +1700,7 @@ const KIT = (() => {
       if (!p.weapon) (rig.slotMeshes || (rig.slotMeshes = {}))[p.slot] = mesh;
       else (rig.weaponMeshes || (rig.weaponMeshes = [])).push(mesh);   // hidden by a phase's `conceal: ['weapon']` (js/flame.js)
       if (!p.weapon && M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
+      if (!p.weapon && M.materials[p.slot]?.burn) { mesh.visible = false; (rig.burnMeshes || (rig.burnMeshes = [])).push(mesh); }   // (v7.47.0) drawn only while the boss burns (js/finale.js)
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
     if (M.eyes) {

@@ -224,6 +224,7 @@ const finale = (() => {
       if (!isBoss(e) || !e.rig || e.asleep) continue;
       const hot = burning(e) && e.alive();
       if (e.rig.embers) e.rig.embers.visible = hot;
+      if (e.rig.burnMeshes) for (const m of e.rig.burnMeshes) m.visible = hot;   // a model's `burn` slots: the fire showing through
       if (!hot) continue;
       const G = F.glow, k = G.base + G.pulse * Math.sin(t * G.rate);
       for (const m of e.rig.bodyMats) m.emissive.r += ((G.color >> 16) & 255) / 255 * k, m.emissive.g += ((G.color >> 8) & 255) / 255 * k, m.emissive.b += (G.color & 255) / 255 * k;

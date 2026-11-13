@@ -552,3 +552,10 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Lore: `LORE.md` 6, 7, 9, 10g, 11; Ysolde's six lines, three inscriptions (`js/data/lore.js`); the guidance routes (the burned capital's, renamed). The old road's Ashen Capital is untouched.
 - Tests: `tests/suite-aurel-in-ash.js` (5), the Story order, the Regent going on to chapter 11, Oswin closing the road, lighting count 19.
 - Not yet: Oswin's and the Cinderfolk's own Blender figures, Finn (`BACKLOG.md`).
+
+## Aldric built in Blender, both phases (v7.47.0, stage 3 track B item 2)
+- Level 5's boss (the Arena, Boss vs Boss, the boss runs, The Calling) was kit primitives, 12,974 triangles. He is now `tools/blender/aldric.py`, one rigid piece per bone (`aldric:<bone>__<slot>`), 54 pieces, 8,069 triangles, 8,225 with the kit's greatsword. The model id stays `varn`.
+- The helm's slit is a real gap in the shell with a dark recess behind it and the eyes between (as the Bell Warden's window); the crown is a gilt circlet with seven tines and a shackle under each.
+- His second phase has its own look: the `burn` glow slot (cracks walked over the helm, the cuirass and the pauldrons by `crack()` / `ribbon()`) is hidden at build by a material's opt-in `burn: true` (`rig.burnMeshes`, checked in `checkModel`) and shown by `js/finale.js` while the boss burns (`burning()`: a phase with `ignite`, from `igniteAt` in its transition), hidden again at death. Drawing only.
+- Deleted kit parts with no other user: `castCuirass`, `gaolerCrown`, `oathLock`, `manacle` (`js/kit-identity.js`), `gorget`, `vambrace` (`js/kit-premium.js`).
+- Checks: the model lab with and without the cracks, a frame on the Field of Answer and one in the throne room as the Ember-Crowned; the in-page `Aldric` (a new test: the cracks dark until he catches, lit after, out at death), `model`, `bosses`, `Ultra models`, `valid` filters, the Node checks. Frames: `docs/scorecard/aldric-lab.jpg`, `aldric-lab-burning.jpg`, `aldric-field.jpg`, `aldric-throne.jpg`.

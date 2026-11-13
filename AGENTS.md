@@ -1,6 +1,6 @@
 # Project Guide
 
-Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.46.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
+Combat Arena 3D: a Souls-like action game in the browser, played by Aleix and his friends. Current version: **v7.47.0** (`VERSION` in `js/config.js`, `LOAD_STAMP` in `combat-arena-3d.html` without the leading v; both `package.json` files carry it too).
 
 Where the game is going lives in three files at the root. Read them before choosing what to build:
 
@@ -95,6 +95,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | The Pillager Captain's model | `tools/blender/captain.py` (rebuild and pack: `docs/captain-model-v7.41.0.md`), materials in `MODEL_DEFS.pillagerCaptain` |
 | The Bell Warden's model | `tools/blender/bellwarden.py` (rebuild and pack: `docs/bellwarden-model-v7.43.0.md`), materials in `MODEL_DEFS.bellWarden` |
 | The Giant Skeleton's model | `tools/blender/giant.py` (rebuild and pack: `docs/giant-model-v7.45.0.md`), materials in `MODEL_DEFS.giantSkeleton` |
+| Aldric's model (both phases) | `tools/blender/aldric.py` (rebuild and pack: `docs/aldric-model-v7.47.0.md`), materials in `MODEL_DEFS.varn` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |

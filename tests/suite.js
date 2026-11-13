@@ -2110,6 +2110,19 @@
     expect.below(D.phases.knell.cooldown[1], D.phases.throne.cooldown[1], 'the Ember-Crowned waits less between attacks');
     expect.below(D.phases.throne.cooldown[1], D.phases.field.cooldown[1], 'the throne bar presses harder than the field');
   });
+  test('Aldric: his Blender model\'s cracks show the Ember only while he burns, from the Ember-Crowned on (v7.47.0)', () => {
+    Game.startFight('varn'); sim.begin();
+    const e = Game.enemies.find(o => o.def.id === 'varn'), seams = e.rig.burnMeshes;
+    expect.ok(KIT.resolve('varn').parts.every(p => p.use === 'baked') && seams && seams.length === 1, 'a baked figure with one burn mesh');
+    Game.render(1, STEP);
+    expect.ok(!seams[0].visible, 'the Gaoler King: no cracks lit');
+    e.enterPhase(1); e.state = ES.PHASE; e.stateTime = CONFIG.finale.igniteAt - 1; Game.render(1, STEP);
+    expect.ok(e.def.ignite && !seams[0].visible, 'the transition: dark until his armour catches');
+    e.stateTime = CONFIG.finale.igniteAt + 0.1; Game.render(1, STEP);
+    expect.ok(seams[0].visible, 'the Ember-Crowned: the cracks burn');
+    e.hp = 0; e.state = ES.DEAD; Game.render(1, STEP);
+    expect.ok(!seams[0].visible, 'dead: they go out');
+  });
   test('Aldric: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
     const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
