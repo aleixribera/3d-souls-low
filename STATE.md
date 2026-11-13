@@ -4,6 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
+Paused by Aleix, 2026-11-13 (resumes at 21:05 today).
+
 - Track A (pass 39, item 2, v7.62.0): Hale and Harrow pass 1 of 2 shipped: baked figures (one gilded suit split, the
   survivor wears it whole), 15 own moves, cued pair moves (`cue`), roof merlons (`pillarHeight`).
   `docs/scorecard/castellans-*.jpg`, in-page `Saltgrave`. Pass 2 (optional) in BACKLOG; else: the Ringer.
