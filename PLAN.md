@@ -220,8 +220,7 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      stock icons), its rarity readable at a glance, its level and change shown plainly (II → III, 30% → 45%), the
      pick timer, number keys and pad buttons. The director's mockup canvas holds the layouts Aleix chooses from.
    - **Order:** the lobby first (done, v7.63.0, approved for every menu); then the blessing pick, the title,
-     Practice, options, pause and the end of run. The
-     loop goes on while it waits; his answer redirects it.
+     Practice, options, pause and the end of run. The loop goes on while it waits; his answer redirects it.
    Check: desktop and phone frames of every screen; a test that walks every screen with the gamepad alone; each
    screen checked against the `design-audit` rule book.
 4. **Co-op moments** (Aleix, 2026-11-13: the coolest Boss Rush out there). Friends new to the genre should have
