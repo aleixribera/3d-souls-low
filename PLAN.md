@@ -83,7 +83,10 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    in-world scenes) and remove every moment that takes movement or the camera away from the player: cutscenes, locked
    cameras, cards that freeze play. Check: play each chapter's story moments with the player moving and turning the
    camera throughout.
-7. **Levels that hurt the story** rebuilt or replaced, rarely. Then the stand-in figures (Ysolde, the chapters'
+7. **The old levels' flaws.** Levels 1-6 and the rough chapters are old and some have clear flaws. Any pass whose
+   item touches a level treats them as weak foundations and improves, redesigns or reworks the level as part of the
+   item; this item then takes the worst one left, one at a time. Rebuilding a level from zero is allowed when it's
+   really needed, never the default. Then the stand-in figures (Ysolde, the chapters'
    regular enemies) in Blender.
 
 ## Track B: Boss Rush

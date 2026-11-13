@@ -71,7 +71,8 @@ side by side, and each should feel like the main event.
 - A new model or boss is seen working in a preview, standing and through every attack, and judged on whether it will
   work in the game.
 - Everything is original. The Elden Ring bosses and the Lands Between leave the game (Aleix, 2026-11-13).
-- The story and its levels aren't fixed. A level that hurts the story can be cut and replaced by a new one, but only
-  when really needed.
+- The story and its levels aren't fixed. Many levels were built long ago and some have clear flaws: they are weak
+  foundations, and a pass working near one should see that and improve, redesign or rework it. Replacing a level
+  with one built from zero is allowed when it's really needed, but it isn't the norm and never the default choice.
 - Story saves may be dropped when the story changes a lot, with a line in the changelog. Otherwise they keep working.
 - Screen flashes stay under 3 a second.
