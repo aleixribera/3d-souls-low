@@ -4,16 +4,15 @@ The loop file for the `iterate` skill. Where it differs from the skill, this fil
 
 ## Vision
 
-- `VISION.md`: what the game is. Wins over everything.
-- `STORY.md`: the one story being built. `LORE.md` is the story in the game today; each shipped chapter brings it in
-  line with `STORY.md`.
-- `AGENTS.md`: the project guide, architectural rules and invariants.
+- `VISION.md`: what the game is, in Aleix's words. Wins over everything, this file included.
+- `.claude/feedback.md`: Aleix's bugs, complaints and ideas. They come first.
 - `~/.claude/CLAUDE.md`: Aleix's standing rules (real Blender models, Claude-only textures, no stock-AI UI, ship without asking).
+- Everything else agents wrote (`AGENTS.md`, `STORY.md`, `LORE.md`, docs, notes) is a draft, not a rule.
 
 ## Plan
 
-`PLAN.md` (written by the director chat): the order of work and each item's acceptance check. Cuts and finds go to
-`BACKLOG.md`.
+`PLAN.md` (written by the director chat): the order of work, two tracks run in parallel (two passes at a time, each in
+its own worktree), and each item's check. Cuts and finds go to `BACKLOG.md`.
 
 ## Notes
 

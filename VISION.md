@@ -1,44 +1,59 @@
 # Vision
 
-What Combat Arena 3D is. This file wins over every other doc, the plan and the iterate skill. Aleix owns it; the
-director chat edits it only with his OK for that change.
+What Combat Arena 3D is, in Aleix's words. This file wins over everything else in the folder. The director edits it
+only with Aleix's OK.
+
+## What binds
+
+- Aleix's words are the truth: this file, his feedback in `.claude/feedback.md`, and his answers recorded in
+  `PLAN.md`. Everything else agents wrote (`AGENTS.md`, the story file, docs, notes, earlier passes' code) is a draft,
+  not a rule.
+- Agents may change key parts of the game from the ground up (enemies, bosses, levels, systems) as long as the result
+  follows this vision.
+
+## The bar
+
+The game must feel AAA in quality and polish, run on a toaster, be fun and challenging, and give the rush that makes
+players want to keep coming back. The end result must be excellent.
 
 ## The game
 
-A Souls-like in the browser that Aleix plays with his friends. Playing together is the point: a co-op mode built for
-a group of friends, and a lobby they drop into for a short session. Alone, it is one long story told across fourteen
-chapters. Combat is weighty, readable and fair. Every character is a real Blender model in one dark-fantasy look.
+A Souls-like in the browser that Aleix plays with his friends, who are new to the genre. It has two main modes, built
+side by side, and each should feel like the main event.
 
-## Who it is for
+- **Story**, alone: one road through a dark world, chapter by chapter. It keeps growing until Aleix says it's done.
+  Progression is the player's own skill, a few more flasks along the way, and harder enemies. No levelling, no stat
+  sheet.
+- **Boss Rush**, with friends, the lobby's default. It has to play well and be fun and challenging. An endless run of
+  bosses: the first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
+  fight, their modifiers shown on screen. Between fights, blessings: common ones are small; rare ones are exciting (skills,
+  passives, things that change the fight, maybe a companion). Playing earns levels; each level gives a crate, opened
+  on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
+  Collection page shows what you own. No money and no shop: menus are not where the game is played.
+- **Practice**: one small, fast mode to fight any enemy or boss (one or several, or bosses against each other) or start
+  any level. Aleix uses it to test. In the lobby, the leader has a small Mode option for Single, Double, Triple and
+  Quad Boss runs.
 
-Aleix and his friends. It is not distributed beyond them. They like the bosses most.
+## How it should feel
 
-## What it has
-
-- **Co-op with friends:** a simple boss rush made for a group (working name The Calling): super cool boss fights,
-  balanced for groups, with every boss in the game to choose from. Every boss, now and later, adapts to the number of
-  players on its own. The public lobby, friendly bots and the Boss Only / Double / Triple / Quad boss runs stay.
-- **The story:** one road, `STORY.md` (*The Hunger That Wears a King*): Ashmere, then the Pass, then Thrale. It
-  replaces the two roads the game has today. `LORE.md` is what is in the game now and follows `STORY.md` chapter by
-  chapter as it is built.
-- **The 1v1 Arena and the Levels menu**, with the story's bosses and levels.
+- **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
+  its tell. Nothing hits without warning.
+- **Spectacular bosses.** Each boss is its own idea, with its own meaning and backstory, its own moveset, big effects
+  and high-quality animation. No two bosses share attacks.
+- **Learn from the best.** Take what works and what is acclaimed in popular, praised games (Dark Souls 1-3,
+  Bloodborne, Sekiro, Lies of P, Elden Ring and others): attack patterns, combos, boss and level design, UI. Build our
+  own version of the core idea. Ideas and mechanics only, never their names, characters, looks or story.
+- **The UI** fits the game's dark tone, is easy to use and looks great. Plain English in menus, the HUD and end screens.
+- **Smooth on integrated graphics:** at least 60 fps on the Normal preset. Two presets: Normal for everyone, Ultra for
+  Aleix's PC. Models may be as detailed as they need to be within that.
 
 ## Rules
 
-- Everything new is original: its world, names, characters, bosses and places. Other games are references for
-  mechanics and feel, never for content. The old second road's eight bosses stay selectable as they are (Aleix,
-  2026-11-13) and get no new art.
-- Real Blender models, Claude-only textures, no stock-AI UI (Aleix's standing rules in `~/.claude/CLAUDE.md`).
-- Engineering rules and invariants: `AGENTS.md`.
-- No area comes first by default. Each stage takes the weakest area for the state of the game, read from
-  `SCORECARD.md` and Aleix's feedback. The areas: combat feel, characters and art, levels and content, bosses, co-op
-  and multiplayer, menus and HUD, performance.
-- Old content goes when the new replaces it. Build new things and delete old ones freely.
-
-## Stages
-
-1. Set up the shared files and the scorecard.
-2. The co-op boss rush, first playable version.
-3. Two tracks side by side: the merged story (rough end to end, then the swap: the old second road goes, its bosses
-   stay selectable), and the bosses, Ashmere's cast in Blender and the co-op mode.
-4. Deepen by the scorecard: Ashmere's weaker levels rebuilt, the story's new cast in Blender, polish.
+- Every character is a real Blender model, with Claude-only textures and no stock-AI UI (Aleix's `~/.claude/CLAUDE.md`).
+- A new model or boss is seen working in a preview, standing and through every attack, and judged on whether it will
+  work in the game.
+- Everything is original. The Elden Ring bosses and the Lands Between leave the game (Aleix, 2026-11-13).
+- The story and its levels aren't fixed. A level that hurts the story can be cut and replaced by a new one, but only
+  when really needed.
+- Story saves may be dropped when the story changes a lot, with a line in the changelog. Otherwise they keep working.
+- Screen flashes stay under 3 a second.

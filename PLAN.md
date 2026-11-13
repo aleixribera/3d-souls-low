@@ -1,105 +1,100 @@
 # Plan
 
-The order of work for the iterate loop, under `VISION.md`. Written by the director chat; the loop reads it every pass
-and doesn't edit it (cuts and finds go to `BACKLOG.md`, questions to "Needs Aleix" in `STATE.md`). Decisions behind it:
-the director's grilling with Aleix, 2026-11-12/13.
+The order of work under `VISION.md`. Written by the director; the loop reads it every pass and doesn't edit it (cuts
+and finds go to `BACKLOG.md`, questions to "Needs Aleix" in `STATE.md`). Decisions: the director's grilling with
+Aleix, 2026-11-13.
 
-## Answers to "Needs Aleix" (STATE.md)
+## How the loop runs
 
-- The order of work: this plan.
-- How he sees progress: every pass report shows its frames (for a model, the two in the check below).
-- The Toll Wisp: the description changes to fit the model (stage 1, item 3).
+- The bar for every item is `VISION.md`'s: AAA quality and polish, runs on a toaster, fun and challenging, makes
+  players come back.
 
-## Stage 1 (now): the shared files and the scorecard
+- Aleix's feedback (`.claude/feedback.md`) comes first, always.
+- Then the clean-up below, then **two tracks in parallel**: two passes at a time, one per track, each in its own git
+  worktree, both merged into `main`. Never more than two passes; only one with a browser open at a time.
+- Items in a track go in order. An item is done when its check is seen in the running game.
+- A release whenever a pass ships something players notice: one entry in the in-game changelog, then the tag.
 
-In this order; the Iron Shover pass already running finishes first.
+## Answers to "Needs Aleix"
 
-1. **Iron Shover** in Blender (in progress).
-2. **The shared files.** `BACKLOG.md` at the root takes the backlog out of `STATE.md`; the loop file's Notes section
-   names `VISION.md`, `PLAN.md`, `STORY.md`, `STATE.md`, `BACKLOG.md`, `SCORECARD.md` and `.claude/feedback.md`;
-   `AGENTS.md`'s opening points at `VISION.md` (what the game is), `PLAN.md` (what's next) and `STORY.md` (the story
-   being built). Check: a fresh pass orients from these alone.
-3. **The Toll Wisp's description** fits its model and `LORE.md`: a bell-ringer's soul in a robe, bound to a handbell
-   (drop "a robe of blue flame"). Check: the enemy's description in the Arena list.
-4. **`SCORECARD.md`**: one row per area in `VISION.md` (combat feel, characters and art, levels and content, bosses,
-   co-op and multiplayer, menus and HUD, performance), each scored 1-5 with one sentence and a path of evidence. One
-   row per Ashmere level under "levels and content", and one per boss under "bosses" (how it plays with 1 and with 3
-   players). Check: every row has evidence a reader can open.
+- The Calling is renamed **Boss Rush** (track B, item 1).
+- Group scaling: health and posture stay as they are (his boss-health complaint is withdrawn).
+- The five blessings: overhauled (track B, item 3).
+- End-screen titles: plain English, the loop's wording.
+- Chapters 6-14's words: the loop's draft stands. Story text is a draft the loop may rewrite.
+- THE ROAD GOES ON stays until the ending ships; after that the story keeps growing until Aleix stops it.
+- What replaces the Elden Ring bosses: nothing. Boss Rush, Practice and the lobby modes use the story's own bosses:
+  Ashmere's five (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, the Antlered Hunger) and chapters 7-14's
+  (Ostrey, Hale and Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade).
 
-**No more work on the old second road's enemies and story** (Omenkin, Leyndell Knight, Golden Zealot, Ashen Warrior,
-Cleanrot Knight, Seren, its levels): they leave at the swap in stage 3. Its eight bosses stay in the game as they are
-(Aleix, 2026-11-13) but get no new art.
+## A model or boss is done when
 
-## Stage 2: the co-op boss rush, first playable version
+The agent has seen it working in a preview, standing and through every attack, and judged whether it will work in the
+game; then a frame of it in its level. Both images in the pass report. Triangle counts are a soft warning, not a rule.
 
-A simple boss rush for friends: super cool boss fights, balanced for groups. It grows out of the multiplayer boss runs
-that exist today (`gauntlet()` in `server/simulation.js`, `C.gauntlets`: Boss Only, Double, Triple, Quad). Working
-name **The Calling** (*who rings me calls the crown to answer*; overridable, logged under "Needs Aleix"). Items in
-order:
+## Clean-up (first)
 
-1. **Group scaling, for every boss automatically.** A boss's health, posture and stagger scale with the number of
-   players fighting it, from one rule in `CONFIG` that every boss gets with no per-boss work, so a boss added later
-   (Thrale's included) is balanced for groups the day it lands. A boss def may override the rule (opt-in field).
-   Check: the same boss's bar and posture at 1, 2, 3 and 4 players, measured in a test.
-2. **Bosses fight the group.** A boss spreads its attention: it switches targets by a readable rule (who hurt it most
-   lately, who is closest, who is healing) instead of locking one player for the whole fight, and its big sweeps and
-   area attacks are the ones that punish a group standing together. Check: frames and a test of a 3-player fight where
-   the boss changes target at least twice and every player gets hit.
-3. **The run.** From the lobby, the host starts a run: a length (5 bosses, about 20 minutes, by default) and a roster,
-   random or picked by hand from **every boss in the game**, the old second road's bosses included, now and after new
-   bosses arrive. Bots fill empty slots for a smaller group. The last fight of a run is two bosses at once. Players who
-   fell rise for the next fight if anyone is standing when the boss dies; the run ends when all fall. Check: two
-   browser clients and a bot finish a 3-boss run end to end.
-4. **Blessings between fights.** At a bonfire between bosses, each player picks one of three blessings (data in
-   `js/data/`, tuning in `CONFIG`): more damage, an extra flask, faster stamina, a wider parry, a revive on the spot
-   once. They last the run. Check: a picked blessing's effect measured in a test, and the pick screen at desktop and
-   phone width.
-5. **The end of a run:** time, bosses beaten, deaths and damage per player (the damage leaderboard exists since
-   v7.8.11), and "again" for the same group. Check: frames of the screen after a win and after a wipe.
+1. **The Elden Ring bosses and the Lands Between go** (pass 31, Aleix's feedback): the eight bosses, the Lands levels,
+   Seren, its enemies, messages, ending, lobby ceremony and the bosses' `.txt` references in `docs/`. Finn stays only
+   if the story road uses him. Story bosses that borrow a Lands boss's moves keep working until they are redone.
+   Check: the game loads and validates, no Lands name in any menu, every story boss in Boss Rush's pick list.
+2. **Lean files.**
+   - Delete from `docs/`: every per-release note, `feature-history.md`, `CHANGELOG.md` (the in-game changelog is the
+     one), `combat-timings-v4.1.md`, `prompt-new-bosses.txt`, the `.json` results and the empty `enemy-redesign/`.
+     Keep `homelab-multiplayer.md`, `container-updates.md`, `how-online-works.html` and the `scorecard/` frames; rewrite
+     `docs/README.md` to list what is left.
+   - Delete `SCORECARD.md` and `tools/scorecard-frames.cjs`'s mention of it (the tool may stay).
+   - `README.md`: one screen on how to play and how to host. The release notes in it go.
+   - Merge `LORE.md` and `STORY.md` into one `STORY.md`: what is in the game, then where it's going, a working draft.
+     Point code comments at it.
+   - Remove the stale worktrees `.claude/worktrees/onboarding` and `../3d-souls-low-base` (check them for uncommitted
+     work first) and the empty `3d-souls-low/.obsidian` folder.
+   - The loop file's own sections (Notes, Ship and release) drop the per-model doc, the `feature-history.md` section,
+     the AGENTS.md row and the minor release per model.
+   Check: no link to a deleted file anywhere (grep), the game loads, `npm run test:node` passes.
 
-Multiplayer invariants in `AGENTS.md` hold throughout; run `tests/multiplayer*.cjs`, `lobby-*.cjs` and
-`reconnect-browser.cjs` for every item. Release when the stage is done.
+## Track A: Story
 
-**Acceptance check for a model (hardened):**
-- a baked piece per bone, inside its triangle budget, its look follows `LORE.md` and its brief;
-- the model lab sheet (front, back, side, silhouette): no flat-white or untextured surfaces, no texture whose repeat
-  is plain to see, the weapon held in the hand at a believable angle;
-- a frame in a level with the model **front-lit, facing the camera, at fighting distance**, readable at a glance;
-- both images' paths in the pass report.
+1. **The ending** (pass 30, in progress).
+2. **Chapters 7-14's bosses redone**, in story order, one pass each (two at most): Ostrey, Hale and Harrow, the
+   Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade. Each one gets one idea of its own, its meaning
+   and backstory, its own moveset (patterns and combos may come from acclaimed souls-likes, never their names or
+   looks), big effects, high-quality animation and its own Blender figure (the re-coloured stand-in goes). Every
+   attack readable on its tell. Its level is reworked so the place and the fight belong together. Check: the model
+   check above, then the boss fought in its level.
+3. **Two graphics presets.** Low and High become one **Normal** preset that holds 60 fps on integrated graphics;
+   **Ultra** stays for Aleix's PC. Build a stand-in for integrated graphics that any pass can run on this PC in under
+   two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
+   it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
+   fight.
+4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
+   may be improved).
+5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
+   strength across chapters in a test, and a play-through frame per act.
+6. **Levels that hurt the story** rebuilt or replaced, rarely. Then the stand-in figures (Ysolde, the chapters'
+   regular enemies) in Blender.
 
-## Stage 3: two tracks side by side
+## Track B: Boss Rush
 
-Passes alternate between the two tracks: one item of track A, then one of track B, and so on. A track with nothing
-left gives its turn to the other.
-
-### Track B: bosses, the cast and the co-op mode
-
-1. **Gargoyle**, then **Empty Sentinel**, in Blender.
-2. **The Ashmere bosses** in Blender, by how often they are met: the Pillager Captain, the Bell Warden, the Giant
-   Skeleton, Aldric (both phases), then the Antlered Hunger. Boss budget 14,000.
-3. Then the weakest "bosses" or "co-op and multiplayer" row of `SCORECARD.md`, one at a time.
-
-### Track A: the merged story (`STORY.md`), rough end to end, then the swap
-
-Every chapter works roughly before any gets a second step. Rough means: playable from its loading line to its boss,
-in order, in Story mode; stand-ins allowed for models (an existing Blender figure re-coloured, never hand-built
-geometry), set dressing and dialogue polish.
-
-1. **Act I's turn:** Aldric's death no longer ends the game. The Ember leaves him (`STORY.md`, the spine); chapter 6
-   (the Church in the Pass) follows as part of the Story; Ysolde's lines and the chapter lines updated.
-2. **Chapters 7 to 14**, one per item, each built from its old level as raw material: the place re-dressed and renamed,
-   its boss (new name, look and moveset, reusing the old fight's engineering where it fits), its new enemy, Ysolde's
-   words, the chapter line, inscriptions. Finn joins at chapter 6 as the champion's former squire.
-3. **The ending** of `STORY.md` and the credits.
-4. **The swap:** the Story is one road. The old second road goes: its levels as named, Seren, its enemies, messages,
-   ending and lobby ceremony. Its eight bosses stay selectable wherever bosses are chosen (the Arena, the boss runs,
-   The Calling), next to the story's bosses. Saves
-   start fresh (`CONFIG.story.saveVersion` bumped, old saves dropped). `LORE.md` becomes `STORY.md`'s story and
-   `STORY.md` is deleted.
-
-## Stage 4: deepen by the scorecard
-
-The Calling grown (a map run with the ash closing in, if the scorecard and Aleix want it), Ashmere's weakest levels
-rebuilt, the story's new cast in Blender, combat and boss
-polish: whichever `SCORECARD.md` and Aleix's feedback rank weakest, one at a time. The `beastFur` texture and the
-unused kit parts in `BACKLOG.md` wait for this stage.
+1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
+   Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
+   co-op. **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
+   several, or two teams against each other) or any level, and be fighting in seconds. Check: frames of the title,
+   the lobby option and Practice at desktop and phone width; a test starts each mode.
+2. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
+   can come. Each fight is harder than the last, from one `CONFIG` rule;
+   modifiers appear after the first few fights (faster, harder-hitting, an extra phase, burning ground, a second boss)
+   and are shown by name under the boss's bar; every few fights two bosses come at once. The end screen shows bosses
+   beaten. Check: a test of fight 1, 5, 10 and 20's numbers; a frame of a modifier on screen.
+3. **Blessings overhaul.** Common blessings are small; rare ones are exciting and rare: skills, passives, things that
+   change the fight, perhaps a companion. Rarity is shown. Check: the odds in a test; each rare one seen working in a
+   fight.
+4. **Levels and crates.** Playing earns levels, kept per browser. Each level-up gives one crate, opened on the
+   end-of-run screen: mostly small things (a weapon look, an emote, a common blessing), rarely a special ability that
+   joins your blessing pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
+   shop, no loadout screen. Check: odds and saving in a test; frames of a crate opening and the Collection.
+5. **The UI redesign**, the whole game. References first: screens from popular games praised for their UI (Dark Souls
+   III and Elden Ring for calm, Hades for clarity in a run, Lies of P, Sekiro and others), the patterns they share,
+   and one screen (the title or the lobby) shown to Aleix under "Needs Aleix" before the rest. Plain English,
+   easy to use, the game's dark tone. Check: desktop and phone frames of every screen against the `design-audit` rule
+   book.
