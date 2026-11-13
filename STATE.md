@@ -4,17 +4,16 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 15 shipped `PLAN.md` stage 3 track A item 2's next chapter, chapter 8 Saltgrave, rough (pass 1 of it), and
-released v7.40.0. Check met: Story mode goes on from the moor to Saltgrave; the twin castellans readable on the tower
-roof (`docs/scorecard/salt-castellans.jpg`), the kneeling statues (`salt-statues.jpg`), Ysolde (`salt-gatehouse.jpg`).
-Also fixed CI's `Guiding light` failure (the moor had no bonfire routes since v7.38.0). Next: track B item 2, the
-Pillager Captain; then chapter 9.
+Pass 16 shipped `PLAN.md` stage 3 track B item 2's first boss, the Pillager Captain in Blender (pass 1 of it), and
+released v7.41.0. Check met: lab sheet `docs/scorecard/captain-lab.jpg` (no flat-white sheet after the cloak's rim fix,
+halberd in the fist, 4,719 of 14,000 triangles), the burning town's height `captain-town.jpg`. Next: track A, chapter 9;
+then track B, the Bell Warden.
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel. Checked by
+  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain. Checked by
   the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -66,9 +65,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 15's push and the v7.40.0 container: check in pass 16 (the v7.39.0 container passed; CI on pass 14's
-STATE push failed only on `Guiding light`, fixed in pass 15). Pass 15 locally: Node group (22/22), in-page
-`Saltgrave`, `Story`, `Moor`, `Lore`, `Ultra`, `Guiding light`.
+CI on pass 16's push and the v7.41.0 container: check in pass 17 (pass 15's CI was still running at pass 16's start;
+the v7.40.0 container passed). Pass 16 locally: Node group (22/22), in-page `model`, `bosses`, `Captain`, `Changelog`.
 
 ## wip/ branches
 

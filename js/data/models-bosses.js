@@ -51,7 +51,7 @@ const CAPTAIN_MATS = {
   skin: { tex: 'paleSkin', tint: 0x6a5e58, decay: 0.85 },
   mail: { tex: 'dentedSteel', tint: 0x3e3c3a, decay: 0.9, size: 512 },
   iron: { tex: 'rustedIron', tint: 0x6a5e58, decay: 0.8 },
-  plate: { tex: 'dentedSteel', tint: 0x4a4644, decay: 0.85, size: 512 },
+  plate: { tex: 'dentedSteel', tint: 0x3a3634, decay: 0.85, size: 512 },   // blackened (v7.41.0: 0x4a4644 read silver in the burning town)
   cloak: { tex: 'rottenCloth', tint: 0x4a3a36, decay: 0.8, size: 512, double: true },
   cloakHem: { tex: 'tatteredFabric', tint: 0x4a3a36, decay: 0.85, size: 512, double: true },
   scorch: { tex: 'rottenCloth', tint: 0x7a3a2c, decay: 0.85, double: true },
@@ -61,40 +61,40 @@ const CAPTAIN_MATS = {
   wood: { tex: 'barkMoss', tint: 0x5a4a44, decay: 0.3 },
   eye: { glow: 0xff7a30 },
 };
+// Pillager Captain (v7.41.0 built in Blender, tools/blender/captain.py): the Ashbound's commander in blackened plate over
+// mail, wearing no colours. A sallet with a keeled crown and a flared tail, a dark eye slit with the ember light behind
+// it and a pointed bevor; iron ram horns curling from its temples. A gorget of lames, a keeled breastplate with rivets
+// and a plackart; layered pauldrons with three lames and iron spikes along the crown; fanned couters, vambraces and
+// gauntlets; a buckled belt, three fauld lames and a mail skirt; scorched loincloths with a red rag of sash; cuisses,
+// knee cops, keeled greaves and sabatons; a dark cloak from the shoulders torn into strips below the knee. The kit
+// still builds the halberd.
 MODEL_DEFS.pillagerCaptain = {
-  extends: 'ashBase', faction: 'ashen', budget: 'boss', fit: 1.02, limbSides: 8,
+  extends: 'ashBase', faction: 'ashen', budget: 'boss', fit: 1.02, rim: 0.4,
   proportions: { shoulderX: 0.4, torsoW: 0.26, torsoD: 0.18, armR: 0.07, legR: 0.09, headR: 0.13, handR: 0.065, footLen: 0.32 },
   posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0.03], elbowL: [-0.35, 0, 0], elbowR: [-0.4, 0, 0] },
-  materials: CAPTAIN_MATS,
-  body: { torso: 'mail', pelvis: 'scorch', arms: 'mail', legs: 'mail', head: null, neck: 'mail', hands: 'plate', feet: 'plate' },
+  materials: {
+    ...CAPTAIN_MATS, void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
+    cloak: { ...CAPTAIN_MATS.cloak, rim: 0.15 }, cloakHem: { ...CAPTAIN_MATS.cloakHem, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
     loinF: { parent: 'spin', at: [0.0, -0.02, 0.17] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.17] },
     capeA: { parent: 'chest', at: [0, 0.58, -0.24] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] }, capeC: { parent: 'capeB', at: [0, -0.42, 0] }, capeD: { parent: 'capeC', at: [0, -0.34, 0] },
   },
-  // v6.0 remake: a warlord in blackened plate (js/kit-premium.js): a full breastplate and fauld over mail, a gorget, a
-  // sallet war-helm crowned with great swept ram horns, layered spiked pauldrons, couters, vambraces and articulated
-  // gauntlets, greaves with knee cops, the scorched loincloths and the torn cloak.
-  parts: [
-    { use: 'breastplate', slot: 'plate', bone: 'chest', rivet: 'iron' }, { use: 'mailSkirt', slot: 'mail', bone: 'spin' }, { use: 'belt', slot: 'leather', bone: 'spin' },
-    { use: 'gorget', slot: 'plate', bone: 'neck', size: 1.2 },
-    { use: 'warHelm', slot: 'plate', bone: 'head', size: 1.15, dark: 'leather' }, { use: 'ramHorns', slot: 'iron', bone: 'head', size: 1.35 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armL', size: 1.45 }, { use: 'spikes', slot: 'iron', bone: 'armL', size: 1.3 },
-    { use: 'roundPauldron', slot: 'plate', bone: 'armR', size: 1.45, side: -1 }, { use: 'spikes', slot: 'iron', bone: 'armR', size: 1.3, side: -1 },
-    { use: 'couter', slot: 'plate', bone: 'elbowL', size: 1.25, side: 1 }, { use: 'couter', slot: 'plate', bone: 'elbowR', size: 1.25, side: -1 },
-    { use: 'plateBands', slot: 'plate', bone: 'elbowL', from: 0.06, to: 0.27, radius: 0.066, count: 3, flare: 0.1 }, { use: 'plateBands', slot: 'plate', bone: 'elbowR', from: 0.06, to: 0.27, radius: 0.066, count: 3, flare: 0.1 },
-    { use: 'gauntlet', slot: 'plate', bone: 'elbowL', at: 0.33, size: 1.3 }, { use: 'gauntlet', slot: 'plate', bone: 'elbowR', at: 0.33, size: 1.3 },
-    { use: 'kneeCop', slot: 'plate', bone: 'kneeL', r: 0.085 }, { use: 'kneeCop', slot: 'plate', bone: 'kneeR', r: 0.085 },
-    { use: 'greave', slot: 'plate', bone: 'kneeL', size: 1.25 }, { use: 'greave', slot: 'plate', bone: 'kneeR', size: 1.25 },
-    { use: 'clothStrip', slot: 'scorch', bone: 'loinF', w: 0.3, len: 0.6, seed: 3 }, { use: 'clothStrip', slot: 'sash', bone: 'loinF', w: 0.08, len: 0.55, seed: 3, dz: 0.012 },
-    { use: 'clothStrip', slot: 'scorch', bone: 'loinB', w: 0.3, len: 0.6, seed: 7 },
-    { use: 'capeSegment', slot: 'cloak', bone: 'capeA', w0: 0.56, w1: 0.68, len: 0.42, bow: 1.0 }, { use: 'capeSegment', slot: 'cloak', bone: 'capeB', w0: 0.68, w1: 0.82, len: 0.42, bow: 0.8 },
-    { use: 'capeSegment', slot: 'cloak', bone: 'capeC', w0: 0.82, w1: 0.92, len: 0.34, bow: 0.6 },
-    { use: 'clothStrip', slot: 'cloak', bone: 'capeD', w: 0.26, len: 0.5, seed: 1, dx: -0.28 }, { use: 'clothStrip', slot: 'cloak', bone: 'capeD', w: 0.24, len: 0.7, seed: 2, dx: 0.0 },
-    { use: 'clothStrip', slot: 'cloak', bone: 'capeD', w: 0.26, len: 0.45, seed: 3, dx: 0.28 },
-  ],
+  // v7.41.0: built in Blender (tools/blender/captain.py), one piece per bone
+  parts: Object.entries({
+    head: ['plate', 'plate.1', 'void', 'iron'], neck: ['mail'],
+    chest: ['plate', 'plate.1', 'iron'], spin: ['leather', 'iron', 'plate', 'mail'],
+    loinF: ['scorch', 'sash'], loinB: ['scorch'],
+    capeA: ['cloak'], capeB: ['cloak'], capeC: ['cloak'], capeD: ['cloakHem'],
+    armL: ['mail', 'plate', 'iron'], armR: ['mail', 'plate', 'iron'],
+    elbowL: ['plate', 'plate.1', 'plate.2'], elbowR: ['plate', 'plate.1', 'plate.2'],
+    legL: ['mail', 'plate'], legR: ['mail', 'plate'],
+    kneeL: ['plate', 'plate.1'], kneeR: ['plate', 'plate.1'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `captain:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'halberd', slots: { blade: 'blade', grip: 'wood', guard: 'iron' } },
   embers: { head: [0, -0.1, 2.0], edge: { size: [0.07, 0.42, 0.06], at: [0, -0.3, 1.86] } },
-  eyes: { color: 0xff7a30, size: 0.02, spread: 0.06, at: [0, 0.125, 0.18] },
+  eyes: { color: 0xff7a30, size: 0.018, spread: 0.05, at: [0, 0.135, 0.13] },
   anim: {
     idle: { breathRate: 1.1, breath: 0.015, headDrift: 0.03, sway: 0.01, twitch: 0 }, walk: { twist: 0.1, roll: 0.04, headNod: 0.04, elbow: 0.3, drag: 0 },
     flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1, slump: 0.8 },

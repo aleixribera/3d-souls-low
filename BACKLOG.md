@@ -67,3 +67,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   hand yet (1,700 HP each, Godrick's damage x0.85).
 - A castellan fought alone (Arena, Boss vs Boss, a Calling roster without her sister) begins as the whole castellan at
   once, kneeling into `sistersHalf` (pass 15); a lone-castellan opening without the kneel may read better.
+- The Pillager Captain (v7.41.0, pass 16): the helm's face reads as a plain bucket from the front (a visor ridge or
+  breaths would break it up); the `dentedSteel` plate shows horizontal streaks; the halberd's glowing edge is the kit's
+  flat yellow card (`embers.edge`), not a lit blade (`docs/scorecard/captain-lab.jpg`). Its second step, stage 4.

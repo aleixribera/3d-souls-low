@@ -503,3 +503,10 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - A castellan fought on her own (the Arena, Boss vs Boss, a Calling roster without her sister) has no `kin` and is the whole castellan from the start; the Arena's group fight gives its line-up `kin`.
 - Fixed on the way: the moor and Saltgrave get bonfire guidance routes (`js/data/bonfire-guidance.js`, Stormhill's and Stormveil's renamed), and `js/ultra-boss.js` looks a boss's `BOSS_FX` phase element up by `def.phaseId` (it read the phase number, so Godrick's dragon phase never turned to fire).
 - Not yet: the castellans' and Salt Knights' own Blender figures (stand-ins: Empty Sentinel, Executioner and Undead Knight re-coloured), a twin's fall drawn as more than a phase change, Finn (`BACKLOG.md`).
+
+## The Pillager Captain built in Blender (v7.41.0, stage 3 track B item 2)
+- The Ashbound's commander (Level 3's boss, the Arena, Boss vs Boss, the boss runs, The Calling) was kit primitives, 14,631 triangles, over the boss budget. He is now `tools/blender/captain.py`, one rigid piece per rig bone named `captain:<bone>__<slot>[.n]`, packed into `js/baked/captain.js`, built from the Empty Sentinel's plate (`sentinel.py`). The kit's `warHelm` and `ramHorns` had no other user and are deleted; the kit still builds the halberd.
+- The ram horns are one helix each (`horns()`): a tube round a centre beside the helm, its radius shrinking and its x stepping outward so it clears the head, ribbed by alternating ring radii.
+- The cloak keeps the four swinging bones; `cloak_at(u, v)` is one surface split at the bones' heights, so the pieces meet at rest, and the last is seven strips of different lengths.
+- Rim light: edge-on the cloak read as a white sheet in the side view; the cloak slots take `rim: 0.15`, the model 0.4. The plate is darker (`0x3a3634`).
+- 39 pieces, 4,592 triangles, 4,719 with the halberd (boss budget 14,000). Checks: the model lab, a frame on the burning town's height, the in-page `model`, `bosses` and `Captain` filters, the Node checks. Notes: `docs/captain-model-v7.41.0.md`. VERSION / LOAD_STAMP: v7.41.0 / 7.41.0.

@@ -91,6 +91,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | The Shover's model | `tools/blender/shover.py` (rebuild and pack: `docs/shover-model-v7.34.0.md`), materials in `MODEL_DEFS.ironShover` |
 | The Gargoyle's model | `tools/blender/gargoyle.py` (rebuild and pack: `docs/gargoyle-model-v7.37.0.md`), materials in `MODEL_DEFS.gargoyle` |
 | The Empty Sentinel's model | `tools/blender/sentinel.py` (rebuild and pack: `docs/sentinel-model-v7.39.0.md`), materials in `MODEL_DEFS.emptySentinel` |
+| The Pillager Captain's model | `tools/blender/captain.py` (rebuild and pack: `docs/captain-model-v7.41.0.md`), materials in `MODEL_DEFS.pillagerCaptain` |
 | An enemy or Ashmere boss | `js/data/enemies.js`, models in `data/models-*.js` |
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |

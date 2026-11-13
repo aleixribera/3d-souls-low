@@ -527,35 +527,6 @@
   };
 
   // ---- warlord plate (the Pillager Captain, Aldric, the Bell Warden) -------------------------------------------------------
-  // Great swept ram horns from the helm (head frame): each a spiral tapering from the temple, ridged with growth rings.
-  P.ramHorns = o => {
-    const s = o.size ?? 1, out = [];
-    for (const sd of [-1, 1]) {
-      const V = (x, y, z) => new V3(x * s * sd, y * s, z * s);
-      const c = new THREE.CatmullRomCurve3([V(0.12, 0.17, -0.01), V(0.23, 0.27, -0.08), V(0.35, 0.25, -0.17), V(0.43, 0.12, -0.14), V(0.43, 0.0, -0.02), V(0.37, -0.03, 0.09), V(0.3, 0.02, 0.13)], false, 'centripetal');
-      out.push(roughen(sweep(c, t => 0.046 * s * (1 - 0.82 * t) * (1 + 0.1 * Math.sin(t * 70)), 40, 9), 0.002 * s, 30 + sd));
-    }
-    return out;
-  };
-  // A sallet war-helm (head frame): a rounded skull flaring into a long tail at the back, a brow plate and a visor with
-  // the eye slit between them (the eyes glow through), a ridge down the visor, breaths, a rivet ring; a bevor below.
-  P.warHelm = o => {
-    const s = o.size ?? 1, out = [], slot = (geo, sl) => out.push(sl ? { slot: sl, geo } : geo);
-    const skull = lathe(resample([[0.1, 0.27], [0.14, 0.24], [0.158, 0.18], [0.162, 0.14], [0.16, 0.12]].map(([r, y]) => [r * s, y * s]), 0.015 * s), 16);
-    deform(skull, v => { if (v.z < 0) { const t = clamp((0.16 * s - v.y) / (0.04 * s), 0, 1); v.z -= t * 0.05 * s; } });   // the tail sweeps back
-    slot(roughen(skull, 0.002 * s, 51));
-    const tail = sector([[0.2 * s, 0.03 * s], [0.18 * s, 0.08 * s], [0.162 * s, 0.125 * s]], 12, Math.PI - 1.6, 3.2, 1.1);
-    slot(tail);
-    const brow = sector([[0.165 * s, 0.135 * s], [0.168 * s, 0.155 * s]], 12, -1.5, 3.0, 1.06);
-    deform(brow, v => { if (v.z > 0) v.z += (0.05 * s - Math.min(0.05 * s, Math.abs(v.x))) * 0.25; });
-    slot(brow);
-    const visor = sector(resample([[0.13 * s, 0.0], [0.155 * s, 0.05 * s], [0.166 * s, 0.1 * s], [0.166 * s, 0.112 * s]], 0.01 * s), 12, -1.4, 2.8, 1.12);
-    deform(visor, v => { if (v.z > 0) v.z += (0.045 * s - Math.min(0.045 * s, Math.abs(v.x))) * 0.6; });   // the visor's prow
-    slot(visor);
-    for (let i = 0; i < 6; i++) slot(xf(new THREE.BoxGeometry(0.005 * s, 0.018 * s, 0.012 * s), (i % 2 ? 1 : -1) * (0.035 + Math.floor(i / 2) * 0.016) * s, 0.06 * s, 0.17 * s), o.dark);   // breaths
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; slot(xf(stud(0.006 * s), Math.sin(a) * 0.16 * s, 0.168 * s, Math.cos(a) * 0.16 * s)); }
-    return out;
-  };
   // A gorget (neck frame): three overlapping lames round the throat and the top of the chest.
   P.gorget = o => {
     const s = o.size ?? 1, out = [];
