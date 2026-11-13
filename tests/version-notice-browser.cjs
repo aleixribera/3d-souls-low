@@ -36,22 +36,22 @@ const { createServer } = require('../server/index.cjs');
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     return page;
   }
-  const last = page => page.evaluate(() => { const it = Game.menuItems[Game.menuItems.length - 1], b = document.querySelector('#menuList').lastElementChild;
+  const last = page => page.evaluate(() => { const it = Game.menuItems[Game.menuItems.length - 1], b = Game.menuButtons[Game.menuButtons.length - 1];
     return { name: it.name, size: it.size, desc: it.desc, cls: b.className, text: b.textContent }; });
-  const updateButtons = page => page.locator('#menuList .menuBtn.update').count();
+  const updateButtons = page => page.locator('#menuList .menuBtn.update, #menuFootActions .title-update').count();
   try {
     // 1. The title of an older page: the button appears last, the selection stays on what the lobby chose.
     const a = await open();
     assert.equal(await a.evaluate(() => VERSION), OLD);
     await a.waitForFunction(() => versionCheck.newer && multiplayer.lobby.state === 'online', null, { timeout: 20000 });
-    await a.waitForFunction(() => document.querySelector('#menuList .menuBtn.update'));
+    await a.waitForFunction(() => document.querySelector('#menuFootActions .title-update'));
     let it = await last(a);
     assert.equal(it.name, 'New version — Reload');
     assert.match(it.desc, /Version 7\.\d+\.\d+ is out; this page runs 0\.0\.1\./);
     assert.equal(await a.evaluate(() => Game.menuItems[Game.selected].name), 'Boss Rush', 'the title still opens on Boss Rush');
-    // Keyboard: up from the first card reaches the button; down from it goes back to the first card.
+    // Keyboard: up from the first mode wraps to the footer, whose last entry is the button; down goes back to the first mode.
     await a.evaluate(() => Game.select(0));
-    await a.keyboard.press('ArrowUp');
+    await a.keyboard.press('ArrowUp'); await a.keyboard.press('ArrowLeft');
     assert.equal(await a.evaluate(() => Game.menuItems[Game.selected].size), 'update');
     await a.screenshot({ path: `${out}/title-desktop.png` });
     await a.keyboard.press('ArrowDown');
@@ -97,8 +97,8 @@ const { createServer } = require('../server/index.cjs');
     await b.close();
     // 5. Phone width: the title's button fits on screen, no sideways scrolling.
     const phone = await open({ viewport: { width: 375, height: 667 } });
-    await phone.waitForFunction(() => document.querySelector('#menuList .menuBtn.update'), null, { timeout: 20000 });
-    const fit = await phone.evaluate(() => { const r = document.querySelector('#menuList .menuBtn.update').getBoundingClientRect();
+    await phone.waitForFunction(() => document.querySelector('#menuFootActions .title-update'), null, { timeout: 20000 });
+    const fit = await phone.evaluate(() => { const r = document.querySelector('#menuFootActions .title-update').getBoundingClientRect();
       return { scroll: document.documentElement.scrollWidth, left: r.left, right: r.right, bottom: r.bottom, height: innerHeight }; });
     assert.ok(fit.scroll <= 375 && fit.left >= 0 && fit.right <= 375 && fit.bottom <= fit.height, `phone layout fits: ${JSON.stringify(fit)}`);
     await phone.screenshot({ path: `${out}/title-phone.png` });

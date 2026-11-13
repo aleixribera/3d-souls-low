@@ -80,82 +80,62 @@
     #menuBox .hint { font-size: 11px; bottom: 28px; }
   }
 
-  /* The title: three cards (Story, Boss Rush, Practice), then one row of small entries, in the same black and gilt.
-     Boss Rush's badge says who is in the public lobby right now (a slow ember dot when people are playing). */
-  #menu.title-menu #menuBox { padding-top: 14vh; }
-  #menu.title-menu #menuBox h1 { font-size: clamp(26px, 6.4vw, 104px); }
-  #menu.title-menu .menuArrow { display: none; }
-  #menu.title-menu #menuList { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px; width: min(600px, 100%);
-    flex: none; align-content: start; max-height: none; min-height: 0; overflow: visible; margin-top: 6vh; padding: 4px; box-sizing: border-box; mask-image: none; -webkit-mask-image: none; }
-  #menu.title-menu .menuBtn { width: 100%; }
-  #menu.title-menu .menuBtn::before { display: none; }
-  #menu.title-menu .menuBtn.hero { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-    padding: 15px 22px 15px 26px; text-align: left; border: 1px solid #5a4c2e88;
-    background: linear-gradient(90deg, #15110bf0, #0b0a08c8 70%, #0b0a0890);
-    box-shadow: inset 0 1px 0 #ffffff0a, 0 6px 22px #000c; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, opacity 0.3s; }
-  .menuBtn.hero .n { order: 2; font-family: 'Trajan Pro', 'Cinzel', 'Palatino Linotype', Georgia, serif; font-size: clamp(20px, 2.4vw, 27px);
-    letter-spacing: 1.5px; color: #efe6cf; }
-  .menuBtn.hero .l { order: 3; font-size: 13px; line-height: 1.4; color: #aaa18c; letter-spacing: 0.3px; }
-  .menuBtn.hero .b { order: 4; display: flex; align-items: center; gap: 8px; margin-top: 8px; font: 12px/1.4 Arial, sans-serif;
-    letter-spacing: 0.6px; color: #cbbd98; }
-  .menuBtn.hero .b:empty { display: none; }
-  .menuBtn.hero .b::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #6f6655; }
-  .menuBtn.hero .b[data-state="live"] { color: #f2dfb0; }
-  .menuBtn.hero .b[data-state="live"]::before { background: #ff6a3d; box-shadow: 0 0 8px 1px #ff5a2ac0; animation: liveDot 2.4s ease-in-out infinite; }
-  .menuBtn.hero .b[data-state="open"]::before { width: 5px; height: 5px; background: none; border: 1px solid #c9a85e; }
-  .menuBtn.hero .b[data-state="checking"]::before { background: #c9a85e66; }
-  @keyframes liveDot { 50% { opacity: 0.45; box-shadow: 0 0 3px #ff5a2a60; } }
-  #menu.still .menuBtn.hero .b::before { animation: none; }
-  /* gilt corner ticks, full strength on the chosen card */
-  .menuBtn.hero::after { content: ''; position: absolute; inset: -1px; pointer-events: none; opacity: 0.5; transition: opacity 0.15s;
-    background: linear-gradient(#c9a85e, #c9a85e) left top / 14px 1px no-repeat, linear-gradient(#c9a85e, #c9a85e) left top / 1px 14px no-repeat,
-                linear-gradient(#c9a85e, #c9a85e) right bottom / 14px 1px no-repeat, linear-gradient(#c9a85e, #c9a85e) right bottom / 1px 14px no-repeat; }
-  #menu.title-menu .menuBtn.hero.sel, #menu.title-menu .menuBtn.hero:hover { border-color: #c9a85e;
-    background: linear-gradient(90deg, #3a2c14f0, #17120bd8 55%, #0b0a08b0); box-shadow: inset 3px 0 0 #e0bd6e, 0 0 26px #b8892a30, 0 6px 22px #000c; }
-  .menuBtn.hero.sel::after, .menuBtn.hero:hover::after { opacity: 1; }
-  .menuBtn.hero.offline { opacity: 0.6; }
-  .menuBtn.hero.offline.sel { opacity: 0.85; }
-  #menu.title-menu .menuBtn.small { padding: 10px 6px; min-height: 44px; border: 1px solid #ffffff14; background: #ffffff05; }
-  #menu.title-menu .menuBtn.small .n { font-size: 16px; }
-  #menu.title-menu .menuBtn.small.sel, #menu.title-menu .menuBtn.small:hover { border-color: #c9a85e;
-    background: radial-gradient(ellipse at 50% 50%, #b8892a55, #b8892a10 75%); }
-  #menu.title-menu #menuDesc { margin-top: 14px; max-width: min(600px, 90vw); }
-  /* A newer version on the server (js/version-check.js): an ember-lit row last on the title and in pause. */
+  /* The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the name top-left, the modes as rows under it, the
+     chosen mode's line, one primary button, and a footer with quiet entries on the left and key hints and the version on
+     the right. The selected entry (keys, pad or pointer) gets the focus outline; the chosen mode is the pressed row. */
+  #menu.title-menu { background: var(--ui-well); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  #menu.title-menu #menuBox { display: grid; grid-template-columns: minmax(0, 420px); grid-template-areas: "title" "list" "desc" "act";
+    align-content: start; justify-content: start; padding: 56px 64px 128px; }
+  #menu.title-menu #menuBox h1 { grid-area: title; padding: 0; text-align: left; white-space: normal; text-shadow: none;
+    font: 400 48px/1.1 var(--ui-display); letter-spacing: .01em; color: var(--ui-ink); text-wrap: balance; }
+  #menu.title-menu #menuBox h1::before { content: none; }
+  #menu.title-menu #menuBox .sub, #menu.title-menu .menuArrow, #menu.title-menu #menuBox .notice, #menu.title-menu #version { display: none; }
+  #menu.title-menu #menuList { grid-area: list; display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: auto;
+    max-height: none; margin-top: 40px; padding: 0; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  #menu.title-menu #menuDesc { grid-area: desc; max-width: none; min-height: 1.5em; margin-top: 14px; text-align: left;
+    font: 400 var(--ui-size-text)/1.5 var(--ui-text); letter-spacing: 0; color: var(--ui-muted); }
+  #menuAct:empty, #menuFootActions:empty { display: none; }
+  #menuFoot { display: contents; }
+  #menu.title-menu #menuAct { grid-area: act; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 18px; }
+  #menu.title-menu #menuAct [hidden] { display: none; }
+  #menu.title-menu .title-mode { min-height: 46px; }
+  #menu.title-menu .title-mode.offline:not([aria-pressed=true]) { color: var(--ui-muted); }
+  #menu.title-menu .title-primary { justify-content: space-between; }
+  #menu.title-menu .title-second { margin-left: -10px; }
+  #menu.title-menu .title-update { color: var(--ui-accent-hi); }
+  #menu.title-menu .ui-row.sel { outline: 1px solid var(--ui-accent); outline-offset: -1px; color: var(--ui-ink); }
+  #menu.title-menu .ui-row.sel:not([aria-pressed=true]) { background: #d9b56b24; }
+  #menu.title-menu .ui-primary.sel { outline: 2px solid var(--ui-ink); outline-offset: 3px; }
+  #menu.title-menu .ui-text-button.sel { color: var(--ui-ink); outline: 1px solid var(--ui-accent); outline-offset: -1px; background: #d9b56b24; }
+  #menu.title-menu #menuFoot { position: absolute; left: 64px; right: 64px; bottom: 24px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding-top: 12px; border-top: 1px solid var(--ui-line); }
+  #menuFootActions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: -10px; }
+  #menu.title-menu #menuBox #menuHint { position: static; margin: 0; text-align: left; font: 400 var(--ui-size-hint)/1.4 var(--ui-text); letter-spacing: 0; color: var(--ui-muted); }
+  @media (max-width: 640px) {   /* a phone upright: tighter edges, a smaller name, the footer's two halves stacked */
+    #menu.title-menu #menuBox { padding: 48px 20px 170px; }
+    #menu.title-menu #menuBox h1 { font-size: 34px; }
+    #menu.title-menu #menuList { margin-top: 28px; }
+    #menu.title-menu #menuFoot { left: 20px; right: 20px; bottom: max(34px, env(safe-area-inset-bottom)); }
+  }
+  @media (max-height: 500px) and (min-width: 560px) {   /* a phone on its side: the modes on the left, the line and the primary beside them */
+    #menu.title-menu #menuBox { grid-template-columns: minmax(0, 320px) minmax(0, 320px); grid-template-areas: "title title" "list desc" "list act";
+      column-gap: 40px; align-items: start; padding: 20px 32px 96px; }
+    #menu.title-menu #menuBox h1 { font-size: 30px; }
+    #menu.title-menu #menuList { margin-top: 14px; }
+    #menu.title-menu .title-mode { min-height: 42px; }
+    #menu.title-menu #menuDesc { margin-top: 22px; }
+    #menu.title-menu #menuAct { margin-top: 10px; }
+    #menu.title-menu #menuFoot { left: 32px; right: 32px; bottom: 12px; padding-top: 6px; }
+  }
+  @media (hover: none) and (pointer: coarse) {   /* a touch screen has no keys to hint: only the version stays */
+    #menu.title-menu .title-primary .ui-key, #menu.title-menu #menuHint span:not(:last-child) { display: none; }
+  }
+  /* A newer version on the server (js/version-check.js): an ember-lit row in pause. */
   .menuBtn.update .n { color: #f3c98a; }
   .menuBtn.update .n::before { content: ''; display: inline-block; width: 7px; height: 7px; margin: 0 10px 2px 0; border-radius: 50%;
     vertical-align: middle; background: #ff7a45; box-shadow: 0 0 8px 1px #ff5a2a99; }
   .menuBtn.update.sel .n, .menuBtn.update:hover .n { color: #ffe2b0; }
   #menuList:has(.menuBtn.update) { max-height: 230px; }
-  #menu.title-menu .menuBtn.update { grid-column: 1 / -1; min-height: 44px; padding: 10px 14px; border: 1px solid #b8683a80; background: #24120a; }
-  #menu.title-menu .menuBtn.update .n { font-size: 16px; }
-  #menu.title-menu .menuBtn.update.sel, #menu.title-menu .menuBtn.update:hover { border-color: #e39a5c;
-    background: radial-gradient(ellipse at 50% 50%, #b8582a55, #24120a 75%); }
-  @media (max-height: 820px) {   /* three cards and the small row fit a laptop screen under the title */
-    #menu.title-menu #menuBox { padding-top: 9vh; }
-    #menu.title-menu #menuList { margin-top: 4vh; gap: 8px; }
-    #menu.title-menu .menuBtn.hero { padding-top: 12px; padding-bottom: 12px; }
-  }
-  @media (max-height: 650px) {
-    #menu.title-menu #menuList { margin-top: 14px; gap: 7px; }
-    #menu.title-menu .menuBtn.hero { padding: 9px 16px 9px 18px; }
-    .menuBtn.hero .b { margin-top: 3px; }
-    #menu.title-menu #menuDesc { min-height: 0; margin-top: 8px; }
-  }
-  @media (max-height: 600px) {   /* small phones: the card's second line repeats the description below */
-    #menu.title-menu #menuBox { padding-top: 6vh; }
-    .menuBtn.hero .l { display: none; }
-  }
-  @media (max-height: 450px) {   /* a phone on its side: the three cards side by side, without their second line */
-    #menu.title-menu #menuBox { padding-top: 4vh; }
-    #menu.title-menu #menuList { margin-top: 8px; gap: 6px; }
-    #menu.title-menu .menuBtn.hero { grid-column: span 4; align-self: stretch; padding: 7px 12px 7px 14px; }
-    #menu.title-menu .menuBtn.small { min-height: 34px; padding: 6px; }
-    .menuBtn.hero .l { display: none; }
-  }
-  @media (max-width: 520px) {
-    #menu.title-menu .menuBtn.small .n { font-size: 14px; }
-    #menu.title-menu .menuBtn.hero { padding: 12px 14px 12px 16px; }
-  }
 
   /* The pointer only shows in the menus with keyboard and mouse (boot.js); developer labs keep theirs. */
   body.no-cursor, body.no-cursor *:not([data-cursor]):not([data-cursor] *) { cursor: none !important; }
@@ -567,7 +547,8 @@
     <div id="menuList" aria-label="Game menu"></div>
     <div class="menuArrow down" id="menuDown"></div>
     <div id="menuDesc"></div>
-    <div class="hint" id="menuHint"></div>
+    <div id="menuAct"></div>
+    <div id="menuFoot"><div id="menuFootActions"></div><div class="hint" id="menuHint"></div></div>
   </div>
   <div id="version"></div>
 </div>

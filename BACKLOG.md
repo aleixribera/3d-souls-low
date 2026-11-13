@@ -2,6 +2,14 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- The title's missing parts (pass 49, v7.70.0, `docs/scorecard/title-desktop.jpg`): the castle behind the right half
+  (a real Blender model with baked light, inside Normal's 60 fps; the right half is empty until then), Collection in
+  the mode list (nothing to collect yet) and Controls in the footer (no Controls screen yet; Options has the lessons).
+  The `story` screen is no longer reached from the title (Story starts the road last played; New game asks first); a
+  second road would need its own way in.
+- The blessing pick in tall cards (rarity, drawn icons, level I → II, pad keys, phone 2×2) is built and tested on
+  `wip/blessing-tall-cards` (pass 49), parked when the pick moved to the upgrades-from-zero session (PLAN.md item 6).
+
 - Kit parts no model uses since v7.28.0/v7.29.0: `quiver`, `archerHarness`, `cowl`, `fittedDoublet`, `wolfMuzzle`,
   `beastEars`, `furClumps`, and since v7.30.0 `wispHat`, `wispBeard`, `wispMantle`, `wispSleeve`, `wispRobe`, `wispTassels`
   and since v7.31.0 `scionMask`, `scionLimbs`, and since v7.32.0 `eyePatch`, `openCollar`, `featherMantle`, `waistSash`,

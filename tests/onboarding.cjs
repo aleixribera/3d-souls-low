@@ -28,11 +28,12 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     assert.deepEqual(obsoleteRequests, [], 'fullscreen adds no separate startup request');
-    await page.getByRole('button', { name: 'Story', exact: true }).click();
+    await page.getByRole('button', { name: 'Practice', exact: true }).click();
     await page.waitForFunction(() => !!document.fullscreenElement);
-    assert.equal(await page.evaluate(() => Game.screen), 'story', 'first click both enters fullscreen and opens Story');
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Practice', 'first click both enters fullscreen and chooses Practice');
     await page.evaluate(() => document.exitFullscreen());
-    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Story', exact: true }).click();
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Story');
     assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'leaving fullscreen is respected');
     await page.getByRole('button', { name: 'Options', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: /^Fullscreen:/ }).count(), 0, 'Options omits the fullscreen control');
@@ -68,7 +69,10 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => Game.screen), 'storyConfirm');
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     assert.equal(await page.evaluate(() => localStorage.getItem(CONFIG.story.saveKeys.ashmere)), kept);
-    await page.getByRole('button', { name: 'ASHMERE: New', exact: true }).click();
+    assert.equal(await page.evaluate(() => Game.screen), 'main', 'Cancel returns to the title');
+    // The title's own way in: choose Story, then New game beside Continue.
+    await page.getByRole('button', { name: 'Story', exact: true }).click();
+    await page.getByRole('button', { name: 'New game', exact: true }).click();
     await page.getByRole('button', { name: 'New', exact: true }).click();
     // A new Ashmere game starts in Level 1 itself: the controls are taught there.
     assert.ok(await page.evaluate(() => Game.mode === 'play' && Game.story && Game.level.id === STORY.chapters[0].level && lessons.owns(Game)));

@@ -43,18 +43,19 @@ Object.assign(Game, {
     const pickBack = { name: 'Back', desc: '', cue: 'menuBack', go: () => { this.practiceAdding = false; this.showMenu(adding ? 'practiceGroup' : 'practice'); } };
     return {
       ...S.screens, ...bossBattle.screens(this),
-      // The title: the game's three modes, then a row of small entries. Boss Rush is played in the public lobby, and its
-      // card says who is in it right now (multiplayer.lobby, asked while the title shows); it is chosen when the lobby answers.
-      main: { title: 'COMBAT ARENA 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
-        { ...S.main[0], size: 'hero', label: 'Story' },
-        { ...this.titleLobby(), size: 'hero', online: true, name: 'Boss Rush',
-          desc: 'Played in the public lobby that everyone on this link shares. The leader starts the run.',
-          go: () => multiplayer.join() },
-        { name: 'Practice', size: 'hero', label: 'Practice', line: 'Any enemy, boss or level, straight away',
-          desc: 'One foe or several at once, two teams of bosses against each other, or a level on its own.', go: () => this.showMenu('practice') },
-        { name: 'Options', size: 'small', desc: 'Graphics, camera, sound, controls and lessons.', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
-        { name: 'Changelog', size: 'small', desc: 'What each version of the game changed.', go: () => this.showMenu('changelog') },
-        ...(DEV ? [{ name: 'Test Grounds', size: 'small', desc: 'Developer rooms for trying out mechanics.', go: () => this.showMenu('tests') }] : []),
+      // The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, one line
+      // about the chosen mode, one primary button that starts it, and a footer of quiet entries. Moving onto a mode or
+      // clicking it chooses it; Enter on it (or the primary) starts it. Boss Rush is played in the public lobby; its line
+      // says who is in it right now (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
+      main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
+        { ...S.main[0], size: 'mode' },
+        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Join public lobby', go: () => multiplayer.join() },
+        { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
+        { name: '', size: 'primary', go: () => { const m = this.menuItems[this.titleMode]; if (m) m.go(); } },
+        { name: 'New game', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.newGame) m.newGame(); } },
+        { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
+        { name: 'Changelog', size: 'foot', go: () => this.showMenu('changelog') },
+        ...(DEV ? [{ name: 'Test Grounds', size: 'foot', go: () => this.showMenu('tests') }] : []),
         ...(update('title') ? [update('title')] : []),
       ] },
       tests: { title: 'COMBAT ARENA 3D', sub: 'TEST GROUNDS', back: 'main',
@@ -111,27 +112,42 @@ Object.assign(Game, {
       ] },
     };
   },
-  // The title's online card: what the public lobby looks like from here (multiplayer.lobby), as its line and live badge.
+  // The title's Boss Rush line: what the public lobby looks like from here (multiplayer.lobby).
   titleLobby() {
     const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
     const live = L.state === 'online' && n > 0;
-    const badge = L.state === 'checking' ? 'Looking for the lobby…'
+    const line = L.state === 'checking' ? 'Looking for the lobby…'
       : L.state === 'online' ? live ? `${n} playing now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : 'Nobody inside yet. Start a run, then share this link.'
       : L.state === 'offline' ? 'The lobby is not answering right now.' : 'Online play is on the home server link.';
-    return { line: 'Boss after boss with your friends', badge, badgeState: live ? 'live' : L.state === 'online' ? 'open' : L.state,
-      reachable: L.state === 'online', label: `Boss Rush: Join public lobby. ${badge}` };
+    return { line, lobbyState: live ? 'live' : L.state === 'online' ? 'open' : L.state, reachable: L.state === 'online' };
   },
-  // A new answer from the lobby: rewrite the online card in place (the list and the selection stay), and move to it
-  // if the player has not chosen anything yet.
+  // A new answer from the lobby: rewrite Boss Rush's line in place (the screen and the selection stay), and choose it
+  // if the player has not touched the title yet.
   refreshTitleLobby() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
-    const at = (this.menuItems || []).findIndex(it => it.online), t = this.titleLobby(), b = $('menuList').children[at];
-    if (!b || !b.classList.contains('hero')) return;
-    b.querySelector('.b').textContent = t.badge; b.querySelector('.b').dataset.state = t.badgeState;
-    b.classList.toggle('offline', !t.reachable && t.badgeState !== 'checking');
-    b.setAttribute('aria-label', t.label);
+    const at = (this.menuItems || []).findIndex(it => it.online), t = this.titleLobby(), b = (this.menuButtons || [])[at];
+    if (!b) return;
+    b.classList.toggle('offline', !t.reachable && t.lobbyState !== 'checking');
     Object.assign(this.menuItems[at], t);
-    if (!this.menuTouched) this.select(t.reachable ? at : 0, document.activeElement && $('menuList').contains(document.activeElement));
+    if (!this.menuTouched) this.select(t.reachable ? at : 0, !!document.activeElement && $('menuBox').contains(document.activeElement));
+    this.chooseMode(this.titleMode);   // the line, when Boss Rush is the chosen mode
+  },
+  // The title's chosen mode: its row is pressed, and the primary button and the line under the rows follow it.
+  chooseMode(i) {
+    const items = this.menuItems || [], it = items[i], btns = this.menuButtons || [];
+    if (!it || it.size !== 'mode') return;
+    this.titleMode = i;
+    items.forEach((x, k) => { if (x.size === 'mode') btns[k].setAttribute('aria-pressed', String(k === i)); });
+    const p = items.findIndex(x => x.size === 'primary'), s = items.findIndex(x => x.size === 'second');
+    if (p >= 0) btns[p].children[0].textContent = items[p].name = it.start;
+    if (s >= 0) btns[s].hidden = !it.newGame;
+    this.titleLine();
+  },
+  // The line under the title's modes: the selected entry's own note when it has one (the new-version button), else
+  // the chosen mode's line.
+  titleLine() {
+    const items = this.menuItems || [], it = items[this.selected], mode = items[this.titleMode];
+    $('menuDesc').textContent = it && it.desc ? it.desc : mode ? mode.line || '' : '';
   },
   showMenu(screen, keepSelection) {
     if (screen === 'lobby') { multiplayer.show(); return; }
@@ -153,26 +169,26 @@ Object.assign(Game, {
     $('menu').classList.remove('hidden'); $('menu').classList.toggle('overlay', !!s.overlay);
     hud.root.classList.toggle('hidden', !inGame);
     $('menuTitle').textContent = s.title; $('menuSub').textContent = s.sub; $('menuNotice').textContent = s.notice || '';
-    this.showMenuHint();
-    list.textContent = '';
+    for (const id of ['menuList', 'menuAct', 'menuFootActions']) $(id).textContent = '';
     this.menuItems = s.items;   // what select() and adjust() read, so a key press never rebuilds every screen
+    this.menuButtons = [];      // every button in item order, wherever it sits (the title spreads them over three places)
+    const title = s.layout === 'title';
+    // The title's pieces take the shared UI pieces (js/ui-theme.js): modes are rows, the primary starts the chosen one,
+    // the rest are quiet text buttons in the footer.
+    const titleClass = { mode: 'title-mode ui-row', primary: 'title-primary ui-primary', second: 'title-second ui-text-button',
+      foot: 'title-foot ui-text-button', update: 'title-foot title-update ui-text-button' };
     s.items.forEach((it, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.setAttribute('aria-describedby', 'menuDesc');
-      b.className = 'menuBtn' + (it.adjust ? ' adj' : '') + (it.size ? ` ${it.size}` : '');
-      b.innerHTML = `<div class="n"></div><div class="d"></div>`;
-      b.children[0].textContent = it.name; b.children[1].textContent = it.desc;
-      // The title's row of small entries shares one line of the 12-column grid, however many there are.
-      if (it.size === 'small' && s.layout === 'title') b.style.gridColumn = `span ${Math.max(1, Math.floor(12 / s.items.filter(x => x.size === 'small').length))}`;
-      if (it.size === 'hero') {   // a title card: the name, a line under it, and a live badge
-        for (const [cls, text] of [['l', it.line], ['b', it.badge]]) {
-          if (!text) continue;   // only the Boss Rush card has a badge
-          const el = document.createElement('div'); el.className = cls; el.textContent = text || '';
-          if (cls === 'b') { el.dataset.state = it.badgeState || ''; el.setAttribute('aria-hidden', 'true'); }
-          b.appendChild(el);
-        }
-        if (it.reachable === false && it.badgeState !== 'checking') b.classList.add('offline');
+      if (!title || it.size === 'mode' || it.desc) b.setAttribute('aria-describedby', 'menuDesc');
+      b.className = title ? titleClass[it.size] : 'menuBtn' + (it.adjust ? ' adj' : '') + (it.size ? ` ${it.size}` : '');
+      b.innerHTML = title ? '<span class="n"></span>' : `<div class="n"></div><div class="d"></div>`;
+      b.children[0].textContent = it.name; if (!title) b.children[1].textContent = it.desc;
+      if (title && it.size === 'primary') { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.appendChild(key); }
+      if (title && it.size === 'mode') {
+        b.setAttribute('aria-pressed', 'false');
+        if (it.reachable === false && it.lobbyState !== 'checking') b.classList.add('offline');
+        b.addEventListener('dblclick', () => { this.select(i); this.confirm(); });   // a double click starts the mode, as Enter does
       }
       if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
       if (it.label) b.setAttribute('aria-label', it.label);
@@ -185,56 +201,86 @@ Object.assign(Game, {
         a.addEventListener('click', ev => { ev.stopPropagation(); this.select(i); this.adjust(d); });
         b.appendChild(a);
       }
-      b.addEventListener('click', () => { this.select(i); this.confirm(); });
-      // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it.
+      // A click on a title mode only chooses it, as in the lobby; every other button does its job.
+      b.addEventListener('click', () => { this.menuTouched = true; this.select(i); if (!title || it.size !== 'mode') this.confirm(); });
+      // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it, and on the
+      // title the pointer only points: it never changes the chosen mode.
       b.addEventListener('mousemove', ev => {
         if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
-        events.emit('menuMove'); this.menuTouched = true; this.select(i);
+        events.emit('menuMove'); this.menuTouched = true;
+        this.hovering = true; try { this.select(i); } finally { this.hovering = false; }
       });
-      list.appendChild(b);
+      (!title || it.size === 'mode' ? list : $(it.size === 'primary' || it.size === 'second' ? 'menuAct' : 'menuFootActions')).appendChild(b);
+      this.menuButtons.push(b);
     });
+    this.showMenuHint();
     if (!keepSelection) this.menuTouched = false;
+    if (title) this.chooseMode(keepSelection && this.titleMode != null ? this.titleMode : s.focus);   // a redraw keeps the chosen mode
     this.select(keepSelection ? this.selected : s.focus ?? Math.max(0, s.items.findIndex(it => !it.disabled)), true);
     if (screen === 'main' && typeof multiplayer !== 'undefined') multiplayer.peek();   // who is online right now
   },
   // Key or button names follow the device used last, so this is redone when it changes.
   showMenuHint() {
-    const screen = this.screen, own = this.screens()[screen].hint;
-    if (own) { $('menuHint').textContent = own; return; }
-    $('menuHint').textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
+    const screen = this.screen, own = this.screens()[screen].hint, hint = $('menuHint');
+    hint.classList.toggle('ui-hints', screen === 'main');
+    if (own) { hint.textContent = own; return; }
+    if (screen === 'main') {   // the title's footer: key caps for moving and choosing, then the version
+      const pad = usingPad(); hint.textContent = '';
+      for (const [key, label] of [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select'], ['', VERSION]]) {
+        const item = document.createElement('span'), cap = document.createElement('span');
+        cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hint.appendChild(item);
+      }
+      this.titleKeys();
+      return;
+    }
+    hint.textContent = `${menuLabel('up')} · ${menuLabel('down')} to select · ${menuLabel('confirm')} to confirm` +
       (screen === 'options' ? ` · ${menuLabel('left')} · ${menuLabel('right')} to adjust` : '') +
-      (screen === 'main' ? '' : ` · ${menuLabel('back')} to go back`);
+      ` · ${menuLabel('back')} to go back`;
   },
-  // One step of directional menu input (keys, D-pad or stick).
-  // The title is a grid: the two cards stacked, the small entries in a row under them.
+  // The primary button shows the confirm key while it is what that key does: on the chosen mode or on the button itself.
+  titleKeys() {
+    if (this.screen !== 'main' || !this.menuButtons) return;
+    const items = this.menuItems || [], p = items.findIndex(x => x.size === 'primary'), it = items[this.selected];
+    const key = p >= 0 && this.menuButtons[p].querySelector('.ui-key');
+    if (key) key.textContent = this.selected === this.titleMode || (it && it.size === 'primary') ? usingPad() ? 'A' : 'Enter' : '';
+  },
+  // One step of directional menu input (keys, D-pad or stick); 'next' and 'prev' (Tab) go through every entry in order.
   menuStep(dir) {
-    const items = this.menuItems || [], it = items[this.selected];
+    const items = this.menuItems || [], it = items[this.selected], shown = i => !(this.menuButtons[i] && this.menuButtons[i].hidden);
     this.menuTouched = true;
+    if (dir === 'next' || dir === 'prev') {
+      const n = items.length, d = dir === 'next' ? 1 : -1;
+      let to = this.selected;
+      do to = (to + d + n) % n; while (!shown(to) && to !== this.selected);
+      events.emit('menuMove'); this.select(to, true);
+      return;
+    }
     if (this.screens()[this.screen].layout === 'title' && it) {
-      // Rows: each card alone, the small entries together, then the new-version button. Up and down go row to row
-      // (wrapping); left and right go along a row, or from a card to its neighbour in the list.
+      // Rows: each mode, the primary, New game (when shown), then the footer's entries together. Up and down go row
+      // to row (wrapping); left and right go along the footer.
       const rows = [];
-      items.forEach((x, i) => { const key = x.size === 'hero' ? `card${i}` : x.size || 'small', row = rows.find(r => r.key === key);
+      items.forEach((x, i) => { if (!shown(i)) return;
+        const key = x.size === 'mode' ? `mode${i}` : x.size === 'update' ? 'foot' : x.size, row = rows.find(r => r.key === key);
         if (row) row.at.push(i); else rows.push({ key, at: [i] }); });
       const r = Math.max(0, rows.findIndex(row => row.at.includes(this.selected))), row = rows[r].at;
       const to = dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
-        : row.length > 1 ? row[(row.indexOf(this.selected) + (dir === 'left' ? -1 : 1) + row.length) % row.length]
-        : rows[r].key.startsWith('card') ? this.selected + (dir === 'left' ? -1 : 1) : this.selected;
-      events.emit('menuMove'); this.select(to, true);
+        : row.length > 1 ? row[(row.indexOf(this.selected) + (dir === 'left' ? -1 : 1) + row.length) % row.length] : this.selected;
+      if (to !== this.selected) { events.emit('menuMove'); this.select(to, true); }
       return;
     }
     if (dir === 'up' || dir === 'down') { events.emit('menuMove'); this.select(this.selected + (dir === 'up' || dir === 'left' ? -1 : 1), true); }
     else this.adjust(dir === 'left' ? -1 : 1);
   },
   select(i, focus = true) {
-    const n = $('menuList').children.length;
+    const btns = this.menuButtons || [], n = btns.length, title = this.screen === 'main';
     this.selected = n ? (i + n) % n : 0;
-    [...$('menuList').children].forEach((b, k) => { b.classList.toggle('sel', k === this.selected); b.tabIndex = k === this.selected ? 0 : -1; });
-    const cur = $('menuList').children[this.selected];
+    btns.forEach((b, k) => { b.classList.toggle('sel', k === this.selected); b.tabIndex = k === this.selected ? 0 : -1; });
+    const cur = btns[this.selected];
     if (focus && cur && document.activeElement !== cur) cur.focus({ preventScroll: true });
     if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const it = (this.menuItems || [])[this.selected];
-    $('menuDesc').textContent = it ? it.desc || '' : '';
+    if (title) { if (it && it.size === 'mode' && !this.hovering) this.chooseMode(this.selected); this.titleLine(); this.titleKeys(); }
+    else $('menuDesc').textContent = it ? it.desc || '' : '';
     $('menuUp').classList.toggle('off', this.selected <= 0); $('menuDown').classList.toggle('off', this.selected >= n - 1);
   },
   confirm() { const it = (this.menuItems || [])[this.selected]; if (!it || it.disabled) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(1); },
@@ -244,7 +290,7 @@ Object.assign(Game, {
     it.adjust(d); saveSettings(); applySettings();
     events.emit('menuAdjust', { dir: d });
     // Only the labels change: rewrite them in place (the list, its buttons and the selection stay).
-    const items = this.screens()[this.screen].items, btns = $('menuList').children;
+    const items = this.screens()[this.screen].items, btns = this.menuButtons;
     this.menuItems = items;
     items.forEach((x, i) => { if (btns[i]) btns[i].children[0].textContent = x.name; });
     $('menuDesc').textContent = items[this.selected] ? items[this.selected].desc || '' : '';
