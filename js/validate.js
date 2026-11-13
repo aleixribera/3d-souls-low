@@ -49,6 +49,16 @@ function validateData({ visual = true } = {}) {
   need(Number.isInteger(nav.anchors) && Number.isInteger(nav.maxNodes) && Number.isInteger(nav.searchSteps) && nav.sample <= nav.cell &&
     nav.maxDrop < CONFIG.fall.lethal && nav.progressTime < nav.stuckTime && nav.recoverMin < nav.recoverMax,
     'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
+  // The Calling's blessings (v7.35.0): a known boon each, unique ids, enough to fill an offer.
+  const BL = CONFIG.blessings;
+  need(Number.isInteger(BL.offer) && BL.offer >= 1 && BL.offer <= BLESSINGS.length, 'Blessings offer must be a whole number from 1 to the number of blessings.');
+  for (const key of ['pickTime', 'riseDelay']) need(num(BL[key]) && BL[key] > 0, `Blessings ${key} must be positive.`);
+  need(BL.riseDelay < CONFIG.death.respawnDelay, 'Blessings riseDelay must be shorter than a team wipe (CONFIG.death.respawnDelay).');
+  need(num(BL.riseHp) && BL.riseHp > 0 && BL.riseHp <= 1, 'Blessings riseHp must be in (0, 1].');
+  for (const [key, value] of Object.entries(BL.boons)) need(num(value) && value > 0 && (!['flasks', 'rise'].includes(key) || Number.isInteger(value)), `Blessing boon ${key} must be positive (whole for flasks and rise).`);
+  need(new Set(BLESSINGS.map(b => b.id)).size === BLESSINGS.length, 'Blessing ids must be unique.');
+  for (const b of BLESSINGS) need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name && typeof b.text === 'string' && b.text &&
+    Object.hasOwn(BL.boons, b.boon), `Blessing ${b.id} needs an id, a name, a text and one of CONFIG.blessings.boons.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
     defence: ['walkMargin', 'walkLead', 'margin'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))

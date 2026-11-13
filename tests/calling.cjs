@@ -41,6 +41,10 @@ async function peer(origin, name) {
   try {
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Ember'); peers.push(a, b);
     const owner = () => [a, b].find(p => p.id === app.leader) || a;
+    // Between fights everyone takes a blessing (tests/blessings.cjs covers the pick itself).
+    const bless = async () => {
+      for (const p of [a, b]) { p.send({ type: 'bless', epoch: session.epoch, id: (await p.next('blessings')).offer[0] }); await p.next('blessings'); }
+    };
     const bosses = app.sim.catalog().bosses.map(e => e.id);
     const call = async extra => {
       owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, ...extra });
@@ -70,7 +74,7 @@ async function peer(origin, name) {
     ready(a); ready(b); await flush(b);
     pose(a, true); await flush(a); pose(a); await flush(a);
     assert.equal(app.clients.get(a.id).pose.hp, 0, 'a fallen player stays down for the rest of the fight');
-    finishFight();
+    finishFight(); await bless();
     session = (await a.next('start')).session; await b.next('start');
     assert.equal(session.gauntlet.number, 2); assert.equal(session.gauntlet.defeated, 1);
     assert.equal(session.id, roster[1]); assert.deepEqual(session.partners, [roster[2]], 'the last two bosses come together');
@@ -95,7 +99,7 @@ async function peer(origin, name) {
     assert.equal(session.gauntlet.roster.length, bosses.length, 'a longer run than there are bosses meets every boss once');
 
     // Restart starts the same roster from its first fight; a team wipe ends the run.
-    ready(a); ready(b); await flush(b); finishFight();
+    ready(a); ready(b); await flush(b); finishFight(); await bless();
     session = (await a.next('start')).session; await b.next('start');
     const whole = session.gauntlet.roster;
     assert.equal(session.gauntlet.number, 2);

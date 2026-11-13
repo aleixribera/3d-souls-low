@@ -251,6 +251,97 @@ const multiplayer = (() => {
       if (connected) { show(); if (!usingPad()) el('lobbyLeave').focus(); }
     }, C.teamWipeScreenTime * 1000);
   }
+  // The Calling's blessings (CONFIG.blessings): between fights the server offers each player a few, and a click, a number
+  // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out.
+  const blessingScreen = document.createElement('section'); blessingScreen.id = 'blessingScreen'; blessingScreen.hidden = true;
+  blessingScreen.setAttribute('aria-labelledby', 'blessingTitle');
+  blessingScreen.innerHTML = '<div class="blessing-panel"><div class="blessing-head"><h2 id="blessingTitle">Choose a blessing</h2><span id="blessingClock"></span></div><div class="blessing-time" aria-hidden="true"><i id="blessingTimeFill"></i></div><div id="blessingChoices" role="group" aria-labelledby="blessingTitle"></div><p id="blessingStatus" aria-live="polite"></p></div>';
+  document.body.appendChild(blessingScreen);
+  const blessingStyle = document.createElement('style');
+  blessingStyle.textContent = `#blessingScreen[hidden]{display:none}
+    #blessingScreen{--gold:#dcbb74;--gold-hi:#f3dca3;--ink:#ece4d1;--muted:#a9a798;--line:#c9a96a33;position:fixed;inset:0;z-index:46;display:flex;align-items:flex-end;justify-content:center;padding:18px 18px max(18px,env(safe-area-inset-bottom));box-sizing:border-box;background:#0507088c;color:var(--ink);font:14px/1.5 system-ui}
+    #blessingScreen .blessing-panel{width:min(880px,100%);max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:20px 22px 14px;background:#14181af5;border:1px solid #c9a96a66;border-radius:8px;box-shadow:0 18px 60px #000a}
+    #blessingScreen .blessing-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+    #blessingScreen h2{margin:0;font:400 26px/1.25 Georgia,serif;color:var(--gold-hi);text-wrap:balance}
+    #blessingClock{color:var(--muted);font-variant-numeric:tabular-nums}
+    #blessingScreen .blessing-time{height:2px;margin:12px 0 16px;background:#ffffff14}#blessingTimeFill{display:block;height:100%;background:var(--gold);transform-origin:left}
+    #blessingChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    #blessingChoices button{position:relative;display:flex;flex-direction:column;gap:6px;min-height:112px;padding:14px 44px 14px 16px;text-align:left;font:inherit;color:var(--ink);background:#0a0d0fb3;border:1px solid var(--line);border-radius:6px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;overflow-wrap:anywhere}
+    #blessingChoices strong{font:400 19px/1.3 Georgia,serif;color:var(--gold-hi)}#blessingChoices span{color:var(--muted)}
+    #blessingChoices kbd{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:22px;height:22px;border:1px solid #c9a96a55;border-radius:4px;font:600 12px/1 system-ui;color:var(--muted)}
+    #blessingChoices button:hover:not(:disabled),#blessingChoices button:focus-visible{border-color:var(--gold);background:#dcbb7414}
+    #blessingChoices button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+    #blessingChoices button[aria-pressed=true]{border-color:var(--gold);background:#dcbb7424;box-shadow:inset 0 0 0 1px var(--gold)}
+    #blessingChoices button:disabled{opacity:.4;cursor:default}
+    #blessingScreen.blessing-pad kbd{display:none}
+    #blessingStatus{margin:12px 0 0;color:var(--muted)}#blessingStatus:empty{display:none}
+    @media(hover:none){#blessingChoices kbd{display:none}#blessingChoices button{padding-right:16px}}
+    @media(max-width:640px){#blessingChoices{grid-template-columns:1fr}#blessingChoices button{min-height:0}#blessingScreen .blessing-panel{padding:16px 14px 10px}#blessingScreen h2{font-size:22px}}`;
+  document.head.appendChild(blessingStyle);
+  let blessing = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
+  function openBlessings(msg) {
+    if (!msg.offer) {   // the server took this player's pick
+      if (blessing) { blessing.held = msg.held || []; blessing.chosen = blessing.chosen || blessing.held[blessing.held.length - 1] || null; drawBlessings(); }
+      return;
+    }
+    blessing = { offer: msg.offer, held: msg.held || [], chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '' };
+    const list = el('blessingChoices'); list.replaceChildren();
+    msg.offer.forEach((id, i) => {
+      const b = ArenaNet.own(BLESSING_BY_ID, id); if (!b) return;
+      const button = document.createElement('button'); button.type = 'button'; button.dataset.blessing = id;
+      for (const [tag, text] of [['kbd', String(i + 1)], ['strong', b.name], ['span', blessingText(b)]]) { const n = document.createElement(tag); n.textContent = text; button.appendChild(n); }
+      button.onclick = () => chooseBlessing(id);
+      list.appendChild(button);
+    });
+    input.clear(); if (document.pointerLockElement) document.exitPointerLock();
+    blessingScreen.hidden = true; drawBlessings();
+  }
+  function chooseBlessing(id) {
+    if (!blessing || blessing.chosen || !active()) return;
+    blessing.chosen = id; send({ type: 'bless', id, epoch: session.epoch }); drawBlessings();
+  }
+  function closeBlessings() { blessing = null; blessingScreen.hidden = true; }
+  function moveBlessingFocus(step) {
+    const buttons = [...el('blessingChoices').children].filter(b => !b.disabled), at = buttons.indexOf(document.activeElement);
+    buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
+  }
+  function drawBlessings() {
+    const visible = !!blessing && active() && Game.loading <= 0 && panel.classList.contains('hidden') && runIntro.hidden;
+    const opening = visible && blessingScreen.hidden;
+    blessingScreen.hidden = !visible;
+    if (!visible) return;
+    const left = Math.max(0, (blessing.deadline - performance.now()) / 1000), clock = Math.ceil(left) + '\u00a0s';
+    if (clock !== blessing.clock) { blessing.clock = clock; el('blessingClock').textContent = clock; }
+    el('blessingTimeFill').style.transform = `scaleX(${(left / CONFIG.blessings.pickTime).toFixed(3)})`;
+    for (const button of el('blessingChoices').children) {
+      button.setAttribute('aria-pressed', String(button.dataset.blessing === blessing.chosen));
+      button.disabled = !!blessing.chosen && button.dataset.blessing !== blessing.chosen;
+    }
+    const held = blessing.held.map(id => ArenaNet.own(BLESSING_BY_ID, id)?.name).filter(Boolean);
+    const status = blessing.chosen ? 'Waiting for the others.' : held.length ? 'Already yours: ' + held.join(', ') + '.' : '';
+    if (el('blessingStatus').textContent !== status) el('blessingStatus').textContent = status;
+    blessingScreen.classList.toggle('blessing-pad', usingPad());
+    if (opening) el('blessingChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+  }
+  // While the pick is open the game hears no keys: a number takes that blessing, arrows move between them, Enter or
+  // Space presses the focused one, and Escape still opens the lobby.
+  window.addEventListener('keydown', ev => {
+    if (blessingScreen.hidden || ev.code === 'Escape') return;
+    userActivity(ev); ev.stopImmediatePropagation();
+    if (ev.code === 'Tab') { ev.preventDefault(); moveBlessingFocus(ev.shiftKey ? -1 : 1); return; }   // focus stays in the pick
+    const n = /^(?:Digit|Numpad)([1-9])$/.exec(ev.code);
+    if (n) { ev.preventDefault(); const b = el('blessingChoices').children[Number(n[1]) - 1]; if (b) chooseBlessing(b.dataset.blessing); }
+    else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); moveBlessingFocus(ev.code === 'ArrowLeft' || ev.code === 'ArrowUp' ? -1 : 1); }
+  }, true);
+  // The pad: the d-pad moves, A takes the focused blessing, Start still opens the lobby.
+  function blessingPad(pressed) {
+    if (blessingScreen.hidden || pressed.includes('PadStart')) return false;
+    input.clear();
+    if (pressed.includes('PadLeft') || pressed.includes('PadUp')) moveBlessingFocus(-1);
+    if (pressed.includes('PadRight') || pressed.includes('PadDown')) moveBlessingFocus(1);
+    if (pressed.includes('PadA') && document.activeElement?.dataset?.blessing) chooseBlessing(document.activeElement.dataset.blessing);
+    return true;
+  }
   const runIntro = document.createElement('section'); runIntro.id = 'runIntroScreen'; runIntro.hidden = true;
   runIntro.tabIndex = -1; runIntro.setAttribute('role', 'status'); runIntro.setAttribute('aria-label', 'Adventure begins');
   runIntro.innerHTML = `<div class="intro-halo" aria-hidden="true"></div><div class="intro-embers" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i style="--ember:${i}"></i>`).join('')}</div>
@@ -416,7 +507,11 @@ const multiplayer = (() => {
     <button id="spectatorNext" class="spectator-arrow" aria-label="Next player">&#8594;</button>
     </div><p id="spectatorHint"></p></div><button id="spectatorToggle" aria-controls="spectatorControls" aria-expanded="true">Hide spectator bar</button>`;
   document.body.appendChild(spectator);
-  function waitingForTeamWipe() { return active() && !!session.teamWipeOnly && !!Game.player && !Game.player.alive(); }
+  function waitingForTeamWipe() { return active() && !!session.teamWipeOnly && !!Game.player && !Game.player.alive() && !risesLeft(); }
+  // Rise Again still to come this fight. `rising`: the fallen body waiting on the server's answer, or 'refused' (the
+  // server had no rise left for this player, after a reconnect say): then they wait for the fight's end like anyone.
+  let rising = null;
+  const risesLeft = () => rising !== 'refused' && Game.player.risen < Game.player.boons.rise;
   function spectatorCandidates() {
     const now = performance.now() / 1000;
     return [...remotes].filter(([, r]) => {
@@ -470,7 +565,7 @@ const multiplayer = (() => {
     spectatorWasWaiting = waiting;
     const candidates = waiting ? spectatorCandidates() : [];
     if (!candidates.some(([id]) => id === spectatorTarget)) spectatorTarget = candidates[0]?.[0] || null;
-    spectator.hidden = !waiting || Game.mode !== 'play' || !panel.classList.contains('hidden') || Game.loading > 0;
+    spectator.hidden = !waiting || Game.mode !== 'play' || !panel.classList.contains('hidden') || Game.loading > 0 || !blessingScreen.hidden;   // the blessing pick covers the spectator bar
     document.body.classList.toggle('spectator-view', waiting);
     if (waiting) updateSpectatorBar();
     const r = remotes.get(spectatorTarget);
@@ -584,7 +679,7 @@ const multiplayer = (() => {
     if (panel.contains(document.activeElement)) document.activeElement.blur();
   }
   function overlayVisibility() {
-    updateLeaderboard();
+    updateLeaderboard(); drawBlessings();
     party.hidden = !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
@@ -866,7 +961,7 @@ const multiplayer = (() => {
       clearControlPending(); notice('');
       finale.cancelEnding();
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
-      session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes();
+      session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeBlessings(); rising = null;
       if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
       const current = session;
       Game.story = false; Game.eldenBoss = null; closePanel();
@@ -878,7 +973,7 @@ const multiplayer = (() => {
         Game.loadingFirst(...loadingCard, () => {
           if (session !== current || !connected) return;
           if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id, session.partners || []);
-          Game.spawn = { ...session.spawn }; Game.spawnPlayer(); restorePlayer(msg.resume);
+          Game.spawn = { ...session.spawn }; Game.spawnPlayer(); Game.player.bless(session.blessings?.[self]); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
           loaded = true; updateRoster();
@@ -889,7 +984,7 @@ const multiplayer = (() => {
       clearControlPending();
       const endedRun = session?.gauntlet;
       finale.cancelEnding();
-      session = null; loaded = false; resetStream(); clearRemotes(); Game.loading = 0; el('loading').classList.remove('show');
+      session = null; loaded = false; resetStream(); clearRemotes(); closeBlessings(); Game.loading = 0; el('loading').classList.remove('show');
       if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
       if (msg.reason === 'team-wipe') showTeamWipe(endedRun);
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
@@ -915,7 +1010,9 @@ const multiplayer = (() => {
         grantedEnemy = msg.enemy; execution.start(Game.player, e); grantedEnemy = null;
       } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
       pendingExecution = null;
-    } else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
+    } else if (msg.type === 'blessings' && session) openBlessings(msg);   // also while loading back in: shown once loaded
+    else if (msg.type === 'risen' && active()) { if (msg.ok && rising === Game.player && !Game.player.alive()) { Game.risePlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); } rising = msg.ok ? null : 'refused'; }
+    else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
   }
   // Reconnect is the only time personal resources come back from the server. Ordinary frames never reconcile them.
@@ -1096,6 +1193,8 @@ const multiplayer = (() => {
     if (!p.alive()) {
       Game.deathTimer += dt;
       if (!session.teamWipeOnly && Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
+      // Rise Again (CONFIG.blessings): the server lifts this player's defeat, and a fresh body gets up where it fell.
+      else if (session.teamWipeOnly && risesLeft() && !rising && Game.deathTimer >= CONFIG.blessings.riseDelay) { rising = p; send({ type: 'rise', epoch: session.epoch }); }
       else p.update(dt, { x: 0, z: 0, has: false }, [], null);
     } else if (Game.hitstop > 0) { Game.hitstop = Math.max(0, Game.hitstop - dt); input.hold(dt); }
     else {
@@ -1253,7 +1352,8 @@ const multiplayer = (() => {
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
   return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
-    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack,
+    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, blessingPad,
+    get blessingOpen() { return !blessingScreen.hidden; }, get blessingPending() { return !!blessing; },
     get lobby() { return { ...peekState }; },
     get campaign() { return connected ? session?.campaign || null : null; },
     get waitingForTeamWipe() { return waitingForTeamWipe(); },

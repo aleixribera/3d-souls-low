@@ -18,6 +18,9 @@ globalThis.host = (() => {
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
   let groupSize = 1, groupLeft = 0;   // the players every boss is scaled for, and how long fewer have been present
+  // The Calling's blessings (CONFIG.blessings), kept across a run's fights: ids held and the open offer, by player id,
+  // and the rises (Rise Again) each player has taken this fight.
+  const blessed = new Map(), offers = new Map(), rises = new Map();
   const C = ArenaNet.config;
   for (const story of STORIES) {
     if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
@@ -162,7 +165,8 @@ globalThis.host = (() => {
     for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
     return ids.slice(0, clamp(Math.floor(Number(length)) || C.calling.length, C.calling.minLength, ids.length));
   }
-  function start(kind, id, partners = []) {
+  // `keepBlessings`: a later fight of the same Calling run; anything else starts with none.
+  function start(kind, id, partners = [], keepBlessings = false) {
     // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
     if (!['level', 'arena'].includes(kind)) throw rejected('Unknown game mode');
     if (!Array.isArray(partners)) throw rejected('Unknown level or opponent');
@@ -184,6 +188,8 @@ globalThis.host = (() => {
     damage = new Map(); results = null; followers.clear(); assignLeft = 0; partyKey = '';
     hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0; groupSize = 1; groupLeft = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
+    if (!keepBlessings) { blessed.clear(); offers.clear(); }
+    rises.clear();
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
@@ -197,8 +203,44 @@ globalThis.host = (() => {
     b.brain = bot.create(b.profile);
     b.body = new Player(PLAYER_DEF, x, z, yaw, world.floorY(x, z, s.y));
     b.body.ctl = b.brain.hands; b.body.id = b.body.botId = b.id;
+    b.body.bless(blessed.get(b.id));
     b.deadFor = 0; b.hitstop = 0;
   }
+  // A bot with Rise Again gets up where it fell (riseBody), `riseDelay` s after its death.
+  function riseBot(b) {
+    if (!rise(b.id)) return;
+    const body = riseBody(b.body, checkpoint); body.ctl = b.brain.hands; body.id = body.botId = b.id;
+    b.body = body; b.deadFor = 0; b.hitstop = 0;
+    players = players.map(p => p.id === b.id ? body : p);
+  }
+  // Blessings (CONFIG.blessings). An offer: `offer` different ids, not yet held while enough remain. With `withBots`,
+  // every bot is offered too and takes one at once.
+  function offerBlessings(ids, withBots = true) {
+    const B = CONFIG.blessings, shuffle = list => { for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; } return list; };
+    for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
+      if (offers.has(id)) continue;
+      const held = blessed.get(id) || [], fresh = shuffle(BLESSINGS.map(b => b.id).filter(b => !held.includes(b)));
+      const offer = fresh.concat(shuffle(BLESSINGS.map(b => b.id).filter(b => held.includes(b)))).slice(0, B.offer);
+      offers.set(id, offer);
+      if (bots.has(id)) bless(id, offer[Math.floor(Math.random() * offer.length)]);
+    }
+  }
+  // Takes one blessing from this player's open offer; false for anything else.
+  function bless(id, blessing) {
+    const offer = offers.get(id);
+    if (!offer || typeof blessing !== 'string' || !offer.includes(blessing)) return false;
+    offers.delete(id); blessed.set(id, [...(blessed.get(id) || []), blessing]);
+    return true;
+  }
+  // Out of time: everyone still choosing takes the first blessing offered.
+  function settleBlessings() { for (const [id, offer] of [...offers]) bless(id, offer[0]); }
+  // A Rise Again claim: allowed while this fight's rises stay under the player's blessings' `rise` boons.
+  function rise(id) {
+    const count = (blessed.get(id) || []).reduce((n, b) => n + (BLESSING_BY_ID[b].boon === 'rise' ? CONFIG.blessings.boons.rise : 0), 0);
+    if ((rises.get(id) || 0) >= count) return false;
+    rises.set(id, (rises.get(id) || 0) + 1); return true;
+  }
+  const boonOf = (id, boon) => (blessed.get(id) || []).reduce((n, b) => n + (BLESSING_BY_ID[b].boon === boon ? CONFIG.blessings.boons[boon] : 0), 0);
   function addBot(profileId) {
     if (bots.size >= C.maxBots) return null;
     const used = new Set([...bots.values()].map(b => b.profile.id));
@@ -225,6 +267,7 @@ globalThis.host = (() => {
       if (!p.alive()) {
         b.deadFor += dt; p.update(dt, { x: 0, z: 0, has: false }, [], null);
         if (!wipeOnly && b.deadFor >= B.respawnDelay) spawnBot(b, 0);
+        else if (wipeOnly && b.deadFor >= CONFIG.blessings.riseDelay && p.risen < p.boons.rise) riseBot(b);
         continue;
       }
       if (b.hitstop > 0) { b.hitstop = Math.max(0, b.hitstop - dt); continue; }
@@ -469,7 +512,7 @@ globalThis.host = (() => {
     if (!within(p, e, reachOf(a.box), [a.box.y - a.box.h / 2, a.box.y + a.box.h / 2])) return false;
     // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer).
     const riposte = msg.riposte === true && time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack;
-    const strike = makeStrike(a, riposte, msg.charge);
+    const strike = makeStrike(a, riposte, msg.charge, boonOf(id, 'damage'));
     if (!Number.isFinite(strike.damage) || !Number.isFinite(strike.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
@@ -534,6 +577,9 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, describe, start, setPlayers, registerPlayer, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
+    offerBlessings, settleBlessings, bless, rise, boonOf, riseDelay: CONFIG.blessings.riseDelay,
+    blessingPickTime: CONFIG.blessings.pickTime,
+    blessings: () => Object.fromEntries(blessed), blessingOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
     campaignAdvanceTime: CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime,

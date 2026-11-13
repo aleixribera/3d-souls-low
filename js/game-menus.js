@@ -229,7 +229,7 @@ Object.assign(Game, {
   pause(fromPointer, fromFocus = false) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     if (online && multiplayer.runIntroActive) return;
-    if (fromPointer && online && multiplayer.spectatorMode) return;
+    if (fromPointer && online && (multiplayer.spectatorMode || multiplayer.blessingPending)) return;   // the blessing pick freed the mouse
     if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
     this.showMenu('pause');
     events.emit('pause');

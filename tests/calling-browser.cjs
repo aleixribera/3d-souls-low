@@ -1,6 +1,7 @@
 'use strict';
 // The Calling end to end (v7.35.0): two browsers pick a 3-boss roster by hand, a bot fills the party, the party beats
-// one boss, then the last two together, and everyone lands back in the lobby with the run complete.
+// one boss, then the last two together, and everyone lands back in the lobby with the run complete. Between the fights
+// each takes a blessing (one by click, one by key), and the fallen one's Rise Again gets them up in the last fight.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
@@ -57,21 +58,49 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 1\/2/);
     await a.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
-    const epoch = app.session.epoch;
+    const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
+    // a is offered Rise Again (the draw itself is tests/blessings.cjs's).
+    const draw = app.sim.offerBlessings;
+    app.sim.offerBlessings = ids => { draw(ids); app.sim.blessingOffer(aId)?.splice(0, 3, 'whetted-edge', 'rise-again', 'keen-ear'); };
     finishFight();
+    for (const page of [a, b]) await page.locator('#blessingScreen').waitFor({ timeout: 30000 });
+    assert.equal(await a.locator('#blessingChoices button').count(), 3, 'three blessings to choose from');
+    await a.waitForTimeout(400);
+    await a.screenshot({ path: `${out}/blessing-desktop.png` });
+    await a.setViewportSize({ width: 390, height: 844 });
+    assert.ok(await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#blessingChoices button')].every(b => b.getBoundingClientRect().bottom <= innerHeight)), 'the pick fits a phone');
+    await a.screenshot({ path: `${out}/blessing-phone.png` });
+    await a.setViewportSize({ width: 1280, height: 720 });
+    await a.locator('#blessingChoices button', { hasText: 'Rise Again' }).click();
+    assert.equal(await a.locator('#blessingStatus').textContent(), 'Waiting for the others.');
+    assert.equal(app.session.epoch, epoch, 'the next fight waits for every pick');
+    const bPick = await b.locator('#blessingChoices button').first().getAttribute('data-blessing');
+    await b.keyboard.press('Digit1');
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
     await Promise.all([ready(a), ready(b)]);
+    assert.equal(await a.locator('#blessingScreen').isVisible(), false);
+    assert.deepEqual(await a.evaluate(() => [...Game.player.blessings]), ['rise-again']);
+    assert.deepEqual(await b.evaluate(() => [...Game.player.blessings]), [bPick], 'the number key took the first');
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /THE CALLING · 2\/2/);
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
     assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['bellWarden', 'margit'], 'the last two bosses come together');
     await a.waitForTimeout(2500);   // let the fight start before the frame
     await a.screenshot({ path: `${out}/final-fight.png` });
+    // Rise Again: a falls and gets up where they fell, at half health, and the server counts them standing.
+    const fell = await a.evaluate(() => { const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); return { x: p.x, z: p.z }; });
+    await a.waitForFunction(() => Game.player.alive(), null, { timeout: 10000 });
+    const risen = await a.evaluate(() => ({ x: Game.player.x, z: Game.player.z, hp: Game.player.hp / Game.player.maxHp, spectating: multiplayer.spectating }));
+    assert.deepEqual(risen, { x: fell.x, z: fell.z, hp: 0.5, spectating: false }, 'risen where they fell, at half health');
+    await a.waitForTimeout(300);
+    assert.equal(app.clients.get(aId).arenaDefeated, false, 'the server lifted the defeat');
+    assert.ok(app.clients.get(aId).pose.hp > 0, 'the risen body is relayed');
+    await a.screenshot({ path: `${out}/risen.png` });
     finishFight();
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });
     assert.match(await a.locator('#lobbyNotice').textContent(), /THE CALLING COMPLETE · 3 bosses defeated/);
     assert.equal(app.session, null);
     await a.screenshot({ path: `${out}/complete.png` });
     assert.deepEqual(errors, []);
-    console.log('THE CALLING browsers: hand-picked roster, phone fit, opening card, bot fill, fallen rise, last two together, run complete passed.');
+    console.log('THE CALLING browsers: hand-picked roster, phone fit, opening card, bot fill, blessings by click and key, fallen rise, last two together, Rise Again, run complete passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

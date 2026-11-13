@@ -4,15 +4,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Next: `PLAN.md` stage 2, item 4, blessings between fights, pass 1 of it: at a bonfire between bosses each player picks
-one of three blessings (data in `js/data/`, tuning in `CONFIG`) that last the run. Check: a picked blessing's effect
-measured in a test, and the pick screen at desktop and phone width. The Calling's fights advance in `server/index.cjs`
-(the `session.gauntlet.roster` branch); the pause between fights is `C.bossVictoryDelay` / the leaderboard.
+Next: `PLAN.md` stage 2, item 5, the end of a run, pass 1 of it: time, bosses beaten, deaths and damage per player, and
+"again" for the same group. Check: frames of the screen after a win and after a wipe. The run ends in `server/index.cjs`
+(`stop(... 'run-complete')` and the team-wipe branch); the client's wipe screen is `showTeamWipe` in `js/multiplayer.js`.
+Then stage 2 is done: release v7.35.0 with its changelog lines (AGENTS.md "Releasing").
 
-Pass 8 shipped item 3, the run (unreleased; stage 2 releases as v7.35.0 when the stage is done, and its changelog lines
-go in then): The Calling in the lobby, a roster random or by hand, bots fill to three, the last two bosses together.
-Pass 7 shipped item 2 (`CONFIG.aggro`), pass 6 item 1 (`CONFIG.group`). Notes: `docs/feature-history.md`, the last
-three sections.
+Pass 9 shipped item 4, blessings between fights (unreleased): pick one of three after each fight but the last, kept for
+the run, Rise Again once a fight. Pass 8 item 3 (the run), pass 7 item 2 (`CONFIG.aggro`), pass 6 item 1
+(`CONFIG.group`). Notes: `docs/feature-history.md`, the last four sections.
 
 ## Works
 
@@ -39,6 +38,9 @@ three sections.
 - The Calling (v7.35.0, unreleased): `C.calling`, `calling()` / `randomRoster()` in `server/simulation.js`, the lobby's
   roster and pick list in `js/multiplayer.js`; checked by `tests/calling.cjs` and `tests/calling-browser.cjs` (two
   browsers and a bot finish a 3-boss run; frames `docs/scorecard/calling-*.jpg`).
+- Blessings (v7.35.0, unreleased): `CONFIG.blessings`, `BLESSINGS` (`js/data/blessings.js`), `Player.bless` /
+  `riseBody`, the server's `offerBlessings` / `bless` / `rise`, the pick screen `#blessingScreen`; checked by
+  `tests/blessings.cjs` and `tests/calling-browser.cjs` (frames `docs/scorecard/blessing-*.jpg`).
 - CI: Node checks and four browser shards on every push.
 - Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]` (headless Edge, High), and
   `[BOTS=3] node tests/bot-duel.cjs all 6 600` (bots against every boss in the headless simulation, about a minute).
@@ -55,8 +57,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 8's push (`b23fbe4` and the commit before): check at the start of pass 9. Pass 7's push was green. Pass 8 locally: the Node group (21/21) and the multiplayer, lobby, reconnect, boss-only, run-intro and
-campaign browser tests.
+CI on pass 9's push: check at the start of pass 10. Pass 8's push was green. Pass 9 locally: the Node group, blessings,
+calling, and the multiplayer, lobby, reconnect, boss-only, run-intro and calling browser tests.
 
 ## wip/ branches
 
@@ -74,3 +76,6 @@ The earlier three (order of work, how to see progress, the Toll Wisp's descripti
 - (overridable) How much harder a boss gets per extra player: +50% health, +30% posture, breaks 10% shorter
   (`CONFIG.group`). Tuned on bots, who fight worse than people; at +60% six of the eight Lands bosses beat three bots
   every time. Worth a feel check with friends.
+- (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
+  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health; 25 s to
+  choose. Rise Again is once a fight, not once a run.

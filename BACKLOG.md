@@ -34,3 +34,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   (today BOSS ONLY) is the director's call.
 - `lobby-polish-browser` failed once ("preset changes preserve online play", switching graphics presets mid-fight) and
   passed on the rerun with no change to that code: flaky (pass 8, 2026-11-13).
+- The Calling's blessing pick is a panel over the arena where the boss fell, a stand-in for "a bonfire between bosses"
+  (`PLAN.md` stage 2, item 4): a bonfire to gather at, and a rise from Rise Again with its own animation and light
+  (the body just stands up now) (pass 9).
+- Blessings aren't shown anywhere during a fight (the HUD or the party list); players see them only on the pick screen
+  (pass 9).

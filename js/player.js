@@ -3,6 +3,24 @@
 // 5. Player
 // ============================================================================
 // Inventory: { itemId: { count, max } }, created from the player definition.
+// No blessings: every boon a Player reads (bless) at zero.
+const NO_BOONS = Object.freeze({ damage: 0, flasks: 0, stamina: 0, parry: 0, rise: 0 });
+// A blessing's line for the pick screen, its numbers filled in from CONFIG.blessings.
+function blessingText(b) {
+  const B = CONFIG.blessings, v = B.boons[b.boon], pct = x => Math.round(x * 100) + '%';
+  return b.text.replace('{pct}', pct(v)).replace('{n}', String(v)).replace('{hp}', pct(B.riseHp));
+}
+// Rise Again (CONFIG.blessings): a fresh body where `old` fell (at `start` instead after a fall into a pit), with the
+// same blessings and flasks left and `riseHp` of full health; it counts one more rise. The owner swaps it in and frees
+// the old rig.
+function riseBody(old, start) {
+  const at = old.inPit && start ? start : old;
+  const p = new Player(old.def, at.x, at.z, at.yaw ?? old.yaw, at.y ?? old.y);
+  p.bless(old.blessings); p.risen = old.risen + 1; p.hp = p.maxHp * CONFIG.blessings.riseHp;
+  const was = old.inventory.flask, now = p.inventory.flask;
+  if (was && now) now.count = Math.min(now.max, was.count);
+  return p;
+}
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 
 class Player {
@@ -29,7 +47,18 @@ class Player {
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
     this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
+    this.boons = NO_BOONS; this.blessings = []; this.risen = 0;   // The Calling's blessings held (bless), rises taken (riseBody)
     this.savePrev();
+  }
+  // The Calling's blessings (CONFIG.blessings, BLESSINGS): sums each held blessing's boon into `boons` and grants the
+  // extra flasks. Called once, on a fresh body.
+  bless(ids) {
+    const boons = { ...NO_BOONS };
+    this.blessings = (ids || []).filter(id => Object.hasOwn(BLESSING_BY_ID, id));
+    for (const id of this.blessings) { const b = BLESSING_BY_ID[id]; boons[b.boon] += CONFIG.blessings.boons[b.boon]; }
+    this.boons = Object.freeze(boons);
+    const flask = this.inventory.flask;
+    if (flask && boons.flasks) { flask.max += boons.flasks; flask.count += boons.flasks; }
   }
   alive() { return this.state !== PS.DEAD; }
   in(group) { return PLAYER_GROUPS[group].has(this.state); }
@@ -122,7 +151,7 @@ class Player {
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
-    this.payload = makeStrike(a, this.riposte > 0);
+    this.payload = makeStrike(a, this.riposte > 0, 0, this.boons.damage);
     this.riposte = 0;
     this.spend(a.cost || 0);
     this.hitbox = null;
@@ -179,7 +208,7 @@ class Player {
     this.bufferInputs();
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     this.canAct(); this.sinceExhausted = this.exhausted ? 0 : this.sinceExhausted + dt;
-    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * dt);
+    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.boons.stamina) * dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -250,7 +279,7 @@ class Player {
           if (this.ctl.isHeld(ch.action) && this.chargeT < ch.hold) {
             this.chargeT = Math.min(ch.hold, this.chargeT + dt);
             if (this.chargeT >= ch.hold) events.emit('chargeFull', { actor: this, attack: a });
-          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold); }
+          } else { this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, this.chargeT / ch.hold, this.boons.damage); }
         }
         if (this.charge !== 1) this.attackT += dt;
         if (ch && this.charge === 0 && this.attackT >= a.hits[0].startup * ch.at) {

@@ -124,6 +124,13 @@ const Game = {
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
   },
+  // Rise Again (CONFIG.blessings): a fresh body gets up where the fallen one lies (riseBody), a respawn that doesn't move.
+  risePlayer() {
+    const old = this.player;
+    this.player = riseBody(old, this.spawn); old.rig.dispose();
+    this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();
+    canvas.classList.remove('dying');
+  },
 
   // ---- bonfires, death -------------------------------------------------------------------------
   // A bonfire with `litBy` (a zone id) is cold and unusable until that zone is won.

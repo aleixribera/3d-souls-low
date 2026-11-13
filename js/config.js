@@ -166,6 +166,15 @@ const CONFIG = {
   // The server grows a boss at once when someone arrives, and shrinks it only after the group has been smaller for
   // `leaveDelay` s, so a stalled connection or a moment in another tab doesn't resize it.
   group: { cap: 4, hp: 0.5, posture: 0.3, breakTime: 0.1, leaveDelay: 10 },
+  // The Calling's blessings (v7.35.0, `BLESSINGS` in js/data/blessings.js): after each fight but the last, every player
+  // is offered `offer` different blessings (ones they don't hold yet, while there are enough) and keeps one for the rest
+  // of the run. The next fight waits until everyone has chosen, or `pickTime` s; a player who hasn't chosen by then gets
+  // the first offered. Each blessing adds its `boons` entry to one Player field, and the same blessing twice adds twice:
+  // `damage` and `stamina` are fractions more blow damage and stamina refill, `flasks` whole flasks, `parry` a fraction
+  // wider parry window (CONFIG.parry lead and grace), `rise` rises per fight: a fresh body where you fell, `riseDelay` s
+  // after the death (before a team wipe ends the fight), with `riseHp` of full health.
+  blessings: { offer: 3, pickTime: 25, riseDelay: 2.5, riseHp: 0.5,
+    boons: { damage: 0.15, flasks: 1, stamina: 0.4, parry: 0.5, rise: 1 } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time

@@ -4,13 +4,14 @@
 // ============================================================================
 // What a landed attack carries, built the same way for both sides.
 // charge: 0..1 of a held heavy's `charge.hold`, scaling damage, poise and posture up to `charge.mul`.
-function makeStrike(attack, riposte = false, charge = 0) {
+// `boost`: a fraction more damage (a Whetted Edge blessing's `damage` boon, CONFIG.blessings).
+function makeStrike(attack, riposte = false, charge = 0, boost = 0) {
   const E = CONFIG.enemy, R = (riposte && attack.riposte) || {}, Ch = attack.charge;
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
   const mul = Ch ? lerp(1, Ch.mul, charge) : 1, hsMul = Ch ? lerp(1, Ch.hitstopMul, charge) : 1;
   return {
     attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
-    damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
+    damage: attack.damage * (R.damage || 1) * mul * (1 + boost), poise: attack.poise * (R.poise || 1) * mul,
     knock: attack.knock, postureDmg: (attack.postureDmg || 0) * mul, destined: !!attack.destined,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
@@ -47,13 +48,13 @@ class Hitbox {
 // Seconds until enemy e's current strike goes active (negative once active) if the player could parry
 // it now, allowing `extra` s of look-ahead; null if the strike is not parryable from here.
 function parryTiming(p, e, extra) {
-  const P = CONFIG.parry;
+  const P = CONFIG.parry, wide = 1 + (p.boons?.parry || 0);   // a Keen Ear blessing widens both edges (CONFIG.blessings)
   let rem;
   if (!canParryAttack(e.attack)) return null;   // roll-only, bolts and `noParry` (blockable): cannot be parried
   if (e.state === ES.WINDUP) rem = e.attack.hits[e.hitIndex].startup - e.stateTime;
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
-  if (rem > P.lead + extra || rem < -P.grace) return null;
+  if (rem > P.lead * wide + extra || rem < -P.grace * wide) return null;
   if (!isInFront(p, e.x, e.z) || gateBetween(p, e)) return null;   // same front rule as blocking
   const b = e.attack.box;
   if (Math.hypot(e.x - p.x, e.z - p.z) > b.fwd + b.d / 2 + p.radius + P.reach) return null;
