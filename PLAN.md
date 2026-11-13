@@ -36,6 +36,26 @@ Aleix, 2026-11-13.
 The agent has seen it working in a preview, standing and through every attack, and judged whether it will work in the
 game; then a frame of it in its level. Both images in the pass report. Triangle counts are a soft warning, not a rule.
 
+## Before everything else: players know a new version is out (Aleix, 2026-11-13)
+
+Aleix often plays an old version. The home server is fine: `hl` (the homelab's own tool, `hl-games.timer`) pulls
+`latest` every 3 minutes while the lobby is empty and holds it while anyone is in. The page is the gap: it compares
+its version with the server's only on Join (`js/multiplayer.js`, the `info.version !== VERSION` check), and the
+title's `peek()` reads `/api/lobby` (which carries `version` and `build`) every few seconds but ignores both. So a tab
+left open, and any solo play in it, stays on the old build and nothing says so.
+
+1. **"New version — Reload".** When `/api/lobby`'s `version` or `build` differs from the page's, the title screen and
+   the pause menu show it, with a reload button (keyboard and gamepad reachable). It checks on the title (the
+   existing `peek()`) and every few minutes elsewhere, solo or online, with no effect on play and nothing shown when
+   there is no server (`file:` or a static host). In the lobby, reloading mid-run is the player's choice, never forced.
+   Check: a page served with an older `VERSION` against a newer server shows the notice on the title and in pause,
+   and the button loads the new build (a browser test, plus frames at desktop and phone width).
+2. **The docs say how it really updates.** `docs/container-updates.md` describes a game-owned updater
+   (`deploy/update.sh`, `combat-arena-update.timer`) that was never installed on the server; the server is updated by
+   `hl` (`C:\Users\Aleix\Documents\CLAUDE\homelab`, `homelab.toml` `[stacks.combat-arena]`, `update = "when-empty"`).
+   Rewrite the doc to say that in a few lines, and delete `deploy/` if nothing uses it (check `compose.yaml`,
+   `container.yaml` and the tests first). Check: no mention of the unused updater anywhere (grep).
+
 ## Clean-up (first)
 
 1. **The Elden Ring bosses and the Lands Between go** (pass 31, Aleix's feedback): the eight bosses, the Lands levels,
