@@ -66,3 +66,9 @@ took it (once taken).
   any second pass on Ostrey, Hale and Harrow and the Ringer.
 - 2026-11-13: the wait between Boss Rush rounds goes back from 10 to 30 s (`CONFIG.blessings.pickTime`), and still
   skips as soon as everyone has chosen. This overrides PLAN.md's "10 s clock". Done by the loop chat in v7.67.0.
+- 2026-11-13, after seeing pass 49's title (v7.71.0, `docs/scorecard/title-desktop.jpg`, `title-phone.jpg`): yes, it
+  matches the mockup he chose. Practice, options, pause and the end of run follow the same style.
+- 2026-11-13, after playing Mother Agathe (pass 48, v7.70.0): her mechanics are cool, especially the lightning
+  strikes; keep them. Her model and weapon animations need polish: in several attacks the hook is held and rotated
+  wrong. Fix the grip and the weapon's angle through every attack (check each tell and strike in the model lab and in
+  the abbey), and polish the model (the backlog already notes her face reads as a mask). This is her second pass.
