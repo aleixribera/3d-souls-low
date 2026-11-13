@@ -41,3 +41,8 @@ took it (once taken).
   (undo the 75% damage cut and any other stat handicap). The only things to tune are how smart they are and how they
   act in each situation. They should be more of a help and less of a carry through behaviour alone (leaving openings
   and executions to the human, supporting rather than leading), while still playing as individual players.
+- 2026-11-13, measurement (Fedora laptop, Lenovo V15 G5, integrated graphics, v7.56.0, Level 5 the Final Castle):
+  Low holds a locked 60 fps most of the time; High runs at about 30-40 fps with the occasional stutter. This is the
+  calibration point for `PLAN.md`'s Normal preset (Low and High merge into Normal, plus Ultra): Normal must hold 60 on
+  this laptop, so it starts from Low's cost and takes back only the parts of High's look that fit in the budget. Ties
+  the stand-in for integrated graphics to these numbers.
