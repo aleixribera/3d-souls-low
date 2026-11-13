@@ -684,7 +684,7 @@ const GAME_FILES = [
   'baked/hollow.js',
   'baked/lancer.js',
   'baked/knight.js',
-  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js',
+  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js', 'baked/kindling-tree.js',
   'baked.js',
   'animator.js',
   'attack-anim.js',
@@ -733,6 +733,7 @@ const GAME_FILES = [
   'gilt-echo.js',
   'ember-seams.js',
   'storm-rend.js',
+  'root-heave.js',
   'bonfire-guidance.js',
   'effect-lighting.js',
   'ability-fx.js',   // Boss Rush's legendaries drawn (after effect-lighting.js and ultra-fx.js)
@@ -744,7 +745,7 @@ const GAME_FILES = [
   'kill-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.73.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.74.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

@@ -120,6 +120,7 @@ function validateData({ visual = true } = {}) {
   need(RD && Number.isInteger(RD.max) && RD.max >= 1 && num(RD.cut) && RD.cut > 0 && RD.cut * RD.max < 0.6 && num(RD.time) && RD.time > 0,
     'CONFIG.rend needs max (whole pieces, 1 or more), cut (a fraction; all of them under 0.6 of the bar) and time (s).');
   need(ST && num(ST.lock) && ST.lock > 0 && ST.lock < 1 && num(ST.minTell) && ST.minTell > 0, 'CONFIG.storm needs lock (0 to 1) and minTell (s).');
+  need(CONFIG.burrow && num(CONFIG.burrow.near) && CONFIG.burrow.near > 0 && num(CONFIG.burrow.minTell) && CONFIG.burrow.minTell > 0, 'CONFIG.burrow needs near (m) and minTell (s).');
   need(SU && ['first', 'near', 'slack', 'reposition', 'settle', 'patience'].every(k => num(SU[k]) && SU[k] >= 0) && SU.slack <= SU.reposition && Array.isArray(SU.behind) && SU.behind.length > 0 && SU.behind.every(d => num(d) && d >= 0 && d <= Math.PI / 2) && num(SU.greed) && SU.greed >= 0 && SU.greed <= 1 && SU.patience >= 1,
     'Bot support needs non-negative first, near, settle, and slack no more than reposition, behind offsets in 0..pi/2, a greed share (0..1) and patience of 1 or more.');
   const jumpRange = botConfig.jumpDodge.lead;
@@ -158,8 +159,8 @@ function validateData({ visual = true } = {}) {
       `${tag}: projectile spread must list angles (rad).`);
     if (a.projectile && 'colors' in a.projectile) need(Array.isArray(a.projectile.colors) && a.projectile.colors.length === 2 && a.projectile.colors.every(num),
       `${tag}: projectile colors must be [core, rim] (hex numbers).`);
-    if (a.projectile && 'look' in a.projectile) need(['arrow', 'slash', 'dagger', 'rock', 'coal'].includes(a.projectile.look),
-      `${tag}: projectile look must be arrow, slash, dagger, rock or coal.`);
+    if (a.projectile && 'look' in a.projectile) need(['arrow', 'slash', 'dagger', 'rock', 'coal', 'thorn'].includes(a.projectile.look),
+      `${tag}: projectile look must be arrow, slash, dagger, rock, coal or thorn.`);
     if (visual && 'spectral' in a) need(a.spectral in SPECTRAL_WEAPONS, `${tag}: unknown spectral weapon "${a.spectral}" (known: ${Object.keys(SPECTRAL_WEAPONS).join(', ')}).`);
     if ('hpBelow' in a) need(num(a.hpBelow) && a.hpBelow > 0 && a.hpBelow <= 1, `${tag}: hpBelow must be a fraction of the bar (0 to 1).`);   // v5.9 (Malenia)
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
@@ -204,6 +205,18 @@ function validateData({ visual = true } = {}) {
         need(h.startup >= CONFIG.seams.minTell - 1e-6 || (prev && prev.erupt && prev.erupt.keep),
           `${tag}: hit ${i + 1}'s eruption needs a wind-up of at least ${CONFIG.seams.minTell} s (the seams' tell), unless it follows one that keeps them.`);
       }
+      // A `burrow` (pass 50, the Kindling Tree): under the floor from `from` of the wind-up, its heave running after the
+      // player at `speed` m/s (turning at most `turn` rad/s) until `lock`, then held still at least CONFIG.burrow.minTell s;
+      // it rises in a ring round itself. Never with another way of moving or placing the blow.
+      if ('burrow' in h) {
+        const B = h.burrow, b = h.box || a.box || {};
+        need(B && typeof B === 'object' && num(B.from) && B.from > 0 && num(B.lock) && B.lock > B.from && B.lock < 1 && num(B.speed) && B.speed > 0 && num(B.turn) && B.turn >= 0
+          && !h.echo && !h.seam && !h.erupt && !h.bolt && !h.leap && !h.blink && !h.step && !h.hold && !h.abort && !!b.ring && b.fwd === 0 && !a.projectile && !a.dash && !a.track && !a.lunge,
+          `${tag}: hit ${i + 1}'s burrow needs from and lock (0 < from < lock < 1), speed (m/s, above 0) and turn (rad/s), and a ring round itself (fwd 0); not with an echo, seam, erupt, bolt, leap, blink, step, hold, abort, projectile, dash, track or lunge.`);
+        need(!B || h.startup * (1 - B.lock) >= CONFIG.burrow.minTell - 1e-6, `${tag}: hit ${i + 1}'s burrow holds still ${(h.startup * (1 - ((B && B.lock) || 0))).toFixed(2)} s before it rises; it needs ${CONFIG.burrow.minTell} s.`);
+      }
+      // A `still` hit (pass 50): it does not turn through its wind-up, so it falls where the hit before it was aimed.
+      if ('still' in h) need(h.still === true && i > 0, `${tag}: hit ${i + 1}'s still must be true, and not on the first hit.`);
       // A `bolt` (pass 48): lightning on the spot its target stood as the mark locked (Enemy.noteBolt); `lock` a fraction of
       // the wind-up. Never with another way of placing the blow, and never with less than CONFIG.storm.minTell s of mark.
       if ('bolt' in h) {
@@ -270,6 +283,7 @@ function validateData({ visual = true } = {}) {
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
+    if ('rooted' in d) need(typeof d.rooted === 'boolean', `Enemy "${d.id}": rooted must be true or false.`);   // pass 50 (the Kindling Tree)
     need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
     if ('echoColor' in d) need(Number.isInteger(d.echoColor) && d.echoColor >= 0 && d.echoColor <= 0xffffff, `Enemy "${d.id}": echoColor must be a colour (0xrrggbb).`);   // pass 44
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
@@ -292,7 +306,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'opener' in ph) need(aids.has(ph.opener) && (!ph.attacks || ph.attacks.includes(ph.opener)), `${tag}: opener "${ph.opener}" must be one of its attacks, and of the phase's own when it lists them (the phase looks it up there).`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
-        for (const k of ['rend', 'storm']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
+        for (const k of ['rend', 'storm', 'rooted']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9

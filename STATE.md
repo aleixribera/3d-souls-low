@@ -4,10 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 48, item 2, v7.70.0): Agathe pass 1 of 2 shipped: Blender figure, 13 own moves; `rend` (her hook
-  keeps torn health, `Player.rend`/`reclaim`) and hit `bolt` (storm mark, `Enemy.noteBolt`), drawn by
-  `js/storm-rend.js`; the rent's floor and columns. `docs/scorecard/agathe-lab.jpg`, `abbey-agathe.jpg`, in-page
-  `Torn Abbey`. Pass 2 (bots and bolts, figure polish) in BACKLOG; next: the Kindling Tree (ch. 13).
+- Track A (pass 50, item 2, v7.73.0): the Kindling Tree pass 1, **awaiting Aleix** (not final until he fights it).
+  Blender figure; rooted (hit `burrow`, drawn by `js/root-heave.js`; hit `still`; `rooted`), uprooted at 60%.
+  Strips `docs/scorecard/tree-moves.jpg`; blind judge 50 vs Hollis 48. In-page `Ember Root`. Agathe (pass 48) also
+  awaits Aleix. Pass 2s in BACKLOG; next: the King's Blade (ch. 14).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 38, v7.59.0, feedback): roll only at blows that can reach them (`clearOf`/`carry`), wait less.

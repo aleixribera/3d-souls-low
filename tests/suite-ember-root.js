@@ -13,19 +13,77 @@
     expect.ok(A.STORY.chapters[12].level === 'ember-root' && A.STORY.chapters[12].title === 'THE ROOT OF THE EMBER', 'chapter 13 of the Story');
     expect.ok(A.LEVEL_12.next === 'ember-root', 'the Levels menu carries on from the Torn Abbey too');
   });
-  test('Ember Root: the Kindling Tree keeps Radagon\'s engineering under new names, within the boss rules', () => {
-    const d = A.ENEMY_BY_ID.kindlingTree, ids = new Set(d.attacks.map(a => a.id)), R = RADAGON;
-    expect.ok(d.attacks.length === R.attacks.length, `every move carried over (${d.attacks.length} of ${R.attacks.length})`);
-    for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
+  // A fight with the tree alone, the player `gap` m before it, both facing; the player cannot die.
+  const duel = (gap = 3) => {
+    Game.startFight('kindlingTree'); sim.begin();
+    const e = Game.duel, p = Game.player; p.hp = p.maxHp = 1000; e.cooldown = 99;
+    e.x = e.px = p.x; e.z = e.pz = p.z + gap; e.y = p.y; e.yaw = Math.PI; p.yaw = 0;
+    return { e, p };
+  };
+  test('Ember Root: the Kindling Tree is its own, rooted until it catches, every wind-up its own (pass 50)', () => {
+    const d = A.ENEMY_BY_ID.kindlingTree, ids = new Set(d.attacks.map(a => a.id));
+    for (const a of d.attacks) for (const h of a.hits) if (!(h.box || a.box).ring) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
     for (const P of Object.values(d.phases)) for (const id of P.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);
     for (const a of d.attacks) for (const f of a.followUps || []) expect.ok(ids.has(f.attack), `${a.id} follows up into ${f.attack}`);
-    const K = d.phases.kindled;
-    expect.ok(K.at === 0.6 && K.opener === 'heartwoodBreaks' && K.name === 'The Kindling Tree, Ablaze' && K.ignite, 'at 60 % it catches');
+    expect.ok(d.attacks.every(a => a.pose && a.pose.startsWith('tree')) && !d.attacks.some(a => RADAGON.attacks.some(r => r.id === a.id)), 'no borrowed moves: every pose is its own');
+    const M = MODEL_DEFS.kindlingTree;
+    expect.ok(M.parts.length >= 25 && M.parts.every(q => q.use === 'baked' && q.mesh.startsWith('tree:')) && M.extends !== 'antleredHunger', 'its own Blender figure');
+    expect.ok(d.hp === 2500 && d.posture.max === 105 && d.posture.parry === 50 && d.poise === 270, 'health and posture as before');
+    const P = d.phases.rooted, K = d.phases.kindled;
+    expect.ok(P.rooted === true && d.speed === 0 && !('speed' in P), 'rooted: it never walks');
+    expect.ok(K.at === 0.6 && K.opener === 'uprooted' && K.name === 'The Kindling Tree, Ablaze' && K.ignite && K.rooted === false && K.speed > 0, 'at 60 % it catches and tears itself free');
+    // Every move opens on its own wind-up (its punish is into the roots, sooner; deep roots opens as into the roots does).
+    const tell = a => JSON.stringify(['armR', 'elbowR', 'armL', 'elbowL', 'spin', 'chest', 'crouch'].map(b => ATTACK_POSES[a.pose].hits[0].windup[b]));
+    const seen = new Map();
+    for (const a of d.attacks.filter(a => !['risingPunish', 'deepRoots', 'burningLash'].includes(a.id))) {
+      expect.ok(!seen.has(tell(a)), `${a.id}: its own wind-up (not ${seen.get(tell(a))}'s)`); seen.set(tell(a), a.id);
+    }
+    for (const a of d.attacks) for (const h of a.hits) if (h.burrow)
+      expect.ok(h.startup * (1 - h.burrow.lock) >= CONFIG.burrow.minTell - 1e-6, `${a.id}: the heave holds still long enough to step off`);
     expect.ok(!OLD.test(JSON.stringify(d.attacks.map(a => a.name)) + JSON.stringify(Object.values(d.phases).map(p => p.name || '')) + d.name + d.description),
       'no names of the old road');
     expect.ok(d.holyLight && d.holyLight.color !== CONFIG.bossPowers.holy.color, 'its marks burn in the Ember\'s light, not the old gold');
     expect.ok(BOSS_FX.kindlingTree && BOSS_FX.kindlingTree.phases.kindled === 'fire', 'its effects are written, fire once it catches');
-    expect.ok(R.name === 'Radagon of the Golden Order' && !R.holyLight && R.attacks.some(a => a.id === 'goldBreaker'), 'Radagon himself is untouched');
+    expect.ok(RADAGON.name === 'Radagon of the Golden Order' && !RADAGON.holyLight && RADAGON.attacks.some(a => a.id === 'goldBreaker'), 'Radagon himself is untouched');
+  });
+  test('Ember Root: rooted, nothing shoves the tree and it does not walk to you', () => {
+    const { e, p } = duel(1.0);
+    const at = [e.x, e.z];
+    sim.seconds(1);
+    expect.ok(Math.hypot(e.x - at[0], e.z - at[1]) < 1e-6, `not shoved (${(e.x - at[0]).toFixed(3)}, ${(e.z - at[1]).toFixed(3)})`);
+    expect.ok(Math.hypot(p.x - e.x, p.z - e.z) >= e.radius + p.radius - 0.05, 'the player is pushed off its trunk');
+    sim.place(e.x, e.z - 9, e.y); e.state = ES.CHASE; sim.seconds(1.5);
+    expect.ok(Math.hypot(e.x - at[0], e.z - at[1]) < 1e-6, 'it waits where it is rooted');
+  });
+  test('Ember Root: into the roots, it runs under the floor after you, holds still, and rises through the swelling', () => {
+    const { e, p } = duel(12), a = e.attackById('intoTheRoots'), h = a.hits[0], B = h.burrow;
+    e.beginAttack(a);
+    sim.seconds(h.startup * B.from * 0.5);
+    expect.ok(!e.burrowed() && !e.invulnerable(), 'sinking, not yet under');
+    sim.until(() => e.burrowed(), 2);
+    expect.ok(e.invulnerable(), 'under the floor it cannot be touched');
+    sim.seconds(0.05, 1);
+    expect.ok(rootHeave.live().rings >= 1, `the swelling is drawn (${JSON.stringify(rootHeave.live())})`);
+    const d0 = Math.hypot(e.x - p.x, e.z - p.z);
+    sim.seconds(0.5);
+    expect.ok(Math.hypot(e.x - p.x, e.z - p.z) < d0 - 3, `the heave runs after you (${d0.toFixed(1)} -> ${Math.hypot(e.x - p.x, e.z - p.z).toFixed(1)})`);
+    sim.until(() => e.stateTime >= h.startup * B.lock + 0.1, 3);
+    const lock = [e.x, e.z];
+    sim.place(p.x + 3, p.z, p.y); sim.seconds(0.2);
+    expect.ok(Math.hypot(e.x - lock[0], e.z - lock[1]) < 0.15, 'once it stops, it holds still');
+    sim.place(lock[0] + 6, lock[1], p.y);   // step off the swelling
+    sim.until(() => e.state === ES.ACTIVE, 3);
+    expect.ok(!e.burrowed() && Math.hypot(e.x - lock[0], e.z - lock[1]) < 0.3, 'it rises where it stopped');
+    sim.until(() => e.state !== ES.ACTIVE, 2);
+    expect.ok(p.hp === p.maxHp, `stepped off, untouched (${p.hp})`);
+    // Again: stand still. It stops beside you, not under you, and the swelling still takes you.
+    sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 6);
+    e.beginAttack(a);
+    sim.until(() => e.stateTime >= h.startup * B.lock + 0.05, 4);
+    const gap = Math.hypot(e.x - p.x, e.z - p.z);
+    expect.ok(gap >= e.radius + p.radius && gap < e.radius + p.radius + CONFIG.burrow.near + 0.6, `it rises beside you (${gap.toFixed(2)} m)`);
+    sim.until(() => p.hp < p.maxHp || e.state === ES.RECOVER, 3);
+    expect.ok(p.hp < p.maxHp, `stood on the swelling: struck (${p.hp})`);
   });
   test('Ember Root: Rootbound hold the hollows, and nothing of the old road is left in them', () => {
     const L = A.LEVEL_13, ids = new Set([...L.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...L.dispersed.map(s => s.enemy)]);

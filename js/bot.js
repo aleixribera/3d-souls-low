@@ -48,7 +48,7 @@ const bot = (() => {
   // How far (centre to body edge of `me`) a blow can land, from its box, ring, lunge, dash, step, leap or blink.
   function reach(e, a, hit, me) {
     const C = B(), b = hit.box || a.box;
-    if (hit.blink) return Infinity;
+    if (hit.blink || hit.burrow) return Infinity;
     let r = b.ring ? Math.max(b.ring.from, b.ring.to) + b.ring.width / 2 + Math.hypot(b.fwd, 0) : Math.hypot(b.fwd + b.d / 2, b.w / 2);
     r += (a.lunge || 0) * C.lungeShare;
     if (a.dash && e.hitIndex === 0) r += a.dash.speed * C.dashShare;
@@ -142,7 +142,7 @@ const bot = (() => {
   // Only where the enemy's target is known (the server's netTarget); rings, blinks, leaps and boxes round it count.
   function aimedElsewhere(e, blow, me) {
     const b = blow.hit.box || blow.attack.box;
-    if (!e.netTarget || e.netTarget === (me.id ?? me.botId) || b.ring || blow.hit.blink || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
+    if (!e.netTarget || e.netTarget === (me.id ?? me.botId) || b.ring || blow.hit.blink || blow.hit.burrow || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
     return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) > Math.PI / 2 + B().behindMargin;
   }
   // The enemy's attention is on `me`: the server's netTarget where it is known, else (a solo companion) it faces `me`
@@ -178,7 +178,7 @@ const bot = (() => {
   // before another blow is eligible; tall sweeps, gap closers and projectiles still call for a roll or space.
   function jumpLead(e, blow, me) {
     const C = B().jumpDodge, P = CONFIG.player, a = blow.attack, h = blow.hit, b = h.box || a.box;
-    if (a.projectile || a.breath || a.sphere || a.dash || h.leap || h.blink || h.step || e.leaping) return null;
+    if (a.projectile || a.breath || a.sphere || a.dash || h.leap || h.blink || h.burrow || h.step || e.leaping) return null;
     const top = b.ground ? 0 : e.y + b.y + b.h / 2 - me.y;
     const need = Math.max(0, top) + C.clearance, disc = P.jumpVelocity * P.jumpVelocity - 2 * CONFIG.gravity * need;
     if (disc <= 0) return null;
@@ -300,13 +300,13 @@ const bot = (() => {
       const out = { turn: 0, lo: 0, hi: v * v / (2 * CONFIG.enemy.accel), side: 0, curve: 0 };
       for (let j = e.hitIndex; j <= blow.index; j++) {
         const h = a.hits[j], current = j === e.hitIndex, windup = !current || e.state === ES.WINDUP;
-        if (h.blink) return null;
+        if (h.blink || h.burrow) return null;
         if (windup) {
           const st = current ? e.stateTime : 0, rate = (a.tracking && a.tracking.rate) || a.track || e.def.trackRate || 0;
           const until = a.tracking ? h.startup * a.tracking.commit : a.track ? Infinity : h.startup * CONFIG.enemy.windupTrack;
           // A held wind-up turns longer: what is left of a hold, or the longest one not yet rolled.
           const rolled = current && e.holdLeft !== null, held = rolled ? Math.max(0, e.holdLeft) : h.hold ? h.hold.time[1] : 0;
-          out.turn += rate * (Math.max(0, Math.min(until, h.startup) - st) + held);
+          if (!h.still) out.turn += rate * (Math.max(0, Math.min(until, h.startup) - st) + held);   // a `still` hit does not turn (pass 50)
           const moving = from => Math.max(0, h.startup - Math.max(st, h.startup * from));
           const go = (from, d) => { if (from < until / h.startup) out.curve += Math.abs(d); return d; };
           if (h.step) { const t = moving(h.step.from); out.hi += go(h.step.from, h.step.speed * t); out.side += Math.abs(h.step.side || 0) * t; }
@@ -345,7 +345,7 @@ const bot = (() => {
     }
     function walkEscape(me, e, blow) {
       const a = blow.attack, h = blow.hit, box = h.box || a.box;
-      if (box.ring || a.dash || a.breath || a.sphere || h.step || h.leap || h.blink || blow.eta < C.defence.walkLead) return null;
+      if (box.ring || a.dash || a.breath || a.sphere || h.step || h.leap || h.blink || h.burrow || blow.eta < C.defence.walkLead) return null;
       const d = escapeDir(me, e, blow), travel = CONFIG.player.walkSpeed * (blow.eta - C.defence.walkMargin);
       const end = { x: me.x + d.x * travel, z: me.z + d.z * travel, y: me.y, height: me.height };
       return clearPath(me, end) && outsideBox(me, e, blow, end.x, end.z) ? d : null;
@@ -358,7 +358,7 @@ const bot = (() => {
       if (!s || s.key !== key) {
         const P = CONFIG.parry, b = blow.attack.box;
         const near = Math.hypot(e.x - me.x, e.z - me.z) <= b.fwd + b.d / 2 + me.radius + P.reach - 0.15;
-        const parry = canParryAttack(blow.attack) && near && !blow.hit.leap && !blow.hit.blink && rng() < profile.parry * C.parryChanceScale;
+        const parry = canParryAttack(blow.attack) && near && !blow.hit.leap && !blow.hit.blink && !blow.hit.burrow && rng() < profile.parry * C.parryChanceScale;
         const walk = !parry && me.isFree() && rng() < profile.evade ? walkEscape(me, e, blow) : null;
         const jump = !parry && !walk && !outsideBox(me, e, blow) && me.grounded && me.isFree() && me.stamina >= CONFIG.player.jumpCost + C.reserve &&
           (!bolt || bolt.eta > 2 * CONFIG.player.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin) &&

@@ -189,8 +189,9 @@ function resolveTeamCombat(game) {
 
 // Bodies cannot overlap; enemies barely give way to the player, and dummies never do.
 function separatePair(a, b, shareA) {
-  if (b.immovable) shareA = 1; else if (a.immovable) shareA = 0;
+  if (b.immovable || (b.def && b.def.rooted)) shareA = 1; else if (a.immovable || (a.def && a.def.rooted)) shareA = 0;   // a rooted phase (pass 50) is not shoved
   if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
+  if ((a.burrowed && a.burrowed()) || (b.burrowed && b.burrowed())) return;   // under the floor (a hit's `burrow`)
   const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.radius + b.radius;
   if (d >= min) return;
   const nx = d > 1e-4 ? dx / d : Math.sin(b.yaw), nz = d > 1e-4 ? dz / d : Math.cos(b.yaw), push = min - d;

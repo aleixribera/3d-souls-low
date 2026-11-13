@@ -2940,7 +2940,7 @@
   test('High loading: selected boss assets and all phase meshes are ready before play', () => {
     try {
       A.visuals.setQuality('high'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
         let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
@@ -3136,7 +3136,7 @@
   test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
     try {
       A.visuals.setQuality('ultra'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         const e = Game.enemies[0];
         expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
@@ -3196,7 +3196,7 @@
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {
       A.visuals.setQuality('low'); sim.begin();
-      for (const [id, field] of [['kindlingTree', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
         const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;

@@ -570,9 +570,14 @@ Chapter 13, after the Torn Abbey. Under everything, the Ember is a root, and the
 the Ember** is the inside of its first growth: hollows of living red-gold wood, warm to the hand, joined by roots with
 no rail over a burning deep. Here the Seven came down with lamps, long ago, and went up again carrying a coal.
 
-**The Kindling Tree** is the Ember's own root, given limbs, where it began. Its boughs lash, its thorns fly, its mark in
-the floor burns a moment later, and it sinks into its roots to rise where the player stands. At 60 % it catches, and
-the bar names it **the Kindling Tree, Ablaze**.
+**The Kindling Tree** is the Ember's own root, given limbs, where it began: a twisted trunk of living red-gold wood on
+buttress roots, two gnarled boughs for arms ending in thorned claws, a bare crown with a few leaves the colour of embers,
+and in its breast the hollow where the Seven took their coal, and the coal that grew back. It has no face. It is rooted
+in the heartwood and does not walk to the player: its boughs lash and fall, its claw drives a mark into the floor that
+burns a moment later, its crown flings thorns, and when the player hugs its trunk the roots burst up all round it. Far
+off, it goes down into its roots: the floor heaves and runs after the player, stops, swells, and the tree comes up
+through it. At 60 % it catches, tears its roots out of the floor and comes after the player, burning, and the bar names
+it **the Kindling Tree, Ablaze**.
 
 The **Rootbound** are thralls grown into the wood, and gone into it gladly: they sink into the roots and rise where you
 stand, throw thorns of fire, and mark the floor to burn.
