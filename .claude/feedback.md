@@ -18,3 +18,6 @@ took it (once taken).
 - 2026-11-13, correction to the boss health complaint above: withdrawn. The normal (non-Elden Ring) bosses' health,
   group scaling included, is right: keep it as it is. Only the Elden Ring bosses felt too tanky, and they are leaving
   the game soon, so no health change is needed.
+- 2026-11-13, decision (relayed by the director from the grilling): remove the Elden Ring bosses and their levels (the
+  whole old second road, the Lands Between) now, not later at the swap: "let's make them leave now ... so that the
+  next loops build their own levels and bosses." The director records it in VISION.md and PLAN.md.
