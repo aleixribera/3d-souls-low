@@ -39,8 +39,11 @@ Aleix, 2026-11-13.
   reaches about 20. Crowned bosses every 5 fights. Story tunes its own bosses for the player's experience, and its
   levels and some enemies need reworks (track B, item 10; track A, items 5 and 7).
 - The coolest Boss Rush out there (Aleix, 2026-11-13, yes to all six of the director's ideas): revive a friend
-  mid-fight and highlights on the end screen (track B, item 4; Focus later dropped); a Crowned boss every 5th fight (item 5; first every 10th); pacts
-  (item 6); a weekly run with a friends' board (item 8). Left out on purpose: damage numbers, stat upgrades between
+  mid-fight and highlights on the end screen (track B, item 4; Focus later dropped); a Crowned boss every 5th fight
+  (item 5; first every 10th); a weekly run with a friends' board (item 8). Pacts were in this list too and are
+  removed (2026-11-13): runs are too short for them, they landed on the Crowned fights, and a vote screen is menu
+  friction. A Crowned win offers a legendary instead; a voluntary harder-for-more choice waits until runs are
+  played and someone asks for one, and would then be picked once before a run, never voted mid-run. Left out on purpose: damage numbers, stat upgrades between
   runs, a separate arena for every boss.
 - The UI (2026-11-13): way better to use and look at, before Endless (track B, item 3). Not Souls-like references;
   mouse and keyboard first with full controller support; the best control for each job in one direction; a castle
@@ -288,18 +291,20 @@ comes back to item 6 the moment it lands.
    the first few fights (faster, an extra phase of new moves, burning ground, a second boss; none adds damage or
    health) and are shown by name under the boss's bar; every few fights two bosses come at once.
    - **Crowned bosses.** Every 5th fight is a Crowned boss (Aleix, 2026-11-13, over every 10th): its own new final
-     phase (new moves, by `VISION.md`'s rules: each telegraphed, none shared with another boss), the arena changed for that fight (light, ground,
-     hazards: baked, inside Normal's budget), and a guaranteed rare ability for winning. The HUD shows how many
-     fights until the next one, so the endless run has chapters and a goal ("we hit Crowned 2 last time").
+     phase (new moves, by `VISION.md`'s rules: each telegraphed, none shared with another boss), the arena changed for
+     that fight (light, ground, hazards: baked, inside Normal's budget), and for winning, an ability pick of 4 with at
+     least one legendary (Aleix, 2026-11-13, in place of pacts). The HUD shows how many fights until the next one, so
+     the endless run has chapters and a goal ("we hit Crowned 2 last time").
    The end screen shows bosses beaten and Crowned reached. Check: a test that the first fights draw only the easier
    bosses and that fights 5, 10 and 15 are Crowned; frames of a modifier on screen and of a Crowned fight.
 6. **Abilities** (Aleix, 2026-11-13). The one name from now on, in the game's text, the code and these files: an
    *ability*, never a blessing, upgrade, boon, skill or power. The pick screen says "Choose an ability"; new code
    says `ability`; old identifiers are renamed when a pass touches them.
    - **First, the upgrades session** ("Design all upgrades and special upgrades from zero", working with Aleix):
-     removes the five old blessings and builds the first set, its data, the tall-card pick screen (item 3's spec) and
-     pacts. While it works, the loop doesn't touch `js/data/blessings.js`, `CONFIG.blessings`, the offer code or the
-     pick screen. When it has shipped (merged into `main`), this item is the loop's, and it comes next in this track.
+     removes the five old blessings and builds the first set, its data and the tall-card pick screen (item 3's spec);
+     no pacts (removed, Aleix, 2026-11-13). While it works, the loop doesn't touch `js/data/blessings.js`,
+     `CONFIG.blessings`, the offer code or the pick screen. When it has shipped (merged into `main`), this item is the
+     loop's, and it comes next in this track.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use.
@@ -325,13 +330,9 @@ comes back to item 6 the moment it lands.
      arena, and end with it. An ability acts on its owner and the boss and touches teammates only lightly (a small
      shared buff at most), never slowing, moving or linking them. Item 2's pace curve is tuned against a stacked kit,
      solo and in a party, so it still reaches impossible.
-   - **Pacts** (built first by the upgrades session): after fight 5, 15, 25 and every ten on, the team votes on one
-     pact: the bosses step up item 2's pace curve for the rest of the run (shown by name with the modifiers) and
-     everyone gets a legendary ability now. Majority wins; a tie or no vote by the pick clock means no pact. Alone,
-     you decide. The end screen lists the pacts taken.
    Check: the odds in a test; every legendary and summon seen working in a real fight, alone and in a party of four,
    with frames of each one's moment; rare ones seen with their effect and sound; a test of the curve against a
-   late-run kit; a test of a pact vote (majority, tie, timeout) and its pace step.
+   late-run kit.
 7. **Levels and crates** (waits until the upgrades session has shipped the new abilities; Aleix, 2026-11-13: the
    roll keeps its animation and effects, in the game's style). Playing earns levels, kept per browser. Each level-up
    gives one crate, opened on the
