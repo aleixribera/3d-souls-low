@@ -45,6 +45,8 @@ async function peer(origin) {
     assert.equal(session.teamWipeOnly, true);
     ready(a); ready(b); await flush(b);
     app.sim.inspect().Game.duel.hp -= 24;
+    // Group scaling (v7.35.0) may resize Margit's bar as poses arrive; her share of it is what must hold.
+    const duel = app.sim.inspect().Game.duel, share = duel.hp / duel.def.hp;
     pose(a, true); await flush(a);
     // Wait longer than the ordinary respawn delay while a teammate survives.
     await wait((app.sim.arenaWipeDelay + 0.2) * 1000);
@@ -52,13 +54,13 @@ async function peer(origin) {
     ready(a); await flush(a);
     assert.equal(app.clients.get(a.id).pose.hp, 0, 'ready and revived poses cannot bypass defeat');
     assert.equal(app.clients.get(a.id).pose.state, 'dead');
-    assert.equal(app.sim.inspect().Game.duel.hp, 3176, 'partial wipe preserves boss damage');
+    assert.ok(share < 1 && Math.abs(duel.hp / duel.def.hp - share) < 1e-9, 'partial wipe preserves boss damage');
     pose(b, true); await flush(b);
     const oldEpoch = session.epoch;
     session = (await a.next('start')).session; await b.next('start');
     assert.ok(session.epoch > oldEpoch, 'full wipe starts a fresh shared attempt');
     assert.equal(session.id, 'margit');
-    assert.equal(app.sim.inspect().Game.duel.hp, 3200, 'boss health resets');
+    assert.equal(app.sim.inspect().Game.duel.hp, app.sim.inspect().Game.duel.def.hp, 'boss health resets');
     ready(a); ready(b); await flush(b);
     assert.equal(app.clients.get(a.id).pose.hp, 120, 'new attempt restores the party');
     // Speed up the remaining edge cases, without changing the production delay.

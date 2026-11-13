@@ -64,7 +64,7 @@ const until = async (test, message, limit = 4000) => {
     const { Game, world } = app.sim.inspect(), zone = Game.zones.find(z => z.id === 'zone-heath');
     for (const e of zone.actors) { e.hp = 0; e.die(); }
     const boss = Game.enemies.find(e => e.baseDef.id === 'margit');
-    boss.hp -= 24; const bossHp = boss.hp;
+    boss.hp -= 24; const bossShare = boss.hp / boss.def.hp;   // her share of a bar that grows with the group (v7.35.0)
     await b.next('frame', m => m.frame.gates.some(g => g.id === zone.id && g.open));
 
     a.send({ type: 'presence', foreground: false }); await a.activity();
@@ -87,7 +87,7 @@ const until = async (test, message, limit = 4000) => {
     const emptyTime = app.sim.state.time;
     await until(() => app.sim.state.time > emptyTime + 0.15, 'the empty run continues ticking');
     assert.equal(app.session.epoch, session.epoch, 'an intentional empty lobby retains the adventure');
-    assert.equal(boss.hp, bossHp, 'boss health survives the whole party leaving');
+    assert.ok(bossShare < 1 && Math.abs(boss.hp / boss.def.hp - bossShare) < 1e-9, 'boss health survives the whole party leaving');
     assert.ok(world.gates.find(g => g.id === zone.id).open, 'won gates remain open');
 
     const rejoined = await add('', token), resumed = await rejoined.next('start');

@@ -66,7 +66,7 @@ async function join(origin, name) {
       await new Promise(r => setTimeout(r, (app.sim.arenaWipeDelay + 1) * 1000));
       assert.equal(app.session.epoch, session.epoch, 'a standing bot keeps the attempt alive');
       const boss = app.sim.inspect().Game.enemies[0];
-      assert.ok(boss.hp < boss.baseDef.hp, 'the bot deals real damage to the shared boss');
+      assert.ok(boss.hp < boss.def.hp, 'the bot deals real damage to the shared boss');
     } finally { clearInterval(keep); }
     a.clear(); a.send({ type: 'control', action: 'removeBot', player: botRow.id });
     await a.next('roster', m => !m.players.some(p => p.bot));

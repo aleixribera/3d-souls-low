@@ -158,6 +158,12 @@ function validateData({ visual = true } = {}) {
     if ('critMul' in d) need(num(d.critMul) && d.critMul > 0 && d.critMul <= 1, `Enemy "${d.id}": critMul must be a number in (0, 1].`);
     if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'hitstop'].every(k => num(d.posture[k])),
       `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime and hitstop.`);
+    // Group scaling (v7.35.0): false, or any of CONFIG.group's hp, posture and breakTime, which stay 0 or more and keep
+    // a break above zero seconds at CONFIG.group.cap players.
+    if ('groupScale' in d) need(d.groupScale === false || d.groupScale && typeof d.groupScale === 'object'
+      && Object.entries(d.groupScale).every(([k, v]) => ['hp', 'posture', 'breakTime'].includes(k) && num(v) && v >= 0)
+      && (d.groupScale.breakTime ?? 0) * (CONFIG.group.cap - 1) < 1,
+      `Enemy "${d.id}": groupScale must be false or an object of hp, posture and breakTime (0 or more; breakTime x (cap - 1) under 1).`);
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
     if ('phases' in d) {
@@ -204,6 +210,9 @@ function validateData({ visual = true } = {}) {
     need(a.feel === undefined || a.feel === 'heavy', `Player attack "${a.id}": feel must be 'heavy' or left out.`);
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
+  const GS = CONFIG.group;   // group scaling (v7.35.0): a break still lasts above zero seconds at `cap` players
+  need(GS && Number.isInteger(GS.cap) && GS.cap >= 1 && ['hp', 'posture', 'breakTime', 'leaveDelay'].every(k => num(GS[k]) && GS[k] >= 0)
+    && GS.breakTime * (GS.cap - 1) < 1, 'CONFIG.group: cap must be a whole number of 1 or more; hp, posture, breakTime and leaveDelay 0 or more, with breakTime x (cap - 1) under 1.');
   // Executions (js/execution.js): the attack they run, and every tuning number.
   need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
   const X = CONFIG.execution;

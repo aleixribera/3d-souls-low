@@ -1,0 +1,13 @@
+﻿giant              6/6 wins  {"win":6}  win avg 49s  resolve avg/max 49/51s  damage taken 38  hp left 97  longest lull 1.5s  fell avg 0.0/3  hit avg 1.3/3
+pillagerCaptain    6/6 wins  {"win":6}  win avg 48s  resolve avg/max 48/59s  damage taken 64  hp left 93  longest lull 2.5s  fell avg 0.0/3  hit avg 2.3/3
+bellWarden         6/6 wins  {"win":6}  win avg 72s  resolve avg/max 72/77s  damage taken 93  hp left 87  longest lull 2.2s  fell avg 0.0/3  hit avg 2.7/3
+varn               5/6 wins  {"win":5,"loss":1}  win avg 148s  resolve avg/max 158/209s  damage taken 185  hp left 48  longest lull 2.3s  fell avg 1.5/3  hit avg 3.0/3
+antlered           5/6 wins  {"win":5,"loss":1}  win avg 91s  resolve avg/max 97/129s  damage taken 179  hp left 64  longest lull 2.3s  fell avg 0.5/3  hit avg 3.0/3
+margit             6/6 wins  {"win":6}  win avg 103s  resolve avg/max 103/132s  damage taken 100  hp left 72  longest lull 2.4s  fell avg 0.5/3  hit avg 3.0/3
+godrick            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 114/162s  damage taken 225  hp left -  longest lull 2.0s  fell avg 3.0/3  hit avg 3.0/3
+crucibleKnight     4/6 wins  {"win":4,"loss":2}  win avg 127s  resolve avg/max 137/212s  damage taken 157  hp left 57  longest lull 3.2s  fell avg 1.3/3  hit avg 3.0/3
+morgott            1/6 wins  {"loss":5,"win":1}  win avg 171s  resolve avg/max 127/171s  damage taken 188  hp left 44  longest lull 2.9s  fell avg 2.7/3  hit avg 3.0/3
+godfrey            1/6 wins  {"loss":5,"win":1}  win avg 181s  resolve avg/max 150/181s  damage taken 270  hp left 0  longest lull 2.9s  fell avg 2.8/3  hit avg 3.0/3
+maliketh           1/6 wins  {"loss":5,"win":1}  win avg 170s  resolve avg/max 141/171s  damage taken 252  hp left 58  longest lull 2.4s  fell avg 2.8/3  hit avg 3.0/3
+radagon            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 136/206s  damage taken 247  hp left -  longest lull 3.6s  fell avg 3.0/3  hit avg 3.0/3
+malenia            0/6 wins  {"loss":6}  win avg -s  resolve avg/max 160/188s  damage taken 214  hp left -  longest lull 3.6s  fell avg 3.0/3  hit avg 3.0/3

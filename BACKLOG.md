@@ -15,7 +15,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   without the v7.34.0 change: flaky (pass 2, 2026-11-13).
 - Bots fight bosses worse alone than in v7.12.1's record: Ser Quill beat the Bell Warden and Margit 6/6 then
   (`.scratch/bot-duel-v7.12.1-final.json`), 0/6 now (`docs/scorecard/boss-duels-1-bot.txt`, pass 5). Bots fill The
-  Calling's empty slots (`PLAN.md` stage 2, item 3): find which change since v7.13.0 did it before then.
+  Calling's empty slots (`PLAN.md` stage 2, item 3): find which change since v7.13.0 did it before then. With group
+  scaling (pass 6) three bots beat the Lands' bosses only 13/48 (`docs/scorecard/boss-duels-3-bots-grouped.txt`), so a
+  run with bot fill-ins needs this fixed, then `CONFIG.group` checked again.
+- Group scaling counts everyone in the run, but the Lands road's solo companion Finn (Story mode) doesn't make a boss
+  scale; if a companion should, it's a `setGroup` call where companions spawn (pass 6).
 - The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
   no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
 - Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat

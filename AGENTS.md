@@ -92,6 +92,7 @@ A new file goes in the layer it belongs to. If the server needs it, add it to th
 | An Elden Ring boss | `js/data/bosses/<boss>.js` (poses, model, def), registered in `data/elden-bosses.js`, effects in `data/boss-fx.js` |
 | Attack phases and key poses | `js/attack-anim.js`, `js/data/attack-poses.js` |
 | Executions | `js/execution.js`, `CONFIG.execution` |
+| A boss against a group (health, posture, breaks per player) | `CONFIG.group`, `groupDef` and `setGroup` (`js/enemy.js`), a def's `groupScale`; the server scales each tick |
 | Boss phases, reactions, follow-ups | `js/enemy.js` (`enterPhase`, `outlast`, `REACTIONS`, `FOLLOW_IF`, `attackById`) |
 | A level | `js/levels/*.js`, listed in `data/levels.js` |
 | Models built in Blender | `tools/blender/*.py`, packed by `tools/pack-baked.cjs` into `js/baked/`, decoded by `js/baked.js`; a level draws them through `scenery` (`js/scenery.js`), a model through `use: 'baked'` parts. Steps in `docs/church-in-the-pass-v7.20.0.md` and `docs/wanderer-model-v7.21.0.md` |

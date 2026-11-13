@@ -52,7 +52,7 @@ async function join(origin, name) {
     assert.match(changed.notice, /inactive for five minutes/);
     assert.equal(a.ws.readyState, WebSocket.OPEN, 'demoted player stays in the game');
     assert.equal(app.session.epoch, session.epoch, 'timeout preserves the current session');
-    assert.equal(app.sim.inspect().Game.duel.hp, 3200, 'timeout preserves the shared boss');
+    assert.equal(app.sim.inspect().Game.duel.hp, app.sim.inspect().Game.duel.def.hp, 'timeout preserves the shared boss');
     a.send({ type: 'control', action: 'restart' });
     assert.match((await a.next('error')).message, /Only the lobby leader/, 'old leader loses authority immediately');
     assert.equal(app.session.epoch, session.epoch);

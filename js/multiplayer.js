@@ -949,6 +949,7 @@ const multiplayer = (() => {
       // still cannot appear before this player's execution animation finishes.
       if (Game.player.exec?.enemy === e) { e.stateTime += dt; continue; }
       const priorState = e.state;
+      e.setGroup(s.group || 1);   // the server's group scaling, before its health and meters land on the scaled bars
       if (e.phase !== s.phase && s.phase >= 0) e.enterPhase(s.phase);
       e.x = lerp(s.x, q.x, alpha); e.y = lerp(s.y, q.y, alpha); e.z = lerp(s.z, q.z, alpha);
       e.yaw = s.yaw + angDiff(q.yaw, s.yaw) * alpha;

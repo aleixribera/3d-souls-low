@@ -17,8 +17,8 @@ Evidence lives in `docs/scorecard/` (v7.34.0, 2026-11-13). To take it again:
 | Combat feel | 3 | Timings, parries, rolls and executions are specified and tested, but no play feedback is on record yet. | `docs/combat-timings-v4.1.md`, `tests/suite.js` (261 in-page tests), `.claude/feedback.md` |
 | Characters and art | 3 | The wanderer, 13 enemies and the Antlered Hunger are Blender models; Aldric, the Bell Warden, the Pillager Captain, the Giant Skeleton, the Gargoyle and the Empty Sentinel are still hand-built geometry. | `docs/scorecard/boss-*.jpg`, `js/baked/` |
 | Levels and content | 3 | Six levels, each with its own light and look; from their opening frames most read as plain corridors and squares (rows below). | `docs/scorecard/level-*.jpg` |
-| Bosses | 2 | Alone they hold up, but no boss scales with the group: three players beat every Ashmere boss in 20-61 s and none of them falls. | `docs/scorecard/boss-duels-1-bot.txt`, `boss-duels-3-bots.txt` |
-| Co-op and multiplayer | 2 | The public lobby, bots and boss runs work, but there is no mode built for a group yet (The Calling, `PLAN.md` stage 2), and group fights are too easy. | `tests/multiplayer.cjs`, `tests/boss-only.cjs`, `docs/scorecard/boss-duels-3-bots.txt` |
+| Bosses | 2 | Every boss scales with the group now: three bots need 48-148 s for an Ashmere boss and fall in some fights, but they beat the Lands' bosses only 13/48 times. | `docs/scorecard/boss-duels-1-bot.txt`, `boss-duels-3-bots-grouped.txt` |
+| Co-op and multiplayer | 2 | The public lobby, bots and boss runs work, and boss bars grow with the group on every client, but there is no mode built for a group yet (The Calling, `PLAN.md` stage 2). | `tests/group-scaling.cjs`, `tests/boss-only-browser.cjs`, `docs/scorecard/boss-only-2p-grouped.jpg` |
 | Menus and HUD | 3 | The title and HUD read cleanly at desktop and phone width, but the title cards carry eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") Aleix's rules forbid. | `docs/scorecard/menu-title-desktop.jpg`, `menu-title-phone.jpg` |
 | Performance | 4 | Every Ashmere level runs at the 144 Hz cap on High on this PC (7 ms median), but with 233-762 draw calls and up to 632k triangles, and friends' machines are unmeasured. | `docs/scorecard/levels-high.json` |
 
@@ -39,22 +39,24 @@ Scored from each level's opening frame only (pass 1); a deeper look plays throug
 
 Wins out of 6 against one bot, then against three bots together (time to win, bots fallen of 3). Frames:
 `docs/scorecard/boss-<id>.jpg`. A good group fight is won most of the time, takes a while, and costs someone a fall.
+Since v7.35.0 (pass 6) every boss scales with the group (`CONFIG.group`: a bar twice as long for three); the 3-player
+column is `docs/scorecard/boss-duels-3-bots-grouped.txt`, and the unscaled run it replaced is `boss-duels-3-bots.txt`.
 
 | Boss | Score | 1 player | 3 players | Why |
 |---|---|---|---|---|
-| Giant Skeleton | 2 | 6/6, 69 s | 6/6, 20 s, 0 fell | Fair alone; a group kills it in 20 s and is barely hit (0.3 of 3). |
-| Pillager Captain | 2 | 2/6, 68 s | 6/6, 22 s, 0 fell | A real duel alone; trivial for a group. |
-| Bell Warden | 2 | 0/6 | 6/6, 29 s, 0 fell | The bot can't beat it alone; a group barely gets hit (0.3 of 3). |
-| Aldric (both phases) | 3 | 0/6 | 6/6, 61 s, 0 fell | The longest Ashmere group fight, but nobody falls. |
-| The Antlered Hunger | 2 | 1/6, 178 s | 6/6, 37 s, 0 fell | Hard alone; easy for a group. |
-| Margit | 4 | 0/6 | 5/6, 47 s, 0.7 fell | A group fight with risk: all three get hit, one sometimes falls. |
-| Godrick | 4 | 0/6 | 4/6, 63 s, 1.0 fell | Hard for a group too: a fall in every fight on average. |
-| Crucible Knight | 2 | 1/6, 223 s | 6/6, 41 s, 0 fell | Slow alone; easy for a group. |
-| Morgott | 4 | 0/6 | 3/6, 81 s, 1.7 fell | The closest group fight: half the runs are lost. |
-| Godfrey | 3 | 0/6 | 6/6, 63 s, 0.2 fell | Everyone is hit, but the group always wins. |
-| Maliketh | 4 | 0/6 | 5/6, 62 s, 0.8 fell | A group fight with risk. |
-| Radagon | 1 | 0/6 | 0/6, all 3 fell | Unbeaten by one bot or three: too hard for bots, untested by people. |
-| Malenia | 3 | 0/6 | 3/6, 126 s, 1.5 fell | Hard and long for a group, as intended for the last boss. |
+| Giant Skeleton | 3 | 6/6, 69 s | 6/6, 49 s, 0 fell | Fair alone; a group now needs most of a minute, but nobody falls. |
+| Pillager Captain | 3 | 2/6, 68 s | 6/6, 48 s, 0 fell | A real duel alone; a group is hit (2.3 of 3) but never falls. |
+| Bell Warden | 3 | 0/6 | 6/6, 72 s, 0 fell | A longer group fight with every bot hit, still without a fall. |
+| Aldric (both phases) | 4 | 0/6 | 5/6, 148 s, 1.5 fell | A long group fight that costs falls and is sometimes lost. |
+| The Antlered Hunger | 4 | 1/6, 178 s | 5/6, 91 s, 0.5 fell | Won most of the time, with a fall every other fight. |
+| Margit | 4 | 0/6 | 6/6, 103 s, 0.5 fell | A group fight with risk: all three get hit, one sometimes falls. |
+| Godrick | 2 | 0/6 | 0/6, all 3 fell | Scaled, three bots can't beat it (4/6 unscaled); untested by people. |
+| Crucible Knight | 4 | 1/6, 223 s | 4/6, 127 s, 1.3 fell | Slow alone; a real group fight now. |
+| Morgott | 2 | 0/6 | 1/6, 171 s, 2.7 fell | Scaled, nearly unbeatable for bots (3/6 unscaled). |
+| Godfrey | 2 | 0/6 | 1/6, 181 s, 2.8 fell | Scaled, nearly unbeatable for bots (6/6 unscaled). |
+| Maliketh | 2 | 0/6 | 1/6, 170 s, 2.8 fell | Scaled, nearly unbeatable for bots (5/6 unscaled). |
+| Radagon | 1 | 0/6 | 0/6, all 3 fell | Unbeaten by one bot or three, scaled or not: too hard for bots, untested by people. |
+| Malenia | 2 | 0/6 | 0/6, all 3 fell | Scaled, unbeaten by bots (3/6 unscaled). |
 
 Bots also do worse alone than in v7.12.1's record (Ser Quill beat the Bell Warden and Margit 6/6 then, 0/6 now):
 `.scratch/bot-duel-v7.12.1-final.json` (local only) against `docs/scorecard/boss-duels-1-bot.txt`; see `BACKLOG.md`.

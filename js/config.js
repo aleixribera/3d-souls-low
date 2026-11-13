@@ -159,6 +159,13 @@ const CONFIG = {
            transition: 3,       // a refilled boss phase's kneel (s) when its phase sets no `transition`
            retreatSpeed: 24,    // a `boss.retreat` leap's top speed (m/s) when it sets no `speed`
            followReach: 1 },    // `flank` / `behind` follow-ups reach this many m past the attack's range
+  // A boss against a group (v7.35.0): every boss scales with the players in its session (people and bots, counted up to
+  // `cap`). Each player past the first adds `hp` of its health bar and `posture` of its posture (or stagger) bar, and
+  // takes `breakTime` off a break's length, so a group's extra blows in one break don't melt it. Solo it is unchanged.
+  // A def's `groupScale` overrides any of hp, posture and breakTime, or `groupScale: false` keeps its solo numbers.
+  // The server grows a boss at once when someone arrives, and shrinks it only after the group has been smaller for
+  // `leaveDelay` s, so a stalled connection or a moment in another tab doesn't resize it.
+  group: { cap: 4, hp: 0.5, posture: 0.3, breakTime: 0.1, leaveDelay: 10 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
   notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 15, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line

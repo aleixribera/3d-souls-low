@@ -45,6 +45,16 @@ function pickByChance(attacks) {
   let r = Math.random() * total;
   return total > 0 ? attacks.find(a => (r -= attackChance(a)) < 0) || attacks[attacks.length - 1] : null;
 }
+// A def's numbers against a group of `players` (CONFIG.group, v7.35.0): more health, a longer posture or stagger bar and
+// a shorter break per player past the first. One player, or `groupScale: false`, returns the def itself.
+function groupDef(def, players) {
+  const G = CONFIG.group, k = Math.min(Math.max(1, players | 0), G.cap) - 1;
+  if (k <= 0 || def.groupScale === false) return def;
+  const R = { ...G, ...def.groupScale }, out = { ...def, hp: def.hp * (1 + R.hp * k) };
+  const meter = M => ({ ...M, max: M.max * (1 + R.posture * k), breakTime: M.breakTime * (1 - R.breakTime * k) });
+  for (const key of ['posture', 'stagger', 'guard']) if (def[key]) out[key] = meter(def[key]);
+  return out;
+}
 
 // opts: x, y (the floor it stands on, default 0), z, yaw, behavior (a key of BEHAVIORS), notice, leash, homeLeash, path,
 // zone (the gated zone it belongs to: an alert wakes the whole zone), key (its placement, for bonfire checkpoints)
@@ -93,6 +103,7 @@ class Enemy {
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
     // away instead of dying (the opening of Level 5).
     this.baseDef = def; this.boss = opts.boss || null;
+    this.plainDef = def; this.group = 1;   // its def before group scaling, and the players it is scaled for (setGroup)
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -103,7 +114,8 @@ class Enemy {
   enterPhase(i) {
     const base = this.baseDef, P = base.phases[this.phaseIds[i]];
     this.phase = i;
-    this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
+    this.plainDef = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
+    this.def = groupDef(this.plainDef, this.group);
     this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
@@ -111,6 +123,18 @@ class Enemy {
   // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
   // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).
   isBoss() { return isBossDef(this.baseDef) || !!this.boss; }
+  // Scale it for a group of `players` (CONFIG.group; the server calls this for every boss as players come and go). Its
+  // health and meters keep their share of the bar, so someone joining mid-fight neither heals nor wounds it.
+  setGroup(players) {
+    const n = Math.min(Math.max(1, players | 0), CONFIG.group.cap);
+    if (n === this.group) return;
+    const old = this.def, next = groupDef(this.plainDef, n);
+    const share = (value, a, b) => a && b ? value / a.max * b.max : value;
+    this.hp = this.hp / old.hp * next.hp;
+    this.posture = share(this.posture, old.posture, next.posture);
+    this.guardMeter = share(this.guardMeter, old.stagger || old.guard, next.stagger || next.guard);
+    this.def = next; this.group = n;
+  }
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
   // on the same bar (no kneel, no refill). Its `opener` (an attack id) is the first thing it does.

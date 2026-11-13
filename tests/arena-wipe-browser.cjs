@@ -28,20 +28,21 @@ const { createServer } = require('../server/index.cjs');
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     const epoch = app.session.epoch;
     app.sim.inspect().Game.duel.hp -= 24;
+    const duel = app.sim.inspect().Game.duel, share = duel.hp / duel.def.hp;   // her share of a group-scaled bar
     await die(a);
     await a.waitForFunction(() => Game.deathTimer > CONFIG.death.respawnDelay + 0.2);
     assert.equal(await a.evaluate(() => Game.player.alive()), false, 'dead player cannot respawn while teammate lives');
     assert.match(await a.locator('#diedStatus').textContent(), /Waiting for your team/);
     assert.equal(await b.evaluate(() => Game.player.alive()), true);
     assert.equal(app.session.epoch, epoch);
-    assert.equal(app.sim.inspect().Game.duel.hp, 3176);
+    assert.ok(share < 1 && Math.abs(duel.hp / duel.def.hp - share) < 1e-9, 'a partial wipe keeps her damage');
     await die(b);
     await a.waitForFunction(epoch => multiplayer.info.session.epoch > epoch, epoch, { timeout: 20000 });
     await Promise.all([ready(a), ready(b)]);
     for (const p of [a, b]) {
       assert.equal(await p.evaluate(() => Game.player.alive()), true);
       assert.equal(await p.evaluate(() => Game.player.hp === Game.player.maxHp), true);
-      assert.equal(await p.evaluate(() => Game.duel.hp), 3200);
+      assert.equal(await p.evaluate(() => Game.duel.hp === Game.duel.def.hp), true, 'the boss is back to a full bar');
     }
     assert.deepEqual(errors, []);
     console.log('Boss arena browsers: defeated player waits beyond respawn delay; full team wipe restores both players and boss.');

@@ -114,16 +114,18 @@ function peer(url, origin) {
     const start = await a.next('start'); await b.next('start');
     const epoch = start.session.epoch;
     for (const p of [a, b]) { p.send({ type: 'ready', epoch }); p.send({ type: 'pose', epoch, pose: pose() }); }
-    await a.next('frame', m => m.frame.time > 0);
+    await a.next('frame', m => m.frame.time > 0 && m.frame.enemies[0].group === 2);   // both in: Margit is scaled for two
+    const full = app.sim.inspect().Game.duel.def.hp;
+    assert.ok(full > 3200, 'two players fight a longer bar than one');
     a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/margit', attack: 'light', charge: 0, swing: 'one' });
     a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/margit', attack: 'light', charge: 0, swing: 'one' });
-    await a.next('frame', m => m.frame.enemies[0].hp < 3200);
-    assert.equal(app.sim.inspect().Game.duel.hp, 3176, 'duplicate contacts do not damage twice');
+    await a.next('frame', m => m.frame.enemies[0].group === 2 && m.frame.enemies[0].hp < full);
+    assert.equal(app.sim.inspect().Game.duel.hp, full - 24, 'duplicate contacts do not damage twice');
     b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/margit', attack: 'heavy', charge: 0, swing: 'old' });
     const c = peer(url, origin); peers.push(c); await c.join();
     assert.equal((await c.next('start')).session.epoch, epoch, 'late join gets current session');
     c.send({ type: 'ready', epoch });
-    assert.equal((await c.next('frame')).frame.enemies[0].hp, 3176, 'late join gets shared current health');
+    assert.equal((await c.next('frame')).frame.enemies[0].hp, full - 24, 'late join gets shared current health');
     a.send({ type: 'control', action: 'transfer', player: wb.id });
     await b.next('roster', m => m.leader === wb.id);
     b.send({ type: 'control', action: 'restart' });

@@ -17,6 +17,7 @@ globalThis.host = (() => {
   const hitBudget = new Map(), lastParry = new Map();
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
+  let groupSize = 1, groupLeft = 0;   // the players every boss is scaled for, and how long fewer have been present
   const C = ArenaNet.config;
   for (const story of STORIES) {
     if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
@@ -163,7 +164,7 @@ globalThis.host = (() => {
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; followers.clear(); assignLeft = 0; partyKey = '';
-    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
+    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0; groupSize = 1; groupLeft = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
@@ -308,6 +309,13 @@ globalThis.host = (() => {
   }
   function tick(dt, holdSimulation = false) {
     time += dt;
+    // Every boss is scaled for everyone in the run, fallen or standing (CONFIG.group): a death doesn't make it easier.
+    // It grows at once and shrinks after `leaveDelay`; before the hold too, so the bars are the group's from the start.
+    const present = Math.max(1, players.length);
+    groupLeft = present >= groupSize ? 0 : groupLeft + dt;
+    if (present > groupSize || groupLeft >= CONFIG.group.leaveDelay) { groupSize = present; groupLeft = 0; }
+    // A broken or executed boss waits: a resize would cut its break short or outgrow the execution cap set at its start.
+    for (const e of Game.enemies) if (e.isBoss() && !e.netExec && e.state !== ES.BROKEN && e.state !== ES.EXECUTED) e.setGroup(groupSize);
     if (holdSimulation) return;
     let living = players.filter(p => p.alive());
     // Contacts and reservations wake it at once; a periodic check also notices any other change.
@@ -375,7 +383,7 @@ globalThis.host = (() => {
       results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
       checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
-      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise,
+      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise, group: e.group,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
       target: e.netTarget, grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
