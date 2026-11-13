@@ -228,7 +228,7 @@ function buildRooms(L) {
       addFlame(G, lx, y + (room.lampFlame ? room.lampFlame.y : 1.45), lz, room.lampFlame ? room.lampFlame.size : C.brazierSize, light);
     }
     for (const [px, pz, size] of unseen ? [] : room.pillars || []) {
-      const s = size ?? room.pillarSize ?? C.pillarSize, h = R.height;
+      const s = size ?? room.pillarSize ?? C.pillarSize, h = room.pillarHeight ?? R.height;
       addBox(G, s, h, s, M.wall, px, y + h / 2, pz);
       addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + 0.2, pz);
       addBox(G, s + 0.4, 0.4, s + 0.4, MAT.dark, px, y + h - 0.5, pz);

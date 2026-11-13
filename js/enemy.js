@@ -155,7 +155,9 @@ class Enemy {
     if (!due) return;
     const hp = this.hp, posture = this.posture, from = this.phase;
     this.enterPhase(this.phase + 1); this.hp = hp; this.posture = posture;
-    this.opener = next.opener ? this.def.attacks.find(a => a.id === next.opener) : null;
+    // One fought on her own (no kin, v7.60.0) has nobody to grieve: the alone phase starts without its opener.
+    const grieves = !next.alone || (this.kin && this.kin.length > 1);
+    this.opener = next.opener && grieves ? this.def.attacks.find(a => a.id === next.opener) : null;
     events.emit('bossPhase', { enemy: this, from, to: this.phase, seamless: true });
   }
   // Its health ran out: a boss with another phase kneels into the transition, one set to retreat leaps away; both
@@ -194,7 +196,7 @@ class Enemy {
   // An attack with `invulnerable` (v5.4, Godrick's arm chop) is untouchable through its wind-ups and strikes, not its recovery.
   invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; }
+  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   isAttacking() { return this.in('attacking'); }
@@ -368,13 +370,18 @@ class Enemy {
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
         this.cooldown -= dt * crowd.cooldownRate(this);   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
+          this.cued = null;   // a kin's cue goes stale
           const shot = this.ranged && this.chooseAttack(dist, toPlayer, dt, true);
           if (shot) this.beginAttack(shot);
           else if (!this.ranged) { tx = dx / dist * d.speed; tz = dz / dist * d.speed; }
           break;
         }
         if (this.opener) { const o = this.opener; this.opener = null; this.yaw = toPlayer; this.beginAttack(o); break; }   // a mid-bar phase's first move
-        const a = this.react(player, dist, toPlayer, dt) || this.chooseAttack(dist, toPlayer, dt);
+        if (this.cued && (this.cued.left -= dt) <= 0) {   // a kin's `cue`: her answering move, if the player is still in its range
+          const a = this.def.attacks.find(x => x.id === this.cued.attack); this.cued = null;
+          if (a && dist >= (a.minRange || 0) && dist <= a.range) { this.beginAttack(a); break; }
+        }
+        const a = !this.cued && (this.react(player, dist, toPlayer, dt) || this.chooseAttack(dist, toPlayer, dt));   // a cued one waits for her cue
         if (a) { this.beginAttack(a); break; }
         if (this.stepIn) {   // stepping in: back to holding at its longer range once the player gets well away
           this.stepInNearest = Math.min(this.stepInNearest, dist);
@@ -582,11 +589,22 @@ class Enemy {
   // `noRepeat` (v7.20): after that many of the same move in a row, it must pick another.
   spent(a) { return !!this.def.noRepeat && a.id === this.lastMove && this.moveRun >= this.def.noRepeat; }
   beginAttack(attack) {
+    if (attack.cue) this.cueKin(attack.cue);
     this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.setState(ES.WINDUP);
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
+  }
+  // A cue (`cue: { attack, delay, chance, near }`, v7.60.0, a pair of bosses): as this attack starts, each other living
+  // member of its group that is chasing within `near` m of its own target and has that attack in its current phase may
+  // (`chance`) answer with it `delay` s later, cooldown and the crowd's gap aside: two bodies, one fight. The answer is
+  // dropped if she leaves the chase first (any other move, a flinch), or if the player is out of its range by then.
+  cueKin(c) {
+    for (const k of this.kin || []) {
+      if (k === this || !k.alive() || k.state !== ES.CHASE || k.cued || !(k.playerDist <= c.near) || !k.def.attacks.some(a => a.id === c.attack)) continue;
+      if (Math.random() < c.chance) k.cued = { attack: c.attack, left: c.delay };
+    }
   }
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover. A bow looses a bolt
   // at the target instead of opening a hitbox.

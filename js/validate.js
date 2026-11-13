@@ -134,6 +134,10 @@ function validateData({ visual = true } = {}) {
       && (!('if' in f) || f.if in FOLLOW_IF)), `${tag}: followUps must list { attack, chance (0 to 1), if? (${Object.keys(FOLLOW_IF).join(', ')}) }.`);
     if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
       `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
+    // v7.60.0 (the Castellans): a kin answers with its own attack (js/enemy.js cueKin), another move than this one.
+    if ('cue' in a) need(a.cue && typeof a.cue.attack === 'string' && a.cue.attack !== a.id && ENEMY_DEFS.some(d => d.attacks.some(x => x && x.id === a.cue.attack))
+      && num(a.cue.delay) && a.cue.delay >= 0 && num(a.cue.chance) && a.cue.chance > 0 && a.cue.chance <= 1 && num(a.cue.near) && a.cue.near > 0,
+      `${tag}: cue needs attack (another enemy's attack id), delay (s, 0 or more), chance (above 0, at most 1) and near (m, above 0).`);
     // A leap's landing then a ground ring (v7.51.1): room for a roll through each (`CONFIG.enemy.ringAfterLanding`).
     if (Array.isArray(a.hits)) a.hits.forEach((h, i) => {
       const next = a.hits[i + 1], box = next && (next.box || a.box);
@@ -215,6 +219,8 @@ function validateData({ visual = true } = {}) {
           `${tag}: reveal must list material slots its model hides (its "hidden").`); }
         if (visual && ph && 'conceal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.conceal) && !!M && ph.conceal.every(sl => sl === 'weapon' || sl in M.materials),
           `${tag}: conceal must list material slots of its model (or 'weapon').`); }
+        if (ph && 'revealBurst' in ph) need(ph.revealBurst && Number.isInteger(ph.revealBurst.color) && num(ph.revealBurst.count) && ph.revealBurst.count > 0
+          && num(ph.revealBurst.speed) && ph.revealBurst.speed > 0 && 'reveal' in ph, `${tag}: revealBurst needs color, count and speed (above 0), and a reveal.`);   // v7.60.0
         if (ph && 'opener' in ph) need(aids.has(ph.opener) && (!ph.attacks || ph.attacks.includes(ph.opener)), `${tag}: opener "${ph.opener}" must be one of its attacks, and of the phase's own when it lists them (the phase looks it up there).`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
@@ -535,6 +541,8 @@ function validateRooms(L, where, need, num, visual = true) {
     if ('grass' in R) check(typeof R.grass === 'boolean' && (!R.grass || R.open === true), `${tag}: grass must be true or false, and grows only in an open room.`);
     if ('unseen' in R) check(typeof R.unseen === 'boolean' && !!L.scenery, `${tag}: unseen must be true or false, and needs a level scenery to draw the room.`);
     if ('pillarSize' in R) check(num(R.pillarSize) && R.pillarSize > 0, `${tag}: pillarSize must be a positive number.`);
+    if ('pillarHeight' in R) check(num(R.pillarHeight) && R.pillarHeight > H.stepUp && R.pillarHeight <= (R.height ?? L.wallHeight ?? Infinity) && 'pillars' in R,
+      `${tag}: pillarHeight must be above CONFIG.height.stepUp (${H.stepUp} m), at most the room's height, with pillars to raise.`);   // v7.60.0
     if ('pillars' in R) check(Array.isArray(R.pillars) && R.pillars.every(P => Array.isArray(P) && num(P[0]) && num(P[1]) && (P[2] === undefined || num(P[2]) && P[2] > 0)), `${tag}: pillars must be a list of [x, z] or [x, z, size].`);
     if ('lampFlame' in R) check(!!R.lampFlame && num(R.lampFlame.size) && num(R.lampFlame.y), `${tag}: lampFlame needs a size and a height y.`);
     if ('lamps' in R) check(Array.isArray(R.lamps) && rectOk(R.rect) && R.lamps.every(l => Array.isArray(l) && l.length === 2 && l.every(num)

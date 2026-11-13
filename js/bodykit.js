@@ -1596,7 +1596,8 @@ const KIT = (() => {
     // The weapon's pieces merge apart from the body's, even where they share a material slot, so the weapon gets its
     // own material: its wind-up glow and hit flash light the weapon only, never the armour.
     const push = (bone, slot, geo, weapon = false) => {
-      if (bone === 'weapon') { geo.computeBoundingBox(); weaponBox.union(geo.boundingBox); }
+      // (the glint sits on the weapon that shows: a hidden one, v7.60.0, waits for a phase's `reveal`)
+      if (bone === 'weapon' && !(M.hidden && M.hidden.includes(slot))) { geo.computeBoundingBox(); weaponBox.union(geo.boundingBox); }
       geo.applyMatrix4(bind[bone]);
       const n = geo.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
       for (let i = 0; i < n; i++) { si[i * 4] = index[bone]; sw[i * 4] = 1; }
@@ -1700,8 +1701,11 @@ const KIT = (() => {
       rig.root.add(mesh); mesh.bind(rig.skeleton, new THREE.Matrix4());
       mesh.boundingSphere = p.geo.boundingSphere;
       if (!p.weapon) (rig.slotMeshes || (rig.slotMeshes = {}))[p.slot] = mesh;
-      else (rig.weaponMeshes || (rig.weaponMeshes = [])).push(mesh);   // hidden by a phase's `conceal: ['weapon']` (js/flame.js)
-      if (!p.weapon && M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
+      else {
+        (rig.weaponMeshes || (rig.weaponMeshes = [])).push(mesh);   // hidden by a phase's `conceal: ['weapon']` (js/flame.js)
+        (rig.weaponSlotMeshes || (rig.weaponSlotMeshes = {}))[p.slot] = mesh;   // a hidden weapon slot, shown by a `reveal` (v7.60.0)
+      }
+      if (M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
       if (!p.weapon && M.materials[p.slot]?.burn) { mesh.visible = false; (rig.burnMeshes || (rig.burnMeshes = [])).push(mesh); }   // (v7.47.0) drawn only while the boss burns (js/finale.js)
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
@@ -1729,6 +1733,9 @@ const KIT = (() => {
       const len = box.max.z - box.min.z, sprite = glowSprite(0xfff2d0, 2.0, 0.5 + 0.18 * len, 0, null);
       sprite.position.set((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, box.min.z + len * 0.78); sprite.visible = false;
       rig.weapon.add(sprite); rig.glint = { sprite, size: 0.5 + 0.18 * len };
+    } else if (M.hidden && built.parts.some(p => p.weapon)) {   // (v7.60.0) a weapon still hidden: the fist glints
+      const sprite = glowSprite(0xfff2d0, 2.0, 0.5, 0, null); sprite.position.set(0, -0.05, 0.05); sprite.visible = false;
+      rig.weapon.add(sprite); rig.glint = { sprite, size: 0.5 };
     }
     if (M.aura) {   // a faint aura marks a stronger variant
       const a = glowSprite(M.aura.color, 1.0, M.aura.size, M.aura.opacity, 0.7); a.position.set(0, 0.25, 0); rig.chest.add(a);

@@ -39,13 +39,16 @@ const BOSS_FX = {
     lanternBursts: { element: 'fire', impact: 'blaze', windup: 'gather' }, lanternBreath: { element: 'fire', windup: 'gather' },
     burningDrop: { element: 'fire', impact: 'blaze' }, kindledSweep: { element: 'fire' } } },
   // Hale and Harrow (Level 8): the sea wind round Hale's axe, iron and stone under Harrow's greaves; taking up her sister's
-  // half is a grief, not a fire: storm for both once alone.
+  // half is a grief, not a fire: storm for both once alone, and gold round the suit made whole.
   hale: { element: 'storm', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
-    galeLeap: { impact: 'gale' }, wallCuts: { element: 'steel' }, grindingRun: { element: 'steel' }, rearBackhand: { element: 'steel' },
-    kneelGate: { impact: 'gale' }, fallingWeight: { element: 'earth', impact: 'quake' }, twoSteps: { element: 'steel' }, sistersHalf: { impact: 'shatter', windup: 'gather' } } },
+    crownCleave: { impact: 'shatter', windup: 'gather' }, beardsHook: { element: 'steel' }, helmsSalute: { element: 'steel' }, haftsHeel: { element: 'steel' },
+    wallTurns: { impact: 'gale' }, offTheRampart: { impact: 'gale' },
+    stampStones: { element: 'earth', impact: 'quake' }, fallingWeight: { element: 'earth', impact: 'quake' }, greaveSlide: { element: 'earth' }, backHeel: { element: 'earth' },
+    sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
   harrow: { element: 'earth', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
-    kneelGate: { impact: 'quake' }, fallingWeight: { impact: 'quake' }, twoSteps: { element: 'steel' }, grindingRun: { element: 'steel' }, rearBackhand: { element: 'steel' },
-    galeLeap: { element: 'storm', impact: 'gale' }, wallCuts: { element: 'steel' }, sistersHalf: { impact: 'shatter', windup: 'gather' } } },
+    stampStones: { impact: 'quake' }, hammerOfHands: { impact: 'quake', windup: 'gather' }, fallingWeight: { impact: 'quake' }, knuckleHeel: { element: 'steel' },
+    crownCleave: { element: 'storm', impact: 'shatter', windup: 'gather' }, wallTurns: { element: 'storm', impact: 'gale' }, offTheRampart: { element: 'storm', impact: 'gale' },
+    saltWind: { element: 'storm' }, sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
   // The Ringer of Thrale (Level 9): old iron and bronze while she is chained; once she rings the blows (the second phase),
   // the bell's cold toll.
   ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {

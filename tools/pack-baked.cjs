@@ -28,6 +28,7 @@ const FILES = {
   'giant': { sources: ['giant'] },
   'aldric': { sources: ['aldric'] },
   'ostrey': { sources: ['ostrey'] },
+  'castellans': { sources: ['castellans'] },
 };
 
 function readGlb(file) {

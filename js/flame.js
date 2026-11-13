@@ -50,10 +50,12 @@ const flame = (() => {
       const reveal = e.def.reveal;
       if (reveal && R.slotMeshes) {
         const opening = e.attack && e.attack.invulnerable && e.state === ES.WINDUP && e.hitIndex === 0;
-        if (!opening && !R.revealed) {
+        if (!opening && !e.opener && !R.revealed) {   // not while a phase-1 attack still runs (the opener waits for it)
           R.revealed = true;
-          for (const sl of reveal) if (R.slotMeshes[sl]) R.slotMeshes[sl].visible = true;
-          if (R.elbowL) { R.elbowL.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, F.revealBurst); }
+          for (const sl of reveal) for (const m of [R.slotMeshes[sl], R.weaponSlotMeshes && R.weaponSlotMeshes[sl]]) if (m) m.visible = true;
+          // the phase's own `revealBurst` (v7.60.0, a suit put on) bursts from the chest; the default from the off arm (a graft)
+          const B = e.def.revealBurst, at = B ? R.chest : R.elbowL;
+          if (at) { at.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, B || F.revealBurst); }
         }
       }
       // Cast-off parts (a phase's `conceal`, v5.5): hidden once its invulnerable opener has begun and struck ('weapon' = the weapon).

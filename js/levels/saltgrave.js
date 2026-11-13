@@ -55,8 +55,11 @@ const LEVEL_8 = {
     { id: 'stair-door', rect: [137, 143, 58, 62], height: 4.5, floor: 0x3a3a38, wall: 0x52524e, dim: true },
     { id: 'stair-room', rect: [132, 148, 62, 72], height: 6, floor: 0x3a3a38, wall: 0x52524e, light: 0xffb070, braziers: [[146.5, 63.5], [146.5, 70.5]] },
     { id: 'fog-landing', rect: [137, 143, 90, 94], y: 10, height: 6, floor: 0x3a3a38, wall: 0x52524e, dim: true },
+    // The tower roof: the beacon the castellans kept lit in the middle, and the stumps of the old turret's merlons, fallen
+    // where the storms threw them: something to put between one sister and the other.
     { id: 'tower-roof', rect: [118, 162, 94, 134], y: 10, open: true, height: 14, edges: { e: 'rail', w: 'rail', n: 'rail' }, floor: 0x40424a, wall: 0x54585e, light: 0xd8e0f0,
-      lamps: [[120, 96], [160, 96], [120, 132], [160, 132]] },
+      lamps: [[120, 96], [160, 96], [120, 132], [160, 132]], braziers: [[140, 113]],
+      pillars: [[127.5, 105, 2.8], [152.5, 105, 2.8], [126.5, 123.5, 2.6], [153.5, 123.5, 2.6], [140, 128.5, 2.4]], pillarHeight: 2.7 },
     { id: 'roof-exit', rect: [137, 143, 134, 138], y: 10, height: 4.5, floor: 0x3a3a38, wall: 0x52524e, light: 0xffd090, dim: true },
   ],
   ramps: [

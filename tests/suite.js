@@ -2798,7 +2798,7 @@
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
-      for (const id of [PLAYER_DEF.look.model, 'castellanHale']) {   // (Old Ostrey left in v7.58.0: all Blender now, one detail)
+      for (const id of [PLAYER_DEF.look.model, 'ringerOfThrale']) {   // (Old Ostrey left in v7.58.0, the Castellans in v7.60.0: all Blender now, one detail)
         KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
         KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
         KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);

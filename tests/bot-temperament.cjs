@@ -48,7 +48,7 @@ function withMood(boss, profile, want) {
 // ---- 2. Waiting out a string: Harrow's Kneel at the Gate (two rings with a pause between) ----
 {
   const { sim, b, p, e } = withMood('harrow', 'maren', m => m === 'patient' || m === 'wary');
-  const kneel = e.baseDef.attacks.find(a => a.id === 'kneelGate');
+  const kneel = e.baseDef.attacks.find(a => a.id === 'stampStones');   // (her Kneel at the Gate until v7.60.0)
   e.beginAttack(kneel);
   let swungMid = false, swungAfter = false, farthest = 0, time = 0;
   for (; time < 8; time += dt) {
@@ -69,10 +69,10 @@ function withMood(boss, profile, want) {
   for (const seed of [3, 5, 8, 13]) {
     const { sim, p, e } = duel('hale', 'quill', seed);
     p.z = e.z + e.radius + p.radius + 0.4; p.savePrev();
-    const storm = e.baseDef.attacks.find(a => a.id === 'galeWheel');
+    const storm = e.baseDef.attacks.find(a => a.id === 'wallTurns');   // (her Gale Wheel until v7.60.0)
     e.beginAttack(storm);
     let rolls = 0, prev = p.state; const hp = p.hp;
-    for (let t = 0; t < 3 && e.attack === storm; t += dt) {
+    for (let t = 0; t < 3 && e.attack === storm && e.state !== 'recover'; t += dt) {   // the string, not the opening after it
       sim.setPlayers([]); sim.tick(dt);
       if (p.state === 'roll' && prev !== 'roll') rolls++;
       prev = p.state;
