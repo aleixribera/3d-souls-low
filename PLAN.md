@@ -75,10 +75,22 @@ game; then a frame of it in its level. Both images in the pass report. Triangle 
    every one of Ultra's effects, each toned down slightly (fewer particles, cheaper passes), never switched off.
    **Baked lighting** everywhere: every level, boss arena and Boss Rush arena gets baked light (lightmaps, baked in
    Blender or a bake step; light probes or baked ambient occlusion for the moving characters), in every preset, in
-   place of most real-time lights and shadows. Build a stand-in for integrated graphics that any pass can run on this PC in under
-   two minutes (for example a GPU frame-time budget per frame), calibrated once on Aleix's Fedora laptop when he opens
-   it (log it under "Needs Aleix"). Check: the stand-in holds 60 fps on every level and in a four-player Boss Rush
-   fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects and looking very nice, not like a cut-down fallback.
+   place of most real-time lights and shadows. **The laptop is the judge** (Aleix, through
+   duty-shooter's director, 2026-11-13): his Lenovo V15 G5 (`ssh uni-laptop`; Intel UHD Graphics, i7-13620H, Fedora 44,
+   Firefox only), shared with duty-shooter's loop, taking turns.
+   - Read `~/laptop-test/README.md` on the laptop first. Every laptop test goes through `~/laptop-test/lt run
+     3d-souls-low <command...>`, which waits (up to 30 min) for the other project's run and holds the turn; wait with
+     Monitor, waiting is not a blocker. Never test outside it. `lt claim 3d-souls-low` when laptop work starts, `lt
+     release 3d-souls-low` when done (it keeps the laptop awake); `lt status` shows who holds what.
+   - Tests may open a visible Firefox window in his session (prefix `WAYLAND_DISPLAY=wayland-0
+     XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`). Close windows and servers
+     when done. Never unlock the screen or change lock or power settings; if it's locked, run headless and say so. If
+     `ssh` times out, the laptop is away: use the stand-in below.
+   - **The stand-in on this PC:** a throttled run (CPU throttle, resolution, whatever brings it closer) that any pass
+     can run in under two minutes. Each time the laptop is measured, tune it until its mean and 1% low per scene land
+     within 15% of the laptop's latest numbers; record the factors and both sets of numbers; recalibrate when the
+     laptop's numbers move.
+   Check: the laptop holds 60 fps on Normal on every level and in a four-player Boss Rush fight; frames of each level on Normal and Ultra side by side, Normal showing the same effects and looking very nice, not like a cut-down fallback.
 4. **Ashmere's five bosses** get new movesets, effects and animation by the same rules; their Blender models stay (and
    may be improved).
 5. **Progression:** flasks found along the road, enemies stronger chapter by chapter. Check: flask count and enemy
