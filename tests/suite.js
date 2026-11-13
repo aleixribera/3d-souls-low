@@ -2810,6 +2810,25 @@
     expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
     sim.move(null);
   });
+  test('Radagon: the Gold Breaker leaves time to roll the landing and its shockwave separately', () => {
+    const { p, e } = startRadagon(); faceOff(e, p, 2); quiet(e);
+    const a = e.baseDef.attacks.find(a => a.id === 'goldBreaker');
+    const slam = a.hits[0], wave = a.hits[1], hp = p.hp;
+    // Start just before the landing, after the leap, so the slam comes down where the player stands.
+    e.beginAttack(a); e.leapHit = 0; e.stateTime = slam.startup - 0.05;
+    sim.move(p.x - e.x, p.z - e.z); sim.press('roll');
+    expect.ok(sim.until(() => e.hitIndex === 0 && e.state === ES.ACTIVE, 1) >= 0, 'the hammer lands');
+    expect.ok(e.hitbox && e.hitbox.dodged, 'the first roll passes through the real landing hitbox');
+    expect.ok(sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP && wave.startup - e.stateTime <= 0.1, 2) >= 0,
+      'the shockwave is about to open');
+    expect.ok(p.isFree(), 'the first roll has ended with time to start a second dodge');
+    sim.press('roll');
+    expect.ok(sim.until(() => e.hitIndex === 1 && e.hitbox && e.hitbox.dodged, 1) >= 0,
+      'the second roll passes through the expanding shockwave');
+    expect.ok(sim.until(() => e.state === ES.RECOVER, 2) >= 0, 'the attack reaches recovery');
+    expect.near(p.hp, hp, 0.001, 'both impacts were evaded without damage');
+    sim.move(null);
+  });
   test('Radagon: at 60% the Gold Breaker opens phase 2, faster, with the Elden Shattering', () => {
     const { p, e } = startRadagon(); sturdy(p); faceOff(e, p, 6);
     e.hp = 5200 * 0.59; sim.step(2);

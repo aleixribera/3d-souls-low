@@ -16,19 +16,20 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   All three belong to the old second road and leave at the swap (`PLAN.md` stage 3), so they get no Blender pass.
 - `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
   without the v7.34.0 change: flaky (pass 2, 2026-11-13).
-- Bots fight bosses worse alone than in v7.12.1's record: Ser Quill beat the Bell Warden and Margit 6/6 then
-  (`.scratch/bot-duel-v7.12.1-final.json`), 0/6 now (`docs/scorecard/boss-duels-1-bot.txt`, pass 5). Bots fill The
-  Calling's empty slots (`PLAN.md` stage 2, item 3): find which change since v7.13.0 did it before then. With group
-  scaling (pass 6) three bots beat the Lands' bosses only 13/48 (`docs/scorecard/boss-duels-3-bots-grouped.txt`), so a
-  run with bot fill-ins needs this fixed, then `CONFIG.group` checked again.
+- Bots lose to bosses far more since v7.13.1 by design (bisected, pass 26): companions take greedy exchanges and forward
+  rolls (`docs/bot-risk-v7.13.1.md`); with both at 0 one bot beats the Bell Warden, Margit and the Pillager Captain 6/6,
+  nearly untouched. So the bot-duel numbers measure reckless companions, not a group of people; whether The Calling's
+  fill-in bots should be steadier than the lobby's is the director's call. In `bot-duel` no human lives, so the bots
+  are always in last-stand mode (turning it off changed little).
 - Group scaling counts everyone in the run, but the Lands road's solo companion Finn (Story mode) doesn't make a boss
   scale; if a companion should, it's a `setGroup` call where companions spawn (pass 6).
 - The title cards' eyebrow labels ("PLAY WITH FRIENDS", "PLAY ALONE") and the HUD's "CONTROLS" label break Aleix's
   no-eyebrow rule (`docs/scorecard/menu-title-desktop.jpg`, pass 5).
 - Level 4, the Tower, opens on a bare, dim stone hall where the wanderer reads as a dark shape; Level 6's snow is a flat
   white that washes out the ground and the controls panel (`docs/scorecard/level-the-tower.jpg`, `level-the-church.jpg`).
-- Radagon is unbeaten by one bot or three (0/6 each, `docs/scorecard/boss-duels-*.txt`): check by hand whether a group
-  of people can beat it before The Calling offers it.
+- Radagon (and the Kindling Tree, his copy) beat three bots 11/12 and 10/12 even after v7.50.1's fairer Gold Breaker
+  (`docs/scorecard/radagon-gold-breaker.txt`); his other big losers for bots, the Rune Slam's two hits, are 1.5 s
+  apart, fair to a person. Check by hand whether a group of people can beat him before The Calling offers him.
 - A client that keeps reporting itself drinking (`useItem`) within 10 m holds a boss's attention (`CONFIG.aggro`): the
   server doesn't check flask use. Harmless among friends; worth a check if the lobby ever opens wider (pass 7).
 - The Calling (pass 8): with a controller, the boss pick list is walked one button at a time; up/down could move by

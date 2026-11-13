@@ -182,10 +182,11 @@ const RADAGON = {
       recovery: 0.4, followUps: [{ attack: 'lightningSpear', if: 'far', chance: 0.6 }],
       damage: 24, poise: 40, knock: 6, lunge: 0, range: 2.8, box: RADAGON_FLASH },
     // ---- phase 2 -----------------------------------------------------------------------------------------------------------
-    // Gold Breaker: a high leap, a long hang in the air, the hammer driven down; a wide holy shockwave. He stays down after.
+    // Gold Breaker: a high leap, a long hang in the air, the hammer driven down; a wide holy shockwave. He stays down after;
+    // the shockwave waits 0.76 s after the landing opens, so a roll through each fits (v7.50.1, like the Shattering's).
     { id: 'goldBreaker', name: 'Gold Breaker', anim: 'chop', pose: 'radagonBreaker', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.45, chance: 0.3,
       hits: [{ startup: 2.0, active: 0.16, follow: 0.2, leap: { from: 0.35, max: 14, short: 0.6 }, sigil: 4, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.25 } },
-             { startup: 0.08, active: 0.18, follow: 1.2, box: RADAGON_RING(1.5, 9, 1.8) }],
+             { startup: 0.4, active: 0.18, follow: 1.2, box: RADAGON_RING(1.5, 9, 1.8) }],
       recovery: 1.6, damage: 66, poise: 100, knock: 12, lunge: 0, range: 14, box: { w: 4.6, h: 2.6, d: 4.6, fwd: 0.8, y: 1.0 } },
     // Elden Shattering: a narrow line of shockwaves, a wide half-circle, then a leap and a blast all round him. The pauses
     // between the first blows are traps; after the third slam there is time for a separate roll through its shockwave.

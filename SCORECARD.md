@@ -61,8 +61,9 @@ column is `docs/scorecard/boss-duels-3-bots-grouped.txt`, and the unscaled run i
 | Morgott | 2 | 0/6 | 1/6, 171 s, 2.7 fell | Scaled, nearly unbeatable for bots (3/6 unscaled). |
 | Godfrey | 2 | 0/6 | 1/6, 181 s, 2.8 fell | Scaled, nearly unbeatable for bots (6/6 unscaled). |
 | Maliketh | 2 | 0/6 | 1/6, 170 s, 2.8 fell | Scaled, nearly unbeatable for bots (5/6 unscaled). |
-| Radagon | 1 | 0/6 | 0/6, all 3 fell | Unbeaten by one bot or three, scaled or not: too hard for bots, untested by people. |
+| Radagon | 2 | 0/12 | 1/12, 188 s, 2.8 fell | Since v7.50.1 the Gold Breaker's shockwave leaves time to roll it after the landing (it hit bots on every use); still the hardest for bots, untested by people (`docs/scorecard/radagon-gold-breaker.txt`). |
 | Malenia | 2 | 0/6 | 0/6, all 3 fell | Scaled, unbeaten by bots (3/6 unscaled). |
 
-Bots also do worse alone than in v7.12.1's record (Ser Quill beat the Bell Warden and Margit 6/6 then, 0/6 now):
-`.scratch/bot-duel-v7.12.1-final.json` (local only) against `docs/scorecard/boss-duels-1-bot.txt`; see `BACKLOG.md`.
+Bots do worse alone than in v7.12.1's record (Ser Quill beat the Bell Warden and Margit 6/6 then, 0/6 now) by design:
+v7.13.1 made companions take greedy exchanges and forward rolls (`docs/bot-risk-v7.13.1.md`); with those at 0 they win
+those fights 6/6 again, nearly untouched (pass 26, `docs/scorecard/radagon-gold-breaker.txt`).

@@ -4,10 +4,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 25 shipped `PLAN.md` stage 3 track A item 2, chapter 13, the Root of the Ember (pass 1, rough), and released
-v7.50.0. Check met: Story mode goes on from the Torn Abbey into chapter 13 and its boss, the Kindling Tree, finishes the
-level; frames `docs/scorecard/root-tree.jpg`, `root-rootbound.jpg`, `tree-lab.jpg`, `rootbound-lab.jpg`. Next: track B
-item 3, the weakest "bosses" or "co-op" row of `SCORECARD.md`; then track A, chapter 14.
+Pass 26 took `PLAN.md` stage 3 track B item 3, the weakest bosses row (Radagon, 1), pass 1: the Gold Breaker's
+shockwave now opens 0.76 s after the landing (was 0.44 s), so a roll through each fits, as the Elden Shattering got in
+v7.12.2; it hit bots on every use. Released v7.50.1. Check met: in-page `Radagon: the Gold Breaker leaves time…` (real
+rolls, fails on the old timing); three bots 0/12 → 1/12 (Radagon), 2/12 (Kindling Tree), wave damage 986 → 64
+(`docs/scorecard/radagon-gold-breaker.txt`). The bots' drop since v7.12.1 is bisected: v7.13.1's deliberate greed
+(`BACKLOG.md`). Next: track A, chapter 14; then track B's next weakest bosses row (Godrick, Morgott, Godfrey,
+Maliketh, Malenia at 2).
 
 ## Works
 
@@ -63,9 +66,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 25's push and the v7.50.0 container: check in pass 26 (pass 24's v7.49.0 container green, its CI still
-running at pass 25's end; pass 23's CI was cancelled by pass 24's push). Pass 25 locally: Node 22/22, in-page `Ember
-Root`, `Story`, `Torn Abbey`, `Guiding light`, `Lore`, `valid`, `Changelog`, `model`, `Radagon`, `Ultra`, `light` (all pass).
+CI on pass 26's push and the v7.50.1 container: check in pass 27. Pass 26 locally: Node checks, in-page
+`Radagon`, `Ember Root`, `Changelog`, `valid`.
 
 ## wip// branches
 
