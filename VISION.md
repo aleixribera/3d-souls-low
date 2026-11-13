@@ -10,6 +10,8 @@ only with Aleix's OK.
   not a rule.
 - Agents may change key parts of the game from the ground up (enemies, bosses, levels, systems) as long as the result
   follows this vision.
+- An agent has full authority over whatever it works on: enemy and boss balance, numbers, timing windows, attack
+  frequency, anything. Weak foundations get fixed or rebuilt, never built on.
 
 ## The bar
 
