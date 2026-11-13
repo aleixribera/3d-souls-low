@@ -6,7 +6,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Track A (pass 37, item 2, Ostrey pass 1 of 2, v7.58.0): his own Blender figure (bar, hanging lantern) and moves;
   check: on the bridge his tells differ and the lantern opens at 55%. `docs/scorecard/ostrey-*.jpg`, in-page `Moor`.
-  Pass 2 (optional): the bridge level and the lantern-overhead tells. Else next: Hale and Harrow.
+  Pass 2 (optional): the bridge level, the lantern-overhead tells. Else next: Hale and Harrow.
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Bots (pass 35, v7.57.0): full stats; the aid is behaviour (`CONFIG.bot.support`). `docs/scorecard/bot-aid.txt`.
