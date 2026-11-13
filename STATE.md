@@ -4,16 +4,16 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Pass 19 shipped `PLAN.md` stage 3 track A item 2's chapter 10, Aurel, the Gilded City (rough), and released v7.44.0.
-Check met: Story goes Ringer -> Aurel -> THE ROAD GOES ON (in-page `Story`), the Regent front-lit at fighting distance
-`docs/scorecard/aurel-hollis.jpg`, a thrall `aurel-thrall.jpg`. Also fixed pass 18's red CI (an attack-chance test's
-window). Next: track B, the Giant Skeleton; then track A, chapter 11 (Aurel in Ash).
+Pass 20 shipped `PLAN.md` stage 3 track B item 2's Giant Skeleton in Blender (pass 1 of it) and released v7.45.0.
+Check met: the lab sheet `docs/scorecard/giant-lab.jpg` and the Long Hall frame, front-lit at fighting distance,
+`giant-hall.jpg`. The skull now looks at the player (posture) and the club rests on the floor (`weapon.rest`). Pass 19's
+CI was still running at this commit (its container passed). Next: track A, chapter 11 (Aurel in Ash); then track B, Aldric (both phases).
 
 ## Works
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Beastman, Toll Wisp, Grafted Scion,
-  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle). Checked by
+  Executioner, Crucible Squire, Shover, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`). Checked by
   the in-page `model` filter (5 tests), `Shover`, `Bowman`, `Lands`, `Wisp`, `Scion`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
@@ -63,9 +63,8 @@ Nothing known. `boss-only` (Node) is flaky: see `BACKLOG.md`.
 
 ## Queued runs
 
-CI on pass 19's push and the v7.44.0 container: check in pass 20 (pass 18's CI failed on `attack chance: stepping in`,
-fixed here; its v7.43.0 container passed). Pass 19 locally: Node (22/22), in-page `Aurel`, `Story`, `Night Gaol`,
-`Guiding light`, `Lore`, `Changelog`, `model`, `bosses`, `Ultra`, `attack chance`.
+CI on pass 19's and pass 20's pushes and the v7.45.0 container: check in pass 21. Pass 20 locally: Node, in-page `model`, `bosses`,
+`Giant`, `Ultra models`, `Changelog`.
 
 ## wip/ branches
 

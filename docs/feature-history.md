@@ -534,3 +534,12 @@ and `docs/CHANGELOG.md` lists every release in one line. Per-feature notes with 
 - Lore: `LORE.md` 6, 7, 9, 10f, 11; Ysolde's six lines, three inscriptions (`js/data/lore.js`); a bonfire guidance route per stretch (the capital's, renamed). The old road's Leyndell is untouched.
 - Tests: `tests/suite-aurel.js` (5), the Story order, the Ringer going on to Aurel, the Regent closing the road, lighting count 18. Frames: `docs/scorecard/aurel-hollis.jpg`, `aurel-thrall.jpg`, `hollis-lab.jpg`, `gilded-thrall-lab.jpg`.
 - Not yet: the Regent's and the thralls' own Blender figures, Finn (`BACKLOG.md`).
+
+## The Giant Skeleton built in Blender (v7.45.0, stage 3 track B item 2)
+- Level 1's boss (the Arena, Boss vs Boss, the boss runs, The Calling) was kit primitives, 16,948 triangles in the game, over the 14,000 boss budget. He is now `tools/blender/giant.py`, one rigid piece per bone (`giant:<bone>__<slot>`), 29 pieces, 12,102 triangles, 12,574 with the kit's bone club.
+- Holes are real: `carve()` subtracts ellipsoids (`ellipsoid()`, turned about the forward axis so the sockets scowl) from the voxel-fused skull with Blender's exact boolean, and dark backs sit behind them.
+- Long bones are exact tubes (`bone_shaft()`, flared ends) with icosphere heads and condyles, not voxel volumes (the v7.2x lesson: a long `soft()` limb decimates to slivers).
+- The white-hot spine is the `core` glow slot on the vertebral bodies from the skull's base to the lumbar; their spines and the cord between them are `dark`.
+- Posture: neck 0.9 -> 0.75, head -0.45 -> -0.95, so the skull's face looks down at the player instead of at the floor. `weapon.rest: 0.5` (the v7.43.0 field) lays the club's head on the floor in front of him. Eyes moved into the new sockets.
+- Deleted kit parts with no other user: `ribcage`, `skullFace` (`js/bodykit.js`), `longBone`, `boneHand`, `boneFoot`, `bonePelvis`, `boneNeck` (`js/kit-premium.js`).
+- Checks: the model lab, a frame in the Long Hall at fighting distance, the in-page `model`, `bosses`, `Giant`, `Ultra models` filters, the Node checks. Frames: `docs/scorecard/giant-lab.jpg`, `giant-hall.jpg`.

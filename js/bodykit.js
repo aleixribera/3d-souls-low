@@ -457,44 +457,6 @@ const KIT = (() => {
       const guard = xf(tube(0.012, 0.012, 0.2, 4), 0, -0.32, 0.05, 0, 0, Math.PI / 2);
       return [{ slot: o.slot, geo: blade }, { slot: o.guardSlot ?? 'iron', geo: xf(guard, 0, 0, 0) }];
     },
-    // A rib cage on a hunched spine: `full` ribs wrap all the way round on one side, `broken` stop short on the other
-    // (`whole: true`: both sides wrap round).
-    ribcage(o) {
-      const out = [], full = o.full ?? 6, broken = o.broken ?? 3, n = Math.max(full, broken), sp = o.spine ?? 0.12;
-      for (let i = 0; i < n; i++) {
-        const y = 0.06 + i * 0.075, rad = (0.2 + 0.07 * Math.sin(i / (n - 1) * Math.PI)) * (o.size ?? 1);
-        for (const side of [1, -1]) {
-          const len = side === 1 || o.whole ? Math.PI * 0.78 : (i < broken ? Math.PI * (0.35 + 0.1 * (i % 2)) : 0);
-          if (side === 1 && i >= full) continue;
-          if (len <= 0) continue;
-          const g = KIT_GEO.Torus(rad, 0.017, 3, 7, len);
-          // The torus arc starts at +x, curving toward +y; lay it flat and swing it so it starts at the spine (back) and
-          // curves forward round a chest centred `rad` in front of it. The other side is the same arc turned over
-          // (rotateZ(PI) mirrors x; the tube is round, so it stays the right way out). Ribs droop toward the front.
-          g.rotateX(Math.PI / 2); g.rotateY(Math.PI / 2); xf(g, 0, 0, rad, 0, 0, 0, 1, 1, 0.8);
-          if (side === -1) g.rotateZ(Math.PI);
-          deform(g, v => { v.y -= Math.max(0, v.z) * 0.35; });
-          xf(g, 0, y, -sp);
-          out.push(g);
-        }
-      }
-      for (let i = 0; i < 8; i++) out.push(xf(sphere(0.034 - i * 0.001, 5, 3), 0, 0.02 + i * 0.075, -sp - 0.0 - Math.sin(i * 0.25) * 0.02, 0, 0, 0, 1.2, 0.9, 1));
-      out.push(xf(tube(0.02, 0.02, 0.62, 4), 0, 0.3, -sp, 0, 0, 0));
-      return out.map(geo => ({ slot: o.slot, geo: uvScale(geo, 2, 1) }));
-    },
-    // A big skull's face: dark sockets, nose hole, teeth, a cracked jaw hanging open, a crack across the brow.
-    skullFace(o, M) {
-      const r = M.proportions.headR, out = [];
-      for (const s of [-1, 1]) out.push({ slot: o.void, geo: xf(sphere(r * 0.24, 6, 4), s * r * 0.42, r * 1.05, r * 0.76, 0, 0, 0, 1, 1.15, 0.8) });
-      out.push({ slot: o.void, geo: xf(KIT_GEO.Cone(r * 0.1, r * 0.3, 3), 0, r * 0.7, r * 0.9, Math.PI, 0, 0) });
-      out.push({ slot: o.void, geo: xf(xf(plate([[-0.01, 0], [0.01, 0], [0.012, r * 0.9], [-0.012, r * 0.9]], 0.01, 0.002), 0, 0, 0), r * 0.15, r * 1.05, r * 0.98, 0, 0, -0.5) });
-      const teeth = [];
-      for (let i = -3; i <= 3; i++) teeth.push(xf(KIT_GEO.Cone(r * 0.04, r * 0.16, 3), i * r * 0.1, r * 0.46, r * 0.86 - Math.abs(i) * r * 0.03, Math.PI, 0, 0));
-      const jaw = deform(sphere(r * 0.8, 8, 4), v => { if (v.y > 0) v.y *= 0.05; v.z += 0.2 * r; });
-      xf(jaw, 0, r * 0.35, 0, 0.35, 0, 0.1, 0.9, 0.55, 0.9); roughen(jaw, 0.012, 41);
-      for (let i = -3; i <= 3; i++) teeth.push(xf(KIT_GEO.Cone(r * 0.035, r * 0.12, 3), i * r * 0.1, r * 0.02, r * 0.95 - Math.abs(i) * r * 0.03, 0.35, 0, 0));
-      return [...out, ...teeth.map(geo => ({ slot: o.slot, geo })), { slot: o.slot, geo: jaw }];
-    },
     // Knuckles and joints: lumps of bone at the given points of the bone's frame.
     knobs(o) { return o.at.map(([x, y, z, r]) => roughen(xf(sphere(r, 6, 4), x, y, z), r * 0.25, 51)); },
     // Curved horns on a helmet.

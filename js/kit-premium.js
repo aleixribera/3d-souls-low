@@ -437,62 +437,6 @@
     return out;
   };
 
-  // ---- bones (the Giant Skeleton, remade) -----------------------------------------------------------------------------
-  // A long bone hanging from its joint (len m, shaft radius r): a waisted shaft between flared ends, a rounded head at
-  // the top, two condyles at the foot. `pair`: two thinner bones side by side (radius and ulna, tibia and fibula).
-  P.longBone = o => {
-    const len = o.len, r = o.r, out = [], shaft = (x, rr) => sweep(new THREE.LineCurve3(new V3(x, 0, 0), new V3(x * 0.8, -len, 0.004)),
-      t => rr * (0.55 + 0.12 * t + 0.85 * bump(t, 0.0, 0.11) + 0.8 * bump(t, 1.0, 0.1)), 14, 8);
-    if (o.pair) { out.push(roughen(shaft(r * 0.55, r * 0.72), r * 0.04, 3), roughen(shaft(-r * 0.6, r * 0.55), r * 0.04, 4)); }
-    else out.push(roughen(shaft(0, r), r * 0.05, 5));
-    if (!o.pair) out.push(roughen(xf(sphere(r * 1.18, 10, 8), 0, r * 0.15, 0), r * 0.06, 6));   // the head of the bone
-    for (const sd of [-1, 1]) out.push(roughen(xf(sphere(r * 0.72, 9, 7), sd * r * 0.62, -len, 0.01, 0, 0, 0, 1, 0.85, 1.05), r * 0.05, 7 + sd));   // condyles
-    return out.map(g => uvScale(g, 1, 2));
-  };
-  // A bony hand at the end of the forearm (elbow frame, `at` m down): a knot of wrist bones, four metacarpals fanning to
-  // the knuckles, fingers in three joints curling under, a thumb.
-  P.boneHand = o => {
-    const s = o.size ?? 1, y0 = -(o.at ?? 0.34), out = [roughen(xf(sphere(0.045 * s, 9, 7), 0, y0, 0.01, 0, 0, 0, 1.2, 0.8, 1), 0.006 * s, 9)];
-    for (let i = -1.5; i <= 1.5; i++) {
-      const w = new V3(i * 0.012 * s, y0 - 0.02 * s, 0.012 * s), k = new V3(i * 0.03 * s, y0 - 0.11 * s, 0.02 * s);
-      const f1 = k.clone().add(new V3(i * 0.006 * s, -0.06 * s, 0.022 * s)), f2 = f1.clone().add(new V3(0, -0.04 * s, 0.04 * s)), tip = f2.clone().add(new V3(0, -0.005 * s, 0.035 * s));
-      out.push(sweep(new THREE.LineCurve3(w, k), t => 0.0085 * s * (1 + 0.6 * bump(t, 1, 0.15)), 6, 5));
-      out.push(sweep(new THREE.CatmullRomCurve3([k, f1, f2, tip], false, 'centripetal'), t => 0.008 * s * (1 - 0.5 * t + 0.4 * bump(t, 0.33, 0.07) + 0.3 * bump(t, 0.66, 0.07)), 12, 5));
-    }
-    const th0 = new V3(0.025 * s, y0 - 0.03 * s, 0.02 * s);
-    out.push(sweep(new THREE.CatmullRomCurve3([th0, th0.clone().add(new V3(0.03 * s, -0.035 * s, 0.03 * s)), th0.clone().add(new V3(0.03 * s, -0.07 * s, 0.07 * s))]), t => 0.009 * s * (1 - 0.5 * t), 10, 5));
-    return out;
-  };
-  // A bony foot under the shin (knee frame): heel and ankle bones, metatarsals running forward to splayed toes.
-  P.boneFoot = o => {
-    const s = o.size ?? 1, y0 = -LEG_SEG, out = [roughen(xf(sphere(0.05 * s, 9, 7), 0, y0 - 0.01, -0.02, 0, 0, 0, 0.9, 0.8, 1.3), 0.006 * s, 12)];
-    for (let i = -1.5; i <= 1.5; i++) {
-      const a = new V3(i * 0.014 * s, y0 - 0.02 * s, 0.03 * s), b = new V3(i * 0.026 * s, y0 - 0.06 * s, 0.14 * s), c = b.clone().add(new V3(i * 0.006 * s, -0.01 * s, 0.06 * s));
-      out.push(sweep(new THREE.CatmullRomCurve3([a, b, c]), t => 0.011 * s * (1 - 0.45 * t + 0.4 * bump(t, 0.6, 0.08)), 10, 5));
-    }
-    return out;
-  };
-  // A pelvis (spin frame): two flaring ilium wings, the sacrum behind, the pubic arch in front.
-  P.bonePelvis = o => {
-    const s = o.size ?? 1, out = [];
-    for (const sd of [-1, 1]) {
-      const wing = KIT_GEO.Sphere(0.13 * s, 12, 8, sd > 0 ? -0.4 : Math.PI - 1.4, 1.8, 0.6, 1.3);
-      out.push(roughen(xf(wing, sd * 0.07 * s, 0.02, -0.01, 0, 0, sd * 0.25, 1, 1.1, 0.75), 0.006 * s, 13 + sd));
-    }
-    out.push(roughen(xf(KIT_GEO.Cone(0.07 * s, 0.2 * s, 8), 0, -0.02, -0.09 * s, Math.PI, 0, 0, 1, 1, 0.6), 0.006, 15));   // the sacrum
-    out.push(xf(KIT_GEO.Torus(0.085 * s, 0.018 * s, 6, 12, Math.PI), 0, -0.07, 0.04 * s, 0, 0, Math.PI));   // the pubic arch
-    return out;
-  };
-  // Neck vertebrae (neck frame): a column of knobs, each with a spine behind.
-  P.boneNeck = o => {
-    const s = o.size ?? 1, out = [];
-    for (let i = 0; i < (o.count ?? 5); i++) {
-      const y = i * 0.04 * s;
-      out.push(roughen(xf(KIT_GEO.Cylinder(0.03 * s, 0.032 * s, 0.026 * s, 8), 0, y, 0), 0.003 * s, 20 + i), xf(KIT_GEO.Cone(0.012 * s, 0.05 * s, 5), 0, y, -0.04 * s, -Math.PI / 2 - 0.3, 0, 0));
-    }
-    return out;
-  };
-
   // A fitted cuirass (`slim: true`, Malenia): close to the body, a shaped bust, a waist pinched like a corset, a light
   // ridge, gilt rims at the neck and waist, a short flared lip over the hips.
   function slimCuirass(o, M) {

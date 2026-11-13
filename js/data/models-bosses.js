@@ -1,7 +1,7 @@
 'use strict';
 // Phase 6: boss models (the format is explained in js/data/models.js; texture size up to 512, budget 6000 triangles).
 // Each boss has one focal point you could draw from memory:
-//   Giant Skeleton   (OLD BONES)  a spectral giant: a huge domed skull hung low, pale glowing bone, a white-hot spine
+//   Giant Skeleton   (OLD BONES)  a spectral giant: a huge domed skull hung low, pale glowing bone, a white-hot spine (Blender, v7.45.0)
 //   Pillager Captain (ASHEN HOST) a horned helm, a cloak torn into strips, a halberd whose edge glows
 //   Bell Warden      (IRONBOUND)  a verdigris bronze colossus: bell helm, bell skirt, a temple bell for a hammer (Blender, v7.43.0)
 
@@ -12,7 +12,8 @@ MODEL_DEFS.giantSkeleton = {
   extends: 'hollowBase', faction: 'oldbones', budget: 'boss', fit: 1.04, limbSides: 8, rim: 2.4,
   proportions: { shoulderX: 0.34, torsoW: 0.16, torsoD: 0.12, armR: 0.072, legR: 0.08, headR: 0.29, handR: 0.06, footLen: 0.32 },
   limbs: { armL: { len: 1.3, thick: 1.15 }, legL: { thick: 1.15 } },
-  posture: { chest: [0.55, 0, 0.04], neck: [0.9, 0, -0.06], head: [-0.45, 0, 0.1], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },
+  // v7.45.0: neck 0.9 -> 0.75, head -0.45 -> -0.95, so the skull's face looks down at the player, not at the floor
+  posture: { chest: [0.55, 0, 0.04], neck: [0.75, 0, -0.06], head: [-0.95, 0, 0.1], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },
   materials: {
     bone: { tex: 'spectralBone', tint: 0xd8dde6, decay: 0.55, size: 512 },
     dark: { tex: 'spectralBone', tint: 0xaab0bc, decay: 0.8 },
@@ -20,26 +21,18 @@ MODEL_DEFS.giantSkeleton = {
     core: { glow: 0xe8eeff },
     eye: { glow: 0xc8d8ff },
   },
-  // v6.0 remake: a real skeleton (js/kit-premium.js): shaped long bones with heads and condyles, paired forearm and shin
-  // bones, bony hands and feet, a pelvis and neck vertebrae under the huge domed skull; the white-hot spine as before.
-  body: { torso: null, pelvis: null, arms: null, legs: null, head: 'bone', neck: null, hands: null, feet: null },
-  parts: [
-    { use: 'ribcage', slot: 'bone', bone: 'chest', full: 8, broken: 8, whole: true, size: 1.3, spine: 0.16 },
-    { use: 'skullFace', slot: 'bone', void: 'void', bone: 'head' },
-    // the burning spine: white-hot vertebrae from the ribs down into the pelvis
-    { use: 'knobs', slot: 'core', bone: 'chest', at: [[0, 0.04, -0.16, 0.032], [0, 0.11, -0.165, 0.03], [0, 0.18, -0.17, 0.028], [0, 0.25, -0.17, 0.026], [0, 0.32, -0.17, 0.024]] },
-    { use: 'knobs', slot: 'core', bone: 'spin', at: [[0, 0.0, -0.08, 0.036], [0, 0.07, -0.095, 0.036], [0, 0.14, -0.11, 0.035], [0, 0.21, -0.125, 0.034], [0, 0.28, -0.14, 0.033]] },
-    { use: 'bonePelvis', slot: 'bone', bone: 'spin', size: 1.3 },
-    { use: 'boneNeck', slot: 'dark', bone: 'neck', size: 1.4, count: 5 },
-    { use: 'longBone', slot: 'bone', bone: 'armL', len: 0.39, r: 0.05 }, { use: 'longBone', slot: 'bone', bone: 'armR', len: 0.3, r: 0.046 },
-    { use: 'longBone', slot: 'bone', bone: 'elbowL', len: 0.39, r: 0.042, pair: true }, { use: 'longBone', slot: 'bone', bone: 'elbowR', len: 0.3, r: 0.04, pair: true },
-    { use: 'longBone', slot: 'bone', bone: 'legL', len: 0.45, r: 0.062 }, { use: 'longBone', slot: 'bone', bone: 'legR', len: 0.45, r: 0.056 },
-    { use: 'longBone', slot: 'bone', bone: 'kneeL', len: 0.45, r: 0.052, pair: true }, { use: 'longBone', slot: 'bone', bone: 'kneeR', len: 0.45, r: 0.048, pair: true },
-    { use: 'boneHand', slot: 'bone', bone: 'elbowL', at: 0.42, size: 1.5 }, { use: 'boneHand', slot: 'bone', bone: 'elbowR', at: 0.33, size: 1.45 },
-    { use: 'boneFoot', slot: 'bone', bone: 'kneeL', size: 1.25 }, { use: 'boneFoot', slot: 'bone', bone: 'kneeR', size: 1.2 },
-  ],
-  weapon: { use: 'boneClub', slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },
-  eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.11, at: [0, 0.28, 0.21] },
+  // v7.45.0: built in Blender (tools/blender/giant.py), one piece per bone: a domed skull with scowling sockets, a crack
+  // over the crown and the jaw hanging open; a barrel of ribs (three snapped) on a spine that burns white (`core`) from
+  // the skull's base into the pelvis; long bones with knuckled ends; a long claw on the left, a fist round the club.
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  parts: Object.entries({
+    head: ['bone', 'bone.1', 'bone.2', 'void', 'core', 'dark'], neck: ['core', 'dark'],
+    chest: ['core', 'dark', 'dark.1', 'bone', 'bone.1', 'bone.2'], spin: ['bone', 'bone.1', 'bone.2'],
+    armL: ['bone'], armR: ['bone'], elbowL: ['bone', 'bone.1'], elbowR: ['bone', 'bone.1'],
+    legL: ['bone'], legR: ['bone'], kneeL: ['bone', 'bone.1'], kneeR: ['bone', 'bone.1'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
+  weapon: { use: 'boneClub', rest: 0.5, slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },   // rest: the club's head on the floor, not sunk in it
+  eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.105, at: [0, 0.265, 0.2] },
   aura: { color: 0xcfdcff, size: 3.6, opacity: 0.16 },
   anim: {
     idle: { breathRate: 0.6, breath: 0.02, headDrift: 0.1, sway: 0.025, twitch: 0 }, walk: { twist: 0.12, roll: 0.06, headNod: 0.07, elbow: 0.3, drag: 0.35 },
