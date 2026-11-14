@@ -806,7 +806,7 @@
       const e = Game.duel;
       expect.ok(sim.until(() => e.state === ES.WINDUP, 12) >= 0, `${id}: attacks`);
       let n = 0;
-      while (e.alive() && n++ < 80) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(12); }
+      while (e.alive() && n++ < 160) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(12); }   // 160: ordinary blows a third weaker (pass 85)
       expect.ok(!e.alive(), `${id}: beaten (${n} heavy hits)`);
     }
   });
