@@ -31,12 +31,12 @@ const run = (args, label) => new Promise((done, fail) => {
   p.on('exit', code => code === 0 ? done() : fail(new Error(`ffmpeg (${label}) exited ${code}`)));
 });
 function probe(file) {
-  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration,size:stream=codec_type,codec_name,profile,width,height,r_frame_rate,sample_rate,channels',
+  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration,size:stream=codec_type,codec_name,profile,pix_fmt,width,height,r_frame_rate,sample_rate,channels',
     '-of', 'json', file], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`ffprobe ${file}: ${r.stderr}`);
   const j = JSON.parse(r.stdout), v = j.streams.find(s => s.codec_type === 'video'), a = j.streams.find(s => s.codec_type === 'audio');
   return { file, mb: +(j.format.size / 1048576).toFixed(2), seconds: +(+j.format.duration).toFixed(2),
-    video: v && `${v.codec_name} ${v.profile} ${v.width}x${v.height} ${v.r_frame_rate}`, audio: a && `${a.codec_name} ${a.sample_rate} Hz ${a.channels} ch` };
+    video: v && `${v.codec_name} ${v.profile} ${v.pix_fmt} ${v.width}x${v.height} ${v.r_frame_rate}`, audio: a && `${a.codec_name} ${a.sample_rate} Hz ${a.channels} ch` };
 }
 
 (async () => {
@@ -97,7 +97,9 @@ function probe(file) {
     const silent = path.join(work, 'video.mp4'), wav = path.join(work, 'sound.wav');
     // The picture: each frame a JPEG from the compositor, straight into the encoder.
     const enc = spawn('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-r', String(FPS), silent], { stdio: ['pipe', 'inherit', 'inherit'] });
+      // The JPEGs are full range (yuvj420p); players and phones expect TV range, so the range is converted, not relabelled.
+      '-vf', 'scale=in_range=pc:out_range=tv,format=yuv420p', '-color_range', 'tv',
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-r', String(FPS), silent], { stdio: ['pipe', 'inherit', 'inherit'] });
     const encoded = new Promise((done, fail) => enc.on('exit', c => c === 0 ? done() : fail(new Error(`ffmpeg (frames) exited ${c}`))));
     const cdp = await page.context().newCDPSession(page);
     const total = Math.round(info.seconds * FPS), began = Date.now();
@@ -121,12 +123,13 @@ function probe(file) {
     // 1080p, 30 fps, its bitrate capped to fit under WHATSAPP_MB).
     await run(['-i', silent, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-ar', String(RATE), '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', big], 'mux');
     const kbps = Math.floor((WHATSAPP_MB * 0.85 * 8192) / info.seconds) - 128;
-    await run(['-i', big, '-vf', 'fps=30', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
+    await run(['-i', big, '-vf', 'fps=30,format=yuv420p', '-color_range', 'tv', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0',
       '-crf', '20', '-maxrate', `${kbps}k`, '-bufsize', `${kbps * 2}k`, '-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-ar', '44100', '-movflags', '+faststart', small], 'whatsapp');
     const a = probe(big), b = probe(small);
     console.log(JSON.stringify({ frames: shown, beats: report && report.beats.map(x => `${x.id}:${x.ok ? 'ok' : 'MISSED'}`), release: a, whatsapp: b }, null, 1));
     if (b.mb >= WHATSAPP_MB) throw new Error(`the WhatsApp cut is ${b.mb} MB, over ${WHATSAPP_MB} MB`);
     if (!/h264/.test(b.video) || !/aac/.test(b.audio)) throw new Error('the WhatsApp cut is not H.264 + AAC');
+    for (const x of [a, b]) if (!/ yuv420p /.test(x.video)) throw new Error(`${x.file} is not yuv420p: ${x.video}`);
   } finally {
     try { await browser.close(); } catch (e) { /* closed */ }
     app.server.close();
