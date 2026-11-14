@@ -4,9 +4,11 @@
 // their blows, the boss they draw) are the engine's (js/abilities.js); this listens to their `abilityPower` events, the
 // server's for everyone online.
 // ============================================================================
-// A stand-in until each has a Blender model of its own (BACKLOG.md): each wears an enemy's figure (js/rig.js, the
-// kind's VIS.abilityFx `figure`) in a material of its own, and strikes with that enemy's `move`, its key poses played on
-// the summon's own clock: the end of the wind-up just before each blow the engine lands, then the strike and recovery.
+// The guardian is its own Blender model (pass 78: tools/blender/guardian.py, MODEL_DEFS.stoneGuardian, the kind's `model`),
+// each of its material slots in its own colour of the summon's shader (`slots`) and its `glows` lit. The lancer still wears
+// an enemy's figure (the kind's `figure`) until it has a model of its own (BACKLOG.md). Both strike with an enemy's `move`
+// (the attack of the `figure` enemy), its key poses played on the summon's own clock: the end of the wind-up just before
+// each blow the engine lands, then the strike and recovery.
 // The guardian is lit stone with a cold glowing rim: it rises out of the floor where it will stand, holds its shield up,
 // and raises its sword in a challenge as it draws the boss. The lancer is a ghost of violet light: it rises from the feet
 // up at its holder's side, charges the boss, and thrusts. Both crumble or burn away from the head down. Four of each
@@ -16,8 +18,9 @@ const summonFigures = (() => {
   const vertex = `
     #include <common>
     #include <skinning_pars_vertex>
-    varying vec3 vN; varying vec3 vV; varying float vY;
+    varying vec3 vN; varying vec3 vV; varying float vY; varying vec2 vUv;
     void main() {
+      vUv = uv;
       #include <skinbase_vertex>
       #include <beginnormal_vertex>
       #include <skinnormal_vertex>
@@ -28,11 +31,13 @@ const summonFigures = (() => {
       gl_Position = projectionMatrix * mv;
     }`;
   // uSolid 1: lit stone under a glowing rim; 0: a ghost of light, bright at its edges. The part past the cut (above it,
-  // uFrom 1; below it, uFrom -1) isn't there, and the line it is cut at glows.
+  // uFrom 1; below it, uFrom -1) isn't there, and the line it is cut at glows. uGlow 1: a slot of light (a rune, an eye).
+  // uMap: the model's own texture for that slot (its carving and cracks), its brightness only; uHasMap 0 for none.
   const fragment = `
     uniform vec3 uColor; uniform vec3 uCore; uniform vec3 uStone; uniform float uSolid; uniform float uOpacity; uniform float uCut;
     uniform float uFrom; uniform float uTime; uniform float uBoost; uniform float uRim; uniform float uBody; uniform float uFlicker;
-    varying vec3 vN; varying vec3 vV; varying float vY;
+    uniform float uGlow; uniform sampler2D uMap; uniform float uHasMap;
+    varying vec3 vN; varying vec3 vV; varying float vY; varying vec2 vUv;
     void main() {
       float edge = (vY - uCut) * uFrom;
       if (edge > 0.0) discard;
@@ -42,28 +47,38 @@ const summonFigures = (() => {
       float seam = smoothstep(-0.18, 0.0, edge);
       if (uSolid > 0.5) {
         float lit = 0.3 + 0.7 * max(dot(n, normalize(vec3(0.35, 0.85, 0.4))), 0.0);
-        vec3 c = uStone * lit + mix(uColor, uCore, seam) * (pow(rim, 1.6) * uRim + seam * 1.6) * flick * uBoost;
+        float tone = mix(1.0, 2.2 * dot(texture2D(uMap, vUv).rgb, vec3(0.3, 0.59, 0.11)), uHasMap);
+        vec3 c = uStone * lit * tone + mix(uColor, uCore, seam) * (pow(rim, 1.6) * uRim + seam * 1.6) * flick * uBoost;
+        c = mix(c, mix(uColor, uCore, 0.6) * (1.3 + 0.5 * rim) * flick * uBoost, uGlow);
         gl_FragColor = vec4(c, 1.0);
       } else {
         vec3 c = mix(uColor, uCore, rim * 0.55 + seam) * (uBody + rim * uRim) * flick * uBoost;
         gl_FragColor = vec4(c, uOpacity * (0.3 + 0.7 * rim + seam));
       }
     }`;
-  function material(F) {
+  // One material per slot colour: `shared` holds the uniforms every slot of one summon moves together (the cut, the rise,
+  // the strike's glow), so drawing sets them once.
+  function material(F, shared, stone, glow, map = null) {
     return new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(F.color) }, uCore: { value: new THREE.Color(F.core) }, uStone: { value: new THREE.Color(F.stone ?? 0) },
-        uSolid: { value: F.solid ? 1 : 0 }, uOpacity: { value: 0 }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 },
-        uRim: { value: F.rim }, uBody: { value: F.body }, uFlicker: { value: F.flicker } },
+      uniforms: { ...shared, uStone: { value: new THREE.Color(stone) }, uGlow: { value: glow ? 1 : 0 }, uMap: { value: map }, uHasMap: { value: map ? 1 : 0 } },
       vertexShader: vertex, fragmentShader: fragment, transparent: !F.solid, depthWrite: !!F.solid,
       blending: F.solid ? THREE.NormalBlending : THREE.AdditiveBlending });
   }
   function make(kind) {
     const F = VIS.abilityFx[kind], d = ENEMY_BY_ID[F.figure];
-    const rig = new Rig({ scale: d.scale * F.scale, bulk: d.bulk, color: d.color, weapon: d.weapon, offhand: d.offhand, visual: d.visual, model: d.model });
-    const mat = material(F);
+    const rig = new Rig(F.model ? { scale: F.scale, bulk: F.bulk ?? 1, model: F.model }   // its own model
+      : { scale: d.scale * F.scale, bulk: d.bulk, color: d.color, weapon: d.weapon, offhand: d.offhand, visual: d.visual, model: d.model });
+    const shared = { uColor: { value: new THREE.Color(F.color) }, uCore: { value: new THREE.Color(F.core) }, uSolid: { value: F.solid ? 1 : 0 },
+      uOpacity: { value: 0 }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uRim: { value: F.rim },
+      uBody: { value: F.body }, uFlicker: { value: F.flicker } };
+    const mat = material(F, shared, F.stone ?? 0, false), bySlot = new Map();   // each mesh of a model: its slot's material
+    if (F.slots) for (const meshes of [rig.slotMeshes, rig.weaponSlotMeshes]) for (const slot in meshes || {}) {
+      const glow = (F.glows || []).includes(slot), own = meshes[slot].material;
+      bySlot.set(meshes[slot], material(F, shared, glow ? 0 : F.slots[slot], glow, !glow && own && own.map || null));
+    }
     rig.root.traverse(o => {
       o.userData.warmUp = true;
-      if (o.isMesh) { o.material = mat; o.castShadow = !!F.solid; o.receiveShadow = false; o.renderOrder = F.solid ? 0 : 2; }
+      if (o.isMesh) { o.material = bySlot.get(o) || mat; o.castShadow = !!F.solid; o.receiveShadow = false; o.renderOrder = F.solid ? 0 : 2; }
       else if (o.isSprite || o.isPoints) o.visible = false;   // a glint, an aura, embers: not on a summon
     });
     rig.root.visible = rig.shadow.visible = false;

@@ -36,6 +36,7 @@ const FILES = {
   'kindling-tree': { sources: ['kindling_tree'] },
   'kings-blade': { sources: ['kings_blade'] },
   'hound': { sources: ['hound'] },
+  'guardian': { sources: ['guardian'] },
 };
 
 function readGlb(file) {

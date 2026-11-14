@@ -721,3 +721,34 @@ MODEL_DEFS.saltKnight = {
     trousers: { tex: 'rottenCloth', tint: 0x48544e, decay: 0.8 },
   },
 };
+
+// ---- Summons ----------------------------------------------------------------------------------------------------------
+// The Stone Guardian (pass 78, built in Blender: tools/blender/guardian.py): the Stone Guardian ability's summon, a tomb
+// effigy come awake. A deep hood over a dark face with two slits of light, carved pauldrons, a faceted breast split by a
+// glowing crack, a tabard carved in folds, rings of light at the elbows and knees, an arched headstone for a shield and a
+// broad stone sword with a lit fuller. No enemy wears it. In a fight the summon draws it in its own shader, slot by slot
+// (VIS.abilityFx.guardian.slots, js/summon-figures.js); these materials are what the model lab shows.
+MODEL_DEFS.stoneGuardian = {
+  extends: 'ironKnight', fit: 1.0, budget: 'enemy',
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.38, torsoW: 0.26, torsoD: 0.19, armR: 0.08, legR: 0.1 },
+  posture: { chest: [0.04, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
+  materials: {
+    stone: { tex: 'stone', tint: 0xc8c2b4, decay: 0.55 },
+    worn: { tex: 'stone', tint: 0x6e6a62, decay: 0.75 },
+    rune: { glow: 0xbfe0ff },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  bones: { loinF: { parent: 'spin', at: [0.0, -0.02, 0.16] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.16] } },
+  parts: Object.entries({
+    head: ['stone', 'worn', 'rune'], neck: ['worn'], chest: ['stone', 'worn', 'rune'], spin: ['worn', 'stone'],
+    loinF: ['worn'], loinB: ['worn'],
+    armL: ['worn', 'stone'], armR: ['worn', 'stone'],
+    elbowL: ['stone', 'rune', 'worn', 'stone.1', 'worn.1', 'stone.2', 'rune.1'], elbowR: ['stone', 'rune', 'worn'],
+    legL: ['stone'], legR: ['stone'], kneeL: ['rune', 'stone', 'worn'], kneeR: ['rune', 'stone', 'worn'],
+    weapon: ['stone', 'worn', 'rune'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `guardian:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+    ...(bone === 'weapon' ? { weapon: true } : {}) }))),
+  weapon: null,   // the stone sword is part of the figure (the `weapon: true` pieces above)
+  eyes: null,     // its eyes are the hood's two slits of light (the `rune` slot)
+  anim: { ...IRONBOUND_ANIM, cloth: [{ bone: 'loinF', gain: 0.04, k: 120, damp: 10, flutter: 0 }, { bone: 'loinB', gain: 0.05, k: 110, damp: 10, flutter: 0 }] },
+};

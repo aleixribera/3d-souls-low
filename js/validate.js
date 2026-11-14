@@ -73,6 +73,15 @@ function validateData({ visual = true } = {}) {
     need(!!d && !!d.model && d.attacks.some(a => a.id === F.move && ATTACK_POSES[a.pose]), `CONFIG.VISUALS.abilityFx.${k}: figure must be an enemy with a model and move one of its attacks with key poses.`);
     need(['windup', 'rise', 'fade', 'strikeGlow', 'cryTime', 'turn', 'scale'].every(n => num(F[n]) && F[n] > 0) && !!F.guard && !!F.cry,
       `CONFIG.VISUALS.abilityFx.${k}: a figure needs windup, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
+    // Its own model (pass 78): a model definition, each slot it colours and lights one of that model's materials.
+    if ('model' in F) {
+      const mats = [], used = [];   // its materials and the slots its parts are drawn in, through what it extends
+      for (let M = MODEL_DEFS[F.model]; M; M = MODEL_DEFS[M.extends]) { mats.push(...Object.keys(M.materials || {})); if (!used.length) used.push(...(M.parts || []).map(o => o.slot).filter(Boolean)); }
+      need(F.model in MODEL_DEFS && (F.bulk === undefined || num(F.bulk) && F.bulk > 0) && F.slots && typeof F.slots === 'object'
+        && Object.entries(F.slots).every(([s, c]) => mats.includes(s) && Number.isInteger(c)) && Array.isArray(F.glows) && F.glows.every(s => mats.includes(s))
+        && used.every(s => s in F.slots || F.glows.includes(s)),
+        `CONFIG.VISUALS.abilityFx.${k}: model must be a model definition, bulk above 0, slots { <its material slot>: colour } and glows a list of its material slots, every slot its parts use in one of them.`);
+    }
   }
   // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
   const ABILITY_TEXT_MAX = { words: 9, chars: 56 };

@@ -647,12 +647,15 @@ const CONFIG = {
       hound: { color: 0x3dffa0, core: 0xdcffe8, eye: 0xc8ffd8, rim: 2.6, body: 0.22, bone: 0.7, flicker: 0.18, turn: 9, rise: 0.55, fade: 0.7,
         gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
         shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
-      // The Stone Guardian and the Lancer of Ash (js/summon-figures.js): for now each wears an enemy's figure (`figure`,
-      // an enemy id, at `scale` times its size) and strikes with that enemy's `move` (one of its attacks, the last
-      // `windup` s of its wind-up played before each blow). `solid`: lit stone (`stone`) with a glowing rim, rising out
-      // of the floor; else a ghost of light, rising from the feet up. `guard`: a key pose held while it isn't striking;
-      // `cry`: the one it strikes, `cryTime` s, as it draws the boss's eye.
-      guardian: { figure: 'warden', move: 'wardenBash', scale: 1.22, solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
+      // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each strikes with the `move` of the `figure` enemy
+      // (one of its attacks, the last `windup` s of its wind-up played before each blow). A `model` (pass 78: the
+      // guardian's) is its own figure at `scale` and `bulk`, each material slot drawn in its `slots` colour and its `glows`
+      // lit; without one it wears the `figure` enemy's at `scale` times its size (the lancer, until it has its own).
+      // `solid`: lit stone (`stone`, or the slot's colour) with a glowing rim, rising out of the floor; else a ghost of
+      // light, rising from the feet up. `guard`: a key pose held while it isn't striking; `cry`: the one it strikes,
+      // `cryTime` s, as it draws the boss's eye.
+      guardian: { figure: 'warden', move: 'wardenBash', model: 'stoneGuardian', scale: 1.37, bulk: 1.06,
+        slots: { stone: 0x8e897e, worn: 0x504d47 }, glows: ['rune'], solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
         flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, windup: 0.45, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
         guard: { armL: [-0.75, 0, -0.25] }, cry: { armR: [-2.3, 0, 0.3], armL: [-0.9, 0, -0.5], chest: [-0.25, 0, 0], head: [-0.3, 0, 0] },
         burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xbfe0ff } },
