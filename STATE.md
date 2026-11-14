@@ -61,9 +61,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 - In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
-- CI since v7.109.0 (the new moveset's shorter i-frames): in-page `v4.2.4 bosses: ... short enough to roll through`
-  (giant sweep), `Aldric: every strike leaves a roll's i-frames a margin`, `Night Gaol: the Ringer ...` (fetterStamp).
-  Boss timings against the dash: track B's item 4 (bosses answer), or the tests read the new dash.
+- CI since v7.109.0 (shorter i-frames): in-page `v4.2.4 bosses` (giant sweep), `Aldric: every strike leaves`,
+  `Night Gaol: the Ringer` (fetterStamp) fail; boss timings vs the dash: track B item 4, or the tests.
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
