@@ -93,6 +93,8 @@ Aleix, 2026-11-13.
   cool as fuck and the same all story ("Next, small" section, item 6, rework item 3).
 - The stagger bar goes (Aleix, 2026-11-14): counters are the focus ("Next, small", item 2). Executions go; the
   Finishing Blow replaces them: the third counter in a short spell becomes a frozen-time multi-cut flash step.
+- The showcase after updates (Aleix, 2026-11-15): plays for every player on their first launch of a new version, at
+  most once a day, still unskippable (the showcase section, item 3).
 - The showcase (Aleix, 2026-11-14): a 30-second live cinematic of the game at its best, before the sparring scene, not
   skippable, kept current by its beats' test, and recorded as a video with a WhatsApp version; built by its own session
   (its own section). `VISION.md`'s exception with his OK.
@@ -462,6 +464,13 @@ session (the showcase session), not the loop**: the loop doesn't touch the showc
 3. **When:** a new player's first launch plays it, then the sparring scene (item 3d of the rework) straight after;
    **it can't be skipped** (Aleix: "no key to skip it"). Afterwards a **Watch** entry on the title plays it again;
    players from before the rework see it with their three sparring-scene offers.
+   **After every update, for every player** (Aleix, 2026-11-15: "play on every game version update for all players";
+   at most once a day, his pick, since the game releases many times a day): the first launch on a version the player
+   hasn't launched before plays it, unless it already played for them in the last 24 hours. Still unskippable. It
+   plays before the title, never into a lobby or a run already under way (a player rejoining a run in progress sees
+   it next launch). The version and time it last played are kept in the local save (try/catch, rule 8); a browser
+   with storage blocked plays it once per page load at most. Check: a test that it plays on a new version, not twice
+   within 24 hours across several versions, again after 24 hours, and never on a rejoin.
 4. **Kept current:** the script is data, a list of beats ("deflect a string", "counter", "ability on key 4"); the bot
    plays it live on a fixed seed, so it looks the same each time; a test runs it every release and fails when a beat
    stops happening; each big new mechanic adds a beat.
