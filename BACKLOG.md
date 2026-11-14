@@ -38,15 +38,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   frame (`captain-desktop-string.jpg`) caught the Captain's charge before the string; the laptop run shows the keys
   alone through a full exchange (strings, finishers, two perfect dodges, a counter).
 
-- **Item 3c's next pass (track A), after pass 94:** the dash steps through five keys, the guard and deflect hold the
-  blade across the body; two fresh judges scored dash 5 and deflect 5 (from 3), flat over the two rounds, so start a
-  new loop. Their giveaways: the dash still folds at the waist with the free arm hanging in front (it wants a lean
-  from the ankles, the free arm trailing, clearer scissoring); the deflect's legs never visibly react (capture it from
-  the side or three-quarter: front-on, the knee bend that is there can't be seen) and wants a sharp 3-4 frame recoil.
-  The light string's flow back into the run is tested but not yet in a strip. Not yet: the counter and drink still
-  borrow poses (pose ids are track B's, above); a perfect dodge's brighter afterimages untested in frames; speed lines
-  on finishers. Use a fresh judge each round: one resumed over rounds grows lenient.
-
+- **Item 3c's next pass (track A), after pass 99:** the deflect now knocks the blade out and back, then sinks over
+  it; three fresh judges scored it 5, 4, 5 against the old 3, from the sword side at three-quarter. Their giveaway:
+  frames 5-9 hold one crouched pose, so drive the hands and chest back and up at frames 3-4, then ease forward with a
+  small damped overshoot and a knee dip. The dash is a stalled loop at 5 over passes 94 and 99: an ankle lean and a
+  held wide split both scored 4. A new approach, not new keys: the rig bends only at hip and knee (no ankle, no
+  spine segments), so try a real Blender action for the dash, or a two-segment spine, before more key tuning. The
+  light string's flow back into the run is tested but not yet in a strip. Not yet: the counter and drink still
+  borrow poses (pose ids are track B's, above); speed lines on finishers. Use a fresh judge each round.
 - **Find (pass 92):** `startFight('dummy')` under a hand-stepped clock (`Game.manualClock`) turns positions to NaN: the
   dummy has no `speed` and starts in chase (`approachVel`). Old and new builds alike; tests and captures use other foes.
 

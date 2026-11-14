@@ -24,15 +24,18 @@ function validateData({ visual = true } = {}) {
     need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && num(d.drop) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press and its clang.');
     need(D && D.clang && Array.isArray(D.clang.step) && D.clang.step.length === 2 && D.clang.step.every(v => Number.isFinite(v) && Math.abs(v) <= 0.6),
       'ANIM_SETTINGS.deflect.clang.step: [side, back] m the body steps off its line (at most 0.6 each).');
+    const Rb = D && D.clang && D.clang.rebound;
+    need(Rb && num(Rb.delay) && num(Rb.rise) && num(Rb.hold) && num(Rb.fall) && num(Rb.drop) && rot(Rb.pose),
+      'ANIM_SETTINGS.deflect.clang.rebound: delay, rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone.');
     need(A.clothClamp > 0 && A.clothSpeed > 0, 'ANIM_SETTINGS.clothClamp (rad) and clothSpeed (m/s): both above 0.');
     for (const [id, M] of Object.entries(MODEL_DEFS)) for (const c of (M.anim && M.anim.cloth) || [])
       need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);
     const Da = A.dash, L = A.land, r3 = v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite);
     const Dk = Da && Da.keys;
-    need(Da && num(Da.rise) && Array.isArray(Dk) && Dk.length >= 2 && Dk[0].at === 0 && Dk[Dk.length - 1].at === 1
+    need(Da && num(Da.rise) && Da.lift >= 0 && Da.lift <= 0.3 && Array.isArray(Dk) && Dk.length >= 2 && Dk[0].at === 0 && Dk[Dk.length - 1].at === 1
       && Dk.every((k, i) => (i === 0 || k.at > Dk[i - 1].at) && Math.abs(k.lean) < 1.5 && Math.abs(k.tip) < 0.5 && Number.isFinite(k.head)
         && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(k[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(k[b]))),
-      'ANIM_SETTINGS.dash: rise (s) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
+      'ANIM_SETTINGS.dash: rise (s), lift (0 to 0.3 m) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
     const Cg = A.counterGlow;
     need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1
       && Cg.flare >= 0 && Cg.flare <= 4 && num(Cg.flareTime),

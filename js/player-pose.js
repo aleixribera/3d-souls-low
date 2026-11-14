@@ -35,13 +35,18 @@ function dashPose(r, tt, rollTime) {
   r.legR.rotation.set(legRx, keyCurve(K, i, s, 'legR', 1), keyCurve(K, i, s, 'legR', 2)); r.kneeR.rotation.x = kneeR;
   for (const b of DASH_LIMBS) r[b].rotation.set(keyCurve(K, i, s, b, 0), keyCurve(K, i, s, b, 1), keyCurve(K, i, s, b, 2));
   if (r.elbowL) { r.elbowL.rotation.x += keyCurve(K, i, s, 'elbowL', -1); r.elbowR.rotation.x += keyCurve(K, i, s, 'elbowR', -1); }
-  // The hips sink until the lower foot is on the floor: a split stance, not a squat (Rig.crouch bends both knees alike).
-  const reach = LEG_SEG * Math.max(Math.cos(legLx) + Math.cos(legLx + kneeL), Math.cos(legRx) + Math.cos(legRx + kneeR));
-  const drop = Math.max(0, 2 * LEG_SEG - reach);
-  r.spin.position.y -= drop; r.crouchDrop += drop;   // so a later crouch() this frame bends from here
-  r.lean(keyCurve(K, i, s, 'lean', -1)); r.tip.rotation.x += keyCurve(K, i, s, 'tip', -1); r.head.rotation.x += keyCurve(K, i, s, 'head', -1);
+  // The hips sit where the lower foot meets the floor once the whole body is tipped at the feet: a split stance, not a
+  // squat (Rig.crouch bends both knees alike). Pass 99: the tip counts, so the body can lean from the ankles in one
+  // line from the driving foot to the head (a forward tip lifts the back foot and sinks the front one, so the hips
+  // rise or drop to keep the lower foot planted) instead of folding at the waist.
+  const tip = keyCurve(K, i, s, 'tip', -1), tn = Math.tan(tip);
+  const drop = Math.max(-ANIM_SETTINGS.dash.lift, 2 * LEG_SEG - LEG_SEG * Math.max(footReach(legLx, kneeL, tn), footReach(legRx, kneeR, tn)));
+  r.spin.position.y -= drop; r.crouchDrop += Math.max(0, drop);   // so a later crouch() this frame bends from here
+  r.lean(keyCurve(K, i, s, 'lean', -1)); r.tip.rotation.x += tip; r.head.rotation.x += keyCurve(K, i, s, 'head', -1);
 }
 const DASH_LIMBS = ['armR', 'armL', 'weapon'];
+// The hip's height over one foot, in leg segments: thigh at `a`, knee bent `k`, the body tipped by atan(tn) at the feet.
+function footReach(a, k, tn) { return Math.cos(a) + Math.cos(a + k) - (Math.sin(a) + Math.sin(a + k)) * tn; }
 // A landing with weight (pass 92): the knees give under the fall and come back up (visual clock `ldAge` on the rig).
 function landPose(p, r, dt) {
   const L = ANIM_SETTINGS.land, air = p.state === PS.JUMP || p.state === PS.FALL || p.state === PS.JUMP_ATTACK;
@@ -67,13 +72,20 @@ function deflectPose(p, r, dt, yaw) {
   if (p.deflect > (r.dfLast ?? 0) + 1e-6) r.dfAge = 0;                       // a fresh press arms the deflect
   else if (r.dfAge !== undefined) r.dfAge += dt;
   r.dfLast = p.deflect;
-  if (p.deflectedBlow && p.deflectedBlow !== r.clBlow) { r.clBlow = p.deflectedBlow; r.clAge = 0; }   // a blow turned aside
+  const R = D.clang.rebound;
+  if (p.deflectedBlow && p.deflectedBlow !== r.clBlow) {   // a blow turned aside; one still rebounding fades out under it
+    r.rbFrom = r.clAge === undefined ? 0 : deflectEnvelope(r.clAge - R.delay, R); r.clBlow = p.deflectedBlow; r.clAge = 0;
+  }
   else if (r.clAge !== undefined) r.clAge += dt;
   if (p.state !== PS.IDLE && p.state !== PS.WALK && p.state !== PS.BLOCK) return;   // any other move takes the body (Rig.settle blends it)
   const c = deflectEnvelope(r.clAge, D.clang), k = Math.max(deflectEnvelope(r.dfAge, D), c);
+  // Pass 99 (a fresh judge: "the body below the arms never reacts"): after the blow kicks blade and shoulders back, the
+  // body rebounds into it, chest over the blade and the hips held in a braced crouch, then settles.
+  const b = r.clAge === undefined ? 0 : Math.max(deflectEnvelope(r.clAge - R.delay, R), (r.rbFrom || 0) * clamp(1 - r.clAge / R.delay, 0, 1));
   poseToward(r, D.pose, k);
   poseToward(r, D.clang.pose, c);
-  if (k > 0.001) r.crouch(lerp(D.drop, D.clang.drop, c) * k);   // the hips drop with it; the feet stay planted
+  poseToward(r, R.pose, b);
+  if (k > 0.001 || b > 0.001) r.crouch(lerp(D.drop, D.clang.drop, c) * k + R.drop * b);   // the hips drop with it; the feet stay planted
   if (c > 0.001) {   // a blow turned aside: the whole body steps off its line (to its left and back), then back in
     const side = D.clang.step[0] * c, back = D.clang.step[1] * c, sy = Math.sin(yaw), cy = Math.cos(yaw);
     const dx = cy * side - sy * back, dz = -sy * side - cy * back;   // drawing only: Rig.place puts the root back next frame

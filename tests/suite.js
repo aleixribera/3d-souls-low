@@ -2939,8 +2939,9 @@
     expect.ok(Game.screen === 'storyConfirm', `New game asks before replacing the save (${Game.screen})`);
     Game.menuBack(); expect.ok(Game.screen === 'main', 'and going back returns to the title');
   }));
-  test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', () => {
+  test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', withSparring(S => {
     sim.begin();   // the stepped clock: a pick's loading card builds the fight at once (alone, the runner's own clock hid this)
+    S.forget({ done: true });   // a fresh page is a new player, whom Boss Rush sends to the sparring scene first (pass 97)
     const pick = (screen, name) => {
       Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
       expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
@@ -2983,7 +2984,7 @@
     expect.ok(Game.kind === 'level' && Game.level.id === A.LEVELS[0].id, 'a level, played on its own');
     pick('practice', 'Boss vs Boss'); expect.ok(Game.screen === 'bossBattle' && Game.screens().bossBattle.back === 'practice', 'two teams of bosses');
     Game.practiceGroup.length = 0; Game.showMenu('main');
-  });
+  }));
   test('Practice: Speed fights a boss at a later Boss Rush fight\'s pace, its health and blows its own', () => {
     sim.begin();
     const was = settings.practiceFight, boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
@@ -3031,7 +3032,7 @@
       gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
       Game.showMenu('main');
       until('PadDown', 'Practice'); press('PadA'); expect.ok(Game.screen === 'practice', `A starts the chosen mode (${Game.screen})`);
-      press('PadA'); expect.ok(Game.screen === 'practiceBosses', 'and opens a list');
+      until('PadDown', 'Fight a boss'); press('PadA'); expect.ok(Game.screen === 'practiceBosses', 'and opens a list');   // past the Tutorial (pass 97)
       press('PadB'); expect.ok(Game.screen === 'practice', 'B goes back a screen');
       press('PadB'); expect.ok(Game.screen === 'main', 'and back to the title');
       // The title's footer: down to it, then along it to Options.
@@ -4088,6 +4089,29 @@
     p.riposte = 0; sim.step(1, 1);
     expect.ok(open > plain + 0.5 && closing < open && closing > plain && Math.abs(glow() - plain) < 1e-6,
       `an open counter lights the blade, dimming as it closes, and only then (${plain.toFixed(2)}, ${open.toFixed(2)}, ${closing.toFixed(2)}, ${glow().toFixed(2)})`);
+  });
+  test('Player look: the dash keeps its lower foot on the floor; a deflected blow flings the blade up, then the body comes forward over it, staying low (pass 99)', () => {
+    Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player, r = p.rig, v = new THREE.Vector3(), feet = [];
+    const foot = () => { r.root.updateMatrixWorld(true); return Math.min(r.kneeL.localToWorld(v.set(0, -LEG_SEG, 0)).y, r.kneeR.localToWorld(v.set(0, -LEG_SEG, 0)).y) - r.root.position.y; };   // the lower sole
+    sim.step(30, 1);
+    sim.press('roll');
+    for (let i = 0; i < 18; i++) { sim.step(1, 1); if (i >= 2) feet.push(foot()); }
+    expect.ok(p.state === PS.ROLL, `it is a dash (${p.state})`);
+    expect.ok(feet.every(f => f > -0.04 && f < 0.12), `through the dash the lower foot stays on the floor, never sunk into it (${Math.min(...feet).toFixed(2)} to ${Math.max(...feet).toFixed(2)} m)`);
+    sim.step(40, 1);
+    const stand = r.spin.position.y;
+    sim.hold('block'); sim.step(3, 1);
+    const hand = () => { r.root.updateMatrixWorld(true); return r.weapon.getWorldPosition(v).y - r.root.position.y; };   // the sword hand's height
+    const guard = hand();
+    p.deflectedBlow = { enemy: null, key: 'look99' }; sim.step(3, 1);
+    const kick = { chest: r.spin.rotation.x, hand: hand() };
+    sim.release('block'); sim.step(6, 1);
+    const sink = { chest: r.spin.rotation.x, hip: r.spin.position.y };
+    expect.ok(kick.hand > guard + 0.1 && kick.chest < -0.05, `the blow flings the sword hand up (${guard.toFixed(2)} to ${kick.hand.toFixed(2)} m high) and the shoulders back (${kick.chest.toFixed(2)})`);
+    expect.ok(sink.chest > kick.chest + 0.1 && sink.hip < stand - 0.03,
+      `then the body comes back over the blade (${kick.chest.toFixed(2)} to ${sink.chest.toFixed(2)}) with the hips still down (${sink.hip.toFixed(2)} m, standing ${stand.toFixed(2)})`);
+    sim.step(30, 1);
   });
   test('Momentum: an attack from a run carries its speed, the light string steers and lets go into the run (pass 94)', () => {
     Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.step(10);   // the open arena: room to run

@@ -4,11 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 97): PLAN 3d rough: sparring (`js/sparring.js`, `js/data/sparring.js`, `js/levels/sparring.js`): a
-  pale teacher (Player + BotHands, `Game.teacher`) shows each drill, the player copies it on a partner; before a new
-  player's first Story road / Boss Rush, 3 launch offers to old saves, Practice, lobby; ~50 s. In-page `pass 97` (a
-  bot does each drill). Counter window: halo + closing ring (`counterFx.aura`), judge 3 to 7 twice. Next: Controls
-  clips (BACKLOG), the Finishing Blow's look.
+- Track A (pass 99): 3c pass 4: the deflect flings the blade up, then comes forward over it, low
+  (`deflect.clang.rebound`), judges 3 to 5, 4, 5; the dash keeps pass 94's keys, its plant counts the tip (`dash.lift`),
+  flat at 5 (BACKLOG: new approach). In-page `pass 99`. Sparring (pass 97, `js/sparring.js`, in-page `pass 97`).
+  Pass 99 once removed pass 98's browser lock by mistake, restored it at once; `.scratch/locked.sh` now refuses.
+  Next: deflect frames 5-9, Controls clips, the Finishing Blow look.
 - Track B (pass 98): v7.125.0 a dodge is decided on first overlap (`dashOutlasts`, per `dashNo`), a dodged blow never
   lands, a landed one closes the counter (`counterClose`); in-page `pass 98 perfect dodge`. v7.126.0 the name
   (`progress.name`, `js/name-ask.js`; `name-browser.cjs`). Next: no stagger bar, the Finishing Blow replaces

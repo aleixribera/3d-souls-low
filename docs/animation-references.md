@@ -78,3 +78,11 @@ in `.scratch/` only): a halo and a floor ring that closes in hold on the player 
 (`ANIM_SETTINGS.counterFx.aura`). Two fresh judges on five frames across one window: 2 to 7, then 3 to 7 after the
 halo held its strength to the end (flat). Strip: `scorecard/anim-p97-window.jpg`. Next: a rim light that keeps the
 body's own shading instead of the even blue fill.
+
+Pass 99 (item 3c pass 4, with two clips Aleix approved, kept in `.scratch/` only: a Sekiro deflect-timing clip,
+youtube bejKX5vw2-Y, and a Stellar Blade dodge clip, youtube fWwIX6O17fc). The deflect now knocks the blade out and
+back on contact, then the body sinks back over it (`ANIM_SETTINGS.deflect.clang.rebound`), filmed from the sword side
+at three-quarter. Three fresh judges: the old build 3 each time, ours 5, 4, 5. The dash: a lean from the ankles and a
+held wide split each scored 4 against the old 5, so pass 94's keys stay; the plant now counts the body's tip, so the
+lower foot no longer sinks through the floor. Strip (old above, new below): `scorecard/anim-p99-deflect.jpg`. Next:
+the deflect's frames 5-9 hold still; the dash is flat at 5 and wants a new approach (the rig's limits, see BACKLOG).
