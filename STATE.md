@@ -67,6 +67,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
+- In-page `Still Mere: the Oath Guard answers` flaked once in CI (kneel angle -0.74; passed on rerun, pass 57).
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
