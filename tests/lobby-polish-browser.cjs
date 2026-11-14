@@ -16,7 +16,7 @@ const { config: C } = require('../js/net-protocol.js');
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
       localStorage.setItem('combatArena.onlineName', name);
     }, name);
     await page.goto(url);

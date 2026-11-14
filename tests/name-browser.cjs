@@ -32,7 +32,11 @@ const { createServer } = require('../server/index.cjs');
   const partyNames = page => page.locator('#lobbyPlayers .lobby-player-name').allTextContents();
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-    await context.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
+    // Sparred already (js/sparring.js sends a new player to the sparring scene first; the end checks that order).
+    await context.addInitScript(() => {
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
+      localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
+    });
     let a = await open(context);
     assert.equal(await a.evaluate(() => progress.name), '', 'empty storage: no name yet');
 
@@ -76,6 +80,7 @@ const { createServer } = require('../server/index.cjs');
     await friendContext.addInitScript(() => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', 'Friend');
+      localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     });
     const b = await open(friendContext);
     await b.getByRole('button', { name: 'Join public lobby', exact: false }).click();
@@ -116,7 +121,19 @@ const { createServer } = require('../server/index.cjs');
     await pad(a, 0); await pad(a, 0); await pad(a, 9);
     assert.equal(await a.evaluate(() => progress.name), 'Vale the SecondA', 'Start keeps the name');
     await b.waitForFunction(() => multiplayer.info.players.some(p => p.name === 'Vale the SecondA'));
+
+    // A brand-new player (truly empty storage) spars first; leaving the sparring scene goes on to the ask.
+    const freshContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    await freshContext.addInitScript(() => { if (!localStorage.getItem('combat-arena-3d.settings')) localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })); });
+    const c = await open(freshContext);
+    await c.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await c.waitForFunction(() => sparring.active(), null, { timeout: 90000 });
+    assert.equal(await asking(c), false, 'no ask over the sparring scene');
+    await c.evaluate(() => sparring.skip());
+    assert.equal(await asking(c), true, 'after sparring, joining asks for the name');
+    assert.equal(await c.evaluate(() => multiplayer.connected), false);
+    await c.close();
     assert.deepEqual(errors, []);
-    console.log('Name: solo never asks, online asks once, kept with the save, reload joins, Options renames live, pad keyboard passed.');
+    console.log('Name: solo never asks, online asks once, kept with the save, reload joins, Options renames live, pad keyboard, new players spar first passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

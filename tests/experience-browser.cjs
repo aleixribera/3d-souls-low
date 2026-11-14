@@ -15,7 +15,7 @@ const { createServer } = require('../server/index.cjs');
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0,
       fps: false, hitboxes: false, cameraMotion: true, screenShake: false })));
-    await page.addInitScript(() => localStorage.setItem('combatArena.onlineName', 'Tester'));   // online play asks for a name otherwise
+    await page.addInitScript(() => { localStorage.setItem('combatArena.onlineName', 'Tester'); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true })); });   // online play asks for a name otherwise
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; });
