@@ -83,3 +83,10 @@ took it (once taken).
      for Boss Rush) and names the single biggest gap. Fix that gap, judge again.
   3. **Aleix is the last gate.** A boss is marked final only after Aleix has fought it. The bot measures balance; fun
      and whether the tells feel fair are his call. Until he has, the boss stays "awaiting Aleix" in `STATE.md`.
+- 2026-11-14, the ability pick between Boss Rush fights: "Add a small pause after choosing the card so that the player
+  can see what it does, and also view other cards, and make other card's info available to see by the player, because
+  they might forget how they work, their triggers, and they might want to form synergies." So:
+  1. After a card is chosen, the pick screen holds briefly: the chosen card shows what it does, and the other offered
+     cards stay readable.
+  2. Every ability the player holds can be looked up at any time (trigger, effect, rarity), so they can remember how
+     each works and plan synergies.
