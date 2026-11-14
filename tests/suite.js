@@ -3369,9 +3369,13 @@
         Game.render(0, STEP);
         const color = parryable ? WARN_COLOR : ROLL_ONLY_COLOR;
         const glow = a.hits[i].echo ? 0 : clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own
-        expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
+        // A blow told on the shield (`tell: 'shield'`, a model with a shieldTell) glows there and leaves the weapon dark.
+        const onShield = a.hits[i].tell === 'shield' && !!e.rig.shieldGlow;
+        expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(onShield ? 0 : glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
         const G = parryable ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
         expect.ok(sameColor(e.rig.warnGlow.material.color, new THREE.Color(G.color).multiplyScalar(G.boost)), `${d.id}/${a.id}/${i}: halo colour`);
+        if (onShield) expect.ok(e.rig.shieldGlow.visible === glow > 0.002 && sameColor(e.rig.shieldGlow.material.color, e.rig.warnGlow.material.color)
+          && Math.abs(e.rig.shieldGlow.material.opacity - glow * CONFIG.VISUALS.windupGlow.opacity) < 1e-6, `${d.id}/${a.id}/${i}: shield glow`);
         checked++;
       }
     }
