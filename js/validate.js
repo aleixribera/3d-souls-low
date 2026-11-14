@@ -917,6 +917,7 @@ function validateShowcase(S, need) {
     need(!!d && isBossDef(d), `${tag}: fight from beat ${f.from}: "${f.boss}" is not a boss.`);
     if (d) need(f.phase === undefined || (d.phases && f.phase in d.phases && (d.defaultPhases || []).includes(f.phase)), `${tag}: ${f.boss} has no phase "${f.phase}" it fights through.`);
     need(num(f.health) && f.health > 0 && f.health <= 1, `${tag}: ${f.boss}'s health is a share of its bar, 0-1.`);
+    need(f.cracks === undefined || (Number.isInteger(f.cracks) && f.cracks >= 0 && f.cracks < CONFIG.finisher.cracks), `${tag}: ${f.boss}'s cracks: 0 to ${CONFIG.finisher.cracks - 1} (its guard as the fight is joined).`);
   }
   const fightAt = b => fights.filter(f => f.from <= b).pop();
   const keyOf = id => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].key;
@@ -926,6 +927,9 @@ function validateShowcase(S, need) {
     need(typeof b.id === 'string' && !ids.has(b.id), `${t}: needs a unique id.`); ids.add(b.id);
     need(num(b.at) && b.at > prev && b.at < (S.title ? S.title.at : len), `${t}: at must be after the beat before it and before the title.`); prev = b.at;
     need(['dodge', 'deflect', 'ability'].includes(b.kind), `${t}: kind is dodge, deflect or ability.`);
+    // The blow's cuts (up to half a bar) would kill a boss the script keeps up, so a Finishing Blow is always the kill.
+    need(!b.finisher || (b.kill && b.counter), `${t}: a Finishing Blow needs its counter and ends the fight (kill).`);
+    need(b.kind !== 'ability' || (!b.kill && !b.finisher && !b.counter), `${t}: an ability beat has no counter, kill or Finishing Blow.`);
     if (b.kind === 'ability') need(Number.isInteger(b.key) && b.key >= 1 && b.key <= ABILITY_KEYS.length && (S.kit || []).some(id => keyOf(id) === ABILITY_KEYS[b.key - 1]), `${t}: key ${b.key} is not one the kit holds.`);
     else {
       const f = fightAt(b.at), d = f && ENEMY_BY_ID[f.boss], P = d && d.phases && f.phase ? d.phases[f.phase] : null;
@@ -934,6 +938,18 @@ function validateShowcase(S, need) {
       if (a && b.kind === 'deflect') need(a.hits.some((h, i) => canParryHit(a, i)), `${t}: "${b.attack}" has no blow a deflect can take.`);
       need(b.counter === undefined || b.counter in PLAYER_DEF.moveset.counter, `${t}: counter is an action with a counter (${Object.keys(PLAYER_DEF.moveset.counter).join(', ')}).`);
       need(!b.kill || b.counter, `${t}: a kill needs its counter.`);
+      // The Finishing Blow (js/finisher.js): the fight's cracks and its earlier counters crack the guard to the last
+      // exactly by a `finisher` beat's counter, and no sooner; each counter lands within the cracks' `fade` of the last.
+      if (b.counter && f) {
+        const C = CONFIG.finisher, sec = beats => beats * 60 / S.bpm;
+        const before = (S.beats || []).filter(x => x !== b && x.counter && x.at < b.at && fightAt(x.at) === f);
+        const cracks = (f.cracks || 0) + before.length, from = before.length ? before[before.length - 1].at : f.from;
+        need(b.finisher ? cracks === C.cracks : cracks < C.cracks, b.finisher
+          ? `${t}: its counter is the Finishing Blow only on a guard cracked ${C.cracks} times; ${f.boss}'s cracks and earlier counters make ${cracks}.`
+          : `${t}: ${f.boss}'s guard is cracked ${cracks} times by then, so this counter would be a Finishing Blow: mark it finisher.`);
+        // From one string's first blow to the next's: its string and its counter take up to about 3 s more.
+        need(!cracks || sec(b.at - from) + 3 < C.fade, `${t}: its counter comes about ${(sec(b.at - from) + 3).toFixed(1)} s after the last crack; they fade after ${C.fade} s.`);
+      }
     }
   }
   const shots = S.shots || {};
@@ -943,7 +959,7 @@ function validateShowcase(S, need) {
   const cuts = S.cuts || [];
   need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
   for (const k of S.keys || []) need((S.beats || []).some(b => b.kind === 'ability' && b.key === k.key && b.at === k.at) && num(k.for) && k.for > 0, `${tag}: the key cap at beat ${k.at} must match an ability beat.`);
-  need(!!S.title && num(S.title.at) && S.title.at < len, `${tag}: the title comes before the end.`);
+  need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0, `${tag}: the title comes before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
 }
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];
