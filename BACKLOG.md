@@ -32,6 +32,19 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   - The model: the helm reads as a bucket, the pauldrons as stacked balls, dark on dark (judge "model" 70).
   - The wound shows on the bar, the cracks and inward embers; brighter cracks for a bigger wound are not done.
   - Track B: 26 posture a parry and 2.1-4 s cooldowns make the break (the mend's counter) slow.
+- The Antlered Hunger, after its pass 1 (pass 77; a blind judge 62, 66, 63 vs Hollis 75, 72, 74: flat, so pass 2
+  wants a fresh judge; `docs/scorecard/hunger-moves.jpg`, `hunger-learned.jpg`, `hunger-church.jpg`). Done: it learns
+  each of six moves you escape or parry (`learns`/`learned` attacks, `Enemy.learned`, the `landed` claim online) and
+  comes again with its learned form; one ember collar per move lights on the antlers and flares at that form's
+  wind-up; a break forgets all. Own poses for 14 moves, a sized tell on every hit. Left:
+  - **The body says nothing of starving** (every judge, "model" 5/10): a barrel chest, gorilla mass and bark-striped
+    hide. Ribs, a sunken flank, thinner limbs, a longer stag muzzle and a hide that reads as hide (see the hide line below).
+  - The strike poses were the judges' biggest gap three times; after pass 77 the Hammerfall pounds upright with its
+    antlers high, the Fall sprawls, the Frenzy's finisher chops one-handed; the Charge and Kick still strike low.
+  - Its dark brown reads poorly on the church's brown floor and carpet; the red claw tells are small there.
+  - Online: a landed claim that arrives after the rake chains into its slam (about 250 ms+ ping) is refused, so the
+    rake may be learned though it hit. No check yet that a follow-up, opener or abort never names a learned form.
+  - Track B: the 3-bot party takes 90 damage against Hollis's 26; one solo bot fell once in 4 (126 s).
 - The Giant Skeleton, after its pass 2 (pass 74; a fresh judge 61, 63, 67 vs Hollis 71). Done: a manacle on the claw
   with a ~1.2 m chain that swings (`chainClaw`, `anim.hang`), a collar with a chain down the back, a dragging ankle
   chain, four small fused skulls, a femur club of its own bound in iron, ember eyes. Left:

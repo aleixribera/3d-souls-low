@@ -4,9 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 75): item 4, Aldric pass 1: own greatsword, poses, the Ember's mend. Strips
-  `docs/scorecard/aldric-moves.jpg`; judge 75, 77 vs Hollis 82 (gap: `BACKLOG.md`). He, the Giant, the Bell Warden,
-  the Pillager Captain, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Next: the next Ashmere boss.
+- Track A (pass 77): item 4, the Antlered Hunger pass 1: learns each move you escape, a lit antler collar per move;
+  `docs/scorecard/hunger-moves.jpg`; judge 62, 66, 63 vs Hollis 75, 72, 74 (gaps: BACKLOG). It, Aldric, the
+  Giant, Bell Warden, Pillager Captain, King's Blade, Agathe, Kindling Tree: **awaiting Aleix**. Next: item 5.
 - Track B (pass 76): item 11 pass 2 done, its check passes (`docs/scorecard/run-shape-pass76.txt`): no kit ~10, great
   kit 18 (1 in 10 reach 20), fight 21 a wall; breaks 28-35 s; swift 1 in 3. Next: the next item in PLAN.md's order.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.

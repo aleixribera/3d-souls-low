@@ -96,6 +96,19 @@ function peer(url, origin) {
   assert.equal(e.state, 'executed');
   sim.endExecution('b', e.netId); assert.equal(e.state, 'executed', 'other player cannot finish execution');
   const before = e.hp; sim.endExecution('a', e.netId); assert.ok(e.hp < before && e.hp >= before - e.def.hp / 2, 'boss execution respects cap');
+  // Pass 77: the Antlered Hunger learns a move that landed on nobody. A client's claim that the move it was shown landed
+  // stops that (a claim on any other move, or from out of its reach, is refused), and every frame carries what it has learned.
+  sim.start('arena', 'antlered'); sim.setPlayers([{ ...pose(18, 0), id: 'a' }]);
+  for (let i = 0; i < 10; i++) sim.tick(1 / 60);
+  const hunger = sim.inspect().Game.duel, rake = hunger.attackById('rake');
+  hunger.beginAttack(rake); sim.tick(1 / 60);
+  sim.landed('a', { enemy: hunger.netId, serial: hunger.netAttack, hitIndex: 0 }); assert.equal(hunger.landed, false, 'a claim from out of its reach is refused');
+  sim.setPlayers([{ ...pose(hunger.x, hunger.z + 2), id: 'a' }]); sim.tick(1 / 60);
+  sim.landed('a', { enemy: hunger.netId, serial: hunger.netAttack + 1, hitIndex: 0 }); assert.equal(hunger.landed, false, 'a claim on another move is refused');
+  sim.landed('a', { enemy: hunger.netId, serial: hunger.netAttack, hitIndex: 0 }); assert.equal(hunger.landed, true, 'a claim on the shown move counts');
+  hunger.learn(); assert.equal(hunger.learned.join(), '', 'a move that landed is not learned');
+  hunger.beginAttack(rake); hunger.learn(); assert.equal(hunger.learned.join(), 'rake', 'a move that landed on nobody is');
+  assert.equal(String(sim.frame().enemies.find(f => f.id === hunger.netId).learned), 'rake', 'the frame carries what it learned');
   const app = createServer({ capacity: 4 });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${app.server.address().port}`, url = origin.replace('http', 'ws') + '/lobby';

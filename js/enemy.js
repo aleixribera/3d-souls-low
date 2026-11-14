@@ -111,6 +111,8 @@ class Enemy {
     this.resonanceRest = 0;                          // ... and how long after its answer before blows fill it again
     this.mendPool = 0;                               // a def's `mend` (pass 75): the open wounds the Ember will close, in hp
     this.wounds = [0, 1, 2, 3].map(() => ({ who: null, pool: 0, since: 0 }));   // ... one per attacker, so each closes on its own
+    this.learned = [];                               // an attack's `learns` (pass 77): the ids of the attacks it has learned, in order
+    this.landed = false;                             // ... and whether the current attack has landed a blow on anyone
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -307,6 +309,8 @@ class Enemy {
     this.sinceBreak = this.state === ES.BROKEN || this.state === ES.EXECUTED ? 0 : this.sinceBreak + dt;   // CONFIG.enemy.postureRest
     // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a break empties it (the opening is yours).
     if (this.resonanceRest > 0) this.resonanceRest -= dt;
+    // Learned forms (pass 77): a break or an execution makes it forget everything it learned (a client's list is the server's).
+    if (this.learned.length && this.sinceBreak === 0) this.learned.length = 0;
     if (d.resonance) this.resonance = this.sinceBreak === 0 ? 0 : this.struckTime > d.resonance.delay ? Math.max(0, this.resonance - d.resonance.decay * dt) : this.resonance;
     // A def's `mend` (pass 75, Aldric): a break or an execution seals his open wounds; once the one who opened a wound has
     // landed no blow for `delay` s the Ember closes it again, `rate` of his bar a second in all. Each attacker's wound is
@@ -517,6 +521,7 @@ class Enemy {
       }
       case ES.RECOVER:
         if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
+          this.learn();
           this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); this.regroup(dist);
         }
         break;
@@ -650,7 +655,7 @@ class Enemy {
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
-    const inReach = this.def.attacks.filter(a => !a.when && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
+    const inReach = this.def.attacks.filter(a => !a.when && !a.learned && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
       && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
     const close = inReach.filter(isClose);
     const chance = this.grouped ? groupedChance : attackChance;
@@ -664,15 +669,17 @@ class Enemy {
   react(player, dist, toPlayer, dt) {
     if (!crowd.mayStart()) return null;
     const rel = angDiff(toPlayer, this.yaw);
-    for (const a of this.def.attacks) if (a.when && !this.spent(a) && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
+    for (const a of this.def.attacks) if (a.when && !a.learned && !this.spent(a) && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
       && Math.random() < attackChance(a) * dt) return a;
     return null;
   }
   // `noRepeat` (v7.20): after that many of the same move in a row, it must pick another.
   spent(a) { return !!this.def.noRepeat && a.id === this.lastMove && this.moveRun >= this.def.noRepeat; }
   beginAttack(attack) {
+    const base = attack;   // an attack it has learned comes as its learned form (`learns`), counted as the attack it learned
+    if (attack.learns && this.learned.includes(attack.id)) attack = this.attackById(attack.learns);
     if (attack.cue) this.cueKin(attack.cue);
-    this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
+    this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
     if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
@@ -796,10 +803,20 @@ class Enemy {
   followUp() {
     for (const f of this.attack.followUps || []) {
       if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= pacedChance(f.chance, this.pace * this.chain)) continue;
-      this.beginAttack(this.attackById(f.attack));
+      this.learn(); this.beginAttack(this.attackById(f.attack));   // the attack it chains from is over: escaped, it is learned
       return true;
     }
     return false;
+  }
+  // An attack's `learns` (pass 77, the Antlered Hunger): an attack that ends (or is parried) without landing a blow on
+  // anyone (`landed`: js/combat.js, or a player's claim on the server) is learned, and from then on comes as the learned
+  // form it names. A break or an execution makes it forget them all (Enemy.step). js/finale.js lights the model's `marks`.
+  learn() {
+    const a = this.attack;
+    if (a && a.learns && !this.landed && this.alive() && !this.learned.includes(a.id)) {
+      this.learned.push(a.id);
+      events.emit('enemyLearned', { enemy: this, attack: a });
+    }
   }
   // An attack by id: the current phase's, else the base def's (a phase may branch into a move it doesn't choose itself).
   attackById(id) { return this.def.attacks.find(a => a.id === id) || this.baseDef.attacks.find(a => a.id === id); }
@@ -852,6 +869,7 @@ class Enemy {
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
   getParried() {
     this.hitbox = null;
+    this.learn();   // a parried attack was answered: it learns it (a break below makes it forget at once)
     if (this.def.posture) {
       this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
       if (this.addPosture(this.def.posture.parry)) return true;

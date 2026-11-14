@@ -12,7 +12,7 @@ const LEVEL_6 = {
   next: 'windward-moor',   // v7.38.0: over the pass and down, into Thrale (chapter 7)
   name: 'Level 6: The Church in the Pass',
   description: 'Over the mountains, in the first church of the Seven, the hunger the Ember left behind has found a body.',
-  help: 'Level 6: the church in the pass. Your steps stay in the snow. Inside, the Antlered Hunger strikes only what is before it: get behind it, and mind the roar.',
+  help: 'Level 6: the church in the pass. Your steps stay in the snow. Inside, the Antlered Hunger learns every move you escape, and its antlers light for each: break its guard and it forgets them all.',
   wallHeight: 10, gateHeight: 5.2, gateThickness: 0.5,
   // A white afternoon: pale sky, hanging snow, long blue shadows. Inside (`interior`), dark timber and candlelight.
   atmosphere: { background: 0xb4c0cc, fog: 0xc0ccd8, fogDensity: 0.0095,

@@ -10,7 +10,7 @@
 //   gateOpened {gate, shortcut} (shortcut: a gate opened from its far side)
 //   dodge {attacker, strike, projectile, player} (a live hitbox or a bolt met the player during the roll's invulnerability; once each)
 //   trapWarning {trap} (the player set a trap off)  trapSprung {trap} (its floor gave way)
-//   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  attackStart {enemy, attack} (an enemy starts an attack)  attackPhase {actor, attack, phase, hitIndex} (a strike changes phase)  attackMarker {actor, attack, marker}  perilous {enemy, attack} (a roll-only wind-up starts)  lock  switchTarget
+//   itemUsed {item}  land {x, y, z, fx}  fell {body} (into a pit)  fallDamage {body, height, damage}  alert {enemy, by}  attackStart {enemy, attack} (an enemy starts an attack)  attackPhase {actor, attack, phase, hitIndex} (a strike changes phase)  attackMarker {actor, attack, marker}  perilous {enemy, attack} (a roll-only wind-up starts)  enemyLearned {enemy, attack} (one of its `learns` attacks ended without landing a blow, js/enemy.js learn)  lock  switchTarget
 //   pause  resume  device {device}  lessonLearned {lesson} (a lesson card was completed, js/lessons.js)
 //   menuMove  menuConfirm  menuBack  menuAdjust {dir}  (menus; the audio engine plays their sounds)
 const events = {

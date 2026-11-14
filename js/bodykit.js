@@ -1644,7 +1644,7 @@ const KIT = (() => {
     }
     if (M.eyes && 'halo' in M.eyes && !(typeof M.eyes.halo === 'number' && M.eyes.halo >= 0 && M.eyes.halo <= 1)) bad('eyes.halo (the glow round the eyes) must be an opacity from 0 to 1.');
     if ('guardArm' in M && !(M.guardArm && typeof M.guardArm === 'object' && Object.keys(M.guardArm).length > 0 && Object.entries(M.guardArm).every(([b, v]) => ['armL', 'elbowL'].includes(b) && Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && Math.abs(x) <= Math.PI)))) bad('guardArm sets armL and/or elbowL to [x, y, z] (rad) while the shield is up.');   // (pass 55)
-    if ('tells' in M && !(M.tells && typeof M.tells === 'object' && Object.entries(M.tells).every(([n, T]) => n !== 'shield' && T && known(T.bone) && Array.isArray(T.at) && T.at.length === 3 && T.at.every(Number.isFinite)))) bad('tells is { <name>: { bone, at: [x, y, z] } }: where on which bone a hit with `tell: <name>` shows its wind-up halo (a shield is shieldTell).');   // (pass 72)
+    if ('tells' in M && !(M.tells && typeof M.tells === 'object' && Object.entries(M.tells).every(([n, T]) => n !== 'shield' && T && known(T.bone) && Array.isArray(T.at) && T.at.length === 3 && T.at.every(Number.isFinite) && (!('size' in T) || (typeof T.size === 'number' && T.size >= 0.2 && T.size <= 2))))) bad('tells is { <name>: { bone, at: [x, y, z], size? (0.2 to 2) } }: where on which bone a hit with `tell: <name>` shows its wind-up halo, and how big against the usual (a shield is shieldTell).');   // (pass 72; size pass 77)
     if ('shieldTell' in M && !(M.shieldTell && known(M.shieldTell.bone) && Array.isArray(M.shieldTell.at) && M.shieldTell.at.length === 3 && M.shieldTell.at.every(Number.isFinite))) bad('shieldTell is { bone, at: [x, y, z] }: where on which bone the shield\'s wind-up halo shows.');   // (pass 55)
     if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -1.6 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -1.6 to 1.6.');   // (pass 48) below -0.5 a long haft stands upright, like a crook
     if (M.weapon) {
@@ -1655,6 +1655,8 @@ const KIT = (() => {
     }
     for (const [k, v] of Object.entries(M.materials)) if (!('glow' in v) && !(v.tex in TEXLIB.defs)) bad(`material "${k}" uses unknown texture "${v.tex}".`);
     for (const [k, v] of Object.entries(M.materials)) if ('burn' in v && !(v.burn === true && 'glow' in v)) bad(`material "${k}": burn must be true, on a glow slot.`);
+    if ('marks' in M && !(Array.isArray(M.marks) && M.marks.length > 0 && M.marks.every(sl => M.materials[sl] && 'glow' in M.materials[sl] && !M.materials[sl].burn && !M.materials[sl].storm && M.parts.some(o => o.slot === sl))))
+      bad('marks lists glow slots of the figure (not burn or storm), one lit for each attack the boss has learned (see an attack `learns`).');   // (pass 77)
     for (const [k, v] of Object.entries(M.materials)) if ('storm' in v && !(v.storm === true && 'glow' in v && !v.burn)) bad(`material "${k}": storm must be true, on a glow slot that does not burn.`);
     for (const [k, v] of Object.entries(M.materials)) if ('rim' in v && !(typeof v.rim === 'number' && v.rim >= 0 && v.rim <= 2)) bad(`material "${k}": rim must be a number from 0 to 2.`);
   }
@@ -1716,6 +1718,8 @@ const KIT = (() => {
       if (M.hidden && M.hidden.includes(p.slot)) mesh.visible = false;   // shown later by the boss (js/flame.js, a phase's `reveal`)
       if (!p.weapon && M.materials[p.slot]?.burn) { mesh.visible = false; (rig.burnMeshes || (rig.burnMeshes = [])).push(mesh); }   // (v7.47.0) drawn only while the boss burns (js/finale.js)
       if (M.materials[p.slot]?.storm) { mesh.visible = false; (rig.stormMeshes || (rig.stormMeshes = [])).push(mesh); }   // (pass 48) drawn only in a `storm` phase (js/storm-rend.js)
+      const mark = M.marks ? M.marks.indexOf(p.slot) : -1;   // (pass 77) one lit per attack the boss has learned (js/finale.js)
+      if (mark >= 0) { mesh.visible = false; const L = rig.markMeshes || (rig.markMeshes = M.marks.map(() => [])); L[mark].push(mesh); }
     }
     // Eyes: tiny emissive points plus a faint halo that reads through fog.
     if (M.eyes) {
@@ -1749,6 +1753,7 @@ const KIT = (() => {
     rig.shieldGlow = null; rig.tellGlows = null;
     for (const [n, T] of Object.entries({ ...(M.tells || {}), ...(M.shieldTell ? { shield: M.shieldTell } : {}) })) {
       const g = makeWarnGlow(); rig.bones[T.bone].add(g); g.position.set(...T.at);
+      if (T.size) g.scale.multiplyScalar(T.size);   // (pass 77) a big figure's halo kept to the claw, not the whole body
       (rig.tellGlows || (rig.tellGlows = {}))[n] = g;
     }
     if (rig.tellGlows && rig.tellGlows.shield) rig.shieldGlow = rig.tellGlows.shield;

@@ -471,6 +471,8 @@ function createServer(options = {}) {
         claim(p, `ability/${msg.when}/${msg.enemy}/${msg.serial ?? msg.seq}`)) sim.abilityClaim(p.id, msg);
     } else if (msg.type === 'lifesteal') {
       if (net.id(msg.enemy) && claim(p, `heal/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.lifesteal(p.id, msg);
+    } else if (msg.type === 'landed') {   // pass 77: an attack the Antlered Hunger would learn struck this player
+      if (net.id(msg.enemy) && claim(p, `land/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.landed(p.id, msg);
     } else if (msg.type === 'rest') {
       if (net.id(msg.bonfire) && sim.rest(p.id, msg.bonfire)) { session.spawn = sim.state.checkpoint; broadcast({ type: 'checkpoint', spawn: session.spawn }); }
     }

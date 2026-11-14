@@ -691,6 +691,7 @@ globalThis.host = (() => {
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
       vx: e.vx, vy: e.vy, vz: e.vz, ...(e.def.resonance ? { resonance: Math.round(e.resonance * 100) / 100 } : null),   // pass 68: his bronze's glow and ring
       ...(e.mendPool > 0 ? { mend: Math.round(e.mendPool) } : null),   // pass 75: Aldric's open wounds (his bar, his cracks)
+      ...(e.learned.length ? { learned: e.learned.slice() } : null),   // pass 77: the attacks the Antlered Hunger has learned (its antlers)
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
     })), gates: world.gates.map(g => ({ id: g.id, open: g.open })),
       traps: world.traps.map(t => ({ id: t.id, state: t.state, timer: t.timer, dropTime: t.dropTime })),
@@ -809,9 +810,17 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
+  // An attack it would learn landed on this player (pass 77, an attack's `learns`): only the attack it is in now, only if
+  // it was in that hit (the history) when the player says so, and only within that hit's reach of where it stood then.
+  function landed(id, msg) {
+    const e = enemy(msg.enemy), p = players.find(p => p.id === id), a = e?.attack, h = a?.learns && a.hits[msg.hitIndex];
+    if (!h || !p || !p.alive() || e.netAttack !== msg.serial) return;
+    const box = h.box || a.box, reach = (box ? reachOf(box) : 0) + p.radius;
+    if (within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial && s.hit === msg.hitIndex)) e.landed = true;
+  }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
-    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, landed, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,

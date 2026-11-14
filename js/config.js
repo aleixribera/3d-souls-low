@@ -395,6 +395,11 @@ const CONFIG = {
     glow: { color: 0xff5a18, base: 0.1, pulse: 0.06, rate: 3.2 },   // the burning armour's emissive glow
     embers: 30,                               // embers rising off him per second, burning
     mend: { lit: 0.5, embers: 24, from: [1.3, 2.3], life: 0.7, chest: 1.35 },   // pass 75: a closing wound draws embers in from `from` m to his chest (× scale) over `life` s; lit `lit` s after it last shrank
+    // pass 77: an attack's `learns` (the Antlered Hunger). Each learnable move has its own mark (ember collar): a move
+    // learned lights its mark with `burst`; a learned form's wind-up flares its mark (`flare`) and streams `embers` a
+    // second off it (within `spread` m); a break's forgetting bursts `forget` from `above` m (× scale) over the head bone.
+    learn: { above: 0.45, spread: 0.18, embers: 30, color: 0xff7a30, burst: { color: 0xff8a30, count: 22, speed: 3.5 }, flare: { color: 0xffa040, count: 16, speed: 2.5 },
+             forget: { color: 0xffc080, count: 40, speed: 6 } },
     pillarFall: 1.6,                          // s a toppling pillar takes to land
     roomLight: 3.2,                           // the throne room's fire light once he burns
     death: { stagger: 1.2, kneel: 2.6, blaze: 4.4, fade: 9.5, overlay: 11.5 },   // s after the killing blow

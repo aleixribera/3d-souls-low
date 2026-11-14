@@ -336,6 +336,16 @@ function validateData({ visual = true } = {}) {
       for (const h of a.hits || []) if (h.counter) need(!!(d.posture || d.guard || d.stagger), `Enemy "${d.id}" attack "${a.id}": a counter breaks the stance, so the enemy needs posture, guard or stagger.`);
       for (const h of a.hits || []) if (h.falter) need(!!d.posture, `Enemy "${d.id}" attack "${a.id}": a falter breaks its posture, so the enemy needs posture.`);
       for (const h of a.hits || []) if (h.abort) need(aidList.has(h.abort.into), `Enemy "${d.id}" attack "${a.id}": abort into "${h.abort.into}" is not one of its attacks.`);
+      // Pass 77 (the Antlered Hunger): `learns` names the learned form it comes as once it has learned this attack: another of
+      // its attacks, marked `learned: true`, that learns nothing itself and is never chosen by a phase (only learned into).
+      if ('learns' in a) { const L = d.attacks.find(x => x && x.id === a.learns);
+        need(!!L && L !== a && L.learned === true && !('learns' in L) && !Object.values(d.phases || {}).some(ph => (ph.attacks || []).includes(L.id)),
+          `Enemy "${d.id}" attack "${a.id}": learns "${a.learns}" must be another of its attacks, marked learned: true, learning nothing itself, in no phase's attacks.`); }
+      if ('learned' in a) need(a.learned === true && d.attacks.some(x => x && x.learns === a.id), `Enemy "${d.id}" attack "${a.id}": learned must be true, on an attack another one learns.`);
+      if (visual && 'learns' in a && a === d.attacks.find(x => x && 'learns' in x)) {   // one mark on its figure for each attack it can learn
+        const n = d.attacks.filter(x => x && 'learns' in x).length, M = d.model && KIT.resolve(d.model);
+        need(!!(M && M.marks && M.marks.length >= n), `Enemy "${d.id}": it can learn ${n} attacks, so its model needs as many marks.`);
+      }
       if (visual) for (const h of (a.hits || []).filter(h => h.tell)) { const M = d.model && KIT.resolve(d.model); need(!!(M && (h.tell === 'shield' ? M.shieldTell : M.tells && M.tells[h.tell])), `Enemy "${d.id}" attack "${a.id}": tell "${h.tell}" needs the model's ${h.tell === 'shield' ? 'shieldTell' : 'tells.' + h.tell}.`); }
     }
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);

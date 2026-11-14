@@ -35,12 +35,55 @@
     expect.ok(e.spent(e.def.attacks.find(a => a.id === 'rake')) && !e.spent(e.def.attacks.find(a => a.id === 'slam')), 'only the repeated move is spent');
   });
   test('Church: the rule holds for its answers too', () => {
-    start(); const e = inNave(2.5), p = Game.player, sweep = e.def.attacks.find(a => a.id === 'hindSweep'), toP = e.yaw + Math.PI;
-    e.lastMove = 'hindSweep'; e.moveRun = 2;
-    for (let i = 0; i < 200; i++) expect.ok(e.react(p, 2.5, toP, 10) !== sweep, 'no third hind sweep');
+    start(); const e = inNave(2.5), p = Game.player, kick = e.def.attacks.find(a => a.id === 'hindKick'), toP = e.yaw + Math.PI;
+    e.lastMove = 'hindKick'; e.moveRun = 2;
+    for (let i = 0; i < 200; i++) expect.ok(e.react(p, 2.5, toP, 10) !== kick, 'no third hind kick');
     e.lastMove = 'slam'; e.moveRun = 2; e.attack = e.def.attacks.find(a => a.id === 'rake');
     for (let i = 0; i < 100; i++) expect.ok(!e.followUp(), 'no third slam from a follow-up');
     e.attack = null;
+  });
+  // Pass 77: it learns every move of its own you escape, comes again with its learned form, and forgets them all on a break.
+  const attack = (e, id) => e.attackById(id);
+  const busy = e => e.state === ES.WINDUP || e.state === ES.ACTIVE || e.state === ES.RECOVER;
+  test('Church: a move you escape is learned, and comes again as its learned form', () => {
+    start(); const e = inNave(20), seen = []; let listen = true; events.on('enemyLearned', x => listen && seen.push(x.attack.id));
+    expect.ok(e.learned.length === 0, 'it knows nothing at first');
+    e.beginAttack(attack(e, 'rake')); sim.until(() => !busy(e), 8); listen = false;
+    expect.ok(e.learned[0] === 'rake' && seen[0] === 'rake', `the missed rake is learned (a missed follow-up after it too) (${e.learned.join()})`);
+    e.beginAttack(attack(e, 'rake'));
+    expect.ok(e.attack.id === 'rakeLearned' && e.attack.hits.length === 3 && e.lastMove === 'rake', `it comes as the learned rake, counted as a rake (${e.attack.id})`);
+    sim.until(() => !busy(e), 8);
+    expect.ok(e.learned.filter(x => x === 'rake').length === 1 && !e.learned.includes('rakeLearned'), 'a learned form is not learned again');
+  });
+  test('Church: a move that lands is not learned', () => {
+    start(); const e = inNave(2.6); e.yaw = -Math.PI / 2;
+    e.beginAttack(attack(e, 'rake')); sim.until(() => !busy(e), 8);
+    expect.ok(e.landed && e.learned.length === 0, `it hit, so it learned nothing (${e.landed}, ${e.learned.join()})`);
+  });
+  test('Church: a parried move is learned, and a break forgets them all', () => {
+    start(); const e = inNave(20);
+    e.beginAttack(attack(e, 'slam')); e.getParried();
+    expect.ok(e.learned.includes('slam'), 'parried, so learned');
+    e.learned.push('rake'); e.breakNow(); sim.step(1);
+    expect.ok(e.learned.length === 0, `broken, it forgets (${e.learned.join()})`);
+    e.beginAttack(attack(e, 'slam'));
+    expect.ok(e.attack.id === 'slam', 'and the hammerfall is plain again');
+  });
+  test('Church: learned forms are never chosen for themselves', () => {
+    start(); const e = inNave(3.5), p = Game.player;
+    for (let i = 0; i < 400; i++) { e.cooldown = 0; const a = e.chooseAttack(3 + (i % 12), 0, 1); expect.ok(!a || !a.learned, `${a && a.id} picked`); }
+    for (let i = 0; i < 200; i++) { const a = e.react(p, 2.5, e.yaw + Math.PI, 10); expect.ok(!a || !a.learned, `${a && a.id} as an answer`); }
+    const d = A.ENEMY_BY_ID.antlered;
+    for (const a of d.attacks) if (a.learns) expect.ok(attack(e, a.learns).learned && !Object.values(d.phases).some(ph => ph.attacks.includes(a.learns)), `${a.learns} only learned`);
+  });
+  test('Church: each move it knows lights its own ember collar on the antlers', () => {
+    start(); const e = inNave(20); sim.step(2, 1);
+    const M = e.rig.markMeshes, lit = () => M.filter(list => list.length && list.every(m => m.visible)).length;
+    expect.ok(M && M.length === 6 && M.every(list => list.length > 0) && lit() === 0, `six collars, all dark (${M && M.length})`);
+    e.learned.push('hook', 'leap'); sim.step(2, 1);
+    expect.ok(lit() === 2 && M[1][0].visible && M[5][0].visible && !M[0][0].visible, `its own collar for each move it knows (${lit()})`);
+    e.breakNow(); sim.step(2, 1);
+    expect.ok(lit() === 0, 'dark again once broken');
   });
   test('Church: the roar waits on its chance at mid range', () => {
     start(); const e = inNave(6); e.enterPhase(1); e.cooldown = 0; let n = 0;

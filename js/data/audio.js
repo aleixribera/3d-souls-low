@@ -481,6 +481,18 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: [2600, 3600], q: 1.4 }, at: 0.35, a: 0.5, d: 0.25, gain: 0.1 },
       { wave: 'sine', freq: 62, to: 96, glide: 0.9, a: 0.8, d: 0.45, gain: 0.3 },
     ] },
+    // The Antlered Hunger learning a move (pass 77): a short hard huff through the skull, and a mark catching like a coal.
+    hungerLearn: { bus: 'sfx', priority: 2, cooldown: 0.4, max: 1, verb: 0.3, heat: 0.2, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 700, to: 260, q: 1.1 }, glide: 0.25, a: 0.02, d: 0.32, gain: 0.7 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 220 }, a: 0.01, d: 0.28, gain: 0.45 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [2400, 3400], q: 1.6 }, at: 0.18, a: 0.08, d: 0.35, gain: 0.08 },
+    ] },
+    // ... and forgetting them all on a break: the marks snuffed in one hiss, a low groan under it.
+    hungerForget: { bus: 'sfx', priority: 3, cooldown: 0.8, max: 1, verb: 0.4, heat: 0.3, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, to: 900, q: 0.9 }, glide: 0.6, a: 0.02, d: 0.7, gain: 0.22 },
+      { wave: 'sawtooth', freq: 92, to: 58, glide: 0.8, a: 0.05, d: 0.9, gain: 0.12, filter: { type: 'lowpass', freq: 420 } },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 260 }, a: 0.05, d: 0.8, gain: 0.4 },
+    ] },
     // Fire catching all at once: a roaring whoosh.
     fireRoar: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.7, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1400, q: 0.6 }, a: 0.3, d: 1.8, gain: 0.8 },

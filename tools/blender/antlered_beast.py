@@ -111,20 +111,37 @@ def sockets(bm):
     blob(bm, (0, Hy - .08, Hz + .385), .03, (1.1, 1, .5), 2)                            # and of the nose
     blob(bm, (0, Hy - .1, Hz + .2), .05, (.9, .35, 3), 2)   # the dark of the mouth
 hard('head__quill', sockets)
+BEAM_R = [.062, .054, .046, .036, .026, .011]
+def beam_of(s):
+    B = lambda x, y, z: (s * x, Hy + y, Hz + z)
+    return [B(.075, .1, .04), B(.2, .22, .0), B(.38, .33, -.1), B(.6, .4, -.08), B(.82, .52, .04), B(1.0, .72, .14)]
 def teeth_antlers(bm):
     for s in (-1, 1):
         for i in range(4):
             z = Hz + .16 + i * .07
             bent_spike(bm, (s * .05 * (1 - i * .15), Hy - .1 - i * .012, z), (s * .05 * (1 - i * .15), Hy - .16 - i * .012, z + .012), .012)
     for s in (-1, 1):
-        B = lambda x, y, z: (s * x, Hy + y, Hz + z)
-        beam = [B(.075, .1, .04), B(.2, .22, .0), B(.38, .33, -.1), B(.6, .4, -.08), B(.82, .52, .04), B(1.0, .72, .14)]
-        tube(bm, beam, [.062, .054, .046, .036, .026, .011], 7)
+        beam = beam_of(s)
+        tube(bm, beam, BEAM_R, 7)
         tines = [(1, (.3, .03, .4)), (2, (.22, .36, .22)), (2, (.1, -.02, .34)), (3, (.2, .44, -.04)), (3, (.06, .03, .3)), (4, (.26, .34, .14)), (4, (.34, .06, .2))]
         for i, (dx, dy, dz) in tines:
             b = Vector(beam[i]); t = b + Vector((s * dx, dy, dz)); m = (b + t) / 2 + Vector((s * .03, .05, -.02))
             tube(bm, [b, m, t], [.032, .02, .005], 5)
 hard('head__bone.2', teeth_antlers)
+# The marks (pass 77): an ember collar round each antler's beam, one lit for each move the Hunger has learned, from the
+# skull out to the tips (the def's `marks`, js/finale.js). Each is its own glow slot, hidden until lit.
+MARK_AT = [(0, .75), (1, .55), (2, .45), (3, .35), (3, .85), (4, .55)]   # (beam segment, how far along it)
+for i, (seg, f) in enumerate(MARK_AT, 1):
+    COL[f'mark{i}'] = (1.0, 0.45, 0.12)
+    def collar(bm, seg=seg, f=f):
+        for s in (-1, 1):
+            beam = [Vector(p) for p in beam_of(s)]
+            a, b = beam[seg], beam[seg + 1]; p = a.lerp(b, f); t = (b - a).normalized()
+            r = (BEAM_R[seg] + (BEAM_R[seg + 1] - BEAM_R[seg]) * f) * 1.15 + .02
+            u = t.cross(Vector((0, 1, 0))).normalized(); v = t.cross(u)
+            ring = [p + (u * math.cos(k / 10 * math.tau) + v * math.sin(k / 10 * math.tau)) * r for k in range(11)]
+            tube(bm, ring, [.024] * 11, 5, cap=False)
+    hard(f'head__mark{i}', collar)
 
 # ---- arms (bones hang straight; the meshes keep to them) ---------------------------------------------------------------
 for s, n in ((1, 'L'), (-1, 'R')):

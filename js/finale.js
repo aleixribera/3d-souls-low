@@ -217,7 +217,29 @@ const finale = (() => {
   }
 
   // ---- drawing, every frame -------------------------------------------------------------------------------------
-  const tmp = new V3(), mendSeen = new WeakMap();   // per boss: its open wounds as last drawn (render-only)
+  const tmp = new V3(), mendSeen = new WeakMap(), marksSeen = new WeakMap(), flared = new WeakMap();   // per boss: its open wounds, its lit marks (a bit each), the attack whose mark last flared, as last drawn (render-only)
+  // Its attacks that learn, in order (mark i is the i-th), with `from`: each learned form's id to the attack that learns it.
+  const learnOrders = new WeakMap();
+  const learnOrder = d => {
+    let L = learnOrders.get(d);
+    if (!L) { const A = d.attacks.filter(a => a.learns); L = A.map(a => a.id); L.from = Object.fromEntries(A.map(a => [a.learns, a.id])); learnOrders.set(d, L); }
+    return L;
+  };
+  // A mark in the world, into `out`: the middle of its collar on one antler (a mark rings both, so the middle of the whole
+  // mesh is the empty air between them), found once in the figure's bind space and carried into the head bone's space,
+  // then out through the head as it moves.
+  const markAt = (rig, list, out) => {
+    const m = list[0];
+    let c = m.userData.markAt;
+    if (!c) {
+      const P = m.geometry.attributes.position, S = rig.skeleton;
+      c = new THREE.Vector3(); let n = 0;
+      for (let i = 0; i < P.count; i++) if (P.getX(i) > 0) { c.x += P.getX(i); c.y += P.getY(i); c.z += P.getZ(i); n++; }
+      if (n) c.divideScalar(n); else { if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); c.copy(m.geometry.boundingSphere.center); }
+      c = m.userData.markAt = c.applyMatrix4(S.boneInverses[S.bones.indexOf(rig.head)]);
+    }
+    return rig.head.localToWorld(out.copy(c));
+  };
   function render(game, placed) {
     const dt = effectSlots.real(), t = performance.now() / 1000;   // the render delta (Game.renderDt), not a fixed 60th
     // Any boss that burns (a phase with `ignite`), in a level or a duel: glowing armour, embers on the blade and off him.
@@ -237,6 +259,35 @@ const finale = (() => {
         if (q) { q.life = q.max = F.mend.life; q.vx = (e.x - sx) / F.mend.life; q.vy = (cy - y) / F.mend.life; q.vz = (e.z - sz) / F.mend.life; }
       }
       if (e.rig.burnMeshes) for (const m of e.rig.burnMeshes) m.visible = hot || pool > 0;   // a model's `burn` slots: the fire showing through
+      // An attack's `learns` (pass 77, the Antlered Hunger): each learnable move has its own mark (the model's `marks`, in
+      // the order of its attacks that learn), lit while it knows that move. A move learned lights its mark with a burst
+      // of embers and a huff; a learned form's wind-up flares its mark and streams embers off it, so you see which move
+      // is coming changed; a break's forgetting puts them all out at once with a hiss.
+      const MK = e.rig.markMeshes;
+      if (MK) {
+        const L = learnOrder(e.baseDef), Ln = F.learn; let mask = 0;
+        if (e.alive()) for (const id of e.learned) { const i = L.indexOf(id); if (i >= 0 && i < MK.length) mask |= 1 << i; }
+        const was = marksSeen.get(e) || 0;
+        if (mask !== was) {
+          for (let i = 0; i < MK.length; i++) for (const m of MK[i]) m.visible = (mask >> i & 1) === 1;
+          const fresh = mask & ~was;
+          if (fresh) { markAt(e.rig, MK[31 - Math.clz32(fresh)], tmp); play('hungerLearn', { x: tmp.x, y: tmp.y, z: tmp.z }); spawnBurst({ x: tmp.x, y: tmp.y, z: tmp.z }, Ln.burst); }
+          else if (!mask && e.alive()) {
+            e.rig.head.getWorldPosition(tmp); tmp.y += Ln.above * (e.def.scale || 1);
+            play('hungerForget', { x: tmp.x, y: tmp.y, z: tmp.z }); spawnBurst({ x: tmp.x, y: tmp.y, z: tmp.z }, Ln.forget);
+          }
+          marksSeen.set(e, mask);
+        }
+        const a = e.attack, at = a && a.learned && e.state === ES.WINDUP ? L.indexOf(L.from[a.id]) : -1;
+        if (at >= 0 && at < MK.length && (mask >> at & 1)) {
+          markAt(e.rig, MK[at], tmp);
+          if (flared.get(e) !== e.attackNo) { flared.set(e, e.attackNo); spawnBurst({ x: tmp.x, y: tmp.y, z: tmp.z }, Ln.flare); }
+          if (Math.random() < Ln.embers * dt) {
+            const k = e.def.scale || 1;
+            ember(tmp.x + rand(-Ln.spread, Ln.spread) * k, tmp.y + rand(0, Ln.spread) * k, tmp.z + rand(-Ln.spread, Ln.spread) * k, Ln.color, 1.2, 0.8, 0.18);
+          }
+        }
+      }
       if (!hot || e.def.ignite === 'weapon') continue;   // (pass 63) only his weapon burns: no glowing armour, no embers off him
       const G = F.glow, k = G.base + G.pulse * Math.sin(t * G.rate);
       for (const m of e.rig.bodyMats) m.emissive.r += ((G.color >> 16) & 255) / 255 * k, m.emissive.g += ((G.color >> 8) & 255) / 255 * k, m.emissive.b += (G.color & 255) / 255 * k;

@@ -151,6 +151,8 @@ function resolveCombat(game) {
       continue;
     }
     hb.markHit(p);
+    hb.owner.landed = true;   // pass 77: it landed (an attack's `learns`); online the server hears it from this player
+    if (hb.owner.attack && hb.owner.attack.learns && typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.landed(hb.owner);
     // A wall of fire pushes away from its seam, a bolt from where it fell, not from him.
     const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner);
     if (hb.owner.def && hb.owner.def.lifesteal) {
@@ -184,7 +186,7 @@ function resolveTeamCombat(game) {
   }
   for (const { hb, target } of hits) {
     if (!target.alive() || target.invulnerable()) continue;
-    hb.markHit(target);
+    hb.markHit(target); hb.owner.landed = true;
     const c = hb.center(), at = { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
     applyEnemyStrike(game, hb.payload, hb.owner, target, at);
   }

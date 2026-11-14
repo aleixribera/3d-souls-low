@@ -1301,6 +1301,7 @@ const multiplayer = (() => {
       e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise; e.frozen = s.frozen || 0;
       e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
       e.mendPool = s.mend || 0;   // pass 75 (Aldric)
+      if (s.learned) { e.learned.length = 0; e.learned.push(...s.learned); } else if (e.learned.length) e.learned.length = 0;   // pass 77 (the Antlered Hunger)
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
       e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
@@ -1464,8 +1465,14 @@ const multiplayer = (() => {
     e.tint = 1; e.recoil = 1;
     return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || e.counterAgainst(Game.player, strike.attackId) === 'turn', broke: false, died: false };   // a counter stance turns it (pass 55)
   }
-  function parry(e) { command('parry', { enemy: e.netId, serial: e.netSerial }); e.netParried = e.netSerial; return e.getParried(); }
+  function parry(e) {
+    command('parry', { enemy: e.netId, serial: e.netSerial }); e.netParried = e.netSerial;
+    const known = e.learned.length, broke = e.getParried();
+    e.learned.length = known;   // what it learns from the parry is the server's to say (pass 77): its next frame brings it
+    return broke;
+  }
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }
+  function landed(e) { command('landed', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }   // pass 77: an attack it would learn struck me
   // An ability's trigger only this browser sees (ABILITY_CLAIMS, js/abilities.js): the server checks it and fires.
   function abilityClaim(when, ctx) {
     if (!ABILITY_CLAIMS.includes(when)) return;   // a parry or a landed heavy: the server sees those itself
@@ -1558,7 +1565,7 @@ const multiplayer = (() => {
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, landed, rest, requestExecution, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },
