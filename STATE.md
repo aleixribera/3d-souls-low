@@ -14,8 +14,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   moveset. Track A: Story's bosses press, circle and recover longer after a dodge too (story-curve not re-run);
   `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
-- Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
-  commit (Python and Git Bash heredocs drop backslashes).
+- Release: `node tools/release.cjs "<title>" "<text>"` (any apostrophe is fine). Don't wait on CI after a push.
 
 ## Works
 

@@ -51,10 +51,10 @@ jobs:
           retention-days: 7
 
   browser:
-    # The in-page suite takes over 40 minutes in one job under software WebGL, so it runs as parallel shards of
-    # consecutive tests (ARENA_SHARD, tests/solo-browser.cjs). Each test's line streams to the log as it ends.
+    # The in-page suite takes over 35 minutes in one job under software WebGL, so it runs as parallel shards of
+    # consecutive tests, equal in time (ARENA_SHARD, tests/shard-weights.json, tests/solo-browser.cjs). Each test's line
+    # streams to the log as it ends. The shards start beside the Node job, not after it.
     name: In-page browser suite ${{ matrix.shard }}/4 (Edge, SwiftShader)
-    needs: node
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

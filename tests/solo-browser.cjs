@@ -37,7 +37,10 @@ const { createServer } = require('../server/index.cjs');
     // ARENA_SHARD=k/n (1-based k): run only that slice of the suite, as one of n parallel CI jobs.
     const m = /^(\d+)\/(\d+)$/.exec(process.env.ARENA_SHARD || ''), shard = m ? [m[1] - 1, +m[2]] : null;
     if (process.env.ARENA_SHARD && !(shard && shard[0] >= 0 && shard[0] < shard[1])) throw new Error(`ARENA_SHARD must be k/n with 1 <= k <= n, not "${process.env.ARENA_SHARD}"`);
-    const results = await page.evaluate(async ([filter, shard]) => { Game.manualClock = true; return __arena.tests.run(filter, { shard }); }, [process.argv[2] || '', shard]);
+    // Shards split by each test's time on CI (tools/shard-weights.cjs refreshes it); a missing file splits by count.
+    let weights = null;
+    try { weights = JSON.parse(fs.readFileSync(path.join(__dirname, 'shard-weights.json'), 'utf8')); } catch (e) { /* by count */ }
+    const results = await page.evaluate(async ([filter, shard, weights]) => { Game.manualClock = true; return __arena.tests.run(filter, { shard, weights }); }, [process.argv[2] || '', shard, weights]);
     const output = path.resolve('.scratch/multiplayer-solo'); fs.mkdirSync(output, { recursive: true });
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ results, messages }, null, 2));
     console.log(results.summary);

@@ -4325,13 +4325,23 @@
     }
   });
 
-  // shard [k, n]: only the k-th (0-based) of n equal runs of consecutive matching tests, so CI can split the suite
-  // across jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once.
-  async function run(filter = '', { shard = null } = {}) {
+  // shard [k, n]: only the k-th (0-based) of n runs of consecutive matching tests, so CI can split the suite across
+  // jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once. With
+  // `weights` (test name -> seconds, tests/shard-weights.json) the runs are equal in time, else equal in count; a test
+  // goes to the shard its midpoint falls in, and one with no weight counts as the median.
+  async function run(filter = '', { shard = null, weights = null } = {}) {
     const out = [], t0 = performance.now();
     const names = filter.split('|'), wanted = t => !filter || names.some(f => t.name.includes(f));   // 'a|b': either
     const picked = tests.filter(wanted);
-    const from = shard ? Math.floor(picked.length * shard[0] / shard[1]) : 0, to = shard ? Math.floor(picked.length * (shard[0] + 1) / shard[1]) : picked.length;
+    let shardOf = null;
+    if (shard) {
+      const own = t => (weights && Object.hasOwn(weights, t.name) && typeof weights[t.name] === 'number') ? weights[t.name] : null;
+      const known = picked.map(own).filter(w => w !== null).sort((a, b) => a - b);
+      const median = known.length ? known[known.length >> 1] : 1;
+      const w = picked.map(t => Math.max(0.05, own(t) ?? median)), total = w.reduce((a, b) => a + b, 0);
+      let before = 0;
+      shardOf = w.map(x => { const k = Math.min(shard[1] - 1, Math.floor(shard[1] * (before + x / 2) / total)); before += x; return k; });
+    }
     let matched = -1;
     const wasMode = Game.mode;
     // What the tests teach by playing (a roll, a lock-on) never sticks to this player: their lessons come back after.
@@ -4340,7 +4350,7 @@
     for (const t of tests) {
       if (!wanted(t)) continue;
       matched++;
-      if (matched < from || matched >= to) continue;
+      if (shardOf && shardOf[matched] !== shard[0]) continue;
       let ok = true, msg = '';
       const started = performance.now();
       Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too

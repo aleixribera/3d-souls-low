@@ -48,9 +48,10 @@ agents: a draft, changed whenever the code changes.
 
 ## Release
 
-1. Bump `VERSION` (`js/config.js`), `LOAD_STAMP` (`combat-arena-3d.html`, without the v) and both `package.json`
-   files, then `npm install --package-lock-only` at the root and in `server/`.
-2. Add a players' entry at the top of `js/data/changelog.js` (its first entry must be `VERSION`).
-3. Commit, push, then push a `v*` tag. `.github/workflows/container.yaml` publishes
+1. `node tools/release.cjs "<title>" "<text>"`: the next minor `VERSION` (`js/config.js`), `LOAD_STAMP`
+   (`combat-arena-3d.html`), both `package.json` and lock files, and the players' entry at the top of
+   `js/data/changelog.js`, read back before anything is written.
+2. Commit, push, then push a `v*` tag. CI tests that commit; the container workflow re-runs the Node tests and
+   smoke-tests the built image. `.github/workflows/container.yaml` publishes
    `ghcr.io/aleixribera/3d-souls-low:<version>` and `:latest`; check that it started. The homelab's `hl` pulls it
    when the lobby is empty (`docs/container-updates.md`).

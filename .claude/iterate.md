@@ -64,9 +64,14 @@ node tools/pack-baked.cjs <stem>
 ## Ship and release
 
 - Commit to `main` and push; CI runs on the push. Stage only this pass's files.
-- A release whenever a pass ships something players notice (`PLAN.md`): the four version spots (AGENTS.md
-  "Release"), `npm install --package-lock-only` at root and `server/`, one entry in `js/data/changelog.js`, then tag
-  `v*` and push the tag. Check the container workflow started.
+- A release whenever a pass ships something players notice (`PLAN.md`): `node tools/release.cjs "<title>" "<text>"`
+  bumps all six version spots and writes the changelog entry (any apostrophe is fine), then commit, push, tag `v*`
+  and push the tag. Check that the container workflow started, then stop.
+- **Don't wait on CI after your push.** CI (about 12 minutes) and the container build belong to the next pass, which
+  reads the newest run first ("Broken"). A test that failed once on CI and passes locally: note it in `STATE.md`
+  "Broken" with its run, and go on. Never sit through another run to see if it repeats.
+- After many tests were added or removed, or when one shard runs far longer than the others, refresh the shard
+  weights from a green run: `node tools/shard-weights.cjs`, and commit `tests/shard-weights.json`.
 
 ## Two passes at a time
 
@@ -85,8 +90,8 @@ node tools/pack-baked.cjs <stem>
   `owner.txt` inside it. If `mkdir` fails, the other pass holds it: wait with `Monitor` until the folder is gone. A
   lock older than 30 minutes is stale, so take it. Remove the folder as soon as Edge is closed.
 - **Ship:** commit on your worktree branch. Then `git fetch` and `git rebase origin/main`. If the incoming commits
-  touch what you changed, re-run your tests. Bump the version only now (the next one after `origin/main`'s
-  `VERSION`), push with `git push origin HEAD:main`, and then tag. If the push is rejected, rebase again and bump again.
+  touch the same files, re-run your tests. Bump the version only now (`node tools/release.cjs`), push with
+  `git push origin HEAD:main`, and then tag. If the push is rejected, drop the bump commit, rebase, and run it again.
   At the end your work is on `main`; leave the worktree itself to the loop chat.
 - **Loop chat, removing a finished worktree:** first unlink the junctions with `cmd /c rmdir <wt>\node_modules` and
   `<wt>\server\node_modules`. Never let a recursive delete follow them into the main checkout. Then run
