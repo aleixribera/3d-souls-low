@@ -64,10 +64,12 @@ const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`
       }
       if (interlude) {
         for (const p of [a, b]) {
-          await p.locator('#ending .back.show').waitFor({ timeout: 20000 });
+          await p.locator('#ending .card').first().waitFor({ state: 'attached', timeout: 20000 });
           assert.equal(await p.locator('#ending .card').allTextContents().then(cards => cards.join('|')),
             await p.evaluate(() => LORE.ending.join('|')), 'the end of Act I');
           assert.equal(await p.locator('#ending .roll').count(), 0, 'no credits mid-road');
+          assert.deepEqual(await p.evaluate(() => ({ mode: Game.mode, input: getComputedStyle(document.getElementById('ending')).pointerEvents })),
+            { mode: 'play', input: 'none' }, 'the lines play over the world, the player still in play');
         }
         console.log('Browsers completed chapter ' + (i + 1) + ': ' + chapters[i] + ' (the interlude; the server carries the party on)');
         continue;

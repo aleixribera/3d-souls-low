@@ -1396,8 +1396,8 @@ const multiplayer = (() => {
     p.savePrev(); for (const e of Game.enemies) e.savePrev(); c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
     sampleEnemies(dt);
     animateGates(dt);
-    // Credits may outlast the replay buffer. Consume the shared stream at the
-    // normal fixed step while leaving personal movement/combat at the ending.
+    // 'ending' mode: the shared stream still steps, the player's own movement and combat do not. The endings no longer
+    // set it (pass 82: they play over the world); tests use it to run this update with the player held still.
     if (Game.mode === 'ending') return;
     if (!p.alive()) {
       Game.deathTimer += dt;
@@ -1414,7 +1414,7 @@ const multiplayer = (() => {
     }
     projectiles.update(Game, dt);
     burnInFires(Game, dt, Game.player);   // the fires the server's enemies left (laid here from their strikes, Enemy.noteFires)
-    if (Game.kind === 'level') { lore.update(Game, dt); updateHazards(dt); finale.updateOnline(Game, dt); }
+    if (Game.kind === 'level') { finale.updateOnline(Game, dt); lore.update(Game, dt); updateHazards(dt); }   // the finale first: the ending's way back reads Talk before the lore does
     Game.updateCamera(dt, false);
     // One death sequence per body, whatever killed it (a blow, rot, a script): as Game.update does.
     if (!Game.player.alive() && Game.deathOf !== Game.player) Game.onPlayerDeath();

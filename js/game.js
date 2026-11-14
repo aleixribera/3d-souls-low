@@ -156,7 +156,7 @@ const Game = {
   // Rest and Talk share a key: the bonfire wins when it can be used and is no farther than the speaker or inscription.
   restWins() {
     const p = this.player, b = this.canRest();
-    if (!b) return false;
+    if (!b || (typeof finale !== 'undefined' && finale.holdsTalk())) return false;   // the story's last lines: the key leads back
     return Math.hypot(b.x - p.x, b.z - p.z) <= (this.kind === 'level' ? lore.nearDist(p) : Infinity);
   },
   tryRest() {

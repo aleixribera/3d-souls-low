@@ -194,13 +194,6 @@ Object.assign(Game, {
       look.y = lerp(look.y, lock.y + lock.height * 0.55, Lk.frame);
       dist += Math.min(Lk.maxExtra, Math.max(0, lock.height - 1.6) * Lk.sizeDist + sep * Lk.sepDist);
       pitch = Math.max(0, pitch) * 0.5 + Math.max(0, lock.height - 2) * 0.05;
-    } else if (this.camFocus) {
-      // A scripted moment to watch (js/finale.js sets `camFocus`, e.g. Aldric leaping onto his wall): the camera turns to
-      // it and lifts its gaze; the player keeps moving freely.
-      const f = this.camFocus, dx = f.x - p.x, dz = f.z - p.z, d = Math.hypot(dx, dz) || 1;
-      c.yaw += angDiff(Math.atan2(dx, dz), c.yaw) * (snap ? 1 : 1 - Math.exp(-CONFIG.camera.focusRate * dt));
-      const F = K.focus; look.y = lerp(look.y, f.y + F.lift, clamp(d / F.far, F.mix[0], F.mix[1])); dist += F.pull;
-      this.mouseHold = 0;
     } else {
       // While the player moves (never when standing still), swing behind their facing and ease the height back to level;
       // no pull when the player runs straight at the camera. Mouse or stick input holds both off for a moment.

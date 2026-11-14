@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.105.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.106.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -22,8 +22,6 @@ const CONFIG = {
   gravity: 30,
   input: { buffer: 0.2 },   // seconds a press is remembered; the clock stops during hit-pauses
   camera: {
-    focusRate: 3.5,   // how fast the camera turns to a scripted moment (Game.camFocus)
-    focus: { lift: 1.5, far: 30, mix: [0.3, 0.6], pull: 2 },   // its gaze: `lift` m above it, eased in by distance / `far` within `mix`; the boom `pull`s back m
     fov: 55, lookHeight: 1.5,
     lead: 0.45,           // m the aim leads ahead of the player at full speed (unlocked), so the view opens where they go
     lookRate: 11,         // aim smoothing (1/s): quicker than the position, so the player never drifts out of frame
@@ -412,8 +410,8 @@ const CONFIG = {
              forget: { color: 0xffc080, count: 40, speed: 6 } },
     pillarFall: 1.6,                          // s a toppling pillar takes to land
     roomLight: 3.2,                           // the throne room's fire light once he burns
-    death: { stagger: 1.2, kneel: 2.6, blaze: 4.4, fade: 9.5, overlay: 11.5 },   // s after the killing blow
-    ending: { card: 6, credits: 24, hold: 5 },   // s per ending card, the credits' roll, then the way back to the title
+    death: { stagger: 1.2, kneel: 2.6, blaze: 4.4, fade: 9.5, overlay: 11.5 },   // s after the killing blow: his last moments, ash by `fade`, the first line at `overlay`
+    ending: { card: 6, credits: 24, hold: 5 },   // s per ending line (over the live world), the credits' roll, then the way back to the title
   },
   // HUD (js/hud.js): everything is laid out on a stage of design pixels scaled by min(width / refWidth, height / refHeight),
   // kept within minScale..maxScale, times the player's HUD scale setting. Below `narrowWidth` design px wide it

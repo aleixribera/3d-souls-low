@@ -2453,6 +2453,23 @@
     }
   };
   const S = () => A.story;
+  // A story moment leaves the player in control (pass 82, VISION.md): still in play, the camera turns with the mouse and
+  // stays where it was turned (nothing pulls it to a scripted subject), and the player walks (best of four ways, walls aside).
+  const inControl = label => {
+    const p = Game.player;
+    Game.setLock(null); Game.retarget = false;   // the mouse turns the camera only when unlocked, as a player would be
+    expect.ok(Game.mode === 'play', `${label}: still in play (${Game.mode})`);
+    const want = Game.cam.yaw - 120 * CONFIG.mouse.yawPerPx * settings.sensitivity;
+    Game.mouseLook(120, 0); sim.step(30);
+    expect.near(angDiff(Game.cam.yaw, want), 0, 0.03, `${label}: the camera turns with the mouse and stays there`);
+    let best = 0;
+    for (const [x, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x0 = p.x, z0 = p.z; sim.move(x, z); sim.seconds(0.3); sim.move(null);
+      best = Math.max(best, Math.hypot(p.x - x0, p.z - z0)); sim.move(-x, -z); sim.seconds(0.3); sim.move(null);
+      if (best > 0.8) break;
+    }
+    expect.above(best, 0.8, `${label}: the player walks`);
+  };
   test('Story: the chapters run Level 1 ... Level 14; the Still Mere is the last chapter built so far', withSave(() => {
     expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
     const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere'];
@@ -2696,10 +2713,11 @@
     Game.showMenu('main');
   }));
   // v7.36.0: Aldric's death is the end of Act I, not of the story (STORY.md): the Ember leaves him, and chapter 6 follows.
-  test('Story: Aldric\'s death plays the Ember leaving him, with no credits, and Story mode goes on to the church', withSave(async () => {
+  // Pass 82 (PLAN.md track A item 6): its lines rise over the throne room while the player walks and looks about.
+  test('Story: Aldric\'s death plays the Ember leaving him over the throne room, the player free throughout, with no credits, and Story mode goes on to the church', withSave(() => {
     const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
-    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 6.4, overlay: 6.6 });   // past the usual next-level fade
-    Object.assign(CONFIG.finale.ending, { card: 0.05 });
+    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 0.6, overlay: 6.6 });   // past the usual next-level fade
+    Object.assign(CONFIG.finale.ending, { card: 1 });
     try {
       S().jumpTo('final-castle'); sim.begin();
       A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin(); sturdy(Game.player);
@@ -2708,16 +2726,19 @@
       b.deplete(); sim.step(1); sim.until(() => b.state !== ES.PHASE, 25); b.deplete(); sim.step(2);
       expect.ok(!b.alive() && Game.complete && A.finale.state.ending, 'Aldric is dead and the end of Act I runs');
       expect.ok(!S().data.completed, 'the story is not complete');
-      sim.seconds(6);
+      inControl('his death');
+      sim.seconds(4);
       expect.ok(Game.level.id === 'final-castle' && !document.getElementById('fade').classList.contains('show'), `the death scene is not cut short by the usual next-level fade (${Game.level.id})`);
       sim.until(() => document.getElementById('ending'), 5);
       const overlay = document.getElementById('ending');
-      expect.ok(overlay && !overlay.querySelector('.roll'), 'the cards, with no credits');
+      expect.ok(overlay && !overlay.querySelector('.roll'), 'the lines, with no credits');
       expect.ok([...overlay.querySelectorAll('.card')].map(c => c.textContent).join('|') === A.LORE.ending.join('|') && /does not go out/.test(A.LORE.ending[0]), 'the Ember does not go out');
-      const t0 = performance.now();
-      while (document.getElementById('ending') && performance.now() - t0 < 5000) await new Promise(r => setTimeout(r, 50));
-      expect.ok(!document.getElementById('ending'), 'the cards end on their own');
-      sim.until(() => Game.level.id === 'the-church' && !Game.pendingLoad, 10); Game.loading = 0;
+      sim.step(2);
+      expect.ok(overlay.querySelector('.card.show') && getComputedStyle(overlay).pointerEvents === 'none' && !document.getElementById('fade').classList.contains('show'),
+        'a line shows over the world, which stays in view, and takes no input');
+      inControl('the end of Act I\'s lines');
+      sim.until(() => Game.level.id === 'the-church' && !Game.pendingLoad, 15); Game.loading = 0;
+      expect.ok(!document.getElementById('ending'), 'the lines end on their own');
       expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `chapter 6 follows in Story mode, saved there (${Game.level.id})`);
       expect.ok(Game.levelCard('the-church')[0] === 'THE CHURCH IN THE PASS' && /still the ash falls/.test(Game.levelCard('the-church')[1]), 'its title and line');
     } finally { Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); }
@@ -2823,13 +2844,13 @@
     expect.ok(Game.story && Game.level.id === 'still-mere' && S().data.level === 'still-mere', `chapter 14 follows, saved there (${Game.level.id})`);
     expect.ok(Game.levelCard('still-mere')[0] === 'THE STILL MERE' && /Something wearing your face is waiting/.test(Game.levelCard('still-mere')[1]), 'its title and line');
   }));
-  test('Story: the King\'s Blade\'s death plays the story\'s ending, the mere\'s cards and the credits, and closes the road on STORY COMPLETE', withSave(async () => {
+  test('Story: the King\'s Blade\'s death plays the story\'s ending, the mere\'s lines and the credits over the world, the player free throughout, and closes the road on STORY COMPLETE', withSave(() => {
     const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
     Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 0.6, overlay: 0.8 });
-    Object.assign(CONFIG.finale.ending, { card: 0.05, credits: 0.1, hold: 0.05 });
+    Object.assign(CONFIG.finale.ending, { card: 1, credits: 4, hold: 0.5 });
     const doneKey = 'combatArena.complete.still-mere', kept = localStorage.getItem(doneKey);   // the Levels menu's mark
     try {
-      S().jumpTo('still-mere'); sim.begin(); Game.loading = 0;
+      S().jumpTo('still-mere'); sim.begin(); Game.loading = 0; sturdy(Game.player);
       expect.ok(Game.story && Game.level.id === 'still-mere', 'chapter 14 starts');
       const r = Game.enemies.find(e => e.baseDef.id === 'kingsBlade');
       expect.ok(r && r.def.name === 'The King\'s Blade', 'the one who waits keeps the ice');
@@ -2841,15 +2862,26 @@
       sim.until(() => document.getElementById('ending'), 5);
       const overlay = document.getElementById('ending');
       const cards = [...overlay.querySelectorAll('.card')].map(c => c.textContent);
-      expect.ok(cards.join('|') === A.LORE.endings['still-mere'].join('|') && /ringing something small/.test(cards.at(-1)), `the mere's cards, ending on the small bell (${cards.length})`);
+      expect.ok(cards.join('|') === A.LORE.endings['still-mere'].join('|') && /ringing something small/.test(cards.at(-1)), `the mere's lines, ending on the small bell (${cards.length})`);
+      sim.step(2);
+      expect.ok(overlay.querySelector('.card.show') && getComputedStyle(overlay).pointerEvents === 'none' && !document.getElementById('fade').classList.contains('show'),
+        'a line shows over the world, which stays in view, and takes no input');
+      inControl('the mere\'s lines');
       const roll = overlay.querySelector('.roll');
       const heads = roll ? [...roll.querySelectorAll('h2')].map(h => h.textContent) : [];
       expect.ok(heads.slice(0, 3).join() === 'THE ROAD,WHO WALKED BESIDE YOU,THOSE WHO STOOD IN THE WAY', `the credits (${heads})`);
       expect.ok(/The Still Mere/.test(roll.textContent) && /Ysolde of Corvel/.test(roll.textContent) && /The King's Blade/.test(roll.textContent), 'the road, Ysolde and the last foe are named');
-      const t0 = performance.now();
-      while (!overlay.querySelector('.back.show') && performance.now() - t0 < 5000) await new Promise(res => setTimeout(res, 50));
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-      expect.ok(!document.getElementById('ending') && Game.screen === 'storyDone', `the way back leads to the road's closing screen (${Game.screen})`);
+      sim.until(() => overlay.classList.contains('rolling'), 10); sim.step(30);
+      expect.ok(/translateY\(-/.test(roll.style.transform), `the credits roll (${roll.style.transform})`);
+      inControl('the credits');
+      sim.press('talk'); sim.step();
+      expect.ok(document.getElementById('ending') && Game.screen !== 'storyDone', 'Talk does nothing before the way back shows');
+      sim.until(() => overlay.querySelector('.back.show'), 10);
+      expect.ok(Game.mode === 'play' && Game.story, 'still walking the mere when the way back shows');
+      const fire = world.bonfires.find(b => Game.bonfireLit(b));   // Talk shares its key with Rest: here it leads back, not to the fire
+      if (fire) { sim.place(fire.x + 0.8, fire.z, fire.y + 0.5); sim.step(2); expect.ok(Game.canRest() && !Game.restWins(), 'at a bonfire, Talk still leads back'); }
+      sim.press('talk'); sim.step();
+      expect.ok(!document.getElementById('ending') && Game.screen === 'storyDone', `Talk leads to the road's closing screen (${Game.screen})`);
       const screen = Game.screens().storyDone;
       expect.ok(screen.title === 'Story complete' && screen.notice === A.STORY.done && /ash has stopped falling/.test(screen.notice), `its words (${screen.title})`);
     } finally {
@@ -2857,6 +2889,52 @@
       if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);
     }
   }));
+  // ---- Story moments (pass 82, PLAN.md track A item 6): nothing takes movement or the camera from the player -------------
+  test('Story moments: in every chapter, Ysolde, the inscriptions, the scenes and the sightings play while the player walks and turns the camera', () => {
+    const lore = A.lore, LS = () => A.lore.state;
+    const quiet = () => { Game.enemies = []; sturdy(Game.player); };   // the moments, not the fights
+    const seen = { npc: 0, inscription: 0, scene: 0, sighting: 0 };
+    for (const id of A.STORY.chapters.map(c => c.level)) {
+      const D = A.LORE.levels[id] || {};
+      for (let i = 0; i < (D.npcs || []).length; i++) {
+        lore.jumpTo(id, i); Game.loading = 0; sim.begin(); quiet();
+        const N = LS().npcs[i], z = N.def.after && Game.zones.find(q => q.id === N.def.after);
+        if (z) z.gate.open = true;   // she waits there once that fight is won
+        sim.place(N.x + Math.sin(N.yaw) * 1.3, N.z + Math.cos(N.yaw) * 1.3, N.y + 0.5);   // nearer her than the bonfire (Talk shares its key)
+        sim.step(2); sim.press('talk'); sim.step();
+        expect.ok(LS().talk && LS().talk.src === N, `${id}: ${N.name} speaks (${lore.prompt()})`);
+        inControl(`${id}: ${N.name}'s words`); seen.npc++;
+        expect.ok(LS().talk && LS().talk.src === N, `${id}: ${N.name} still speaks while the player walks and looks around`);
+      }
+      Game.startLevel(id); Game.loading = 0; sim.begin(); quiet(); sim.step(2);
+      for (const I of LS() ? LS().inscriptions : []) {
+        sim.place(I.x + Math.sin(I.def.yaw) * 1.1, I.z + Math.cos(I.def.yaw) * 1.1, I.y + 0.5); sim.step(2);
+        sim.press('talk'); sim.step();
+        expect.ok(LS().talk, `${id}: ${I.name} reads (${lore.prompt()})`);
+        inControl(`${id}: ${I.name}`); seen.inscription++;
+      }
+      for (const s of LS() ? LS().scenes : []) {
+        sim.place(s.def.x + 1.5, s.def.z, s.y + 0.5); sim.step(2); Game.render(1, CONFIG.step);
+        expect.ok(s.group.visible, `${id}: the ${s.def.kind} scene shows`);
+        inControl(`${id}: the ${s.def.kind} scene`); seen.scene++;
+      }
+      for (const s of A.finale.state ? A.finale.state.spectators : []) {
+        const [x0, x1, z0, z1] = s.def.trigger; sim.place((x0 + x1) / 2, (z0 + z1) / 2); sim.step(2);
+        expect.ok(s.state === 'watch', `${id}: ${s.def.id} watches the player (${s.state})`);
+        inControl(`${id}: ${s.def.id}`); seen.sighting++;
+      }
+    }
+    expect.ok(seen.npc >= 14 && seen.inscription >= 14 && seen.scene >= 5 && seen.sighting >= 2, `every kind of moment was played (${JSON.stringify(seen)})`);
+  });
+  test('Story moments: Aldric\'s retreat over the wall leaves the camera to the player', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const b = Game.enemies.find(e => e.def.id === 'varn');
+    sim.step(30); b.deplete(); sim.step(2);
+    expect.ok(b.state === ES.RETREAT, `he retreats (${b.state})`);
+    inControl('Aldric\'s leap onto the wall');
+    sim.until(() => b.state === ES.GONE, 10);
+    inControl('Aldric gone over the wall');
+  });
 
   // ---- Lore (v5.1): Ysolde, inscriptions, scenes, the seamless subtitles -----------------------------------------
   const lore = () => A.lore, LS = () => A.lore.state;

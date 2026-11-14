@@ -107,7 +107,6 @@ const finale = (() => {
   function reset(game) {
     clear();
     hideEnding();
-    game.camFocus = null;
     // v7.0: any level with a fog gate, sightings or ambush hints is scripted too (the later chapters), not only
     // the one with the `ending`; the throne room dressing and its transition stay Level 5's (`finaleRoom`).
     const lv = game.kind === 'level' ? game.level : null;
@@ -172,10 +171,9 @@ const finale = (() => {
       }
       st.grit.set(e, t <= 0 ? F.grit.every : t);
     }
-    // Aldric's retreat: the camera follows his leap onto the wall and over it, then lets go a moment after he is gone.
-    const fleeing = game.enemies.find(e => isBoss(e) && (e.state === ES.RETREAT || (e.state === ES.GONE && e.stateTime < 0.8)));
-    game.camFocus = fleeing ? { x: fleeing.x, y: fleeing.y, z: fleeing.z } : null;
-    if (fleeing && game.lock) game.setLock(null);
+    // Aldric's retreat is watched, never shown: the camera stays the player's (VISION.md). His leap draws the eye with
+    // its own light and sound (the flee halo in render, `bossLeap`/`bossGone`), and a player locked on follows him by
+    // their own choice until he is gone.
     // The boss pulse while Aldric fights, quicker and hotter once he burns.
     const boss = game.enemies.find(e => isBoss(e) && e.alive() && (e.fightingPlayer() || e.state === ES.PHASE));
     if (boss && p.alive()) {
@@ -394,6 +392,7 @@ const finale = (() => {
     if (b.fire) b.fire.visible = hot;
   });
   events.on('respawn', () => restoreRoom());
+  events.on('playerDeath', () => { const O = st && st.ending && st.ending.view; if (O && O.next && O.fadeFrom != null && !O.left) { O.fadeFrom = null; $('fade').classList.remove('show'); } });
   // Aldric's last bar is gone: his death, then the ending.
   events.on('enemyDeath', d => {
     const e = d.enemy;
@@ -403,9 +402,13 @@ const finale = (() => {
   });
 
   // ---- the ending ------------------------------------------------------------------------------------------------------
-  // In the world first (the player keeps control): he staggers, sinks to his knees, rises with his arms flung out as
-  // light and fire pour from the cracks, and breaks up into ash; the bell tolls once and falls silent; his blade stays
-  // standing in the floor. Then the fade, the ending cards, the credits, and the way back to the title.
+  // Told in the world, never by taking control (VISION.md: movement and the camera are always the player's). He
+  // staggers, sinks to his knees, rises with his arms flung out as light and fire pour from the cracks, and breaks up
+  // into ash; the bell tolls once and falls silent; his blade stays standing in the floor. Then the ending's lines rise
+  // one at a time over the live world (`#ending` takes no input and sits under the menus), counted on the fixed step,
+  // so the pause menu holds them. An ending with a level after it (the end of Act I) then carries on like any chapter:
+  // a fade and the next level (online, the server carries the party on). The story's last ending rolls the credits over
+  // the world, still walkable, then offers the way back: Talk or Enter.
   function updateEnding(game, dt) {
     const E = st.ending, D = F.death;
     E.t += dt;
@@ -417,12 +420,38 @@ const finale = (() => {
       const blade = new THREE.Group(); blade.position.set(b.x, b.y, b.z); blade.rotation.set(0.12, rand(0, 6), 0.08); group.add(blade);
       box(blade, 0.07, 1.7, 0.18, 0x8a8a8e, 0, 0.6, 0); box(blade, 0.6, 0.08, 0.1, 0x5a5048, 0, 1.45, 0); box(blade, 0.06, 0.4, 0.06, 0x4e4a44, 0, 1.7, 0);
     }
-    if (E.stage === 3 && E.t >= D.fade) { E.stage = 4; $('fade').classList.add('show'); }
-    if (E.stage === 4 && E.t >= D.overlay) { E.stage = 5; showEnding(); }
+    if (E.stage === 3 && E.t >= D.overlay) { E.stage = 4; E.view = showEnding(); }
+    if (E.stage === 4 && E.view) tellEnding(E.view, E.t - D.overlay);
+  }
+  // `t`: seconds since the first line. One line at a time, then the next level or the credits.
+  function tellEnding(O, t) {
+    const X = F.ending, n = O.cards.length, i = Math.floor(t / X.card);
+    if (i !== O.shown) { O.shown = i; O.cards.forEach((c, k) => c.classList.toggle('show', k === i)); }
+    if (i < n) return;
+    const after = t - n * X.card;
+    if (O.next) {   // the end of Act I: on like any chapter
+      if (onlineGame() || O.left || !Game.player.alive()) return;
+      if (O.fadeFrom == null) { O.fadeFrom = t; $('fade').classList.add('show'); }
+      if (t - O.fadeFrom >= CONFIG.nextLevel.fadeTime) { O.left = true; const next = O.next; Game.loadingFirst(...Game.levelCard(next), () => Game.startLevel(next)); }
+      return;
+    }
+    if (!O.rolling) { O.rolling = true; overlay.classList.add('rolling'); O.rollH = O.roll.offsetHeight; }
+    O.rollT = after;
+    if (after >= X.credits) O.thanks.classList.add('show');
+    if (!O.canLeave && after >= X.credits + X.hold) { O.canLeave = true; O.how.textContent = bindLabel('talk'); O.back.classList.add('show'); }   // the key of the device in hand now
+    if (O.canLeave && input.consume('talk')) leaveEnding();
   }
   function renderEnding() {
     const E = st.ending, D = F.death, b = E.boss, r = b.rig, t = E.t;
-    if (!r || E.stage >= 5) return;
+    const O = E.view;
+    if (O && O.rolling) {   // the credits, moved every frame on a drawn clock that follows the step's (smooth at any refresh rate)
+      if (Game.mode === 'play') O.drawT += effectSlots.real();
+      O.drawT = clamp(O.drawT, O.rollT - 0.1, O.rollT + CONFIG.step);
+      const y = -clamp(O.drawT / F.ending.credits, 0, 1) * (window.innerHeight + O.rollH + 40);
+      if (Math.abs(y - O.rollY) >= 0.25) { O.rollY = y; O.roll.style.transform = `translateY(${y.toFixed(1)}px)`; }
+    }
+    if (!r) return;
+    if (t >= D.fade) { r.root.visible = false; if (r.shadow) r.shadow.visible = false; return; }   // ash: only the blade is left
     // Over the generic death pose: his own last moments.
     r.reset(); r.root.visible = true;
     const fade = clamp((t - D.blaze) / (D.fade - 1 - D.blaze), 0, 1);
@@ -442,82 +471,68 @@ const finale = (() => {
     }
     if (r.weapon && t >= D.blaze) r.weapon.visible = false;   // the blade stays behind, standing in the floor
   }
-  let overlay = null, overlayTimer = null, padLoop = 0, overlayCleanup = null;
+  let overlay = null, overlayCleanup = null;
   function hideEnding() {
     if (overlayCleanup) { overlayCleanup(); overlayCleanup = null; }
     if (overlay) overlay.remove();
-    overlay = null; clearTimeout(overlayTimer); cancelAnimationFrame(padLoop);
+    overlay = null;
   }
+  function leaveEnding() {
+    const O = st && st.ending && st.ending.view;
+    if (!O || !O.canLeave) return;
+    hideEnding(); st.ending = null;
+    events.emit('endingDone');   // Story mode (js/story.js) marks the story complete and shows its own screen
+    if (onlineGame()) { $('fade').classList.remove('show'); multiplayer.show(); }
+    else if (Game.mode === 'play') { Game.reset(); Game.showMenu('main'); }
+  }
+  // Builds the lines (and, at the road's end, the credits) over the world; returns what tellEnding plays.
   function showEnding() {
     hideEnding();
-    Game.mode = 'ending'; input.clear();
-    if (document.pointerLockElement) document.exitPointerLock();
-    const E = F.ending;
     const online = onlineGame();
     const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from STORY.md)
-    // An ending with a level after it (Aldric's: the end of Act I) is an interlude: its cards, no credits, then that
-    // level. Online, the server carries a campaign on; the way back to the lobby shows after the cards.
     const next = Game.nextLevelId();
     // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
     const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
     const credits = `<h2>THE ROAD</h2>${road.chapterIds().map(id => `<p>${road.levelName(id)}</p>`).join('')}
         <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>${Game.story && !online && R.companion ? `<p>${R.companion.name}</p>` : ''}
         <h2>THOSE WHO STOOD IN THE WAY</h2>${R.credits.foes.map(f => `<p>${f}</p>`).join('')}`;
+    const where = online ? 'the lobby' : 'the title';
     overlay = document.createElement('div');
     overlay.id = 'ending';
     overlay.innerHTML = `<style>
-      #ending { position: fixed; inset: 0; z-index: 20; background: #000; color: #c9b88a; font-family: Georgia, 'Times New Roman', serif;
-        display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
-      #ending .card { position: absolute; left: 10%; right: 10%; font-size: clamp(18px, 2.6vw, 30px); line-height: 1.6; opacity: 0; transition: opacity 1.4s; }
+      #ending { position: fixed; inset: 0; z-index: 9; pointer-events: none; color: #e8dab2; font-family: Georgia, 'Times New Roman', serif;
+        text-align: center; overflow: hidden; text-shadow: 0 0 12px #000, 0 1px 3px #000; transition: background-color 2s; }
+      #ending.rolling { background-color: rgba(0, 0, 0, 0.5); }
+      #ending .card { position: absolute; left: max(16px, 12%); right: max(16px, 12%); bottom: 21%; font-size: clamp(18px, 2.4vw, 28px);
+        line-height: 1.55; opacity: 0; transition: opacity 1.4s; }
       #ending .card.show { opacity: 1; }
-      #ending .roll { position: absolute; left: 0; right: 0; top: 100%; letter-spacing: 2px; }
-      #ending .roll h1 { font-size: clamp(28px, 4vw, 48px); letter-spacing: 10px; color: #d8c48e; font-weight: normal; margin: 0 0 40px; }
-      #ending .roll h2 { font-size: 15px; letter-spacing: 6px; color: #8a7e62; font-weight: normal; margin: 48px 0 12px; }
-      #ending .roll p { font-size: 18px; margin: 6px 0; color: #b8a87e; }
-      #ending .thanks { position: absolute; left: 0; right: 0; top: 42%; font-size: clamp(24px, 3.4vw, 40px); letter-spacing: 8px; opacity: 0; transition: opacity 2s; }
+      #ending .roll { position: absolute; left: 16px; right: 16px; top: 100%; letter-spacing: 2px; }
+      #ending .roll h1 { font-size: clamp(28px, 4vw, 48px); letter-spacing: 10px; color: #e2cf98; font-weight: normal; margin: 0 0 40px; }
+      #ending .roll h2 { font-size: 15px; letter-spacing: 6px; color: #b3a47c; font-weight: normal; margin: 48px 0 12px; }
+      #ending .roll p { font-size: 18px; margin: 6px 0; color: #d6c69c; }
+      #ending .thanks { position: absolute; left: 16px; right: 16px; top: 40%; font-size: clamp(24px, 3.4vw, 40px); letter-spacing: 8px; opacity: 0; transition: opacity 2s; }
       #ending .thanks.show { opacity: 1; }
-      #ending .back { position: absolute; left: 0; right: 0; bottom: 14%; font-size: 16px; letter-spacing: 3px; color: #8a7e62; opacity: 0; transition: opacity 1.2s; }
+      #ending .back { position: absolute; left: 16px; right: 16px; bottom: 14%; font-size: 16px; letter-spacing: 2px; color: #d6c69c; opacity: 0; transition: opacity 1.2s; }
       #ending .back.show { opacity: 1; }
-      #ending button { margin-top: 14px; background: none; border: 1px solid #6a5e48; color: #c9b88a; font: inherit; letter-spacing: 3px; padding: 10px 26px; cursor: pointer; }
-      #ending button:hover, #ending button:focus { border-color: #c9b88a; outline: none; }
+      @media (prefers-reduced-motion: reduce) { #ending .card, #ending .thanks, #ending .back { transition: none; } }
     </style>` + cards.map(c => `<div class="card">${c}</div>`).join('') +
       (next ? '' : `<div class="roll"><h1>COMBAT ARENA 3D</h1>
         ${credits}
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
-      <div class="thanks">THANK YOU FOR PLAYING</div>`) +
-      `<div class="back">Press any key to return to ${online ? 'the lobby' : 'the title'}<br><button type="button">${online ? 'Return to lobby' : 'Return to title'}</button></div>`;
+      <div class="thanks">THANK YOU FOR PLAYING</div>
+      <div class="back">Press <span class="how"></span> to return to ${where}</div>`);
     document.body.appendChild(overlay);
-    const cardEls = [...overlay.querySelectorAll('.card')], roll = overlay.querySelector('.roll'), thanks = overlay.querySelector('.thanks'), back = overlay.querySelector('.back');
-    let i = 0, canLeave = false;
-    const nextCard = () => {
-      cardEls.forEach((c, k) => c.classList.toggle('show', k === i));
-      if (i < cardEls.length) { i++; overlayTimer = setTimeout(nextCard, E.card * 1000); return; }
-      cardEls.forEach(c => c.classList.remove('show'));
-      if (next && online) { back.classList.add('show'); canLeave = true; back.querySelector('button').focus(); return; }
-      if (next) { hideEnding(); Game.loadingFirst(...Game.levelCard(next), () => Game.startLevel(next)); return; }
-      roll.style.transition = `transform ${E.credits}s linear`;
-      requestAnimationFrame(() => { roll.style.transform = `translateY(-${window.innerHeight + roll.offsetHeight + 40}px)`; });
-      overlayTimer = setTimeout(() => {
-        thanks.classList.add('show');
-        overlayTimer = setTimeout(() => { back.classList.add('show'); canLeave = true; back.querySelector('button').focus(); }, E.hold * 1000);
-      }, E.credits * 1000);
-    };
-    nextCard();
-    const leave = () => {
-      if (!canLeave || !overlay) return;
-      hideEnding();
-      events.emit('endingDone');   // Story mode (js/story.js) marks the story complete and shows its own screen
-      if (onlineGame()) { Game.mode = 'play'; $('fade').classList.remove('show'); multiplayer.show(); }
-      else if (Game.mode === 'ending') { Game.reset(); Game.showMenu('main'); }
-    };
-    const onKey = ev => { if (canLeave) { ev.preventDefault(); ev.stopPropagation(); leave(); } };
-    window.addEventListener('keydown', onKey, true); window.addEventListener('pointerdown', onKey, true);
-    overlayCleanup = () => { window.removeEventListener('keydown', onKey, true); window.removeEventListener('pointerdown', onKey, true); };
-    // A gamepad: any button once the way back shows.
-    const pads = () => { padLoop = requestAnimationFrame(pads); if (!canLeave) return;
-      for (const g of (navigator.getGamepads ? navigator.getGamepads() : [])) if (g && g.buttons.some(b => b.pressed)) { leave(); return; } };
-    padLoop = requestAnimationFrame(pads);
+    const O = { cards: [...overlay.querySelectorAll('.card')], roll: overlay.querySelector('.roll'), thanks: overlay.querySelector('.thanks'),
+      back: overlay.querySelector('.back'), how: overlay.querySelector('.back .how'), next, shown: -1, rolling: false, rollH: 0, rollT: 0, drawT: 0, rollY: 1,
+      canLeave: false, left: false, fadeFrom: null };
+    if (next) return O;
+    // Enter also leads back once the way back shows (Talk is read on the fixed step, in tellEnding). No button: in play
+    // the pointer is locked, and the menus cover this overlay.
+    const onKey = ev => { if (ev.key === 'Enter' && O.canLeave && Game.mode === 'play') { ev.preventDefault(); leaveEnding(); } };
+    window.addEventListener('keydown', onKey);
+    overlayCleanup = () => window.removeEventListener('keydown', onKey);
+    return O;
   }
 
   // ---- developer tools (#dev) --------------------------------------------------------------------------------------
@@ -557,6 +572,8 @@ const finale = (() => {
     reset, update, devItems, jump, depleteBoss, seenSightings, skipSightings,
     updateOnline: (game, dt) => update(game, dt, true),
     cancelEnding() { if (st) st.ending = null; hideEnding(); $('fade').classList.remove('show'); },
+    leaveEnding,
+    holdsTalk: () => !!(st && st.ending && st.ending.view && st.ending.view.canLeave),
     completed(id = 'final-castle') { try { return localStorage.getItem(storeKey(id)) === '1'; } catch (err) { return false; } },
     get state() { return st; },
   };

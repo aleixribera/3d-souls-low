@@ -11,6 +11,12 @@ The game text lives in `js/data/lore.js` (dialogues, inscriptions, scenes, endin
 
 Voice: archaic, understated, melancholic, tender in places. No modern words, no jokes. Show, never tell the whole.
 
+How it is told (pass 82): never by taking control. Movement and the camera stay the player's through every story
+moment, as in Half-Life 2's scripted scenes; the words come in the Souls way, in fragments the player goes to: Ysolde's
+lines as subtitles, inscriptions read where they stand, wordless scenes, sightings seen from afar, and the endings'
+lines rising over the live world. No cutscene, locked camera or card that stops play; the only fade to black is the
+one into the next chapter's loading screen.
+
 # Part one: in the game
 
 ## Public-lobby opening ceremonies
@@ -427,8 +433,8 @@ Read like the dialogues (press Talk near one; subtitles; control stays free). Sh
 ## 9. The end of Act I: the Ember leaves him
 
 Aldric's death no longer ends the story (part two, the spine). Killing the king does not kill the Ember; it only
-frees the hunger that wore him. These cards follow his death, with no credits, and the road goes on to chapter 6, the
-Church in the Pass.
+frees the hunger that wore him. These lines rise one at a time over the throne room after his death, while the player
+walks among the ash, with no credits; then the road goes on to chapter 6, the Church in the Pass.
 
 1. Aldric, the Ember-Crowned, is ash. The Ember gutters in the cinders where he stood. It does not go out.
 2. Something goes up out of it, like heat over a summer road, through the broken windows and away toward the mountains.
@@ -441,7 +447,8 @@ The story's own ending follows the last chapter: section 9b.
 ## 9b. The end of the story: the Still Mere
 
 The King's Blade's last bar breaks on the ice of the Still Mere (chapter 14). It kneels and burns out, the champion's
-sword left standing where it knelt. Then these cards, and the credits:
+sword left standing where it knelt. Then these lines over the mere, and the credits rolling over it, the player free
+to walk the ice throughout:
 
 1. The King's Blade kneels in the shallows. The red scarf comes loose, and floats.
 2. You wade out with the Ember and hold it under. It does not fight you. The ice closes over it.
