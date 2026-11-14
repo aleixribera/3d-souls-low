@@ -181,9 +181,9 @@ MODEL_DEFS.giantSkeleton = {
 // ---- the boss -----------------------------------------------------------------------------------------------------------
 {
   const glint = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));
-  const BURST = r => ({ w: 2 * r, h: 2.4, d: 2 * r, fwd: 0, y: 1.2 });
+  const BURST = r => ({ w: 2 * r, h: 2.4, d: 2 * r, fwd: 0, y: 1.2, round: true });   // a disc round him (pass 93)
   const SWEEP = { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 };
-  const STOMP = { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 };   // low: a jump clears it
+  const STOMP = { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4, round: true };   // low: a jump clears it; a disc (pass 93)
   const CLAW = { w: 4.2, h: 2.2, d: 4.0, fwd: 2.4, y: 1.1 };
   const SLAM = { w: 2.6, h: 3.0, d: 4.4, fwd: 2.8, y: 1.0 };
   const SCOOP = { w: 3.0, h: 1.8, d: 3.0, fwd: 2.3, y: 0.9 };
@@ -242,7 +242,7 @@ MODEL_DEFS.giantSkeleton = {
   // Pit Stomps: right, left, right toward you, hunched and marching, the third the hardest. Roll them, or jump them.
   const pitStomps = { id: 'giantPitStomps', name: 'Pit Stomps', anim: 'stomp', pose: 'giantPitStomps', tracking: { rate: 2.0, commit: 0.7 }, rollOnly: true, chance: 0.4,
     hits: [{ startup: 1.0, active: 0.12, follow: 0.12, tell: 'footR', impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.08 } },
-           { startup: 0.6, active: 0.12, follow: 0.12, tell: 'footL', impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.08 } },
+           { startup: 0.66, active: 0.12, follow: 0.12, tell: 'footL', impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.08 } },
            { startup: 0.85, active: 0.12, follow: 0.45, tell: 'footR', damage: 30, box: { ...STOMP, w: 7.0, d: 7.0 }, impact: { ring: 3.6, crack: 1.6, dust: 16, shake: 0.14 } }],
     recovery: 1.3, damage: 20, poise: 50, knock: 7, lunge: 1.4, range: 3.0, box: STOMP };
 

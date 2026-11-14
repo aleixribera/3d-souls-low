@@ -53,6 +53,8 @@ class Hitbox {
     if (b.ring) {   // an expanding ring round the box's centre: from `from` to `to` m over `time` s of the strike, `width` m thick
       const R = b.ring, r = lerp(R.from, R.to, clamp(this.owner.stateTime / R.time, 0, 1));
       if (Math.abs(Math.hypot(lx, lz) - r) > R.width / 2 + target.radius) return false;
+    } else if (b.round) {   // a round burst (pass 93): a disc `w` m across round the box's centre
+      if (Math.hypot(lx, lz) > b.w / 2 + target.radius) return false;
     } else {
       const ex = lx - clamp(lx, -b.w / 2, b.w / 2), ez = lz - clamp(lz, -b.d / 2, b.d / 2);
       if (ex * ex + ez * ez > target.radius * target.radius) return false;
@@ -162,6 +164,7 @@ function resolveCombat(game) {
         // A perfect dodge: the dash's i-frames are short, so a blow slipped inside them was dodged right on it. The next
         // blow within CONFIG.player.counterTime s is a counter (a riposte), drawn with a beat of slow motion.
         hb.dodged = true; p.riposte = Math.max(p.riposte, CONFIG.player.counterTime);
+        if (hb.owner.dashedThroughBy) hb.owner.dashedThroughBy();   // a boss recovers longer from it (CONFIG.bossMove.dodged)
         const no = hb.owner.attackNo || 0;   // the number keys fill once an attack dodged, as the server counts it online
         if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
         events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });

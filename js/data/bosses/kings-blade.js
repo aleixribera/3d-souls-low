@@ -299,11 +299,11 @@
                { startup: 0.75, active: 0.14, follow: 0.3, damage: 34, box: THRUST }], recovery: 1.8,
         damage: 22, poise: 45, postureDmg: 10, knock: 6, lunge: 5.0, range: 3.4, box: CUT },
       // The Turn: behind it, a look over its shoulder; the sword comes round.
-      { id: 'theTurn', name: 'The Turn', anim: 'sweep', pose: 'kbTurn', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+      { id: 'theTurn', name: 'The Turn', anim: 'sweep', pose: 'kbTurn', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.4,
         damage: 26, poise: 40, postureDmg: 10, knock: 8, lunge: 0, range: 3.4, box: { w: 4.6, h: 1.8, d: 4.6, fwd: -0.6, y: 1.1 } },
       // The Shield's Rim: at its shield side, the shield swung out at you, rim first.
-      { id: 'rimStrike', name: 'The Shield\'s Rim', anim: 'bash', pose: 'kbRim', noParry: true, when: 'flank', tracking: { rate: 4, commit: 0.5 }, chance: 2,
+      { id: 'rimStrike', name: 'The Shield\'s Rim', anim: 'bash', pose: 'kbRim', when: 'flank', tracking: { rate: 4, commit: 0.5 }, chance: 2,
         hits: [{ startup: 0.5, active: 0.14, follow: 0.2, tell: 'shield' }], recovery: 1.4,
         damage: 18, poise: 60, postureDmg: 8, knock: 9, lunge: 0.6, range: 2.8, box: { w: 2.6, h: 1.8, d: 2.4, fwd: 0.8, y: 1.1 } },
       // Drinking where it can see you: the reach, sooner and longer.
@@ -334,7 +334,7 @@
         damage: 44, poise: 80, postureDmg: 18, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
       // The Shield Burns: at its shield side, the burning shield flung out wide and slammed into the ice.
       { id: 'shieldBurns', name: 'The Shield Burns', anim: 'stomp', pose: 'kbShieldBurns', noParry: true, rollOnly: true, when: 'flank', tracking: { rate: 1, commit: 0.4 }, chance: 1.5,
-        hits: [{ startup: 0.8, active: 0.35, follow: 0.3, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
+        hits: [{ startup: 0.9, active: 0.35, follow: 0.3, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
         damage: 26, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
     ],
   };

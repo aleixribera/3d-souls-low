@@ -311,7 +311,7 @@
       hits: [{ startup: 0.9, active: 0.06, follow: 0.25 }], recovery: 0.96,
       damage: 22, poise: 25, knock: 4, lunge: 0, range: 18, box: { w: 0.5, h: 0.5, d: 0.5, fwd: 0.6, y: 1.3 } },
     // Behind her: the butt of the haft driven back past her hip.
-    { id: 'haftsHeel', name: 'The Haft\'s Heel', anim: 'thrust', pose: 'haleHaftsHeel', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
+    { id: 'haftsHeel', name: 'The Haft\'s Heel', anim: 'thrust', pose: 'haleHaftsHeel', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
       hits: [{ startup: 0.6, active: 0.12, follow: 0.3 }], recovery: 0.96,
       damage: 20, poise: 35, knock: 8, lunge: 0, range: 3.0, box: { w: 2.6, h: 1.8, d: 2.6, fwd: -1.5, y: 1.0 } },
     // ---- Harrow: fists and greaves -------------------------------------------------------------------------------------
@@ -346,7 +346,7 @@
       hits: [{ startup: 0.85, active: 0.2, follow: 0.4 }], recovery: 1.32,
       damage: 26, poise: 45, knock: 8, lunge: 2.4, range: 11, box: { w: 2.2, h: 0.8, d: 2.8, fwd: 1.2, y: 0.4, ground: true } },
     // Behind her: a greave kicked straight back.
-    { id: 'backHeel', name: 'Back Heel', anim: 'thrust', pose: 'harrowBackHeel', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
+    { id: 'backHeel', name: 'Back Heel', anim: 'thrust', pose: 'harrowBackHeel', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
       hits: [{ startup: 0.55, active: 0.12, follow: 0.3 }], recovery: 0.96,
       damage: 20, poise: 35, knock: 9, lunge: 0, range: 3.0, box: { w: 2.0, h: 1.6, d: 2.8, fwd: -1.6, y: 0.8 } },
     // ---- alone, in the whole suit ---------------------------------------------------------------------------------------

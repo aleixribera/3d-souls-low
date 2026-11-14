@@ -273,11 +273,11 @@ MODEL_DEFS.oldOstrey = {
         hits: [{ startup: 0.6, active: 0.06, follow: 0.15 }], recovery: 0.68,
         damage: 18, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
       // Behind him: he looks over his shoulder and drives the butt of the bar back.
-      { id: 'buttBack', name: 'Butt of the Bar', anim: 'thrust', pose: 'ostreyButtBack', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+      { id: 'buttBack', name: 'Butt of the Bar', anim: 'thrust', pose: 'ostreyButtBack', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.65, active: 0.12, follow: 0.3 }], recovery: 1.36,
         damage: 22, poise: 40, knock: 8, lunge: 0, range: 3.2, box: { w: 3.0, h: 1.8, d: 2.8, fwd: -1.6, y: 1.0 } },
       // At his left (the lantern side): a rising swing of the lantern.
-      { id: 'lanternSwing', name: 'Lantern Swing', anim: 'sweep', pose: 'ostreyLanternSwing', noParry: true, when: 'flank', tracking: { rate: 3.6, commit: 0.7 }, chance: 1.6,
+      { id: 'lanternSwing', name: 'Lantern Swing', anim: 'sweep', pose: 'ostreyLanternSwing', when: 'flank', tracking: { rate: 3.6, commit: 0.7 }, chance: 1.6,
         hits: [{ startup: 0.55, active: 0.12, follow: 0.18 }], recovery: 1.19,
         damage: 22, poise: 35, knock: 5, lunge: 1.6, range: 3.0, box: { w: 3.4, h: 2.0, d: 2.6, fwd: 1.3, y: 1.4 } },
       // ---- the lantern opened ------------------------------------------------------------------------------------------

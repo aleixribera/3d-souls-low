@@ -379,11 +379,7 @@ const finale = (() => {
     if (ring) fireRing(e.x, e.y, e.z, ring.from, ring.to, ring.time);
     if (burning(e) && e.rig && e.rig.weapon) { e.rig.weapon.getWorldPosition(tmp); spawnBurst({ x: tmp.x, y: tmp.y, z: tmp.z }, { color: 0xff8a30, count: 14, speed: 4 }); }
   });
-  // The wind-up of a ring hit glows on the floor round him first: the telegraph for the rings.
-  events.on('attackStart', d => {
-    if (!isBoss(d.enemy)) return;
-    if (d.attack.hits.some(h => h.box && h.box.ring)) groundFx.ring(d.enemy.x, d.enemy.z, 4, 0xff5a20, 0.7, d.enemy.y);
-  });
+  // A ring hit's wind-up shows its whole reach on the floor through js/area-marks.js (pass 93; a 4 m glow here undersold a 15 m toll).
   events.on('impact', d => { if (burning(d.enemy)) { groundFx.ring(d.x, d.z, d.fx.ring * 1.4, 0xff6a20, 0.8, d.y); spawnBurst({ x: d.x, y: d.y + 0.4, z: d.z }, { color: 0xff7a28, count: 24, speed: 6 }); } });
   // A burning boss's bolt is a wave of fire.
   events.on('shot', d => {

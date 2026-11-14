@@ -266,7 +266,7 @@ MODEL_DEFS.regentHollis = {
         followUps: [{ attack: 'courtesy', if: 'near', chance: 0.19 }],
         damage: 42, poise: 70, knock: 8, lunge: 1.0, range: 4.2, box: CHOP },
       // The Turning Cloak: behind him, a look over his shoulder; the mantle and the blade come round.
-      { id: 'turnCloak', name: 'The Turning Cloak', anim: 'sweep', pose: 'hollisTurnCloak', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+      { id: 'turnCloak', name: 'The Turning Cloak', anim: 'sweep', pose: 'hollisTurnCloak', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.65, active: 0.16, follow: 0.3 }], recovery: 1.44,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 3.4, box: { w: 4.6, h: 1.8, d: 4.6, fwd: -0.6, y: 1.1 } },
       // Largesse: to you standing off, his left hand flung open: gold leaf hangs round where you stand, and closes. Leave

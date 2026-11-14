@@ -176,7 +176,7 @@
   const HAMMER = { w: 3.0, h: 3.2, d: 4.2, fwd: 2.4, y: 1.2 };
   const RAM = { w: 3.2, h: 2.6, d: 4.0, fwd: 2.2, y: 1.4 };
   const KICK = { w: 3.6, h: 1.8, d: 3.4, fwd: -2.3, y: 0.9 };   // behind it
-  const WHEEL = { w: 7.0, h: 2.0, d: 7.0, fwd: 0, y: 1.0 };
+  const WHEEL = { w: 7.0, h: 2.0, d: 7.0, fwd: 0, y: 1.0, round: true };   // a disc round it (pass 93)
   const LANDING = { w: 5.0, h: 2.6, d: 5.0, fwd: 0.8, y: 1.0 };
   const RING = (to, time = 0.18) => ({ w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1, to, width: 1.6, time } });   // along the floor: jump it or roll it
   const SHATTER = { ring: 3.4, crack: 1.8, dust: 16, shake: 0.14 };
@@ -191,8 +191,8 @@
     hits: [...rake.hits.map(h => ({ ...h })), { startup: 0.95, active: 0.15, follow: 0.45, tell: 'clawR', damage: 34, box: SCISSOR, hold: { at: 0.55, time: [0.25, 0.55], chance: 1 } }],
     recovery: 1.5 };
   delete rakeLearned.learns;
-  // Antler Hook: the skull dipped low to its left; heaved up and across. Roll it. Learned: hooked straight back the other way.
-  const hook = { id: 'hook', name: 'Antler Hook', anim: 'sweep', pose: 'hungerHook', tracking: { rate: 2.4, commit: 0.6 }, noParry: true, rollOnly: true, learns: 'hookLearned', chance: 0.7,
+  // Antler Hook: the skull dipped low to its left; heaved up and across. Parry it or roll it (pass 93). Learned: hooked straight back the other way.
+  const hook = { id: 'hook', name: 'Antler Hook', anim: 'sweep', pose: 'hungerHook', tracking: { rate: 2.4, commit: 0.6 }, learns: 'hookLearned', chance: 0.7,
     hits: [{ startup: 1.0, active: 0.16, follow: 0.45, tell: 'antlers' }], recovery: 1.4,
     damage: 32, poise: 60, knock: 9, lunge: 1.4, range: 3.8, box: HOOK };
   const hookLearned = { ...hook, id: 'hookLearned', name: 'Antler Hook, Learned', pose: 'hungerHookLearned', learned: true, learns: undefined,
@@ -204,7 +204,7 @@
     hits: [{ startup: 1.25, active: 0.14, follow: 0.5, tell: 'clawR', hold: { at: 0.6, time: [0.2, 0.6], chance: 0.5 }, impact: SHATTER }], recovery: 2.0,
     damage: 44, poise: 80, knock: 9, lunge: 1.4, range: 3.8, box: HAMMER };
   const slamLearned = { ...slam, id: 'slamLearned', name: 'Hammerfall, Learned', pose: 'hungerHammerLearned', learned: true, learns: undefined,
-    hits: [{ ...slam.hits[0], follow: 0.2 }, { startup: 0.85, active: 0.18, follow: 0.6, tell: 'clawR', step: { from: 0.2, speed: 4, side: 0 }, damage: 30, box: RING(6.5, 0.2), impact: { ring: 4.2, crack: 1.4, dust: 18, shake: 0.16 } }],
+    hits: [{ ...slam.hits[0], follow: 0.2 }, { startup: 0.85, active: 0.18, follow: 0.6, tell: 'clawR', damage: 30, box: RING(6.5, 0.2), impact: { ring: 4.2, crack: 1.4, dust: 18, shake: 0.16 } }],
     recovery: 2.0 };
   delete slamLearned.learns;
   // Antler Charge: its head down, a fist pawing back; it runs you down. Step aside or roll. Learned: past you it turns on
@@ -218,10 +218,10 @@
   // Hind Kick: only at someone behind it. Its weight on its fists, its hind legs drawn up; both kicked out behind. Roll it.
   // Learned: off the kick it wheels a whole turn round with its right claw out (roll that too, or be out of reach).
   const hindKick = { id: 'hindKick', name: 'Hind Kick', anim: 'stomp', pose: 'hungerKick', noParry: true, rollOnly: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, learns: 'hindKickLearned', chance: 1.6,
-    hits: [{ startup: 0.75, active: 0.14, follow: 0.35, tell: 'hind' }], recovery: 1.3,
+    hits: [{ startup: 0.9, active: 0.14, follow: 0.35, tell: 'hind' }], recovery: 1.3,
     damage: 30, poise: 50, knock: 10, lunge: 0, range: 4.2, box: KICK };
   const hindKickLearned = { ...hindKick, id: 'hindKickLearned', name: 'Hind Kick, Learned', pose: 'hungerKickLearned', learned: true, learns: undefined, when: undefined,
-    hits: [{ ...hindKick.hits[0], follow: 0.15 }, { startup: 0.5, active: 0.16, follow: 0.4, tell: 'clawR', damage: 26, box: WHEEL }], recovery: 1.5 };
+    hits: [{ ...hindKick.hits[0], follow: 0.15 }, { startup: 0.62, active: 0.16, follow: 0.4, tell: 'clawR', damage: 26, box: WHEEL }], recovery: 1.5 };
   delete hindKickLearned.learns; delete hindKickLearned.when;
 
   // ---- starving: the second half of its health ----

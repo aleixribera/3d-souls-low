@@ -19,10 +19,9 @@
 // to his left. The blade hauled back low behind his right hip, his back half turned (the sweep); over his right shoulder,
 // point to the sky (the two cuts); laid across the back of his neck like a headsman's yoke, point out to his left (the
 // withheld sentence); drawn back level at his right hip, point at you (the lunge); let down along his right thigh,
-// point trailing, his left hand off it and his left shoulder squared to you (the shoulder); the point planted ahead and
-// leaned on, his right knee raised (the stamp); crouched with the blade over his right shoulder, point behind him (the
-// leap). Burning: the point dragged on the floor
-// behind him (the ash wave); low at his left (the ascent); the hilt raised to his chest, the blade hanging point-down (the
+// point trailing, his left hand off it and his left shoulder squared to you (the shoulder); crouched with the blade over
+// his right shoulder, point behind him (the leap). He had a stamp too, a borrowed stomp; it went in pass 93 (PLAN.md
+// rework item 4: every attack fair on its own). Burning: the point dragged on the floor behind him (the ash wave); low at his left (the ascent); the hilt raised to his chest, the blade hanging point-down (the
 // last toll). The four-cut chain runs through four of these in a row.
 
 // ---- his figure: built in Blender (tools/blender/aldric.py), one piece per bone -----------------------------------------
@@ -138,13 +137,6 @@ MODEL_DEFS.varn = {
     armR: [-0.4, 0, -0.4], elbowR: [-0.25, 0, 0], haft: [0.9, -1.2, 4.71], grip: false, armL: [-0.3, 0, 0.7], elbowL: [-1.9, 0, 0] };
   ATTACK_POSES.aldricShoulder = { ease: lunge, lag: { weapon: 0.04 }, hits: [{ windup: braced, strike: rammed, follow: rammed }] };
 
-  // The Gaoler's Stamp: the point planted in the floor ahead and leaned on, his right knee drawn up high; stamped down, and
-  // the floor rings out round him.
-  const kneeUp = { crouch: 0.05, lean: 0.15, legR: [-1.45, 0, 0], kneeR: [1.5, 0, 0], chest: [0.15, 0, 0], head: [-0.1, 0, 0],
-    armR: [-1.0, 0, 0.25], elbowR: [-0.5, 0, 0], haft: [1.35, 0.15, 3.14], armL: [-1.0, 0, -0.05], elbowL: [-0.5, 0, 0] };
-  const stamped = { crouch: 0.3, lean: 0.2, legR: [0.15, 0, 0], kneeR: [0.1, 0, 0], legL: [-0.3, 0, 0], kneeL: [0.3, 0, 0], chest: [0.25, 0, 0], head: [-0.2, 0, 0],
-    armR: [-0.85, 0, 0.25], elbowR: [-0.4, 0, 0], haft: [1.45, 0.15, 3.14], armL: [-0.85, 0, -0.05], elbowL: [-0.4, 0, 0] };
-  ATTACK_POSES.aldricStamp = { ease: heavy, lag: { weapon: 0.04 }, hits: [{ windup: kneeUp, strike: stamped, follow: stamped }] };
 
   // Judgement Leap: a deep crouch, the blade over his right shoulder with its point behind him; a leap along his locked aim,
   // and the blade comes down with him.
@@ -197,10 +189,9 @@ MODEL_DEFS.varn = {
   const FALL = { w: 1.8, h: 3.0, d: 3.8, fwd: 2.2, y: 1.2 };
   const THRUST = { w: 1.4, h: 1.8, d: 3.2, fwd: 2.0, y: 1.2 };
   const SHOULDER = { w: 2.6, h: 2.2, d: 2.0, fwd: 1.4, y: 1.2 };
-  const STAMP = r => ({ w: 2 * r, h: 0.6, d: 2 * r, fwd: 0.3, y: 0.3, ground: true });
   const LANDING = r => ({ w: 2 * r, h: 0.6, d: 2 * r, fwd: 0.6, y: 0.3, ground: true });
   const TOLL_RING = { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 15, width: 2.2, time: 0.2 } };
-  const BLAST = { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0 };
+  const BLAST = { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0, round: true };   // a disc round him (pass 93)
 
   // ---- the man: the Field of Answer and the throne room's first bar ------------------------------------------------------
   // Gaol Sweep: hauled back low at his right hip; flat across at your waist. Parry it.
@@ -229,10 +220,6 @@ MODEL_DEFS.varn = {
   // wind-up is shorter, but it is the same wind-up. Parry it, or stop striking and roll.
   const rebuke = { ...JSON.parse(JSON.stringify(shoulder)), id: 'varnRebuke', name: "The King's Rebuke", when: 'struck', chance: 1.6,
     hits: [{ startup: 0.7, active: 0.14, follow: 0.2 }], tracking: { rate: 3, commit: 0.6 } };
-  // The Gaoler's Stamp: the point planted, his knee drawn up; the floor rings out round him. Jump it, or roll it.
-  const stamp = { id: 'varnStomp', name: "The Gaoler's Stamp", anim: 'stomp', pose: 'aldricStamp', tracking: { rate: 1.4, commit: 0.5 }, poseScale: 1.1, rollOnly: true, chance: 0.4,
-    hits: [{ startup: 1.35, active: 0.14, follow: 0.4 }], recovery: 2.4,
-    damage: 44, poise: 70, knock: 10, lunge: 0, range: 2.6, box: STAMP(2.8), impact: { ring: 4.0, crack: 2.0, dust: 18, shake: 0.12 } };
   // Judgement Leap: crouched, the blade over his shoulder; a leap high along his locked aim, a crash that rings the ground.
   // Roll it. A long recovery.
   const leap = { id: 'varnLeap', name: 'Judgement Leap', anim: 'chop', pose: 'aldricLeap', tracking: { rate: 1.8, commit: 0.45 }, poseScale: 1.1, rollOnly: true, minRange: 4, chance: 0.35,
@@ -250,8 +237,6 @@ MODEL_DEFS.varn = {
     box: { ...FALL, w: 1.9, d: 4.0 }, impact: { ring: 3.4, crack: 1.8, dust: 18, shake: 0.12 } });
   const knellLunge = hot(lungeAt, { id: 'knellLunge', tracking: { rate: 3.4, commit: 0.4 }, poseScale: 1.1, dash: { speed: 12.5, from: 0.45 }, chance: 0.8,
     hits: [{ startup: 0.95, active: 0.16, follow: 0.24 }], recovery: 2.4, damage: 30, lunge: 2.8, range: 13, box: { ...THRUST, w: 1.5, d: 3.4 } });
-  const knellStamp = hot(stamp, { id: 'knellStomp', tracking: { rate: 2.0, commit: 0.5 }, poseScale: 1.15, chance: 0.45,
-    hits: [{ startup: 1.15, active: 0.14, follow: 0.36 }], recovery: 3.2, damage: 36, range: 2.8, box: STAMP(3.2), impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.14 } });
   const knellLeap = hot(leap, { id: 'knellLeap', tracking: { rate: 2.6, commit: 0.45 }, poseScale: 1.15, chance: 0.25,
     hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 4.8, damage: 50, range: 14, box: LANDING(2.8),
     impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.22 } });
@@ -294,7 +279,7 @@ MODEL_DEFS.varn = {
     // (Enemy.enterPhase): `field` outside the castle (ends in a retreat), then `throne` and `knell` in the throne room.
     // Every strike's active time stays well under a roll's i-frames (the boss test).
     id: 'varn', model: 'varn', name: 'Aldric, the Gaoler King',
-    description: 'Aldric, king of Ashmere, who took the Undying Ember to cheat death, and it will not let him stay hurt. In his throne room every wound you give him glows, and the Ember closes it once you stop: keep at him, or break his guard to make the wounds stay. Strike too long and he shoulders you off. His sweep, his two cuts, his withheld sentence and his lunge can be parried; his stamp and his leap only rolled. In the end he burns.',
+    description: 'Aldric, king of Ashmere, who took the Undying Ember to cheat death, and it will not let him stay hurt. In his throne room every wound you give him glows, and the Ember closes it once you stop: keep at him, or break his guard to make the wounds stay. Strike too long and he shoulders you off. His sweep, his two cuts, his withheld sentence and his lunge can be parried; his leap only rolled. In the end he burns.',
     scale: 1.75, bulk: 1.25, radius: 0.78, color: 0x5a4a36, weapon: 'sword', idle: 'guard',
     visual: { skin: 0x5a5048, skinMetal: 0.45, metal: 0.4, roughness: 0.45, rim: 0.9 },
     hp: 1600, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
@@ -306,20 +291,20 @@ MODEL_DEFS.varn = {
     phases: {
       // Outside: still a man. Slower and readable, teaching his blade; his wounds stay. Ends in a retreat (the placement's `boss.retreat`).
       field: { hp: 1600, cooldown: [3, 5.6], approach: 0.35, kite: 0.25, speed: 2.0,
-        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnStomp', 'varnLeap'] },
+        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnLeap'] },
       // The throne room's first bar: the same blade, pressed harder, and the Ember closes his wounds. Pass 75: the bars
       // in the throne room 1600 and 1700 before the Ember mended him; trimmed so a fight lasts about as long as it did.
       throne: { hp: 1400, cooldown: [2.1, 4], approach: 0.6, kite: 0, speed: 2.2, mend: MEND,
-        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnRebuke', 'varnStomp', 'varnLeap'] },
+        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnRebuke', 'varnLeap'] },
       // After the transition (15 s, invulnerable): burning, faster, fiercer tracking in the wind-ups (commit points
       // unchanged), four of his own, and the Ember mends him faster.
       knell: { name: 'Aldric, the Ember-Crowned', hp: 1500, transition: 15, ignite: true, cooldown: [1.6, 3.0], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7, mend: { ...MEND, share: 0.55, cap: 0.14, delay: 2.0, rate: 0.065 },
         posture: { max: 105, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 5, breakTime: 3.0, hitstop: 0.22 },
-        attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellStomp', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
+        attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
     },
-    attacks: [sweep, cleave, sentence, lungeAt, shoulder, rebuke, stamp, leap,
-      knellSweep, knellCleave, knellSentence, knellLunge, knellRebuke, knellStamp, knellLeap, chain, ashWave, ascent, lastToll],
+    attacks: [sweep, cleave, sentence, lungeAt, shoulder, rebuke, leap,
+      knellSweep, knellCleave, knellSentence, knellLunge, knellRebuke, knellLeap, chain, ashWave, ascent, lastToll],
   };
   ENEMY_DEFS.push(ALDRIC); ENEMY_BY_ID[ALDRIC.id] = ALDRIC;
 }

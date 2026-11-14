@@ -240,7 +240,7 @@ MODEL_DEFS.oswinFirstCrown = {
     attacks: [
       // ---- crowned ------------------------------------------------------------------------------------------------------
       // The King's Tread: the knee lifted high, the foot thrown down; the floor splits ahead of him and stays split.
-      { id: 'tread', name: 'The King\'s Tread', anim: 'stomp', pose: 'oswinTread', noParry: true, tracking: { rate: 2.0, commit: 0.6 }, chance: 0.6,
+      { id: 'tread', name: 'The King\'s Tread', anim: 'stomp', pose: 'oswinTread', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.6,
         hits: [{ startup: 0.95, active: 0.2, follow: 0.25, seam: { from: 1.4, len: 9 }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 1.5,
         followUps: [{ attack: 'threefold', if: 'near', chance: 0.22 }, { attack: 'headsman', chance: 0.17 }],
         damage: 26, poise: 45, knock: 7, lunge: 0, range: 9, box: CRACK },
@@ -266,7 +266,7 @@ MODEL_DEFS.oswinFirstCrown = {
                  impact: { ring: 4.5, crack: 2.6, dust: 26, shake: 0.22 } }], recovery: 3.24,
         damage: 48, poise: 85, knock: 10, lunge: 0, range: 15, box: { w: 3.0, h: 3.0, d: 4.6, fwd: 2.4, y: 1.2 } },
       // The Turn: behind him, a look over his shoulder; the axe comes round with him.
-      { id: 'turn', name: 'The Turn', anim: 'sweep', pose: 'oswinTurn', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
+      { id: 'turn', name: 'The Turn', anim: 'sweep', pose: 'oswinTurn', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
         hits: [{ startup: 0.75, active: 0.18, follow: 0.3 }], recovery: 1.8,
         damage: 28, poise: 45, knock: 8, lunge: 0, range: 4.6, box: { w: 6.4, h: 2.0, d: 6.4, fwd: -0.4, y: 1.3 } },
       // Long Live the King: with three seams or more open, the haft driven into the floor at his feet; then his head thrown
@@ -294,7 +294,7 @@ MODEL_DEFS.oswinFirstCrown = {
         hits: [{ startup: 1.0, active: 0.18, follow: 0.6 }], recovery: 3.8,
         damage: 56, poise: 90, knock: 12, lunge: 4.5, range: 5, box: GRAB },
       // Fists of the Ember: a hook from the left, one from the right, both fists into the floor; it splits ahead.
-      { id: 'emberFists', name: 'Fists of the Ember', anim: 'sweep', pose: 'oswinFists', noParry: true, tracking: { rate: 3.0, commit: 0.7 }, chance: 0.7,
+      { id: 'emberFists', name: 'Fists of the Ember', anim: 'sweep', pose: 'oswinFists', tracking: { rate: 3.0, commit: 0.7 }, chance: 0.7,
         hits: [{ startup: 0.75, active: 0.14, follow: 0.71, step: { from: 0.3, speed: 3.5, side: 0 } },
                { startup: 0.42, active: 0.14, follow: 0.75, step: { from: 0.1, speed: 3.5, side: 0 } },
                { startup: 0.85, active: 0.16, follow: 0.45, box: { w: 2.6, h: 2.0, d: 3.6, fwd: 2.0, y: 0.9 }, seam: { from: 2.2, len: 6 },
@@ -309,9 +309,9 @@ MODEL_DEFS.oswinFirstCrown = {
         hits: [{ startup: 1.05, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 11, short: 1.6 } }], recovery: 3.06,
         damage: 50, poise: 85, knock: 12, lunge: 0, range: 11, box: GRAB },
       // Twin Tread: the right foot, then the left, each splitting the floor ahead, a little to each side.
-      { id: 'twinTread', name: 'Twin Tread', anim: 'stomp', pose: 'oswinTwinTread', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.5,
-        hits: [{ startup: 0.85, active: 0.2, follow: 0.8, seam: { from: 1.4, len: 9, spread: [0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } },
-               { startup: 0.65, active: 0.2, follow: 0.35, seam: { from: 1.4, len: 9, spread: [-0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 2.6,
+      { id: 'twinTread', name: 'Twin Tread', anim: 'stomp', pose: 'oswinTwinTread', noParry: true, tracking: { rate: 2.0, commit: 0.4 }, chance: 0.5,
+        hits: [{ startup: 0.9, active: 0.2, follow: 0.8, seam: { from: 1.4, len: 9, spread: [0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } },
+               { startup: 0.7, active: 0.2, follow: 0.35, seam: { from: 1.4, len: 9, spread: [-0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 2.6,
         damage: 26, poise: 45, knock: 7, lunge: 0, range: 9, box: CRACK },
       // The First Hunger: on one knee, both hands driven into the floor, and again: every open seam burns, then burns again.
       { id: 'firstHunger', name: 'The First Hunger', anim: 'stomp', pose: 'oswinHunger', noParry: true, when: 'seamed', tracking: { rate: 1.4, commit: 0.4 }, chance: 0.15,
@@ -319,7 +319,7 @@ MODEL_DEFS.oswinFirstCrown = {
                { startup: 0.85, active: 0.4, follow: 0.5, erupt: true, box: FIRE }], recovery: 3.6,
         damage: 36, poise: 60, knock: 9, lunge: 0, range: 40, box: FIRE },
       // The Backhand: behind him, a look over his shoulder; the back of his burning hand comes round with him.
-      { id: 'backhand', name: 'The Backhand', anim: 'sweep', pose: 'oswinBackhand', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
+      { id: 'backhand', name: 'The Backhand', anim: 'sweep', pose: 'oswinBackhand', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
         hits: [{ startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.62,
         damage: 24, poise: 40, knock: 8, lunge: 0, range: 4.0, box: { w: 5.6, h: 2.0, d: 5.6, fwd: -0.3, y: 1.4 } },
       // Drinking where he can see it: the hold, sooner and from further.

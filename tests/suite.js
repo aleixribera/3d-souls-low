@@ -2641,12 +2641,10 @@
     sim.press('roll'); sim.seconds(0.6);
     expect.ok(q.hp === hp1, 'rolled through the ring');
   });
-  test('Aldric: the Last Toll rings and his stomps run along the floor: a jump clears them; the Ash Wave is a flying slash', () => {
+  test('Aldric: the Last Toll rings run along the floor: a jump clears them; the Ash Wave is a flying slash; he has no stomp', () => {
     const D = A.ENEMY_BY_ID.varn;
-    for (const id of ['lastToll', 'varnStomp', 'knellStomp']) for (const h of D.attacks.find(a => a.id === id).hits.slice(0, id === 'lastToll' ? 3 : 1)) {
-      const b = h.box || D.attacks.find(a => a.id === id).box;
-      expect.ok(b.y + b.h / 2 <= 0.6 + 1e-6, `${id}: low enough to jump (top ${b.y + b.h / 2} m)`);
-    }
+    for (const h of D.attacks.find(a => a.id === 'lastToll').hits.slice(0, 3)) expect.ok(h.box.y + h.box.h / 2 <= 0.6 + 1e-6, `lastToll: low enough to jump (top ${h.box.y + h.box.h / 2} m)`);
+    expect.ok(!D.attacks.some(a => /stomp|stamp/i.test(a.id + ' ' + a.name)), 'his stamp is gone (pass 93): a sword king does not stomp');
     expect.ok(D.attacks.find(a => a.id === 'ashWave').projectile.look === 'slash', 'the Ash Wave is drawn as a slash');
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
     const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
@@ -2654,7 +2652,7 @@
     e.beginAttack(toll); sim.until(() => e.state === ES.WINDUP && e.stateTime >= toll.hits[0].startup - 0.12, 3);
     sim.press('jump'); sim.seconds(0.5);
     expect.ok(p.hp === hp0, `jumped over the ring (lost ${hp0 - p.hp})`);
-    expect.ok(D.attacks.find(a => a.id === 'varnStomp').box.ground, 'stomps are ground shockwaves: any time in the air clears them');
+    expect.ok(toll.hits[0].box.ground, 'the rings are ground shockwaves: any time in the air clears them');
     sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP && e.stateTime >= toll.hits[1].startup - 0.42, 3);
     sim.press('jump'); sim.seconds(0.5);   // an early jump: in the air as the ring passes, though well below its old reach
     expect.ok(p.hp === hp0, `an early jump clears it too (lost ${hp0 - p.hp})`);

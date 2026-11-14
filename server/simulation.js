@@ -810,6 +810,8 @@ globalThis.host = (() => {
       return false;
     }
     lastDodge.set(id, time); gainCharge(id, CONFIG.abilities.press.gain.dodge);
+    const e = enemy(msg.enemy);   // still that attack: a boss recovers longer from a blow dashed through (CONFIG.bossMove.dodged)
+    if (e && e.netAttack === msg.serial && e.in('attacking')) e.dashedThroughBy();
     return true;
   }
   function beginExecution(id, msg) {

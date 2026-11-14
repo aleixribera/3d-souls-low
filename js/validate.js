@@ -220,6 +220,19 @@ function validateData({ visual = true } = {}) {
     'CONFIG.rend needs max (whole pieces, 1 or more), cut (a fraction; all of them under 0.6 of the bar) and time (s).');
   need(ST && num(ST.lock) && ST.lock > 0 && ST.lock < 1 && num(ST.minTell) && ST.minTell > 0, 'CONFIG.storm needs lock (0 to 1) and minTell (s).');
   need(CONFIG.burrow && num(CONFIG.burrow.near) && CONFIG.burrow.near > 0 && num(CONFIG.burrow.minTell) && CONFIG.burrow.minTell > 0, 'CONFIG.burrow needs near (m) and minTell (s).');
+  const AR = CONFIG.area;
+  need(AR && ['reach', 'tell', 'offset', 'locked'].every(k => num(AR[k]) && AR[k] > 0) && num(AR.held) && AR.held > 0 && AR.held < 1 && num(AR.dash) && AR.dash > 0 && AR.dash <= 1,
+    'CONFIG.area needs reach and offset (m), tell and locked (s), and held and dash (fractions, 0 to 1).');
+  const BM = CONFIG.bossMove, pos = v => num(v) && v > 0;
+  need(BM && pos(BM.pace) && pos(BM.floor) && BM.floor <= 1 && num(BM.max) && BM.max >= 1 && BM.close && pos(BM.close.beyond) && num(BM.close.mul) && BM.close.mul >= 1 && num(BM.close.approach) && BM.close.approach >= 1
+    && BM.circle && pos(BM.circle.speed) && BM.circle.speed <= 1 && Array.isArray(BM.circle.flip) && BM.circle.flip.length === 2 && pos(BM.circle.flip[0]) && BM.circle.flip[1] >= BM.circle.flip[0]
+    && BM.respace && pos(BM.respace.time) && num(BM.respace.mul) && BM.respace.mul >= 1 && num(BM.respace.turn) && BM.respace.turn >= 1
+    && BM.dodged && num(BM.dodged.recovery) && BM.dodged.recovery >= 1,
+    'CONFIG.bossMove needs pace (above 0), floor (0 to 1) and max (1 or more); close {beyond (m), mul, approach}; circle {speed (0 to 1), flip [s, s]}; respace {time (s), mul, turn}; dodged {recovery}: multipliers 1 or more.');
+  need(CONFIG.undeflectable && Number.isInteger(CONFIG.undeflectable.bigMoments) && CONFIG.undeflectable.bigMoments >= 0, 'CONFIG.undeflectable needs bigMoments (a whole number, 0 or more).');
+  const AM = CONFIG.VISUALS.areaMark;
+  if (visual) need(AM && Number.isInteger(AM.color) && num(AM.opacity) && AM.opacity > 0 && AM.opacity <= 1 && num(AM.fade) && AM.fade > 0 && Number.isInteger(AM.pool) && AM.pool >= 2,
+    'VISUALS.areaMark needs a color, an opacity (0 to 1), a fade (s) and a pool of 2 or more.');
   need(SU && ['first', 'near', 'slack', 'reposition', 'settle', 'patience'].every(k => num(SU[k]) && SU[k] >= 0) && SU.slack <= SU.reposition && Array.isArray(SU.behind) && SU.behind.length > 0 && SU.behind.every(d => num(d) && d >= 0 && d <= Math.PI / 2) && num(SU.greed) && SU.greed >= 0 && SU.greed <= 1 && SU.patience >= 1,
     'Bot support needs non-negative first, near, settle, and slack no more than reposition, behind offsets in 0..pi/2, a greed share (0..1) and patience of 1 or more.');
   const jumpRange = botConfig.jumpDodge.lead;
@@ -350,6 +363,22 @@ function validateData({ visual = true } = {}) {
           `${tag}: hit ${i + 1}'s bolt must be true or { lock } (0 to 1), its box centred on the mark (fwd 0); not with an echo, seam, erupt, leap, blink, step, ring or projectile.`);
         need(h.startup >= CONFIG.storm.minTell - 1e-6, `${tag}: hit ${i + 1}'s bolt needs a wind-up of at least ${CONFIG.storm.minTell} s (its mark).`);
       }
+      // Every area attack fair on its own (pass 93, CONFIG.area; areaHit in js/enemy.js, drawn by js/area-marks.js).
+      if (h && areaHit(a, i)) {
+        const A = CONFIG.area, b = h.box || a.box, prev = a.hits[i - 1], at = `${tag}: hit ${i + 1} (a ground area hit, CONFIG.area)`;
+        // Its mark shows from the start of its wind-up, or from the strike before it; a burrow's once it stops (CONFIG.burrow).
+        const shown = h.startup + (prev ? prev.active + (prev.follow || 0) : 0);
+        need(h.burrow || shown >= A.tell - 1e-6, `${at} shows its reach ${shown.toFixed(2)} s before it strikes; it needs ${A.tell} s.`);
+        need(!h.step && !h.blink && !h.abort, `${at} must not move under its mark (no step, blink or abort).`);
+        need(!b.round || (b.w === b.d && !b.ring), `${at}: a round burst is as deep as it is wide (w = d), and not a ring.`);
+        if (!b.ring && !(b.round && Math.abs(b.fwd) <= A.offset)) {   // turning would carry it: it locks first
+          const lock = a.tracking ? h.startup * (1 - a.tracking.commit) : 0;
+          need(!a.track && lock >= A.locked - 1e-6, `${at} turns with the body until ${lock.toFixed(2)} s before it strikes; it must stop at least ${A.locked} s before (tracking.commit).`);
+        }
+        // No spot under it longer than a dash's i-frames allow, so a dash on it always gets through (a body PLAYER_DEF.radius across).
+        const iframes = CONFIG.player.rollIFrames * A.dash, under = areaDwell(b, h.active, PLAYER_DEF.radius);
+        need(under <= iframes + 1e-6, `${at} holds a spot for ${under.toFixed(2)} s; a dash gets through ${iframes.toFixed(2)} s at most.`);
+      }
     });
     if ('rend' in a) need(typeof a.rend === 'boolean', `${tag}: rend must be true or false.`);
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
@@ -461,6 +490,19 @@ function validateData({ visual = true } = {}) {
         // v7.40.0: an `alone` phase begins on the same bar once the rest of its zone has fallen (a pair of bosses).
         else if (ph && 'alone' in ph) need(ph.alone === true && !('hp' in ph) && Object.keys(P)[0] !== pid, `${tag}: alone must be true, with no hp of its own, and not the first phase.`);
         else need(ph && num(ph.hp) && ph.hp > 0, `${tag}: needs hp above 0.`);
+        // Most of its moves can be deflected (pass 93, CONFIG.undeflectable): beside its area hits, grabs, leaps, shots and
+        // fire, a phase keeps at most `bigMoments` undeflectable moves (a learned form shares its move's name).
+        if (ph && Array.isArray(ph.attacks)) {
+          const by = id => d.attacks.find(a => a && a.id === id), seen = new Set(), big = new Set();
+          const own = ph.attacks.map(by).filter(Boolean), more = own.flatMap(a => [a.learns, ...(a.followUps || []).map(f => f.attack)]).map(id => id && by(id));
+          for (const a of own.concat(more)) {   // its learned forms and follow-ups too
+            if (!a || !a.hits || seen.has(a) || !(a.noParry || a.rollOnly) || a.projectile) continue;
+            seen.add(a);
+            if (a.hits.some((h, i) => areaHit(a, i) || h.seize || h.pull || h.leap || h.erupt || h.bolt || h.burrow)) continue;
+            big.add(a.name.replace(/, Learned$/, ''));
+          }
+          need(big.size <= CONFIG.undeflectable.bigMoments, `${tag}: ${big.size} moves no guard can deflect (${[...big].join(', ')}); a phase keeps at most ${CONFIG.undeflectable.bigMoments} besides its area hits, grabs, leaps, shots and fire (CONFIG.undeflectable).`);
+        }
         if (visual && ph && 'reveal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.reveal) && !!M && ph.reveal.every(sl => (M.hidden || []).includes(sl)),
           `${tag}: reveal must list material slots its model hides (its "hidden").`); }
         if (visual && ph && 'conceal' in ph) { const M = d.model && KIT.resolve(d.model); need(Array.isArray(ph.conceal) && !!M && ph.conceal.every(sl => sl === 'weapon' || sl in M.materials),

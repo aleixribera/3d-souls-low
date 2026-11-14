@@ -217,7 +217,7 @@ MODEL_DEFS.kindlingTree = {
         hits: [{ startup: 2.6, active: 0.2, follow: 0.5, burrow: { from: 0.18, lock: 0.72, speed: 11, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.4,
         damage: 46, poise: 80, knock: 10, lunge: 0, range: 22, box: RISE },
       // The Turning Bough: behind it, a look over its right side; the bough comes round.
-      { id: 'turningBough', name: 'The Turning Bough', anim: 'sweep', pose: 'treeTurning', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+      { id: 'turningBough', name: 'The Turning Bough', anim: 'sweep', pose: 'treeTurning', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.75, active: 0.16, follow: 0.3 }], recovery: 1.35,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 4.6, box: TURN },
       // Drinking where it can feel it: it goes under, sooner, and faster.

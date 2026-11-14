@@ -55,6 +55,59 @@ function isAreaAttack(a) {
   return AREA_ATTACKS.get(a);
 }
 const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
+// The ground hit hit `h` of attack `a` can make, about its box's centre (m): a ring's band from its first radius to the
+// last it reaches before its strike ends (`inner`, `outer`), a round burst's disc (`outer`), or a box (`hw`, `hd`: half
+// its width and depth). What js/area-marks.js draws and js/combat.js Hitbox.overlaps hits (pass 93). `out` is reused.
+const AREA_SHAPE = { shape: 'box', inner: 0, outer: 0, hw: 0, hd: 0 };
+function areaShape(a, h, out = AREA_SHAPE) {
+  const b = h.box || a.box;
+  out.inner = 0; out.hw = b.w / 2; out.hd = b.d / 2;
+  if (b.ring) {
+    const R = b.ring;
+    out.shape = 'ring'; out.inner = Math.max(0, R.from - R.width / 2); out.outer = lerp(R.from, R.to, Math.min(1, h.active / R.time)) + R.width / 2;
+  } else if (b.round) { out.shape = 'round'; out.outer = b.w / 2; }
+  else { out.shape = 'box'; out.outer = Math.hypot(b.w, b.d) / 2; }
+  return out;
+}
+// How far from its owner hit `h` of attack `a` can reach (m): a ring's outer edge, a round burst's or a box's far corner.
+function hitReach(a, h) {
+  const b = h.box || a.box;
+  if (!b) return 0;
+  if (b.ring) return areaShape(a, h).outer;
+  if (b.round) return Math.abs(b.fwd) + b.w / 2;
+  return Math.hypot(b.w / 2, Math.abs(b.fwd) + b.d / 2);
+}
+// The longest a body `r` m across stands under box `b` while it strikes for `active` s (s): the whole strike for a box;
+// for an expanding ring, the time its band takes to pass the worst-placed spot (it sits at its full size once spread).
+function areaDwell(b, active, r) {
+  if (!b.ring) return active;
+  const R = b.ring, dt = 1 / 120;
+  let worst = 0;
+  for (let d = 0; d <= R.to + R.width + r; d += 0.05) {
+    let under = 0;
+    for (let t = 0; t < active; t += dt) if (Math.abs(d - lerp(R.from, R.to, Math.min(1, t / R.time))) <= R.width / 2 + r) under += dt;
+    worst = Math.max(worst, under);
+  }
+  return worst;
+}
+// A ground area hit (CONFIG.area, pass 93): a ring, a `round` burst, a shockwave along the floor (`ground`) or any blow of
+// a stomp, reaching CONFIG.area.reach m or more. Not the leap slams (Aleix: unchanged), a body that rushes in (`dash`),
+// the seams' walls of fire (`erupt`: the open seams are their mark), the storm's bolts (`bolt`: their own mark), a gilt
+// echo or a shot. A burrowing rise (`burrow`) is one, marked once it stops.
+const AREA_HITS = new WeakMap();
+function areaHit(a, i) {
+  if (!a || !a.hits) return false;
+  let marks = AREA_HITS.get(a);
+  if (!marks) {
+    const plain = !a.projectile && !a.dash && !a.hits.some(h => h.leap);
+    marks = a.hits.map(h => {
+      const b = h.box || a.box;
+      return plain && !!b && !h.erupt && !h.bolt && !h.echo && (!!b.ring || !!b.round || !!b.ground || a.anim === 'stomp') && hitReach(a, h) >= CONFIG.area.reach;
+    });
+    AREA_HITS.set(a, marks);
+  }
+  return !!marks[i];
+}
 // Boss Rush's pace after `won` fights (CONFIG.pace): a warm-up under every boss's own pace for the first `warm` fights,
 // then rising exponentially with the fights won past it up to `steady` won, and on from there at the rate it had reached,
 // the same step every fight (pass 90: no wall, no ease; PLAN.md item 11).
@@ -114,6 +167,10 @@ class Enemy {
     this.wounds = [0, 1, 2, 3].map(() => ({ who: null, pool: 0, since: 0 }));   // ... one per attacker, so each closes on its own
     this.learned = [];                               // an attack's `learns` (pass 77): the ids of the attacks it has learned, in order
     this.landed = false;                             // ... and whether the current attack has landed a blow on anyone
+    this.dashedThrough = false;                      // ... and whether its player dashed through it as it struck (CONFIG.bossMove)
+    this.recoverMul = 1;                             // how many times as long its recovery plays (a dashed-through boss's, CONFIG.bossMove)
+    this.circleDir = Math.random() < 0.5 ? 1 : -1; this.circleLeft = 0;   // a boss holding alone: which way it circles, and for how long
+    this.respace = 0; this.sawDash = false;          // a boss: how long it still takes its distance again after its player's dash
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -183,6 +240,12 @@ class Enemy {
   tellRate() {
     const P = CONFIG.pace;
     return this.pace <= P.boss ? 1 : Math.min(1 / P.tellFloor, Math.pow(this.pace / P.boss, P.tell));
+  }
+  // How fast a boss walks, turns and tracks at its pace (CONFIG.bossMove): its own at a boss's base pace. Others: 1.
+  moveRate() {
+    if (!this.isBoss()) return 1;
+    const M = CONFIG.bossMove;
+    return clamp(Math.pow(this.pace / CONFIG.pace.boss, M.pace), M.floor, M.max);
   }
   lastPhase() { return !this.phaseIds || this.phase >= this.phaseIds.length - 1; }
   // A mid-bar phase (a phase with `at`, v5.3): once the health falls to `at` of the bar, the next phase begins at once,
@@ -313,7 +376,9 @@ class Enemy {
     this.checkPhaseAt();
     const d = this.def, E = CONFIG.enemy;
     // A faster pace (CONFIG.pace) cuts recoveries short and, past a boss's base pace, quickens its wind-ups a little.
-    this.stateTime += this.state === ES.RECOVER ? dt * this.pace : this.state === ES.WINDUP ? dt * this.tellRate() : dt;
+    // A boss dashed through recovers `recoverMul` times as long (CONFIG.bossMove): the opening the dash earned.
+    // A ground area hit's wind-up keeps its own length at any pace (CONFIG.area: its tell is a promise).
+    this.stateTime += this.state === ES.RECOVER ? dt * this.pace / this.recoverMul : this.state === ES.WINDUP ? dt * (areaHit(this.attack, this.hitIndex) ? 1 : this.tellRate()) : dt;
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     this.sinceBreak = this.state === ES.BROKEN || this.state === ES.EXECUTED ? 0 : this.sinceBreak + dt;   // CONFIG.enemy.postureRest
@@ -368,6 +433,12 @@ class Enemy {
     // An archer takes aim at a player it can't walk to. Never one past its leash: it would give up at once and flicker.
     const engage = sees && (reach || this.ranged) && dist <= this.leash;
     let tx = 0, tz = 0;
+    // A boss sees its player's dash start and takes its distance again (CONFIG.bossMove.respace).
+    if (this.isBoss()) {
+      const dashing = playerAlive && player.state === PS.ROLL;
+      if (dashing && !this.sawDash) this.respace = CONFIG.bossMove.respace.time;
+      this.sawDash = dashing; this.respace = Math.max(0, this.respace - dt);
+    }
 
     switch (this.state) {
       case ES.IDLE:
@@ -437,7 +508,7 @@ class Enemy {
         }
         if (sightLost(this, player)) { this.stepIn = false; this.searchLook = 0; this.setState(ES.SEARCH); break; }
         this.lastSeen = { x: player.x, z: player.z };
-        this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
+        this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * this.moveRate() * (this.respace > 0 ? CONFIG.bossMove.respace.turn : 1) * dt);
         this.cooldown -= dt * crowd.cooldownRate(this) * this.pace * this.rest;   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
           this.cued = null;   // a kin's cue goes stale
@@ -459,10 +530,10 @@ class Enemy {
           if (dist > Math.max(this.stepInNearest, this.attackReach.short) + CONFIG.ai.stepOut) this.stepIn = false;
         } else if (this.cooldown <= 0 && dist <= this.attackReach.close + CONFIG.ai.commitReach) {
           this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.close;   // the player came just short of its close reach: commit
-        } else if (this.cooldown <= 0 && dist <= this.holdReach() && Math.random() < (d.approach ?? CONFIG.ai.approach) * dt) {
+        } else if (this.cooldown <= 0 && dist <= this.holdReach() && Math.random() < (d.approach ?? CONFIG.ai.approach) * (this.isBoss() ? CONFIG.bossMove.close.approach * this.moveRate() : 1) * dt) {
           this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.short;   // holding, ready to strike: now and then it steps in
         }
-        [tx, tz] = this.holdVelocity(player, dist);
+        [tx, tz] = this.holdVelocity(player, dist, dt);
         break;
       }
       case ES.WINDUP: {
@@ -473,7 +544,7 @@ class Enemy {
         if (hit.hold && this.holdLeft === null && this.stateTime >= hit.startup * hit.hold.at)
           this.holdLeft = Math.random() < hit.hold.chance ? rand(hit.hold.time[0], hit.hold.time[1]) : 0;
         if (this.holdLeft > 0) { this.holdLeft -= dt; this.stateTime = Math.min(this.stateTime, hit.startup * hit.hold.at); }
-        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, ((a.tracking && a.tracking.rate) || a.track || d.trackRate) * dt);
+        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, ((a.tracking && a.tracking.rate) || a.track || d.trackRate) * (hit.leap ? 1 : this.moveRate()) * dt);   // a leap as it was (Aleix)
         // A hit's `step` (v5.4, Godrick's rampage): from `from` of its wind-up (not while held) it closes in at `speed` m/s
         // (stopping once the strike would reach) and drifts `side` m/s sideways (+ to its left): a stride into each cut.
         if (hit.step && this.stateTime >= hit.startup * hit.step.from && !(this.holdLeft > 0)) {
@@ -523,16 +594,17 @@ class Enemy {
         break;
       }
       case ES.ACTIVE: {   // the strike, then (hitbox closed) its follow-through
-        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * dt);
+        if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * this.moveRate() * dt);
         const striking = this.stateTime < this.attack.hits[this.hitIndex].active;
         if (!striking) this.hitbox = null;
-        if (striking && !this.attack.hits[this.hitIndex].echo) { tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge; }
+        // A ground area hit stays where its mark lay (CONFIG.area): no lunge under it.
+        if (striking && !this.attack.hits[this.hitIndex].echo && !areaHit(this.attack, this.hitIndex)) { tx = Math.sin(this.yaw) * this.attack.lunge; tz = Math.cos(this.yaw) * this.attack.lunge; }
         this.endStrikeWhenDone();
         break;
       }
       case ES.RECOVER: {
         // Mashed through its recovery (CONFIG.enemy.mash): past `recoverCut` of it, it breaks off at once.
-        const b = playerAlive && this.stateTime >= this.attack.recovery * E.mash.recoverCut && this.breakOff(dist);
+        const b = playerAlive && this.recoverMul === 1 && this.stateTime >= this.attack.recovery * E.mash.recoverCut && this.breakOff(dist);   // dashed through: no break-off
         if (b) { this.learn(); this.yaw = toPlayer; this.beginAttack(b); break; }
         if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
           this.learn();
@@ -569,7 +641,7 @@ class Enemy {
     if (this.state === ES.CHASE) [tx, tz] = steerAroundProps(this, tx, tz, dist);
     else if (this.state === ES.RETURN) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.home.x - this.x, this.home.z - this.z));
     else if (this.state === ES.SEARCH && this.lastSeen) [tx, tz] = steerAroundProps(this, tx, tz, Math.hypot(this.lastSeen.x - this.x, this.lastSeen.z - this.z));
-    approachVel(this, tx, tz, E.accel * dt);
+    approachVel(this, tx, tz, E.accel * (this.state === ES.CHASE ? this.moveRate() : 1) * dt);   // a boss gets going at its pace too (CONFIG.bossMove)
     integrateBody(this, dt, E.knockFriction, true);   // never walks off an edge; knockback can still push it over
     if (d.tether) this.keepTether(d.tether);
     this.checkFall();
@@ -646,17 +718,25 @@ class Enemy {
   // How far from the player it waits: `holdInset` inside its hold reach, or inside its shortest while stepping in.
   holdDistance() { return (this.stepIn ? this.attackReach.short : this.holdReach()) - CONFIG.ai.holdInset; }
   // Close in at full speed to its hold distance; once more than `holdBand` closer, back off (slower) all the way to
-  // it; and circle toward its place around the player (`slot`), still facing the player. Returns the wanted velocity [x, z].
-  holdVelocity(player, dist) {
+  // it; and circle toward its place around the player (`slot`), still facing the player. A boss with no place circles
+  // anyway, one way then the other, and moves at its pace (CONFIG.bossMove). Returns the wanted velocity [x, z].
+  holdVelocity(player, dist, dt = CONFIG.step) {
     const A = CONFIG.ai, want = this.holdDistance();
     if (dist < want - A.holdBand) this.backingOff = true; else if (dist >= want) this.backingOff = false;
     const a = Math.atan2(this.x - player.x, this.z - player.z);   // bearing from the player
     const rx = Math.sin(a), rz = Math.cos(a), ux = Math.cos(a), uz = -Math.sin(a);   // outward and around (+angle)
     const out = dist > want ? -Math.min(1, (dist - want) * 1.2) : this.backingOff ? clamp((want - dist) * 1.2, 0, 1) * A.holdSpeedMul : 0;
-    const along = this.slot === null ? 0 : clamp(angDiff(this.slot, a) * dist * 0.6, -1, 1) * A.holdSpeedMul;
+    let along = this.slot === null ? 0 : clamp(angDiff(this.slot, a) * dist * 0.6, -1, 1) * A.holdSpeedMul;
+    const boss = this.isBoss(), M = CONFIG.bossMove;
+    if (boss && !crowd.enemies.some(o => o !== this && o.slot !== null) && !this.stepIn && Math.abs(dist - want) < A.holdBand + 1) {   // a boss holding alone circles its player
+      if ((this.circleLeft -= dt) <= 0) { this.circleDir = -this.circleDir; this.circleLeft = rand(M.circle.flip[0], M.circle.flip[1]); }
+      along = this.circleDir * M.circle.speed;
+    }
     const vx = rx * out + ux * along, vz = rz * out + uz * along, l = Math.hypot(vx, vz);
     if (l < 0.1) return [0, 0];   // in place: stand and watch
-    const sp = this.def.speed / Math.max(1, l);
+    // A boss: at its pace (moveRate), running in from afar, quicker while it takes its distance after a dash.
+    const mul = !boss ? 1 : this.moveRate() * (dist > want + M.close.beyond ? M.close.mul : 1) * (this.respace > 0 ? M.respace.mul : 1);
+    const sp = this.def.speed * mul / Math.max(1, l);
     return [vx * sp, vz * sp];
   }
   // No attack is chosen in advance. Once the cooldown is over and it faces the player (and the crowd's gap after
@@ -694,7 +774,7 @@ class Enemy {
     const base = attack;   // an attack it has learned comes as its learned form (`learns`), counted as the attack it learned
     if (attack.learns && this.learned.includes(attack.id)) attack = this.attackById(attack.learns);
     if (attack.cue) this.cueKin(attack.cue);
-    this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false;
+    this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false; this.dashedThrough = false; this.recoverMul = 1;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
     if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
@@ -813,7 +893,18 @@ class Enemy {
     if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;
     if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.setState(ES.WINDUP); }
-    else if (!this.followUp()) this.setState(ES.RECOVER);
+    else if (!this.followUp()) {
+      this.recoverMul = 1; this.setState(ES.RECOVER);
+      if (this.dashedThrough) this.dashedThroughBy();
+    }
+  }
+  // A blow of its attack was dashed through (a perfect dodge: js/combat.js; online the server's `dodged` claim). A
+  // boss's attack that has landed on no one recovers CONFIG.bossMove.dodged.recovery times as long, with no break-off,
+  // from its recovery's start or from now if it is already recovering. Not a leap (Aleix: the leaps stay as they are).
+  dashedThroughBy() {
+    this.dashedThrough = true;
+    const a = this.attack;
+    if (this.state === ES.RECOVER && this.isBoss() && !this.landed && a && !a.hits.some(h => h.leap)) this.recoverMul = CONFIG.bossMove.dodged.recovery;
   }
   // Follow-ups (an attack's `followUps`, v5.3): as the last hit's follow-through ends, the first entry whose condition
   // (`if`, FOLLOW_IF) holds and whose `chance` rolls starts at once instead of the recovery: a combo that branches.
@@ -1075,16 +1166,25 @@ class Enemy {
         r.tip.rotation.x = -Math.PI / 2 * (1 - p); r.legL.rotation.x = -1.2 * Math.sin(p * Math.PI);
         r.kneeL.rotation.x = 1.6 * Math.sin(p * Math.PI); r.armR.rotation.x = lerp(-0.3, -0.4, p); break;
       }
-      case ES.WINDUP: case ES.ACTIVE: case ES.RECOVER:
+      case ES.WINDUP: case ES.ACTIVE: case ES.RECOVER: {
+        // A ground area hit's wind-up (CONFIG.area): the body rises into its pose over the first `held` of it, then holds
+        // there, trembling, until it lands, so the strike's moment reads from the body as well as from the floor.
+        const W = this.state === ES.WINDUP ? a.hits[this.hitIndex] : null, held = W && !W.burrow && areaHit(a, this.hitIndex);
+        const wt = held ? Math.min(W.startup, tt / CONFIG.area.held) : tt;
         if (a.pose) {   // four-phase key poses (js/attack-anim.js) on the attack's own clock
-          const still = this.holdLeft > 0 ? this.stateTime : tt;   // a held wind-up is drawn perfectly still
+          const still = this.holdLeft > 0 ? this.stateTime : wt;   // a held wind-up is drawn perfectly still
           const at = phaseSpan(a, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + still;
           glint = poseAttackKeys(r, a, at);
-        } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, tt / a.hits[this.hitIndex].startup, this.hitIndex);
+        } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, wt / W.startup, this.hitIndex);
         else if (this.state === ES.ACTIVE) poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex);
         else poseAttack(r, a, PHASE.RECOVERY, tt / a.recovery, this.hitIndex);
+        if (held && wt >= W.startup) {   // the hold's tremble (small and fast; no flash)
+          const k = clamp((tt - W.startup * CONFIG.area.held) / 0.15, 0, 1);
+          r.spin.rotation.z += Math.sin(tt * 38) * 0.025 * k; r.tip.rotation.x += Math.sin(tt * 31) * 0.015 * k;
+        }
         if (this.state === ES.WINDUP && !a.hits[this.hitIndex].echo) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own (js/gilt-echo.js)
         break;
+      }
       case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt, this.hitK || 1); break;
       case ES.STAGGER: flinchPose(r, true, tt / d.staggerTime, tt); break;
       case ES.PARRIED: {

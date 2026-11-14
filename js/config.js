@@ -232,6 +232,29 @@ const CONFIG = {
   // A hit's `burrow` (pass 50, the Kindling Tree): its heave stops `near` m short of the player's body (it rises beside
   // them, not in them), and holds still over the spot it will rise from for at least `minTell` s before the rise (validated).
   burrow: { near: 2.0, minTell: 0.6 },
+  // Every area attack fair on its own (pass 93, PLAN.md rework item 4; areaHit in js/enemy.js, checked by js/validate.js,
+  // drawn by js/area-marks.js). A ground area hit reaching `reach` m or more from its owner: the floor shows its whole
+  // reach from the start of its wind-up (a later hit's from the strike before it), at least `tell` s before it strikes
+  // (its wind-up never quickens with Boss Rush's pace);
+  // the body rises into its wind-up pose over the first `held` of the wind-up and holds it, shaking, until the strike;
+  // any but a ring or a disc centred within `offset` m of the body stops turning at least `locked` s before it strikes; it never
+  // moves under its mark (no step, blink or lunge); and no spot stays under it longer than `dash` of a dash's i-frames,
+  // so a dash on it always gets through. The leap slams keep their own rules (Aleix: unchanged).
+  area: { reach: 3, tell: 0.9, held: 0.5, offset: 1, locked: 0.4, dash: 0.75 },
+  // Deflecting (pass 93, PLAN.md 248e544): a boss's attack that no guard press deflects (`noParry` or `rollOnly`) is a
+  // ground area hit, a grab (`seize`, `pull`), a leap, a shot, a wall of fire, or one of at most `bigMoments` moves (by
+  // name, its learned form included) in each phase: everything else can be deflected. Its wind-up glows blue (js/rig.js).
+  undeflectable: { bigMoments: 2 },
+  // How a boss moves (pass 93, PLAN.md rework item 4, js/enemy.js): on one pace with its timings. Its walk, turns and
+  // tracking run at (pace / CONFIG.pace.boss)^`pace` times its own, from `floor` to `max` (Enemy.moveRate). More than
+  // `close.beyond` m past where it holds, it runs in at `close.mul` times its walk, and holding, it steps in to strike
+  // `close.approach` times as often (and at its move rate). Holding alone (no place in a crowd),
+  // it circles the player at `circle.speed` of its walk, turning back every `circle.flip` s. When its player dashes, for
+  // `respace.time` s it walks `respace.mul` times as fast and turns `respace.turn` times as fast to take its distance
+  // again. An attack with a blow dashed through (a perfect dodge) that landed on no one: its recovery plays
+  // `dodged.recovery` times as long, and it breaks off no mashing until it is over. Not the leaps (Aleix: as they are).
+  bossMove: { pace: 0.5, floor: 0.8, max: 1.6, close: { beyond: 3, mul: 1.5, approach: 1.6 }, circle: { speed: 0.45, flip: [1.6, 3.2] },
+              respace: { time: 0.7, mul: 1.4, turn: 2 }, dodged: { recovery: 1.35 } },
   // Pace (v7.65.0): no enemy or boss scales with the number of players, anywhere; a group of four meets the boss a solo
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
@@ -649,6 +672,9 @@ const CONFIG = {
     // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
     // flash and `dust` when it breaks.
     ringWave: { color: 0xf0e2c0, opacity: 0.8, fade: 0.3, pool: 6 },
+    // A ground area attack's whole reach on the floor from the start of its wind-up (js/area-marks.js, CONFIG.area, pass 93):
+    // its line and fill at `opacity`, gone `fade` s after its strike; `pool` marks at once.
+    areaMark: { color: 0xff5a2a, opacity: 0.85, fade: 0.25, pool: 8 },
     // Boss Rush's legendaries drawn (js/ability-fx.js). `near`: within this many m of the player a power shakes
     // the camera; `cool`: the colour a meteor's crater cools to. Meteor: its column of fire `column` m tall falls
     // in `fall` s, `width` m wide, the shock ring spreads in `ring` s, the crater (`glow` times as bright) cools by

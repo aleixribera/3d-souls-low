@@ -249,9 +249,9 @@ MODEL_DEFS.motherAgathe = {
                { startup: 0.55, active: 0.18, follow: 0.3, damage: 26, box: DRAW }], recovery: 1.98,
         followUps: [{ attack: 'turningHook', if: 'behind', chance: 0.33 }],
         damage: 32, poise: 50, knock: 6, lunge: 1.0, range: 4.4, box: REAP },
-      // The Crook: levelled at you, held; the reach lays the hook past you, then it is hauled home through you. Roll toward
+      // The Crook: levelled at you, held; the reach lays the hook past you, then it is hauled home through you. Parry it (pass 93), or roll toward
       // her or out to the side as she hauls.
-      { id: 'crook', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', noParry: true, rend: true, tracking: { rate: 2.8, commit: 0.75 }, minRange: 2.5, chance: 0.7,
+      { id: 'crook', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', rend: true, tracking: { rate: 2.8, commit: 0.75 }, minRange: 2.5, chance: 0.7,
         hits: [{ startup: 1.05, active: 0.14, follow: 0.1, damage: 14, box: REACH, hold: { at: 0.55, time: [0.3, 0.9], chance: 0.5 } },
                { startup: 0.5, active: 0.26, follow: 0.3, box: HAUL }], recovery: 2.16,
         damage: 34, poise: 50, knock: 7, lunge: 1.6, range: 7.0, box: HAUL },
@@ -269,7 +269,7 @@ MODEL_DEFS.motherAgathe = {
                { startup: 0.75, active: 0.14, follow: 0.35, impact: { ring: 2.4, crack: 1.4, dust: 14, shake: 0.1 } }], recovery: 2.34,
         damage: 40, poise: 70, knock: 8, lunge: 1.0, range: 4.4, box: CHOP },
       // Rend the Earth: raised high on her left; dragged through the floor ahead, a line of shockwaves. Roll or jump it.
-      { id: 'rendEarth', name: 'Rend the Earth', anim: 'chop', pose: 'agatheRendEarth', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.7 }, minRange: 2.5, chance: 0.45,
+      { id: 'rendEarth', name: 'Rend the Earth', anim: 'chop', pose: 'agatheRendEarth', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.65 }, minRange: 2.5, chance: 0.45,
         hits: [{ startup: 1.15, active: 0.22, follow: 0.35, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } }], recovery: 1.8,
         damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
       // Torn Stones: crouched, dragging through the rubble; a fan of stones. At range.
@@ -281,11 +281,11 @@ MODEL_DEFS.motherAgathe = {
         projectile: { speed: 12, gravity: 12, size: 0.8, look: 'rock' }, hits: [{ startup: 1.6, active: 0.05, follow: 0.5, impact: { ring: 1.4, crack: 1.2, dust: 14, shake: 0.06 } }], recovery: 2.7,
         damage: 46, poise: 80, knock: 9, lunge: 0, range: 20, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 2.0 } },
       // The Turning Hook: behind her, a look over her right shoulder; the hook comes round.
-      { id: 'turningHook', name: 'The Turning Hook', anim: 'sweep', pose: 'agatheTurningHook', noParry: true, rend: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+      { id: 'turningHook', name: 'The Turning Hook', anim: 'sweep', pose: 'agatheTurningHook', rend: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.7, active: 0.16, follow: 0.3 }], recovery: 1.62,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 3.8, box: TURN },
       // Drinking where she can see it: the crook, sooner.
-      { id: 'crookPunish', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', noParry: true, rend: true, when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, chance: 3,
+      { id: 'crookPunish', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', rend: true, when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, chance: 3,
         hits: [{ startup: 0.65, active: 0.14, follow: 0.1, damage: 14, box: REACH }, { startup: 0.4, active: 0.24, follow: 0.3, box: HAUL }], recovery: 1.98,
         damage: 32, poise: 50, knock: 7, lunge: 2.0, range: 7.5, box: HAUL },
       // ---- the storm -----------------------------------------------------------------------------------------------------
@@ -302,7 +302,7 @@ MODEL_DEFS.motherAgathe = {
                { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 2.16,
         damage: 30, poise: 40, knock: 6, lunge: 0, range: 20, box: BOLT },
       // Lightning Down the Furrow: rend the earth, and then the hook points at you: the storm falls where you stand.
-      { id: 'stormFurrow', name: 'Lightning Down the Furrow', anim: 'chop', pose: 'agatheStormFurrow', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.7 }, minRange: 2.5, chance: 0.45,
+      { id: 'stormFurrow', name: 'Lightning Down the Furrow', anim: 'chop', pose: 'agatheStormFurrow', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.6 }, minRange: 2.5, chance: 0.45,
         hits: [{ startup: 1.1, active: 0.22, follow: 0.2, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } },
                { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, damage: 28, box: BOLT, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 1.98,
         damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
@@ -333,7 +333,9 @@ MODEL_DEFS.motherAgathe = {
     color: 0x6a5a48, visual: { ...B.visual, skin: 0x9a8e80 },
     attacks: B.attacks.map(a => {
       if (!NAMES[a.id]) throw new Error(`Rending Brother: the Beastman's "${a.id}" has no new name.`);
-      return { ...JSON.parse(JSON.stringify(a)), id: NAMES[a.id][0], name: NAMES[a.id][1] };
+      const m = { ...JSON.parse(JSON.stringify(a)), id: NAMES[a.id][0], name: NAMES[a.id][1] };
+      if (m.id === 'brotherRend') m.tracking.commit = 0.6;   // its line stops turning 0.4 s before it lands (CONFIG.area, pass 93)
+      return m;
     }) };
   ENEMY_DEFS.push(BROTHER); ENEMY_BY_ID[BROTHER.id] = BROTHER;
   const R = MODEL_DEFS.rogue;

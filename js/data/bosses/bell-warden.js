@@ -178,7 +178,7 @@ MODEL_DEFS.bellWarden = {
   // The toll all round him: a square `r` m out on every side of him, too tall to jump. Roll it, or be out of reach. Not a
   // ring that travels out (v6.2 took the Skyfall shockwave off him for balance, and the tests keep it off): it is the bronze
   // ringing where he stands.
-  const BURST = r => ({ w: 2 * r, h: 2.4, d: 2 * r, fwd: 0, y: 1.2 });
+  const BURST = r => ({ w: 2 * r, h: 2.4, d: 2 * r, fwd: 0, y: 1.2, round: true });   // a disc round him (pass 93)
   const SWEEP = { w: 5.6, h: 1.6, d: 3.8, fwd: 2.0, y: 1.1 };
   const SLAM = { w: 2.4, h: 3.0, d: 4.0, fwd: 2.5, y: 1.0 };
   const PUSH = { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 };

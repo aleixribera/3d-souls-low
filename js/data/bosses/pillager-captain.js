@@ -261,7 +261,7 @@
            { startup: 0.5, active: 0.14, follow: 0.3, damage: 26, box: RISE }], recovery: 1.2,
     damage: 28, poise: 45, knock: 6, lunge: 0, range: 6.0, box: FURROW };
   // Haft Back: you are behind him; a look back over his shoulder and the iron shoe rammed into you.
-  const haftBack = { id: 'captainHaftBack', name: 'Haft Back', anim: 'thrust', pose: 'pillagerHaftBack', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+  const haftBack = { id: 'captainHaftBack', name: 'Haft Back', anim: 'thrust', pose: 'pillagerHaftBack', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
     hits: [{ startup: 0.6, active: 0.14, follow: 0.25 }], recovery: 1.1, damage: 20, poise: 40, knock: 9, lunge: 0, range: 2.6, box: BUTT };
   // Drinking where he can see it: the thrust, sooner.
   const thrustPunish = { ...JSON.parse(JSON.stringify(thrust)), id: 'captainThrustPunish', when: 'healing', minRange: 0, chance: 3,
