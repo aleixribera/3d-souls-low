@@ -26,6 +26,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   js/multiplayer.js) still has its own look: a glowing crest, a blurred title scaling in and drifting embers, against
   item 3's "no dopamine on menus" and one type system; and the lobby's controls list is its own copy of
   `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
+- Abilities, what item 6 pass 1 (pass 59) left: more summons (a hound, a stone guardian), each its own Blender
+  model; the twin drawing some of the boss's attention (it only strikes now); re-measuring the curve with
+  `KIT=strong` now that Gale Crescent, Pyre and the twin can be in the kit.
 - The blessing pick in tall cards (rarity, drawn icons, level I → II, pad keys, phone 2×2) is built and tested on
   `wip/blessing-tall-cards` (pass 49), parked when the pick moved to the upgrades-from-zero session (PLAN.md item 6).
 

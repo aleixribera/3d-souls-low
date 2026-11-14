@@ -11,9 +11,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   is baked lighting (`BACKLOG.md`). Auto now gives integrated GPUs
   Normal (was Low, 116-230 fps). The King's Blade (pass 55, `docs/scorecard/kings-blade-*.jpg`), Agathe, the Kindling
   Tree: **awaiting Aleix**.
-- Track B (pass 58, v7.81.0): item 3's open checks: Controls screen (`docs/scorecard/controls-*.jpg`), pad-alone
-  walk (`Menus:`, `rush-alone-browser`). Left: the title's castle, Collection, rewards (item 7). Next: item 6.
-  Item 10 (pass 56): fight 12 without abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).
+- Track B (pass 59): item 6 pass 1, 31 abilities: Ember Twin (summon), Gale Crescent, Pyre, 3 rares
+  (`tests/abilities.cjs`, `docs/scorecard/abilities-*.jpg`). Next: item 6 pass 2 (BACKLOG). Curve: pass 56.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -86,6 +85,7 @@ In `BACKLOG.md`.
 
 - (overridable) Item 10's skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`). Story
   bosses fight at the new, slower 1x until track A item 5: Hollis is slower than when you judged him.
+- (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
