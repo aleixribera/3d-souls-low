@@ -383,12 +383,14 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle',
   'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick',
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityBreath', 'abilityStep', 'abilityEmpower',
-  'abilityHeal', 'abilityCharge'];
-// A power's sound by its `then`, and its later blows' (`strike`: a lightning bolt, a twin's echo) by STRIKE_SOUNDS; a
-// rare's perk its own (ABILITY_PERK_SOUNDS, at a pitch), a pick's pitch by its rarity.
+  'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt'];
+// A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
+// STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
+// at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
-  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark' };
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho' };
+  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound' };
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite' };
+const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1], 'parry/stamina': ['abilityBreath', 1],
   'flask/stamina': ['abilityBreath', 0.84], 'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
@@ -456,9 +458,10 @@ function registerAudioListeners() {
   // Thousand Blades rings once for each blow of its rain, as the drawn swords land (every `every` s, js/ability-fx.js).
   const rains = [];   // { e, left, next, every }
   on('abilityPower', d => {
-    const id = d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
+    const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
-    const mine = d.body === Game.player, pos = mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
+    // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.
+    const mine = d.body === Game.player, pos = d.draw ? spot(d) : mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
     audio.play(id, { pos, vel: 1 });
     if (d.then === 'blades' && d.enemy && d.v) for (let i = rains.length - 1; i >= 0; i--) if (rains[i].e === d.enemy) rains.splice(i, 1);   // a new rain on it replaces the old
     if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });

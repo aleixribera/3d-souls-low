@@ -283,6 +283,32 @@ const AUDIO = {
       { wave: 'sine', freq: 392, partials: [[1, 1, 1], [1.5, 0.7, 0.9], [2.01, 0.3, 0.6]], at: 0.38, a: 0.003, d: 1.5, gain: 0.16 },
       { noise: 'white', filter: { type: 'highpass', freq: 4000 }, at: 0.36, a: 0.001, d: 0.05, gain: 0.35 },
     ] },
+    // The twin drawing the boss: a roar of fire flaring up and a low struck note, a challenge.
+    abilityTaunt: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.5, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1400, q: 0.8 }, a: 0.08, h: 0.12, d: 0.5, gain: 0.7, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 220, to: 120 }, a: 0.02, d: 0.5, gain: 0.8 },
+      { wave: 'sawtooth', freq: 98, to: 73, glide: 0.4, filter: { type: 'lowpass', freq: 700, to: 260 }, a: 0.01, d: 0.7, gain: 0.2, drive: 2 },
+    ] },
+    // Grave Hound called: a breath of cold fire from the ground, a growl rising out of it, a hollow far bell.
+    abilityHound: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.65, heat: 0.4, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 2200, q: 0.9 }, a: 0.25, h: 0.08, d: 0.5, gain: 0.5 },
+      { wave: 'sawtooth', freq: 62, to: 78, glide: 0.5, filter: { type: 'lowpass', freq: 260, to: 520 }, a: 0.12, h: 0.3, d: 0.45, gain: 0.28, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 160, to: 300 }, a: 0.2, h: 0.2, d: 0.5, gain: 0.7 },
+      { wave: 'sine', freq: 233, partials: [[1, 1, 1], [2.4, 0.4, 0.6], [4.1, 0.15, 0.4]], at: 0.3, a: 0.004, d: 1.6, gain: 0.1 },
+    ] },
+    // Each of its bites: the jaws' clack, a tearing snarl, a thump.
+    abilityBite: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.25, heat: 0.2, jitter: 160, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2600, q: 3 }, a: 0.0005, d: 0.03, gain: 0.9 },
+      { wave: 'sawtooth', freq: 120, to: 85, filter: { type: 'lowpass', freq: 900, to: 300 }, a: 0.005, d: 0.18, gain: 0.25, drive: 3 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 500, q: 1.2 }, a: 0.004, d: 0.14, gain: 0.45 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 240, to: 90 }, a: 0.002, d: 0.12, gain: 0.55 },
+    ] },
+    // Its howl as it draws the boss: a long rising and falling cry over a cold wind.
+    abilityHowl: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.75, heat: 0.4, jitter: 20, layers: [
+      { wave: 'sawtooth', freq: 330, to: 520, glide: 0.35, filter: { type: 'bandpass', freq: 900, to: 1300, q: 3 }, a: 0.12, h: 0.45, d: 0.6, gain: 0.16 },
+      { wave: 'sine', freq: 330, to: 520, glide: 0.35, a: 0.12, h: 0.45, d: 0.6, gain: 0.12 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1500, q: 0.7 }, a: 0.3, h: 0.3, d: 0.7, gain: 0.3 },
+    ] },
     // Each of the twin's blows: a short hiss of fire and a crackle on top of the blow itself.
     abilityEcho: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 2, verb: 0.3, heat: 0.25, jitter: 180, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 1400, to: 600, q: 0.9 }, a: 0.005, d: 0.22, gain: 0.55 },

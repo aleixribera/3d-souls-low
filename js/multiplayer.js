@@ -1230,7 +1230,7 @@ const multiplayer = (() => {
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
       // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
       const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];
-      if (wh && wh.bolt) e.noteBolt(s.target === self ? Game.player : remotes.get(s.target)?.body);
+      if (wh && wh.bolt) e.noteBolt(s.lure || (s.target === self ? Game.player : remotes.get(s.target)?.body));   // `lure`: a summon draws it
       if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
       const boxKey = `${s.serial}/${s.hitIndex}`;
       // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.

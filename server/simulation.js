@@ -54,6 +54,9 @@ globalThis.host = (() => {
   }
   // A legendary's damage counts to its holder, as a blow would (a bot's own step already counts what it changed).
   abilityPowers.credit = (holder, e, amount) => { sleeping = false; if (!acting) { creditDamage(holder, amount); noteDamage(e, holder, amount); } };
+  abilityPowers.bodyOf = id => players.find(p => p.id === id) || null;
+  // Whom an enemy fights, for the snapshot: a player's id, or `summon` and the summon's place (`lure`) while one draws it.
+  const netTargetOf = e => { const d = abilityPowers.decoy(e); return d ? { target: 'summon', lure: { x: d.x, y: d.y, z: d.z } } : { target: e.netTarget }; };   // a summon follows its holder's latest pose
   const enemyId = e => e.key || 'duel/' + e.baseDef.id;
   const enemy = id => Game.enemies.find(e => e.netId === id);
   events.onAny((type, d) => {
@@ -63,7 +66,7 @@ globalThis.host = (() => {
     if (acting && type === 'parry' && d.target?.netId) eventList.push({ type: 'parry', player: acting.id, enemy: d.target.netId });
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'postureBreak', 'enemyBlink', 'impact'].includes(type))
@@ -548,7 +551,7 @@ globalThis.host = (() => {
       crowd.spread(group.player);
       for (const e of group.enemies) {
         if (e.netExec) continue;
-        e.savePrev(); e.update(dt, group.player);
+        e.savePrev(); e.update(dt, abilityPowers.decoy(e) || group.player);   // a summon may draw it (js/abilities.js)
         if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
       }
       crowdClocks.set(id, crowd.sinceStart);
@@ -572,7 +575,7 @@ globalThis.host = (() => {
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
       hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise, frozen: e.frozen,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
-      target: e.netTarget, grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
+      ...netTargetOf(e), grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
       vx: e.vx, vy: e.vy, vz: e.vz,
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,

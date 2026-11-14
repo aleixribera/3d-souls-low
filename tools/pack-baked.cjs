@@ -35,6 +35,7 @@ const FILES = {
   'agathe': { sources: ['agathe'] },
   'kindling-tree': { sources: ['kindling_tree'] },
   'kings-blade': { sources: ['kings_blade'] },
+  'hound': { sources: ['hound'] },
 };
 
 function readGlb(file) {

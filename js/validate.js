@@ -59,6 +59,10 @@ function validateData({ visual = true } = {}) {
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
+  const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
+  need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
+    && num(SUM[k].flank) && num(SUM[k].speed) && SUM[k].speed > 0 && num(SUM[k].height) && SUM[k].height > 0) && num(SUM.hound.reach) && SUM.hound.reach > 0,
+    `CONFIG.abilities.summons: arrive, near, side and radius 0 or more; each summon (${[...SUMMONS].join(', ')}) a gap, a flank, a speed and a height above 0; the hound a reach above 0.`);
   for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
   for (const b of ABILITIES) {
     const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);

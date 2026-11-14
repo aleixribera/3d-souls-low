@@ -44,6 +44,12 @@ const ABILITY_PERKS = {
 //   flask/twin:          a summon. Drinking a flask calls an ember twin of the holder for `time` s; every blow the
 //                        holder lands in that time, the twin lands too, on the enemy's far side: `share` of its
 //                        damage and posture.
+//   parry/hound:         a summon (a rare's). A parry calls a grave hound out of the holder's shadow for `time` s: it
+//                        runs round the parried enemy's flank and bites it every `every` s (`damage`, `posture`).
+// A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
+// owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
+// hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
+// it has gone (no cooldown spent); the same kind's call renews it.
 // A level's `cooldown` s spaces its triggers; `once: true` fires once a fight. Blows counted (`hits`) are the
 // holder's own landed and unblocked; a power's own strikes never count, nor set off another power.
 const ABILITY_POWERS = {
@@ -51,8 +57,29 @@ const ABILITY_POWERS = {
   'dodge/freeze': ['time', 'radius', 'cooldown'], 'parry/blades': ['time', 'every', 'damage', 'posture', 'cooldown'],
   'low/bloodMoon': ['below', 'time', 'damage', 'drain'], 'parry/flare': ['damage', 'posture', 'cooldown'],
   'hits/spark': ['hits', 'damage', 'posture'], 'hits/gale': ['hits', 'damage', 'posture', 'reach', 'width'],
-  'break/pyre': ['time', 'every', 'damage', 'posture', 'cooldown'], 'flask/twin': ['time', 'share', 'cooldown'],
+  'break/pyre': ['time', 'every', 'damage', 'posture', 'cooldown'], 'flask/twin': ['time', 'share', 'draw', 'cooldown'],
+  'parry/hound': ['time', 'every', 'damage', 'posture', 'draw', 'cooldown'],
 };
+const SUMMONS = new Set(['twin', 'hound']);
+// Where summon `s` (its `kind`, `x`, `z`) heads round enemy `e` with its holder at `body`: `gap` m off the enemy's
+// body, `flank` rad round from its side away from the holder (CONFIG.abilities.summons); with no enemy, beside the
+// holder. It runs there at up to `speed` m/s and faces the enemy. The engine moves the real one; js/ability-fx.js and
+// js/summon-hound.js move the drawn one by the same rule. Returns the distance it still has to go.
+function summonStep(s, e, body, dt) {
+  const K = CONFIG.abilities.summons, S = K[s.kind];
+  let x, z;
+  if (e) {
+    const dx = body ? e.x - body.x : Math.sin(e.yaw), dz = body ? e.z - body.z : Math.cos(e.yaw), l = Math.hypot(dx, dz) || 1;
+    const c = Math.cos(S.flank), sn = Math.sin(S.flank), fx = dx / l, fz = dz / l, r = (e.radius || 1) + S.gap;
+    x = e.x + (fx * c - fz * sn) * r; z = e.z + (fx * sn + fz * c) * r;
+  } else if (body) { x = body.x + Math.cos(body.yaw || 0) * K.side; z = body.z - Math.sin(body.yaw || 0) * K.side; }
+  else return 0;
+  const gx = x - s.x, gz = z - s.z, far = Math.hypot(gx, gz), go = Math.min(far, S.speed * dt);
+  if (far > 1e-6) { s.x += gx / far * go; s.z += gz / far * go; }
+  const tx = e ? e.x - s.x : gx, tz = e ? e.z - s.z : gz;
+  if (Math.hypot(tx, tz) > 1e-4) s.yaw = Math.atan2(tx, tz);
+  return far - go;
+}
 // The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a break).
 const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask'];
 
@@ -144,18 +171,28 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre']);
+const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage`, `posture` and `twin`.
   const running = [];
   const ready = new Map();   // holder + '/' + ability id -> the clock time it may fire again (Infinity: once, spent)
   const counts = new Map();   // holder + '/' + ability id -> blows landed toward a `hits` power
-  const twins = new Map();   // holder -> { pw, until, n }: a summoned twin still out (n: its blows so far)
+  // holder -> a summon still out: { kind, pw, body, until, n (its blows so far), x, y, z, yaw, enemy, wait (s until it
+  // has arrived), bite (s to its next bite), drew (it has drawn its enemy's eye), lure (the enemy it draws now),
+  // lureUntil, decoy (what that enemy fights: its place, never hurt) }.
+  const summons = new Map();
   let clock = 0;
-  const twinOf = holder => { const t = twins.get(holder); return t && t.until > clock ? t : null; };
-  const api = { trigger, tick, reset, twinOf, credit: null, running };
-  function reset() { running.length = 0; ready.clear(); counts.clear(); twins.clear(); clock = 0; }
+  const summonOf = holder => { const s = summons.get(holder); return s && s.until > clock ? s : null; };
+  const twinOf = holder => { const s = summonOf(holder); return s && s.kind === 'twin' ? s : null; };
+  // The decoy enemy `e` fights instead of a player while a summon draws it (null: none).
+  function decoy(e) {
+    for (const s of summons.values()) if (s.lure === e) return s.decoy;
+    return null;
+  }
+  // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
+  const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, running };
+  function reset() { running.length = 0; ready.clear(); counts.clear(); summons.clear(); clock = 0; }
   // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it).
   function wound(e, damage, posture, holder, power) {
     if (!e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED) return;
@@ -191,6 +228,7 @@ const abilityPowers = (() => {
     if (!at) return false;
     const x = ctx.x ?? at.x, y = ctx.y ?? at.y, z = ctx.z ?? at.z, e = ctx.enemy || null, enemies = Game.enemies;
     if (ON_ENEMY.has(pw.then) && !(e && e.alive())) return false;
+    if (SUMMONS.has(pw.then)) { const s = summons.get(holder); if (s && (s.until > clock ? s.kind !== pw.then : !!s.lure)) return false; }
     events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v });
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, v.posture, holder, pw.id); break;
@@ -207,7 +245,14 @@ const abilityPowers = (() => {
       case 'pyre':   // one pillar an enemy: a second break lights it afresh
         for (let i = running.length - 1; i >= 0; i--) if (running[i].pw === pw && running[i].holder === holder && running[i].enemy === e) running.splice(i, 1);
         running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
-      case 'twin': twins.set(holder, { pw, until: clock + v.time, n: 0 }); break;
+      case 'twin': case 'hound': {
+        const out = summonOf(holder), from = out || at, K = CONFIG.abilities.summons;
+        const s = { kind: pw.then, pw, body, until: clock + v.time, n: out ? out.n : 0, x: from.x, y: from.y, z: from.z, yaw: from.yaw || 0,
+          enemy: e, wait: out ? 0 : K.arrive, bite: 0, drew: out ? out.drew : false, lure: out ? out.lure : null, lureUntil: out ? out.lureUntil : 0, decoy: null };
+        if (pw.then === 'twin' && !out) summonStep(s, foeOf(s), body, 60);   // it rises where it stands; a hound runs there
+        s.decoy = { decoy: true, holder, x: s.x, y: s.y, z: s.z, radius: K.radius, height: K[pw.then].height, state: null, alive: () => true, isAttacking: () => false };
+        summons.set(holder, s); break;
+      }
       case 'freeze':
         for (const o of enemies) if (near(o, x, y, z, v.radius)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
         break;
@@ -224,9 +269,43 @@ const abilityPowers = (() => {
     const v = t.pw.v;
     running.push({ pw: t.pw, holder, body, enemy: e, left: 1, next: ECHO_DELAY, n: 0, damage: strike.damage * v.share, posture: (strike.postureDmg || 0) * v.share, twin: t });
   }
+  // The enemy a summon fights: the one it was called on while it lives, else the nearest live one to its holder.
+  function foeOf(s) {
+    if (s.enemy && s.enemy.alive() && Game.enemies.includes(s.enemy)) return s.enemy;
+    const from = s.body || s;
+    let best = null, near = CONFIG.abilities.summons.near;
+    for (const e of Game.enemies) if (e.alive()) { const d = Math.hypot(e.x - from.x, e.z - from.z); if (d < near) { near = d; best = e; } }
+    return (s.enemy = best);
+  }
+  function summonTick(holder, s, dt) {
+    const v = s.pw.v, K = CONFIG.abilities.summons;
+    const body = (api.bodyOf && api.bodyOf(holder)) || s.body;
+    if (!body || (body.alive && !body.alive())) s.until = Math.min(s.until, clock);   // it goes with its holder
+    else s.body = body;
+    // Its time up, it goes, but not out of an attack begun on it: that one ends on it, where it stood.
+    const held = s.lure && s.lure.alive() && Game.enemies.includes(s.lure);
+    if (s.lure && (clock >= s.lureUntil || s.until <= clock || !held) && !(held && s.lure.in('attacking'))) s.lure = null;
+    if (s.until <= clock) { if (!s.lure) summons.delete(holder); return; }
+    const e = foeOf(s);
+    summonStep(s, e, body, dt);
+    if (e) s.y = e.y;
+    s.decoy.x = s.x; s.decoy.y = s.y; s.decoy.z = s.z;
+    if ((s.wait -= dt) > 0 || !e) return;
+    // Arrived: it draws its enemy's eye once, when that enemy is between attacks and no other summon has it.
+    if (!s.drew && v.draw > 0 && !e.in('attacking') && !(e.frozen > 0) && !decoy(e)) {
+      s.drew = true; s.lure = e; s.lureUntil = clock + v.draw;
+      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, draw: true });
+    }
+    // The hound bites whatever it is beside, every `every` s.
+    if (s.kind === 'hound' && (s.bite -= dt) <= 0 && Math.hypot(e.x - s.x, e.z - s.z) - (e.radius || 1) <= K.hound.reach) {
+      s.bite = v.every; s.n++;
+      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, strike: s.n });
+      wound(e, v.damage, v.posture, holder, s.pw.id);
+    }
+  }
   function tick(dt) {
     clock += dt;
-    for (const [holder, t] of twins) if (t.until <= clock) twins.delete(holder);
+    for (const [holder, s] of summons) summonTick(holder, s, dt);
     for (let i = running.length - 1; i >= 0; i--) {
       const r = running[i], e = r.enemy;
       if ((r.next -= dt) > 0) continue;

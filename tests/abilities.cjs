@@ -199,6 +199,41 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.trigger('w', twin, twin.kit, 'hits', { enemy: e, strike: blow }); step(0.2); assert.equal(e.hp, after, 'gone when its time is up');
   powers.reset(); assert.equal(powers.twinOf('w'), null);
 
+  // Grave Hound: a parry calls it on the parried boss. It runs to the boss's flank, draws its eye for `draw` s once
+  // it has arrived (the boss fights its decoy, and finishes an attack begun on it), bites every `every` s, and goes
+  // when its time is up. One summon a holder: the twin can't come while it is out.
+  const ES = g('ES'), K = g('CONFIG').abilities.summons;
+  fresh(); e.state = ES.IDLE; e.frozen = 0;
+  const hound = holder(['grave-hound', 'ember-twin']), hv = BY['grave-hound'].levels[0];
+  powers.trigger('h', hound, hound.kit, 'parry', { enemy: e });
+  const out = powers.summonOf('h'); assert.ok(out && out.kind === 'hound', 'the hound is out');
+  assert.equal(fired.filter(f => f.power === 'grave-hound').length, 1, 'its call is an event');
+  assert.equal(powers.decoy(e), null, 'not drawing it before it has arrived');
+  powers.trigger('h', hound, hound.kit, 'flask', {}); assert.equal(powers.twinOf('h'), null, 'no twin while the hound is out');
+  step(K.arrive + 0.05);
+  const lure = powers.decoy(e); assert.ok(lure && lure.decoy, 'arrived: it draws the boss');
+  assert.ok(Math.hypot(lure.x - e.x, lure.z - e.z) < e.radius + K.hound.gap + 0.6, 'beside the boss');
+  assert.ok(Math.hypot(lure.x - hound.x, lure.z - hound.z) > 1, 'not where its holder stands');
+  assert.equal(fired.filter(f => f.power === 'grave-hound' && f.draw).length, 1, 'the draw is an event');
+  // The draw ends, but not mid-attack.
+  e.state = ES.WINDUP; e.attack = e.def.attacks[0]; e.hitIndex = 0; e.stateTime = 0;
+  step(hv.draw); assert.ok(powers.decoy(e), 'an attack begun on it ends on it');
+  e.state = ES.IDLE; step(1 / 60); assert.equal(powers.decoy(e), null, 'then the boss is free');
+  assert.ok(e.hp < e.def.hp, 'it bites'); const bit = fired.filter(f => f.power === 'grave-hound' && f.strike).length;
+  step(hv.every * 3 + 0.01); assert.equal(fired.filter(f => f.power === 'grave-hound' && f.strike).length, bit + 3, 'a bite every `every` s');
+  // Drawn, the boss turns on it: its own step faces the decoy.
+  const turned = e.yaw; for (let i = 0; i < 30; i++) e.update(1 / 60, lure);
+  const face = Math.atan2(lure.x - e.x, lure.z - e.z), off = a => Math.abs(Math.atan2(Math.sin(a - face), Math.cos(a - face)));
+  assert.ok(off(e.yaw) <= off(turned) + 1e-6, 'the boss turns toward the hound');
+  step(hv.time); assert.equal(powers.summonOf('h'), null, 'gone when its time is up');
+  powers.trigger('h', hound, hound.kit, 'flask', {}); assert.ok(powers.twinOf('h'), 'and the twin may come');
+  step(K.arrive + 0.05); assert.ok(powers.decoy(e), 'the twin draws the boss too');
+  assert.equal(powers.decoy(e).height, K.twin.height, 'its decoy stands as tall as the twin (sight lines, shots)');
+  // A summon goes with its holder, and lets the boss go.
+  hound.hp = 0; hound.state = g('PS').DEAD; step(1 / 60);
+  assert.equal(powers.twinOf('h'), null, 'gone with its holder'); assert.equal(powers.decoy(e), null, 'and the boss is free');
+  powers.reset();
+
   // Second Wind (a rare's perk): a flask drunk gives stamina back.
   const wind = holder(['second-wind']); wind.stamina = 0; wind.useItem('flask');
   near(wind.stamina, wind.maxStamina * BY['second-wind'].levels[0].stamina, 'Second Wind');
@@ -421,6 +456,6 @@ async function peer(origin, name) {
     for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; boss2.posture = 0; seen.push(...struck()); }
     assert.equal(seen.filter(ev => ev.power === 'ember-twin' && ev.strike).length, sparkEvery, "the twin echoes each of b's blows");
     assert.equal(seen.filter(ev => ev.power === 'static-edge').length, 1, 'a spark on the Nth blow the server accepted');
-    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
+    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting and both summons drawing the boss, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

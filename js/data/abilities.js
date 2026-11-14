@@ -9,9 +9,9 @@
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
-//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`).
+//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`, `hound`).
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
-const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n' };
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n' };
 // The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
 const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain', 'share'];
 const ABILITIES = [
@@ -63,6 +63,11 @@ const ABILITIES = [
   // Small powers: a strike of their own on the boss, drawn and heard (js/ability-fx.js), smaller than a legendary's.
   { id: 'counterflame', name: 'Counterflame', rarity: 'rare', text: 'Parry: fire bursts on the boss.',
     power: { when: 'parry', then: 'flare' }, levels: [{ damage: 40, posture: 10, cooldown: 1 }, { damage: 55, posture: 14, cooldown: 1 }, { damage: 70, posture: 18, cooldown: 1 }] },
+  // A summon of a rare's: a hound of the grave that hunts the parried boss and draws its eye for a moment.
+  { id: 'grave-hound', name: 'Grave Hound', rarity: 'rare', text: 'Parry: a grave hound hunts the boss for {time}, drawing its eye.',
+    power: { when: 'parry', then: 'hound' },
+    levels: [{ time: 8, every: 1.2, damage: 16, posture: 5, draw: 2, cooldown: 14 }, { time: 10, every: 1.1, damage: 20, posture: 6, draw: 2.5, cooldown: 12 },
+      { time: 12, every: 1, damage: 24, posture: 7, draw: 3, cooldown: 10 }] },
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark of lightning jumps to the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30, posture: 6 }, { hits: 4, damage: 34, posture: 7 }, { hits: 4, damage: 44, posture: 9 }] },
 
@@ -89,8 +94,8 @@ const ABILITIES = [
     power: { when: 'break', then: 'pyre' },
     levels: [{ time: 4, every: 0.4, damage: 26, posture: 0.5, cooldown: 2 }, { time: 6, every: 0.35, damage: 30, posture: 0.5, cooldown: 2 }] },
   // The first summon: a twin of its holder, made of embers, that fights at the boss's far side and strikes with them.
-  { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Drink a flask: an ember twin fights beside you for {time}, striking as you strike.',
+  { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Drink a flask: an ember twin draws the boss and fights beside you for {time}, striking as you strike.',
     power: { when: 'flask', then: 'twin' },
-    levels: [{ time: 12, share: 0.5, cooldown: 20 }, { time: 16, share: 0.7, cooldown: 16 }] },
+    levels: [{ time: 12, share: 0.5, draw: 2, cooldown: 20 }, { time: 16, share: 0.7, draw: 3, cooldown: 16 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

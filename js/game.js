@@ -233,7 +233,7 @@ const Game = {
         return;
       }
       const slow = clamp(1 - this.deathTimer / CONFIG.death.slowTime, 0, 1);
-      if (slow > 0) for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt * slow, p);
+      if (slow > 0) for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt * slow, abilityPowers.decoy(e) || p);
       if (slow > 0) projectiles.update(this, dt * slow);
       p.update(dt, { x: 0, z: 0, has: false }, [], null);
       this.updateCamera(dt, false);
@@ -250,7 +250,7 @@ const Game = {
     if (this.companion) companions.updateEnemies(this, dt);
     else {
       crowd.update(this, dt);
-      for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, p);
+      for (const e of this.enemies) if (!this.sleeps(e)) e.update(dt, abilityPowers.decoy(e) || p);   // a summon may draw it (js/abilities.js)
     }
     separateBodies(p, this.enemies);
     resolveCombat(this);

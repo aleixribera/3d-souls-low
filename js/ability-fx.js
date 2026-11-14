@@ -469,7 +469,7 @@ const abilityFx = (() => {
       const rig = new Rig(PLAYER_DEF.look), mat = emberMaterial();
       rig.root.traverse(o => { o.userData.warmUp = true; if (o.isMesh) { o.material = mat; o.castShadow = o.receiveShadow = false; } });
       rig.root.visible = rig.shadow.visible = false; made.push(rig.root);
-      twins.push({ rig, mat, body: null, left: 0, time: 1, x: 0, y: 0, z: 0, yaw: 0, placed: false, mote: 0, boost: 0, gone: false });
+      twins.push({ rig, mat, body: null, left: 0, time: 1, x: 0, y: 0, z: 0, yaw: 0, placed: false, mote: 0, boost: 0, gone: false, enemy: null });
     }
   }
   const twinAt = { x: 0, y: 0, z: 0 }, twinPose = { t: 0, dt: 0, yaw: 0, px: 0, pz: 0 }, TWIN_MOTES = { r: 0.35, speed: 0.4, lift: 1.4, life: [0.4, 0.9], up: 1, size: 0.8 };
@@ -477,27 +477,24 @@ const abilityFx = (() => {
     const body = d.body;
     if (!body || !twins.length) return;
     const t = twins.find(q => q.body === body) || twins.find(q => !q.body) || twins.reduce((a, b) => (a.left < b.left ? a : b));
-    t.body = body; t.left = t.time = d.v.time; t.placed = false; t.boost = 0; t.gone = false; t.enemies = Game.enemies;
+    const renew = t.body === body && t.left > 0 && !t.gone;
+    t.body = body; t.left = t.time = d.v.time; t.placed = renew && t.placed; t.boost = 0; t.gone = false; t.enemies = Game.enemies; t.enemy = d.enemy || null;
     place(t, 0);
     const c = { x: t.x, y: t.y + 1, z: t.z };
     groundFx.ring(t.x, t.z, 1.8, T.color, 0.8, t.y); spawnBurst(c, T.burst);
     ultraFx.moteBurst(c, 50, T.color, { r: 0.5, speed: 1.2, lift: 3, life: [0.6, 1.4], up: 1 }); ultraFx.sparkBurst(c, 24, 'ember', [0, 1, 0], 0.6, 0.9);
     light(c, T.color, 10, 12); shake(T.shake, t.x, t.z);
   }
-  // Where the twin goes this frame: round the nearest live enemy from its holder, `flank` rad off its far side (facing
-  // it), else at their side.
+  // Where the twin goes this frame: by the engine's rule (summonStep, js/abilities.js), round the enemy it was called on
+  // while that one lives, else the nearest live one to its holder (facing it), else at their side; it appears there at once.
+  const twinStep = { kind: 'twin', x: 0, z: 0, yaw: 0 };
   function place(t, dt) {
     const b = t.body;
-    let foe = null, best = T.near;
-    for (const e of Game.enemies) if (e.alive()) { const dd = Math.hypot(e.x - b.x, e.z - b.z); if (dd < best) { best = dd; foe = e; } }
-    let x, z, yaw;
-    if (foe) {
-      const dx = b.x - foe.x, dz = b.z - foe.z, l = Math.hypot(dx, dz) || 1, r = (foe.radius || 1) + T.gap;
-      const c = Math.cos(T.flank), s = Math.sin(T.flank), fx = -dx / l, fz = -dz / l;
-      x = foe.x + (fx * c - fz * s) * r; z = foe.z + (fx * s + fz * c) * r; yaw = Math.atan2(foe.x - x, foe.z - z);
-    } else { x = b.x + Math.cos(b.yaw) * T.side; z = b.z - Math.sin(b.yaw) * T.side; yaw = b.yaw; }
-    const k = t.placed ? 1 - Math.exp(-T.follow * dt) : 1;
-    t.x += (x - t.x) * k; t.z += (z - t.z) * k; t.yaw += angDiff(yaw, t.yaw) * (t.placed ? 1 - Math.exp(-T.turn * dt) : 1);
+    let foe = t.enemy && t.enemy.alive() && Game.enemies.includes(t.enemy) ? t.enemy : null, best = CONFIG.abilities.summons.near;
+    if (!foe) { for (const e of Game.enemies) if (e.alive()) { const dd = Math.hypot(e.x - b.x, e.z - b.z); if (dd < best) { best = dd; foe = e; } } t.enemy = foe; }
+    twinStep.x = t.placed ? t.x : b.x; twinStep.z = t.placed ? t.z : b.z; twinStep.yaw = t.yaw;
+    summonStep(twinStep, foe, b, t.placed ? dt : 60);
+    t.x = twinStep.x; t.z = twinStep.z; t.yaw += angDiff(foe ? twinStep.yaw : b.yaw, t.yaw) * (t.placed ? 1 - Math.exp(-T.turn * dt) : 1);
     t.y = world.groundAt(t.x, t.z, b.y + 0.5); if (!Number.isFinite(t.y)) t.y = b.y;
     t.placed = true;
   }
@@ -538,6 +535,15 @@ const abilityFx = (() => {
     s.t = 0; s.m.visible = true; s.m.position.set(at.x, at.y, at.z); s.m.rotation.set(0, Math.atan2(dx, dz), (rnd() - 0.5) * 1.8);
     ultraFx.sparkBurst(at, 18, 'ember', [dx / l, 0.2, dz / l], 0.5, 0.9); ultraFx.moteBurst(at, 10, T.color, { r: 0.2, speed: 2, lift: 0.6, life: [0.3, 0.7] });
     spawnBurst(at, T.hitBurst); light(at, T.color, 5, 8);
+  }
+  // It draws the boss's eye: a ring of fire round its feet and a flare at its chest, its embers flaring up.
+  function twinDraws(d) {
+    const t = twins.find(q => q.body && q.body === d.body);
+    if (!t) return;
+    t.boost = 1.6; if (d.enemy) t.enemy = d.enemy;
+    const c = { x: t.x, y: t.y + 1.2, z: t.z };
+    groundFx.ring(t.x, t.z, 2.4, T.color, 0.75, t.y); ultraFx.flare(c, T.color, 2.4);
+    ultraFx.moteBurst(c, 26, T.color, { r: 0.4, speed: 1.4, lift: 2, life: [0.5, 1.1], up: 1 }); light(c, T.color, 6, 9);
   }
   function drawEmberSlashes(dt) {
     for (const s of emberSlashes) {
@@ -654,6 +660,7 @@ const abilityFx = (() => {
     else if (d.then === 'blades' && e) blades(d, e);
     else if (d.then === 'bloodMoon') bloodMoon(d);
     else if (d.then === 'twin' && d.strike && e) twinStrike(d, e);
+    else if (d.then === 'twin' && d.draw) twinDraws(d);
     else if (d.then === 'twin') twin(d);
     else if (d.then === 'gale' && e) gale(d, e);
     else if (d.then === 'pyre' && e) pyre(d, e);

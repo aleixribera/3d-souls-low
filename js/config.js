@@ -37,14 +37,15 @@ const CONFIG = {
     // `heavy` and dip), a roll widens and dips, a blow taken pushes away from the attacker (scaled by damage over
     // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / breaks / executions punch the
     // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. A power (its `then`, a lightning
-    // bolt `strike`, a twin's blow `echo`) kicks [fov, dip] in `powers`, in full for its holder, fading out to
+    // bolt `strike`, a twin's blow `echo`, a hound's `bite`, a summon drawing the boss `draw`) kicks [fov, dip] in `powers`, in full for its holder, fading out to
     // `powerNear` m for the rest; a rare's perk acting kicks the holder's view by `perkFov`. Never past `maxRoll` / `maxFov`.
     feel: { omega: 13, swing: 0.05, heavy: 0.1, heavyDip: 0.04, swingRoll: 0.006, rollFov: 3, rollDip: 0.06,
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
-              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02] } },
+              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
+              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -221,7 +222,14 @@ const CONFIG = {
   // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
   // A swift kill's extra card (CONFIG.swift) is never common.
   abilities: { offer: 3, pickTime: 30,
-    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } } },
+    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } },
+    // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
+    // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
+    // `arrive` s after it is called; a hound bites from `reach` m off the enemy's body. With no enemy within `near` m
+    // of its holder it stands `side` m to their right. While it draws an enemy, that enemy fights a body of `radius` m
+    // and its kind's `height` m (sight lines, shots aimed at it).
+    summons: { arrive: 0.7, near: 16, side: 1.4, radius: 0.5,
+      twin: { gap: 1.1, flank: 0.85, speed: 14, height: 1.8 }, hound: { gap: 0.6, flank: -1.25, speed: 10, height: 1, reach: 1.3 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -553,11 +561,15 @@ const CONFIG = {
     // its holder tinted `tint`; each blow's slash `slashSize` m, gone in `slash` s, and their blade trail (Ultra)
     // red at `trail` times its glow. Perks: the rares' small cues; `picked`: the ring round the player as a pick is made, in
     // its rarity's colour. Twin (Ember Twin): its embers' `color` and white-hot `core`, how bright its edges (`rim`)
-    // and middle (`body`) burn and how much they `flicker`; it stands `gap` m past the boss's edge, `flank` rad round
-    // from its far side so the boss never hides it from its holder's camera (no boss within
-    // `near` m: `side` m beside its holder), catching up at `follow` and turning at `turn` (1/s); it rises in `rise`
+    // and middle (`body`) burn and how much they `flicker`; it stands where the engine puts it (CONFIG.abilities.summons:
+    // off the boss's far flank, so the boss never hides it from its holder's camera), turning at `turn` (1/s); it rises in `rise`
     // s and burns away in `fade` s, sheds a mote every `motes` s, glows `strikeBoost` brighter for `strikeGlow` s as
-    // it strikes, and its slash is `slashSize` m, gone in `slash` s. Gale: the crescent `size` m across (at a `width`
+    // it strikes, and its slash is `slashSize` m, gone in `slash` s. Hound (Grave Hound, js/summon-hound.js): its
+    // grave-fire's `color`, `core` and `eye`, edges (`rim`), hide (`body`) and `bone` brightness, `flicker`; turning at
+    // `turn`, up in `rise` s, gone in `fade` s; a full gallop from `gallopAt` m/s, `strideRate` strides a second at it and
+    // `prowlRate` while it waits; a bite's lunge `lunge` s with the jaws closing `snapAt` of the way in, glowing
+    // `biteBoost` brighter; a howl `howlTime` s; pulled straight to the engine's place past `snap` m off; a mote every
+    // `motes` s. Gale: the crescent `size` m across (at a `width`
     // of 1.6 m), flying `lift` m up at `speed` m/s, tilted up to `roll` rad, gone `fade` s after its reach. Pyre: the
     // pillar `height` m tall and `pad` m wider than the boss, up in `rise` s, out in `fade` s, motes every `motes` s and
     // a light every `lightEvery` s. Flare (Counterflame): its flare `size`. Spark (Static Edge): a bolt from `height`
@@ -576,9 +588,12 @@ const CONFIG = {
         burst: { count: 8, speed: 4, color: 0xffe2a0 } },
       moon: { color: 0xff2a3a, height: 9, size: 4.5, distance: 90, up: 0.62, right: 0.28, skySize: 22, fade: 0.6, tint: 0.12, motes: 0.12, slash: 0.36, slashSize: 3.2, trail: 1.3,
         burst: { count: 30, speed: 5, color: 0xff3a48 } },
-      twin: { color: 0xff6a1e, core: 0xffd8a0, rim: 2.4, body: 0.3, flicker: 0.22, gap: 1.1, flank: 0.85, near: 16, side: 1.4, follow: 7, turn: 10,
+      twin: { color: 0xff6a1e, core: 0xffd8a0, rim: 2.4, body: 0.3, flicker: 0.22, turn: 10,
         rise: 0.5, fade: 0.8, motes: 0.06, strikeBoost: 0.8, strikeGlow: 0.25, slash: 0.3, slashSize: 2.6, shake: [0.16, 0.08],
         burst: { count: 30, speed: 5, color: 0xff8a3a }, hitBurst: { count: 10, speed: 4, color: 0xffa050 } },
+      hound: { color: 0x3dffa0, core: 0xdcffe8, eye: 0xc8ffd8, rim: 2.6, body: 0.22, bone: 0.7, flicker: 0.18, turn: 9, rise: 0.55, fade: 0.7,
+        gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
+        shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
       gale: { color: 0xc8fff0, core: 0xffffff, size: 5.2, lift: 1.3, speed: 34, roll: 0.9, fade: 0.18, shake: [0.14, 0.08],
         burst: { count: 26, speed: 8, color: 0xdafff6 } },
       pyre: { color: 0xff5a14, core: 0xffd890, height: 9, pad: 0.5, rise: 0.18, fade: 0.45, motes: 0.05, lightEvery: 0.8, shake: [0.3, 0.2],

@@ -73,7 +73,7 @@ const companions = (() => {
     }
     for (const [p, enemies] of groups) {
       crowd.enemies = enemies; crowd.sinceStart = (c.clocks.get(p) ?? Infinity) + dt; crowd.spread(p);
-      for (const e of enemies) if (!game.sleeps(e)) e.update(dt, p);
+      for (const e of enemies) if (!game.sleeps(e)) e.update(dt, abilityPowers.decoy(e) || p);   // a summon may draw it (js/abilities.js)
       c.clocks.set(p, crowd.sinceStart);
     }
     crowd.lastStarter = null;

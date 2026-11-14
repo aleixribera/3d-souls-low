@@ -72,6 +72,7 @@ function registerListeners() {
   flame.attach();      // flame breath and revealed parts drawn (`breath` attacks, phase `reveal`; js/flame.js)
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (`blink`, `sigil` hits; js/holy.js)
   abilityFx.attach(); // Boss Rush's legendaries drawn (`abilityPower`, `abilityPerk`; js/ability-fx.js)
+  summonHound.attach(); // the Grave Hound summon drawn (js/summon-hound.js)
   registerAudioListeners();
 }
 
