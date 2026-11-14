@@ -167,6 +167,7 @@ item 3 (the menus), then item 6 (abilities) as
 soon as the upgrades session has shipped it, ahead of everything below, then items 4, 5 and 8, then item 7 (crates,
 after the abilities). If the track reaches item 6 before that session has shipped, it goes on with the next item and
 comes back to item 6 the moment it lands.
+Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in progress, ahead of everything left.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
    Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
@@ -389,3 +390,25 @@ comes back to item 6 the moment it lands.
    Check: a table of every boss's solo time and falls before and after, alone at 1x; the bot's fight reached across
    several runs, with no abilities and with a strong kit, against the targets; a test of the curve's speed at fights
    1, 5, 10, 15 and 20 (speed changes; health and damage don't); a frame of Practice's speed setting.
+11. **The run's shape: a warm-up, fewer legendaries, no instant breaks** (Aleix, 2026-11-14, after a run to fight 21:
+   fights 1-4 were the hardest; once the abilities, the legendary ones above all, came in it was a cruise; he fell
+   at 21 by being careless; some abilities filled the boss's posture so fast he beat it in an instant). The end must
+   come from the bosses, not a slip. Right after item 7's pass in progress, ahead of everything else left.
+   - **A warm-up.** Fights 1-4 draw only the easiest bosses and start a little under 1x, reaching 1x by fight 5. Every
+     run starts with one free pick of common abilities before fight 1, so it never opens empty-handed.
+   - **Fewer legendaries.** Each player holds at most 2 legendaries in a run; past that, a legendary card only levels
+     up one already held. Their odds grow more slowly as the run goes on. A Crowned win still offers one (item 5).
+   - **A legendary is a big moment, not a win button.** Every effect, sound and camera moment stays (the spectacle bar,
+     item 6); only raw damage, posture and how often it fires come down, until no single legendary carries a run. It
+     should save a bad fight, not make every fight easy.
+   - **The stagger meter stays earned** (Aleix: it is super important). Abilities, summons included, fill a boss's
+     posture far less than they deal damage, and each posture break in a fight makes the next one need more, on top
+     of `postureRest`. Target: even a strong kit breaks a boss no more than about every 15-20 s, and an execution is
+     a reward, never the whole fight. `breaker` and every ability's `posture` are re-tuned against it.
+   - **The shape**, for one skilled player alone: fights 1-4 a warm-up to learn on; 5-10 real fights; 10-15 hard even
+     with a good kit; 15-20 brutal; past 20 impossible. The curve (`CONFIG.pace`) steepens from about fight 8. Item 10's
+     targets stand (about 10-12 without abilities, about 20 with a great kit); what changes is that a strong kit must
+     be struggling by 15.
+   Check: the test bot's runs with no abilities and with the strongest kit the rules allow (2 legendaries, the best
+   posture abilities), against these targets: fight reached, fight times by stage, and seconds between posture breaks
+   with that kit; a test of the legendary cap, the warm-up bosses and the free first pick.
