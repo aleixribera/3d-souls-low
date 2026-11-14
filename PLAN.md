@@ -117,7 +117,7 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    - **A dash for a roll:** about 0.35 s, i-frames kept. A perfect dodge (right on the hit) opens a short counter
      window, drawn with a beat of slow motion; the simulation and the other players never slow.
    - **Cancels:** any attack cancels into a dodge or a deflect once its hit is out. The wind-up still commits.
-   - **Combos:** light strings of 4-5 hits; a heavy finisher from any point in the string, each its own move
+   - **Combos:** light strings of 4 hits (item 3); a heavy finisher from any point in the string, each its own move
      (light-light-heavy differs from four lights and a heavy); a dash attack out of the dodge; the jump attack stays.
      No juggling.
    - **The deflect** replaces the parry: block pressed as a hit lands deflects it, more forgiving than today's parry
@@ -125,13 +125,51 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
      riposte.
    - **Healing:** flasks drunk while walking, quicker, cut short by a hit; a small heal on every execution.
    - Abilities whose triggers change (perfect dodge, full charge, parry) move to their new moments.
-3. **First-time friends on a laptop.** Everything plays on a laptop keyboard and touchpad as well as with a mouse or a
+3. **Controls** (Aleix, 2026-11-14). Every key stays rebindable on the Controls page; the mouse still works (left
+   click light, right click heavy) but is never needed.
+
+   | Keys | Action |
+   |---|---|
+   | W A S D | move |
+   | Shift | dash |
+   | Space | jump |
+   | J | light |
+   | K | heavy (hold to charge) |
+   | L | block (hold) and deflect (tap as the hit lands): one button, the separate parry key goes |
+   | 1, 2, 3, 4 | the abilities you can fire, one key each, in the order you took them |
+   | Q | lock on / off; Tab switches target |
+   | E | flask |
+   | F | interact |
+
+   - **Abilities on the number row** (Aleix: "use the number bar"). Some abilities become ones you fire on a press, each
+     on its own number key (pad: the d-pad), each with its own charge filled by playing well (hits, deflects, perfect
+     dodges) and shown on the HUD by its key. Abilities with their own triggers keep them. You choose the moment, like
+     an anime finisher. Item 6 decides which abilities are pressed and which trigger, and its pool grows both kinds.
+   - **Lock-on is automatic in boss fights:** it turns on when a boss fight starts and the camera follows the boss, so a
+     touchpad never has to aim; Q frees it. Ordinary enemies stay manual.
+   - **The attacks:** a 4-hit light string; a heavy finisher from any point in it, each its own move; a held heavy
+     still charges, and a full charge still fires the abilities that wait for one; a dash attack; light and heavy jump
+     attacks; executions; a riposte after a deflected string. No direction-plus-button inputs: a newcomer only ever
+     presses one key at a time.
+3b. **First-time friends on a laptop.** Everything plays on a laptop keyboard and touchpad as well as with a mouse or a
    controller; lock-on carries the camera so a touchpad never has to. A friend who has never played learns to attack,
    dodge, deflect and heal in their first minute, without a tutorial screen (button hints in the world, the first fight
    forgiving). Normal holds 60 fps on the laptop (track A item 3).
-4. **The bosses answer.** Once the moveset has landed, every boss gets a little more aggressive (fewer idle gaps, more
-   strings that punish mashing), tells always readable, and item 10's and 11's targets are measured again with the new
-   moves.
+4. **The bosses answer** (Aleix, 2026-11-14: free attacks and a dodge with charges must not let a player mash bosses
+   down). Shared rules in the engine, not one boss at a time:
+   - **No flinch from ordinary hits:** a light or heavy never interrupts a boss's attack. After about 5-6 hits in a
+     row without a pause, the boss answers with a quick, told break-off (a sweep, a burst, a step back with a strike).
+     Mashing is punished; short bursts between its attacks are the way.
+   - **Posture fills from skill, not volume:** ordinary hits barely fill it; deflects, perfect-dodge counters, heavy
+     finishers, full charges and abilities fill it a lot; it drains when the pressure stops (item 11's rule that each
+     break needs more still holds).
+   - **Damage moves to skill and abilities:** ordinary hits deal about a third less; counters, finishers, executions,
+     ripostes and abilities carry most of a fight's damage.
+   - **Dodge spam:** the 2 charges cap it; a dodge that isn't on an attack only moves you; a mistimed dodge's end has a
+     short window without i-frames.
+   - **Then the bot:** every boss a little more aggressive (fewer idle gaps, more strings that punish mashing), tells
+     always readable; the test bot plays each boss on the new moves, and only a boss it finds trivial gets its own
+     rework. Item 10's and 11's targets are measured again.
 5. **One boss first, then everything, without waiting.** The moveset is proven against one boss (the Pillager
    Captain, in Practice) inside the same push, then becomes the only moveset at once: no gate on Aleix's play, no
    option to switch back. His notes after playing the whole game redirect it.
