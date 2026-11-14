@@ -85,18 +85,27 @@ function deflectPose(p, r, dt, yaw) {
 // The counter window, shown (pass 94, PLAN.md "Next, small" 2): while a counter is open (after a perfect dodge or a
 // deflect that opened the foe) the blade burns a cold white, dimming as the window closes; a cue only. A steady glow,
 // no pulse, so it needs nothing for reducedMotion. Returns its strength (0 when shut); `cwFull` is the window's length.
+// Pass 95: it flares as the window opens, and the counter itself burns at full strength until its recovery.
 function counterGlow(p, r) {
-  if (!(p.riposte > 0)) { r.cwFull = r.cwLeft = 0; return 0; }
+  const G = ANIM_SETTINGS.counterGlow;
+  if (!(p.riposte > 0)) {
+    r.cwFull = r.cwLeft = 0;
+    if (p.state === PS.ATTACK && p.payload && p.payload.riposte && p.attack) {   // the counter swinging
+      const tl = attackTimeline(p.attack, p.attackT);
+      return tl.phase === PHASE.RECOVERY ? 1 - tl.p : 1;
+    }
+    return 0;
+  }
   if (p.riposte > (r.cwLeft || 0) + 1e-6) r.cwFull = p.riposte;   // opened, or opened again
   r.cwLeft = p.riposte;
-  const G = ANIM_SETTINGS.counterGlow;
-  return G.min + (1 - G.min) * clamp(p.riposte / r.cwFull, 0, 1);
+  const since = r.cwFull - p.riposte, flare = G.flare * Math.pow(clamp(1 - since / G.flareTime, 0, 1), 2);
+  return G.min + (1 - G.min) * clamp(p.riposte / r.cwFull, 0, 1) + flare;
 }
 function drawCounterGlow(r, k) {
   if (!(k > 0)) return;
   const G = ANIM_SETTINGS.counterGlow, c = r.cwColor || (r.cwColor = new THREE.Color(G.color)), m = r.weaponMat, e = G.emissive * k;
   m.emissive.r += c.r * e; m.emissive.g += c.g * e; m.emissive.b += c.b * e;
-  m.color.lerp(c, 0.5 * k);
+  m.color.lerp(c, 0.5 * Math.min(1, k));
 }
 
 Player.prototype.pose = function (tt, ctx) {
@@ -172,7 +181,7 @@ Player.prototype.pose = function (tt, ctx) {
   // One move into the next without a snap (a chained swing is its own move); a body back from the dead starts clean.
   r.settle(this.state, this.state === PS.ATTACK || this.state === PS.EXECUTE ? this.attack : null, tt, r.settleKey !== PS.DEAD);
   // An open counter holds a star of light on the blade, over whatever the move's own layers set (they still run).
-  if (r.anim && cw > 0) r.anim.glintK = Math.max(r.anim.glintK, ANIM_SETTINGS.counterGlow.glint * cw);
+  if (r.anim && cw > 0) r.anim.glintK = Math.max(r.anim.glintK, ANIM_SETTINGS.counterGlow.glint * Math.min(cw, 1.6));
   if (r.anim) r.anim.finishPlayer(this, ctx);   // the cloth swings from the blended body, not the snapped one
   if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
   else { r.setFlash(Math.max(this.flash, this.chargeGlow)); drawCounterGlow(r, cw); }

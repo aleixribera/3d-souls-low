@@ -34,8 +34,14 @@ function validateData({ visual = true } = {}) {
         && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(k[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(k[b]))),
       'ANIM_SETTINGS.dash: rise (s) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
     const Cg = A.counterGlow;
-    need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1,
-      'ANIM_SETTINGS.counterGlow: a colour, emissive (above 0, at most 4), min (0 to 1) and glint (0 to 1).');
+    need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1
+      && Cg.flare >= 0 && Cg.flare <= 4 && num(Cg.flareTime),
+      'ANIM_SETTINGS.counterGlow: a colour, emissive (above 0, at most 4), min (0 to 1), glint (0 to 1), flare (0 to 4) and flareTime (s).');
+    const Cf = A.counterFx, hex = c => Number.isInteger(c) && c >= 0 && c <= 0xffffff, pos = v => typeof v === 'number' && v > 0 && v < 20;
+    need(Cf && Cf.dim && Cf.dim.peak >= 0 && Cf.dim.peak <= 0.8 && num(Cf.dim.in) && num(Cf.dim.out) && Cf.mark && pos(Cf.mark.size) && num(Cf.mark.time) && hex(Cf.mark.color)
+      && Cf.trail && hex(Cf.trail.color) && pos(Cf.trail.boost) && Cf.trail.life >= 1 && Cf.trail.life < 6 && Cf.cut && pos(Cf.cut.length) && num(Cf.cut.thin) && Cf.cut.wide > Cf.cut.thin
+      && num(Cf.cut.show) && hex(Cf.cut.color) && Number.isInteger(Cf.cut.sparks) && Number.isInteger(Cf.cut.arcSparks) && Number.isFinite(Cf.cut.tilt),
+      'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
@@ -256,6 +262,11 @@ function validateData({ visual = true } = {}) {
       `${tag}: "hits" must list { startup, active } for each strike.`);
     need(num(a.recovery) && num(a.damage) && num(a.poise) && num(a.knock), `${tag}: recovery, damage, poise and knock must be numbers.`);
     need(a.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(a.box[k])), `${tag}: box needs w, h, d, fwd and y.`);
+    // The counter's signature moves (pass 95): a flash step through or past the foe, and a cut that opens a beat later.
+    if ('flashStep' in a) { const F = a.flashStep; need(F && [F.past, F.min, F.max, F.range, F.cone, F.brake, F.exit].every(v => num(v) && v >= 0) && F.min > 0 && F.max >= F.min && F.max <= 9 && a.hits.length === 1 && num(a.hits[0].active) && a.hits[0].active > 0
+      && F.max / a.hits[0].active * CONFIG.step < PLAYER_DEF.radius + CONFIG.height.railThickness,
+      `${tag}: flashStep needs past, min <= max (at most 9 m), range, cone, brake (m/s^2) and exit (m/s), on a one-hit attack whose active phase covers max in steps shorter than the body's radius and a rail (no tunnelling through walls).`); }
+    if ('cut' in a) need(a.cut && ['line', 'arc'].includes(a.cut.kind) && num(a.cut.open) && a.cut.open >= 0 && a.cut.open < 1, `${tag}: cut needs kind ('line' or 'arc') and open (0 to 1 s).`);
     // Optional mechanics (enemy attacks): roll-only, gap-closing dash, tracking.
     if ('rollOnly' in a) need(typeof a.rollOnly === 'boolean', `${tag}: rollOnly must be true or false.`);
     if ('minRange' in a) need(num(a.minRange) && num(a.range) && a.minRange < a.range, `${tag}: minRange must be a number below range.`);

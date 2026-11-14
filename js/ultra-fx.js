@@ -271,7 +271,7 @@ void main() {
     };
     return {
       mesh, owner: null,
-      update(active, rig, now, color, boost) {
+      update(active, rig, now, color, boost, life = T.life) {
         if (active) {
           rig.weapon.updateWorldMatrix(true, false);
           const m = rig.weapon.matrixWorld;
@@ -280,7 +280,7 @@ void main() {
           pts.unshift(p);
           if (pts.length > T.samples) spare.push(pts.pop());
         }
-        while (pts.length && now - pts[pts.length - 1].time > T.life) spare.push(pts.pop());
+        while (pts.length && now - pts[pts.length - 1].time > life) spare.push(pts.pop());
         if (pts.length < 2) { mesh.visible = false; return pts.length > 0; }
         mat.uniforms.uColor.value.set(color).multiplyScalar(boost);
         let n = 0;
@@ -291,7 +291,7 @@ void main() {
             const t = s / sub;
             cr(p0.b, p1.b, p2.b, p3.b, t, v1); cr(p0.t, p1.t, p2.t, p3.t, t, v2);
             put(n, v1, v2);
-            const age = clamp((now - lerp(p1.time, p2.time, t)) / T.life, 0, 1); aT[n * 2] = aT[n * 2 + 1] = age;
+            const age = clamp((now - lerp(p1.time, p2.time, t)) / life, 0, 1); aT[n * 2] = aT[n * 2 + 1] = age;
             n++;
           }
         }
@@ -633,10 +633,15 @@ void main() {
     for (const t of impactFx.trails.values()) t.mesh.visible = false;
     for (const [b] of placed) {
       const isP = b instanceof Player;
-      const act = isP ? (b.state === PS.JUMP_ATTACK || (b.state === PS.ATTACK && !!b.hitbox)) : b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
+      // An open counter (pass 95) trails the blade the whole window, and the counter's own swing leaves a longer ribbon.
+      const counter = isP && (b.riposte > 0 || (b.state === PS.ATTACK && b.payload && b.payload.riposte && b.attack && b.attackPhase() !== PHASE.RECOVERY));
+      const act = isP ? (b.state === PS.JUMP_ATTACK || (b.state === PS.ATTACK && !!b.hitbox) || counter) : b.state === ES.ACTIVE && !!b.hitbox && !b.asleep;
       let r = ribbonOf.get(b);
       if (!r && act) { r = ribbons.slice(0, budget().ribbons).find(x => !x.owner); if (r) { r.owner = b; ribbonOf.set(b, r); } }
-      if (r) { const [c, k] = trailColor(b); if (!r.update(act, b.rig, now / 1000, c, k)) { r.owner = null; ribbonOf.delete(b); } }
+      if (r) {
+        const K = ANIM_SETTINGS.counterFx.trail, own = counter ? null : trailColor(b);
+        if (!r.update(act, b.rig, now / 1000, own ? own[0] : K.color, own ? own[1] : K.boost, counter ? T.life * K.life : T.life)) { r.owner = null; ribbonOf.delete(b); }
+      }
     }
     // living bosses: an aura of motes; burning phases shed embers; big bodies kick up dust; dying bodies crumble to ash
     for (const [b] of placed) {

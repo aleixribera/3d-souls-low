@@ -16,7 +16,8 @@ const worldHints = (() => {
   // kind: what it teaches, the action whose key it shows, the word under it.
   // A number key's kind is its key (ABILITY_KEYS); its word is the held ability's name.
   const KINDS = { attack: { action: 'light', word: 'Attack' }, deflect: { action: 'block', word: 'Deflect' }, dodge: { action: 'roll', word: 'Dash' },
-    finisher: { action: 'heavy', word: 'Finisher' }, dashAttack: { action: 'light', word: 'Dash attack' }, jumpAttack: { action: 'light', word: 'Jump attack' } };
+    finisher: { action: 'heavy', word: 'Finisher' }, dashAttack: { action: 'light', word: 'Dash attack' }, jumpAttack: { action: 'light', word: 'Jump attack' },
+    counter: { action: 'light', word: 'Counter' } };
   ABILITY_KEYS.forEach((key, i) => { KINDS[key] = { action: ABILITY_ACTIONS[i], word: '' }; });
   const done = Object.fromEntries(Object.keys(KINDS).map(k => [k, 0]));
   function load() {
@@ -32,6 +33,7 @@ const worldHints = (() => {
     if (!mine(d.attacker) || !d.target || d.target === d.attacker) return;
     count('attack');
     const id = d.strike.attackId;
+    if (d.strike.riposte) count('counter');
     if (d.strike.air) count('jumpAttack');
     else if (/^finisher/.test(id)) count('finisher');
     else if (/^dash/.test(id)) count('dashAttack');
@@ -39,6 +41,11 @@ const worldHints = (() => {
   events.on('abilityPress', d => { if (mine(d.body) && d.key in done) count(d.key); });
   events.on('parry', d => { if (mine(d.player)) count('deflect'); });
   events.on('dodge', d => { if (mine(d.player) && !d.projectile) count('dodge'); });
+  // The first counter window of each fight shows the counter's key: once per body (a fight, a retry or a respawn makes
+  // a fresh one) and again after a rest.
+  let counterHint = false, counterBody = null;
+  events.on('rest', () => { counterBody = null; }); visuals.hooks.stage.push(() => { counterBody = null; });
+  events.on('counterOpen', d => { if (mine(d.player) && counterBody !== d.player) { counterBody = d.player; counterHint = true; } });
 
   // The key as a keycap: the keyboard's key (no mouse button: the hint is for a laptop), or the controller's button.
   function keyText(action) {
@@ -78,6 +85,9 @@ const worldHints = (() => {
     if (!p || !p.alive() || game.mode !== 'play' || game.loading > 0 || game.kind === 'bossBattle' || p.state === PS.EXECUTE || p.state === PS.HELD
       || settings.lessons === false || (typeof hud !== 'undefined' && hud.helpOpen())) return false;
     let bestD = Infinity; pickE = pickKind = null;
+    // The counter (pass 95): the first window of a fight shows its key by the blade, over every other hint.
+    if (counterHint && p.riposte > 0 && !learned('counter')) { pickE = p; pickKind = 'counter'; pickWord = KINDS.counter.word; return true; }
+    if (!(p.riposte > 0)) counterHint = false;
     const move = moveKind(p), held = keyKind(p);
     for (const e of game.enemies) {
       if (!e.alive() || !e.awake() || e.asleep || e.npc || e.execReady) continue;   // a kneeling foe has its own cue (Execute)
@@ -112,9 +122,15 @@ const worldHints = (() => {
     const K = KINDS[pickKind], key = keyText(K.action);
     if (!key) return hide();
     // Beside the foe at chest height, on the camera's right: clear of its health bar, the lesson card and the boss bar.
-    const q = pickE.rig.root.position, side = (pickE.radius || 0.5) + H().side;
+    // The counter's: just off the glowing blade.
     right.setFromMatrixColumn(camera.matrixWorld, 0);
-    v.set(q.x + right.x * side, q.y + pickE.height * H().height, q.z + right.z * side).project(camera);
+    if (pickKind === 'counter' && pickE.rig.weapon) {
+      pickE.rig.weapon.updateWorldMatrix(true, false); v.set(0, 0, 0.7).applyMatrix4(pickE.rig.weapon.matrixWorld);
+      v.addScaledVector(right, H().side).project(camera);
+    } else {
+      const q = pickE.rig.root.position, side = (pickE.radius || 0.5) + H().side;
+      v.set(q.x + right.x * side, q.y + pickE.height * H().height, q.z + right.z * side).project(camera);
+    }
     if (v.z < -1 || v.z >= 1) return hide();
     if (shownKind !== pickKind || shownKey !== key || shownWord !== pickWord) {
       capEl.textContent = key; wordEl.textContent = pickWord; el.dataset.kind = pickKind; shownKey = key; shownWord = pickWord;

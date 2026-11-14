@@ -404,6 +404,9 @@
   /* Edge vignette: red at low health, a flare when hurt. Opacity comes from hud.js. */
   #vignette { position: absolute; inset: 0; opacity: 0; pointer-events: none;
     background: radial-gradient(ellipse at 50% 50%, #00000000 52%, #6a0a06b0 100%); }
+  /* The counter window (pass 95): the world's edges go cold and dark while it is open. Opacity comes from counter-fx.js. */
+  #counterDim { position: absolute; inset: 0; opacity: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 46%, #00000000 30%, #050b16e0 100%); }
 
   /* Banners, over the middle of the view. */
   #died, #won, #complete { position: absolute; left: 0; right: 0; top: 38%; text-align: center; opacity: 0; }
@@ -554,6 +557,7 @@
 
 <div id="hud" class="hidden">
   <div id="vignette"></div>
+  <div id="counterDim"></div>
   <div id="eTags"></div>
   <div id="dmgNums"></div>
   <div id="worldHint" aria-hidden="true"><kbd class="lesson-cap key" id="worldHintKey"></kbd><span id="worldHintWord"></span></div>
@@ -813,6 +817,7 @@ const GAME_FILES = [
   'kill-moment.js',
   'dodge-moment.js',
   'afterimage.js',   // the dash's pale copies of the body (drawing only)
+  'counter-fx.js',   // the counter window and the counter's cut (drawing only)
   'boot.js',
 ];
 const LOAD_STAMP = '7.121.0';   // bump for each release; stable within a release so browsers can cache scripts

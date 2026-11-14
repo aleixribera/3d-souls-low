@@ -97,7 +97,18 @@ const ANIM_SETTINGS = {
   ] },
   // The counter window on the blade (pass 94, js/player-pose.js): `color` glowing at `emissive` times its strength,
   // which runs from 1 as the window opens down to `min` as it shuts; the blade's glint held at `glint` of that.
-  counterGlow: { color: 0xcfe6ff, emissive: 1.6, min: 0.3, glint: 0.6 },
+  // Pass 95: it flares as the window opens, `flare` times brighter on top, easing off over `flareTime` s.
+  counterGlow: { color: 0xcfe6ff, emissive: 2.4, min: 0.45, glint: 0.85, flare: 2.2, flareTime: 0.3 },
+  // The counter, impossible to miss (pass 95, js/counter-fx.js). As the window opens: the screen's edges dim (`dim`:
+  // peak darkness, in and out s) while it lasts; the foe shows an open mark at its chest (`mark`: size m, s); the blade
+  // leaves a trail (`trail`: colour, brightness, how much longer it lasts than a swing's). The counter's cut: a thin line
+  // across the foe (`cut`: length m, width m thin and opened, s it shows after opening), sparks as it opens.
+  counterFx: {
+    dim: { peak: 0.8, in: 0.1, out: 0.3 },
+    mark: { size: 1.5, time: 0.5, color: 0xe8f4ff },
+    trail: { color: 0x9cc6ff, boost: 1.5, life: 1.6 },
+    cut: { length: 2.6, thin: 0.035, wide: 0.1, show: 0.42, color: 0xf2f8ff, sparks: 46, arcSparks: 60, tilt: 0.38 },
+  },
   // A landing with weight (pass 92): the knees take it, `drop` m at most for a fall at `ref` m/s or faster.
   land: { rise: 0.04, hold: 0.05, fall: 0.22, drop: 0.2, min: 0.35, ref: 9, lean: 0.18 },
   // Dash afterimages (pass 91, js/afterimage.js): a pale copy of the body every `gap` m of a dash, frozen and fading over

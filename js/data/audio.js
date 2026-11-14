@@ -84,6 +84,37 @@ const AUDIO = {
       { noise: 'pink', filter: { type: 'bandpass', freq: 1500, to: 3000, q: 0.9 }, a: 0.02, d: 0.14, gain: 0.1 },
     ] },
 
+    // ---- the counter (pass 95) ----
+    // The window opening: a sharp, bright ring (a struck high bell over a glassy shimmer) and a low swell of time
+    // slowing under it. Its own: no hit sound is like it.
+    counterOpen: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 1, verb: 0.55, heat: 0.35, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 7000, q: 0.7 }, a: 0.0006, d: 0.03, gain: 0.35 },
+      { wave: 'sine', freq: 2490, partials: [[1, 1, 1], [2.76, 0.45, 0.5], [5.4, 0.2, 0.3], [1.5, 0.3, 0.8]], a: 0.001, d: 0.9, gain: 0.3 },
+      { noise: 'white', parallel: [{ type: 'bandpass', freq: 4200, q: 30 }, { type: 'bandpass', freq: 5600, q: 26 }], a: 0.002, d: 0.6, gain: 1.4 },
+      { wave: 'sine', freq: 220, to: 110, glide: 0.5, a: 0.04, d: 0.55, gain: 0.22 },
+    ] },
+    // The flash step: air torn open in one stroke and a thin, high steel "shing".
+    counterFlash: { bus: 'sfx', priority: 3, cooldown: 0.1, verb: 0.3, heat: 0.4, jitter: 60, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1200, to: 7500, q: 1.1 }, a: 0.004, d: 0.13, gain: 0.9 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 900, to: 200 }, a: 0.003, d: 0.18, gain: 0.7 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [5200, 5800], q: 24 }, at: 0.02, a: 0.002, d: 0.45, gain: 1.6 },
+      { wave: 'sine', freq: 3300, partials: [[1, 1, 1], [2.1, 0.35, 0.6]], at: 0.02, a: 0.002, d: 0.35, gain: 0.08 },
+    ] },
+    // The rising cut: a deep heave of air sweeping upward into a ringing edge.
+    counterRise: { bus: 'sfx', priority: 3, cooldown: 0.1, verb: 0.3, heat: 0.45, jitter: 50, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 250, to: 2600, q: 0.9 }, glide: 0.22, a: 0.06, d: 0.26, gain: 1.1 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1600, to: 6000, q: 1.4 }, glide: 0.22, a: 0.05, d: 0.22, gain: 0.6 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [3100, 3500], q: 20 }, at: 0.14, a: 0.002, d: 0.5, gain: 1.4 },
+      { wave: 'sine', freq: 70, to: 110, a: 0.05, d: 0.3, gain: 0.35 },
+    ] },
+    // The cut opening a beat after the blow: a tearing hiss and a deep, dry boom.
+    cutOpen: { bus: 'sfx', priority: 3, cooldown: 0.12, verb: 0.4, heat: 0.8, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [3000, 4200], to: 9000, q: 0.7 }, a: 0.002, d: 0.16, gain: 0.7, drive: 2 },
+      { noise: 'pink', parallel: [{ type: 'bandpass', freq: [300, 360], q: 4 }, { type: 'bandpass', freq: [620, 700], q: 5 }], a: 0.002, d: 0.38, gain: 1.4, drive: 2 },
+      { wave: 'sine', freq: [54, 62], to: 30, a: 0.004, d: 0.8, gain: 1.1, drive: 3 },
+      { noise: 'white', parallel: [{ type: 'bandpass', freq: 2800, q: 26 }, { type: 'bandpass', freq: 4100, q: 22 }], a: 0.002, d: 0.7, gain: 1.2 },
+    ] },
+
     // ---- impacts ----
     hitFlesh: { bus: 'sfx', priority: 3, cooldown: 0.03, verb: 0.08, heat: 0.6, velPitch: 0.12, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [3000, 4800], q: 0.7 }, a: 0.0005, d: 0.01, dv: 0.4, gain: 0.55 },   // snap: edge on armour

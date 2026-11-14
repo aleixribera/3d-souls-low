@@ -40,7 +40,7 @@ const CONFIG = {
     // bolt `strike`, a twin's blow `echo`, a hound's `bite`, a summon drawing the boss `draw`) kicks [fov, dip] in `powers`, in full for its holder, fading out to
     // `powerNear` m for the rest; a rare's perk acting kicks the holder's view by `perkFov`. Never past `maxRoll` / `maxFov`.
     feel: { omega: 13, swing: 0.05, heavy: 0.1, heavyDip: 0.04, swingRoll: 0.006, rollFov: 3, rollDip: 0.06,
-            hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4, heavyHitFov: -2.2, counterFov: -1.6,
+            hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4, heavyHitFov: -2.2, counterFov: -1.6, counterHitFov: -3.4, counterRoll: 0.035, counterSwing: 0.16, flashPush: 0.3,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],

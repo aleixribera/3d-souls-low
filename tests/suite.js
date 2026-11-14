@@ -715,6 +715,59 @@
     sim.press('roll'); sim.step(); sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
     expect.ok(p.attack && p.attack.id === 'dashLight', `an ordinary dash still gives the dash attack (${p.attack && p.attack.id})`);
   });
+  const opens = [], hits = [];   // pass 95: every counter window opened and every strike (recorded once: events has no unsubscribe)
+  A.events.on('counterOpen', d => opens.push(d)); A.events.on('strike', d => hits.push(d));
+  test('pass 95 counter: a window opens with its cue on a dodge or a deflect; the light counter flash-steps through the foe and its cut opens', () => {
+    const H = CONFIG.hints, W = A.worldHints;
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons; opens.length = hits.length = 0;
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0; counterFx.clear();
+      const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), one = e.def.attacks.find(a => a.id === 'captainOverhead');
+      faceOff(e, p, 1.6); e.beginAttack(one);   // a single blow, so no second one cuts the counter short
+      sim.until(() => e.state === ES.WINDUP && !(e.holdLeft > 0) && e.stateTime >= one.hits[0].startup - 0.04, 4); sim.press('roll');
+      sim.until(() => log.includes('dodge'), 0.4);
+      const o = opens[opens.length - 1];
+      expect.ok(o && o.player === p && o.from === 'dodge' && o.foe === e && p.riposte > 0 && dodgeMoment.active,
+        `a perfect dodge opens the window, with its beat of slow motion (${o && o.from}, ${dodgeMoment.active})`);
+      Game.render(1, STEP);
+      const s = W.shown;
+      expect.ok(s && s.kind === 'counter' && s.word === 'Counter' && s.enemy === p, `the first window of the fight shows the counter's key by the blade (${s && s.kind})`);
+      expect.ok(counterFx.state.marks === 1 && counterFx.state.dim > 0, `the foe shows the open mark, the edges dim (${JSON.stringify(counterFx.state)})`);
+      // The light counter: a flash step through the foe to its far side, one cut that opens a beat later.
+      const fx = e.x - p.x, fz = e.z - p.z;
+      sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
+      expect.ok(p.attack && p.attack.id === 'counter' && p.attack.flashStep, `the counter, a flash step (${p.attack && p.attack.id})`);
+      e.cooldown = 30; const n0 = log.length;
+      sim.until(() => p.attackPhase() === PHASE.RECOVERY || p.state !== PS.ATTACK, 1.5);
+      const along = ((p.x - e.x) * fx + (p.z - e.z) * fz) / Math.hypot(fx, fz);
+      const F = p.attack.flashStep, far = e.radius + p.radius + F.past;
+      expect.ok(along > e.radius && along < far + 1.5, `the flash step ends just past the foe's far side (${along.toFixed(2)} m beyond its centre, about ${far.toFixed(2)})`);
+      const sx = p.x, sz = p.z; sim.seconds(1);
+      expect.ok(Math.hypot(p.x - sx, p.z - sz) < 1.2, `and stops there, no slide on (${Math.hypot(p.x - sx, p.z - sz).toFixed(2)} m more)`);
+      expect.ok(!hits.some(d => d.target === p), 'never caught by the blow it slipped');
+      expect.ok(log.slice(n0).includes('strike'), 'the cut landed');
+      Game.render(1, STEP); let c = counterFx.state.cuts[0];
+      expect.ok(c && c.kind === 'line' && !c.open, `a thin cut line across the foe (${JSON.stringify(c)})`);
+      const thin = c.w; Game.hitstop = 0;
+      for (let i = 0; i < Math.ceil(A.PLAYER_DEF.moveset.attacks.counter.cut.open / STEP) + 4; i++) Game.render(1, STEP);
+      c = counterFx.state.cuts[0];
+      expect.ok(c && c.open && c.w > thin * 2, `a beat later it opens wide (${thin.toFixed(2)} to ${c && c.w.toFixed(2)})`);
+      // The second window of the fight, from a deflect: its slow beat too, and no hint this time.
+      sim.until(() => p.isFree(), 2); e.cooldown = 0; sim.until(() => e.state === ES.CHASE, 4);
+      faceOff(e, p, 2); e.beginAttack(combo); opens.length = 0;
+      deflectString(e, combo);
+      const d = opens[opens.length - 1];
+      expect.ok(d && d.from === 'deflect' && e.state === ES.PARRIED && dodgeMoment.active, `a deflected last blow opens it too, slowed (${d && d.from}, ${e.state})`);
+      Game.render(1, STEP);
+      expect.ok(!W.shown || W.shown.kind !== 'counter', 'its key shows on the first window of a fight only');
+    } finally {
+      settings.lessons = wasLessons;
+      try { if (kept == null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
   test('pass 85 anti-mash: a boss under a run of blows breaks off with its own quick attack; ordinary hits never flinch it', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
     const p = Game.player, e = Game.duel, M = CONFIG.enemy.mash; faceOff(e, p, 2); e.cooldown = 30;

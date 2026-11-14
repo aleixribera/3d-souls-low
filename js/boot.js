@@ -48,6 +48,7 @@ function registerListeners() {
   abilityFx.attach(); // Boss Rush's legendaries drawn (`abilityPower`, `abilityPerk`; js/ability-fx.js)
   summonHound.attach(); // the Grave Hound summon drawn (js/summon-hound.js)
   afterimage.attach();  // the dash's afterimages (js/afterimage.js)
+  counterFx.attach();   // the counter window's dim and mark, the counter's cut (js/counter-fx.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

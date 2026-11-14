@@ -8,7 +8,7 @@
 // with the other bodies), so nothing is allocated per frame and no game state changes. Reduced motion: one per dash.
 const afterimage = (() => {
   const pool = [];
-  let wasDash = false, fresh = false, made = 0, lastX = 0, lastZ = 0, dodgeArmed = false, perfect = false;
+  let wasDash = false, wasFlash = false, fresh = false, made = 0, lastX = 0, lastZ = 0, dodgeArmed = false, perfect = false;
   function makePool() {
     if (pool.length) return;
     for (let i = 0; i < ANIM_SETTINGS.afterimage.pool; i++) {
@@ -78,19 +78,22 @@ const afterimage = (() => {
       if (k <= 0) { g.rig.root.visible = false; continue; }
       g.mat.opacity = g.peak * k * k * near(g, r);
     }
-    const dash = !!(r && r.skeleton && p.state === PS.ROLL && game.mode === 'play');
+    // A counter's flash step (pass 95: the body `phasing` through the foe) leaves copies too, the plain ones: the bright
+    // ones bloom over the foe the step passes through.
+    const flash = !!(r && r.skeleton && p.phasing && game.mode === 'play');
+    const dash = flash || !!(r && r.skeleton && p.state === PS.ROLL && game.mode === 'play');
     if (dash) {
       const x = r.root.position.x, z = r.root.position.z, cap = reducedMotion() ? 1 : A.perDash[visuals.quality().fxBudget] ?? A.perDash.normal;
-      if (!wasDash || fresh) { made = 0; perfect = false; fresh = false; }
+      if (!wasDash || fresh || (flash && !wasFlash)) { made = 0; perfect = false; fresh = false; if (flash) { spawn(r, A); made++; lastX = x; lastZ = z; } }
       if (dodgeArmed) { dodgeArmed = false; perfect = true; spawn(r, A.dodge); made++; lastX = x; lastZ = z; }
       else if (made < cap && (made === 0 ? p.stateTime >= ANIM_SETTINGS.dash.rise : Math.hypot(x - lastX, z - lastZ) >= A.gap)) {   // the first once the lunge is struck
         spawn(r, perfect ? A.dodge : A); made++; lastX = x; lastZ = z;
       }
     }
     if (!dash) dodgeArmed = false;
-    wasDash = dash;
+    wasDash = dash; wasFlash = flash;
   }
-  function clear() { for (const g of pool) g.rig.root.visible = false; wasDash = fresh = dodgeArmed = false; }
+  function clear() { for (const g of pool) g.rig.root.visible = false; wasDash = wasFlash = fresh = dodgeArmed = false; }
   return {
     attach() {
       makePool();

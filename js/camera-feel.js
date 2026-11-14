@@ -29,6 +29,7 @@ const cameraFeel = (() => {
     kick('roll', (d.hitIndex % 2 ? -1 : 1) * F.swingRoll * (H ? 1.6 : 1));
     if (H) kick('y', -F.heavyDip);
     if (C) kick('fov', F.counterFov);
+    if (d.attack.flashStep) kick('z', F.flashPush);   // a flash step: the view surges after the body (pass 95)
   });
   events.on('strike', d => {
     if (isPlayer(d.target)) {   // knocked away from the blow
@@ -38,7 +39,11 @@ const cameraFeel = (() => {
       kick('roll', (lx >= 0 ? -1 : 1) * F.hurtRoll * k); kick('fov', F.hurtFov * k);
     } else if (isPlayer(d.attacker) && !d.blocked) {   // a heavy, a finisher or a counter landing punches in (pass 92), and any big blow
       const big = d.strike.riposte || (d.strike.charge > 0) || heavy(d.attacker.attack);
-      if (big || (d.strike.damage || 0) >= F.punchFrom) kick('fov', big ? F.heavyHitFov : F.hitFov);
+      if (d.strike.riposte) {   // a counter landing (pass 95): a hard punch in and a swing of the view with the cut
+        const a = d.attacker.attack, rising = a && a.cut && a.cut.kind === 'arc';
+        kick('fov', F.counterHitFov); kick('roll', (rising ? 1 : -1) * F.counterRoll);
+        if (rising) kick('y', F.counterSwing); else kick('x', F.counterSwing);
+      } else if (big || (d.strike.damage || 0) >= F.punchFrom) kick('fov', big ? F.heavyHitFov : F.hitFov);
       if (big) kick('y', -F.heavyDip * 0.6);
     }
   });

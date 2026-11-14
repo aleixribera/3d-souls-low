@@ -2,6 +2,14 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **From the counter pass (pass 95, track A), for track B:** (1) PLAN's "deflected strings make the riposte chain a
+  second time if the press comes again" is not built: a combat rule plus the server's riposte claim check
+  (server/simulation.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
+  blow during its startup (the heavy's 0.24 s); counters may want i-frames through their startup. (3) The boss's gold
+  hit flash on a riposte whites out the whole body for ~15 frames and hides the cut. Track A next: the judge wants a
+  cue on the body for the whole window (the blade glow and edge dim read small in frames); the new counter poses
+  (`counterFlash`, `counterRising`) were tuned only by eye in clips.
+
 - **After item 4's pass (pass 93, track B):** (1) 92 of 197 boss attacks still can't be deflected, nearly all area
   hits and leaps; PLAN's "a quarter at most" needs either deflectable leaps or a hit-level `noParry` on mixed strings
   (only the area blow undeflectable, the rest of the string parryable; per-hit `noParry` exists since pass 63).
@@ -14,8 +22,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   shows a press on the very next frame; what still feels slow is the moves' own timing, in track B's files: a tapped
   heavy's blow lands 32 frames after the press (startup 0.5 s) and a light's 14 (0.2 s); the run takes 9 frames to full
   speed (accel 26), 12 to stop (decel 22) and 13 to turn round (turnRate 14). Sekiro's step leans fully in 6 frames
-  and runs on without a stop. Pass 90 took heavy startup 0.4 s and decel 30 (v7.118.0). Also: the counter's
-  attacks borrow `lightBackhand`/`heavyOverhead` poses and want their own pose ids (js/data/player.js). `Player.pose`
+  and runs on without a stop. Pass 90 took heavy startup 0.4 s and decel 30 (v7.118.0). (The counters have their own
+  poses since pass 95.) `Player.pose`
   moved from js/player.js to js/player-pose.js (track A's, drawing only); the update loop is untouched.
 
 - **Boss Rush after pass 90 (track B):** at 1x the skilled bot's fight length runs from about 69 s (the castellans)

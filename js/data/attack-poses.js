@@ -220,6 +220,41 @@ const ATTACK_POSES = {
     charge: { crouch: 0.1, lean: -0.12, spin: [0, -0.3, 0], chest: [-0.2, -0.25, 0], armR: [-0.25, 0, -0.15], armL: [-0.2, 0, 0.1],
               head: [0.1, 0.1, 0] },
   },
+  // The light counter, a flash step (pass 95): sunk low with the blade drawn across to the off hip, the eyes on the foe;
+  // the body flies forward as the blade sweeps out flat to the weapon side; held there, low and still, while the cut
+  // opens behind; then it rises.
+  counterFlash: {
+    ease: { windup: 'outCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
+    lag: { weapon: 0.1, armR: 0.06, elbowR: 0.08 },
+    hits: [{
+      windup: { crouch: 0.3, lean: 0.22, legL: [-0.6, 0, 0], kneeL: [0.55, 0, 0], legR: [0.45, 0, 0], kneeR: [0.55, 0, 0],
+                spin: [0, 0.6, 0], chest: [0.12, 0.45, 0.05], neck: [0, -0.45, 0], head: [0.05, -0.5, 0],
+                armR: [-0.7, 0, 1.15], elbowR: [-1.1, 0, 0], weapon: [1.0, 0, 0.5], armL: [-0.55, 0, -0.35], elbowL: [-1.1, 0, 0] },
+      strike: { crouch: 0.34, lean: 0.48, legL: [-1.05, 0, 0], kneeL: [0.45, 0, 0], legR: [0.85, 0, 0], kneeR: [0.2, 0, 0],
+                spin: [0, -0.75, 0.04], chest: [0.18, -0.55, 0.1], neck: [0, 0.45, 0], head: [0, 0.5, 0],
+                armR: [-1.45, 0, -1.35], elbowR: [0.05, 0, 0], weapon: [0.35, 0, -0.45], armL: [0.55, 0, 0.55], elbowL: [-0.3, 0, 0] },
+      follow: { crouch: 0.38, lean: 0.42, legL: [-1.1, 0, 0], kneeL: [0.55, 0, 0], legR: [0.9, 0, 0], kneeR: [0.25, 0, 0],
+                spin: [0, -0.85, 0.05], chest: [0.2, -0.6, 0.12], neck: [0, 0.5, 0], head: [0.04, 0.55, 0],
+                armR: [-1.25, 0, -1.5], elbowR: [0.08, 0, 0], weapon: [0.55, 0, -0.55], armL: [0.6, 0, 0.6], elbowL: [-0.25, 0, 0] },
+    }],
+  },
+  // The heavy counter, a rising cut (pass 95): dropped into a wide, deep stance with the blade low behind on the weapon
+  // side, the point near the ground; it rips up and across in a wide arc as the body straightens onto its toes, and
+  // holds there with the blade high over the off shoulder.
+  counterRising: {
+    ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
+    hits: [{
+      windup: { crouch: 0.4, lean: 0.24, legL: [-0.75, 0, 0], kneeL: [0.8, 0, 0], legR: [0.6, 0, 0], kneeR: [0.75, 0, 0],
+                spin: [0, -0.85, 0], chest: [0.3, -0.5, 0.15], neck: [0, 0.4, 0], head: [0, 0.55, 0],
+                armR: [0.55, 0, -0.45], elbowR: [-0.3, 0, 0], weapon: [1.3, 0, -0.3], armL: [-0.95, 0, 0.35], elbowL: [-0.8, 0, 0] },
+      strike: { crouch: 0.02, lean: -0.22, legL: [-0.35, 0, 0], kneeL: [0.1, 0, 0], legR: [0.45, 0, 0], kneeR: [0.3, 0, 0],
+                spin: [0, 0.7, 0], chest: [-0.35, 0.5, -0.15], neck: [-0.1, -0.35, 0], head: [-0.2, -0.4, 0],
+                armR: [-2.95, 0, 0.45], elbowR: [-0.2, 0, 0], weapon: [-0.6, 0, 0.3], armL: [-0.45, 0, -0.65], elbowL: [-0.2, 0, 0] },
+      follow: { crouch: 0.04, lean: -0.28, legL: [-0.38, 0, 0], kneeL: [0.12, 0, 0], legR: [0.48, 0, 0], kneeR: [0.32, 0, 0],
+                spin: [0, 0.85, 0], chest: [-0.4, 0.6, -0.18], neck: [-0.12, -0.4, 0], head: [-0.25, -0.45, 0],
+                armR: [-3.1, 0, 0.55], elbowR: [-0.15, 0, 0], weapon: [-0.7, 0, 0.4], armL: [-0.3, 0, -0.9], elbowL: [-0.15, 0, 0] },
+    }],
+  },
 };
 // Combos built from single cuts: a quick diagonal then a backhand; three cuts end in a big overhead (the final hit has the
 // biggest wind-up).

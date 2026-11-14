@@ -4,10 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 94): v7.121.0 3c pass 3: keyed dash (`ANIM_SETTINGS.dash.keys`), guard/deflect blade across the
-  body, cape `max` per strip, momentum (`CONFIG.player.momentum`, attacks' `flow`), counter blade glow (in-page
-  `pass 94`). Fresh judges: dash 3 to 5, deflect 3 to 5, flat over 2 rounds (BACKLOG). Next Track A pass (95): the
-  counter window from PLAN.md e67106f, building on the glow (`ANIM_SETTINGS.counterGlow`).
+- Track A (pass 95): v7.122.0 the counter: `counterOpen` (Player.openCounter) drives sound, slow beat (offline),
+  dim/mark/cut (`js/counter-fx.js`), blade trail, key hint once per body. Light = flash step (`flashStep`), heavy =
+  rising arc. In-page `pass 95`. Judge: window 3 to 7, counter 3 to 8 (`docs/scorecard/anim-p95-counter.jpg`).
+  Next: a body cue for the whole window (judge), then PLAN item 3d.
 - Track B (pass 93): v7.120.0 item 4: fair area attacks (`CONFIG.area`, `js/area-marks.js`, validate.js; leaps
   untouched; `docs/scorecard/stomp-mark-giant*.jpg`), deflects (`CONFIG.undeflectable`), bosses move on one pace
   (`CONFIG.bossMove`); `tests/fair-attacks.cjs`. Next: the Boss Rush curve again (movement unmeasured), the only

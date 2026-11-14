@@ -384,7 +384,7 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick',
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityBreath', 'abilityStep', 'abilityEmpower',
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
-  'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand'];
+  'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -414,10 +414,15 @@ function registerAudioListeners() {
     else {
       audio.play('hitFlesh', { vel, pos, pitch: big(d.target) });
       if (d.strike && d.strike.riposte) audio.play('riposteBoom', { vel, pos });
+      // A counter's cut opens a beat after the blow (js/counter-fx.js draws it on the same real-time beat).
+      const a = d.attacker && d.attacker.attack;
+      if (d.strike && d.strike.riposte && a && a.cut && a.id === d.strike.attackId) audio.play('cutOpen', { vel: 1, pos, delay: a.cut.open });
       const R = d.target && d.target.def && d.target.def.resonance;   // pass 68: his bronze rings, higher the fuller it is
       if (R) audio.play('bronzeRing', { vel, pos, pitch: 1 + 0.6 * (d.target.resonance || 0) / R.max });
     }
   });
+  // A counter opening (pass 95): its own bright ring, for the one whose window it is.
+  on('counterOpen', d => { if (d.player === Game.player) audio.play('counterOpen', { vel: 1 }); });
   on('parry', d => audio.play('parry', { pos: chest(d.target) }));
   on('hazard', d => audio.play('rotSizzle', { pos: spot(d.player), vel: 0.8 }));   // v7.0: the scarlet rot eating at the feet
   on('execution', d => {   // the blade goes in: flesh, the riposte's boom and the break's crack, all at once

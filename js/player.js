@@ -20,7 +20,7 @@ class Player {
     // No exhaustion since the rework (pass 85): kept false, as network frames and the HUD still carry it.
     this.exhausted = false; this.sinceExhausted = Infinity;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
-    this.riposte = 0;      // timer: > 0 while the next blow is a riposte (after a deflect that opened a foe, or a perfect dodge)
+    this.riposte = 0; this.flashDist = 0; this.phasing = false;      // riposte: timer: > 0 while the next blow is a riposte (after a deflect that opened a foe, or a perfect dodge)
     this.dashes = CONFIG.player.dashCharges;   // dash charges held (fractional while one comes back)
     // The deflect (CONFIG.parry): s left of an armed press, s of the spam lock, and the blow deflected last ({ enemy, key }):
     // a deflected blow whose hitbox opens a moment later never lands.
@@ -115,7 +115,15 @@ class Player {
   deflected(enemy, key, opened) {
     this.deflect = 0; this.deflectLock = 0; this.flash = 1;
     this.deflectedBlow = { enemy, key };
-    if (opened) this.riposte = CONFIG.parry.riposteTime;
+    if (opened) this.openCounter(CONFIG.parry.riposteTime, 'deflect', enemy);
+  }
+  // A counter opens (pass 95): after a perfect dodge or a deflect that left the foe open, the next blow within `time` s is
+  // the counter. A window opened fresh is announced once (`counterOpen`: its sound, slow beat, marks and key hint);
+  // one opened again while open only runs longer.
+  openCounter(time, from, foe) {
+    const was = this.riposte;
+    this.riposte = Math.max(this.riposte, time);
+    if (!(was > 0)) events.emit('counterOpen', { player: this, from, foe, time: this.riposte });
   }
   // Souls-style input buffer: while busy, a roll or attack press is remembered only if it comes within bufferWindow s
   // of the moment that action becomes possible (earlier presses, mashing, are dropped). One slot: the latest press
@@ -168,6 +176,14 @@ class Player {
     }
     this.riposte = 0;
     this.hitbox = null;
+    // A flash step (the light counter, pass 95: `flashStep`): its blow carries the body through or past the foe ahead,
+    // to `past` m beyond its far side (min..max m in all). Aimed at the locked foe, else the nearest in front.
+    const F = a.flashStep;
+    if (F) {
+      let best = null;
+      for (const c of findEnemies(this, enemies, { range: F.range, cone: F.cone, yaw: this.yaw, surface: true })) if (!best || c.d < best.d) best = c;
+      this.flashDist = best ? clamp(best.d + 2 * best.e.radius + this.radius + F.past, F.min, F.max) : F.min;
+    }
   }
   // The attack an input starts: with a riposte open (a perfect dodge, an opening deflect), the counter; else the
   // follow-up of a combo still running (or just ended), else the opener.
@@ -175,6 +191,20 @@ class Player {
     const M = this.def.moveset, from = this.comboFrom;
     if (this.riposte > 0 && M.counter && M.counter[action]) return M.attacks[M.counter[action]];
     return M.attacks[(from && from.next && from.next[action]) || M.ground[action]];
+  }
+  // The flash step's motion: across the active phase at the one speed that covers flashDist, passing through bodies
+  // (`phasing`: no body push); then out of it at no more than `exit` m/s, a skid to a stop through the follow-through.
+  // The whole attack stops at a ledge (update's integrateBody).
+  flashMove(F, tl, fx, fz, dt) {
+    const a = this.attack;
+    if (tl.phase === PHASE.ACTIVE) {
+      const sp = this.flashDist / a.hits[0].active;
+      this.vx = fx * sp; this.vz = fz * sp; this.phasing = true;
+    } else if (tl.phase === PHASE.FOLLOW || tl.phase === PHASE.RECOVERY) {
+      const v = Math.hypot(this.vx, this.vz);
+      if (v > F.exit) { this.vx *= F.exit / v; this.vz *= F.exit / v; }
+      if (tl.phase === PHASE.FOLLOW) approachVel(this, 0, 0, F.brake * dt);
+    }
   }
   startAttack(a, mv, face, enemies) {
     this.beginAttack(a, mv, face, enemies); this.setState(PS.ATTACK);
@@ -216,7 +246,7 @@ class Player {
   // lock: the locked-on enemy or null.
   update(dt, mv, enemies, lock) {
     const C = CONFIG.player, M = this.def.moveset;
-    this.stateTime += dt;
+    this.stateTime += dt; this.phasing = false;
     this.tint = Math.max(0, this.tint - dt / CONFIG.fx.tintTime);
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
@@ -332,6 +362,7 @@ class Player {
         this.carry = Math.max(0, (this.carry || 0) - C.walkSpeed / C.momentum.carryTime * dt);
         const sp = this.charge === 1 ? 0 : Math.max(lunging ? a.lunge : 0, this.carry);
         approachVel(this, fx * sp, fz * sp, C.accel * dt);
+        if (a.flashStep) this.flashMove(a.flashStep, tl, fx, fz, dt);
         // Cancels: once the blow has landed (or missed), a dash or a deflect cuts the rest short. Recovery is where a buffered attack
         // chains the string (or a heavy ends it with that point's finisher).
         if (this.cancellable() && this.wantsRoll()) { this.startRoll(mv); break; }
@@ -393,7 +424,7 @@ class Player {
     if (face !== null && !this.in('noLockFacing') && !released)
       this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), (this.state === PS.ATTACK ? C.attackSteer : CONFIG.lock.turnRate) * dt);
 
-    integrateBody(this, dt, C.knockFriction, this.state === PS.EXECUTE);   // an execution never slides off a ledge
+    integrateBody(this, dt, C.knockFriction, this.state === PS.EXECUTE || (this.state === PS.ATTACK && !!this.attack.flashStep));   // an execution or a flash step never slides off a ledge
     if (!this.grounded && this.in('falls')) this.setState(PS.FALL);   // walked (or was knocked) off an edge
     if (this.grounded && this.in('airborne') && this.stateTime > 0) this.setState(PS.IDLE);
     if (this.grounded && this.state === PS.JUMP_ATTACK && this.stateTime > 0) {

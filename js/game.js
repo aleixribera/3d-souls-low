@@ -323,7 +323,7 @@ const Game = {
       f.mesh.scale.set(1 + k * 0.08, 1 + k * 0.16, 1 + k * 0.08); f.mesh.rotation.y = t * 2;
     });
     updateDust(t);
-    swordTrail.update(!visuals.quality().combatFx && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox)), p.rig);
+    swordTrail.update(!visuals.quality().combatFx && (p.state === PS.JUMP_ATTACK || (p.state === PS.ATTACK && !!p.hitbox) || p.riposte > 0), p.rig);   // an open counter trails too (pass 95)
     const fxDt = frameDt * (this.drawSlow || 1);   // the kill moment's drawn slow motion (js/kill-moment.js)
     groundFx.update(fxDt);
     updateParticles(fxDt);

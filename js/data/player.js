@@ -95,18 +95,23 @@ const PLAYER_DEF = {
                    markers: [{ at: 'windup', t: 0.6, event: 'sound', sound: 'swingHeavy', vel: 0.85 }, { at: 'active', t: 0, event: 'glint' }],
                    damage: 34, poise: 50, postureDmg: 14, knock: 7, lunge: 8, hitstop: 0.12, riposte: { damage: 2 },
                    box: { w: 1.3, h: 1.8, d: 3.4, fwd: 1.8, y: 1.1 } },
-      // The counter (pass 88): the riposte a perfect dodge or an opening deflect allows, its own move: a quick draw cut
-      // (light, chaining on into the string) or a rising cut (heavy). Plain numbers as a light's and a heavy's, so a
-      // counter claimed without its riposte is worth no more than those.
-      counter: { id: 'counter', anim: 'sweep', pose: 'lightBackhand', hits: [{ startup: 0.12, active: 0.08, follow: 0.12 }], recovery: 0.22,
+      // The counter (pass 88; its own signature moves since pass 95): the riposte a perfect dodge or an opening deflect
+      // allows. Light: a flash step, a low draw cut that carries the body through or past the foe (`flashStep`) and
+      // holds there while the cut opens behind it (`cut`). Heavy: a rising cut in a wide arc from the ground up, held
+      // high. Plain numbers as a light's and a heavy's, so a counter claimed without its riposte is worth no more than those.
+      // flashStep: { past: m beyond the foe's far side, min/max: m in all, range/cone: the foe it aims for, brake: m/s^2
+      // of the skid after, exit: the most m/s it leaves the step with }. cut: { kind: 'line' | 'arc', open: s after the blow its line opens } (js/counter-fx.js).
+      counter: { id: 'counter', anim: 'sweep', pose: 'counterFlash', hits: [{ startup: 0.1, active: 0.14, follow: 0.26 }], recovery: 0.3,
                  next: { light: 'light2', heavy: 'finisher2' },
-                 markers: [{ at: 'windup', t: 0.5, event: 'sound', sound: 'swingLight', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],
-                 damage: 16, poise: 24, postureDmg: 3, knock: 3, lunge: 4, hitstop: 0.07, riposte: { damage: 2.6 },
-                 box: { w: 2.2, h: 1.6, d: 2.0, fwd: 1.3, y: 1.1 } },
-      counterHeavy: { id: 'counterHeavy', anim: 'overhead', pose: 'heavyOverhead', feel: 'heavy', hits: [{ startup: 0.26, active: 0.12, follow: 0.16 }], recovery: 0.4,
-                      markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingHeavy', vel: 0.9 }, { at: 'active', t: 0, event: 'glint' }],
-                      damage: 36, poise: 52, postureDmg: 12, knock: 6, lunge: 3.5, hitstop: 0.12, riposte: { damage: 2.6, poise: 2.5 },
-                      box: { w: 1.4, h: 2.8, d: 2.6, fwd: 1.4, y: 1.3 } },
+                 markers: [{ at: 'active', t: 0, event: 'sound', sound: 'counterFlash', vel: 1 }, { at: 'active', t: 0.5, event: 'glint' }],
+                 damage: 16, poise: 24, postureDmg: 3, knock: 3, lunge: 0, hitstop: 0.12, riposte: { damage: 2.6 },
+                 flashStep: { past: 1.1, min: 3, max: 5.5, range: 6, cone: 0.7, brake: 60, exit: 4 }, cut: { kind: 'line', open: 0.32 },
+                 box: { w: 1.8, h: 1.8, d: 2.8, fwd: 0.5, y: 1.1 } },
+      counterHeavy: { id: 'counterHeavy', anim: 'overhead', pose: 'counterRising', feel: 'heavy', hits: [{ startup: 0.24, active: 0.12, follow: 0.28 }], recovery: 0.38,
+                      markers: [{ at: 'windup', t: 0.55, event: 'sound', sound: 'counterRise', vel: 1 }, { at: 'active', t: 0.6, event: 'glint' }],
+                      damage: 36, poise: 52, postureDmg: 12, knock: 6, lunge: 3.5, hitstop: 0.16, riposte: { damage: 2.6, poise: 2.5 },
+                      cut: { kind: 'arc', open: 0.24 },
+                      box: { w: 3.0, h: 3.0, d: 2.6, fwd: 1.3, y: 1.4 } },
       // Execution (v5.2, js/execution.js): light attack in front of a kneeling enemy. No hitbox: the damage is the
       // execution's own (CONFIG.execution.damage), dealt as the active phase opens. Wind-up: slide in and coil low;
       // active: the thrust through the chest; follow: the hold, blade inside; recovery: the pull-out.

@@ -163,7 +163,7 @@ function resolveCombat(game) {
       if (!hb.dodged && p.state === PS.ROLL) {   // an execution's untouchable time is no dodge
         // A perfect dodge: the dash's i-frames are short, so a blow slipped inside them was dodged right on it. The next
         // blow within CONFIG.player.counterTime s is a counter (a riposte), drawn with a beat of slow motion.
-        hb.dodged = true; p.riposte = Math.max(p.riposte, CONFIG.player.counterTime);
+        hb.dodged = true; p.openCounter(CONFIG.player.counterTime, 'dodge', hb.owner);
         if (hb.owner.dashedThroughBy) hb.owner.dashedThroughBy();   // a boss recovers longer from it (CONFIG.bossMove.dodged)
         const no = hb.owner.attackNo || 0;   // the number keys fill once an attack dodged, as the server counts it online
         if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
@@ -175,6 +175,8 @@ function resolveCombat(game) {
       }
       continue;
     }
+    // The counter out of a perfect dodge (pass 95) is never caught by the blow it slipped, still live behind the dash.
+    if (hb.dodged && p.state === PS.ATTACK && p.payload && p.payload.riposte) continue;
     hb.markHit(p);
     hb.owner.landed = true;   // pass 77: it landed (an attack's `learns`); online the server hears it from this player
     if (hb.owner.attack && hb.owner.attack.learns && typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.landed(hb.owner);
@@ -221,6 +223,7 @@ function resolveTeamCombat(game) {
 function separatePair(a, b, shareA) {
   if (b.immovable || (b.def && b.def.rooted)) shareA = 1; else if (a.immovable || (a.def && a.def.rooted)) shareA = 0;   // a rooted phase (pass 50) is not shoved
   if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
+  if (a.phasing) return;   // a flash step passes through (Player.flashMove)
   if ((a.burrowed && a.burrowed()) || (b.burrowed && b.burrowed())) return;   // under the floor (a hit's `burrow`)
   const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz), min = a.radius + b.radius;
   if (d >= min) return;
