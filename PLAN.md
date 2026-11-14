@@ -121,8 +121,13 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    part of the fight, not a garnish: the moveset gives them moments to fire on (perfect dodges, deflects, finishers,
    charged blows), and item 6's spectacle bar makes them the highlight of every fight.
 2. **The moveset:**
-   - **No stamina for attacking or dodging,** and no exhaustion. The dodge has 2 charges that refill quickly. Blocking
-     still wears your guard down, so turtling stays risky.
+   - **No stamina for attacking or dodging,** and no exhaustion. The dodge has 3 charges that refill more slowly, one at
+     a time (Aleix, 2026-11-14, over 2 quick ones; start near 1.3 s each and tune). Blocking still wears your guard
+     down, so turtling stays risky.
+   - **The HUD: no stamina bar** (Aleix: "why is there still a stamina bar? This new white dash bar should be it").
+     Where the green bar sat, the dash charges show as three very slim white horizontal bars side by side, each
+     filling as it comes back; no diamonds. The guard isn't a standing bar: its wear shows only while blocking or
+     refilling (thin, beside the dash bars, fading out once full), so a newcomer sees one bar under health, not two.
    - **A dash for a roll:** about 0.35 s, i-frames kept. A perfect dodge (right on the hit) opens a short counter
      window, drawn with a beat of slow motion; the simulation and the other players never slow.
    - **Cancels:** any attack cancels into a dodge or a deflect once its hit is out. The wind-up still commits.
