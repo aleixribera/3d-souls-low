@@ -16,6 +16,18 @@ function validateData({ visual = true } = {}) {
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
   for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id, ...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  // The player's look (pass 91, js/player-pose.js, Rig.settle): blend times, the deflect's pose, the player's easings.
+  if (visual) {
+    const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
+    need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');
+    const D = A.deflect;
+    need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s) and a pose of [x, y, z] per bone, for the press and its clang.');
+    need(Object.entries(A.playerEase || {}).every(([ph, e]) => MARKER_PHASES.includes(ph) && e in EASE), `ANIM_SETTINGS.playerEase: phases ${MARKER_PHASES.join(', ')}, easings from EASE.`);
+    const G = A.afterimage, look = g => g && num(g.life) && num(g.opacity) && Number.isInteger(g.color) && g.color >= 0 && g.color <= 0xffffff;
+    need(G && look(G) && look(G.dodge) && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0
+      && Object.keys(CONFIG.VISUALS.fxBudgets).every(b => Number.isInteger(G.perDash && G.perDash[b]) && G.perDash[b] >= 1 && G.perDash[b] <= G.pool),
+      'ANIM_SETTINGS.afterimage: pool (1 to 12 figures), gap (m), core and inLine (0 to 1), cover (m), clear ([from, to] m), life and opacity (0 to 1), a colour, perDash per effect budget (1 to pool), and the same look for `dodge`.');
+  }
   // The changelog in the game (js/data/changelog.js): newest first, starting at the running version.
   need(Array.isArray(CHANGELOG) && CHANGELOG.length && CHANGELOG[0].version === VERSION, `Changelog: the first entry must be the running version ${VERSION} (js/data/changelog.js).`);
   const changeLabels = new Set();

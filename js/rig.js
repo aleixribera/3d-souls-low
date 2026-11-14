@@ -123,6 +123,43 @@ class Rig {
     this.leanS += (clamp(turn * Math.abs(fwd) * W.turn, -W.max, W.max) - this.leanS) * k;
     this.tip.rotation.x += this.leanF; this.tip.rotation.z += this.leanS;
   }
+  // Blends between moves (visual only, pass 91): called each frame with the move being drawn (`state`, and `sub`, which
+  // tells one attack from the next) and how long it has run (`tt`, s). When the move changes, or its clock starts over
+  // (hit again while still flinching), each bone's turn from the new pose back to last frame's drawn pose is kept
+  // as an offset that fades out over ANIM_SETTINGS.settle, on an ease-out: no snaps, and the new move still shows at
+  // once. It runs on the move's own clock, so a hit-pause holds it. `from` false (a respawn) starts the move clean.
+  settle(state, sub, tt, from = true) {
+    const S = ANIM_SETTINGS.settle, B = this.settleBones || this.initSettle(), n = B.length, R = this.settleR;
+    if (state !== this.settleKey || sub !== this.settleSub || tt < this.settleLast - 1e-6) {
+      const was = this.settleKey; this.settleKey = state; this.settleSub = sub; this.settleTime = 0;
+      if (was !== null && from) {
+        for (let i = 0; i < n; i++) {
+          const o = this.settleOff[i].copy(B[i].quaternion).invert().premultiply(this.settlePrev[i]);   // last frame's pose, from the new one
+          if (o.w < 0) o.set(-o.x, -o.y, -o.z, -o.w);
+        }
+        this.settleDrop = this.settleY - this.spin.position.y;
+        this.settleTime = S.into[state] ?? S.time; this.settleT0 = Math.min(tt, CONFIG.step);
+      }
+    }
+    if (this.settleTime > 0) {
+      const p = clamp((tt - this.settleT0 + CONFIG.step) / this.settleTime, 0, 1), w = (1 - p) * (1 - p);   // ease-out: a third of the way in the first frame, settling softly
+      if (w > 0) {
+        for (let i = 0; i < n; i++) B[i].quaternion.premultiply(R.identity().slerp(this.settleOff[i], w));
+        this.spin.position.y += this.settleDrop * w;
+      } else this.settleTime = 0;
+    }
+    for (let i = 0; i < n; i++) this.settlePrev[i].copy(B[i].quaternion);
+    this.settleY = this.spin.position.y; this.settleLast = tt;
+  }
+  initSettle() {
+    const skip = new Set();
+    if (this.anim) { for (const c of this.anim.cloth) skip.add(c.bone); for (const h of this.anim.hang) skip.add(h.bone); }   // springs of their own
+    const all = this.skeleton ? this.skeleton.bones : ['tip', 'spin', 'chest', 'neck', 'head', 'legL', 'legR', 'kneeL', 'kneeR', 'armL', 'armR', 'elbowL', 'elbowR', 'weapon'].map(n => this[n]);
+    this.settleBones = all.filter(b => b && !skip.has(b));
+    this.settlePrev = this.settleBones.map(b => b.quaternion.clone()); this.settleOff = this.settleBones.map(() => new THREE.Quaternion());
+    this.settleR = new THREE.Quaternion(); this.settleKey = null; this.settleSub = null; this.settleLast = 0; this.settleTime = 0; this.settleT0 = 0; this.settleDrop = 0; this.settleY = this.spin.position.y;
+    return this.settleBones;
+  }
   // Weapon trails the body's turning and movement slightly (visual only).
   applyLag(yaw, speed, dt) {
     if (this.lastYaw === null || dt <= 0) { this.lastYaw = yaw; return; }

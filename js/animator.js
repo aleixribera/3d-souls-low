@@ -155,7 +155,8 @@ class ModelAnimator {
 
   // glint: the blade flash of a key-posed attack (js/attack-anim.js), or -1 for none. Its whole-body pose replaces
   // the secondary attack layer.
-  updatePlayer(p, tt, ctx, glint = -1) {   // the player
+  // `later`: the cloth, hanging parts and glint wait for finishPlayer, after the body's own blends (js/player-pose.js).
+  updatePlayer(p, tt, ctx, glint = -1, later = false) {   // the player
     const st = p.state, t = ctx.t + this.seed, dt = Math.min(ctx.dt || 0, 0.1);
     if (st !== PS.DEAD) this.idleLayer(t, st === PS.IDLE ? 1 : 0.3);
     this.walkLayer(p.walkPhase, st === PS.WALK || st === PS.BLOCK, dt);
@@ -169,8 +170,12 @@ class ModelAnimator {
     else if (st === PS.BLOCK) { this.add('chest', [-0.12, 0, 0]); this.add('head', [-0.08, 0, 0]); }
     else if (st === PS.PARRY) { const k = Math.sin(clamp(tt / CONFIG.parry.arm, 0, 1) * Math.PI); this.add('chest', [-0.1, 0.25, 0], k); this.add('head', [0, -0.2, 0], k); }
     else if (st === PS.DEAD) this.deathLayer(tt);
+    if (!later) this.finishPlayer(p, ctx);
+  }
+  finishPlayer(p, ctx) {
+    const dt = Math.min(ctx.dt || 0, 0.1);
     this.updateCloth(p, ctx, dt);
-    this.finish(p, ctx, dt, st === PS.DEAD);
+    this.finish(p, ctx, dt, p.state === PS.DEAD);
   }
 
   // Hanging strips: damped springs pushed by the body's movement and turning, plus a slow flutter.

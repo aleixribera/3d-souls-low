@@ -7,3 +7,4 @@ What the game is: `../VISION.md`. What comes next: `../PLAN.md`. The story: `../
 - `container-updates.md`: how the server picks up a new release (the homelab's `hl`), by hand, pinned or rolled back.
 - `how-online-works.html`: a picture of the multiplayer model.
 - `scorecard/`: frames and measurements the loop's passes saved as evidence.
+- `animation-references.md`: the reference clips, patterns and input-to-motion numbers for the player's movement (PLAN.md item 3c).

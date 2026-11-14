@@ -2,6 +2,19 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **For track B, from item 3c's pass 1 (pass 91, track A; numbers in `docs/animation-references.md`).** The body now
+  shows a press on the very next frame; what still feels slow is the moves' own timing, in track B's files: a tapped
+  heavy's blow lands 32 frames after the press (startup 0.5 s) and a light's 14 (0.2 s); the run takes 9 frames to full
+  speed (accel 26), 12 to stop (decel 22) and 13 to turn round (turnRate 14). Sekiro's step leans fully in 6 frames
+  and runs on without a stop. Candidates, overridable: heavy startup about 0.4 s, decel about 30. Also: the counter's
+  attacks borrow `lightBackhand`/`heavyOverhead` poses and want their own pose ids (js/data/player.js). `Player.pose`
+  moved from js/player.js to js/player-pose.js (track A's, drawing only); the update loop is untouched.
+
+- **Item 3c's next pass (track A):** the judge's giveaways (`docs/scorecard/animation-judge.csv`): the dash should be a
+  long, low, leaning lunge (the pose, not the distance), and the deflect should move the whole body (recoil, a weight
+  shift, the free arm), not the sword arm alone. Not yet: a perfect dodge's brighter afterimages are untested in frames
+  (no strike lands in the probe); drink still borrows a raised arm; speed lines on finishers.
+
 - **Keys 1-4, after pass 87 (track B):** pressed abilities fill from play (`CONFIG.abilities.press`). Not yet: Story
   gives no pressed ability (below); Thunder Call and Cataclysm reuse
   Storm King's and Meteor Fall's effects, not their own; bots press a full key at once (heal when hurt, stance on a

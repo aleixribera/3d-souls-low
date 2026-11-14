@@ -146,7 +146,7 @@ if (DEV) (() => {
     lab.scene.remove(lab.rig.root); lab.rig.dispose(); lab.renderer.dispose(); lab.root.remove(); lab = null;
   }
   // Debug: MODELLAB.pose('Sword Swing', 0.5) freezes that mode at that time (s into its loop); MODELLAB.pose() unfreezes.
-  MODELLAB.pose = (name, tt = 0) => { if (!lab) return; lab.frozen = !!name; if (name) { lab.mode = Math.max(0, lab.modes.findIndex(m => m.name === name)); lab.tt = tt; lab.modeBtn.textContent = 'anim: ' + name; } };
+  MODELLAB.pose = (name, tt = 0) => { if (!lab) return; lab.frozen = !!name; if (name) { lab.mode = Math.max(0, lab.modes.findIndex(m => m.name === name)); lab.tt = tt; lab.modeBtn.textContent = 'anim: ' + name; if (lab.player) lab.player.rig.settleKey = null; } };   // a frozen frame shows the move alone, no blend (Rig.settle)
   MODELLAB.state = () => lab;
   // Debug: MODELLAB.views([{ name, pos: [x, y, z], look?: y, sil? }, ...]) swaps the four cameras (frame strips of a long weapon).
   MODELLAB.views = list => { VIEWS = list; if (lab) lab.labels.forEach((d, i) => { d.textContent = list[i] ? list[i].name : ''; }); };

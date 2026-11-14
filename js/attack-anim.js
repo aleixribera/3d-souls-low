@@ -80,7 +80,8 @@ function applyKeyPose(rig, pose, k) {
 // are skipped. Returns the blade glint strength (0..1) from `glint` markers.
 // charge: 0..1 of a held heavy; the pose's `charge` key pose is added that much through the wind-up and unwinds
 // through the strike. fromPose: where a chained attack's first wind-up starts (the previous swing's last key pose).
-function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null) {
+// style: easings by phase that win over the pose's own (the player's, ANIM_SETTINGS.playerEase).
+function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null, style = null) {
   const P = ATTACK_POSES[a.pose], S = POSE_SETTINGS, tl = attackTimeline(a, tt), i = tl.hitIndex, H = P.hits;
   const after = h => h.follow || h.strike;   // where a hit leaves the body
   let from, to;
@@ -88,7 +89,7 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null) {
   else if (tl.phase === PHASE.ACTIVE) { from = H[i].windup; to = H[i].strike; }
   else if (tl.phase === PHASE.FOLLOW) { from = H[i].strike; to = H[i].follow; }
   else { from = after(H[H.length - 1]); to = null; }
-  const ease = EASE[(P.ease && P.ease[PHASE_EASE_KEY[tl.phase]]) || S.ease[PHASE_EASE_KEY[tl.phase]]];
+  const ph = PHASE_EASE_KEY[tl.phase], ease = EASE[(style && style[ph]) || (P.ease && P.ease[ph]) || S.ease[ph]];
   const lagOf = name => (P.lag && P.lag[name]) ?? S.lag[name] ?? 0;
   // A ground ring lives as long as it spreads; the blow that starts it lands in CONFIG.enemy.ringStrike s.
   const B = tl.phase === PHASE.ACTIVE && a.hits[i] ? a.hits[i].box || a.box : null;
