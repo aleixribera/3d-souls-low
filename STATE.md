@@ -9,13 +9,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   player's first Story road / Boss Rush, 3 launch offers to old saves, Practice, lobby; ~50 s. In-page `pass 97` (a
   bot does each drill). Counter window: halo + closing ring (`counterFx.aura`), judge 3 to 7 twice. Next: Controls
   clips (BACKLOG), the Finishing Blow's look.
-- Track B (pass 98, Aleix's bug): v7.125.0 the perfect dodge is decided on the first frame the i-frames meet a blow,
-  only if it ends within them (`dashOutlasts`, whole steps, once per `dashNo`); a blow dodged is `markHit` and never
-  lands; any unblocked blow closes the counter (`closeCounter`, `counterClose`). In-page `pass 98 perfect dodge`
-  (dash 0.02-0.15 s ahead: dodge, cued +0 frames; 0.2-0.3 s: hit, no cue). The name is unshipped on the worktree
-  branch. Pass 96: no stamina, guard bar or poise; only `heavy: true` staggers.
-- Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
-- Release: `node tools/release.cjs "<title>" "<text>"` (any apostrophe is fine). Don't wait on CI after a push.
+- Track B (pass 98): v7.125.0 a dodge is decided on first overlap (`dashOutlasts`, per `dashNo`), a dodged blow never
+  lands, a landed one closes the counter (`counterClose`); in-page `pass 98 perfect dodge`. v7.126.0 the name
+  (`progress.name`, `js/name-ask.js`; `name-browser.cjs`). Next: no stagger bar, the Finishing Blow replaces
+  executions (07658e1, bfff005): B the count, damage, healing, party rule, server claim; A the look. Off `js/showcase*`.
+- Old docs: `git show v7.56.0:docs/<file>`.
 
 ## Works
 
@@ -59,7 +57,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
+- Not in CI, failing on a360796 too: `lobby-polish-browser` (Tab wrap; flaky), `enemy-feedback-browser` (break
+  flash), `experience-browser` (320x568 overlap).
 
 ## Queued runs
 
@@ -87,6 +86,7 @@ None. Backlog: `BACKLOG.md`.
 - (overridable) Boss Rush: no wall; x1.6 at fight 10, x2.8 at 15, x4 at 20, then +0.25 a fight (pass 96).
 - (overridable) Pass 96: heavy = poise 60+ (94 attacks); projectiles stay blockable; the end reads "Reached fight
   N"; Deep Lungs, Quick/Deep Breath and Second Wind are gone; the harder press is every boss's, Story's too.
+- (overridable) Pass 98: "Your name" with Join / Cancel; Options > Game > Name; a new player spars, then is asked.
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
