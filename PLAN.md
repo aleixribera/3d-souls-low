@@ -96,6 +96,9 @@ Aleix, 2026-11-13.
 - The showcase (Aleix, 2026-11-14): a 30-second live cinematic of the game at its best, before the sparring scene, not
   skippable, kept current by its beats' test, and recorded as a video with a WhatsApp version; built by its own session
   (its own section). `VISION.md`'s exception with his OK.
+- The ability design (Aleix, 2026-11-14): its own session designs every ability with ChatGPT concept images, shown
+  in a private gallery page; the loop builds them later (item 6). Textures and concept art may now use ChatGPT's
+  image generation (`VISION.md` and his `CLAUDE.md` changed; the Claude-only texture skill removed).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -689,6 +692,12 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
    - **Fewer plain stat buffs** (Aleix: "most of the upgrades I'm getting are common stat buffs"). Even commons do
      something you see in the fight (a small effect on a trigger) more than they add a number; plain stat buffs are at
      most a third of the commons and come up less often in offers. Hard to design that many, "but still, let's try".
+   - **The design comes first, from its own session** (Aleix, 2026-11-14): the ability design session designs the
+     whole pool (about 110, the existing 38 redesigned or cut, plus Story's four) with a ChatGPT concept image for each,
+     into `design/abilities/` (one spec per ability, a data entry shaped like `js/data/abilities.js`, effect, sound,
+     camera and card specs, a build order in batches). The loop doesn't design new abilities meanwhile; once it has
+     shipped, item 6's growth and spectacle passes build it batch by batch with the game's own tools, matching each
+     concept image, and the images are references only.
    - **The feel: anime techniques** (Aleix: the cool attacks and effects of a show like Naruto Shippuden). Signature
      moves with a big moment: a lightning dragon that tears out of a fully charged heavy blow, a counter that fires when
      you parry, clones that strike together, a wind blade, a fire burst. `VISION.md`'s rule holds: the spectacle and

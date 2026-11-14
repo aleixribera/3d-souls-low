@@ -78,7 +78,7 @@ side by side, and each should feel like the main event.
 
 ## Rules
 
-- Every character is a real Blender model, with Claude-only textures and no stock-AI UI (Aleix's `~/.claude/CLAUDE.md`).
+- Every character is a real Blender model, with no stock-AI UI (Aleix's `~/.claude/CLAUDE.md`). Textures and concept art may use ChatGPT's image generation (Aleix, 2026-11-14).
 - A new model or boss is seen working in a preview, standing and through every attack, and judged on whether it will
   work in the game.
 - Everything is original. The Elden Ring bosses and the Lands Between leave the game (Aleix, 2026-11-13).
