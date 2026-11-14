@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.133.0', title: 'The showcase after every update', text: 'After each update the showcase plays once when you launch the game, at most once a day. It never interrupts a lobby or a run.' },
   { version: 'v7.132.0', title: 'The opening waits for the page', text: 'The opening cinematic now starts once the game has finished loading, and plays at its real speed.' },
   { version: 'v7.131.0', title: 'The Finishing Blow lands', text: 'Counters now crack a foe with glowing fissures that cool as they fade. The Finishing Blow stops time: the world goes grey and dark, the foe freezes mid-swing, you flash-step through it in red, and every cut opens at once in a burst, with its own sound and a camera that swings round the hit.' },
   { version: 'v7.130.0', title: 'The showcase ends on the Finishing Blow', text: 'The showcase that opens the game now ends on the Finishing Blow: the King\'s Blade\'s guard cracks, and the third counter flash-steps through him before the title comes up.' },
