@@ -91,8 +91,8 @@ Aleix, 2026-11-13.
   modifiers named for what they do; the first pick a rare; momentum through attacks; legendaries OP, at one level,
   uncapped, the dragon the floor, but not "wins the fight by itself"; fewer plain stat buffs; Story's four abilities
   cool as fuck and the same all story ("Next, small" section, item 6, rework item 3).
-- The stagger bar goes (Aleix, 2026-11-14): counters are the focus ("Next, small", item 2). He leans to removing
-  executions too, open to keeping one if it's much cooler: being grilled.
+- The stagger bar goes (Aleix, 2026-11-14): counters are the focus ("Next, small", item 2). Executions go; the
+  Finishing Blow replaces them: the third counter in a short spell becomes a frozen-time multi-cut flash step.
 - The showcase (Aleix, 2026-11-14): a 30-second live cinematic of the game at its best, before the sparring scene, not
   skippable, kept current by its beats' test, and recorded as a video with a WhatsApp version; built by its own session
   (its own section). `VISION.md`'s exception with his OK.
@@ -332,8 +332,14 @@ name (6 below) came later the same day and goes with track B's.
    - **Kept:** the ability keys' charges, and bosses that learn (they read as a boss reacting).
    - **The stagger bar goes** (Aleix, 2026-11-14: it competes with the counters; "focus on counters"). No posture bar
      and no hidden posture, for bosses and for every enemy; the boss bar shows health only. Counters are the skill
-     the fight is about. What a chain of counters earns, and whether executions stay, waits on Aleix's answer
-     ("Needs Aleix"); until then the loop removes nothing of executions. Abilities that fill posture today (`breaker`
+     the fight is about. **Executions go; the Finishing Blow replaces them** (Aleix,
+     2026-11-14): no kneeling and no walking up to press attack. Each counter visibly cracks the enemy's guard (on the
+     body, not a meter), and the cracks fade if no counter lands for a while. The third counter within that spell
+     becomes the Finishing Blow: time freezes for a moment, the player flash-steps through the enemy several times
+     with afterimages, then every cut line opens at once for big damage; about 1.2 s, then control is back at once.
+     It never stops the action. Its own sound, camera, hit-stop and held pose, to the counter's bar; the healing that
+     executions gave moves to it. `js/execution.js` and the kneeling state go. In a party, any player's counters count
+     and the one landing the third gets the blow. The showcase's finale beat becomes it. Abilities that fill posture today (`breaker`
      and the rest) are reworked to feed counters (a longer window, an effect when a counter lands).
    - **The Boss Rush corner:** the fight number only, plus the clock while a Swift kill is still possible (under par);
      "Crowned in" and "par" go.
@@ -385,8 +391,8 @@ session (the showcase session), not the loop**: the loop doesn't touch the showc
    never during it.
 2. **The shape:** a montage across three of the most aggressive bosses, about 10 s each, hard cuts on the beats: it
    opens on a boss mid-combo and ends on the game's title. Beats: dashing through a string, deflecting a string into
-   the flash-step counter, an ability on its key, a legendary (the lightning dragon), the counters' finale (whatever
-   breaking a boss is once Aleix decides, below). Its own synthesized music cue drives the cuts.
+   the flash-step counter, an ability on its key, a legendary (the lightning dragon), the Finishing Blow (three counters into the
+   multi-cut flash step). Its own synthesized music cue drives the cuts.
 3. **When:** a new player's first launch plays it, then the sparring scene (item 3d of the rework) straight after;
    **it can't be skipped** (Aleix: "no key to skip it"). Afterwards a **Watch** entry on the title plays it again;
    players from before the rework see it with their three sparring-scene offers.
