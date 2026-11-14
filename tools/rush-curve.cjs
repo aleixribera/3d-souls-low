@@ -9,7 +9,7 @@
 // One body, its bot brain playing the person (no allied bot, item 9). A fight ends at a win, a fall or `LIMIT` s (a loss).
 // No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses (bosses mode). JOBS=n splits the work over n child processes, each at
 // idle priority. CURVE='{"rise":0.3}' merges into CONFIG.pace, to try a curve without editing js/config.js.
-// ABILITIES='{"posture":0.7}' merges into CONFIG.abilities.
+// ABILITIES='{"posture":0.7}' merges into CONFIG.abilities. PRESS='{"rest":1.3}' merges into CONFIG.enemy.press (pass 96).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
 // BY=1 adds the damage taken by what dealt it, and the last blow of each fall (BY=2: by blow of a string).
 // SLOW='{"oswin":[1.2,1.1,0.8,0.2]}' scales a boss's idle gaps (every `cooldown`), recoveries and follow-up chances, and adds
@@ -30,7 +30,7 @@ const patch = process.env.PATCH ? JSON.parse(process.env.PATCH) : {};
 // The stand-in's skill: SKILLED=1 is the skilled player of PLAN.md item 10's curve targets, the bot mistiming a quarter
 // as many rolls as its moods say (BOT_MOODS slip, 0.3 to 0.5: a decent friend new to the genre, the default).
 const skill = process.env.SKILLED ? 0.25 : 1;
-// KIT (pass 56): the abilities held, the first the free pick before fight 1 (a common, CONFIG.abilities.first, pass 73),
+// KIT (pass 56): the abilities held, the first the free pick before fight 1 (a rare since pass 96, CONFIG.abilities.first),
 // then one picked after each fight won, in this order: fight n holds the first n. KIT=strong is item 10's "rare, great
 // kit": a lucky run's best picks, two legendaries the bot can use (Time Rift on its dodges, Blood Moon when low) among
 // health, damage and healing. KIT=max (pass 73, item 11's check) is the strongest kit the rules allow for the stagger
@@ -39,18 +39,18 @@ const skill = process.env.SKILLED ? 0.25 : 1;
 // KIT=best (pass 76) is a lucky run's great kit: those two legendaries with health, posture, damage and healing. Or a
 // list of ability ids. No KIT: no abilities.
 const KITS = {
-  max: ['breaker', 'gale-crescent', 'breaker', 'static-edge', 'gale-crescent', 'breaker', 'opportunist', 'meteor-fall', 'keen-edge',
+  max: ['static-edge', 'gale-crescent', 'breaker', 'breaker', 'gale-crescent', 'breaker', 'opportunist', 'meteor-fall', 'keen-edge',
     'breaker', 'static-edge', 'meteor-fall', 'iron-blood', 'opportunist', 'keen-edge', 'static-edge', 'iron-blood', 'opportunist',
     'keen-edge', 'ash-lancer', 'iron-blood', 'ash-lancer', 'keen-edge', 'iron-blood', 'ash-lancer', 'bloodthirst', 'bloodthirst',
-    'bloodthirst', 'deep-lungs', 'deep-lungs', 'deep-lungs'],
-  strong: ['keen-edge', 'iron-blood', 'keen-edge', 'time-rift', 'bloodthirst', 'iron-blood', 'keen-edge', 'long-shadow', 'time-rift',
+    'bloodthirst', 'light-step', 'light-step', 'light-step'],
+  strong: ['bloodthirst', 'iron-blood', 'keen-edge', 'time-rift', 'keen-edge', 'iron-blood', 'keen-edge', 'long-shadow', 'time-rift',
     'iron-blood', 'bloodthirst', 'keen-edge', 'blood-moon', 'long-shadow', 'iron-blood', 'keen-edge', 'bloodthirst',
     'quick-draught', 'opportunist', 'blood-moon', 'long-shadow', 'quick-draught', 'opportunist', 'vengeance', 'vengeance',
-    'opportunist', 'vengeance', 'quick-draught', 'quick-draught', 'deep-lungs', 'deep-lungs'],
-  best: ['iron-blood', 'gale-crescent', 'breaker', 'iron-blood', 'gale-crescent', 'keen-edge', 'meteor-fall', 'iron-blood',
-    'bloodthirst', 'breaker', 'meteor-fall', 'iron-blood', 'static-edge', 'keen-edge', 'bloodthirst', 'breaker', 'opportunist',
+    'opportunist', 'vengeance', 'quick-draught', 'quick-draught', 'light-step', 'light-step'],
+  best: ['bloodthirst', 'gale-crescent', 'breaker', 'iron-blood', 'gale-crescent', 'keen-edge', 'meteor-fall', 'iron-blood',
+    'iron-blood', 'breaker', 'meteor-fall', 'iron-blood', 'static-edge', 'keen-edge', 'bloodthirst', 'breaker', 'opportunist',
     'keen-edge', 'static-edge', 'bloodthirst', 'breaker', 'keen-edge', 'opportunist', 'static-edge', 'long-shadow', 'long-shadow',
-    'opportunist', 'long-shadow', 'deep-lungs', 'deep-lungs', 'deep-lungs'],
+    'opportunist', 'long-shadow', 'light-step', 'light-step', 'light-step'],
 };
 const kitList = process.env.KIT ? KITS[process.env.KIT] || process.env.KIT.split(',') : [];
 const probe = createSimulation();
@@ -64,6 +64,7 @@ function setup(sim) {
   if (curve) Object.assign(global(sim, 'CONFIG').pace, curve);
   if (process.env.ENDLESS) Object.assign(global(sim, 'CONFIG').endless, JSON.parse(process.env.ENDLESS));
   if (process.env.ABILITIES) Object.assign(global(sim, 'CONFIG').abilities, JSON.parse(process.env.ABILITIES));
+  if (process.env.PRESS) Object.assign(global(sim, 'CONFIG').enemy.press, JSON.parse(process.env.PRESS));
   if (skill !== 1) for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill;
   const byId = global(sim, 'ENEMY_BY_ID');
   for (const [id, [cd, rec, fu, beat = 0]] of Object.entries(slow)) {

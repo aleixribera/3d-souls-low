@@ -1,16 +1,13 @@
 'use strict';
 // ============================================================================
-// Storm and rend (pass 48, Mother Agathe, the Rending Hand): what her hook holds of you, and the storm at her back
-// (drawing only)
+// The storm (pass 48, Mother Agathe, the Rending Hand): the storm at her back (drawing only). Her rend, the pieces of
+// your bar her hook held, went in pass 96 (PLAN.md "No hidden meters").
 // ============================================================================
-// - The pieces: each piece of your bar her hook has torn away (Player.rend) hangs on the hook's inner curve, a coal of
-//   your own red, and flies to it from your chest as it is torn; each blow you land on her flies one back to you
-//   (Player.reclaim). A wound that closes drops what it held as ash. Only your own pieces: what she holds of you.
 // - The bolts: a hit's `bolt` (Enemy.noteBolt) shows its mark on the floor where it will fall, a ring that follows you
 //   and then holds still (brighter, tighter: step off it), and strikes as a jagged column of light from the clouds.
 // - The storm: a phase's `storm` shows the model's `storm` slots (the seam of lightning along the hook, the sign on her
 //   breast) and throws sparks off the hook.
-// With reducedMotion() no flicker. One InstancedMesh each for marks, bolt segments and pieces; nothing allocated per frame.
+// With reducedMotion() no flicker. One InstancedMesh each for marks and bolt segments; nothing allocated per frame.
 const stormRend = (() => {
   const C = VIS.stormRend, POOL = 6, SEG = C.segs;
   const flat = new THREE.RingGeometry(0.82, 1, 40); flat.rotateX(-Math.PI / 2);
@@ -27,48 +24,30 @@ const stormRend = (() => {
   })();
   const segGeo = new THREE.PlaneGeometry(1, 1); segGeo.translate(0, 0.5, 0);   // stands on its lower end
   const bolts = new THREE.InstancedMesh(segGeo, add({ map: tex, side: THREE.DoubleSide }), POOL * SEG * 2);
-  const pieceGeo = new THREE.OctahedronGeometry(1, 0); pieceGeo.scale(0.75, 1.25, 0.75);
-  const pieces = new THREE.InstancedMesh(pieceGeo, add({}), 12);
   const black = new THREE.Color(0, 0, 0);
-  for (const m of [marks, bolts, pieces]) {
+  for (const m of [marks, bolts]) {
     for (let i = 0; i < m.count; i++) m.setColorAt(i, black);
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor.setUsage(THREE.DynamicDrawUsage);
     m.frustumCulled = false; m.visible = false; m.renderOrder = 2; scene.add(m); pooledFx.push(m);
   }
   const dummy = new THREE.Object3D(), col = new THREE.Color(), markCol = new THREE.Color(C.markColor), boltCol = new THREE.Color(C.boltColor);
-  const pieceCol = new THREE.Color(C.pieceColor), backCol = new THREE.Color(C.backColor);
   const v = new THREE.Vector3(), w = new THREE.Vector3(), d = new THREE.Vector3(), n = new THREE.Vector3(), c = new THREE.Vector3();
-  const UP = new THREE.Vector3(0, 1, 0), FWD = new THREE.Vector3(0, 0, 1), MARKS = POOL * 2, BOLTS = POOL * SEG * 2, PIECES = 12;
-  const SPARK = { color: C.stormColor, count: 2, speed: 2.4 }, STRIKE = { color: C.boltColor, count: 18, speed: 7 }, ASH = { color: 0x5a5450, count: 6, speed: 1.2 };
-  const RED = { color: C.pieceColor, count: 10, speed: 3.5 }, BACK = { color: C.backColor, count: 8, speed: 2.5 };
-  // Where piece k (0..) hangs on the hook: along the crescent's inner curve, in the weapon bone's frame (tools/blender/agathe.py).
+  const UP = new THREE.Vector3(0, 1, 0), FWD = new THREE.Vector3(0, 0, 1), MARKS = POOL * 2, BOLTS = POOL * SEG * 2;
+  const SPARK = { color: C.stormColor, count: 2, speed: 2.4 }, STRIKE = { color: C.boltColor, count: 18, speed: 7 };
+  // Points along the hook's inner curve, in the weapon bone's frame (tools/blender/agathe.py): where the storm's sparks fly off.
   const HANG = [[0, 0.16, 1.6], [0, 0.26, 1.76], [0, 0.2, 1.95], [0, 0.08, 2.0]];
   function hookPoint(e, k, out) {
     const h = HANG[Math.min(k, HANG.length - 1)];
     if (!e.rig || !e.rig.weapon) return out.set(e.x, e.y + 2.5, e.z);
     return e.rig.weapon.localToWorld(out.set(h[0], h[1], h[2]));
   }
-  const chestOf = (b, out) => out.set(b.x, b.y + (b.height || 1.8) * 0.6, b.z);
-  // Pieces in flight: { body, enemy, k, t, back } (to the hook, or `back` to you).
-  const flights = Array.from({ length: 8 }, () => ({ on: false, body: null, enemy: null, k: 0, t: 0, back: false }));
-  function fly(body, enemy, k, back) {
-    const f = flights.find(f => !f.on) || flights[0];
-    f.on = true; f.body = body; f.enemy = enemy; f.k = k; f.t = 0; f.back = back;
-  }
-  const mine = d => d.body === Game.player;
-  events.on('rend', d => { if (!mine(d)) return; spawnBurst(chestOf(d.body, v), RED); fly(d.body, d.enemy, d.piece - 1, false); });
-  events.on('reclaim', d => {
-    if (!mine(d) || !d.enemy) return;
-    for (let i = 0; i < d.pieces; i++) fly(d.body, d.enemy, d.left + i, true);
-  });
-  events.on('rentClosed', d => { if (mine(d) && d.enemy && d.enemy.rig) for (let i = 0; i < d.pieces; i++) spawnBurst(hookPoint(d.enemy, i, v), ASH); });
 
   const struck = new WeakMap();   // enemy -> the bolt key last struck (one burst and shake per bolt)
   const MARK_R = [1, 0.35], MARK_K = [1, 0.6], BOLT_W = [1, 2.5], BOLT_K = [1.0, 0.16];   // the mark's two rings; the bolt's core and glow
   function commit(m, n) { m.count = n; m.visible = n > 0; if (n) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; } }
   function render(game) {
-    const dt = effectSlots.dt(), now = effectSlots.time(), calm = typeof reducedMotion === 'function' && reducedMotion();
-    let mi = 0, bi = 0, pi = 0;
+    const dt = effectSlots.dt(), calm = typeof reducedMotion === 'function' && reducedMotion();
+    let mi = 0, bi = 0;
     for (const e of game.enemies) {
       // The storm at her back: the storm slots, and sparks off the hook.
       const storm = !!(e.def && e.def.storm) && e.alive();
@@ -115,35 +94,8 @@ const stormRend = (() => {
         marks.setMatrixAt(mi, dummy.matrix); marks.setColorAt(mi, col.copy(boltCol).multiplyScalar(0.9 * life)); mi++;
       }
     }
-    // The pieces: what her hook holds of you, and those on their way.
-    const p = Game.player, by = p && p.rentBy;
-    let inFlight = 0;
-    for (const f of flights) if (f.on && !f.back && f.body === p) inFlight++;
-    if (by && by.rig && by.alive()) {
-      const held = Math.max(0, p.rent - inFlight);
-      for (let k = 0; k < held && pi < PIECES; k++) {
-        hookPoint(by, k, v);
-        const pulse = calm ? 1 : 0.8 + 0.2 * Math.sin(now * 7 + k * 2);   // about 1 Hz
-        dummy.position.copy(v); dummy.position.y -= 0.12; dummy.rotation.set(0, now * 1.2 + k, 0); dummy.scale.setScalar(C.piece * (by.def.scale || 1) * 0.5);
-        dummy.updateMatrix(); pieces.setMatrixAt(pi, dummy.matrix); pieces.setColorAt(pi, col.copy(pieceCol).multiplyScalar(1.6 * pulse)); pi++;
-      }
-    }
-    for (const f of flights) {
-      if (!f.on || pi >= PIECES) continue;
-      f.t += dt / C.fly;
-      if (f.t >= 1 || !f.enemy || !f.enemy.rig) {
-        f.on = false;
-        if (f.back && f.body) spawnBurst(chestOf(f.body, v), BACK);
-        continue;
-      }
-      hookPoint(f.enemy, f.k, v); chestOf(f.body, w);
-      const s = f.back ? f.t : 1 - f.t, e = s * s * (3 - 2 * s);   // eased along the way, arcing up
-      dummy.position.set(w.x + (v.x - w.x) * e, w.y + (v.y - w.y) * e + Math.sin(e * Math.PI) * 1.2, w.z + (v.z - w.z) * e);
-      dummy.rotation.set(0, f.t * 8, 0); dummy.scale.setScalar(C.piece * 1.2);
-      dummy.updateMatrix(); pieces.setMatrixAt(pi, dummy.matrix); pieces.setColorAt(pi, col.copy(f.back ? backCol : pieceCol).multiplyScalar(2)); pi++;
-    }
-    commit(marks, mi); commit(bolts, bi); commit(pieces, pi);
+    commit(marks, mi); commit(bolts, bi);
   }
   Game.renderHooks.push(render);
-  return { live: () => ({ marks: marks.visible ? marks.count : 0, bolts: bolts.visible ? bolts.count : 0, pieces: pieces.visible ? pieces.count : 0 }) };
+  return { live: () => ({ marks: marks.visible ? marks.count : 0, bolts: bolts.visible ? bolts.count : 0 }) };
 })();

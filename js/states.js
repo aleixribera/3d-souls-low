@@ -28,7 +28,6 @@ const PLAYER_GROUPS = {
   airborne: new Set([PS.JUMP, PS.FALL]),
   falls: new Set([PS.IDLE, PS.WALK, PS.BLOCK, PS.USE_ITEM, PS.REST, PS.HURT, PS.STAGGER]),   // no floor below: start falling
   attacking: new Set([PS.ATTACK, PS.JUMP_ATTACK]),
-  noRegen: new Set([PS.EXECUTE, PS.BLOCK, PS.DEAD, PS.HELD]),
   noLockFacing: new Set([PS.EXECUTE, PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND, PS.HELD]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
   // Busy states whose roll and attack presses go through the Souls-style input buffer (Player.bufferInputs).

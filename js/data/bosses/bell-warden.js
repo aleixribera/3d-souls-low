@@ -192,31 +192,31 @@ MODEL_DEFS.bellWarden = {
   // ---- cold: the bell chained silent ---------------------------------------------------------------------------------------
   // Bronze Sweep: hauled back low on his right; flat across at your hips. Parry it.
   const sweep = { id: 'wardenSweep', name: 'Bronze Sweep', anim: 'sweep', pose: 'wardenSweep', tracking: { rate: 2.2, commit: 0.7 }, markers: glint(0),
-    hits: [{ startup: 1.25, active: 0.16, follow: 0.4 }], recovery: 1.15, damage: 34, poise: 60, knock: 8, lunge: 1.0, range: 3.6, box: SWEEP };
+    hits: [{ startup: 1.25, active: 0.16, follow: 0.4 }], recovery: 1.15, damage: 34, heavy: true, poise: 60, knock: 8, lunge: 1.0, range: 3.6, box: SWEEP };
   // The Hammerfall: raised straight up, held; down mouth-first ahead. Roll it.
   const hammerfall = { id: 'wardenHammerfall', name: 'The Hammerfall', anim: 'chop', pose: 'wardenHammerfall', tracking: { rate: 2, commit: 0.5 }, rollOnly: true, chance: 0.45,
     hits: [{ startup: 1.55, active: 0.14, follow: 0.45, hold: { at: 0.55, time: [0.4, 1.0], chance: 0.6 }, impact: TOLL }], recovery: 1.4,
-    damage: 58, poise: 90, knock: 8, lunge: 1.2, range: 3.4, box: SLAM };
+    damage: 58, heavy: true, poise: 90, knock: 8, lunge: 1.2, range: 3.4, box: SLAM };
   // The Ward Push: crosswise before his chest; driven out at you. It sends you a long way, and the tower top has an open
   // edge. Parry it.
   const push = { id: 'wardenPush', name: 'The Ward Push', anim: 'shove', pose: 'wardenPush', tracking: { rate: 1.8, commit: 0.65 }, markers: glint(0), shove: true, chance: 0.45,
     hits: [{ startup: 1.3, active: 0.18, follow: 0.25 }], recovery: 1.0, damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: PUSH };
   // The Rampart Charge: head down, the bell levelled under his arm; a run and a ram. Parry it.
   const charge = { id: 'wardenCharge', name: 'Rampart Charge', anim: 'thrust', pose: 'wardenCharge', tracking: { rate: 2, commit: 0.35 }, markers: glint(0), minRange: 5, dash: { speed: 11, from: 0.4 },
-    hits: [{ startup: 1.15, active: 0.16, follow: 0.3 }], recovery: 1.15, damage: 32, poise: 70, knock: 12, lunge: 3, range: 12, box: RAM };
+    hits: [{ startup: 1.15, active: 0.16, follow: 0.3 }], recovery: 1.15, damage: 32, heavy: true, poise: 70, knock: 12, lunge: 3, range: 12, box: RAM };
   // Backhand and Hammer: over his left shoulder; a backhand down across (parry it), then heaved up and brought down (roll it).
   const backhand = { id: 'wardenBackhand', name: 'Backhand and Hammer', anim: 'sweep', pose: 'wardenBackhand', tracking: { rate: 2.6, commit: 0.7 }, markers: glint(0), chance: 0.55,
     hits: [{ startup: 0.95, active: 0.15, follow: 0.2, box: BACKHAND }, { startup: 0.85, active: 0.14, follow: 0.4, noParry: true, damage: 46, box: SLAM, impact: TOLL }],
     recovery: 1.35, damage: 26, poise: 50, knock: 7, lunge: 1.2, range: 3.2, box: BACKHAND };
   // The Upswing: the bell let down on the floor ahead, crouched over it; scooped up under you. Parry it.
   const upswing = { id: 'wardenUpswing', name: 'The Upswing', anim: 'overhead', pose: 'wardenUpswing', tracking: { rate: 2.4, commit: 0.65 }, markers: glint(0), chance: 0.4,
-    hits: [{ startup: 1.05, active: 0.16, follow: 0.35 }], recovery: 1.2, damage: 30, poise: 60, knock: 10, lunge: 1.4, range: 3.3, box: UPSWING };
+    hits: [{ startup: 1.05, active: 0.16, follow: 0.35 }], recovery: 1.2, damage: 30, heavy: true, poise: 60, knock: 10, lunge: 1.4, range: 3.3, box: UPSWING };
   // The Answering Toll: never chosen; it is his answer once his bronze is full (`resonance`). Hugged upright, head bowed,
   // shaking; then arms flung wide and the toll rings out all round him. Roll it, or be out of reach.
   const answer = { id: 'wardenAnswer', name: 'The Answering Toll', anim: 'stomp', pose: 'wardenAnswer', when: 'resonant', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 60,
     markers: [tollSound(0.5)],
     hits: [{ startup: 1.05, active: 0.2, follow: 0.62, box: BURST(3.6), impact: { ring: 4.2, crack: 0, dust: 10, shake: 0.14 } }], recovery: 1.7,
-    damage: 34, poise: 60, knock: 14, lunge: 0, range: 3.6, box: BURST(3.6) };
+    damage: 34, heavy: true, poise: 60, knock: 14, lunge: 0, range: 3.6, box: BURST(3.6) };
   // Drinking where he can see it: the charge, sooner.
   const chargePunish = { ...JSON.parse(JSON.stringify(charge)), id: 'wardenChargePunish', when: 'healing', minRange: 0, chance: 3,
     hits: [{ startup: 0.8, active: 0.16, follow: 0.3 }], tracking: { rate: 3, commit: 0.6 } };
@@ -231,7 +231,7 @@ MODEL_DEFS.bellWarden = {
   // The Bronze Fall: crouched, the bell swung behind him; a leap, and down on you mouth-first. Roll it.
   const fall = { id: 'wardenFall', name: 'The Bronze Fall', anim: 'overhead', pose: 'wardenFall', tracking: { rate: 2.4, commit: 0.45 }, rollOnly: true, minRange: 4, chance: 0.5,
     hits: [{ startup: 1.2, active: 0.16, follow: 0.45, leap: { from: 0.5, max: 14, short: 1.0 }, impact: { ring: 3.6, crack: 2.0, dust: 18, shake: 0.16 } }], recovery: 1.5,
-    damage: 52, poise: 90, knock: 9, lunge: 0, range: 14, box: FALL };
+    damage: 52, heavy: true, poise: 90, knock: 9, lunge: 0, range: 14, box: FALL };
   // Three Tolls: over his right shoulder and down (parry it), over his left and down (parry it), then raised, held, and
   // down ahead (roll it).
   const threeTolls = { id: 'wardenThreeTolls', name: 'Three Tolls', anim: 'chop', pose: 'wardenThreeTolls', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1), chance: 0.55,

@@ -11,15 +11,14 @@ class Player {
     this.ctl = typeof input !== 'undefined' ? input : null;   // where presses come from: the keyboard/pad, or a bot's hands (js/bot.js)
     this.rig = new Rig(def.look);
     this.radius = def.radius; this.height = BODY_HEIGHT * def.look.scale;
-    this.maxHp = def.stats.maxHp; this.maxStamina = def.stats.maxStamina; this.maxPoise = def.stats.maxPoise;
+    this.maxHp = def.stats.maxHp;
     this.inventory = makeInventory(def.inventory);
     this.x = x; this.y = y; this.z = z; this.yaw = yaw;
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.grounded = true; this.peak = y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
-    this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
-    // No exhaustion since the rework (pass 85): kept false, as network frames and the HUD still carry it.
-    this.exhausted = false; this.sinceExhausted = Infinity;
-    this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
+    // No stamina, guard bar or poise (pass 96, PLAN.md "No hidden meters"): health and the dashes are the only meters.
+    this.hp = this.maxHp;
+    this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
     this.riposte = 0; this.flashDist = 0; this.phasing = false;      // riposte: timer: > 0 while the next blow is a riposte (after a deflect that opened a foe, or a perfect dodge)
     this.dashes = CONFIG.player.dashCharges;   // dash charges held (fractional while one comes back)
     // The deflect (CONFIG.parry): s left of an armed press, s of the spam lock, and the blow deflected last ({ enemy, key }):
@@ -37,19 +36,18 @@ class Player {
     // Boss Rush's abilities (js/abilities.js): the kit they make, its perks' clocks, and who settles its powers (a
     // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
     this.kit = NO_KIT; this.perk = abilityPerkState(); this.onAbility = null; this.lastHp = this.hp; this.lowReported = false;
-    this.rent = 0; this.rentTime = 0; this.rentBy = null;   // a rend (pass 48): pieces torn off the bar, s until it closes, who holds them
     this.savePrev();
   }
   // Boss Rush's abilities (ABILITIES): the kit of the ids held (one per pick, repeated by upgrades), with the health
-  // and stamina it gives, both full. Called once, on a fresh body.
+  // it gives, full. Called once, on a fresh body.
   grantAbilities(ids) {
     this.kit = abilityKit(ids);
     const S = this.def.stats, m = this.kit.mods;
-    this.maxHp = S.maxHp * (1 + m.maxHp); this.maxStamina = S.maxStamina * (1 + m.maxStamina);
-    this.hp = this.lastHp = this.maxHp; this.stamina = this.maxStamina;
+    this.maxHp = S.maxHp * (1 + m.maxHp);
+    this.hp = this.lastHp = this.maxHp;
   }
-  // Last Breath (a `low/freeStamina` perk): this low, dashes cost no charge.
-  freeStamina() { const v = this.kit.perks['low/freeStamina']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below; }
+  // Last Breath (a `low/freeDash` perk): this low, dashes cost no charge.
+  freeDash() { const v = this.kit.perks['low/freeDash']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below; }
   // A flask drunk this many times as fast (Quick Draught).
   drinkRate() { return 1 + (this.kit ? this.kit.mods.flaskSpeed : 0); }
   alive() { return this.state !== PS.DEAD; }
@@ -58,17 +56,12 @@ class Player {
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { if (s !== PS.FALL) this.dropped = false; this.state = s; this.stateTime = 0; }
-  // The guard (the `stamina` bar): only blocked blows wear it down; it refills after CONFIG.player.staminaDelay s.
-  spend(amount) {
-    this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay;
-  }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
   // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.bossPowers.destined).
-  // Less, too, every piece a rending hook holds of it (CONFIG.rend, Player.rend).
   hpCap() {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
-    return this.maxHp * Math.max(0.05, 1 - doom - this.rent * CONFIG.rend.cut);
+    return this.maxHp * Math.max(0.05, 1 - doom);
   }
   invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames * (1 + (this.kit?.mods.rollIFrames || 0))) || this.state === PS.EXECUTE || this.execGrace > 0; }
   // A swing already out is not interrupted by hits.
@@ -79,7 +72,7 @@ class Player {
   refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
   // A dash needs a whole charge (Last Breath: none).
-  canRoll() { return this.dashes >= 1 || this.freeStamina(); }
+  canRoll() { return this.dashes >= 1 || this.freeDash(); }
   // A dash is wanted now: a queued press, or a fresh one (only consumed if a dash is possible).
   // A queued dash that can't happen the moment it's allowed (no charge) is dropped, never held.
   wantsRoll() {
@@ -141,7 +134,7 @@ class Player {
   startRoll(mv) {
     this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    if (!this.freeStamina()) this.dashes = Math.max(0, this.dashes - 1);
+    if (!this.freeDash()) this.dashes = Math.max(0, this.dashes - 1);
     this.hitbox = null; this.chainPose = null; this.setState(PS.ROLL);
     events.emit('dash', { player: this });
   }
@@ -218,15 +211,12 @@ class Player {
     this.setState(PS.USE_ITEM);
     events.emit('itemUsed', { item: id, player: this });
     if (id !== 'flask') return;
-    const wind = this.kit.perks['flask/stamina'];   // Second Wind
-    if (wind) { this.stamina = Math.min(this.maxStamina, this.stamina + this.maxStamina * wind.stamina); events.emit('abilityPerk', { body: this, perk: 'flask/stamina' }); }
     abilityReport(this, 'flask', {});   // Ember Twin
   }
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
-    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js). It costs
-    // no stamina, so it comes before the exhaustion check: even an exhausted player can execute.
+    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js).
     const victim = execution.target(this, enemies);
     if (victim && ((this.buffer && this.buffer.action === 'light') || this.ctl.consume('light'))) { execution.start(this, victim); return true; }
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
@@ -254,14 +244,10 @@ class Player {
     this.deflect = Math.max(0, this.deflect - dt); this.deflectLock = Math.max(0, this.deflectLock - dt);
     this.execGrace = Math.max(0, this.execGrace - dt);
     if (this.doomTime > 0) this.updateDoom(dt);
-    if (this.rent > 0) this.updateRent(dt);
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.refillDashes(dt);
-    this.staminaDelay = Math.max(0, this.staminaDelay - dt);
-    if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.kit.mods.staminaRegen) * dt);
     if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
-    tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
 
@@ -408,10 +394,7 @@ class Player {
       case PS.HURT:
       case PS.STAGGER: {
         approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= this.stunTime) {
-          if (this.state === PS.STAGGER) this.poise = this.maxPoise;
-          this.setState(PS.IDLE);
-        }
+        if (this.stateTime >= this.stunTime) this.setState(PS.IDLE);
         break;
       }
       case PS.EXECUTE: execution.update(this, dt); break;
@@ -514,35 +497,6 @@ class Player {
     this.hp = Math.min(this.hp, this.hpCap());
     if (this.hp <= 0) this.die();
   }
-  // A rend (pass 48, Mother Agathe; an attack's `rend` or her phase's): an unblocked blow of the hook tears a piece off the
-  // health bar (CONFIG.rend.cut of the maximum, at most `max` pieces) and she keeps it on the hook. Every blow landed on
-  // her tears one back, as health (Player.reclaim); left there, the wound closes after `time` s from the last tear and the
-  // bar comes back empty. When she falls, everything she held comes back as health.
-  rend(by) {
-    const R = CONFIG.rend;
-    if (this.rentBy && this.rentBy !== by) this.closeRent();   // one holder at a time
-    this.rentBy = by; this.rentTime = R.time;
-    if (this.rent < R.max) { this.rent++; events.emit('rend', { body: this, enemy: by, piece: this.rent }); }
-    this.hp = Math.min(this.hp, this.hpCap());
-  }
-  reclaim(all = false) {
-    if (this.rent <= 0) return;
-    const n = all ? this.rent : 1, by = this.rentBy;
-    this.rent -= n;
-    if (this.alive()) this.hp = Math.min(this.hpCap(), this.hp + n * CONFIG.rend.cut * this.maxHp);
-    events.emit('reclaim', { body: this, enemy: by, pieces: n, left: this.rent });
-    if (this.rent <= 0) { this.rentBy = null; this.rentTime = 0; }
-  }
-  closeRent() {
-    if (this.rent > 0) events.emit('rentClosed', { body: this, enemy: this.rentBy, pieces: this.rent });
-    this.rent = 0; this.rentTime = 0; this.rentBy = null;
-  }
-  updateRent(dt) {
-    const by = this.rentBy;
-    if (!this.alive()) { this.closeRent(); return; }
-    if (!by || !by.alive()) { this.reclaim(true); return; }   // she fell: all of it comes back
-    if ((this.rentTime -= dt) <= 0) this.closeRent();
-  }
   // A seize (pass 72, the Giant Skeleton's hand; a hit's `seize`): caught, you are carried from where you stood to `at`
   // ([side, up, fwd] m from him, along his facing) over `lift` s and held there, burning `dps` a second, for at most `time`
   // s. Every strike, roll or parry pressed in his grip wins back `escape` s. The grip breaks too when he stops the attack
@@ -594,19 +548,18 @@ class Player {
     this.setState(PS.FALL); this.dropped = true;
     events.emit('seizeEnd', { body: this, enemy: H.by, thrown });
   }
-  // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
+  // Damage, block, hurt and stagger from one strike. Returns { blocked, died }. No hidden meters (pass 96, PLAN.md):
+  // a guard facing the blow takes CONFIG.block's chip damage and never breaks, but holds nothing that can't be deflected
+  // (a strike's `rollOnly`: a blue wind-up). An unblocked blow flinches a body that isn't mid-swing; only an attack
+  // marked `heavy` (its wind-up shows it, Enemy.drawWindup) staggers, mid-swing too.
   takeHit(strike, from) {
     const B = CONFIG.block, C = CONFIG.player;
     this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
-    let damage = strike.damage, poise = strike.poise, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
-    let blocked = false, guardBroken = false;
+    let damage = strike.damage, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
     const drinking = this.state === PS.USE_ITEM;
-    if (this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z)) {   // roll-only goes through the guard
-      this.spend(B.staminaBase + strike.damage * B.staminaPerDamage);
-      if (this.stamina <= 0) guardBroken = true;
-      else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
-    }
+    const blocked = this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z);
+    if (blocked) { damage *= B.damageMul; knock *= B.knockMul; }
     this.hp = Math.max(0, this.hp - damage);
     if (this.state === PS.HELD) {   // already in a grip: the blow hurts, but nothing throws you out of it
       this.tint = 1;
@@ -620,24 +573,20 @@ class Player {
     } else { this.kx += dx / d * knock; this.kz += dz / d * knock; }
     if (blocked) this.brace = 1; else this.tint = 1;
     if (this.hp <= 0) { this.die(); return { blocked, died: true }; }
-    if (strike.rend && !blocked && strike.rendBy) this.rend(strike.rendBy);
     if (strike.destined && !blocked) {   // a new hit restarts the cut (it never stacks) and the drain
       const D = CONFIG.bossPowers.destined;
       this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());
       events.emit('destinedDeath', { body: this });
     }
-    if (guardBroken) { this.hitbox = null; this.stunTime = B.breakTime; this.poise = this.maxPoise; this.setState(PS.STAGGER); return { blocked: false }; }
     if (blocked) {
       const bastion = this.kit.perks['block/charge'];
       if (bastion) this.perk.bastion = bastion.window;
-      if (poise > 0) { this.poise = Math.max(1, this.poise - poise); this.poiseTimer = 0; }
       return { blocked: true };
     }
-    const r = applyPoise(this, poise, this.isCommitted(), this.maxPoise);
-    if (r !== POISE.NONE) {   // a jump attack still in its air wind-up is cancelled too
+    if (strike.heavy || !this.isCommitted()) {   // a jump attack still in its air wind-up is cancelled too
       this.hitbox = null;
-      this.stunTime = r === POISE.STAGGER ? C.staggerTime : C.hurtTime;
-      this.setState(r === POISE.STAGGER ? PS.STAGGER : PS.HURT);
+      this.stunTime = strike.heavy ? C.staggerTime : C.hurtTime;
+      this.setState(strike.heavy ? PS.STAGGER : PS.HURT);
     } else if (drinking) { this.stunTime = C.hurtTime; this.setState(PS.HURT); }   // a blow cuts a drink short
     return { blocked: false };
   }

@@ -197,7 +197,7 @@ MODEL_DEFS.varn = {
   // Gaol Sweep: hauled back low at his right hip; flat across at your waist. Parry it.
   const sweep = { id: 'varnSweep', name: 'Gaol Sweep', anim: 'sweep', pose: 'aldricSweep', tracking: { rate: 2.2, commit: 0.65 }, markers: glint(0), poseScale: 1.1,
     hits: [{ startup: 1.2, active: 0.14, follow: 0.38 }], recovery: 2,
-    damage: 38, poise: 60, knock: 8, lunge: 1.2, range: 3.4, box: SWEEP };
+    damage: 38, heavy: true, poise: 60, knock: 8, lunge: 1.2, range: 3.4, box: SWEEP };
   // Two Cuts: over his right shoulder; down across (parry it), then up across (parry it).
   const cleave = { id: 'varnCleave', name: 'Two Cuts', anim: 'sweep', pose: 'aldricTwoCuts', tracking: { rate: 2.6, commit: 0.7 }, markers: glint(0, 1), poseScale: 1.1,
     hits: [{ startup: 0.9, active: 0.13, follow: 0.64 }, { startup: 0.62, active: 0.13, follow: 0.3 }], recovery: 1.9,
@@ -205,7 +205,7 @@ MODEL_DEFS.varn = {
   // The Withheld Sentence: the yoke across his neck, held as long as he likes; down ahead. Parry it, if you wait for it.
   const sentence = { id: 'varnDelay', name: 'The Withheld Sentence', anim: 'chop', pose: 'aldricSentence', tracking: { rate: 2.2, commit: 0.55 }, markers: glint(0), poseScale: 1.1,
     hits: [{ startup: 1.5, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.5, 1.2], chance: 0.75 } }], recovery: 2.3,
-    damage: 52, poise: 80, knock: 9, lunge: 1.6, range: 3.2, box: FALL, impact: { ring: 2.8, crack: 1.6, dust: 14, shake: 0.1 } };
+    damage: 52, heavy: true, poise: 80, knock: 9, lunge: 1.6, range: 3.2, box: FALL, impact: { ring: 2.8, crack: 1.6, dust: 14, shake: 0.1 } };
   // Shackle Lunge: drawn back level at his hip, point at you; a run and a thrust from far off. Parry it.
   const lungeAt = { id: 'varnLunge', name: 'Shackle Lunge', anim: 'thrust', pose: 'aldricLunge', tracking: { rate: 2.6, commit: 0.4 }, markers: glint(0), poseScale: 1.05, minRange: 5,
     dash: { speed: 11, from: 0.45 }, chance: 0.7,
@@ -224,7 +224,7 @@ MODEL_DEFS.varn = {
   // Roll it. A long recovery.
   const leap = { id: 'varnLeap', name: 'Judgement Leap', anim: 'chop', pose: 'aldricLeap', tracking: { rate: 1.8, commit: 0.45 }, poseScale: 1.1, rollOnly: true, minRange: 4, chance: 0.35,
     hits: [{ startup: 1.9, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 13, short: 1.4 } }], recovery: 4,
-    damage: 60, poise: 90, knock: 12, lunge: 0, range: 13, box: LANDING(2.5), impact: { ring: 6.0, crack: 2.6, dust: 26, shake: 0.2 } };
+    damage: 60, heavy: true, poise: 90, knock: 12, lunge: 0, range: 13, box: LANDING(2.5), impact: { ring: 6.0, crack: 2.6, dust: 26, shake: 0.2 } };
 
   // ---- the Ember-Crowned: the same blade, burning, faster -----------------------------------------------------------------
   const hot = (a, over) => ({ ...JSON.parse(JSON.stringify(a)), ...over });
@@ -258,7 +258,7 @@ MODEL_DEFS.varn = {
   const ascent = { id: 'burningAscent', name: 'Burning Ascent', anim: 'chop', pose: 'aldricAscent', tracking: { rate: 2.6, commit: 0.6 }, poseScale: 1.15, rollOnly: true, chance: 0.4,
     hits: [{ startup: 0.85, active: 0.14, follow: 0.62 }, { startup: 1.1, active: 0.16, follow: 0.45, leap: { from: 0.3, max: 9, short: 1.4 },
       box: LANDING(2.5), impact: { ring: 5.0, crack: 2.2, dust: 22, shake: 0.16 } }], recovery: 4.8,
-    damage: 32, poise: 70, knock: 9, lunge: 1.6, range: 3.2, box: { w: 2.6, h: 2.8, d: 3.0, fwd: 1.8, y: 1.3 } };
+    damage: 32, heavy: true, poise: 70, knock: 9, lunge: 1.6, range: 3.2, box: { w: 2.6, h: 2.8, d: 3.0, fwd: 1.8, y: 1.3 } };
   // The Last Toll: the hilt raised, the blade hanging point-down; driven into the floor three times, three tolls, three
   // rings of fire out across the room (roll or jump each as it reaches you); then the fire breaks out close round him.
   const lastToll = { id: 'lastToll', name: 'The Last Toll', anim: 'stomp', pose: 'aldricLastToll', tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.1, rollOnly: true, chance: 0.12,
@@ -266,7 +266,7 @@ MODEL_DEFS.varn = {
               { at: 'windup', t: 0, hit: 2, event: 'sound', sound: 'bellToll', vel: 0.9 }],
     hits: [{ startup: 1.6, active: 0.2, follow: 1.1, box: TOLL_RING }, { startup: 0.8, active: 0.2, follow: 1.1, box: TOLL_RING },
            { startup: 0.8, active: 0.2, follow: 1.1, box: TOLL_RING }, { startup: 1.0, active: 0.16, follow: 0.6, box: BLAST, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.22 } }],
-    recovery: 4.4, damage: 32, poise: 60, knock: 10, lunge: 0, range: 9, box: BLAST };
+    recovery: 4.4, damage: 32, heavy: true, poise: 60, knock: 10, lunge: 0, range: 9, box: BLAST };
 
   // The Undying Ember (pass 75): `share` of each blow that lands opens a wound on his bar, at most `cap` of it at a time;
   // once no blow has landed for `delay` s the Ember closes it at `rate` of his bar a second. A posture break seals every

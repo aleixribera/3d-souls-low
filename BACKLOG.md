@@ -10,6 +10,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   cue on the body for the whole window (the blade glow and edge dim read small in frames); the new counter poses
   (`counterFlash`, `counterRising`) were tuned only by eye in clips.
 
+- **For track A, from pass 96 (track B, "No hidden meters"):** the guard bar, stamina and player poise are gone, so
+  the BLOCK lesson's text (js/data/lessons.js, `block`: "Each one wears your guard down.") is now untrue: a block takes
+  a little damage and never breaks, and a blue-glowing blow goes through it. Ordinary hits flinch; only attacks marked
+  `heavy` (an amber body tint through their wind-up, `CONFIG.VISUALS.heavyTell`) stagger. The shield lessons are about
+  enemy guards and still hold.
+
 - **After item 4's pass (pass 93, track B):** (1) 92 of 197 boss attacks still can't be deflected, nearly all area
   hits and leaps; PLAN's "a quarter at most" needs either deflectable leaps or a hit-level `noParry` on mixed strings
   (only the area blow undeflectable, the rest of the string parryable; per-hit `noParry` exists since pass 63).

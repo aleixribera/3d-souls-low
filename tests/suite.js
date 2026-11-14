@@ -114,7 +114,7 @@
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
     const p = Game.player, report = [];
     for (const [when, hit] of [['first', false], ['first', true], ['later', false], ['later', true]]) {
-      sim.place(12, 0); p.yaw = Math.PI / 2; p.stamina = p.maxStamina;
+      sim.place(12, 0); p.yaw = Math.PI / 2;
       const target = hit ? sim.spawn('hollow', 13.6, 0, undefined, -Math.PI / 2) : null;
       if (target) quiet(target);
       frames.length = 0; landedAt = -1;
@@ -600,7 +600,7 @@
       sim.step();
     }
     expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light4,light', `string: ${seen.map(a => a.id).join()}`);
-    expect.ok(p.stamina === p.maxStamina, 'swinging costs nothing (the green bar is the guard)');
+    expect.ok(!('stamina' in p), 'swinging costs nothing: there is no stamina (pass 96)');
   });
   test('pass 85 finishers: a heavy at any point of the string is that point\'s finisher', () => {
     const M = A.PLAYER_DEF.moveset.attacks;
@@ -627,7 +627,6 @@
     }
     sim.press('roll'); sim.step(2);
     expect.ok(p.state !== PS.ROLL, 'no fourth dash until a charge is back');
-    expect.ok(p.stamina === p.maxStamina, 'dashing costs no guard');
     p.dashes = 0; sim.seconds(C.dashRefill + 0.1);   // from empty, one charge comes back per dashRefill s, not all at once
     expect.ok(p.dashes >= 1 && p.dashes < 1.2, `from empty, one charge back after ${C.dashRefill} s (${p.dashes.toFixed(2)})`);
     sim.press('roll'); sim.step(2);
@@ -851,12 +850,36 @@
     expect.near(p.payload.damage, H.damage * H.charge.mul, 0.01, 'a full charge does charge.mul x damage');
     expect.ok(p.stateTime > tapTime + H.charge.hold * 0.9, 'the hold lengthened the wind-up');
   });
-  test('player: 1.2x health, 1.6x guard, ordinary hits a third weaker (pass 85)', () => {
+  test('player: 1.2x health, ordinary hits a third weaker (pass 85); no guard bar, stamina or poise (pass 96)', () => {
     const S = A.PLAYER_DEF.stats, M = A.PLAYER_DEF.moveset.attacks;
-    expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} guard`);
+    expect.ok(S.maxHp === 120 && Object.keys(S).join() === 'maxHp', `stats: ${JSON.stringify(S)}`);
     expect.ok(M.heavy.damage === 36 && M.light.damage === 16, `heavy ${M.heavy.damage}, light ${M.light.damage} (53 and 24 before)`);
     Game.startLevel('test-training'); sim.begin();
-    expect.ok(Game.player.hp === 120 && Game.player.stamina === 160, 'a fresh player starts full');
+    const p = Game.player;
+    expect.ok(p.hp === 120 && !('stamina' in p) && !('poise' in p) && !document.getElementById('pSt'), 'a fresh player starts full, with health and dashes the only meters');
+  });
+  test('pass 96 hits: only heavy attacks stagger; a block takes chip damage, never breaks, and lets an undeflectable blow through', () => {
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const p = Game.player, e = Game.duel, B = CONFIG.block, C = CONFIG.player;
+    const light = e.def.attacks.find(a => !a.heavy && canParryAttack(a)), heavy = ENEMY_DEFS.flatMap(d => d.attacks).find(a => a.heavy && canParryAttack(a));
+    const reset = state => { p.hp = p.maxHp = 1000; p.hitbox = null; p.stunTime = 0; p.setState(state); p.yaw = Math.atan2(e.x - p.x, e.z - p.z); };
+    faceOff(e, p, 2); quiet(e);
+    reset(PS.IDLE); p.takeHit(makeStrike(light), e);
+    expect.ok(p.state === PS.HURT, `an ordinary hit flinches (${p.state})`);
+    reset(PS.IDLE); p.takeHit(makeStrike(heavy), e);
+    expect.ok(p.state === PS.STAGGER && Math.abs(p.stunTime - C.staggerTime) < 1e-9, `a heavy one staggers (${p.state})`);
+    reset(PS.ATTACK); p.takeHit(makeStrike(heavy), e);
+    expect.ok(p.state === PS.STAGGER, `a heavy one staggers mid-swing too (${p.state})`);
+    // The guard: chip damage, for any number of blows, never a break.
+    for (let i = 0; i < 12; i++) {
+      reset(PS.BLOCK); const r = p.takeHit(makeStrike(heavy), e);
+      expect.ok(r.blocked && p.state === PS.BLOCK && Math.abs(p.maxHp - p.hp - heavy.damage * B.damageMul) < 1e-6, `blow ${i + 1}: held, ${(p.maxHp - p.hp).toFixed(2)} chip`);
+    }
+    // A blow that cannot be deflected (it glows blue) is not held either.
+    const blue = ENEMY_DEFS.flatMap(d => d.attacks).find(a => a.noParry && !a.projectile && !a.rollOnly && !a.hits.some(h => h.echo || h.erupt || h.bolt || h.pull || h.seize));
+    e.attack = blue; e.hitIndex = 0; const hb = e.makeHitbox();
+    reset(PS.BLOCK); const r = p.takeHit(hb.payload, e);
+    expect.ok(!r.blocked && p.maxHp - p.hp > blue.damage * 0.9, `${blue.id} goes through the guard (${(p.maxHp - p.hp).toFixed(1)} of ${blue.damage})`);
   });
   test('new enemies: each duels in the arena, attacks, and can be beaten', () => {
     for (const id of NEW) {
@@ -1796,21 +1819,10 @@
     events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
     expect.ok(A.lessons.card.id === 'heavy' && A.lessons.card.done && A.lessons.learned('heavy'), 'a full charge: done, and learned');
   }));
-  test('pass 85 guard: an empty guard never stops attacking, dashing or jumping', () => {
-    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0); log.length = 0;
-    const p = Game.player; sim.step(2);
-    p.spend(p.stamina);
-    expect.ok(!p.exhausted && p.stamina === 0, 'an empty guard, no exhaustion');
-    sim.press('roll'); sim.step(2);
-    expect.ok(p.state === PS.ROLL && !log.includes('staminaDenied'), 'it still dashes');
-    sim.until(() => p.state !== PS.ROLL, 1); sim.press('light'); sim.step(2);
-    expect.ok(p.state === PS.ATTACK, 'it still attacks');
+  test('pass 85 dashes: a slim bar per dash charge under health; no guard bar (pass 96)', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0); sim.step(2); hud.updateVitals(Game, 0);
     expect.ok(document.querySelectorAll('#pDash i').length === CONFIG.player.dashCharges, 'a slim bar per dash charge under health');
-    // Pass 90 (Aleix): the guard bar shows only while it is worn or the player blocks, and is gone when full.
-    const pSt = document.getElementById('pSt');
-    hud.updateVitals(Game, 0); expect.ok(pSt.classList.contains('shown'), 'a worn guard shows');
-    p.stamina = p.maxStamina; hud.updateVitals(Game, 0);
-    expect.ok(!pSt.classList.contains('shown') || p.state === PS.BLOCK, 'a full guard hides');
+    expect.ok(!document.getElementById('pSt'), 'no guard bar');
   });
   test('v4.2.4 vision: unaware enemies see in a cone only; a searching one walks to where it last saw the player', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
@@ -2496,9 +2508,9 @@
     expect.ok(toastsFor({ style: 'portcullis' })[0] === CONFIG.hud.toasts.portcullis, 'a portcullis opens');
     expect.ok(toastsFor({ style: 'barricade' }, true)[0] === CONFIG.hud.toasts.shortcut, 'a shortcut opens');
     expect.ok(!document.getElementById('objective'), 'no objective counter on screen');
-    const before = JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]);
+    const before = JSON.stringify([Game.player.hp, Game.player.dashes, Game.enemies.map(e => [e.hp, e.x, e.z])]);
     for (let i = 0; i < 30; i++) Game.render(1, STEP);
-    expect.ok(before === JSON.stringify([Game.player.hp, Game.player.stamina, Game.enemies.map(e => [e.hp, e.x, e.z])]), 'rendering the HUD changes nothing in the game');
+    expect.ok(before === JSON.stringify([Game.player.hp, Game.player.dashes, Game.enemies.map(e => [e.hp, e.x, e.z])]), 'rendering the HUD changes nothing in the game');
     const H = CONFIG.hud, u = Math.max(H.minScale, Math.min(H.maxScale, Math.min(innerWidth / H.refWidth, innerHeight / H.refHeight))) * A.settings.hudScale;
     expect.near(hud.scale, u, 0.001, 'the stage scale fits the window');
   });
@@ -3380,14 +3392,6 @@
       expect.above(e.guardMeter, m0, `${id}: the meter grew`);
     }
   });
-  test('Execution: needs no stamina: a player with an empty guard can still execute', () => {
-    Game.startFight('knight'); Game.loading = 0; sim.begin();
-    const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1);
-    p.spend(p.stamina); sim.step(1);
-    expect.ok(p.stamina < 1, 'an empty guard');
-    sim.press('light'); sim.step(1);
-    expect.ok(p.state === PS.EXECUTE, `executing (${p.state})`);
-  });
   test('Execution: the kneel gives no damage bonus any more', () => {
     Game.startFight('giant'); Game.loading = 0; sim.begin();
     const e = Game.duel, hp0 = e.hp; kneel(e);
@@ -4122,13 +4126,6 @@
       p.setState(PS.IDLE); p.vy = 0;
     }
   });
-  test('Combat clarity: the guard refills at staminaRegen a second after its delay', () => {
-    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.place(20, 0);
-    const p = Game.player; p.stamina = 40; p.staminaDelay = 0;
-    sim.seconds(1);
-    expect.near(p.stamina, 40 + CONFIG.player.staminaRegen, 1e-6, 'one second of refill');
-    expect.ok(CONFIG.player.staminaDelay === 0.75, 'its delay unchanged');
-  });
   test('Combat clarity: the EXECUTE card tells the whole sequence and stays put as the foe kneels; zoom controls are gone', withLessons(() => {
     input.use('keyboard'); const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute'); Game.render(1, STEP);
     const instruction = shown('lessonText') + shown('lessonKeys');
@@ -4218,7 +4215,7 @@
       Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.place(14, 0);
       sim.move(1, 0); sim.seconds(4, 6); sim.move(null); sim.press('roll'); sim.seconds(2, 6); sim.press('light'); sim.seconds(4, 6);
       const p = Game.player, cardUp = card();
-      return { cardUp, state: [p.x, p.z, p.hp, p.stamina, ...Game.enemies.map(e => `${e.x.toFixed(6)},${e.z.toFixed(6)},${e.hp},${e.state}`)].map(String).join('|') };
+      return { cardUp, state: [p.x, p.z, p.hp, p.dashes, ...Game.enemies.map(e => `${e.x.toFixed(6)},${e.z.toFixed(6)},${e.hp},${e.state}`)].map(String).join('|') };
     };
     try {
       runOnce(false);   // both compared runs start from the same built stage

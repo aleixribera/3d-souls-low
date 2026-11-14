@@ -27,9 +27,9 @@ const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el
 const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
-  pSt: $('pSt'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
+  diedTip: $('diedTip'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eMend: $('eHpMend'), lastMend: 0, mendClosing: 0, mendShown: true, eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
-  rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
+  rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
@@ -37,9 +37,9 @@ const hud = {
   healingTip: $('healingTip'), healingTipText: $('healingTipText'), healingTipState: 'pending',
   groupTip: $('groupTip'), groupTipCount: $('groupTipCount'), groupTipText: $('groupTipText'),
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
-  hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
+  hpLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
-  healTimer: 0, hurtTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
+  healTimer: 0, hurtTimer: 0, wasAlive: true, popFlask: -1, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.connected, run = online && multiplayer.gauntlet;
@@ -63,10 +63,10 @@ const hud = {
     }
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
-    // Boss Rush's kill moment (js/kill-moment.js): "Boss n down", with the run's count of bosses beaten.
+    // Boss Rush's kill moment (js/kill-moment.js): "Fight n won", the fight's own number (one count: the fight, pass 96).
     const rush = run && run.run;
     this.won.classList.toggle('rush', !!rush);
-    this.wonTitle.textContent = rush ? `Boss ${run.defeated + 1 + (run.partners ? run.partners.length : 0)} down` : 'ENEMY FELLED';
+    this.wonTitle.textContent = rush ? `Fight ${run.number} won` : 'ENEMY FELLED';
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
       : online ? 'Open the lobby to choose your next fight.' : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
@@ -87,9 +87,9 @@ const hud = {
     this.healingTip.hidden = true;
     this.healingTipState = 'pending';
     this.groupTip.hidden = true;
-    this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
+    this.hpLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
-    this.healTimer = this.hurtTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
+    this.healTimer = this.hurtTimer = 0; this.wasAlive = true; this.popFlask = -1;
     for (const t of this.toastList) t.el.remove();
     this.toastList = [];
     for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
@@ -141,7 +141,7 @@ const hud = {
       this.dashRow = document.getElementById('pDash'); this.dashPips = []; this.dashShown = [];
       for (let i = 0; i < n; i++) { const d = document.createElement('i'); this.dashRow.appendChild(d); this.dashPips.push(d); this.dashShown.push(-1); }
     }
-    const free = p.freeStamina();
+    const free = p.freeDash();
     for (let i = 0; i < n; i++) {
       const k = free ? 1 : Math.round(clamp01(p.dashes - i) * 20) / 20;
       if (k === this.dashShown[i]) continue;
@@ -150,7 +150,7 @@ const hud = {
       this.dashPips[i].classList.toggle('ready', k >= 1);
     }
   },
-  // The number keys (pass 87): one square per key, bottom right, shown once any key holds an ability. A held one shows
+  // The number keys (pass 87): one square per key, bottom centre (pass 96, Aleix), shown once any key holds an ability. A held one shows
   // its icon over a charge that fills from below and its bound key; a full one lights. Written only when a step changes.
   syncAbilityKeys(p) {
     if (!this.keySlots) {
@@ -164,7 +164,7 @@ const hud = {
       document.getElementById('stage').appendChild(row);
       this.keyRow = row; this.keyKit = null;
       const style = document.createElement('style'); style.id = 'abilityKeys';
-      style.textContent = `#aBR{right:var(--mx);bottom:16px;flex-direction:row;align-items:flex-end;gap:8px}#aBR.off{display:none}
+      style.textContent = `#aBR{left:50%;bottom:var(--my);transform:translateX(-50%);flex-direction:row;align-items:flex-end;gap:8px}#aBR.off{display:none}
   .akey{--rc:#cfc8b6;position:relative;width:50px;height:50px;box-sizing:border-box;background:#0b0c10b8;border:1px solid #6e5d36;box-shadow:0 0 0 1px #000000c0;overflow:hidden}
   .akey[data-rarity=rare]{--rc:#8fb8dc}.akey[data-rarity=legendary]{--rc:#e59a5c}
   .akey.empty{background:#0b0c1060;border-color:#6e5d3660}
@@ -300,10 +300,10 @@ const hud = {
     }
   },
   // Player vitals: health with a lag trail, a heal glow, a hit shake and a low-health pulse. Under it the dash charges
-  // (syncDashes), and beside them a thin guard bar that shows only while blocking or refilling, then fades (Aleix, pass 90).
+  // (syncDashes); no other meter (pass 96, PLAN.md "No hidden meters").
   updateVitals(game, dt) {
     const H = CONFIG.hud, p = game.player;
-    const ph = clamp01(p.hp / p.maxHp), sp = clamp01(p.stamina / p.maxStamina);
+    const ph = clamp01(p.hp / p.maxHp);
     if (ph > this.hpLag.last + 0.004) this.healTimer = H.healFlash;
     if (ph < this.hpLag.last - 0.004) { restart(this.pHp, 'hit'); this.pHp.addEventListener('animationend', () => this.pHp.classList.remove('hit'), { once: true }); }
     const hpTrail = this.hpLag.update(ph, dt);
@@ -313,12 +313,6 @@ const hud = {
     this.pHp.classList.toggle('low', low);
     this.pHp.classList.toggle('heal', this.healTimer > 0);
 
-    const empty = sp <= 0.001;
-    if (empty && !this.wasEmpty) { restart(this.pSt, 'empty'); this.pSt.addEventListener('animationend', () => this.pSt.classList.remove('empty'), { once: true }); }
-    this.wasEmpty = empty;
-    const stTrail = this.stLag.update(sp, dt * 4);   // spent stamina trails away faster than health
-    this.pStFill.style.width = sp * 100 + '%'; this.pStTrail.style.width = stTrail * 100 + '%';
-    this.pSt.classList.toggle('shown', p.alive() && (p.state === PS.BLOCK || sp < 0.999));
     this.syncDashes(p);
     this.syncAbilityKeys(p);
     this.syncFlasks(p.item('flask'));
@@ -422,9 +416,9 @@ const hud = {
     this.rested.classList.toggle('show', this.restedTimer > 0);
     this.confirm.classList.toggle('show', game.restartArm > 0);
     this.died.classList.toggle('show', !p.alive());
-    if (!p.alive() && this.wasAlive) {   // a tip under YOU DIED: the stamina one if the player had just run dry
-      const T = H.text, tips = T.deathTips;
-      this.diedTip.textContent = p.sinceExhausted <= T.staminaTipTime ? tips[0] : tips[Math.floor(Math.random() * tips.length)];
+    if (!p.alive() && this.wasAlive) {   // a tip under YOU DIED, at random
+      const tips = H.text.deathTips;
+      this.diedTip.textContent = tips[Math.floor(Math.random() * tips.length)];
     }
     const waitingForTeam = typeof multiplayer !== 'undefined' && multiplayer.waitingForTeamWipe;
     $('diedStatus').textContent = waitingForTeam ? game.duelWon() ? 'Boss defeated' : 'Waiting for your team…' : 'Returning to the last bonfire…';
@@ -435,23 +429,21 @@ const hud = {
     this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },
-  // Boss Rush's streak (v7.69.0): the fight's number, how far the next Crowned fight is (Endless, CONFIG.endless), its
-  // clock and its par, and under them the fight's modifiers by name; written only when a second turns over.
-  updateRush() {
-    const r = typeof multiplayer !== 'undefined' && multiplayer.rush;
+  // Boss Rush's corner (pass 96, PLAN.md "No hidden meters"): the fight's number (and Crowned, on a Crowned fight), its
+  // clock only while a Swift kill is still possible (under par), and under them the fight's modifiers by name; written
+  // only when a second turns over.
+  updateRush(r = typeof multiplayer !== 'undefined' && multiplayer.rush) {   // `r`: the streak to draw (tests hand their own)
     this.rushClock.hidden = !r;
     if (!r) { this.rushKey = -1; this.rushMods.hidden = true; return; }
     const sec = Math.floor(r.clock), key = (r.fight * 4096 + sec) * 4096 + r.par;
     if (key === this.rushKey) return;
     this.rushKey = key;
     const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    this.rushFight.textContent = `Fight ${r.fight}`; this.rushTime.textContent = clock(sec); this.rushPar.textContent = `par ${clock(r.par)}`;
-    const every = CONFIG.endless.crowned, left = every - (r.fight % every);
-    this.rushCrown.textContent = r.crowned ? 'Crowned' : `Crowned in ${left}`;
-    this.rushCrown.classList.toggle('now', r.crowned);
+    this.rushFight.textContent = `Fight ${r.fight}`;
+    this.rushCrown.hidden = !r.crowned;
+    this.rushTime.textContent = clock(sec); this.rushTime.hidden = sec > r.par;
     this.rushMods.textContent = r.modifiers.map(id => RUSH_MODIFIER_BY_ID[id]?.name || '').filter(Boolean).join(' · ');
     this.rushMods.hidden = !r.modifiers.length;
-    this.rushClock.classList.toggle('over', sec > r.par);
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },
   showHitboxes() { return this.helpOpen(); },

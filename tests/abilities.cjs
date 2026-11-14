@@ -33,12 +33,9 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   near(kitOf(Array(9).fill('keen-edge')).mods.damage, at('keen-edge', 4).damage, 'past the last level');
   assert.deepEqual(kitOf(['vengeance', 'meteor-fall', 'nothing']).ids, ['vengeance', 'meteor-fall'], 'an unknown id is dropped');
 
-  // Iron Blood and Deep Lungs: bigger bars, full. Quick Breath: a faster refill.
-  const tough = body(['iron-blood', 'deep-lungs']);
+  // Iron Blood: a bigger bar, full.
+  const tough = body(['iron-blood']);
   near(tough.maxHp, S.maxHp * (1 + at('iron-blood', 1).maxHp), 'Iron Blood bar'); assert.equal(tough.hp, tough.maxHp);
-  near(tough.maxStamina, S.maxStamina * (1 + at('deep-lungs', 1).maxStamina), 'Deep Lungs bar');
-  const refill = ids => { const p = body(ids); p.stamina = 0; p.staminaDelay = 0; p.update(0.25, { x: 0, z: 0, has: false }, [], null); return p.stamina; };
-  near(refill(['quick-breath']) / refill([]), 1 + at('quick-breath', 1).staminaRegen, 'Quick Breath refill');
   near(body(['quick-draught']).drinkRate(), 1 + at('quick-draught', 1).flaskSpeed, 'Quick Draught');
 
   // Keen Eye: a press too early for a plain body parries with the ability.
@@ -319,10 +316,6 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   const thv = BY['thunder-call'].levels[0]; near(keyed('thunder-call', 'ultimate'), thv.damage * thv.strikes, 'Thunder Call: every bolt');
   near(keyed('cataclysm', 'ultimate'), BY['cataclysm'].levels[0].damage, 'Cataclysm');
   powers.reset();
-
-  // Second Wind (a rare's perk): a flask drunk gives stamina back.
-  const wind = holder(['second-wind']); wind.stamina = 0; wind.useItem('flask');
-  near(wind.stamina, wind.maxStamina * BY['second-wind'].levels[0].stamina, 'Second Wind');
 }
 
 // ---- 3. The offers -------------------------------------------------------------------------------------------------
@@ -399,7 +392,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
     assert.ok(sim.abilityOffer('cap').every(id => BY[id].rarity !== 'legendary'), 'two legendaries at their last level: none offered');
     sim.giveAbilities('cap', maxed);
   }
-  // The free pick before fight 1 (CONFIG.abilities.first): commons only.
+  // The free pick before fight 1 (CONFIG.abilities.first): rares only (pass 96, Aleix).
   for (let i = 0; i < 100; i++) {
     sim.offerAbilities(['first' + i], false, 0, 0, false, null, true, B.first);
     const o = sim.abilityOffer('first' + i);
@@ -470,7 +463,7 @@ async function peer(origin, name) {
     await flush(a); await flush(b);
 
     // Round one: a stranger's id and a wrong one are refused; one pick a round; the fight waits for both.
-    forced.set(a.id, ['keen-edge', 'iron-blood', 'meteor-fall']); forced.set(b.id, ['quick-breath', 'blood-moon', 'time-rift']);
+    forced.set(a.id, ['keen-edge', 'iron-blood', 'meteor-fall']); forced.set(b.id, ['light-step', 'blood-moon', 'time-rift']);
     finishFight();
     const offerA = await a.next('abilities'); await b.next('abilities');
     assert.deepEqual(offerA.offer, forced.get(a.id)); assert.deepEqual(offerA.held, []);
@@ -521,7 +514,7 @@ async function peer(origin, name) {
     assert.equal(app.sim.frame(true).events.filter(ev => ev.type === 'abilityPower').length, 1, 'the late pose lets the claim through');
 
     // Round two: a takes Meteor Fall (a legendary a teammate holds is never offered); b lets the time run out.
-    forced.set(a.id, ['meteor-fall', 'iron-blood', 'time-rift']); forced.set(b.id, ['iron-blood', 'keen-edge', 'quick-breath']);
+    forced.set(a.id, ['meteor-fall', 'iron-blood', 'time-rift']); forced.set(b.id, ['iron-blood', 'keen-edge', 'light-step']);
     app.sim.abilityPickTime = 0.5;
     finishFight();
     await a.next('abilities'); await b.next('abilities');

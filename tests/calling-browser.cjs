@@ -4,7 +4,7 @@
 // offers four abilities with a legendary; a pair in the first pair fight (CONFIG.endless.pairFrom) has a share of its health each, and a wipe there ends the run on the end-of-run screen. Between the fights
 // each takes an ability (one by click, one by key); the fallen get up for the next fight.
 // v7.70.0: the abilities rebuilt (25 of them, js/data/abilities.js): tall cards, the held one's kit after the pick.
-// v7.69.0: the kill moment ("Boss 1 down", slowed and embers), a swift kill's fourth card, the next boss dropping
+// v7.69.0: the kill moment ("Fight 1 won" since pass 96, slowed and embers), a swift kill's fourth card, the next boss dropping
 // straight in with no loading card, the streak and par under the boss bar, and each boss's time on the end screen.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -67,7 +67,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(app.sim.botList().length, 0, 'no bot fills the party');
     assert.equal(app.session.gauntlet.boss, 'pillagerCaptain');
     assert.match(await a.locator('#onlineCurrentLevel').textContent(), /BOSS RUSH · Fight 1/);
-    assert.equal(await a.locator('#rushCrown').textContent(), 'Crowned in 4');
+    assert.equal(await a.locator('#rushCrown').isVisible(), false, 'no "Crowned in": the corner names only the fight (pass 96)');
     assert.equal(await a.locator('#rushMods').isVisible(), false, 'no modifier on the first fights');
     const bId = await b.evaluate(() => multiplayer.info.self);
     blows([await a.evaluate(() => multiplayer.info.self), bId]);
@@ -83,9 +83,9 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
       if (o) o.splice(0, o.length, ...['keen-edge', 'time-rift', 'vengeance', 'iron-blood'].slice(0, o.length));
     };
     finishFight();
-    // The kill moment: "Boss 1 down" at once, the boss's death slowed for the drawing only.
+    // The kill moment: "Fight 1 won" at once, the boss's death slowed for the drawing only.
     await b.locator('#won.show.rush').waitFor({ timeout: 10000 });
-    assert.equal(await b.locator('#wonTitle').textContent(), 'Boss 1 down');
+    assert.equal(await b.locator('#wonTitle').textContent(), 'Fight 1 won');
     assert.equal(await b.evaluate(() => killMoment.active && Game.drawSlow < 1), true, 'the kill moment plays');
     await b.waitForTimeout(350);
     await b.screenshot({ path: `${out}/kill-moment.png` });
@@ -128,13 +128,15 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
     assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['ostrey']);
     await a.waitForTimeout(2500);   // let the fight start before the frame
-    // The streak under the boss bar: the fight, Crowned, its clock (the server's) and its par; the modifiers under it.
+    // The streak under the boss bar: the fight, Crowned, and its clock (the server's) while under par, with no par shown
+    // (pass 96); the modifiers under it.
     assert.equal(await a.locator('#rushClock').isVisible(), true);
     assert.equal(await a.locator('#rushFight').textContent(), 'Fight 5');
     assert.equal(await a.locator('#rushCrown').textContent(), 'Crowned');
     assert.match(await a.locator('#rushTime').textContent(), /^0:0\d$/);
-    const par = app.session.par;
-    assert.equal(await a.locator('#rushPar').textContent(), `par ${Math.floor(par / 60)}:${String(par % 60).padStart(2, '0')}`);
+    assert.equal(await a.locator('#rushPar').count(), 0, 'no par in the corner');
+    assert.equal(await a.locator('#rushTime').isVisible(), true, 'the clock while under par');
+    assert.equal(await a.evaluate(() => { const r = { ...multiplayer.rush }; r.clock = r.par + 1; hud.updateRush(r); return document.getElementById('rushTime').hidden; }), true, 'past par the clock goes');
     // Its modifiers: one from each CONFIG.endless.mods entry it has reached, and one more for a Crowned fight once they start.
     const mods = app.session.gauntlet.modifiers, E = app.sim.inspect().CONFIG.endless;
     assert.equal(mods.length, E.mods.filter(from => 5 >= from).length + (5 >= E.mods[0] ? 1 : 0), 'a Crowned fight 5: its modifiers');
@@ -201,10 +203,10 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });
     assert.equal(app.session, null);
-    // The end of the run: bosses beaten as the title, Crowned fights won, time, and each player's damage and deaths;
+    // The end of the run: the fight reached as the title (the HUD's number: one count, the fight, pass 96), Crowned fights won, time, and each player's damage and deaths;
     // the leader can go again.
     for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 10000 });
-    assert.equal(await a.locator('#runSummaryTitle').textContent(), '2 bosses beaten');
+    assert.equal(await a.locator('#runSummaryTitle').textContent(), `Reached fight ${pairFrom}`, 'the fight of two bosses is one fight');
     assert.equal(await a.locator('#runSummaryCrowned').textContent(), '1');
     assert.match(await a.locator('#runSummaryTime').textContent(), /^\d+:\d\d$/);
     const times = await a.locator('#runSummaryTimes li').allTextContents();
@@ -235,7 +237,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     // A wipe in the first fight ends the run on the same screen, in red.
     for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 30000 });
-    assert.equal(await a.locator('#runSummaryTitle').textContent(), 'No boss beaten');
+    assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Reached fight 1');
     assert.equal(await a.locator('#runSummaryCrowned').textContent(), '0');
     assert.equal(await a.locator('#teamWipeScreen').isVisible(), false, 'the summary replaces the short wipe card');
     await a.waitForTimeout(300);

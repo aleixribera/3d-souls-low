@@ -42,10 +42,10 @@ const progress = (() => {
     while (left >= need) { left -= need; level++; need = Math.min(L.most, need + L.step); }
     return { level, into: left, need };
   }
-  // What a run earns: its bosses beaten, its Crowned ones, its whole minutes, never under `least`.
+  // What a run earns: its fights won, its Crowned ones, its whole minutes, never under `least`.
   function runXp(run) {
     const X = CRATES.xp, n = v => Math.max(0, Math.floor(Number(v) || 0));
-    return Math.max(X.least, n(run.beaten) * X.boss + n(run.crowned) * X.crowned + Math.floor(n(run.time) / 60) * X.minute);
+    return Math.max(X.least, n(run.won) * X.fight + n(run.crowned) * X.crowned + Math.floor(n(run.time) / 60) * X.minute);
   }
   // Counts a finished run once (`key` names it): its xp, the levels and the crates they give. Null if already counted.
   function award(run, key) {

@@ -8,7 +8,7 @@
 //   id, anim (a name in ANIMS), hits: [{ startup, active }] (one per strike), recovery,
 //   damage, poise, knock, lunge, box: hit volume in the attacker's frame
 //     (w side, h up, d forward, centred `fwd` ahead and `y` up).
-//   Optional: hitstop (default scales with damage), cost (stamina), range (enemy AI: start the attack
+//   Optional: hitstop (default scales with damage), range (enemy AI: start the attack
 //   within this distance), postureDmg (fills a boss's posture), riposte: { damage, poise } multipliers
 //   after a parry, air: jump-attack landing data (the active phase lasts until touchdown).
 //   Four-phase animation (js/attack-anim.js): a hit may add `follow` (s of follow-through after the active phase, no
@@ -25,7 +25,7 @@ const PLAYER_DEF = {
   name: 'Knight', radius: 0.36,
   look: { scale: 1.0, bulk: 1.0, color: 0xb59a5a, weapon: 'sword', weaponColor: 0xb8bcc4, model: 'wanderer',
           visual: { skin: 0x8a867c, skinMetal: 0.15, roughness: 0.7 } },   // helmed knight
-  stats: { maxHp: 120, maxStamina: 160, maxPoise: 30 },
+  stats: { maxHp: 120 },
   inventory: [{ item: 'flask', count: 4, max: 4 }],
   // The moveset since the player rework (pass 85, PLAN.md "First, urgent"): no attack costs anything. Ordinary blows
   // (the light string, a tapped heavy, jump attacks) deal about a third less than before and barely fill a boss's

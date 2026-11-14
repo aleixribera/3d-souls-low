@@ -194,7 +194,7 @@
   // Antler Hook: the skull dipped low to its left; heaved up and across. Parry it or roll it (pass 93). Learned: hooked straight back the other way.
   const hook = { id: 'hook', name: 'Antler Hook', anim: 'sweep', pose: 'hungerHook', tracking: { rate: 2.4, commit: 0.6 }, learns: 'hookLearned', chance: 0.7,
     hits: [{ startup: 1.0, active: 0.16, follow: 0.45, tell: 'antlers' }], recovery: 1.4,
-    damage: 32, poise: 60, knock: 9, lunge: 1.4, range: 3.8, box: HOOK };
+    damage: 32, heavy: true, poise: 60, knock: 9, lunge: 1.4, range: 3.8, box: HOOK };
   const hookLearned = { ...hook, id: 'hookLearned', name: 'Antler Hook, Learned', pose: 'hungerHookLearned', learned: true, learns: undefined,
     hits: [{ ...hook.hits[0], follow: 0.2 }, { startup: 0.6, active: 0.16, follow: 0.5, tell: 'antlers', damage: 30 }], recovery: 1.5 };
   delete hookLearned.learns;
@@ -202,7 +202,7 @@
   // a stride on, the floor jumping round it (jump that, or roll it).
   const slam = { id: 'slam', name: 'Hammerfall', anim: 'chop', pose: 'hungerHammer', tracking: { rate: 2.2, commit: 0.55 }, noParry: true, rollOnly: true, learns: 'slamLearned', chance: 0.6,
     hits: [{ startup: 1.25, active: 0.14, follow: 0.5, tell: 'clawR', hold: { at: 0.6, time: [0.2, 0.6], chance: 0.5 }, impact: SHATTER }], recovery: 2.0,
-    damage: 44, poise: 80, knock: 9, lunge: 1.4, range: 3.8, box: HAMMER };
+    damage: 44, heavy: true, poise: 80, knock: 9, lunge: 1.4, range: 3.8, box: HAMMER };
   const slamLearned = { ...slam, id: 'slamLearned', name: 'Hammerfall, Learned', pose: 'hungerHammerLearned', learned: true, learns: undefined,
     hits: [{ ...slam.hits[0], follow: 0.2 }, { startup: 0.85, active: 0.18, follow: 0.6, tell: 'clawR', damage: 30, box: RING(6.5, 0.2), impact: { ring: 4.2, crack: 1.4, dust: 18, shake: 0.16 } }],
     recovery: 2.0 };
@@ -211,7 +211,7 @@
   // its haunches and comes again.
   const charge = { id: 'charge', name: 'Antler Charge', anim: 'thrust', pose: 'hungerCharge', tracking: { rate: 2.4, commit: 0.6 }, noParry: true, rollOnly: true, learns: 'chargeLearned', minRange: 5, chance: 0.45,
     dash: { speed: 13, from: 0.5 }, hits: [{ startup: 1.05, active: 0.16, follow: 0.45, tell: 'antlers' }], recovery: 1.7,
-    damage: 40, poise: 70, knock: 10, lunge: 2.6, range: 15, box: RAM };
+    damage: 40, heavy: true, poise: 70, knock: 10, lunge: 2.6, range: 15, box: RAM };
   const chargeLearned = { ...charge, id: 'chargeLearned', name: 'Antler Charge, Learned', pose: 'hungerChargeLearned', learned: true, learns: undefined,
     hits: [{ ...charge.hits[0], follow: 0.25 }, { startup: 0.85, active: 0.16, follow: 0.5, tell: 'antlers', damage: 36, step: { from: 0.4, speed: 12, side: 0 } }], recovery: 1.8 };
   delete chargeLearned.learns;
@@ -229,13 +229,13 @@
   // roll it. The change itself hurts nobody.
   const roar = { id: 'roar', name: 'The Roar', anim: 'overhead', pose: 'hungerRoar', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.4 }, minRange: 0.1, chance: 0.2,
     hits: [{ startup: 1.3, active: 0.18, follow: 0.5, tell: 'antlers', box: RING(10), impact: { ring: 4.0, crack: 0, dust: 14, shake: 0.22 } }], recovery: 1.62,
-    damage: 24, poise: 60, knock: 8, lunge: 0, range: 8, box: RING(10) };
+    damage: 24, heavy: true, poise: 60, knock: 8, lunge: 0, range: 8, box: RING(10) };
   // The Fall: crouched on its haunches; over the pillars and down on you, the floor jumping round it. Roll it. Learned: it
   // leaps on after you once more before the floor jumps.
   const LAND_HIT = { startup: 1.4, active: 0.16, follow: 0.7, tell: 'clawR', leap: { from: 0.4, max: 15, short: 1.4 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } };
   const SHOCK_HIT = { startup: 0.3, active: 0.18, follow: 0.5, tell: 'clawR', box: { ...RING(8), ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } }, impact: { ring: 4.5, crack: 0, dust: 14, shake: 0.12 } };
   const leap = { id: 'leap', name: 'The Fall', anim: 'chop', pose: 'hungerLeap', noParry: true, rollOnly: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.5, learns: 'leapLearned',
-    hits: [LAND_HIT, SHOCK_HIT], recovery: 2.7, damage: 50, poise: 90, knock: 10, lunge: 0, range: 16, box: LANDING };
+    hits: [LAND_HIT, SHOCK_HIT], recovery: 2.7, damage: 50, heavy: true, poise: 90, knock: 10, lunge: 0, range: 16, box: LANDING };
   const leapLearned = { ...leap, id: 'leapLearned', name: 'The Fall, Learned', pose: 'hungerLeapLearned', learned: true, learns: undefined,
     hits: [{ ...LAND_HIT, follow: 0.3 }, { startup: 0.8, active: 0.16, follow: 0.6, tell: 'clawR', leap: { from: 0.3, max: 10, short: 1.2 }, damage: 40, impact: { ring: 5.0, crack: 2.2, dust: 22, shake: 0.18 } }, SHOCK_HIT],
     recovery: 2.7 };

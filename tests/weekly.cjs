@@ -64,6 +64,9 @@ async function serve(options) {
     sim.giveAbilities('solo', []);
 
     // ---- Two weekly runs over the wire meet the same bosses and offers ----
+    // Fight 2 brings two bosses at once here (the pairs start at fight 9 in play), so the tally below has a pair.
+    const E = sim.inspect().Game.update.constructor('return CONFIG')().endless, pairs = [E.pairFrom, E.pairEvery];
+    E.pairFrom = 2; E.pairEvery = 5;
     let session;
     const a = await peer(origin, 'Ash'); peers.push(a);
     assert.deepEqual(a.welcome.board, { week: '2026-W46', runs: [], kills: [] }, 'the welcome brings this week\'s board');
@@ -97,7 +100,13 @@ async function serve(options) {
     assert.equal(end.reason, 'team-wipe'); assert.match(end.message, /YOU FELL.*WEEKLY RUN/); assert.equal(end.summary.id, C.weekly.id);
     const posted = (await a.next('board')).board;
     assert.equal(posted.runs.length, 1); assert.deepEqual(posted.runs[0].names, ['Ash']);
-    assert.equal(posted.runs[0].reached, 4, 'fell at fight 4'); assert.equal(posted.runs[0].beaten, end.summary.beaten);
+    // One count, the fight (pass 96): the fight of two bosses is one fight won, and the HUD's number (the fight it fell
+    // at), the end screen's and the board's agree.
+    assert.equal(first[1].partners.length, 1, 'fight 2 was two bosses');
+    assert.equal(end.summary.won, 3, 'three fights won, the pair one of them'); assert.equal(end.summary.times.length, 3);
+    assert.equal(session.gauntlet.number, 4, 'the HUD showed fight 4'); assert.equal(end.summary.reached, 4, 'the end screen: fight 4');
+    assert.equal(posted.runs[0].reached, 4, 'the board: fight 4'); assert.ok(!('beaten' in posted.runs[0]) && !('beaten' in end.summary), 'no boss count');
+    E.pairFrom = pairs[0]; E.pairEvery = pairs[1];
     const lone = end.summary.times.filter(t => t.bosses.length === 1);
     assert.equal(posted.kills.length, new Set(lone.map(t => t.bosses[0])).size, 'a kill per boss met alone');
     assert.ok(posted.kills.every(k => k.names[0] === 'Ash' && Number.isInteger(k.time)));
@@ -126,21 +135,21 @@ async function serve(options) {
     const restarted = (await monday.next('start')).session;
     assert.equal(restarted.gauntlet.number, 1); assert.equal(restarted.gauntlet.run.week, '2026-W47', 'a restart is this week\'s run');
     const left = (await monday.next('board')).board;
-    assert.deepEqual(left.runs.map(r => [r.names, r.reached, r.beaten]), [[['Ash'], 2, 1]], 'a restart after a win puts the run on the board');
+    assert.deepEqual(left.runs.map(r => [r.names, r.reached]), [[['Ash'], 2]], 'a restart after a win puts the run on the board');
     monday.send({ type: 'control', action: 'lobby' }); await monday.next('stop'); monday.send({ type: 'ping' }); await monday.next('pong');
     assert.ok(!monday.queue.some(m => m.type === 'board'), 'a run left before any win is not on the board');
 
     // ---- The board alone: a party keeps its best run, a boss its fastest kill, the lists their size ----
     const week = () => '2026-W46', boss = sim.catalog().bosses.map(e => e.id);
     const b = createBoard({ size: 3, bosses: boss, weekOf: week });
-    b.record('2026-W46', { names: ['Ash', 'Ember'], reached: 5, beaten: 4, time: 400, fights: [{ bosses: [boss[0]], time: 50 }, { bosses: [boss[1], boss[2]], time: 70 }] });
-    b.record('2026-W46', { names: ['Ember', 'Ash'], reached: 3, beaten: 2, time: 100, fights: [{ bosses: [boss[0]], time: 40 }] });
+    b.record('2026-W46', { names: ['Ash', 'Ember'], reached: 5, time: 400, fights: [{ bosses: [boss[0]], time: 50 }, { bosses: [boss[1], boss[2]], time: 70 }] });
+    b.record('2026-W46', { names: ['Ember', 'Ash'], reached: 3, time: 100, fights: [{ bosses: [boss[0]], time: 40 }] });
     assert.equal(b.current().runs.length, 1, 'one row per party'); assert.equal(b.current().runs[0].reached, 5, 'its best run');
     assert.deepEqual(b.current().kills.map(k => [k.boss, k.time]), [[boss[0], 40]], 'the fastest kill of a boss; a pair has none');
-    for (let i = 0; i < 5; i++) b.record('2026-W46', { names: ['P' + i], reached: 2 + i, beaten: 1 + i, time: 60, fights: [] });
+    for (let i = 0; i < 5; i++) b.record('2026-W46', { names: ['P' + i], reached: 2 + i, time: 60, fights: [] });
     assert.deepEqual(b.current().runs.map(r => r.reached), [6, 5, 5], 'furthest first, the list cut to its size');
-    assert.equal(b.record('2026-W45', { names: ['Late'], reached: 9, beaten: 8, time: 1, fights: [] }), false, 'a run of last week is not counted');
-    assert.equal(b.record('2026-W46', { names: [], reached: 9, beaten: 8, time: 1, fights: [] }), false, 'a run needs a name');
+    assert.equal(b.record('2026-W45', { names: ['Late'], reached: 9, time: 1, fights: [] }), false, 'a run of last week is not counted');
+    assert.equal(b.record('2026-W46', { names: [], reached: 9, time: 1, fights: [] }), false, 'a run needs a name');
     fs.writeFileSync(boardFile, '{ not json');
     assert.deepEqual(createBoard({ file: boardFile, bosses: boss, weekOf: week }).current(), { week: '2026-W46', runs: [], kills: [] }, 'a broken file starts the week empty');
     console.log('WEEKLY RUN: one seed per ISO week, the same bosses, modifiers and offers in two runs, the board (furthest, fastest kills), kept across a restart, reset by a new week passed.');

@@ -197,18 +197,18 @@ MODEL_DEFS.giantSkeleton = {
   // ---- the gaol's dead --------------------------------------------------------------------------------------------------
   // Club Sweep: hauled back low behind its right hip; flat across at your hips. Parry it.
   const sweep = { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'giantSweep', tracking: { rate: 1.6, commit: 0.6 }, markers: glint(0),
-    hits: [{ startup: 1.45, active: 0.14, follow: 0.42 }], recovery: 1.3, damage: 32, poise: 70, knock: 10, lunge: 0.6, range: 3.6, box: SWEEP };
+    hits: [{ startup: 1.45, active: 0.14, follow: 0.42 }], recovery: 1.3, damage: 32, heavy: true, poise: 70, knock: 10, lunge: 0.6, range: 3.6, box: SWEEP };
   // Stomp: a foot raised high over you; down. Its answer to standing under it. Roll it, or jump it.
   const stomp = { id: 'stomp', name: 'Stomp', anim: 'stomp', pose: 'giantStomp', tracking: { rate: 1.2, commit: 0.5 }, rollOnly: true, chance: 0.5,
     hits: [{ startup: 1.25, active: 0.12, follow: 0.38, tell: 'footL', hold: { at: 0.55, time: [0.3, 0.8], chance: 0.5 }, impact: { ring: 2.8, crack: 1.2, dust: 12, shake: 0.12 } }], recovery: 1.05,
-    damage: 24, poise: 60, knock: 8, lunge: 0, range: 2.6, box: STOMP };
+    damage: 24, heavy: true, poise: 60, knock: 8, lunge: 0, range: 2.6, box: STOMP };
   // The Long Claw: drawn up over its left shoulder; raked down across before it. Parry it.
   const claw = { id: 'giantClaw', name: 'The Long Claw', anim: 'sweep', pose: 'giantClaw', tracking: { rate: 2.0, commit: 0.65 }, markers: glint(0), chance: 0.6,
     hits: [{ startup: 1.15, active: 0.14, follow: 0.35, tell: 'claw' }], recovery: 1.1, damage: 28, poise: 55, knock: 7, lunge: 1.2, range: 4.2, box: CLAW };
   // Gaol Slam: the club high on its right, the claw aimed at you; held; down into the floor. Roll it.
   const slam = { id: 'giantSlam', name: 'Gaol Slam', anim: 'chop', pose: 'giantSlam', tracking: { rate: 1.8, commit: 0.5 }, rollOnly: true, chance: 0.45,
     hits: [{ startup: 1.5, active: 0.13, follow: 0.5, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 }, impact: SHATTER }], recovery: 1.45,
-    damage: 46, poise: 90, knock: 9, lunge: 1.0, range: 3.8, box: SLAM };
+    damage: 46, heavy: true, poise: 90, knock: 9, lunge: 1.0, range: 3.8, box: SLAM };
   // The Taking: crouched, the open hand held out wide and low; it scoops you off the floor and holds you up before
   // its skull. Roll it; caught, struggle.
   const taking = { id: 'giantTaking', name: 'The Taking', anim: 'thrust', pose: 'giantTaking', tracking: { rate: 1.8, commit: 0.6 }, rollOnly: true, noParry: true, chance: 0.45,
@@ -238,7 +238,7 @@ MODEL_DEFS.giantSkeleton = {
   // The Bonewheel: the club straight out to its right, coiled to its left; whirled round twice. Roll it, or be out of reach.
   const wheel = { id: 'giantWheel', name: 'The Bonewheel', anim: 'sweep', pose: 'giantWheel', tracking: { rate: 1.6, commit: 0.4 }, rollOnly: true, noParry: true, chance: 0.4,
     hits: [{ startup: 1.35, active: 0.2, follow: 0.12 }, { startup: 0.12, active: 0.2, follow: 0.55 }], recovery: 1.5,
-    damage: 26, poise: 60, knock: 10, lunge: 0.8, range: 3.8, box: WHEEL };
+    damage: 26, heavy: true, poise: 60, knock: 10, lunge: 0.8, range: 3.8, box: WHEEL };
   // Pit Stomps: right, left, right toward you, hunched and marching, the third the hardest. Roll them, or jump them.
   const pitStomps = { id: 'giantPitStomps', name: 'Pit Stomps', anim: 'stomp', pose: 'giantPitStomps', tracking: { rate: 2.0, commit: 0.7 }, rollOnly: true, chance: 0.4,
     hits: [{ startup: 1.0, active: 0.12, follow: 0.12, tell: 'footR', impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.08 } },

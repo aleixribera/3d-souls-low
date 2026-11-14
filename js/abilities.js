@@ -5,31 +5,29 @@
 // ============================================================================
 // A body's abilities become its kit (abilityKit): the commons' numbers summed into `mods`, the rares' perks by their
 // `when/then` and the legendaries' powers. The Player reads its kit where each number lives (js/player.js); the perks
-// that touch the body itself (stamina, healing, a charged heavy) run on the body's owner: the browser for a person,
+// that touch the body itself (healing, a charged heavy) run on the body's owner: the browser for a person,
 // the server for a bot. Whatever reaches the boss is settled by whoever owns the enemies: abilityStrike for a blow,
 // abilityPowers for a legendary. Online that is the server, which knows every player's kit and checks each claim.
 
 // The commons' numbers. `less` cuts its Player number by the fraction; the rest raise theirs.
-const ABILITY_MODS = { damage: 'more', maxHp: 'more', maxStamina: 'more', staminaRegen: 'more', posture: 'more',
+const ABILITY_MODS = { damage: 'more', maxHp: 'more', posture: 'more',
   parryWindow: 'more', dashRefill: 'more', rollIFrames: 'more', flaskSpeed: 'more', chargeSpeed: 'more', riposte: 'more',
   execution: 'more' };
 // The rares' perks, as `when/then`, and the numbers each level of one gives:
-//   parry/stamina:    a parry gives back `stamina` of the bar.
 //   dodge/riposte:    a perfect dodge (a roll's i-frames take a blow) opens a riposte for `window` s, as a parry does.
 //   hurt/empower:     losing health makes the next landed blow within `window` s do `damage` more.
 //   streak/heal:      `hits` landed blows without losing health heal `heal` of the bar.
-//   low/freeStamina:  at or under `below` of the bar, dashes take no charge (pass 85: nothing else costs anything).
+//   low/freeDash:     at or under `below` of the bar, dashes take no charge (pass 85: nothing else costs anything).
 //   open/damage:      blows on a boss that is off balance (abilityOpen) do `damage` more.
 //   block/charge:     a blocked blow makes the next heavy within `window` s come out fully charged at once.
 //   unhurt/empower:   `after` s without losing health make the next landed blow do `damage` more.
-//   flask/stamina:    drinking a flask gives back `stamina` of the bar.
 //   execute/heal:     an execution heals `heal` of the bar (a crate's).
 //   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
 //   press/heal:       pressed (its key full: `charge` points): heals `heal` of the bar.
 //   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow).
 const ABILITY_PERKS = {
-  'parry/stamina': ['stamina'], 'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
-  'low/freeStamina': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'], 'flask/stamina': ['stamina'],
+  'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
+  'low/freeDash': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
   'execute/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
 };
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.

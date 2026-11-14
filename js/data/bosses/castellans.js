@@ -281,7 +281,7 @@
     // Crown Cleave: raised high behind her head, held (the delay is the point), brought straight down.
     { id: 'crownCleave', name: 'Crown Cleave', anim: 'chop', pose: 'haleCrownCleave', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
       hits: [{ startup: 1.25, active: 0.14, follow: 0.45, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 } }], recovery: 1.68,
-      damage: 38, poise: 70, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 },
+      damage: 38, heavy: true, poise: 70, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 },
       impact: { ring: 2.4, crack: 1.4, dust: 12, shake: 0.1 } },
     // The Beard's Hook: up from her right hip, then the beard hooked back across. Roll the first toward her left.
     { id: 'beardsHook', name: 'The Beard\'s Hook', anim: 'sweep', pose: 'haleBeardsHook', tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0),
@@ -303,7 +303,7 @@
     // Off the Rampart: from afar, a crouch with the axe trailing, a leap, the axe first on landing.
     { id: 'offTheRampart', name: 'Off the Rampart', anim: 'chop', pose: 'haleOffTheRampart', noParry: true, tracking: { rate: 2.2, commit: 0.5 }, minRange: 5, chance: 0.35,
       hits: [{ startup: 1.3, active: 0.16, follow: 0.5, leap: { from: 0.4, max: 12, short: 1.4 } }], recovery: 1.92,
-      damage: 40, poise: 75, knock: 9, lunge: 0, range: 12, box: { w: 2.2, h: 2.8, d: 4.2, fwd: 2.0, y: 1.0 },
+      damage: 40, heavy: true, poise: 75, knock: 9, lunge: 0, range: 12, box: { w: 2.2, h: 2.8, d: 4.2, fwd: 2.0, y: 1.0 },
       impact: { ring: 3.4, crack: 1.8, dust: 16, shake: 0.14 } },
     // Salt Wind: from afar, the flat of the axe swept across, and the sea wind it raises flies at you. Block it or step aside.
     { id: 'saltWind', name: 'Salt Wind', anim: 'sweep', pose: 'haleSaltWind', tracking: { rate: 2.8, commit: 0.85 }, minRange: 6, chance: 0.35,
@@ -325,7 +325,7 @@
     // Hammer of Both Hands: fists locked, wound over her left shoulder, held, smashed down across to her right.
     { id: 'hammerOfHands', name: 'Hammer of Both Hands', anim: 'chop', pose: 'harrowHammer', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
       hits: [{ startup: 1.15, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.25, 0.7], chance: 0.5 } }], recovery: 1.56,
-      damage: 36, poise: 65, knock: 8, lunge: 1.4, range: 3.0, box: { w: 2.2, h: 2.6, d: 3.2, fwd: 1.6, y: 1.0 },
+      damage: 36, heavy: true, poise: 65, knock: 8, lunge: 1.4, range: 3.0, box: { w: 2.2, h: 2.6, d: 3.2, fwd: 1.6, y: 1.0 },
       impact: { ring: 2.0, crack: 1.0, dust: 10, shake: 0.1 } },
     // Knuckle and Heel: a jab, a hook, a front kick. Quick; parry each.
     { id: 'knuckleHeel', name: 'Knuckle and Heel', anim: 'thrust', pose: 'harrowKnuckleHeel', tracking: { rate: 3.2, commit: 0.65 }, markers: glint(0, 1, 2),
@@ -339,7 +339,7 @@
       hits: [{ startup: 1.3, active: 0.16, follow: 0.4, leap: { from: 0.45, max: 12, short: 1.2 }, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 },
                impact: { ring: 3.6, crack: 2.0, dust: 20, shake: 0.16 } },
              { startup: 0.32, active: 0.2, follow: 0.4, box: RING(1.4, 7, 1.6, 0.2), impact: { ring: 4.2, crack: 0, dust: 12, shake: 0.1 } }],
-      recovery: 2.04, damage: 40, poise: 75, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 } },
+      recovery: 2.04, damage: 40, heavy: true, poise: 75, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 } },
     // Greave Slide: from afar, a run, then she drops and slides in feet first at your shins. Jump it.
     { id: 'greaveSlide', name: 'Greave Slide', anim: 'bash', pose: 'harrowGreaveSlide', noParry: true, tracking: { rate: 2.6, commit: 0.5 },
       minRange: 4, dash: { speed: 12, from: 0.4 }, chance: 0.35,
@@ -360,7 +360,7 @@
       hits: [{ startup: 1.1, active: 0.14, follow: 0.4, impact: { ring: 2.4, crack: 1.4, dust: 12, shake: 0.1 } },
              { startup: 0.7, active: 0.2, follow: 0.25, box: RING(1.0, 7, 1.6), impact: { ring: 3.6, crack: 1.6, dust: 16, shake: 0.12 } },
              { startup: 0.55, active: 0.14, follow: 0.4, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } }],
-      recovery: 1.92, damage: 34, poise: 60, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 } },
+      recovery: 1.92, damage: 34, heavy: true, poise: 60, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 } },
   ];
   const HALE = ['crownCleave', 'beardsHook', 'helmsSalute', 'wallTurns', 'offTheRampart', 'saltWind', 'haftsHeel'];
   const HARROW = ['stampStones', 'hammerOfHands', 'knuckleHeel', 'fallingWeight', 'greaveSlide', 'backHeel'];

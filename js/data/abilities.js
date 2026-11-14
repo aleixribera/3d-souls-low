@@ -18,18 +18,14 @@
 // fires (js/abilities.js pressGain). Strike, Guard and Summon are rares, Ultimate legendaries; validate.js holds every
 // pressed ability to exactly one key. Its text is the effect only: the card and the HUD show its key.
 const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n' };
-// The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
-const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain', 'share'];
+// The numbers that are a share of something whole (of the health bar, of the damage dealt): never above 1.
+const ABILITY_SHARES = ['below', 'heal', 'drain', 'share'];
 const ABILITIES = [
   // ---- Commons: half plain numbers, half one move made better ----
   { id: 'keen-edge', name: 'Keen Edge', rarity: 'common', text: '{damage} more damage.', mods: true,
     levels: [{ damage: 0.08 }, { damage: 0.16 }, { damage: 0.24 }, { damage: 0.32 }] },
   { id: 'iron-blood', name: 'Iron Blood', rarity: 'common', text: '{maxHp} more health.', mods: true,
     levels: [{ maxHp: 0.1 }, { maxHp: 0.2 }, { maxHp: 0.3 }, { maxHp: 0.4 }] },
-  { id: 'deep-lungs', name: 'Deep Lungs', rarity: 'common', text: '{maxStamina} more guard.', mods: true,
-    levels: [{ maxStamina: 0.12 }, { maxStamina: 0.24 }, { maxStamina: 0.36 }, { maxStamina: 0.48 }] },
-  { id: 'quick-breath', name: 'Quick Breath', rarity: 'common', text: 'Guard refills {staminaRegen} faster.', mods: true,
-    levels: [{ staminaRegen: 0.12 }, { staminaRegen: 0.24 }, { staminaRegen: 0.36 }, { staminaRegen: 0.48 }] },
   { id: 'breaker', name: 'Breaker', rarity: 'common', text: 'Break bosses {posture} faster.', mods: true,
     levels: [{ posture: 0.12 }, { posture: 0.24 }, { posture: 0.36 }, { posture: 0.48 }] },
   { id: 'keen-eye', name: 'Keen Eye', rarity: 'common', text: 'Deflect window {parryWindow} wider.', mods: true,
@@ -48,8 +44,6 @@ const ABILITIES = [
     levels: [{ execution: 0.15 }, { execution: 0.3 }, { execution: 0.45 }, { execution: 0.6 }] },
 
   // ---- Rares: useful perks that happen when something does ----
-  { id: 'deep-breath', name: 'Deep Breath', rarity: 'rare', text: 'Deflect: regain {stamina} guard.',
-    perk: { when: 'parry', then: 'stamina' }, levels: [{ stamina: 0.4 }, { stamina: 0.7 }, { stamina: 1 }] },
   { id: 'counterstep', name: 'Counterstep', rarity: 'rare', text: 'Perfect dodge: next hit in {window} is a riposte.',
     perk: { when: 'dodge', then: 'riposte' }, levels: [{ window: 1.5 }, { window: 2 }, { window: 2.5 }] },
   { id: 'vengeance', name: 'Vengeance', rarity: 'rare', text: 'Get hit: next hit in {window} does {damage} more.',
@@ -57,15 +51,13 @@ const ABILITIES = [
   { id: 'bloodthirst', name: 'Bloodthirst', rarity: 'rare', text: '{hits} hits unhurt: heal {heal}.',
     perk: { when: 'streak', then: 'heal' }, levels: [{ hits: 5, heal: 0.08 }, { hits: 5, heal: 0.11 }, { hits: 5, heal: 0.14 }] },
   { id: 'last-breath', name: 'Last Breath', rarity: 'rare', text: 'Below {below} health: endless dashes.',
-    perk: { when: 'low', then: 'freeStamina' }, levels: [{ below: 0.25 }, { below: 0.3 }, { below: 0.35 }] },
+    perk: { when: 'low', then: 'freeDash' }, levels: [{ below: 0.25 }, { below: 0.3 }, { below: 0.35 }] },
   { id: 'opportunist', name: 'Opportunist', rarity: 'rare', text: 'Boss off balance: {damage} more damage.',
     perk: { when: 'open', then: 'damage' }, levels: [{ damage: 0.3 }, { damage: 0.4 }, { damage: 0.5 }] },
   { id: 'bastion', name: 'Bastion', rarity: 'rare', text: 'Block: next heavy in {window} is fully charged.',
     perk: { when: 'block', then: 'charge' }, levels: [{ window: 3 }, { window: 4 }, { window: 5 }] },
   { id: 'patience', name: 'Patience', rarity: 'rare', text: '{after} unhurt: next hit does double.',
     perk: { when: 'unhurt', then: 'empower' }, levels: [{ after: 8, damage: 1 }, { after: 6.5, damage: 1 }, { after: 5, damage: 1 }] },
-  { id: 'second-wind', name: 'Second Wind', rarity: 'rare', text: 'Flask: regain {stamina} guard.',
-    perk: { when: 'flask', then: 'stamina' }, levels: [{ stamina: 0.5 }, { stamina: 0.75 }, { stamina: 1 }] },
   // Small powers: a strike of their own on the boss, drawn and heard (js/ability-fx.js), smaller than a legendary's.
   { id: 'counterflame', name: 'Counterflame', rarity: 'rare', text: 'Deflect: fire bursts on the boss.',
     power: { when: 'parry', then: 'flare' }, levels: [{ damage: 40, posture: 10, cooldown: 1 }, { damage: 55, posture: 14, cooldown: 1 }, { damage: 70, posture: 18, cooldown: 1 }] },

@@ -287,12 +287,12 @@
       // The Shield Wall: from off, a run behind the shield, the shield first; a cut over it. The shield cannot be parried.
       { id: 'shieldWall', name: 'The Shield Wall', anim: 'bash', pose: 'kbWall', noParry: true, tracking: { rate: 3.0, commit: 0.45 }, chance: 0.5, minRange: 4.5, dash: { speed: 10, from: 0.45 },
         hits: [{ startup: 0.95, active: 0.14, follow: 0.45, box: SHIELD, tell: 'shield' }, { startup: 0.55, active: 0.14, follow: 0.25, damage: 28, box: CUT }], recovery: 1.9,
-        damage: 24, poise: 70, postureDmg: 12, knock: 10, lunge: 0, range: 11, box: SHIELD },
+        damage: 24, heavy: true, poise: 70, postureDmg: 12, knock: 10, lunge: 0, range: 11, box: SHIELD },
       // The Crown's Weight: the shield a roof over its head, the sword laid back under it, held; straight down.
       { id: 'crownsWeight', name: 'The Crown\'s Weight', anim: 'chop', pose: 'kbCrown', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0), chance: 0.6,
         hits: [{ startup: 1.3, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.3, 1.0], chance: 0.5 }, impact: { ring: 1.8, crack: 1.0, dust: 10, shake: 0.08 } }], recovery: 2.1,
         followUps: [{ attack: 'keepingRiver', if: 'near', chance: 0.18 }],
-        damage: 42, poise: 70, postureDmg: 18, knock: 8, lunge: 1.0, range: 4.0, box: CHOP },
+        damage: 42, heavy: true, poise: 70, postureDmg: 18, knock: 8, lunge: 1.0, range: 4.0, box: CHOP },
       // Gives Ground: struck, it springs back with a parting cut, then comes again with the reach.
       { id: 'givesGround', name: 'Gives Ground', anim: 'sweep', pose: 'kbGround', when: 'struck', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(1), chance: 0.8,
         hits: [{ startup: 0.45, active: 0.14, follow: 0.45, leap: { from: 0.15, max: 6, back: 4.5 }, box: CUT },
@@ -305,7 +305,7 @@
       // The Shield's Rim: at its shield side, the shield swung out at you, rim first.
       { id: 'rimStrike', name: 'The Shield\'s Rim', anim: 'bash', pose: 'kbRim', when: 'flank', tracking: { rate: 4, commit: 0.5 }, chance: 2,
         hits: [{ startup: 0.5, active: 0.14, follow: 0.2, tell: 'shield' }], recovery: 1.4,
-        damage: 18, poise: 60, postureDmg: 8, knock: 9, lunge: 0.6, range: 2.8, box: { w: 2.6, h: 1.8, d: 2.4, fwd: 0.8, y: 1.1 } },
+        damage: 18, heavy: true, poise: 60, postureDmg: 8, knock: 9, lunge: 0.6, range: 2.8, box: { w: 2.6, h: 1.8, d: 2.4, fwd: 0.8, y: 1.1 } },
       // Drinking where it can see you: the reach, sooner and longer.
       { id: 'reachPunish', name: 'The King\'s Reach', anim: 'thrust', pose: 'kbReach', when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, markers: glint(0), chance: 3,
         hits: [{ startup: 0.7, active: 0.16, follow: 0.35 }], recovery: 1.6,
@@ -321,7 +321,7 @@
       { id: 'corvel', name: 'Corvel Burns', anim: 'chop', pose: 'kbCorvel', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.4 }, chance: 0.35,
         hits: [{ startup: 2.4, active: 0.5, follow: 0.6, falter: { hits: 3 }, box: RING(0.6, 7, 1.4, 0.5), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.16 } },
                { startup: 0.7, active: 0.5, follow: 0.4, damage: 26, box: RING(0.6, 11, 1.6, 0.7) }], recovery: 2.4,
-        damage: 34, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 9, box: RING(0.6, 7, 1.4, 0.5) },
+        damage: 34, heavy: true, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 9, box: RING(0.6, 7, 1.4, 0.5) },
       // The Hunger's Cuts: the burning shield driven in, the blade over its rim, then raised over the shield and down across.
       { id: 'hungerCuts', name: 'The Hunger\'s Cuts', anim: 'sweep', pose: 'kbHunger', tracking: { rate: 3.2, commit: 0.7 }, markers: glint(0, 1, 2), chance: 0.9,
         hits: [{ startup: 0.72, active: 0.12, follow: 0.38, damage: 16, box: SHIELD, tell: 'shield', step: { from: 0.3, speed: 4, side: 0 } },
@@ -331,11 +331,11 @@
       // The Ember Leaps: raised high, a leap from far off, and down where you were, in fire.
       { id: 'emberLeap', name: 'The Ember Leaps', anim: 'chop', pose: 'kbLeap', noParry: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.5, minRange: 5,
         hits: [{ startup: 1.2, active: 0.16, follow: 0.4, leap: { from: 0.35, max: 11, short: 1.2 }, impact: { ring: 3.0, crack: 1.6, dust: 16, shake: 0.14 } }], recovery: 2.4,
-        damage: 44, poise: 80, postureDmg: 18, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
+        damage: 44, heavy: true, poise: 80, postureDmg: 18, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
       // The Shield Burns: at its shield side, the burning shield flung out wide and slammed into the ice.
       { id: 'shieldBurns', name: 'The Shield Burns', anim: 'stomp', pose: 'kbShieldBurns', noParry: true, rollOnly: true, when: 'flank', tracking: { rate: 1, commit: 0.4 }, chance: 1.5,
         hits: [{ startup: 0.9, active: 0.35, follow: 0.3, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
-        damage: 26, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
+        damage: 26, heavy: true, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
     ],
   };
   ENEMY_DEFS.push(BLADE); ENEMY_BY_ID[BLADE.id] = BLADE;

@@ -33,13 +33,10 @@
     for (const a of d.attacks) { const t = tell(a), other = seen.get(t); expect.ok(!other || same(a, other), `${a.id} and ${other && other.id} share a wind-up`); seen.set(t, a); }
     expect.ok(d.hp === 3200 && d.posture.max === 84 && d.posture.parry === 60 && d.poise === 240, 'her health and posture are kept until every boss is reworked');
     const S = d.phases.storm, R = d.phases.abbess;
-    expect.ok(S.at === 0.5 && S.opener === 'stormComes' && S.name === 'Agathe, the Storm at Her Back' && S.storm && S.rend && !R.storm && !R.rend,
-      'at half her strength the storm comes at her back, and every blow of the hook rends');
+    expect.ok(S.at === 0.5 && S.opener === 'stormComes' && S.name === 'Agathe, the Storm at Her Back' && S.storm && !R.storm,
+      'at half her strength the storm comes at her back');
     expect.ok(d.attacks.find(a => a.id === 'stormComes').invulnerable, 'she cannot be hurt through the change');
-    const rends = R.attacks.map(id => d.attacks.find(a => a.id === id)).filter(a => a.rend);
-    expect.ok(rends.length >= 4 && rends.every(a => !a.projectile), `in the first half her hook's blade rends (${rends.map(a => a.id)})`);
-    expect.ok(['correction', 'rendEarth', 'tornStones', 'cornerstone', 'stormComes', 'stormFurrow'].every(id => d.attacks.find(a => a.id === id).rend === false),
-      'the butt, the stones and the torn earth never rend');
+    expect.ok(!('rend' in S) && !('rend' in R) && d.attacks.every(a => !('rend' in a)), 'nothing rends: her hook just hits hard (pass 96, Aleix)');
     const bolts = d.attacks.filter(a => a.hits.some(h => h.bolt));
     expect.ok(bolts.length >= 2 && bolts.every(a => !R.attacks.includes(a.id) && S.attacks.includes(a.id)), 'the storm falls where you stand, only once it has come');
     expect.ok(!OLD.test(JSON.stringify(d.attacks.map(a => a.name)) + JSON.stringify(Object.values(d.phases).map(p => p.name || '')) + d.name + d.description),
@@ -47,40 +44,12 @@
     expect.ok(BOSS_FX.agathe && BOSS_FX.agathe.phases.storm === 'storm', 'her effects are written, the storm\'s once it comes');
     expect.ok(M.attacks.some(a => a.id === 'shedRobes') && M.name === 'Beast Clergyman' && M.phases.blackBlade.reveal, 'Maliketh himself is untouched');
   });
-  test('Torn Abbey: what her hook tears off your bar it keeps; a blow on her tears it back; left there it closes (pass 48)', () => {
-    const { e, p } = duel(), C = CONFIG.rend;
-    e.beginAttack(e.attackById('reapingDraw')); e.holdLeft = 0;
-    sim.until(() => p.rent > 0, 5);
-    expect.ok(p.rent === 1 && p.rentBy === e && Math.abs(p.hpCap() - p.maxHp * (1 - C.cut)) < 1e-6 && p.hp <= p.hpCap(), `a piece torn off (${p.rent}, cap ${p.hpCap()})`);
-    sim.until(() => e.state !== ES.ACTIVE && e.state !== ES.WINDUP, 5);
-    // Struck back: each blow on her tears one piece back, as health.
-    const held = p.rent, before = p.hp;
-    expect.ok(held === 2, `both blows of the reaping draw tore a piece (${held})`);
-    sim.seconds(VIS.stormRend.fly + 0.1, 1);   // past their flight: on the hook
-    expect.ok(stormRend.live().pieces === 2, `the pieces hang on her hook (${JSON.stringify(stormRend.live())})`);
-    for (let k = held; k > 0; k--) {
-      e.cooldown = 99; e.x = e.px = p.x; e.z = e.pz = p.z + 1.6; p.yaw = 0; p.setState(PS.IDLE);
-      sim.press('light'); sim.until(() => p.rent < k, 3);
-      expect.ok(p.rent === k - 1, `one piece back per blow (${p.rent} left)`);
-      sim.until(() => p.state === PS.IDLE, 3);
-    }
-    expect.ok(p.rent === 0 && p.rentBy === null && p.hpCap() === p.maxHp && p.hp > before, `torn back as health (${before} -> ${p.hp})`);
-    // The butt never rends.
-    sim.until(() => p.state === PS.IDLE, 3);
-    p.hp = p.maxHp; e.cooldown = 99; e.x = e.px = p.x; e.z = e.pz = p.z + 2.4; e.yaw = Math.PI; e.state = ES.IDLE;
-    e.beginAttack(e.attackById('correction'));
-    sim.until(() => p.hp < p.maxHp, 4);
-    expect.ok(p.hp < p.maxHp && p.rent === 0, 'the correction hurts, and tears nothing');
-    // Left on her hook, the wound closes; the bar comes back empty.
-    sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 6); e.cooldown = 999; e.x = e.px = p.x + 30;   // done with her recovery, which sets her cooldown
-    p.hp = p.maxHp; p.rend(e); p.rend(e); p.rend(e); p.rend(e);
-    expect.ok(p.rent === C.max, `at most ${C.max} pieces (${p.rent})`);
-    sim.seconds(C.time + 0.5);
-    expect.ok(p.rent === 0 && p.hpCap() === p.maxHp && p.hp <= p.maxHp * (1 - C.max * C.cut) + 1e-6, `closed, the bar empty there (hp ${p.hp}, rent ${p.rent}, ${p.rentTime.toFixed(1)} s, cap ${p.hpCap()}, she ${e.state} ${e.attack && e.attack.id})`);
-    // She falls: all she held comes back.
-    p.rend(e); p.rend(e); const low = p.hp;
-    e.deplete(); sim.step(2);
-    expect.ok(p.rent === 0 && p.hp > low, `on her death every piece comes back (${low} -> ${p.hp})`);
+  test('Torn Abbey: her hook hits hard and takes nothing off the bar (pass 96: the rend is gone)', () => {
+    const { e, p } = duel(), draw = e.attackById('reapingDraw');
+    e.beginAttack(draw); e.holdLeft = 0;
+    sim.until(() => p.hp < p.maxHp, 5);
+    expect.ok(p.maxHp - p.hp >= draw.damage * 0.9 && p.hpCap() === p.maxHp, `a hard blow, the bar whole (${p.maxHp - p.hp} of ${draw.damage}, cap ${p.hpCap()})`);
+    expect.ok(!('rent' in p) && !('rend' in p), 'no torn pieces kept anywhere');
   });
   test('Torn Abbey: in the storm a mark follows you, holds still, and is struck: step off it (pass 48)', () => {
     const { e, p } = duel();
@@ -89,7 +58,7 @@
     sim.until(() => e.def.phaseId === 'storm' && e.state !== ES.PHASE && !(e.attack && e.attack.invulnerable), 12);
     sim.step(1, 1);
     expect.ok(e.def.storm && e.rig.stormMeshes.length >= 2 && e.rig.stormMeshes.every(m => m.visible), 'the storm seams her hook and the sign on her breast');
-    sim.place(p.x, p.z, p.y); p.hp = p.maxHp; p.rent = 0; p.rentBy = null;
+    sim.place(p.x, p.z, p.y); p.hp = p.maxHp;
     e.cooldown = 99; e.attack = null; e.hitbox = null; e.state = ES.IDLE;
     e.x = e.px = p.x; e.z = e.pz = p.z + 8; e.y = p.y; e.yaw = Math.PI;
     e.beginAttack(e.attackById('stormKnows'));
@@ -109,18 +78,7 @@
     // The second: stand still on it.
     sim.until(() => e.state === ES.ACTIVE && e.hitIndex === 1, 3);
     sim.until(() => p.hp < p.maxHp || e.hitIndex !== 1, 1);
-    expect.ok(p.hp < p.maxHp && p.rent === 0, `stood on it: struck, and lightning tears nothing (${p.hp}, rent ${p.rent})`);
-    // In the storm the butt still tears nothing; a blow of the hook with no `rend` of its own does (the phase's).
-    const close = id => {
-      sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 8);
-      p.hp = p.maxHp; e.cooldown = 99; e.x = e.px = p.x; e.z = e.pz = p.z + 2.4; e.yaw = Math.PI; p.yaw = 0;
-      e.beginAttack(e.attackById(id)); sim.until(() => p.hp < p.maxHp, 4);
-    };
-    close('correction');
-    expect.ok(p.hp < p.maxHp && p.rent === 0, `the correction hurts in the storm too, and tears nothing (rent ${p.rent})`);
-    expect.ok(!('rend' in e.attackById('galeReap')), 'the gale reap has no rend of its own');
-    close('galeReap');
-    expect.ok(p.hp < p.maxHp && p.rent === 1, `the gale reap tears, the storm's rend (rent ${p.rent})`);
+    expect.ok(p.hp < p.maxHp, `stood on it: struck (${p.hp})`);
   });
   test('Torn Abbey: Rending Brothers hold the ruins, and nothing of the old road is left in them', () => {
     const L = A.LEVEL_12, ids = new Set([...L.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...L.dispersed.map(s => s.enemy)]);

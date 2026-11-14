@@ -5,7 +5,7 @@
 // blade look a player wears, the crate abilities they may be offered): a crate never changes a fight's numbers beyond
 // putting one more ability in that player's pool.
 // ============================================================================
-// `xp`: what a run earns. `boss` for each boss beaten, `crowned` more for a Crowned one, `minute` for each minute played,
+// `xp`: what a run earns. `fight` for each fight won, `crowned` more for a Crowned one, `minute` for each minute played,
 //   at least `least` for any run that ended (a run lost at once still counts as playing).
 // `level`: the xp from one level to the next: `first`, then `step` more each level, never above `most`.
 // `odds`: a crate's rarity, drawn by weight among the rarities that still hold a reward you don't own.
@@ -15,7 +15,7 @@
 //   `start: true` is owned from the first day and never in a crate. A reward's rarity is its own, or its ability's.
 //   A `text` follows the abilities' rule (AGENTS.md rule 10): only what it is, in the fewest plain words.
 const CRATES = {
-  xp: { boss: 100, crowned: 150, minute: 15, least: 50 },
+  xp: { fight: 100, crowned: 150, minute: 15, least: 50 },
   level: { first: 250, step: 100, most: 1500 },
   odds: { common: 70, rare: 25, legendary: 5 },
   roll: { tiles: 46, land: 40, time: 6.2, still: 1.2 },

@@ -39,15 +39,15 @@ const { config: C } = require('../js/net-protocol.js');
     const p = Game.player; input.clear(); Game.setLock(null); Game.retarget = false;
     p.x = Game.spawn.x + 1; p.z = Game.spawn.z; p.y = world.floorY(p.x, p.z, Game.spawn.y); p.yaw = 0.7;
     p.vx = p.vy = p.vz = 0; p.grounded = true; p.setState(PS.IDLE); p.savePrev();
-    p.hp = 61; p.stamina = 37; p.staminaDelay = 100; p.item('flask').count = 1;
+    p.hp = 61; p.item('flask').count = 1;
     document.getElementById('lobbyName').value = 'Remembered knight';
     document.getElementById('lobbyName').onchange();
-    return { x: p.x, y: p.y, z: p.z, hp: p.hp, stamina: p.stamina, flasks: p.item('flask').count };
+    return { x: p.x, y: p.y, z: p.z, hp: p.hp, flasks: p.item('flask').count };
   });
   const assertSaved = async (page, saved) => {
     const current = await page.evaluate(() => {
       const p = Game.player;
-      return { x: p.x, y: p.y, z: p.z, hp: p.hp, stamina: p.stamina, flasks: p.item('flask').count };
+      return { x: p.x, y: p.y, z: p.z, hp: p.hp, flasks: p.item('flask').count };
     });
     for (const [key, value] of Object.entries(saved)) assert.ok(Math.abs(current[key] - value) < 0.05, key + ' is recovered: ' + current[key] + '/' + value);
     assert.equal(await page.locator('#lobbyName').inputValue(), 'Remembered knight');
@@ -100,7 +100,7 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(await b.evaluate(() => multiplayer.info.self), friendId);
 
     // Deliberate leave/removal cancels retries but keeps the run and saved resources.
-    await a.evaluate(() => { Game.player.stamina = 23; Game.player.staminaDelay = 100; Game.player.item('flask').count = 0; multiplayer.leave(); });
+    await a.evaluate(() => { Game.player.item('flask').count = 0; multiplayer.leave(); });
     app.clients.get(friendId).ws.close(1008, 'Removed by the lobby leader.');
     await b.waitForFunction(() => !multiplayer.connected); await wait(1200);
     assert.equal(app.clients.size, 0); assert.equal(app.session.epoch, epoch);
@@ -108,7 +108,7 @@ const { config: C } = require('../js/net-protocol.js');
     assert.ok(app.sim.state.time > emptyAt + 0.1, 'the empty lobby keeps simulating');
     await a.bringToFront(); await a.evaluate(() => multiplayer.join()); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId);
-    await assertSaved(a, { ...saved, stamina: 23, flasks: 0 });
+    await assertSaved(a, { ...saved, flasks: 0 });
     assert.equal(app.session.epoch, epoch);
     assert.deepEqual(errors, []);
     console.log('Browsers: lone frozen leader/new active joiner, live empty run, same identity/name/resources across transport loss, reload, menu recovery and explicit leave; retries and removal passed.');

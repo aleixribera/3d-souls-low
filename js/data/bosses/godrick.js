@@ -60,12 +60,12 @@ const GODRICK = {
     // A roll-and-leap out of the storm, the axe driven into the earth: it lodges, a long opening.
     { id: 'stormLeap', name: 'Storm Leap Slam', anim: 'chop', pose: 'heavyOverhead', noParry: true, tracking: { rate: 2.2, commit: 0.5 }, poseScale: 1.4, chance: 0,
       hits: [{ startup: 1.2, active: 0.16, follow: 0.6, leap: { from: 0.3, max: 10, short: 1.6 } }], recovery: 1.9,
-      damage: 56, poise: 85, knock: 10, lunge: 0, range: 10, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 },
+      damage: 56, heavy: true, poise: 85, knock: 10, lunge: 0, range: 10, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 },
       impact: { ring: 4.0, crack: 2.2, dust: 22, shake: 0.18 } },
     // The standalone jump: both hands on the haft, straight up, straight down. Long landing.
     { id: 'jumpSlam', name: 'Jumping Axe Slam', anim: 'chop', pose: 'heavyOverhead', noParry: true, tracking: { rate: 2.0, commit: 0.45 }, poseScale: 1.4, minRange: 4, chance: 0.3,
       hits: [{ startup: 1.6, active: 0.16, follow: 0.6, leap: { from: 0.4, max: 11, short: 1.6 } }], recovery: 1.8,
-      damage: 54, poise: 85, knock: 10, lunge: 0, range: 11, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 },
+      damage: 54, heavy: true, poise: 85, knock: 10, lunge: 0, range: 11, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 },
       impact: { ring: 4.0, crack: 2.0, dust: 20, shake: 0.16 } },
     // "I command thee, kneel!": the leg raised, the axe inverted and slammed: a small shockwave, then a much wider one.
     // Along the floor: jump them or roll them. A big opening after the second.
@@ -115,7 +115,7 @@ const GODRICK = {
     { id: 'dragonGrab', name: 'Dragon Grab', anim: 'bash', pose: 'enemyBash', noParry: true, rollOnly: true, tracking: { rate: 2.6, commit: 0.5 }, poseScale: 1.3,
       minRange: 3.5, dash: { speed: 10, from: 0.4 }, chance: 0.35, breath: { len: 3.5, width: 1.6 },
       hits: [{ startup: 1.3, active: 0.16, follow: 0.5 }], recovery: 1.9,
-      damage: 62, poise: 90, knock: 12, lunge: 2.0, range: 10, box: { w: 2.2, h: 1.6, d: 3.0, fwd: 1.8, y: 0.7 } },
+      damage: 62, heavy: true, poise: 90, knock: 12, lunge: 2.0, range: 10, box: { w: 2.2, h: 1.6, d: 3.0, fwd: 1.8, y: 0.7 } },
     // The burning stormcaller: same branching, fiercer.
     { id: 'flameStorm', name: 'Flaming Stormcaller', anim: 'spin', pose: 'godrickStorm', noParry: true, tracking: { rate: 2.8, commit: 0.6 }, poseScale: 1.35, chance: 0.6,
       hits: [{ startup: 0.9, active: 0.14, follow: 0.06 }, { startup: 0.3, active: 0.14, follow: 0.06 }, { startup: 0.3, active: 0.14, follow: 0.12 }], recovery: 0.5,
@@ -130,13 +130,13 @@ const GODRICK = {
     { id: 'flameLeap', name: 'Flaming Leap Slam', anim: 'chop', pose: 'godrickLeapRing', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.45, chance: 0,
       hits: [{ startup: 1.15, active: 0.16, follow: 0.2, leap: { from: 0.3, max: 11, short: 1.6 }, impact: { ring: 5.0, crack: 2.6, dust: 26, shake: 0.2 } },
              { startup: 0.4, active: 0.18, follow: 0.5, box: RING(1.5, 6.5, 1.6), impact: { ring: 3.6, crack: 0, dust: 12, shake: 0.12 } }],
-      recovery: 1.8, damage: 60, poise: 90, knock: 11, lunge: 0, range: 11, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 } },
+      recovery: 1.8, damage: 60, heavy: true, poise: 90, knock: 11, lunge: 0, range: 11, box: { w: 3.0, h: 2.6, d: 4.4, fwd: 1.8, y: 1.0 } },
     // Kneel in three: small, medium, then a blast across most of the arena. Recovery only after the third.
     { id: 'flameKneel', name: 'Flaming "Kneel!"', anim: 'stomp', pose: 'godrickKneel3', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, poseScale: 1.35, chance: 0.45,
       hits: [{ startup: 1.3, active: 0.18, follow: 0.15, box: RING(0.8, 4, 1.4), impact: { ring: 3.0, crack: 1.6, dust: 14, shake: 0.12 } },
              { startup: 0.75, active: 0.18, follow: 0.15, box: RING(1.2, 8, 1.8), impact: { ring: 4.5, crack: 2.0, dust: 18, shake: 0.15 } },
              { startup: 0.95, active: 0.2, follow: 0.5, box: RING(1.5, 13, 2.4), impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.24 } }],
-      recovery: 2.0, damage: 34, poise: 60, knock: 10, lunge: 0, range: 4.4, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true } },
+      recovery: 2.0, damage: 34, heavy: true, poise: 60, knock: 10, lunge: 0, range: 4.4, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true } },
     // He walks forward with the dragon's mouth down, the ground ahead in flames, and flicks the fire up to end.
     // Step round his sides: the stream is only ahead.
     { id: 'fireMarch', name: 'Fire March', anim: 'bash', pose: 'godrickMarch', noParry: true, tracking: { rate: 1.6, commit: 1 }, poseScale: 1.2, chance: 0.4,

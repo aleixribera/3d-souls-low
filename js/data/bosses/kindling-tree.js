@@ -196,13 +196,13 @@ MODEL_DEFS.kindlingTree = {
       // The Falling Bough: both boughs high and back, a pause, brought down together. Parry it, or roll aside.
       { id: 'fallingBough', name: 'The Falling Bough', anim: 'chop', pose: 'treeFallingBough', tracking: { rate: 2.4, commit: 0.6 }, markers: glint(0),
         hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.3, 0.8], chance: 0.5 }, impact: { ring: 3.0, crack: 2.0, dust: 18, shake: 0.14 } }], recovery: 2.1,
-        damage: 44, poise: 75, knock: 9, lunge: 0, range: 6.0, box: BOUGH },
+        damage: 44, heavy: true, poise: 75, knock: 9, lunge: 0, range: 6.0, box: BOUGH },
       // The Kindling Mark: the claw drawn to its coal and driven into the floor before it; torn out, the mark it left burns
       // a moment later, where it was. Step off it.
       { id: 'kindlingMark', name: 'The Kindling Mark', anim: 'chop', pose: 'treeKindlingMark', noParry: true, tracking: { rate: 2.4, commit: 0.6 }, chance: 0.5,
         hits: [{ startup: 1.15, active: 0.15, follow: 0.35, damage: 26, box: CLAW, impact: { ring: 2.0, crack: 1.4, dust: 12, shake: 0.1 } },
                { startup: 1.2, active: 0.18, follow: 0.4, still: true, sigil: 2.4, box: MARK, impact: { ring: 3.0, crack: 0.8, dust: 10, shake: 0.12 } }], recovery: 1.65,
-        damage: 40, poise: 60, knock: 8, lunge: 0, range: 6.2, minRange: 1.5, box: MARK },
+        damage: 40, heavy: true, poise: 60, knock: 8, lunge: 0, range: 6.2, minRange: 1.5, box: MARK },
       // The Thorns: leaning back, boughs low and spread; its crown flings a fan of thorns. At range.
       { id: 'thornVolley', name: 'Thorns', anim: 'overhead', pose: 'treeThorns', noParry: true, tracking: { rate: 3.0, commit: 0.85 }, minRange: 6, chance: 0.45,
         projectile: THORNS, hits: [{ startup: 1.0, active: 0.05, follow: 0.3 }], recovery: 1.2,
@@ -215,7 +215,7 @@ MODEL_DEFS.kindlingTree = {
       // through it. Get off the swelling once it stops, or roll as it breaks. A long opening after.
       { id: 'intoTheRoots', name: 'Into the Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, tracking: { rate: 2.0, commit: 0.3 }, minRange: 4.5, chance: 0.45,
         hits: [{ startup: 2.6, active: 0.2, follow: 0.5, burrow: { from: 0.18, lock: 0.72, speed: 11, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.4,
-        damage: 46, poise: 80, knock: 10, lunge: 0, range: 22, box: RISE },
+        damage: 46, heavy: true, poise: 80, knock: 10, lunge: 0, range: 22, box: RISE },
       // The Turning Bough: behind it, a look over its right side; the bough comes round.
       { id: 'turningBough', name: 'The Turning Bough', anim: 'sweep', pose: 'treeTurning', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.75, active: 0.16, follow: 0.3 }], recovery: 1.35,
@@ -223,7 +223,7 @@ MODEL_DEFS.kindlingTree = {
       // Drinking where it can feel it: it goes under, sooner, and faster.
       { id: 'risingPunish', name: 'Into the Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, when: 'healing', tracking: { rate: 2.4, commit: 0.3 }, chance: 3,
         hits: [{ startup: 1.9, active: 0.2, follow: 0.4, burrow: { from: 0.15, lock: 0.6, speed: 13, turn: 3.0 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.1,
-        damage: 40, poise: 70, knock: 10, lunge: 0, range: 20, box: RISE },
+        damage: 40, heavy: true, poise: 70, knock: 10, lunge: 0, range: 20, box: RISE },
       // ---- ablaze --------------------------------------------------------------------------------------------------------
       // Uprooted (the phase opener): its claws in the floor, it tears itself free; a ring of burning earth all round. It
       // cannot be hurt through it (as every boss's change).
@@ -240,17 +240,17 @@ MODEL_DEFS.kindlingTree = {
       // The Charge: low, boughs forward like antlers; it runs at you on its roots. Roll aside, late.
       { id: 'rootCharge', name: 'The Charge', anim: 'thrust', pose: 'treeCharge', noParry: true, tracking: { rate: 2.6, commit: 0.7 }, minRange: 5, chance: 0.4,
         dash: { speed: 11, from: 0.45 }, hits: [{ startup: 1.2, active: 0.2, follow: 0.4, impact: { ring: 2.4, crack: 0.8, dust: 18, shake: 0.12 } }], recovery: 2.1,
-        damage: 40, poise: 70, knock: 10, lunge: 0, range: 14, box: RAM },
+        damage: 40, heavy: true, poise: 70, knock: 10, lunge: 0, range: 14, box: RAM },
       // The Great Kindling: its breast opened to the sky; a ring of fire, and a wider one after it. Roll each.
       { id: 'greatKindling', name: 'The Great Kindling', anim: 'stomp', pose: 'treeGreatKindling', noParry: true, rollOnly: true, tracking: { rate: 1.4, commit: 0.4 }, chance: 0.35,
         hits: [{ startup: 1.6, active: 0.45, follow: 0.35, box: RING(0.8, 7.0, 1.6, 0.45, 1.6), impact: { ring: 4.4, crack: 2.0, dust: 20, shake: 0.16 } },
                { startup: 0.85, active: 0.55, follow: 0.4, box: RING(2.5, 11.0, 1.6, 0.55, 1.6), impact: { ring: 6.0, crack: 2.4, dust: 26, shake: 0.2 } }], recovery: 2.25,
-        damage: 36, poise: 60, knock: 9, lunge: 0, range: 9, box: RING(0.8, 7.0, 1.6, 0.45, 1.6) },
+        damage: 36, heavy: true, poise: 60, knock: 9, lunge: 0, range: 9, box: RING(0.8, 7.0, 1.6, 0.45, 1.6) },
       // Deep Roots: it goes under, comes up through the swelling, and goes under again.
       { id: 'deepRoots', name: 'Deep Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, tracking: { rate: 2.0, commit: 0.3 }, minRange: 4.5, chance: 0.4,
         hits: [{ startup: 2.2, active: 0.2, follow: 0.45, burrow: { from: 0.2, lock: 0.68, speed: 12, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } },
                { startup: 1.8, active: 0.2, follow: 0.5, burrow: { from: 0.25, lock: 0.62, speed: 12, turn: 2.6 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.7,
-        damage: 40, poise: 70, knock: 10, lunge: 0, range: 22, box: RISE },
+        damage: 40, heavy: true, poise: 70, knock: 10, lunge: 0, range: 22, box: RISE },
     ],
   };
   ENEMY_DEFS.push(TREE); ENEMY_BY_ID[TREE.id] = TREE;

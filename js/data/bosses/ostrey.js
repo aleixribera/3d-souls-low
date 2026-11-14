@@ -242,7 +242,7 @@ MODEL_DEFS.oldOstrey = {
       // he lowers his head and runs at you instead.
       { id: 'gateDrop', name: 'The Gate Drop', anim: 'chop', pose: 'ostreyGateDrop', tracking: { rate: 2.0, commit: 0.55 }, markers: glint(0),
         hits: [{ startup: 1.5, active: 0.14, follow: 0.5, hold: { at: 0.55, time: [0.4, 1.1], chance: 0.7 }, abort: { at: 0.6, beyond: 6, into: 'shoulderGate' } }], recovery: 2.55,
-        damage: 46, poise: 80, knock: 9, lunge: 1.2, range: 3.8, box: { w: 1.8, h: 3.0, d: 4.2, fwd: 2.4, y: 1.2 },
+        damage: 46, heavy: true, poise: 80, knock: 9, lunge: 1.2, range: 3.8, box: { w: 1.8, h: 3.0, d: 4.2, fwd: 2.4, y: 1.2 },
         impact: { ring: 2.8, crack: 1.5, dust: 14, shake: 0.12 } },
       // The Drive: a short jab to draw you in, then the long drive, sometimes held.
       { id: 'barDrive', name: 'Bar Drive', anim: 'thrust', pose: 'ostreyBarDrive', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(0, 1),
@@ -259,7 +259,7 @@ MODEL_DEFS.oldOstrey = {
       { id: 'shoulderGate', name: 'Shoulder the Gate', anim: 'bash', pose: 'ostreyShoulderGate', noParry: true, shove: true, tracking: { rate: 2.4, commit: 0.45 },
         minRange: 5, dash: { speed: 11, from: 0.35 }, chance: 0.35,
         hits: [{ startup: 1.0, active: 0.16, follow: 0.4 }], recovery: 1.87,
-        damage: 34, poise: 60, knock: 10, lunge: 2.2, range: 12, box: { w: 3.4, h: 2.2, d: 2.4, fwd: 1.4, y: 1.1 },
+        damage: 34, heavy: true, poise: 60, knock: 10, lunge: 2.2, range: 12, box: { w: 3.4, h: 2.2, d: 2.4, fwd: 1.4, y: 1.1 },
         impact: { ring: 1.6, crack: 0, dust: 10, shake: 0.08 } },
       // Lantern Coals: swung low and back, then flung underarm: three coals lobbed in a fan. Blockable, not parryable.
       { id: 'lanternCoals', name: 'Lantern Coals', anim: 'overhead', pose: 'ostreyCoals', tracking: { rate: 2.8, commit: 0.85 }, minRange: 4, chance: 0.3,
@@ -286,7 +286,7 @@ MODEL_DEFS.oldOstrey = {
         hits: [{ startup: 1.4, active: 0.16, follow: 0.75, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 }, impact: { ring: 3.4, crack: 1.6, dust: 18, shake: 0.16 } },
                { startup: 0.45, active: 0.18, follow: 0.4, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.5, crack: 0, dust: 12, shake: 0.12 } }],
-        recovery: 2.72, damage: 40, poise: 70, knock: 9, lunge: 0.8, range: 3.6, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 } },
+        recovery: 2.72, damage: 40, heavy: true, poise: 70, knock: 9, lunge: 0.8, range: 3.6, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 } },
       // Low, Then High: the knees, then the head. Roll the first, roll the second.
       { id: 'kindledSweep', name: 'Low, Then High', anim: 'sweep', pose: 'ostreyKindledSweep', tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0, 1),
         hits: [{ startup: 0.9, active: 0.16, follow: 0.47, box: { w: 7.0, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
@@ -304,7 +304,7 @@ MODEL_DEFS.oldOstrey = {
         hits: [{ startup: 1.5, active: 0.16, follow: 0.65, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.18 } },
                { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7.5, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.0, crack: 0, dust: 12, shake: 0.1 } }],
-        recovery: 3.06, damage: 54, poise: 90, knock: 11, lunge: 0, range: 12, box: { w: 2.4, h: 2.6, d: 4.4, fwd: 2.4, y: 1.0 } },
+        recovery: 3.06, damage: 54, heavy: true, poise: 90, knock: 11, lunge: 0, range: 12, box: { w: 2.4, h: 2.6, d: 4.4, fwd: 2.4, y: 1.0 } },
       // Ember Rain: the lantern whirled overhead and swung down, coals scattered in a wide fan; twice.
       { id: 'emberRain', name: 'Ember Rain', anim: 'overhead', pose: 'ostreyEmberRain', tracking: { rate: 2.4, commit: 0.8 }, minRange: 3, chance: 0.3,
         projectile: { ...COAL, speed: 13, spread: [-0.5, -0.25, 0, 0.25, 0.5] },

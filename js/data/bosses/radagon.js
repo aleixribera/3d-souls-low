@@ -72,7 +72,7 @@ const RADAGON = {
                impact: { ring: 3.0, crack: 1.8, dust: 18, shake: 0.15 } },
              { startup: 1.5, active: 0.18, follow: 0.4, sigil: 3.2, box: { w: 6.0, h: 4.0, d: 6.0, fwd: 2.4, y: 1.5 }, impact: { ring: 3.4, crack: 1.0, dust: 10, shake: 0.12 } }],
       recovery: 1.4, followUps: [{ attack: 'teleportAway', chance: 0.35 }],
-      damage: 46, poise: 75, knock: 9, lunge: 0.8, range: 3.6, box: { w: 2.0, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 } },
+      damage: 46, heavy: true, poise: 75, knock: 9, lunge: 0.8, range: 3.6, box: { w: 2.0, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 } },
     // The combo's branch: the slam's spot glows, then erupts.
     { id: 'runeBurst', name: 'Rune Detonation', anim: 'stomp', pose: 'enemyStomp', noParry: true, tracking: { rate: 0.5, commit: 0.1 }, chance: 0,
       hits: [{ startup: 1.4, active: 0.18, follow: 0.4, sigil: 2.8, box: { w: 5.0, h: 4.0, d: 5.0, fwd: 2.2, y: 1.5 }, impact: { ring: 3.0, crack: 0.8, dust: 8, shake: 0.1 } }],
@@ -94,13 +94,13 @@ const RADAGON = {
     { id: 'blinkPunish', name: 'Teleport Slam', anim: 'chop', pose: 'radagonBlinkSlam', noParry: true, when: 'healing', tracking: { rate: 3.0, commit: 0.6 }, poseScale: 1.3, minRange: 5, chance: 1.0,
       hits: [{ startup: 0.5, active: 0.12, follow: 0.05, blink: { from: 0.3, dist: 2.4 }, box: RADAGON_FLASH },
              { startup: 0.6, active: 0.15, follow: 0.4, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } }],
-      recovery: 1.1, damage: 42, poise: 60, knock: 8, lunge: 0, range: 26, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 } },
+      recovery: 1.1, damage: 42, heavy: true, poise: 60, knock: 8, lunge: 0, range: 26, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 } },
     // Golden Grab: the left hand ignites, a tracking charge; caught, a heavy blow. Roll sideways and he whiffs into the
     // ground (a major opening). Not a true grab: a roll-only strike, like Godrick's Dragon Grab.
     { id: 'goldenGrab', name: 'Golden Grab', anim: 'thrust', pose: 'enemyThrust', noParry: true, rollOnly: true, tracking: { rate: 3.0, commit: 0.75 }, poseScale: 1.2,
       minRange: 3, dash: { speed: 11, from: 0.5 }, chance: 0.3,
       hits: [{ startup: 1.2, active: 0.16, follow: 0.6, impact: { ring: 2.0, crack: 1.0, dust: 12, shake: 0.12 } }], recovery: 2.0,
-      damage: 70, poise: 100, knock: 12, lunge: 2.0, range: 10, box: { w: 1.6, h: 2.2, d: 3.0, fwd: 1.8, y: 1.1 } },
+      damage: 70, heavy: true, poise: 100, knock: 12, lunge: 2.0, range: 10, box: { w: 1.6, h: 2.2, d: 3.0, fwd: 1.8, y: 1.1 } },
     // ---- teleports: the departure bursts, he reappears before the player and sweeps at once ------------------------------
     { id: 'teleportStrike', name: 'Teleport Reappearance Strike', anim: 'sweep', pose: 'radagonBlink', noParry: true, tracking: { rate: 3.2, commit: 0.8 }, poseScale: 1.2, minRange: 5, chance: 0.35,
       hits: [{ startup: 0.55, active: 0.12, follow: 0.05, box: RADAGON_FLASH },
@@ -119,7 +119,7 @@ const RADAGON = {
     { id: 'goldBreaker', name: 'Gold Breaker', anim: 'chop', pose: 'radagonBreaker', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.45, chance: 0.3,
       hits: [{ startup: 2.0, active: 0.16, follow: 0.2, leap: { from: 0.35, max: 14, short: 0.6 }, sigil: 4, impact: { ring: 6.0, crack: 3.0, dust: 30, shake: 0.25 } },
              { startup: 0.4, active: 0.18, follow: 1.2, box: RADAGON_RING(1.5, 9, 1.8), impact: { ring: 5.0, crack: 0, dust: 16, shake: 0.14 } }],
-      recovery: 1.6, damage: 66, poise: 100, knock: 12, lunge: 0, range: 14, box: { w: 4.6, h: 2.6, d: 4.6, fwd: 0.8, y: 1.0 } },
+      recovery: 1.6, damage: 66, heavy: true, poise: 100, knock: 12, lunge: 0, range: 14, box: { w: 4.6, h: 2.6, d: 4.6, fwd: 0.8, y: 1.0 } },
     // Elden Shattering: a narrow line of shockwaves, a wide half-circle, then a leap and a blast all round him. The pauses
     // between the first blows are traps; after the third slam there is time for a separate roll through its shockwave.
     // The first two run along the floor (a jump clears them).
@@ -128,16 +128,16 @@ const RADAGON = {
              { startup: 1.1, active: 0.16, follow: 0.15, box: { w: 12, h: 0.6, d: 6.5, fwd: 2.8, y: 0.3 }, impact: { ring: 3.4, crack: 2.4, dust: 18, shake: 0.16 } },
              { startup: 1.5, active: 0.16, follow: 0.1, leap: { from: 0.3, max: 3, short: 2.0 }, sigil: 4, impact: { ring: 6.0, crack: 3.2, dust: 30, shake: 0.25 } },
              { startup: 0.5, active: 0.18, follow: 1.0, box: RADAGON_RING(0, 12, 3), impact: { ring: 6.5, crack: 0, dust: 18, shake: 0.16 } }],
-      recovery: 2.0, damage: 48, poise: 80, knock: 10, lunge: 0, range: 7, box: { w: 3.0, h: 2.6, d: 3.4, fwd: 1.4, y: 1.1 } },
+      recovery: 2.0, damage: 48, heavy: true, poise: 80, knock: 10, lunge: 0, range: 7, box: { w: 3.0, h: 2.6, d: 3.4, fwd: 1.4, y: 1.1 } },
     // A conjured golden spear driven into the ground; a second later its line bursts. His rear flank is safe.
     { id: 'spearThrust', name: 'Spear Thrust, Detonation', anim: 'thrust', pose: 'radagonSpearThrust', spectral: 'sword', noParry: true, tracking: { rate: 2.8, commit: 0.65 }, poseScale: 1.2, chance: 0.35,
       hits: [{ startup: 0.9, active: 0.14, follow: 0.1, box: { w: 1.2, h: 1.8, d: 4.2, fwd: 2.4, y: 1.0 } },
              { startup: 1.0, active: 0.18, follow: 0.4, sigil: 2.4, box: { w: 3.0, h: 4.0, d: 6.0, fwd: 3.4, y: 1.5 }, impact: { ring: 2.8, crack: 1.2, dust: 10, shake: 0.12 } }],
-      recovery: 1.2, damage: 40, poise: 60, knock: 8, lunge: 1.6, range: 4.2, box: { w: 1.2, h: 1.8, d: 4.2, fwd: 2.4, y: 1.0 } },
+      recovery: 1.2, damage: 40, heavy: true, poise: 60, knock: 8, lunge: 1.6, range: 4.2, box: { w: 1.2, h: 1.8, d: 4.2, fwd: 2.4, y: 1.0 } },
     // An offensive teleport into an overhead slam (the hammer glints: parryable).
     { id: 'teleportSlam', name: 'Teleport Slam', anim: 'chop', pose: 'radagonBlinkSlam', tracking: { rate: 3.0, commit: 0.6 }, markers: radagonGlint(1), poseScale: 1.3, minRange: 6, chance: 0.35,
       hits: [{ startup: 0.5, active: 0.12, follow: 0.05, blink: { from: 0.3, dist: 2.4 }, box: RADAGON_FLASH },
              { startup: 0.65, active: 0.15, follow: 0.4, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } }],
-      recovery: 1.1, damage: 44, poise: 60, knock: 8, lunge: 0, range: 20, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 } },
+      recovery: 1.1, damage: 44, heavy: true, poise: 60, knock: 8, lunge: 0, range: 20, box: { w: 1.8, h: 3.0, d: 3.8, fwd: 2.0, y: 1.2 } },
   ],
 };

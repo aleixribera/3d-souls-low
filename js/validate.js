@@ -178,8 +178,8 @@ function validateData({ visual = true } = {}) {
   if (visual) ABILITY_KEYS.forEach((k, i) => need(Object.hasOwn(DEFAULT_ACTIONS, `ability${i + 1}`), `Key ${k}: no ability${i + 1} binding (js/input.js).`));
   // Levels and crates (js/data/crates.js): every crate ability is a reward, and every reward is whole.
   const CR = CRATES, whole0 = x => Number.isInteger(x) && x >= 0, crateWords = t => t.trim().split(/\s+/).length;
-  need(CR && ['boss', 'crowned', 'minute', 'least'].every(k => whole0(CR.xp?.[k])) && ['first', 'step', 'most'].every(k => whole0(CR.level?.[k])) && CR.level.first > 0 && CR.level.most >= CR.level.first,
-    'CRATES: xp boss, crowned, minute and least, and level first, step and most, whole numbers of 0 or more (first above 0, most at least first).');
+  need(CR && ['fight', 'crowned', 'minute', 'least'].every(k => whole0(CR.xp?.[k])) && ['first', 'step', 'most'].every(k => whole0(CR.level?.[k])) && CR.level.first > 0 && CR.level.most >= CR.level.first,
+    'CRATES: xp fight, crowned, minute and least, and level first, step and most, whole numbers of 0 or more (first above 0, most at least first).');
   need(Object.keys(RAR).every(r => num(CR.odds?.[r]) && CR.odds[r] >= 0) && Object.values(CR.odds).some(w => w > 0), 'CRATES.odds: a weight of 0 or more for each rarity, one above 0.');
   need(Number.isInteger(CR.roll?.tiles) && Number.isInteger(CR.roll.land) && CR.roll.land > 0 && CR.roll.land < CR.roll.tiles - 2 && num(CR.roll.time) && CR.roll.time > 0 && num(CR.roll.still) && CR.roll.still > 0,
     'CRATES.roll: whole tiles, the reward at a whole land with tiles after it, a time and a still above 0.');
@@ -199,7 +199,7 @@ function validateData({ visual = true } = {}) {
   for (const b of ABILITIES) if (b.crate !== undefined) need(b.crate === true && CR.rewards.some(r => r.ability === b.id), `Ability ${b.id}: crate is only true, and a crate reward must give it.`);
   for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r && !b.crate).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r} outside the crates, to fill an offer.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
-  for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'],
+  for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow'],
     defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], execution: ['yield', 'late', 'aside'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
     for (const key of fields) need(num(botConfig[group]?.[key]) && botConfig[group][key] >= 0, `Bot ${group}.${key} must be non-negative.`);
   // Temperaments (v7.52.0): ordered positive pairs and positive gaps.
@@ -207,13 +207,13 @@ function validateData({ visual = true } = {}) {
   need(pair(botConfig.moodJitter) && botConfig.moodJitter[0] > 0 && pair(botConfig.slip?.early) && pair(botConfig.slip?.late) && num(botConfig.slip.lateShare) && botConfig.slip.lateShare >= 0 && botConfig.slip.lateShare <= 1 &&
     num(botConfig.behindMargin) && botConfig.behindMargin >= 0 && num(botConfig.fightGap) && botConfig.fightGap > 0,
     'Bot moodJitter, slip.early and slip.late need ordered pairs and slip.lateShare a share (0..1); behindMargin and fightGap must be non-negative and positive.');
-  for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
+  for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
   { const D = botConfig.dashIn, T = botConfig.tempo;   // pass 88: finishers and dash attacks
     need(['finisher', 'finisherOpening'].every(k => num(T[k]) && T[k] >= 0) && D && pair(D.gap) && ['rate', 'rest', 'heavy', 'counterReach', 'counterHeavy'].every(k => num(D[k]) && D[k] >= 0),
       'Bot tempo.finisher and finisherOpening must be 0 or more; dashIn needs gap [near, far] and rate, rest, heavy, counterReach and counterHeavy of 0 or more.'); }
-  for (const key of ['windowSlack', 'minWindow', 'reserve'])
+  for (const key of ['windowSlack', 'minWindow'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] > 0, `Bot risk.${key} must be positive.`);
   for (const key of ['combo', 'earlyRollChance'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] >= 0 && botConfig.risk[key] <= 1, `Bot risk.${key} must be 0..1.`);
@@ -230,9 +230,7 @@ function validateData({ visual = true } = {}) {
     'Bot room needs non-negative player, bot, laneDepth and push, and a lane under pi.');
   const BF = botConfig.fire;
   need(BF && ['margin', 'push', 'ending'].every(k => num(BF[k]) && BF[k] >= 0), 'Bot fire needs non-negative margin (m), push and ending (s).');
-  const RD = CONFIG.rend, ST = CONFIG.storm;
-  need(RD && Number.isInteger(RD.max) && RD.max >= 1 && num(RD.cut) && RD.cut > 0 && RD.cut * RD.max < 0.6 && num(RD.time) && RD.time > 0,
-    'CONFIG.rend needs max (whole pieces, 1 or more), cut (a fraction; all of them under 0.6 of the bar) and time (s).');
+  const ST = CONFIG.storm;
   need(ST && num(ST.lock) && ST.lock > 0 && ST.lock < 1 && num(ST.minTell) && ST.minTell > 0, 'CONFIG.storm needs lock (0 to 1) and minTell (s).');
   need(CONFIG.burrow && num(CONFIG.burrow.near) && CONFIG.burrow.near > 0 && num(CONFIG.burrow.minTell) && CONFIG.burrow.minTell > 0, 'CONFIG.burrow needs near (m) and minTell (s).');
   const AR = CONFIG.area;
@@ -400,7 +398,8 @@ function validateData({ visual = true } = {}) {
         need(under <= iframes + 1e-6, `${at} holds a spot for ${under.toFixed(2)} s; a dash gets through ${iframes.toFixed(2)} s at most.`);
       }
     });
-    if ('rend' in a) need(typeof a.rend === 'boolean', `${tag}: rend must be true or false.`);
+    // Pass 96 (PLAN.md "No hidden meters"): the only blows that stagger the player; the wind-up shows it (Enemy.drawWindup).
+    if ('heavy' in a) need(a.heavy === true, `${tag}: heavy must be true (or left out).`);
     // Per hit (v4.3): its own `box` (an expanding `ring` round the owner when given), its own `impact`, and `leap`.
     for (const h of Array.isArray(a.hits) ? a.hits : []) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);
@@ -532,7 +531,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'opener' in ph) need(aids.has(ph.opener) && (!ph.attacks || ph.attacks.includes(ph.opener)), `${tag}: opener "${ph.opener}" must be one of its attacks, and of the phase's own when it lists them (the phase looks it up there).`);
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
-        for (const k of ['rend', 'storm', 'rooted']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
+        for (const k of ['storm', 'rooted']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
         if (ph && 'ignite' in ph) need(ph.ignite === true || ph.ignite === 'weapon', `${tag}: ignite must be true (he burns) or 'weapon' (only his weapon does: js/finale.js).`);   // pass 63
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'resonance' in ph) need(resOk(ph.resonance) && hasAnswer(ph.attacks), `${tag}: resonance needs max (above 0), light, heavy, breakers, delay and decay, and one of its attacks with when: 'resonant'.`);   // pass 68

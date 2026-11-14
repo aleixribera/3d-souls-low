@@ -407,11 +407,6 @@ const AUDIO = {
       { wave: 'sawtooth', freq: 160, fm: { ratio: 0.53, index: 5, decay: 0.2 }, filter: { type: 'bandpass', freq: 2200, q: 1.4 }, a: 0.002, d: 0.16, gain: 0.25, drive: 3 },
       { noise: 'white', filter: { type: 'bandpass', freq: 5600, q: 3 }, at: 0.03, a: 0.001, d: 0.09, gain: 0.3 },
     ] },
-    // The rares' perks, each its own: a deep breath drawn in, then a clear note (stamina back).
-    abilityBreath: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.35, heat: 0.15, jitter: 20, layers: [
-      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1900, q: 1.2 }, a: 0.12, d: 0.2, gain: 0.35 },
-      { wave: 'sine', freq: 660, partials: [[1, 1, 1], [2, 0.3, 0.6]], at: 0.12, a: 0.003, d: 0.7, gain: 0.18 },
-    ] },
     // A step that opens a riposte: a quick swish and a bright high chime.
     abilityStep: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.35, heat: 0.15, jitter: 20, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2400, to: 5200, q: 1.5 }, a: 0.01, d: 0.12, gain: 0.35 },

@@ -2,7 +2,7 @@
 // Boss Rush between fights (v7.69.0, PLAN.md track B item 2): each fight's par (CONFIG.swift), the server's fight clock,
 // the kill moment's short wait before the ability pick opens in the arena, a swift kill's extra choice, the next boss
 // dropping straight in (no loading card, a short grace), and each boss's time on the end screen. Pass 73: par follows
-// the kit, and the free pick of commons before fight 1 holds the boss until it is taken.
+// the kit, and the free pick of rares before fight 1 holds the boss until it is taken.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { build } = require('../server/headless.cjs');
@@ -114,14 +114,14 @@ async function peer(origin, name) {
     assert.deepEqual(times[2].bosses, [opening[2]], 'the third fight boss in its row');
     assert.equal(times[0].time, S.par + 5); assert.equal(times[0].par, S.par);
 
-    // A new run (pass 73): once the party has loaded, a free pick of commons; the boss waits for it, then the body
+    // A new run (pass 73): once the party has loaded, a free pick of rares; the boss waits for it, then the body
     // takes its kit and the par follows it.
     a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id });
     session = (await a.next('start')).session; await arrive(a);
     let first = await a.next('abilities'); while (!first.offer) first = await a.next('abilities');   // past fight 3's taken pick
     assert.equal(first.offer.length, CONFIG.abilities.offer);
     const BY = app.sim.inspect().Game.update.constructor('return ABILITY_BY_ID')();
-    assert.ok(first.offer.every(id => CONFIG.abilities.first.includes(BY[id].rarity)), `the free pick is commons: ${first.offer}`);
+    assert.ok(first.offer.every(id => CONFIG.abilities.first.includes(BY[id].rarity)), `the free pick is rares: ${first.offer}`);
     assert.deepEqual(first.held, [], 'it comes before anything is held');
     await wait(300); await flush(a);
     assert.equal(app.sim.state.fought, 0, 'the boss waits for the pick');

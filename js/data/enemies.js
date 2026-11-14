@@ -38,7 +38,7 @@ const ENEMY_DEFS = [
                breakTime: 2.0, hitstop: 0.14 },
     attacks: [
       { id: 'slam', name: 'Greatsword Slam', anim: 'overhead', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.5, active: 0.18, follow: 0.3, hold: { at: 0.45, time: [0.25, 0.6], chance: 0.4 } }], recovery: 1.15,
-        damage: 58, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
+        damage: 58, heavy: true, poise: 85, knock: 9, lunge: 1.4, range: 2.8,
         box: { w: 1.5, h: 3.0, d: 3.2, fwd: 2.0, y: 1.5 } },
       { id: 'bash', name: 'Shield Bash', anim: 'bash', pose: 'enemyBash', tracking: { rate: 2.4, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.55, active: 0.12, follow: 0.15 }], recovery: 0.6,
         damage: 16, poise: 34, knock: 11, lunge: 4.0, range: 1.6,
@@ -104,7 +104,7 @@ const ENEMY_DEFS = [
       { id: 'lancerJab', name: 'Jab', anim: 'stab', chance: 0.35, pose: 'enemyStab', tracking: { rate: 3, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], hits: [{ startup: 0.48, active: 0.1, follow: 0.12 }], recovery: 0.72,   // long recovery: the opening
         damage: 14, poise: 18, knock: 3, lunge: 2.5, range: 2.8, box: { w: 0.7, h: 1.1, d: 2.8, fwd: 1.6, y: 1.1 } },
       { id: 'lancerCharged', name: 'Charged Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.65 }, poseScale: 1.15, rollOnly: true, chance: 1.0, hits: [{ startup: 1.4, active: 0.18, follow: 0.22, hold: { at: 0.45, time: [0.3, 0.7], chance: 0.5 } }], recovery: 0.95,
-        damage: 48, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
+        damage: 48, heavy: true, poise: 60, knock: 8, lunge: 4, range: 3.0, box: { w: 0.9, h: 1.3, d: 3.4, fwd: 2.0, y: 1.1 } },
     ],
   },
   {
@@ -118,9 +118,9 @@ const ENEMY_DEFS = [
     stagger: { max: 100, heavy: 40, light: 10, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 9.6, breakTime: 2.2, hitstop: 0.14 },
     attacks: [
       { id: 'execChop', name: 'Tracking Chop', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.6, commit: 0.85 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, hits: [{ startup: 1.4, active: 0.18, follow: 0.3, hold: { at: 0.5, time: [0.3, 0.7], chance: 0.5 } }], recovery: 1.1,
-        damage: 52, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
+        damage: 52, heavy: true, poise: 80, knock: 9, lunge: 1.4, range: 3.0, box: { w: 1.4, h: 3.0, d: 3.4, fwd: 2.0, y: 1.4 } },
       { id: 'execSpin', name: 'Whirling Axe', anim: 'spin', pose: 'enemySpin', tracking: { rate: 1.5, commit: 0.6 }, rollOnly: true, chance: 0.4, hits: [{ startup: 1.3, active: 0.2, follow: 0.4 }], recovery: 1,
-        damage: 58, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
+        damage: 58, heavy: true, poise: 70, knock: 10, lunge: 1.0, range: 2.6, box: { w: 6.0, h: 1.6, d: 6.0, fwd: 0, y: 1.0 } },
     ],
   },
   {
@@ -199,10 +199,10 @@ const ENEMY_DEFS = [
     attacks: [
       { id: 'sentinelSweep', name: 'Patient Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.8, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25,
         hits: [{ startup: 1.3, active: 0.14, follow: 0.4, hold: { at: 0.5, time: [0.4, 1.0], chance: 0.6 } }], recovery: 1.1,
-        damage: 44, poise: 70, knock: 9, lunge: 1.0, range: 3.6, box: { w: 5.4, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
+        damage: 44, heavy: true, poise: 70, knock: 9, lunge: 1.0, range: 3.6, box: { w: 5.4, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
       { id: 'sentinelSlam', name: 'Hollow Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 1.6, commit: 0.5 }, poseScale: 1.3, rollOnly: true, chance: 0.45,
         hits: [{ startup: 1.6, active: 0.14, follow: 0.45 }], recovery: 1.3,
-        damage: 62, poise: 90, knock: 8, lunge: 1.0, range: 3.4, box: { w: 2.2, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
+        damage: 62, heavy: true, poise: 90, knock: 8, lunge: 1.0, range: 3.4, box: { w: 2.2, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
         impact: { ring: 3.0, crack: 1.6, dust: 14, shake: 0.1 } },
       { id: 'sentinelThrust', name: 'Halberd Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.2, commit: 0.55 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.15, minRange: 3, chance: 0.6,
         hits: [{ startup: 1.0, active: 0.14, follow: 0.25 }], recovery: 0.9,

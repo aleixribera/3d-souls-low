@@ -60,11 +60,7 @@ function observe(b, p, enemies, seconds) {
 {
   const { b, p, e } = waiting('kingsBlade', 'quill');
   p.z = e.z + e.radius + p.radius + 0.7;
-  p.stamina = 0; p.exhausted = true;
   observe(b, p, [e], 10);
-  b.brain.think(dt, p, [e], []);
-  assert.ok(!b.brain.hands.peek('light') && !b.brain.hands.peek('heavy'), 'impatience cannot spend unavailable stamina');
-  p.stamina = p.maxStamina;
   for (let i = 0; i < 30 && !b.brain.hands.peek('light'); i++) b.brain.think(dt, p, [e], []);
   assert.ok(b.brain.hands.peek('light'), 'a rested bot probes even when the theoretical counter window is too short');
 }
@@ -92,7 +88,7 @@ function observe(b, p, enemies, seconds) {
   b.brain.think(dt, p, [e], [], [bolt]);
   assert.ok(b.brain.hands.peek('roll') && !b.brain.hands.peek('light'), 'an incoming bolt also vetoes a probe');
 }
-console.log('Bot personalities: distinct movement, persistent and varied plans, stamina, partner defence and projectile defence passed.');
+console.log('Bot personalities: distinct movement, persistent and varied plans, partner defence and projectile defence passed.');
 
 // Arena tracking covers every corner, even when the opponent is idle and facing away.
 for (const profile of profiles) {
@@ -495,7 +491,7 @@ function riskOver(seconds, { allies = [], hp = 1, flasks = null, target, person 
   console.log(`Bot room: ${worstLane.toFixed(2)} rad off the person's lane at worst, ${closest.toFixed(2)} m from them at closest.`);
 }
 // A thick ring touches a body when its outer edge arrives, not its middle (pass 32: bots used to roll after Hollis's
-// ring burst had already caught them, at full health and full stamina; since pass 44 it is The Gilt Cracks).
+// ring burst had already caught them, at full health; since pass 44 it is The Gilt Cracks).
 for (const dist of [3.8, 6]) {
   const { sim, b, p, e } = waiting('hollis', 'maren');
   b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0, jumpDodge: 0, forward: 0 }, () => 0.5); p.ctl = b.brain.hands;

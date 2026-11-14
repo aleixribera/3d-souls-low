@@ -108,7 +108,7 @@ const MALIKETH = {
     // Both hands into the earth, a boulder heaved overhead and hurled in an arc. A long throw: a big opening up close.
     { id: 'gurranqStone', name: 'Stone of Gurranq', anim: 'overhead', pose: 'heavyOverhead', noParry: true, tracking: { rate: 2.2, commit: 0.8 }, poseScale: 1.3, minRange: 5, chance: 0.22,
       projectile: { speed: 11, gravity: 12, size: 0.75, look: 'rock' }, hits: [{ startup: 1.7, active: 0.05, follow: 0.5 }], recovery: 1.7,
-      damage: 48, poise: 80, knock: 9, lunge: 0, range: 20, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 2.0 } },
+      damage: 48, heavy: true, poise: 80, knock: 9, lunge: 0, range: 20, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 2.0 } },
     // The left claws dragged back through the floor: a line of shockwaves along the ground ahead. Jump or roll it;
     // a short opening as the claws come out.
     { id: 'beastClaw', name: 'Beast Claw', anim: 'sweep', pose: 'enemyStomp', noParry: true, rollOnly: true, tracking: { rate: 2.6, commit: 0.7 }, poseScale: 1.2, minRange: 2.5, chance: 0.4,
@@ -117,7 +117,7 @@ const MALIKETH = {
     // Both hands in the earth, a roar, a wait, then a ring of shockwaves all round. Jump it; a big opening after.
     { id: 'gurranqClaw', name: 'Gurranq\'s Beast Claw', anim: 'stomp', pose: 'enemyStomp', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.35, chance: 0.3,
       hits: [{ startup: 1.75, active: 0.2, follow: 0.6, box: MALIKETH_RING(1.0, 9, 1.9), impact: { ring: 6.0, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 1.8,
-      damage: 36, poise: 60, knock: 9, lunge: 0, range: 5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true } },
+      damage: 36, heavy: true, poise: 60, knock: 9, lunge: 0, range: 5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true } },
     // A lunging sweep across the gap; it often ends in the stab and uplift.
     { id: 'lungeSweep', name: 'Lunging Sweep', anim: 'sweep', pose: 'hollowSwing', noParry: true, tracking: { rate: 2.8, commit: 0.5 }, poseScale: 1.2,
       minRange: 4.5, dash: { speed: 9.5, from: 0.3 }, chance: 0.35,
@@ -151,7 +151,7 @@ const MALIKETH = {
     // The corkscrew dive: the blade flashes gold as he spins down at you. Parry it (a long stun) or roll; a short opening.
     { id: 'corkscrew', name: 'Corkscrew Dive', anim: 'chop', pose: 'hollowOverhead', destined: true, tracking: { rate: 2.4, commit: 0.5 }, markers: MALIKETH_GLINT(0), poseScale: 1.4, minRange: 4, chance: 0.25,
       hits: [{ startup: 1.25, active: 0.16, follow: 0.45, leap: { from: 0.35, max: 13, short: 1.5 }, impact: { ring: 3.0, crack: 1.6, dust: 16, shake: 0.14 } }], recovery: 0.9,
-      damage: 46, poise: 70, knock: 9, lunge: 0, range: 13, box: { w: 2.6, h: 2.6, d: 3.8, fwd: 1.7, y: 1.0 } },
+      damage: 46, heavy: true, poise: 70, knock: 9, lunge: 0, range: 13, box: { w: 2.6, h: 2.6, d: 3.8, fwd: 1.7, y: 1.0 } },
     // The blade planted, a hop onto the pommel, a pause, then a sphere of a thousand crimson cuts in FRONT of it: six
     // ticks. Behind him is safe the whole time, and open: a big punish.
     { id: 'deathSphere', name: 'Destined Death', anim: 'chop', pose: 'malikethSphere', noParry: true, destined: true, tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.2, chance: 0.18,
@@ -165,7 +165,7 @@ const MALIKETH = {
       hits: [{ startup: 1.65, active: 0.16, follow: 0.3, hold: { at: 0.55, time: [0.3, 0.8], chance: 0.6 }, box: { w: 2.2, h: 3.0, d: 4.6, fwd: 2.5, y: 1.1 }, impact: { ring: 3.0, crack: 2.6, dust: 18, shake: 0.16 } },
              { startup: 0.9, active: 0.18, follow: 0.5, line: true, box: { w: 2.4, h: 2.8, d: 10, fwd: 5.5, y: 1.0 }, impact: { ring: 2.0, crack: 4.0, dust: 26, shake: 0.2 } }],
       recovery: 1.6, followUps: [{ attack: 'escapeSlash', if: 'behind', chance: 0.8 }],
-      damage: 44, poise: 75, knock: 9, lunge: 1.2, range: 3.8, box: { w: 2.2, h: 3.0, d: 4.6, fwd: 2.5, y: 1.1 } },
+      damage: 44, heavy: true, poise: 75, knock: 9, lunge: 1.2, range: 3.8, box: { w: 2.2, h: 3.0, d: 4.6, fwd: 2.5, y: 1.1 } },
     // Someone behind: a wide sweeping slash round his back as he turns away.
     { id: 'escapeSlash', name: 'Sweeping Escape Slash', anim: 'spin', pose: 'enemySpin', noParry: true, destined: true, when: 'behind', tracking: { rate: 1.4, commit: 0.4 }, poseScale: 1.2, chance: 1.6,
       hits: [{ startup: 0.55, active: 0.14, follow: 0.3 }], recovery: 0.8,

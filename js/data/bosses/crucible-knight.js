@@ -36,7 +36,7 @@ const CK_ATTACKS = {
   // Both hands overhead, a pause, then straight down: the blade stays planted in the earth (the big opening, phase 1).
   overheadSlam: { id: 'overheadSlam', name: 'Two-Handed Overhead Slam', anim: 'chop', pose: 'heavyOverhead', tracking: { rate: 2.2, commit: 0.55 }, markers: crucibleGlint(0), poseScale: 1.3, chance: 0,
     hits: [{ startup: 0.95, active: 0.15, follow: 0.6, hold: { at: 0.6, time: [0.15, 0.4], chance: 0.6 } }], recovery: 1.5,
-    damage: 44, poise: 70, knock: 9, lunge: 1.0, range: 3.6, box: { w: 1.4, h: 2.6, d: 3.4, fwd: 2.0, y: 1.2 },
+    damage: 44, heavy: true, poise: 70, knock: 9, lunge: 1.0, range: 3.6, box: { w: 1.4, h: 2.6, d: 3.4, fwd: 2.0, y: 1.2 },
     impact: { ring: 2.4, crack: 1.4, dust: 14, shake: 0.14 } },
   // The blade dragged along the earth at his left, ripped up in a rising cut. May go on into the diagonal pair.
   uppercut: { id: 'uppercut', name: 'Uppercut Slash', anim: 'sweep', pose: 'lightBackhand', tracking: { rate: 2.6, commit: 0.6 }, markers: crucibleGlint(0), poseScale: 1.3, chance: 0,
@@ -56,11 +56,11 @@ const CK_ATTACKS = {
   shieldBash: { id: 'shieldBash', name: 'Shield Bash', anim: 'bash', pose: 'enemyBash', noParry: true, tracking: { rate: 2.4, commit: 0.75 }, poseScale: 1.25, chance: 0.4,
     dash: { speed: 4.2, from: 0.15 },
     hits: [{ startup: 0.9, active: 0.14, follow: 0.35 }], recovery: 1.5,
-    damage: 24, poise: 70, knock: 11, lunge: 2.0, range: 4.5, box: { w: 1.8, h: 2.0, d: 2.0, fwd: 1.5, y: 1.2 } },
+    damage: 24, heavy: true, poise: 70, knock: 11, lunge: 2.0, range: 4.5, box: { w: 1.8, h: 2.0, d: 2.0, fwd: 1.5, y: 1.2 } },
   // The counter: a blow just glanced off his shield, the bash comes straight back (a reaction, js/enemy.js `shielded`).
   counterBash: { id: 'counterBash', name: 'Shield Counter', anim: 'bash', pose: 'enemyBash', noParry: true, when: 'shielded', tracking: { rate: 3.0, commit: 0.7 }, poseScale: 1.2, chance: 2.5,
     hits: [{ startup: 0.55, active: 0.14, follow: 0.3 }], recovery: 1.3,
-    damage: 24, poise: 70, knock: 11, lunge: 2.4, range: 3.2, box: { w: 1.8, h: 2.0, d: 2.0, fwd: 1.5, y: 1.2 } },
+    damage: 24, heavy: true, poise: 70, knock: 11, lunge: 2.4, range: 3.2, box: { w: 1.8, h: 2.0, d: 2.0, fwd: 1.5, y: 1.2 } },
   // A quick straight jab from behind the shield; barely an opening.
   jab: { id: 'jab', name: 'One-Handed Thrust', anim: 'stab', pose: 'enemyStab', tracking: { rate: 3.2, commit: 0.7 }, markers: crucibleGlint(0), poseScale: 1.15, chance: 0.7,
     hits: [{ startup: 0.55, active: 0.12, follow: 0.15 }], recovery: 0.45,
@@ -72,7 +72,7 @@ const CK_ATTACKS = {
   wingsDive: { id: 'wingsDive', name: 'Aspect of the Crucible: Wings', anim: 'thrust', pose: 'enemyThrust', noParry: true, spectral: 'wings', tracking: { rate: 2.4, commit: 0.75 }, poseScale: 1.3, chance: 0.3,
     minRange: 3,
     hits: [{ startup: 1.55, active: 0.16, follow: 0.7, leap: { from: 0.2, max: 15, short: 1.4 } }], recovery: 2.0,
-    damage: 54, poise: 85, knock: 11, lunge: 0, range: 15, box: { w: 1.8, h: 2.2, d: 3.6, fwd: 1.8, y: 1.0 },
+    damage: 54, heavy: true, poise: 85, knock: 11, lunge: 0, range: 15, box: { w: 1.8, h: 2.2, d: 3.6, fwd: 1.8, y: 1.0 },
     impact: { ring: 3.0, crack: 1.8, dust: 22, shake: 0.18 } },
   // Tail: a golden tail sweeps round his body; quick. If you back off or strike at once, the great tail follows.
   tailSwipe: { id: 'tailSwipe', name: 'Aspect of the Crucible: Tail', anim: 'spin', pose: 'enemySpin', noParry: true, spectral: 'tail', tracking: { rate: 2.0, commit: 0.5 }, poseScale: 1.2, chance: 0,

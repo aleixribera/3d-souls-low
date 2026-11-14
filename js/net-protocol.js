@@ -67,7 +67,7 @@
   const pose = Object.freeze({
     required: Object.freeze(['x', 'y', 'z', 'yaw', 'hp', 'stateTime', 'attackT', 'chargeT', 'walkPhase']),
     motion: Object.freeze(['vx', 'vy', 'vz', 'activeAt', 'landTime', 'stunTime', 'execGrace']),
-    personal: Object.freeze(['stamina', 'flasks', 'exhausted', 'staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']),
+    personal: Object.freeze(['flasks', 'doomTime', 'doomDrain']),
     states: Object.freeze(['idle', 'walk', 'jump', 'fall', 'roll', 'attack', 'jumpAttack', 'land', 'block', 'parry', 'useItem', 'rest', 'hurt', 'stagger', 'dead', 'execute', 'held']),
   });
   // The body fields of a Player, shared by browsers (capturePose) and server bots (botFrames).

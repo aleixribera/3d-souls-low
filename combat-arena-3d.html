@@ -288,20 +288,12 @@
   @keyframes barShake { 0% { transform: translateX(0); } 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); }
     70% { transform: translateX(-2px); } 100% { transform: translateX(0); } }
   @keyframes lowPulse { 50% { border-color: #e0604a; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 3px #d0301c90, inset 0 0 6px #000000b0; } }
-  @keyframes emptyPulse { 0% { box-shadow: 0 0 0 1px #000000d8, 0 0 16px 4px #ff4a30c0; transform: scaleY(1.9); } 100% { transform: scaleY(1); } }
-  /* Under health (pass 90, Aleix): the dash charges, slim white bars side by side, each filling as it comes back; and
-     the guard, thin, beside them, shown only while it is worn (blocking, or refilling after), fading out once full. */
+  /* Under health (pass 90, Aleix): the dash charges, slim white bars side by side, each filling as it comes back. */
   #pMove { display: flex; align-items: center; gap: 10px; width: 320px; height: 7px; margin-top: 7px; }
   #pDash { display: flex; gap: 5px; flex: 0 0 66%; }
   #pDash i { flex: 1; height: 3px; box-shadow: 0 0 0 1px #000000b8, 0 1px 4px #000000a0;
     background: linear-gradient(90deg, #f4f1ea calc(var(--k, 1) * 100%), #ffffff2a calc(var(--k, 1) * 100%)); transition: box-shadow 0.2s; }
   #pDash i.ready { box-shadow: 0 0 0 1px #000000b8, 0 0 5px #ffffff70; }
-  #pSt { flex: 1; height: 3px; border: 0; background: #00000090; box-shadow: 0 0 0 1px #000000b8; opacity: 0; transition: opacity 0.6s; }
-  #pSt::after, #pSt .st::after { display: none; }
-  #pSt .st { background: #a9b8c8; }
-  #pSt .trail { background: #e8e0c8; opacity: 0.7; }
-  #pSt.shown { opacity: 1; transition-duration: 0.12s; }
-  #pSt.empty { background: #6a1810; animation: emptyPulse 0.6s ease-out; }
   #pFlasks { margin-top: 12px; height: 18px; transition: opacity 0.3s; opacity: calc(1 - var(--calm) * 0.5); }
   .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
     border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #0d0b0a; box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12;
@@ -333,14 +325,11 @@
   #eDmg { position: absolute; right: 0; top: 1px; font-size: 15px; letter-spacing: 1px; color: #f0d890; opacity: 0;
     text-shadow: 0 0 4px #000, 0 0 10px #000; transition: opacity 0.4s; font-variant-numeric: tabular-nums; }
   #eDmg.show { opacity: 1; transition: opacity 0.08s; }
-  /* Boss Rush's streak (v7.69.0): the fight, its clock and its par, under the boss bar's slot. */
+  /* Boss Rush's corner (pass 96): the fight, Crowned on a Crowned fight, and the clock while under par, under the boss bar. */
   #rushClock { display: flex; justify-content: center; gap: 16px; margin-top: 4px; font-size: 14px; letter-spacing: 2px; color: var(--ink);
     text-shadow: 0 0 3px #000, 0 0 10px #000; font-variant: small-caps; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  #rushClock[hidden] { display: none; }
-  #rushPar { color: var(--gilt); }
-  #rushClock.over #rushPar { color: #8a8170; }
-  #rushCrown { color: #b3a68c; }
-  #rushCrown.now { color: var(--gilt); }
+  #rushClock[hidden], #rushClock [hidden] { display: none; }
+  #rushCrown { color: var(--gilt); }
   /* Endless's modifiers (js/data/rush.js), by name under the streak. */
   #rushMods { margin-top: 2px; text-align: center; font-size: 13px; letter-spacing: 2px; color: #e0915a; font-variant: small-caps;
     text-shadow: 0 0 3px #000, 0 0 10px #000; white-space: nowrap; }
@@ -515,7 +504,7 @@
     #bossBattleHud h2 { margin-bottom: 6px; } .battle-health { margin-top: 5px; } }
   @media (prefers-reduced-motion: reduce) {
     #menu *, #hud *, canvas#view { transition-duration: 0.01ms !important; }
-    #pHp, #pSt, #pFlasks, .flask, #ePost { animation: none !important; }
+    #pHp, #pFlasks, .flask, #ePost { animation: none !important; }
     #pHp.low { border-color: #e0604a; }
     #ePost.warn { border-color: #f4d27a; }
     .toast { animation: none; opacity: 1; transform: none; }
@@ -567,7 +556,6 @@
         <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
         <div id="pMove">
           <div id="pDash" aria-hidden="true"></div>
-          <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
         </div>
         <div id="pFlasks"></div>
       </div>
@@ -588,7 +576,7 @@
         <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div><div class="mend" id="eHpMend"></div></div>
         <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
-      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown"></span><span id="rushTime"></span><span id="rushPar"></span></div>
+      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown" hidden>Crowned</span><span id="rushTime"></span></div>
       <div id="rushMods" hidden></div>
       <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
         <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>

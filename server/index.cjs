@@ -109,7 +109,7 @@ function createServer(options = {}) {
   // loaded, then 'open' while it is offered (the boss waits), null once taken or for any other fight. Never with
   // createServer({ firstPick: false }) (browser tests about later picks).
   let firstPick = null;
-  let tally = null;   // Boss Rush's totals across its fights: { run, startedAt, beaten, crowned, players: id -> row }
+  let tally = null;   // Boss Rush's totals across its fights: { run, startedAt, at (the fight it is in), won, crowned, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
@@ -178,8 +178,9 @@ function createServer(options = {}) {
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
   }
-  // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight its bosses and its time
-  // against par (CONFIG.swift); under par is a swift kill.
+  // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight counts once (a fight of two
+  // bosses too: one count, the fight, pass 96), with its bosses and its time against par (CONFIG.swift); under par is a
+  // swift kill.
   function tallyFight(won) {
     for (const r of sim.fightTally()) {
       const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0, parries: 0, executions: 0, revives: 0, rescued: [], kills: 0 };
@@ -189,25 +190,26 @@ function createServer(options = {}) {
     }
     if (!won) return;
     const g = session.gauntlet, time = Math.floor(sim.state.fought + 1e-6);   // whole seconds, as the HUD shows them
-    tally.beaten += 1 + (g.partners?.length || 0);
+    tally.won++;
     if (g.crowned) tally.crowned++;
     const killer = sim.fightKiller, row = killer && tally.players.get(killer);
     if (row) row.kills++;
     tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par, killer: row ? killer : null, ...(g.crowned ? { crowned: true } : {}) });
   }
-  // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, Crowned fights won, and each
-  // player's totals, most damage first.
-  const runSummary = outcome => ({ outcome, key: tally.key, id: tally.id, name: tally.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
+  // What the end-of-run screen shows: the run's time in whole seconds, the fight it reached (the HUD's and the board's
+  // number: the fight it ended in, or the next one when it was left after that fight's win), the fights won, the Crowned
+  // ones, and each player's totals, most damage first.
+  const runSummary = outcome => ({ outcome, key: tally.key, id: tally.id, name: tally.name, won: tally.won, reached: tally.at + (tallied && outcome !== 'won' ? 1 : 0),
+    crowned: tally.crowned, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
   // The end of a weekly run goes on this week's board, once, and everyone in the lobby sees the new board. However it
   // ends counts: a wipe, a win, the leader taking everyone to the lobby, a restart or a new run.
   function recordWeekly(summary) {
     const week = tally?.run.week;
-    if (!week || tally.recorded || summary.outcome === 'left' && !summary.beaten) return;   // given up before a win: nothing to show
+    if (!week || tally.recorded || summary.outcome === 'left' && !summary.won) return;   // given up before a win: nothing to show
     tally.recorded = true;
-    const reached = summary.times.length + (summary.outcome === 'won' ? 0 : 1);
-    if (board.record(week, { names: summary.players.filter(r => !r.bot).map(r => r.name), reached, beaten: summary.beaten, time: summary.time, fights: summary.times }))
+    if (board.record(week, { names: summary.players.filter(r => !r.bot).map(r => r.name), reached: summary.reached, time: summary.time, fights: summary.times }))
       broadcast({ type: 'board', board: board.current() });
   }
   // A Boss Rush run's end: the summary for the end screen, after a weekly run's board has it.
@@ -238,7 +240,8 @@ function createServer(options = {}) {
     }
     if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.run) tally = null;
-    else if (gauntlet.fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
+    else if (gauntlet.fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), won: 0, crowned: 0, times: [], players: new Map() };
+    if (tally) tally.at = gauntlet.number;   // the fight the run is in: the HUD's number
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
@@ -385,14 +388,13 @@ function createServer(options = {}) {
     const P = net.pose;
     if (!s || typeof s !== 'object' || !P.required.every(k => net.finite(s[k]))) return;
     // Whitelist fields: remote data never becomes a Player object or arbitrary properties.
-    // Health and stamina within the bars this player's abilities give (Iron Blood, Deep Lungs).
-    const maxHp = sim.maxHpOf(p.id) + 1e-6, maxStamina = sim.maxStaminaOf(p.id) + 1e-6;
+    // Health within the bar this player's abilities give (Iron Blood).
+    const maxHp = sim.maxHpOf(p.id) + 1e-6;
     if (!P.states.includes(s.state) || typeof s.grounded !== 'boolean' || s.hp < 0 || s.hp > maxHp || s.stateTime < 0 || s.attackT < 0) return;
-    const limits = { stamina: maxStamina, flasks: sim.playerMaxFlasks, staminaDelay: C.maxCoordinate,
-      poise: sim.playerMaxPoise, poiseTimer: C.maxCoordinate, doomTime: C.maxCoordinate, doomDrain: maxHp };
+    const limits = { flasks: sim.playerMaxFlasks, doomTime: C.maxCoordinate, doomDrain: maxHp };
     if (Object.entries(limits).some(([key, max]) => s[key] !== undefined && (!net.finite(s[key], max) || s[key] < 0)) ||
-      s.flasks !== undefined && !Number.isInteger(s.flasks) || s.exhausted !== undefined && typeof s.exhausted !== 'boolean') return;
-    const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'stamina' ? maxStamina : key === 'flasks' ? sim.playerMaxFlasks : key === 'poise' ? sim.playerMaxPoise : 0);
+      s.flasks !== undefined && !Number.isInteger(s.flasks)) return;
+    const resource = key => s[key] ?? p.pose?.[key] ?? (key === 'flasks' ? sim.playerMaxFlasks : 0);
     // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
     // shared session clears this player's defeat, including repeated ready messages.
     const down = s.hp <= 0 || s.state === 'dead';
@@ -410,7 +412,7 @@ function createServer(options = {}) {
       attack: sim.playerAttack(s.attack), charge: Math.min(2, Math.max(0, Number(s.charge) || 0)),
       grounded: s.grounded, execEnemy: net.id(s.execEnemy) ? s.execEnemy : null,
       ...Object.fromEntries(P.motion.map(key => [key, net.finite(s[key]) ? s[key] : key === 'activeAt' ? -1 : 0])),
-      ...Object.fromEntries(P.personal.filter(key => key !== 'exhausted').map(key => [key, resource(key)])), exhausted: s.exhausted ?? p.pose?.exhausted ?? false,
+      ...Object.fromEntries(P.personal.map(key => [key, resource(key)])),
       view: net.cameraView(s.view) };
     if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
     if (rose) p.pose.hp = Math.min(p.pose.hp, rose);   // up with the bar the revive gave, no more
@@ -652,7 +654,7 @@ function createServer(options = {}) {
           // CONFIG.endless.longest, which no one reaches).
           if (session.gauntlet.run) {
             if (session.gauntlet.next) start('calling', session.gauntlet.run, null, session.gauntlet.next);
-            else stop(`${session.gauntlet.name} COMPLETE · ${tally ? tally.beaten : 0} bosses beaten.`, 'run-complete', tally ? { summary: endRun('won') } : {});
+            else stop(`${session.gauntlet.name} COMPLETE · ${tally ? tally.won : 0} fights won.`, 'run-complete', tally ? { summary: endRun('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);

@@ -1,6 +1,6 @@
 'use strict';
 // The weekly run's board (PLAN.md track B item 8): this week's furthest runs and fastest kills, by the names the party
-// played under. No accounts and nothing else: names, fights, bosses and seconds. Kept in one JSON file (BOARD_FILE, a
+// played under. No accounts and nothing else: names, the fight reached and seconds (one count, the fight: pass 96). Kept in one JSON file (BOARD_FILE, a
 // mounted volume on the home server) so a restart or a container update keeps it; without a file it lives in memory.
 // A new week starts an empty board. Every file access is wrapped: a board that cannot be read or written never stops
 // the lobby.
@@ -15,10 +15,10 @@ const cleanNames = list => Array.isArray(list) ? list.filter(n => typeof n === '
 function createBoard({ file = null, size = 3, bosses = [], weekOf }) {
   const known = new Set(bosses);
   let board = { week: weekOf(), runs: [], kills: [] }, warned = false;
-  const run = r => r && typeof r === 'object' && whole(r.reached, 1e4) && whole(r.beaten, 1e5) && whole(r.time, 1e7)
-    ? { names: cleanNames(r.names), reached: r.reached, beaten: r.beaten, time: r.time } : null;
+  const run = r => r && typeof r === 'object' && whole(r.reached, 1e4) && whole(r.time, 1e7)
+    ? { names: cleanNames(r.names), reached: r.reached, time: r.time } : null;   // an older file's `beaten` is dropped
   const kill = k => k && typeof k === 'object' && known.has(k.boss) && whole(k.time, 1e6) ? { boss: k.boss, time: k.time, names: cleanNames(k.names) } : null;
-  const sortRuns = list => list.sort((a, b) => b.reached - a.reached || b.beaten - a.beaten || a.time - b.time);
+  const sortRuns = list => list.sort((a, b) => b.reached - a.reached || a.time - b.time);
   const sortKills = list => list.sort((a, b) => a.time - b.time);
   if (file) try {
     const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -43,16 +43,16 @@ function createBoard({ file = null, size = 3, bosses = [], weekOf }) {
     if (board.week !== week) { board = { week, runs: [], kills: [] }; save(); }
     return board;
   }
-  // A finished weekly run of `week`: the party's names, the fight it reached, bosses beaten, its time (s), and its won
+  // A finished weekly run of `week`: the party's names, the fight it reached, its time (s), and its won
   // fights ({ bosses, time }). A run of another week is not counted. A party keeps only its best run, and a boss only
   // its fastest kill (one boss alone; a pair is no fair time). Returns whether the board changed.
-  function record(week, { names, reached, beaten, time, fights = [] }) {
-    const b = current(), entry = run({ names, reached, beaten, time });
+  function record(week, { names, reached, time, fights = [] }) {
+    const b = current(), entry = run({ names, reached, time });
     if (week !== b.week || !entry || !entry.names.length) return false;
     const before = JSON.stringify(b), party = list => [...list].sort().join('\n'), key = party(entry.names);
     const mine = b.runs.find(r => party(r.names) === key);
     if (!mine) b.runs.push(entry);
-    else if ((entry.reached - mine.reached || entry.beaten - mine.beaten || mine.time - entry.time) > 0) Object.assign(mine, entry);
+    else if ((entry.reached - mine.reached || mine.time - entry.time) > 0) Object.assign(mine, entry);
     b.runs = sortRuns(b.runs).slice(0, size);
     for (const f of fights) {
       if (!Array.isArray(f.bosses) || f.bosses.length !== 1) continue;

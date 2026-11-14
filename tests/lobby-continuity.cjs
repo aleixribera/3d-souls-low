@@ -54,7 +54,7 @@ const until = async (test, message, limit = 4000) => {
   const ready = (p, session, extra = {}) => {
     p.send({ type: 'ready', epoch: session.epoch });
     p.send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, yaw: 0, hp: 120, state: 'idle', stateTime: 0,
-      attackT: 0, chargeT: 0, walkPhase: 0, grounded: true, stamina: 160, flasks: 4, ...extra } });
+      attackT: 0, chargeT: 0, walkPhase: 0, grounded: true, flasks: 4, ...extra } });
   };
   try {
     const a = await add('Leader'), b = await add('Friend');
@@ -77,7 +77,7 @@ const until = async (test, message, limit = 4000) => {
     assert.equal(newcomer.welcome.leader, newcomer.id, 'a new active player leads immediately when the old tabs are away');
     assert.equal((await newcomer.next('start')).session.epoch, session.epoch);
     const saved = { x: session.spawn.x + 1, y: session.spawn.y, z: session.spawn.z + 1, yaw: 0.8, hp: 61,
-      stamina: 37, flasks: 1, staminaDelay: 0.4, exhausted: false, doomTime: 2, doomDrain: 3 };
+      flasks: 1, doomTime: 2, doomDrain: 3 };
     ready(newcomer, session, saved); await newcomer.activity();
     const token = newcomer.welcome.token, id = newcomer.id;
     assert.match(token, /^[a-f0-9]{64}$/);
@@ -108,9 +108,9 @@ const until = async (test, message, limit = 4000) => {
     assert.equal([...app.clients.values()].filter(p => p.id === id).length, 1);
 
     // Missing pose/resource fields use legal defaults; invalid resource packets never poison remembered state.
-    replacement.send({ type: 'pose', epoch: session.epoch, pose: { ...app.clients.get(id).pose, stamina: -1 } });
+    replacement.send({ type: 'pose', epoch: session.epoch, pose: { ...app.clients.get(id).pose, flasks: -1 } });
     await replacement.activity();
-    assert.equal(app.clients.get(id).pose.stamina, 37);
+    assert.equal(app.clients.get(id).pose.flasks, 1);
     replacement.send({ type: 'control', action: 'transfer', player: impostor.id }); await replacement.activity();
     impostor.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
     const run = (await impostor.next('start')).session;
@@ -132,7 +132,7 @@ const until = async (test, message, limit = 4000) => {
     assert.equal(current.session.epoch, run.epoch); assert.equal(current.resume, null);
     assert.equal(later.welcome.players.find(p => p.id === id).name, 'Returning knight');
     ready(later, run); await later.activity();
-    later.send({ type: 'pose', epoch: run.epoch, pose: { ...app.clients.get(id).pose, hp: 0, state: 'dead', stamina: 0, flasks: 0 } });
+    later.send({ type: 'pose', epoch: run.epoch, pose: { ...app.clients.get(id).pose, hp: 0, state: 'dead', flasks: 0 } });
     await later.activity(); later.ws.terminate(); await until(() => !app.clients.size, 'defeated player disconnected');
     const dead = await add('', token), death = await dead.next('start');
     assert.equal(death.resume.hp, 0); assert.equal(death.resume.state, 'dead', 'rejoining cannot revive a defeated player');

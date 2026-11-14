@@ -222,7 +222,7 @@ MODEL_DEFS.ringerOfThrale = {
       // The Hour Struck: the ball hung down her back, held, brought over onto you. Step aside, not back.
       { id: 'strikeHour', name: 'The Hour Struck', anim: 'chop', pose: 'ringerHourStruck', tracking: { rate: 2.0, commit: 0.6 }, markers: glint(0),
         hits: [{ startup: 1.45, active: 0.14, follow: 0.5, hold: { at: 0.6, time: [0.35, 1.0], chance: 0.6 } }], recovery: 2.38,
-        damage: 44, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 },
+        damage: 44, heavy: true, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 },
         impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
       // Change Ringing: low at the knees from her left (jump it or roll it), then high across from her right.
       { id: 'changeRinging', name: 'Change Ringing', anim: 'sweep', pose: 'ringerChangeRinging', tracking: { rate: 2.6, commit: 0.6 }, markers: glint(0, 1),
@@ -233,7 +233,7 @@ MODEL_DEFS.ringerOfThrale = {
       // The Rising Toll: from between her feet, up and over. Late: roll at the last moment.
       { id: 'risingToll', name: 'The Rising Toll', anim: 'overhead', pose: 'ringerRisingToll', tracking: { rate: 2.8, commit: 0.7 }, markers: glint(0),
         hits: [{ startup: 1.15, active: 0.14, follow: 0.4 }], recovery: 1.87,
-        damage: 36, poise: 60, knock: 9, lunge: 1.6, range: 3.6, box: { w: 1.8, h: 3.4, d: 3.4, fwd: 1.9, y: 1.5 } },
+        damage: 36, heavy: true, poise: 60, knock: 9, lunge: 1.6, range: 3.6, box: { w: 1.8, h: 3.4, d: 3.4, fwd: 1.9, y: 1.5 } },
       // The Clapper Drive: a short jab to draw you in, then the long drive.
       { id: 'clapperDrive', name: 'The Clapper Drive', anim: 'thrust', pose: 'ringerClapperDrive', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(0, 1),
         hits: [{ startup: 0.8, active: 0.1, follow: 0.47, box: { w: 1.0, h: 1.4, d: 2.8, fwd: 1.9, y: 1.2 } },
@@ -265,7 +265,7 @@ MODEL_DEFS.ringerOfThrale = {
       { id: 'strikeHour2', name: 'The Hour Struck', anim: 'chop', pose: 'ringerHourStruck2', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
         hits: [{ startup: 1.35, active: 0.14, follow: 0.6, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
                { startup: 0.45, follow: 0.45, ...knell(1, 10, 1.5, 0.7), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.1 } }], recovery: 2.21,
-        damage: 44, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 } },
+        damage: 44, heavy: true, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 } },
       // Two Fetters: the left foot stamped, then the right, wider.
       { id: 'fetterStamp2', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp2', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
         hits: [{ startup: 0.9, follow: 0.45, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
@@ -277,7 +277,7 @@ MODEL_DEFS.ringerOfThrale = {
       { id: 'overTheLine', name: 'Over the Line', anim: 'chop', pose: 'ringerOverTheLine', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.6 }, chance: 0.1,
         hits: [{ startup: 1.6, active: 0.16, follow: 0.7, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 }, impact: { ring: 3.6, crack: 1.8, dust: 20, shake: 0.18 } },
                { startup: 0.35, follow: 0.5, ...knell(1, 22, 1.6, 1.6), impact: { ring: 5.0, crack: 0, dust: 14, shake: 0.12 } }],
-        recovery: 2.72, damage: 40, poise: 70, knock: 9, lunge: 0.6, range: 8, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
+        recovery: 2.72, damage: 40, heavy: true, poise: 70, knock: 9, lunge: 0.6, range: 8, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
       // The Nine Tailors: knelt, she counts them out: three knells at a steady pace, then a fourth, heavier and wider.
       // Jump each on the beat; her body is open between them.
       { id: 'nineTailors', name: 'The Nine Tailors', anim: 'chop', pose: 'ringerNineTailors', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 0.3,
@@ -295,7 +295,7 @@ MODEL_DEFS.ringerOfThrale = {
       { id: 'outOfTheRing', name: 'Out of the Ring', anim: 'chop', pose: 'ringerOutOfTheRing', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.35,
         hits: [{ startup: 1.4, active: 0.14, follow: 0.65, leap: { from: 0.45, max: 13, short: 1.4 }, impact: { ring: 4.6, crack: 2.2, dust: 22, shake: 0.18 } },
                { startup: 0.35, follow: 0.5, ...knell(1, 9, 1.5, 0.55), impact: { ring: 3.6, crack: 0, dust: 10, shake: 0.1 } }],
-        recovery: 2.89, damage: 46, poise: 85, knock: 10, lunge: 0, range: 13, box: { w: 2.4, h: 2.8, d: 4.4, fwd: 2.4, y: 1.0 } },
+        recovery: 2.89, damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 13, box: { w: 2.4, h: 2.8, d: 4.4, fwd: 2.4, y: 1.0 } },
     ],
   };
   ENEMY_DEFS.push(RINGER); ENEMY_BY_ID[RINGER.id] = RINGER;

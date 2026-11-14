@@ -58,7 +58,7 @@ const abilityLab = (() => {
     const tool = (label, go) => { const t = make('button', 'ui-text-button', label); t.type = 'button'; t.addEventListener('click', go); return t; };
     tools.append(
       tool('All off', () => { held.clear(); events.emit('menuBack'); wear(); }),
-      tool('Heal', () => { const p = Game.player; if (p && p.alive()) { p.hp = p.maxHp; p.stamina = p.maxStamina; } }),
+      tool('Heal', () => { const p = Game.player; if (p && p.alive()) { p.hp = p.maxHp; } }),
       tool('Low health', () => { const p = Game.player; if (p && p.alive()) p.hp = Math.max(1, Math.floor(p.maxHp * 0.2)); }),
       tool('Charge keys', () => { const p = Game.player; if (p) abilityGain(p.kit, p.perk, 999); }));   // keys 1-4 full
     const shut = make('button', 'ui-button lab-close'); shut.type = 'button';

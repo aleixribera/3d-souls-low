@@ -20,9 +20,9 @@ const RUSH = {
   warmHealth: { giant: 0.7, pillagerCaptain: 0.7, antlered: 0.45, hollis: 0.45, hale: 0.7 },
   health: { bellWarden: 0.75, oswin: 0.85, ostrey: 0.85, varn: 0.9 },
   modifiers: [
-    { id: 'quickened', name: 'Quickened', from: 4, pace: 1.12 },
-    { id: 'restless', name: 'Restless', from: 4, rest: 1.5 },
-    { id: 'unbroken', name: 'Unbroken', from: 6, chain: 1.8 },
+    { id: 'quickened', name: 'Faster', from: 4, pace: 1.12 },
+    { id: 'restless', name: 'Fewer pauses', from: 4, rest: 1.5 },
+    { id: 'unbroken', name: 'Longer combos', from: 6, chain: 1.8 },
   ],
 };
 const RUSH_MODIFIER_BY_ID = Object.fromEntries(RUSH.modifiers.map(m => [m.id, m]));

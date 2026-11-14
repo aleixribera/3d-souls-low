@@ -89,8 +89,9 @@ fs.mkdirSync(output, { recursive: true });
       multiplayer.hit(e, strike); multiplayer.hit(e, strike); p.hitbox = null;
       p.x = -14; p.z = -9; delete p.invulnerable;
     });
-    // Margit's bar is scaled for the group (v7.35.0): one light blow (24) off whatever bar the server gave her.
-    const full = app.sim.inspect().Game.duel.def.hp, left = full - 24;
+    // Margit's bar is scaled for the group (v7.35.0): one light blow off whatever bar the server gave her.
+    const light = app.sim.inspect().Game.update.constructor('return PLAYER_DEF')().moveset.attacks.light.damage;
+    const full = app.sim.inspect().Game.duel.def.hp, left = full - light;
     await a.waitForFunction(left => Game.duel.hp <= left, left);
     await b.waitForFunction(left => Game.duel.hp <= left, left);
     assert.equal(app.sim.inspect().Game.duel.hp, left, 'one shared damage application');
@@ -103,13 +104,13 @@ fs.mkdirSync(output, { recursive: true });
     const defense = await b.evaluate(() => {
       Game.manualClock = true;
       const p = Game.player, e = Game.duel, a = e.attack;
-      p.hitbox = null; p.hp = p.maxHp; p.stamina = p.maxStamina; p.exhausted = false; p.execGrace = 0;
+      p.hitbox = null; p.hp = p.maxHp; p.execGrace = 0;
       p.x = e.x - 1.5; p.y = e.y; p.z = e.z; p.yaw = Math.PI / 2; e.yaw = -Math.PI / 2;
       // A deflect (pass 85) of the attack's last blow, the one that opens it.
       e.state = ES.WINDUP; e.hitIndex = a.hits.length - 1; e.stateTime = a.hits[e.hitIndex].startup - CONFIG.parry.lead / 2;
       p.setState(PS.IDLE); p.deflect = CONFIG.parry.arm; p.deflectLock = 0; resolveCombat(Game);
       const parried = p.state === PS.IDLE && p.flash === 1 && p.riposte > 0 && e.hitbox === null;
-      p.riposte = 0; p.deflectedBlow = null; p.stamina = p.maxStamina; p.dashes = CONFIG.player.dashCharges; p.startRoll({ has: false });
+      p.riposte = 0; p.deflectedBlow = null; p.dashes = CONFIG.player.dashCharges; p.startRoll({ has: false });
       e.netParried = null; e.state = ES.ACTIVE; e.stateTime = 0;
       e.hitbox = new Hitbox(e, a.hits[0].box || a.box, makeStrike(a));
       const at = e.hitbox.center(); p.x = at.x; p.z = at.z;

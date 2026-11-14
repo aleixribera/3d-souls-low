@@ -1,0 +1,31 @@
+Boss Rush curve after "No hidden meters" (pass 96, PLAN.md "Next, small: fixes from Aleix's run")
+Tool: SKILLED=1 JOBS=10 [KIT=best|strong] CURVE=... PRESS=... node tools/rush-curve.cjs runs 60 (one skilled bot alone).
+Kits now open on a rare (CONFIG.abilities.first), so each KIT's first pick is a rare.
+
+Pass 90's curve (rise 0.45, press rest 1.15 chain 1.25) with no guard bar, no stamina, no player poise (only `heavy`
+attacks stagger), blocks never break, blue blows go through a block, pass 93's boss movement:
+  kit      median  past 10  past 15  past 20   fights 1-4 win time
+  none       13     0.70     0.23     0.00      62 s
+  best       21     0.95     0.85     0.52      54 s
+  strong     21     0.98     0.87     0.52      60 s
+  Easier: an ordinary blow no longer staggers, so strings stop chaining into falls.
+
+Candidates (none: median / past 10 / past 15):
+  rise .55                           13 / 0.68 / 0.18
+  rise .5, tell .35                  13 / 0.75 / 0.17
+  rise .6                            12 / 0.67 / 0.07
+  rise .6, scale 5.5                 11 / 0.60 / 0.03
+  press 1.3 / 1.4                    13 / 0.65 / 0.13
+  press 1.3 / 1.4, rise .55 (chosen) 11 / 0.50 / 0.03
+  press 1.3 / 1.4, rise .6           13 / 0.63 / 0.10   (60 runs: about +-1 on the median)
+  Pace alone barely moves fights 5-10 (falls 0.05); the press (shorter idle gaps, longer strings) does.
+
+Chosen (CONFIG.pace.rise 0.55, CONFIG.enemy.press rest 1.3, chain 1.4):
+  kit      median  past 10  past 15  past 20   fights 1-4 win time
+  none       11     0.50     0.03     0.00      62 s
+  best       20     0.98     0.85     0.43      55 s
+  strong     18     0.98     0.70     0.33      60 s
+  Pass 90's targets: none 10 / 0.45 / 0.02 / 0.00, 64 s; best 21 / 0.92 / 0.77 / 0.50, 57 s; strong 19 / 1.00 / 0.80 /
+  0.40, 59 s. Within the measurement's noise: no kit falls around 10-12, a strong kit around 20, struggling by 15.
+  Pace: x0.85 at fight 1, x1.0 at 5, x1.64 at 10, x2.81 at 15, x4.05 at 20, then +0.25 a fight.
+  The press is every boss's everywhere, so Story's bosses press harder too (tools/story-curve.cjs not re-run).

@@ -29,13 +29,13 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   assert.deepEqual(plain(progress.levelOf(0)), { level: 1, into: 0, need: L.first });
   assert.deepEqual(plain(progress.levelOf(L.first)), { level: 2, into: 0, need: L.first + L.step });
   assert.equal(progress.levelOf(1e7).need, L.most, 'a level never needs more than `most`');
-  assert.equal(progress.runXp({ beaten: 4, crowned: 0, time: 370 }), 4 * X.boss + 6 * X.minute);
-  assert.equal(progress.runXp({ beaten: 5, crowned: 1, time: 59 }), 5 * X.boss + X.crowned);
-  assert.equal(progress.runXp({ beaten: 0, time: 20 }), X.least, 'a run lost at once still earns something');
-  assert.equal(progress.runXp({ beaten: 'x', crowned: -3, time: NaN }), X.least, 'a summary that makes no sense earns the least');
+  assert.equal(progress.runXp({ won: 4, crowned: 0, time: 370 }), 4 * X.fight + 6 * X.minute);
+  assert.equal(progress.runXp({ won: 5, crowned: 1, time: 59 }), 5 * X.fight + X.crowned);
+  assert.equal(progress.runXp({ won: 0, time: 20 }), X.least, 'a run lost at once still earns something');
+  assert.equal(progress.runXp({ won: 'x', crowned: -3, time: NaN }), X.least, 'a summary that makes no sense earns the least');
 
   // A run is counted once by its key; its levels are crates.
-  const big = { beaten: 12, crowned: 2, time: 900 }, earned = progress.award(big, 'run-1');
+  const big = { won: 12, crowned: 2, time: 900 }, earned = progress.award(big, 'run-1');
   assert.equal(earned.xp, progress.runXp(big)); assert.equal(earned.before.level, 1);
   assert.equal(earned.crates, earned.after.level - 1); assert.ok(earned.crates >= 2, 'a long run gives several crates');
   assert.equal(progress.crates, earned.crates); assert.equal(progress.xp, earned.xp);
@@ -52,7 +52,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   for (const [r, w] of Object.entries(CRATES.odds)) near(count[r] / N, w / total, `crate odds, ${r}`, 0.02 / (w / total));
   assert.equal(progress.open(rng), null, 'no crate, nothing to open');
   const prizes = CRATES.rewards.filter(r => !r.start);
-  progress.award({ beaten: 200, crowned: 40, time: 0 }, 'long');
+  progress.award({ won: 200, crowned: 40, time: 0 }, 'long');
   assert.ok(progress.crates > prizes.length, 'enough crates for everything and more');
   const seen = new Set(), before = progress.crates;
   for (let i = 0; i < prizes.length; i++) {
@@ -74,16 +74,16 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
 // ---- 3. The store: kept across visits, safe against bad data and blocked storage -----------------------------------
 {
   const s = store(), a = browser(s).progress;
-  a.award({ beaten: 6, time: 300 }, 'k1'); const opened = a.open(seeded(3));
+  a.award({ won: 6, time: 300 }, 'k1'); const opened = a.open(seeded(3));
   const b = browser(s).progress;   // the next visit
   assert.equal(b.xp, a.xp); assert.equal(b.crates, a.crates); assert.deepEqual(plain(b.owned), plain(a.owned)); assert.equal(b.look, a.look);
-  assert.equal(b.award({ beaten: 6, time: 300 }, 'k1'), null, 'a run counted on the last visit stays counted');
+  assert.equal(b.award({ won: 6, time: 300 }, 'k1'), null, 'a run counted on the last visit stays counted');
   assert.ok(b.owns(opened.reward.id));
   // Two tabs at once: one opens a crate, the other then counts a run; neither undoes the other.
-  b.award({ beaten: 9, time: 0 }, 'k2'); const tabA = a.open(seeded(4)); b.award({ beaten: 1, time: 0 }, 'k3');
+  b.award({ won: 9, time: 0 }, 'k2'); const tabA = a.open(seeded(4)); b.award({ won: 1, time: 0 }, 'k3');
   const after = browser(s).progress;
   assert.ok(after.owns(tabA.reward.id), 'a crate opened in one tab survives a run counted in another');
-  assert.equal(after.award({ beaten: 9, time: 0 }, 'k2'), null);
+  assert.equal(after.award({ won: 9, time: 0 }, 'k2'), null);
   // Bad data: unknown rewards dropped, the start look always owned, a look not owned not worn, numbers made whole.
   const bad = store(); bad.setItem('arena.progress', JSON.stringify({ xp: -5, crates: 2.5, owned: ['gilded', 'nope', 3], look: 'bloodsteel', counted: 'x' }));
   const c = browser(bad).progress;
@@ -93,7 +93,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   // Storage that throws (blocked, private mode): it still plays, kept for the visit.
   const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
   const d = browser(blocked).progress;
-  const e = d.award({ beaten: 3, time: 200 }, 'b'); assert.ok(e.xp > 0); assert.equal(d.xp, e.xp);
+  const e = d.award({ won: 3, time: 200 }, 'b'); assert.ok(e.xp > 0); assert.equal(d.xp, e.xp);
 }
 
 // ---- 4. The server: crate abilities only for those who own them, never in the weekly run ------------------------------

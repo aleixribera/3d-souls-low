@@ -10,8 +10,6 @@ const ABILITY_ICONS = {
   // Commons
   'keen-edge': '<path d="M12 33 L33 12 L38 10 L36 15 L15 36 Z"/><path d="M9 30 L18 39 M13 35 L8 40"/><path d="M38 27 V35 M34 31 H42"/>',
   'iron-blood': '<path d="M24 40 C14 33 8 27 8 19 A8 8 0 0 1 24 15 A8 8 0 0 1 40 19 C40 27 34 33 24 40 Z"/><path d="M24 21 V31 M19 26 H29"/>',
-  'deep-lungs': '<path d="M24 8 V20 M24 20 C21 22 20 24 20 27 M24 20 C27 22 28 24 28 27"/><path d="M20 16 C13 14 9 22 9 31 C9 38 13 40 19 37 C21 36 21 33 21 29 Z"/><path d="M28 16 C35 14 39 22 39 31 C39 38 35 40 29 37 C27 36 27 33 27 29 Z"/>',
-  'quick-breath': '<path d="M6 18 H28 A5 5 0 1 0 23 13"/><path d="M6 26 H36 A5 5 0 1 1 31 31"/><path d="M6 34 H20"/>',
   'breaker': '<circle cx="24" cy="24" r="15"/><path d="M24 9 L21 18 L27 23 L21 30 L24 39"/><path d="M27 23 L34 21"/>',
   'keen-eye': '<path d="M5 26 C11 16 37 16 43 26 C37 36 11 36 5 26 Z"/><circle cx="24" cy="26" r="5"/><path d="M24 6 V11 M12 9 L15 13 M36 9 L33 13"/>',
   'light-step': '<path d="M38 8 C24 8 14 18 14 34 C28 34 38 24 38 8 Z"/><path d="M38 8 L9 40"/><path d="M19 27 H27 M24 22 H32"/>',
@@ -21,7 +19,6 @@ const ABILITY_ICONS = {
   'cold-riposte': '<path d="M6 30 H34 L41 30 L34 33 H6 Z"/><path d="M11 25 V38"/><path d="M33 6 V18 M27 12 H39 M29 8 L37 16 M37 8 L29 16"/>',
   'headsman': '<path d="M12 42 L32 10"/><path d="M27 14 C33 8 42 11 42 19 C42 25 37 28 32 26 Z"/><path d="M9 36 L15 40"/>',
   // Rares
-  'deep-breath': '<path d="M10 34 L30 14 M38 34 L18 14"/><path d="M8 30 L14 36 M40 30 L34 36"/><path d="M14 10 A14 14 0 0 1 34 10"/><path d="M34 10 L33 5 M34 10 L29 11"/>',
   'counterstep': '<path d="M8 36 C8 22 16 14 28 14"/><path d="M28 14 L23 10 M28 14 L23 18"/><path d="M22 34 H40 L44 34 L40 36 H22 Z"/><path d="M26 30 V40"/>',
   'vengeance': '<path d="M17 10 C11 19 9 24 9 28 A8 8 0 0 0 25 28 C25 24 23 19 17 10 Z"/><path d="M36 40 V12 M30 18 L36 12 L42 18"/><path d="M30 26 L36 20 L42 26"/>',
   'bloodthirst': '<path d="M8 10 V28 M14 10 V28 M20 10 V28 M26 10 V28 M5 24 L29 14"/><path d="M36 41 C31 37 28 34 28 31 A4 4 0 0 1 36 29 A4 4 0 0 1 44 31 C44 34 41 37 36 41 Z"/>',
@@ -29,7 +26,6 @@ const ABILITY_ICONS = {
   'opportunist': '<circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2"/><path d="M24 4 V14 M24 34 V44 M4 24 H14 M34 24 H44"/>',
   'bastion': '<path d="M24 6 L38 11 V24 C38 33 31 39 24 42 C17 39 10 33 10 24 V11 Z"/><path d="M27 14 L19 26 H27 L21 35"/>',
   'patience': '<path d="M14 6 H34 M14 42 H34"/><path d="M17 6 C17 16 24 19 24 24 C24 29 17 32 17 42 M31 6 C31 16 24 19 24 24 C24 29 31 32 31 42"/><path d="M20 39 C22 36 26 36 28 39"/>',
-  'second-wind': '<path d="M20 8 H28 M21 8 V15 C15 18 13 23 13 28 A11 11 0 0 0 35 28 C35 23 33 18 27 15 V8"/><path d="M18 30 C21 26 25 34 30 30"/><path d="M41 22 V8 M37 12 L41 8 L45 12"/>',
   'counterflame': '<path d="M8 38 L28 18 M40 38 L20 18"/><path d="M24 3 C18 10 18 14 24 18 C30 14 30 10 24 3 Z"/><path d="M13 42 L5 34 M35 42 L43 34"/>',
   'stone-guardian': '<path d="M24 6 L37 11 V23 C37 32 31 38 24 42 C17 38 11 32 11 23 V11 Z"/><path d="M24 6 V42"/><path d="M17 17 L20 22 L17 28"/><path d="M4 45 H44" stroke-dasharray="3 2"/>',
   'ash-lancer': '<path d="M7 41 L36 12"/><path d="M33 9 L44 4 L39 15 Z"/><path d="M12 42 L17 37"/><path d="M4 30 L11 23 M11 46 L18 39 M3 21 L8 16" stroke-dasharray="2 2"/>',

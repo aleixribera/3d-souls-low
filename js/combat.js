@@ -15,7 +15,7 @@ function makeStrike(attack, riposte = false, charge = 0) {
   return {
     attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
     damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
-    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * postureMul, destined: !!attack.destined,
+    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * postureMul, destined: !!attack.destined, heavy: !!attack.heavy,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
 }
@@ -126,8 +126,6 @@ function resolveCombat(game) {
       p.gainCharge(CONFIG.abilities.press.gain.deflect);
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
       events.emit('parry', { target, player: p, opened: res.opened });
-      const breath = p.kit.perks['parry/stamina'];   // Deep Breath
-      if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('abilityPerk', { body: p, perk: 'parry/stamina' }); }
       const mercy = p.kit.perks['parry/heal'];   // Iron Mercy (a crate's)
       if (mercy && p.perk && p.perk.mercy <= 0) { p.perk.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
       abilityReport(p, 'parry', { enemy: target });
@@ -138,7 +136,7 @@ function resolveCombat(game) {
   const playerHits = p.hitbox ? live.filter(e => !e.invulnerable() && p.hitbox.overlaps(e) && !gateBetween(p, e)) : [];   // a boss between phases: blows pass through
   // 2. Enemy hitboxes against the player's body.
   const enemyHits = p.alive() ? live.filter(e => e.hitbox && !(e.frozen > 0) && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];   // stopped in time: harmless
-  // 3. Apply damage, poise loss, knockback and stagger.
+  // 3. Apply damage, knockback and stagger (an enemy's poise; the player's flinch or a heavy's stagger).
   for (const e of playerHits) {
     const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
     p.hitbox.markHit(e);
@@ -152,7 +150,6 @@ function resolveCombat(game) {
       if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
       abilityReport(p, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, an Ember Twin's echo
     }
-    if (p.rentBy === e && !res.blocked) p.reclaim();   // pass 48: every blow on her tears a piece back (Player.rend)
     if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); abilityReport(p, 'break', { enemy: e }); }
   }
   for (const hb of enemyHits) {

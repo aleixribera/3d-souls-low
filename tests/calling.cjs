@@ -2,7 +2,7 @@
 // Boss Rush (v7.35.0 as The Calling), endless since pass 65 (PLAN.md track B item 5): a run of bosses drawn from its
 // seed that goes on until everyone falls. No bots (pass 52); the first fights from the easier bosses, every 5th fight
 // Crowned (a pick of 4 with a legendary), two bosses at once every few fights, modifiers by name; the fallen rise for
-// the next fight; a refused opening changes nothing; the end of run counts bosses beaten and Crowned fights. Pass 73:
+// the next fight; a refused opening changes nothing; the end of run counts fights won and Crowned fights. Pass 73:
 // the warm-up's bosses (RUSH.opening, at their RUSH.warmHealth share) and each posture break needing more.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -72,9 +72,9 @@ async function peer(origin, name) {
     app.sim.start('arena', bosses.find(id => !Object.hasOwn(RUSH.health, id)), []);   // a boss at its whole health in Boss Rush
     const boss = app.sim.inspect().Game.enemies[0], hp = boss.maxHp ?? boss.def.hp;
     const plain = app.sim.setRushFight(10), quick = app.sim.setRushFight(10, ['quickened', 'restless', 'unbroken']);
-    assert.ok(Math.abs(quick / plain - RUSH.modifiers.find(m => m.id === 'quickened').pace) < 1e-9, 'Quickened speeds the whole pace');
+    assert.ok(Math.abs(quick / plain - RUSH.modifiers.find(m => m.id === 'quickened').pace) < 1e-9, 'Faster speeds the whole pace');
     const press = G('CONFIG').enemy.press;   // every boss's own press (pass 90), under the modifiers
-    assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Restless and Unbroken set the rests and the strings');
+    assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Fewer pauses and Longer combos set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
     app.sim.setRushFight(E.opening); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
     assert.equal(boss.def.hp, hp, 'a boss alone keeps its whole health');
@@ -186,14 +186,14 @@ async function peer(origin, name) {
     await nextFight();
     assert.equal(session.gauntlet.number, E.crowned + 1); assert.equal(session.gauntlet.crowned, false);
 
-    // A team wipe ends the run: bosses beaten, Crowned fights won, each player's totals.
+    // A team wipe ends the run: fights won, Crowned fights won, each player's totals.
     ready(a); ready(b); await flush(b);
     app.sim.arenaWipeDelay = 0.1;
     pose(a, true); pose(b, true); await flush(a); await flush(b);
     const wipe = await a.next('stop'); await b.next('stop');
     assert.equal(wipe.reason, 'team-wipe'); assert.match(wipe.message, /TEAM WIPED.*BOSS RUSH/);
     const end = wipe.summary, row = id => end.players.find(r => r.id === id);
-    assert.equal(end.outcome, 'wiped'); assert.equal(end.beaten, E.crowned, 'a restart starts the tally again');
+    assert.equal(end.outcome, 'wiped'); assert.equal(end.won, E.crowned, 'a restart starts the tally again'); assert.equal(end.reached, E.crowned + 1, 'it fell at the next fight');
     assert.equal(end.crowned, 1, 'one Crowned fight won');
     assert.equal(end.times.length, E.crowned); assert.equal(end.times[E.crowned - 1].crowned, true, 'the Crowned fight is marked');
     assert.equal(end.players.length, 2); assert.equal(row(b.id).deaths, 1); assert.equal(row(a.id).name, 'Ash');

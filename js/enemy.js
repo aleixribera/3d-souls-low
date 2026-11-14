@@ -3,6 +3,7 @@
 // 6. Enemy
 // ============================================================================
 const STRONG_KINDS = ['projectile', 'dash', 'rollOnly', 'shove'];   // attack kinds with their own default chance
+let heavyColor = null;   // a heavy's wind-up tint (CONFIG.VISUALS.heavyTell), made on first use: the server draws nothing
 // An enemy attack's chance per second: its own `chance`, else CONFIG.ai.chance for its kind (the lowest of its kinds).
 function attackChance(a) {
   if (a.chance !== undefined) return a.chance;
@@ -829,7 +830,7 @@ class Enemy {
     strike.damage *= this.damageMul;
     if (hit.pull) { strike.pull = hit.pull; strike.rollOnly = true; }   // pass 63: the hook drags you in to this far from him (Player.takeHit); no guard holds it
     if (hit.seize) { strike.seize = hit.seize; strike.seizeBy = this; strike.seizeAttack = this.attack.id; strike.rollOnly = true; }   // pass 72: a hand that closes on you (Player.seize); no guard holds it
-    if (!hit.bolt && !this.attack.projectile && (this.attack.rend ?? this.def.rend)) { strike.rend = true; strike.rendBy = this; }   // pass 48: the hook keeps what it tears
+    if (!this.attack.projectile && !canParryHit(this.attack, this.hitIndex)) strike.rollOnly = true;   // pass 96: a blow no deflect turns (a blue wind-up), no guard holds either
     if (hit.bolt) {   // the storm strikes where its mark lay; a mark never seen strikes nothing
       const B = this.bolt;
       if (!B || B.key !== this.attackNo * 64 + this.hitIndex) return null;
@@ -1153,7 +1154,7 @@ class Enemy {
   pose(tt, ctx) {
     const r = this.rig, d = this.def, E = CONFIG.enemy;
     r.reset(); r.setOpacity(1); r.root.visible = true;
-    let warn = 0, glint = -1;
+    let warn = 0, glint = -1, heavy = 0;
     const a = this.attack;
     switch (this.state) {
       case ES.CHASE: case ES.PATROL: case ES.RETURN: case ES.SEARCH: r.walk(this.walkPhase, 0.5); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
@@ -1183,6 +1184,7 @@ class Enemy {
           r.spin.rotation.z += Math.sin(tt * 38) * 0.025 * k; r.tip.rotation.x += Math.sin(tt * 31) * 0.015 * k;
         }
         if (this.state === ES.WINDUP && !a.hits[this.hitIndex].echo) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own (js/gilt-echo.js)
+        if (this.state === ES.WINDUP && a.heavy) heavy = clamp(tt / a.hits[this.hitIndex].startup, 0, 1);   // pass 96: the body warms through a heavy's wind-up
         break;
       }
       case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt, this.hitK || 1); break;
@@ -1247,6 +1249,7 @@ class Enemy {
     r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell || null);   // red: parryable; blue: cannot be parried (this hit); on the shield, claw or foot when that strikes
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
+    else if (heavy > this.tint) r.setTint(heavyColor || (heavyColor = new THREE.Color(CONFIG.VISUALS.heavyTell.color)), heavy * heavy * CONFIG.VISUALS.heavyTell.tint);   // a heavy coming: it will stagger
     else r.setTint(HIT_COLOR, this.tint * 0.8);
     if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? Math.min(1, this.resonance / R.max) : 0;   // pass 68: his bronze glows as the blows fill it
       r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }

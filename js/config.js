@@ -65,10 +65,9 @@ const CONFIG = {
           autoRange: 9,               // first-encounter auto lock-on distance
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
-    // The player rework (pass 85, PLAN.md "First, urgent"): no stamina for attacking, dashing or jumping, and no
-    // exhaustion. The guard (`stamina`; a thin bar shown only while it is worn, pass 90): only blocking wears it down (CONFIG.block); it refills whenever the player
-    // isn't blocking, after `staminaDelay` s.
-    poiseResetTime: 4, staminaRegen: 52, staminaDelay: 0.75,
+    // The player rework (pass 85, PLAN.md "First, urgent"): no stamina for anything. Pass 96 (PLAN.md "No hidden
+    // meters"): no guard bar and no poise either; a blow flinches for `hurtTime`, an attack marked `heavy` staggers for
+    // `staggerTime`.
     walkSpeed: 4.3, accel: 26, decel: 30, turnRate: 14,   // pass 90: decel 30 (a run stops in about 9 frames, was 12)
     airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
@@ -108,9 +107,9 @@ const CONFIG = {
   // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
   groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
                  dustLife: 0.9, shakeTime: 0.2 },
-  // Blocking wears the guard (`stamina`, a thin bar beside the dashes while worn) down; an empty guard breaks into a stagger.
-  block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
-           breakTime: 1.35, hitstop: 0.05 },
+  // Blocking (pass 96): a blow the guard faces does `damageMul` of its damage (chip damage) and `knockMul` of its knock; the
+  // guard never breaks, and holds nothing that can't be deflected (a blue wind-up).
+  block: { damageMul: 0.15, knockMul: 0.35, hitstop: 0.05 },
   // The deflect (pass 85; it replaced the parry, and keeps its name in code, events and claims): block pressed as a
   // blow lands. The window is anchored to the enemy's swing: it opens `lead` s before the active phase and closes
   // `grace` s into it. A press stays armed for `arm` s, so a press succeeds in [active - lead - arm, active + grace],
@@ -204,7 +203,8 @@ const CONFIG = {
            // The bosses answer the new moveset (pass 90, PLAN.md rework item 4), every boss everywhere: its idle gaps run
            // `rest` times as fast and its follow-ups come as at `chain` times its pace (Enemy.rest / chain, which Boss
            // Rush's modifiers multiply). Wind-ups, strikes and recoveries keep their own timing: every tell stays as told.
-           press: { rest: 1.15, chain: 1.25 },
+           // Pass 96: 1.3 and 1.4 (were 1.15 and 1.25), as only heavy blows stagger the player now and a block never breaks.
+           press: { rest: 1.3, chain: 1.4 },
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
@@ -227,12 +227,8 @@ const CONFIG = {
   // `max` burn per enemy (the oldest goes out); each hurts only once it has caught, `kindle` s after it is laid (time to
   // roll out of one laid under you); one may burn at most `maxTime` s and `maxDps` a second.
   groundFire: { max: 14, kindle: 0.35, maxTime: 12, maxDps: 30 },
-  // Rends (pass 48, Mother Agathe; an attack's or a phase's `rend`, Player.rend): each unblocked blow of the hook tears `cut`
-  // of the bar's maximum away, at most `max` pieces; every blow landed on her tears one back as health, and left there the
-  // wound closes `time` s after the last tear. The storm (a hit's `bolt`, Enemy.noteBolt): its mark follows the target for
-  // the first `lock` of the wind-up (unless the attack's tracking says otherwise), and a bolt's wind-up is at least
-  // `minTell` s (validated).
-  rend: { cut: 0.1, max: 3, time: 22 },
+  // The storm (pass 48, Mother Agathe; a hit's `bolt`, Enemy.noteBolt): its mark follows the target for the first `lock`
+  // of the wind-up (unless the attack's tracking says otherwise), and a bolt's wind-up is at least `minTell` s (validated).
   storm: { lock: 0.55, minTell: 0.9 },
   // A hit's `burrow` (pass 50, the Kindling Tree): its heave stops `near` m short of the player's body (it rises beside
   // them, not in them), and holds still over the spot it will rise from for at least `minTell` s before the rise (validated).
@@ -271,12 +267,13 @@ const CONFIG = {
   // Boss Rush's curve (pass 90, PLAN.md rework item 4, on the new moveset; no wall, no ease): the warm-up's first `warm`
   // fights run from `warmFrom` up toward `boss`, reached at fight `warm` + 1; after `won` fights from there,
   // pace = boss x (1 + rise x (e^((min(won, steady) - warm) / scale) - 1)), and past `steady` fights won the same step
-  // every fight (the curve's slope there), at most `max`, which no run reaches: x1.5 by fight 10, x2.5 by 15, x3.5 by 20,
-  // +0.2 a fight after. Measured alone with three dashes (tools/rush-curve.cjs runs, SKILLED, 60 runs each,
-  // docs/scorecard/rush-curve-pass90.txt): with no abilities a skilled player falls around fight 10 (median 10, 2% past
-  // 15); with a great kit around 20 (KIT=strong: median 19, 80% past 15, 40% past 20; KIT=best: median 21). Fights 1-4
-  // take about a minute. It depends on the fights won alone: never on health, damage or the team's size.
-  pace: { boss: 1, rise: 0.45, scale: 6.5, steady: 11, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
+  // every fight (the curve's slope there), at most `max`, which no run reaches: x1.6 by fight 10, x2.8 by 15, x4 by 20,
+  // +0.25 a fight after. Measured alone with three dashes (tools/rush-curve.cjs runs, SKILLED, 60 runs each,
+  // docs/scorecard/rush-curve-pass96.txt; pass 96 brought it back to pass 90's targets after the hidden meters went):
+  // with no abilities a skilled player falls around fight 10 (median 11, 3% past 15); with a great kit around 20
+  // (KIT=strong: median 18, 70% past 15, 33% past 20; KIT=best: median 20). Fights 1-4 take about a minute. It depends
+  // on the fights won alone: never on health, damage or the team's size.
+  pace: { boss: 1, rise: 0.55, scale: 6.5, steady: 11, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
@@ -313,11 +310,12 @@ const CONFIG = {
   // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
   // A swift kill's extra card (CONFIG.swift) is never common. Once everyone has chosen, the pick stays up `pickHold` s
   // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
-  // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1. A player holds at
+  // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1: rares since pass
+  // 96 (Aleix: the start was a struggle until the abilities came). A player holds at
   // most `legendaries` legendaries; past that a legendary card only levels one already held. A power's blow (a
   // legendary's, a rare's, a summon's) builds `posture` of its posture number: abilities fill the stagger meter far
   // less than they hurt.
-  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['common'], legendaries: 2, posture: 0.4,
+  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['rare'], legendaries: 2, posture: 0.4,
     // The number keys' abilities (js/abilities.js ABILITY_KEYS): the points each landed blow gives every key (`hit`,
     // `skill` more for a finisher, a full charge or a riposte), each deflect, perfect dodge and execution. A press
     // strikes the locked enemy, else the nearest, within `range` m of its holder's body. The server takes a press with
@@ -498,13 +496,13 @@ const CONFIG = {
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
          online: { noticeTime: 7 },
          text: { restBlocked: 'Enemies too close to rest', controller: 'Best played with a controller',
-                 // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.
+                 // One shows under YOU DIED, at random.
                  deathTips: ['Tip: you have three dashes. Spent, they come back one at a time.',
                              'Tip: dash through a strike as it lands, not before, and counter while time slows.',
                              'Tip: tap block as a red attack lands to deflect it. Dash through blue attacks.',
                              'Tip: a heavy pressed in a string of lights ends it with a finisher.',
-                             'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
-                 staminaTipTime: 6 },
+                             'Tip: resting at a bonfire keeps every enemy you have beaten dead.',
+                             'Tip: a boss that glows amber as it winds up will knock you down. Dash it.'] },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',
                    saveFailed: 'Progress could not be saved. Closing this page may lose progress.', flaskFound: 'A flask: {n} now' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
@@ -669,6 +667,9 @@ const CONFIG = {
     // Every unparryable attack has a cold blue blade. Roll-only attacks also show a faint ground ring
     // as the wind-up starts (`ring`: size, `opacity`: its peak).
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
+    // A `heavy` attack's wind-up (pass 96, the only blows that stagger the player): the whole body warms to amber as it
+    // winds up, up to `tint` (emissive) at the strike; a steady rise, no flash.
+    heavyTell: { color: 0xff8a1a, tint: 0.7 },
     // A body in a boss's grip (a hit's `seize`, pass 72): bone splinters as the hand closes, white-hot embers off it every
     // `every` s while it burns, a spray at each struggle, and a last one when it is thrown or tears loose.
     grip: { seize: { color: 0xe8e0cc, count: 22, speed: 5 }, burn: { color: 0xffb060, count: 3, speed: 2.2 }, every: 0.09,
@@ -764,7 +765,7 @@ const CONFIG = {
         burst: { count: 34, speed: 7, color: 0xff7a2a } },
       flare: { color: 0xff8a2a, size: 2.4, burst: { count: 18, speed: 5, color: 0xff9a40 } },
       spark: { height: 3.2, width: 0.6, burst: { count: 10, speed: 5, color: 0xbcd6ff } },
-      perks: { empower: 0xffc070, empowerBurst: { count: 14, speed: 5, color: 0xffc070 }, heal: 0x8fe08a, stamina: 0x8fb8dc,
+      perks: { empower: 0xffc070, empowerBurst: { count: 14, speed: 5, color: 0xffc070 }, heal: 0x8fe08a,
         riposte: 0xdfe6f0, charge: 0xd9b56b, picked: { common: 0xcfc8b6, rare: 0x8fb8dc, legendary: 0xe59a5c } },
     },
     // The Regent Hollis's hanging cuts (js/gilt-echo.js): leaves per cut, seam motes, pooled cuts, leaf size (m), how long
@@ -781,11 +782,10 @@ const CONFIG = {
     // `r`), the scorch under it (its colour and glow), how long one takes to flare up and to die down (s), fires drawn at once.
     groundFire: { fire: 0xff6a1c, hot: 0xffc070, flames: 9, flameW: 0.5, flameH: 1.15, scorch: 0xff5a18, glow: 0.55, flare: 0.3, fade: 0.8, pool: 30,
       bill: { flames: 6, w: 0.3, h: 0.8, spread: 0.1, drop: 0.25, bright: 1.1 } },   // a burning weapon's flames (scaled by the boss)
-    // Mother Agathe's storm and hook (js/storm-rend.js): the bolt's mark on the floor (`mark` m across), the bolt (`height`
-    // m of jagged light in `segs` pieces, `width` m wide, lit `flash` s), the pieces of you on the hook (`piece` m, drawn
-    // as embers of your own red) and their flight to and from it (`fly` s).
+    // Mother Agathe's storm (js/storm-rend.js): the bolt's mark on the floor (`mark` m across), the bolt (`height` m of
+    // jagged light in `segs` pieces, `width` m wide, lit `flash` s), the sparks off the hook.
     stormRend: { mark: 2.6, markColor: 0x9fc4ff, boltColor: 0xd8e8ff, height: 26, segs: 12, width: 0.32, jag: 1.5, flash: 0.28,
-      piece: 0.17, pieceColor: 0xff3424, backColor: 0xffc890, fly: 0.38, stormColor: 0xa8ccff },
+      stormColor: 0xa8ccff },
     // The Kindling Tree's burrow (js/root-heave.js): it sinks `depth` of its height and rises in `rise` s; clods of root and
     // earth heave up behind the head every `step` m and settle in `life` s; the spot it rises from shows its reach as a
     // ring (`ring` colour) that brightens and tightens once it holds still.
@@ -967,7 +967,6 @@ const CONFIG = {
     threatMargin: 0.7,          // m added to a strike's reach before it counts as a threat
     lungeShare: 0.4,            // share of an enemy attack's lunge speed (m/s) added to its reach
     dashShare: 0.55,            // s of an enemy dash added to its reach
-    reserve: 34,                // stamina kept back for a roll while an enemy could strike
     windowTrust: 0.7,           // share of an enemy's remaining cooldown counted as safe
     safety: 0.12,               // s spare left after its own swing before an enemy strike may open
     closeGap: 0.5,              // edge gap it closes to before striking
@@ -979,7 +978,7 @@ const CONFIG = {
     // finisher / finisherOpening (pass 88): times its taste for heavies, the chance it ends a string with that point's
     // finisher (a real opening: the second); after the last light it always does.
     tempo: { comboBase: 0.12, comboAggression: 0.45, punishCombo: 0.9, punishWindow: 1.3,
-      punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, regroupBelow: 0.3, finisher: 0.8, finisherOpening: 1.6 },
+      punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, finisher: 0.8, finisherOpening: 1.6 },
     // Pass 88, a dash attack: from `gap` m (edge to edge) out, with every dash charge in hand, it dashes in at about `rate`
     // a second (scaled by its aggression), at most once every `rest` s, striking out of the dash (a heavy by `heavy` times
     // its taste for them). A dash that slips a blow comes out as the counter while the foe is within `counterReach` m
@@ -987,7 +986,7 @@ const CONFIG = {
     dashIn: { gap: [1.8, 3.4], rate: 0.6, rest: 5, heavy: 0.8, counterReach: 1.2, counterHeavy: 0.3 },
     // Risk is chosen on a clock, never re-rolled every frame.
     risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
-      combo: 0.9, reserve: 12, earlyRollChance: 0.35, rollLead: [0.12, 0.22] },
+      combo: 0.9, earlyRollChance: 0.35, rollLead: [0.12, 0.22] },
     // Caution: under `below` of its health (`dry` with no flask left) a bot takes no greedy trade, goes in only for a
     // real opening with `safety` s more to spare, keeps `spacing` m more room and waits `patience` times as long before
     // forcing an exchange. With the enemy on it and someone else close enough to fight (`company` m from the enemy), it

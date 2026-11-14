@@ -658,7 +658,7 @@ const bot = (() => {
         }
         if (s.plan === 'roll' && blow.eta <= lead) {
           if (me.canRoll()) { const d = rollDir(me, enemy, blow, s.risky); hands.press('roll'); s.done = true; heavyHold = 0; dashPlan = null; hands.hold('heavy', false); return { mv: { ...d, has: true }, lock: enemy }; }
-          if (!blow.attack.rollOnly && me.in('free')) { hands.hold('block', true); return { mv: idle, lock: enemy }; }   // no stamina: guard
+          if (canParryHit(blow.attack, blow.index) && me.in('free')) { hands.hold('block', true); return { mv: idle, lock: enemy }; }   // no dash: guard (a blue blow goes through it)
         }
         // A blow is coming soon: hold off new swings and keep it in front.
         if (blow.eta < 0.9) return { mv: strafe(me, flat(enemy.x - me.x, enemy.z - me.z), edge(me, enemy), holdGap(me, enemy), 1), lock: enemy };
@@ -781,7 +781,7 @@ const bot = (() => {
         const light = A()[me.def.moveset.ground.light];
         const ready = attackWindow > commit(light) + spare;
         // A quiet neutral opponent is a possibility, not a strike already in flight. Eventually try a single light
-        // to start an exchange; actual wind-ups, other enemies, bolts and stamina still veto the commitment.
+        // to start an exchange; actual wind-ups, other enemies and bolts still veto the commitment.
         const probe = (rescue || !shy && quietTime >= patience + C.probeDelay) && incomingWindow > commit(light) + spare;
         // Backing someone up, it gets out of the enemy's front before it trades (a real opening is taken where it stands);
         // after `settle` s in reach without getting there (a wall at the enemy's back), it trades where it is.
@@ -816,8 +816,7 @@ const bot = (() => {
         }
         // Keep the chosen tempo even when a hypothetical opening is large: bait, flank, press, or regroup.
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
-        const recovering = !can(light.cost) || me.stamina < me.maxStamina * T.regroupBelow;
-        const motion = recovering || retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
+        const motion = retreating ? BOT_TACTICS.reset : committed ? BOT_TACTICS.pressure : tactic;
         if (gap <= C.reach + 3) tally.waiting += dt;
         if (str && !swingGap) return { mv: room(me, e, allies, orbit(Math.max(motion.gap, holdGap(me, e)) + roomy, motion.circle)), lock: e };
         if (settling) return { mv: room(me, e, allies, orbit(gap, motion.circle * 0.5)), lock: e };   // a beat before going in

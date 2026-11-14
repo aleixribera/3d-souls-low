@@ -10,7 +10,7 @@ const multiplayer = (() => {
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
-  const rushView = { fight: 0, beaten: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
+  const rushView = { fight: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
   const noModifiers = Object.freeze([]);
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, nameDraft = '', nameLowercase = false;
@@ -62,7 +62,7 @@ const multiplayer = (() => {
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
-    <p class="lobby-controls-tip">Attacks cost nothing; you have three dashes. Blocking wears your guard. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
+    <p class="lobby-controls-tip">Attacks cost nothing; you have three dashes. Blocking takes a little damage. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
     </div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby,#onlineParty,#onlineLeaderboard,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
@@ -257,14 +257,14 @@ const multiplayer = (() => {
   function showTeamWipe(run) {
     clearTeamWipe();
     el('teamWipeKicker').textContent = `${run?.name || 'BOSS RUSH'} · RUN ENDED`;
-    el('teamWipeScore').textContent = !run ? '' : run.run ? `Bosses defeated · ${run.defeated ?? run.number - 1}` : `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}`;
+    el('teamWipeScore').textContent = !run ? '' : run.run ? `Reached fight ${run.number}` : `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}`;
     panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
     wipeTimer = setTimeout(() => {
       clearTeamWipe();
       if (connected) { show(); if (!usingPad()) el('lobbyLeave').focus(); }
     }, C.teamWipeScreenTime * 1000);
   }
-  // The end of a Calling run, won or wiped: its time, bosses beaten, and each player's damage and falls. It stays until
+  // The end of a Calling run, won or wiped: the fight it reached, its time, and each player's damage and falls. It stays until
   // the player closes it (Escape, B, Lobby) or the leader starts the same run again for the same group.
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
   runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
@@ -324,9 +324,10 @@ const multiplayer = (() => {
   function showRunSummary(data) {
     summary = data;
     runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
-    // Endless: the bosses beaten are the title (PLAN.md track B item 3's end of run), then the Crowned fights won.
-    const beaten = Math.max(0, Math.floor(Number(data.beaten) || 0));
-    el('runSummaryTitle').textContent = beaten ? `${beaten} ${beaten === 1 ? 'boss' : 'bosses'} beaten` : 'No boss beaten';
+    // Endless: the fight reached is the title, the HUD's and the board's number (one count, the fight: pass 96), then
+    // the Crowned fights won.
+    const reached = Math.max(1, Math.floor(Number(data.reached) || 0));
+    el('runSummaryTitle').textContent = `Reached fight ${reached}`;
     el('runSummaryCrowned').textContent = String(Math.max(0, Math.floor(Number(data.crowned) || 0)));
     el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
     // Each boss's time against its par; under par was a swift kill.
@@ -1209,21 +1210,20 @@ const multiplayer = (() => {
   // Reconnect is the only time personal resources come back from the server. Ordinary frames never reconcile them.
   // Resume at the saved position without replaying an old attack, roll, flask or execution animation.
   function restorePlayer(s) {
-    if (!s || !['x', 'y', 'z', 'yaw', 'hp', 'stamina', 'flasks'].every(key => ArenaNet.finite(s[key]))) return;
+    if (!s || !['x', 'y', 'z', 'yaw', 'hp', 'flasks'].every(key => ArenaNet.finite(s[key]))) return;
     const p = Game.player;
     for (const key of ['x', 'y', 'z', 'yaw']) p[key] = s[key];
-    p.hp = clamp(s.hp, 0, p.maxHp); p.stamina = clamp(s.stamina, 0, p.maxStamina);
+    p.hp = clamp(s.hp, 0, p.maxHp);
     p.item('flask').count = clamp(Math.floor(s.flasks), 0, p.item('flask').max);
-    for (const key of ['staminaDelay', 'poise', 'poiseTimer', 'doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
-    p.exhausted = !!s.exhausted; p.grounded = !!s.grounded; p.peak = p.y; p.lastHp = p.hp;   // no health lost by coming back
+    for (const key of ['doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
+    p.grounded = !!s.grounded; p.peak = p.y; p.lastHp = p.hp;   // no health lost by coming back
     for (const key of ['vx', 'vy', 'vz']) p[key] = !p.grounded && ArenaNet.finite(s[key]) ? s[key] : 0;
     p.setState(p.hp <= 0 || s.state === PS.DEAD ? PS.DEAD : p.grounded ? PS.IDLE : PS.FALL);
     p.savePrev(); Game.deathTimer = 0; Game.cam.yaw = p.yaw; Game.updateCamera(0, true);
   }
   function capturePose(p) {
     return { ...ArenaNet.bodyPose(p),
-      stamina: p.stamina, flasks: p.item('flask').count, exhausted: p.exhausted, staminaDelay: p.staminaDelay,
-      poise: clamp(p.poise, 0, p.maxPoise), poiseTimer: Math.min(p.poiseTimer, CONFIG.player.poiseResetTime), doomTime: p.doomTime, doomDrain: p.doomDrain,
+      flasks: p.item('flask').count, doomTime: p.doomTime, doomDrain: p.doomDrain,
       view: session.teamWipeOnly && p.alive() ? lastView : null };
   }
   function heartbeat(now) {
@@ -1490,7 +1490,7 @@ const multiplayer = (() => {
   }
   function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
   function rest(b) {
-    const p = Game.player; p.closeRent(); p.hp = p.maxHp; p.stamina = p.maxStamina; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
+    const p = Game.player; p.hp = p.maxHp; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
     command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
   }
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
@@ -1586,12 +1586,12 @@ const multiplayer = (() => {
     get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
     get listener() { return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
     get gauntlet() { return connected ? session?.gauntlet || null : null; },
-    // Boss Rush's fight (v7.69.0): its number, the bosses beaten once it is won, its clock (the server's, s) and its par.
+    // Boss Rush's fight (v7.69.0): its number, its clock (the server's, s) and its par.
     // One object, refilled: the HUD reads it every frame.
     get rush() {
       const g = connected && loaded ? session?.gauntlet : null;
       if (!g?.run) return null;
-      rushView.fight = g.number; rushView.beaten = g.defeated + 1 + (g.partners?.length || 0);
+      rushView.fight = g.number;
       rushView.crowned = !!g.crowned; rushView.modifiers = Array.isArray(g.modifiers) ? g.modifiers : noModifiers;
       rushView.clock = latestFrame?.fought || 0; rushView.par = session.par || 0;
       return rushView;

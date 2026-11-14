@@ -264,7 +264,7 @@ MODEL_DEFS.regentHollis = {
         hits: [{ startup: 1.4, active: 0.14, follow: 0.65, hold: { at: 0.6, time: [0.3, 1.0], chance: 0.5 }, impact: { ring: 2.0, crack: 1.0, dust: 10, shake: 0.08 } },
                { startup: 0.5, active: 0.14, follow: 0.25, damage: 30, ...echo(0, 'chop'), impact: { ring: 2.0, crack: 0, dust: 8, shake: 0.06 } }], recovery: 2.08,
         followUps: [{ attack: 'courtesy', if: 'near', chance: 0.19 }],
-        damage: 42, poise: 70, knock: 8, lunge: 1.0, range: 4.2, box: CHOP },
+        damage: 42, heavy: true, poise: 70, knock: 8, lunge: 1.0, range: 4.2, box: CHOP },
       // The Turning Cloak: behind him, a look over his shoulder; the mantle and the blade come round.
       { id: 'turnCloak', name: 'The Turning Cloak', anim: 'sweep', pose: 'hollisTurnCloak', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.65, active: 0.16, follow: 0.3 }], recovery: 1.44,
@@ -312,7 +312,7 @@ MODEL_DEFS.regentHollis = {
       { id: 'feast', name: 'The Feast', anim: 'chop', pose: 'hollisFeast', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
         hits: [{ startup: 1.3, active: 0.16, follow: 0.7, leap: { from: 0.4, max: 12, short: 1.2 }, impact: { ring: 4.0, crack: 2.0, dust: 20, shake: 0.16 } },
                { startup: 0.7, active: 0.2, follow: 0.3, damage: 30, box: { w: 4.0, h: 3.0, d: 4.0, fwd: 1.0, y: 1.5 }, ...echo(0, 'field') }], recovery: 2.56,
-        damage: 46, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
+        damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
     ],
   };
   ENEMY_DEFS.push(HOLLIS); ENEMY_BY_ID[HOLLIS.id] = HOLLIS;

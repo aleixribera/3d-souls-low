@@ -2,7 +2,7 @@
 // Boss Rush is you against the bosses (pass 52, PLAN.md track B item 9): the lobby offers no bot, a run started alone
 // stays alone (no bot joins, none is drawn), and alone, a fall ends the run on the end-of-run screen.
 // The whole run is played from the gamepad alone (PLAN.md track B item 3): the title's Boss Rush, the lobby's Start,
-// the free pick of commons before fight 1 (pass 73), the ability pick and the end of the run. (Two people: tests/calling-browser.cjs; every lobby control by pad:
+// the free pick of rares before fight 1 (pass 73; commons until pass 96), the ability pick and the end of the run. (Two people: tests/calling-browser.cjs; every lobby control by pad:
 // tests/lobby-controller-browser.cjs.) node tests/rush-alone-browser.cjs [screenshot directory]
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -59,11 +59,11 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(app.sim.inspect().bots.size, 0, 'the server simulates no bot');
     assert.equal(await page.evaluate(() => multiplayer.info.players.length), 1);
     assert.equal(await page.locator('.online-name').count(), 0, 'no teammate is drawn');
-    // Before fight 1, a free pick of commons (PLAN.md item 11): the boss waits for it.
+    // Before fight 1, a free pick of rares (PLAN.md item 11; pass 96): the boss waits for it.
     await page.locator('#abilityScreen').waitFor({ timeout: 30000 });
     await page.waitForFunction(() => document.activeElement?.dataset?.ability);
     const free = await page.locator('#abilityChoices button').evaluateAll(bs => bs.map(b => b.dataset.ability));
-    assert.ok(await page.evaluate(ids => ids.every(id => CONFIG.abilities.first.includes(ABILITY_BY_ID[id].rarity)), free), 'the free pick is commons');
+    assert.ok(await page.evaluate(ids => ids.every(id => CONFIG.abilities.first.includes(ABILITY_BY_ID[id].rarity)), free), 'the free pick is rares');
     assert.equal(app.sim.state.fought, 0, 'the boss waits for it');
     await page.waitForTimeout(600);
     await page.screenshot({ path: path.join(shots, 'first-pick-desktop.png') });
@@ -93,7 +93,7 @@ const { config: C } = require('../js/net-protocol.js');
     app.sim.arenaWipeDelay = 0.1;
     await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await page.locator('#runSummary').waitFor({ timeout: 30000 });
-    assert.equal(await page.locator('#runSummaryTitle').textContent(), '1 boss beaten', 'the bosses beaten are the title');
+    assert.equal(await page.locator('#runSummaryTitle').textContent(), 'Reached fight 2', 'the fight reached is the title, as the HUD showed it');
     assert.equal(await page.locator('#runSummaryRows tr').count(), 1, 'the end of the run lists Ash alone');
     assert.equal(app.session, null);
     assert.match(await page.locator('#lobbyNotice').textContent(), /^YOU FELL · /, 'the lobby says it plainly too');

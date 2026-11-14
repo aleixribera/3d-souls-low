@@ -248,7 +248,7 @@ MODEL_DEFS.oswinFirstCrown = {
       { id: 'headsman', name: 'The Headsman\'s Fall', anim: 'chop', pose: 'oswinHeadsman', tracking: { rate: 2.0, commit: 0.65 }, markers: glint(0), chance: 0.7,
         hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.2, 0.8], chance: 0.3 }, seam: { from: 3.0, len: 6 },
                  impact: { ring: 2.4, crack: 2.0, dust: 16, shake: 0.16 } }], recovery: 3.4,
-        damage: 44, poise: 75, knock: 9, lunge: 1.0, range: 5.2, box: CHOP },
+        damage: 44, heavy: true, poise: 75, knock: 9, lunge: 1.0, range: 5.2, box: CHOP },
       // Threefold Reign: across at the waist, back across, then heaved up and down into the floor ahead.
       { id: 'threefold', name: 'Threefold Reign', anim: 'sweep', pose: 'oswinThreefold', noParry: true, tracking: { rate: 2.6, commit: 0.65 }, chance: 0.6,
         hits: [{ startup: 1.05, active: 0.16, follow: 0.85 },
@@ -264,7 +264,7 @@ MODEL_DEFS.oswinFirstCrown = {
       { id: 'kingsLeap', name: 'The King\'s Leap', anim: 'chop', pose: 'oswinLeap', noParry: true, tracking: { rate: 2.2, commit: 0.45 }, minRange: 6, chance: 0.5,
         hits: [{ startup: 1.4, active: 0.16, follow: 0.5, leap: { from: 0.35, max: 15, short: 2.4 }, seam: { from: 2.0, len: 7, spread: [-0.55, 0, 0.55] },
                  impact: { ring: 4.5, crack: 2.6, dust: 26, shake: 0.22 } }], recovery: 3.24,
-        damage: 48, poise: 85, knock: 10, lunge: 0, range: 15, box: { w: 3.0, h: 3.0, d: 4.6, fwd: 2.4, y: 1.2 } },
+        damage: 48, heavy: true, poise: 85, knock: 10, lunge: 0, range: 15, box: { w: 3.0, h: 3.0, d: 4.6, fwd: 2.4, y: 1.2 } },
       // The Turn: behind him, a look over his shoulder; the axe comes round with him.
       { id: 'turn', name: 'The Turn', anim: 'sweep', pose: 'oswinTurn', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
         hits: [{ startup: 0.75, active: 0.18, follow: 0.3 }], recovery: 1.8,
@@ -274,11 +274,11 @@ MODEL_DEFS.oswinFirstCrown = {
       { id: 'longLive', name: 'Long Live the King', anim: 'stomp', pose: 'oswinLongLive', noParry: true, when: 'seamed', tracking: { rate: 1.6, commit: 0.4 }, chance: 0.25,
         hits: [{ startup: 0.9, active: 0.25, follow: 0.8, box: RING(0.6, 3.6, 1.2, 0.25), impact: { ring: 3.0, crack: 1.4, dust: 14, shake: 0.12 } },
                { startup: 1.25, active: 0.45, follow: 0.4, erupt: true, box: FIRE, damage: 40 }], recovery: 3.24,
-        damage: 22, poise: 60, knock: 9, lunge: 0, range: 40, box: RING(0.6, 3.6, 1.2, 0.25) },
+        damage: 22, heavy: true, poise: 60, knock: 9, lunge: 0, range: 40, box: RING(0.6, 3.6, 1.2, 0.25) },
       // Drinking where he can see it: the leap, sooner.
       { id: 'leapPunish', name: 'The King\'s Leap', anim: 'chop', pose: 'oswinLeap', noParry: true, when: 'healing', tracking: { rate: 2.6, commit: 0.5 }, minRange: 4, chance: 3,
         hits: [{ startup: 1.0, active: 0.16, follow: 0.5, leap: { from: 0.3, max: 15, short: 2.4 }, seam: { from: 2.0, len: 7 }, impact: { ring: 4.0, crack: 2.4, dust: 22, shake: 0.2 } }],
-        recovery: 2.88, damage: 44, poise: 80, knock: 10, lunge: 0, range: 15, box: { w: 3.0, h: 3.0, d: 4.6, fwd: 2.4, y: 1.2 } },
+        recovery: 2.88, damage: 44, heavy: true, poise: 80, knock: 10, lunge: 0, range: 15, box: { w: 3.0, h: 3.0, d: 4.6, fwd: 2.4, y: 1.2 } },
 
       // ---- the change -----------------------------------------------------------------------------------------------------
       // The Crown Cast Down (the phase opener): the axe held high, then hurled down into the floor: a ring, and the floor
@@ -286,13 +286,13 @@ MODEL_DEFS.oswinFirstCrown = {
       { id: 'crownCastDown', name: 'The Crown Cast Down', anim: 'chop', pose: 'oswinCastDown', noParry: true, rollOnly: true, invulnerable: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 0,   // only as the phase's opener
         hits: [{ startup: 1.8, active: 0.4, follow: 0.5, box: RING(0.6, 7.5, 1.4, 0.4), seam: { from: 1.5, len: 8, spread: [-2.36, -0.79, 0.79, 2.36] },
                  impact: { ring: 5.0, crack: 2.8, dust: 32, shake: 0.24 } }], recovery: 2.16,
-        damage: 30, poise: 60, knock: 11, lunge: 0, range: 7, box: RING(0.6, 7.5, 1.4, 0.4) },
+        damage: 30, heavy: true, poise: 60, knock: 11, lunge: 0, range: 7, box: RING(0.6, 7.5, 1.4, 0.4) },
 
       // ---- uncrowned ------------------------------------------------------------------------------------------------------
       // The King's Hold: arms spread wide, a lunge, and they close. Roll it.
       { id: 'kingsHold', name: 'The King\'s Hold', anim: 'bash', pose: 'oswinHold', noParry: true, rollOnly: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.35,
         hits: [{ startup: 1.0, active: 0.18, follow: 0.6 }], recovery: 3.8,
-        damage: 56, poise: 90, knock: 12, lunge: 4.5, range: 5, box: GRAB },
+        damage: 56, heavy: true, poise: 90, knock: 12, lunge: 4.5, range: 5, box: GRAB },
       // Fists of the Ember: a hook from the left, one from the right, both fists into the floor; it splits ahead.
       { id: 'emberFists', name: 'Fists of the Ember', anim: 'sweep', pose: 'oswinFists', tracking: { rate: 3.0, commit: 0.7 }, chance: 0.7,
         hits: [{ startup: 0.75, active: 0.14, follow: 0.71, step: { from: 0.3, speed: 3.5, side: 0 } },
@@ -307,7 +307,7 @@ MODEL_DEFS.oswinFirstCrown = {
       // Lunging Grasp: one hand out, a runner's crouch; he springs at you. Roll it.
       { id: 'grasp', name: 'Lunging Grasp', anim: 'thrust', pose: 'oswinGrasp', noParry: true, rollOnly: true, tracking: { rate: 2.4, commit: 0.4 }, minRange: 5, chance: 0.5,
         hits: [{ startup: 1.05, active: 0.16, follow: 0.5, leap: { from: 0.45, max: 11, short: 1.6 } }], recovery: 3.06,
-        damage: 50, poise: 85, knock: 12, lunge: 0, range: 11, box: GRAB },
+        damage: 50, heavy: true, poise: 85, knock: 12, lunge: 0, range: 11, box: GRAB },
       // Twin Tread: the right foot, then the left, each splitting the floor ahead, a little to each side.
       { id: 'twinTread', name: 'Twin Tread', anim: 'stomp', pose: 'oswinTwinTread', noParry: true, tracking: { rate: 2.0, commit: 0.4 }, chance: 0.5,
         hits: [{ startup: 0.9, active: 0.2, follow: 0.8, seam: { from: 1.4, len: 9, spread: [0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } },
@@ -317,7 +317,7 @@ MODEL_DEFS.oswinFirstCrown = {
       { id: 'firstHunger', name: 'The First Hunger', anim: 'stomp', pose: 'oswinHunger', noParry: true, when: 'seamed', tracking: { rate: 1.4, commit: 0.4 }, chance: 0.15,
         hits: [{ startup: 1.3, active: 0.4, follow: 1.0, erupt: { keep: true }, box: FIRE, impact: { ring: 2.0, crack: 0.8, dust: 10, shake: 0.12 } },
                { startup: 0.85, active: 0.4, follow: 0.5, erupt: true, box: FIRE }], recovery: 3.6,
-        damage: 36, poise: 60, knock: 9, lunge: 0, range: 40, box: FIRE },
+        damage: 36, heavy: true, poise: 60, knock: 9, lunge: 0, range: 40, box: FIRE },
       // The Backhand: behind him, a look over his shoulder; the back of his burning hand comes round with him.
       { id: 'backhand', name: 'The Backhand', anim: 'sweep', pose: 'oswinBackhand', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
         hits: [{ startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.62,
@@ -325,7 +325,7 @@ MODEL_DEFS.oswinFirstCrown = {
       // Drinking where he can see it: the hold, sooner and from further.
       { id: 'holdPunish', name: 'The King\'s Hold', anim: 'bash', pose: 'oswinHold', noParry: true, rollOnly: true, when: 'healing', tracking: { rate: 3.0, commit: 0.65 }, chance: 3,
         hits: [{ startup: 0.7, active: 0.18, follow: 0.6 }], recovery: 2.88,
-        damage: 52, poise: 90, knock: 12, lunge: 6, range: 6.5, box: GRAB },
+        damage: 52, heavy: true, poise: 90, knock: 12, lunge: 6, range: 6.5, box: GRAB },
     ],
   };
   ENEMY_DEFS.push(OSWIN); ENEMY_BY_ID[OSWIN.id] = OSWIN;

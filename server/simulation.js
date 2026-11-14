@@ -361,7 +361,6 @@ globalThis.host = (() => {
     return kit;
   }
   const maxHpOf = id => PLAYER_DEF.stats.maxHp * (1 + kitOf(id).mods.maxHp);
-  const maxStaminaOf = id => PLAYER_DEF.stats.maxStamina * (1 + kitOf(id).mods.maxStamina);
   // A person's perk clocks (a bot's body keeps its own), and its last health from its poses.
   function perkOf(id) {
     let st = perks.get(id);
@@ -859,8 +858,8 @@ globalThis.host = (() => {
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, beginExecution, endExecution, lifesteal, landed, rest,
-    playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
-    offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
+    playerMaxHp: PLAYER_DEF.stats.maxHp,
+    offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
