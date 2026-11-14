@@ -302,9 +302,24 @@ The momentum item goes to track A, the legendary and Story ability bars to item 
      be deflected. `stamina` and its bar leave the player.
    - **Poise goes.** Ordinary hits never stagger the player; only attacks marked heavy do, and their wind-up shows it.
    - **Rend goes** (Mother Agathe's hook tearing pieces off your health bar for 22 s): her hook just hits hard.
-   - **The counter window shows:** while a counter is open (0.8 s after a perfect dodge, 1.1 s after deflecting the
-     last blow of an attack), the blade glows; a light or heavy pressed then is the counter, about 2.6 times the
-     damage and far more posture. Only a cue, no effect of its own (track A, the player's effects).
+   - **The counter: impossible to miss, and way cooler** (Aleix, 2026-11-14: "I didn't notice, and even now I don't
+     remember any time I did it"; "make the follow-up attack way cooler"). A counter opens 0.8 s after a perfect dodge
+     and 1.1 s after deflecting an attack's last blow; a light or heavy pressed then is the counter (about 2.6 times
+     the damage, far more posture). Track A, the player's effects and animation, its own pass ahead of the rest of
+     item 3c:
+     - **The opening, seen and heard:** a sharp, bright ring of sound the moment it opens (its own, not a hit sound); a
+       beat of slow motion after a deflect too, as after a perfect dodge; the blade flares bright and keeps a strong
+       glow with a trail while the window lasts, dimming as it runs out; the boss flashes a brief open mark. Flashes
+       under 3 Hz, `reducedMotion()` respected.
+     - **The counter itself, a signature move:** the light counter is a flash step, the player dashing through or past
+       the boss in a blur with afterimages, one clean cut, then the cut line opening a beat later; the heavy counter is
+       a rising slash with a wide arc that lifts the boss's guard. Each with long hit-stop, a camera kick and swing, its
+       own sound, sparks and a short held pose after it. Deflected strings make the riposte chain a second time if the
+       press comes again.
+     - **Taught:** the sparring scene (item 3d) teaches it, and the first time a counter opens in a fight its key shows
+       by the blade.
+     Check: a clip of each (a perfect dodge into each counter, a deflect into each), side by side with old; a first
+     look by a blind judge: does it notice the window opened? Then Aleix plays it.
    - **Kept:** the boss's posture bar, the ability keys' charges, and bosses that learn (they read as a boss
      reacting).
    - **The Boss Rush corner:** the fight number only, plus the clock while a Swift kill is still possible (under par);
