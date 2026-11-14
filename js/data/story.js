@@ -4,7 +4,8 @@
 //   menuTitle, menuSub its own menu screen's title and subtitle; description: the line under it in the Story menu
 //   chapters           the campaign in order, each a level id with the title shown over its loading screen and one line
 //     linking it to the last. Optional `loadout: { <item id>: { min, max } }` clamps a carried item's capacity on that
-//     chapter (for a level built around a fixed kit).
+//     chapter (for a level built around a fixed kit). Optional `might: { pace, health, damage }` (pass 79): its bosses'
+//     own strength, over the road's climb (CONFIG.story.road, roadMight in js/game-level.js).
 //   done               the notice on the STORY COMPLETE screen; credits: who walked beside you and who stood in the way
 //   goesOn             optional: while the road's last chapter has no `ending` (its later chapters not built yet), the
 //                      notice on the THE ROAD GOES ON screen that follows that chapter
@@ -21,7 +22,8 @@ const STORY = {
     { level: 'final-castle', title: 'THE FINAL CASTLE', line: 'The bell is rung. By the old law, King Aldric must come out of his gates and answer.' },
     { level: 'the-church', title: 'THE CHURCH IN THE PASS', line: 'The king is ash, and still the ash falls. Something left him as he died, and went up into the mountains.' },
     { level: 'windward-moor', title: 'THE WINDWARD MOOR', line: 'Over the pass lies the country the Seven never named to their children. Its gate is still kept.' },
-    { level: 'saltgrave', title: 'SALTGRAVE', line: 'Two castellans hold Saltgrave for a crown that does not answer. They have held it a very long time.' },
+    { level: 'saltgrave', title: 'SALTGRAVE', line: 'Two castellans hold Saltgrave for a crown that does not answer. They have held it a very long time.',
+      might: { pace: 0.75, health: 0.65, damage: 0.8 } },   // two at once: the climb alone left a newcomer 1 win in 4 (tools/story-curve.cjs)
     { level: 'night-gaol', title: 'THE NIGHT GAOL', line: 'Thrale too had a bell. The one who rang it was never let out.' },
     { level: 'aurel', title: 'AUREL, THE GILDED CITY', line: 'Aurel is gold, and fed, and smiling. Its regent will be glad to see you.' },
     { level: 'aurel-in-ash', title: 'AUREL IN ASH', line: 'A city that will not be kept is burned. You have seen this done before, though you do not remember it.' },

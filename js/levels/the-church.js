@@ -53,6 +53,8 @@ const LEVEL_6 = {
     { id: 'sanctuary', rect: [166, 170, -3, 3], y: 6, height: 5.2, unseen: true, dim: true, floor: 0x2a1c12, wall: 0x3a2818, light: 0xffd8a0 },
   ],
   ramps: [{ id: 'hill-path', rect: [44, 74, -9, 9], axis: 'x', from: 0, to: 6, height: 10, unseen: true, floor: 0xd8dee6, wall: 0x7a8088 }],
+  // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
+  flaskFinds: [{ id: 'pass-pilgrim', x: 62.7, y: 3.6, z: 6.4 }],
   bonfires: [{ id: 'pass-wood', x: 4.5, z: -5.5, spawn: { x: 6.5, z: -3.5, yaw: Math.PI / 2 } },
              { id: 'pass-yard', x: 80, y: 6, z: -6, spawn: { x: 82.5, y: 6, z: -4, yaw: Math.PI / 2 } }],
   gated: [

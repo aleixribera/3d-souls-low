@@ -140,7 +140,8 @@ class Enemy {
     this.baseDef = def; this.boss = opts.boss || null;
     this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
     this.rest = 1; this.chain = 1;   // an Endless modifier's (RUSH.modifiers): rests this many times faster, strings as if this much faster
-    this.health = 1;   // its bars' share of its own health (setHealth: Boss Rush's pairs)
+    this.health = 1;   // its bars' share of its own health (setHealth: Boss Rush's pairs, Story's chapters)
+    this.damageMul = 1;   // its blows' share of their own damage (setMight: Story's chapters)
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -165,6 +166,12 @@ class Enemy {
     if (this.def === B) this.def = { ...B };   // a def without phases is shared: scale a copy
     this.health = k; this.def.hp = Math.round(((this.phaseIds && B.phases[this.def.phaseId].hp) ?? B.hp) * k);
     this.hp = Math.min(this.def.hp, this.hp * this.def.hp / was);
+  }
+  // Its strength on a chapter of Story's road (roadMight, js/game-level.js; null: as written): its pace times `pace`,
+  // its bars at `health` of its own, its blows, bolts and fires at `damage` of theirs.
+  setMight(m) {
+    if (!m) return;
+    this.pace *= m.pace; this.damageMul = m.damage; this.setHealth(m.health);
   }
   // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
   // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).
@@ -725,11 +732,13 @@ class Enemy {
       const lines = this.erupting && this.erupting.length ? this.erupting : null;
       if (!lines) return null;
       const hb = new Hitbox(this, box, { ...makeStrike(this.attack), ...(hit.damage ? { damage: hit.damage } : {}), rollOnly: true }, null, lines);   // fire: no guard holds it
+      hb.payload.damage *= this.damageMul;
       hb.near.x = this.x; hb.near.y = this.y; hb.near.z = this.z;   // until it finds someone: at his feet (where its impact lands)
       return hb;
     }
     const strike = makeStrike(this.attack);
     if (hit.damage) strike.damage = hit.damage;
+    strike.damage *= this.damageMul;
     if (hit.pull) { strike.pull = hit.pull; strike.rollOnly = true; }   // pass 63: the hook drags you in to this far from him (Player.takeHit); no guard holds it
     if (hit.seize) { strike.seize = hit.seize; strike.seizeBy = this; strike.seizeAttack = this.attack.id; strike.rollOnly = true; }   // pass 72: a hand that closes on you (Player.seize); no guard holds it
     if (!hit.bolt && !this.attack.projectile && (this.attack.rend ?? this.def.rend)) { strike.rend = true; strike.rendBy = this; }   // pass 48: the hook keeps what it tears
@@ -770,7 +779,7 @@ class Enemy {
     this.fireKey = key;
     const F = hit.fire, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     for (const [fwd, side] of F.at) {
-      this.fires.push({ x: this.x + s * fwd + c * side, y: this.y, z: this.z + c * fwd - s * side, r: F.r, time: F.time, dps: F.dps, age: 0, no: ++this.fireNo });
+      this.fires.push({ x: this.x + s * fwd + c * side, y: this.y, z: this.z + c * fwd - s * side, r: F.r, time: F.time, dps: F.dps * this.damageMul, age: 0, no: ++this.fireNo });
       if (this.fires.length > CONFIG.groundFire.max) this.fires.shift();
     }
   }

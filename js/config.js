@@ -150,7 +150,17 @@ const CONFIG = {
   // Hazard floors (v7.0, a level's `hazards`, js/game.js): the `hazard` event (sound, a flash of the health bar) every `tick` s.
   hazards: { tick: 0.5 },
   // saveKeys: one save slot per campaign of STORIES (js/data/story.js); saveKey is Ashmere's, kept for old saves.
-  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story' }, saveVersion: 1, titleTime: 3.2 },
+  // The road's climb (pass 79, PLAN.md track A item 5; roadMight, js/game-level.js): from the first chapter to the last,
+  // Story's regular enemies (`foes`) and bosses run their pace (Enemy.pace), health and damage from [first, last], linear
+  // in the chapter's place on the road; a chapter's `might` sets its bosses' own. Its own, never Boss Rush's: CONFIG.pace,
+  // CONFIG.swift and RUSH stay Boss Rush's. Foes keep their health near their own (no sponges) and hit harder; bosses
+  // start slow and light (a newcomer's first boss) and end a little past 1x. Measured with tools/story-curve.cjs
+  // (docs/scorecard/story-climb-pass79.txt): the default bot alone wins the first bosses every time, the last about 3 in 4.
+  // `find`: a flask found on the road (a level's `flaskFinds`) is taken within `range` m, on its floor (`floorGap`); drawn
+  // as a warm `color` light (js/lore.js) that fades over `fade` s once taken.
+  story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story' }, saveVersion: 1, titleTime: 3.2,
+           road: { foes: { pace: [1, 1.1], health: [1, 1.15], damage: [1, 1.35] }, bosses: { pace: [0.8, 1.1], health: [0.75, 1], damage: [0.85, 1.1] } },
+           find: { range: 1.3, floorGap: 1.5, color: 0xffa850, fade: 0.6 } },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
   projectile: { max: 24, length: 0.7, color: 0x8a7458, glow: 0xffd8a0, glowSize: 0.6, muzzle: 0.72, aimAt: 0.6, life: 4 },
@@ -428,7 +438,7 @@ const CONFIG = {
                              'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
                  staminaTipTime: 6 },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',
-                   saveFailed: 'Progress could not be saved. Closing this page may lose progress.' } },
+                   saveFailed: 'Progress could not be saved. Closing this page may lose progress.', flaskFound: 'A flask: {n} now' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5, haftBlendRate: 9,
         trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,

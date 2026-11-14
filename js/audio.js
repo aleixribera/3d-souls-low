@@ -447,6 +447,7 @@ function registerAudioListeners() {
   });
   on('itemUsed', d => { if (d.item === 'flask') audio.play('flask', { pos: d.player && d.player !== Game.player ? spot(d.player) : null }); });
   on('rest', () => audio.play('rest'));
+  on('flaskFound', () => audio.play('rest', { vel: 0.7 }));   // pass 79: a flask found on the road, a smaller kindling
   on('revive', d => audio.play('rest', { pos: d.self ? null : spot(d), vel: d.self ? 1 : 0.8 }));   // a teammate rises (js/multiplayer.js)
   on('gateOpened', d => audio.play('gateOpened', { pos: spot(d.gate) }));
   on('trapWarning', d => audio.play('trapWarning', { pos: trapAt(d.trap) }));

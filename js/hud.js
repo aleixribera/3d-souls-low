@@ -398,6 +398,7 @@ function registerHudListeners() {
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
   events.on('saveFailed', () => hud.toast(H.toasts.saveFailed));
+  events.on('flaskFound', d => hud.toast(H.toasts.flaskFound.replace('{n}', d.flasks)));   // pass 79: the flask row grows by one too
 }
 // Always-visible FPS counter: its own animation-frame loop, so it also counts in menus; refreshed every
 // CONFIG.hud.fps.interval s. Drawing only.

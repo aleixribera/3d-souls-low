@@ -16,7 +16,7 @@ const LEVEL_14 = {
   name: 'Level 14: The Still Mere',
   description: 'There is one water in Thrale that never burned: a frozen lake under a white tree. Down the white boughs, through the drowned court, to the shore. Something waits on the ice, wearing your face.',
   help: 'Level 14: the boughs have no rail: a fall is death. The Drowned lie under the shallows until you pass. On the ice, the one who waits fights as you fight. When it stands behind its shield, a blow into its front is turned and answered: break the stance with a heavy, circle it, or wait for the thrust. When it raises the torch, strike it, and it remembers.',
-  wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5, flasks: 9,
+  wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5,
   atmosphere: { background: 0x2a3038, fog: 0x8a94a0, fogDensity: 0.0095,
                 moon: { color: 0xf0f4ff, intensity: 2.3, position: [-30, 40, 16] },
                 ambient: { color: 0x56606c, intensity: 1.35 },

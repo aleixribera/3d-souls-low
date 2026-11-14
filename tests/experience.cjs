@@ -72,9 +72,10 @@ const notices = [];
 const campaignContext = vm.createContext({
   CONFIG: { story: { saveVersion: 1, saveKeys: { test: 'save' } } },
   ALL_LEVELS: [{ id: 'hall', bonfires: [] }], PLAYER_DEF: { inventory: [] }, ITEMS: { flask: {} },
+  roadFlasks: () => 6, roadFinds: () => ['before-hall'],   // pass 79: the road before 'hall' holds two flasks to find
   localStorage: { getItem: () => stored, setItem(k, v) { if (refuseWrite) throw new Error('Quota exceeded'); stored = v; } },
   events: { emit: type => notices.push(type) },
-  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [] },
+  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [], found: new Set(['before-hall']) },
   world: { gates: [], traps: [] }, finale: { seenSightings: () => [] },
 });
 const storySource = source('js/story.js');
@@ -82,11 +83,16 @@ vm.runInContext(storySource.slice(0, storySource.indexOf('// The facade')), camp
 const campaign = vm.runInContext("makeCampaign({ id: 'test', chapters: [{ level: 'hall' }], progress: {} })", campaignContext);
 assert.equal(campaign.status, 'ok');
 assert.equal(campaign.data.progress.futureField.preserved, true, 'unknown progress stays intact');
+// Pass 79: a save from before flasks were found counts the flasks before its level as found, and holds at least theirs.
+assert.deepEqual([...campaign.data.finds], ['before-hall'], 'an old save finds the flasks before its level');
+assert.equal(campaign.data.progress.inventory.flask.max, 6, 'an old save holds at least the flasks found before its level');
+stored = JSON.stringify({ ...valid, finds: [], progress: { inventory: { flask: { max: 5 } } } }); campaign.load();
+assert.equal(campaign.data.progress.inventory.flask.max, 5, 'a save with finds keeps its own flasks');
 for (const mutate of [
   d => { d.progress = []; }, d => { d.progress.inventory = []; },
   ...[null, [], {}, { max: '4' }, { max: -1 }, { max: 1.5 }, { max: Number.MAX_SAFE_INTEGER + 1 }]
     .map(value => d => { d.progress.inventory.flask = value; }),
-  d => { d.completed = 'false'; }, d => { d.savedAt = null; }, d => { d.savedAt = -1; },
+  d => { d.completed = 'false'; }, d => { d.savedAt = null; }, d => { d.savedAt = -1; }, d => { d.finds = 'all'; }, d => { d.finds = [3]; },
 ]) {
   const broken = structuredClone(valid); mutate(broken); stored = JSON.stringify(broken); campaign.load();
   assert.equal(campaign.status, 'broken', `malformed checkpoint rejected: ${stored}`);

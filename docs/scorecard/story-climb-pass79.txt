@@ -1,0 +1,36 @@
+Pass 79 (PLAN.md track A item 5): Story's climb, measured with `node tools/story-curve.cjs 32` (BASE=1 for the first table).
+Flasks through each chapter with every find taken: 4 5 5 6 6 7 7 7 8 8 8 9 9 9 (five finds: the keep, the tower, the
+church, the gaol, the abbey). The bot rarely drinks (0 to 1.2 a fight), so found flasks help a person more than this shows.
+Bosses' pace 0.80 -> 1.10, health 0.75 -> 1, damage 0.85 -> 1.10; Saltgrave's pair has its own 0.75 / 0.65 / 0.8.
+Foes' pace 1 -> 1.1, health 1 -> 1.15, damage 1 -> 1.35. Boss Rush untouched (its kinds never call Game.onRoad).
+
+# Story's bosses alone, 32 fights each, the default bot (a friend new to the genre), as written (BASE: 1x, 4 flasks)
+ 1 giant              wins 30/32   94%  pace 1.00  hp 1920  flasks 4  drunk 0.0  time 63s  win time 64s
+ 3 pillagerCaptain    wins 30/32   94%  pace 1.00  hp 1800  flasks 4  drunk 0.3  time 82s  win time 83s
+ 4 bellWarden         wins 23/32   72%  pace 1.00  hp 2600  flasks 4  drunk 0.8  time 94s  win time 107s
+ 5 varn               wins 25/32   78%  pace 1.00  hp 1500  flasks 4  drunk 0.8  time 138s  win time 150s
+ 6 antlered           wins 18/32   56%  pace 1.00  hp 2600  flasks 4  drunk 0.4  time 124s  win time 135s
+ 7 ostrey             wins 21/32   66%  pace 1.00  hp 3000  flasks 4  drunk 0.4  time 114s  win time 127s
+ 8 hale+harrow        wins  4/32   13%  pace 1.00  hp 3400  flasks 4  drunk 0.5  time 81s  win time 204s
+ 9 ringer             wins 28/32   88%  pace 1.00  hp 3000  flasks 4  drunk 0.6  time 117s  win time 119s
+10 hollis             wins 30/32   94%  pace 1.00  hp 2600  flasks 4  drunk 0.4  time 107s  win time 107s
+11 oswin              wins 23/32   72%  pace 1.00  hp 3500  flasks 4  drunk 1.0  time 120s  win time 135s
+12 agathe             wins 26/32   81%  pace 1.00  hp 3200  flasks 4  drunk 0.5  time 116s  win time 124s
+13 kindlingTree       wins 26/32   81%  pace 1.00  hp 2500  flasks 4  drunk 0.7  time 94s  win time 100s
+14 kingsBlade         wins 28/32   88%  pace 1.00  hp 3000  flasks 4  drunk 0.5  time 151s  win time 156s
+TOTAL wins 312/416 (75%)
+# Story's bosses alone, 32 fights each, the default bot (a friend new to the genre), as strong as their chapter
+ 1 giant              wins 32/32  100%  pace 0.80  hp 1440  flasks 4  drunk 0.0  time 49s  win time 49s
+ 3 pillagerCaptain    wins 32/32  100%  pace 0.85  hp 1419  flasks 5  drunk 0.0  time 58s  win time 58s
+ 4 bellWarden         wins 25/32   78%  pace 0.87  hp 2100  flasks 6  drunk 0.4  time 74s  win time 78s
+ 5 varn               wins 30/32   94%  pace 0.89  hp 1240  flasks 6  drunk 0.4  time 112s  win time 114s
+ 6 antlered           wins 29/32   91%  pace 0.92  hp 2200  flasks 7  drunk 0.2  time 104s  win time 108s
+ 7 ostrey             wins 23/32   72%  pace 0.94  hp 2596  flasks 7  drunk 0.6  time 101s  win time 109s
+ 8 hale+harrow        wins 24/32   75%  pace 0.75  hp 2210  flasks 7  drunk 0.6  time 90s  win time 101s
+ 9 ringer             wins 27/32   84%  pace 0.98  hp 2712  flasks 8  drunk 0.5  time 104s  win time 110s
+10 hollis             wins 29/32   91%  pace 1.01  hp 2400  flasks 8  drunk 0.3  time 101s  win time 103s
+11 oswin              wins 24/32   75%  pace 1.03  hp 3298  flasks 8  drunk 1.2  time 119s  win time 131s
+12 agathe             wins 25/32   78%  pace 1.05  hp 3077  flasks 9  drunk 0.8  time 117s  win time 119s
+13 kindlingTree       wins 21/32   66%  pace 1.08  hp 2452  flasks 9  drunk 1.2  time 93s  win time 98s
+14 kingsBlade         wins 27/32   84%  pace 1.10  hp 3000  flasks 9  drunk 0.8  time 152s  win time 159s
+TOTAL wins 348/416 (84%)

@@ -18,7 +18,7 @@ const LEVEL_12 = {
   description: 'Where Thrale\'s monks tried to cut the hunger out of the earth, and the earth came with it: ruins adrift in the storm. The colonnade crumbles under your feet; the long bridge has no rail. The abbess waits where the hill tore.',
   help: 'Level 12: most edges are open to the storm: a fall is death. The Rending Brothers spring from the ruins and rend the floor into lines of shockwaves (roll or jump them).',
   completeHint: 'The abbess lies in the rent. Below the storm, the root goes down into the dark…',
-  wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5, flasks: 8,
+  wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5,
   atmosphere: { background: 0x2a2c34, fog: 0x4c4e5a, fogDensity: 0.0085,
                 moon: { color: 0xc8d4ff, intensity: 2.2, position: [-30, 26, 14] },
                 ambient: { color: 0x4a4c5a, intensity: 1.3 },
@@ -68,6 +68,8 @@ const LEVEL_12 = {
     { id: 'undercroft-ramp', rect: [114, 130, -14, -8], axis: 'x', from: 0, to: 8, stairs: true, height: 6, edges: { s: 'open' }, floor: 0x585450, wall: 0x6e6a66 },
     { id: 'nave-stair', rect: [214, 230, -3, 3], axis: 'x', from: 8, to: 16, stairs: true, height: 6, edges: { n: 'open', s: 'open' }, floor: 0x585450, wall: 0x6e6a66 },
   ],
+  // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
+  flaskFinds: [{ id: 'abbey-brother', x: 236.7, y: 16, z: 5.4 }],
   bonfires: [{ id: 'abbey-landing', x: 3, z: -4.5, spawn: { x: 5, z: -3, yaw: Math.PI / 2 } },
              { id: 'abbey-terrace', x: 132, y: 8, z: -2, spawn: { x: 134, y: 8, z: -3.5, yaw: Math.PI / 2 } },
              { id: 'abbey-nave', x: 232, y: 16, z: -6, spawn: { x: 234, y: 16, z: -4.5, yaw: Math.PI / 2 } }],

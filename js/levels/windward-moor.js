@@ -17,7 +17,7 @@ const LEVEL_7 = {
   description: 'Over the pass, Thrale\'s border: a storm-held moor, a gorge, a cliff road with no rail and a gate bridge, still kept.',
   help: 'Level 7: win each fight to open the way on. The thralls are blind: their bearer sees for them. The cliff road has no rail: keep to its wall.',
   completeHint: 'The porter is fallen. Thrale\'s gate stands open…',
-  wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5, flasks: 6,
+  wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5,
   // A slate storm over the moor: driving rain, wind in the grass, lightning far off; no sun.
   atmosphere: { background: 0x3e474e, fog: 0x4e585e, fogDensity: 0.012,
                 moon: { color: 0xd0d8e4, intensity: 2.1, position: [-20, 30, 12] },

@@ -96,6 +96,8 @@ const LEVEL_4 = {
   ],
   // The tower's solid core, below the hall and between the hall's roof and the bell platform.
   blocks: [{ rect: [90, 110, -10, 10], y0: 0, y1: 5.5, wall: 0x4a4a42 }, { rect: [90, 110, -10, 10], y0: 11.5, y1: 21.5, wall: 0x4a4a42 }],
+  // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
+  flaskFinds: [{ id: 'tower-ringer', x: 7.2, z: 7.3 }],
   bonfires: [{ id: 'tower-gate', x: -5.5, z: -4.5, spawn: { x: -3.5, z: -2, yaw: Math.PI / 2 } },
              { id: 'tower-bait', x: 30.5, z: -1.8, spawn: { x: 32.3, z: -0.3, yaw: 0 } },
              { id: 'tower-postern', x: 107.5, z: -13.5, y: 6, spawn: { x: 105, y: 6, z: -11.5, yaw: -Math.PI / 2 } },

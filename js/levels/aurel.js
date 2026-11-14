@@ -16,7 +16,7 @@ const LEVEL_10 = {
   description: 'Thrale\'s capital, still gold, and fed, and smiling. Down the avenue, through the fountain court, up the great stair and over the root out of the chasm, to the throne court where the Regent keeps the city.',
   help: 'Level 10: the citizens smile until you are close, and they carry knives. Archers hold the fountain court\'s north gallery. The great root over the chasm has no rail.',
   completeHint: 'The Regent is fallen, and the city stops smiling. Somewhere below the avenue, something has begun to burn…',
-  wallHeight: 10, gateHeight: 3.6, gateThickness: 0.5, flasks: 7,
+  wallHeight: 10, gateHeight: 3.6, gateThickness: 0.5,
   // Afternoon gold: warm haze, white stone hardly weathered, flakes of gold leaf falling off the roofs.
   atmosphere: { background: 0x6a5a40, fog: 0x8a7652, fogDensity: 0.0085,
                 moon: { color: 0xffe0a0, intensity: 2.6, position: [-30, 40, -20] },

@@ -145,7 +145,7 @@ const lore = (() => {
     const data = game.kind === 'level' && LORE.levels[game.level.id];
     if (!data) return;
     L = data; group = new THREE.Group(); scene.add(group);
-    st = { npcs: [], inscriptions: [], scenes: [], talk: null, near: null, clock: 0 };
+    st = { npcs: [], inscriptions: [], scenes: [], finds: [], talk: null, near: null, clock: 0 };
     for (const D of L.npcs || []) {   // one or more places she waits in this level (Level 5 has two)
       const N = D.who ? LORE.cast[D.who] : LORE.npc;   // v7.0: a level's NPC may be another of the cast (LORE.cast, by `who`)
       const rig = new Rig({ scale: N.scale, bulk: N.bulk, color: 0x5a6a7a, weapon: 'sword', model: N.model });
@@ -174,6 +174,17 @@ const lore = (() => {
       const y = floor(S.x, S.z, S.y), g = new THREE.Group(); g.position.set(S.x, y, S.z); g.rotation.y = S.yaw || 0; group.add(g);
       const out = SCENE[S.kind](S, g) || {};
       st.scenes.push({ def: S, group: g, y, ...out });
+    }
+    // Flasks to find (pass 79, a level's `flaskFinds`; Story alone: Game.updateLevel takes them): a warm light low over the
+    // floor, a wide dim one round it and a thin shaft rising from it, so it is seen down a hall; once taken it swells and fades.
+    const F = CONFIG.story.find;
+    if (game.story) for (const f of game.level.flaskFinds || []) {
+      if (game.found.has(f.id)) continue;
+      const y = floor(f.x, f.z, f.y), core = glowSprite(F.color, 1.6, 0.5, 0.9, null), haze = glowSprite(F.color, 1, 2.6, 0.4, null),
+        shaft = glowSprite(F.color, 1.2, 1, 0.45, null);
+      core.position.set(f.x, y + 0.3, f.z); haze.position.set(f.x, y + 0.5, f.z); shaft.position.set(f.x, y + 1.2, f.z);
+      shaft.scale.set(0.35, 2.4, 1); group.add(core, haze, shaft);
+      st.finds.push({ def: f, core, haze, shaft, taken: -1 });
     }
   }
 
@@ -283,6 +294,15 @@ const lore = (() => {
       I.glow.material.opacity = (st.near === I ? 0.55 : 0.18 * k) * (0.85 + 0.15 * Math.sin(t * 2 + I.x));
     }
     for (const N of st.npcs) drawNpc(game, N, p, t, dt);
+    for (const f of st.finds) {
+      if (f.taken < 0 && game.found.has(f.def.id)) f.taken = 0;
+      if (f.taken >= 1) continue;
+      if (f.taken >= 0) f.taken = Math.min(1, f.taken + dt / CONFIG.story.find.fade);
+      const pulse = f.taken >= 0 ? 1 - f.taken : typeof reducedMotion === 'function' && reducedMotion() ? 1 : 0.8 + 0.2 * Math.sin(t * 2.4 + f.def.x);
+      f.core.material.opacity = 0.9 * pulse; f.haze.material.opacity = 0.4 * pulse; f.shaft.material.opacity = 0.45 * pulse;
+      f.core.scale.setScalar(0.5 * (1 + 2 * Math.max(0, f.taken)));
+      f.core.visible = f.haze.visible = f.shaft.visible = f.taken < 1;
+    }
   }
   function drawNpc(game, N, p, t, dt) {
     const r = N.rig, near = Math.hypot(p.x - N.x, p.z - N.z), on = near < C.sceneRange * 1.5 && present(game, N);
