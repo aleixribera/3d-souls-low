@@ -86,3 +86,11 @@ at three-quarter. Three fresh judges: the old build 3 each time, ours 5, 4, 5. T
 held wide split each scored 4 against the old 5, so pass 94's keys stay; the plant now counts the body's tip, so the
 lower foot no longer sinks through the floor. Strip (old above, new below): `scorecard/anim-p99-deflect.jpg`. Next:
 the deflect's frames 5-9 hold still; the dash is flat at 5 and wants a new approach (the rig's limits, see BACKLOG).
+
+Pass 101 (item 3c pass 5): the dash as a Blender-authored clip (branch `wip/p101-dash-clip`: `tools/blender/clips.py`
+hangs the wanderer's parts on an armature, keys the dash with two-bone IK feet that really plant and skid, and writes
+per-frame quaternions the game plays). In-game probes matched Blender to the centimetre, but three fresh judges scored
+it 4, 4, 3 against the hand-keyed dash's 3, 5, 5. Low hips read as a kneel, high hips as a leaning plank: the judges
+want a long asymmetric lunge (torso near flat, back leg straight about a body length behind, lead knee deeply bent on
+a planted foot, then a tight gather and stand), which the wanderer's 0.9 m legs reach only with the hips very low.
+Strip (old, round 2, round 3): `scorecard/anim-p101-dash.jpg`. New tool: `tools/anim-strip.cjs` films any move.

@@ -4413,7 +4413,7 @@
     trainingAt(null, 'the-tower'); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'Level 4 has none');
     Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'a duel has none');
     const opt = Game.screens().options.items.filter(i => i.cat === 'game').map(i => i.name);
-    expect.ok(opt.join() === 'Game,Lessons,Show lessons again', `Options' Game category: ${opt}`);
+    expect.ok(opt.join() === 'Game,Name,Lessons,Show lessons again', `Options' Game category: ${opt}`);
   }));
   test('Lessons: the REST card points an arrow at its bonfire, and the CONTROLS panel steps aside in Level 1', withLessons(() => {
     trainingAt(null, 'long-hall'); A.lessons.show('rest'); Game.render(1, STEP);

@@ -38,14 +38,16 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   frame (`captain-desktop-string.jpg`) caught the Captain's charge before the string; the laptop run shows the keys
   alone through a full exchange (strings, finishers, two perfect dodges, a counter).
 
-- **Item 3c's next pass (track A), after pass 99:** the deflect now knocks the blade out and back, then sinks over
-  it; three fresh judges scored it 5, 4, 5 against the old 3, from the sword side at three-quarter. Their giveaway:
-  frames 5-9 hold one crouched pose, so drive the hands and chest back and up at frames 3-4, then ease forward with a
-  small damped overshoot and a knee dip. The dash is a stalled loop at 5 over passes 94 and 99: an ankle lean and a
-  held wide split both scored 4. A new approach, not new keys: the rig bends only at hip and knee (no ankle, no
-  spine segments), so try a real Blender action for the dash, or a two-segment spine, before more key tuning. The
-  light string's flow back into the run is tested but not yet in a strip. Not yet: the counter and drink still
-  borrow poses (pose ids are track B's, above); speed lines on finishers. Use a fresh judge each round.
+- **Item 3c's next pass (track A), after pass 101:** the deflect (pass 99: judges 5, 4, 5 against the old 3) holds one
+  crouched pose in frames 5-9: drive the hands and chest back and up at frames 3-4, then ease forward with a small
+  damped overshoot and a knee dip. The dash is stalled at 5 over passes 94, 99 and 101. Pass 101 tried a real Blender
+  clip (`wip/p101-dash-clip`: `tools/blender/clips.py`, IK feet that plant and skid, played per frame by
+  `js/player-pose.js`): 4, 4, 3. Low hips read as a kneel, high hips as a leaning plank. Every judge describes the
+  same target: an asymmetric lunge, torso near flat, back leg straight about a body length behind, lead knee deeply
+  bent over a planted foot, then a tight gather (frames 7-9) and a stand. The wanderer's 0.9 m legs reach that only
+  with the hips near 0.45 m, and the dark cloak hides the legs in the strip. Try that one pose on the clip branch, or
+  cut the dash here (the director's call). Not yet: Controls clips; the counter and drink borrow poses; speed lines on
+  finishers. Use a fresh judge each round; `tools/anim-strip.cjs dash|deflect` films the strip.
 - **Find (pass 92):** `startFight('dummy')` under a hand-stepped clock (`Game.manualClock`) turns positions to NaN: the
   dummy has no `speed` and starts in chase (`approachVel`). Old and new builds alike; tests and captures use other foes.
 

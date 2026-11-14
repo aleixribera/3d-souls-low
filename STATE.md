@@ -4,10 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 99): 3c pass 4: the deflect flings the blade up, then comes forward over it, low
-  (`deflect.clang.rebound`), judges 3 to 5, 4, 5; the dash keeps pass 94's keys, its plant counts the tip (`dash.lift`),
-  flat at 5 (BACKLOG: new approach). In-page `pass 99`. Sparring (pass 97, `js/sparring.js`, in-page `pass 97`).
-  Pass 99 once removed pass 98's browser lock by mistake, restored it at once; `.scratch/locked.sh` now refuses.
+- Track A (pass 101): 3c pass 5: the dash as a Blender clip (IK feet) scored 4, 4, 3 vs the old 3, 5, 5: not adopted,
+  the game keeps pass 94's keys (BACKLOG). New `tools/anim-strip.cjs` films a move. Fixed CI's Lessons test (the
+  Name row). Deflect (pass 99, in-page `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock.
   Next: deflect frames 5-9, Controls clips, the Finishing Blow look.
 - Track B (pass 98): v7.125.0 a dodge is decided on first overlap (`dashOutlasts`, per `dashNo`), a dodged blow never
   lands, a landed one closes the counter (`counterClose`); in-page `pass 98 perfect dodge`. v7.126.0 the name
@@ -66,7 +65,7 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 
 ## wip// branches
 
-None. Backlog: `BACKLOG.md`.
+`wip/p101-dash-clip` (Blender dash clip, not adopted). Backlog: `BACKLOG.md`.
 
 ## Needs Aleix
 
