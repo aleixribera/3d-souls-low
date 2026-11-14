@@ -1787,7 +1787,9 @@
     for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
       const source = MOVE_SOURCES.find(d => d.id === a.origin.enemy).attacks.find(s => s.id === a.origin.attack);
       expect.ok(source && a !== source && a.hits !== source.hits && a.box !== source.box && a.tracking !== source.tracking, `${a.id}: independent copy`);
-      expect.ok(a.pose === source.pose && JSON.stringify(a.tracking) === JSON.stringify(source.tracking) && a.recovery === source.recovery, `${a.id}: source animation and timing`);
+      expect.ok(a.pose === source.pose && JSON.stringify(a.tracking) === JSON.stringify(source.tracking), `${a.id}: source animation and timing`);
+      // Recovery is the borrowing boss's own (pass 54: every boss's data is its 1x), never quicker than the source's.
+      expect.ok(a.recovery >= source.recovery, `${a.id}: recovers at the borrowing boss's pace (${a.recovery} s, source ${source.recovery} s)`);
       expect.ok(!a.followUps, `${a.id}: no branches into the source boss's other moves`);
       for (let i = 0; i < a.hits.length; i++) {
         const h = a.hits[i], s = source.hits[i];

@@ -205,7 +205,7 @@ MODEL_DEFS.ringerOfThrale = {
     scale: 1.85, bulk: 1.0, radius: 0.7, color: 0x8a8478, weapon: 'club', idle: 'sway',
     visual: { skin: 0xb0a8a0, roughness: 0.75, rim: 0.9 },
     hp: 3000, poise: 220, speed: 2.6, turnRate: 3.2, trackRate: 1.8, approach: 0.55, kite: 0.1,
-    cooldown: [1.0, 2.0], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
+    cooldown: [1.7, 3.4], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
     posture: { max: 88, parry: 62, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['chained', 'tolling'],
     phases: {
@@ -213,7 +213,7 @@ MODEL_DEFS.ringerOfThrale = {
       chained: { hp: 3000, tether: 8.5,
         attacks: ['strikeHour', 'changeRinging', 'risingToll', 'clapperDrive', 'fetterStamp', 'backstroke', 'callAcross', 'callPunish'] },
       // Past half her strength she steps over the line, and rings the hours.
-      tolling: { at: 0.5, name: 'The Ringer of Thrale, Over the Line', opener: 'overTheLine', cooldown: [0.7, 1.5], approach: 0.75, kite: 0.05, speed: 3.0, trackRate: 2.1,
+      tolling: { at: 0.5, name: 'The Ringer of Thrale, Over the Line', opener: 'overTheLine', cooldown: [1.19, 2.55], approach: 0.75, kite: 0.05, speed: 3.0, trackRate: 2.1,
         attacks: ['strikeHour2', 'changeRinging', 'risingToll', 'clapperDrive', 'fetterStamp2', 'backstroke', 'callAcross', 'callPunish',
                   'overTheLine', 'nineTailors', 'peal', 'outOfTheRing'] },
     },
@@ -221,81 +221,81 @@ MODEL_DEFS.ringerOfThrale = {
       // ---- chained ------------------------------------------------------------------------------------------------------
       // The Hour Struck: the ball hung down her back, held, brought over onto you. Step aside, not back.
       { id: 'strikeHour', name: 'The Hour Struck', anim: 'chop', pose: 'ringerHourStruck', tracking: { rate: 2.0, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 1.45, active: 0.14, follow: 0.5, hold: { at: 0.6, time: [0.35, 1.0], chance: 0.6 } }], recovery: 1.4,
+        hits: [{ startup: 1.45, active: 0.14, follow: 0.5, hold: { at: 0.6, time: [0.35, 1.0], chance: 0.6 } }], recovery: 2.38,
         damage: 44, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 },
         impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
       // Change Ringing: low at the knees from her left (jump it or roll it), then high across from her right.
       { id: 'changeRinging', name: 'Change Ringing', anim: 'sweep', pose: 'ringerChangeRinging', tracking: { rate: 2.6, commit: 0.6 }, markers: glint(0, 1),
-        hits: [{ startup: 0.95, active: 0.16, follow: 0.12, box: { w: 6.5, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
-               { startup: 0.6, active: 0.16, follow: 0.35, box: { w: 6.5, h: 1.2, d: 3.6, fwd: 1.6, y: 1.9 } }], recovery: 1.0,
-        followUps: [{ attack: 'backstroke', if: 'behind', chance: 0.6 }],
+        hits: [{ startup: 0.95, active: 0.16, follow: 0.47, box: { w: 6.5, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
+               { startup: 0.6, active: 0.16, follow: 0.35, box: { w: 6.5, h: 1.2, d: 3.6, fwd: 1.6, y: 1.9 } }], recovery: 1.7,
+        followUps: [{ attack: 'backstroke', if: 'behind', chance: 0.35 }],
         damage: 28, poise: 45, knock: 6, lunge: 1.4, range: 3.8, box: { w: 6.5, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
       // The Rising Toll: from between her feet, up and over. Late: roll at the last moment.
       { id: 'risingToll', name: 'The Rising Toll', anim: 'overhead', pose: 'ringerRisingToll', tracking: { rate: 2.8, commit: 0.7 }, markers: glint(0),
-        hits: [{ startup: 1.15, active: 0.14, follow: 0.4 }], recovery: 1.1,
+        hits: [{ startup: 1.15, active: 0.14, follow: 0.4 }], recovery: 1.87,
         damage: 36, poise: 60, knock: 9, lunge: 1.6, range: 3.6, box: { w: 1.8, h: 3.4, d: 3.4, fwd: 1.9, y: 1.5 } },
       // The Clapper Drive: a short jab to draw you in, then the long drive.
       { id: 'clapperDrive', name: 'The Clapper Drive', anim: 'thrust', pose: 'ringerClapperDrive', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(0, 1),
-        hits: [{ startup: 0.8, active: 0.1, follow: 0.12, box: { w: 1.0, h: 1.4, d: 2.8, fwd: 1.9, y: 1.2 } },
-               { startup: 0.55, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.45 } }], recovery: 1.0,
+        hits: [{ startup: 0.8, active: 0.1, follow: 0.47, box: { w: 1.0, h: 1.4, d: 2.8, fwd: 1.9, y: 1.2 } },
+               { startup: 0.55, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.45 } }], recovery: 1.7,
         damage: 28, poise: 45, knock: 7, lunge: 3.0, range: 4.4, box: { w: 1.2, h: 1.4, d: 4.4, fwd: 2.7, y: 1.2 } },
       // The Fetter Stamp: the knee up, the fettered foot stamped; a ring runs out. It flows on into the rising toll or the
       // hour struck.
       { id: 'fetterStamp', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
-        hits: [{ startup: 0.95, follow: 0.2, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.0,
-        followUps: [{ attack: 'risingToll', if: 'near', chance: 0.5 }, { attack: 'strikeHour', if: 'any', chance: 0.3 }],
+        hits: [{ startup: 0.95, follow: 0.2, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.7,
+        followUps: [{ attack: 'risingToll', if: 'near', chance: 0.29 }, { attack: 'strikeHour', if: 'any', chance: 0.18 }],
         damage: 22, poise: 35, knock: 6, lunge: 0, range: 5, box: RING(0.8, 5.5, 1.4, 0.45) },
       // Behind her: a look over her shoulder and the clapper swung back round.
       { id: 'backstroke', name: 'The Backstroke', anim: 'sweep', pose: 'ringerBackstroke', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
-        hits: [{ startup: 0.7, active: 0.14, follow: 0.3 }], recovery: 0.9,
+        hits: [{ startup: 0.7, active: 0.14, follow: 0.3 }], recovery: 1.53,
         damage: 24, poise: 40, knock: 8, lunge: 0, range: 3.4, box: { w: 3.6, h: 2.0, d: 3.0, fwd: -1.5, y: 1.0 } },
       // Calling Across the Ring: from inside her circle, to you standing off: the clapper listened to, then struck on the
       // floor. The knell runs out to 20 m. Jump it (or roll through it); a shield does not stop it.
       { id: 'callAcross', name: 'Calling Across the Ring', anim: 'chop', pose: 'ringerCallAcross', noParry: true, rollOnly: true, tracking: { rate: 2.0, commit: 0.8 },
         minRange: 6, chance: 0.5,
         hits: [{ startup: 1.5, follow: 0.4, hold: { at: 0.7, time: [0.2, 0.7], chance: 0.5 }, ...knell(1, 20, 1.4, 1.5), impact: { ring: 3.0, crack: 1.0, dust: 12, shake: 0.1 } }],
-        recovery: 1.2, damage: 24, poise: 30, knock: 5, lunge: 0, range: 20, box: RING(1, 20, 1.4, 1.5) },
+        recovery: 2.04, damage: 24, poise: 30, knock: 5, lunge: 0, range: 20, box: RING(1, 20, 1.4, 1.5) },
       // Drinking where she can see it: the same call, sooner.
       { id: 'callPunish', name: 'Calling Across the Ring', anim: 'chop', pose: 'ringerCallAcross', noParry: true, rollOnly: true, when: 'healing', tracking: { rate: 2.6, commit: 0.8 },
         minRange: 4, chance: 3,
         hits: [{ startup: 0.95, follow: 0.4, ...knell(1, 20, 1.4, 1.5), impact: { ring: 3.0, crack: 1.0, dust: 12, shake: 0.1 } }],
-        recovery: 1.0, damage: 26, poise: 30, knock: 5, lunge: 0, range: 20, box: RING(1, 20, 1.4, 1.5) },
+        recovery: 1.7, damage: 26, poise: 30, knock: 5, lunge: 0, range: 20, box: RING(1, 20, 1.4, 1.5) },
       // ---- over the line ------------------------------------------------------------------------------------------------
       // The Hour Struck twice: the ball struck again where it lies, and a knell runs out from it.
       { id: 'strikeHour2', name: 'The Hour Struck', anim: 'chop', pose: 'ringerHourStruck2', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 1.35, active: 0.14, follow: 0.25, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
-               { startup: 0.45, follow: 0.45, ...knell(1, 10, 1.5, 0.7), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.1 } }], recovery: 1.3,
+        hits: [{ startup: 1.35, active: 0.14, follow: 0.6, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
+               { startup: 0.45, follow: 0.45, ...knell(1, 10, 1.5, 0.7), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.1 } }], recovery: 2.21,
         damage: 44, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 } },
       // Two Fetters: the left foot stamped, then the right, wider.
       { id: 'fetterStamp2', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp2', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
-        hits: [{ startup: 0.9, follow: 0.1, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
-               { startup: 0.65, follow: 0.3, ...knell(1, 9, 1.6, 0.6), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.14 } }], recovery: 1.1,
-        followUps: [{ attack: 'risingToll', if: 'near', chance: 0.5 }, { attack: 'peal', if: 'any', chance: 0.25 }],
+        hits: [{ startup: 0.9, follow: 0.45, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
+               { startup: 0.65, follow: 0.3, ...knell(1, 9, 1.6, 0.6), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.14 } }], recovery: 1.87,
+        followUps: [{ attack: 'risingToll', if: 'near', chance: 0.29 }, { attack: 'peal', if: 'any', chance: 0.15 }],
         damage: 24, poise: 40, knock: 7, lunge: 0, range: 6, box: RING(0.8, 5.5, 1.4, 0.45) },
       // Over the Line (the phase opener): the clapper raised high, her arm flung wide, her face lifted; brought down on
       // the floor where her circle ends, and the great knell runs out to the walls.
       { id: 'overTheLine', name: 'Over the Line', anim: 'chop', pose: 'ringerOverTheLine', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.6 }, chance: 0.1,
-        hits: [{ startup: 1.6, active: 0.16, follow: 0.35, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 }, impact: { ring: 3.6, crack: 1.8, dust: 20, shake: 0.18 } },
+        hits: [{ startup: 1.6, active: 0.16, follow: 0.7, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 }, impact: { ring: 3.6, crack: 1.8, dust: 20, shake: 0.18 } },
                { startup: 0.35, follow: 0.5, ...knell(1, 22, 1.6, 1.6), impact: { ring: 5.0, crack: 0, dust: 14, shake: 0.12 } }],
-        recovery: 1.6, damage: 40, poise: 70, knock: 9, lunge: 0.6, range: 8, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
+        recovery: 2.72, damage: 40, poise: 70, knock: 9, lunge: 0.6, range: 8, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
       // The Nine Tailors: knelt, she counts them out: three knells at a steady pace, then a fourth, heavier and wider.
       // Jump each on the beat; her body is open between them.
       { id: 'nineTailors', name: 'The Nine Tailors', anim: 'chop', pose: 'ringerNineTailors', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 0.3,
-        hits: [{ startup: 1.4, follow: 0.05, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.06 } },
-               { startup: 0.5, follow: 0.05, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0, dust: 8, shake: 0.06 } },
-               { startup: 0.5, follow: 0.05, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0, dust: 8, shake: 0.06 } },
+        hits: [{ startup: 1.4, follow: 0.4, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0.8, dust: 8, shake: 0.06 } },
+               { startup: 0.5, follow: 0.4, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0, dust: 8, shake: 0.06 } },
+               { startup: 0.5, follow: 0.4, ...knell(1, 12, 1.2, 0.9), impact: { ring: 2.4, crack: 0, dust: 8, shake: 0.06 } },
                { startup: 0.95, follow: 0.5, ...knell(1, 20, 1.6, 1.4), impact: { ring: 4.4, crack: 1.6, dust: 18, shake: 0.14 } }],
-        recovery: 1.6, damage: 20, poise: 30, knock: 5, lunge: 0, range: 12, box: RING(1, 12, 1.2, 0.9) },
+        recovery: 2.72, damage: 20, poise: 30, knock: 5, lunge: 0, range: 12, box: RING(1, 12, 1.2, 0.9) },
       // The Peal: four quick blows from the shoulders, left, right, left, the last into the floor with a short knell.
       { id: 'peal', name: 'The Peal', anim: 'chop', pose: 'ringerPeal', tracking: { rate: 3.0, commit: 0.65 }, markers: glint(0, 1, 2, 3),
-        hits: [{ startup: 0.75, active: 0.12, follow: 0.08 }, { startup: 0.38, active: 0.12, follow: 0.08 }, { startup: 0.38, active: 0.12, follow: 0.08 },
+        hits: [{ startup: 0.75, active: 0.12, follow: 0.43 }, { startup: 0.38, active: 0.12, follow: 0.43 }, { startup: 0.38, active: 0.12, follow: 0.43 },
                { startup: 0.65, follow: 0.4, ...knell(0.8, 6, 1.4, 0.45), impact: { ring: 2.8, crack: 1.2, dust: 12, shake: 0.1 } }],
-        recovery: 1.2, damage: 24, poise: 35, knock: 5, lunge: 1.6, range: 3.6, box: { w: 2.4, h: 2.6, d: 3.6, fwd: 1.9, y: 1.2 } },
+        recovery: 2.04, damage: 24, poise: 35, knock: 5, lunge: 1.6, range: 3.6, box: { w: 2.4, h: 2.6, d: 3.6, fwd: 1.9, y: 1.2 } },
       // Out of the Ring: a crouch, the clapper over her shoulder; a leap, and it comes down where she lands, a knell after.
       { id: 'outOfTheRing', name: 'Out of the Ring', anim: 'chop', pose: 'ringerOutOfTheRing', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.35,
-        hits: [{ startup: 1.4, active: 0.14, follow: 0.3, leap: { from: 0.45, max: 13, short: 1.4 }, impact: { ring: 4.6, crack: 2.2, dust: 22, shake: 0.18 } },
+        hits: [{ startup: 1.4, active: 0.14, follow: 0.65, leap: { from: 0.45, max: 13, short: 1.4 }, impact: { ring: 4.6, crack: 2.2, dust: 22, shake: 0.18 } },
                { startup: 0.35, follow: 0.5, ...knell(1, 9, 1.5, 0.55), impact: { ring: 3.6, crack: 0, dust: 10, shake: 0.1 } }],
-        recovery: 1.7, damage: 46, poise: 85, knock: 10, lunge: 0, range: 13, box: { w: 2.4, h: 2.8, d: 4.4, fwd: 2.4, y: 1.0 } },
+        recovery: 2.89, damage: 46, poise: 85, knock: 10, lunge: 0, range: 13, box: { w: 2.4, h: 2.8, d: 4.4, fwd: 2.4, y: 1.0 } },
     ],
   };
   ENEMY_DEFS.push(RINGER); ENEMY_BY_ID[RINGER.id] = RINGER;

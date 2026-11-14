@@ -172,7 +172,7 @@ MODEL_DEFS.kindlingTree = {
     holyLight: { color: 0xff8a2a, core: 0xffd890 },   // its marks: the Ember's red-gold (js/holy.js)
     // hp and posture: kept from v7.65.0 (a skilled player alone beats it in about a minute, tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 2500, poise: 270, speed: 0, turnRate: 2.6, trackRate: 1.8, approach: 0, kite: 0,
-    cooldown: [0.9, 1.8], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
+    cooldown: [1.35, 2.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
     posture: { max: 105, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['rooted', 'kindled'],
     phases: {
@@ -181,7 +181,7 @@ MODEL_DEFS.kindlingTree = {
         attacks: ['lash', 'fallingBough', 'kindlingMark', 'thornVolley', 'rootsRise', 'intoTheRoots', 'turningBough', 'risingPunish'] },
       // At 60 % it catches, tears its roots out of the floor and comes for you.
       kindled: { at: 0.6, name: 'The Kindling Tree, Ablaze', opener: 'uprooted', ignite: true, rooted: false,
-        cooldown: [0.7, 1.4], approach: 0.75, kite: 0.05, speed: 3.0, turnRate: 3.2, trackRate: 2.1,
+        cooldown: [1.05, 2.1], approach: 0.75, kite: 0.05, speed: 3.0, turnRate: 3.2, trackRate: 2.1,
         attacks: ['uprooted', 'burningLash', 'fallingBough', 'kindlingMark', 'thornVolley', 'rootsRise', 'rootCharge', 'greatKindling', 'deepRoots',
                   'turningBough', 'risingPunish'] },
     },
@@ -189,67 +189,67 @@ MODEL_DEFS.kindlingTree = {
       // ---- rooted ---------------------------------------------------------------------------------------------------------
       // The Lash: the right bough wound across, swept out; the left answers back. Parry both, or get under its trunk.
       { id: 'lash', name: 'The Lash', anim: 'sweep', pose: 'treeLash', tracking: { rate: 2.2, commit: 0.65 }, markers: glint(0, 1),
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.12, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.35 } },
-               { startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.0,
-        followUps: [{ attack: 'turningBough', if: 'behind', chance: 0.6 }],
+        hits: [{ startup: 1.05, active: 0.16, follow: 0.37, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.35 } },
+               { startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.5,
+        followUps: [{ attack: 'turningBough', if: 'behind', chance: 0.4 }],
         damage: 30, poise: 50, knock: 7, lunge: 0, range: 5.6, box: LASH },
       // The Falling Bough: both boughs high and back, a pause, brought down together. Parry it, or roll aside.
       { id: 'fallingBough', name: 'The Falling Bough', anim: 'chop', pose: 'treeFallingBough', tracking: { rate: 2.4, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.3, 0.8], chance: 0.5 }, impact: { ring: 3.0, crack: 2.0, dust: 18, shake: 0.14 } }], recovery: 1.4,
+        hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.3, 0.8], chance: 0.5 }, impact: { ring: 3.0, crack: 2.0, dust: 18, shake: 0.14 } }], recovery: 2.1,
         damage: 44, poise: 75, knock: 9, lunge: 0, range: 6.0, box: BOUGH },
       // The Kindling Mark: the claw drawn to its coal and driven into the floor before it; torn out, the mark it left burns
       // a moment later, where it was. Step off it.
       { id: 'kindlingMark', name: 'The Kindling Mark', anim: 'chop', pose: 'treeKindlingMark', noParry: true, tracking: { rate: 2.4, commit: 0.6 }, chance: 0.5,
-        hits: [{ startup: 1.15, active: 0.15, follow: 0.1, damage: 26, box: CLAW, impact: { ring: 2.0, crack: 1.4, dust: 12, shake: 0.1 } },
-               { startup: 1.2, active: 0.18, follow: 0.4, still: true, sigil: 2.4, box: MARK, impact: { ring: 3.0, crack: 0.8, dust: 10, shake: 0.12 } }], recovery: 1.1,
+        hits: [{ startup: 1.15, active: 0.15, follow: 0.35, damage: 26, box: CLAW, impact: { ring: 2.0, crack: 1.4, dust: 12, shake: 0.1 } },
+               { startup: 1.2, active: 0.18, follow: 0.4, still: true, sigil: 2.4, box: MARK, impact: { ring: 3.0, crack: 0.8, dust: 10, shake: 0.12 } }], recovery: 1.65,
         damage: 40, poise: 60, knock: 8, lunge: 0, range: 6.2, minRange: 1.5, box: MARK },
       // The Thorns: leaning back, boughs low and spread; its crown flings a fan of thorns. At range.
       { id: 'thornVolley', name: 'Thorns', anim: 'overhead', pose: 'treeThorns', noParry: true, tracking: { rate: 3.0, commit: 0.85 }, minRange: 6, chance: 0.45,
-        projectile: THORNS, hits: [{ startup: 1.0, active: 0.05, follow: 0.3 }], recovery: 0.8,
+        projectile: THORNS, hits: [{ startup: 1.0, active: 0.05, follow: 0.3 }], recovery: 1.2,
         damage: 14, poise: 15, knock: 3, lunge: 0, range: 24, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 3.6 } },
       // The Roots Rise: hugging itself, crouched; the roots burst up all round it. Roll through, or be away.
       { id: 'rootsRise', name: 'The Roots Rise', anim: 'stomp', pose: 'treeRootsRise', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 0.9,
-        hits: [{ startup: 1.25, active: 0.4, follow: 0.4, box: RING(0.6, 6.0, 1.6, 0.4, 1.6), impact: { ring: 4.0, crack: 2.4, dust: 22, shake: 0.16 } }], recovery: 1.2,
+        hits: [{ startup: 1.25, active: 0.4, follow: 0.4, box: RING(0.6, 6.0, 1.6, 0.4, 1.6), impact: { ring: 4.0, crack: 2.4, dust: 22, shake: 0.16 } }], recovery: 1.8,
         damage: 34, poise: 50, knock: 9, lunge: 0, range: 4.0, box: RING(0.6, 6.0, 1.6, 0.4, 1.6) },
       // Into the Roots: boughs up together, it sinks; the floor heaves and runs after you, stops, swells, and it comes up
       // through it. Get off the swelling once it stops, or roll as it breaks. A long opening after.
       { id: 'intoTheRoots', name: 'Into the Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, tracking: { rate: 2.0, commit: 0.3 }, minRange: 4.5, chance: 0.45,
-        hits: [{ startup: 2.6, active: 0.2, follow: 0.5, burrow: { from: 0.18, lock: 0.72, speed: 11, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 1.6,
+        hits: [{ startup: 2.6, active: 0.2, follow: 0.5, burrow: { from: 0.18, lock: 0.72, speed: 11, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.4,
         damage: 46, poise: 80, knock: 10, lunge: 0, range: 22, box: RISE },
       // The Turning Bough: behind it, a look over its right side; the bough comes round.
       { id: 'turningBough', name: 'The Turning Bough', anim: 'sweep', pose: 'treeTurning', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
-        hits: [{ startup: 0.75, active: 0.16, follow: 0.3 }], recovery: 0.9,
+        hits: [{ startup: 0.75, active: 0.16, follow: 0.3 }], recovery: 1.35,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 4.6, box: TURN },
       // Drinking where it can feel it: it goes under, sooner, and faster.
       { id: 'risingPunish', name: 'Into the Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, when: 'healing', tracking: { rate: 2.4, commit: 0.3 }, chance: 3,
-        hits: [{ startup: 1.9, active: 0.2, follow: 0.4, burrow: { from: 0.15, lock: 0.6, speed: 13, turn: 3.0 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 1.4,
+        hits: [{ startup: 1.9, active: 0.2, follow: 0.4, burrow: { from: 0.15, lock: 0.6, speed: 13, turn: 3.0 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.1,
         damage: 40, poise: 70, knock: 10, lunge: 0, range: 20, box: RISE },
       // ---- ablaze --------------------------------------------------------------------------------------------------------
       // Uprooted (the phase opener): its claws in the floor, it tears itself free; a ring of burning earth all round. It
       // cannot be hurt through it (as every boss's change).
       { id: 'uprooted', name: 'Uprooted', anim: 'stomp', pose: 'treeUprooted', noParry: true, rollOnly: true, invulnerable: true, tracking: { rate: 1.6, commit: 0.5 }, chance: 0.1,
-        hits: [{ startup: 1.8, active: 0.5, follow: 0.4, box: RING(0.8, 9.0, 1.6, 0.55, 1.4), impact: { ring: 5.0, crack: 3.0, dust: 30, shake: 0.22 } }], recovery: 1.3,
+        hits: [{ startup: 1.8, active: 0.5, follow: 0.4, box: RING(0.8, 9.0, 1.6, 0.55, 1.4), impact: { ring: 5.0, crack: 3.0, dust: 30, shake: 0.22 } }], recovery: 1.95,
         damage: 32, poise: 50, knock: 9, lunge: 0, range: 8, box: RING(0.8, 9.0, 1.6, 0.55, 1.4) },
       // The Burning Lash: the lash with a stride into each blow, and a third, both boughs down from high on its left.
       { id: 'burningLash', name: 'The Burning Lash', anim: 'sweep', pose: 'treeBurningLash', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1, 2),
-        hits: [{ startup: 0.95, active: 0.16, follow: 0.1, step: { from: 0.2, speed: 3.5, side: 0 } },
-               { startup: 0.55, active: 0.16, follow: 0.1, step: { from: 0.1, speed: 3.5, side: 0 } },
-               { startup: 0.75, active: 0.16, follow: 0.4, damage: 40, box: BOUGH, impact: { ring: 3.0, crack: 2.0, dust: 18, shake: 0.14 } }], recovery: 1.3,
-        followUps: [{ attack: 'turningBough', if: 'behind', chance: 0.6 }],
+        hits: [{ startup: 0.95, active: 0.16, follow: 0.35, step: { from: 0.2, speed: 3.5, side: 0 } },
+               { startup: 0.55, active: 0.16, follow: 0.35, step: { from: 0.1, speed: 3.5, side: 0 } },
+               { startup: 0.75, active: 0.16, follow: 0.4, damage: 40, box: BOUGH, impact: { ring: 3.0, crack: 2.0, dust: 18, shake: 0.14 } }], recovery: 1.95,
+        followUps: [{ attack: 'turningBough', if: 'behind', chance: 0.4 }],
         damage: 30, poise: 50, knock: 7, lunge: 1.0, range: 5.4, box: LASH },
       // The Charge: low, boughs forward like antlers; it runs at you on its roots. Roll aside, late.
       { id: 'rootCharge', name: 'The Charge', anim: 'thrust', pose: 'treeCharge', noParry: true, tracking: { rate: 2.6, commit: 0.7 }, minRange: 5, chance: 0.4,
-        dash: { speed: 11, from: 0.45 }, hits: [{ startup: 1.2, active: 0.2, follow: 0.4, impact: { ring: 2.4, crack: 0.8, dust: 18, shake: 0.12 } }], recovery: 1.4,
+        dash: { speed: 11, from: 0.45 }, hits: [{ startup: 1.2, active: 0.2, follow: 0.4, impact: { ring: 2.4, crack: 0.8, dust: 18, shake: 0.12 } }], recovery: 2.1,
         damage: 40, poise: 70, knock: 10, lunge: 0, range: 14, box: RAM },
       // The Great Kindling: its breast opened to the sky; a ring of fire, and a wider one after it. Roll each.
       { id: 'greatKindling', name: 'The Great Kindling', anim: 'stomp', pose: 'treeGreatKindling', noParry: true, rollOnly: true, tracking: { rate: 1.4, commit: 0.4 }, chance: 0.35,
-        hits: [{ startup: 1.6, active: 0.45, follow: 0.1, box: RING(0.8, 7.0, 1.6, 0.45, 1.6), impact: { ring: 4.4, crack: 2.0, dust: 20, shake: 0.16 } },
-               { startup: 0.85, active: 0.55, follow: 0.4, box: RING(2.5, 11.0, 1.6, 0.55, 1.6), impact: { ring: 6.0, crack: 2.4, dust: 26, shake: 0.2 } }], recovery: 1.5,
+        hits: [{ startup: 1.6, active: 0.45, follow: 0.35, box: RING(0.8, 7.0, 1.6, 0.45, 1.6), impact: { ring: 4.4, crack: 2.0, dust: 20, shake: 0.16 } },
+               { startup: 0.85, active: 0.55, follow: 0.4, box: RING(2.5, 11.0, 1.6, 0.55, 1.6), impact: { ring: 6.0, crack: 2.4, dust: 26, shake: 0.2 } }], recovery: 2.25,
         damage: 36, poise: 60, knock: 9, lunge: 0, range: 9, box: RING(0.8, 7.0, 1.6, 0.45, 1.6) },
       // Deep Roots: it goes under, comes up through the swelling, and goes under again.
       { id: 'deepRoots', name: 'Deep Roots', anim: 'stomp', pose: 'treeIntoRoots', noParry: true, rollOnly: true, tracking: { rate: 2.0, commit: 0.3 }, minRange: 4.5, chance: 0.4,
-        hits: [{ startup: 2.2, active: 0.2, follow: 0.2, burrow: { from: 0.2, lock: 0.68, speed: 12, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } },
-               { startup: 1.8, active: 0.2, follow: 0.5, burrow: { from: 0.25, lock: 0.62, speed: 12, turn: 2.6 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 1.8,
+        hits: [{ startup: 2.2, active: 0.2, follow: 0.45, burrow: { from: 0.2, lock: 0.68, speed: 12, turn: 2.4 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } },
+               { startup: 1.8, active: 0.2, follow: 0.5, burrow: { from: 0.25, lock: 0.62, speed: 12, turn: 2.6 }, impact: { ring: 4.2, crack: 2.6, dust: 28, shake: 0.2 } }], recovery: 2.7,
         damage: 40, poise: 70, knock: 10, lunge: 0, range: 22, box: RISE },
     ],
   };

@@ -219,7 +219,7 @@ MODEL_DEFS.oldOstrey = {
     scale: 2.1, bulk: 1.2, radius: 0.82, color: 0x5a564c, weapon: 'spear', idle: 'sway',
     visual: { skin: 0x8a8274, roughness: 0.8, rim: 0.9 },
     hp: 3000, poise: 240, speed: 2.5, turnRate: 3.0, trackRate: 1.6, approach: 0.5, kite: 0.15,
-    cooldown: [1.1, 2.1], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
+    cooldown: [1.87, 3.57], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
     posture: { max: 91, parry: 65, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['porter', 'kindled'],
     phases: {
@@ -227,7 +227,7 @@ MODEL_DEFS.oldOstrey = {
       porter: { hp: 3000,
         attacks: ['barTheWay', 'gateDrop', 'barDrive', 'threeKnocks', 'shoulderGate', 'lanternCoals', 'coalPunish', 'buttBack', 'lanternSwing'] },
       // Hurt past bearing (at 55 %), he opens the lantern: it burns, and so does he. Sooner, closer, and fire.
-      kindled: { at: 0.55, name: 'Old Ostrey, the Lantern Opened', opener: 'lanternBursts', ignite: true, cooldown: [0.75, 1.5], approach: 0.75, kite: 0.05, speed: 2.8, trackRate: 2.0,
+      kindled: { at: 0.55, name: 'Old Ostrey, the Lantern Opened', opener: 'lanternBursts', ignite: true, cooldown: [1.27, 2.55], approach: 0.75, kite: 0.05, speed: 2.8, trackRate: 2.0,
         attacks: ['barTheWay', 'gateDrop', 'barDrive', 'threeKnocks', 'shoulderGate', 'lanternCoals', 'coalPunish', 'buttBack', 'lanternSwing',
                   'lanternBursts', 'kindledSweep', 'lanternBreath', 'burningDrop', 'emberRain'] },
     },
@@ -235,80 +235,80 @@ MODEL_DEFS.oldOstrey = {
       // ---- the porter --------------------------------------------------------------------------------------------------
       // Bar the Way: a sweep at the knees, wide and late. Roll through it, not away.
       { id: 'barTheWay', name: 'Bar the Way', anim: 'sweep', pose: 'ostreyBarTheWay', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0),
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.3 }], recovery: 1.0,
-        followUps: [{ attack: 'threeKnocks', if: 'near', chance: 0.3 }],
+        hits: [{ startup: 1.05, active: 0.16, follow: 0.3 }], recovery: 1.7,
+        followUps: [{ attack: 'threeKnocks', if: 'near', chance: 0.18 }],
         damage: 26, poise: 45, knock: 6, lunge: 1.4, range: 3.6, box: { w: 7.0, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
       // The Gate Drop: raised plumb, held (the delay is the point), dropped like a portcullis. Back off while it is up and
       // he lowers his head and runs at you instead.
       { id: 'gateDrop', name: 'The Gate Drop', anim: 'chop', pose: 'ostreyGateDrop', tracking: { rate: 2.0, commit: 0.55 }, markers: glint(0),
-        hits: [{ startup: 1.5, active: 0.14, follow: 0.5, hold: { at: 0.55, time: [0.4, 1.1], chance: 0.7 }, abort: { at: 0.6, beyond: 6, into: 'shoulderGate' } }], recovery: 1.5,
+        hits: [{ startup: 1.5, active: 0.14, follow: 0.5, hold: { at: 0.55, time: [0.4, 1.1], chance: 0.7 }, abort: { at: 0.6, beyond: 6, into: 'shoulderGate' } }], recovery: 2.55,
         damage: 46, poise: 80, knock: 9, lunge: 1.2, range: 3.8, box: { w: 1.8, h: 3.0, d: 4.2, fwd: 2.4, y: 1.2 },
         impact: { ring: 2.8, crack: 1.5, dust: 14, shake: 0.12 } },
       // The Drive: a short jab to draw you in, then the long drive, sometimes held.
       { id: 'barDrive', name: 'Bar Drive', anim: 'thrust', pose: 'ostreyBarDrive', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(0, 1),
-        hits: [{ startup: 0.75, active: 0.1, follow: 0.12, box: { w: 1.0, h: 1.4, d: 2.6, fwd: 1.8, y: 1.2 } },
-               { startup: 0.5, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.45 } }], recovery: 1.0,
-        followUps: [{ attack: 'lanternSwing', if: 'flank', chance: 0.7 }],
+        hits: [{ startup: 0.75, active: 0.1, follow: 0.47, box: { w: 1.0, h: 1.4, d: 2.6, fwd: 1.8, y: 1.2 } },
+               { startup: 0.5, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.45 } }], recovery: 1.7,
+        followUps: [{ attack: 'lanternSwing', if: 'flank', chance: 0.41 }],
         damage: 28, poise: 45, knock: 6, lunge: 3.0, range: 4.2, box: { w: 1.2, h: 1.4, d: 4.2, fwd: 2.6, y: 1.2 } },
       // Three Knocks: the bar brought down at the gate three times; the third raised higher and held.
       { id: 'threeKnocks', name: 'Three Knocks', anim: 'chop', pose: 'ostreyThreeKnocks', tracking: { rate: 2.6, commit: 0.6 }, markers: glint(0, 1, 2),
-        hits: [{ startup: 0.8, active: 0.12, follow: 0.12 }, { startup: 0.5, active: 0.12, follow: 0.12 },
+        hits: [{ startup: 0.8, active: 0.12, follow: 0.47 }, { startup: 0.5, active: 0.12, follow: 0.47 },
                { startup: 0.95, active: 0.14, follow: 0.45, hold: { at: 0.5, time: [0.3, 0.8], chance: 0.6 }, impact: { ring: 2.4, crack: 1.2, dust: 10, shake: 0.08 } }],
-        recovery: 1.2, damage: 26, poise: 40, knock: 6, lunge: 1.2, range: 3.6, box: { w: 1.8, h: 2.8, d: 4.0, fwd: 2.2, y: 1.0 } },
+        recovery: 2.04, damage: 26, poise: 40, knock: 6, lunge: 1.2, range: 3.6, box: { w: 1.8, h: 2.8, d: 4.0, fwd: 2.2, y: 1.0 } },
       // Shoulder the Gate: from afar, the bar across his chest, head down, a run that bowls you over.
       { id: 'shoulderGate', name: 'Shoulder the Gate', anim: 'bash', pose: 'ostreyShoulderGate', noParry: true, shove: true, tracking: { rate: 2.4, commit: 0.45 },
         minRange: 5, dash: { speed: 11, from: 0.35 }, chance: 0.35,
-        hits: [{ startup: 1.0, active: 0.16, follow: 0.4 }], recovery: 1.1,
+        hits: [{ startup: 1.0, active: 0.16, follow: 0.4 }], recovery: 1.87,
         damage: 34, poise: 60, knock: 10, lunge: 2.2, range: 12, box: { w: 3.4, h: 2.2, d: 2.4, fwd: 1.4, y: 1.1 },
         impact: { ring: 1.6, crack: 0, dust: 10, shake: 0.08 } },
       // Lantern Coals: swung low and back, then flung underarm: three coals lobbed in a fan. Blockable, not parryable.
       { id: 'lanternCoals', name: 'Lantern Coals', anim: 'overhead', pose: 'ostreyCoals', tracking: { rate: 2.8, commit: 0.85 }, minRange: 4, chance: 0.3,
         projectile: { ...COAL, spread: [-0.14, 0, 0.14] },
-        hits: [{ startup: 0.9, active: 0.06, follow: 0.2 }], recovery: 0.55,
-        followUps: [{ attack: 'shoulderGate', if: 'any', chance: 0.3 }],
+        hits: [{ startup: 0.9, active: 0.06, follow: 0.2 }], recovery: 0.94,
+        followUps: [{ attack: 'shoulderGate', if: 'any', chance: 0.18 }],
         damage: 16, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
       // Drinking at range: one coal, sooner.
       { id: 'coalPunish', name: 'Lantern Coal', anim: 'overhead', pose: 'ostreyCoals', when: 'healing', tracking: { rate: 3.4, commit: 0.85 }, minRange: 4, chance: 3,
         projectile: COAL,
-        hits: [{ startup: 0.6, active: 0.06, follow: 0.15 }], recovery: 0.4,
+        hits: [{ startup: 0.6, active: 0.06, follow: 0.15 }], recovery: 0.68,
         damage: 18, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
       // Behind him: he looks over his shoulder and drives the butt of the bar back.
       { id: 'buttBack', name: 'Butt of the Bar', anim: 'thrust', pose: 'ostreyButtBack', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
-        hits: [{ startup: 0.65, active: 0.12, follow: 0.3 }], recovery: 0.8,
+        hits: [{ startup: 0.65, active: 0.12, follow: 0.3 }], recovery: 1.36,
         damage: 22, poise: 40, knock: 8, lunge: 0, range: 3.2, box: { w: 3.0, h: 1.8, d: 2.8, fwd: -1.6, y: 1.0 } },
       // At his left (the lantern side): a rising swing of the lantern.
       { id: 'lanternSwing', name: 'Lantern Swing', anim: 'sweep', pose: 'ostreyLanternSwing', noParry: true, when: 'flank', tracking: { rate: 3.6, commit: 0.7 }, chance: 1.6,
-        hits: [{ startup: 0.55, active: 0.12, follow: 0.18 }], recovery: 0.7,
+        hits: [{ startup: 0.55, active: 0.12, follow: 0.18 }], recovery: 1.19,
         damage: 22, poise: 35, knock: 5, lunge: 1.6, range: 3.0, box: { w: 3.4, h: 2.0, d: 2.6, fwd: 1.3, y: 1.4 } },
       // ---- the lantern opened ------------------------------------------------------------------------------------------
       // The Lantern Opened (the phase opener): held up, dashed into the ground; the fire runs out in a ring.
       { id: 'lanternBursts', name: 'The Lantern Opened', anim: 'chop', pose: 'ostreyLanternBursts', noParry: true, tracking: { rate: 2.0, commit: 0.6 }, chance: 0.12,
-        hits: [{ startup: 1.4, active: 0.16, follow: 0.4, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 }, impact: { ring: 3.4, crack: 1.6, dust: 18, shake: 0.16 } },
+        hits: [{ startup: 1.4, active: 0.16, follow: 0.75, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 }, impact: { ring: 3.4, crack: 1.6, dust: 18, shake: 0.16 } },
                { startup: 0.45, active: 0.18, follow: 0.4, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.5, crack: 0, dust: 12, shake: 0.12 } }],
-        recovery: 1.6, damage: 40, poise: 70, knock: 9, lunge: 0.8, range: 3.6, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 } },
+        recovery: 2.72, damage: 40, poise: 70, knock: 9, lunge: 0.8, range: 3.6, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 } },
       // Low, Then High: the knees, then the head. Roll the first, roll the second.
       { id: 'kindledSweep', name: 'Low, Then High', anim: 'sweep', pose: 'ostreyKindledSweep', tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0, 1),
-        hits: [{ startup: 0.9, active: 0.16, follow: 0.12, box: { w: 7.0, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
-               { startup: 0.55, active: 0.16, follow: 0.35, box: { w: 7.0, h: 1.2, d: 3.6, fwd: 1.6, y: 1.9 } }], recovery: 1.0,
-        followUps: [{ attack: 'lanternSwing', if: 'flank', chance: 0.6 }],
+        hits: [{ startup: 0.9, active: 0.16, follow: 0.47, box: { w: 7.0, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
+               { startup: 0.55, active: 0.16, follow: 0.35, box: { w: 7.0, h: 1.2, d: 3.6, fwd: 1.6, y: 1.9 } }], recovery: 1.7,
+        followUps: [{ attack: 'lanternSwing', if: 'flank', chance: 0.35 }],
         damage: 30, poise: 50, knock: 7, lunge: 1.6, range: 3.6, box: { w: 7.0, h: 0.9, d: 3.6, fwd: 1.6, y: 0.45 } },
       // The Ember's Breath: the lantern to his chest, head bowed over it; then its fire breathed across his front. His sides
       // and back are safe all the while.
       { id: 'lanternBreath', name: 'The Ember\'s Breath', anim: 'bash', pose: 'ostreyLanternBreath', noParry: true, tracking: { rate: 0.4, commit: 1 }, chance: 0.18,
         breath: { len: 7, width: 2.2 },
-        hits: [{ startup: 1.2, active: 0.14, follow: 0.06 }, ...Array.from({ length: 6 }, () => ({ startup: 0.2, active: 0.14, follow: 0.06 }))], recovery: 1.6,
+        hits: [{ startup: 1.2, active: 0.14, follow: 0.41 }, ...Array.from({ length: 6 }, () => ({ startup: 0.2, active: 0.14, follow: 0.06 }))], recovery: 2.72,
         damage: 12, poise: 15, knock: 3, lunge: 0, range: 7, box: { w: 2.6, h: 2.0, d: 6.5, fwd: 4.0, y: 1.0 } },
       // The Burning Drop: a crouch, a leap, the gate dropped from the air, and the fire running out from where it lands.
       { id: 'burningDrop', name: 'The Burning Drop', anim: 'chop', pose: 'ostreyBurningDrop', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 4, chance: 0.35,
-        hits: [{ startup: 1.5, active: 0.16, follow: 0.3, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.18 } },
+        hits: [{ startup: 1.5, active: 0.16, follow: 0.65, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.18 } },
                { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7.5, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.0, crack: 0, dust: 12, shake: 0.1 } }],
-        recovery: 1.8, damage: 54, poise: 90, knock: 11, lunge: 0, range: 12, box: { w: 2.4, h: 2.6, d: 4.4, fwd: 2.4, y: 1.0 } },
+        recovery: 3.06, damage: 54, poise: 90, knock: 11, lunge: 0, range: 12, box: { w: 2.4, h: 2.6, d: 4.4, fwd: 2.4, y: 1.0 } },
       // Ember Rain: the lantern whirled overhead and swung down, coals scattered in a wide fan; twice.
       { id: 'emberRain', name: 'Ember Rain', anim: 'overhead', pose: 'ostreyEmberRain', tracking: { rate: 2.4, commit: 0.8 }, minRange: 3, chance: 0.3,
         projectile: { ...COAL, speed: 13, spread: [-0.5, -0.25, 0, 0.25, 0.5] },
-        hits: [{ startup: 1.1, active: 0.06, follow: 0.15 }, { startup: 0.7, active: 0.06, follow: 0.2 }], recovery: 0.9,
+        hits: [{ startup: 1.1, active: 0.06, follow: 0.5 }, { startup: 0.7, active: 0.06, follow: 0.2 }], recovery: 1.53,
         damage: 16, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
     ],
   };

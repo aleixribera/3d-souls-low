@@ -280,87 +280,87 @@
     // ---- Hale: the axe -------------------------------------------------------------------------------------------------
     // Crown Cleave: raised high behind her head, held (the delay is the point), brought straight down.
     { id: 'crownCleave', name: 'Crown Cleave', anim: 'chop', pose: 'haleCrownCleave', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
-      hits: [{ startup: 1.25, active: 0.14, follow: 0.45, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 } }], recovery: 1.4,
+      hits: [{ startup: 1.25, active: 0.14, follow: 0.45, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 } }], recovery: 1.68,
       damage: 38, poise: 70, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 },
       impact: { ring: 2.4, crack: 1.4, dust: 12, shake: 0.1 } },
     // The Beard's Hook: up from her right hip, then the beard hooked back across. Roll the first toward her left.
     { id: 'beardsHook', name: 'The Beard\'s Hook', anim: 'sweep', pose: 'haleBeardsHook', tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0),
-      hits: [{ startup: 0.95, active: 0.14, follow: 0.1, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } },
-             { startup: 0.45, active: 0.14, follow: 0.35, box: { w: 3.8, h: 1.4, d: 3.0, fwd: 1.4, y: 1.7 } }], recovery: 1.0,
-      followUps: [{ attack: 'haftsHeel', if: 'behind', chance: 0.6 }],
+      hits: [{ startup: 0.95, active: 0.14, follow: 0.2, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } },
+             { startup: 0.45, active: 0.14, follow: 0.35, box: { w: 3.8, h: 1.4, d: 3.0, fwd: 1.4, y: 1.7 } }], recovery: 1.2,
+      followUps: [{ attack: 'haftsHeel', if: 'behind', chance: 0.5 }],
       damage: 28, poise: 45, knock: 6, lunge: 1.4, range: 3.4, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } },
     // The Helm's Salute: the haft upright before her face, a stillness, then the top spike driven out a long step.
     { id: 'helmsSalute', name: 'The Helm\'s Salute', anim: 'thrust', pose: 'haleHelmsSalute', tracking: { rate: 3.0, commit: 0.75 }, markers: glint(0),
-      hits: [{ startup: 1.05, active: 0.12, follow: 0.3 }], recovery: 1.0,
-      followUps: [{ attack: 'beardsHook', if: 'near', chance: 0.3 }],
+      hits: [{ startup: 1.05, active: 0.12, follow: 0.3 }], recovery: 1.2,
+      followUps: [{ attack: 'beardsHook', if: 'near', chance: 0.25 }],
       damage: 30, poise: 50, knock: 7, lunge: 2.6, range: 4.6, box: { w: 1.0, h: 1.4, d: 4.6, fwd: 2.7, y: 1.2 } },
     // The Wall Turns: yoked across her shoulders, then two full turns with the axe held out. Get out of reach, or under it
     // with a roll; Harrow slides in at whoever backs away.
     { id: 'wallTurns', name: 'The Wall Turns', anim: 'sweep', pose: 'haleWallTurns', noParry: true, tracking: { rate: 1.6, commit: 0.4 }, chance: 0.5,
       cue: { attack: 'greaveSlide', delay: 0.9, chance: 0.6, near: 14 },
-      hits: [{ startup: 1.2, active: 0.2, follow: 0.1 }, { startup: 0.15, active: 0.2, follow: 0.45 }], recovery: 1.4,
+      hits: [{ startup: 1.2, active: 0.2, follow: 0.2 }, { startup: 0.15, active: 0.2, follow: 0.45 }], recovery: 1.68,
       damage: 26, poise: 45, knock: 8, lunge: 0.6, range: 3.4, box: { w: 6.8, h: 1.8, d: 6.8, fwd: 0, y: 1.1 } },
     // Off the Rampart: from afar, a crouch with the axe trailing, a leap, the axe first on landing.
     { id: 'offTheRampart', name: 'Off the Rampart', anim: 'chop', pose: 'haleOffTheRampart', noParry: true, tracking: { rate: 2.2, commit: 0.5 }, minRange: 5, chance: 0.35,
-      hits: [{ startup: 1.3, active: 0.16, follow: 0.5, leap: { from: 0.4, max: 12, short: 1.4 } }], recovery: 1.6,
+      hits: [{ startup: 1.3, active: 0.16, follow: 0.5, leap: { from: 0.4, max: 12, short: 1.4 } }], recovery: 1.92,
       damage: 40, poise: 75, knock: 9, lunge: 0, range: 12, box: { w: 2.2, h: 2.8, d: 4.2, fwd: 2.0, y: 1.0 },
       impact: { ring: 3.4, crack: 1.8, dust: 16, shake: 0.14 } },
     // Salt Wind: from afar, the flat of the axe swept across, and the sea wind it raises flies at you. Block it or step aside.
     { id: 'saltWind', name: 'Salt Wind', anim: 'sweep', pose: 'haleSaltWind', tracking: { rate: 2.8, commit: 0.85 }, minRange: 6, chance: 0.35,
       projectile: SALT_WIND,
-      hits: [{ startup: 0.9, active: 0.06, follow: 0.25 }], recovery: 0.8,
+      hits: [{ startup: 0.9, active: 0.06, follow: 0.25 }], recovery: 0.96,
       damage: 22, poise: 25, knock: 4, lunge: 0, range: 18, box: { w: 0.5, h: 0.5, d: 0.5, fwd: 0.6, y: 1.3 } },
     // Behind her: the butt of the haft driven back past her hip.
     { id: 'haftsHeel', name: 'The Haft\'s Heel', anim: 'thrust', pose: 'haleHaftsHeel', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
-      hits: [{ startup: 0.6, active: 0.12, follow: 0.3 }], recovery: 0.8,
+      hits: [{ startup: 0.6, active: 0.12, follow: 0.3 }], recovery: 0.96,
       damage: 20, poise: 35, knock: 8, lunge: 0, range: 3.0, box: { w: 2.6, h: 1.8, d: 2.6, fwd: -1.5, y: 1.0 } },
     // ---- Harrow: fists and greaves -------------------------------------------------------------------------------------
     // Stamp the Stones: a knee raised high, then the greave stamped: a ring along the floor; then the other, wider. Jump
     // them or roll them; Hale's cleave comes down where you land.
     { id: 'stampStones', name: 'Stamp the Stones', anim: 'stomp', pose: 'harrowStamp', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
       cue: { attack: 'crownCleave', delay: 0.35, chance: 0.7, near: 6 },
-      hits: [{ startup: 1.05, active: 0.2, follow: 0.15, box: RING(0.8, 5, 1.4), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
+      hits: [{ startup: 1.05, active: 0.2, follow: 0.25, box: RING(0.8, 5, 1.4), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
              { startup: 0.75, active: 0.2, follow: 0.4, box: RING(1.0, 8, 1.6), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.14 } }],
-      recovery: 1.5, damage: 24, poise: 40, knock: 7, lunge: 0, range: 5, box: RING(0.8, 5, 1.4) },
+      recovery: 1.8, damage: 24, poise: 40, knock: 7, lunge: 0, range: 5, box: RING(0.8, 5, 1.4) },
     // Hammer of Both Hands: fists locked, wound over her left shoulder, held, smashed down across to her right.
     { id: 'hammerOfHands', name: 'Hammer of Both Hands', anim: 'chop', pose: 'harrowHammer', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
-      hits: [{ startup: 1.15, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.25, 0.7], chance: 0.5 } }], recovery: 1.3,
+      hits: [{ startup: 1.15, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.25, 0.7], chance: 0.5 } }], recovery: 1.56,
       damage: 36, poise: 65, knock: 8, lunge: 1.4, range: 3.0, box: { w: 2.2, h: 2.6, d: 3.2, fwd: 1.6, y: 1.0 },
       impact: { ring: 2.0, crack: 1.0, dust: 10, shake: 0.1 } },
     // Knuckle and Heel: a jab, a hook, a front kick. Quick; parry each.
     { id: 'knuckleHeel', name: 'Knuckle and Heel', anim: 'thrust', pose: 'harrowKnuckleHeel', tracking: { rate: 3.2, commit: 0.65 }, markers: glint(0, 1, 2),
-      hits: [{ startup: 0.65, active: 0.1, follow: 0.08, box: { w: 1.0, h: 1.2, d: 2.6, fwd: 1.6, y: 1.6 } },
-             { startup: 0.38, active: 0.12, follow: 0.08, box: { w: 2.6, h: 1.2, d: 2.2, fwd: 1.2, y: 1.6 } },
-             { startup: 0.6, active: 0.14, follow: 0.35, box: { w: 1.4, h: 1.2, d: 3.0, fwd: 1.8, y: 0.9 } }], recovery: 0.9,
-      followUps: [{ attack: 'backHeel', if: 'behind', chance: 0.7 }],
+      hits: [{ startup: 0.65, active: 0.1, follow: 0.18, box: { w: 1.0, h: 1.2, d: 2.6, fwd: 1.6, y: 1.6 } },
+             { startup: 0.38, active: 0.12, follow: 0.18, box: { w: 2.6, h: 1.2, d: 2.2, fwd: 1.2, y: 1.6 } },
+             { startup: 0.6, active: 0.14, follow: 0.35, box: { w: 1.4, h: 1.2, d: 3.0, fwd: 1.8, y: 0.9 } }], recovery: 1.08,
+      followUps: [{ attack: 'backHeel', if: 'behind', chance: 0.58 }],
       damage: 20, poise: 30, knock: 5, lunge: 1.4, range: 2.8, box: { w: 1.0, h: 1.2, d: 2.6, fwd: 1.6, y: 1.6 } },
     // The Falling Weight: a sprinter's crouch, a leap, both knees down on you; the stones ring out a moment after.
     { id: 'fallingWeight', name: 'The Falling Weight', anim: 'chop', pose: 'harrowFallingWeight', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
-      hits: [{ startup: 1.3, active: 0.16, follow: 0.3, leap: { from: 0.45, max: 12, short: 1.2 }, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 },
+      hits: [{ startup: 1.3, active: 0.16, follow: 0.4, leap: { from: 0.45, max: 12, short: 1.2 }, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 },
                impact: { ring: 3.6, crack: 2.0, dust: 20, shake: 0.16 } },
              { startup: 0.32, active: 0.2, follow: 0.4, box: RING(1.4, 7, 1.6, 0.2), impact: { ring: 4.2, crack: 0, dust: 12, shake: 0.1 } }],
-      recovery: 1.7, damage: 40, poise: 75, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 } },
+      recovery: 2.04, damage: 40, poise: 75, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 } },
     // Greave Slide: from afar, a run, then she drops and slides in feet first at your shins. Jump it.
     { id: 'greaveSlide', name: 'Greave Slide', anim: 'bash', pose: 'harrowGreaveSlide', noParry: true, tracking: { rate: 2.6, commit: 0.5 },
       minRange: 4, dash: { speed: 12, from: 0.4 }, chance: 0.35,
-      hits: [{ startup: 0.85, active: 0.2, follow: 0.4 }], recovery: 1.1,
+      hits: [{ startup: 0.85, active: 0.2, follow: 0.4 }], recovery: 1.32,
       damage: 26, poise: 45, knock: 8, lunge: 2.4, range: 11, box: { w: 2.2, h: 0.8, d: 2.8, fwd: 1.2, y: 0.4, ground: true } },
     // Behind her: a greave kicked straight back.
     { id: 'backHeel', name: 'Back Heel', anim: 'thrust', pose: 'harrowBackHeel', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 3,
-      hits: [{ startup: 0.55, active: 0.12, follow: 0.3 }], recovery: 0.8,
+      hits: [{ startup: 0.55, active: 0.12, follow: 0.3 }], recovery: 0.96,
       damage: 20, poise: 35, knock: 9, lunge: 0, range: 3.0, box: { w: 2.0, h: 1.6, d: 2.8, fwd: -1.6, y: 0.8 } },
     // ---- alone, in the whole suit ---------------------------------------------------------------------------------------
     // Her Sister's Half (the opener): she kneels by her sister a long while, untouchable, then rises in the whole suit and
     // the stones ring out round her.
     { id: 'sistersHalf', name: 'Her Sister\'s Half', anim: 'stomp', pose: 'castellanSistersHalf', noParry: true, invulnerable: true, tracking: { rate: 1.0, commit: 0.3 }, chance: 0,
       hits: [{ startup: 2.6, active: 0.2, follow: 0.6, box: RING(1.2, 7, 1.6), impact: { ring: 4.0, crack: 1.6, dust: 20, shake: 0.18 } }],
-      recovery: 0.6, damage: 24, poise: 40, knock: 10, lunge: 0, range: 4, box: RING(1.2, 7, 1.6) },
+      recovery: 0.72, damage: 24, poise: 40, knock: 10, lunge: 0, range: 4, box: RING(1.2, 7, 1.6) },
     // Both Halves: the crown cleave, a stamp that rings out, the beard rising. Parry the first; jump or roll the ring; roll the third.
     { id: 'bothHalves', name: 'Both Halves', anim: 'chop', pose: 'castellanBothHalves', tracking: { rate: 2.4, commit: 0.6 }, markers: glint(0), chance: 0.35,
-      hits: [{ startup: 1.1, active: 0.14, follow: 0.3, impact: { ring: 2.4, crack: 1.4, dust: 12, shake: 0.1 } },
-             { startup: 0.7, active: 0.2, follow: 0.15, box: RING(1.0, 7, 1.6), impact: { ring: 3.6, crack: 1.6, dust: 16, shake: 0.12 } },
+      hits: [{ startup: 1.1, active: 0.14, follow: 0.4, impact: { ring: 2.4, crack: 1.4, dust: 12, shake: 0.1 } },
+             { startup: 0.7, active: 0.2, follow: 0.25, box: RING(1.0, 7, 1.6), impact: { ring: 3.6, crack: 1.6, dust: 16, shake: 0.12 } },
              { startup: 0.55, active: 0.14, follow: 0.4, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } }],
-      recovery: 1.6, damage: 34, poise: 60, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 } },
+      recovery: 1.92, damage: 34, poise: 60, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 } },
   ];
   const HALE = ['crownCleave', 'beardsHook', 'helmsSalute', 'wallTurns', 'offTheRampart', 'saltWind', 'haftsHeel'];
   const HARROW = ['stampStones', 'hammerOfHands', 'knuckleHeel', 'fallingWeight', 'greaveSlide', 'backHeel'];
@@ -375,9 +375,9 @@
   };
   // While her sister stands: her own half, and a longer breath between blows. Alone: the whole suit, sooner and closer;
   // the other half shown as she rises from the kneel (a gilt burst, not the fire of a grafting).
-  const pair = own => ({ hp: 1700, cooldown: [1.7, 3.0], attacks: own });
+  const pair = own => ({ hp: 1700, cooldown: [2.04, 3.6], attacks: own });
   const whole = (name, reveal, conceal) => ({ alone: true, name, opener: 'sistersHalf', reveal, conceal, revealBurst: { color: 0xe8c878, count: 60, speed: 5 },
-    cooldown: [0.9, 1.7], approach: 0.7, kite: 0, speed: 2.6, trackRate: 1.8, attacks: WHOLE });
+    cooldown: [1.08, 2.04], approach: 0.7, kite: 0, speed: 2.6, trackRate: 1.8, attacks: WHOLE });
   const defs = [
     { ...base, id: 'hale', model: 'castellanHale', name: 'Hale, the Castellan',
       description: 'The elder castellan of Saltgrave, in the helm and breastplate of the one suit she shares with her sister, and the bearded axe.',

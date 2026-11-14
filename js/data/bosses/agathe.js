@@ -228,7 +228,7 @@ MODEL_DEFS.motherAgathe = {
     visual: { skin: 0xb4aca2, roughness: 0.75, rim: 0.9 },
     // hp and posture: kept from pass 45 (v7.65.0): a skilled player alone beats her in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 3200, poise: 240, speed: 2.9, turnRate: 3.4, trackRate: 1.9, approach: 0.6, kite: 0.15,
-    cooldown: [0.9, 1.8], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
+    cooldown: [1.62, 3.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
     posture: { max: 84, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['abbess', 'storm'],
     phases: {
@@ -236,7 +236,7 @@ MODEL_DEFS.motherAgathe = {
         attacks: ['reapingDraw', 'crook', 'correction', 'hookHaul', 'rendEarth', 'tornStones', 'cornerstone', 'turningHook', 'crookPunish'] },
       // At half her strength the storm comes at her back: every blow of the hook rends, and the storm falls where you stand.
       storm: { at: 0.5, name: 'Agathe, the Storm at Her Back', opener: 'stormComes', storm: true, rend: true,
-        cooldown: [0.7, 1.4], approach: 0.8, kite: 0.05, speed: 3.2, trackRate: 2.2,
+        cooldown: [1.26, 2.52], approach: 0.8, kite: 0.05, speed: 3.2, trackRate: 2.2,
         attacks: ['stormComes', 'reapingDraw', 'crook', 'correction', 'hookHaul', 'stormFurrow', 'tornStones', 'turningHook', 'crookPunish',
                   'stormKnows', 'galeReap', 'stormLeap'] },
     },
@@ -246,76 +246,76 @@ MODEL_DEFS.motherAgathe = {
       // jump or roll the draw.
       { id: 'reapingDraw', name: 'The Reaping Draw', anim: 'sweep', pose: 'agatheReapingDraw', rend: true, tracking: { rate: 2.4, commit: 0.65 }, markers: glint(0),
         hits: [{ startup: 1.15, active: 0.18, follow: 0.12, hold: { at: 0.6, time: [0.25, 0.7], chance: 0.4 } },
-               { startup: 0.55, active: 0.18, follow: 0.3, damage: 26, box: DRAW }], recovery: 1.1,
-        followUps: [{ attack: 'turningHook', if: 'behind', chance: 0.6 }],
+               { startup: 0.55, active: 0.18, follow: 0.3, damage: 26, box: DRAW }], recovery: 1.98,
+        followUps: [{ attack: 'turningHook', if: 'behind', chance: 0.33 }],
         damage: 32, poise: 50, knock: 6, lunge: 1.0, range: 4.4, box: REAP },
       // The Crook: levelled at you, held; the reach lays the hook past you, then it is hauled home through you. Roll toward
       // her or out to the side as she hauls.
       { id: 'crook', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', noParry: true, rend: true, tracking: { rate: 2.8, commit: 0.75 }, minRange: 2.5, chance: 0.7,
         hits: [{ startup: 1.05, active: 0.14, follow: 0.1, damage: 14, box: REACH, hold: { at: 0.55, time: [0.3, 0.9], chance: 0.5 } },
-               { startup: 0.5, active: 0.26, follow: 0.3, box: HAUL }], recovery: 1.2,
+               { startup: 0.5, active: 0.26, follow: 0.3, box: HAUL }], recovery: 2.16,
         damage: 34, poise: 50, knock: 7, lunge: 1.6, range: 7.0, box: HAUL },
       // The Correction: butt-first like a staff; three raps of the iron shoe. Parry them: the butt never rends.
       { id: 'correction', name: 'The Correction', anim: 'thrust', pose: 'agatheCorrection', rend: false, tracking: { rate: 3.2, commit: 0.7 }, markers: glint(0, 1, 2),
         hits: [{ startup: 0.8, active: 0.12, follow: 0.06 },
                { startup: 0.34, active: 0.12, follow: 0.06, step: { from: 0.1, speed: 3, side: 0 } },
-               { startup: 0.42, active: 0.12, follow: 0.25, step: { from: 0.1, speed: 3, side: 0 } }], recovery: 1.0,
-        followUps: [{ attack: 'hookHaul', if: 'near', chance: 0.3 }],
+               { startup: 0.42, active: 0.12, follow: 0.25, step: { from: 0.1, speed: 3, side: 0 } }], recovery: 1.8,
+        followUps: [{ attack: 'hookHaul', if: 'near', chance: 0.17 }],
         damage: 16, poise: 30, knock: 4, lunge: 0.8, range: 3.2, box: RAP },
       // Hook and Haul: trailing behind her heel, head bowed; a reap at the ankles (jump it), then heaved overhead and down
       // (parry it, or roll).
       { id: 'hookHaul', name: 'Hook and Haul', anim: 'chop', pose: 'agatheHookHaul', rend: true, tracking: { rate: 2.4, commit: 0.6 }, markers: glint(1),
         hits: [{ startup: 1.0, active: 0.16, follow: 0.1, damage: 22, box: ANKLE },
-               { startup: 0.75, active: 0.14, follow: 0.35, impact: { ring: 2.4, crack: 1.4, dust: 14, shake: 0.1 } }], recovery: 1.3,
+               { startup: 0.75, active: 0.14, follow: 0.35, impact: { ring: 2.4, crack: 1.4, dust: 14, shake: 0.1 } }], recovery: 2.34,
         damage: 40, poise: 70, knock: 8, lunge: 1.0, range: 4.4, box: CHOP },
       // Rend the Earth: raised high on her left; dragged through the floor ahead, a line of shockwaves. Roll or jump it.
       { id: 'rendEarth', name: 'Rend the Earth', anim: 'chop', pose: 'agatheRendEarth', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.7 }, minRange: 2.5, chance: 0.45,
-        hits: [{ startup: 1.15, active: 0.22, follow: 0.35, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } }], recovery: 1.0,
+        hits: [{ startup: 1.15, active: 0.22, follow: 0.35, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } }], recovery: 1.8,
         damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
       // Torn Stones: crouched, dragging through the rubble; a fan of stones. At range.
       { id: 'tornStones', name: 'Torn Stones', anim: 'sweep', pose: 'agatheTornStones', noParry: true, rend: false, tracking: { rate: 3.0, commit: 0.85 }, minRange: 4, chance: 0.35,
-        projectile: STONES, hits: [{ startup: 0.85, active: 0.05, follow: 0.2 }], recovery: 0.6,
+        projectile: STONES, hits: [{ startup: 0.85, active: 0.05, follow: 0.2 }], recovery: 1.08,
         damage: 12, poise: 15, knock: 3, lunge: 0, range: 15, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.0 } },
       // The Cornerstone: the hook driven into the floor, hauled back on; a slab of the abbey, hurled. Sidestep it.
       { id: 'cornerstone', name: 'The Cornerstone', anim: 'overhead', pose: 'agatheCornerstone', noParry: true, rend: false, tracking: { rate: 2.2, commit: 0.8 }, minRange: 6, chance: 0.22,
-        projectile: { speed: 12, gravity: 12, size: 0.8, look: 'rock' }, hits: [{ startup: 1.6, active: 0.05, follow: 0.5, impact: { ring: 1.4, crack: 1.2, dust: 14, shake: 0.06 } }], recovery: 1.5,
+        projectile: { speed: 12, gravity: 12, size: 0.8, look: 'rock' }, hits: [{ startup: 1.6, active: 0.05, follow: 0.5, impact: { ring: 1.4, crack: 1.2, dust: 14, shake: 0.06 } }], recovery: 2.7,
         damage: 46, poise: 80, knock: 9, lunge: 0, range: 20, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 2.0 } },
       // The Turning Hook: behind her, a look over her right shoulder; the hook comes round.
       { id: 'turningHook', name: 'The Turning Hook', anim: 'sweep', pose: 'agatheTurningHook', noParry: true, rend: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
-        hits: [{ startup: 0.7, active: 0.16, follow: 0.3 }], recovery: 0.9,
+        hits: [{ startup: 0.7, active: 0.16, follow: 0.3 }], recovery: 1.62,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 3.8, box: TURN },
       // Drinking where she can see it: the crook, sooner.
       { id: 'crookPunish', name: 'The Crook', anim: 'thrust', pose: 'agatheCrook', noParry: true, rend: true, when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, chance: 3,
-        hits: [{ startup: 0.65, active: 0.14, follow: 0.1, damage: 14, box: REACH }, { startup: 0.4, active: 0.24, follow: 0.3, box: HAUL }], recovery: 1.1,
+        hits: [{ startup: 0.65, active: 0.14, follow: 0.1, damage: 14, box: REACH }, { startup: 0.4, active: 0.24, follow: 0.3, box: HAUL }], recovery: 1.98,
         damage: 32, poise: 50, knock: 7, lunge: 2.0, range: 7.5, box: HAUL },
       // ---- the storm -----------------------------------------------------------------------------------------------------
       // The Storm Comes (the phase opener): the hook lifted to the sky, the lightning takes it, the iron shoe driven down: a
       // ring of the storm along the floor. She cannot be hurt through it (as every boss's change).
       { id: 'stormComes', name: 'The Storm Comes', anim: 'stomp', pose: 'agatheStormComes', noParry: true, rollOnly: true, invulnerable: true, rend: false, tracking: { rate: 1.6, commit: 0.5 }, chance: 0.1,
-        hits: [{ startup: 1.6, active: 0.5, follow: 0.4, box: RING(0.6, 8.0, 1.4, 0.55), impact: { ring: 4.4, crack: 1.4, dust: 18, shake: 0.18 } }], recovery: 1.3,
+        hits: [{ startup: 1.6, active: 0.5, follow: 0.4, box: RING(0.6, 8.0, 1.4, 0.55), impact: { ring: 4.4, crack: 1.4, dust: 18, shake: 0.18 } }], recovery: 2.34,
         damage: 30, poise: 50, knock: 9, lunge: 0, range: 7, box: RING(0.6, 8.0, 1.4, 0.55) },
       // The Storm Knows Its Own: the hook held up, her palm to the clouds; three marks fall where you stand, and are struck.
       // Each one follows you, holds still, and burns white just before: step off it.
       { id: 'stormKnows', name: 'The Storm Knows Its Own', anim: 'overhead', pose: 'agatheStormKnows', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.45,
         hits: [{ startup: 1.35, active: 0.18, follow: 0.1, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } },
                { startup: 1.0, active: 0.18, follow: 0.1, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } },
-               { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 1.2,
+               { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 2.16,
         damage: 30, poise: 40, knock: 6, lunge: 0, range: 20, box: BOLT },
       // Lightning Down the Furrow: rend the earth, and then the hook points at you: the storm falls where you stand.
       { id: 'stormFurrow', name: 'Lightning Down the Furrow', anim: 'chop', pose: 'agatheStormFurrow', noParry: true, rollOnly: true, rend: false, tracking: { rate: 2.4, commit: 0.7 }, minRange: 2.5, chance: 0.45,
         hits: [{ startup: 1.1, active: 0.22, follow: 0.2, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } },
-               { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, damage: 28, box: BOLT, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 1.1,
+               { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, damage: 28, box: BOLT, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 1.98,
         damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
       // The Gale Reap: wound round behind her back, her back to you; full round at full reach, then back the other way low.
       // Roll the first; jump or roll the second.
       { id: 'galeReap', name: 'The Gale Reap', anim: 'sweep', pose: 'agatheGaleReap', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.55,
         hits: [{ startup: 1.15, active: 0.2, follow: 0.1, box: GALE },
-               { startup: 0.55, active: 0.2, follow: 0.35, damage: 26, box: GALE_LOW }], recovery: 1.4,
+               { startup: 0.55, active: 0.2, follow: 0.35, damage: 26, box: GALE_LOW }], recovery: 2.52,
         damage: 32, poise: 50, knock: 8, lunge: 0.6, range: 4.6, box: GALE },
       // The Hook from the Storm: a spring from a deep crouch; the hook driven down where you stood, and the storm strikes
       // it. Roll it late; a long opening after.
       { id: 'stormLeap', name: 'The Hook from the Storm', anim: 'chop', pose: 'agatheStormLeap', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
-        hits: [{ startup: 1.3, active: 0.16, follow: 0.45, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 4.2, crack: 2.0, dust: 22, shake: 0.18 } }], recovery: 1.6,
+        hits: [{ startup: 1.3, active: 0.16, follow: 0.45, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 4.2, crack: 2.0, dust: 22, shake: 0.18 } }], recovery: 2.88,
         damage: 46, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.2, h: 2.8, d: 3.8, fwd: 1.6, y: 1.0 } },
     ],
   };

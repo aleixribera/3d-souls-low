@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.77.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.78.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -191,13 +191,15 @@ const CONFIG = {
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
   // Strikes keep their own timing. Wind-ups quicken only past the base pace and only gently, (pace / boss)^`tell`, and
-  // never below `tellFloor` of their own length: the same tell, a little sooner (7% by fight 10, 18% by 20, 40% by 40).
-  // Every boss fights at `boss` outside Boss Rush and in its first fight (1.15 made a party's fight 1 last 71 s
-  // instead of 55, tools/bot-fights.cjs, pass 45).
-  // Boss Rush's curve: after `won` fights, pace = boss x (1 + rise x (e^(won / scale) - 1)), at most `max`. Subtle and
-  // exponential: x1.1 by fight 5, x1.25 by 10, x1.8 by 20, then x5.7 by 40, where it leaves no room to answer. It
-  // depends on the fights won alone: never on health, damage or the team's size.
-  pace: { boss: 1, rise: 0.2, scale: 12.5, max: 6, tell: 0.35, tellFloor: 0.6 },
+  // never below `tellFloor` of their own length: the same tell, a little sooner (6% by fight 10, 21% by 20, 31% by 25).
+  // `boss` is 1: since pass 54 every boss's own data is its 1x (PLAN.md track B item 10), tuned so the test bot alone
+  // finds each about as hard as the rest (tools/rush-curve.cjs bosses), and Story and Practice fight it there too.
+  // Boss Rush's curve: after `won` fights, pace = boss x (1 + rise x (e^(won / scale) - 1)), at most `max`. Exponential:
+  // friendly at first (x1.06 by fight 5), real by fight 10 (x1.2), hard by 15 (x1.5), x2 by 20 and x2.9 by 25, where
+  // it leaves no room to answer (x4.7 by 30, x6 from fight 33). Measured alone with no abilities (tools/rush-curve.cjs runs,
+  // SKILLED, 120 runs): a skilled player falls around fight 10 (half of runs end by 10, 90% by 18). It depends on the fights won alone: never on health, damage or
+  // the team's size.
+  pace: { boss: 1, rise: 0.1, scale: 8, max: 6, tell: 0.35, tellFloor: 0.6 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.

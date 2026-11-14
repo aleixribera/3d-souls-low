@@ -43,44 +43,44 @@
     scale: 2.3, bulk: 1.2, radius: 0.95, color: 0x4a3626, weapon: 'none', idle: 'sway', noRepeat: 2,
     visual: { skin: 0x5a4632, roughness: 0.85, rim: 0.5 },
     hp: 2600, poise: 240, speed: 3.1, turnRate: 3.4, trackRate: 1.9, approach: 0.8, kite: 0.02,
-    cooldown: [0.5, 1.1], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 7,
+    cooldown: [0.9, 1.98], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 7,
     posture: { max: 98, parry: 45, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.22 },
     defaultPhases: ['stalk', 'gorge'],
     phases: {
       stalk: { hp: 2600, attacks: ['rake', 'flurry', 'slam', 'charge', 'hindSweep'] },
-      gorge: { at: 0.5, opener: 'roar', cooldown: [0.3, 0.8], approach: 1.1, speed: 3.5, trackRate: 2.3, attacks: ['rake', 'flurry', 'slam', 'charge', 'leap', 'roar', 'hindSweep'] },
+      gorge: { at: 0.5, opener: 'roar', cooldown: [0.54, 1.44], approach: 1.1, speed: 3.5, trackRate: 2.3, attacks: ['rake', 'flurry', 'slam', 'charge', 'leap', 'roar', 'hindSweep'] },
     },
     attacks: [
       // Right claw, then left: the bread of the fight. Both can be parried.
       { id: 'rake', name: 'Claw Rake', anim: 'sweep', pose: 'hungerRake', tracking: { rate: 3.0, commit: 0.65 }, markers: glint(0, 1), poseScale: 1.2,
-        hits: [{ startup: 0.7, active: 0.14, follow: 0.1 }, { startup: 0.45, active: 0.14, follow: 0.3 }], recovery: 0.75,
-        followUps: [{ attack: 'slam', if: 'far', chance: 0.35 }],
+        hits: [{ startup: 0.7, active: 0.14, follow: 0.5 }, { startup: 0.45, active: 0.14, follow: 0.3 }], recovery: 1.35,
+        followUps: [{ attack: 'slam', if: 'far', chance: 0.19 }],
         damage: 26, poise: 45, knock: 6, lunge: 2.2, range: 4.2, box: { w: 5.0, h: 2.6, d: 3.6, fwd: 2.0, y: 1.6 } },
       // Three cuts, advancing, a beat between the second and third.
       { id: 'flurry', name: 'Rending Flurry', anim: 'sweep', pose: 'hungerFlurry', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(0, 2), poseScale: 1.15, chance: 0.6,
-        hits: [{ startup: 0.6, active: 0.13, follow: 0.08, step: { from: 0.3, speed: 3, side: 0 } }, { startup: 0.4, active: 0.13, follow: 0.1 }, { startup: 0.7, active: 0.14, follow: 0.35 }],
-        recovery: 0.95, damage: 22, poise: 35, knock: 4, lunge: 2.4, range: 4.0, box: { w: 4.6, h: 2.4, d: 3.4, fwd: 1.9, y: 1.5 } },
+        hits: [{ startup: 0.6, active: 0.13, follow: 0.48, step: { from: 0.3, speed: 3, side: 0 } }, { startup: 0.4, active: 0.13, follow: 0.5 }, { startup: 0.7, active: 0.14, follow: 0.35 }],
+        recovery: 1.71, damage: 22, poise: 35, knock: 4, lunge: 2.4, range: 4.0, box: { w: 4.6, h: 2.4, d: 3.4, fwd: 1.9, y: 1.5 } },
       // Both arms up, held a beat, down: the big opening of the first phase.
       { id: 'slam', name: 'Hammerfall', anim: 'chop', pose: 'heavyOverhead', tracking: { rate: 2.2, commit: 0.55 }, markers: glint(0), poseScale: 1.3,
-        hits: [{ startup: 1.2, active: 0.15, follow: 0.45, hold: { at: 0.5, time: [0.2, 0.6], chance: 0.5 } }], recovery: 1.25,
+        hits: [{ startup: 1.2, active: 0.15, follow: 0.45, hold: { at: 0.5, time: [0.2, 0.6], chance: 0.5 } }], recovery: 2.25,
         damage: 44, poise: 80, knock: 9, lunge: 1.6, range: 4.0, box: { w: 2.8, h: 3.4, d: 4.4, fwd: 2.4, y: 1.4 },
         impact: { ring: 3.4, crack: 1.8, dust: 16, shake: 0.14 } },
       // The head goes down and it comes on, antlers first: step aside, it cannot be parried.
       { id: 'charge', name: 'Antler Charge', anim: 'thrust', pose: 'enemyThrust', noParry: true, tracking: { rate: 2.4, commit: 0.6 }, poseScale: 1.2, minRange: 5, chance: 0.45,
-        dash: { speed: 13, from: 0.45 }, hits: [{ startup: 1.0, active: 0.16, follow: 0.45 }], recovery: 1.0,
+        dash: { speed: 13, from: 0.45 }, hits: [{ startup: 1.0, active: 0.16, follow: 0.45 }], recovery: 1.8,
         damage: 40, poise: 70, knock: 10, lunge: 2.6, range: 15, box: { w: 3.2, h: 2.6, d: 4.0, fwd: 2.2, y: 1.4 } },
       // Over the pillars and down on the player: the long opening of the second phase.
       { id: 'leap', name: 'The Fall', anim: 'chop', pose: 'hungerCrash', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, poseScale: 1.35, minRange: 5, chance: 0.5,
-        hits: [{ startup: 1.4, active: 0.16, follow: 0.3, leap: { from: 0.4, max: 15, short: 1.4 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } },
+        hits: [{ startup: 1.4, active: 0.16, follow: 0.7, leap: { from: 0.4, max: 15, short: 1.4 }, impact: { ring: 6.0, crack: 2.8, dust: 26, shake: 0.2 } },
                { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } }, impact: { ring: 4.5, crack: 0, dust: 14, shake: 0.12 } }],
-        recovery: 1.5, damage: 50, poise: 90, knock: 10, lunge: 0, range: 16, box: { w: 5.0, h: 2.6, d: 5.0, fwd: 0.8, y: 1.0 } },
+        recovery: 2.7, damage: 50, poise: 90, knock: 10, lunge: 0, range: 16, box: { w: 5.0, h: 2.6, d: 5.0, fwd: 0.8, y: 1.0 } },
       // Throws back the skull and screams: a ring of force through the floor. Jump or roll it. Opens the second phase.
       { id: 'roar', name: 'The Roar', anim: 'overhead', pose: 'hungerRoar', noParry: true, tracking: { rate: 1.6, commit: 0.4 }, poseScale: 1.0, minRange: 0.1, chance: 0.2,
         hits: [{ startup: 1.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1, to: 10, width: 1.6, time: 0.18 } }, impact: { ring: 4.0, crack: 0, dust: 14, shake: 0.22 } }],
-        recovery: 0.9, damage: 24, poise: 60, knock: 8, lunge: 0, range: 8, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3 } },
+        recovery: 1.62, damage: 24, poise: 60, knock: 8, lunge: 0, range: 8, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3 } },
       // Behind it: a whole turn of the claws.
       { id: 'hindSweep', name: 'Hind Sweep', anim: 'spin', pose: 'enemySpin', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 1.6,
-        hits: [{ startup: 0.7, active: 0.15, follow: 0.3 }], recovery: 0.8,
+        hits: [{ startup: 0.7, active: 0.15, follow: 0.3 }], recovery: 1.44,
         damage: 26, poise: 45, knock: 8, lunge: 0, range: 4.2, box: { w: 7.0, h: 2.0, d: 7.0, fwd: 0, y: 1.0 } },
     ],
   };

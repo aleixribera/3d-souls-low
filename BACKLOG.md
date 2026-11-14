@@ -173,6 +173,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   lopsided. A reconnect during the blessing pick replays the kill moment (the new arena sees the boss die again).
 - Pass 52 (item 9): the server still lists bots added through `sim.addBot` (tests, tools) in the roster, and the lobby
   draws them as people (Make leader / Remove do nothing). Dev only; drop bots from `roster()` if it ever shows.
-- Pass 52: alone at 1x the lone test bot loses to 8 of 13 bosses every time (`docs/scorecard/rush-solo-fight1.txt`):
-  item 10's first job. A solo fall shows "You fell"; a party where one player went away also gets YOU FELL in the
-  lobby notice (the server counts the party that took part).
+- Pass 52: a party where one player went away also gets YOU FELL in the lobby notice (the server counts the party
+  that took part).
+- Item 10 (pass 54, `docs/scorecard/rush-1x-pass54.txt`): Varn (the Last Toll's rings) and Oswin (the Headsman's
+  delayed blow, the seams) still drop the skilled bot 4 fights in 32 at 1x and end most runs; slowing them past ~1.8x
+  stopped helping, so the next lever is those moves or the bot's read of them. The strong-kit measure waits for a
+  scripted kit in `tools/rush-curve.cjs`. Swift-kill par (45 s) was set for the old pace: the bot's 1x fights run
+  68-139 s. Follow-up chances were divided by k; the engine's own inverse, 1 - (1 - c)^(1/k), keeps strings about
+  twice as common (the King's Blade's three cuts: 0.11 now, 0.22 that way) if they feel too rare.

@@ -1,7 +1,8 @@
 'use strict';
 // One / two / two additional moves for the skeleton / captain / Warden, borrowed from the move sources (js/data/bosses/).
 // Load after those definitions and before validation. Copy nested data so story tuning never changes a source boss.
-// Timings, tracking, movement and key poses come from the source; damage is tuned to the story encounter.
+// Timings, tracking, movement and key poses come from the source; damage is tuned to the story encounter, and the
+// recovery to the borrowing boss's pace (pass 54, PLAN.md track B item 10: each boss's own 1x).
 {
   const borrow = (source, id, changes) => {
     const original = source.attacks.find(a => a.id === id);
@@ -15,27 +16,27 @@
   // A giant with a heavy club: two broad sweeps and a held chop.
   ENEMY_BY_ID.giant.attacks.push(
     borrow(GODFREY, 'tripleAxe', {
-      id: 'giantBonebreaker', name: 'Bonebreaker Chain', damage: 28,
+      id: 'giantBonebreaker', name: 'Bonebreaker Chain', damage: 28, recovery: 1.65,
     }),
   );
 
   // A halberd has the haft and cutting reach for an axe drag and a two-turn blade sweep.
   ENEMY_BY_ID.pillagerCaptain.attacks.push(
     borrow(GODRICK, 'dragSlash', {
-      id: 'captainDraggingSlash', name: 'Dragging Halberd', damage: 28,
+      id: 'captainDraggingSlash', name: 'Dragging Halberd', damage: 28, recovery: 1.02,
     }),
     borrow(CRUCIBLE_KNIGHT, 'doubleSpin', {
-      id: 'captainDoubleSpin', name: 'Double Halberd Spin', damage: 26,
+      id: 'captainDoubleSpin', name: 'Double Halberd Spin', damage: 26, recovery: 1.92,
     }),
   );
 
   // The bell is a massive hammer: a sweep/backswing/slam and a stomp into a chop.
   ENEMY_BY_ID.bellWarden.attacks.push(
     borrow(RADAGON, 'hammerCombo', {
-      id: 'bellHammerChain', name: 'Bell Hammer Chain', damage: 30,
+      id: 'bellHammerChain', name: 'Bell Hammer Chain', damage: 30, recovery: 1.2,
     }),
     borrow(RADAGON, 'stompChop', {
-      id: 'bellStompChop', name: 'Stomp and Toll', damage: 28,
+      id: 'bellStompChop', name: 'Stomp and Toll', damage: 28, recovery: 1.08,
     }),
   );
 }

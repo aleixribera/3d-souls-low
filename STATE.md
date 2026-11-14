@@ -10,10 +10,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   also awaits Aleix. Next: the King's Blade (ch. 14).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Track B (pass 52, v7.74.0): item 9 done: no bot in the lobby or any party (bots are test players only:
-  `sim.addBot`); alone it says Start and a fall ends the run ("You fell"). `rush-alone-browser`, `calling*`, `bot`.
-  Fight 1 alone at 1x: the lone bot wins 12/39, 8 bosses beat it every time (`docs/scorecard/rush-solo-fight1.txt`,
-  item 10's before table). Also: a preset change online no longer reconnects (`EnemyTrack.catchUp`). Next: item 10.
+- Track B (pass 54, v7.78.0): item 10 pass 1. Each boss's own data is its new, slower 1x (no multiplier; `[k, beat]`
+  per boss and the before/after table in `docs/scorecard/rush-1x-pass54.txt`): alone at fight 1 the bot falls 0.12
+  (was 0.55), SKILLED 0.03 (0.24). Curve rise 0.1, scale 8: SKILLED runs reach fight 10 (median, 90% by 18). The bot
+  reads bolts and seams. Next (pass 2): Practice's speed setting and its frame; Varn and Oswin, the outliers.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -33,7 +33,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
 - Pace, not team size (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate` (`js/enemy.js`), `setRushFight`
   (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`. Between fights (v7.69.0): `CONFIG.swift`,
-  `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`.
+  `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`. Measuring (pass 54): `tools/rush-curve.cjs`
+  `bosses` (each boss alone at a fight's pace) and `runs` (shuffled runs to the first fall); `SKILLED=1`, `CURVE=`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`; in-page `Menus:`.
@@ -81,12 +82,11 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
+- (overridable) Item 10's skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`). Story
+  bosses fight at the new, slower 1x until track A item 5: Hollis is slower than when you judged him.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
-- (overridable) The five blessings, their names and sizes (`CONFIG.blessings`): Whetted Edge +15% damage, Spare Draught
-  +1 flask, Second Wind +40% stamina refill, Keen Ear a 50% wider parry, Rise Again once a fight at half health.
-  Rise Again is once a fight, not once a run.
 - (overridable) Swift kill (v7.69.0): par 45 s, more with pace or a pair, adds a card; a kill says "Boss 7 down".
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run

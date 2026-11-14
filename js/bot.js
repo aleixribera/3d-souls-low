@@ -48,7 +48,9 @@ const bot = (() => {
   // How far (centre to body edge of `me`) a blow can land, from its box, ring, lunge, dash, step, leap or blink.
   function reach(e, a, hit, me) {
     const C = B(), b = hit.box || a.box;
-    if (hit.blink || hit.burrow) return Infinity;
+    // Lands wherever you stand: a burrow's heave, a blink, a storm's bolt on your mark (pass 54: the bot used to read a bolt
+    // by the box at the caster's feet, stand still under it and take every one), fire up every open seam.
+    if (hit.blink || hit.burrow || hit.bolt || hit.erupt) return Infinity;
     let r = b.ring ? Math.max(b.ring.from, b.ring.to) + b.ring.width / 2 + Math.hypot(b.fwd, 0) : Math.hypot(b.fwd + b.d / 2, b.w / 2);
     r += (a.lunge || 0) * C.lungeShare;
     if (a.dash && e.hitIndex === 0) r += a.dash.speed * C.dashShare;
@@ -282,8 +284,43 @@ const bot = (() => {
       }
       return true;
     }
+    // Blows that land away from the caster (pass 54): a storm's bolt falls on the mark it laid by your feet, clear once
+    // the mark has stopped following you and you stand off it; an eruption stands every open seam up as a wall of fire
+    // longer than a roll's i-frames, clear only off every seam. Read where they land, not the box at the caster's feet.
+    function offMark(me, e, blow, x = me.x, z = me.z) {
+      if (blow.hit.erupt) { const s = nearestSeam(e, x, z); return !s || s.dist > CONFIG.seams.width / 2 + me.radius + C.defence.margin; }
+      const M = e.bolt, b = blow.hit.box || blow.attack.box;
+      if (!(blow.hit.bolt && M && M.locked && M.key === e.attackNo * 64 + blow.index)) return false;
+      // The box stands on the mark, turned as the caster faced when it locked (Hitbox.place with a bolt anchor).
+      const s = Math.sin(M.yaw), c = Math.cos(M.yaw), dx = x - M.x, dz = z - M.z, margin = me.radius + C.defence.margin;
+      return Math.abs(dz * s - dx * c) > b.w / 2 + margin || Math.abs(dx * s + dz * c - (b.fwd || 0)) > b.d / 2 + margin;
+    }
+    // The open seam nearest (x, z): { dist, away } (away: the flat direction off it), or null with none open. While the
+    // fire stands, its walls are the hitbox's lines (the floor's seams may already have closed behind them).
+    function nearestSeam(e, x, z) {
+      let best = null;
+      for (const L of (e.hitbox && e.hitbox.lines) || e.seams || []) {
+        const ax = L.x1 - L.x0, az = L.z1 - L.z0, len2 = ax * ax + az * az || 1;
+        const t = clamp(((x - L.x0) * ax + (z - L.z0) * az) / len2, 0, 1), px = L.x0 + ax * t, pz = L.z0 + az * t, dist = Math.hypot(x - px, z - pz);
+        if (!best || dist < best.dist) best = { dist, away: dist > 1e-3 ? flat(x - px, z - pz) : flat(-az, ax) };
+      }
+      return best;
+    }
+    // A way off every open seam within `travel` m (null if none): straight off the nearest first, then 16 bearings.
+    function offSeams(me, e, blow, travel) {
+      const s = nearestSeam(e, me.x, me.z);
+      if (!s) return null;
+      const tries = [s.away];
+      for (let i = 0; i < 16; i++) tries.push(rot(s.away, (i % 2 ? -1 : 1) * Math.ceil((i + 1) / 2) * Math.PI / 8));
+      for (const d of tries) {
+        const end = { x: me.x + d.x * travel, z: me.z + d.z * travel, y: me.y, height: me.height };
+        if (offMark(me, e, blow, end.x, end.z) && clearPath(me, end)) return flat(d.x, d.z);
+      }
+      return null;
+    }
     function outsideBox(me, e, blow, x = me.x, z = me.z, yaw = e.yaw, extra = 0) {
       const b = blow.hit.box || blow.attack.box;
+      if (blow.hit.bolt || blow.hit.erupt) return offMark(me, e, blow, x, z);
       if (b.ring) return false;
       const s = Math.sin(yaw), c = Math.cos(yaw), lunge = (blow.attack.lunge || 0) * blow.hit.active;
       const dx = x - e.x - s * lunge, dz = z - e.z - c * lunge, forward = dx * s + dz * c, left = dz * s - dx * c;
@@ -331,7 +368,9 @@ const bot = (() => {
     // [inLo, inHi] (cut to where its width reaches), and the enemy can face me at any angle from |bearing| - turn to
     // |bearing| + turn. Travel that can bend while it turns (curve) widens the box by as far as the bend can carry it.
     function clearOf(me, e, blow) {
-      const b = blow.hit.box || blow.attack.box, t = !b.ring && carry(e, blow);
+      const b = blow.hit.box || blow.attack.box;
+      if (blow.hit.bolt || blow.hit.erupt) return offMark(me, e, blow);
+      const t = !b.ring && carry(e, blow);
       if (!t) return false;
       const margin = me.radius + C.defence.margin + C.defence.clear, r = Math.hypot(me.x - e.x, me.z - e.z);
       const near = b.fwd - b.d / 2 + t.lo - margin, far = b.fwd + b.d / 2 + t.hi + margin;
@@ -346,9 +385,21 @@ const bot = (() => {
     function walkEscape(me, e, blow) {
       const a = blow.attack, h = blow.hit, box = h.box || a.box;
       if (box.ring || a.dash || a.breath || a.sphere || h.step || h.leap || h.blink || h.burrow || blow.eta < C.defence.walkLead) return null;
-      const d = escapeDir(me, e, blow), travel = CONFIG.player.walkSpeed * (blow.eta - C.defence.walkMargin);
+      const travel = CONFIG.player.walkSpeed * (blow.eta - C.defence.walkMargin);
+      const d = h.erupt ? offSeams(me, e, blow, travel) : escapeDir(me, e, blow);
+      if (!d) return null;
       const end = { x: me.x + d.x * travel, z: me.z + d.z * travel, y: me.y, height: me.height };
-      return clearPath(me, end) && outsideBox(me, e, blow, end.x, end.z) ? d : null;
+      // A blow still tracking turns after the walker (pass 54: a sidestep from a wide tracked sweep, Oswin's Threefold
+      // Reign, was judged against the box where it pointed then, and walked along the blade): judge the end against
+      // the box turned toward it as far as the tracking can turn it before its aim locks.
+      let yaw = e.yaw;
+      if (blow.index === e.hitIndex && e.isTracking && e.isTracking()) {
+        const T = a.tracking, rate = (T && T.rate) || a.track || e.def.trackRate || 0;
+        const left = T ? Math.max(0, h.startup * T.commit - e.stateTime) : blow.eta;
+        const want = angDiff(Math.atan2(end.x - e.x, end.z - e.z), e.yaw);
+        yaw = e.yaw + Math.sign(want) * Math.min(Math.abs(want), rate * left);
+      }
+      return clearPath(me, end) && outsideBox(me, e, blow, end.x, end.z, yaw) ? d : null;
     }
 
     // Pick a response once per blow. Most are spacing/rolls; a rare parry or physically safe jump adds variety.
@@ -384,6 +435,10 @@ const bot = (() => {
     function rollDir(me, e, blow, risky = false) {
       const C = B().roll, P = CONFIG.player, to = flat(e.x - me.x, e.z - me.z), b = blow.hit.box || blow.attack.box;
       const turn = rng() < C.reverseChance ? -side : side;
+      if (blow.hit.erupt) {   // off every seam, out of their walls
+        const way = offSeams(me, e, blow, P.rollSpeed * P.rollTime * (1 - P.rollSlow / 3)), s = !way && nearestSeam(e, me.x, me.z);
+        if (way || s) return way || s.away;
+      }
       if (b.ring) return rot(to, turn * span(C.ringAngle, rng));
       if (blow.attack.sphere) return rot(to, Math.PI + turn * span(C.retreatAngle, rng));   // a breath is left sideways, out of its box
       const s = Math.sin(e.yaw), c = Math.cos(e.yaw), dx = me.x - e.x, dz = me.z - e.z;

@@ -220,7 +220,7 @@ MODEL_DEFS.regentHollis = {
     visual: { skin: 0xd8c08a, roughness: 0.55, rim: 0.9 },
     // hp and posture: pass 45 (v7.65.0), a skilled player alone beats him in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 2600, poise: 220, speed: 3.0, turnRate: 3.6, trackRate: 2.0, approach: 0.6, kite: 0.15,
-    cooldown: [0.9, 1.8], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 6,
+    cooldown: [1.44, 2.88], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 6,
     posture: { max: 91, parry: 60, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     echoColor: 0xf0b030,
     defaultPhases: ['gracious', 'hungry'],
@@ -229,7 +229,7 @@ MODEL_DEFS.regentHollis = {
         attacks: ['courtesy', 'salute', 'measure', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish'] },
       // Past the worst of his hurt the gilt cracks: his cuts hang as embers, and the hunger calls them home.
       hungry: { at: 0.55, name: 'The Regent Hollis, the Gilt Cracked', opener: 'giltCracks', ignite: true, echoColor: 0xff7a30,
-        cooldown: [0.7, 1.4], approach: 0.8, kite: 0.05, speed: 3.3, trackRate: 2.3,
+        cooldown: [1.12, 2.24], approach: 0.8, kite: 0.05, speed: 3.3, trackRate: 2.3,
         attacks: ['courtesy2', 'salute', 'measure', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish',
                   'giltCracks', 'callHome', 'ravenous', 'feast'] },
     },
@@ -237,81 +237,81 @@ MODEL_DEFS.regentHollis = {
       // ---- gracious -----------------------------------------------------------------------------------------------------
       // The Courtesy: a bow, a rising cut; it hangs, and he offers it his hand. Roll the cut, then step out of its line.
       { id: 'courtesy', name: 'The Courtesy', anim: 'sweep', pose: 'hollisCourtesy', tracking: { rate: 2.4, commit: 0.65 }, markers: glint(0),
-        hits: [{ startup: 1.2, active: 0.16, follow: 0.3, hold: { at: 0.55, time: [0.25, 0.8], chance: 0.45 } },
-               { startup: 0.6, active: 0.14, follow: 0.25, damage: 24, ...echo(0, 'sweep', {}, -0.45) }], recovery: 1.1,
-        followUps: [{ attack: 'turnCloak', if: 'behind', chance: 0.6 }],
+        hits: [{ startup: 1.2, active: 0.16, follow: 0.6, hold: { at: 0.55, time: [0.25, 0.8], chance: 0.45 } },
+               { startup: 0.6, active: 0.14, follow: 0.25, damage: 24, ...echo(0, 'sweep', {}, -0.45) }], recovery: 1.76,
+        followUps: [{ attack: 'turnCloak', if: 'behind', chance: 0.37 }],
         damage: 34, poise: 55, knock: 7, lunge: 1.4, range: 3.8, box: RISE },
       // The Salute: the blade upright before his face, held; the long thrust. A nod of the blade and it runs through again.
       { id: 'salute', name: 'The Salute', anim: 'thrust', pose: 'hollisSalute', tracking: { rate: 3.0, commit: 0.75 }, markers: glint(0),
-        hits: [{ startup: 1.05, active: 0.14, follow: 0.3, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.5 } },
-               { startup: 0.55, active: 0.14, follow: 0.2, damage: 24, ...echo(0, 'thrust') }], recovery: 1.0,
+        hits: [{ startup: 1.05, active: 0.14, follow: 0.6, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.5 } },
+               { startup: 0.55, active: 0.14, follow: 0.2, damage: 24, ...echo(0, 'thrust') }], recovery: 1.6,
         damage: 36, poise: 55, knock: 8, lunge: 3.2, range: 5.2, box: THRUST },
       // Taking Your Measure: across at the waist, a step and back again; the sword stood on its point, and the first comes
       // again.
       { id: 'measure', name: 'Taking Your Measure', anim: 'sweep', pose: 'hollisMeasure', tracking: { rate: 2.6, commit: 0.6 }, markers: glint(0, 1),
-        hits: [{ startup: 0.95, active: 0.16, follow: 0.12 },
-               { startup: 0.45, active: 0.16, follow: 0.25, step: { from: 0.2, speed: 3, side: 0 } },
-               { startup: 0.45, active: 0.14, follow: 0.2, damage: 20, ...echo(0, 'sweep') }], recovery: 1.0,
-        followUps: [{ attack: 'turnCloak', if: 'behind', chance: 0.6 }],
+        hits: [{ startup: 0.95, active: 0.16, follow: 0.42 },
+               { startup: 0.45, active: 0.16, follow: 0.55, step: { from: 0.2, speed: 3, side: 0 } },
+               { startup: 0.45, active: 0.14, follow: 0.2, damage: 20, ...echo(0, 'sweep') }], recovery: 1.6,
+        followUps: [{ attack: 'turnCloak', if: 'behind', chance: 0.37 }],
         damage: 28, poise: 45, knock: 6, lunge: 1.2, range: 3.8, box: WAIST },
       // The Long Table: a sweep at the knees, wide as a banquet; he lays his hand along it and it is swept again. Jump each.
       { id: 'longTable', name: 'The Long Table', anim: 'sweep', pose: 'hollisLongTable', noParry: true, tracking: { rate: 2.2, commit: 0.6 }, chance: 0.6,
-        hits: [{ startup: 1.15, active: 0.16, follow: 0.3 },
-               { startup: 0.7, active: 0.16, follow: 0.25, damage: 22, ...echo(0, 'sweep') }], recovery: 1.2,
+        hits: [{ startup: 1.15, active: 0.16, follow: 0.6 },
+               { startup: 0.7, active: 0.16, follow: 0.25, damage: 22, ...echo(0, 'sweep') }], recovery: 1.92,
         damage: 30, poise: 45, knock: 6, lunge: 1.0, range: 4.2, box: TABLE },
       // The Judgement: both hands high, straight down. He steps off it, bows his head, and it falls again.
       { id: 'judgement', name: 'The Judgement', anim: 'chop', pose: 'hollisJudgement', tracking: { rate: 2.0, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 1.4, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.3, 1.0], chance: 0.5 }, impact: { ring: 2.0, crack: 1.0, dust: 10, shake: 0.08 } },
-               { startup: 0.5, active: 0.14, follow: 0.25, damage: 30, ...echo(0, 'chop'), impact: { ring: 2.0, crack: 0, dust: 8, shake: 0.06 } }], recovery: 1.3,
-        followUps: [{ attack: 'courtesy', if: 'near', chance: 0.3 }],
+        hits: [{ startup: 1.4, active: 0.14, follow: 0.65, hold: { at: 0.6, time: [0.3, 1.0], chance: 0.5 }, impact: { ring: 2.0, crack: 1.0, dust: 10, shake: 0.08 } },
+               { startup: 0.5, active: 0.14, follow: 0.25, damage: 30, ...echo(0, 'chop'), impact: { ring: 2.0, crack: 0, dust: 8, shake: 0.06 } }], recovery: 2.08,
+        followUps: [{ attack: 'courtesy', if: 'near', chance: 0.19 }],
         damage: 42, poise: 70, knock: 8, lunge: 1.0, range: 4.2, box: CHOP },
       // The Turning Cloak: behind him, a look over his shoulder; the mantle and the blade come round.
       { id: 'turnCloak', name: 'The Turning Cloak', anim: 'sweep', pose: 'hollisTurnCloak', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
-        hits: [{ startup: 0.65, active: 0.16, follow: 0.3 }], recovery: 0.9,
+        hits: [{ startup: 0.65, active: 0.16, follow: 0.3 }], recovery: 1.44,
         damage: 26, poise: 40, knock: 8, lunge: 0, range: 3.4, box: { w: 4.6, h: 1.8, d: 4.6, fwd: -0.6, y: 1.1 } },
       // Largesse: to you standing off, his left hand flung open: gold leaf hangs round where you stand, and closes. Leave
       // it before his fingers curl (blockable).
       { id: 'largesse', name: 'Largesse', anim: 'overhead', pose: 'hollisLargesse', noParry: true, tracking: { rate: 2.4, commit: 0.95 }, minRange: 6, chance: 0.5,
-        hits: [{ startup: 1.0, active: 0.1, follow: 0.2, damage: 6, box: { w: 1.2, h: 1.6, d: 1.2, fwd: 1.0, y: 1.2 } },
-               { startup: 0.95, active: 0.2, follow: 0.3, box: SHOWER, ...echo(0, 'field') }], recovery: 1.1,
+        hits: [{ startup: 1.0, active: 0.1, follow: 0.5, damage: 6, box: { w: 1.2, h: 1.6, d: 1.2, fwd: 1.0, y: 1.2 } },
+               { startup: 0.95, active: 0.2, follow: 0.3, box: SHOWER, ...echo(0, 'field') }], recovery: 1.76,
         damage: 26, poise: 30, knock: 5, lunge: 0, range: 12, box: SHOWER },
       // Drinking where he can see it: the salute's thrust, sooner and longer.
       { id: 'salutePunish', name: 'The Salute', anim: 'thrust', pose: 'hollisSalute', when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, chance: 3, markers: glint(0),
-        hits: [{ startup: 0.6, active: 0.16, follow: 0.35 }], recovery: 1.0,
+        hits: [{ startup: 0.6, active: 0.16, follow: 0.35 }], recovery: 1.6,
         damage: 32, poise: 55, knock: 8, lunge: 4.6, range: 6.5, box: THRUST },
       // ---- hungry ---------------------------------------------------------------------------------------------------------
       // The Courtesy, answered: the rising cut and one down across it; both hang, an X, and cut again in turn.
       { id: 'courtesy2', name: 'The Courtesy', anim: 'sweep', pose: 'hollisCourtesy2', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1),
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.15, hold: { at: 0.55, time: [0.2, 0.7], chance: 0.4 } },
-               { startup: 0.5, active: 0.16, follow: 0.25 },
-               { startup: 0.5, active: 0.14, follow: 0.1, damage: 24, ...echo(0, 'sweep', {}, -0.45) },
-               { startup: 0.3, active: 0.14, follow: 0.25, damage: 24, ...echo(1, 'sweep', {}, 0.45), box: RISE }], recovery: 1.2,
+        hits: [{ startup: 1.05, active: 0.16, follow: 0.45, hold: { at: 0.55, time: [0.2, 0.7], chance: 0.4 } },
+               { startup: 0.5, active: 0.16, follow: 0.55 },
+               { startup: 0.5, active: 0.14, follow: 0.4, damage: 24, ...echo(0, 'sweep', {}, -0.45) },
+               { startup: 0.3, active: 0.14, follow: 0.25, damage: 24, ...echo(1, 'sweep', {}, 0.45), box: RISE }], recovery: 1.92,
         damage: 34, poise: 55, knock: 7, lunge: 1.4, range: 3.8, box: RISE },
       // The Gilt Cracks (the phase opener): his mask clutched, then his arms flung wide: the hunger bursts along the floor.
       // He cannot be hurt through it (as every boss's change).
       { id: 'giltCracks', name: 'The Gilt Cracks', anim: 'stomp', pose: 'hollisGiltCracks', noParry: true, rollOnly: true, invulnerable: true, tracking: { rate: 1.6, commit: 0.5 }, chance: 0.1,
-        hits: [{ startup: 1.5, active: 0.5, follow: 0.4, box: RING(0.6, 7.5, 1.4, 0.5), impact: { ring: 4.0, crack: 1.6, dust: 18, shake: 0.16 } }], recovery: 1.4,
+        hits: [{ startup: 1.5, active: 0.5, follow: 0.4, box: RING(0.6, 7.5, 1.4, 0.5), impact: { ring: 4.0, crack: 1.6, dust: 18, shake: 0.16 } }], recovery: 2.24,
         damage: 30, poise: 50, knock: 9, lunge: 0, range: 6, box: RING(0.6, 7.5, 1.4, 0.5) },
       // Called Home: the waist cut, a leap back from you with a cut at nothing; then his hand draws the first cut home to
       // him, through you. Get out of its line sideways, or roll it as it comes.
       { id: 'callHome', name: 'Called Home', anim: 'sweep', pose: 'hollisCallHome', tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0), chance: 0.7,
-        hits: [{ startup: 0.85, active: 0.16, follow: 0.1 },
-               { startup: 0.6, active: 0.14, follow: 0.2, leap: { from: 0.15, max: 7, back: 5.5 }, box: { w: 3.0, h: 1.4, d: 2.0, fwd: 1.4, y: 1.1 } },
-               { startup: 0.6, active: 0.4, follow: 0.2, damage: 28, ...echo(0, 'sweep', { home: true }) }], recovery: 1.1,
+        hits: [{ startup: 0.85, active: 0.16, follow: 0.4 },
+               { startup: 0.6, active: 0.14, follow: 0.5, leap: { from: 0.15, max: 7, back: 5.5 }, box: { w: 3.0, h: 1.4, d: 2.0, fwd: 1.4, y: 1.1 } },
+               { startup: 0.6, active: 0.4, follow: 0.2, damage: 28, ...echo(0, 'sweep', { home: true }) }], recovery: 1.76,
         damage: 30, poise: 45, knock: 7, lunge: 1.2, range: 3.8, box: WAIST },
       // Ravenous: hunched, looking up; four quick cuts stepping in, and the second again where it hangs.
       { id: 'ravenous', name: 'Ravenous', anim: 'sweep', pose: 'hollisRavenous', tracking: { rate: 3.2, commit: 0.7 }, markers: glint(0, 1, 2, 3), chance: 0.8,
-        hits: [{ startup: 0.75, active: 0.12, follow: 0.06 },
-               { startup: 0.35, active: 0.12, follow: 0.06, step: { from: 0.1, speed: 3.5, side: 0 } },
-               { startup: 0.35, active: 0.12, follow: 0.06, step: { from: 0.1, speed: 3.5, side: 0 } },
-               { startup: 0.45, active: 0.12, follow: 0.2, step: { from: 0.1, speed: 3.5, side: 0 } },
-               { startup: 0.4, active: 0.14, follow: 0.2, damage: 20, ...echo(1, 'sweep') }], recovery: 1.3,
+        hits: [{ startup: 0.75, active: 0.12, follow: 0.36 },
+               { startup: 0.35, active: 0.12, follow: 0.36, step: { from: 0.1, speed: 3.5, side: 0 } },
+               { startup: 0.35, active: 0.12, follow: 0.36, step: { from: 0.1, speed: 3.5, side: 0 } },
+               { startup: 0.45, active: 0.12, follow: 0.5, step: { from: 0.1, speed: 3.5, side: 0 } },
+               { startup: 0.4, active: 0.14, follow: 0.2, damage: 20, ...echo(1, 'sweep') }], recovery: 2.08,
         damage: 22, poise: 35, knock: 5, lunge: 1.0, range: 3.6, box: { w: 4.0, h: 1.6, d: 3.0, fwd: 1.6, y: 1.0 } },
       // The Feast: the sword raised point-down, a leap, and it is driven into the floor where you were; the gilt it threw
       // up hangs round him, and cuts.
       { id: 'feast', name: 'The Feast', anim: 'chop', pose: 'hollisFeast', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
-        hits: [{ startup: 1.3, active: 0.16, follow: 0.4, leap: { from: 0.4, max: 12, short: 1.2 }, impact: { ring: 4.0, crack: 2.0, dust: 20, shake: 0.16 } },
-               { startup: 0.7, active: 0.2, follow: 0.3, damage: 30, box: { w: 4.0, h: 3.0, d: 4.0, fwd: 1.0, y: 1.5 }, ...echo(0, 'field') }], recovery: 1.6,
+        hits: [{ startup: 1.3, active: 0.16, follow: 0.7, leap: { from: 0.4, max: 12, short: 1.2 }, impact: { ring: 4.0, crack: 2.0, dust: 20, shake: 0.16 } },
+               { startup: 0.7, active: 0.2, follow: 0.3, damage: 30, box: { w: 4.0, h: 3.0, d: 4.0, fwd: 1.0, y: 1.5 }, ...echo(0, 'field') }], recovery: 2.56,
         damage: 46, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
     ],
   };

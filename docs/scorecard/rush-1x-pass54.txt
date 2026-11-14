@@ -1,0 +1,41 @@
+# Boss Rush: one 1x for every boss, and the new curve (pass 54, PLAN.md track B item 10)
+# Alone, fight 1 at 1x, no abilities, 32 fights per boss (seeds 1000+), today's bot on both sides:
+#   JOBS=4 node tools/rush-curve.cjs bosses 32          (the default bot: a decent friend new to the genre)
+#   SKILLED=1 JOBS=4 node tools/rush-curve.cjs bosses 32 (the skilled player: a quarter of the bot's mistimed rolls)
+# "before" is the boss data as it was (pass 52's original table: rush-solo-fight1.txt); "after" each boss's own new 1x.
+# falls = the share of fights that ended with the bot down; time = mean fight length.
+#
+#                  default bot                    SKILLED
+# boss             before        after            before        after
+# giant            0.06  72s     0.06  68s        0.06  71s     0.03  68s
+# pillagerCaptain  0.06  83s     0.03  69s        0.00  86s     0.00  69s
+# bellWarden       0.19 143s     0.09 128s        0.03 152s     0.03 130s
+# varn             0.91 109s     0.31 131s        0.59 168s     0.13 139s
+# antlered         0.91 127s     0.03 125s        0.38 183s     0.03 122s
+# ostrey           0.75 149s     0.22 117s        0.31 177s     0.00 124s
+# hale + harrow    0.16  77s     0.06  72s        0.03  76s     0.03  71s
+# ringer           0.75 121s     0.13 113s        0.06 148s     0.00 122s
+# hollis           0.66 116s     0.06 109s        0.09 149s     0.00 108s
+# oswin            0.84 100s     0.28 123s        0.44 152s     0.13 132s
+# agathe           0.75 132s     0.16 119s        0.06 168s     0.00 123s
+# kindlingTree     0.56  90s     0.16  95s        0.28 104s     0.03  98s
+# kingsBlade       1.00 160s     0.06 132s        0.97 207s     0.03 135s
+# TOTAL            0.55          0.12             0.24          0.03
+# (agathe after: re-measured on pass 53's v7.77.0 moves with the box-true bolt read; default 0.09 before that fix)
+#
+# How each boss got its 1x (written into its own data; no global multiplier): idle gaps (cooldown) and recoveries x k,
+# follow-up chances below 1 divided by k, + beat s between a string's blows. [k, beat]:
+#   giant [1.1, 0.05], pillagerCaptain [1.2, 0.1], bellWarden [1.2, 0.1], varn [2.0, 0.5], antlered [1.8, 0.4],
+#   ostrey [1.7, 0.35], hale/harrow [1.2, 0.1], ringer [1.7, 0.35], hollis [1.6, 0.3], oswin [1.8, 0.4],
+#   agathe [1.8, 0] (pace only: pass 53 owns her moves), kindlingTree [1.5, 0.25], kingsBlade [2.2, 0.6].
+# Health untouched: fight times are set by hp, now 68-139 s. Outliers left: Varn (Last Toll rings) and Oswin (the
+# Headsman's delayed blow, the seams) still drop the skilled bot 4 times in 32; past ~1.8x more slowdown stops helping.
+#
+# The curve: pace = 1 + rise x (e^(won / scale) - 1), at most 6. Runs: every boss shuffled, a fresh body each fight,
+# fight n at the pace for n - 1 won, until the first fall (SKILLED=1 JOBS=4 node tools/rush-curve.cjs runs 120).
+#   curve                   pace at 5 / 10 / 15 / 20 / 25     reached fight (120 runs): median  p25-p75  p90  max
+#   old  rise 0.2, scale 12.5   1.08 1.21 1.41 1.71 2.16        11   -      -    24   (on the new 1x data)
+#   rise 0.2,  scale 10         1.10 1.29 1.61 2.14 3.00         9   5-14   17   22   (default bot: median 3)
+#   new  rise 0.1, scale 8      1.06 1.21 1.48 1.98 2.91        10   5-15   18   24
+# Runs end most at oswin (26), varn (20), ostrey (14), kingsBlade (13), giant (12): the later fights are where the
+# outliers show. tests/boss-pace.cjs checks the curve at fights 1, 5, 10, 15, 20 and 25, health and damage unchanged.
