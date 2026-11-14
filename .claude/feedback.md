@@ -99,3 +99,5 @@ took it (once taken).
   Taken by pass 70 (v7.93.0): every text rewritten, capped in `js/validate.js` (9 words, 56 characters), AGENTS.md rule 10.
 - 2026-11-14: "Very quickly remove the auto fullscreen". Done in v7.116.0 by the loop chat: the first click or key no
   longer enters fullscreen.
+- 2026-11-14, asked whether passes may download the Sekiro and Stellar Blade reference clips again for the animation
+  judge: "Yes, download them". Kept in `.scratch/`, never committed.
