@@ -9,12 +9,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   player's first Story road / Boss Rush, 3 launch offers to old saves, Practice, lobby; ~50 s. In-page `pass 97` (a
   bot does each drill). Counter window: halo + closing ring (`counterFx.aura`), judge 3 to 7 twice. Next: Controls
   clips (BACKLOG), the Finishing Blow's look.
-- Track B (pass 96): v7.123.0 "fixes from Aleix's run" 1-4: one count, the fight (server `tally.won`/`at`, board
-  `reached`); no stamina, guard bar or player poise; only `heavy: true` attacks stagger (amber wind-up,
-  `VISUALS.heavyTell`); blocks chip (`CONFIG.block`), undeflectable melee is `rollOnly`; no rend; keys bottom centre;
-  rares first. Curve back on pass 90's targets with `pace.rise` .55, press 1.3/1.4
-  (`docs/scorecard/rush-curve-pass96.txt`, HUD `pass96-hud-*.jpg`). Next: PLAN item 6 (the name), Story's curve.
-  `PS.PARRY` is dead.
+- Track B (pass 98, Aleix's bug): v7.125.0 the perfect dodge is decided on the first frame the i-frames meet a blow,
+  only if it ends within them (`dashOutlasts`, whole steps, once per `dashNo`); a blow dodged is `markHit` and never
+  lands; any unblocked blow closes the counter (`closeCounter`, `counterClose`). In-page `pass 98 perfect dodge`
+  (dash 0.02-0.15 s ahead: dodge, cued +0 frames; 0.2-0.3 s: hit, no cue). The name is unshipped on the worktree
+  branch. Pass 96: no stamina, guard bar or poise; only `heavy: true` staggers.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Release: `node tools/release.cjs "<title>" "<text>"` (any apostrophe is fine). Don't wait on CI after a push.
 

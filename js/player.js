@@ -63,7 +63,14 @@ class Player {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
     return this.maxHp * Math.max(0.05, 1 - doom);
   }
-  invulnerable() { return (this.state === PS.ROLL && this.stateTime < CONFIG.player.rollIFrames * (1 + (this.kit?.mods.rollIFrames || 0))) || this.state === PS.EXECUTE || this.execGrace > 0; }
+  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0; }
+  // Seconds of the dash's i-frames still to come (0 out of a dash; never past the dash's end, however long Long Shadow
+  // makes them).
+  iFramesLeft() {
+    if (this.state !== PS.ROLL) return 0;
+    const C = CONFIG.player;
+    return Math.min(C.rollIFrames * (1 + (this.kit?.mods.rollIFrames || 0)), C.rollTime) - this.stateTime;
+  }
   // A swing already out is not interrupted by hits.
   isCommitted() {
     return (this.state === PS.ATTACK && this.attackPhase() === PHASE.ACTIVE) || (this.state === PS.JUMP_ATTACK && !!this.hitbox);
@@ -118,6 +125,13 @@ class Player {
     this.riposte = Math.max(this.riposte, time);
     if (!(was > 0)) events.emit('counterOpen', { player: this, from, foe, time: this.riposte });
   }
+  // A blow that lands closes an open counter at once (pass 98, Aleix's bug): its cues end with it (`counterClose`; the
+  // glow and the hint follow `riposte`).
+  closeCounter() {
+    if (!(this.riposte > 0)) return;
+    this.riposte = 0;
+    events.emit('counterClose', { player: this });
+  }
   // Souls-style input buffer: while busy, a roll or attack press is remembered only if it comes within bufferWindow s
   // of the moment that action becomes possible (earlier presses, mashing, are dropped). One slot: the latest press
   // replaces the one before. It comes out at the first frame the action is allowed.
@@ -136,6 +150,7 @@ class Player {
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     if (!this.freeDash()) this.dashes = Math.max(0, this.dashes - 1);
     this.hitbox = null; this.chainPose = null; this.setState(PS.ROLL);
+    this.dashNo = (this.dashNo || 0) + 1;   // which dash this is: a blow is weighed for a perfect dodge once per dash (js/combat.js)
     events.emit('dash', { player: this });
   }
   // Dash charges come back one at a time (Light Step: faster).
@@ -560,6 +575,7 @@ class Player {
     const drinking = this.state === PS.USE_ITEM;
     const blocked = this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z);
     if (blocked) { damage *= B.damageMul; knock *= B.knockMul; }
+    else this.closeCounter();   // the counter (a dodge's or a deflect's) is lost to any blow that lands
     this.hp = Math.max(0, this.hp - damage);
     if (this.state === PS.HELD) {   // already in a grip: the blow hurts, but nothing throws you out of it
       this.tint = 1;

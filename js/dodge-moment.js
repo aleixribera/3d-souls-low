@@ -15,6 +15,7 @@ const dodgeMoment = (() => {
     if (d.player !== Game.player) return;
     if (!(typeof multiplayer !== 'undefined' && multiplayer.active()) && !reducedMotion()) left = CONFIG.dodgeMoment.time;
   });
+  events.on('counterClose', d => { if (d.player === Game.player) left = 0; });   // a blow landed: the counter is gone
   // Read by the frame loop (js/boot.js): the factor the simulation clock runs at now. Real time drains the moment.
   function scale(frameDt) {
     if (left <= 0) return 1;

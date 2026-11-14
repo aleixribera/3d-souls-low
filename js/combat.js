@@ -28,6 +28,7 @@ function makeStrike(attack, riposte = false, charge = 0) {
 class Hitbox {
   constructor(owner, box, payload, anchor = null, lines = null) {
     this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor; this.lines = lines;
+    this.weighed = null; this.dodged = false;   // the dash it was last weighed against (Player.dashNo), and whether it was dodged (resolveCombat)
     this.x = 0; this.y = 0; this.z = 0; this.yaw = 0; this.near = { x: 0, y: 0, z: 0 };
   }
   // The frame the box sits in this step (no allocation: it is read on every step).
@@ -104,6 +105,34 @@ const STANCE_STATES = new Set([PS.BLOCK, PS.ATTACK, PS.USE_ITEM]);
 const canDeflectNow = p => p.alive() && (p.deflect > 0 && (p.state === PS.BLOCK || p.isFree()) ||
   p.perk && p.perk.stance > 0 && (p.isFree() || STANCE_STATES.has(p.state)));
 
+// A perfect dodge (pass 85; pass 98, Aleix's bug: the cue fired, then the blow it announced landed). Decided on the
+// first frame the dash's i-frames meet a blow, so the cue is instant: a dodge only if the blow ends no later than the
+// i-frames (sim time on both sides; hitstop and slow motion pause both). Else nothing is cued: the blow lands when the
+// i-frames run out, or misses plainly if the dash carries out of its reach first.
+function dashOutlasts(p, hb) {
+  const e = hb.owner, h = e.hitbox === hb && e.state === ES.ACTIVE && e.attack ? e.attack.hits[e.hitIndex] : null;
+  if (!h) return true;   // a blow of no known length: as before, dodged
+  // Counted in whole steps, as both live: the blow is out on the next `more` steps (while stateTime < active), and the
+  // dash must still be untouchable on the last of them.
+  const S = CONFIG.step, more = Math.max(0, Math.ceil((h.active - e.stateTime) / S - 1e-6) - 1);
+  return p.iFramesLeft() - more * S > 1e-6;
+}
+// The dodge counts: the blow is marked as having missed this player, so it can never land on them afterwards (what the
+// cue promised holds, even past the i-frames), and the next blow within CONFIG.player.counterTime s is a counter (a
+// riposte), drawn with a beat of slow motion.
+function perfectDodge(p, hb) {
+  hb.dodged = true; hb.markHit(p);
+  p.openCounter(CONFIG.player.counterTime, 'dodge', hb.owner);
+  if (hb.owner.dashedThroughBy) hb.owner.dashedThroughBy();   // a boss recovers longer from it (CONFIG.bossMove.dodged)
+  const no = hb.owner.attackNo || 0;   // the number keys fill once an attack dodged, as the server counts it online
+  if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
+  events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
+  if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.dodged(hb.owner);   // the server allows the counter (still mid-dash)
+  const step = p.kit.perks['dodge/riposte'];   // Counterstep: a longer counter window
+  if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('abilityPerk', { body: p, perk: 'dodge/riposte' }); }
+  abilityReport(p, 'dodge', { enemy: hb.owner });
+}
+
 // Order each step: deflect, then player hitboxes against enemies, then enemy hitboxes against the player.
 // Damage itself lives in Player.takeHit / Enemy.takeHit; effects listen to the events.
 function resolveCombat(game) {
@@ -156,25 +185,12 @@ function resolveCombat(game) {
     if (!p.alive()) continue;
     const db = p.deflectedBlow;
     if (db && db.enemy === hb.owner && db.key === blowKey(hb.owner)) { hb.markHit(p); continue; }   // turned aside by a deflect
-    if (p.invulnerable()) {   // dashed through: announced once per hitbox, which stays live (it can catch the end of the dash)
-      if (!hb.dodged && p.state === PS.ROLL) {   // an execution's untouchable time is no dodge
-        // A perfect dodge: the dash's i-frames are short, so a blow slipped inside them was dodged right on it. The next
-        // blow within CONFIG.player.counterTime s is a counter (a riposte), drawn with a beat of slow motion.
-        hb.dodged = true; p.openCounter(CONFIG.player.counterTime, 'dodge', hb.owner);
-        if (hb.owner.dashedThroughBy) hb.owner.dashedThroughBy();   // a boss recovers longer from it (CONFIG.bossMove.dodged)
-        const no = hb.owner.attackNo || 0;   // the number keys fill once an attack dodged, as the server counts it online
-        if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
-        events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
-        if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.dodged(hb.owner);   // the server allows the counter
-        const step = p.kit.perks['dodge/riposte'];   // Counterstep: a longer counter window
-        if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('abilityPerk', { body: p, perk: 'dodge/riposte' }); }
-        abilityReport(p, 'dodge', { enemy: hb.owner });
-      }
+    if (p.invulnerable()) {   // dashed through: the hitbox stays live (it can catch the end of the dash)
+      // Weighed once, on the first frame they meet. An execution's untouchable time is no dodge.
+      if (p.state === PS.ROLL && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
       continue;
     }
-    // The counter out of a perfect dodge (pass 95) is never caught by the blow it slipped, still live behind the dash.
-    if (hb.dodged && p.state === PS.ATTACK && p.payload && p.payload.riposte) continue;
-    hb.markHit(p);
+    hb.markHit(p);   // (a blow dodged is marked too, so the counter out of it is never caught by it: perfectDodge)
     hb.owner.landed = true;   // pass 77: it landed (an attack's `learns`); online the server hears it from this player
     if (hb.owner.attack && hb.owner.attack.learns && typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.landed(hb.owner);
     // A wall of fire pushes away from its seam, a bolt from where it fell, not from him.

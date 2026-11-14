@@ -714,6 +714,70 @@
     sim.press('roll'); sim.step(); sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
     expect.ok(p.attack && p.attack.id === 'dashLight', `an ordinary dash still gives the dash attack (${p.attack && p.attack.id})`);
   });
+  // Pass 98 fix (Aleix's bug): the dodge cue fired, then the blow it announced landed and the counter stayed open. A
+  // perfect dodge is decided on the first frame the i-frames meet the blow, only if the blow ends within them, and a blow
+  // dodged can never land afterwards; any blow that lands closes the counter.
+  const struckMe = [];   // every blow that landed on the player (recorded once: events has no unsubscribe)
+  A.events.on('strike', d => { if (d.target === Game.player && !d.blocked) struckMe.push(d); });
+  const longBlow = (e, active = 0.6) => {   // the Overhead Cleave with its own active window, no pause and no lunge
+    const one = e.def.attacks.find(a => a.id === 'captainOverhead'), { hold, ...h } = one.hits[0];
+    return { ...one, lunge: 0, hits: [{ ...h, active }] };
+  };
+  test('pass 98 perfect dodge: a blow dodged never lands, even past the i-frames', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0; struckMe.length = 0;
+    const p = Game.player, e = Game.duel, a = longBlow(e, 0.2);
+    faceOff(e, p, 1.6); e.beginAttack(a);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= a.hits[0].startup - 0.02, 4);
+    const sx = p.x, sz = p.z, pin = () => { p.x = p.px = sx; p.z = p.pz = sz; };
+    sim.press('roll');
+    sim.until(() => { pin(); return log.includes('dodge'); }, 0.5);
+    expect.ok(log.includes('dodge') && p.riposte > 0 && e.attack === a, 'a short blow inside the i-frames: dodged, the counter open');
+    a.hits[0].active = 1.5;   // the blow now stays out long past the i-frames, the player standing in it
+    sim.until(() => { pin(); return e.state !== ES.ACTIVE; }, 2);
+    expect.ok(struckMe.length === 0, `never caught by the blow it dodged (${struckMe.length} hits, ${p.state})`);
+  });
+  test('pass 98 perfect dodge: a dash whose i-frames run out inside the blow is hit, with no dodge and no counter', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0; struckMe.length = 0;
+    const p = Game.player, e = Game.duel, a = longBlow(e);
+    faceOff(e, p, 1.6); e.beginAttack(a);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= a.hits[0].startup - 0.02, 4);
+    const sx = p.x, sz = p.z;
+    sim.press('roll');
+    sim.until(() => { p.x = p.px = sx; p.z = p.pz = sz; return struckMe.length > 0 || e.state !== ES.ACTIVE && e.state !== ES.WINDUP; }, 2);
+    expect.ok(struckMe.length === 1, `the blow outlasted the i-frames and landed (${struckMe.length})`);
+    expect.ok(!log.includes('dodge') && !log.includes('counterOpen') && !(p.riposte > 0), `no dodge cue, no counter (${log.includes('dodge')}, ${p.riposte})`);
+  });
+  test('pass 98 perfect dodge: a later blow that lands closes the counter the dodge opened', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0; struckMe.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    faceOff(e, p, 1.6); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.04, 2); sim.press('roll');
+    sim.until(() => log.includes('dodge'), 0.4);
+    expect.ok(log.includes('dodge') && p.riposte > 0 && struckMe.length === 0, 'the first cut slipped: a counter is open');
+    p.riposte = Math.max(p.riposte, 3);   // a long window, as Counterstep gives, so it is still open at the second cut
+    sim.until(() => p.state !== PS.ROLL, 1); faceOff(e, p, 1.6);   // standing in front of the second cut
+    sim.until(() => struckMe.length > 0, 2);
+    expect.ok(struckMe.length === 1 && e.hitIndex === 1, `the second cut landed (${struckMe.length}, hit ${e.hitIndex})`);
+    expect.ok(p.riposte === 0 && log.includes('counterClose') && !dodgeMoment.active, `it closed the counter (${p.riposte}, ${log.includes('counterClose')})`);
+  });
+  test('pass 98 perfect dodge: at any dash timing, the cue and the blow never both happen; a clean one is instant', () => {
+    const out = [];
+    for (const lead of [0.3, 0.25, 0.2, 0.15, 0.1, 0.05, 0.02, 0]) {
+      Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0; struckMe.length = 0;
+      const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+      faceOff(e, p, 1.6); e.beginAttack(combo);
+      sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - lead, 2); sim.press('roll');
+      let opened = -1, cue = -1, n = 0;
+      sim.until(() => { if (opened < 0 && e.state === ES.ACTIVE) opened = n; if (cue < 0 && log.includes('dodge')) cue = n; n++; return e.hitIndex > 0 || e.state === ES.RECOVER; }, 2);
+      const dodged = cue >= 0, hit = struckMe.length > 0;
+      expect.ok(!(dodged && hit), `lead ${lead} s: dodged and hit both (${cue - opened} frames)`);
+      expect.ok(!hit || !(p.riposte > 0), `lead ${lead} s: hit with a counter still open`);
+      out.push(`${lead}: ${dodged ? `dodge +${cue - opened}f` : hit ? 'hit' : 'clear'}`);
+      if (lead === 0.02) expect.ok(dodged && cue === opened, `a dash on the beat is a dodge, cued the frame the blow comes out (${out.at(-1)})`);
+      if (dodged) expect.ok(cue - opened <= 8, `the cue comes within a few frames (${out.at(-1)})`);
+    }
+    console.log('pass 98 dodge timings:', out.join(', '));
+  });
   const opens = [], hits = [];   // pass 95: every counter window opened and every strike (recorded once: events has no unsubscribe)
   A.events.on('counterOpen', d => opens.push(d)); A.events.on('strike', d => hits.push(d));
   test('pass 95 counter: a window opens with its cue on a dodge or a deflect; the light counter flash-steps through the foe and its cut opens', () => {
