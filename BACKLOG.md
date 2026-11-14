@@ -8,15 +8,17 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Its figure is 16,138 triangles against the 14,000 budget (Hollis 14,208); no test holds the budget.
 
 - The title's missing parts (pass 49, v7.70.0, `docs/scorecard/title-desktop.jpg`): the castle behind the right half
-  (a real Blender model with baked light, inside Normal's 60 fps; the right half is empty until then), Collection in
-  the mode list (nothing to collect yet) and Controls in the footer (no Controls screen yet; Options has the lessons).
+  (a real Blender model with baked light, inside Normal's 60 fps; the right half is empty until then) and Collection
+  in the mode list (nothing to collect yet). Controls is in the footer since pass 58.
   The `story` screen is no longer reached from the title (Story starts the road last played; New game asks first); a
   second road would need its own way in.
-- The menus' missing parts (pass 51, `docs/scorecard/menus-*.jpg`): pause has no Controls row (no Controls screen
-  yet) and shows blessings as names, not icons (the icons come with the upgrades session); the end of run has no
-  Crowned count, no "Your best run" (no record kept yet) and no rewards column (no crates yet), so the per-boss times
-  take the right side. A gamepad-only walk of every screen (PLAN.md item 3's check) is still to write: the keys and
-  pad share `Game.menuStep`, and `experience-browser` walks Options by keys.
+- The menus' missing parts (pass 51, `docs/scorecard/menus-*.jpg`): pause shows abilities as names, not icons; the
+  end of run has no Crowned count, no "Your best run" (no record kept yet) and no rewards column (no crates yet), so
+  the per-boss times take the right side. Pass 58 added Controls and the pad-alone walk (in-page `Menus:`,
+  `rush-alone-browser`; the lobby's own pad test is `lobby-controller-browser`). The run intro (`#runIntroScreen`,
+  js/multiplayer.js) still has its own look: a glowing crest, a blurred title scaling in and drifting embers, against
+  item 3's "no dopamine on menus" and one type system; and the lobby's controls list is its own copy of
+  `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
 - The blessing pick in tall cards (rarity, drawn icons, level I → II, pad keys, phone 2×2) is built and tested on
   `wip/blessing-tall-cards` (pass 49), parked when the pick moved to the upgrades-from-zero session (PLAN.md item 6).
 

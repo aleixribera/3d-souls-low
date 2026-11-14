@@ -27,7 +27,7 @@ const { config: C } = require('../js/net-protocol.js');
     // One press and release of a pad button (standard mapping: 0 A, 1 B, 13 down, 14 left, 15 right).
     const pad = button => page.evaluate(button => {
       const read = gamepad.read;
-      input.suspended = false;   // a headless page may not have focus
+      input.suspended = false; gamepad.neutralRequired = false;   // a headless page may not have focus
       try {
         gamepad.read = () => ({ buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: i === button, value: i === button ? 1 : 0 })), axes: [0, 0, 0, 0] });
         gamepad.poll(CONFIG.step);

@@ -10,10 +10,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   judge 51 vs Hollis 51. Agathe (pass 53) and the Kindling Tree also await Aleix. Track A's bosses 7-14 are done.
 - Pass 33 (v7.56.0): every preset draws native (`qualityDraw`, `js/visuals.js`); numbers:
   `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Track B (pass 56, v7.80.1): item 10 pass 2, done (leftovers: BACKLOG). Practice's Speed (frames
-  `docs/scorecard/practice-speed-*.png`); Varn, Oswin and pass 55's King's Blade re-timed into the band (SKILLED
-  alone: every boss 0.00-0.11 falls at fight 1, 0.01-0.12 at 11); curve rise 0.09, scale 6: runs reach fight 12 with
-  no abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).
+- Track B (pass 58, v7.81.0): item 3's open checks: Controls screen (`docs/scorecard/controls-*.jpg`), pad-alone
+  walk (`Menus:`, `rush-alone-browser`). Left: the title's castle, Collection, rewards (item 7). Next: item 6.
+  Item 10 (pass 56): fight 12 without abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -39,7 +38,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `CONFIG.practice.fights`, `practiceWon`; in-page `Practice: Speed`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
-- Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`; in-page `Menus:`.
+- Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
 - Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
   (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
