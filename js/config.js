@@ -79,7 +79,7 @@ const CONFIG = {
     // `rollIFrames` s only, so a mistimed dash ends open. `dashCharges` dashes held at most, each coming back over
     // `dashRefill` s, one at a time. A blow slipped inside the i-frames is a perfect dodge (the `dodge` event): the next
     // blow within `counterTime` s is a counter (a riposte strike), drawn with a beat of slow motion (js/dodge-moment.js).
-    rollTime: 0.36, rollIFrames: 0.2, rollSpeed: 13.5, rollSlow: 0.62,
+    rollTime: 0.36, rollIFrames: 0.3, rollSpeed: 13.5, rollSlow: 0.62,   // i-frames kept (PLAN.md): every boss strike was timed to 0.3 s
     rollExitKeep: 0.35,          // speed kept when a dash ends
     dashCharges: 2, dashRefill: 0.85, counterTime: 0.8,
     // A dash attack: a light or heavy pressed from `dashAttackFrom` s into a dash (or buffered in it) comes out as the
@@ -284,6 +284,12 @@ const CONFIG = {
   // legendary's, a rare's, a summon's) builds `posture` of its posture number: abilities fill the stagger meter far
   // less than they hurt.
   abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['common'], legendaries: 2, posture: 0.4,
+    // The number keys' abilities (js/abilities.js ABILITY_KEYS): the points each landed blow gives every key (`hit`,
+    // `skill` more for a finisher, a full charge or a riposte), each deflect, perfect dodge and execution. A press
+    // strikes the locked enemy, else the nearest, within `range` m of its holder's body. The server takes a press with
+    // at least 1 - `slack` of the charge it counted (a claim it refused is a point the browser still counted). A bot
+    // presses a full key with its foe within `botReach` m (Guard's heal under `botHeal` of its bar, its stance at a wind-up).
+    press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, execution: 6 }, range: 18, slack: 0.25, botReach: 6, botHeal: 0.6 },
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.25 } },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived

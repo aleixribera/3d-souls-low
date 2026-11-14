@@ -25,10 +25,12 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', maxStamina: 'more', stamin
 //   flask/stamina:    drinking a flask gives back `stamina` of the bar.
 //   execute/heal:     an execution heals `heal` of the bar (a crate's).
 //   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
+//   press/heal:       pressed (its key full: `charge` points): heals `heal` of the bar.
+//   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow).
 const ABILITY_PERKS = {
   'parry/stamina': ['stamina'], 'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeStamina': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'], 'flask/stamina': ['stamina'],
-  'execute/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'],
+  'execute/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
 };
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.
 function abilityHeal(p, share, perk) {
@@ -53,13 +55,15 @@ function abilityHeal(p, share, perk) {
 //   flask/twin:          a summon. Drinking a flask calls an ember twin of the holder for `time` s; every blow the
 //                        holder lands in that time, the twin lands too, on the enemy's far side: `share` of its
 //                        damage and posture.
-//   parry/hound:         a summon (a rare's). A parry calls a grave hound out of the holder's shadow for `time` s: it
-//                        runs round the parried enemy's flank and bites it every `every` s (`damage`, `posture`).
+//   press/hound:         a summon (a rare's, key 3). Pressed, a grave hound comes out of the holder's shadow for `time`
+//                        s: it runs round the enemy's flank and bites it every `every` s (`damage`, `posture`).
 //   low/guardian:        a summon (a rare's, once a fight). Dropping under `below` of its health raises a guardian of
 //                        stone beside the nearest enemy for `time` s: it holds that enemy's eye `draw` s and bashes it
 //                        every `every` s.
-//   break/lancer:        a summon (a rare's). Breaking an enemy's balance sends a lancer of ash charging at it for
-//                        `time` s, thrusting every `every` s.
+//   press/lancer:        a summon (a rare's, key 3). Pressed, a lancer of ash charges the enemy for `time` s, thrusting
+//                        every `every` s.
+//   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
+//                        on the enemy (the blast round its holder).
 // A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
 // owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
 // hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
@@ -72,8 +76,11 @@ const ABILITY_POWERS = {
   'low/bloodMoon': ['below', 'time', 'damage', 'drain'], 'parry/flare': ['damage', 'posture', 'cooldown'],
   'hits/spark': ['hits', 'damage', 'posture'], 'hits/gale': ['hits', 'damage', 'posture', 'reach', 'width'],
   'break/pyre': ['time', 'every', 'damage', 'posture', 'cooldown'], 'flask/twin': ['time', 'share', 'draw', 'cooldown'],
-  'parry/hound': ['time', 'every', 'damage', 'posture', 'draw', 'cooldown'], 'low/guardian': ['below', 'time', 'every', 'damage', 'posture', 'draw'],
-  'break/lancer': ['time', 'every', 'damage', 'posture', 'draw', 'cooldown'],
+  'press/hound': ['charge', 'time', 'every', 'damage', 'posture', 'draw'], 'low/guardian': ['below', 'time', 'every', 'damage', 'posture', 'draw'],
+  'press/lancer': ['charge', 'time', 'every', 'damage', 'posture', 'draw'],
+  'press/flare': ['charge', 'damage', 'posture'], 'press/gale': ['charge', 'damage', 'posture', 'reach', 'width'],
+  'press/blades': ['charge', 'time', 'every', 'damage', 'posture'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage', 'posture'],
+  'press/blast': ['charge', 'radius', 'damage', 'posture'],
 };
 const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
@@ -98,7 +105,44 @@ function summonStep(s, e, body, dt) {
   return far - go;
 }
 // The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a break).
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask'];
+// A press is a key's power fired (below); the server checks it against its own count of that key's charge.
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press'];
+
+// ---- The number keys (PLAN.md, the player rework's controls) --------------------------------------------------------
+// A pressed ability (`key` in its data, `when: 'press'`) belongs to one of four keys, always the same one: 1 Strike, 2
+// Guard, 3 Summon, 4 Ultimate (the `ability1`..`ability4` bindings, js/input.js). A body holds at most one per key.
+// Each fills its own charge from playing well (CONFIG.abilities.press.gain: landed blows, more for a finisher, a full
+// charge or a riposte; deflects, perfect dodges, executions) up to its level's `charge`, and its key fires it when full.
+// The charge lives in the perk clocks (`charge`, one count per key): on the body for its owner, and on the server for
+// a person, counted from the claims it accepted, so a press is checked against it.
+const ABILITY_KEYS = ['strike', 'guard', 'summon', 'ultimate'];
+const ABILITY_KEY_NAMES = { strike: 'Strike', guard: 'Guard', summon: 'Summon', ultimate: 'Ultimate' };
+// The points a landed blow of `strike` gives toward every key: more for a finisher, a full charge or a riposte.
+function pressGain(strike) {
+  const G = CONFIG.abilities.press.gain, a = PLAYER_DEF.moveset.attacks[strike.attackId];
+  return G.hit + (strike.riposte || a && (a.charge && strike.charge >= 1 || a.feel === 'heavy') ? G.skill : 0);   // a charge counts only on a chargeable attack
+}
+// `n` points toward each key the kit holds, each up to its ability's `charge`.
+function abilityGain(kit, st, n) {
+  for (const key in kit.pressed) st.charge[key] = Math.min(kit.pressed[key].v.charge, st.charge[key] + n);
+}
+// The enemy a press strikes: the locked one if alive and in reach, else the nearest live one in reach (null: none).
+// One that can't be hurt now (between phases, being executed) is passed over.
+function pressTarget(body, enemies, lock) {
+  const R = CONFIG.abilities.press.range, dist = e => Math.hypot(e.x - body.x, e.z - body.z) - (e.radius || 0);
+  const open = e => e.alive() && !e.netExec && e.state !== ES.EXECUTED && !e.invulnerable();
+  if (lock && open(lock) && dist(lock) <= R) return lock;
+  let best = null, near = R;
+  for (const e of enemies) if (open(e) && dist(e) <= near) { near = dist(e); best = e; }
+  return best;
+}
+// The input actions of the four keys, in ABILITY_KEYS order (js/input.js binds them).
+const ABILITY_ACTIONS = ['ability1', 'ability2', 'ability3', 'ability4'];
+// A pressed perk on its holder's body (Guard's): a heal, or the deflecting stance.
+function abilityPressPerk(p, slot) {
+  if (slot.then === 'heal') abilityHeal(p, slot.v.heal, 'press/heal');
+  else if (slot.then === 'stance') { p.perk.stance = slot.v.time; events.emit('abilityPerk', { body: p, perk: 'press/stance' }); }
+}
 
 // An ability's level for a list of held ids (one id per pick, repeated by its upgrades), at most its last level.
 function abilityLevel(b, held) {
@@ -110,25 +154,30 @@ function abilityLevel(b, held) {
 const abilityAt = (b, level) => b.levels[clamp(level, 1, b.levels.length) - 1];
 
 const NO_MODS = Object.freeze(Object.fromEntries(Object.keys(ABILITY_MODS).map(k => [k, 0])));
-const NO_KIT = Object.freeze({ ids: Object.freeze([]), mods: NO_MODS, perks: Object.freeze({}), powers: Object.freeze([]), whens: new Set() });
+const NO_KIT = Object.freeze({ ids: Object.freeze([]), mods: NO_MODS, perks: Object.freeze({}), powers: Object.freeze([]), whens: new Set(), pressed: Object.freeze({}) });
 // A body's kit from the ids it holds: { ids, mods: { key: fraction }, perks: { 'when/then': level numbers },
-// powers: [{ id, when, then, once, action, v: level numbers }], whens: the triggers it must hear (abilityReport) }.
+// powers: [{ id, when, then, once, action, key, v: level numbers }], whens: the triggers it must hear (abilityReport),
+// pressed: { key: { id, then, power (true: settled where the enemies are), v } }, one a key: the first held }.
 function abilityKit(held) {
   const ids = (held || []).filter(id => Object.hasOwn(ABILITY_BY_ID, id));
   if (!ids.length) return NO_KIT;
-  const mods = { ...NO_MODS }, perks = {}, powers = [], whens = new Set();
+  const mods = { ...NO_MODS }, perks = {}, powers = [], whens = new Set(), pressed = {};
   for (const id of new Set(ids)) {
     const b = ABILITY_BY_ID[id], v = abilityAt(b, abilityLevel(b, ids));
+    if (b.key) {   // a key's ability: fired by its key only (a second one for the same key, never offered, is idle)
+      if (!pressed[b.key]) pressed[b.key] = Object.freeze({ id: b.id, then: (b.perk || b.power).then, power: !!b.power, v });
+      if (b.perk || pressed[b.key].id !== b.id) continue;
+    }
     if (b.mods) for (const [key, x] of Object.entries(v)) mods[key] += x;
     if (b.perk) { perks[b.perk.when + '/' + b.perk.then] = v; if (b.perk.when === 'dodge') whens.add('dodge'); }
     if (b.power) {
-      powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, v });
+      powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, key: b.key || null, v });
       whens.add(b.power.when);
       if (b.power.then === 'twin') whens.add('hits');   // the twin strikes as its holder lands a blow
     }
   }
   for (const key of Object.keys(mods)) if (ABILITY_MODS[key] === 'less') mods[key] = Math.min(mods[key], 1);
-  return Object.freeze({ ids: Object.freeze(ids), mods: Object.freeze(mods), perks: Object.freeze(perks), powers: Object.freeze(powers), whens });
+  return Object.freeze({ ids: Object.freeze(ids), mods: Object.freeze(mods), perks: Object.freeze(perks), powers: Object.freeze(powers), whens, pressed: Object.freeze(pressed) });
 }
 // How much a kit of `held` ids weighs on a fight (CONFIG.swift.might): each pick (a level) of an ability adds its rarity's
 // might. Boss Rush's par is divided by 1 + the party's.
@@ -139,8 +188,10 @@ function kitMight(held) {
 }
 // A body's perk clocks (on the Player; the server keeps one per person): s since it last lost health (`calm`, reset
 // when Patience is spent), Vengeance's and Bastion's s left, the landed blows since it last lost health, and the
-// Blood Moon's s left with its level's numbers, and Iron Mercy's s until it heals again.
-const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0 });
+// Blood Moon's s left with its level's numbers, Iron Mercy's s until it heals again, the deflecting stance's s left,
+// and each number key's charge (points).
+const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
+  charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 } });
 // Off balance, for Opportunist: kneeling, reeling after an execution, opened by a parry, or stopped in time.
 const ABILITY_OPEN = new Set([ES.BROKEN, ES.STAGGER, ES.PARRIED, ES.HURT]);
 const abilityOpen = e => e.frozen > 0 || ABILITY_OPEN.has(e.state);
@@ -152,6 +203,7 @@ function abilityHurt(kit, st) {
 }
 function abilityClocks(st, dt) {
   st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
+  st.stance = Math.max(0, st.stance - dt);
 }
 // The blow a body lands on `e`, with its kit: damage and posture raised, and the one-shot perks it carries spent.
 // Returns `strike` itself when nothing changes it. `strike.riposte` (a parry's or Counterstep's) adds Cold Riposte.
@@ -232,11 +284,11 @@ const abilityPowers = (() => {
   }
   const near = (e, x, y, z, r) => e.alive() && Math.hypot(e.x - x, e.z - z) - e.radius <= r && Math.abs(e.y - y) <= CONFIG.height.reach;
   // `ctx`: { enemy } (the one parried, struck, broken or dodged), { x, y, z } (where), { action } (a jump attack's
-  // input), { strike } (a landed blow's, for `hits`: what a twin echoes).
+  // input), { strike } (a landed blow's, for `hits`: what a twin echoes), { key } (a press: that key's power only).
   function trigger(holder, body, kit, when, ctx = {}) {
     if (when === 'hits') echo(holder, body, ctx.enemy, ctx.strike);
     for (const pw of kit.powers) {
-      if (pw.when !== when || (pw.action && pw.action !== ctx.action)) continue;
+      if (pw.when !== when || (pw.action && pw.action !== ctx.action) || (pw.key && pw.key !== ctx.key)) continue;
       const key = holder + '/' + pw.id;
       if ((ready.get(key) ?? -Infinity) > clock) continue;
       const hits = pw.when === 'hits';
@@ -250,8 +302,13 @@ const abilityPowers = (() => {
       else if (pw.when === 'low' && SUMMONS.has(pw.then) && body) waiting.set(key, { holder, pw, body });   // low is told once: it waits its turn
     }
   }
-  // A summon of another kind holds the field: this one may not come yet.
-  function blocked(holder, pw) { const s = summons.get(holder); return !!s && (s.until > clock ? s.kind !== pw.then : !!s.lure); }
+  // A summon of another kind holds the field: this one may not come yet. A pressed one is its holder's choice: it
+  // sends the other away (and the enemy that one drew is free).
+  function blocked(holder, pw) {
+    const s = summons.get(holder);
+    if (pw.when === 'press') { if (s && (s.kind !== pw.then || s.until <= clock)) summons.delete(holder); return false; }
+    return !!s && (s.until > clock ? s.kind !== pw.then : !!s.lure);
+  }
   function fire(pw, holder, body, ctx) {
     const v = pw.v, at = body || ctx.enemy;
     if (!at) return false;

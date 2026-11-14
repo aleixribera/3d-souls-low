@@ -97,6 +97,33 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.equal(plain, 1, 'a dash takes a charge'); assert.equal(roll(['last-breath'], S.maxHp * 0.2), 0, 'Last Breath: free'); assert.equal(roll(['last-breath']), plain, 'not while healthy');
   const refillDash = ids => { const p = body(ids); p.dashes = 0; p.refillDashes(0.2); return p.dashes; };
   near(refillDash(['light-step']) / refillDash([]), 1 + at('light-step', 1).dashRefill, 'Light Step');
+
+  // The number keys (pass 87): one ability a key, the first held. Its key fires it once full; the charge starts over.
+  const keys = kitOf(['mending', 'fire-burst', 'grave-hound', 'ash-lancer', 'thunder-call']), idle = { x: 0, z: 0, has: false };
+  assert.deepEqual(Object.keys(keys.pressed).sort(), ['guard', 'strike', 'summon', 'ultimate'], 'four keys');
+  assert.equal(keys.pressed.summon.id, 'grave-hound', 'one a key: the first held');
+  assert.ok(!keys.powers.some(pw => pw.id === 'ash-lancer') && keys.whens.has('press'), 'the second one idles');
+  assert.ok(!Object.keys(keys.perks).length, 'a pressed perk waits for its key, not a trigger');
+  const mender = body(['mending']), mv = at('mending', 1); mender.hp = mender.lastHp = 50;
+  hands.clear(); hands.press('ability2'); mender.update(CONFIG.step, idle, [], null);
+  assert.equal(mender.hp, 50, 'not charged: no heal');
+  g('abilityGain')(mender.kit, mender.perk, 999);
+  assert.equal(mender.perk.charge.guard, mv.charge, 'the charge stops at full'); assert.equal(mender.perk.charge.strike, 0, 'only a held key fills');
+  hands.press('ability2'); mender.update(CONFIG.step, idle, [], null);
+  near(mender.hp, 50 + mender.maxHp * mv.heal, 'Mending heals'); assert.equal(mender.perk.charge.guard, 0, 'and its charge starts over');
+  hands.clear();
+  // What fills a key: a blow 1, a heavy, a full charge or a riposte more.
+  const G = CONFIG.abilities.press.gain, light = PLAYER_DEF.moveset.attacks.light;
+  assert.equal(g('pressGain')({ attackId: light.id, charge: 0 }), G.hit); assert.equal(g('pressGain')({ attackId: light.id, charge: 0, riposte: true }), G.hit + G.skill);
+  assert.equal(g('pressGain')({ attackId: light.id, charge: 1 }), G.hit, 'a light claims no charge'); assert.equal(g('pressGain')({ attackId: 'heavy', charge: 1 }), G.hit + G.skill, 'a full charge'); assert.equal(g('pressGain')({ attackId: 'heavy', charge: 0.5 }), G.hit); assert.equal(g('pressGain')({ attackId: 'finisher2', charge: 0 }), G.hit + G.skill, 'a finisher');
+  // Iron Stance: for its time every blow that comes is deflected, mid-swing too.
+  const stance = body(['iron-stance']); g('abilityGain')(stance.kit, stance.perk, 999);
+  assert.equal(g('canDeflectNow')(stance), false, 'not before its key');
+  hands.press('ability2'); stance.update(CONFIG.step, idle, [], null);
+  assert.ok(stance.perk.stance > 0 && g('canDeflectNow')(stance), 'pressed: it deflects');
+  stance.state = g('PS').ATTACK; assert.ok(g('canDeflectNow')(stance), 'mid-swing too');
+  g('abilityClocks')(stance.perk, at('iron-stance', 1).time); assert.equal(g('canDeflectNow')(stance), false, 'then it ends');
+  hands.clear();
 }
 
 // ---- 2. The legendaries on the boss --------------------------------------------------------------------------------
@@ -200,13 +227,14 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.trigger('w', twin, twin.kit, 'hits', { enemy: e, strike: blow }); step(0.2); assert.equal(e.hp, after, 'gone when its time is up');
   powers.reset(); assert.equal(powers.twinOf('w'), null);
 
-  // Grave Hound: a parry calls it on the parried boss. It runs to the boss's flank, draws its eye for `draw` s once
+  // Grave Hound: its key (Summon) calls it on the boss, a parry no more. It runs to the boss's flank, draws its eye for `draw` s once
   // it has arrived (the boss fights its decoy, and finishes an attack begun on it), bites every `every` s, and goes
   // when its time is up. One summon a holder: the twin can't come while it is out.
   const ES = g('ES'), K = g('CONFIG').abilities.summons;
   fresh(); e.state = ES.IDLE; e.frozen = 0;
   const hound = holder(['grave-hound', 'ember-twin']), hv = BY['grave-hound'].levels[0];
-  powers.trigger('h', hound, hound.kit, 'parry', { enemy: e });
+  powers.trigger('h', hound, hound.kit, 'parry', { enemy: e }); assert.equal(powers.summonOf('h'), null, 'a parry calls no hound');
+  powers.trigger('h', hound, hound.kit, 'press', { enemy: e, key: 'summon' });
   const out = powers.summonOf('h'); assert.ok(out && out.kind === 'hound', 'the hound is out');
   assert.equal(fired.filter(f => f.power === 'grave-hound').length, 1, 'its call is an event');
   assert.equal(powers.decoy(e), null, 'not drawing it before it has arrived');
@@ -236,7 +264,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.reset();
 
   // Stone Guardian: low health raises it once a fight, beside the boss (it doesn't run there); it holds the boss
-  // `draw` s and bashes every `every` s. Lancer of Ash: a break sends it charging from its holder; it thrusts.
+  // `draw` s and bashes every `every` s. Lancer of Ash: its key sends it charging from its holder; it thrusts.
   fresh(); e.state = ES.IDLE;
   const guard = holder(['stone-guardian']), sgv = BY['stone-guardian'].levels[0];
   powers.trigger('g', guard, guard.kit, 'low', {}); assert.equal(powers.summonOf('g'), null, 'no guardian while its holder is well');
@@ -261,12 +289,35 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   step(bwv.time + 0.1); assert.equal(powers.summonOf('b')?.kind, 'guardian', 'the guardian rises when the twin is gone');
   powers.reset(); fresh(); e.state = ES.IDLE;
   const lan = holder(['ash-lancer']), alv = BY['ash-lancer'].levels[0];
-  powers.trigger('l', lan, lan.kit, 'break', { enemy: e });
-  const als = powers.summonOf('l'); assert.ok(als && als.kind === 'lancer', 'a break sends the lancer');
+  powers.trigger('l', lan, lan.kit, 'press', { enemy: e, key: 'summon' });
+  const als = powers.summonOf('l'); assert.ok(als && als.kind === 'lancer', 'its key sends the lancer');
   assert.ok(Math.hypot(als.x - lan.x, als.z - lan.z) < 1e-6, 'from its holder');
   step(1); assert.ok(Math.hypot(als.x - e.x, als.z - e.z) - e.radius <= K.lancer.reach, 'it charges to the boss');
   assert.ok(e.hp < e.def.hp && fired.some(f => f.power === 'ash-lancer' && f.draw), 'it thrusts and draws the boss');
-  powers.trigger('l', lan, lan.kit, 'break', { enemy: e }); assert.equal(fired.filter(f => f.power === 'ash-lancer' && !f.strike && !f.draw).length, 1, 'its cooldown spaces it');
+  powers.trigger('l', lan, lan.kit, 'press', { enemy: e, key: 'strike' }); assert.equal(fired.filter(f => f.power === 'ash-lancer' && !f.strike && !f.draw).length, 1, "another key's press calls no lancer");
+  // A pressed summon is its holder's choice: it sends another kind away (the twin here) instead of waiting.
+  powers.reset(); fresh(); e.state = ES.IDLE;
+  const pick = holder(['ash-lancer', 'ember-twin']);
+  powers.trigger('k', pick, pick.kit, 'flask', {}); assert.equal(powers.summonOf('k')?.kind, 'twin', 'the twin is out');
+  powers.trigger('k', pick, pick.kit, 'press', { enemy: e, key: 'summon' }); assert.equal(powers.summonOf('k')?.kind, 'lancer', 'the lancer sends it away');
+  // Past its time but still holding the boss in an attack begun on it, a summon gives way to a press of its own kind.
+  const lingering = powers.summonOf('k'); lingering.until = -1; lingering.lure = e;
+  assert.equal(powers.summonOf('k'), null, 'its time is up');
+  powers.trigger('k', pick, pick.kit, 'press', { enemy: e, key: 'summon' }); assert.equal(powers.summonOf('k')?.kind, 'lancer', 'pressed again: a fresh lancer');
+  // A press passes over a boss that can't be hurt now (between phases, being executed).
+  const pressTarget = g('pressTarget'), hurtable = e.invulnerable;
+  assert.equal(pressTarget(pick, [e], e), e, 'the locked boss in reach');
+  e.invulnerable = () => true; assert.equal(pressTarget(pick, [e], e), null, 'not one that cannot be hurt'); e.invulnerable = hurtable;
+  powers.reset();
+
+  // The number keys' legendaries and rares on the boss: Fire Burst, Wind Blade, Thunder Call, Cataclysm, each only by
+  // its own key.
+  const keyed = (id, key) => { powers.reset(); fresh(); const h = holder([id]); powers.trigger('x', h, h.kit, 'press', { enemy: e, key: key === 'strike' ? 'guard' : 'strike' });
+    step(0.05); assert.equal(e.hp, e.def.hp, `${id}: not by another key`); powers.trigger('x', h, h.kit, 'press', { enemy: e, key, x: h.x, y: h.y, z: h.z }); step(3); return e.def.hp - e.hp; };
+  near(keyed('fire-burst', 'strike'), BY['fire-burst'].levels[0].damage, 'Fire Burst');
+  near(keyed('wind-blade', 'strike'), BY['wind-blade'].levels[0].damage, 'Wind Blade');
+  const thv = BY['thunder-call'].levels[0]; near(keyed('thunder-call', 'ultimate'), thv.damage * thv.strikes, 'Thunder Call: every bolt');
+  near(keyed('cataclysm', 'ultimate'), BY['cataclysm'].levels[0].damage, 'Cataclysm');
   powers.reset();
 
   // Second Wind (a rare's perk): a flask drunk gives stamina back.
@@ -327,6 +378,20 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
     sim.giveAbilities('cap', two);   // the offer closed, the kit as it was
   }
   assert.ok(seen > 0, 'their next levels are offered');
+
+  // The number keys (pass 87): a key once filled stays. Holding Fire Burst (Strike), no other Strike ability is
+  // offered, only Fire Burst again as its next level; the other keys stay open.
+  sim.start('arena', 'ostrey');
+  let again = 0, others = 0;
+  for (let i = 0; i < 300; i++) {
+    sim.giveAbilities('keys', ['fire-burst']);
+    sim.offerAbilities(['keys'], false, 1, 30);
+    const o = sim.abilityOffer('keys');
+    assert.ok(o.every(id => BY[id].key !== 'strike' || id === 'fire-burst'), `no other Strike ability: ${o}`);
+    again += o.includes('fire-burst'); others += o.some(id => BY[id].key && BY[id].key !== 'strike');
+    sim.giveAbilities('keys', ['fire-burst']);
+  }
+  assert.ok(again > 0 && others > 0, `its next level comes (${again}), and the other keys (${others})`);
   const maxed = two.flatMap(id => Array(BY[id].levels.length).fill(id));
   sim.giveAbilities('cap', maxed);
   for (let i = 0; i < 100; i++) {
@@ -521,6 +586,22 @@ async function peer(origin, name) {
     for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; boss2.posture = 0; seen.push(...struck()); }
     assert.equal(seen.filter(ev => ev.power === 'ember-twin' && ev.strike).length, sparkEvery, "the twin echoes each of b's blows");
     assert.equal(seen.filter(ev => ev.power === 'static-edge').length, 1, 'a spark on the Nth blow the server accepted');
-    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting, the guardian holding and the lancer charging, every summon drawing the boss, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
+
+    // A number key claimed (pass 87): refused until the server's own count of b's accepted blows fills it (less its
+    // slack), then fired on the boss, and its count starts over.
+    forced.set(b.id, ['fire-burst']); app.sim.offerAbilities([b.id], false); assert.equal(app.sim.pickAbility(b.id, 'fire-burst'), true);
+    const fv = BY['fire-burst'].levels[0], press = () => claim(b.id, { when: 'press', key: 'strike', enemy: boss2.netId }, S.maxHp).filter(ev => ev.power === 'fire-burst');
+    const pressAt = () => { app.sim.setPlayers([{ ...session.spawn, id: b.id, x: boss2.x, z: boss2.z + boss2.radius + 0.5, y: boss2.y, yaw: Math.PI, hp: S.maxHp, state: 'idle', poseAge: 0 }]);
+      app.sim.frame(true); return app.sim.abilityClaim(b.id, { when: 'press', key: 'strike', enemy: boss2.netId }); };
+    const st = app.sim.inspect().holderOf(b.id).perk; st.charge.strike = 0;
+    assert.equal(pressAt(), false, 'an empty key is refused');
+    assert.equal(app.sim.abilityClaim(b.id, { when: 'press', key: 'ultimate', enemy: boss2.netId }), false, 'a key it holds nothing in');
+    const need = Math.ceil(fv.charge * (1 - g('CONFIG').abilities.press.slack));
+    for (let i = 0; i < need; i++) { for (let k = 0; k < 20; k++) app.sim.tick(1 / 60); boss2.hp = boss2.def.hp; boss2.posture = 0; struck(); }   // at a real swing's pace
+    assert.ok(st.charge.strike >= need, `the server counts b's blows: ${st.charge.strike}`);
+    boss2.hp = boss2.def.hp; boss2.posture = 0;
+    assert.equal(press().length, 1, 'filled: Fire Burst on the boss'); assert.ok(boss2.hp < boss2.def.hp, 'it burns');
+    assert.equal(st.charge.strike, 0, 'and the count starts over'); assert.equal(pressAt(), false, 'so a second press is refused');
+    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting, the guardian holding and the lancer charging, every summon drawing the boss, the twin echoing blows and Static Edge counting them on the server, the number keys (one ability a key, charged, locked in the offers, claimed against the server count), the timed-out pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

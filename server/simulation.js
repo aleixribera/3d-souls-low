@@ -284,7 +284,8 @@ globalThis.host = (() => {
   // cards to everyone who holds the same abilities.
   // `crates` false (the weekly run) leaves every crate ability out; else a player is offered the ones their crates gave
   // them (setGear). `rarities` (a list) keeps the offer to those: the free pick before fight 1 (CONFIG.abilities.first).
-  // A player holding CONFIG.abilities.legendaries legendaries is offered only those again, as their next level.
+  // A player holding CONFIG.abilities.legendaries legendaries is offered only those again, as their next level. A
+  // number key (ABILITY_KEYS) holds one ability: once one is taken, no other for that key is offered (pass 87, Aleix).
   function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true, rarities = null) {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
@@ -297,7 +298,10 @@ globalThis.host = (() => {
       const held = owned.get(id) || [], team = teamLegendaries(id);
       const mine = crates && gear.get(id)?.crates;
       const legends = new Set(held.filter(h => ABILITY_BY_ID[h]?.rarity === 'legendary')), capped = legends.size >= B.legendaries;
+      // A number key once filled stays: no other ability for it is offered, only the one held, as its next level.
+      const keyOf = new Map(held.map(h => ABILITY_BY_ID[h]).filter(b => b && b.key).map(b => [b.key, b.id]));
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && (team.has(b.id) || capped && !legends.has(b.id)))
+        && !(b.key && keyOf.has(b.key) && keyOf.get(b.key) !== b.id)
         && (!b.crate || !!mine && mine.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
@@ -363,6 +367,8 @@ globalThis.host = (() => {
     if (!st) perks.set(id, st = { ...abilityPerkState(), hp: maxHpOf(id) });
     return st;
   }
+  // A person's number keys fill from the claims accepted here (CONFIG.abilities.press.gain), as on their own body.
+  function gainCharge(id, n) { const kit = kitOf(id); if (kit !== NO_KIT) abilityGain(kit, perkOf(id), n); }
   // A person's pose: health lost wakes the perks that wait for it, as on their own body.
   function notePose(id, hp) {
     const kit = kitOf(id);
@@ -388,7 +394,15 @@ globalThis.host = (() => {
     const kit = kitOf(id), p = players.find(p => p.id === id), body = holderOf(id);
     if (!p || !body || !p.alive() || !ABILITY_CLAIMS.includes(msg.when) || !kit.whens.has(msg.when)) return false;
     sleeping = false;
-    if (msg.when === 'land') {
+    if (msg.when === 'press') {   // a number key: its ability held, its charge full by this server's own count
+      const slot = ABILITY_KEYS.includes(msg.key) && kit.pressed[msg.key], st = perkOf(id);
+      if (!slot || !slot.power || st.charge[msg.key] < slot.v.charge * (1 - CONFIG.abilities.press.slack) - 1e-9) return false;
+      const live = Game.enemies.filter(e => !e.invulnerable()), aim = enemy(msg.enemy);   // their lock, if in reach; else the nearest
+      const e = pressTarget(p, live, aim && live.includes(aim) ? aim : null);
+      if (ON_ENEMY.has(slot.then) && !e) return false;
+      st.charge[msg.key] = 0;
+      abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e });
+    } else if (msg.when === 'land') {
       const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);
       if (!a || !['land', 'jumpAttack'].includes(p.state) || p.attack !== a) return false;
       abilityPowers.trigger(id, body, kit, 'land', { x: p.x, y: p.y, z: p.z, action: msg.action });
@@ -737,6 +751,7 @@ globalThis.host = (() => {
     const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
+    if (!result.blocked) gainCharge(id, pressGain(strike));
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
@@ -776,7 +791,7 @@ globalThis.host = (() => {
     const opened = hit === a.hits.length - 1, share = opened ? 1 : CONFIG.enemy.deflectShare;
     const broke = opened && e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry * share) : false;
     if (opened) lastParry.set(id, time);
-    feat(id).parries++;
+    feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
@@ -793,7 +808,7 @@ globalThis.host = (() => {
       if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait, fn: dodged });
       return false;
     }
-    lastDodge.set(id, time);
+    lastDodge.set(id, time); gainCharge(id, CONFIG.abilities.press.gain.dodge);
     return true;
   }
   function beginExecution(id, msg) {
@@ -806,7 +821,7 @@ globalThis.host = (() => {
     const damage = execution.damageFor(e, kitOf(id).mods.execution);
     if (!Number.isFinite(damage)) return false;
     e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
-    e.hitbox = null; e.setState(ES.EXECUTED); feat(id).executions++;
+    e.hitbox = null; e.setState(ES.EXECUTED); feat(id).executions++; gainCharge(id, CONFIG.abilities.press.gain.execution);
     return true;
   }
   function finishExecution(e) {

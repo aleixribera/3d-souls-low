@@ -205,7 +205,7 @@
     p.grantAbilities(['stone-guardian', 'ash-lancer']); abilityPowers.reset();
     p.x = e.x - 6.5; p.z = e.z + 2.5; Game.lock = e; p.hp = Math.floor(p.maxHp * 0.2);
     const ctx = { x: e.x, y: e.y, z: e.z, enemy: e };
-    abilityPowers.trigger('self', p, p.kit, 'low', ctx); abilityPowers.trigger('second', p, p.kit, 'break', ctx);   // two holders: one summon each
+    abilityPowers.trigger('self', p, p.kit, 'low', ctx); abilityPowers.trigger('second', p, p.kit, 'press', { ...ctx, key: 'summon' });   // two holders: one summon each
     const seq = { guardian: [], lancer: [] }, early = { guardian: 0, lancer: 0 };
     let hop = 0, hopOff = 0;
     for (let i = 0; i < 6 * 60; i++) {
@@ -709,6 +709,23 @@
     for (let i = 0; i < M.hits; i++) { e.takeHit({ ...strikeOf('light'), attackId: 'light' }, p); expect.ok(e.state !== ES.STAGGER, 'no flinch'); e.chainTime = 0.3; }
     sim.until(() => log.includes('breakOff'), 0.5);
     expect.ok(log.includes('breakOff') && e.state === ES.WINDUP, `after ${M.hits} quick blows it breaks off (${e.state})`);
+  });
+  test('pass 87 number keys: a full key fires its ability on the boss, an empty one does nothing; the HUD shows each key', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel; faceOff(e, p, 2); e.cooldown = 30;
+    p.grantAbilities(['fire-burst', 'mending']); abilityPowers.reset(); sim.step(1, 1); log.length = 0;
+    const row = document.getElementById('aBR'), slots = [...row.querySelectorAll('.akey')];
+    expect.ok(slots.length === 4 && !row.classList.contains('off'), 'four squares, shown');
+    expect.ok(!slots[0].classList.contains('empty') && !slots[1].classList.contains('empty') && slots[2].classList.contains('empty'), 'Strike and Guard held, Summon empty');
+    const bind = slots[0].querySelector('.akey-bind').textContent; expect.ok(bind === '1', `its key (${bind})`);
+    const hp = e.hp; sim.press('ability1'); sim.step(2);
+    expect.ok(e.hp === hp && log.includes('abilityNotReady') && !slots[0].classList.contains('ready'), 'empty: nothing');
+    abilityGain(p.kit, p.perk, 999); sim.step(1, 1);
+    expect.ok(slots[0].classList.contains('ready'), 'full: it lights');
+    e.cooldown = 30; sim.press('ability1'); sim.step(2);
+    expect.ok(e.hp < hp && p.perk.charge.strike === 0 && log.includes('abilityPress'), `Fire Burst burns the boss (${(hp - e.hp).toFixed(0)})`);
+    p.grantAbilities([]); sim.step(1, 1);
+    expect.ok(row.classList.contains('off'), 'no key held: hidden');
   });
   test('input buffer: early mashing is dropped; a late press is kept and fires at the cancel point', () => {
     Game.startLevel('test-training'); sim.begin();

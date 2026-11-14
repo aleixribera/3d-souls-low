@@ -651,6 +651,8 @@ const abilityFx = (() => {
     else if (d.perk === 'dodge/riposte') groundFx.ring(p.x, p.z, 1.5, P.riposte, 0.5, p.y);
     else if (d.perk === 'flask/stamina') { ultraFx.moteBurst(c, 20, P.stamina, { r: 0.5, speed: 0.6, lift: 1.4, life: [0.6, 1.1] }); groundFx.ring(p.x, p.z, 1.8, P.stamina, 0.55, p.y); }
     else if (d.perk === 'block/charge') { ultraFx.sparkBurst(c, 16, 'gold', null, 0, 0.7); groundFx.ring(p.x, p.z, 1.4, P.charge, 0.5, p.y); }
+    else if (d.perk === 'press/heal') { ultraFx.moteBurst(c, 30, P.heal, { r: 0.6, speed: 0.9, lift: 1.8, life: [0.8, 1.3] }); groundFx.ring(p.x, p.z, 1.9, P.heal, 0.6, p.y); }
+    else if (d.perk === 'press/stance') { ultraFx.sparkBurst(c, 22, 'gold', null, 0, 0.9); groundFx.ring(p.x, p.z, 2.2, P.charge, 0.7, p.y); }
   }
 
   events.on('abilityPower', d => {

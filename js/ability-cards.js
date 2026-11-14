@@ -47,9 +47,18 @@ const ABILITY_ICONS = {
   'time-rift': '<circle cx="24" cy="24" r="16"/><path d="M24 14 V24 L30 28"/><path d="M40 8 L34 14 L38 17 L31 24 L35 27 L28 34" stroke-dasharray="3 2"/>',
   'thousand-blades': '<path d="M12 4 V24 L12 29 M8 9 H16"/><path d="M24 10 V32 L24 37 M20 15 H28"/><path d="M36 4 V24 L36 29 M32 9 H40"/><path d="M6 44 H42" stroke-dasharray="2 4"/>',
   'blood-moon': '<path d="M30 6 A17 17 0 1 0 42 32 A13 13 0 1 1 30 6 Z"/><path d="M20 34 C17 38 17 40 20 42 C23 40 23 38 20 34 Z"/><path d="M30 40 V44"/>',
+  // The pressed ones (pass 87, keys 1-4).
+  'fire-burst': '<path d="M24 6 C28 14 34 16 34 26 A10 10 0 0 1 14 26 C14 19 19 17 20 11 C22 15 24 15 24 6 Z"/><path d="M5 24 H10 M38 24 H43 M10 10 L13 13 M38 10 L35 13 M10 38 L13 35 M38 38 L35 35"/>',
+  'wind-blade': '<path d="M8 38 C18 31 30 19 40 8 C37 23 26 35 8 38 Z"/><path d="M5 20 H17 M4 27 H13 M22 43 H37" stroke-dasharray="3 2"/>',
+  'mending': '<path d="M24 41 C10 31 6 24 6 17 A8.5 8.5 0 0 1 24 13 A8.5 8.5 0 0 1 42 17 C42 24 38 31 24 41 Z"/><path d="M24 19 V31 M18 25 H30"/>',
+  'iron-stance': '<path d="M24 5 L39 11 V23 C39 33 32 39 24 43 C16 39 9 33 9 23 V11 Z"/><path d="M16 23 L24 16 L32 23 M16 31 L24 24 L32 31"/>',
+  'thunder-call': '<path d="M16 4 L9 18 H15 L10 30"/><path d="M30 8 L22 23 H29 L23 38"/><path d="M41 4 L36 14 H40 L37 22"/><path d="M6 44 H42"/>',
+  'cataclysm': '<circle cx="24" cy="24" r="5"/><circle cx="24" cy="24" r="12" stroke-dasharray="3 3"/><circle cx="24" cy="24" r="19"/><path d="M24 1 V7 M24 41 V47 M1 24 H7 M41 24 H47"/>',
 };
 const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
 const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+// A pressed ability's bound key as the player reads it: "1", or a D-pad arrow after a controller press.
+const abilityKeyBind = key => bindLabel(ABILITY_ACTIONS[ABILITY_KEYS.indexOf(key)]).replace(/^\[\s*|\s*\]$/g, '');
 // One number of a card: a percentage, or in its ABILITY_UNITS unit.
 function abilityAmount(key, x) {
   const unit = ABILITY_UNITS[key];
@@ -86,6 +95,7 @@ function abilityCard(b, held, key, swift) {
   for (const part of abilityCardText(b, level)) text.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
   words.appendChild(text);
   const foot = make('span', 'bcard-foot'), rarity = make('span', 'bcard-rarity', ABILITY_RARITY_WORD[b.rarity]);
+  if (b.key) rarity.appendChild(make('em', 'swift', ABILITY_KEY_NAMES[b.key]));   // its key's slot; the HUD shows the key
   if (swift) rarity.appendChild(make('em', 'swift', 'Swift kill'));
   foot.append(rarity, make('kbd', 'ui-key', String(key)));
   words.appendChild(foot);
@@ -105,7 +115,7 @@ function abilityHeldList(ids) {
     const icon = make('span', 'held-icon'); icon.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>`;
     const head = make('span', 'held-head'), name = make('strong', 'held-name', b.name);
     if (level > 1) name.appendChild(make('span', 'held-level', ABILITY_LEVEL_MARK[level - 1]));
-    head.append(name, make('span', 'held-rarity', ABILITY_RARITY_WORD[b.rarity]));
+    head.append(name, make('span', 'held-rarity', ABILITY_RARITY_WORD[b.rarity] + (b.key ? ` · ${ABILITY_KEY_NAMES[b.key]} ${abilityKeyBind(b.key)}` : '')));
     const text = make('span', 'held-text');
     for (const part of abilityCardText(b, level, true)) text.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
     li.append(icon, head, text); list.appendChild(li);

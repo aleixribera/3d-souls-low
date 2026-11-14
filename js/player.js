@@ -226,7 +226,7 @@ class Player {
     this.refillDashes(dt);
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.kit.mods.staminaRegen) * dt);
-    if (this.kit !== NO_KIT) this.abilityStep(dt);
+    if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -409,6 +409,25 @@ class Player {
       if (pw.when === 'low' && this.hp <= this.maxHp * pw.v.below) { this.lowReported = true; abilityReport(this, 'low', {}); }
     }
   }
+  // The number keys (pass 87, ABILITY_KEYS): a key's ability fires when its key is pressed with its charge full, in
+  // any state but held or executing. A power needing an enemy keeps its charge while none is in reach. Pressed early,
+  // the key only says so (`abilityNotReady`, the HUD's slot).
+  pressAbilities(enemies, lock) {
+    for (let n = 0; n < ABILITY_KEYS.length; n++) {
+      if (!this.ctl.consume(ABILITY_ACTIONS[n])) continue;
+      const key = ABILITY_KEYS[n], slot = this.kit.pressed[key];
+      if (!slot || !this.alive() || this.state === PS.HELD || this.state === PS.EXECUTE) continue;
+      if (this.perk.charge[key] < slot.v.charge) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      const e = pressTarget(this, enemies, lock);
+      if (slot.power && ON_ENEMY.has(slot.then) && !e) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      this.perk.charge[key] = 0;
+      events.emit('abilityPress', { body: this, key, ability: slot.id });
+      if (slot.power) abilityReport(this, 'press', { key, enemy: e });
+      else abilityPressPerk(this, slot);
+    }
+  }
+  // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, an execution's.
+  gainCharge(n) { if (this.kit !== NO_KIT) abilityGain(this.kit, this.perk, n); }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
   // health a second; untouchable frames (an execution, a roll's i-frames) keep it off. `timers` (a Map per body) paces
   // the `hazard` tick event. Returns true if it killed this body (`hazardDeath` then).

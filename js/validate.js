@@ -104,6 +104,12 @@ function validateData({ visual = true } = {}) {
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
     need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity !== 'common'),
       `${where}: one of mods (a common), perk (a rare) or power (a rare or a legendary).`);
+    // The number keys (pass 87): every pressed ability names exactly one key, always the same; nothing else names one.
+    const pressed = (b.perk || b.power || {}).when === 'press';
+    need(pressed === (b.key !== undefined) && (b.key === undefined || ABILITY_KEYS.includes(b.key)),
+      `${where}: a pressed ability (when: 'press') names exactly one key (${ABILITY_KEYS.join(', ')}), and only a pressed one names a key.`);
+    if (b.key !== undefined) need((b.key === 'ultimate') === (b.rarity === 'legendary') && !b.crate,
+      `${where}: key ultimate is a legendary's, strike, guard and summon a rare's; no crate gives a pressed one.`);
     if (!R || kinds.length !== 1 || !Array.isArray(b.levels)) { need(Array.isArray(b.levels), `${where}: levels must be a list.`); continue; }
     need(b.levels.length === R.levels, `${where}: ${R.levels} levels for a ${b.rarity}.`);
     const plan = b.perk ? ABILITY_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? ABILITY_POWERS[b.power.when + '/' + b.power.then] : null;
@@ -129,6 +135,12 @@ function validateData({ visual = true } = {}) {
     if (visual) need(typeof ABILITY_ICONS === 'object' && typeof ABILITY_ICONS[b.id] === 'string', `${where}: no icon in ABILITY_ICONS (js/ability-cards.js).`);
   }
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
+  const BP = BL.press, PG = BP && BP.gain;
+  need(PG && ['hit', 'skill', 'deflect', 'dodge', 'execution'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
+    && num(BP.slack) && BP.slack >= 0 && BP.slack < 1 && num(BP.botReach) && BP.botReach > 0 && num(BP.botHeal) && BP.botHeal > 0 && BP.botHeal <= 1,
+    'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, execution 0 or more }, range above 0, slack from 0 to under 1, botReach above 0, botHeal above 0 up to 1.');
+  for (const key of ABILITY_KEYS) need(ABILITIES.some(b => b.key === key && !b.crate), `Abilities: key ${key} needs at least one ability to fill it.`);
+  if (visual) ABILITY_KEYS.forEach((k, i) => need(Object.hasOwn(DEFAULT_ACTIONS, `ability${i + 1}`), `Key ${k}: no ability${i + 1} binding (js/input.js).`));
   // Levels and crates (js/data/crates.js): every crate ability is a reward, and every reward is whole.
   const CR = CRATES, whole0 = x => Number.isInteger(x) && x >= 0, crateWords = t => t.trim().split(/\s+/).length;
   need(CR && ['boss', 'crowned', 'minute', 'least'].every(k => whole0(CR.xp?.[k])) && ['first', 'step', 'most'].every(k => whole0(CR.level?.[k])) && CR.level.first > 0 && CR.level.most >= CR.level.first,

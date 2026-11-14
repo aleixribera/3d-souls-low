@@ -44,7 +44,7 @@ const abilityLab = (() => {
     if (!pw) return;
     const live = game.enemies.filter(e => e.alive());
     const e = game.lock && game.lock.alive() ? game.lock : live.sort((a, c) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(c.x - p.x, c.z - p.z))[0];
-    const at = e || p, ctx = { x: at.x, y: at.y, z: at.z, enemy: e, action: pw.action };
+    const at = e || p, ctx = { x: at.x, y: at.y, z: at.z, enemy: e, action: pw.action, key: pw.key };
     if (pw.v.below) p.hp = Math.min(p.hp, Math.max(1, Math.floor(p.maxHp * pw.v.below * 0.9)));   // a power that waits for low health
     abilityPowers.reset();
     if (pw.when === 'hits') ctx.strike = { damage: 0, postureDmg: 0 };
@@ -59,7 +59,8 @@ const abilityLab = (() => {
     tools.append(
       tool('All off', () => { held.clear(); events.emit('menuBack'); wear(); }),
       tool('Heal', () => { const p = Game.player; if (p && p.alive()) { p.hp = p.maxHp; p.stamina = p.maxStamina; } }),
-      tool('Low health', () => { const p = Game.player; if (p && p.alive()) p.hp = Math.max(1, Math.floor(p.maxHp * 0.2)); }));
+      tool('Low health', () => { const p = Game.player; if (p && p.alive()) p.hp = Math.max(1, Math.floor(p.maxHp * 0.2)); }),
+      tool('Charge keys', () => { const p = Game.player; if (p) abilityGain(p.kit, p.perk, 999); }));   // keys 1-4 full
     const shut = make('button', 'ui-button lab-close'); shut.type = 'button';
     shut.append('Back to the fight ', make('kbd', 'ui-key', 'B'));
     shut.addEventListener('click', close);

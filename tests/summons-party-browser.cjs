@@ -2,8 +2,8 @@
 // All four summons out at once in a real online party of four (PLAN.md track B item 6's check: every summon seen working
 // in a real fight in a party of four). One page (Ash) and three Node teammates (Bram, Cole, Dara) in a Boss Rush; each
 // takes one summon at the pick after fight 1, then in fight 2 calls it the way a player does, through the server's own
-// checks: Cole's parry of a real blow sends the Grave Hound, low health raises the Stone Guardian, a flask calls the
-// Ember Twin (Ash's in the page, then Bram's, run twice), and Dara's blow that breaks the boss's balance sends the
+// checks: Cole's Summon key sends the Grave Hound, low health raises the Stone Guardian, a flask calls the
+// Ember Twin (Ash's in the page, then Bram's, run twice), and Dara's Summon key sends the
 // Lancer of Ash. The page must draw all four where the server has them, one of them must draw the boss, and all four
 // must go when their time is up. The engine's rules for each summon: tests/abilities.cjs.
 // node tests/summons-party-browser.cjs [screenshot directory] [twin|guardian]
@@ -24,7 +24,6 @@ async function party(browser, mine, his) {
   const app = createServer({ dev: true, firstPick: false }), errors = [], peers = [], tag = mine.split('-')[1];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port, R = app.sim.inspect();
-  const g = name => R.Game.update.constructor('return ' + name)(), ES = g('ES'), canParryHit = g('canParryHit'), PLAYER_DEF = g('PLAYER_DEF');
   const opening = ['pillagerCaptain', 'hollis'];
   const newRun = app.sim.newRun; app.sim.newRun = () => newRun(opening);
   // Each player's offer is the one summon the test hands them (the draw itself is tests/abilities.cjs's).
@@ -102,20 +101,18 @@ async function party(browser, mine, his) {
     bram.at = round(his === 'stone-guardian' ? 2.59 : -2.79, 1.6); cole.at = round(-1.39, 1.4); dara.at = round(his === 'stone-guardian' ? -3.04 : -2.64, 1.2);
     await wait(600);
 
-    // Cole parries a real blow of Hollis's (one with a hit that can be parried, out while he stands in reach).
-    let houndOut = false;
-    for (let t = 0; t < 400 && !houndOut; t++) {
-      const b = boss();
-      if (b.state === ES.WINDUP || b.state === ES.ACTIVE) {
-        const a = b.attack, i = b.hit || 0;
-        if (a && !a.projectile && canParryHit(a, i)) { cole.claim('parry', { enemy: b.netId, serial: b.netAttack, hit: i }); await wait(80); houndOut = R.abilityPowers.summonOf(cole.id)?.kind === 'hound'; }
-      }
-      if (!houndOut) await wait(40);
-    }
-    assert.ok(houndOut, "Cole's parry sends the hound");
+    // Cole presses his Summon key (pass 87), full by the server's count (filled here; tests/abilities.cjs fills it with
+    // real blows): the hound.
+    const pressKey = async (who, kind) => {
+      R.holderOf(who.id).perk.charge.summon = 99;
+      who.claim('ability', { when: 'press', key: 'summon', enemy: boss().netId });
+      for (let t = 0; t < 100 && R.abilityPowers.summonOf(who.id)?.kind !== kind; t++) await wait(40);
+    };
+    await pressKey(cole, 'hound');
+    assert.equal(R.abilityPowers.summonOf(cole.id)?.kind, 'hound', "Cole's Summon key sends the hound");
     ({ ux, uz } = await place());   // the boss has moved while it was waited on: the frame's places again
     // Nearly down, the guardian's holder raises it (the page reports its own low health); the twin's holder drinks.
-    // Dara's blow breaks Hollis's balance: the lancer.
+    // Dara presses her Summon key: the lancer.
     if (mine === 'ember-twin') {
       // The drink, then a 0.7 s hitch (a slow frame): the claim must not wait on the next frame's pose.
       await page.evaluate(() => { const p = Game.player; p.setState(PS.IDLE); p.useItem('flask'); const t = performance.now(); while (performance.now() - t < 700); });
@@ -124,10 +121,8 @@ async function party(browser, mine, his) {
       await page.evaluate(() => { Game.player.hp = Game.player.maxHp * 0.25; });
       bram.state = 'useItem'; await wait(120); bram.claim('ability', { when: 'flask' });
     }
-    const b = boss(), P = b.def.posture;
-    b.sinceBreak = 99; b.posture = P.max - 0.01;
-    const light = Object.values(PLAYER_DEF.moveset.attacks).find(x => x.id !== 'execute' && !x.charge).id;
-    dara.claim('hit', { enemy: b.netId, swing: 'dara-1', attack: light, charge: 0 });
+    await pressKey(dara, 'lancer');
+    const b = boss();
     const kinds = () => [ash, bram.id, cole.id, dara.id].map(id => R.abilityPowers.summonOf(id)?.kind || null);
     for (let t = 0; kinds().includes(null); t++) { if (t > 100) throw new Error('not all four out: ' + kinds().join(', ') + ' ' + JSON.stringify(await page.evaluate(() => [Game.player.state, Game.player.hp, Game.player.item('flask').count])) + ' ' + app.clients.get(ash).pose?.state); await wait(30); }
     assert.deepEqual(kinds(), mine === 'ember-twin' ? ['twin', 'guardian', 'hound', 'lancer'] : ['guardian', 'twin', 'hound', 'lancer'], 'all four summons out at once, one each');

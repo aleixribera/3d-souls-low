@@ -13,7 +13,11 @@
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
 //              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`, `hound`, `guardian`, `lancer`).
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
-const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n' };
+// Pressed abilities (pass 87, PLAN.md's player rework): a `key` (ABILITY_KEYS: strike, guard, summon or ultimate; the
+// number keys 1-4) and a perk or power `when: 'press'`. Each level's `charge` is the points its key fills before it
+// fires (js/abilities.js pressGain). Strike, Guard and Summon are rares, Ultimate legendaries; validate.js holds every
+// pressed ability to exactly one key. Its text is the effect only: the card and the HUD show its key.
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n' };
 // The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
 const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain', 'share'];
 const ABILITIES = [
@@ -65,22 +69,35 @@ const ABILITIES = [
   // Small powers: a strike of their own on the boss, drawn and heard (js/ability-fx.js), smaller than a legendary's.
   { id: 'counterflame', name: 'Counterflame', rarity: 'rare', text: 'Deflect: fire bursts on the boss.',
     power: { when: 'parry', then: 'flare' }, levels: [{ damage: 40, posture: 10, cooldown: 1 }, { damage: 55, posture: 14, cooldown: 1 }, { damage: 70, posture: 18, cooldown: 1 }] },
-  // A summon of a rare's: a hound of the grave that hunts the parried boss and draws its eye for a moment.
-  { id: 'grave-hound', name: 'Grave Hound', rarity: 'rare', text: 'Deflect: a hound hunts the boss for {time}.',
-    power: { when: 'parry', then: 'hound' },
-    levels: [{ time: 8, every: 1.2, damage: 16, posture: 5, draw: 2, cooldown: 14 }, { time: 10, every: 1.1, damage: 20, posture: 6, draw: 2.5, cooldown: 12 },
-      { time: 12, every: 1, damage: 24, posture: 7, draw: 3, cooldown: 10 }] },
+  // Key 3, Summon: a hound of the grave that hunts the boss and draws its eye for a moment.
+  { id: 'grave-hound', name: 'Grave Hound', rarity: 'rare', key: 'summon', text: 'A hound hunts the boss for {time}.',
+    power: { when: 'press', then: 'hound' },
+    levels: [{ charge: 20, time: 8, every: 1.2, damage: 16, posture: 5, draw: 2 }, { charge: 18, time: 10, every: 1.1, damage: 20, posture: 6, draw: 2.5 },
+      { charge: 16, time: 12, every: 1, damage: 24, posture: 7, draw: 3 }] },
   // A summon that holds the boss: a guardian of stone that rises when its holder is nearly down and keeps the boss on
   // it for a long breath, battering it with its shield now and then. Once a fight.
   { id: 'stone-guardian', name: 'Stone Guardian', rarity: 'rare', text: 'Low health: a guardian holds the boss for {draw}.',
     power: { when: 'low', then: 'guardian', once: true },
     levels: [{ below: 0.33, time: 9, every: 2, damage: 14, posture: 12, draw: 4 }, { below: 0.33, time: 11, every: 1.8, damage: 18, posture: 15, draw: 5 },
       { below: 0.33, time: 13, every: 1.6, damage: 22, posture: 18, draw: 6 }] },
-  // A summon that hits: a lancer of ash that charges the boss whose balance its holder broke, and thrusts at it.
-  { id: 'ash-lancer', name: 'Lancer of Ash', rarity: 'rare', text: 'Break balance: a lancer charges the boss for {time}.',
-    power: { when: 'break', then: 'lancer' },
-    levels: [{ time: 6, every: 0.9, damage: 18, posture: 4, draw: 1, cooldown: 12 }, { time: 7, every: 0.8, damage: 22, posture: 5, draw: 1.2, cooldown: 10 },
-      { time: 8, every: 0.7, damage: 26, posture: 6, draw: 1.5, cooldown: 8 }] },
+  // Key 3, Summon: a lancer of ash that charges the boss and thrusts at it.
+  { id: 'ash-lancer', name: 'Lancer of Ash', rarity: 'rare', key: 'summon', text: 'A lancer charges the boss for {time}.',
+    power: { when: 'press', then: 'lancer' },
+    levels: [{ charge: 18, time: 6, every: 0.9, damage: 18, posture: 4, draw: 1 }, { charge: 16, time: 7, every: 0.8, damage: 22, posture: 5, draw: 1.2 },
+      { charge: 14, time: 8, every: 0.7, damage: 26, posture: 6, draw: 1.5 }] },
+  // Key 1, Strike: a burst of attack on the boss.
+  { id: 'fire-burst', name: 'Fire Burst', rarity: 'rare', key: 'strike', text: 'Fire bursts on the boss.',
+    power: { when: 'press', then: 'flare' },
+    levels: [{ charge: 14, damage: 70, posture: 22 }, { charge: 13, damage: 90, posture: 28 }, { charge: 12, damage: 110, posture: 34 }] },
+  { id: 'wind-blade', name: 'Wind Blade', rarity: 'rare', key: 'strike', text: 'A wind blade cuts all in its path.',
+    power: { when: 'press', then: 'gale' },
+    levels: [{ charge: 16, damage: 80, posture: 24, reach: 12, width: 1.4 }, { charge: 15, damage: 100, posture: 30, reach: 14, width: 1.6 },
+      { charge: 14, damage: 120, posture: 36, reach: 16, width: 1.8 }] },
+  // Key 2, Guard: defence and counters.
+  { id: 'mending', name: 'Mending', rarity: 'rare', key: 'guard', text: 'Heal {heal}.',
+    perk: { when: 'press', then: 'heal' }, levels: [{ charge: 14, heal: 0.2 }, { charge: 13, heal: 0.25 }, { charge: 12, heal: 0.3 }] },
+  { id: 'iron-stance', name: 'Iron Stance', rarity: 'rare', key: 'guard', text: 'Deflect blows for {time}, no timing needed.',
+    perk: { when: 'press', then: 'stance' }, levels: [{ charge: 12, time: 2.5 }, { charge: 12, time: 3 }, { charge: 12, time: 3.5 }] },
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark strikes the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30, posture: 6 }, { hits: 4, damage: 34, posture: 7 }, { hits: 4, damage: 44, posture: 9 }] },
 
@@ -112,6 +129,13 @@ const ABILITIES = [
   { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Flask: a twin fights with you for {time}.',
     power: { when: 'flask', then: 'twin' },
     levels: [{ time: 10, share: 0.4, draw: 2, cooldown: 24 }, { time: 12, share: 0.55, draw: 3, cooldown: 20 }] },
+  // Key 4, Ultimate: the longest charge and the biggest moment.
+  { id: 'thunder-call', name: 'Thunder Call', rarity: 'legendary', key: 'ultimate', text: '{strikes} lightning strikes on the boss.',
+    power: { when: 'press', then: 'lightning' },
+    levels: [{ charge: 40, strikes: 5, lead: 0.75, every: 0.35, damage: 45, posture: 14 }, { charge: 36, strikes: 7, lead: 0.75, every: 0.3, damage: 45, posture: 14 }] },
+  { id: 'cataclysm', name: 'Cataclysm', rarity: 'legendary', key: 'ultimate', text: 'A blast hits all within {radius}.',
+    power: { when: 'press', then: 'blast' },
+    levels: [{ charge: 40, radius: 7, damage: 180, posture: 60 }, { charge: 36, radius: 8, damage: 240, posture: 75 }] },
 
   // ---- Crate abilities (pass 71, js/data/crates.js): `crate: true` keeps one out of every run's offers until a crate
   // has given it to that player; then it joins their pool like any other. Never offered in the weekly run (one pool

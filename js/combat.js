@@ -96,8 +96,11 @@ function parryTiming(p, e, extra) {
 
 // Which blow of an enemy's is under way: its attack's number (online, the server's serial) and the hit within it.
 const blowKey = e => (e.attackNo || 0) * 64 + (e.hitIndex || 0);
-// A deflect can come from the guard or from standing free (a tap already released).
-const canDeflectNow = p => p.deflect > 0 && p.alive() && (p.state === PS.BLOCK || p.isFree());
+// A deflect can come from the guard or from standing free (a tap already released). Iron Stance (a pressed Guard,
+// `perk.stance` s left) deflects every blow a guard could, untimed, mid-swing or drinking too.
+const STANCE_STATES = new Set([PS.BLOCK, PS.ATTACK, PS.USE_ITEM]);
+const canDeflectNow = p => p.alive() && (p.deflect > 0 && (p.state === PS.BLOCK || p.isFree()) ||
+  p.perk && p.perk.stance > 0 && (p.isFree() || STANCE_STATES.has(p.state)));
 
 // Order each step: deflect, then player hitboxes against enemies, then enemy hitboxes against the player.
 // Damage itself lives in Player.takeHit / Enemy.takeHit; effects listen to the events.
@@ -118,6 +121,7 @@ function resolveCombat(game) {
       const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getDeflected();
       const broke = res.broke;
       p.deflected(target, key, res.opened);
+      p.gainCharge(CONFIG.abilities.press.gain.deflect);
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
       events.emit('parry', { target, player: p, opened: res.opened });
       const breath = p.kit.perks['parry/stamina'];   // Deep Breath
@@ -141,6 +145,7 @@ function resolveCombat(game) {
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
     if (strike.empowered) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });
     if (!res.blocked && p.kit !== NO_KIT) {
+      p.gainCharge(pressGain(strike));
       abilityLanded(p, strike);
       if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
       abilityReport(p, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, an Ember Twin's echo
@@ -157,6 +162,8 @@ function resolveCombat(game) {
         // A perfect dodge: the dash's i-frames are short, so a blow slipped inside them was dodged right on it. The next
         // blow within CONFIG.player.counterTime s is a counter (a riposte), drawn with a beat of slow motion.
         hb.dodged = true; p.riposte = Math.max(p.riposte, CONFIG.player.counterTime);
+        const no = hb.owner.attackNo || 0;   // the number keys fill once an attack dodged, as the server counts it online
+        if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
         events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
         if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.dodged(hb.owner);   // the server allows the counter
         const step = p.kit.perks['dodge/riposte'];   // Counterstep: a longer counter window

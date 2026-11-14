@@ -55,6 +55,7 @@ const execution = (() => {
     e.hitbox = null; e.vx = e.vz = e.kx = e.kz = 0; e.execReady = false; e.exec = p.exec;
     e.setState(ES.EXECUTED);
     p.setState(PS.EXECUTE);
+    if (p.gainCharge) p.gainCharge(CONFIG.abilities.press.gain.execution);   // the number keys fill (online, the server counts it too)
     events.emit('executionStart', { player: p, enemy: e });
   }
 

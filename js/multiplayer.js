@@ -1485,7 +1485,8 @@ const multiplayer = (() => {
   function abilityClaim(when, ctx) {
     if (!ABILITY_CLAIMS.includes(when)) return;   // a parry or a landed heavy: the server sees those itself
     publishPose();
-    command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}) });
+    command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}),
+      ...(ctx.key ? { key: ctx.key } : {}) });   // a number key's press: the server checks its charge and aims it
   }
   function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
   function rest(b) {

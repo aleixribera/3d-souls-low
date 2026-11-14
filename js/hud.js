@@ -150,6 +150,65 @@ const hud = {
       this.dashPips[i].classList.toggle('ready', k >= 1);
     }
   },
+  // The number keys (pass 87): one square per key, bottom right, shown once any key holds an ability. A held one shows
+  // its icon over a charge that fills from below and its bound key; a full one lights. Written only when a step changes.
+  syncAbilityKeys(p) {
+    if (!this.keySlots) {
+      const row = document.createElement('div'); row.className = 'anchor'; row.id = 'aBR'; row.setAttribute('aria-hidden', 'true');
+      this.keySlots = ABILITY_KEYS.map(key => {
+        const el = document.createElement('div'), fill = document.createElement('i'), icon = document.createElement('span'), bind = document.createElement('b');
+        el.className = 'akey empty'; el.dataset.key = key; fill.className = 'akey-fill'; icon.className = 'akey-icon'; bind.className = 'akey-bind';
+        el.append(fill, icon, bind); row.appendChild(el);
+        return { key, el, fill, icon, bind, id: null, k: -1, label: '' };
+      });
+      document.getElementById('stage').appendChild(row);
+      this.keyRow = row; this.keyKit = null;
+      const style = document.createElement('style'); style.id = 'abilityKeys';
+      style.textContent = `#aBR{right:var(--mx);bottom:16px;flex-direction:row;align-items:flex-end;gap:8px}#aBR.off{display:none}
+  .akey{--rc:#cfc8b6;position:relative;width:50px;height:50px;box-sizing:border-box;background:#0b0c10b8;border:1px solid #6e5d36;box-shadow:0 0 0 1px #000000c0;overflow:hidden}
+  .akey[data-rarity=rare]{--rc:#8fb8dc}.akey[data-rarity=legendary]{--rc:#e59a5c}
+  .akey.empty{background:#0b0c1060;border-color:#6e5d3660}
+  .akey-fill{position:absolute;left:0;right:0;bottom:0;height:100%;background:color-mix(in srgb,var(--rc) 26%,transparent);transform:scaleY(var(--k,0));transform-origin:bottom}
+  .akey-icon{position:absolute;inset:7px}.akey-icon svg{width:100%;height:100%;fill:none;stroke:var(--rc);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+  .akey-bind{position:absolute;left:3px;top:2px;font:600 12px/1 Georgia,'Times New Roman',serif;color:#d9c792;text-shadow:0 1px 2px #000}
+  .akey.empty .akey-bind{color:#6f6753}
+  .akey.ready{border-color:#f0d690;box-shadow:0 0 0 1px #000000c0,0 0 10px 1px color-mix(in srgb,var(--rc) 55%,transparent)}.akey.ready .akey-icon svg{opacity:1}
+  .akey.fired{animation:akeyFire .45s ease-out}.akey.denied{animation:akeyDeny .3s ease-out}
+  @keyframes akeyFire{0%{background:color-mix(in srgb,var(--rc) 60%,#0b0c10)}100%{background:#0b0c10b8}}
+  @keyframes akeyDeny{0%,100%{border-color:#6e5d36}40%{border-color:#e07a5c}}
+  @media (prefers-reduced-motion:reduce){.akey.fired,.akey.denied{animation:none}}`;
+      document.head.appendChild(style);
+    }
+    const kit = p.kit;
+    if (kit !== this.keyKit) {   // a new pick: who sits in which key
+      const on = this.keyOn = !!kit && Object.keys(kit.pressed).length > 0;
+      this.keyKit = kit; this.keyRow.classList.toggle('off', !on); this.keyLabelAt = 0;
+      for (const s of this.keySlots) {
+        const slot = on ? kit.pressed[s.key] : null, b = slot && ABILITY_BY_ID[slot.id];
+        if ((b && b.id) === s.id) continue;
+        s.id = b ? b.id : null; s.k = -1;
+        s.el.classList.toggle('empty', !b); s.el.dataset.rarity = b ? b.rarity : '';
+        s.icon.innerHTML = b ? `<svg viewBox="0 0 48 48" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>` : '';
+      }
+    }
+    if (!this.keyOn) return;
+    // The bound keys follow the device used last and the Controls screen: read again when the device changes, else each second.
+    if (input.device !== this.keyDevice || this.clock >= this.keyLabelAt) {
+      this.keyDevice = input.device; this.keyLabelAt = this.clock + 1;
+      for (const s of this.keySlots) { const label = abilityKeyBind(s.key).replace('D-pad ', ''); if (label !== s.label) { s.label = label; s.bind.textContent = label; } }
+    }
+    for (const s of this.keySlots) {
+      if (!s.id) continue;
+      const k = Math.round(clamp01(p.perk.charge[s.key] / kit.pressed[s.key].v.charge) * 40) / 40;
+      if (k === s.k) continue;
+      s.k = k; s.fill.style.setProperty('--k', k); s.el.classList.toggle('ready', k >= 1);
+    }
+  },
+  // A press of a number key: the square flashes when its ability fires, its edge reddens when not yet charged.
+  keyPressed(key, fired) {
+    const s = this.keySlots && this.keySlots.find(x => x.key === key);
+    if (s && s.id) restart(s.el, fired ? 'fired' : 'denied');
+  },
   // Flask icons follow the inventory's capacity, so upgrades show. A flask just drunk pops as it empties.
   syncFlasks(it) {
     while (this.flasks.length < it.max) { const f = document.createElement('span'); f.className = 'flask'; this.flaskRow.appendChild(f); this.flasks.push(f); }
@@ -265,6 +324,7 @@ const hud = {
     this.pSt.classList.toggle('waiting', p.staminaDelay > 0 && sp < 1);
     this.pSt.classList.toggle('refund', this.refundTimer > 0);
     this.syncDashes(p);
+    this.syncAbilityKeys(p);
     this.syncFlasks(p.item('flask'));
 
     // Screen edge: a steady red at low health, beating with the heart; a flare when a blow lands.
@@ -410,6 +470,8 @@ function registerHudListeners() {
     hud.popFlask = d.player.item('flask').count; hud.dismissHealingTip();
   } });
   events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
+  events.on('abilityPress', d => { if (d.body === Game.player) hud.keyPressed(d.key, true); });
+  events.on('abilityNotReady', d => { if (d.body === Game.player) hud.keyPressed(d.key, false); });
   events.on('staminaDenied', d => { if (d.player !== Game.player) return; hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
     hud.pSt.addEventListener('animationend', () => hud.pSt.classList.remove('empty'), { once: true }); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look

@@ -543,6 +543,15 @@ const bot = (() => {
       wary = careful || shy; steady = careful;
       const roomy = (careful ? CA.spacing : 0) + (shy ? CA.hunted : 0);
       const spare = C.safety + (wary ? CA.safety : 0);   // s left over after its own swing before a blow could open
+      // The number keys (pass 87): a full key is pressed when it pays: a heal when hurt, the stance as a wind-up comes,
+      // the rest near the foe.
+      if (me.kit) for (let n = 0; n < ABILITY_KEYS.length; n++) {
+        const key = ABILITY_KEYS[n], slot = me.kit.pressed[key], BP = CONFIG.abilities.press;
+        if (!slot || me.perk.charge[key] < slot.v.charge) continue;
+        if (slot.then === 'heal' ? health < BP.botHeal : slot.then === 'stance' ? e.state === ES.WINDUP && gap < BP.botReach : gap < BP.botReach) {
+          hands.press(ABILITY_ACTIONS[n]); break;
+        }
+      }
       // Support (CONFIG.bot.support): a person near this enemy sets the tempo, and whoever it is after gets backup:
       // the bot fights from their far side, and presses to draw it off them when they are hurt or drinking.
       const S = C.support, X = C.execution;
