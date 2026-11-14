@@ -4,7 +4,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gives the Finishing Blow its look (Aleix); no other pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
+Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
 - Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
   `tools/anim-strip.cjs` draws every step; `finisher` films the 3-counter chain (`CLIP=` an mp4). Deflect (in-page
   `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. After the pause: deflect frames 5-9,
