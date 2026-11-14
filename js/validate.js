@@ -246,6 +246,8 @@ function validateData({ visual = true } = {}) {
   const AM = CONFIG.VISUALS.areaMark;
   if (visual) need(AM && Number.isInteger(AM.color) && num(AM.opacity) && AM.opacity > 0 && AM.opacity <= 1 && num(AM.fade) && AM.fade > 0 && Number.isInteger(AM.pool) && AM.pool >= 2,
     'VISUALS.areaMark needs a color, an opacity (0 to 1), a fade (s) and a pool of 2 or more.');
+  const HT = CONFIG.VISUALS.heavyTell;   // pass 96: the amber a heavy attack's wind-up ramps to
+  if (visual) need(HT && Number.isInteger(HT.color) && num(HT.tint) && HT.tint > 0 && HT.tint <= 1, 'VISUALS.heavyTell needs a color and a tint (0 to 1).');
   need(SU && ['first', 'near', 'slack', 'reposition', 'settle', 'patience'].every(k => num(SU[k]) && SU[k] >= 0) && SU.slack <= SU.reposition && Array.isArray(SU.behind) && SU.behind.length > 0 && SU.behind.every(d => num(d) && d >= 0 && d <= Math.PI / 2) && num(SU.greed) && SU.greed >= 0 && SU.greed <= 1 && SU.patience >= 1,
     'Bot support needs non-negative first, near, settle, and slack no more than reposition, behind offsets in 0..pi/2, a greed share (0..1) and patience of 1 or more.');
   const jumpRange = botConfig.jumpDodge.lead;

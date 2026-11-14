@@ -8,11 +8,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   dim/mark/cut (`js/counter-fx.js`), blade trail, key hint once per body. Light = flash step (`flashStep`), heavy =
   rising arc. In-page `pass 95`. Judge: window 3 to 7, counter 3 to 8 (`docs/scorecard/anim-p95-counter.jpg`).
   Next: a body cue for the whole window (judge), then PLAN item 3d.
-- Track B (pass 93): v7.120.0 item 4: fair area attacks (`CONFIG.area`, `js/area-marks.js`, validate.js; leaps
-  untouched; `docs/scorecard/stomp-mark-giant*.jpg`), deflects (`CONFIG.undeflectable`), bosses move on one pace
-  (`CONFIG.bossMove`); `tests/fair-attacks.cjs`. Next: the Boss Rush curve again (movement unmeasured), the only
-  moveset. Track A: Story's bosses press, circle and recover longer after a dodge too (story-curve not re-run);
-  `PS.PARRY` is dead.
+- Track B (pass 96): v7.123.0 "fixes from Aleix's run" 1-4: one count, the fight (server `tally.won`/`at`, board
+  `reached`); no stamina, guard bar or player poise; only `heavy: true` attacks stagger (amber wind-up,
+  `VISUALS.heavyTell`); blocks chip (`CONFIG.block`), undeflectable melee is `rollOnly`; no rend; keys bottom centre;
+  rares first. Curve back on pass 90's targets with `pace.rise` .55, press 1.3/1.4
+  (`docs/scorecard/rush-curve-pass96.txt`, HUD `pass96-hud-*.jpg`). Next: PLAN item 6 (the name), Story's curve.
+  Track A: lessons still name the guard bar (`BACKLOG.md`); `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Release: `node tools/release.cjs "<title>" "<text>"` (any apostrophe is fine). Don't wait on CI after a push.
 
@@ -37,10 +38,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Boss Rush (pass 65-73): `calling`, `offerAbilities`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`
   (`server/simulation.js`); `tests/calling.cjs`, `calling-browser.cjs`, `rush-alone-browser.cjs`. Weekly: `tests/weekly.cjs`.
 - Revive (pass 64): `js/revive.js`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
-- The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
-  `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
-  Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
-  `Story` and `Church` tests and `tests/campaign-browser.cjs` (Ashmere, the one road since v7.54.0); frames `docs/scorecard/act1-*.jpg` (`.scratch/act1-frames.cjs`).
+- The end of Act I (v7.36.0): `LORE.ending`, `showEnding` (`js/finale.js`), `LEVEL_5.next`, `goesOn`, `resume`,
+  `campaignAdvanceTime`; in-page `Story`, `Church`, `tests/campaign-browser.cjs`; `docs/scorecard/act1-*.jpg`.
 - Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
@@ -88,7 +87,9 @@ In `BACKLOG.md`.
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.
-- (overridable) Boss Rush: no wall; x1.5 at fight 10, x2.5 at 15, x3.5 at 20, then +0.2 a fight (pass 90).
+- (overridable) Boss Rush: no wall; x1.6 at fight 10, x2.8 at 15, x4 at 20, then +0.25 a fight (pass 96).
+- (overridable) Pass 96: heavy = poise 60+ (94 attacks); projectiles stay blockable; the end reads "Reached fight
+  N"; Deep Lungs, Quick/Deep Breath and Second Wind are gone; the harder press is every boss's, Story's too.
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.

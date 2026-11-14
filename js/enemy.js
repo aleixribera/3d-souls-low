@@ -1184,7 +1184,7 @@ class Enemy {
           r.spin.rotation.z += Math.sin(tt * 38) * 0.025 * k; r.tip.rotation.x += Math.sin(tt * 31) * 0.015 * k;
         }
         if (this.state === ES.WINDUP && !a.hits[this.hitIndex].echo) warn = clamp(tt / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own (js/gilt-echo.js)
-        if (this.state === ES.WINDUP && a.heavy) heavy = clamp(tt / a.hits[this.hitIndex].startup, 0, 1);   // pass 96: the body warms through a heavy's wind-up
+        if (this.state === ES.WINDUP && a.heavy) heavy = clamp(tt / Math.max(a.hits[this.hitIndex].startup, 0.01), 0, 1);   // pass 96: the body warms through a heavy's wind-up
         break;
       }
       case ES.HURT: flinchPose(r, false, tt / d.flinchTime, tt, this.hitK || 1); break;
