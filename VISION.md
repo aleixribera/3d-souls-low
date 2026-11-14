@@ -64,7 +64,8 @@ side by side, and each should feel like the main event.
 - **Exceptional models,** the big bosses most of all: the best detail and art direction.
 - **Smooth animation.** No hard edges: motion follows smooth curves with real-world acceleration and easing.
 - **A compelling story,** told in whatever way works best, without ever taking control from the player: movement and
-  the camera are always theirs.
+  the camera are always theirs. The one exception (Aleix, 2026-11-14): the showcase, a 30-second cinematic of the
+  game at its best that a new player watches before the sparring scene; a show before play, never during it.
 - **Learn from the best.** Take what works and what is acclaimed in popular, praised games (Dark Souls 1-3,
   Bloodborne, Sekiro, Lies of P, Elden Ring and others): attack patterns, combos, boss and level design, UI. Build our
   own version of the core idea. Ideas and mechanics only, never their names, characters, looks or story.

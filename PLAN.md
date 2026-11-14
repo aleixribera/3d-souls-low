@@ -91,6 +91,11 @@ Aleix, 2026-11-13.
   modifiers named for what they do; the first pick a rare; momentum through attacks; legendaries OP, at one level,
   uncapped, the dragon the floor, but not "wins the fight by itself"; fewer plain stat buffs; Story's four abilities
   cool as fuck and the same all story ("Next, small" section, item 6, rework item 3).
+- The stagger bar goes (Aleix, 2026-11-14): counters are the focus ("Next, small", item 2). He leans to removing
+  executions too, open to keeping one if it's much cooler: being grilled.
+- The showcase (Aleix, 2026-11-14): a 30-second live cinematic of the game at its best, before the sparring scene, not
+  skippable, kept current by its beats' test, and recorded as a video with a WhatsApp version; built by its own session
+  (its own section). `VISION.md`'s exception with his OK.
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -324,8 +329,12 @@ name (6 below) came later the same day and goes with track B's.
        by the blade.
      Check: a clip of each (a perfect dodge into each counter, a deflect into each), side by side with old; a first
      look by a blind judge: does it notice the window opened? Then Aleix plays it.
-   - **Kept:** the boss's posture bar, the ability keys' charges, and bosses that learn (they read as a boss
-     reacting).
+   - **Kept:** the ability keys' charges, and bosses that learn (they read as a boss reacting).
+   - **The stagger bar goes** (Aleix, 2026-11-14: it competes with the counters; "focus on counters"). No posture bar
+     and no hidden posture, for bosses and for every enemy; the boss bar shows health only. Counters are the skill
+     the fight is about. What a chain of counters earns, and whether executions stay, waits on Aleix's answer
+     ("Needs Aleix"); until then the loop removes nothing of executions. Abilities that fill posture today (`breaker`
+     and the rest) are reworked to feed counters (a longer window, an effect when a counter lands).
    - **The Boss Rush corner:** the fight number only, plus the clock while a Swift kill is still possible (under par);
      "Crowned in" and "par" go.
    - **The ability keys sit bottom centre** (Aleix), not bottom right.
@@ -361,6 +370,34 @@ name (6 below) came later the same day and goes with track B's.
    Check: a browser test from empty storage: solo play never asks; opening online asks once, and the name shows in the
    party list; a reload joins with no ask; a rename in Settings shows in the party list. Frames of the ask and the
    Settings row at desktop and phone width.
+
+## The showcase: 30 seconds of the game at its best (Aleix, 2026-11-14)
+
+Aleix: "a trailer/ad/tutorial for new people that is just watching 30 seconds of the highest level gameplay", "an
+in-game cinematic, we allow it for once", updated "over time with new mechanics the game adds". **Built by its own
+session (the showcase session), not the loop**: the loop doesn't touch the showcase's own files (`js/showcase*.js`,
+`js/data/showcase.js`, its music cue, `tools/showcase-*.cjs`) and keeps its beats working when it changes a mechanic
+(its test says when one breaks).
+
+1. **Live in the engine, not a video file:** a scripted bot at the top level fights hard Boss Rush bosses at a late
+   run's pace (fights 15-20, their modifiers), with cinematic cameras cutting on the beats, so it always shows the
+   current game. The one exception to "never taking control" (`VISION.md`, with Aleix's OK): a show before play,
+   never during it.
+2. **The shape:** a montage across three of the most aggressive bosses, about 10 s each, hard cuts on the beats: it
+   opens on a boss mid-combo and ends on the game's title. Beats: dashing through a string, deflecting a string into
+   the flash-step counter, an ability on its key, a legendary (the lightning dragon), the counters' finale (whatever
+   breaking a boss is once Aleix decides, below). Its own synthesized music cue drives the cuts.
+3. **When:** a new player's first launch plays it, then the sparring scene (item 3d of the rework) straight after;
+   **it can't be skipped** (Aleix: "no key to skip it"). Afterwards a **Watch** entry on the title plays it again;
+   players from before the rework see it with their three sparring-scene offers.
+4. **Kept current:** the script is data, a list of beats ("deflect a string", "counter", "ability on key 4"); the bot
+   plays it live on a fixed seed, so it looks the same each time; a test runs it every release and fails when a beat
+   stops happening; each big new mechanic adds a beat.
+5. **A real video too:** a tool records the same cinematic at each release: a 1080p 60 fps MP4, and a **WhatsApp
+   version** (Aleix) that WhatsApp sends as a playable video, not a file: MP4, H.264 and AAC, 720p, 30 fps, under
+   16 MB. Posting either anywhere stays Aleix's.
+Check: the cinematic seen in the game at desktop and phone width; its test passing; both videos played back, the
+WhatsApp one's size and codecs checked; Aleix watches it.
 
 ## Before everything else: players know a new version is out (Aleix, 2026-11-13)
 
