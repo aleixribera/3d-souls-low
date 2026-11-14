@@ -8,9 +8,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `Pillager Captain`): own end poses per strike (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots
   step out of fires (`CONFIG.bot.fire`, `bot.offFires`, test `bot-behavior` "Bot fire"). Judge vs Hollis 4-6 vs 5-7;
   leftovers in `BACKLOG.md`. He, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Baked light accepted.
-- Track B (pass 67, v7.91.0): item 5 pass 2, each boss of a pair has half its health (`CONFIG.endless.pairHealth`,
-  `Enemy.setHealth`, `session.health`). A lone skilled bot's median run: fight 7 -> 12, in target 10-12
-  (`docs/scorecard/endless-pass67.txt`). Item 5's check met; leftovers in `BACKLOG.md`. Next: item 8, then 7.
+- Track B (pass 69): item 8, the weekly run (lobby mode, one seed per ISO week, the week's board in `BOARD_FILE`;
+  homelab mounts `data/combat-arena`). Frames `docs/scorecard/weekly-*.jpg`. Next: item 7.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -37,7 +36,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Boss Rush, endless (pass 65): `calling(run, fight)` / `offerAbilities` / `rise` / `fightTally`, `RUSH`,
   `CONFIG.endless` (`server/simulation.js`), `runSummary` (`server/index.cjs`), `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
-  Pair health (pass 67): `rushHealth`, `Enemy.setHealth`; same tests.
+  Pair health (pass 67): `rushHealth`, `Enemy.setHealth`; same tests. Weekly (pass 69): `server/board.cjs`, `tests/weekly.cjs`.
   Revive, titles (pass 64): `js/revive.js`, `reviveStep`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),

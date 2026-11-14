@@ -229,3 +229,9 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   - Pairs (pass 67): each boss of a pair has half its health; a lone bot's median run is fight 12
     (`docs/scorecard/endless-pass67.txt`). Fights 7 and 12 (pairs) are still where most runs end; party pairs and the
     swift-kill par for a pair (still 1.5x a lone boss's) are unmeasured.
+- The weekly run (track B item 8, pass 69). Shipped: the Weekly Run mode (one seed per ISO week, UTC; the same bosses,
+  modifiers and offers for the same picks), the lobby board (3 furthest runs, one per party; 3 fastest lone-boss
+  kills, one per boss), kept in `BOARD_FILE`. Left:
+  - The end screen doesn't say where the run placed on the board.
+  - A release mid-week that changes the bosses, abilities or modifiers changes that week's run; the board stays.
+  - A party is keyed by its sorted names: a renamed player is a new party.

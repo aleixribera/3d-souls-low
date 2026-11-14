@@ -116,6 +116,19 @@ async function serve(options) {
     ({ app, origin } = await serve({ dateNow: () => clock, boardFile })); servers.push(app);
     const monday = await peer(origin, 'Ash'); peers.push(monday);
     assert.deepEqual(monday.welcome.board, { week: '2026-W47', runs: [], kills: [] }, 'a new week starts an empty board');
+    // A weekly run given up after a win counts too: a restart (as this week's run) or the lobby.
+    monday.send({ type: 'control', action: 'start', kind: 'calling', id: C.weekly.id }); session = (await monday.next('start')).session;
+    const go = async () => { monday.send({ type: 'ready', epoch: session.epoch }); monday.send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, hp: 120, state: 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } }); monday.send({ type: 'ping' }); await monday.next('pong'); };
+    await go(); for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
+    const o = await monday.next('abilities'); monday.send({ type: 'pickAbility', epoch: session.epoch, id: o.offer[0] }); await monday.next('abilities');
+    session = (await monday.next('start')).session; await go();
+    monday.send({ type: 'control', action: 'restart' });
+    const restarted = (await monday.next('start')).session;
+    assert.equal(restarted.gauntlet.number, 1); assert.equal(restarted.gauntlet.run.week, '2026-W47', 'a restart is this week\'s run');
+    const left = (await monday.next('board')).board;
+    assert.deepEqual(left.runs.map(r => [r.names, r.reached, r.beaten]), [[['Ash'], 2, 1]], 'a restart after a win puts the run on the board');
+    monday.send({ type: 'control', action: 'lobby' }); await monday.next('stop'); monday.send({ type: 'ping' }); await monday.next('pong');
+    assert.ok(!monday.queue.some(m => m.type === 'board'), 'a run left before any win is not on the board');
 
     // ---- The board alone: a party keeps its best run, a boss its fastest kill, the lists their size ----
     const week = () => '2026-W46', boss = sim.catalog().bosses.map(e => e.id);

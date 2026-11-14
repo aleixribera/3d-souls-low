@@ -7,6 +7,11 @@ services:
       - "127.0.0.1:${GAME_PORT:-3080}:3000"
     environment:
       MAX_PLAYERS: "${MAX_PLAYERS:-16}"
+      # The weekly run's board (server/board.cjs), on the one writable path, so updates keep it. The folder must be
+      # writable by uid 1000 (the image's node user); without it the board lives in memory until the next restart.
+      BOARD_FILE: /data/weekly-board.json
+    volumes:
+      - ./data:/data
     read_only: true
     cap_drop:
       - ALL

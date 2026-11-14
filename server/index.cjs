@@ -168,6 +168,7 @@ function createServer(options = {}) {
   };
   const error = (p, message) => send(p, { type: 'error', message });
   function stop(message, reason = null, extra = {}) {
+    if (tally?.run.week && !tally.recorded) recordWeekly(runSummary('left'));   // a weekly run left for the lobby counts too
     session = null; abilityFor = null; abilityRound.clear(); tally = null;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
     broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
@@ -191,13 +192,15 @@ function createServer(options = {}) {
   }
   // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, Crowned fights won, and each
   // player's totals, most damage first.
-  const runSummary = outcome => ({ outcome, id: session.gauntlet.id, name: session.gauntlet.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
+  const runSummary = outcome => ({ outcome, id: tally.id, name: tally.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
-  // The end of a weekly run goes on this week's board, and everyone in the lobby sees the new board.
+  // The end of a weekly run goes on this week's board, once, and everyone in the lobby sees the new board. However it
+  // ends counts: a wipe, a win, the leader taking everyone to the lobby, a restart or a new run.
   function recordWeekly(summary) {
     const week = tally?.run.week;
-    if (!week) return;
+    if (!week || tally.recorded || summary.outcome === 'left' && !summary.beaten) return;   // given up before a win: nothing to show
+    tally.recorded = true;
     const reached = summary.times.length + (summary.outcome === 'won' ? 0 : 1);
     if (board.record(week, { names: summary.players.filter(r => !r.bot).map(r => r.name), reached, beaten: summary.beaten, time: summary.time, fights: summary.times }))
       broadcast({ type: 'board', board: board.current() });
@@ -218,6 +221,7 @@ function createServer(options = {}) {
       if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another level.', 'error');
       throw e;
     }
+    if (tally?.run.week && !tally.recorded && !(gauntlet?.run && gauntlet.fight > 0)) recordWeekly(runSummary('left'));   // a weekly run given up
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
     if (gauntlet?.run) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
@@ -226,7 +230,7 @@ function createServer(options = {}) {
     if (gauntlet?.run && gauntlet.partners.length) session.health = sim.rushHealth(1 + gauntlet.partners.length);   // each boss's share of its bars
     if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.run) tally = null;
-    else if (gauntlet.fight === 0) tally = { run: gauntlet.run, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
+    else if (gauntlet.fight === 0) tally = { run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
@@ -318,7 +322,8 @@ function createServer(options = {}) {
         if (!e.rejected) console.error('Start failed:', e);
         error(p, e.rejected ? e.message : 'That adventure could not start. Choose another.');
       }
-    } else if (msg.action === 'restart' && session) session.gauntlet?.run ? start('calling', session.gauntlet.run, null, 0, true)
+    // A weekly run restarts as this week's run (it may have begun last week); any other Boss Rush run as itself.
+    } else if (msg.action === 'restart' && session) session.gauntlet?.run ? start('calling', session.gauntlet.run.week ? sim.weeklyRun(dateNow()) : session.gauntlet.run, null, 0, true)
       : session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
     else if (msg.action === 'lobby') {
       stop('The leader returned everyone to the lobby.');
