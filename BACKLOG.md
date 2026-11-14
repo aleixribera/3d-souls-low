@@ -226,4 +226,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   - The Crowned arena change (light, ground, hazards; baked, inside Normal's budget).
   - Modifiers "an extra phase of new moves" and "burning ground" (a hazard system the arenas lack); more pace-only ones.
   - A swift kill on a Crowned fight adds no card (the pick is 4 either way).
-  - A pair is still the run's wall for a lone player (falls at fight 7 in the scorecard); party pairs are unmeasured.
+  - Pairs (pass 67): each boss of a pair has half its health; a lone bot's median run is fight 12
+    (`docs/scorecard/endless-pass67.txt`). Fights 7 and 12 (pairs) are still where most runs end; party pairs and the
+    swift-kill par for a pair (still 1.5x a lone boss's) are unmeasured.

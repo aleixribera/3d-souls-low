@@ -7,6 +7,7 @@ pairHealth 1 (pass 65, 48 runs):  median 7,  mean 8.4,  fell at fight 7: most ru
 pairHealth 0.6 (48 runs):         median 10, mean 9.3,  range 2-16, fell at 7: 12, at 12: 10, reached 10+: 24, fell to a pair: 22
 pairHealth 0.55 (64 runs):        median 10, mean 9.4,  range 1-16, fell at 7: 11, at 12: 17, reached 10+: 34, fell to a pair: 28
 pairHealth 0.5 (48 runs, shipped): median 12, mean 10.4, range 2-16, fell at 7: 5,  at 12: 10, reached 10+: 31, fell to a pair: 15
+  again on v7.90.0 (the Captain's pass 2, bots out of fires): median 12, mean 10.3, fell at 7: 5, at 12: 10, reached 10+: 30
 
 ## Pairs alone at the pace for 6 won (fight 7), 48 random pairs (pairs 48 6)
 pairHealth 1 (pass 65): falls 0.38, win time 217 s
