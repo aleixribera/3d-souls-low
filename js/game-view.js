@@ -245,7 +245,10 @@ Object.assign(Game, {
     t = Math.max(0, t);
     const wx = p.x + ox * t, wz = p.z + oz * t;
     const want = new THREE.Vector3(wx, this.camY(wx, wz, base + height * Math.max(t, 0.5) + (1 - t) * K.closeRaise, base), wz);
-    c.pos.lerp(want, k); c.look.lerp(look, snap ? 1 : 1 - Math.exp(-K.lookRate * dt));
+    // A snap (a level start, a respawn) copies: a lerp keeps a NaN forever, so one bad frame followed the camera into
+    // every later level (pass 86).
+    if (snap) { c.pos.copy(want); c.look.copy(look); }
+    else { c.pos.lerp(want, k); c.look.lerp(look, 1 - Math.exp(-K.lookRate * dt)); }
     if (W.solids) {
       // The smoothed position can cut a corner: pull it back along the line from the player if it would.
       const dx = c.pos.x - p.x, dz = c.pos.z - p.z, f = this.boomFit(p.x, head, p.z, dx, c.pos.y - head, dz);

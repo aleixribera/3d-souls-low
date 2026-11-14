@@ -3132,7 +3132,10 @@
         inControl(`${id}: ${I.name}`); seen.inscription++;
       }
       for (const s of LS() ? LS().scenes : []) {
-        sim.place(s.def.x + 1.5, s.def.z, s.y + 0.5); sim.step(2); Game.render(1, CONFIG.step);
+        // Beside it, on a floor: the abbey's first corpse sits by a wall with nothing past it (a NaN player there broke the camera).
+        const [dx, dz] = [[1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5]].find(([dx, dz]) => Number.isFinite(world.floorY(s.def.x + dx, s.def.z + dz, s.y + 0.5))) || [];
+        expect.ok(dx !== undefined, `${id}: there is floor beside the ${s.def.kind} scene`);
+        sim.place(s.def.x + dx, s.def.z + dz, s.y + 0.5); sim.step(2); Game.render(1, CONFIG.step);
         expect.ok(s.group.visible, `${id}: the ${s.def.kind} scene shows`);
         inControl(`${id}: the ${s.def.kind} scene`); seen.scene++;
       }
