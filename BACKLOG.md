@@ -3,14 +3,23 @@
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
 - **Keys 1-4, after pass 87 (track B):** pressed abilities fill from play (`CONFIG.abilities.press`). Not yet: Story
-  gives no pressed ability (track A: four given abilities along the road, one a key); Thunder Call and Cataclysm reuse
+  gives no pressed ability (below); Thunder Call and Cataclysm reuse
   Storm King's and Meteor Fall's effects, not their own; bots press a full key at once (heal when hurt, stance on a
   wind-up), untuned; a press the server refuses spends the client's charge with no reply to refund it; no online test
   of a dodged multi-hit string filling once (the server counts one per attack, the client too since the review).
 
-- **World hints, after pass 86 (track A):** keys beside the foe for Attack, Deflect, Dodge. Not yet: a hint for the
-  dash attack, the finisher, jump attacks and the flask in the world (the HUD's "Press E to heal" stays); the lesson
-  cards still teach the old moves in places (stamina, the parry's words). A test that empties `Game.enemies` without
+- **Story's four key abilities (track A, waiting behind item 3c since pass 89).** Pass 89's draft, not built: a
+  level's `abilityFinds` beside `flaskFinds` (a light of its own colour at a shrine or a person, taken on touch, kept in
+  the save's `finds`, granted in `spawnPlayer`, and through the road off Story like `roadFlasks`; the toast names it
+  and its key); validate one per key on the road, pressed abilities only. Picks (overridable): Wind Blade at the
+  Sunken Keep's founders' shrine (1), Mending in the Church in the Pass (2), Grave Hound at Saltgrave (3), Thunder Call
+  in the Torn Abbey (4). Online Story needs the server's `owned` list for the road too (track B's claim checks).
+  Charge resets on death.
+
+- **World hints, after pass 89 (track A):** keys beside the foe for Attack, Deflect, Dash, Finisher, Dash attack, Jump
+  attack and a charged key 1-4. Not yet: the flask in the world (the HUD's "Press E to heal" stays); the dash-attack
+  hint lasts one 0.36 s dash, worth watching in play; `hud.js`'s first death tip waits on `sinceExhausted`, which
+  nothing sets since stamina went, so it shows only at random. A test that empties `Game.enemies` without
   `sim.clearEnemies()` leaves figures in the scene for every later test (pass 86 fixed two; a check in the runner would
   catch the next).
 

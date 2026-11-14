@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 86): item 3: keys beside the foe from the bindings, until done 3 times (`js/world-hints.js`, in-page
-  `World hints`, `world-hint-*.jpg`); CI shard 3: a leak of ~360 figures and a NaN camera (`Story moments`) fixed.
-  Next: lessons' words on the new moves; re-tune Story once the moveset is the only one.
+- Track A (pass 89): 3b: lessons and death tips on the new moves; world hints (in-page `World hints`) for finishers,
+  dash and jump attacks, a charged key 1-4. Next: item 3c (smooth, responsive, a bit anime; track A owns the player's
+  animation), references and input-to-motion frames first. Behind 3c: Story's key abilities, its re-tune;
+  the counter, deflect and drink poses are 3c's.
 - Track B (pass 88): items 1-2 rough (in-page `pass 85`); keys 1-4 (in-page `pass 87`); the counter, a riposte's own
   move (`moveset.counter`, stand-in poses); bots end strings with finishers, dash in, counter (`CONFIG.bot.dashIn`,
   `bot-behavior.cjs`). Next: (1) Boss Rush bosses and curve (item 4); (2) item 5's proof, then the only moveset.
