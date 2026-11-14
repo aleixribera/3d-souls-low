@@ -674,7 +674,8 @@ function validateData({ visual = true } = {}) {
   // Flasks found on the road (a level's `flaskFinds`): only on a chapter of a campaign, each id unique on every road.
   const findIds = ALL_LEVELS.flatMap(L => (Array.isArray(L.flaskFinds) ? L.flaskFinds : []).map(f => f && f.id));
   need(new Set(findIds).size === findIds.length, 'Levels: every flaskFinds id must be unique.');
-  for (const L of ALL_LEVELS) if ('flaskFinds' in L) need(storyIdsAll.includes(L.id), `Level "${L.id}": flaskFinds only on a chapter of a Story road.`);
+  // roadFlasks and roadMight walk STORY's road, and js/lore.js draws a find only where the level has lore.
+  for (const L of ALL_LEVELS) if ('flaskFinds' in L) need(STORY.chapters.some(c => c.level === L.id) && LORE.levels[L.id], `Level "${L.id}": flaskFinds only on a chapter of STORY's road, in a level with an entry in LORE.levels.`);
   // Lore (js/data/lore.js, v5.1): the NPC's model, and per level a dialogue, inscriptions and scenes with readable text.
   const lines = a => Array.isArray(a) && a.length > 0 && a.every(t => typeof t === 'string' && t.trim().length > 0);
   need(LORE.npc && typeof LORE.npc.name === 'string' && LORE.npc.model in MODEL_DEFS && num(LORE.npc.scale) && num(LORE.npc.bulk), 'Lore: the NPC needs a name, a model in MODEL_DEFS, scale and bulk.');
