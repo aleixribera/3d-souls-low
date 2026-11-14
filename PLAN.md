@@ -56,6 +56,8 @@ Aleix, 2026-11-13.
 - What replaces the Elden Ring bosses: nothing. Boss Rush, Practice and the lobby modes use the story's own bosses:
   Ashmere's five (Pillager Captain, Bell Warden, the Gaol Giant, Aldric, the Antlered Hunger) and chapters 7-14's
   (Ostrey, Hale and Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade).
+- Abilities (Aleix, 2026-11-14): way more spectacular, super cool, and a really wide pool: 80 or more, at least 20
+  legendary and 8 summons (track B, item 6).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -189,7 +191,9 @@ after the abilities). If the track reaches item 6 before that session has shippe
 comes back to item 6 the moment it lands.
 Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in progress, ahead of everything left.
 Next in this track (2026-11-14): item 11's third pass (the wall and the ease go, picks evened, par per boss), ahead of
-the summons' own moves; then the end screen's highlights (item 4), which are still unbuilt.
+the summons' own moves; then item 6's new bar (Aleix, 2026-11-14: way more spectacular abilities and a really wide
+pool), whose spectacle and growth passes then take every other track-B pass for as long as the pool is short of it,
+the end screen's highlights (item 4, still unbuilt) fitting in between.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
    Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
@@ -334,7 +338,13 @@ the summons' own moves; then the end screen's highlights (item 4), which are sti
      boss-sized mannequins and every ability) is that session's follow-up, its own PR.
    - **Then the loop owns the pool.** It adds as many abilities as it likes, reworks them, and cuts what doesn't work
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
-     least 4 summons, every one fun to get and fun to use.
+     least 4 summons, every one fun to get and fun to use. Reached at v7.103.0 (36: 12 common, 16 rare, 8 legendary;
+     4 summons). **The new bar (Aleix, 2026-11-14): way more spectacular, super cool, a really wide pool.** Aim for
+     80 or more, at least 20 legendary and 8 summons, rares as spectacular as today's legendaries and legendaries a
+     clear step above that. Two kinds of pass, taken in turn: a spectacle pass that lifts existing abilities to the
+     new bar (the plainest first, judged on frames and a short clip of each moment), and a growth pass that adds new
+     ones, each with its own look, sound and moment. Every new one keeps item 11's rules (at most 2 legendaries held,
+     posture earned, no single ability carrying a run) and `AGENTS.md`'s short card text.
    - **The feel: anime techniques** (Aleix: the cool attacks and effects of a show like Naruto Shippuden). Signature
      moves with a big moment: a lightning dragon that tears out of a fully charged heavy blow, a counter that fires when
      you parry, clones that strike together, a wind blade, a fire burst. `VISION.md`'s rule holds: the spectacle and
