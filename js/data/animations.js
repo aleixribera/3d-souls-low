@@ -95,15 +95,15 @@ const ANIM_SETTINGS = {
     { at: 0, lean: 0.5, tip: 0.06, head: -0.35,   // loaded: both knees bent, arms going back
       legL: [-0.5, 0, 0.06], kneeL: 1.2, legR: [0.45, 0, -0.06], kneeR: 0.7,
       armR: [0.5, 0.1, -0.3], elbowR: -0.3, weapon: [1.1, 0, 0], armL: [0.4, -0.1, 0.4], elbowL: -0.4 },
-    { at: 0.16, lean: 0.72, tip: 0.14, head: -0.55,   // push-off: the back leg drives straight, arms swept back
-      legL: [-1, 0, 0.08], kneeL: 1.35, legR: [0.95, 0, -0.06], kneeR: 0.05,
-      armR: [1, 0.15, -0.4], elbowR: -0.15, weapon: [1.3, 0, 0], armL: [0.95, -0.1, 0.5], elbowL: -0.15 },
-    { at: 0.42, lean: 0.55, tip: 0.1, head: -0.45,   // the stride: the back leg swung through and reaching, the old front leg behind, free arm swung through
-      legL: [0.55, 0, 0.08], kneeL: 0.5, legR: [-1.15, 0, -0.06], kneeR: 1.3,
-      armR: [1.1, 0.2, -0.45], elbowR: -0.2, weapon: [1.25, 0, 0], armL: [-0.5, -0.1, 0.35], elbowL: -0.9 },
-    { at: 0.7, lean: 0.3, tip: -0.08, head: -0.2,   // the skid: the new front heel braking, back knee low, body rising, free arm bent out a little
-      legL: [0.5, 0, 0.12], kneeL: 1.3, legR: [-1, 0, -0.08], kneeR: 0.3,
-      armR: [0.35, 0.1, -0.6], elbowR: -0.5, weapon: [1, 0.2, 0], armL: [-0.45, 0, 0.45], elbowL: -0.8 },
+    { at: 0.12, lean: 0.68, tip: 0.05, head: -0.5,   // the lunge struck: front thigh level over an upright shin, back leg straight far behind, free arm out for balance
+      legL: [-1.45, 0, 0.1], kneeL: 1.55, legR: [0.96, 0, -0.06], kneeR: 0.04,
+      armR: [1, 0.15, -0.45], elbowR: -0.15, weapon: [1.3, 0, 0], armL: [-0.5, -0.1, 0.9], elbowL: -0.5 },
+    { at: 0.5, lean: 0.75, tip: 0.03, head: -0.55,   // held and sinking: the hips about half a metre up, the blade trailing low
+      legL: [-1.55, 0, 0.12], kneeL: 1.6, legR: [1.02, 0, -0.08], kneeR: 0.02,
+      armR: [1.1, 0.2, -0.5], elbowR: -0.1, weapon: [1.35, 0, 0], armL: [-0.6, -0.1, 1], elbowL: -0.45 },
+    { at: 0.72, lean: 0.6, tip: 0, head: -0.4,   // the gather: the back leg pulled in under the hips, the body rising
+      legL: [-0.95, 0, 0.1], kneeL: 1.5, legR: [0.1, 0, -0.06], kneeR: 1.3,
+      armR: [0.6, 0.1, -0.5], elbowR: -0.5, weapon: [1.1, 0.1, 0], armL: [0.2, 0, 0.5], elbowL: -0.8 },
     { at: 1, lean: 0.12, tip: 0, head: -0.05,   // up toward stance, blade forward again
       legL: [0.3, 0, 0.05], kneeL: 0.5, legR: [-0.45, 0, -0.03], kneeR: 0.5,
       armR: [-0.2, 0, -0.15], elbowR: -0.2, weapon: [0.6, 0, 0], armL: [-0.1, 0, 0.3], elbowL: -0.2 },
