@@ -6,8 +6,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Track A (pass 84): item 3 pass 1: laptop keys, changeable in Controls; L taps deflect; bosses lock on; a gentle
   first Hollow (in-page `Controls:`; `BACKLOG.md` top). Next: hints in the world.
-- Track B (pass 83): four summons at once online, party of four (`tests/summons-party-browser.cjs` by hand,
-  `docs/scorecard/summons-party.jpg`). Next: the rework's moveset (items 1-2).
+- Track B (pass 85): rework items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`). Next, in order: (1) ability
+  triggers, 1-4 keys; (2) own poses for the new moves, bots on them (0.2 s i-frames, deflects); (3) Boss Rush bosses
+  and curve (item 4); (4) item 5's proof and clips, then the only moveset. Track A: lessons and hints still say
+  stamina/parry; dash and jump attacks want hints.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -25,19 +27,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
-- Pace (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate`, `setRushFight`; `tests/boss-pace.cjs`. Between fights:
-  `CONFIG.swift`, `rushPar`, `js/kill-moment.js`; `tests/rush-flow.cjs`. `tools/rush-curve.cjs` `bosses`, `runs`,
-  `pairs` (`SKILLED=1`, `CURVE=`, `ENDLESS=`, `ABILITIES=`, `KIT=strong|max|best`); the wall (pass 76): `CONFIG.pace.wall`. Practice's Speed: `CONFIG.practice.fights`.
+- Pace: `CONFIG.pace` (`wall`), `rushPace`, `CONFIG.swift`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
+  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
-- Boss Rush, endless (pass 65): `calling(run, fight)` / `offerAbilities` / `rise` / `fightTally`, `RUSH`,
-  `CONFIG.endless` (`server/simulation.js`), `runSummary` (`server/index.cjs`), `js/multiplayer.js`; checked by
-  `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
-  Pair health (pass 67): `rushHealth`, `Enemy.setHealth`; same tests. Weekly (pass 69): `server/board.cjs`, `tests/weekly.cjs`.
-  Pick hold, held list (pass 70): `pickHold`, `abilityHeldList`; `calling-browser`. Run shape (pass 73): `firstPick`,
-  `RUSH.health`, `kitMight`; `rush-alone-browser` (`first-pick-*.jpg`).
-  Revive, titles (pass 64): `js/revive.js`, `reviveStep`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
+- Boss Rush (pass 65-73): `calling`, `offerAbilities`, `rise`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`,
+  `firstPick` (`server/simulation.js`), `runSummary`; `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs`,
+  `rush-alone-browser.cjs`. Weekly: `server/board.cjs`, `tests/weekly.cjs`.
+- Revive (pass 64): `js/revive.js`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
@@ -62,6 +60,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 - In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
+- CI on v7.107.0: in-page 3/4 timed out, `Ultra: Hale and the Kindling Tree` took 1,126 s on SwiftShader.
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
