@@ -10,9 +10,10 @@ on:
 permissions:
   contents: read
 
+# Two passes push to main: a run on main always completes (the next one waits); a PR's newer push cancels its old run.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   node:
