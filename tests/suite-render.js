@@ -37,7 +37,7 @@
     try {
       start('long-hall');
       const live = KIT.modelParts(PLAYER_DEF.look.model);   // the player's body was built at the current detail
-      const other = JSON.stringify(was) === JSON.stringify(Q.ultra.modelDetail) ? Q.low.modelDetail : Q.ultra.modelDetail;
+      const other = JSON.stringify(was) === JSON.stringify(Q.ultra.modelDetail) ? Q.normal.modelDetail : Q.ultra.modelDetail;
       KIT.setDetail(other);
       const temp = KIT.modelParts('oswinFirstCrown');
       let freed = 0; for (const p of temp.parts) p.geo.addEventListener('dispose', () => freed++);
