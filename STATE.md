@@ -8,7 +8,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Normal: no MSAA but FXAA, 4 lights, no stone reflections, volumetrics/refraction/fire at small budgets. Laptop
   (`tools/bench/laptop.sh`, fps / 1% low): long-hall 67/36, burning-town 50-59/35, aurel-in-ash 54-59/35, final-castle
   60-65/41, still-mere 70-73/45, 4-player King's Blade 69-75/47 (old High 33-53). **Not yet 60 everywhere**: pass 2
-  is baked lighting. PC stand-in `tools/bench/pc-bench.cjs` (uncalibrated). Auto now gives integrated GPUs
+  is baked lighting (`BACKLOG.md`). Auto now gives integrated GPUs
   Normal (was Low, 116-230 fps). The King's Blade (pass 55, `docs/scorecard/kings-blade-*.jpg`), Agathe, the Kindling
   Tree: **awaiting Aleix**.
 - Track B (pass 58, v7.81.0): item 3's open checks: Controls screen (`docs/scorecard/controls-*.jpg`), pad-alone
@@ -67,7 +67,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- In-page `Still Mere: the Oath Guard answers` flaked once in CI (kneel angle -0.74; passed on rerun, pass 57).
+- In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
