@@ -96,6 +96,10 @@ const TEXTURE_DEFS = [
   { id: 'wispMantle', kind: 'cloth', base: 0x3a2012, alt: 0x62381e, accent: 0x1a0d06, rough: [0.78, 0.96], metal: 0, bump: 1.2, scratch: 10, stain: 0x160a05, cavity: 0.8, contrast: 0.85 },
   { id: 'wispBrocade', kind: 'holy', base: 0x7a5c2e, alt: 0xd4b678, accent: 0x3a220c, rough: [0.55, 0.88], metal: 0.12, bump: 1.4, scratch: 8, stain: 0x281808, cavity: 0.85, contrast: 0.95, scale: 2 },
   { id: 'wispTrim', kind: 'cloth', base: 0x683612, alt: 0xc47e24, accent: 0x2a1206, rough: [0.5, 0.85], metal: 0.2, bump: 1.45, scratch: 6, stain: 0x1e0c04, cavity: 0.85, contrast: 0.95, scale: 2 },
+  // Mother Agathe (pass 53): a black wool habit, a storm-grey scapular and white linen that read as what they are, unblotched.
+  { id: 'abbessWool', kind: 'cloth', base: 0x1e1c1b, alt: 0x2a2826, accent: 0x1a1918, rough: [0.86, 1], metal: 0, bump: 0.9, scratch: 2, stain: 0x141312, cavity: 0.5, contrast: 0.35 },
+  { id: 'abbeyStorm', kind: 'cloth', base: 0x484b50, alt: 0x55585e, accent: 0x414449, rough: [0.84, 1], metal: 0, bump: 0.7, scratch: 3, stain: 0x26272a, cavity: 0.45, contrast: 0.3 },
+  { id: 'abbeyLinen', kind: 'cloth', base: 0xcfcbc0, alt: 0xe2ded4, accent: 0xc2beb2, rough: [0.82, 0.98], metal: 0, bump: 0.5, scratch: 2, stain: 0x8c8678, cavity: 0.3, contrast: 0.2 },
   { id: 'wispCoat', kind: 'cloth', base: 0x1a1c16, alt: 0x32362a, accent: 0x0b0c09, rough: [0.82, 0.98], metal: 0, bump: 1.1, scratch: 8, stain: 0x0c0b08, cavity: 0.8, contrast: 0.8 },
   // The Empty Sentinel (v5.5, after the reference art): antique burnished gold/brass plate, deeply embossed arabesque
   // gold filigree, warm amber-bronze chainmail, weathered ash-white surcoat cloth with dark geometric border embroidery

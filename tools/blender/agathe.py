@@ -48,24 +48,67 @@ def lerp_rows(rows, y):
 
 # ==== HEAD ==================================================================================================================
 # ---- the face: long and gaunt, the cheeks hollow under high bones, a long hooked nose, the mouth a pressed line ----------
+# (pass 53) One smooth head, its features pushed and carved into the surface (`after`), not stuck on as lumps: the old
+# blobs read as a mask.
 def face(bm):
     blob(bm, (0, 1.835, -.02), .086, (.84, 1.1, 1.04), 3)          # the skull, long and narrow
-    blob(bm, (0, 1.742, .022), .05, (.8, .86, .95), 3)             # the jaw, narrow, the chin pointed
-    blob(bm, (0, 1.703, .058), .019, (1.0, .9, .9), 2)             # the chin
-    for s in (-1, 1):
-        blob(bm, (s * .05, 1.802, .052), .022, (1.0, .62, .7), 2)     # the cheekbones, high and sharp
-        blob(bm, (s * .032, 1.842, .07), .02, (1.5, .55, .6), 2)      # the brow ridge, heavy over deep sockets
-        blob(bm, (s * .031, 1.817, .07), .012, (1.3, .5, .4), 1)      # the lids, heavy
-    blob(bm, (0, 1.79, .088), .013, (.65, 2.1, 1.2), 2)            # the nose, long
-    blob(bm, (0, 1.77, .1), .011, (.8, .9, 1.0), 1)                # its hooked tip, drooping
-    tube(bm, [(-.022, 1.733, .078), (0, 1.731, .083), (.022, 1.733, .078)], [.004, .0045, .004], 6)   # the mouth, pressed thin
-soft('head__skin', face, 1250, voxel=.0048)
+    blob(bm, (0, 1.75, .016), .052, (.8, .95, .95), 3)             # the jaw, narrow, the chin pointed
+    blob(bm, (0, 1.708, .05), .02, (1.0, .9, .9), 2)               # the chin
+# Features: (x, y, half-width, half-height, depth); + raises the surface, - carves it. Mirrored where x != 0.
+FEATURES = [
+    (.031, 1.816, .021, .015, -.019),   # the eye sockets, deep
+    (.030, 1.842, .03, .009, .006),     # the brow ridge over them, heavy
+    (.052, 1.803, .016, .009, .006),    # the cheekbones, high and sharp
+    (.044, 1.764, .02, .022, -.013),    # the cheeks, hollow under them
+    (.068, 1.83, .012, .03, -.005),     # the temples, sunken
+    (0, 1.825, .008, .01, -.004),       # the bridge between the eyes, pinched
+    (0, 1.795, .0072, .028, .013),      # the nose, long and thin
+    (0, 1.773, .009, .008, .009),       # its hooked tip, drooping
+    (.011, 1.773, .006, .005, -.004),   # the nostrils' wings, pinched in
+    (0, 1.74, .022, .003, -.008),       # the mouth, pressed to a line
+    (0, 1.746, .022, .004, .002),       # the thin upper lip over it
+    (.024, 1.736, .006, .012, -.004),   # the lines down from its corners
+    (0, 1.71, .014, .01, .003),         # the chin, pointed
+]
+def carve(g):
+    if g.z < -.01: return 0
+    d = 0
+    for x, y, rx, ry, k in FEATURES:
+        for sx in ((-x, x) if x else (0,)):
+            d += k * math.exp(-((g.x - sx) / rx) ** 2 - ((g.y - y) / ry) ** 2)
+    return d * min(1, (g.z + .01) / .04)
+soft('head__skin', face, 1500, voxel=.004, after=carve)
 # ---- the coif: white linen tight round the face, over the brow and under the chin, round the throat ----------------------
+def coif_shell(bm, c=(0, 1.81, -.018), r=(.11, .132, .118), e0=-.9, e1=1.5, nu=30, nv=14, hole=(0, 1.787, .063, .09)):
+    """(pass 53) The coif round the whole head, the face showing through an oval opening (the old one was a box)."""
+    hx, hy, ha, hb = hole
+    def on(x, y):   # the point of the shell's front at (x, y)
+        k = 1 - (x / r[0]) ** 2 - ((y - c[1]) / r[1]) ** 2
+        return Vector((x, y, c[2] + r[2] * math.sqrt(max(0.0, k))))
+    grid, inside = [], []
+    for j in range(nv + 1):
+        e = e0 + (e1 - e0) * j / nv; line, flags = [], []
+        for i in range(nu):
+            a = -math.pi + math.tau * i / nu
+            p = Vector((c[0] + math.sin(a) * math.cos(e) * r[0], c[1] + math.sin(e) * r[1], c[2] + math.cos(a) * math.cos(e) * r[2]))
+            d = math.hypot((p.x - hx) / ha, (p.y - hy) / hb)
+            hit = p.z > c[2] and d < 1
+            if hit and d > 1e-6: p = on(hx + (p.x - hx) / d, hy + (p.y - hy) / d)   # pulled out to the opening's edge
+            line.append(p); flags.append(hit)
+        grid.append(line); inside.append(flags)
+    verts = [[None] * nu for _ in range(nv + 1)]
+    for j in range(nv):
+        for i in range(nu):
+            q = [(j, i), (j, (i + 1) % nu), (j + 1, (i + 1) % nu), (j + 1, i)]
+            if all(inside[a][b] for a, b in q): continue
+            for a, b in q:
+                if verts[a][b] is None: verts[a][b] = bm.verts.new(G(*grid[a][b]))
+            vs = [verts[a][b] for a, b in q]
+            if len({id(v) for v in vs}) == 4: bm.faces.new(vs)
 def coif(bm):
-    shell(bm, (0, 1.81, -.018), .11, .132, .118, -.9, 1.5, .8, math.tau - .8, nu=16, nv=9)   # round the sides and back
-    shell(bm, (0, 1.81, -.018), .112, .132, .12, .45, 1.5, -.95, .95, nu=10, nv=5)              # the band over the brow
-    loft(bm, [(1.75, 0, .0, .08, .076), (1.68, 0, -.004, .082, .078), (1.58, 0, -.01, .095, .09)], 14, cap=False)   # the throat
-    shell(bm, (0, 1.75, .01), .082, .05, .07, -1.3, .1, -1.0, 1.0, nu=10, nv=4)                # under the chin
+    coif_shell(bm)                                                                                # round the head, the face in an oval
+    loft(bm, [(1.726, 0, -.006, .074, .079), (1.67, 0, -.008, .08, .078), (1.58, 0, -.01, .095, .09)], 14, cap=False)   # the throat
+    shell(bm, (0, 1.712, .0), .08, .05, .068, -1.3, -.2, -1.1, 1.1, nu=10, nv=4)                # under the chin, below the mouth
 hard('head__linen', coif, thick=.009, outward=(0, 1.8, -.01))
 # ---- the black veil over the coif, falling back to the shoulders --------------------------------------------------------
 def veil(bm):
@@ -154,16 +197,23 @@ hard('loinF__rope', rope_ends)
 # ==== the mantle: the veil's black, from the shoulders to the floor behind her, torn at the hem =============================
 TOP, HEM = 1.58, .04
 def mantle_at(u, v):   # u across (0 the figure's right), v = 0 the shoulders .. 1 the hem
-    y = TOP + (HEM - TOP) * v; w = .44 + .5 * v ** .8
+    # (pass 53) Heavy wool in deep folds, not a board: from the shoulder blades the cloth breaks into a few big pipes
+    # that open out toward the hem, uneven, the middle one deepest; the sides wrap round toward her flanks.
+    y = TOP + (HEM - TOP) * v; w = .46 + .56 * v ** .8
     x = (u - .5) * w
-    bow = (.15 - .02 * v) * (1 - math.cos((u - .5) * math.pi))
-    z = -.22 - .16 * v ** 1.1 + bow + .045 * math.sin(u * 11 + v * 2.5) * v ** .7
+    a = (u - .5) * math.pi
+    bow = (.16 - .02 * v) * (1 - math.cos(a))
+    grow = min(1.0, .25 + v * 1.3)
+    pipes = .5 + .5 * math.sin(u * 15.5 + .6 + .9 * v) + .35 * math.sin(u * 33 + 1.7 + v * 4)
+    fold = (.03 + .085 * v ** .8) * grow * pipes * (1 - .45 * abs(u - .5) * 2)
+    z = -.22 - .15 * v ** 1.1 + bow - fold * math.cos(a)
+    x += fold * math.sin(a) * .8
     return (x, y, z)
 SEGS = [('capeA', 1.58), ('capeB', 1.14), ('capeC', .70)]
 def v_of(y): return (TOP - y) / (TOP - HEM)
 for i, (bone, y0) in enumerate(SEGS):
     v0 = 0 if i == 0 else v_of(y0); v1 = v_of(SEGS[i + 1][1]) if i < 2 else 1.0
-    hard(f'{bone}__habit', lambda bm, v0=v0, v1=v1, last=(i == 2): sheet(bm, 14, 3, lambda u, v: mantle_at(u, v0 + (v1 - v0) * v),
+    hard(f'{bone}__habit', lambda bm, v0=v0, v1=v1, last=(i == 2): sheet(bm, 30, 4, lambda u, v: mantle_at(u, v0 + (v1 - v0) * v),
                                                                      ragged=.12 if last else 0, seed=21), outward=(0, .9, .2))
 
 # ==== ARMS: the habit's sleeves, wide bell cuffs from the elbow; long bony hands bound in linen ===============================
@@ -177,20 +227,14 @@ for s, n in ((1, 'L'), (-1, 'R')):
     hard(f'elbow{n}__habit', bell, thick=.008, outward=lambda c, x=x: (x, c.y, -.01))
     def hand(bm, x=x, s=s):
         tube(bm, [(x, EL - .02, 0), (x, WR + .02, .004)], [.04, .034], 8)                       # the forearm, thin
-        if s < 0:   # the right: a closed grip round the haft, the knuckles sharp
-            blob(bm, (x + s * .024, WR - .03, 0), .052, (.6, 1.0, 1.12), 2)
-            for zf in (-.036, -.012, .012, .036):
-                tube(bm, [(x + s * .036, WR - .032, zf), (x + s * .028, WR - .085, zf * 1.1), (x - s * .028, WR - .09, zf * 1.1), (x - s * .046, WR - .044, zf)],
-                     [.014, .013, .012, .011], 6)
-                blob(bm, (x + s * .03, WR - .086, zf * 1.1), .013, (1, 1, 1), 1)                 # the knuckle
-            tube(bm, [(x + s * .02, WR - .008, .052), (x - s * .014, WR - .004, .064), (x - s * .044, WR - .018, .056)], [.013, .012, .01], 6)
-        else:       # the left: long fingers half closed, hooked like the blade
-            blob(bm, (x, WR - .042, .004), .046, (.48, 1.1, 1.0), 2)
-            for k, zf in enumerate((-.03, -.01, .01, .03)):
-                ln = (.09, .1, .096, .08)[k]
-                tube(bm, [(x, WR - .075, zf), (x + .004, WR - .075 - ln * .55, zf * 1.1 + .01), (x + .006, WR - .075 - ln * .9, zf * 1.15 + .04),
-                          (x + .004, WR - .075 - ln * .95, zf * 1.15 + .062)], [.011, .01, .009, .007], 6)
-            tube(bm, [(x - .006, WR - .04, .042), (x + .002, WR - .08, .064), (x + .006, WR - .1, .08)], [.012, .01, .008], 6)
+        # Both hands a closed grip round the haft (pass 53: the left holds it too), the knuckles sharp. The fist closes
+        # round a line along z just below the wrist, where the game's grip puts the haft.
+        blob(bm, (x + s * .024, WR - .03, 0), .052, (.6, 1.0, 1.12), 2)
+        for zf in (-.036, -.012, .012, .036):
+            tube(bm, [(x + s * .036, WR - .032, zf), (x + s * .028, WR - .085, zf * 1.1), (x - s * .028, WR - .09, zf * 1.1), (x - s * .046, WR - .044, zf)],
+                 [.014, .013, .012, .011], 6)
+            blob(bm, (x + s * .03, WR - .086, zf * 1.1), .013, (1, 1, 1), 1)                 # the knuckle
+        tube(bm, [(x + s * .02, WR - .008, .052), (x - s * .014, WR - .004, .064), (x - s * .044, WR - .018, .056)], [.013, .012, .01], 6)
     soft(f'elbow{n}__skin', hand, 620, voxel=.005)
     def strips(bm, x=x):   # linen bound round wrist and palm, a loose end
         for k in range(5):

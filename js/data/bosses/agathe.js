@@ -19,9 +19,11 @@
 // her, hauling back on it (the cornerstone); the haft hugged upright, a look over her right shoulder (the turning hook).
 // In the storm: the hook lifted to the sky in both hands, crouched under it (the storm comes); the hook held up in her
 // right hand alone, her left palm open to the clouds (the storm knows its own); the hook wound round behind her back, her
-// back to you (the gale reap); a deep crouch, the hook trailing, and a spring (the hook from the storm). Blade angles below
-// are a `pitch` (0 the haft level ahead, -1.57 straight up, positive dips the hook), worked out into the weapon bone's angle
-// by the loop after the poses, as for the Regent Hollis.
+// back to you (the gale reap); a deep crouch, the hook trailing, and a spring (the hook from the storm). She holds the haft
+// in both hands (the model's `grip`, Rig.holdHaft, pass 53): each key pose says where it points, `haft: [pitch, yaw, roll]`
+// in her chest's heading (pitch 0 level ahead, -1.57 straight up, positive dips the hook; yaw + to her left; roll the
+// crescent's turn round the haft: 3.14 hangs it under a level haft and forward of an upright one, 4.7 to her left, 1.6 to
+// her right), and her left hand closes on it `grip` along it (false: let go).
 
 // ---- her figure: built in Blender (tools/blender/agathe.py), one piece per bone ----------------------------------------
 // A gaunt old face in a white coif under a black veil that falls to the shoulders and on as a long torn mantle; a white
@@ -29,23 +31,24 @@
 // the abbey's sign (a ring with a hook through it) on an iron chain; wide bell sleeves, long bony hands bound in linen.
 // The great hook: an ash haft taller than a man, iron-shod, a crescent blade as long as an arm, prayer cloths under it.
 // `storm` slots (a seam of lightning along the hook's inner edge, the sign on her breast) show only in the storm.
+const AGATHE_TILE = { skin: 0.12, linen: 0.2, scap: 0.25 };   // (pass 53) finer grain on the small, close-seen parts: a face's pores, linen's weave
 MODEL_DEFS.motherAgathe = {
   extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8, rim: 0.45,
   proportions: { shoulderX: 0.38, torsoW: 0.22, torsoD: 0.17, armR: 0.065, legR: 0.085, headR: 0.12, handR: 0.06, footLen: 0.3 },
   posture: { chest: [0.06, 0, 0], neck: [0.08, 0, 0], head: [-0.06, 0, 0], elbowL: [-0.35, 0, 0], elbowR: [-0.5, 0, 0] },   // a little stooped, head up
   materials: {
-    skin: { tex: 'paleSkin', tint: 0xb4aca2, decay: 0.5 },
-    linen: { tex: 'oathLinen', tint: 0xe4e0d4, decay: 0.45, rim: 0.3 },
-    habit: { tex: 'wispCoat', tint: 0x2a2a30, decay: 0.6, double: true, rim: 0.25 },
-    scap: { tex: 'rottenCloth', tint: 0x6a6e78, decay: 0.7, double: true, rim: 0.3 },
+    skin: { tex: 'paleSkin', tint: 0x9c9084, decay: 0.1, rim: 0.15 },   // weathered, a shade under the linen so the face reads in it
+    linen: { tex: 'abbeyLinen', tint: 0xffffff, decay: 0.15, rim: 0.3 },
+    habit: { tex: 'abbessWool', tint: 0xffffff, decay: 0.2, double: true, rim: 0.25 },   // black wool, no brown in it
+    scap: { tex: 'abbeyStorm', tint: 0xffffff, decay: 0.3, double: true, rim: 0.3 },   // storm-grey
     iron: { tex: 'rustedIron', tint: 0x6a6460, decay: 0.75, rim: 0.4 },
     rope: { tex: 'crackedLeather', tint: 0x9a9080, decay: 0.6 },
     wood: { tex: 'paviseWood', tint: 0x8a7258, decay: 0.6 },
     steel: { tex: 'glaiveSteel', tint: 0xc0c4ca, decay: 0.45, rim: 0.5 },
-    wrap: { tex: 'sentinelRags', tint: 0xc8bea8, decay: 0.65, double: true },
+    wrap: { tex: 'sentinelRags', tint: 0xc8bea8, decay: 0.4, double: true },
     leather: { tex: 'rogueLeather', tint: 0x3a3028, decay: 0.7 },
     storm: { glow: 0xb8d4ff, storm: true },
-    eye: { glow: 0xc8d8ff },
+    eye: { glow: 0x5a6478 },
   },
   bones: {
     loinF: { parent: 'spin', at: [0, -0.02, 0.2] }, loinB: { parent: 'spin', at: [0, -0.02, -0.2] },
@@ -58,11 +61,12 @@ MODEL_DEFS.motherAgathe = {
     armL: ['habit'], armR: ['habit'], elbowL: ['habit', 'skin', 'wrap'], elbowR: ['habit', 'skin', 'wrap'],
     legL: ['habit'], legR: ['habit'], kneeL: ['habit', 'leather'], kneeR: ['habit', 'leather'],
     weapon: ['wood', 'steel', 'iron', 'wrap', 'storm'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `agathe:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `agathe:${bone}__${s}`, bone, slot: s.split('.')[0], tile: AGATHE_TILE[s.split('.')[0]] ?? 0.42,
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,          // the great hook is part of the figure (the `weapon: true` pieces above)
-  weaponRest: -1.0,      // at rest the haft stands upright at her side like a shepherd's crook, the hook over her head
-  eyes: { color: 0xc8d8ff, size: 0.008, spread: 0.031, at: [0, 0.125, 0.075] },   // deep in their sockets
+  grip: { span: [-0.75, 1.15], rest: [-1.45, 0, 3.14] },
+  weaponRest: -1.0,   // where views that don't hold the haft (the codex, the finale) stand it   // at rest the haft stands upright at her side like a shepherd's crook, the hook over her head
+  eyes: { color: 0x5a6478, size: 0.005, spread: 0.031, at: [0, 0.126, 0.047], halo: 0 },   // a dull gleam deep in their sockets
   anim: {
     idle: { breathRate: 0.6, breath: 0.012, headDrift: 0.025, sway: 0.01, twitch: 0 }, walk: { twist: 0.05, roll: 0.03, headNod: 0.02, elbow: 0.08, drag: 0.08 },
     flinch: { head: 0.3, chest: 0.3, arms: 0.25 }, death: { buckle: 0.9, slump: 0.9 },
@@ -79,33 +83,33 @@ MODEL_DEFS.motherAgathe = {
   // The Reaping Draw: the hook laid out far to her right, low, her eyes on you over her left shoulder; a wide reap across to
   // her left, then the hook drawn back low through your knees to her right, and hauled in.
   const laidOut = { crouch: 0.2, lean: 0.1, legL: [-0.35, 0, 0], legR: [0.4, 0, 0], spin: [0, -1.0, 0], chest: [0, -0.3, 0], neck: [0, 0.4, 0], head: [0, 0.5, 0],
-    armR: [-1.1, 0, -1.1], elbowR: [-0.1, 0, 0], pitch: 0.3, armL: [-0.9, 0, -0.3], elbowL: [-0.8, 0, 0] };
+    armR: [-1.1, 0, -1.1], elbowR: [-0.1, 0, 0], haft: [0.3, -0.6, 4.9], armL: [-0.9, 0, -0.3], elbowL: [-0.8, 0, 0] };
   const reaped = { crouch: 0.22, lean: 0.25, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.9, 0], chest: [0.1, 0.3, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
-    armR: [-1.4, 0, 0.6], elbowR: [0, 0, 0], pitch: 0.2, armL: [-0.6, 0, 0.6], elbowL: [-0.5, 0, 0] };
+    armR: [-1.4, 0, 0.6], elbowR: [0, 0, 0], haft: [0.2, 0.7, 4.9], armL: [-0.6, 0, 0.6], elbowL: [-0.5, 0, 0] };
   const drawn = { crouch: 0.38, lean: 0.25, legL: [-0.6, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, -0.8, 0], chest: [0.2, -0.3, 0], head: [0, 0.3, 0],
-    armR: [-0.7, 0, -0.9], elbowR: [-0.1, 0, 0], pitch: 0.85, armL: [-0.7, 0, -0.2], elbowL: [-0.7, 0, 0] };
-  const hauledIn = { ...drawn, crouch: 0.3, lean: 0.05, armR: [-0.35, 0, -0.5], elbowR: [-1.1, 0, 0], pitch: 0.7 };
+    armR: [-0.7, 0, -0.9], elbowR: [-0.1, 0, 0], haft: [0.45, -0.6, 4.9], armL: [-0.7, 0, -0.2], elbowL: [-0.7, 0, 0] };
+  const hauledIn = { ...drawn, crouch: 0.3, lean: 0.05, armR: [-0.35, 0, -0.5], elbowR: [-1.1, 0, 0], haft: [-0.5, -0.3, 4.9] };
   ATTACK_POSES.agatheReapingDraw = { ease: { ...swing, windup: 'inOutSine' }, lag: { weapon: 0.1, armR: 0.04 },
     hits: [{ windup: laidOut, strike: reaped, follow: { ...reaped, spin: [0, 1.1, 0] } }, { windup: { ...reaped, crouch: 0.32 }, strike: drawn, follow: hauledIn }] };
 
   // The Crook: the haft levelled straight at you at shoulder height in both hands, held; a long reach that lays the hook
   // past you, and then she hauls it home through you.
   const levelled = { crouch: 0.08, lean: -0.1, legL: [-0.4, 0, 0], legR: [0.4, 0, 0], chest: [-0.1, 0, 0], head: [-0.05, 0, 0],
-    armR: [-1.45, 0, 0.1], elbowR: [-0.7, 0, 0], pitch: -0.08, armL: [-1.35, 0, -0.25], elbowL: [-0.25, 0, 0] };
+    armR: [-1.45, 0, 0.1], elbowR: [-0.7, 0, 0], haft: [-0.05, 0.12, 3.14], armL: [-1.35, 0, -0.25], elbowL: [-0.25, 0, 0] };
   const reached = { crouch: 0.22, lean: 0.45, legL: [-0.95, 0, 0], kneeL: [0.5, 0, 0], legR: [0.55, 0, 0], chest: [0.15, 0, 0], head: [-0.2, 0, 0],
-    armR: [-1.75, 0, 0.05], elbowR: [0, 0, 0], pitch: -0.15, armL: [-1.7, 0, -0.1], elbowL: [-0.05, 0, 0] };
+    armR: [-1.75, 0, 0.05], elbowR: [0, 0, 0], haft: [-0.1, 0.1, 3.14], armL: [-1.7, 0, -0.1], elbowL: [-0.05, 0, 0] };
   const hauled = { crouch: 0.28, lean: -0.2, legL: [-0.5, 0, 0], legR: [0.55, 0, 0], kneeR: [0.3, 0, 0], chest: [-0.2, 0, 0], head: [0.05, 0, 0],
-    armR: [-0.55, 0, -0.2], elbowR: [-1.6, 0, 0], pitch: 0.15, armL: [-0.45, 0, 0.2], elbowL: [-1.5, 0, 0] };
+    armR: [-0.55, 0, -0.2], elbowR: [-1.6, 0, 0], haft: [0.05, 0.1, 3.14], armL: [-0.45, 0, 0.2], elbowL: [-1.5, 0, 0] };
   ATTACK_POSES.agatheCrook = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [{ windup: levelled, strike: reached, follow: reached }, { windup: { ...reached, lean: 0.4, head: [0.1, 0, 0] }, strike: hauled, follow: { ...hauled, lean: -0.25 } }] };
 
   // The Correction: the haft turned butt-first across her breast, held like a staff; three raps of the iron shoe, high,
   // low, high. The butt never rends.
   const staff = { crouch: 0.1, lean: 0.0, legL: [-0.3, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.3, 0], chest: [0, -0.1, 0], head: [0, 0.2, 0],
-    armR: [-0.9, 0, -0.1], elbowR: [-1.2, 0, 0], pitch: 2.75, armL: [-1.0, 0, -0.4], elbowL: [-1.0, 0, 0] };
+    armR: [-0.9, 0, -0.1], elbowR: [-1.2, 0, 0], haft: [-3.7, 0.5, 3.14], armL: [-1.0, 0, -0.4], elbowL: [-1.0, 0, 0] };
   const rapHigh = { crouch: 0.15, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.2, 0], chest: [0.15, 0.1, 0], head: [0, 0, 0],
-    armR: [-1.2, 0, 0.1], elbowR: [-0.3, 0, 0], pitch: 2.95, armL: [-1.3, 0, -0.2], elbowL: [-0.3, 0, 0] };
-  const rapLow = { ...rapHigh, crouch: 0.3, lean: 0.35, spin: [0, -0.2, 0], pitch: 3.4, armR: [-0.8, 0, 0], armL: [-0.9, 0, -0.1] };
+    armR: [-1.2, 0, 0.1], elbowR: [-0.3, 0, 0], haft: [-3.3, 0.12, 3.14], armL: [-1.3, 0, -0.2], elbowL: [-0.3, 0, 0] };
+  const rapLow = { ...rapHigh, crouch: 0.3, lean: 0.35, spin: [0, -0.2, 0], haft: [-2.85, 0.12, 3.14], armR: [-0.8, 0, 0], armL: [-0.9, 0, -0.1] };
   ATTACK_POSES.agatheCorrection = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.05 },
     hits: [{ windup: staff, strike: rapHigh, follow: rapHigh }, { windup: { ...staff, crouch: 0.2 }, strike: rapLow, follow: rapLow },
       { windup: { ...staff, spin: [0, -0.5, 0] }, strike: { ...rapHigh, lean: 0.35 }, follow: { ...rapHigh, lean: 0.35 } }] };
@@ -113,68 +117,68 @@ MODEL_DEFS.motherAgathe = {
   // Hook and Haul: the hook trailing low behind her right heel, her head bowed to your feet; a reap at the ankles, then
   // the hook heaved up over her head in both hands and brought down.
   const lowBehind = { crouch: 0.3, lean: 0.3, legL: [-0.5, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.7, 0], chest: [0.25, -0.2, 0], neck: [0.2, 0, 0], head: [0.35, 0.3, 0],
-    armR: [0.35, 0, -0.4], elbowR: [-0.1, 0, 0], pitch: 2.1, armL: [-0.5, 0, 0.3], elbowL: [-0.9, 0, 0] };
+    armR: [0.35, 0, -0.4], elbowR: [-0.1, 0, 0], haft: [0.35, -1.7, 4.9], armL: [-0.5, 0, 0.3], elbowL: [-0.9, 0, 0] };
   const ankle = { crouch: 0.42, lean: 0.4, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.6, 0], chest: [0.35, 0.2, 0], head: [0.2, -0.2, 0],
-    armR: [-0.9, 0, 0.5], elbowR: [0, 0, 0], pitch: 1.0, armL: [-0.6, 0, 0.5], elbowL: [-0.5, 0, 0] };
+    armR: [-0.9, 0, 0.5], elbowR: [0, 0, 0], haft: [0.3, 0.4, 4.9], armL: [-0.6, 0, 0.5], elbowL: [-0.5, 0, 0] };
   const heave = { crouch: 0.08, lean: -0.2, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], chest: [-0.25, 0, 0], head: [-0.05, 0, 0],
-    armR: [-2.9, 0, 0.1], elbowR: [-0.8, 0, 0], pitch: -3.2, armL: [-2.7, 0, -0.15], elbowL: [-0.9, 0, 0] };
+    armR: [-2.9, 0, 0.1], elbowR: [-0.8, 0, 0], haft: [-2.5, 0, 3.14], armL: [-2.7, 0, -0.15], elbowL: [-0.9, 0, 0] };
   const chopped = { crouch: 0.36, lean: 0.5, legL: [-0.8, 0, 0], legR: [0.5, 0, 0], chest: [0.4, 0, 0], head: [0.1, 0, 0],
-    armR: [-1.0, 0, 0], elbowR: [0, 0, 0], pitch: 0.75, armL: [-1.0, 0, -0.1], elbowL: [-0.2, 0, 0] };
+    armR: [-1.0, 0, 0], elbowR: [0, 0, 0], haft: [0.25, 0, 3.14], armL: [-1.0, 0, -0.1], elbowL: [-0.2, 0, 0] };
   ATTACK_POSES.agatheHookHaul = { ease: swing, lag: { weapon: 0.1 },
     hits: [{ windup: lowBehind, strike: ankle, follow: ankle }, { windup: heave, strike: chopped, follow: { ...chopped, crouch: 0.4 } }] };
 
   // Rend the Earth: the hook raised high on her left, point forward, her left foot stamped out; the blade dragged down
   // and through the floor ahead.
   const raisedLeft = { crouch: 0.12, lean: -0.1, legL: [-0.65, 0, 0], legR: [0.3, 0, 0], spin: [0, 0.7, 0], chest: [-0.1, 0.25, 0], neck: [0, -0.3, 0], head: [0, -0.5, 0],
-    armR: [-2.4, 0, 0.7], elbowR: [-0.5, 0, 0], pitch: -1.2, armL: [-2.0, 0, 0.5], elbowL: [-0.8, 0, 0] };
+    armR: [-2.4, 0, 0.7], elbowR: [-0.5, 0, 0], haft: [-1.2, 0.1, 3.14], armL: [-2.0, 0, 0.5], elbowL: [-0.8, 0, 0] };
   const furrow = { crouch: 0.45, lean: 0.55, legL: [-0.85, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.1, 0], chest: [0.4, 0, 0], head: [0.15, 0, 0],
-    armR: [-0.8, 0, 0.1], elbowR: [0, 0, 0], pitch: 1.2, armL: [-0.75, 0, -0.05], elbowL: [-0.15, 0, 0] };
+    armR: [-0.8, 0, 0.1], elbowR: [0, 0, 0], haft: [0.25, 0, 3.14], armL: [-0.75, 0, -0.05], elbowL: [-0.15, 0, 0] };
   ATTACK_POSES.agatheRendEarth = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [{ windup: raisedLeft, strike: furrow, follow: { ...furrow, crouch: 0.48 } }] };
   // ... in the storm: and then the hook pointed at you, her left hand up to the clouds: the storm falls where you stand.
   const pointing = { crouch: 0.15, lean: 0.05, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], chest: [-0.05, 0, 0], head: [-0.25, 0, 0],
-    armR: [-1.6, 0, 0], elbowR: [0, 0, 0], pitch: -0.35, armL: [-2.7, 0, 0.45], elbowL: [-0.1, 0, 0] };
+    armR: [-1.6, 0, 0], elbowR: [0, 0, 0], haft: [-0.35, 0.1, 3.14], grip: false, armL: [-2.7, 0, 0.45], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.agatheStormFurrow = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [{ windup: raisedLeft, strike: furrow, follow: furrow }, { windup: pointing, strike: { ...pointing, armL: [-2.2, 0, 0.6] }, follow: pointing }] };
 
   // Torn Stones: crouched low, the hook dragged behind her left through the rubble, her eyes on you; the stones flung up
   // and out across to her right.
   const dragBehind = { crouch: 0.45, lean: 0.35, legL: [-0.55, 0, 0], legR: [0.55, 0, 0], spin: [0, 0.9, 0], chest: [0.3, 0.3, 0], neck: [0, -0.5, 0], head: [0, -0.6, 0],
-    armR: [0.2, 0, 0.6], elbowR: [-0.1, 0, 0], pitch: 2.4, armL: [-0.4, 0, 0.6], elbowL: [-0.6, 0, 0] };
+    armR: [0.2, 0, 0.6], elbowR: [-0.1, 0, 0], haft: [0.3, 1.2, 3.14], armL: [-0.4, 0, 0.6], elbowL: [-0.6, 0, 0] };
   const fling = { crouch: 0.12, lean: -0.1, legL: [-0.3, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.6, 0], chest: [-0.1, -0.3, 0], head: [0, 0.2, 0],
-    armR: [-2.0, 0, -0.6], elbowR: [-0.1, 0, 0], pitch: -1.4, armL: [-1.0, 0, 0.3], elbowL: [-0.5, 0, 0] };
+    armR: [-2.0, 0, -0.6], elbowR: [-0.1, 0, 0], haft: [-1.3, -0.3, 3.14], armL: [-1.0, 0, 0.3], elbowL: [-0.5, 0, 0] };
   ATTACK_POSES.agatheTornStones = { ease: swing, lag: { weapon: 0.12 }, hits: [{ windup: dragBehind, strike: fling, follow: fling }] };
 
   // The Cornerstone: the hook driven into the floor before her, both hands hauling back on it, her whole weight leaning;
   // a slab of the abbey tears up, and she hurls it.
   const haul = { crouch: 0.3, lean: -0.35, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], chest: [-0.3, 0, 0], head: [0.1, 0, 0],
-    armR: [-0.9, 0, 0.1], elbowR: [-1.0, 0, 0], pitch: 1.0, armL: [-0.9, 0, -0.1], elbowL: [-1.1, 0, 0] };
+    armR: [-0.9, 0, 0.1], elbowR: [-1.0, 0, 0], haft: [1.0, 0.1, 3.14], armL: [-0.9, 0, -0.1], elbowL: [-1.1, 0, 0] };
   const hurl = { crouch: 0.1, lean: 0.3, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], chest: [0.3, 0, 0], head: [-0.1, 0, 0],
-    armR: [-2.6, 0, 0.1], elbowR: [-0.3, 0, 0], pitch: -2.0, armL: [-2.5, 0, -0.1], elbowL: [-0.3, 0, 0] };
+    armR: [-2.6, 0, 0.1], elbowR: [-0.3, 0, 0], haft: [-2.2, 0, 3.14], armL: [-2.5, 0, -0.1], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.agatheCornerstone = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [{ windup: haul, strike: hurl, follow: hurl }] };
 
   // The Turning Hook: you are behind her; the haft hugged upright at her side, a look over her right shoulder, and the
   // hook comes round.
   const hugged = { crouch: 0.15, spin: [0, -0.6, 0], chest: [0, -0.3, 0], neck: [0, -0.5, 0], head: [0, -1.0, 0],
-    armR: [-0.4, 0, -0.3], elbowR: [-1.3, 0, 0], pitch: -1.4, armL: [-0.6, 0, -0.4], elbowL: [-1.2, 0, 0] };
+    armR: [-0.4, 0, -0.3], elbowR: [-1.3, 0, 0], haft: [-1.4, 0, 3.14], armL: [-0.6, 0, -0.4], elbowL: [-1.2, 0, 0] };
   const round = { crouch: 0.22, lean: 0.1, legL: [-0.3, 0, 0], legR: [0.4, 0, 0], spin: [0, 1.6, 0], chest: [0.05, 0.5, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
-    armR: [-1.4, 0, 0.9], elbowR: [0, 0, 0], pitch: 0.2, armL: [-0.5, 0, 0.8], elbowL: [-0.3, 0, 0] };
+    armR: [-1.4, 0, 0.9], elbowR: [0, 0, 0], haft: [0.2, 0.5, 4.9], armL: [-0.5, 0, 0.8], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.agatheTurningHook = { ease: swing, lag: { weapon: 0.1 }, hits: [{ windup: hugged, strike: round, follow: { ...round, spin: [0, 1.9, 0] } }] };
 
   // ---- the storm (second phase) ----
   // The Storm Comes (the phase opener): the hook lifted to the sky in both hands, crouched under it, her face up; the
   // lightning takes it, and she drives the iron shoe into the floor.
   const skyward = { crouch: 0.25, lean: -0.15, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], chest: [-0.3, 0, 0], neck: [-0.3, 0, 0], head: [-0.55, 0, 0],
-    armR: [-3.0, 0, 0.15], elbowR: [-0.2, 0, 0], pitch: -1.6, armL: [-2.9, 0, -0.15], elbowL: [-0.3, 0, 0] };
+    armR: [-3.0, 0, 0.15], elbowR: [-0.2, 0, 0], haft: [-1.6, 0, 3.14], armL: [-2.9, 0, -0.15], elbowL: [-0.3, 0, 0] };
   const grounded = { crouch: 0.38, lean: 0.2, legL: [-0.5, 0, 0], legR: [0.45, 0, 0], chest: [0.2, 0, 0], head: [0.2, 0, 0],
-    armR: [-0.9, 0, 0], elbowR: [-0.7, 0, 0], pitch: -1.3, armL: [-1.0, 0, -0.2], elbowL: [-0.8, 0, 0] };
+    armR: [-0.9, 0, 0], elbowR: [-0.7, 0, 0], haft: [-1.3, 0, 3.14], armL: [-1.0, 0, -0.2], elbowL: [-0.8, 0, 0] };
   ATTACK_POSES.agatheStormComes = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: skyward, strike: grounded, follow: grounded }] };
 
   // The Storm Knows Its Own: standing tall, the hook held up in her right hand alone, her left palm open to the clouds;
   // she casts the hand down at you, three times: three marks, three bolts.
   const callStorm = { crouch: 0.02, lean: -0.15, legL: [-0.2, 0, 0], legR: [0.2, 0, 0], chest: [-0.2, 0, 0], neck: [-0.2, 0, 0], head: [-0.45, 0, 0],
-    armR: [-2.9, 0, -0.3], elbowR: [-0.1, 0, 0], pitch: -1.75, armL: [-2.3, 0, 0.8], elbowL: [-0.2, 0, 0] };
+    armR: [-2.9, 0, -0.3], elbowR: [-0.1, 0, 0], haft: [-1.75, 0, 3.14], grip: false, armL: [-2.3, 0, 0.8], elbowL: [-0.2, 0, 0] };
   const cast = { ...callStorm, lean: 0.1, chest: [0.05, 0, 0], head: [-0.05, 0, 0], armL: [-1.3, 0, 0.35], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.agatheStormKnows = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
     hits: [{ windup: callStorm, strike: cast, follow: cast }, { windup: callStorm, strike: cast, follow: cast }, { windup: callStorm, strike: cast, follow: cast }] };
@@ -182,29 +186,23 @@ MODEL_DEFS.motherAgathe = {
   // The Gale Reap: the hook wound round behind her back in both hands, her back to you, looking at you over her
   // shoulder; she turns full round with it at full reach, and back the other way, low.
   const woundRound = { crouch: 0.22, lean: 0.1, legL: [-0.3, 0, 0], legR: [0.45, 0, 0], spin: [0, -1.6, 0], chest: [0, -0.5, 0], neck: [0, 0.6, 0], head: [0, 1.0, 0],
-    armR: [-1.2, 0, -1.2], elbowR: [-0.1, 0, 0], pitch: 0.1, armL: [-1.0, 0, -0.6], elbowL: [-0.6, 0, 0] };
+    armR: [-1.2, 0, -1.2], elbowR: [-0.1, 0, 0], haft: [0.1, -0.6, 4.7], armL: [-1.0, 0, -0.6], elbowL: [-0.6, 0, 0] };
   const reapRound = { crouch: 0.25, lean: 0.15, legL: [-0.45, 0, 0], legR: [0.4, 0, 0], spin: [0, 1.8, 0], chest: [0.05, 0.5, 0], neck: [0, -0.4, 0], head: [0, -0.6, 0],
-    armR: [-1.4, 0, 0.9], elbowR: [0, 0, 0], pitch: 0.15, armL: [-0.7, 0, 0.8], elbowL: [-0.4, 0, 0] };
+    armR: [-1.4, 0, 0.9], elbowR: [0, 0, 0], haft: [0.15, 0.4, 4.7], armL: [-0.7, 0, 0.8], elbowL: [-0.4, 0, 0] };
   const reapBack = { crouch: 0.42, lean: 0.3, legL: [-0.55, 0, 0], kneeL: [0.3, 0, 0], legR: [0.5, 0, 0], spin: [0, -1.7, 0], chest: [0.25, -0.5, 0], neck: [0, 0.4, 0], head: [0, 0.6, 0],
-    armR: [-1.2, 0, -1.0], elbowR: [0, 0, 0], pitch: 0.65, armL: [-0.8, 0, -0.5], elbowL: [-0.5, 0, 0] };
+    armR: [-1.2, 0, -1.0], elbowR: [0, 0, 0], haft: [0.45, -0.4, 4.7], armL: [-0.8, 0, -0.5], elbowL: [-0.5, 0, 0] };
   ATTACK_POSES.agatheGaleReap = { ease: swing, lag: { weapon: 0.12, armR: 0.05 },
     hits: [{ windup: woundRound, strike: reapRound, follow: reapRound }, { windup: { ...reapRound, crouch: 0.35 }, strike: reapBack, follow: { ...reapBack, spin: [0, -1.9, 0] } }] };
 
   // The Hook from the Storm: a deep crouch, the hook trailing, and she springs: aloft, the hook up over her head in both
   // hands, driven down hook-first where you stood, and the storm strikes it.
   const aloft = { crouch: 0.1, lean: -0.1, legL: [-0.9, 0, 0], kneeL: [1.0, 0, 0], legR: [-0.3, 0, 0], kneeR: [1.1, 0, 0], chest: [-0.2, 0, 0], head: [-0.15, 0, 0],
-    armR: [-2.8, 0, 0.1], elbowR: [-1.0, 0, 0], pitch: -2.9, armL: [-2.7, 0, -0.1], elbowL: [-1.0, 0, 0] };
+    armR: [-2.8, 0, 0.1], elbowR: [-1.0, 0, 0], haft: [-2.6, 0, 3.14], armL: [-2.7, 0, -0.1], elbowL: [-1.0, 0, 0] };
   const planted = { crouch: 0.5, lean: 0.5, legL: [-1.0, 0, 0], kneeL: [1.2, 0, 0], legR: [0.4, 0, 0], kneeR: [1.3, 0, 0], chest: [0.35, 0, 0], head: [0.15, 0, 0],
-    armR: [-0.85, 0, 0], elbowR: [-0.2, 0, 0], pitch: 1.2, armL: [-0.85, 0, -0.1], elbowL: [-0.25, 0, 0] };
+    armR: [-0.85, 0, 0], elbowR: [-0.2, 0, 0], haft: [0.25, 0, 3.14], armL: [-0.85, 0, -0.1], elbowL: [-0.25, 0, 0] };
   ATTACK_POSES.agatheStormLeap = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
     hits: [{ windup: aloft, strike: planted, follow: planted }] };
 
-  // Every haft angle above is a `pitch`, the way the hook end points; here it becomes the weapon bone's angle.
-  for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('agathe')) for (const h of P.hits) for (const k of ['windup', 'strike', 'follow']) {
-    const q = h[k]; if (!q || !('pitch' in q)) continue;
-    const { pitch, ...rest } = q, x = b => (rest[b] ? rest[b][0] : 0);
-    h[k] = { ...rest, weapon: [pitch + 0.08 - x('armR') - x('elbowR') - x('chest') - (rest.lean || 0), 0, 0] };
-  }
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------

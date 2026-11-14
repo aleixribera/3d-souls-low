@@ -938,6 +938,10 @@ class Enemy {
     }
     if (r.anim) r.anim.update(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only
     r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
+    if (r.grip) {   // a two-handed haft (pass 53): held as the key poses say while she stands, walks and fights; let go to the old pose when thrown about
+      r.haftW += ((HAFT_HELD[this.state] ? 1 : 0) - r.haftW) * (1 - Math.exp(-CONFIG.fx.haftBlendRate * ctx.dt));
+      r.holdHaft(r.haftW);
+    }
     r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR);   // red: parryable; blue: cannot be parried (this hit)
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed

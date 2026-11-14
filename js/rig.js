@@ -10,6 +10,14 @@ const shadowGeo = new THREE.CircleGeometry(1, 20);
 
 // Humanoid built from primitives. Local +Z is forward; the weapon arm is on -X.
 const HIP = 0.95, LEG_SEG = 0.45;   // hip pivot height; thigh and shin length
+// Scratch for Rig.holdHaft (one body at a time; nothing allocated per frame).
+const HAFT_TMP = { v: new THREE.Vector3(), h: new THREE.Vector3(), d: new THREE.Vector3(), e: new THREE.Vector3(), p: new THREE.Vector3(),
+  n: new THREE.Vector3(), f: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(), qt: new THREE.Quaternion(),
+  qh: new THREE.Quaternion(), eu: new THREE.Euler() };
+const POLE_L = new THREE.Vector3(0.55, -1, -0.35).normalize();   // where an elbow points when its hand is on a haft: out, down, a little back
+const POLE_R = new THREE.Vector3(-0.55, -1, -0.35).normalize();
+const quarterTurn = t => t > Math.PI / 2 ? t - Math.PI : t < -Math.PI / 2 ? t + Math.PI : t;   // a fist holds a haft either way round
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 class Rig {
   constructor({ scale, bulk, color, weapon, weaponColor, offhand, visual, model, variant }) {
     this.fit = 1; this.alphaK = 1;
@@ -75,6 +83,7 @@ class Rig {
     this.armL.rotation.set(-0.1, 0, 0); this.armR.rotation.set(-0.4, 0, 0);
     this.weapon.rotation.set(0.5, 0, 0);
     if (this.rest) for (const [bone, r] of this.rest) bone.rotation.set(r[0], r[1], r[2]);   // a model's resting posture
+    if (this.grip) { const G = this.grip; this.haftNow[0] = G.rest[0]; this.haftNow[1] = G.rest[1]; this.haftNow[2] = G.rest[2]; this.gripW = 0; }
   }
   walk(phase, amount) {
     const s = Math.sin(phase) * amount;
@@ -122,6 +131,79 @@ class Rig {
     this.lag += (clamp(-angVel * 0.07, -0.45, 0.45) - this.lag) * k;
     this.lagPitch += (clamp(speed * 0.035, 0, 0.25) - this.lagPitch) * k;
     this.weapon.rotation.y += this.lag; this.weapon.rotation.x += this.lagPitch;
+  }
+  // A two-handed haft (a model's `grip`, pass 53). The key poses say where the haft points, in the chest's heading
+  // (haftNow: pitch, 0 level ahead and -1.57 straight up; yaw, + to the body's left; roll, the head's turn round the haft),
+  // not as a weapon-bone angle on the end of the arm. The haft lies where the right fist holds it; if the left hand
+  // could not reach it there, the right fist brings it in toward her (a reach of its own); the left hand closes on it at
+  // the place nearest the left shoulder (within grip.span, never on the right fist: hands slide along a haft); each
+  // forearm turns so its fist closes round the haft. w: how much of all this applies (0 leaves the pose as drawn);
+  // gripW (the key poses' `grip`) how much the left hand holds on. Visual only; allocates nothing.
+  holdHaft(w) {
+    this.weapon.position.copy(this.gripWrist);
+    if (!(w > 0.001)) return;
+    const T = HAFT_TMP, G = this.grip, H = this.haftNow, gw = this.gripW * w;
+    this.root.updateMatrixWorld(true);
+    const me = this.chest.matrixWorld.elements, heading = Math.atan2(me[8], me[10]);   // where the chest faces
+    T.eu.set(H[0], heading + H[1], H[2], 'YXZ'); T.qh.setFromEuler(T.eu);             // the haft in the world
+    this.chest.getWorldQuaternion(T.q2).invert();
+    T.n.set(0, 0, 1).applyQuaternion(T.qh).applyQuaternion(T.q2);                       // ... its direction, in the chest's frame
+    const b = this.elbowL.position.length() + G.fist, reach = (this.elbowL.position.length() + b) * 0.96;
+    if (gw > 0.001) {   // the right fist brings the haft in to where the left hand can reach it
+      this.weapon.getWorldPosition(T.f); this.chest.worldToLocal(T.f);
+      const z = this.gripPlace(T.f, this.armL.position);
+      T.p.copy(T.f).addScaledVector(T.n, z).sub(this.armL.position);                    // the left shoulder to its place on the haft
+      const far = T.p.length();
+      if (far > reach) {
+        T.f.addScaledVector(T.p, -(far - reach) / far);
+        this.reachArm(this.armR, this.elbowR, this.weapon.position.length(), T.f, POLE_R, gw); this.elbowR.updateMatrixWorld(true);
+      }
+    }
+    // The right fist turns round the forearm (at most a quarter turn either way) so its grip lines up with the haft.
+    this.elbowR.getWorldQuaternion(T.q2); T.v.set(0, 0, 1).applyQuaternion(T.qh).applyQuaternion(T.q2.invert());
+    T.qt.setFromAxisAngle(Y_AXIS, quarterTurn(Math.atan2(T.v.x, T.v.z)) * w); this.elbowR.quaternion.multiply(T.qt); this.elbowR.updateMatrixWorld(true);
+    this.elbowR.getWorldQuaternion(T.q2); T.q2.invert().multiply(T.qh);
+    this.weapon.quaternion.slerp(T.q2, w);
+    // ... and the haft runs through the middle of the fist, whichever way it is turned (the baked haft lies grip.y off the wrist).
+    const wl = this.gripWrist.length();
+    T.d.set(0, G.y, 0).applyQuaternion(this.weapon.quaternion);
+    T.e.copy(this.gripWrist).multiplyScalar((wl + G.fist) / wl).sub(T.d);
+    this.weapon.position.lerp(T.e, w); this.weapon.updateMatrixWorld(true);
+    if (gw < 0.001) return;
+    // The left hand: its place on the haft, in the chest's frame, and a shoulder-elbow-palm reach to it.
+    this.weapon.getWorldPosition(T.f); this.chest.worldToLocal(T.f);
+    this.gripZ = this.gripPlace(T.f, this.armL.position);
+    T.h.set(0, G.y, this.gripZ); this.weapon.localToWorld(T.h); this.chest.worldToLocal(T.h);
+    const bend = this.reachArm(this.armL, this.elbowL, b, T.h, POLE_L, gw);
+    // The left fist turns round the forearm, as the right, so the haft runs through it.
+    T.v.copy(T.n).applyQuaternion(T.q2.copy(T.q).invert()).applyAxisAngle(T.e.set(1, 0, 0), bend);   // the haft, in the forearm's frame before its turn
+    const r = this.elbowL.rotation; r.y = lerp(r.y, quarterTurn(Math.atan2(T.v.x, T.v.z)), gw);
+  }
+  // Where the left hand holds the haft: along it from the right fist (at f, chest frame; direction HAFT_TMP.n), the place
+  // nearest the left shoulder s, within grip.span and at least grip.gap from the fist.
+  gripPlace(f, s) {
+    const G = this.grip;
+    let z = clamp(HAFT_TMP.e.copy(s).sub(f).dot(HAFT_TMP.n), G.span[0], G.span[1]);
+    if (Math.abs(z) < G.gap) z = z < 0 && G.span[0] < -G.gap ? -G.gap : G.gap;
+    return z;
+  }
+  // A two-bone reach (chest frame): turns `arm` and bends `elbow` (about x) so the point `len` down the forearm lies at
+  // `target`, the elbow toward `pole`; w of the way from the pose as drawn. Leaves the arm's turn in HAFT_TMP.q; returns the bend.
+  reachArm(arm, elbow, len, target, pole, w) {
+    const T = HAFT_TMP, a = elbow.position.length(), b = len;
+    T.d.copy(target).sub(arm.position);
+    const dist = clamp(T.d.length(), Math.abs(a - b) + 1e-3, (a + b) * 0.999);
+    const bend = Math.PI - Math.acos(clamp((a * a + b * b - dist * dist) / (2 * a * b), -1, 1));
+    T.v.set(0, -a - b * Math.cos(bend), b * Math.sin(bend)).normalize();                 // the end, so bent, in the arm's frame
+    T.d.normalize(); T.q.setFromUnitVectors(T.v, T.d);
+    T.e.set(0, -1, 0).applyQuaternion(T.q); T.e.addScaledVector(T.d, -T.e.dot(T.d));   // the elbow ...
+    T.v.copy(pole).addScaledVector(T.d, -pole.dot(T.d));                                 // ... turned round the reach to the pole
+    if (T.e.lengthSq() > 1e-6 && T.v.lengthSq() > 1e-6) {
+      T.qt.setFromAxisAngle(T.d, Math.atan2(T.d.dot(T.p.crossVectors(T.e, T.v)), T.e.dot(T.v))); T.q.premultiply(T.qt);
+    }
+    arm.quaternion.slerp(T.q, w);
+    const r = elbow.rotation; r.set(lerp(r.x, -bend, w), r.y * (1 - w), r.z * (1 - w));
+    return bend;
   }
   setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
   setWarning(k, color = WARN_COLOR) {

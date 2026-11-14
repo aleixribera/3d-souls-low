@@ -44,7 +44,9 @@ const ENEMY_GROUPS = {
   fighting: new Set([ES.CHASE, ES.WINDUP, ES.ACTIVE, ES.RECOVER]),       // has a place around the player (js/crowd.js)
   attacking: new Set([ES.WINDUP, ES.ACTIVE, ES.RECOVER]),                // mid-attack: damps the others' attack chances
 };
-const IDLE_BLEND = { [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25, [ES.SEARCH]: 0.25 };
+// States in which a two-handed haft is held as its key poses say (Rig.holdHaft); in the rest it follows the arm.
+const HAFT_HELD = { [ES.IDLE]: 1, [ES.CHASE]: 1, [ES.PATROL]: 1, [ES.LURK]: 1, [ES.RETURN]: 1, [ES.SEARCH]: 1, [ES.WINDUP]: 1, [ES.ACTIVE]: 1, [ES.RECOVER]: 1 };
+const IDLE_BLEND ={ [ES.IDLE]: 1, [ES.CHASE]: 0.25, [ES.PATROL]: 0.25, [ES.LURK]: 0.25, [ES.RETURN]: 0.25, [ES.SEARCH]: 0.25 };
 // Placement behaviours: the state an enemy starts in, and the state it returns to once back home.
 const BEHAVIORS = {
   arena: { start: ES.IDLE, home: ES.IDLE },

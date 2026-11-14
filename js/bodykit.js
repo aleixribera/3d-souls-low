@@ -1640,6 +1640,14 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
+    if ('grip' in M) {   // (pass 53) a two-handed haft on a weapon built in Blender
+      const G = M.grip, n = v => typeof v === 'number' && Number.isFinite(v);
+      if (!(G && Array.isArray(G.span) && G.span.length === 2 && G.span.every(n) && G.span[0] < G.span[1] && Array.isArray(G.rest) && G.rest.length === 3 && G.rest.every(n) && ['y', 'gap', 'fist'].every(k => !(k in G) || n(G[k])))) bad("grip needs span [from, to] (where the left hand may hold the haft, along it from the fist), rest [pitch, yaw, roll], and optional y (the haft's line off the wrist, in the haft's frame), fist (the fist's middle below the wrist) and gap.");
+      else if (('fist' in G && !(G.fist >= 0 && G.fist < 0.2)) || ('gap' in G && !(G.gap >= 0 && G.gap < G.span[1]))) bad('grip.fist must be from 0 to 0.2 and grip.gap at least 0 and less than the end of span.');
+      if (!M.parts.some(o => o.weapon)) bad('grip needs a weapon built into the figure (weapon: true parts).');
+      if (!(M.posture && M.posture.elbowR && M.posture.elbowL)) bad('grip needs posture.elbowR and posture.elbowL (Rig.holdHaft turns the forearms from them every frame).');
+    }
+    if (M.eyes && 'halo' in M.eyes && !(typeof M.eyes.halo === 'number' && M.eyes.halo >= 0 && M.eyes.halo <= 1)) bad('eyes.halo (the glow round the eyes) must be an opacity from 0 to 1.');
     if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -1.6 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -1.6 to 1.6.');   // (pass 48) below -0.5 a long haft stands upright, like a crook
     if (M.weapon) {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
@@ -1716,8 +1724,11 @@ const KIT = (() => {
       const E = M.eyes, em = mats.eye, eg = built.eyeGeo || (built.eyeGeo = sphere(E.size, 5, 3));   // one per model, freed with it
       eg.userData.shared = true;
       for (const s of [-1, 1]) { const e = new THREE.Mesh(eg, em); e.position.set(s * E.spread, E.at[1], E.at[2]); rig.head.add(e); }
-      const halo = glowSprite(E.color, 1.2, 0.22, 0.45, 0.6); halo.position.set(0, E.at[1], E.at[2] + 0.02); rig.head.add(halo);
-      rig.glows.push({ mat: halo.material, base: 0.45 });
+      const ho = E.halo ?? 0.45;   // (pass 53) eyes.halo: 0 for a face that has to read as a face, not a lamp
+      if (ho > 0) {
+        const halo = glowSprite(E.color, 1.2, 0.22, ho, 0.6); halo.position.set(0, E.at[1], E.at[2] + 0.02); rig.head.add(halo);
+        rig.glows.push({ mat: halo.material, base: ho });
+      }
     }
     if (M.embers) rig.embers = addWeaponEmbers(rig.weapon, M.embers);   // glow at the weapon head / along its edge
     for (const H of M.halos || []) {   // (v7.58.0, opt-in) a soft light round a lit thing the body carries (a lantern)
@@ -1729,6 +1740,7 @@ const KIT = (() => {
     if (M.weaponRest != null) rig.weaponRest = M.weaponRest;   // (pass 42, opt-in) the same for a weapon baked into the figure
     if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);
+    if (M.grip) { rig.grip = { y: -0.045, gap: 0.2, fist: 0.06, ...M.grip }; rig.gripWrist = rig.weapon.position.clone(); rig.haftNow = [...M.grip.rest]; rig.gripW = 0; rig.gripZ = 0; rig.haftW = 1; }   // (pass 53, opt-in) a two-handed haft: Rig.holdHaft
     rig.warnGlow = makeWarnGlow(); rig.weapon.add(rig.warnGlow);
     // A glint of light that flashes along the weapon as a strike begins (driven by the animator): at the far end of the
     // weapon's own geometry, so every weapon gets one without data.

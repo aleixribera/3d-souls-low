@@ -370,7 +370,7 @@ const CONFIG = {
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',
                    saveFailed: 'Progress could not be saved. Closing this page may lose progress.' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
-        recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5,
+        recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5, haftBlendRate: 9,
         trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,
         tagRange: 22, tagGap: 0.22,   // overhead enemy health bars: max distance, height above the head
         bursts: {   // colour, particle count and speed of every combat burst

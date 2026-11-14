@@ -5,7 +5,7 @@
 const MODELLAB = {};
 if (DEV) (() => {
   let lab = null;
-  const VIEWS = [{ name: 'front', pos: [0, 1.0, 6.4] }, { name: 'back', pos: [0, 1.0, -6.4] }, { name: 'side (weapon arm)', pos: [-6.4, 1.0, 0] },
+  let VIEWS = [{ name: 'front', pos: [0, 1.0, 6.4] }, { name: 'back', pos: [0, 1.0, -6.4] }, { name: 'side (weapon arm)', pos: [-6.4, 1.0, 0] },
                  { name: 'silhouette, 3/4 from behind', pos: [-4.6, 0.9, -4.6], sil: true }];
   function open(id) {
     if (lab) return;
@@ -121,7 +121,7 @@ if (DEV) (() => {
     R.setScissorTest(true);
     VIEWS.forEach((v, i) => {
       R.setViewport(i * w, 0, w, H); R.setScissor(i * w, 0, w, H);
-      lab.camera.aspect = w / H; const k = Math.max(1, lab.rig.root.scale.y); lab.camera.position.set(v.pos[0] * k, (v.pos[1] - 0.2) * k + 0.2, v.pos[2] * k); lab.camera.lookAt(0, (v.sil ? 0.9 : 0.95) * k, 0); lab.camera.updateProjectionMatrix();
+      lab.camera.aspect = w / H; const k = Math.max(1, lab.rig.root.scale.y); lab.camera.position.set(v.pos[0] * k, (v.pos[1] - 0.2) * k + 0.2, v.pos[2] * k); lab.camera.lookAt(0, (v.look ?? (v.sil ? 0.9 : 0.95)) * k, 0); lab.camera.updateProjectionMatrix();
       lab.scene.background = v.sil ? lab.sky : lab.dark; lab.scene.overrideMaterial = v.sil ? black : null; lab.floor.visible = !v.sil;
       const hide = v.sil ? sprites() : [];   // glows and auras are not part of the silhouette
       hide.forEach(o => { o.userData.was = o.visible; o.visible = false; });
@@ -138,6 +138,8 @@ if (DEV) (() => {
   // Debug: MODELLAB.pose('Sword Swing', 0.5) freezes that mode at that time (s into its loop); MODELLAB.pose() unfreezes.
   MODELLAB.pose = (name, tt = 0) => { if (!lab) return; lab.frozen = !!name; if (name) { lab.mode = Math.max(0, lab.modes.findIndex(m => m.name === name)); lab.tt = tt; lab.modeBtn.textContent = 'anim: ' + name; } };
   MODELLAB.state = () => lab;
+  // Debug: MODELLAB.views([{ name, pos: [x, y, z], look?: y, sil? }, ...]) swaps the four cameras (frame strips of a long weapon).
+  MODELLAB.views = list => { VIEWS = list; if (lab) lab.labels.forEach((d, i) => { d.textContent = list[i] ? list[i].name : ''; }); };
   MODELLAB.open = id => open(id); MODELLAB.close = close; MODELLAB.toggle = () => lab ? close() : open();
   window.addEventListener('keydown', ev => { if (ev.code === 'F9') { ev.preventDefault(); MODELLAB.toggle(); } });
 })();

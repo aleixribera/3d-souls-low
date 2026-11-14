@@ -87,6 +87,7 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null) {
   let crouch = 0, lean = 0;
   for (const name of names) {
     const f = val(from, name), g = val(to, name), k = at(name), c = cw ? val(P.charge, name) : null;
+    if (name === 'haft' || name === 'grip') continue;   // a two-handed haft's (below)
     if (name === 'crouch' || name === 'lean') {
       const v = (lerp(f || 0, g || 0, k) + (c || 0) * cw) * sc;
       if (name === 'crouch') crouch = v; else lean = v;
@@ -101,6 +102,14 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null) {
   }
   if (crouch > 0) rig.crouch(crouch);
   if (lean) rig.lean(lean);
+  // A two-handed haft (a model's `grip`, pass 53; drawn by Rig.holdHaft): a key pose's `haft` [pitch, yaw, roll] is where
+  // the haft points, in the chest's heading; `grip: false` lets the left hand go (it holds on otherwise). A missing
+  // key pose (the guard before and after) is the model's rest: the haft at grip.rest, the left hand free.
+  if (rig.grip) {
+    const G = rig.grip, k = at('weapon'), hf = (from && from.haft) || G.rest, hg = (to && to.haft) || G.rest;
+    for (let j = 0; j < 3; j++) rig.haftNow[j] = lerp(hf[j], hg[j], k);
+    rig.gripW = lerp(from && from.grip !== false ? 1 : 0, to && to.grip !== false ? 1 : 0, k);
+  }
   let glint = 0;
   if (a.markers) for (const m of a.markers) if (m.event === 'glint') {
     const d = Math.abs(tt - markerTime(a, m)) / (m.time ?? S.glintTime);
@@ -119,6 +128,10 @@ function checkAttackAnim(a, tag, need) {
     if (P) {
       need(Array.isArray(P.hits) && P.hits.length >= a.hits.length && P.hits.every(h => h.windup && h.strike),
         `${tag}: pose "${a.pose}" needs { windup, strike } key poses for each of the attack's ${a.hits.length} hit(s).`);
+      for (const h of P.hits || []) for (const q of [h.windup, h.strike, h.follow]) if (q) {   // a two-handed haft's keys (pass 53)
+        if ('haft' in q) need(Array.isArray(q.haft) && q.haft.length === 3 && q.haft.every(num), `${tag}: pose "${a.pose}": haft must be [pitch, yaw, roll].`);
+        if ('grip' in q) need(q.grip === false, `${tag}: pose "${a.pose}": grip can only be false (the left hand lets go of the haft).`);
+      }
       for (const k of Object.values({ ...POSE_SETTINGS.ease, ...(P.ease || {}) })) need(k in EASE, `${tag}: pose "${a.pose}" uses unknown easing "${k}" (known: ${Object.keys(EASE).join(', ')}).`);
     }
   }
