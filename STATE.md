@@ -7,11 +7,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 86): item 3: keys beside the foe from the bindings, until done 3 times (`js/world-hints.js`, in-page
   `World hints`, `world-hint-*.jpg`); CI shard 3: a leak of ~360 figures and a NaN camera (`Story moments`) fixed.
   Next: lessons' words on the new moves; re-tune Story once the moveset is the only one.
-- Track B (pass 87): items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`); abilities on keys 1-4 (`ABILITY_KEYS`,
-  `CONFIG.abilities.press`), filled by blows, deflects, dodges, executions; Boss Rush locks a filled key (in-page
-  `pass 87`, `tests/abilities.cjs`, `number-keys-*.jpg`). Dash i-frames 0.3 s again (CI's 3 boss tests). Next: (1)
-  own poses for the new moves, bots on them; (2) Boss Rush bosses and curve (item 4); (3) item 5's proof, then the
-  only moveset. Track A: lessons say stamina/parry; dash/jump attacks and keys 1-4 want hints; Story gives none.
+- Track B (pass 88): items 1-2 rough (in-page `pass 85`); keys 1-4 (in-page `pass 87`); the counter, a riposte's own
+  move (`moveset.counter`, stand-in poses); bots end strings with finishers, dash in, counter (`CONFIG.bot.dashIn`,
+  `bot-behavior.cjs`). Next: (1) Boss Rush bosses and curve (item 4); (2) item 5's proof, then the only moveset.
+  Track A: lessons say stamina/parry; dash/jump attacks, keys 1-4 want hints; the counter, deflect and drink want own
+  poses (pass 88's draft dropped); `PS.PARRY` is dead. CI on 2b1244c: shard 1's Bell Warden cap fixed (pass 88).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -60,7 +60,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
-- In-page `Combat clarity: jump heavies` fails since the moveset ("both jump attacks deal more damage"): track B.
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
