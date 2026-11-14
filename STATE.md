@@ -4,13 +4,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 57): item 3 pass 1, two presets (Normal, Ultra; hidden `bare` for CI; old saves become Normal).
-  Normal: no MSAA but FXAA, 4 lights, no stone reflections, volumetrics/refraction/fire at small budgets. Laptop
-  (`tools/bench/laptop.sh`, fps / 1% low): long-hall 67/36, burning-town 50-59/35, aurel-in-ash 54-59/35, final-castle
-  60-65/41, still-mere 70-73/45, 4-player King's Blade 69-75/47 (old High 33-53). **Not yet 60 everywhere**: pass 2
-  is baked lighting (`BACKLOG.md`). Auto now gives integrated GPUs
-  Normal (was Low, 116-230 fps). The King's Blade (pass 55, `docs/scorecard/kings-blade-*.jpg`), Agathe, the Kindling
-  Tree: **awaiting Aleix**.
+- Track A (pass 60, v7.84.0): item 3 pass 2, baked light (`js/baked-light.js`, test `Baked light:`): every
+  level's fixed lights and the moon's visibility in a 1 m volume, both presets; Normal has no shadow map. Laptop
+  (fps / 1% low): every level 67-108 mean (aurel-in-ash 67/47, burning-town 76/48), 4-player kingsBlade 82/60,
+  pillagerCaptain 84/61; interleaved A/B on the 3 slowest scenes 56/23 -> 66/41. Left: PC stand-in calibration
+  (`BACKLOG.md`). Frames: `docs/scorecard/baked-light-normal.jpg`. The King's Blade, Agathe, the Kindling Tree:
+  **awaiting Aleix**.
 - Track B (pass 59): item 6 pass 1, 31 abilities: Ember Twin (summon), Gale Crescent, Pyre, 3 rares
   (`tests/abilities.cjs`, `docs/scorecard/abilities-*.jpg`). Next: item 6 pass 2 (BACKLOG). Curve: pass 56.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
