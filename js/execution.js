@@ -37,7 +37,7 @@ const execution = (() => {
   function damageFor(e, more = 0) {
     const D = CONFIG.execution.damage, boss = isBossLike(e);
     // `critMul` (v5.5, opt-in per def): a foe that shrugs off part of a critical blow (the Crucible Knight, 0.7).
-    const dmg = PLAYER_DEF.moveset.attacks.light.damage * (boss ? D.bossLightMul : D.lightMul) * (e.def.critMul ?? 1);
+    const dmg = D.base * (boss ? D.bossLightMul : D.lightMul) * (e.def.critMul ?? 1);
     return (boss ? Math.min(dmg, e.def.hp * D.bossCap) : dmg) * (1 + more);   // e.def: a boss's current phase, so its current bar
   }
 
@@ -80,6 +80,7 @@ const execution = (() => {
     if (!(typeof multiplayer !== 'undefined' && multiplayer.active())) e.hp = Math.max(1, e.hp - dmg);   // the bar empties only when the animation lets it
     e.tint = 1;
     Game.hitstop = Math.max(Game.hitstop, C.hitstop);
+    if (p.alive()) p.hp = Math.min(p.hpCap(), p.hp + p.maxHp * C.heal);   // a small heal on every execution (pass 85)
     const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), y = e.y + e.height * C.chest;
     events.emit('execution', { player: p, enemy: e, damage: dmg, lethal: X.lethal,
       at: { x: e.x + fx * e.radius * 0.8, y, z: e.z + fz * e.radius * 0.8 }, exit: { x: e.x - fx * e.radius * 1.1, y, z: e.z - fz * e.radius * 1.1 } });

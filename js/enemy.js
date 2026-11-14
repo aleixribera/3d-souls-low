@@ -444,6 +444,7 @@ class Enemy {
           break;
         }
         if (this.opener) { const o = this.opener; this.opener = null; this.yaw = toPlayer; this.beginAttack(o); break; }   // a mid-bar phase's first move
+        { const b = this.breakOff(dist); if (b) { this.yaw = toPlayer; this.beginAttack(b); break; } }   // mashed: it breaks off (CONFIG.enemy.mash)
         if (this.cued && (this.cued.left -= dt) <= 0) {   // a kin's `cue`: her answering move, if the player is still in its range
           const a = this.def.attacks.find(x => x.id === this.cued.attack); this.cued = null;
           if (a && dist >= (a.minRange || 0) && dist <= a.range) { this.beginAttack(a); break; }
@@ -526,12 +527,16 @@ class Enemy {
         this.endStrikeWhenDone();
         break;
       }
-      case ES.RECOVER:
+      case ES.RECOVER: {
+        // Mashed through its recovery (CONFIG.enemy.mash): past `recoverCut` of it, it breaks off at once.
+        const b = playerAlive && this.stateTime >= this.attack.recovery * E.mash.recoverCut && this.breakOff(dist);
+        if (b) { this.learn(); this.yaw = toPlayer; this.beginAttack(b); break; }
         if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
           this.learn();
           this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); this.regroup(dist);
         }
         break;
+      }
       case ES.HURT:
         if (this.stateTime >= d.flinchTime) { this.cooldown = Math.max(this.cooldown, d.cooldown[0]); this.setState(ES.CHASE); this.regroup(dist); }
         break;
@@ -886,6 +891,41 @@ class Enemy {
     this.setState(ES.PARRIED);
     return false;
   }
+  // A deflect (pass 85, CONFIG.parry): the last blow of its attack deflected ends it, open (getParried); an earlier blow
+  // is only turned aside, the string goes on, and a boss's posture fills by `deflectShare` of its parry value.
+  // Returns { broke, opened }.
+  getDeflected() {
+    const a = this.attack, last = !a || this.hitIndex >= a.hits.length - 1;
+    if (last) { const broke = this.getParried(); return { broke, opened: true }; }
+    if (this.def.posture) {
+      this.chainTime = 0;
+      if (this.addPosture(this.def.posture.parry * CONFIG.enemy.deflectShare)) return { broke: true, opened: true };
+    }
+    return { broke: false, opened: false };
+  }
+  // Anti-mash (pass 85, CONFIG.enemy.mash): the run of blows a boss has taken without a pause of `gap` s. Long enough,
+  // and it answers with a break-off of its own (breakOff): its quickest attack that reaches, the widest first. The run
+  // is one attacker's: a party taking turns is not one player mashing.
+  noteMash(strike, from) {
+    const M = CONFIG.enemy.mash;
+    if (strike.riposte || !Object.hasOwn(PLAYER_DEF.moveset.attacks, strike.attackId)) return;   // a counter, or an ability's blow
+    const same = from === this.mashBy && this.chainTime <= M.gap;
+    this.mashBy = from; this.mash = (same ? this.mash || 0 : 0) + 1;
+  }
+  breakOff(dist) {
+    const M = CONFIG.enemy.mash;
+    if (!this.def.posture || (this.mash || 0) < M.hits || this.chainTime > M.gap) return null;
+    const fits = this.def.attacks.filter(a => !a.when && !a.learned && !a.projectile && attackChance(a) > 0 && dist >= (a.minRange || 0) && dist <= a.range + M.reach
+      && !a.hits[0].leap && !a.hits[0].bolt && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));
+    if (!fits.length) return null;
+    const pick = fits.reduce((b, a) => {
+      const sa = a.hits[0].startup - (isAreaAttack(a) ? M.areaBonus : 0), sb = b.hits[0].startup - (isAreaAttack(b) ? M.areaBonus : 0);
+      return sa < sb ? a : b;
+    });
+    this.mash = 0;
+    events.emit('breakOff', { enemy: this, attack: pick });
+    return pick;
+  }
 
   // One strike from `from`. Returns { broke (posture), died }.
   // Seal every open wound (a break, an execution, a new phase).
@@ -952,6 +992,7 @@ class Enemy {
     if (P) {
       // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
       const chained = this.chainTime <= P.chainGap;
+      this.noteMash(strike, from);   // before chainTime restarts: it measures the pause before this blow
       this.chainTime = 0;
       // A hit's `falter` (pass 55, the King's Blade): `hits` blows landed through its wind-up and it breaks off, open.
       if (W && W.falter) {

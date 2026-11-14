@@ -65,26 +65,34 @@ const CONFIG = {
           autoRange: 9,               // first-encounter auto lock-on distance
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
-    poiseResetTime: 4, staminaRegen: 43.2, staminaDelay: 0.75,
+    // The player rework (pass 85, PLAN.md "First, urgent"): no stamina for attacking, dashing or jumping, and no
+    // exhaustion. The green bar is the guard: only blocking wears it down (CONFIG.block); it refills whenever the player
+    // isn't blocking, after `staminaDelay` s.
+    poiseResetTime: 4, staminaRegen: 52, staminaDelay: 0.75,
     walkSpeed: 4.3, accel: 26, decel: 22, turnRate: 14,   // v4.1: accel 34, decel 28 (a little more weight)
     airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
-    jumpVelocity: 8.2, airControl: 9, jumpCost: 14,
+    jumpVelocity: 8.2, airControl: 9,
     jumpAttackAirControl: 0.6,   // multiplier on air control during a jump attack
     landKeep: 0.35,              // horizontal speed kept on a jump-attack landing
-    rollCost: 22,   // a roll needs any stamina at all, and drains what's left (to 0 at worst)
-    // Exhaustion (Souls-style penalty): emptying the stamina bar, by any action, leaves the player exhausted: no roll,
-    // attack, parry or jump until it has refilled to `exhaustRecover`, and it starts refilling only after `exhaustDelay`
-    // s (instead of staminaDelay). The bar shows it, and a press while exhausted says why (js/hud.js).
-    exhaustDelay: 1.3, exhaustRecover: 30,
-    rollTime: 0.62, rollIFrames: 0.3, rollSpeed: 9.2, rollSlow: 0.78,
-    rollExitKeep: 0.3,           // speed kept when a roll ends
-    // Input buffer (Souls-style, one slot, latest press wins): a roll or attack pressed while busy is kept only if the
-    // action becomes possible within bufferWindow s; it then waits that long plus bufferGrace before being dropped.
+    // The dash (the action and state keep the old name, `roll`): `rollTime` s long, untouchable for its first
+    // `rollIFrames` s only, so a mistimed dash ends open. `dashCharges` dashes held at most, each coming back over
+    // `dashRefill` s, one at a time. A blow slipped inside the i-frames is a perfect dodge (the `dodge` event): the next
+    // blow within `counterTime` s is a counter (a riposte strike), drawn with a beat of slow motion (js/dodge-moment.js).
+    rollTime: 0.36, rollIFrames: 0.2, rollSpeed: 13.5, rollSlow: 0.62,
+    rollExitKeep: 0.35,          // speed kept when a dash ends
+    dashCharges: 2, dashRefill: 0.85, counterTime: 0.8,
+    // A dash attack: a light or heavy pressed from `dashAttackFrom` s into a dash (or buffered in it) comes out as the
+    // moveset's `dash` attack instead of waiting for the dash to end.
+    dashAttackFrom: 0.14,
+    // Input buffer (one slot, latest press wins): a dash or attack pressed while busy is kept only if the action becomes
+    // possible within bufferWindow s; it then waits that long plus bufferGrace before being dropped.
     bufferWindow: 0.4, bufferGrace: 0.1,
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     attackSteer: 3.2,            // rad/s the player may turn during an attack's wind-up (none once the strike is out)
-    comboGrace: 0.3,             // after an attack ends, a press this soon still continues its combo
+    comboGrace: 0.35,            // after an attack ends, a press this soon still continues its string
+    // Drinking on the move: a flask is drunk walking at `drinkSpeedMul` of walking speed; a blow that lands cuts it short.
+    drinkSpeedMul: 0.55,
     chargeTremble: 0.025,        // rad the body shakes at full heavy charge (visual)
     chargeShake: { time: 0.14, amp: 0.035 },   // camera jolt when a heavy reaches full charge
     hurtTime: 0.34, staggerTime: 0.9, knockFriction: 7, braceTime: 0.25, deathFade: 3.5,
@@ -95,13 +103,18 @@ const CONFIG = {
   // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
   groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
                  dustLife: 0.9, shakeTime: 0.2 },
+  // Blocking wears the guard (the green bar, `stamina`) down; an empty guard breaks into a stagger.
   block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
            breakTime: 1.35, hitstop: 0.05 },
-  // Parry window is anchored to the enemy's swing: it opens `lead` s before the active phase and
-  // closes `grace` s into it. A press stays armed for `arm` s, so a press succeeds only in
-  // [active - lead - arm, active + grace] — about a quarter second.
-  parry: { cost: 12, arm: 0.1, lead: 0.12, grace: 0.03, time: 0.52, reach: 0.6, hitstop: 0.16,
-           riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  // The deflect (pass 85; it replaced the parry, and keeps its name in code, events and claims): block pressed as a
+  // blow lands. The window is anchored to the enemy's swing: it opens `lead` s before the active phase and closes
+  // `grace` s into it. A press stays armed for `arm` s, so a press succeeds in [active - lead - arm, active + grace],
+  // about a third of a second. Spamming: a press that deflects nothing locks the next `spamLock` s of presses out (a
+  // deflect clears it, so a string can be deflected blow by blow). A deflected blow fills a boss's posture; the last
+  // blow of an attack deflected leaves it open (Enemy.getDeflected), and the next blow within `riposteTime` s is a
+  // riposte. `postureMul`: how much more posture a riposte or a counter builds.
+  parry: { arm: 0.17, lead: 0.13, grace: 0.05, spamLock: 0.5, reach: 0.6, hitstop: 0.12,
+           riposteTime: 1.1, riposteHitstop: 1.6, postureMul: 3, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
   // Executions (v5.2, js/execution.js): the reward for a full stagger, guard or posture bar. While an enemy kneels
   // (ES.BROKEN), light attack from in front of it runs the `execute` attack (js/data/player.js) instead of a light cut.
   // Every number of the system is here.
@@ -116,11 +129,13 @@ const CONFIG = {
     gap: 0.3,            // ...m from the enemy's centre, so the blade runs through the chest and out of the back
     chest: 0.47,         // a kneeling body's chest, as a share of its standing height (where the blade goes in)
     thrustHeight: 1.1,   // m above the player's feet the thrust runs level; a taller chest tilts it up (bosses)
-    // Damage: `lightMul` times the player's light attack damage for normal enemies (24 x 3.75 = 90: hurts normal enemies
-    // without one-shotting them from full); `bossLightMul` times light damage for bosses (24 x 13.5 = 324: about a third
-    // of a doubled boss bar or less), never above `bossCap` of a boss's bar.
-    // A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change or retreat follows it.
-    damage: { lightMul: 3.75, bossLightMul: 13.5, bossCap: 0.5 },
+    // Damage: `lightMul` times `base` for normal enemies (24 x 3.75 = 90: hurts normal enemies without one-shotting them
+    // from full); `bossLightMul` times `base` for bosses (24 x 13.5 = 324: about a third of a doubled boss bar or less),
+    // never above `bossCap` of a boss's bar. `base` stands apart from the light attack (pass 85: ordinary hits are weaker,
+    // executions are not). A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change
+    // or retreat follows it.
+    damage: { base: 24, lightMul: 3.75, bossLightMul: 13.5, bossCap: 0.5 },
+    heal: 0.08,          // share of the executor's max health the blade going in heals (pass 85; capped at hpCap)
     aimRate: 8,   // rad/s the executor keeps turning toward a victim it was stopped short of by a wall
     hitstop: 0.24,       // s the world freezes as the blade goes in
     grace: 0.25,         // s the player stays untouchable after the animation ends
@@ -174,6 +189,12 @@ const CONFIG = {
            // A boss back on its feet after a posture break builds posture at `mul` for `time` s (v7.65.0): it gets to
            // fight before the next break, however many blades are on it, so a break stays a moment, not a loop.
            postureRest: { time: 8, mul: 0.25 },
+           // A deflect (CONFIG.parry) of a blow before its attack's last fills a boss's posture by this share of its parry value.
+           deflectShare: 0.6,
+           // Anti-mash (pass 85): `hits` player blows each within `gap` s of the last and a posture boss breaks off with its
+           // quickest attack that reaches within its range + `reach` m (an area attack counts `areaBonus` s quicker), even
+           // from `recoverCut` of the way through a recovery.
+           mash: { hits: 6, gap: 1.0, reach: 0.5, areaBonus: 0.15, recoverCut: 0.35 },
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
@@ -248,6 +269,8 @@ const CONFIG = {
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
   killMoment: { slow: 0.3, time: 1.1, embers: 70, emberSpeed: 7 },
+  // A perfect dodge alone (pass 85, js/dodge-moment.js): the world runs at `slow` for `time` real s; `burst` sparks.
+  dodgeMoment: { slow: 0.35, time: 0.35, burst: 14 },
   // Boss Rush's abilities (v7.75.0, `ABILITIES` in js/data/abilities.js, js/abilities.js): after each fight but the
   // last, every player is offered `offer` abilities and keeps one for the rest of the run. One already held comes back
   // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
@@ -887,6 +910,7 @@ const CONFIG = {
   // Friendly bots (v7.11, js/bot.js): a bot presses the same actions a player does. Times in s, distances in m
   // (between body edges unless named otherwise). Nothing here is tuned for one enemy: every read comes from attack data.
   bot: {
+    jumpRest: 6,                 // s between two leaping heavies of a bot's own choosing (pass 85: jumps cost nothing now)
     notice: [0.1, 0.26],         // a new wind-up is seen this long after it starts (v7.69.0: slower, less even)
     rollLead: [0.05, 0.12],     // a roll starts this long before the strike opens (its i-frames last CONFIG.player.rollIFrames)
     parryLead: [0.02, 0.07],    // a parry is pressed this long before the strike opens (inside CONFIG.parry.lead)

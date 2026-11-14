@@ -58,7 +58,7 @@ if (DEV) (() => {
     if (lab.player) {
       const A = PLAYER_DEF.moveset.attacks;
       lab.modes.push({ name: 'light attack', type: 'pattack', a: A.light }, { name: 'heavy attack', type: 'pattack', a: A.heavy }, { name: 'block', type: 'pstate', s: PS.BLOCK },
-        { name: 'parry', type: 'pstate', s: PS.PARRY, len: CONFIG.parry.time + 0.5 }, { name: 'roll', type: 'pstate', s: PS.ROLL, len: CONFIG.player.rollTime + 0.5 },
+        { name: 'parry', type: 'pstate', s: PS.PARRY, len: CONFIG.parry.arm + 0.5 }, { name: 'roll', type: 'pstate', s: PS.ROLL, len: CONFIG.player.rollTime + 0.5 },
         { name: 'hurt', type: 'pstate', s: PS.HURT, len: CONFIG.player.hurtTime + 0.6 }, { name: 'stagger', type: 'pstate', s: PS.STAGGER, len: CONFIG.player.staggerTime + 0.6 },
         { name: 'death', type: 'pstate', s: PS.DEAD, len: CONFIG.player.deathFade + 0.8 });
     }

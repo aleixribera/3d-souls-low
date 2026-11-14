@@ -26,13 +26,13 @@ const POISE = Object.freeze({ STAGGER: 'poiseStagger', FLINCH: 'poiseFlinch', NO
 const PLAYER_GROUPS = {
   free: new Set([PS.IDLE, PS.WALK]),                                     // may start any action
   airborne: new Set([PS.JUMP, PS.FALL]),
-  falls: new Set([PS.IDLE, PS.WALK, PS.BLOCK, PS.PARRY, PS.USE_ITEM, PS.REST, PS.HURT, PS.STAGGER]),   // no floor below: start falling
+  falls: new Set([PS.IDLE, PS.WALK, PS.BLOCK, PS.USE_ITEM, PS.REST, PS.HURT, PS.STAGGER]),   // no floor below: start falling
   attacking: new Set([PS.ATTACK, PS.JUMP_ATTACK]),
-  noRegen: new Set([PS.EXECUTE, PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD, PS.HELD]),
+  noRegen: new Set([PS.EXECUTE, PS.BLOCK, PS.DEAD, PS.HELD]),
   noLockFacing: new Set([PS.EXECUTE, PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND, PS.HELD]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
   // Busy states whose roll and attack presses go through the Souls-style input buffer (Player.bufferInputs).
-  buffers: new Set([PS.ATTACK, PS.ROLL, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER, PS.USE_ITEM]),
+  buffers: new Set([PS.ATTACK, PS.ROLL, PS.LAND, PS.HURT, PS.STAGGER, PS.USE_ITEM]),
 };
 const ENEMY_GROUPS = {
   unaware: new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.RETURN]),           // has not noticed the player

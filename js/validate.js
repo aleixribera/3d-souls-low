@@ -501,10 +501,10 @@ function validateData({ visual = true } = {}) {
   need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
   const X = CONFIG.execution;
   need(X && ['range', 'cone', 'facing', 'floor', 'angleWeight', 'snapTime', 'standoff', 'gap', 'chest', 'thrustHeight', 'hitstop', 'grace', 'push', 'cuePulse', 'cueGlow'].every(k => num(X[k]))
-    && ['lightMul', 'bossLightMul', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
+    && ['base', 'lightMul', 'bossLightMul', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
     && X.snapTime < M.attacks.execute.hits[0].startup, 'CONFIG.execution: a number is missing, bossCap is above 0.5, or snapTime outlasts the wind-up.');
-  for (const group of ['ground', 'air'])
-    for (const [action, id] of Object.entries(M[group])) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
+  for (const group of ['ground', 'air', 'dash'])
+    for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
   const tri3 = v => Array.isArray(v) && v.length === 3 && v.every(num);
   for (const [id, W] of Object.entries(WEAPONS)) {   // where a weapon glows with embers (an enemy's visual `embers`)
@@ -595,8 +595,17 @@ function validateData({ visual = true } = {}) {
     'CONFIG.ai: kite must be 0..1, leashResume above 0 and at most 1, search.speedMul and search.max above 0, search.arrive and search.look 0 or more.');
   need(Vi.cone > 0 && Vi.cone <= Math.PI && nonNeg(Vi.near), 'CONFIG.vision: cone must be above 0 and at most pi (rad), near 0 or more.');
   const Pl = CONFIG.player;
-  need(nonNeg(Pl.exhaustDelay) && Pl.exhaustRecover > 0 && Pl.exhaustRecover <= PLAYER_DEF.stats.maxStamina,
-    'CONFIG.player: exhaustDelay must be 0 or more, exhaustRecover above 0 and at most the player maxStamina.');
+  // The pass-85 moveset: dash charges, the counter after a perfect dodge, the dash attack, drinking on the move.
+  need(Number.isInteger(Pl.dashCharges) && Pl.dashCharges >= 1 && [Pl.dashRefill, Pl.counterTime, Pl.drinkSpeedMul].every(v => num(v) && v > 0)
+    && nonNeg(Pl.dashAttackFrom) && Pl.dashAttackFrom < Pl.rollTime && Pl.rollIFrames < Pl.rollTime && nonNeg(Pl.comboGrace),
+    'CONFIG.player: dashCharges must be a whole number 1 or more, dashRefill, counterTime and drinkSpeedMul above 0, dashAttackFrom and rollIFrames under rollTime.');
+  { const Pa = CONFIG.parry, Ms = CONFIG.enemy.mash;   // the deflect, and the bosses' answer to mashing
+    need(['arm', 'lead', 'grace', 'spamLock', 'reach', 'hitstop', 'riposteTime', 'postureMul'].every(k => num(Pa[k]) && Pa[k] >= 0) && Pa.arm > 0 && Pa.spamLock >= Pa.arm,
+      'CONFIG.parry: arm, lead, grace, spamLock, reach, hitstop, riposteTime and postureMul must be 0 or more, arm above 0 and spamLock at least arm.');
+    need(num(CONFIG.enemy.deflectShare) && CONFIG.enemy.deflectShare >= 0 && CONFIG.enemy.deflectShare <= 1, 'CONFIG.enemy.deflectShare must be from 0 to 1.');
+    need(Ms && Number.isInteger(Ms.hits) && Ms.hits >= 2 && [Ms.gap, Ms.reach, Ms.areaBonus].every(v => num(v) && v >= 0) && Ms.recoverCut >= 0 && Ms.recoverCut <= 1,
+      'CONFIG.enemy.mash: hits a whole number 2 or more, gap, reach and areaBonus 0 or more, recoverCut from 0 to 1.'); }
+  need(num(CONFIG.execution.heal) && CONFIG.execution.heal >= 0 && CONFIG.execution.heal < 1, 'CONFIG.execution.heal must be from 0 to under 1.');
   { const D = CONFIG.hud.damageNumbers;   // the Ability Grounds' damage numbers
     need(Number.isInteger(D.pool) && D.pool > 0 && [D.life, D.rise, D.spread, D.big].every(v => num(v) && v > 0) && Array.isArray(D.lanes) && D.lanes.length && D.lanes.every(num),
       'CONFIG.hud.damageNumbers: pool (whole number), life, rise, spread and big above 0, and lanes (numbers).'); }

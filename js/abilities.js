@@ -11,14 +11,14 @@
 
 // The commons' numbers. `less` cuts its Player number by the fraction; the rest raise theirs.
 const ABILITY_MODS = { damage: 'more', maxHp: 'more', maxStamina: 'more', staminaRegen: 'more', posture: 'more',
-  parryWindow: 'more', rollCost: 'less', rollIFrames: 'more', flaskSpeed: 'more', chargeSpeed: 'more', riposte: 'more',
+  parryWindow: 'more', dashRefill: 'more', rollIFrames: 'more', flaskSpeed: 'more', chargeSpeed: 'more', riposte: 'more',
   execution: 'more' };
 // The rares' perks, as `when/then`, and the numbers each level of one gives:
 //   parry/stamina:    a parry gives back `stamina` of the bar.
 //   dodge/riposte:    a perfect dodge (a roll's i-frames take a blow) opens a riposte for `window` s, as a parry does.
 //   hurt/empower:     losing health makes the next landed blow within `window` s do `damage` more.
 //   streak/heal:      `hits` landed blows without losing health heal `heal` of the bar.
-//   low/freeStamina:  at or under `below` of the bar, rolls and attacks cost no stamina.
+//   low/freeStamina:  at or under `below` of the bar, dashes take no charge (pass 85: nothing else costs anything).
 //   open/damage:      blows on a boss that is off balance (abilityOpen) do `damage` more.
 //   block/charge:     a blocked blow makes the next heavy within `window` s come out fully charged at once.
 //   unhurt/empower:   `after` s without losing health make the next landed blow do `damage` more.

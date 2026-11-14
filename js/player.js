@@ -17,9 +17,14 @@ class Player {
     this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
     this.grounded = true; this.peak = y; this.fallHeight = 0; this.inPit = false;   // see integrateBody
     this.hp = this.maxHp; this.stamina = this.maxStamina; this.poise = this.maxPoise;
-    this.exhausted = false; this.sinceExhausted = Infinity;   // see spend and canAct
+    // No exhaustion since the rework (pass 85): kept false, as network frames and the HUD still carry it.
+    this.exhausted = false; this.sinceExhausted = Infinity;
     this.staminaDelay = 0; this.poiseTimer = 0; this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
-    this.riposte = 0;      // timer: > 0 while a riposte is available after a successful parry
+    this.riposte = 0;      // timer: > 0 while the next blow is a riposte (after a deflect that opened a foe, or a perfect dodge)
+    this.dashes = CONFIG.player.dashCharges;   // dash charges held (fractional while one comes back)
+    // The deflect (CONFIG.parry): s left of an armed press, s of the spam lock, and the blow deflected last ({ enemy, key }):
+    // a deflected blow whose hitbox opens a moment later never lands.
+    this.deflect = 0; this.deflectLock = 0; this.deflectedBlow = null;
     this.state = PS.IDLE; this.stateTime = 0;
     this.attack = null; this.payload = null; this.hitbox = null; this.stunTime = 0; this.usingItem = null;
     this.activeAt = Infinity; this.landTime = 0; this.landHit = false;
@@ -43,7 +48,7 @@ class Player {
     this.maxHp = S.maxHp * (1 + m.maxHp); this.maxStamina = S.maxStamina * (1 + m.maxStamina);
     this.hp = this.lastHp = this.maxHp; this.stamina = this.maxStamina;
   }
-  // Last Breath (a `low/freeStamina` perk): this low, rolls and attacks cost nothing.
+  // Last Breath (a `low/freeStamina` perk): this low, dashes cost no charge.
   freeStamina() { const v = this.kit.perks['low/freeStamina']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below; }
   // A flask drunk this many times as fast (Quick Draught).
   drinkRate() { return 1 + (this.kit ? this.kit.mods.flaskSpeed : 0); }
@@ -53,21 +58,9 @@ class Player {
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
   setState(s) { if (s !== PS.FALL) this.dropped = false; this.state = s; this.stateTime = 0; }
-  // Emptying the bar exhausts the player (CONFIG.player.exhaustDelay, exhaustRecover): a longer wait before it refills,
-  // and no stamina action until it is back to exhaustRecover.
+  // The guard (the `stamina` bar): only blocked blows wear it down; it refills after CONFIG.player.staminaDelay s.
   spend(amount) {
     this.stamina = Math.max(0, this.stamina - amount); this.staminaDelay = CONFIG.player.staminaDelay;
-    if (amount > 0 && this.stamina <= 0) { this.exhausted = true; this.staminaDelay = CONFIG.player.exhaustDelay; }
-  }
-  // May start a roll, attack, parry or jump: any stamina at all (one emergency roll or swing), unless exhausted.
-  canAct() {
-    if (this.exhausted && this.stamina >= CONFIG.player.exhaustRecover) this.exhausted = false;
-    return this.stamina > 0 && !this.exhausted;
-  }
-  // A stamina action pressed while exhausted: swallowed, and announced so the HUD can say why nothing happened.
-  refuseIfExhausted(actions) {
-    if (this.canAct() || !actions.some(a => this.ctl.consume(a))) return;
-    events.emit('staminaDenied', { player: this });
   }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
@@ -85,9 +78,10 @@ class Player {
   item(id) { return this.inventory[id] || { count: 0, max: 0 }; }
   refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
-  canRoll() { return this.canAct(); }
-  // A roll is wanted now: a queued press, or a fresh one (only consumed if a roll is possible).
-  // A queued roll that can't happen the moment it's allowed (no stamina, or exhausted) is dropped, never held.
+  // A dash needs a whole charge (Last Breath: none).
+  canRoll() { return this.dashes >= 1 || this.freeStamina(); }
+  // A dash is wanted now: a queued press, or a fresh one (only consumed if a dash is possible).
+  // A queued dash that can't happen the moment it's allowed (no charge) is dropped, never held.
   wantsRoll() {
     const buffered = this.buffer && this.buffer.action === 'roll';
     if (!this.canRoll()) { if (buffered) this.buffer = null; return false; }
@@ -97,14 +91,31 @@ class Player {
   untilAllowed(action) {
     const C = CONFIG.player, t = this.stateTime;
     switch (this.state) {
-      case PS.ATTACK: return this.charge === 1 ? Infinity : Math.max(0, phaseSpan(this.attack, 'recovery')[0] - this.attackT);
+      case PS.ATTACK: return this.charge === 1 ? Infinity : Math.max(0, (action === 'roll' ? phaseSpan(this.attack, 'follow', 0) : phaseSpan(this.attack, 'recovery'))[0] - this.attackT);   // a dash cancels once the blow is out
       case PS.ROLL: return C.rollTime - t;
       case PS.LAND: return action === 'roll' ? Math.max(0, this.attack.air.impactTime - t) : this.landTime - t;
       case PS.HURT: case PS.STAGGER: return this.stunTime - t;
-      case PS.PARRY: return CONFIG.parry.time - t;
       case PS.USE_ITEM: return (this.usingItem.useTime - t * this.drinkRate()) / this.drinkRate();
       default: return Infinity;
     }
+  }
+  // Cancels (pass 85): once an attack's blow is out (past its wind-up, and not holding a charge), a dash or a deflect
+  // cuts the rest of it short.
+  cancellable() { return this.state === PS.ATTACK && this.charge !== 1 && this.attackPhase() !== PHASE.STARTUP && this.attackPhase() !== PHASE.ACTIVE; }   // the blow has had its frames
+  // A deflect press (block, or the old parry action a bot's hands still press): armed for CONFIG.parry.arm s, unless a
+  // press that deflected nothing came within `spamLock` s before it. Returns true if a press was taken.
+  pressDeflect() {
+    const pressed = this.ctl.consume('block') | this.ctl.consume('parry');
+    if (!pressed) return false;
+    if (this.deflectLock <= 0) { this.deflect = CONFIG.parry.arm; events.emit('deflectPress', { player: this }); }
+    this.deflectLock = CONFIG.parry.spamLock;
+    return true;
+  }
+  // The deflect worked (resolveCombat): the lock clears, so the next blow of a string can be deflected too.
+  deflected(enemy, key, opened) {
+    this.deflect = 0; this.deflectLock = 0; this.flash = 1;
+    this.deflectedBlow = { enemy, key };
+    if (opened) this.riposte = CONFIG.parry.riposteTime;
   }
   // Souls-style input buffer: while busy, a roll or attack press is remembered only if it comes within bufferWindow s
   // of the moment that action becomes possible (earlier presses, mashing, are dropped). One slot: the latest press
@@ -122,9 +133,14 @@ class Player {
   startRoll(mv) {
     this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    const cost = CONFIG.player.rollCost * (1 - this.kit.mods.rollCost);   // Light Step
-    if (!this.freeStamina()) this.spend(Math.max(cost, this.stamina - cost < 1 ? this.stamina : 0));   // (all but) empty: exhausted
-    this.hitbox = null; this.setState(PS.ROLL);
+    if (!this.freeStamina()) this.dashes = Math.max(0, this.dashes - 1);
+    this.hitbox = null; this.chainPose = null; this.setState(PS.ROLL);
+    events.emit('dash', { player: this });
+  }
+  // Dash charges come back one at a time (Light Step: faster).
+  refillDashes(dt) {
+    const C = CONFIG.player;
+    if (this.dashes < C.dashCharges) this.dashes = Math.min(C.dashCharges, this.dashes + dt * (1 + (this.kit.mods.dashRefill || 0)) / C.dashRefill);
   }
   // Heading toward the best nearby enemy in the direction the player means to swing, or null.
   autoAim(mv, enemies) {
@@ -136,7 +152,7 @@ class Player {
     }
     return best;
   }
-  // Shared by ground and jump attacks: aim, riposte bonus, stamina.
+  // Shared by ground and jump attacks: aim and the riposte bonus. Attacks cost nothing.
   beginAttack(a, mv, face, enemies) {
     const auto = face === null ? this.autoAim(mv, enemies) : null;
     if (face !== null) this.yaw = face;                // locked on: always aim at the target
@@ -149,7 +165,6 @@ class Player {
       events.emit('chargeFull', { actor: this, attack: a }); events.emit('abilityPerk', { body: this, perk: 'block/charge' });
     }
     this.riposte = 0;
-    if (!this.freeStamina()) this.spend(a.cost || 0);
     this.hitbox = null;
   }
   // The attack an input starts: the follow-up of a combo still running (or just ended), else the opener.
@@ -161,10 +176,11 @@ class Player {
     this.beginAttack(a, mv, face, enemies); this.setState(PS.ATTACK);
     this.buffer = null; this.comboFrom = null; this.chainPose = null;
   }
-  startParry() { this.spend(CONFIG.parry.cost); this.hitbox = null; this.setState(PS.PARRY); }
+  // Into the guard with a deflect armed (a tap: released at once, it is only the deflect).
+  startGuard() { this.hitbox = null; this.buffer = null; this.comboFrom = null; this.chainPose = null; this.setState(PS.BLOCK); }
   useItem(id) {
     this.inventory[id].count--;
-    this.usingItem = ITEMS[id]; this.vx = this.vz = 0;
+    this.usingItem = ITEMS[id];
     this.setState(PS.USE_ITEM);
     events.emit('itemUsed', { item: id, player: this });
     if (id !== 'flask') return;
@@ -179,17 +195,16 @@ class Player {
     // no stamina, so it comes before the exhaustion check: even an exhausted player can execute.
     const victim = execution.target(this, enemies);
     if (victim && ((this.buffer && this.buffer.action === 'light') || this.ctl.consume('light'))) { execution.start(this, victim); return true; }
-    this.refuseIfExhausted(['roll', 'parry', 'jump', ...Object.keys(M.ground)]);
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
-    if (this.canAct() && this.ctl.consume('parry')) { this.startParry(); return true; }
+    if (this.pressDeflect()) { this.startGuard(); return true; }
     const queued = this.buffer && this.buffer.action;
     for (const action of Object.keys(M.ground)) {
-      if (this.canAct() && (queued === action || this.ctl.consume(action))) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
+      if (queued === action || this.ctl.consume(action)) { this.startAttack(this.nextAttack(action), mv, face, enemies); return true; }
     }
     for (const [id, item] of Object.entries(ITEMS)) {
       if (this.item(id).count > 0 && this.ctl.consume(item.action)) { this.useItem(id); return true; }
     }
-    if (this.canAct() && this.ctl.consume('jump')) { this.spend(C.jumpCost); this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
+    if (this.ctl.consume('jump')) { this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
     if (this.ctl.isHeld('block')) { this.setState(PS.BLOCK); return true; }
     return false;
   }
@@ -202,13 +217,14 @@ class Player {
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
+    this.deflect = Math.max(0, this.deflect - dt); this.deflectLock = Math.max(0, this.deflectLock - dt);
     this.execGrace = Math.max(0, this.execGrace - dt);
     if (this.doomTime > 0) this.updateDoom(dt);
     if (this.rent > 0) this.updateRent(dt);
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
+    this.refillDashes(dt);
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
-    this.canAct(); this.sinceExhausted = this.exhausted ? 0 : this.sinceExhausted + dt;
     if (!this.in('noRegen') && this.staminaDelay <= 0) this.stamina = Math.min(this.maxStamina, this.stamina + C.staminaRegen * (1 + this.kit.mods.staminaRegen) * dt);
     if (this.kit !== NO_KIT) this.abilityStep(dt);
     tickPoise(this, dt, C.poiseResetTime, this.maxPoise);
@@ -228,7 +244,7 @@ class Player {
       case PS.JUMP:
       case PS.FALL: {
         if (this.dropped) for (const a in M.air) this.ctl.consume(a);   // a fall from a grip: struggle presses are not plunges
-        else if (this.canAct()) {
+        else {
           const action = Object.keys(M.air).find(a => this.ctl.consume(a));
           if (action) {
             this.beginAttack(M.attacks[M.air[action]], mv, face, enemies);
@@ -271,6 +287,13 @@ class Player {
         const p = this.stateTime / C.rollTime;
         const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
         this.vx = fx * sp; this.vz = fz * sp;
+        // A dash attack: an attack pressed in the dash (held in the buffer) comes out of it once past dashAttackFrom.
+        const dashAttack = this.buffer && M.dash[this.buffer.action];
+        if (dashAttack && this.stateTime >= C.dashAttackFrom && this.buffer.action === 'light') {   // a foe on its knees: the execution
+          const victim = execution.target(this, enemies);
+          if (victim) { execution.start(this, victim); break; }
+        }
+        if (dashAttack && this.stateTime >= C.dashAttackFrom) { this.startAttack(M.attacks[dashAttack], mv, face, enemies); break; }
         if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
       }
@@ -300,13 +323,15 @@ class Player {
         const lungeFrom = ch ? Math.max(C.lungeStart, ch.at) : C.lungeStart;
         const lunging = this.charge !== 1 && (tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > lungeFrom));
         approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
-        // Recovery is the cancel point: a buffered (or fresh) roll, else a buffered attack, which chains the combo.
-        if (tl.phase === PHASE.RECOVERY && this.wantsRoll()) { this.startRoll(mv); break; }
-        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light') {   // the combo broke its stance
+        // Cancels: once the blow has landed (or missed), a dash or a deflect cuts the rest short. Recovery is where a buffered attack
+        // chains the string (or a heavy ends it with that point's finisher).
+        if (this.cancellable() && this.wantsRoll()) { this.startRoll(mv); break; }
+        if (this.cancellable() && this.pressDeflect()) { this.startGuard(); break; }
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light') {   // the string broke its stance
           const victim = execution.target(this, enemies);
           if (victim) { execution.start(this, victim); break; }
         }
-        if (tl.phase === PHASE.RECOVERY && this.buffer && this.canAct()) {
+        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action !== 'roll') {
           this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
         }
         if (tl.done) { this.comboFrom = a; this.comboTimer = C.comboGrace; this.setState(PS.IDLE); }
@@ -315,23 +340,16 @@ class Player {
       case PS.BLOCK: {
         const bs = C.walkSpeed * C.blockSpeedMul;
         approachVel(this, mv.x * bs, mv.z * bs, (mv.has ? C.accel : C.decel) * dt);
-        this.refuseIfExhausted(['roll']);
-        if (this.wantsRoll()) { this.startRoll(mv); break; }   // roll straight out of a guard
-        // Parry from block only commits if an attack is about to land; otherwise the press is ignored.
-        if (this.ctl.consume('parry')) {
-          if (this.canAct() && enemies.some(e => parryTiming(this, e, CONFIG.parry.arm) !== null)) { this.startParry(); break; }
-        }
+        if (this.wantsRoll()) { this.startRoll(mv); break; }   // dash straight out of a guard
+        this.pressDeflect();   // a bot's parry press while guarding (a person's block press starts the guard)
         if (!this.ctl.isHeld('block')) this.setState(PS.IDLE);
         break;
       }
-      case PS.PARRY: {
-        approachVel(this, 0, 0, C.decel * dt);
-        if (this.stateTime >= CONFIG.parry.time) this.setState(PS.IDLE);   // whiffed: recovery over
-        break;
-      }
       case PS.USE_ITEM: {
-        const I = this.usingItem, rate = this.drinkRate();   // Quick Draught: the whole drink runs faster
-        approachVel(this, 0, 0, C.decel * dt);
+        // Drunk on the move (pass 85): walking at drinkSpeedMul, turning as on foot; a landed blow ends it (takeHit).
+        const I = this.usingItem, rate = this.drinkRate(), ds = C.walkSpeed * C.drinkSpeedMul;   // Quick Draught: the whole drink runs faster
+        if (mv.has && face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * dt);
+        approachVel(this, mv.x * ds, mv.z * ds, (mv.has ? C.accel : C.decel) * dt);
         if (I.heal) {   // heal spread over [healStart, healStart + healDuration]
           const t0 = (this.stateTime - dt) * rate, t1 = this.stateTime * rate;
           const healed = clamp(t1 - I.healStart, 0, I.healDuration) - clamp(t0 - I.healStart, 0, I.healDuration);
@@ -522,6 +540,7 @@ class Player {
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     let damage = strike.damage, poise = strike.poise, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
     let blocked = false, guardBroken = false;
+    const drinking = this.state === PS.USE_ITEM;
     if (this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z)) {   // roll-only goes through the guard
       this.spend(B.staminaBase + strike.damage * B.staminaPerDamage);
       if (this.stamina <= 0) guardBroken = true;
@@ -558,7 +577,7 @@ class Player {
       this.hitbox = null;
       this.stunTime = r === POISE.STAGGER ? C.staggerTime : C.hurtTime;
       this.setState(r === POISE.STAGGER ? PS.STAGGER : PS.HURT);
-    }
+    } else if (drinking) { this.stunTime = C.hurtTime; this.setState(PS.HURT); }   // a blow cuts a drink short
     return { blocked: false };
   }
 
@@ -571,11 +590,11 @@ class Player {
       case PS.WALK: r.walk(this.walkPhase, 0.6); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
       case PS.JUMP: case PS.FALL:
         r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
-      case PS.ROLL: {
-        const p = clamp(tt / C.rollTime, 0, 1), tuck = Math.sin(p * Math.PI);
-        r.spin.rotation.x = p * Math.PI * 2;
-        r.spin.scale.setScalar(1 - 0.35 * tuck); r.spin.position.y = HIP - 0.4 * tuck;
-        r.legL.rotation.x = r.legR.rotation.x = -1.2 * tuck; r.kneeL.rotation.x = r.kneeR.rotation.x = 2.0 * tuck; r.armL.rotation.x = r.armR.rotation.x = -1.2 * tuck;
+      case PS.ROLL: {   // the dash: a low forward lunge, blade trailing
+        const p = clamp(tt / C.rollTime, 0, 1), k = Math.sin(Math.min(1, p * 1.6) * Math.PI * 0.5) * (1 - ease(Math.max(0, p - 0.6) / 0.4));
+        r.legL.rotation.x = -0.8 * k; r.kneeL.rotation.x = 0.9 * k; r.legR.rotation.x = 0.6 * k; r.kneeR.rotation.x = 0.5 * k;
+        r.armL.rotation.x = 0.7 * k; r.armR.rotation.x = 0.9 * k; r.weapon.rotation.x = 0.4 * k;
+        r.crouch(0.28 * k); r.lean(0.55 * k);
         break;
       }
       case PS.ATTACK: {
@@ -609,15 +628,8 @@ class Player {
       case PS.BLOCK:
         r.walk(this.walkPhase, 0.3 * clamp(Math.hypot(this.vx, this.vz) / 2, 0, 1));   // short guarded steps
         r.armR.rotation.set(-1.45, 0, -0.5); r.weapon.rotation.set(0.2, 0, 1.2); r.armL.rotation.x = -1.3; r.tip.rotation.x = 0.06; break;
-      case PS.PARRY: {
-        // Quick outward deflection, then an exposed recovery.
-        const out = ease(tt / 0.12), back = ease((tt - 0.12) / (CONFIG.parry.time - 0.12));
-        const k = out * (1 - back);
-        r.armR.rotation.set(lerp(-0.4, -1.7, k), 0, -0.6 * k); r.spin.rotation.y = 0.9 * k;
-        r.weapon.rotation.set(lerp(0.5, 0.1, k), 0, 1.0 * k); r.armL.rotation.x = -0.6 * k;
-        break;
-      }
-      case PS.USE_ITEM: {
+      case PS.USE_ITEM: {   // drinking on the move: the legs walk, the off hand lifts the flask
+        r.walk(this.walkPhase, 0.4 * clamp(Math.hypot(this.vx, this.vz) / 2, 0, 1));
         const k = Math.sin(clamp(tt * this.drinkRate() / this.usingItem.useTime, 0, 1) * Math.PI);
         r.armL.rotation.set(-2.3 * k, 0, -0.5 * k); r.head.rotation.x = -0.4 * k; break;
       }

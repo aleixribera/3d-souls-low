@@ -242,7 +242,7 @@ const bot = (() => {
     let target = null, side = profile.side, sideTimer = span(C.strafeSwitch, rng), heavyHold = 0, jumpPlan = 0;
     let wasAlive = new WeakSet(), cheer = 0;
     let tacticId = null, tacticTimer = 0, tacticDuration = 1, quietTime = 0, healWait = 0, lastHp = 0, lastTargetHp = 0;
-    let resetLeft = 0, resetPending = false, decisionLeft = 0, punishLeft = 0, comboChoice = null;
+    let resetLeft = 0, resetPending = false, decisionLeft = 0, jumpRest = 0, punishLeft = 0, comboChoice = null;
     let lastAttacking = false, lastMove = null, lastMoveTime = 0;
     const newBurst = () => Math.floor(span([profile.burst[0], profile.burst[1] + 1], rng));
     let burstLeft = newBurst();
@@ -411,7 +411,7 @@ const bot = (() => {
         const near = Math.hypot(e.x - me.x, e.z - me.z) <= b.fwd + b.d / 2 + me.radius + P.reach - 0.15;
         const parry = canParryHit(blow.attack, blow.index) && near && !blow.hit.leap && !blow.hit.blink && !blow.hit.burrow && rng() < profile.parry * C.parryChanceScale;
         const walk = !parry && me.isFree() && rng() < profile.evade ? walkEscape(me, e, blow) : null;
-        const jump = !parry && !walk && !outsideBox(me, e, blow) && me.grounded && me.isFree() && me.stamina >= CONFIG.player.jumpCost + C.reserve &&
+        const jump = !parry && !walk && !outsideBox(me, e, blow) && me.grounded && me.isFree() &&
           (!bolt || bolt.eta > 2 * CONFIG.player.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin) &&
           enemies.every(o => o === e || !o.alive() || !level(o, me) || gateBetween(o, me) || opening(o, me) > 2 * CONFIG.player.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin) ?
           jumpLead(e, blow, me) : null;
@@ -529,7 +529,7 @@ const bot = (() => {
         quietSince += dt;
         wary = steady = false;
         hands.hold('block', false); hands.hold('heavy', false);
-        if (cheer > 0 && (cheer -= dt) <= 0.2 && me.isFree() && me.canAct()) { hands.press('jump'); cheer = 0; }
+        if (cheer > 0 && (cheer -= dt) <= 0.2 && me.isFree()) { hands.press('jump'); cheer = 0; }
         const lead = leader || allies.filter(a => !a.botId && a.alive()).sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
         return { mv: navigator.move(dt, me, lead), lock: null };
       }
@@ -557,7 +557,7 @@ const bot = (() => {
       // Walk toward a gap of `want` m: round to the enemy's back while it is after someone else, else circling as planned.
       const orbit = (want, circle) => flank ? strafe(me, to, gap, want, flank.far ? Math.max(circle, 1) : 0, flank.dir) : strafe(me, to, gap, want, circle);
       if ((tacticTimer -= dt) <= 0) chooseTactic();
-      decisionLeft = Math.max(0, decisionLeft - dt); resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
+      decisionLeft = Math.max(0, decisionLeft - dt); jumpRest = Math.max(0, jumpRest - dt); resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
       const attacking = me.isAttacking();
       if (attacking && (!lastAttacking || me.attack !== lastMove || me.attackT < lastMoveTime)) {
         comboChoice = null;
@@ -576,7 +576,7 @@ const bot = (() => {
       // A single decision buys a brief greedy exchange, rather than a new coin flip on every safe frame.
       // It can spend its roll reserve, squeeze in another hit, and stay committed when the target winds up.
       if (!attackable(e) || wary) riskLeft = 0;
-      if (riskWait <= 0 && !wary && me.isFree() && me.canAct() && gap <= C.reach + C.closeGap && attackable(e)) {
+      if (riskWait <= 0 && !wary && me.isFree() && gap <= C.reach + C.closeGap && attackable(e)) {
         riskWait = span(R.interval, rng);
         if (rng() < profile.greed * (person ? S.greed : 1)) riskLeft = span(R.duration, rng);
       }
@@ -611,7 +611,7 @@ const bot = (() => {
       }
       hands.hold('block', false);
       if (bolt && bolt.eta <= 0.14) {
-        if (me.canAct() && (me.isFree() || me.state === PS.ATTACK)) { hands.press('roll'); return { mv: { ...bolt.dir, has: true }, lock: e }; }
+        if (me.canRoll() && (me.isFree() || me.state === PS.ATTACK)) { hands.press('roll'); return { mv: { ...bolt.dir, has: true }, lock: e }; }
         if (me.isFree()) { hands.hold('block', true); return { mv: idle, lock: e }; }
       }
       // Greed can trade with the target, but does not ignore another opponent or a projectile to do it.
@@ -629,8 +629,8 @@ const bot = (() => {
         }
         if (s.plan === 'jump' && blow.eta <= s.lead) {
           const range = jumpLead(enemy, blow, me), flight = 2 * P.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin;
-          const safe = range && blow.eta >= range[0] && me.grounded && me.isFree() && me.canAct() &&
-            me.stamina >= P.jumpCost + C.reserve && Math.hypot(me.vx, me.vz) <= C.jumpDodge.maxSpeed &&
+          const safe = range && blow.eta >= range[0] && me.grounded && me.isFree() &&
+            Math.hypot(me.vx, me.vz) <= C.jumpDodge.maxSpeed &&
             clearPath(me, { x: me.x + me.vx * flight, z: me.z + me.vz * flight, y: me.y, height: me.height }) &&
             (!bolt || bolt.eta > flight) && enemies.every(o => o === enemy || !o.alive() || !level(o, me) || gateBetween(o, me) || opening(o, me) > flight);
           if (safe) {
@@ -640,12 +640,12 @@ const bot = (() => {
           s.plan = 'roll';   // late notice or another threat appeared: keep the grounded response
         }
         if (s.plan === 'jump') return { mv: idle, lock: enemy, hold: true };
-        if (s.plan === 'parry' && me.canAct() && blow.eta <= s.lead) {
+        if (s.plan === 'parry' && blow.eta <= s.lead) {
           if (me.isFree() || me.state === PS.BLOCK) { hands.press('parry'); s.done = true; return { mv: idle, lock: enemy }; }
           if (blow.eta < 0) s.plan = 'roll';   // caught busy: fall back to whatever still works
         }
         if (s.plan === 'roll' && blow.eta <= lead) {
-          if (me.canAct()) { const d = rollDir(me, enemy, blow, s.risky); hands.press('roll'); s.done = true; heavyHold = 0; hands.hold('heavy', false); return { mv: { ...d, has: true }, lock: enemy }; }
+          if (me.canRoll()) { const d = rollDir(me, enemy, blow, s.risky); hands.press('roll'); s.done = true; heavyHold = 0; hands.hold('heavy', false); return { mv: { ...d, has: true }, lock: enemy }; }
           if (!blow.attack.rollOnly && me.in('free')) { hands.hold('block', true); return { mv: idle, lock: enemy }; }   // no stamina: guard
         }
         // A blow is coming soon: hold off new swings and keep it in front.
@@ -712,9 +712,8 @@ const bot = (() => {
       const keyOpening = opportunity || punishLeft > 0 && window > commit(A()[me.def.moveset.ground.light]) + spare;
       const retreating = (resetLeft > 0 || wary) && !keyOpening && !pressing && !greedy;
       const committed = greedy || keyOpening || pressing || !retreating && settled;
-      const reserve = greedy ? R.reserve : window > 2.5 ? P.rollCost + 2 : C.reserve;
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
-      const can = cost => me.canAct() && me.stamina - cost >= reserve;
+      const can = () => true;   // pass 85: attacks and jumps cost nothing (the green bar is the guard)
       // A kneeling enemy is a player's to execute: wait off its flank, and take it only near the end of the kneel.
       const leave = k => {
         const near = allies.find(a => !a.botId && a.alive() && Math.hypot(a.x - k.x, a.z - k.z) <= X.yield);
@@ -775,9 +774,8 @@ const bot = (() => {
           if (can(light.cost)) { hands.press('light'); return { mv: idle, lock: e }; }
         }
         // Flair: from a step or two out, a long opening can take a leaping heavy.
-        const jh = A().jumpHeavy;
-        if (!inReach && !str && !settling && committed && !retreating && decisionLeft <= 0 && gap < 3.2 && window > 2.0 && can(P.jumpCost + jh.cost) && rng() < profile.jump * dt * 14) {
-          hands.press('jump'); decisionLeft = span(profile.think, rng); jumpPlan = 1.2; return { mv: { ...to, has: true }, lock: e };
+        if (!inReach && !str && !settling && committed && !retreating && decisionLeft <= 0 && gap < 3.2 && window > 2.0 && jumpRest <= 0 && rng() < profile.jump * dt * 14) {
+          hands.press('jump'); decisionLeft = span(profile.think, rng); jumpPlan = 1.2; jumpRest = C.jumpRest; return { mv: { ...to, has: true }, lock: e };
         }
         // Keep the chosen tempo even when a hypothetical opening is large: bait, flank, press, or regroup.
         // Actual punish opportunities and the bounded standoff fallback are the deliberate overrides.
@@ -834,7 +832,7 @@ const bot = (() => {
     // away from its middle, weighed by `push` against where it was walking; standing in one, it walks straight out (away
     // from the enemy that laid it, if it stands on the very middle). A fire with under `ending` s left is let be.
     function offFires(me, enemies, mv) {
-      const F = B().fire; let px = 0, pz = 0, inside = false;
+      const F = B().fire; let px = 0, pz = 0, inside = false, mx = mv.has ? mv.x : 0, mz = mv.has ? mv.z : 0;
       for (const e of enemies) {
         const L = e.fires; if (!L || !L.length) continue;
         for (const f of L) {
@@ -845,11 +843,14 @@ const bot = (() => {
           let dx = me.x - f.x, dz = me.z - f.z, n = d;
           if (n < 1e-3) { dx = me.x - e.x; dz = me.z - e.z; n = Math.hypot(dx, dz); if (n < 1e-3) { dx = 1; dz = 0; n = 1; } }
           const k = 1 - d / want; px += dx / n * k; pz += dz / n * k;
+          // Pass 85: no walking on into it (only round it), so the quicker dash and string never carry a bot in.
+          const into = -(mx * dx + mz * dz) / n;
+          if (into > 0) { mx += dx / n * into; mz += dz / n * into; }
         }
       }
       if (!px && !pz) return mv;
       if (inside) return flat(px, pz);
-      return flat((mv.has ? mv.x : 0) + px * F.push, (mv.has ? mv.z : 0) + pz * F.push);
+      return flat(mx + px * F.push, mz + pz * F.push);
     }
     // Walk toward a gap of `want` m, circling to `dir` (the bot's current side) by `circle` (0..1 of CONFIG.bot.strafe).
     function strafe(me, to, gap, want, circle, dir = side) {

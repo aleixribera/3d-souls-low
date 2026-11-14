@@ -551,6 +551,17 @@
   const faceOff = (e, p, d = 2) => {   // the enemy d m in front of the player, facing them
     e.x = e.px = p.x + Math.sin(p.yaw) * d; e.z = e.pz = p.z + Math.cos(p.yaw) * d; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
   };
+  // Pass 85: deflect every blow of attack `a` (a block tap just before each goes active). Returns how many were
+  // deflected; the last one deflected leaves the foe open (PARRIED).
+  const deflectString = (e, a) => {
+    let n = 0;
+    for (let i = e.attack === a ? e.hitIndex : 0; i < a.hits.length; i++) {
+      if (sim.until(() => e.attack === a && e.hitIndex === i && e.state === ES.WINDUP && e.stateTime >= a.hits[i].startup - 0.08, 3) < 0) break;
+      const before = log.length; sim.press('block');
+      if (sim.until(() => log.slice(before).includes('parry'), 0.4) >= 0) n++;
+    }
+    return n;
+  };
   const holdAt = (e, r) => { if (e.state === ES.CHASE) faceOff(e, Game.player, r); };   // r m in front of the player while it chooses
   const starts = [];   // every attack an enemy started: who, which, when (s) and how far from the player (m)
   A.events.on('attackStart', d => starts.push({ enemy: d.enemy, attack: d.attack, t: clock,
@@ -580,37 +591,141 @@
     expect.ok(phases.join() === [PHASE.STARTUP, PHASE.ACTIVE, PHASE.FOLLOW, PHASE.RECOVERY].join(), `phases in order: ${phases.join()}`);
     expect.ok(marks.includes('sound'), 'the swing sound marker fired');
   });
-  test('player combo: light presses chain diagonal -> backhand -> overhead -> diagonal', () => {
+  test('player string: four lights chain, then start over; costs nothing', () => {
     Game.startLevel('test-training'); sim.begin();
     const p = Game.player, seen = [];
-    for (let i = 0; i < 300 && seen.length < 4; i++) {
+    for (let i = 0; i < 400 && seen.length < 5; i++) {
       if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
       if (i % 6 === 0) sim.press('light');
-      sim.step(); p.stamina = p.maxStamina;
+      sim.step();
     }
-    expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light', `chain: ${seen.map(a => a.id).join()}`);
+    expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light4,light', `string: ${seen.map(a => a.id).join()}`);
+    expect.ok(p.stamina === p.maxStamina, 'swinging costs nothing (the green bar is the guard)');
   });
-  test('input buffer: early mashing is dropped; a late press is kept, the latest wins, and fires at the cancel point', () => {
+  test('pass 85 finishers: a heavy at any point of the string is that point\'s finisher', () => {
+    const M = A.PLAYER_DEF.moveset.attacks;
+    for (let at = 1; at <= 4; at++) {
+      Game.startLevel('test-training'); sim.begin();
+      const p = Game.player, seen = [];
+      for (let i = 0; i < 400 && seen.length < at + 1; i++) {
+        if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
+        if (i % 6 === 0) sim.press(seen.length < at ? 'light' : 'heavy');
+        sim.step();
+      }
+      const ids = seen.map(a => a.id);
+      expect.ok(ids[at] === `finisher${at}` && M[`finisher${at}`].damage > M.light.damage * 1.5, `after ${at} light: ${ids.join()}`);
+    }
+  });
+  test('pass 85 dash: two charges, each comes back; no stamina', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player, C = CONFIG.player;
+    sim.press('roll'); sim.step(2); expect.ok(p.state === PS.ROLL && Math.abs(p.dashes - (C.dashCharges - 1)) < 0.05, `first dash (${p.dashes.toFixed(2)} left)`);
+    sim.until(() => p.state !== PS.ROLL, 1); sim.press('roll'); sim.step(2);
+    expect.ok(p.state === PS.ROLL && p.dashes < 1, `second dash (${p.dashes.toFixed(2)} left)`);
+    sim.until(() => p.state !== PS.ROLL, 1); sim.press('roll'); sim.step(2);
+    expect.ok(p.state !== PS.ROLL, 'no third dash until a charge is back');
+    expect.ok(p.stamina === p.maxStamina, 'dashing costs no guard');
+    sim.seconds(C.dashRefill + 0.1); sim.press('roll'); sim.step(2);
+    expect.ok(p.state === PS.ROLL, 'a charge came back');
+  });
+  test('pass 85 cancels: a dash or a deflect cuts an attack short once its blow is out, never in the wind-up', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy;
+    sim.press('heavy'); sim.step(3); sim.press('roll'); sim.step(1);
+    expect.ok(p.state === PS.ATTACK, 'a dash pressed early in the wind-up is dropped');
+    sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 2); sim.press('roll'); sim.step(1);
+    expect.ok(p.state === PS.ROLL, `a dash cancels the follow-through (${p.state})`);
+    sim.until(() => p.state === PS.IDLE || p.state === PS.WALK, 2); sim.step(2);
+    sim.press('light'); sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 2);
+    sim.press('block'); sim.step(1);
+    expect.ok(p.state === PS.BLOCK && p.deflect > 0, `a deflect press cancels into the guard, armed (${p.state})`);
+    // A dash pressed late in a light's wind-up waits for the blow: its hitbox is live for at least one step first.
+    sim.until(() => p.state === PS.IDLE || p.state === PS.WALK, 2); sim.step(20);
+    sim.press('light'); sim.step(4); sim.press('roll');
+    let out = false;
+    for (let i = 0; i < 60 && p.state === PS.ATTACK; i++) { sim.step(1); out = out || !!p.hitbox; }
+    expect.ok(out && p.state === PS.ROLL, `the blow came out before the buffered dash (${p.state})`);
+  });
+  test('pass 85 dash attack and jump attacks: a light or heavy out of a dash; light and heavy from the air', () => {
+    const M = A.PLAYER_DEF.moveset;
+    for (const [action, id] of Object.entries(M.dash)) {
+      Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+      const p = Game.player; sim.press('roll'); sim.step(3); sim.press(action);
+      sim.until(() => p.state === PS.ATTACK, 1);
+      expect.ok(p.attack && p.attack.id === id, `${action} out of a dash: ${p.attack && p.attack.id}`);
+    }
+    for (const [action, id] of Object.entries(M.air)) {
+      Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+      const p = Game.player; sim.press('jump'); sim.step(8); sim.press(action);
+      sim.until(() => p.state === PS.JUMP_ATTACK || p.state === PS.LAND, 1);
+      expect.ok(p.attack && p.attack.id === id, `${action} from the air: ${p.attack && p.attack.id}`);
+    }
+  });
+  test('pass 85 drinking: on the move, slower; a hit cuts the drink short', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player; p.hp = p.maxHp * 0.3; sim.move(1, 0);
+    sim.press('flask'); sim.step(10);
+    const x0 = p.x; sim.step(10);
+    expect.ok(p.state === PS.USE_ITEM && p.x - x0 > 0.2, `walks while drinking (${(p.x - x0).toFixed(2)} m in 1/6 s)`);
+    expect.ok(Math.hypot(p.vx, p.vz) <= CONFIG.player.walkSpeed * CONFIG.player.drinkSpeedMul + 0.01, 'and slower');
+    sim.move(null);
+    const e = sim.spawn('hollow', p.x + 1.5, p.z); quiet(e);
+    p.takeHit(makeStrike(e.def.attacks[0]), e);
+    expect.ok(p.state !== PS.USE_ITEM, `a hit cuts the drink short (${p.state})`);
+  });
+  test('pass 85 deflect: a block tap on the beat turns a blow; a mid-string one leaves the string going, the last opens it', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), hp0 = p.hp;
+    faceOff(e, p, 2); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('block');
+    sim.until(() => log.includes('parry'), 0.4);
+    expect.ok(log.includes('parry') && e.state !== ES.PARRIED && e.attack === combo, 'the first cut turned, the string goes on');
+    sim.until(() => e.hitIndex === 1, 1);
+    expect.ok(p.hp === hp0, 'the turned cut never landed');
+    // The rest of the string, deflected: the last cut leaves it open, and a riposte follows.
+    log.length = 0; const n = deflectString(e, combo);
+    expect.ok(n >= 2 && e.state === ES.PARRIED && p.riposte > 0, `the last cut deflected opens it (${e.state}), a riposte is ready`);
+  });
+  test('pass 85 deflect: mashing the button deflects nothing (the spam lock)', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    faceOff(e, p, 2); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.45, 2);
+    for (let i = 0; i < 10; i++) { sim.press('block'); sim.step(6); }
+    expect.ok(!log.includes('parry'), 'a press every 0.1 s through the blow deflects nothing');
+  });
+  test('pass 85 perfect dodge: a blow inside the dash opens a counter (a riposte)', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    faceOff(e, p, 1.6); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.04, 2); sim.press('roll');
+    sim.until(() => log.includes('dodge'), 0.4);
+    expect.ok(log.includes('dodge') && p.riposte > 0, `dodged on the beat: a counter is open (${p.riposte.toFixed(2)} s)`);
+  });
+  test('pass 85 anti-mash: a boss under a run of blows breaks off with its own quick attack; ordinary hits never flinch it', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, M = CONFIG.enemy.mash; faceOff(e, p, 2); e.cooldown = 30;
+    sim.until(() => e.state === ES.CHASE, 3); e.cooldown = 30;
+    for (let i = 0; i < M.hits; i++) { e.takeHit({ ...strikeOf('light'), attackId: 'light' }, p); expect.ok(e.state !== ES.STAGGER, 'no flinch'); e.chainTime = 0.3; }
+    sim.until(() => log.includes('breakOff'), 0.5);
+    expect.ok(log.includes('breakOff') && e.state === ES.WINDUP, `after ${M.hits} quick blows it breaks off (${e.state})`);
+  });
+  test('input buffer: early mashing is dropped; a late press is kept and fires at the cancel point', () => {
     Game.startLevel('test-training'); sim.begin();
     const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy, cancel = phaseSpan(H, 'recovery')[0];
     sim.press('heavy'); sim.step(2); sim.press('roll'); sim.step(2);
-    expect.ok(!p.buffer, 'a roll pressed at the start of a heavy is dropped');
+    expect.ok(!p.buffer && p.state === PS.ATTACK, 'a dash pressed at the start of a heavy is dropped');
     sim.until(() => p.state === PS.ATTACK && cancel - p.attackT < CONFIG.player.bufferWindow * 0.8, 120);
-    sim.press('roll'); sim.step();
-    expect.ok(p.buffer && p.buffer.action === 'roll', 'a roll pressed near the end is remembered');
     sim.press('light'); sim.step();
-    expect.ok(p.buffer && p.buffer.action === 'light', 'a later attack press replaces it');
+    expect.ok(p.buffer && p.buffer.action === 'light', 'an attack pressed near the end is remembered');
     for (let i = 0; i < 90 && p.attack.id === 'heavy' && p.state === PS.ATTACK; i++) sim.step();
     expect.ok(p.state === PS.ATTACK && p.attack.id === 'light' && p.attackT < 0.05, 'the attack came out at the start of recovery');
-    sim.until(() => attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 60); sim.press('roll');
-    sim.until(() => p.state === PS.ROLL, 60);
-    const L = A.PLAYER_DEF.moveset.attacks.light;
-    expect.ok(p.attackT >= phaseSpan(L, 'recovery')[0] - 1e-6, `a roll from the follow-through waits for recovery (${p.attackT.toFixed(2)} s in)`);
-    sim.step(5); sim.press('roll'); sim.step(2);
-    expect.ok(!p.buffer, 'a roll mashed early in a roll is dropped');
+    sim.until(() => attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 60); sim.press('roll'); sim.step();
+    expect.ok(p.state === PS.ROLL, 'a dash from the follow-through cancels it at once (pass 85)');
+    // A dash is shorter than the buffer window (pass 85): a press anywhere in it is kept, and chains into the next.
     sim.until(() => CONFIG.player.rollTime - p.stateTime < 0.2, 60); sim.press('roll');
     sim.until(() => p.state !== PS.ROLL, 60); sim.step();
-    expect.ok(p.state === PS.ROLL, 'one pressed at the end of a roll chains into the next');
+    expect.ok(p.state === PS.ROLL, 'one pressed at the end of a dash chains into the next');
   });
   test('heavy charge: the feet stay planted while held', () => {
     Game.startLevel('test-training'); sim.begin();
@@ -653,10 +768,10 @@
     expect.near(p.payload.damage, H.damage * H.charge.mul, 0.01, 'a full charge does charge.mul x damage');
     expect.ok(p.stateTime > tapTime + H.charge.hold * 0.9, 'the hold lengthened the wind-up');
   });
-  test('player: 1.2x health, 1.6x stamina, a lighter heavy attack', () => {
-    const S = A.PLAYER_DEF.stats;
-    expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} stamina`);
-    expect.ok(A.PLAYER_DEF.moveset.attacks.heavy.damage === 53, 'heavy attack damage 53 (38 x 1.4, v5.4.5)');
+  test('player: 1.2x health, 1.6x guard, ordinary hits a third weaker (pass 85)', () => {
+    const S = A.PLAYER_DEF.stats, M = A.PLAYER_DEF.moveset.attacks;
+    expect.ok(S.maxHp === 120 && S.maxStamina === 160, `stats ${S.maxHp} HP, ${S.maxStamina} guard`);
+    expect.ok(M.heavy.damage === 36 && M.light.damage === 16, `heavy ${M.heavy.damage}, light ${M.light.damage} (53 and 24 before)`);
     Game.startLevel('test-training'); sim.begin();
     expect.ok(Game.player.hp === 120 && Game.player.stamina === 160, 'a fresh player starts full');
   });
@@ -703,13 +818,12 @@
     Game.startFight('duelist'); sim.begin(); log.length = 0;
     const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length > 1);
     faceOff(e, p, 2); e.beginAttack(combo);
-    sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
-    sim.until(() => log.includes('parry'), 0.5);
-    expect.ok(log.includes('parry') && e.state === ES.PARRIED, 'parried and left open');
+    const turned = deflectString(e, combo);
+    expect.ok(turned === combo.hits.length && e.state === ES.PARRIED, `every blow deflected (${turned}/${combo.hits.length}), the last left it open`);
     Game.startFight('duelist'); sim.begin();
     const d = Game.duel; let n = 0;
     while (d.alive() && n++ < 20) { d.takeHit(strikeOf('light'), behind(d)); sim.step(30); }
-    expect.ok(!d.alive() && n <= 5, `fragile: ${n} light hits`);
+    expect.ok(!d.alive() && n <= 7, `fragile: ${n} light hits`);   // pass 85: lights deal 16 (24 before, 5 hits)
   });
   test('Ashen Lancer: dashes again and again from mid range, never up close; its jab leaves an opening', () => {
     const mid = attacksAt('lancer', 6), close = attacksAt('lancer', 2);
@@ -1347,7 +1461,7 @@
     expect.ok(!log.includes('dodge'), 'blocking it is no dodge');
     p = trainingAt('dodge');
     const d = Game.enemies[0];
-    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.08, 6); sim.press('parry');
+    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.08, 6); sim.press('block');
     sim.until(() => d.state === ES.RECOVER, 2);
     expect.ok(!log.includes('parry'), 'it cannot be parried');
   });
@@ -1599,19 +1713,16 @@
     events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
     expect.ok(A.lessons.card.id === 'heavy' && A.lessons.card.done && A.lessons.learned('heavy'), 'a full charge: done, and learned');
   }));
-  test('v4.2.4 stamina: emptying the bar exhausts; nothing but walking until it refills, and a press says why', () => {
-    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); log.length = 0;
+  test('pass 85 guard: an empty green bar never stops attacking, dashing or jumping', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0); log.length = 0;
     const p = Game.player; sim.step(2);
     p.spend(p.stamina);
-    expect.ok(p.exhausted && p.staminaDelay >= CONFIG.player.exhaustDelay - 1e-9, 'exhausted, with the longer wait');
-    p.stamina = 5; sim.press('roll'); sim.step(1, 1);
-    expect.ok(p.state !== PS.ROLL && log.includes('staminaDenied'), 'no roll, and the refusal announced');
-    expect.ok(document.getElementById('pExhaust').classList.contains('show') && shown('pExhaust') !== '', 'the bar says so');
-    sim.until(() => p.stamina >= CONFIG.player.exhaustRecover, 6); sim.step(1);
+    expect.ok(!p.exhausted && p.stamina === 0, 'an empty guard, no exhaustion');
     sim.press('roll'); sim.step(2);
-    expect.ok(!p.exhausted && p.state === PS.ROLL, 'refilled: it rolls again');
-    p.hp = 0; p.setState(PS.DEAD); p.sinceExhausted = 1; sim.step(1, 1);
-    expect.ok(/stamina/i.test(shown('diedTip')), `a stamina tip on death (${shown('diedTip')})`);
+    expect.ok(p.state === PS.ROLL && !log.includes('staminaDenied'), 'it still dashes');
+    sim.until(() => p.state !== PS.ROLL, 1); sim.press('light'); sim.step(2);
+    expect.ok(p.state === PS.ATTACK, 'it still attacks');
+    expect.ok(document.querySelectorAll('#pDash i').length === CONFIG.player.dashCharges, 'a diamond per dash charge under the bar');
   });
   test('v4.2.4 vision: unaware enemies see in a cone only; a searching one walks to where it last saw the player', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
@@ -2016,9 +2127,8 @@
     const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), over = e.def.attacks.find(a => a.rollOnly);
     expect.ok(combo && combo.tracking.rate > 0 && !makeStrike(combo).rollOnly, 'a tracking three-cut combo, not roll-only');
     faceOff(e, p, 2); e.beginAttack(combo);
-    sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
-    sim.until(() => log.includes('parry'), 0.5);
-    expect.ok(log.includes('parry') && e.state === ES.PARRIED, 'the combo was parried and left it open');
+    const n = deflectString(e, combo);
+    expect.ok(n === 3 && e.state === ES.PARRIED, `all three cuts deflected (${n}), the last left it open`);
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
     const q = Game.player, c = Game.duel; faceOff(c, q, 2); quiet(c); c.notice = 30;
     sim.hold('block'); sim.step(2); const hp0 = q.hp; c.beginAttack(over);
@@ -2027,19 +2137,17 @@
     const far = attacksAt('pillagerCaptain', 8), near = attacksAt('pillagerCaptain', 2.2);
     expect.ok(far.includes('captainThrust') && !near.includes('captainThrust'), `thrust only from range (8 m: ${far.join(', ')}; 2.2 m: ${near.join(', ')})`);
   });
-  test('Pillager Captain: parries and chained hits break its posture', () => {
+  test('Pillager Captain: deflected strings and chained hits break its posture', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
     const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
-    let parries = 0;
-    while (e.state !== ES.BROKEN && parries < 8) {
+    let strings = 0;
+    while (e.state !== ES.BROKEN && strings < 6) {
       sim.until(() => e.state !== ES.PARRIED && e.state !== ES.WINDUP && e.state !== ES.ACTIVE, 4);
       faceOff(e, p, 2); e.beginAttack(combo); log.length = 0;
-      sim.until(() => e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('parry');
-      sim.until(() => log.includes('parry'), 0.5);
-      if (log.includes('parry')) parries++;
+      if (deflectString(e, combo)) strings++;
       sim.until(() => e.state === ES.BROKEN || e.state === ES.CHASE, 3);
     }
-    expect.ok(e.state === ES.BROKEN && parries <= 6, `posture broke after ${parries} parries`);   // v4.2.1: parry fills 24 (was 28)
+    expect.ok(e.state === ES.BROKEN && strings <= 3, `posture broke after ${strings} deflected strings`);   // pass 85: every blow deflected fills it
     Game.startFight('pillagerCaptain'); sim.begin();
     const d = Game.duel; let n = 0;
     while (d.state !== ES.BROKEN && n++ < 30) { d.takeHit(strikeOf('heavy'), behind(d)); sim.step(10); }
@@ -3181,11 +3289,11 @@
       expect.above(e.guardMeter, m0, `${id}: the meter grew`);
     }
   });
-  test('Execution: needs no stamina: an exhausted player can still execute', () => {
+  test('Execution: needs no stamina: a player with an empty guard can still execute', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
     const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1);
     p.spend(p.stamina); sim.step(1);
-    expect.ok(p.exhausted && p.stamina < 1, 'exhausted');
+    expect.ok(p.stamina < 1, 'an empty guard');
     sim.press('light'); sim.step(1);
     expect.ok(p.state === PS.EXECUTE, `executing (${p.state})`);
   });
@@ -3840,12 +3948,12 @@
       p.setState(PS.IDLE); p.vy = 0;
     }
   });
-  test('Combat clarity: stamina regenerates 20 percent faster with the same delays', () => {
+  test('Combat clarity: the guard refills at staminaRegen a second after its delay', () => {
     Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.place(20, 0);
     const p = Game.player; p.stamina = 40; p.staminaDelay = 0;
     sim.seconds(1);
-    expect.near(p.stamina, 40 + 36 * 1.2, 1e-6, 'one second of regeneration');
-    expect.ok(CONFIG.player.staminaDelay === 0.75 && CONFIG.player.exhaustDelay === 1.3, 'recovery delays unchanged');
+    expect.near(p.stamina, 40 + CONFIG.player.staminaRegen, 1e-6, 'one second of refill');
+    expect.ok(CONFIG.player.staminaDelay === 0.75, 'its delay unchanged');
   });
   test('Combat clarity: the EXECUTE card tells the whole sequence and stays put as the foe kneels; zoom controls are gone', withLessons(() => {
     input.use('keyboard'); const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute'); Game.render(1, STEP);
@@ -3971,7 +4079,8 @@
   // across jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once.
   async function run(filter = '', { shard = null } = {}) {
     const out = [], t0 = performance.now();
-    const picked = tests.filter(t => !filter || t.name.includes(filter));
+    const names = filter.split('|'), wanted = t => !filter || names.some(f => t.name.includes(f));   // 'a|b': either
+    const picked = tests.filter(wanted);
     const from = shard ? Math.floor(picked.length * shard[0] / shard[1]) : 0, to = shard ? Math.floor(picked.length * (shard[0] + 1) / shard[1]) : picked.length;
     let matched = -1;
     const wasMode = Game.mode;
@@ -3979,7 +4088,7 @@
     const lessonsKey = CONFIG.lessons.storageKey; let keptLessons = null;
     try { keptLessons = localStorage.getItem(lessonsKey); } catch (e) { /* none */ }
     for (const t of tests) {
-      if (filter && !t.name.includes(filter)) continue;
+      if (!wanted(t)) continue;
       matched++;
       if (matched < from || matched >= to) continue;
       let ok = true, msg = '';

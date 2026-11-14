@@ -167,7 +167,7 @@ class ModelAnimator {
     } else if (st === PS.HURT) this.flinchLayer('hurt', Math.sin(clamp(tt / p.stunTime, 0, 1) * Math.PI), tt);
     else if (st === PS.STAGGER) this.flinchLayer('stagger', Math.sin(clamp(tt / p.stunTime, 0, 1) * Math.PI), tt);
     else if (st === PS.BLOCK) { this.add('chest', [-0.12, 0, 0]); this.add('head', [-0.08, 0, 0]); }
-    else if (st === PS.PARRY) { const k = Math.sin(clamp(tt / CONFIG.parry.time, 0, 1) * Math.PI); this.add('chest', [-0.1, 0.25, 0], k); this.add('head', [0, -0.2, 0], k); }
+    else if (st === PS.PARRY) { const k = Math.sin(clamp(tt / CONFIG.parry.arm, 0, 1) * Math.PI); this.add('chest', [-0.1, 0.25, 0], k); this.add('head', [0, -0.2, 0], k); }
     else if (st === PS.DEAD) this.deathLayer(tt);
     this.updateCloth(p, ctx, dt);
     this.finish(p, ctx, dt, st === PS.DEAD);

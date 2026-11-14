@@ -62,7 +62,7 @@ const multiplayer = (() => {
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
-    <p class="lobby-controls-tip">Attacks, rolls and blocking use stamina. Ease off to let it refill. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
+    <p class="lobby-controls-tip">Attacks and dashes cost nothing. The green bar is your guard. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
     </div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby,#onlineParty,#onlineLeaderboard,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
@@ -1465,12 +1465,18 @@ const multiplayer = (() => {
     e.tint = 1; e.recoil = 1;
     return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || e.counterAgainst(Game.player, strike.attackId) === 'turn', broke: false, died: false };   // a counter stance turns it (pass 55)
   }
+  // A deflect (pass 85): the blow's index goes too, so the server knows a string's last blow (which opens the foe) from
+  // an earlier one (only turned aside, the string goes on). Returns { broke, opened } like Enemy.getDeflected.
   function parry(e) {
-    command('parry', { enemy: e.netId, serial: e.netSerial }); e.netParried = e.netSerial;
-    const known = e.learned.length, broke = e.getParried();
+    const hit = e.hitIndex || 0, last = !!e.attack && hit === e.attack.hits.length - 1;
+    command('parry', { enemy: e.netId, serial: e.netSerial, hit });
+    const known = e.learned.length, res = e.getDeflected();
+    if (res.opened && last) e.netParried = e.netSerial;   // only the last blow opens it on the server too
     e.learned.length = known;   // what it learns from the parry is the server's to say (pass 77): its next frame brings it
-    return broke;
+    return res;
   }
+  // A perfect dodge (pass 85): the server marks it, so the counter's riposte that follows is allowed.
+  function dodged(e) { publishPose(); command('dodged', { enemy: e.netId, serial: e.netSerial }); }   // the dash pose goes first
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }
   function landed(e) { command('landed', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }   // pass 77: an attack it would learn struck me
   // An ability's trigger only this browser sees (ABILITY_CLAIMS, js/abilities.js): the server checks it and fires.
@@ -1568,7 +1574,7 @@ const multiplayer = (() => {
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, lifesteal, landed, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, rest, requestExecution, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },

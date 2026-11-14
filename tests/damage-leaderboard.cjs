@@ -25,7 +25,7 @@ assert.equal(hit('ember', e), true);
 e.hp = 3;
 assert.equal(hit('ember', e), true);
 const rows = complete();
-assert.deepEqual(rows.map(r => [r.id, r.damage, r.rank]), [['ember', 27, 1], ['ash', 24, 2], ['idle', 0, 3]], 'trusted damage, overkill cap, zero damage participants and descending ranks');
+assert.deepEqual(rows.map(r => [r.id, r.damage, r.rank]), [['ember', 19, 1], ['ash', 16, 2], ['idle', 0, 3]], 'trusted damage, overkill cap, zero damage participants and descending ranks');
 sim.registerPlayer('ash', 'Changed after victory');
 assert.equal(sim.frame(false).results[1].name, 'Ash', 'completed results remain frozen');
 const encoder = new FrameEncoder(), decoder = new FrameDecoder();
@@ -53,13 +53,13 @@ assert.equal(complete().find(r => r.id === 'ash').damage, 0);
 
 e = begin(); e.def = { ...e.def, lifesteal: { flat: 40, pct: 0.02 } };   // the opt-in lifesteal of v5.9, no longer on any boss
 hit('ash', e); e.lifesteal(); hit('ash', e);
-assert.equal(complete()[0].damage, 48, 'healing never subtracts previously earned damage');
+assert.equal(complete()[0].damage, 32, 'healing never subtracts previously earned damage');
 
 e = begin();
 hit('ash', e); hit('ember', e);
 sim.setPlayers([]);
 const ties = complete();
-assert.deepEqual(ties.map(r => [r.name, r.damage, r.rank]), [['Ash', 24, 1], ['Ember', 24, 1], ['Idle', 0, 3]], 'ties share a rank and disconnected contributors remain');
+assert.deepEqual(ties.map(r => [r.name, r.damage, r.rank]), [['Ash', 16, 1], ['Ember', 16, 1], ['Idle', 0, 3]], 'ties share a rank and disconnected contributors remain');
 
 e = begin('arena', 'varn'); e.hp = 10;
 hit('ash', e);

@@ -39,7 +39,7 @@
   test('Saltgrave: the castellans cue each other: Harrow\'s stamps bring down Hale\'s cleave', () => {
     start(); arrive();
     const h = twin('hale'), r = twin('harrow'), p = Game.player, rnd = Math.random;
-    for (const e of [h, r]) { e.chooseAttack = e.react = () => null; e.cooldown = 0; }
+    for (const e of [h, r]) { e.chooseAttack = e.react = e.breakOff = () => null; e.cooldown = 0; }
     sim.place(140, 118, 10); h.x = 139; h.z = 120; r.x = 142; r.z = 121; h.setState(ES.CHASE); r.setState(ES.CHASE); sim.step(0.1);
     try {
       Math.random = () => 0;   // the cue's chance always answers

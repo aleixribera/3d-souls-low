@@ -134,6 +134,22 @@ const hud = {
   },
 
   // ---- pieces ----------------------------------------------------------------------------------
+  // Dash charges (pass 85): one diamond per charge, filling back from below; written only when a step of it changes.
+  syncDashes(p) {
+    const n = CONFIG.player.dashCharges;
+    if (!this.dashPips) {
+      this.dashRow = document.getElementById('pDash'); this.dashPips = []; this.dashShown = [];
+      for (let i = 0; i < n; i++) { const d = document.createElement('i'); this.dashRow.appendChild(d); this.dashPips.push(d); this.dashShown.push(-1); }
+    }
+    const free = p.freeStamina();
+    for (let i = 0; i < n; i++) {
+      const k = free ? 1 : Math.round(clamp01(p.dashes - i) * 20) / 20;
+      if (k === this.dashShown[i]) continue;
+      this.dashShown[i] = k;
+      this.dashPips[i].style.setProperty('--k', k);
+      this.dashPips[i].classList.toggle('ready', k >= 1);
+    }
+  },
   // Flask icons follow the inventory's capacity, so upgrades show. A flask just drunk pops as it empties.
   syncFlasks(it) {
     while (this.flasks.length < it.max) { const f = document.createElement('span'); f.className = 'flask'; this.flaskRow.appendChild(f); this.flasks.push(f); }
@@ -248,6 +264,7 @@ const hud = {
     this.pExhaust.classList.toggle('flash', this.deniedTimer > 0 && !!p.exhausted);
     this.pSt.classList.toggle('waiting', p.staminaDelay > 0 && sp < 1);
     this.pSt.classList.toggle('refund', this.refundTimer > 0);
+    this.syncDashes(p);
     this.syncFlasks(p.item('flask'));
 
     // Screen edge: a steady red at low health, beating with the heart; a flare when a blow lands.

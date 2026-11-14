@@ -127,7 +127,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   const parryable = e.def.attacks.find(a => g('canParryAttack')(a)), mv = BY['iron-mercy'].levels[0];
   const parry = p => {
     e.yaw = 0; e.attack = parryable; e.hitIndex = 0; e.state = ES.WINDUP; e.stateTime = parryable.hits[0].startup - CONFIG.parry.lead * 0.5;
-    p.setState(PS.PARRY); p.stateTime = 0;
+    p.setState(PS.IDLE); p.deflect = CONFIG.parry.arm; p.deflectLock = 0;   // a deflect press (pass 85)
     g('resolveCombat')({ player: p, enemies: [e], hitstop: 0 });
   };
   const mercy = body(['iron-mercy']); mercy.hp = 40;
@@ -144,7 +144,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
     assert.ok(p.exec?.impact, 'the execution lands');
     return p.hp;
   };
-  near(feast(['grave-feast']), 30 + PLAYER_DEF.stats.maxHp * BY['grave-feast'].levels[0].heal, 'Grave Feast heals on an execution');
-  assert.equal(feast([]), 30, 'no heal without it');
+  near(feast(['grave-feast']), 30 + PLAYER_DEF.stats.maxHp * (BY['grave-feast'].levels[0].heal + CONFIG.execution.heal), 'Grave Feast heals on an execution');   // on top of every execution's own (pass 85)
+  near(feast([]), 30 + PLAYER_DEF.stats.maxHp * CONFIG.execution.heal, 'an execution heals a little without it');
 }
 console.log('crates: ok');

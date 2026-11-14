@@ -108,7 +108,7 @@ async function party(browser, mine, his) {
       const b = boss();
       if (b.state === ES.WINDUP || b.state === ES.ACTIVE) {
         const a = b.attack, i = b.hit || 0;
-        if (a && !a.projectile && canParryHit(a, i)) { cole.claim('parry', { enemy: b.netId, serial: b.netAttack }); await wait(80); houndOut = R.abilityPowers.summonOf(cole.id)?.kind === 'hound'; }
+        if (a && !a.projectile && canParryHit(a, i)) { cole.claim('parry', { enemy: b.netId, serial: b.netAttack, hit: i }); await wait(80); houndOut = R.abilityPowers.summonOf(cole.id)?.kind === 'hound'; }
       }
       if (!houndOut) await wait(40);
     }

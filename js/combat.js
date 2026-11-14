@@ -3,16 +3,19 @@
 // 7. Hitbox helper
 // ============================================================================
 // What a landed attack carries, built the same way for both sides.
-// charge: 0..1 of a held heavy's `charge.hold`, scaling damage, poise and posture up to `charge.mul`.
+// charge: 0..1 of a held heavy's `charge.hold`, scaling damage and poise up to `charge.mul`, posture up to `postureMul`.
+// A riposte (after a deflect that opened the foe, or a perfect dodge's counter) builds CONFIG.parry.postureMul times the
+// posture: posture comes from skill, not from the number of blows.
 // An ability's bonus is added when it lands, by whoever owns the enemy (abilityStrike, js/abilities.js).
 function makeStrike(attack, riposte = false, charge = 0) {
   const E = CONFIG.enemy, R = (riposte && attack.riposte) || {}, Ch = attack.charge;
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
   const mul = Ch ? lerp(1, Ch.mul, charge) : 1, hsMul = Ch ? lerp(1, Ch.hitstopMul, charge) : 1;
+  const postureMul = (Ch ? lerp(1, Ch.postureMul ?? Ch.mul, charge) : 1) * (riposte && attack.riposte ? R.posture ?? CONFIG.parry.postureMul : 1);
   return {
     attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
     damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
-    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * mul, destined: !!attack.destined,
+    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * postureMul, destined: !!attack.destined,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
 }
@@ -91,7 +94,12 @@ function parryTiming(p, e, extra) {
   return rem;
 }
 
-// Order each step: parry, then player hitboxes against enemies, then enemy hitboxes against the player.
+// Which blow of an enemy's is under way: its attack's number (online, the server's serial) and the hit within it.
+const blowKey = e => (e.attackNo || 0) * 64 + (e.hitIndex || 0);
+// A deflect can come from the guard or from standing free (a tap already released).
+const canDeflectNow = p => p.deflect > 0 && p.alive() && (p.state === PS.BLOCK || p.isFree());
+
+// Order each step: deflect, then player hitboxes against enemies, then enemy hitboxes against the player.
 // Damage itself lives in Player.takeHit / Enemy.takeHit; effects listen to the events.
 function resolveCombat(game) {
   const p = game.player, P = CONFIG.parry;
@@ -100,17 +108,18 @@ function resolveCombat(game) {
     const c = hb.center();
     return { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
   };
-  // 0. Parry, before any damage: only the strike that lands first is parried.
-  if (p.state === PS.PARRY && p.stateTime <= P.arm) {
+  // 0. Deflect (the `parry` event and claim keep the old name), before any damage: only the blow that lands first.
+  // A deflected blow never lands; the last blow of an attack deflected leaves the foe open for a riposte.
+  if (canDeflectNow(p)) {
     let target = null, soonest = Infinity;
     for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
     if (target) {
-      const broke = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getParried();
-      p.stamina = Math.min(p.maxStamina, p.stamina + P.cost);   // a successful parry is free
-      p.staminaDelay = 0; p.riposte = P.riposteTime; p.flash = 1;
-      p.setState(PS.IDLE);
-      game.hitstop = Math.max(game.hitstop, P.hitstop);
-      events.emit('parry', { target, player: p });
+      const key = blowKey(target);
+      const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getDeflected();
+      const broke = res.broke;
+      p.deflected(target, key, res.opened);
+      game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
+      events.emit('parry', { target, player: p, opened: res.opened });
       const breath = p.kit.perks['parry/stamina'];   // Deep Breath
       if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('abilityPerk', { body: p, perk: 'parry/stamina' }); }
       const mercy = p.kit.perks['parry/heal'];   // Iron Mercy (a crate's)
@@ -141,10 +150,16 @@ function resolveCombat(game) {
   }
   for (const hb of enemyHits) {
     if (!p.alive()) continue;
-    if (p.invulnerable()) {   // rolled through: announced once per hitbox, which stays live (it can catch the end of the roll)
+    const db = p.deflectedBlow;
+    if (db && db.enemy === hb.owner && db.key === blowKey(hb.owner)) { hb.markHit(p); continue; }   // turned aside by a deflect
+    if (p.invulnerable()) {   // dashed through: announced once per hitbox, which stays live (it can catch the end of the dash)
       if (!hb.dodged && p.state === PS.ROLL) {   // an execution's untouchable time is no dodge
-        hb.dodged = true; events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
-        const step = p.kit.perks['dodge/riposte'];   // Counterstep: the next blow is a riposte
+        // A perfect dodge: the dash's i-frames are short, so a blow slipped inside them was dodged right on it. The next
+        // blow within CONFIG.player.counterTime s is a counter (a riposte), drawn with a beat of slow motion.
+        hb.dodged = true; p.riposte = Math.max(p.riposte, CONFIG.player.counterTime);
+        events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
+        if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.dodged(hb.owner);   // the server allows the counter
+        const step = p.kit.perks['dodge/riposte'];   // Counterstep: a longer counter window
         if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('abilityPerk', { body: p, perk: 'dodge/riposte' }); }
         abilityReport(p, 'dodge', { enemy: hb.owner });
       }

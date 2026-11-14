@@ -82,14 +82,20 @@ function peer(url, origin) {
   assert.equal(e.netTarget, 'a', 'server selects nearby player');
   const hp = e.hp;
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0 }), true);
-  assert.equal(e.hp, hp - 24, 'server computes damage from game data');
+  assert.equal(e.hp, hp - 16, 'server computes damage from game data');   // the light's 16 (pass 85)
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'missing', charge: 0 }), false);
   const parryable = e.baseDef.attacks.find(a => !a.noParry && !a.projectile && !a.rollOnly);
   e.beginAttack(parryable); sim.tick(1 / 60); const oldSerial = e.netAttack;
   e.beginAttack(parryable); const newSerial = e.netAttack;
-  assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial }), true, 'accept a successful parry of the displayed recent move');
+  assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial }), false, 'a deflect names the blow it turned (pass 85)');
+  assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial, hit: 5 }), false, 'a blow that was never under way is refused');
+  assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial, hit: 0 }), true, 'accept a successful parry of the displayed recent move');
   assert.equal(e.netAttack, newSerial); assert.equal(e.state, 'windup', 'a late parry never cancels an unrelated new move');
   assert.ok(e.posture > 0, 'late parries still grant shared posture damage');
+  // A perfect dodge needs the claimer's own frames to show the dash (pass 85).
+  sim.tick(1 / 60); assert.equal(sim.dodged('a', { enemy: e.netId, serial: newSerial }), false, 'no dodge while standing');
+  sim.setPlayers([{ ...pose(6, -3), id: 'a', state: 'roll' }, { ...pose(-12, 0), id: 'b' }]);
+  assert.equal(sim.dodged('a', { enemy: e.netId, serial: newSerial }), true, 'a dodge while dashing');
   e.setState('broken');
   assert.equal(sim.beginExecution('a', { enemy: e.netId }), true);
   assert.equal(sim.beginExecution('b', { enemy: e.netId }), false, 'execution has a single owner');
@@ -133,12 +139,12 @@ function peer(url, origin) {
     a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     await a.next('frame', m => m.frame.enemies[0].hp < full);
-    assert.equal(app.sim.inspect().Game.duel.hp, full - 24, 'duplicate contacts do not damage twice');
+    assert.equal(app.sim.inspect().Game.duel.hp, full - 16, 'duplicate contacts do not damage twice');
     b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/ostrey', attack: 'heavy', charge: 0, swing: 'old' });
     const c = peer(url, origin); peers.push(c); await c.join();
     assert.equal((await c.next('start')).session.epoch, epoch, 'late join gets current session');
     c.send({ type: 'ready', epoch });
-    assert.equal((await c.next('frame')).frame.enemies[0].hp, full - 24, 'late join gets shared current health');
+    assert.equal((await c.next('frame')).frame.enemies[0].hp, full - 16, 'late join gets shared current health');
     a.send({ type: 'control', action: 'transfer', player: wb.id });
     await b.next('roster', m => m.leader === wb.id);
     b.send({ type: 'control', action: 'restart' });

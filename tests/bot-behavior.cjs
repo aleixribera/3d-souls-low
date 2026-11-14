@@ -12,7 +12,7 @@ function waiting(boss, profile, hurt = false, seed = 17) {
   const { Game, bot, bots } = sim.inspect(), b = [...bots.values()][0], p = b.body, e = Game.enemies[0];
   b.brain = bot.create(b.profile, seeded(seed)); p.ctl = b.brain.hands;
   // Freeze only the opponent's initiative: its real moves/phase, collision, damage and combat still apply.
-  e.chooseAttack = e.react = () => null; e.def = { ...e.def, speed: 0, approach: 0 }; e.cooldown = 0;
+  e.chooseAttack = e.react = e.breakOff = () => null; e.def = { ...e.def, speed: 0, approach: 0 }; e.cooldown = 0;
   p.x = e.x; p.z = e.z + e.radius + p.radius + 2.2; p.y = e.y; p.savePrev(); e.wake(p);
   if (hurt) p.hp = p.maxHp * 0.4;
   return { sim, b, p, e };

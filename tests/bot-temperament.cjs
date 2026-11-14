@@ -15,7 +15,7 @@ function duel(boss, profile, seed, bots = 1) {
   sim.start('arena', boss); sim.setPlayers([]);
   const { Game, bot, bots: all } = sim.inspect(), list = [...all.values()], b = list[0], p = b.body, e = Game.enemies[0];
   b.brain = bot.create(b.profile, seeded(seed)); p.ctl = b.brain.hands;
-  e.chooseAttack = e.react = () => null; e.def = { ...e.def, speed: 0, approach: 0 }; e.cooldown = 99;
+  e.chooseAttack = e.react = e.breakOff = () => null; e.def = { ...e.def, speed: 0, approach: 0 }; e.cooldown = 99;
   p.x = e.x; p.z = e.z + e.radius + p.radius + 1; p.y = e.y; p.yaw = Math.PI; p.savePrev(); e.yaw = 0; e.wake(p);
   return { sim, Game, bot, list, b, p, e };
 }
@@ -54,7 +54,10 @@ function withMood(boss, profile, want) {
   for (; time < 8; time += dt) {
     sim.setPlayers([]); sim.tick(dt);
     const mid = e.attack === kneel && (e.state === 'windup' || e.state === 'active');
-    if (p.state === 'attack' && mid) swungMid = true;
+    // The pause: before the last ring is out. Pass 85's dash is quick, so a bot that dashed through the last ring may
+    // swing while that ring still spreads behind it: the string is over for it.
+    const pause = mid && !(e.state === 'active' && e.hitIndex === kneel.hits.length - 1);
+    if (p.state === 'attack' && pause) swungMid = true;
     if (mid) farthest = Math.max(farthest, Math.hypot(p.x - e.x, p.z - e.z));
     if (e.state === 'recover' && p.state === 'attack') { swungAfter = true; break; }
   }

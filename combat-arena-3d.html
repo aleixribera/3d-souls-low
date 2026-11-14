@@ -299,12 +299,17 @@
   @keyframes lowPulse { 50% { border-color: #e0604a; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 3px #d0301c90, inset 0 0 6px #000000b0; } }
   @keyframes emptyPulse { 0% { box-shadow: 0 0 0 1px #000000d8, 0 0 16px 4px #ff4a30c0; transform: scaleY(1.9); } 100% { transform: scaleY(1); } }
   /* Exhausted: a small note under the stamina bar, faint while it lasts, bright for a moment after a refused press. */
-  #pExhaust { height: 14px; margin-top: 3px; font-size: 11px; letter-spacing: 2px; color: #e07a5c; text-shadow: 0 0 4px #000;
+  #pExhaust { height: 0; margin-top: 0; overflow: hidden; font-size: 11px; letter-spacing: 2px; color: #e07a5c; text-shadow: 0 0 4px #000;
     opacity: 0; transition: opacity 0.25s; font-variant: small-caps; }
   #pExhaust.show { opacity: 0.55; }
   #pExhaust.flash { opacity: 1; color: #ff9a76; }
   @keyframes windedPulse { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 10px 2px #d0402880; } }
 
+  /* Dash charges (pass 85): one diamond each under the guard bar, filling from below as it comes back. */
+  #pDash { display: flex; gap: 9px; height: 12px; margin: 6px 0 0 3px; }
+  #pDash i { width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid #c9a85e; box-shadow: 0 0 0 1px #000000c0;
+    background: linear-gradient(0deg, #f0dca0 calc(var(--k, 1) * 100%), #00000080 calc(var(--k, 1) * 100%)); }
+  #pDash i.ready { border-color: #f6e6b0; box-shadow: 0 0 0 1px #000000c0, 0 0 6px 1px #ffd88a80; }
   #pFlasks { margin-top: 12px; height: 18px; transition: opacity 0.3s; opacity: calc(1 - var(--calm) * 0.5); }
   .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
     border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #0d0b0a; box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12;
@@ -556,6 +561,7 @@
       <div id="pBars">
         <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
         <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
+        <div id="pDash" aria-hidden="true"></div>
         <div id="pExhaust"></div>
         <div id="pFlasks"></div>
       </div>
@@ -800,6 +806,7 @@ const GAME_FILES = [
   'crate-screen.js', // the crate roll, the Collection, a blade look (before multiplayer.js: its keys come first)
   'multiplayer.js',
   'kill-moment.js',
+  'dodge-moment.js',
   'boot.js',
 ];
 const LOAD_STAMP = '7.108.0';   // bump for each release; stable within a release so browsers can cache scripts

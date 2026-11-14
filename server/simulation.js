@@ -384,7 +384,7 @@ globalThis.host = (() => {
   // low (their pose's health) or drinking a flask (their pose: drinking). A claim sent ahead of the pose that shows it waits up to C.claimWait s for that pose
   // (pendingClaims, checked each step). Cooldowns and once-a-fight are the powers' own.
   function abilityClaim(id, msg, retry = false) {
-    const wait = () => { if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait }); return false; };
+    const wait = () => { if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait, fn: abilityClaim }); return false; };
     const kit = kitOf(id), p = players.find(p => p.id === id), body = holderOf(id);
     if (!p || !body || !p.alive() || !ABILITY_CLAIMS.includes(msg.when) || !kit.whens.has(msg.when)) return false;
     sleeping = false;
@@ -411,7 +411,7 @@ globalThis.host = (() => {
   function retryClaims() {
     for (let i = pendingClaims.length - 1; i >= 0; i--) {
       const c = pendingClaims[i];
-      if (time > c.until || abilityClaim(c.id, c.msg, true)) pendingClaims.splice(i, 1);
+      if (time > c.until || c.fn(c.id, c.msg, true)) pendingClaims.splice(i, 1);
     }
   }
   function addBot(profileId) {
@@ -728,8 +728,9 @@ globalThis.host = (() => {
     // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer), or with
     // Counterstep their accepted perfect dodge.
     const kit = kitOf(id), step = kit.perks['dodge/riposte'];
+    // Pass 85: every perfect dodge opens a counter (CONFIG.player.counterTime), Counterstep's window if longer.
     const riposte = msg.riposte === true && (time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack ||
-      !!step && time - (lastDodge.get(id) ?? -Infinity) <= step.window + C.riposteSlack);
+      time - (lastDodge.get(id) ?? -Infinity) <= Math.max(CONFIG.player.counterTime, step ? step.window : 0) + C.riposteSlack);
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
@@ -761,19 +762,38 @@ globalThis.host = (() => {
     const recent = history.filter(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE)))
       .map(f => f.enemies.find(s => s.id === msg.enemy));
     const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
-    if (!a || !recent.some(s => canParryHit(a, s.hit || 0))) return false;   // a hit of it that can be parried was under way
+    // The deflected blow (pass 85): `msg.hit`, its index in the attack. Only the last blow of an attack opens it; an
+    // earlier one is turned aside, the string goes on, and a boss's posture fills by deflectShare.
+    const hit = msg.hit;
+    if (!a || !Number.isSafeInteger(hit) || hit < 0 || hit >= a.hits.length || !canParryHit(a, hit)
+      || !recent.some(s => (s.hit || 0) === hit)) return false;   // that very blow was under way
     // The parried blow must have reached this player: its farthest hit from where the enemy stood during it.
     const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
     if (!within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial)) return false;
     // A delayed parry of an old move still succeeded on that player's screen,
     // but must never cancel an unrelated new move on everybody else's screen.
     sleeping = false;
-    const broke = e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry) : false;
-    lastParry.set(id, time); feat(id).parries++;
+    const opened = hit === a.hits.length - 1, share = opened ? 1 : CONFIG.enemy.deflectShare;
+    const broke = opened && e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry * share) : false;
+    if (opened) lastParry.set(id, time);
+    feat(id).parries++;
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
     if (broke) abilityPowers.trigger(id, holderOf(id), kitOf(id), 'break', { enemy: e });   // Pyre
+    return true;
+  }
+  // A perfect dodge (pass 85), claimed by the dodger's browser: a blow of that attack was out near them. It allows the
+  // counter's riposte (hit). Abilities that fire on a dodge still come through abilityClaim. Like that claim, it needs
+  // the claimer's own frames to show the dash, and waits a moment for them.
+  function dodged(id, msg, retry = false) {
+    const p = players.find(p => p.id === id);
+    if (!p || !p.alive() || !struckNear(p, msg)) return false;
+    if (p.state !== 'roll') {
+      if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait, fn: dodged });
+      return false;
+    }
+    lastDodge.set(id, time);
     return true;
   }
   function beginExecution(id, msg) {
@@ -820,7 +840,7 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
-    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, landed, rest,
+    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, beginExecution, endExecution, lifesteal, landed, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,

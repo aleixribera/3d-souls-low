@@ -203,7 +203,7 @@ function frame(now) {
   document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
   if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
-  accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
+  accumulator += frameDt * Game.timeScale * dodgeMoment.scale(frameDt);   // timeScale < 1: the F6 slow motion of developer builds; a perfect dodge's beat (js/dodge-moment.js)
   let steps = 0;
   while (accumulator >= CONFIG.step && steps < CONFIG.maxSteps) { input.tick(CONFIG.step); Game.update(CONFIG.step); accumulator -= CONFIG.step; steps++; }
   if (accumulator >= CONFIG.step) accumulator = 0;   // stalled tab: drop the backlog instead of catching up

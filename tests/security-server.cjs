@@ -36,7 +36,7 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
   // Honest contact at reach; the riposte flag needs this player's own accepted parry.
   let hp = e.hp;
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0, riposte: true }), true, 'in-range hit accepted');
-  assert.equal(hp - e.hp, 24, 'riposte bonus refused without a parry');
+  assert.equal(hp - e.hp, 16, 'riposte bonus refused without a parry');   // the light's 16 (pass 85)
   // Per player/enemy budget: a burst of claimed swings is capped.
   let accepted = 1;
   for (let i = 0; i < 6; i++) accepted += sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0 }) ? 1 : 0;

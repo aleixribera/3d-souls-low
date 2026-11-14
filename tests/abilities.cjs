@@ -91,11 +91,12 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   const before = thirsty.hp; g('abilityLanded')(thirsty, base);
   assert.ok(thirsty.hp <= before + 1e-9, 'a hurt starts the count over');
 
-  // Last Breath: low, a roll costs nothing. Light Step: a cheaper roll.
-  const roll = (ids, hp) => { const p = body(ids); if (hp) p.hp = p.lastHp = hp; p.startRoll({ x: 0, z: 1, has: true }); return p.maxStamina - p.stamina; };
+  // Last Breath: low, a dash takes no charge. Light Step: dash charges refill faster (pass 85).
+  const roll = (ids, hp) => { const p = body(ids); if (hp) p.hp = p.lastHp = hp; const n = p.dashes; p.startRoll({ x: 0, z: 1, has: true }); return n - p.dashes; };
   const plain = roll([]);
-  assert.ok(plain > 0); assert.equal(roll(['last-breath'], S.maxHp * 0.2), 0, 'Last Breath: free'); assert.equal(roll(['last-breath']), plain, 'not while healthy');
-  near(roll(['light-step']), plain * (1 - at('light-step', 1).rollCost), 'Light Step');
+  assert.equal(plain, 1, 'a dash takes a charge'); assert.equal(roll(['last-breath'], S.maxHp * 0.2), 0, 'Last Breath: free'); assert.equal(roll(['last-breath']), plain, 'not while healthy');
+  const refillDash = ids => { const p = body(ids); p.dashes = 0; p.refillDashes(0.2); return p.dashes; };
+  near(refillDash(['light-step']) / refillDash([]), 1 + at('light-step', 1).dashRefill, 'Light Step');
 }
 
 // ---- 2. The legendaries on the boss --------------------------------------------------------------------------------

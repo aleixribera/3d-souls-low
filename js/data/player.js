@@ -15,8 +15,10 @@
 //   hitbox); `pose` (an ATTACK_POSES id, js/data/attack-poses.js) draws it from key poses; markers: [{ at: 'windup' |
 //   'active' | 'follow' | 'recovery', t: 0..1 through that phase, hit?: index, event: 'sound' | 'shake' | 'glint', ... }].
 
+// A flask is drunk on the move (pass 85, CONFIG.player.drinkSpeedMul), quicker than before (was 1.3 s), and a landed
+// blow cuts it short.
 const ITEMS = {
-  flask: { name: 'Flask', action: 'flask', useTime: 1.3, heal: 45, healStart: 0.35, healDuration: 0.8, refillOnRest: true },
+  flask: { name: 'Flask', action: 'flask', useTime: 0.95, heal: 45, healStart: 0.25, healDuration: 0.55, refillOnRest: true },
 };
 
 const PLAYER_DEF = {
@@ -25,35 +27,73 @@ const PLAYER_DEF = {
           visual: { skin: 0x8a867c, skinMetal: 0.15, roughness: 0.7 } },   // helmed knight
   stats: { maxHp: 120, maxStamina: 160, maxPoise: 30 },
   inventory: [{ item: 'flask', count: 4, max: 4 }],
+  // The moveset since the player rework (pass 85, PLAN.md "First, urgent"): no attack costs anything. Ordinary blows
+  // (the light string, a tapped heavy, jump attacks) deal about a third less than before and barely fill a boss's
+  // posture; the skill moves (finishers, a full charge, ripostes and counters, executions) carry the damage and the
+  // posture. Poses borrowed from the enemies' (enemyStab, enemySpin, enemyThrust) are stand-ins until the moves get
+  // their own key poses.
   moveset: {
     ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
     air: { light: 'jumpLight', heavy: 'jumpHeavy' },
+    dash: { light: 'dashLight', heavy: 'dashHeavy' },  // an attack pressed in a dash (CONFIG.player.dashAttackFrom)
     attacks: {
-      // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery. Was 0.22 / 0.12 / 0.34.
-      // Light combo: diagonal -> backhand -> overhead finisher (`next`: the attack a press during this one chains into).
-      // Damage 18 -> 24 per hit: a full combo deals 72 versus a tapped heavy's 53, for 48 versus 40 stamina.
-      light: { id: 'light', anim: 'sweep', pose: 'lightDiagonal', hits: [{ startup: 0.3, active: 0.1, follow: 0.14 }], recovery: 0.26, cost: 16,
-               next: { light: 'light2' },
+      // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery.
+      // The light string: diagonal -> backhand -> overhead -> thrust (`next`: the attack a press during this one chains
+      // into). A heavy pressed at any point of it is that point's own finisher instead of a charged heavy.
+      light: { id: 'light', anim: 'sweep', pose: 'lightDiagonal', hits: [{ startup: 0.2, active: 0.08, follow: 0.1 }], recovery: 0.22,
+               next: { light: 'light2', heavy: 'finisher1' },
                markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
-               damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.4, hitstop: 0.07, riposte: { damage: 2.4 },
+               damage: 16, poise: 22, postureDmg: 3, knock: 3, lunge: 2.4, hitstop: 0.06, riposte: { damage: 2.4 },
                box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
-      light2: { id: 'light2', anim: 'sweep', pose: 'lightBackhand', hits: [{ startup: 0.26, active: 0.1, follow: 0.14 }], recovery: 0.28, cost: 16,
-                next: { light: 'light3' },
+      light2: { id: 'light2', anim: 'sweep', pose: 'lightBackhand', hits: [{ startup: 0.18, active: 0.08, follow: 0.1 }], recovery: 0.22,
+                next: { light: 'light3', heavy: 'finisher2' },
                 markers: [{ at: 'windup', t: 0.65, event: 'sound', sound: 'swingLight', vel: 0.55 }, { at: 'active', t: 0, event: 'glint' }],
-                damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.2, hitstop: 0.07, riposte: { damage: 2.4 },
+                damage: 16, poise: 22, postureDmg: 3, knock: 3, lunge: 2.2, hitstop: 0.06, riposte: { damage: 2.4 },
                 box: { w: 2.0, h: 1.6, d: 1.9, fwd: 1.25, y: 1.1 } },
-      light3: { id: 'light3', anim: 'overhead', pose: 'lightOverhead', hits: [{ startup: 0.38, active: 0.12, follow: 0.18 }], recovery: 0.36, cost: 16,
-                next: { light: 'light' },
-                markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingLight', vel: 0.7 }, { at: 'active', t: 0, event: 'glint' }],
-                damage: 24, poise: 22, postureDmg: 9, knock: 3, lunge: 2.6, hitstop: 0.08, riposte: { damage: 2.4 },
+      light3: { id: 'light3', anim: 'overhead', pose: 'lightOverhead', hits: [{ startup: 0.24, active: 0.09, follow: 0.12 }], recovery: 0.24,
+                next: { light: 'light4', heavy: 'finisher3' },
+                markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingLight', vel: 0.65 }, { at: 'active', t: 0, event: 'glint' }],
+                damage: 16, poise: 22, postureDmg: 3, knock: 3, lunge: 2.6, hitstop: 0.07, riposte: { damage: 2.4 },
                 box: { w: 1.4, h: 2.2, d: 2.2, fwd: 1.35, y: 1.2 } },
-      // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage.
-      // Was 0.56 / 0.16, recovery 0.64.
-      heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.62, active: 0.14, follow: 0.22 }], recovery: 0.5, cost: 40,
-               charge: { action: 'heavy', at: 0.7, hold: 0.9, mul: 1.5, hitstopMul: 1.4 },
+      light4: { id: 'light4', anim: 'stab', pose: 'enemyStab', hits: [{ startup: 0.24, active: 0.09, follow: 0.12 }], recovery: 0.3,
+                next: { heavy: 'finisher4' },
+                markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingLight', vel: 0.75 }, { at: 'active', t: 0, event: 'glint' }],
+                damage: 20, poise: 26, postureDmg: 4, knock: 4, lunge: 3.4, hitstop: 0.08, riposte: { damage: 2.4 },
+                box: { w: 1.2, h: 1.6, d: 2.8, fwd: 1.6, y: 1.1 } },
+      // Finishers: the heavy at each point of the string, each its own move, bigger the later it comes.
+      finisher1: { id: 'finisher1', anim: 'sweep', pose: 'enemySpin', feel: 'heavy', hits: [{ startup: 0.26, active: 0.12, follow: 0.12 }], recovery: 0.36,
+                   markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingHeavy', vel: 0.7 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 30, poise: 40, postureDmg: 16, knock: 5, lunge: 2.4, hitstop: 0.1, riposte: { damage: 2 },
+                   box: { w: 3.4, h: 1.8, d: 3.0, fwd: 0.6, y: 1.1 } },
+      finisher2: { id: 'finisher2', anim: 'stab', pose: 'enemyThrust', feel: 'heavy', hits: [{ startup: 0.28, active: 0.12, follow: 0.14 }], recovery: 0.38,
+                   markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingHeavy', vel: 0.75 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 36, poise: 46, postureDmg: 20, knock: 6, lunge: 6.5, hitstop: 0.11, riposte: { damage: 2 },
+                   box: { w: 1.2, h: 1.8, d: 3.4, fwd: 1.9, y: 1.1 } },
+      finisher3: { id: 'finisher3', anim: 'overhead', pose: 'heavyOverhead', feel: 'heavy', hits: [{ startup: 0.32, active: 0.13, follow: 0.18 }], recovery: 0.42,
+                   markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingHeavy', vel: 0.85 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 44, poise: 56, postureDmg: 26, knock: 7, lunge: 3.4, hitstop: 0.13, riposte: { damage: 2 },
+                   box: { w: 1.3, h: 2.6, d: 2.8, fwd: 1.55, y: 1.3 } },
+      finisher4: { id: 'finisher4', anim: 'sweep', pose: 'enemySpin', feel: 'heavy', hits: [{ startup: 0.34, active: 0.16, follow: 0.18 }], recovery: 0.48,
+                   markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingHeavy', vel: 1 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 56, poise: 70, postureDmg: 34, knock: 9, lunge: 3, hitstop: 0.16, riposte: { damage: 2 },
+                   box: { w: 3.8, h: 2.2, d: 3.6, fwd: 0.7, y: 1.2 } },
+      // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage and
+      // `postureMul` x posture (a full charge is a skill move).
+      heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.5, active: 0.13, follow: 0.2 }], recovery: 0.44,
+               charge: { action: 'heavy', at: 0.7, hold: 0.8, mul: 1.7, postureMul: 3, hitstopMul: 1.4 },
                markers: [{ at: 'windup', t: 0.8, event: 'sound', sound: 'swingHeavy', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],
-               damage: 53, poise: 52, postureDmg: 24, knock: 7, lunge: 3.2, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+               damage: 36, poise: 52, postureDmg: 12, knock: 7, lunge: 3.2, hitstop: 0.12, riposte: { damage: 2.6, poise: 2.5 },
                box: { w: 1.1, h: 2.6, d: 2.7, fwd: 1.55, y: 1.3 } },
+      // Dash attacks: out of a dash, the momentum carried into a thrust (light) or a driving lunge (heavy).
+      dashLight: { id: 'dashLight', anim: 'stab', pose: 'enemyStab', hits: [{ startup: 0.12, active: 0.1, follow: 0.1 }], recovery: 0.28,
+                   next: { light: 'light2', heavy: 'finisher2' },
+                   markers: [{ at: 'windup', t: 0.5, event: 'sound', sound: 'swingLight', vel: 0.7 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 22, poise: 30, postureDmg: 6, knock: 4, lunge: 6, hitstop: 0.08, riposte: { damage: 2.4 },
+                   box: { w: 1.3, h: 1.6, d: 2.8, fwd: 1.5, y: 1.1 } },
+      dashHeavy: { id: 'dashHeavy', anim: 'stab', pose: 'enemyThrust', feel: 'heavy', hits: [{ startup: 0.22, active: 0.13, follow: 0.14 }], recovery: 0.42,
+                   markers: [{ at: 'windup', t: 0.6, event: 'sound', sound: 'swingHeavy', vel: 0.85 }, { at: 'active', t: 0, event: 'glint' }],
+                   damage: 34, poise: 50, postureDmg: 14, knock: 7, lunge: 8, hitstop: 0.12, riposte: { damage: 2 },
+                   box: { w: 1.3, h: 1.8, d: 3.4, fwd: 1.8, y: 1.1 } },
       // Execution (v5.2, js/execution.js): light attack in front of a kneeling enemy. No hitbox: the damage is the
       // execution's own (CONFIG.execution.damage), dealt as the active phase opens. Wind-up: slide in and coil low;
       // active: the thrust through the chest; follow: the hold, blade inside; recovery: the pull-out.
@@ -63,15 +103,15 @@ const PLAYER_DEF = {
                  damage: 0, poise: 0, knock: 0, lunge: 0, box: { w: 0.6, h: 0.6, d: 1.6, fwd: 1.0, y: 1.1 } },
       // Jump attacks: wind-up in the air, the hitbox opens while descending and lasts until landing
       // plus impactTime. `recovery` is the landing recovery (shortened by hitRecoveryMul on a hit).
-      jumpLight: { id: 'jumpLight', anim: 'overhead', hits: [{ startup: 0.12, active: Infinity }], recovery: 0.42, cost: 18,
-                   damage: 28, poise: 34, postureDmg: 14, knock: 3.5, lunge: 0, hitstop: 0.09, riposte: { damage: 2.4 },
+      jumpLight: { id: 'jumpLight', anim: 'overhead', hits: [{ startup: 0.12, active: Infinity }], recovery: 0.36,
+                   damage: 20, poise: 34, postureDmg: 6, knock: 3.5, lunge: 0, hitstop: 0.09, riposte: { damage: 2.4 },
                    box: { w: 1.5, h: 2.0, d: 1.8, fwd: 0.9, y: 0.1 },
                    air: { impactTime: 0.08, hitRecoveryMul: 0.85, hop: 3.2, fx: { ring: 1.6, crack: 0.75, dust: 6, shake: 0.05 } } },
       // v4.2.1 balance (was damage 52, poise 60, posture 24, cost 42, recovery 0.7, hitstop 0.15, box 2.2 x 2.6): between a
       // tapped heavy and a full charge, a tighter landing zone, a longer landing to punish a miss that a hit no longer
       // shortens. Jump heavies now fill stagger and guard meters as heavy hits (v7.3).
-      jumpHeavy: { id: 'jumpHeavy', anim: 'overhead', feel: 'heavy', hits: [{ startup: 0.3, active: Infinity }], recovery: 0.85, cost: 46,
-                   damage: 74, poise: 70, postureDmg: 30, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
+      jumpHeavy: { id: 'jumpHeavy', anim: 'overhead', feel: 'heavy', hits: [{ startup: 0.3, active: Infinity }], recovery: 0.7,
+                   damage: 50, poise: 70, postureDmg: 20, knock: 7, lunge: 0, hitstop: 0.13, riposte: { damage: 2.6, poise: 2.5 },
                    box: { w: 1.7, h: 2.4, d: 2.1, fwd: 1.1, y: 0.0 },
                    air: { impactTime: 0.1, hitRecoveryMul: 1, hop: 3.8, fx: { ring: 3.2, crack: 1.7, dust: 14, shake: 0.11 } } },
     },

@@ -460,7 +460,10 @@ function createServer(options = {}) {
       if (!net.id(msg.enemy) || !net.id(msg.swing) || !net.id(msg.attack)) return;
       if (claim(p, `${msg.swing}/${msg.enemy}`)) sim.hit(p.id, msg);
     } else if (msg.type === 'parry') {
-      if (net.id(msg.enemy) && Number.isSafeInteger(msg.serial) && claim(p, `parry/${msg.enemy}/${msg.serial}`)) sim.parry(p.id, msg);
+      if (net.id(msg.enemy) && Number.isSafeInteger(msg.serial) && Number.isSafeInteger(msg.hit) &&
+        claim(p, `parry/${msg.enemy}/${msg.serial}/${msg.hit}`)) sim.parry(p.id, msg);
+    } else if (msg.type === 'dodged') {   // pass 85: a perfect dodge, for the counter that follows
+      if (net.id(msg.enemy) && Number.isSafeInteger(msg.serial) && claim(p, `dodged/${msg.enemy}/${msg.serial}`)) sim.dodged(p.id, msg);
     } else if (msg.type === 'execute') {
       const accepted = net.id(msg.enemy) && sim.beginExecution(p.id, msg);
       send(p, { type: 'execution', enemy: net.id(msg.enemy) ? msg.enemy : null, accepted: !!accepted });

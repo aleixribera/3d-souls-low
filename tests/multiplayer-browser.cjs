@@ -105,10 +105,11 @@ fs.mkdirSync(output, { recursive: true });
       const p = Game.player, e = Game.duel, a = e.attack;
       p.hitbox = null; p.hp = p.maxHp; p.stamina = p.maxStamina; p.exhausted = false; p.execGrace = 0;
       p.x = e.x - 1.5; p.y = e.y; p.z = e.z; p.yaw = Math.PI / 2; e.yaw = -Math.PI / 2;
-      e.state = ES.WINDUP; e.hitIndex = 0; e.stateTime = a.hits[0].startup - CONFIG.parry.lead / 2;
-      p.startParry(); resolveCombat(Game);
+      // A deflect (pass 85) of the attack's last blow, the one that opens it.
+      e.state = ES.WINDUP; e.hitIndex = a.hits.length - 1; e.stateTime = a.hits[e.hitIndex].startup - CONFIG.parry.lead / 2;
+      p.setState(PS.IDLE); p.deflect = CONFIG.parry.arm; p.deflectLock = 0; resolveCombat(Game);
       const parried = p.state === PS.IDLE && p.flash === 1 && p.riposte > 0 && e.hitbox === null;
-      p.riposte = 0; p.stamina = p.maxStamina; p.startRoll({ has: false });
+      p.riposte = 0; p.deflectedBlow = null; p.stamina = p.maxStamina; p.dashes = CONFIG.player.dashCharges; p.startRoll({ has: false });
       e.netParried = null; e.state = ES.ACTIVE; e.stateTime = 0;
       e.hitbox = new Hitbox(e, a.hits[0].box || a.box, makeStrike(a));
       const at = e.hitbox.center(); p.x = at.x; p.z = at.z;
