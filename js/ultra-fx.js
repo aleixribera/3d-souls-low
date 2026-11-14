@@ -524,7 +524,7 @@ void main() {
   when('bossPhase', d => {
     const e = d.enemy, c = chest(e), color = auraColor(e);
     moteBurst(c, 300, color, { r: e.radius, speed: 6, lift: 1.4, life: [1.0, 2.6], size: 1.4, swirl: 1.6, up: 0.4, drag: 1.0 });
-    sparkBurst(c, 70, e.def.ignite ? 'ember' : 'gold', null, 0, 1.4);
+    sparkBurst(c, 70, e.def.ignite === true ? 'ember' : 'gold', null, 0, 1.4);
     flashAt(c, color, 26, 16); flare(c, color, 6, 0.7);
     mark(e.x, e.y, e.z, color, 8 * scaleOf(e), 2.5, 1);
     dustRing(e.x, e.y, e.z, 20, 3, U.puffs.dust, 1.8);
@@ -652,7 +652,7 @@ void main() {
           moteBurst({ x: b.x + Math.cos(a) * r, y: b.y + rand(0.1, b.height), z: b.z + Math.sin(a) * r }, 1, c,
             { r: 0, speed: 0.3, lift: 0.35, life: [1.2, 2.4], size: A.size * Math.sqrt(sc), boost: 1.5, pulse: 7 });
         }
-        if (b.def.ignite) {
+        if (b.def.ignite === true) {   // a whole body burning, not only a weapon ('weapon')
           F2.ember += A.igniteRate * dt * sc;
           for (; F2.ember >= 1; F2.ember--) {
             const a = rand(0, Math.PI * 2), r = b.radius * rand(0.2, 1.1);

@@ -182,6 +182,10 @@ const CONFIG = {
   // attack with `when: 'seamed'` be chosen; an erupting hit's wind-up (the seams' tell, js/ember-seams.js) is at least
   // `minTell` s.
   seams: { max: 6, width: 1.4, height: 3.2, callAt: 3, minTell: 1.1 },
+  // Fires on the floor (pass 63, the Pillager Captain; a hit's `fire`, js/enemy.js noteFires and burnInFires): at most
+  // `max` burn per enemy (the oldest goes out); each hurts only once it has caught, `kindle` s after it is laid (time to
+  // roll out of one laid under you); one may burn at most `maxTime` s and `maxDps` a second.
+  groundFire: { max: 14, kindle: 0.35, maxTime: 12, maxDps: 30 },
   // Rends (pass 48, Mother Agathe; an attack's or a phase's `rend`, Player.rend): each unblocked blow of the hook tears `cut`
   // of the bar's maximum away, at most `max` pieces; every blow landed on her tears one back as health, and left there the
   // wound closes `time` s after the last tear. The storm (a hit's `bolt`, Enemy.noteBolt): its mark follows the target for
@@ -638,6 +642,10 @@ const CONFIG = {
     // open (s), its jag (m), the fire wall's colour, height (m), how long it burns and fades (s), flames per seam.
     emberSeams: { color: 0xff6a20, hot: 0xffc070, rest: 0.55, tell: 1.6, open: 0.3, jag: 0.22, crack: 14, width: 0.32,
       fire: 0xff7a28, flames: 14, flameW: 1.3, flameH: 3.2, burn: 0.55, fade: 0.6, close: 0.8, pool: 12 },
+    // The Pillager Captain's fires on the floor (js/ground-fire.js): flames per fire, their width and height (m, times its
+    // `r`), the scorch under it (its colour and glow), how long one takes to flare up and to die down (s), fires drawn at once.
+    groundFire: { fire: 0xff6a1c, hot: 0xffc070, flames: 9, flameW: 0.5, flameH: 1.15, scorch: 0xff5a18, glow: 0.55, flare: 0.3, fade: 0.8, pool: 30,
+      bill: { flames: 6, w: 0.3, h: 0.8, spread: 0.1, drop: 0.25, bright: 1.1 } },   // a burning weapon's flames (scaled by the boss)
     // Mother Agathe's storm and hook (js/storm-rend.js): the bolt's mark on the floor (`mark` m across), the bolt (`height`
     // m of jagged light in `segs` pieces, `width` m wide, lit `flash` s), the pieces of you on the hook (`piece` m, drawn
     // as embers of your own red) and their flight to and from it (`fly` s).

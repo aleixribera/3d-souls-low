@@ -114,6 +114,7 @@ class Enemy {
     this.leaping = false;                            // airborne in a leaping strike (a hit's `leap`)
     this.attackNo = 0; this.cuts = [];               // attacks begun; where it stood for each hit of this one (`noteCut`, a hit's `echo`)
     this.seams = []; this.erupting = null; this.seamKey = -1; this.seamNo = 0;   // the floor it has cracked open (a hit's `seam` / `erupt`)
+    this.fires = []; this.fireKey = -1; this.fireNo = 0;   // the fires it has left burning on the floor (a hit's `fire`, burnInFires)
     // Boss phases (v4.3): an enemy def with `phases` fights through the phase ids its placement lists (`boss.phases`,
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
     // away instead of dying (the opening of Level 5).
@@ -554,7 +555,7 @@ class Enemy {
     this.setState(ES.GONE);
     events.emit('bossGone', { enemy: this });
   }
-  die() { this.hitbox = null; this.seams.length = 0; this.erupting = null; this.setState(ES.DEAD); }
+  die() { this.hitbox = null; this.seams.length = 0; this.erupting = null; this.fires.length = 0; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
   checkFall() {
     if (!this.alive()) return;
@@ -673,6 +674,7 @@ class Enemy {
     }
     const strike = makeStrike(this.attack);
     if (hit.damage) strike.damage = hit.damage;
+    if (hit.pull) { strike.pull = hit.pull; strike.rollOnly = true; }   // pass 63: the hook drags you in to this far from him (Player.takeHit); no guard holds it
     if (!hit.bolt && !this.attack.projectile && (this.attack.rend ?? this.def.rend)) { strike.rend = true; strike.rendBy = this; }   // pass 48: the hook keeps what it tears
     if (hit.bolt) {   // the storm strikes where its mark lay; a mark never seen strikes nothing
       const B = this.bolt;
@@ -698,7 +700,22 @@ class Enemy {
   noteCut() {
     const c = this.cuts[this.hitIndex] || (this.cuts[this.hitIndex] = { x: 0, y: 0, z: 0, yaw: 0, no: -1 });
     c.x = this.x; c.y = this.y; c.z = this.z; c.yaw = this.yaw; c.no = this.attackNo;
-    this.noteSeams();
+    this.noteSeams(); this.noteFires();
+  }
+  // A hit's `fire` (pass 63, the Pillager Captain): as it strikes it leaves fires burning on the floor, one per `at`
+  // [fwd, side] (m ahead of him, m to his left) where he stands and faces, each `r` m across, for `time` s, burning
+  // `dps` a second from anyone standing in it once it has caught (CONFIG.groundFire.kindle; burnInFires). The oldest goes out
+  // past CONFIG.groundFire.max. Once per hit: a client lays them the first time it sees the hit strike. Drawn by
+  // js/ground-fire.js.
+  noteFires() {
+    const hit = this.attack && this.attack.hits[this.hitIndex], key = this.attackNo * 64 + this.hitIndex;
+    if (!hit || !hit.fire || this.fireKey === key) return;
+    this.fireKey = key;
+    const F = hit.fire, s = Math.sin(this.yaw), c = Math.cos(this.yaw);
+    for (const [fwd, side] of F.at) {
+      this.fires.push({ x: this.x + s * fwd + c * side, y: this.y, z: this.z + c * fwd - s * side, r: F.r, time: F.time, dps: F.dps, age: 0, no: ++this.fireNo });
+      if (this.fires.length > CONFIG.groundFire.max) this.fires.shift();
+    }
   }
   // A hit's `seam` (pass 47, Oswin): as it strikes, the floor cracks open along a line ahead of it (`from` m out, `len` m
   // long, once per angle of `spread`), and stays open, glowing, the oldest closing past CONFIG.seams.max. A hit's `erupt`
@@ -989,5 +1006,42 @@ class Enemy {
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
+  }
+}
+
+// The fires enemies leave on the floor (a hit's `fire`, Enemy.noteFires), every step: here alone (burnInFires), on a client
+// for its own body (js/multiplayer.js; each client owns its health), and on the server for its bots (ageFires + fireUnder,
+// server/simulation.js). They burn down; a body on the floor in one that has caught (and not untouchable: a roll's
+// i-frames, an execution) loses its `dps` a second (the hottest it stands in, never the sum), with the `hazard` tick every
+// CONFIG.hazards.tick s; a death in fire goes through Player.die() (`hazardDeath`).
+function ageFires(game, dt) {
+  for (const e of game.enemies) {
+    const L = e.fires; if (!L || !L.length) continue;
+    if (!e.alive()) { L.length = 0; continue; }
+    for (let i = L.length - 1; i >= 0; i--) if ((L[i].age += dt) >= L[i].time) L.splice(i, 1);
+  }
+}
+// The hottest caught fire this body stands in, or null.
+function fireUnder(game, b) {
+  if (!b || !b.alive() || !b.grounded || b.invulnerable()) return null;
+  const G = CONFIG.groundFire; let hot = null;
+  for (const e of game.enemies) {
+    const L = e.fires; if (!L) continue;
+    for (const f of L) {
+      if (f.age < G.kindle || Math.abs(b.y - f.y) >= CONFIG.height.stepUp || Math.hypot(b.x - f.x, b.z - f.z) > f.r + b.radius * 0.5) continue;
+      if (!hot || f.dps > hot.dps) hot = f;
+    }
+  }
+  return hot;
+}
+function burnInFires(game, dt, body, other) {
+  ageFires(game, dt);
+  for (let k = 0; k < 2; k++) {
+    const b = k ? other : body; if (!b) continue;
+    const hot = fireUnder(game, b);
+    if (!hot) { b.fireTick = 0; continue; }
+    b.hp = Math.max(0, b.hp - hot.dps * dt);
+    if ((b.fireTick = (b.fireTick || 0) + dt) >= CONFIG.hazards.tick) { b.fireTick -= CONFIG.hazards.tick; b.tint = Math.max(b.tint, 0.5); events.emit('hazard', { hazard: hot, player: b }); }
+    if (b.hp <= 0) { b.die(); events.emit('hazardDeath', { hazard: hot, player: b }); }
   }
 }

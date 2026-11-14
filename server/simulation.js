@@ -391,6 +391,8 @@ globalThis.host = (() => {
       if (p.alive() && !p.invulnerable()) for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
         p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
       }
+      const fire = fireUnder(Game, p);   // a bot burns in them like a person (each client burns its own body)
+      if (fire) { p.hp = Math.max(0, p.hp - fire.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD); }
       // Only sustained failed walking can request a short, collision-checked unstick along its route.
       const rescue = b.brain.navigator.recovery;
       if (Game.kind === 'level' && p.alive() && !b.brain.target && rescue && lead) {
@@ -543,7 +545,7 @@ globalThis.host = (() => {
     if (living.length || bots.size) sleeping = false;
     else if ((settleCheck -= dt) <= 0) { settleCheck = C.sleepCheck; sleeping = settled(); }
     if (sleeping) { progress(dt); return; }
-    updateBots(dt); flyBolts(dt);
+    ageFires(Game, dt); updateBots(dt); flyBolts(dt);   // the fires enemies left (js/enemy.js) burn down here too
     for (const st of perks.values()) abilityClocks(st, dt);
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
@@ -688,7 +690,7 @@ globalThis.host = (() => {
     const recent = history.filter(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE)))
       .map(f => f.enemies.find(s => s.id === msg.enemy));
     const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
-    if (!a || !canParryAttack(a)) return false;
+    if (!a || !recent.some(s => canParryHit(a, s.hit || 0))) return false;   // a hit of it that can be parried was under way
     // The parried blow must have reached this player: its farthest hit from where the enemy stood during it.
     const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
     if (!within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial)) return false;

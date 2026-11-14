@@ -4,7 +4,7 @@
 # him 1.45x. Rest pose: upright, arms hanging (the model's posture leans him a little and bends the elbows in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().
 # Bones at rest: spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0); arms at x +-.40, y 1.55,
-# elbows y 1.25, wrists y .95 (the halberd's shaft runs along z through the right fist; the kit builds it); hips x +-.15,
+# elbows y 1.25, wrists y .95 (the bill's haft runs along z through the right fist, baked on the `weapon` bone); hips x +-.15,
 # y .90, knees .45. Cloth bones (they swing): loinF (0, .93, .17), loinB (0, .93, -.17), and the cloak's chain capeA
 # (0, 1.58, -.24), capeB (0, 1.16, -.24), capeC (0, .74, -.24), capeD (0, .40, -.24).
 # The look (the MODEL_DEFS brief): a warlord in blackened plate over mail, wearing no colours. A sallet war-helm with a
@@ -14,7 +14,7 @@
 # vambraces, gauntlets closed in fists; a belt with an iron buckle, three fauld lames, a mail skirt; scorched
 # loincloths front and back, a red rag of sash over the front one; cuisses, knee cops, keeled greaves, sabatons; a dark
 # cloak from the shoulders, worn through and torn into strips below the knee. Boss budget: 14,000 triangles with the
-# halberd.
+# bill. Pass 63: his own weapon, a pillager's bill (below), held in both hands (MODEL_DEFS `grip`), and breaths in the bevor.
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
@@ -25,7 +25,8 @@ from mathutils import Vector
 
 begin({'plate': (0.2, 0.19, 0.19), 'mail': (0.16, 0.16, 0.16), 'iron': (0.32, 0.27, 0.24), 'leather': (0.2, 0.2, 0.2),
        'cloak': (0.22, 0.17, 0.16), 'cloakHem': (0.22, 0.17, 0.16), 'scorch': (0.36, 0.17, 0.13), 'sash': (0.6, 0.16, 0.1),
-       'void': (0.02, 0.02, 0.02)}, prefix='captain:')
+       'void': (0.02, 0.02, 0.02), 'wood': (0.3, 0.22, 0.16), 'blade': (0.42, 0.4, 0.38), 'pitch': (0.05, 0.04, 0.035),
+       'burn': (1.0, 0.45, 0.12)}, prefix='captain:')
 
 SX, EL, WR = .40, 1.25, .95
 SLIT = 1.825   # the eye slit: MODEL_DEFS.pillagerCaptain.eyes glow behind it
@@ -239,5 +240,102 @@ for s, n in ((1, 'L'), (-1, 'R')):
         blob(bm, (hx, .045, .205), .042, (1.0, .75, 1.25), 1)
         blob(bm, (hx, .048, -.055), .05, (1.0, .9, .8), 1)
     soft(f'knee{n}__plate.1', sabaton, 90, voxel=.008)
+
+# ---- breaths: two rows of short slots down each side of the bevor, and a brow lip over the slit (the face is no bucket) ---
+def bevor_point(a, y, lift=.004):
+    """A point on the bevor's surface at angle a, height y (1.67 to 1.8), lifted off it."""
+    rows = [(SLIT - .018, -.012, .156, .176), (1.77, -.006, .158, .184), (1.72, 0, .148, .182), (1.67, -.008, .128, .162)][::-1]
+    for r0, r1 in zip(rows, rows[1:]):
+        if r0[0] <= y <= r1[0]:
+            f = (y - r0[0]) / (r1[0] - r0[0]); cz, rx, rz = (r0[k] + (r1[k] - r0[k]) * f for k in (1, 2, 3)); break
+    r = 1 + .1 * max(0.0, math.cos(a)) ** 6 + lift
+    return (math.sin(a) * rx * r, y, cz + math.cos(a) * rz * r)
+def breaths(bm):
+    for s in (-1, 1):
+        for k in range(4):
+            y = 1.785 - k * .024
+            a0, a1 = s * .5, s * .78
+            p = [bm.verts.new(G(*bevor_point(a, yy, .012))) for a, yy in ((a0, y + .006), (a1, y + .006), (a1, y - .006), (a0, y - .006))]
+            bm.faces.new(p)
+hard('head__void.1', breaths, outward=(0, 1.76, -.04))
+def brow(bm):   # a riveted lip over the slit, standing off the helm, so the face has a brow and a shadow under it
+    rows = 9
+    top = [bm.verts.new(G(*helm_point(-1.05 + 2.1 * i / rows, SLIT + .03, .006))) for i in range(rows + 1)]
+    out = [bm.verts.new(G(*helm_point(-1.05 + 2.1 * i / rows, SLIT + .02, .026))) for i in range(rows + 1)]
+    low = [bm.verts.new(G(*helm_point(-1.05 + 2.1 * i / rows, SLIT + .014, .004))) for i in range(rows + 1)]
+    for i in range(rows):
+        bm.faces.new((top[i], top[i + 1], out[i + 1], out[i])); bm.faces.new((out[i], out[i + 1], low[i + 1], low[i]))
+    for i in (1, 3, 5, 7):
+        stud(bm, helm_point(-1.05 + 2.1 * (i + .5) / rows, SLIT + .022, .03), .006)
+hard('head__iron.1', brow, smooth=False, outward=(0, 1.86, -.02))
+
+# ==== THE BILL (on the weapon bone): a pillager's bill, the hedger's tool made a war-weapon ===============================
+# An ash haft longer than a man (the game's 1.45x makes it 3.2 m), iron-shod; on its head a broad, heavy cleaver blade
+# with a convex edge (on the head's "up", +dy), a long hook recurved back toward the wielder on the other side (the
+# Hook catches with it), and a square spike on top. Pitch-soaked rags are wound round the haft under the socket. The
+# `burn` slot (shown only while he burns, Torch of Corvel): the lit edge of the blade, fire in the rags, the hook's inner
+# edge. Haft along +z through the right fist (x -SX, y WR - .05), its origin the right wrist.
+BX, BY = -SX, WR - .05
+HEAD = 1.3            # the socket's top, along the haft
+hard('weapon__wood', lambda bm: tube(bm, [(BX, BY, -.8), (BX, BY, 0.0), (BX, BY, .8), (BX, BY, HEAD - .1)], [.022, .025, .024, .022], 8))
+
+def plate(bm, outline, t0, t1, reach):
+    """A flat blade in the haft's plane (dy, z): its outline [(dy, z)], t0 thick at the haft, thinning to t1 at `reach` dy."""
+    def th(dy): return t0 + (t1 - t0) * min(1.0, abs(dy) / reach)
+    f = [bm.verts.new(G(BX + th(dy), BY + dy, z)) for dy, z in outline]
+    b = [bm.verts.new(G(BX - th(dy), BY + dy, z)) for dy, z in outline]
+    bm.faces.new(f); bm.faces.new(list(reversed(b)))
+    n = len(outline)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((f[j], f[i], b[i], b[j]))
+BLADE = [(.02, HEAD - .16), (.09, HEAD - .2), (.17, HEAD - .2), (.25, HEAD - .12), (.3, HEAD + .0), (.315, HEAD + .12),
+         (.3, HEAD + .24), (.25, HEAD + .33), (.19, HEAD + .36), (.13, HEAD + .29), (.06, HEAD + .2), (.02, HEAD + .14)]
+HOOK = [(-.02, HEAD + .07), (-.1, HEAD + .08), (-.18, HEAD + .06), (-.25, HEAD + .0), (-.285, HEAD - .08), (-.275, HEAD - .17),
+        (-.24, HEAD - .1), (-.19, HEAD - .045), (-.11, HEAD - .03), (-.02, HEAD - .05)]
+def head(bm):
+    plate(bm, BLADE, .016, .004, .3)
+    plate(bm, HOOK, .014, .004, .28)
+    # the spike: a square bodkin from the socket's top
+    base = [bm.verts.new(G(BX + dx, BY + dy, HEAD + .02)) for dx, dy in ((.022, 0), (0, .022), (-.022, 0), (0, -.022))]
+    mid = [bm.verts.new(G(BX + dx * 1.15, BY + dy * 1.15, HEAD + .14)) for dx, dy in ((.022, 0), (0, .022), (-.022, 0), (0, -.022))]
+    tip = bm.verts.new(G(BX, BY, HEAD + .46))
+    for k in range(4):
+        j = (k + 1) % 4
+        bm.faces.new((base[k], base[j], mid[j], mid[k])); bm.faces.new((mid[k], mid[j], tip))
+    bm.faces.new(list(reversed(base)))
+hard('weapon__blade', head, smooth=False)
+
+def fittings(bm):   # the socket and its langets, two rings along the haft, the iron shoe at the butt
+    tube(bm, [(BX, BY, HEAD - .2), (BX, BY, HEAD - .05), (BX, BY, HEAD + .04)], [.032, .036, .03], 10)
+    for s in (-1, 1): tube(bm, [(BX + s * .026, BY, HEAD - .2), (BX + s * .026, BY, HEAD - .5)], [.009, .004], 4)
+    for z in (.35, -.42): tube(bm, [(BX, BY, z), (BX, BY, z + .05)], [.029, .029], 10)
+    tube(bm, [(BX, BY, -.68), (BX, BY, -.8), (BX, BY, -.92)], [.027, .022, .004], 8)
+    for z in (HEAD - .12, HEAD - .02):   # rivets through the socket
+        stud(bm, (BX + .037, BY, z), .007); stud(bm, (BX - .037, BY, z), .007)
+hard('weapon__iron', fittings)
+
+def rags(bm):   # pitch-soaked rags wound thick round the haft under the socket, three torn ends hanging
+    r = random.Random(11)
+    for k in range(6):
+        z = HEAD - .26 - k * .045
+        blob(bm, (BX, BY, z), .052 + r.uniform(-.006, .008), (1.0, 1.0, .75), 1)
+    for k in range(3):
+        a = k / 3 * math.tau + .5; dx, dy = math.sin(a) * .05, math.cos(a) * .05
+        ln = r.uniform(.16, .26)
+        tube(bm, [(BX + dx, BY + dy, HEAD - .3), (BX + dx * 1.2, BY + dy - ln * .45, HEAD - .36), (BX + dx * 1.1, BY + dy - ln, HEAD - .42)], [.016, .012, .004], 4)
+soft('weapon__pitch', rags, 260, voxel=.008)
+
+def burn(bm):   # while he burns: the blade's edge lit, the hook's inner edge, and fire through the rags
+    edge = [(BX, BY + dy * 1.02, z) for dy, z in BLADE[2:9]]
+    tube(bm, edge, [.006, .009, .011, .012, .011, .009, .006], 4)
+    inner = [(BX, BY + dy, z) for dy, z in HOOK[5:9]]
+    tube(bm, inner, [.004, .007, .007, .004], 4)
+    r = random.Random(3)
+    for k in range(5):
+        z = HEAD - .26 - k * .05; a = r.uniform(0, math.tau)
+        tube(bm, [(BX + math.sin(a) * .056, BY + math.cos(a) * .056, z), (BX + math.sin(a + 1.2) * .058, BY + math.cos(a + 1.2) * .058, z - .02),
+                  (BX + math.sin(a + 2.3) * .055, BY + math.cos(a + 2.3) * .055, z - .01)], [.006, .009, .005], 4)
+hard('weapon__burn', burn)
 
 result = tally()

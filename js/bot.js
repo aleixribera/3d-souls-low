@@ -409,7 +409,7 @@ const bot = (() => {
       if (!s || s.key !== key) {
         const P = CONFIG.parry, b = blow.attack.box;
         const near = Math.hypot(e.x - me.x, e.z - me.z) <= b.fwd + b.d / 2 + me.radius + P.reach - 0.15;
-        const parry = canParryAttack(blow.attack) && near && !blow.hit.leap && !blow.hit.blink && !blow.hit.burrow && rng() < profile.parry * C.parryChanceScale;
+        const parry = canParryHit(blow.attack, blow.index) && near && !blow.hit.leap && !blow.hit.blink && !blow.hit.burrow && rng() < profile.parry * C.parryChanceScale;
         const walk = !parry && me.isFree() && rng() < profile.evade ? walkEscape(me, e, blow) : null;
         const jump = !parry && !walk && !outsideBox(me, e, blow) && me.grounded && me.isFree() && me.stamina >= CONFIG.player.jumpCost + C.reserve &&
           (!bolt || bolt.eta > 2 * CONFIG.player.jumpVelocity / CONFIG.gravity + C.jumpDodge.followMargin) &&

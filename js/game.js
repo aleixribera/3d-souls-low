@@ -258,6 +258,7 @@ const Game = {
     companions.resolve(this);
     execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);
+    burnInFires(this, dt, p, this.companion && this.companion.body);   // the fires left on the floor (a hit's `fire`, js/enemy.js)
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
     if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }

@@ -310,7 +310,7 @@ console.log('Bot spacing: a safe walking escape avoids damage without a roll; fa
     return 'none';
   };
   assert.equal(firstResponse('captainThrust', true), 'none', 'behind the boss, a frontal dashing thrust gets no roll');
-  assert.equal(firstResponse('captainDoubleSpin', true), 'roll', 'behind the boss, a spin that reaches all round gets a roll');
+  assert.equal(firstResponse('captainWheel', true), 'roll', 'behind the boss, a wheel that reaches all round gets a roll');
   assert.equal(firstResponse('captainThrust', false), 'roll', 'in front of the boss, the same thrust gets a roll');
   // The real thing: the thrust plays out with the bot free to act behind the boss. It never rolls and is never hit.
   const { sim, b, p, e } = waiting('pillagerCaptain', 'maren');

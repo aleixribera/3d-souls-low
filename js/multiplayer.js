@@ -1370,6 +1370,7 @@ const multiplayer = (() => {
       resolveCombat(Game); execution.mark(p, Game.enemies);
     }
     projectiles.update(Game, dt);
+    burnInFires(Game, dt, Game.player);   // the fires the server's enemies left (laid here from their strikes, Enemy.noteFires)
     if (Game.kind === 'level') { lore.update(Game, dt); updateHazards(dt); finale.updateOnline(Game, dt); }
     Game.updateCamera(dt, false);
     // One death sequence per body, whatever killed it (a blow, rot, a script): as Game.update does.

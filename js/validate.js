@@ -229,6 +229,18 @@ function validateData({ visual = true } = {}) {
           `${tag}: hit ${i + 1}'s burrow needs from and lock (0 < from < lock < 1), speed (m/s, above 0) and turn (rad/s), and a ring round itself (fwd 0); not with an echo, seam, erupt, bolt, leap, blink, step, hold, abort, projectile, dash, track or lunge.`);
         need(!B || h.startup * (1 - B.lock) >= CONFIG.burrow.minTell - 1e-6, `${tag}: hit ${i + 1}'s burrow holds still ${(h.startup * (1 - ((B && B.lock) || 0))).toFixed(2)} s before it rises; it needs ${CONFIG.burrow.minTell} s.`);
       }
+      // A `fire` (pass 63, the Pillager Captain; Enemy.noteFires): fires left burning on the floor where it lands, at [fwd,
+      // side] m from him, `r` m across, for `time` s, `dps` a second once caught (within CONFIG.groundFire's limits).
+      // A `pull` (pass 63): a hook that drags you in to `pull` m from him instead of throwing you back; it never holds on a
+      // guard and cannot be parried (that hit is roll-only).
+      if ('fire' in h) {
+        const F = h.fire, G = CONFIG.groundFire;
+        need(F && Array.isArray(F.at) && F.at.length > 0 && F.at.length <= G.max && F.at.every(p => Array.isArray(p) && p.length === 2 && p.every(num) && Math.hypot(...p) <= 12)
+          && num(F.r) && F.r >= 0.4 && F.r <= 3 && num(F.time) && F.time > G.kindle && F.time <= G.maxTime && num(F.dps) && F.dps > 0 && F.dps <= G.maxDps && !a.projectile && !h.echo,
+          `${tag}: hit ${i + 1}'s fire needs at (1 to ${G.max} [fwd, side] places within 12 m), r (0.4 to 3 m), time (${G.kindle} to ${G.maxTime} s) and dps (up to ${G.maxDps}); not on a projectile or an echo.`);
+      }
+      if ('noParry' in h) need(h.noParry === true, `${tag}: hit ${i + 1}'s noParry must be true (the attack's other hits may still be parried).`);
+      if ('pull' in h) need(num(h.pull) && h.pull >= 0.8 && h.pull <= 4 && !a.shove && !a.projectile, `${tag}: hit ${i + 1}'s pull must be 0.8 to 4 m (not on a shove or a projectile).`);
       // A `still` hit (pass 50): it does not turn through its wind-up, so it falls where the hit before it was aimed.
       if ('still' in h) need(h.still === true && i > 0, `${tag}: hit ${i + 1}'s still must be true, and not on the first hit.`);
       // A `bolt` (pass 48): lightning on the spot its target stood as the mark locked (Enemy.noteBolt); `lock` a fraction of
@@ -339,6 +351,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'attacks' in ph) need(Array.isArray(ph.attacks) && ph.attacks.length > 0 && ph.attacks.every(id => aids.has(id)),
           `${tag}: attacks must list attack ids of the enemy (unknown: ${(ph.attacks || []).filter(id => !aids.has(id)).join(', ')}).`);
         for (const k of ['rend', 'storm', 'rooted']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
+        if (ph && 'ignite' in ph) need(ph.ignite === true || ph.ignite === 'weapon', `${tag}: ignite must be true (he burns) or 'weapon' (only his weapon does: js/finale.js).`);   // pass 63
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9

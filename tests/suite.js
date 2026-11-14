@@ -1386,7 +1386,7 @@
       expect.ok(!r.bodyMats.includes(r.weaponMat) && meshes.filter(m => m.material === r.weaponMat).length >= 1
         && meshes.some(m => r.bodyMats.includes(m.material)), `${id}: the weapon has its own material`);
       r.dispose();
-      for (const a of A.ENEMY_BY_ID[id].attacks) for (const h of a.hits)
+      for (const a of A.ENEMY_BY_ID[id].attacks) for (const h of a.hits) if (!(h.box || a.box).ring)   // a ring spreads: jumped or rolled as it passes
         expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${id} ${a.id}: active ${h.active} s leaves a roll's i-frames a margin`);
     }
   });
@@ -1716,7 +1716,7 @@
   });
 
   // ---- v4.0 the Pillager Captain ----------------------------------------------------------------------------------
-  test('Pillager Captain: a posture boss between the throne pair and the Bell Warden, with a halberd that glows with embers', () => {
+  test('Pillager Captain: a posture boss between the throne pair and the Bell Warden, with a bill held in both hands', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); Game.render(1, STEP);
     const e = Game.duel, B = A.ENEMY_BY_ID;
     expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'its posture shows on the big bar at the top of the screen');
@@ -1724,7 +1724,39 @@
     expect.near(e.def.hp, 1800, 0, '1800 HP (doubled from 900)');
     expect.above(e.def.hp, Math.max(B.knight.hp, B.warden.hp), 'tougher than either of Level 2\'s throne pair');
     expect.below(e.def.hp, B.bellWarden.hp, 'less than the Bell Warden');
-    expect.ok(e.def.weapon === 'halberd' && e.def.visual.embers === true && !!e.rig.embers, 'a halberd with embers');
+    expect.ok(!!e.rig.grip && !!e.rig.embers && e.rig.weaponSlotMeshes.burn && !e.rig.weaponSlotMeshes.burn.visible, 'a bill in both hands, its rags not yet burning');
+  });
+  // ---- pass 63: the Captain's own fight: the hook drags you in; lit, the bill burns and leaves fire on the floor ---------
+  test('Pillager Captain: the hook cannot be parried or blocked and drags you in to him; the chop after it can be parried', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, hook = e.def.attacks.find(a => a.id === 'captainHook');
+    expect.ok(!canParryHit(hook, 0) && canParryHit(hook, 1), 'the sweep is roll-only, the chop parryable');
+    faceOff(e, p, 3.6); quiet(e); e.notice = 30;
+    sim.hold('block'); sim.step(2); const hp0 = p.hp; e.beginAttack(hook);
+    sim.until(() => e.state === ES.ACTIVE, 3); sim.step(6); sim.release('block');
+    const d0 = Math.hypot(p.x - e.x, p.z - e.z); sim.step(30);
+    const d1 = Math.hypot(p.x - e.x, p.z - e.z);
+    expect.ok(p.hp < hp0, 'the hook went through the guard');
+    expect.ok(d1 < 2.2 && d1 < d0, `dragged in: ${d0.toFixed(2)} m, then ${d1.toFixed(2)} m from him`);
+  });
+  test('Pillager Captain: at half his strength only the bill burns, and where it lands fire burns on the floor, then goes out', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const p = Game.player, e = Game.duel;
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.ignite === 'weapon' && e.state === ES.ACTIVE && e.attack.id === 'captainKindling', 12);
+    expect.ok(e.attack && e.attack.id === 'captainKindling', `the lit phase opens with Kindling (${e.attack && e.attack.id})`);
+    sim.step(2); Game.render(1, STEP);
+    expect.ok(e.fires.length === 6, `six fires stand round him (${e.fires.length})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(30); Game.render(1, STEP);
+    expect.ok(e.rig.weaponSlotMeshes.burn.visible && e.rig.embers.visible, 'the bill burns');
+    expect.ok(!e.rig.bodyMats.some(m => m.emissive && m.emissive.r > 0.3), 'his armour does not glow');
+    // stand in one: it burns, a tick at a time; a roll's i-frames keep it off
+    const f = e.fires[0]; quiet(e); e.x += 25; e.px = e.x;   // out of his reach: only the fire hurts
+    p.x = f.x; p.z = f.z; p.y = f.y; p.hp = p.maxHp = 1000; const hp0 = p.hp; log.length = 0;
+    sim.step(60);
+    expect.near(hp0 - p.hp, f.dps, f.dps * 0.1, `a second in the fire costs its dps (${(hp0 - p.hp).toFixed(1)})`);
+    sim.step(Math.ceil((f.time - f.age) * 60) + 2);
+    expect.ok(!e.fires.includes(f), 'and then it goes out');
   });
   test('Pillager Captain: its three-cut combo can be parried, its overhead only rolled, its thrust comes only from mid range', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
@@ -1765,10 +1797,9 @@
   const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
   const STORY_BOSS_MOVES = [
     { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
-    { id: 'pillagerCaptain', level: 'burning-town', hp: 1800, total: 5, added: 2 },
     { id: 'bellWarden', level: 'the-tower', hp: 2600, total: 6, added: 2 },
   ];
-  test('Story boss moves: exactly 1 / 2 / 2 additions and doubled health in levels and duels', () => {
+  test('Story boss moves: exactly 1 / 2 additions and doubled health in levels and duels', () => {
     for (const b of STORY_BOSS_MOVES) {
       const d = A.ENEMY_BY_ID[b.id];
       expect.ok(d.attacks.length === b.total && d.attacks.filter(a => a.origin).length === b.added, `${b.id}: exact move counts`);

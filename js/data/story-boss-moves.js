@@ -1,5 +1,5 @@
 'use strict';
-// One / two / two additional moves for the skeleton / captain / Warden, borrowed from the move sources (js/data/bosses/).
+// One / two additional moves for the giant / Warden, borrowed from the move sources (js/data/bosses/).
 // Load after those definitions and before validation. Copy nested data so story tuning never changes a source boss.
 // Timings, tracking, movement and key poses come from the source; damage is tuned to the story encounter, and the
 // recovery to the borrowing boss's pace (pass 54, PLAN.md track B item 10: each boss's own 1x).
@@ -17,16 +17,6 @@
   ENEMY_BY_ID.giant.attacks.push(
     borrow(GODFREY, 'tripleAxe', {
       id: 'giantBonebreaker', name: 'Bonebreaker Chain', damage: 28, recovery: 1.65,
-    }),
-  );
-
-  // A halberd has the haft and cutting reach for an axe drag and a two-turn blade sweep.
-  ENEMY_BY_ID.pillagerCaptain.attacks.push(
-    borrow(GODRICK, 'dragSlash', {
-      id: 'captainDraggingSlash', name: 'Dragging Halberd', damage: 28, recovery: 1.02,
-    }),
-    borrow(CRUCIBLE_KNIGHT, 'doubleSpin', {
-      id: 'captainDoubleSpin', name: 'Double Halberd Spin', damage: 26, recovery: 1.92,
     }),
   );
 

@@ -2,6 +2,17 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- The Pillager Captain (pass 63, item 4 pass 1), for his pass 2. The blind judge scored him under Hollis (5-6 vs 7-9).
+  - **Strikes look alike.** Most of them end in the same crouched forward lunge (the thrust, cleave, Three Cuts hit 3,
+    hook hit 2, furrow hit 1, firebrand hit 2; `docs/scorecard/captain-moves.jpg`), and the strike and follow-through
+    frames barely differ. Give each its own end: the cleave driven down, the furrow on the floor. The haft-back reads
+    weakly.
+  - **The figure:** pauldrons and limbs read as stacked rings, the rust texture is smeared, and the hook and spike
+    can't be seen at fighting distance. He sinks into the dark square cold (`captain-town.jpg`).
+  - **Fires:** bots don't step out of them (`js/bot.js`). Kindling's ring can land fires inside the square's walls. A
+    marker can show a parry glint on a hit that can't be parried (`js/attack-anim.js` checks the attack, not the hit).
+  - **Ideas:** a thrown firepot for a mid-range answer; burning dressing round his square that grows as the fight goes.
+
 - Two presets, what pass 2 (pass 60, baked light) left: the PC stand-in within 15% of the laptop per scene
   (`tools/bench/pc-bench.cjs`, not calibrated). Baked light's gaps: fire flicker and a bonfire's flare no longer
   move the light on walls (a per-light gain could); a 1 m grid softens the hot spot right next to a flame; Normal's
@@ -11,7 +22,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 
 - The King's Blade (pass 55, v7.79.0), judge's leftovers: the Turn still reads like Hollis's Turning Cloak (a
   spin with the cape); the Shield Wall's second cut can't be parried because `noParry` is per attack (a per-hit
-  `noParry` would let the bash be roll-only and the cut parryable); the Shield Burns' wide fling wasn't re-judged.
+  `noParry`, there since pass 63, lets the bash be roll-only and the cut parryable); the Shield Burns' wide fling wasn't re-judged.
   Its figure is 16,138 triangles against the 14,000 budget (Hollis 14,208); no test holds the budget.
 
 - The title's missing parts (pass 49, v7.70.0, `docs/scorecard/title-desktop.jpg`): the castle behind the right half

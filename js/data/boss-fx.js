@@ -25,7 +25,8 @@ const FX_ELEMENTS = {
 const BOSS_FX = {
   giant: { element: 'bone', aura: 0xd8d0c0, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
     giantBonebreaker: { impact: 'shatter' } } },
-  pillagerCaptain: { element: 'steel', aura: 0xff9a50, attacks: { captainOverhead: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+  pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'quake', windup: 'gather' },
+    captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather' } } },
   bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { bellSlam: { impact: 'toll', windup: 'gather' },
     bellHammerChain: { impact: 'toll' }, bellStompChop: { impact: 'toll' } } },
   varn: { element: 'steel', aura: 0xff8040, phases: { throne: 'fire', knell: 'fire' }, attacks: {

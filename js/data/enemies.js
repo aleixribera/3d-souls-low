@@ -189,28 +189,6 @@ const ENEMY_DEFS = [
     ],
   },
   {
-    // The invaders' commander, met at the top of the burning town (Level 3). A posture boss, stronger than Level 2's
-    // throne pair and weaker than the Bell Warden: it tests what the town taught (close the gap, parry the combo, roll).
-    id: 'pillagerCaptain', model: 'pillagerCaptain', name: 'Pillager Captain',
-    description: 'The invaders\' commander, who put Corvel to the torch. His halberd thrusts from afar, cuts three times (parry it) and falls from above (roll it).',
-    scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'halberd', idle: 'guard',
-    visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, embers: true, cloak: true },   // blackened mail, a dark cloak
-    hp: 1800, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,   // a boss: steps in and presses, and rarely backs away
-    cooldown: [1.18, 2.35], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
-    posture: { max: 70, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
-    attacks: [
-      { id: 'captainThrust', name: 'Dashing Thrust', anim: 'thrust', pose: 'enemyThrust', tracking: { rate: 2.6, commit: 0.4 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, minRange: 4.5, dash: { speed: 10.5, from: 0.45 },
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.2 }], recovery: 1.02, damage: 34, poise: 50, knock: 7, lunge: 2.5, range: 10,
-        box: { w: 1.2, h: 1.6, d: 3.0, fwd: 1.8, y: 1.2 } },
-      { id: 'captainCombo', name: 'Three Cuts', anim: 'sweep', pose: 'enemyTripleCut', tracking: { rate: 3.2, commit: 0.75 }, markers: [{ event: 'glint', parry: true }, { event: 'glint', parry: true, hit: 1 }, { event: 'glint', parry: true, hit: 2 }], poseScale: 1.1,
-        hits: [{ startup: 0.65, active: 0.14, follow: 0.2 }, { startup: 0.42, active: 0.14, follow: 0.2 }, { startup: 0.8, active: 0.16, follow: 0.24 }],
-        recovery: 0.9, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: { w: 3.4, h: 1.6, d: 2.8, fwd: 1.6, y: 1.2 } },
-      { id: 'captainOverhead', name: 'Burning Overhead', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2.2, commit: 0.5 }, poseScale: 1.25, rollOnly: true, chance: 0.4, hits: [{ startup: 1.5, active: 0.14, follow: 0.36, hold: { at: 0.5, time: [0.4, 1], chance: 0.6 } }],
-        recovery: 1.32, damage: 62, poise: 80, knock: 8, lunge: 1.4, range: 3.0, box: { w: 1.6, h: 3.0, d: 3.6, fwd: 2.0, y: 1.2 },
-        impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } },
-    ],
-  },
-  {
     id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
     scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze

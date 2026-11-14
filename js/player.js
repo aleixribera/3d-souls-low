@@ -474,7 +474,10 @@ class Player {
       else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
     }
     this.hp = Math.max(0, this.hp - damage);
-    this.kx += dx / d * knock; this.kz += dz / d * knock;
+    if (strike.pull && !blocked) {   // pass 63, a hook: dragged in to `pull` m from him instead of thrown back (the knock glides knock / friction m)
+      const k = Math.max(0, d - strike.pull) * C.knockFriction;
+      this.kx = -dx / d * k; this.kz = -dz / d * k;
+    } else { this.kx += dx / d * knock; this.kz += dz / d * knock; }
     if (blocked) this.brace = 1; else this.tint = 1;
     if (this.hp <= 0) { this.die(); return { blocked, died: true }; }
     if (strike.rend && !blocked && strike.rendBy) this.rend(strike.rendBy);

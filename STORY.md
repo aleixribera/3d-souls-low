@@ -62,6 +62,10 @@ face. The Seven called it *the hunger that wears a king*.
 - **The Ashbound** (Ashen Lancers, Executioners, the Pillager Captain, *the invaders' commander* in the game's own words): the king's own army, turned. They wear no
   colours of Ashmere, so the towns they burned took them for **invaders** from beyond the mountains, and the king
   let that be believed. They burn the towns and herd the people to the castle as fuel.
+  **The Pillager Captain, Torch of Corvel**, put Corvel to the torch and holds its square. He fights with a bill, a
+  long haft with a cleaver's blade and a hook, and the hook drags people in to him rather than knocking them away. He
+  burns what he takes: hurt, he lights the pitch-soaked rags under the bill's head, and wherever it lands the floor
+  burns after it.
 - **Toll Wisps**: the souls of the tower's old bell-ringers, bound to small bells of their own. They ring before
   they strike, out of a habit older than death.
 - **Gargoyles**: the castle's carved guardians, woken by the Ember's heat.
