@@ -6,9 +6,9 @@
 // king's sword he was the king's shield, and it is the shield the memory kept. It is the only enemy that fights the way
 // the player does: it waits behind the round shield and answers. Its patience is the Oath Guard: the shield high, the
 // sword laid level over its rim. A blow into its front is turned and answered at once (a hit's `counter`, js/enemy.js
-// takeHit); a heavy blow breaks the stance and it is open; wait it out and the sword comes over the rim. Every time its
-// posture breaks it does what the champion did at Corvel: it kneels, the sword planted point-down in the ice, its head
-// bowed (`brokenPose`), the image the story ends on.
+// takeHit); a heavy blow breaks the stance and it is open; wait it out and the sword comes over the rim. Every Finishing
+// Blow that leaves it standing, it does what the champion did at Corvel: it kneels, the sword planted point-down in the
+// ice, its head bowed (`brokenPose`), the image the story ends on.
 // Past half (`emberWorn`) the hunger takes the memory and does what the champion refused: the sword becomes the torch,
 // the shield burns and the guard is gone. Corvel Burns is the long raising of the torch; three blows landed through it
 // and the memory refuses again (a hit's `falter`): it kneels, open. Let it finish and the fire runs out across the ice.
@@ -210,7 +210,7 @@
   ATTACK_POSES.kbShieldBurns = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' },
     hits: [{ windup: shieldUp, strike: slammed, follow: slammed }] };
 
-  // The refusal (every posture break): one knee down, the sword planted point-down in the ice before it, both hands on
+  // The refusal (every Finishing Blow): one knee down, the sword planted point-down in the ice before it, both hands on
   // the pommel, the shield let down at its side, its head bowed: as the champion knelt at Corvel, and kneels at the end.
   const refusal = { kneel: 1, lean: 0.12, chest: [0.12, 0, 0], neck: [0.25, 0, 0], head: [0.45, 0, 0],
     armR: [-0.75, 0, 0.3], elbowR: [-0.55, 0, 0], pitch: 1.57, armL: [-0.2, 0, 0.35], face: 0.1 };
@@ -247,12 +247,10 @@
     hp: 3000,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     poise: 200, speed: 3.1, turnRate: 4.0, trackRate: 2.0, approach: 0.7, kite: 0.1,
     cooldown: [1.98, 3.74], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 6, noRepeat: 2,
-    posture: { max: 84, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4.5, breakTime: 3.0, hitstop: 0.2 },   // two parries break it
-    brokenPose: KINGS_BLADE_REFUSAL,   // every break is the refusal at Corvel: knelt, the sword planted, head bowed
+    brokenPose: KINGS_BLADE_REFUSAL,   // every Finishing Blow is the refusal at Corvel: knelt, the sword planted, head bowed
     // The round shield, as the player holds it: frontal blows while it is not attacking glance off (0.35 of the damage)
     // and fill its guard; a heavy far more. Flank it or punish what it swings. Gone once the Ember shows.
-    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, blockedMul: 0.4, breakers: ['heavy', 'jumpHeavy'],
-             max: 100, heavy: 30, light: 10, decayDelay: 2.5, decay: 8, breakTime: 3.0, hitstop: 0.18 },
+    guard: { arc: 0.9, damageMul: 0.35, knockMul: 0.3, lowerReach: 1.0, breakers: ['heavy', 'jumpHeavy'] },
     defaultPhases: ['blade', 'emberWorn'],
     phases: {
       blade: { hp: 3000,
@@ -268,74 +266,74 @@
       // answers; a heavy blow breaks the stance open; wait, or circle, and the sword comes over the rim (parry it).
       { id: 'oathGuard', name: 'The Oath Guard', anim: 'thrust', pose: 'kbOath', tracking: { rate: 3.2, commit: 0.85 }, markers: glint(0), chance: 1.3,
         hits: [{ startup: 1.9, active: 0.14, follow: 0.3, hold: { at: 0.75, time: [0.4, 1.4], chance: 0.6 }, counter: { answer: 'theAnswer', from: 0.12 } }], recovery: 1.6,
-        damage: 32, poise: 50, postureDmg: 12, knock: 7, lunge: 2.0, range: 4.6, box: THRUST },
+        damage: 32, poise: 50, knock: 7, lunge: 2.0, range: 4.6, box: THRUST },
       // The Answer: only ever a blow turned on the Oath Guard; the shield into you, then the sword down across.
       { id: 'theAnswer', name: 'The Answer', anim: 'sweep', pose: 'kbAnswer', tracking: { rate: 3.4, commit: 0.75 }, markers: glint(1), chance: 0,
         hits: [{ startup: 0.42, active: 0.12, follow: 0.42, damage: 16, box: SHIELD, tell: 'shield' }, { startup: 0.5, active: 0.14, follow: 0.25 }], recovery: 1.6,
-        damage: 30, poise: 55, postureDmg: 12, knock: 8, lunge: 1.4, range: 4, box: CUT },
+        damage: 30, poise: 55, knock: 8, lunge: 1.4, range: 4, box: CUT },
       // Keeping the River: across at the waist; a step and up from low; the shield driven after it.
       { id: 'keepingRiver', name: 'Keeping the River', anim: 'sweep', pose: 'kbRiver', tracking: { rate: 2.8, commit: 0.65 }, markers: glint(0, 1), chance: 0.9,
         hits: [{ startup: 0.95, active: 0.16, follow: 0.42 },
                { startup: 0.45, active: 0.14, follow: 0.45, step: { from: 0.2, speed: 3, side: 0 }, box: CUT },
                { startup: 0.45, active: 0.12, follow: 0.2, damage: 14, box: SHIELD, tell: 'shield' }], recovery: 1.8,
         followUps: [{ attack: 'theTurn', if: 'behind', chance: 0.36 }],
-        damage: 26, poise: 45, postureDmg: 10, knock: 6, lunge: 1.2, range: 3.8, box: WAIST },
+        damage: 26, poise: 45, knock: 6, lunge: 1.2, range: 3.8, box: WAIST },
       // The King's Reach: drawn back at the shoulder, held; a long lunge.
       { id: 'kingsReach', name: 'The King\'s Reach', anim: 'thrust', pose: 'kbReach', tracking: { rate: 3.0, commit: 0.75 }, markers: glint(0), chance: 0.7,
         hits: [{ startup: 1.15, active: 0.14, follow: 0.3, hold: { at: 0.6, time: [0.3, 1.1], chance: 0.55 } }], recovery: 1.8,
-        damage: 36, poise: 55, postureDmg: 14, knock: 8, lunge: 5.0, range: 6.5, box: THRUST },
+        damage: 36, poise: 55, knock: 8, lunge: 5.0, range: 6.5, box: THRUST },
       // The Shield Wall: from off, a run behind the shield, the shield first; a cut over it. The shield cannot be parried.
       { id: 'shieldWall', name: 'The Shield Wall', anim: 'bash', pose: 'kbWall', noParry: true, tracking: { rate: 3.0, commit: 0.45 }, chance: 0.5, minRange: 4.5, dash: { speed: 10, from: 0.45 },
         hits: [{ startup: 0.95, active: 0.14, follow: 0.45, box: SHIELD, tell: 'shield' }, { startup: 0.55, active: 0.14, follow: 0.25, damage: 28, box: CUT }], recovery: 1.9,
-        damage: 24, heavy: true, poise: 70, postureDmg: 12, knock: 10, lunge: 0, range: 11, box: SHIELD },
+        damage: 24, heavy: true, poise: 70, knock: 10, lunge: 0, range: 11, box: SHIELD },
       // The Crown's Weight: the shield a roof over its head, the sword laid back under it, held; straight down.
       { id: 'crownsWeight', name: 'The Crown\'s Weight', anim: 'chop', pose: 'kbCrown', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0), chance: 0.6,
         hits: [{ startup: 1.3, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.3, 1.0], chance: 0.5 }, impact: { ring: 1.8, crack: 1.0, dust: 10, shake: 0.08 } }], recovery: 2.1,
         followUps: [{ attack: 'keepingRiver', if: 'near', chance: 0.18 }],
-        damage: 42, heavy: true, poise: 70, postureDmg: 18, knock: 8, lunge: 1.0, range: 4.0, box: CHOP },
+        damage: 42, heavy: true, poise: 70, knock: 8, lunge: 1.0, range: 4.0, box: CHOP },
       // Gives Ground: struck, it springs back with a parting cut, then comes again with the reach.
       { id: 'givesGround', name: 'Gives Ground', anim: 'sweep', pose: 'kbGround', when: 'struck', tracking: { rate: 3.0, commit: 0.7 }, markers: glint(1), chance: 0.8,
         hits: [{ startup: 0.45, active: 0.14, follow: 0.45, leap: { from: 0.15, max: 6, back: 4.5 }, box: CUT },
                { startup: 0.75, active: 0.14, follow: 0.3, damage: 34, box: THRUST }], recovery: 1.8,
-        damage: 22, poise: 45, postureDmg: 10, knock: 6, lunge: 5.0, range: 3.4, box: CUT },
+        damage: 22, poise: 45, knock: 6, lunge: 5.0, range: 3.4, box: CUT },
       // The Turn: behind it, a look over its shoulder; the sword comes round.
       { id: 'theTurn', name: 'The Turn', anim: 'sweep', pose: 'kbTurn', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.6, active: 0.16, follow: 0.3 }], recovery: 1.4,
-        damage: 26, poise: 40, postureDmg: 10, knock: 8, lunge: 0, range: 3.4, box: { w: 4.6, h: 1.8, d: 4.6, fwd: -0.6, y: 1.1 } },
+        damage: 26, poise: 40, knock: 8, lunge: 0, range: 3.4, box: { w: 4.6, h: 1.8, d: 4.6, fwd: -0.6, y: 1.1 } },
       // The Shield's Rim: at its shield side, the shield swung out at you, rim first.
       { id: 'rimStrike', name: 'The Shield\'s Rim', anim: 'bash', pose: 'kbRim', when: 'flank', tracking: { rate: 4, commit: 0.5 }, chance: 2,
         hits: [{ startup: 0.5, active: 0.14, follow: 0.2, tell: 'shield' }], recovery: 1.4,
-        damage: 18, heavy: true, poise: 60, postureDmg: 8, knock: 9, lunge: 0.6, range: 2.8, box: { w: 2.6, h: 1.8, d: 2.4, fwd: 0.8, y: 1.1 } },
+        damage: 18, heavy: true, poise: 60, knock: 9, lunge: 0.6, range: 2.8, box: { w: 2.6, h: 1.8, d: 2.4, fwd: 0.8, y: 1.1 } },
       // Drinking where it can see you: the reach, sooner and longer.
       { id: 'reachPunish', name: 'The King\'s Reach', anim: 'thrust', pose: 'kbReach', when: 'healing', tracking: { rate: 3.4, commit: 0.8 }, markers: glint(0), chance: 3,
         hits: [{ startup: 0.7, active: 0.16, follow: 0.35 }], recovery: 1.6,
-        damage: 32, poise: 55, postureDmg: 12, knock: 8, lunge: 6.0, range: 7.5, box: THRUST },
+        damage: 32, poise: 55, knock: 8, lunge: 6.0, range: 7.5, box: THRUST },
       // ---- Ember-Worn ---------------------------------------------------------------------------------------------------
       // The Torch Taken Up (the phase opener): raised like a torch, driven into the ice; the fire runs out from it.
       // It cannot be hurt through it (as every boss's change).
       { id: 'torchTaken', name: 'The Torch Taken Up', anim: 'chop', pose: 'kbTorch', noParry: true, rollOnly: true, invulnerable: true, tracking: { rate: 1.6, commit: 0.5 }, chance: 0.1,
         hits: [{ startup: 1.6, active: 0.5, follow: 0.4, box: RING(0.6, 8, 1.4, 0.5), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.16 } }], recovery: 2.2,
-        damage: 30, poise: 50, postureDmg: 0, knock: 9, lunge: 0, range: 7, box: RING(0.6, 8, 1.4, 0.5) },
+        damage: 30, poise: 50, knock: 9, lunge: 0, range: 7, box: RING(0.6, 8, 1.4, 0.5) },
       // Corvel Burns: the torch raised, held; three blows landed through it and the memory refuses (it kneels, open).
       // Otherwise it is driven down, and the fire runs out across the ice twice: roll each.
       { id: 'corvel', name: 'Corvel Burns', anim: 'chop', pose: 'kbCorvel', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.4 }, chance: 0.35,
         hits: [{ startup: 2.4, active: 0.5, follow: 0.6, falter: { hits: 3 }, box: RING(0.6, 7, 1.4, 0.5), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.16 } },
                { startup: 0.7, active: 0.5, follow: 0.4, damage: 26, box: RING(0.6, 11, 1.6, 0.7) }], recovery: 2.4,
-        damage: 34, heavy: true, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 9, box: RING(0.6, 7, 1.4, 0.5) },
+        damage: 34, heavy: true, poise: 60, knock: 9, lunge: 0, range: 9, box: RING(0.6, 7, 1.4, 0.5) },
       // The Hunger's Cuts: the burning shield driven in, the blade over its rim, then raised over the shield and down across.
       { id: 'hungerCuts', name: 'The Hunger\'s Cuts', anim: 'sweep', pose: 'kbHunger', tracking: { rate: 3.2, commit: 0.7 }, markers: glint(0, 1, 2), chance: 0.9,
         hits: [{ startup: 0.72, active: 0.12, follow: 0.38, damage: 16, box: SHIELD, tell: 'shield', step: { from: 0.3, speed: 4, side: 0 } },
                { startup: 0.3, active: 0.12, follow: 0.42, box: THRUST },
                { startup: 0.6, active: 0.14, follow: 0.25, damage: 32, box: CHOP, step: { from: 0.2, speed: 3, side: 0 } }], recovery: 2.1,
-        damage: 22, poise: 35, postureDmg: 8, knock: 5, lunge: 1.0, range: 3.6, box: { w: 4.0, h: 1.6, d: 3.0, fwd: 1.6, y: 1.0 } },
+        damage: 22, poise: 35, knock: 5, lunge: 1.0, range: 3.6, box: { w: 4.0, h: 1.6, d: 3.0, fwd: 1.6, y: 1.0 } },
       // The Ember Leaps: raised high, a leap from far off, and down where you were, in fire.
       { id: 'emberLeap', name: 'The Ember Leaps', anim: 'chop', pose: 'kbLeap', noParry: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.5, minRange: 5,
         hits: [{ startup: 1.2, active: 0.16, follow: 0.4, leap: { from: 0.35, max: 11, short: 1.2 }, impact: { ring: 3.0, crack: 1.6, dust: 16, shake: 0.14 } }], recovery: 2.4,
-        damage: 44, heavy: true, poise: 80, postureDmg: 18, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
+        damage: 44, heavy: true, poise: 80, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
       // The Shield Burns: at its shield side, the burning shield flung out wide and slammed into the ice.
       { id: 'shieldBurns', name: 'The Shield Burns', anim: 'stomp', pose: 'kbShieldBurns', noParry: true, rollOnly: true, when: 'flank', tracking: { rate: 1, commit: 0.4 }, chance: 1.5,
         hits: [{ startup: 0.9, active: 0.35, follow: 0.3, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
-        damage: 26, heavy: true, poise: 60, postureDmg: 0, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
+        damage: 26, heavy: true, poise: 60, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
     ],
   };
   ENEMY_DEFS.push(BLADE); ENEMY_BY_ID[BLADE.id] = BLADE;

@@ -166,7 +166,7 @@ console.log('Bot rolls: each personality used at least three dodge directions ag
 {
   const { sim, b, p, e } = waiting('giant', 'quill');
   b.brain = sim.inspect().bot.create({ ...b.profile, patterns: { pressure: 1 }, burst: [1, 1], reset: [1, 1], heavy: 0, jump: 0 }, seeded(83)); p.ctl = b.brain.hands;
-  e.cooldown = 30; e.def = { ...e.def, posture: { ...e.def.posture, max: 1e6 } };
+  e.cooldown = 30;
   let wasAttacking = false, finished = false, retreatFrames = 0, lastDistance = Math.hypot(p.x - e.x, p.z - e.z), hits = 0, lastHp = e.hp;
   for (let i = 0; i < 12 * 60; i++) {
     sim.setPlayers([]); sim.tick(dt);

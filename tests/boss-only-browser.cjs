@@ -15,6 +15,7 @@ const { config: C } = require('../js/net-protocol.js');
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));   // no sparring offer over the menu (pass 97)
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -49,8 +50,8 @@ const { config: C } = require('../js/net-protocol.js');
     await a.waitForFunction(() => Game.duel.hp === Game.duel.def.hp - 72);
     // No team-size scaling (v7.65.0): two players meet the boss's own bars, the same on the server and every client.
     const served = app.sim.inspect().Game.duel, own = served.baseDef.phases?.[served.phaseIds?.[served.phase]]?.hp ?? served.baseDef.hp;
-    for (const page of [a, b]) assert.deepEqual(await page.evaluate(() => ({ hp: Game.duel.def.hp, posture: Game.duel.def.posture.max })),
-      { hp: served.def.hp, posture: served.def.posture.max }, 'a client draws the boss on the server\'s bars');
+    for (const page of [a, b]) assert.deepEqual(await page.evaluate(() => ({ hp: Game.duel.def.hp })),
+      { hp: served.def.hp }, 'a client draws the boss on the server\'s bar');
     assert.equal(served.def.hp, own, 'two players fight the bar one player does');
     if (process.env.GROUP_SHOT) await a.screenshot({ path: process.env.GROUP_SHOT });
     const allyHealth = a.locator('#onlineAlive').getByRole('meter', { name: 'Ember health', exact: true });

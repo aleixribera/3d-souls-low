@@ -39,7 +39,7 @@ function runTitles(rows, times = [], won = false) {
     if (r.revives) add(4 + 2 * r.revives, saved.length === 1 ? `Revived ${saved[0]}${r.revives > 1 ? ` ${r.revives} times` : ''}`
       : saved.length === r.revives ? `Revived ${r.revives} friends` : `${r.revives} revives`);
     if (r.parries >= 3) add(0.6 * r.parries, `${r.parries} perfect parries`);
-    if (r.executions >= 2) add(0.8 * r.executions, `${r.executions} executions`);
+    if (r.finishers >= 2) add(0.8 * r.finishers, `${r.finishers} Finishing Blows`);
     if (fastest && (party ? fastest.killer === r.id : true)) add(fastest.swift ? 3 : 1.5, `Fastest kill: ${clock(fastest.time)}`);
     if (party && r.kills >= 2) add(1.2 * r.kills, `Final blow on ${r.kills} bosses`);
     if (party && total > 0 && r.damage / total >= 1.25 / rows.length) add(1.5 * rows.length * r.damage / total, `Most damage: ${count(r.damage)}`);
@@ -183,8 +183,8 @@ function createServer(options = {}) {
   // swift kill.
   function tallyFight(won) {
     for (const r of sim.fightTally()) {
-      const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0, parries: 0, executions: 0, revives: 0, rescued: [], kills: 0 };
-      row.name = r.name; for (const key of ['damage', 'deaths', 'parries', 'executions', 'revives']) row[key] += r[key] || 0;
+      const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0, parries: 0, finishers: 0, revives: 0, rescued: [], kills: 0 };
+      row.name = r.name; for (const key of ['damage', 'deaths', 'parries', 'finishers', 'revives']) row[key] += r[key] || 0;
       row.rescued = row.rescued.concat(r.rescued || []);
       tally.players.set(r.id, row);
     }
@@ -457,7 +457,7 @@ function createServer(options = {}) {
     if (msg.type === 'pose') { acceptPose(p, msg.pose); return; }
     if (!Number.isSafeInteger(msg.seq) || msg.seq <= p.lastSeq) return;
     p.lastSeq = msg.seq; syncPlayers();
-    if (session.teamWipeOnly && p.arenaDefeated && msg.type !== 'executionEnd') return;
+    if (session.teamWipeOnly && p.arenaDefeated && msg.type !== 'finisherEnd') return;
     if (msg.type === 'hit') {
       if (!net.id(msg.enemy) || !net.id(msg.swing) || !net.id(msg.attack)) return;
       if (claim(p, `${msg.swing}/${msg.enemy}`)) sim.hit(p.id, msg);
@@ -466,11 +466,8 @@ function createServer(options = {}) {
         claim(p, `parry/${msg.enemy}/${msg.serial}/${msg.hit}`)) sim.parry(p.id, msg);
     } else if (msg.type === 'dodged') {   // pass 85: a perfect dodge, for the counter that follows
       if (net.id(msg.enemy) && Number.isSafeInteger(msg.serial) && claim(p, `dodged/${msg.enemy}/${msg.serial}`)) sim.dodged(p.id, msg);
-    } else if (msg.type === 'execute') {
-      const accepted = net.id(msg.enemy) && sim.beginExecution(p.id, msg);
-      send(p, { type: 'execution', enemy: net.id(msg.enemy) ? msg.enemy : null, accepted: !!accepted });
-    } else if (msg.type === 'executionEnd') {
-      if (net.id(msg.enemy)) sim.endExecution(p.id, msg.enemy);
+    } else if (msg.type === 'finisherEnd') {   // pass 100: the Finishing Blow the server granted (Simulation.hit) has ended
+      if (net.id(msg.enemy)) sim.endFinisher(p.id, msg.enemy);
     } else if (msg.type === 'ability') {   // an ability's trigger only this player's browser sees (ABILITY_CLAIMS)
       if (typeof msg.when === 'string' && (msg.enemy === undefined || net.id(msg.enemy)) && (msg.action === undefined || net.id(msg.action)) &&
         (msg.key === undefined || net.id(msg.key)) &&

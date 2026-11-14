@@ -1,5 +1,5 @@
 'use strict';
-// Exercise real enemy materials and both update paths, including held executions.
+// Exercise real enemy materials and both update paths, including a foe held for a Finishing Blow.
 const assert = require('node:assert/strict');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
@@ -35,16 +35,13 @@ const { createServer } = require('../server/index.cjs');
           try {
             for (const online of [false, true]) {
               const label = `${def.id}/${online ? 'online' : 'solo'}`;
-              e.state = ES.IDLE; e.posture = e.guardMeter = 0;
-              const meter = e.def.guard || e.def.stagger;
-              if (e.def.posture) e.addPosture(e.def.posture.max);
-              else if (meter) e.fillMeter(meter, meter.breakers[0], meter.max / meter.heavy);
-              else e.crack = 1; // poise-only enemies use the same presentation path
-              check(e.crack === 1, `${label}: break produces its flash`);
+              e.state = ES.IDLE; e.cracks = 0;
+              e.openNow();   // a stance broken, a wind-up faltered (pass 100: the meters went): every enemy's same flash
+              check(e.crack === 1, `${label}: an opening produces its flash`);
               e.tint = e.recoil = 1;
               e.state = ES.IDLE; e.pose(0, ctx);
               check(glowing(e), `${label}: initial break flash is visible`);
-              // Solo's execution state still ticks feedback before returning.
+              // Held for a Finishing Blow, feedback still ticks before returning.
               e.state = ES.EXECUTED;
               for (let i = 0; i < steps; i++) {
                 if (online) multiplayer.update(CONFIG.step);
@@ -63,19 +60,19 @@ const { createServer } = require('../server/index.cjs');
             checked.push(def.id);
           } finally { e.rig.dispose(); }
         }
-        // Exercise the real streamed boss and the local execution-hold branch.
+        // Exercise the real streamed boss and the local Finishing Blow hold branch.
         Game.enemies = original;
         const boss = Game.duel;
         boss.crack = boss.tint = boss.recoil = 1;
         p.exec = { enemy: boss };
         for (let i = 0; i < steps; i++) multiplayer.update(CONFIG.step);
-        check(boss.crack === 0 && boss.tint === 0 && boss.recoil === 0, 'streamed boss: execution hold does not freeze feedback');
+        check(boss.crack === 0 && boss.tint === 0 && boss.recoil === 0, 'streamed boss: a Finishing Blow hold does not freeze feedback');
         p.exec = null;
       } finally { Game.enemies = original; Game.mode = mode; p.exec = null; }
       return { failures, checked };
     });
     assert.deepEqual(results.failures, []);
     assert.deepEqual(errors, []);
-    console.log(`Enemy feedback: ${results.checked.length} enemy/boss definitions passed solo and multiplayer material resets, repeated hits, and streamed execution hold.`);
+    console.log(`Enemy feedback: ${results.checked.length} enemy/boss definitions passed solo and multiplayer material resets, repeated hits, and a streamed Finishing Blow hold.`);
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

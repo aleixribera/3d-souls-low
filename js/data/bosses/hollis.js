@@ -218,10 +218,9 @@ MODEL_DEFS.regentHollis = {
     description: 'The steward the hunger left to keep Aurel fed: gilded, gracious, cruel. His cuts hang in the air in gold leaf and cut again a beat later where they hang; he bows while it falls. Parry the man, never the gilt: step out of its line. Past the worst of his hurt the gilt cracks, his cuts hang as embers, and he calls them home to him through you.',
     scale: 1.9, bulk: 1.0, radius: 0.7, color: 0x8a7448, weapon: 'sword', idle: 'sway',
     visual: { skin: 0xd8c08a, roughness: 0.55, rim: 0.9 },
-    // hp and posture: pass 45 (v7.65.0), a skilled player alone beats him in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
+    // hp: pass 45 (v7.65.0), a skilled player alone beats him in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 2600, poise: 220, speed: 3.0, turnRate: 3.6, trackRate: 2.0, approach: 0.6, kite: 0.15,
     cooldown: [1.44, 2.88], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 6,
-    posture: { max: 91, parry: 60, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
     echoColor: 0xf0b030,
     defaultPhases: ['gracious', 'hungry'],
     phases: {

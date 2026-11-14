@@ -35,7 +35,7 @@ const CONFIG = {
     // Camera feel (js/camera-feel.js, drawing only; the "Camera motion" option turns it off): critically damped springs
     // of stiffness `omega` (1/s). Offsets in m, rolls in rad, fov in degrees. A swing nudges forward (`swing`, heavies
     // `heavy` and dip), a roll widens and dips, a blow taken pushes away from the attacker (scaled by damage over
-    // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / breaks / executions punch the
+    // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / cracks / Finishing Blows punch the
     // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. A power (its `then`, a lightning
     // bolt `strike`, a twin's blow `echo`, a hound's `bite`, a summon drawing the boss `draw`) kicks [fov, dip] in `powers`, in full for its holder, fading out to
     // `powerNear` m for the rest; a rare's perk acting kicks the holder's view by `perkFov`. Never past `maxRoll` / `maxFov`.
@@ -114,41 +114,30 @@ const CONFIG = {
   // blow lands. The window is anchored to the enemy's swing: it opens `lead` s before the active phase and closes
   // `grace` s into it. A press stays armed for `arm` s, so a press succeeds in [active - lead - arm, active + grace],
   // about a third of a second. Spamming: a press that deflects nothing locks the next `spamLock` s of presses out (a
-  // deflect clears it, so a string can be deflected blow by blow). A deflected blow fills a boss's posture; the last
-  // blow of an attack deflected leaves it open (Enemy.getDeflected), and the next blow within `riposteTime` s is a
-  // riposte. `postureMul`: how much more posture a riposte or a counter builds.
+  // deflect clears it, so a string can be deflected blow by blow). The last blow of an attack deflected leaves it open
+  // (Enemy.getDeflected), and the next blow within `riposteTime` s is a riposte: a counter.
   parry: { arm: 0.17, lead: 0.13, grace: 0.05, spamLock: 0.5, reach: 0.6, hitstop: 0.12,
-           riposteTime: 1.1, riposteHitstop: 1.6, postureMul: 3, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
-  // Executions (v5.2, js/execution.js): the reward for a full stagger, guard or posture bar. While an enemy kneels
-  // (ES.BROKEN), light attack from in front of it runs the `execute` attack (js/data/player.js) instead of a light cut.
-  // Every number of the system is here.
-  execution: {
-    range: 1.5,          // m between the two bodies' edges (big bodies reach as far as their radius adds)
-    cone: Math.PI / 4,   // rad either side of the enemy's facing the player must stand in (a 90° cone in front)
-    facing: 1.4,         // rad the player may face away from the enemy (forgiving: off-axis presses still count)
-    floor: 0.8,          // m of height between the two at most (no executing from a ledge above)
-    angleWeight: 1.2,    // choosing between two kneeling enemies: m of distance one rad off the front is worth
-    snapTime: 0.16,      // s of the wind-up the player slides into place (no teleport; walls and ledges stop it)
-    standoff: 0.42,      // where the player ends up: their radius + this share of the enemy's radius + `gap`...
-    gap: 0.3,            // ...m from the enemy's centre, so the blade runs through the chest and out of the back
-    chest: 0.47,         // a kneeling body's chest, as a share of its standing height (where the blade goes in)
-    thrustHeight: 1.1,   // m above the player's feet the thrust runs level; a taller chest tilts it up (bosses)
-    // Damage: `lightMul` times `base` for normal enemies (24 x 3.75 = 90: hurts normal enemies without one-shotting them
-    // from full); `bossLightMul` times `base` for bosses (24 x 13.5 = 324: about a third of a doubled boss bar or less),
-    // never above `bossCap` of a boss's bar. `base` stands apart from the light attack (pass 85: ordinary hits are weaker,
-    // executions are not). A blow that would empty a bar leaves 1 hp until the animation ends; the death, phase change
-    // or retreat follows it.
-    damage: { base: 24, lightMul: 3.75, bossLightMul: 13.5, bossCap: 0.5 },
-    heal: 0.08,          // share of the executor's max health the blade going in heals (pass 85; capped at hpCap)
-    aimRate: 8,   // rad/s the executor keeps turning toward a victim it was stopped short of by a wall
-    hitstop: 0.24,       // s the world freezes as the blade goes in
-    grace: 0.25,         // s the player stays untouchable after the animation ends
-    push: 5,             // knockback (m/s) on a survivor as the blade comes out
-    shake: { time: 0.32, amp: 0.13 }, pullShake: { time: 0.16, amp: 0.05 },
+           riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+  // The Finishing Blow (pass 100, js/finisher.js; it replaced the posture bar and executions). Each counter that lands
+  // cracks the foe's guard; `cracks` cracks fade at once after `fade` s with no counter on it; the counter that lands on
+  // a guard with `cracks` cracks is the Finishing Blow (one crack a counter: a striker's second riposte blow within `rest`
+  // s of their crack is only a blow): the striker runs the `finisher` attack (js/data/player.js),
+  // `steps` flash steps through the held foe through its wind-up, each ending `past` m beyond the far edge of its body,
+  // then every cut opens at once. Every number of the system is here.
+  finisher: {
+    cracks: 2, fade: 10, rest: 0.6, steps: 3, past: 1.4, glow: 0.12,   // glow: a cracked foe's tint a crack (stand-in)
+    // Damage: `mul` times `base` for normal enemies (90); `bossMul` times `base` for bosses (24 x 20 = 480, about a
+    // seventh of a boss's bar), never above `bossCap` of a boss's bar. A blow that would empty a bar leaves 1 hp until
+    // the attack ends; the death, phase change or retreat follows it.
+    damage: { base: 24, mul: 3.75, bossMul: 20, bossCap: 0.5 },
+    heal: 0.08,          // share of the striker's max health the cuts opening heal (capped at hpCap)
+    hitstop: 0.14,       // s the world freezes as the cuts open (with the `finisher` attack's 1.06 s: about 1.2 s in all)
+    grace: 0.25,         // s the player stays untouchable after the attack ends
+    push: 5,             // knockback (m/s) on a survivor as it is let go
+    shake: { time: 0.32, amp: 0.13 },
     camera: { push: 0.32, lower: 0.25, rate: 6 },   // camera moves in by `push` of its distance and looks `lower` m lower
-    cuePulse: 1.6, cueGlow: 0.16,   // Hz and strength of the soft red glow on a kneeling enemy the player can execute
     bursts: { enter: { color: 0x8a1010, count: 26, speed: 5 }, exit: { color: 0xff9040, count: 30, speed: 7 },
-              pull: { color: 0x701010, count: 18, speed: 4 } },
+              step: { color: 0xffd0a0, count: 10, speed: 3 } },
   },
   // Bonfires are checkpoints: resting keeps dead every enemy killed before it (until the level restarts); everything
   // else, including enemies killed since the last rest, comes back at full health on a rest or a death.
@@ -191,12 +180,7 @@ const CONFIG = {
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
            counterArc: 1.0,    // a counter stance (a hit's `counter`, pass 55) turns blows from within this many rad of its front
            firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
-           // A boss back on its feet after a posture break builds posture at `mul` for `time` s (v7.65.0): it gets to
-           // fight before the next break, however many blades are on it, so a break stays a moment, not a loop.
-           postureRest: { time: 8, mul: 0.25 },
-           // A deflect (CONFIG.parry) of a blow before its attack's last fills a boss's posture by this share of its parry value.
-           deflectShare: 0.6,
-           // Anti-mash (pass 85): `hits` player blows each within `gap` s of the last and a posture boss breaks off with its
+           // Anti-mash (pass 85): `hits` player blows each within `gap` s of the last and a boss breaks off with its
            // quickest attack that reaches within its range + `reach` m (an area attack counts `areaBonus` s quicker), even
            // from `recoverCut` of the way through a recovery.
            mash: { hits: 6, gap: 1.0, reach: 0.5, areaBonus: 0.15, recoverCut: 0.35 },
@@ -293,9 +277,7 @@ const CONFIG = {
   // its own health, every bar of it: at 0.5 a pair holds about one boss's health between two sets of blows. Measured
   // alone (SKILLED, docs/scorecard/endless-pass67.txt): a skilled bot's median run went from fight 7 to 12. `longest`: a
   // bound on a run's fights for the draw; the curve makes it unreachable.
-  // `breakGrow` (pass 73): each posture break in a fight makes the next need this much more (a boss's posture builds at
-  // 1 / (1 + breakGrow x breaks)), on top of CONFIG.enemy.postureRest: the stagger meter stays earned.
-  endless: { breakGrow: 0.4, opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [8, 14, 20], longest: 999 },
+  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [8, 14, 20], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
@@ -312,16 +294,14 @@ const CONFIG = {
   // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
   // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1: rares since pass
   // 96 (Aleix: the start was a struggle until the abilities came). A player holds at
-  // most `legendaries` legendaries; past that a legendary card only levels one already held. A power's blow (a
-  // legendary's, a rare's, a summon's) builds `posture` of its posture number: abilities fill the stagger meter far
-  // less than they hurt.
-  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['rare'], legendaries: 2, posture: 0.4,
+  // most `legendaries` legendaries; past that a legendary card only levels one already held.
+  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['rare'], legendaries: 2,
     // The number keys' abilities (js/abilities.js ABILITY_KEYS): the points each landed blow gives every key (`hit`,
-    // `skill` more for a finisher, a full charge or a riposte), each deflect, perfect dodge and execution. A press
+    // `skill` more for a finisher, a full charge or a riposte), each deflect, perfect dodge and Finishing Blow. A press
     // strikes the locked enemy, else the nearest, within `range` m of its holder's body. The server takes a press with
     // at least 1 - `slack` of the charge it counted (a claim it refused is a point the browser still counted). A bot
     // presses a full key with its foe within `botReach` m (Guard's heal under `botHeal` of its bar, its stance at a wind-up).
-    press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, execution: 6 }, range: 18, slack: 0.25, botReach: 6, botHeal: 0.6 },
+    press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, finisher: 6 }, range: 18, slack: 0.25, botReach: 6, botHeal: 0.6 },
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.25 } },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
@@ -494,7 +474,7 @@ const CONFIG = {
          trailHold: 0.45, healFlash: 0.9, hitShake: 0.3,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
-         tallyHold: 1.4, postureWarn: 0.8, mendLit: 0.3,   // mendLit (pass 75): s a closing wound stays lit after it last shrank
+         tallyHold: 1.4, mendLit: 0.3,   // mendLit (pass 75): s a closing wound stays lit after it last shrank
          // Damage numbers (only on a level with `damageNumbers`, the Ability Grounds): each rises `rise` px over `life` s.
          damageNumbers: { pool: 16, life: 0.9, rise: 54, spread: 58, lanes: [0, 1, -1, 0.5, -0.5], big: 120 },
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
@@ -511,7 +491,7 @@ const CONFIG = {
                    saveFailed: 'Progress could not be saved. Closing this page may lose progress.', flaskFound: 'A flask: {n} now' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5, haftBlendRate: 9,
-        trailDrain: 0.22, postureFlash: 0.35, deadTargetTime: 1.5,
+        trailDrain: 0.22, deadTargetTime: 1.5,
         tagRange: 22, tagGap: 0.22,   // overhead enemy health bars: max distance, height above the head
         bursts: {   // colour, particle count and speed of every combat burst
           hit: { color: 0xe8d8a0, count: 12, speed: 4.5 },
@@ -519,11 +499,11 @@ const CONFIG = {
           block: { color: 0xffd070, count: 16, speed: 7 },
           hurt: { color: 0xb01818, count: 14, speed: 4.5 },
           parry: { color: 0xfff6d0, count: 26, speed: 7.5 },
-          postureBreak: { color: 0xffc060, count: 30, speed: 8 },
+          guardCrack: { color: 0xffc060, count: 30, speed: 8 },
           alert: { color: 0xff6a30, count: 10, speed: 2.5 },
           bolt: { color: 0xb8a888, count: 6, speed: 2.5 },   // a bolt stopped by a wall
         },
-        postureBreakShake: { time: 0.22, amp: 0.08 },
+        guardCrackShake: { time: 0.22, amp: 0.04 },
         // Impact feel (js/impact.js), visual only. A landed hit shakes the camera by its damage: none below `from`, the
         // full `amp` at `full` (so light cuts stay steady and heavy blows and slams jolt). The struck body shudders
         // `jitter` m during the hit-pause. Enemies' active swings leave a trail too (at most `trails` at once).
@@ -937,7 +917,7 @@ const CONFIG = {
       motes: { max: 2600, size: 0.09, maxPx: 42 },
       puffs: { max: 360, size: [0.6, 2.2], life: 1.3, dust: 0x8a8070, smoke: 0x2a2624 },
       chunks: { max: 120, size: [0.06, 0.2], speed: [3, 8], life: 2.6 },
-      // Impact lights: `lights` point lights flashed by clashes, parries, executions and boss moments (fixed count).
+      // Impact lights: `lights` point lights flashed by clashes, parries, Finishing Blows and boss moments (fixed count).
       flash: { lights: 1, decay: 7, range: 9 },
       flares: { max: 10, time: 0.28 },
       // Weapon trails: a smooth ribbon (Catmull-Rom, `sub` points between samples) that fades over `life` s; HDR so bloom
@@ -1005,7 +985,7 @@ const CONFIG = {
     // against where it was walking, walks straight out of one it stands in, and lets be one with under `ending` s left.
     fire: { margin: 0.5, push: 2.5, ending: 0.4 },
     // Support (pass 35): a bot is a normal player, with a player's full stats; it helps rather than carries by how it
-    // plays. With a person within execution.yield m of its enemy: a stagger or a long recovery the person stands in
+    // plays. With a person within yieldTo.range m of its enemy: a stagger or a long recovery the person stands in
     // reach of (`near` m past a light's reach) is theirs for its first `first` s, or until they swing, and the bot never
     // fills it with a charged heavy; its greed is scaled by `greed`, its patience before forcing an exchange by
     // `patience` (the person sets the tempo), and it does not rush the kill.
@@ -1044,8 +1024,8 @@ const CONFIG = {
     behindMargin: 0.25,         // rad past square behind an enemy where a blow aimed at someone else is let go
     slip: { early: [0.3, 0.45], late: [0.04, 0.1], lateShare: 0.75 },   // s a slipped roll goes before (or after, `lateShare` of slips) the strike opens: BOT_MOODS[].slip
     fightGap: 3,                // s with no opponent before the next one starts a new fight (and a new mood)
-    // A kneeling enemy is the player's to execute: with a living player within `yield` m of it, a bot waits `aside` m
-    // off its flank and goes in only when `late` s (plus its walk) remain of the kneel. Same for a parried enemy.
-    execution: { yield: 9, late: 0.6, aside: 1.6 },
+    // An opening is a person's first: with a living person within `range` m of an enemy, a bot leaves a parried enemy's
+    // counter to them until `late` s of the opening remain.
+    yieldTo: { range: 9, late: 0.6 },
   },
 };

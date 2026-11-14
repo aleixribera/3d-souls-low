@@ -31,7 +31,7 @@
     const same = (x, y) => x.pose === y.pose || [x.id, y.id].sort().join() === 'rendEarth,stormFurrow';
     const seen = new Map();
     for (const a of d.attacks) { const t = tell(a), other = seen.get(t); expect.ok(!other || same(a, other), `${a.id} and ${other && other.id} share a wind-up`); seen.set(t, a); }
-    expect.ok(d.hp === 3200 && d.posture.max === 84 && d.posture.parry === 60 && d.poise === 240, 'her health and posture are kept until every boss is reworked');
+    expect.ok(d.hp === 3200 && d.poise === 240, 'her health and poise are kept until every boss is reworked');
     const S = d.phases.storm, R = d.phases.abbess;
     expect.ok(S.at === 0.5 && S.opener === 'stormComes' && S.name === 'Agathe, the Storm at Her Back' && S.storm && !R.storm,
       'at half her strength the storm comes at her back');

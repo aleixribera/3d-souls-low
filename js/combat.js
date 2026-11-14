@@ -3,19 +3,18 @@
 // 7. Hitbox helper
 // ============================================================================
 // What a landed attack carries, built the same way for both sides.
-// charge: 0..1 of a held heavy's `charge.hold`, scaling damage and poise up to `charge.mul`, posture up to `postureMul`.
-// A riposte (after a deflect that opened the foe, or a perfect dodge's counter) builds CONFIG.parry.postureMul times the
-// posture: posture comes from skill, not from the number of blows.
+// charge: 0..1 of a held heavy's `charge.hold`, scaling damage and poise up to `charge.mul`.
+// A riposte (after a deflect that opened the foe, or a perfect dodge's counter) is a counter: it cracks the foe's guard
+// (js/finisher.js).
 // An ability's bonus is added when it lands, by whoever owns the enemy (abilityStrike, js/abilities.js).
 function makeStrike(attack, riposte = false, charge = 0) {
   const E = CONFIG.enemy, R = (riposte && attack.riposte) || {}, Ch = attack.charge;
   const hitstop = attack.hitstop ?? clamp(E.hitstopBase + attack.damage * E.hitstopScale, 0, E.hitstopMax);
   const mul = Ch ? lerp(1, Ch.mul, charge) : 1, hsMul = Ch ? lerp(1, Ch.hitstopMul, charge) : 1;
-  const postureMul = (Ch ? lerp(1, Ch.postureMul ?? Ch.mul, charge) : 1) * (riposte && attack.riposte ? R.posture ?? CONFIG.parry.postureMul : 1);
   return {
     attackId: attack.id, air: !!attack.air, riposte, rollOnly: !!attack.rollOnly, shove: !!attack.shove, charge,
     damage: attack.damage * (R.damage || 1) * mul, poise: attack.poise * (R.poise || 1) * mul,
-    knock: attack.knock, postureDmg: (attack.postureDmg || 0) * postureMul, destined: !!attack.destined, heavy: !!attack.heavy,
+    knock: attack.knock, destined: !!attack.destined, heavy: !!attack.heavy,
     hitstop: hitstop * (riposte ? CONFIG.parry.riposteHitstop : 1) * hsMul,
   };
 }
@@ -150,7 +149,6 @@ function resolveCombat(game) {
     if (target) {
       const key = blowKey(target);
       const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getDeflected();
-      const broke = res.broke;
       p.deflected(target, key, res.opened);
       p.gainCharge(CONFIG.abilities.press.gain.deflect);
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
@@ -158,7 +156,6 @@ function resolveCombat(game) {
       const mercy = p.kit.perks['parry/heal'];   // Iron Mercy (a crate's)
       if (mercy && p.perk && p.perk.mercy <= 0) { p.perk.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
       abilityReport(p, 'parry', { enemy: target });
-      if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); abilityReport(p, 'break', { enemy: target }); }
     }
   }
   // 1. Player hitboxes against enemy bodies.
@@ -179,14 +176,16 @@ function resolveCombat(game) {
       if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
       abilityReport(p, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, an Ember Twin's echo
     }
-    if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); abilityReport(p, 'break', { enemy: e }); }
+    if (strike.riposte && !res.blocked) abilityReport(p, 'counter', { enemy: e });   // a counter landed (Pyre, Breaker's mark)
+    if (res.opened) p.openCounter(CONFIG.parry.riposteTime, 'break', e);   // a stance broken, a wind-up faltered: open
+    if (res.finisher) finisher.start(p, e);   // the counter on a guard cracked to the last (online: the server grants it)
   }
   for (const hb of enemyHits) {
     if (!p.alive()) continue;
     const db = p.deflectedBlow;
     if (db && db.enemy === hb.owner && db.key === blowKey(hb.owner)) { hb.markHit(p); continue; }   // turned aside by a deflect
     if (p.invulnerable()) {   // dashed through: the hitbox stays live (it can catch the end of the dash)
-      // Weighed once, on the first frame they meet. An execution's untouchable time is no dodge.
+      // Weighed once, on the first frame they meet. A Finishing Blow's untouchable time is no dodge.
       if (p.state === PS.ROLL && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
       continue;
     }
@@ -204,17 +203,13 @@ function resolveCombat(game) {
   }
 }
 
-// Boss team combat uses the same hitboxes, shields, posture, damage and phase transitions as a duel.
+// Boss team combat uses the same hitboxes, shields, damage and phase transitions as a duel.
 // Capture active hitboxes before applying damage so simultaneous opposing swings can trade.
 function applyEnemyStrike(game, strike, attacker, target, at, projectile = false, from = attacker) {
   const res = target.takeHit(strike, from);
   if (attacker.def.lifesteal) attacker.lifesteal();
   game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
   events.emit('strike', { strike, attacker, target, at, blocked: !!res.blocked, projectile });
-  if (res.broke) {
-    game.hitstop = Math.max(game.hitstop, (target.def.posture || target.def.guard || target.def.stagger).hitstop);
-    events.emit('postureBreak', { enemy: target });
-  }
   return res;
 }
 function resolveTeamCombat(game) {
@@ -246,7 +241,7 @@ function separatePair(a, b, shareA) {
 }
 function separateBodies(p, enemies) {
   for (let i = 0; i < enemies.length; i++) {
-    if (enemies[i].state !== ES.EXECUTED) separatePair(p, enemies[i], 0.85);   // the blade's victim: the bodies overlap
+    if (enemies[i].state !== ES.EXECUTED) separatePair(p, enemies[i], 0.85);   // held through a Finishing Blow: the striker steps through it
     for (let j = i + 1; j < enemies.length; j++) separatePair(enemies[i], enemies[j], 0.5);
   }
 }

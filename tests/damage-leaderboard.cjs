@@ -11,6 +11,17 @@ function begin(kind = 'arena', id = 'ostrey') {
   return e;
 }
 const hit = (id, e, extra = {}) => sim.hit(id, { enemy: e.netId, attack: 'light', charge: 0, ...extra });
+// Pass 100: player `id` lands a Finishing Blow: a perfect dodge opens a counter, and its counter on a guard cracked to
+// the last is granted. The counter itself lands first.
+function finisherBy(id, e) {
+  e.beginAttack(e.baseDef.attacks.find(a => !a.projectile)); sim.tick(1 / C.tickRate);
+  const at = { x: e.x, y: e.y, z: e.z + 1, hp: 120 }, others = ['ash', 'ember'].filter(o => o !== id).map(o => ({ id: o, ...at, state: 'idle' }));
+  sim.setPlayers([{ id, ...at, state: 'roll' }, ...others]);
+  assert.equal(sim.dodged(id, { enemy: e.netId, serial: e.netAttack }), true, 'a perfect dodge');
+  sim.setPlayers([{ id, ...at, state: 'idle' }, ...others]);
+  e.cracks = sim.inspect().CONFIG.finisher.cracks;
+  assert.equal(hit(id, e, { riposte: true }), true); assert.ok(e.netExec, 'the Finishing Blow is granted');
+}
 function complete() {
   for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
   sim.tick(1 / C.tickRate);
@@ -33,19 +44,18 @@ assert.deepEqual(decoder.decode(JSON.parse(JSON.stringify(encoder.encode(sim.fra
 sim.tick(C.leaderboardTime);
 assert.equal(sim.frame(false).results, null, 'results expire after their reading time');
 
-e = begin(); e.setState('broken'); e.hp = 100;
-assert.equal(sim.beginExecution('ash', { enemy: e.netId }), true);
-assert.equal(sim.beginExecution('ember', { enemy: e.netId }), false);
-sim.endExecution('ember', e.netId);
-assert.equal(e.hp, 100, 'another player cannot resolve the execution');
-sim.endExecution('ash', e.netId);
-assert.equal(complete()[0].damage, 100, 'execution credits its owner, capped at remaining HP');
+e = begin(); e.hp = 100; finisherBy('ash', e);
+const held = e.hp;
+assert.equal(hit('ember', e), false, 'nobody strikes a foe held for a Finishing Blow');
+sim.endFinisher('ember', e.netId);
+assert.equal(e.hp, held, 'another player cannot end the Finishing Blow');
+sim.endFinisher('ash', e.netId);
+assert.equal(complete()[0].damage, 100, 'a Finishing Blow credits its owner, capped at remaining HP');
 
-e = begin(); e.setState('broken'); e.hp = 80;
-assert.equal(sim.beginExecution('ember', { enemy: e.netId }), true);
+e = begin(); e.hp = 80; finisherBy('ember', e);
 sim.setPlayers([]);
 for (let i = 0; i < 600 && e.netExec; i++) sim.tick(1 / C.tickRate);
-assert.equal(complete()[0].damage, 80, 'disconnected execution owner retains credit on reservation timeout');
+assert.equal(complete()[0].damage, 80, 'a disconnected Finishing Blow owner retains credit on reservation timeout');
 
 e = begin(); e.setState('phase');
 assert.equal(hit('ash', e), false, 'invulnerable contacts are rejected');
@@ -80,4 +90,4 @@ assert.ok(removed < 24 && removed >= 0);
 assert.equal(complete().find(r => r.id === 'ash').damage, removed, 'blocked hits count actual chip damage');
 begin();
 assert.deepEqual(complete().map(r => r.damage), [0, 0, 0], 'each new epoch resets all totals');
-console.log('Damage leaderboard: trusted totals, chip damage, overkill, executions, phases, ties, disconnects, delayed display, baselines and reset passed.');
+console.log('Damage leaderboard: trusted totals, chip damage, overkill, Finishing Blows, phases, ties, disconnects, delayed display, baselines and reset passed.');

@@ -27,7 +27,7 @@ async function peer(origin, name) {
 }
 (async () => {
   // The titles first: pure.
-  const row = (id, extra = {}) => ({ id, name: id, damage: 1000, deaths: 1, parries: 0, executions: 0, revives: 0, kills: 0, ...extra });
+  const row = (id, extra = {}) => ({ id, name: id, damage: 1000, deaths: 1, parries: 0, finishers: 0, revives: 0, kills: 0, ...extra });
   const alone = runTitles([row('a', { damage: 4200, parries: 7 })], [{ time: 38, swift: true, killer: 'a' }]);
   assert.equal(alone.length, 1); assert.ok(alone[0].title, 'alone, the title is yours');
   const four = runTitles([row('a', { damage: 5000, kills: 2 }), row('b', { revives: 3, rescued: ['a', 'c', 'd'] }), row('c', { parries: 12 }), row('d', { deaths: 0 })],

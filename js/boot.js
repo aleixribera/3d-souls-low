@@ -11,14 +11,16 @@ function registerListeners() {
   });
   events.on('chargeFull', d => { if (!d.player || d.player === Game.player) Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp); });
   events.on('parry', d => { spawnBurst(chest(d.target), F.parry); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
-  events.on('postureBreak', d => {
-    spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.postureBreak);
-    Game.addShake(CONFIG.fx.postureBreakShake.time, CONFIG.fx.postureBreakShake.amp);
+  // The Finishing Blow (js/finisher.js), stand-ins until track A's look: a burst as a counter cracks the guard (bigger
+  // each crack), a puff of embers off each flash step, blood and embers as the cuts open with a heavy jolt.
+  const X = CONFIG.finisher;
+  events.on('guardCrack', d => {
+    if (!(d.cracks > 0)) return;
+    spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.guardCrack);
+    if (!d.by || d.by === Game.player) Game.addShake(CONFIG.fx.guardCrackShake.time, CONFIG.fx.guardCrackShake.amp * d.cracks);
   });
-  // Executions (js/execution.js): blood where the blade goes in, embers where it comes out of the back; a heavy jolt.
-  const X = CONFIG.execution;
-  events.on('execution', d => { spawnBurst(d.at, X.bursts.enter); spawnBurst(d.exit, X.bursts.exit); if (!d.player || d.player === Game.player) Game.addShake(X.shake.time, X.shake.amp); });
-  events.on('executionPull', d => { spawnBurst(chest(d.enemy), X.bursts.pull); if (!d.player || d.player === Game.player) Game.addShake(X.pullShake.time, X.pullShake.amp); });
+  events.on('finisherStep', d => spawnBurst({ x: d.to.x, y: d.player.y + 1, z: d.to.z }, X.bursts.step));
+  events.on('finisher', d => { spawnBurst(d.at, X.bursts.enter); spawnBurst(d.exit, X.bursts.exit); if (!d.player || d.player === Game.player) Game.addShake(X.shake.time, X.shake.amp); });
   events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
   events.on('fallDamage', d => {   // a hard landing: dust, and a jolt if it was the player
     groundFx.spawn(d.body.x, d.body.z, CONFIG.fx.hardLanding, d.body.y);

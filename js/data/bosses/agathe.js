@@ -223,10 +223,9 @@ MODEL_DEFS.motherAgathe = {
     description: 'The abbess who held the knife when Thrale\'s monks tried to cut the Ember out of the earth. She did not let go, and her great hook still hits hard. At half her strength the storm comes at her back, and it falls where you stand. Step off its mark.',
     scale: 1.95, bulk: 1.0, radius: 0.7, color: 0x2c2c32, weapon: 'spear', idle: 'sway',
     visual: { skin: 0xb4aca2, roughness: 0.75, rim: 0.9 },
-    // hp and posture: kept from pass 45 (v7.65.0): a skilled player alone beats her in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
+    // hp: kept from pass 45 (v7.65.0): a skilled player alone beats her in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 3200, poise: 240, speed: 2.9, turnRate: 3.4, trackRate: 1.9, approach: 0.6, kite: 0.15,
     cooldown: [1.62, 3.24], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-    posture: { max: 84, parry: 60, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['abbess', 'storm'],
     phases: {
       abbess: { hp: 3200,

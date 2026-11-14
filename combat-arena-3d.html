@@ -318,12 +318,8 @@
   #eName { font-size: 16px; letter-spacing: 4px; color: var(--ink); text-shadow: 0 0 3px #000, 0 0 10px #000; margin-bottom: 6px;
     font-variant: small-caps; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   #eName::before, #eName::after { content: '\25C6'; font-size: 8px; color: var(--gilt); vertical-align: middle; margin: 0 12px; }
-  #eHp, #ePost { width: clamp(0px, calc(100vw / var(--u) - 840px), 620px); }   /* clear of the vitals on its left */
+  #eHp { width: clamp(0px, calc(100vw / var(--u) - 840px), 620px); }   /* clear of the vitals on its left */
   #eHp { height: 11px; }
-  #ePost { height: 5px; margin-top: 3px; }
-  #ePost.hidden { display: none; }
-  #ePost.warn { border-color: #f4d27a; animation: postWarn 0.5s ease-in-out infinite; }
-  @keyframes postWarn { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #ffd060a0; } }
   #eDmg { position: absolute; right: 0; top: 1px; font-size: 15px; letter-spacing: 1px; color: #f0d890; opacity: 0;
     text-shadow: 0 0 4px #000, 0 0 10px #000; transition: opacity 0.4s; font-variant-numeric: tabular-nums; }
   #eDmg.show { opacity: 1; transition: opacity 0.08s; }
@@ -375,8 +371,6 @@
     box-shadow: 0 0 0 1px #000000c0; overflow: hidden; display: none; opacity: 0.72; }
   .eTag > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
   .eTag.locked { border-color: #f0e0a8; opacity: 1; box-shadow: 0 0 0 1px #000000c0, 0 0 8px #f0e0a860; }
-  .eTag.eGuard { height: 3px; }
-  .eTag.eGuard.broken .po { filter: brightness(2.2); }
 
   /* Bottom centre: short notices, the interaction prompt. */
   #toasts { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 82px; gap: 4px; }
@@ -384,9 +378,9 @@
     background: linear-gradient(90deg, #00000000, #000000a8 25%, #000000a8 75%, #00000000);
     animation: toastLife var(--toast-time) ease-in-out forwards; }
   @keyframes toastLife { 0% { opacity: 0; transform: translateY(8px); } 8% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; } }
-  #prompt, #confirm, #talk, #execCue { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
+  #prompt, #confirm, #talk { display: flex; align-items: center; gap: 12px; min-height: 28px; font-size: 15px; color: #d9cda8; letter-spacing: 2px;
     text-shadow: 0 0 6px #000; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; white-space: nowrap; }
-  #prompt.show, #confirm.show, #talk.show, #execCue.show { opacity: 1; transform: none; }
+  #prompt.show, #confirm.show, #talk.show { opacity: 1; transform: none; }
   /* Subtitles (js/lore.js): the speaker's name over the line, at the very bottom, never in the way of the fight. */
   #subtitle { max-width: 760px; margin-top: 8px; text-align: center; opacity: 0; transition: opacity 0.45s; pointer-events: none;
     padding: 6px 28px 8px; background: linear-gradient(90deg, #00000000, #000000b0 18%, #000000b0 82%, #00000000); }
@@ -489,7 +483,7 @@
   #hud.narrow { --mx: 16px; --my: 14px; }
   #hud.narrow #pHp, #hud.narrow #pMove { width: 220px; }
   #hud.narrow #aTC { top: 104px; }
-  #hud.narrow #eHp, #hud.narrow #ePost { width: min(620px, calc(100vw / var(--u) - 2 * var(--mx))); }
+  #hud.narrow #eHp { width: min(620px, calc(100vw / var(--u) - 2 * var(--mx))); }
   #hud.narrow #eName { font-size: 14px; letter-spacing: 3px; }
   #hud.narrow #died .big { font-size: 48px; letter-spacing: 8px; }
   #hud.narrow #complete .big { font-size: 34px; letter-spacing: 6px; }
@@ -525,9 +519,8 @@
     #bossBattleHud h2 { margin-bottom: 6px; } .battle-health { margin-top: 5px; } }
   @media (prefers-reduced-motion: reduce) {
     #menu *, #hud *, canvas#view { transition-duration: 0.01ms !important; }
-    #pHp, #pFlasks, .flask, #ePost { animation: none !important; }
+    #pHp, #pFlasks, .flask { animation: none !important; }
     #pHp.low { border-color: #e0604a; }
-    #ePost.warn { border-color: #f4d27a; }
     .toast { animation: none; opacity: 1; transform: none; }
     #lesson, #lesson.show.enter, #lesson .lesson-seal { animation: none !important; transform: none !important; }
     .menuBtn.hero .b::before { animation: none !important; }
@@ -596,7 +589,6 @@
         <div id="eName"></div>
         <div id="eDmg"></div>
         <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div><div class="mend" id="eHpMend"></div></div>
-        <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
       <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown" hidden>Crowned</span><span id="rushTime"></span></div>
       <div id="rushMods" hidden></div>
@@ -607,7 +599,6 @@
       <div id="toasts"></div>
       <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
       <div id="talk"><span class="key" id="talkKey"></span><span id="talkText"></span></div>
-      <div id="execCue"><span class="key" id="execKey"></span><span>Execute</span></div>
       <div id="confirm"></div>
       <div id="subtitle"><div id="subName"></div><div id="subText"></div></div>
     </div>
@@ -770,7 +761,7 @@ const GAME_FILES = [
   'enemy.js',
   'crowd.js',
   'combat.js',
-  'execution.js',
+  'finisher.js',
   'abilities.js',   // Boss Rush's abilities: kits, perks and the legendaries' powers (engine; the server runs it too)
   'bot-navigation.js',
   'bot.js',

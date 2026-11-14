@@ -31,7 +31,7 @@ class Player {
     this.attackT = 0; this.chargeT = 0; this.charge = 0;   // charge: 0 not yet, 1 holding, 2 released (or none)
     this.buffer = null;   // { action, time }: the one remembered press (Souls-style; see bufferInputs)
     this.comboFrom = null; this.comboTimer = 0;   // the attack just finished, whose `next` a quick press still follows
-    this.exec = null; this.execGrace = 0;   // a running execution (js/execution.js), and the untouchable time after one
+    this.exec = null; this.execGrace = 0;   // a running Finishing Blow (js/finisher.js), and the untouchable time after one
     this.doomTime = 0; this.doomDrain = 0;   // Destined Death (v5.8): s left of the health cut, and HP still to drain
     // Boss Rush's abilities (js/abilities.js): the kit they make, its perks' clocks, and who settles its powers (a
     // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
@@ -119,10 +119,10 @@ class Player {
   }
   // A counter opens (pass 95): after a perfect dodge or a deflect that left the foe open, the next blow within `time` s is
   // the counter. A window opened fresh is announced once (`counterOpen`: its sound, slow beat, marks and key hint);
-  // one opened again while open only runs longer.
+  // one opened again while open only runs longer. Breaker makes it longer (kit.mods.counterWindow, pass 100).
   openCounter(time, from, foe) {
     const was = this.riposte;
-    this.riposte = Math.max(this.riposte, time);
+    this.riposte = Math.max(this.riposte, time * (1 + (this.kit.mods.counterWindow || 0)));
     if (!(was > 0)) events.emit('counterOpen', { player: this, from, foe, time: this.riposte });
   }
   // A blow that lands closes an open counter at once (pass 98, Aleix's bug): its cues end with it (`counterClose`; the
@@ -231,9 +231,6 @@ class Player {
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {
     const C = CONFIG.player, M = this.def.moveset;
-    // Light attack beside a kneeling enemy, in front of it: an execution instead of a cut (js/execution.js).
-    const victim = execution.target(this, enemies);
-    if (victim && ((this.buffer && this.buffer.action === 'light') || this.ctl.consume('light'))) { execution.start(this, victim); return true; }
     if (this.wantsRoll()) { this.startRoll(mv); return true; }
     if (this.pressDeflect()) { this.startGuard(); return true; }
     const queued = this.buffer && this.buffer.action;
@@ -325,10 +322,6 @@ class Player {
         // A dash attack: an attack pressed in the dash (held in the buffer) comes out of it once past dashAttackFrom;
         // after a perfect dodge in this dash, the counter instead.
         const dashAttack = this.buffer && ((this.riposte > 0 && M.counter && M.counter[this.buffer.action]) || M.dash[this.buffer.action]);
-        if (dashAttack && this.stateTime >= C.dashAttackFrom && this.buffer.action === 'light') {   // a foe on its knees: the execution
-          const victim = execution.target(this, enemies);
-          if (victim) { execution.start(this, victim); break; }
-        }
         if (dashAttack && this.stateTime >= C.dashAttackFrom) { this.startAttack(M.attacks[dashAttack], mv, face, enemies); break; }
         if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
@@ -368,10 +361,6 @@ class Player {
         // chains the string (or a heavy ends it with that point's finisher).
         if (this.cancellable() && this.wantsRoll()) { this.startRoll(mv); break; }
         if (this.cancellable() && this.pressDeflect()) { this.startGuard(); break; }
-        if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action === 'light') {   // the string broke its stance
-          const victim = execution.target(this, enemies);
-          if (victim) { execution.start(this, victim); break; }
-        }
         if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action !== 'roll') {
           this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
         }
@@ -412,7 +401,7 @@ class Player {
         if (this.stateTime >= this.stunTime) this.setState(PS.IDLE);
         break;
       }
-      case PS.EXECUTE: execution.update(this, dt); break;
+      case PS.EXECUTE: finisher.update(this, dt); break;
       case PS.HELD: this.updateHeld(dt); break;
       case PS.DEAD: approachVel(this, 0, 0, C.decel * dt); break;
     }
@@ -422,7 +411,7 @@ class Player {
     if (face !== null && !this.in('noLockFacing') && !released)
       this.yaw = turnToward(this.yaw, Math.atan2(lock.x - this.x, lock.z - this.z), (this.state === PS.ATTACK ? C.attackSteer : CONFIG.lock.turnRate) * dt);
 
-    integrateBody(this, dt, C.knockFriction, this.state === PS.EXECUTE || (this.state === PS.ATTACK && !!this.attack.flashStep));   // an execution or a flash step never slides off a ledge
+    integrateBody(this, dt, C.knockFriction, this.state === PS.EXECUTE || (this.state === PS.ATTACK && !!this.attack.flashStep));   // a Finishing Blow or a flash step never slides off a ledge
     if (!this.grounded && this.in('falls')) this.setState(PS.FALL);   // walked (or was knocked) off an edge
     if (this.grounded && this.in('airborne') && this.stateTime > 0) this.setState(PS.IDLE);
     if (this.grounded && this.state === PS.JUMP_ATTACK && this.stateTime > 0) {
@@ -466,10 +455,10 @@ class Player {
       else abilityPressPerk(this, slot);
     }
   }
-  // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, an execution's.
+  // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, a Finishing Blow's.
   gainCharge(n) { if (this.kit !== NO_KIT) abilityGain(this.kit, this.perk, n); }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
-  // health a second; untouchable frames (an execution, a roll's i-frames) keep it off. `timers` (a Map per body) paces
+  // health a second; untouchable frames (a Finishing Blow, a roll's i-frames) keep it off. `timers` (a Map per body) paces
   // the `hazard` tick event. Returns true if it killed this body (`hazardDeath` then).
   standInHazards(dt, timers) {
     let died = false;
@@ -487,7 +476,7 @@ class Player {
   }
   // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
   // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
-  die() { if (this.exec) execution.abandon(this); if (this.held) this.releaseHold(false); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+  die() { if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
   checkFall() {
     if (!this.alive()) return;
@@ -515,10 +504,10 @@ class Player {
   // A seize (pass 72, the Giant Skeleton's hand; a hit's `seize`): caught, you are carried from where you stood to `at`
   // ([side, up, fwd] m from him, along his facing) over `lift` s and held there, burning `dps` a second, for at most `time`
   // s. Every strike, roll or parry pressed in his grip wins back `escape` s. The grip breaks too when he stops the attack
-  // that holds you (a break of his posture, a parry, a phase, his death): a friend can free you. Out of it, you are flung
+  // that holds you (a parry, a Finishing Blow, a phase, his death): a friend can free you. Out of it, you are flung
   // `throw` m/s away from him and fall.
   seize(by, S, attackId) {
-    if (this.exec) execution.abandon(this);
+    if (this.exec) finisher.abandon(this);
     const yaw = by.yaw, s = Math.sin(yaw), c = Math.cos(yaw), dx = this.x - by.x, dz = this.z - by.z;
     // Where you were caught, in his frame: the carry starts there.
     this.held = { by, S, attackId, left: S.time, from: [dx * c - dz * s, this.y - by.y, dx * s + dz * c] };

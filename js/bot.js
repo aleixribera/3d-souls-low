@@ -135,7 +135,6 @@ const bot = (() => {
       case ES.PARRIED: return Math.max(0, d.parriedTime - st) + base + quick;
       case ES.STAGGER: return Math.max(0, d.staggerTime - st) + base + quick;
       case ES.HURT: return Math.max(0, d.flinchTime - st) + Math.min(cool + quick, quickestReaction(e, me, intent));
-      case ES.BROKEN: return Math.max(0, (d.posture || d.guard || d.stagger).breakTime - st) + base + quick;
       case ES.EXECUTED: case ES.PHASE: return Infinity;
       default: return Math.min(cool + quick + walk, quickestReaction(e, me, intent) + walk);
     }
@@ -207,8 +206,8 @@ const bot = (() => {
     // offered: openings left to a person; backup: s spent behind an enemy that was after someone else; drew: times it
     // pressed to draw an enemy off a hurt or drinking ally; waiting: s spent free within 3 m of a light's reach of an
     // enemy it could hit, not swinging (waiting out a string, a beat before going in, circling, baiting or regrouping).
-    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0, slips: 0, dashIns: 0 };
-    let waitedThis = false, nearThis = false, yieldedThis = null, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
+    const tally = { waited: 0, gaps: 0, offered: 0, backup: 0, drew: 0, waiting: 0, slips: 0, dashIns: 0 };
+    let waitedThis = false, nearThis = false, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
     // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
     function holdGap(me, o) {
       const s = stringOf(o, me);
@@ -235,7 +234,7 @@ const bot = (() => {
       return `${moodId}: ${mood.gap === null ? 'waits out every string' : `swings into pauses of ${mood.gap} s or more`}, ` +
         `keeps ${spacing.toFixed(1)} m past a string's reach, goes in ${goIn.toFixed(2)} s after, patience ${profile.patience.toFixed(1)} s, ` +
         `greed ${profile.greed.toFixed(2)}, circles ${side > 0 ? 'left' : 'right'}; plans ${plans}. ` +
-        `Waited out ${tally.waited} strings, swung into ${tally.gaps} pauses, left ${tally.yielded} executions and ${tally.offered} openings to a player, took ${tally.executed} executions; ` +
+        `Waited out ${tally.waited} strings, swung into ${tally.gaps} pauses, left ${tally.offered} openings to a player; ` +
         `${tally.backup.toFixed(0)} s behind an enemy on someone else, drew it off a hurt ally ${tally.drew} times.`;
     }
     const seen = new WeakMap();   // enemy -> { key, at, plan, done }: what was decided about its current blow
@@ -555,8 +554,8 @@ const bot = (() => {
       }
       // Support (CONFIG.bot.support): a person near this enemy sets the tempo, and whoever it is after gets backup:
       // the bot fights from their far side, and presses to draw it off them when they are hurt or drinking.
-      const S = C.support, X = C.execution;
-      let person = null, nearest = X.yield;
+      const S = C.support, X = C.yieldTo;
+      let person = null, nearest = X.range;
       for (const a of allies) { const d = Math.hypot(a.x - e.x, a.z - e.z); if (!a.botId && a.alive() && d <= nearest) { person = a; nearest = d; } }
       const hunted = quarry(e, me, allies), flank = behind(me, e, hunted);
       const rescue = !!hunted && !careful && (hunted.hp < (hunted.maxHp || me.maxHp) * CA.below || hunted.state === PS.USE_ITEM);
@@ -708,23 +707,22 @@ const bot = (() => {
       // ---- 4. Offence ----
       const T = C.tempo;
       // A riposte is the player's too, until late in the opening.
-      const theirs = e.state === ES.PARRIED && me.riposte <= 0 && person && edge(person, e) <= CONFIG.execution.range + 1 &&
+      const theirs = e.state === ES.PARRIED && me.riposte <= 0 && person && edge(person, e) <= C.reach + S.near &&
         e.def.parriedTime - e.stateTime > X.late;
       if (theirs) return { mv: room(me, e, allies, orbit(C.spacing + spacing, 1)), lock: e };   // the player's riposte
-      const exec = typeof execution !== 'undefined' ? execution.target(me, enemies) : null;
       // A stagger or a long recovery with a person in reach of it is theirs first: wait off the flank, then join (once
-      // they swing, or after `first` s). Not mid-swing, and never over an execution it could take.
+      // they swing, or after `first` s). Not mid-swing.
       // A boss's recovery runs at its Boss Rush pace (Enemy.pace), so its seconds are counted in real time here.
       const pace = e.state === ES.RECOVER && e.pace > 0 ? e.pace : 1;
       const big = me.riposte <= 0 && (e.state === ES.STAGGER || e.state === ES.RECOVER && e.attack && e.attack.recovery / pace >= T.punishRecovery);
       const near = big && person && edge(person, e) <= C.reach + S.near;
       if (!big) offeredThis = sharedThis = null;
       if (near && person.isAttacking && person.isAttacking()) sharedThis = e;
-      if (near && sharedThis !== e && e.stateTime / pace < S.first && me.isFree() && !exec) {
+      if (near && sharedThis !== e && e.stateTime / pace < S.first && me.isFree()) {
         if (offeredThis !== e) { offeredThis = e; tally.offered++; }
         return { mv: room(me, e, allies, orbit(C.reach, 0.6)), lock: e };
       }
-      const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER, ES.BROKEN].includes(e.state) ||
+      const opportunity = me.riposte > 0 || [ES.PARRIED, ES.STAGGER].includes(e.state) ||
         e.state === ES.RECOVER && e.attack && (e.attack.recovery - e.stateTime) / pace >= T.punishRecovery && window >= T.punishWindow ||
         !person && e.hp <= e.def.hp * T.finishBelow && window >= T.punishWindow;   // beside a person, it does not rush the kill
       if (opportunity) punishLeft = T.punishCommit;
@@ -733,27 +731,6 @@ const bot = (() => {
       const committed = greedy || keyOpening || pressing || !retreating && settled;
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
       const can = () => true;   // pass 85: attacks and jumps cost nothing (only blocking wears the guard)
-      // A kneeling enemy is a player's to execute: wait off its flank, and take it only near the end of the kneel.
-      const leave = k => {
-        const near = allies.find(a => !a.botId && a.alive() && Math.hypot(a.x - k.x, a.z - k.z) <= X.yield);
-        if (!near || k.state !== ES.BROKEN) return false;
-        const d = k.def, left = (d.posture || d.guard || d.stagger).breakTime - k.stateTime;
-        const front = { x: k.x + Math.sin(k.yaw) * (k.radius + me.radius + 0.4), z: k.z + Math.cos(k.yaw) * (k.radius + me.radius + 0.4) };
-        return left > X.late + Math.hypot(front.x - me.x, front.z - me.z) / P.walkSpeed;
-      };
-      if (e.state !== ES.BROKEN) yieldedThis = null;
-      if (exec && me.isFree() && !leave(exec)) { hands.press('light'); tally.executed++; return { mv: idle, lock: exec }; }
-      if (e.state === ES.BROKEN) {
-        if (leave(e)) {
-          if (yieldedThis !== e) { yieldedThis = e; tally.yielded++; }
-          const a = e.yaw + side * Math.PI / 2, r = e.radius + me.radius + X.aside;
-          const spot = { x: e.x + Math.sin(a) * r, z: e.z + Math.cos(a) * r }, d = Math.hypot(spot.x - me.x, spot.z - me.z);
-          return { mv: d > 0.3 ? flat(spot.x - me.x, spot.z - me.z) : idle, lock: e };
-        }
-        // Kneeling and nobody else takes it: get in front of it for the execution.
-        const front = { x: e.x + Math.sin(e.yaw) * (e.radius + me.radius + 0.4), z: e.z + Math.cos(e.yaw) * (e.radius + me.radius + 0.4) };
-        return { mv: flat(front.x - me.x, front.z - me.z), lock: e };
-      }
       if (!attackable(e)) return { mv: room(me, e, allies, strafe(me, to, gap, C.spacing + 1, 1)), lock: e };
       const inReach = gap <= C.reach;
       // Mid-string, only a mood that takes pauses swings: into one this long, or a greedy trade against a string's last
@@ -855,7 +832,7 @@ const bot = (() => {
         if (d < want && d > 1e-3) { const k = (want - d) / want; px += dx / d * k; pz += dz / d * k; }
         if (a.botId) continue;
         const theirs = Math.hypot(a.x - e.x, a.z - e.z), mine = Math.hypot(me.x - e.x, me.z - e.z);
-        if (mine > theirs + R.laneDepth || theirs > B().execution.yield) continue;
+        if (mine > theirs + R.laneDepth || theirs > B().yieldTo.range) continue;
         const at = Math.atan2(me.x - e.x, me.z - e.z), off = angDiff(at, Math.atan2(a.x - e.x, a.z - e.z));
         if (Math.abs(off) >= R.lane) continue;
         const s = off >= 0 ? 1 : -1, k = (R.lane - Math.abs(off)) / R.lane;   // round the enemy, away from their line

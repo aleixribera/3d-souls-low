@@ -60,12 +60,12 @@
     e.beginAttack(attack(e, 'rake')); sim.until(() => !busy(e), 8);
     expect.ok(e.landed && e.learned.length === 0, `it hit, so it learned nothing (${e.landed}, ${e.learned.join()})`);
   });
-  test('Church: a parried move is learned, and a break forgets them all', () => {
+  test('Church: a parried move is learned, and a Finishing Blow forgets them all', () => {
     start(); const e = inNave(20);
     e.beginAttack(attack(e, 'slam')); e.getParried();
     expect.ok(e.learned.includes('slam'), 'parried, so learned');
-    e.learned.push('rake'); e.breakNow(); sim.step(1);
-    expect.ok(e.learned.length === 0, `broken, it forgets (${e.learned.join()})`);
+    e.learned.push('rake'); e.hitbox = null; e.setState(ES.EXECUTED); sim.step(1);
+    expect.ok(e.learned.length === 0, `held for a Finishing Blow, it forgets (${e.learned.join()})`);
     e.beginAttack(attack(e, 'slam'));
     expect.ok(e.attack.id === 'slam', 'and the hammerfall is plain again');
   });
@@ -82,8 +82,8 @@
     expect.ok(M && M.length === 6 && M.every(list => list.length > 0) && lit() === 0, `six collars, all dark (${M && M.length})`);
     e.learned.push('hook', 'leap'); sim.step(2, 1);
     expect.ok(lit() === 2 && M[1][0].visible && M[5][0].visible && !M[0][0].visible, `its own collar for each move it knows (${lit()})`);
-    e.breakNow(); sim.step(2, 1);
-    expect.ok(lit() === 0, 'dark again once broken');
+    e.hitbox = null; e.setState(ES.EXECUTED); sim.step(2, 1);
+    expect.ok(lit() === 0, 'dark again after a Finishing Blow');
   });
   test('Church: the roar waits on its chance at mid range', () => {
     start(); const e = inNave(6); e.enterPhase(1); e.cooldown = 0; let n = 0;

@@ -170,10 +170,9 @@ MODEL_DEFS.kindlingTree = {
     scale: 2.5, bulk: 1.3, radius: 1.0, color: 0x6a2a14, weapon: 'none', idle: 'sway',
     visual: { skin: 0x7a3a1c, roughness: 0.85, rim: 0.6 },
     holyLight: { color: 0xff8a2a, core: 0xffd890 },   // its marks: the Ember's red-gold (js/holy.js)
-    // hp and posture: kept from v7.65.0 (a skilled player alone beats it in about a minute, tools/bot-fights.cjs BOTS=1 CLEAN=1).
+    // hp: kept from v7.65.0 (a skilled player alone beats it in about a minute, tools/bot-fights.cjs BOTS=1 CLEAN=1).
     hp: 2500, poise: 270, speed: 0, turnRate: 2.6, trackRate: 1.8, approach: 0, kite: 0,
     cooldown: [1.35, 2.7], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 6,
-    posture: { max: 105, parry: 50, chainGap: 1.8, chainMul: 1.35, decay: 4, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['rooted', 'kindled'],
     phases: {
       // Rooted in the heartwood: it never steps, and nothing shoves it.

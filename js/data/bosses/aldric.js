@@ -6,8 +6,8 @@
 // Ember to cheat it. It keeps its bargain: he will not stay hurt. Every blow you land on him opens a wound the Ember fills
 // (the def's `mend`: a share of the blow's damage glows on his bar, his cracks light, js/hud.js), and once no blow has
 // landed for `delay` s the Ember closes it again, embers streaming back into him (js/finale.js). Only two things make a
-// wound stay: keep at him before it closes, or break his guard, which lets the death in (a posture break seals every open
-// wound; a riposte or an execution never opens one). Answer his greed for life with yours: press him, and break him. He
+// wound stay: keep at him before it closes, or crack his guard, which lets the death in (a Finishing Blow seals every
+// open wound; a counter never opens one). Answer his greed for life with yours: press him, and break him. He
 // knows it, and a king who was a soldier punishes greed in turn: a string of blows too long and he shoulders you off
 // (`when: 'struck'`). Three bars. On the Field of Answer before his gates he is still a man, and his wounds stay; pressed,
 // he withdraws behind his walls, where the Ember is strongest (the field's `retreat`). In the throne room the Ember mends
@@ -269,8 +269,8 @@ MODEL_DEFS.varn = {
     recovery: 4.4, damage: 32, heavy: true, poise: 60, knock: 10, lunge: 0, range: 9, box: BLAST };
 
   // The Undying Ember (pass 75): `share` of each blow that lands opens a wound on his bar, at most `cap` of it at a time;
-  // once no blow has landed for `delay` s the Ember closes it at `rate` of his bar a second. A posture break seals every
-  // open wound; a blow on him while parried or broken opens none.
+  // once no blow has landed for `delay` s the Ember closes it at `rate` of his bar a second. A Finishing Blow seals every
+  // open wound; a blow on him while parried opens none.
   const MEND = { share: 0.5, cap: 0.12, delay: 2.4, rate: 0.05 };
 
   const ALDRIC = {
@@ -284,7 +284,6 @@ MODEL_DEFS.varn = {
     visual: { skin: 0x5a5048, skinMetal: 0.45, metal: 0.4, roughness: 0.45, rim: 0.9 },
     hp: 1600, poise: 240, speed: 2.1, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.2,   // v7.65.0: a skilled player alone beats it in about a minute (tools/bot-fights.cjs, BOTS=1 CLEAN=1)
     cooldown: [2.8, 5.2], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, deathFade: 7,
-    posture: { max: 91, parry: 26, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.22 },
     // Broken: hunched over his knees, the blade's point on the floor before him, his head hanging.
     brokenPose: { crouch: 0.32, lean: 0.3, chest: [0.35, 0, 0], neck: [0.2, 0, 0], head: [0.35, 0, 0], armR: [-0.9, 0, -0.05], elbowR: [-0.3, 0, 0], armL: [-0.45, 0, 0.3], elbowL: [-0.7, 0, 0] },
     defaultPhases: ['throne', 'knell'],   // a duel from the Enemies menu fights the throne room's two bars
@@ -300,7 +299,6 @@ MODEL_DEFS.varn = {
       // unchanged), four of his own, and the Ember mends him faster.
       knell: { name: 'Aldric, the Ember-Crowned', hp: 1500, transition: 15, ignite: true, cooldown: [1.6, 3.0], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7, mend: { ...MEND, share: 0.55, cap: 0.14, delay: 2.0, rate: 0.065 },
-        posture: { max: 105, parry: 24, chainGap: 1.8, chainMul: 1.3, decay: 5, breakTime: 3.0, hitstop: 0.22 },
         attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
     },
     attacks: [sweep, cleave, sentence, lungeAt, shoulder, rebuke, leap,

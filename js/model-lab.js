@@ -53,7 +53,7 @@ if (DEV) (() => {
     if (def) {
       for (const a of def.attacks) lab.modes.push({ name: a.name, type: 'attack', a });
       lab.modes.push({ name: 'hurt', type: 'hurt' }, { name: 'stagger', type: 'stagger' }, { name: 'parried', type: 'parried' }, { name: 'death', type: 'dead' });
-      if (def.posture || def.guard || def.stagger) lab.modes.push({ name: 'broken', type: 'broken' });
+      lab.modes.push({ name: 'finished', type: 'finished' });   // held through a Finishing Blow (js/finisher.js)
     }
     if (lab.player) {
       const A = PLAYER_DEF.moveset.attacks;
@@ -90,7 +90,7 @@ if (DEV) (() => {
       case 'hurt': e.state = ES.HURT; tt = tt % (d.flinchTime + 0.8); break;
       case 'stagger': e.state = ES.STAGGER; tt = tt % (d.staggerTime + 0.6); break;
       case 'parried': e.state = ES.PARRIED; tt = tt % (d.parriedTime + 0.6); break;
-      case 'broken': e.state = ES.BROKEN; tt = tt % ((d.posture || d.guard || d.stagger).breakTime + 0.6); break;
+      case 'finished': e.state = ES.EXECUTED; tt = tt % (phaseSpan(PLAYER_DEF.moveset.attacks.finisher, 'recovery')[1] + 0.6); break;
       case 'dead': e.state = ES.DEAD; tt = tt % (CONFIG.enemy.deathFade + 0.8); break;
       default: e.state = ES.IDLE;
     }

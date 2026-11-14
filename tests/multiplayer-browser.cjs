@@ -23,6 +23,7 @@ fs.mkdirSync(output, { recursive: true });
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));   // no sparring offer over the menu (pass 97)
     }, name);
     if (delay) await page.routeWebSocket('**/lobby', route => {
       const server = route.connectToServer();
@@ -116,7 +117,8 @@ fs.mkdirSync(output, { recursive: true });
       const at = e.hitbox.center(); p.x = at.x; p.z = at.z;
       const hp = p.hp; resolveCombat(Game);
       const dodged = p.hp === hp && e.hitbox.dodged === true;
-      p.setState(PS.IDLE); resolveCombat(Game);
+      // A dodged blow never lands (pass 98); the next one, with the roll over, does.
+      p.setState(PS.IDLE); e.hitbox = new Hitbox(e, a.hits[0].box || a.box, makeStrike(a)); resolveCombat(Game);
       const vulnerableAfterRoll = p.hp < hp;
       p.hp = 17; p.setState(PS.IDLE); p.x = -14; p.z = 9; Game.hitstop = 0;
       Game.manualClock = false;
@@ -136,28 +138,30 @@ fs.mkdirSync(output, { recursive: true });
     await selectAdventure(b, 'arena/varn');
     await b.locator('#lobbyStart').click();
     for (const p of [a, b, c]) await p.waitForFunction(() => __arena.multiplayer.info.ready && Game.duelId === 'varn', { timeout: 90000 });
+    // Pass 100: a's counter on Aldric's guard cracked to the last: the server grants the Finishing Blow (Simulation.hit),
+    // a's browser runs it, invulnerable, and the boss's next bar waits for it to end.
     const aldric = app.sim.inspect().Game.duel;
-    aldric.hp = 100; aldric.hitbox = null; aldric.setState('broken');
-    await a.waitForFunction(() => Game.duel.state === ES.BROKEN && Game.duel.hp === 100);
+    aldric.hp = 100; aldric.hitbox = null; aldric.setState('idle'); aldric.cooldown = 30;
     await a.evaluate(() => {
-      const p = Game.player, e = Game.duel, C = CONFIG.execution;
-      const d = p.radius + e.radius * C.standoff + C.gap;
+      const p = Game.player, e = Game.duel, d = p.radius + e.radius + 0.6;
       p.x = e.x + Math.sin(e.yaw) * d; p.z = e.z + Math.cos(e.yaw) * d; p.y = e.y; p.yaw = e.yaw + Math.PI;
       p.hp = p.maxHp; p.setState(PS.IDLE); p.kx = p.kz = p.vx = p.vz = 0;
-    });
-    // The server range-checks the execution against a's pose: wait until it has seen a beside Aldric.
-    await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => !p.botId && Math.hypot(p.x - e.x, p.z - e.z) < e.radius + 2.5); });
-    await a.evaluate(() => {
-      const p = Game.player, e = Game.duel;
-      window.__coopPhaseStates = [];
+      window.__coopPhaseStates = []; window.__cracks = [];
       events.on('bossPhase', () => window.__coopPhaseStates.push(Game.player.state));
-      execution.start(p, e);
+      events.on('guardCrack', d => window.__cracks.push(d.cracks));
     });
-    await a.waitForFunction(() => Game.player.state === PS.EXECUTE);
-    assert.equal(await a.evaluate(() => Game.player.invulnerable()), true, 'reserved online execution is invulnerable');
+    // The server range-checks the counter against a's pose: wait until it has seen a beside Aldric.
+    await until(() => { const e = app.sim.inspect().Game.duel; return app.sim.inspect().players.some(p => !p.botId && Math.hypot(p.x - e.x, p.z - e.z) < e.radius + 2.5); });
+    const aId = [...app.sim.inspect().players].find(p => !p.botId && Math.hypot(p.x - aldric.x, p.z - aldric.z) < aldric.radius + 2.5).id;
+    aldric.cracks = app.sim.inspect().CONFIG.finisher.cracks;
+    await a.waitForFunction(n => Game.duel.cracks === n, aldric.cracks);
+    assert.deepEqual(await a.evaluate(() => window.__cracks), [aldric.cracks], 'the cracks come with the frames, and say so');
+    app.sim.inspect().beginFinisher(aId, aldric);   // as a's counter does (Simulation.hit; tests/multiplayer.cjs plays it through)
+    await a.waitForFunction(() => Game.player.state === PS.EXECUTE, { timeout: 15000 });
+    assert.equal(await a.evaluate(() => Game.player.invulnerable()), true, 'a granted Finishing Blow is invulnerable');
     await a.waitForFunction(() => Game.player.state !== PS.EXECUTE && Game.duel.phase === 1, { timeout: 15000 });
-    assert.ok(!(await a.evaluate(() => window.__coopPhaseStates)).includes('execute'), 'boss transitions wait for the local execution to finish');
-    console.log('Online execution: server reservation, local invulnerability and deferred boss phase passed.');
+    assert.ok(!(await a.evaluate(() => window.__coopPhaseStates)).includes('execute'), 'boss transitions wait for the Finishing Blow to end');
+    console.log('Online Finishing Blow: cracks in frames, the server\'s grant, local invulnerability and deferred boss phase passed.');
     await b.evaluate(() => multiplayer.show());
     await selectAdventure(b, 'level/long-hall');
     await b.locator('#lobbyStart').click();

@@ -23,6 +23,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));   // no sparring offer over the menu (pass 97)
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -36,7 +37,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
   const finishFight = () => { for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } };
   // A blow from each player at the first boss, through the server's own hit check, so the run's damage is real.
   const blows = ids => {
-    const boss = app.sim.inspect().Game.enemies[0], attack = Object.values(app.sim.inspect().PLAYER_DEF?.moveset.attacks || {}).find(x => x.id !== 'execute')?.id || 'light';
+    const boss = app.sim.inspect().Game.enemies[0], attack = Object.values(app.sim.inspect().PLAYER_DEF?.moveset.attacks || {}).find(x => x.id !== 'finisher')?.id || 'light';
     for (const [i, id] of ids.entries()) {
       app.sim.setPlayers([{ ...app.session.spawn, id, x: boss.x, z: boss.z + boss.radius + 0.5, y: boss.y, yaw: Math.PI, hp: 120, state: 'idle', poseAge: 0 }]);
       for (let n = 0; n <= i; n++) app.sim.hit(id, { enemy: boss.netId, attack, charge: 0 });
@@ -158,7 +159,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const R = app.sim.inspect(), fireAs = (kit, when, ctx) => R.abilityPowers.trigger(aId, R.holderOf(aId), kit, when, ctx);
     fireAs(app.sim.kitOf(aId), 'dodge', { enemy: R.Game.enemies[0] });
     for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().bubbles > 0, null, { timeout: 5000 });
-    fireAs({ powers: [{ id: 'meteor-fall', when: 'land', then: 'blast', action: 'heavy', v: { radius: 1, damage: 1, posture: 1, cooldown: 1 } }] }, 'land', { x: 0, y: 0, z: 0, action: 'heavy' });
+    fireAs({ powers: [{ id: 'meteor-fall', when: 'land', then: 'blast', action: 'heavy', v: { radius: 1, damage: 1, cooldown: 1 } }] }, 'land', { x: 0, y: 0, z: 0, action: 'heavy' });
     for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().meteors > 0, null, { timeout: 5000 });
     R.abilityPowers.reset();
     // a falls again: they watch the rest of this fight.

@@ -1,6 +1,6 @@
 'use strict';
 // Pace, not team size (v7.65.0, CONFIG.pace), in the headless server simulation:
-// - every boss is the same for one player and for four: health, posture bar and break length;
+// - every boss is the same for one player and for four: health and damage;
 // - Boss Rush's curve at fights 1, 5, 10, 15, 20 and 25 raises only the pace, never health or damage (item 10); a boss's
 //   Boss Rush health share (RUSH.health, RUSH.warmHealth, pass 73) is checked by tests/calling.cjs;
 // - a faster pace means more attacks a minute; wind-ups barely change by fight 10 and stay above
@@ -18,8 +18,7 @@ function fight(boss, n, won = null) {
   return { sim, Game, spawn, e: Game.enemies.find(e => e.isBoss()) };
 }
 const bars = (e, health = true) => {
-  const M = e.def.posture || e.def.stagger || e.def.guard;
-  return JSON.stringify({ hp: health ? e.def.hp : 0, now: health ? e.hp : 0, meter: M ? M.max : null, breakTime: M ? M.breakTime : null, damage: e.def.attacks.map(a => a.hits.map(h => h.damage ?? a.damage)) });   // text: each simulation is its own VM
+  return JSON.stringify({ hp: health ? e.def.hp : 0, now: health ? e.hp : 0, damage: e.def.attacks.map(a => a.hits.map(h => h.damage ?? a.damage)) });   // text: each simulation is its own VM
 };
 
 // 1 and 4 players face the same boss.
@@ -28,7 +27,7 @@ for (const boss of bosses) {
   const one = bars(fight(boss, 1).e), four = bars(fight(boss, 4).e);
   assert.equal(four, one, `${boss}: four players meet the boss one player does`);
 }
-console.log(`${bosses.length} bosses: the same health, posture and breaks for 1 and 4 players`);
+console.log(`${bosses.length} bosses: the same health and damage for 1 and 4 players`);
 
 // The curve (PLAN.md track B item 10, pass 54; item 11, pass 73): fight n runs at the pace for n - 1 won. The warm-up
 // (CONFIG.pace.warm fights) climbs from a little under 1x to 1x, then the pace climbs exponentially, speed only: health
@@ -42,7 +41,7 @@ for (const boss of bosses) {
     const { e, sim } = fight(boss, 1, n - 1);
     // Health: the boss's own, or its Boss Rush share (rushHealth: RUSH.health, a warm-up boss's RUSH.warmHealth).
     if (n > PC.warm && sim.rushHealth(1, n - 1, boss) === 1) assert.equal(bars(e), plain, `${boss}, fight ${n}: health and damage are the boss's own`);
-    else assert.equal(bars(e, false), still, `${boss}, fight ${n}: damage and posture are the boss's own`);
+    else assert.equal(bars(e, false), still, `${boss}, fight ${n}: damage is the boss's own`);
     assert.equal(e.pace, sim.setRushFight(n - 1), `${boss}, fight ${n}: the boss runs at the curve's pace`);
     if (boss === bosses[0]) P.pace.push(e.pace);
   }
@@ -98,17 +97,3 @@ for (const [id, was] of slow.windups) {
 assert.ok(compared >= 2, 'wind-ups compared at every pace');
 console.log(`boss-pace: ${slow.starts}, ${mid.starts} and ${fast.starts} attacks in 90 s at fights 1, 10 and 40; ${compared} wind-ups checked: ok`);
 
-// After a break (CONFIG.enemy.postureRest): a boss back on its feet builds posture at `mul` for `time` s, then fully,
-// so a party cannot keep it kneeling; the break itself still comes as soon as before.
-{
-  const { e, sim } = fight('ostrey', 1), R = sim.inspect().CONFIG.enemy.postureRest;
-  e.posture = 0; e.sinceBreak = Infinity; e.addPosture(10);
-  const fresh = e.posture;
-  e.posture = 0; e.sinceBreak = R.time / 2; e.addPosture(10);
-  const resting = e.posture;
-  e.posture = 0; e.sinceBreak = R.time + 0.1; e.addPosture(10);
-  assert.equal(fresh, 10, 'posture builds fully on a boss that has not broken lately');
-  assert.ok(Math.abs(resting - 10 * R.mul) < 1e-9, `just after a break it builds at ${R.mul} (${resting})`);
-  assert.equal(e.posture, 10, `after ${R.time} s it builds fully again`);
-  console.log(`boss-pace: posture after a break builds at ${R.mul} for ${R.time} s: ok`);
-}

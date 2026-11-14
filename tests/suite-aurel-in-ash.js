@@ -25,7 +25,7 @@
     const seams = d.attacks.filter(a => a.hits.some(h => h.seam)), calls = d.attacks.filter(a => a.hits.some(h => h.erupt));
     expect.ok(seams.length >= 8 && calls.length === 2 && calls.every(a => a.when === 'seamed' && a.noParry), `${seams.length} moves crack the floor; ${calls.length} call it up`);
     for (const a of calls) expect.ok(a.hits.find(h => h.erupt).startup >= CONFIG.seams.minTell, `${a.id}: the floor glows a full ${CONFIG.seams.minTell} s first`);
-    expect.ok(d.hp === 3500 && d.phases.crowned.hp === 3500 && d.posture.max === 115 && d.posture.breakTime === 3.4, 'health and posture as tuned in pass 45');
+    expect.ok(d.hp === 3500 && d.phases.crowned.hp === 3500, 'health as tuned in pass 45');
     const U = d.phases.uncrowned;
     expect.ok(U.at === 0.4 && U.opener === 'crownCastDown' && U.ignite && U.conceal.join() === 'weapon' && U.name === 'Oswin, Uncrowned',
       'at 40% he casts the axe down and the Ember takes his hands');

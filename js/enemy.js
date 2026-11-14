@@ -28,7 +28,7 @@ const REACTIONS = {
   behind: (e, p, rel) => Math.abs(rel) > CONFIG.ai.reactions.behind,
   flank: (e, p, rel) => rel > CONFIG.ai.reactions.flank[0] && rel < CONFIG.ai.reactions.flank[1],
   healing: (e, p) => p.state === PS.USE_ITEM,
-  staggered: (e, p) => p.state === PS.STAGGER || p.state === ES.STAGGER || p.state === ES.BROKEN,
+  staggered: (e, p) => p.state === PS.STAGGER || p.state === ES.STAGGER,
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
   struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
   seamed: e => e.seams.length >= CONFIG.seams.callAt,   // pass 47: enough of the floor cracked open to call it up (Oswin)
@@ -155,11 +155,9 @@ class Enemy {
     this.unreachable = 0; this.reachable = true;    // time the player has been too far above or below to fight
     this.ranged = def.attacks.some(a => a.projectile);   // an archer: shoots from where it stands (js/projectiles.js)
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
-    this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
-    this.sinceBreak = Infinity;                      // time since its last posture break or execution ended
-    this.breaks = 0; this.breakGrow = 0;             // posture breaks this fight; Boss Rush's CONFIG.endless.breakGrow
+    this.chainTime = Infinity;                       // time since the last landed hit (a boss's anti-mash)
+    this.cracks = 0; this.crackTime = 0;             // its guard's cracks (js/finisher.js) and time since the last counter on it
     this.frozen = 0;   // s left stopped in time (Time Rift, js/abilities.js): no step, no blow, hit as it stands
-    this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
     this.resonance = 0;                              // a def's `resonance` (pass 68): how full of the blows it took it is
@@ -172,7 +170,7 @@ class Enemy {
     this.recoverMul = 1;                             // how many times as long its recovery plays (a dashed-through boss's, CONFIG.bossMove)
     this.circleDir = Math.random() < 0.5 ? 1 : -1; this.circleLeft = 0;   // a boss holding alone: which way it circles, and for how long
     this.respace = 0; this.sawDash = false;          // a boss: how long it still takes its distance again after its player's dash
-    this.crack = 0;                                  // visual: posture-break flash
+    this.crack = 0;                                  // visual: a guard-crack flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
     this.rewarded = false;                           // death already announced
@@ -215,7 +213,7 @@ class Enemy {
     this.phase = i;
     this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
     if (this.health !== 1) this.def.hp = Math.round(this.def.hp * this.health);
-    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0; this.resonance = 0; this.clearWounds();   // a new phase rings from silence, unwounded
+    this.hp = this.def.hp; this.poise = this.def.poise; this.resonance = 0; this.clearWounds();   // a new phase rings from silence, unwounded
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
   }
@@ -234,8 +232,8 @@ class Enemy {
     if (!m) return;
     this.pace *= m.pace; this.damageMul = m.damage; this.setHealth(m.health);
   }
-  // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
-  // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).
+  // A boss: a def with phases (isBossDef), or any `boss` placement. The one rule for the Finishing Blow (a boss's result
+  // waits for the end of it), checkpoints and saves (a beaten boss stays beaten).
   isBoss() { return isBossDef(this.baseDef) || !!this.boss; }
   // How fast its wind-ups run at its pace (CONFIG.pace): 1 up to a boss's base pace, then gently quicker, to a floor.
   tellRate() {
@@ -258,8 +256,8 @@ class Enemy {
     const next = this.baseDef.phases[this.phaseIds[this.phase + 1]];
     const due = next.alone ? (this.kin || [this]).every(k => k === this || !k.alive()) : next.at && this.hp <= this.def.hp * next.at;
     if (!due) return;
-    const hp = this.hp, posture = this.posture, from = this.phase;
-    this.enterPhase(this.phase + 1); this.hp = hp; this.posture = posture;
+    const hp = this.hp, from = this.phase;
+    this.enterPhase(this.phase + 1); this.hp = hp;
     // One fought on her own (no kin, v7.62.0) has nobody to grieve: the alone phase starts without its opener.
     const grieves = !next.alone || (this.kin && this.kin.length > 1);
     this.opener = next.opener && grieves ? this.def.attacks.find(a => a.id === next.opener) : null;
@@ -382,18 +380,22 @@ class Enemy {
     this.stateTime += this.state === ES.RECOVER ? dt * this.pace / this.recoverMul : this.state === ES.WINDUP ? dt * (areaHit(this.attack, this.hitIndex) ? 1 : this.tellRate()) : dt;
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
-    this.sinceBreak = this.state === ES.BROKEN || this.state === ES.EXECUTED ? 0 : this.sinceBreak + dt;   // CONFIG.enemy.postureRest
-    // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a break empties it (the opening is yours).
+    const held = this.state === ES.EXECUTED;   // through a Finishing Blow (js/finisher.js)
+    // The cracks in its guard fade at once after CONFIG.finisher.fade s with no counter on it (a client's are the server's).
+    if (this.cracks > 0 && !held && (this.crackTime += dt) > CONFIG.finisher.fade && !(typeof multiplayer !== 'undefined' && multiplayer.active())) {
+      this.cracks = 0; events.emit('guardCrack', { enemy: this, cracks: 0 });
+    }
+    // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a Finishing Blow empties it.
     if (this.resonanceRest > 0) this.resonanceRest -= dt;
-    // Learned forms (pass 77): a break or an execution makes it forget everything it learned (a client's list is the server's).
-    if (this.learned.length && this.sinceBreak === 0) this.learned.length = 0;
-    if (d.resonance) this.resonance = this.sinceBreak === 0 ? 0 : this.struckTime > d.resonance.delay ? Math.max(0, this.resonance - d.resonance.decay * dt) : this.resonance;
-    // A def's `mend` (pass 75, Aldric): a break or an execution seals his open wounds; once the one who opened a wound has
+    // Learned forms (pass 77): a Finishing Blow makes it forget everything it learned (a client's list is the server's).
+    if (this.learned.length && held) this.learned.length = 0;
+    if (d.resonance) this.resonance = held ? 0 : this.struckTime > d.resonance.delay ? Math.max(0, this.resonance - d.resonance.decay * dt) : this.resonance;
+    // A def's `mend` (pass 75, Aldric): a Finishing Blow seals his open wounds; once the one who opened a wound has
     // landed no blow for `delay` s the Ember closes it again, `rate` of his bar a second in all. Each attacker's wound is
     // its own, so in co-op the one who stops pressing loses theirs while the others keep theirs open.
     const Mn = d.mend;
     if (Mn && this.mendPool > 0 && this.wounds.some(w => w.pool > 0)) {   // a client's pool comes from the server's snapshot
-      if (this.sinceBreak === 0) this.clearWounds();
+      if (held) this.clearWounds();
       else if (this.alive()) {
         let budget = Mn.rate * d.hp * dt, sum = 0;
         for (const w of this.wounds) {
@@ -404,18 +406,11 @@ class Enemy {
         this.mendPool = sum;
       }
     }
-    if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
+    if (held) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held in stopped time (js/finisher.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
     if (this.state === ES.RETREAT) { this.updateRetreat(player); return; }   // scripted flight: no physics
-    const M = d.guard || d.stagger;
-    if (M && this.state !== ES.BROKEN && (this.guardTime += dt) > M.decayDelay)
-      this.guardMeter = Math.max(0, this.guardMeter - M.decay * dt);
     tickPoise(this, dt, E.poiseResetTime, d.poise);
-    // Posture drains only after `chainGap` s without a landed hit (and never while the player swings), and
-    // holds while the boss is open from a parry, so the riposte window can build on it.
-    if (d.posture && this.state !== ES.BROKEN && this.state !== ES.PARRIED && this.chainTime > d.posture.chainGap && !player.isAttacking())
-      this.posture = Math.max(0, this.posture - d.posture.decay * dt);
     const dx = player.x - this.x, dz = player.z - this.z, dist = Math.hypot(dx, dz) || 1e-6;
     this.playerDist = dist;
     this.huntTime = Math.max(0, (this.huntTime || 0) - dt);   // v7.0: woken into its own zone's fight (wakeZones): leashes wait
@@ -621,9 +616,6 @@ class Enemy {
         break;
       case ES.PARRIED:
         if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
-        break;
-      case ES.BROKEN:
-        if (this.stateTime >= (d.posture || d.guard || d.stagger).breakTime) { this.posture = 0; this.guardMeter = 0; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.PHASE: {   // between two health bars: kneels, rises, the new bar fills; nothing it does can hurt
         const T = d.transition || CONFIG.enemy.transition;
@@ -919,7 +911,7 @@ class Enemy {
   }
   // An attack's `learns` (pass 77, the Antlered Hunger): an attack that ends (or is parried) without landing a blow on
   // anyone (`landed`: js/combat.js, or a player's claim on the server) is learned, and from then on comes as the learned
-  // form it names. A break or an execution makes it forget them all (Enemy.step). js/finale.js lights the model's `marks`.
+  // form it names. A Finishing Blow makes it forget them all (Enemy.step). js/finale.js lights the model's `marks`.
   learn() {
     const a = this.attack;
     if (a && a.learns && !this.landed && this.alive() && !this.learned.includes(a.id)) {
@@ -944,21 +936,9 @@ class Enemy {
       case ES.ACTIVE: this.endStrikeWhenDone(); break;
       case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
       case ES.PARRIED: if (this.stateTime >= this.def.parriedTime) this.setState(ES.IDLE); break;
-      case ES.BROKEN: if (this.stateTime >= this.def.stagger.breakTime) { this.guardMeter = 0; this.setState(ES.IDLE); } break;
     }
   }
 
-  // Boss posture: add, and break when full. Returns true if this broke the posture.
-  addPosture(amount) {
-    const P = this.def.posture;
-    if (!P || this.state === ES.BROKEN) return false;
-    const R = CONFIG.enemy.postureRest;
-    this.posture = Math.min(P.max, this.posture + amount * (this.sinceBreak < R.time ? R.mul : 1) / (1 + this.breakGrow * this.breaks));
-    if (this.posture < P.max) return false;
-    this.hitbox = null; this.crack = 1; this.breaks++;
-    this.setState(ES.BROKEN);
-    return true;
-  }
   // A hit's `counter` (pass 55): what a blow from `from` with the player's attack `attackId` does to this wind-up:
   // 'turn' (turned and answered), 'break' (a breaker: the stance breaks) or null (no stance, or not from its front).
   // multiplayer.hit asks the same, so the striker's own client shows a turned blow as blocked.
@@ -969,34 +949,25 @@ class Enemy {
     const G = this.def.guard || this.baseDef.guard;   // a phase that drops the guard mid-wind-up keeps its breakers
     return (W.counter.breakers || (G && G.breakers) || []).includes(attackId) ? 'break' : 'turn';
   }
-  // Broken at once, its posture full (a counter stance broken, a faltering wind-up). Returns true (it broke).
-  breakNow() {
-    if (this.def.posture) this.posture = this.def.posture.max;
-    this.hitbox = null; this.crack = 1; this.breaks++; this.setState(ES.BROKEN);
+  // Opened at once (a counter stance broken, a faltering wind-up; pass 100: the kneel went): it reels, open, as a
+  // parried foe does, and the blow that did it opens a counter for its striker (resolveCombat, Simulation.hit).
+  openNow() {
+    this.hitbox = null; this.crack = 1; this.chainTime = 0; this.setState(ES.PARRIED);
     return true;
   }
-  // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
+  // A successful parry ends the current attack and leaves the enemy open.
   getParried() {
     this.hitbox = null;
-    this.learn();   // a parried attack was answered: it learns it (a break below makes it forget at once)
-    if (this.def.posture) {
-      this.chainTime = 0;   // a parry starts a hit chain: the riposte builds posture straight away
-      if (this.addPosture(this.def.posture.parry)) return true;
-    }
+    this.learn();   // a parried attack was answered: it learns it
+    this.chainTime = 0;
     this.setState(ES.PARRIED);
-    return false;
   }
   // A deflect (pass 85, CONFIG.parry): the last blow of its attack deflected ends it, open (getParried); an earlier blow
-  // is only turned aside, the string goes on, and a boss's posture fills by `deflectShare` of its parry value.
-  // Returns { broke, opened }.
+  // is only turned aside and the string goes on. Returns { opened }.
   getDeflected() {
     const a = this.attack, last = !a || this.hitIndex >= a.hits.length - 1;
-    if (last) { const broke = this.getParried(); return { broke, opened: true }; }
-    if (this.def.posture) {
-      this.chainTime = 0;
-      if (this.addPosture(this.def.posture.parry * CONFIG.enemy.deflectShare)) return { broke: true, opened: true };
-    }
-    return { broke: false, opened: false };
+    if (last) this.getParried();
+    return { opened: last };
   }
   // Anti-mash (pass 85, CONFIG.enemy.mash): the run of blows a boss has taken without a pause of `gap` s. Long enough,
   // and it answers with a break-off of its own (breakOff): its quickest attack that reaches, the widest first. The run
@@ -1009,7 +980,7 @@ class Enemy {
   }
   breakOff(dist) {
     const M = CONFIG.enemy.mash;
-    if (!this.def.posture || (this.mash || 0) < M.hits || this.chainTime > M.gap) return null;
+    if (!this.isBoss() || (this.mash || 0) < M.hits || this.chainTime > M.gap) return null;
     const fits = this.def.attacks.filter(a => !a.when && !a.learned && !a.projectile && attackChance(a) > 0 && dist >= (a.minRange || 0) && dist <= a.range + M.reach
       && !a.hits[0].leap && !a.hits[0].bolt && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));
     if (!fits.length) return null;
@@ -1022,10 +993,14 @@ class Enemy {
     return pick;
   }
 
-  // One strike from `from`. Returns { broke (posture), died }.
-  // Seal every open wound (a break, an execution, a new phase).
+  // Seal every open wound (a Finishing Blow, a new phase).
   clearWounds() { for (const w of this.wounds) { w.pool = 0; w.who = null; } this.mendPool = 0; }
+  // A Finishing Blow's hold: learned forms forgotten, resonance emptied, wounds sealed (Enemy.step does it each held step
+  // solo; the server, which skips a foe a person's blow holds, calls it once as it grants the blow).
+  forgetAll() { this.learned.length = 0; this.resonance = 0; this.clearWounds(); }
 
+  // One strike from `from`. Returns { died, blocked?, opened? (it reels open: a counter for the striker), finisher? (this
+  // blow was a counter on a guard already cracked CONFIG.finisher.cracks times: the Finishing Blow is due, js/finisher.js) }.
   takeHit(strike, from) {
     this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
@@ -1033,47 +1008,45 @@ class Enemy {
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
     this.tint = 1;
-    if (this.training) {   // flash and recoil only; a dummy with a stagger meter (the execution dummy) fills it
+    if (this.training) {   // flash and recoil only
       // A dummy with a `refill` runs down to empty and takes nothing more until it is full again (updateTraining).
       if (!this.emptyTime) this.hp = Math.max(this.def.refill ? 0 : 1, this.hp - strike.damage);
       if (this.def.refill && this.hp <= 0 && !this.emptyTime) this.emptyTime = 1e-6;
-      const broke = !!this.def.stagger && this.state !== ES.BROKEN && this.state !== ES.EXECUTED && this.fillMeter(this.def.stagger, strike.attackId);
-      return { broke, died: false };
+      return { died: false };
     }
-    if (this.invulnerable()) return { broke: false, died: false };
-    const def = this.def, P = def.posture;
+    if (this.invulnerable()) return { died: false };
+    const def = this.def;
     // A hit's `counter` (pass 55, the King's Blade): through its wind-up (from `from` of it) it stands behind its shield;
     // a blow from within `arc` of its front is turned and answered at once with the attack `answer`, and a heavy blow
-    // (the guard's breakers) breaks the stance: the blow lands and it is open (BROKEN). Behind its arc, blows land.
-    // Just up from a break (CONFIG.enemy.postureRest), a breaking blow only lands: a break is a moment, not a loop.
+    // (the guard's breakers) breaks the stance: the blow lands and it reels open (openNow). Behind its arc, blows land.
     const W = this.state === ES.WINDUP ? this.attack.hits[this.hitIndex] : null, C = this.counterAgainst(from, strike.attackId);
-    if (C === 'break' && this.sinceBreak >= CONFIG.enemy.postureRest.time) {
+    if (C === 'break') {
       this.hp = Math.max(0, this.hp - strike.damage); this.struckTime = 0;
-      if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };
-      if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
-      return { broke: this.breakNow(), died: false };
+      if (this.hp <= 0 && this.outlast()) return { died: false };
+      if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { died: true }; }
+      return { died: false, opened: this.openNow() };
     }
     if (C === 'turn') {
       this.kx += kx * 0.2; this.kz += kz * 0.2; this.tint = 0.3; this.blockTime = 0;
       events.emit('enemyCounter', { enemy: this, attack: this.attack });
       this.beginAttack(this.attackById(W.counter.answer));
-      return { broke: false, died: false, blocked: true };
+      return { died: false, blocked: true };
     }
     if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
       return this.blockHit(strike, kx, kz);
-    this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
+    this.hp = Math.max(0, this.hp - strike.damage);
     this.struckTime = 0;   // the `struck` reaction (v5.9)
-    // A def's `resonance` (pass 68): each blow that lands fills it (a heavy one more), except while it lies open (parried,
-    // broken: the riposte and the execution are yours). Full, its `when: 'resonant'` answer is due (REACTIONS).
+    // A def's `resonance` (pass 68): each blow that lands fills it (a heavy one more), except while it lies open
+    // (parried: the counter is yours). Full, its `when: 'resonant'` answer is due (REACTIONS).
     const R = def.resonance;
-    if (R && this.state !== ES.PARRIED && this.state !== ES.BROKEN && !(this.resonanceRest > 0)) this.resonance = Math.min(R.max, this.resonance + (R.breakers.includes(strike.attackId) ? R.heavy : R.light));
+    if (R && this.state !== ES.PARRIED && !(this.resonanceRest > 0)) this.resonance = Math.min(R.max, this.resonance + (R.breakers.includes(strike.attackId) ? R.heavy : R.light));
     // A def's `mend` (pass 75): `share` of the blow opens a wound the Ember will close (at most `cap` of the bar open at
-    // once), except while he lies open (parried, broken): the riposte and the execution stay.
+    // once), except while he lies open (parried): the counter stays.
     const Mn = def.mend;
     // Whose wound: a body's own, by its id where it has one (the server rebuilds a player's proxy at every pose), else the
     // body itself (the solo player); a bolt's or a power's `from` is a new point each time, so those share one wound.
     const who = !Mn || !from ? null : from.id != null ? from.id : 'hp' in from ? from : null;
-    if (Mn && this.state !== ES.PARRIED && this.state !== ES.BROKEN && this.hp > 0) {
+    if (Mn && this.state !== ES.PARRIED && this.hp > 0) {
       let w = this.wounds.find(o => o.who === who && o.pool > 0) || this.wounds.find(o => o.pool <= 0);
       if (!w) w = this.wounds.reduce((a, b) => (b.since > a.since ? b : a));   // all four open: the one left alone longest
       const add = Math.max(0, Math.min(Mn.cap * def.hp, this.mendPool + strike.damage * Mn.share, def.hp - this.hp) - this.mendPool);
@@ -1082,62 +1055,45 @@ class Enemy {
       const w = this.wounds.find(o => o.who === who && o.pool > 0); if (w) w.since = 0;
     }
     if (!this.def.rooted) { this.kx += kx; this.kz += kz; }   // a rooted phase (pass 50) is not knocked back either
-    if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
-    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
-    if (P) {
-      // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
-      const chained = this.chainTime <= P.chainGap;
+    if (this.hp <= 0 && this.outlast()) return { died: false };   // a boss with another bar, or retreating
+    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { died: true }; }
+    // A counter (a riposte's blow; a power's blow never) cracks the guard; one on a guard cracked CONFIG.finisher.cracks
+    // times is the Finishing Blow (js/finisher.js: the striker runs it).
+    const finisher = !!strike.riposte && !strike.power && crackGuard(this, from);
+    if (this.isBoss()) {
+      // Bosses ignore interrupts.
       this.noteMash(strike, from);   // before chainTime restarts: it measures the pause before this blow
       this.chainTime = 0;
       // A hit's `falter` (pass 55, the King's Blade): `hits` blows landed through its wind-up and it breaks off, open.
       if (W && W.falter) {
         const key = this.attackNo * 64 + this.hitIndex;
         if (this.falterKey !== key) { this.falterKey = key; this.falterHits = 0; }
-        if (++this.falterHits >= W.falter.hits && this.sinceBreak >= CONFIG.enemy.postureRest.time) return { broke: this.breakNow(), died: false };
+        if (++this.falterHits >= W.falter.hits) return { died: false, finisher, opened: this.openNow() };
       }
       if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
-      return { broke: this.addPosture(strike.postureDmg * (chained ? P.chainMul : 1)), died: false };
+      return { died: false, finisher };
     }
-    if (this.state === ES.BROKEN) return { broke: false, died: false };   // a broken guard: no flinch
-    const M = def.stagger || def.guard;
-    // Stagger/guard meter instead of poise: hits never interrupt until the meter fills. A riposte on a parried enemy
-    // fills it too (v5.2: it used to be shrugged off with the other no-reaction states).
-    if (M && this.state === ES.PARRIED) return { broke: this.fillMeter(M, strike.attackId), died: false };
-    if (this.in('shrugsHits')) return { broke: false, died: false };
+    if (this.in('shrugsHits')) return { died: false, finisher };
     if (this.state === ES.DORMANT) this.setState(ES.RISE);
     const unaware = this.in('unaware');
-    if (M) {
-      if (unaware) this.setState(ES.CHASE);
-      return { broke: this.fillMeter(M, strike.attackId), died: false };
-    }
     const r = applyPoise(this, strike.poise, this.isCommitted(), def.poise);
     if (r === POISE.STAGGER) { this.hitbox = null; this.setState(ES.STAGGER); }
     else if (r === POISE.FLINCH && def.flinchTime > 0 && this.in('canFlinch')) this.setState(ES.HURT);
     else if (unaware) this.setState(ES.CHASE);
-    return { broke: false, died: false };
+    return { died: false, finisher };
   }
 
-  // A strike taken on the shield: reduced damage, little push, and it fills the guard meter
-  // (heavy attacks more than light ones). A full meter breaks the guard.
+  // A strike taken on the shield: reduced damage, little push. One of the guard's `breakers` knocks a soldier's shield
+  // aside: it reels (staggerTime), open (pass 100: no guard meter). A boss's shield holds (its counter stance breaks).
   blockHit(strike, kx, kz) {
     const G = this.def.guard;
     this.hp = Math.max(0, this.hp - strike.damage * G.damageMul);
     this.kx += kx * G.knockMul; this.kz += kz * G.knockMul;
     this.tint = 0.3; this.blockTime = 0;
-    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { died: true }; }
+    if (G.breakers.includes(strike.attackId) && !this.isBoss()) { this.hitbox = null; this.crack = 1; this.setState(ES.STAGGER); return { died: false }; }
     if (this.in('unaware')) this.setState(ES.CHASE);
-    if (this.fillMeter(G, strike.attackId, G.blockedMul)) return { broke: true, died: false };
-    return { broke: false, died: false, blocked: true };
-  }
-  // Shared by the shield guard and the stagger meter (`guardMeter` holds either): heavy attacks fill
-  // more than light ones; a full meter breaks the enemy (kneels, open) for M.breakTime. Returns true on a break.
-  fillMeter(M, attackId, mul = 1) {
-    this.guardTime = 0;
-    this.guardMeter = Math.min(M.max, this.guardMeter + (M.breakers.includes(attackId) ? M.heavy : M.light) * mul);
-    if (this.guardMeter < M.max - 1e-6) return false;
-    this.hitbox = null; this.crack = 1;
-    this.setState(ES.BROKEN);
-    return true;
+    return { died: false, blocked: true };
   }
 
   // Idle personality layered on top of the base pose, weighted by how idle the enemy is.
@@ -1197,14 +1153,6 @@ class Enemy {
         r.legR.rotation.x += 0.55 * k; r.kneeR.rotation.x += 0.4 * k; r.legL.rotation.x -= 0.25 * k;
         r.armR.rotation.set(lerp(-0.4, -2.8, k), 0, -1.1 * k); r.armL.rotation.set(lerp(-0.1, 0.6, k), 0, 0.6 * k); r.head.rotation.x = -0.4 * k; break;
       }
-      case ES.BROKEN: {
-        // Sinks to one knee, club on the floor, then hauls itself back up; a boss's own `brokenPose` (pass 55) instead.
-        const T = (d.posture || d.guard || d.stagger).breakTime, k = ease(tt / 0.4) * (1 - ease((tt - T + 0.6) / 0.6));
-        if (d.brokenPose) { applyKeyPose(r, d.brokenPose, k); break; }
-        r.kneel(k); r.lean(0.3 * k);
-        r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
-        r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
-      }
       case ES.PHASE: {   // sinks to a knee, head bowed, then rises as the new bar fills
         const T = d.transition || CONFIG.enemy.transition, k = ease(clamp(tt / 0.6, 0, 1)) * (1 - ease(clamp((tt - T * 0.62) / (T * 0.3), 0, 1)));
         r.kneel(k); r.lean(0.35 * k); r.head.rotation.x = 0.55 * k;
@@ -1219,7 +1167,7 @@ class Enemy {
         if (tt >= t3) r.setOpacity(1 - clamp((tt - t3) / R.fly, 0, 1));   // fades as it drops out of sight beyond the wall
         break;
       }
-      case ES.EXECUTED: executedPose(r, this, tt); break;   // js/execution.js
+      case ES.EXECUTED: executedPose(r, this, tt); break;   // js/finisher.js
       case ES.GONE: r.setOpacity(0); r.root.visible = false; break;
       case ES.DEAD: { const fade = d.deathFade || E.deathFade; deathPose(r, tt, fade); r.root.visible = tt < fade; break; }
     }
@@ -1248,8 +1196,8 @@ class Enemy {
     }
     r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell || null);   // red: parryable; blue: cannot be parried (this hit); on the shield, claw or foot when that strikes
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
-    else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else if (heavy > this.tint) r.setTint(heavyColor || (heavyColor = new THREE.Color(CONFIG.VISUALS.heavyTell.color)), heavy * heavy * CONFIG.VISUALS.heavyTell.tint);   // a heavy coming: it will stagger
+    else if (this.cracks > 0 && this.tint < 0.25) r.setTint(CRACK_COLOR, CONFIG.finisher.glow * this.cracks);   // its guard cracked (stand-in, js/finisher.js)
     else r.setTint(HIT_COLOR, this.tint * 0.8);
     if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? Math.min(1, this.resonance / R.max) : 0;   // pass 68: his bronze glows as the blows fill it
       r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }

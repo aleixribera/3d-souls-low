@@ -8,7 +8,6 @@
   const log = [];
   events.onAny((type, d) => { if (['playerDeath', 'hazardDeath', 'respawn', 'attackMarker'].includes(type)) log.push({ type, d }); });
   const seen = type => log.filter(x => x.type === type).length;
-  const kneel = e => { e.hitbox = null; e.setState(ES.BROKEN); };
   const inFront = (e, p, gap = 0.6) => {
     const d = e.radius + p.radius + gap;
     sim.place(e.x + Math.sin(e.yaw) * d, e.z + Math.cos(e.yaw) * d, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
@@ -61,11 +60,12 @@
     expect.ok(tolls === 3, `three tolls (${tolls})`);
   });
 
-  test('Audit: an executor who dies mid-execution never leaves the victim held on the blade', () => {
+  test('Audit: a player who dies mid-Finishing Blow never leaves the foe held in stopped time', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
-    const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1);
-    sim.press('light'); sim.until(() => p.state === PS.EXECUTE, 0.3);
-    expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED, 'executing');
+    const p = Game.player, e = Game.duel; e.cracks = CONFIG.finisher.cracks; e.hitbox = null; e.setState(ES.PARRIED);
+    inFront(e, p); p.openCounter(1, 'deflect', e); sim.step(1);
+    sim.press('light'); sim.until(() => p.state === PS.EXECUTE, 1);
+    expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED, 'the Finishing Blow');
     sim.step(5); p.die();
     expect.ok(e.state !== ES.EXECUTED && !p.exec, `released (${e.state})`);
   });

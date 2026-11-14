@@ -28,9 +28,9 @@ const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   diedTip: $('diedTip'), flaskRow: $('pFlasks'), flasks: [],
-  eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eMend: $('eHpMend'), lastMend: 0, mendClosing: 0, mendShown: true, eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
+  eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eMend: $('eHpMend'), lastMend: 0, mendClosing: 0, mendShown: true, eName: $('eName'), eDmg: $('eDmg'),
   rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
-  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
+  died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), 
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
   help: $('help'), controlsTips: $('controlsTips'), controlsTipsRows: $('controlsTipsRows'), controlsTipsTimer: 0,
@@ -38,7 +38,7 @@ const hud = {
   groupTip: $('groupTip'), groupTipCount: $('groupTipCount'), groupTipText: $('groupTipText'),
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
-  target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
+  target: null, restedTimer: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
   healTimer: 0, hurtTimer: 0, wasAlive: true, popFlask: -1, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
@@ -76,7 +76,6 @@ const hud = {
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.promptKey.textContent = keycap(bindLabel('rest'));
     this.talkKey.textContent = keycap(bindLabel('talk'));
-    this.execKey.textContent = keycap(bindLabel('light'));
     this.restText = 'Rest at bonfire';
     this.confirm.textContent = `Press ${systemLabel('restart')} again to restart from the beginning`;
   },
@@ -226,7 +225,7 @@ const hud = {
     camera.updateMatrixWorld();
     let n = 0;
     for (const e of game.enemies) {
-      if (!e.alive() || !e.awake() || e.asleep || (e.training && !(e.def.stagger && e.def.stagger.showBar)) || e.def.posture && game.kind !== 'bossBattle') continue;
+      if (!e.alive() || !e.awake() || e.asleep || e.training || e.isBoss() && game.kind !== 'bossBattle') continue;
       if (e.in('unaware') && e.hp >= e.def.hp && e !== game.lock) continue;   // untouched and unaware: no bar yet
       const q = e.rig.root.position;
       if (game.kind !== 'bossBattle' && (Math.hypot(q.x - p.x, q.z - p.z) > F.tagRange || gateBetween(p, e))) continue;
@@ -236,21 +235,11 @@ const hud = {
       if (!t) {
         const el = document.createElement('div'); el.className = 'eTag';
         el.innerHTML = '<div class="trail"></div><div class="hp"></div>';
-        const gEl = document.createElement('div'); gEl.className = 'eTag eGuard';   // shield guard meter, under the bar
-        gEl.innerHTML = '<div class="po"></div>';
-        this.tagRoot.append(el, gEl);
-        t = { el, trail: el.children[0], hp: el.children[1], gEl, guard: gEl.children[0], enemy: null, lag: new LagMeter() };
+        this.tagRoot.append(el);
+        t = { el, trail: el.children[0], hp: el.children[1], enemy: null, lag: new LagMeter() };
         this.tags.push(t);
       }
       const at = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, -50%) scale(${s})`;
-      const G = e.def.guard || e.def.stagger;
-      if (G) {
-        const broken = e.state === ES.BROKEN;
-        t.guard.style.width = (broken ? 100 : e.guardMeter / G.max * 100) + '%';
-        t.gEl.classList.toggle('broken', broken);
-        t.gEl.style.transform = `${at} translateY(8px)`;
-      }
-      t.gEl.style.display = G ? 'block' : 'none';
       const eh = e.hp / e.def.hp;
       if (t.enemy !== e) { t.enemy = e; t.lag.set(eh); }
       const trail = t.lag.update(eh, dt);
@@ -261,7 +250,7 @@ const hud = {
       t.el.style.transform = at;
       t.el.style.display = 'block';
     }
-    for (let i = n; i < this.tags.length; i++) { this.tags[i].el.style.display = this.tags[i].gEl.style.display = 'none'; this.tags[i].enemy = null; }
+    for (let i = n; i < this.tags.length; i++) { this.tags[i].el.style.display = 'none'; this.tags[i].enemy = null; }
   },
   // Damage numbers (a level with `damageNumbers`: the Ability Grounds). Each enemy's health is read every frame and
   // a drop rises off it as a number, so blows and every ability's damage all show. A fixed pool, reused.
@@ -334,8 +323,8 @@ const hud = {
     this.calm = this.calm + Math.max(-rate, Math.min(rate, goal - this.calm));
     this.root.style.setProperty('--calm', this.calm.toFixed(3));
   },
-  // The boss bar, top centre: fades in with the target, trails its losses, tallies the damage of a combo, and
-  // warns when posture is about to break.
+  // The boss bar, top centre: fades in with the target, trails its losses and tallies the damage of a combo. Health
+  // only (pass 100: the posture bar went).
   updateBoss(e, dt) {
     const H = CONFIG.hud;
     this.eBars.classList.toggle('hidden', !e);
@@ -344,7 +333,7 @@ const hud = {
     this.eDmg.classList.toggle('show', this.tallyTimer > 0 && this.tally >= 1);
     if (!e) return;
     const eh = clamp01(e.hp / e.def.hp);
-    if (e !== this.target) { this.target = e; this.bossLag.set(eh); this.eName.textContent = e.def.name; this.lastBossHp = e.hp; this.tally = this.tallyTimer = 0; this.lastPosture = e.posture || 0; this.lastMend = 0; this.mendClosing = 0; }
+    if (e !== this.target) { this.target = e; this.bossLag.set(eh); this.eName.textContent = e.def.name; this.lastBossHp = e.hp; this.tally = this.tallyTimer = 0; this.lastMend = 0; this.mendClosing = 0; }
     if (e.hp < this.lastBossHp - 1e-6) { this.tally += this.lastBossHp - e.hp; this.tallyTimer = H.tallyHold; this.eDmg.textContent = `−${Math.round(this.tally)}`; }
     this.lastBossHp = e.hp;
     if (this.eName.textContent !== e.def.name) this.eName.textContent = e.def.name;   // a boss's next phase renames it
@@ -355,16 +344,6 @@ const hud = {
     this.mendClosing = mend < this.lastMend - 1e-6 && mend > 0 ? H.mendLit : Math.max(0, this.mendClosing - dt); this.lastMend = mend;
     if (mend > 0 || this.mendShown) { this.eMend.style.left = eh * 100 + '%'; this.eMend.style.width = mend * 100 + '%'; this.mendShown = mend > 0; }
     this.eMend.classList.toggle('closing', this.mendClosing > 0);
-    this.ePost.classList.toggle('hidden', !e.def.posture);
-    if (e.def.posture) {
-      const pr = e.posture / e.def.posture.max;
-      if (e.posture > this.lastPosture + 0.5) this.postFlash = CONFIG.fx.postureFlash;   // pulse when posture rises
-      this.lastPosture = e.posture;
-      this.postFlash = Math.max(0, this.postFlash - dt);
-      this.ePostFill.style.width = pr * 100 + '%';
-      this.ePostFill.style.filter = this.postFlash > 0 ? 'brightness(2.2)' : '';
-      this.ePost.classList.toggle('warn', pr >= H.postureWarn);
-    }
   },
   // Short notices above the prompt; each fades on its own (CSS) and is swept away here.
   toast(text) {
@@ -388,8 +367,6 @@ const hud = {
     const talk = p.alive() && !(ready && game.restWins()) ? lore.prompt() : null;   // one key: show only the one it would do
     this.talk.classList.toggle('show', !!talk);
     if (talk && this.talkText.textContent !== talk) this.talkText.textContent = talk;
-    // Execute (js/execution.js): a kneeling enemy is in reach, in front of it.
-    this.execCue.classList.toggle('show', p.alive() && game.enemies.some(e => e.execReady));
   },
   // Subtitles (js/lore.js): { name, text, show } or null. A line fades in and out; null fades everything away.
   subtitle(s) {
@@ -399,7 +376,7 @@ const hud = {
   },
   update(game, dt) {
     if (game.kind === 'bossBattle') { this.updateTags(game, dt); bossBattle.drawHud(game); return; }
-    const H = CONFIG.hud, t = game.target(), e = t && (t.def.posture || t.def.bossBar) ? t : null;   // the top bar: bosses and the great mannequins
+    const H = CONFIG.hud, t = game.target(), e = t && (t.isBoss() || t.def.bossBar) ? t : null;   // the top bar: bosses and the great mannequins
     const p = game.player;
     this.clock += dt;
     this.updateControlsTips(game, dt);

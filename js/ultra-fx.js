@@ -27,7 +27,7 @@ const ultraFx = (() => {
   const fogged = [];   // materials whose fog colour follows the level's (non-additive pools)
   const groundBelow = (x, y, z) => { const g = world ? world.groundAt(x, z, y + 0.4) : 0; return g > -Infinity ? g : y - 30; };
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
-  const isBoss = e => !!(e.boss || e.baseDef.phases || e.baseDef.posture);
+  const isBoss = e => !!(e.boss || e.baseDef.phases);
   // js/ultra-boss.js plugs in here: a boss's colour of the moment, its blade ribbon, and whether it draws a ground blow itself.
   const hooks = { aura: null, trail: null, playerTrail: null, impact: null, bolt: null };
   const auraColor = e => (hooks.aura && hooks.aura(e)) ?? U.auraColors[e.baseDef.id] ?? U.aura.color;
@@ -479,7 +479,8 @@ void main() {
     moteBurst(at, 40, 0xffe2a0, { r: 0.3, speed: 4, lift: 0.3, life: [0.4, 1.0], size: 0.8, up: 0.2 });
     ultraPost.wave(at, 1.3, 1.1); ultraPost.pulse({ flash: 0.12, color: 0xfff0c8 });
   });
-  when('postureBreak', d => {
+  when('guardCrack', d => {   // pass 100: a counter cracks a guard (was the posture break's)
+    if (!(d.cracks > 0)) return;
     const e = d.enemy, at = { x: e.x, y: e.y + e.height * 0.65, z: e.z };
     sparkBurst(at, 90, 'gold', [0, 1, 0], 0.4, 1.1);
     moteBurst(at, 60, 0xffc860, { r: e.radius, speed: 3, lift: 0.8, life: [0.8, 1.6], size: 1.2 });
@@ -487,16 +488,12 @@ void main() {
     mark(e.x, e.y, e.z, 0xffa030, 3 * scaleOf(e), 1.2, 0.9);
     ultraPost.wave(at, 1.1, 1.2);
   });
-  when('execution', d => {
+  when('finisher', d => {   // pass 100: the Finishing Blow's cuts open (was the execution's)
     const dir = dirOf(d.at, d.exit);
     bloodSpray(d.exit, dir, 70, 1.6); bloodSpray(d.at, [-dir[0], 0, -dir[2]], 30, 1.1);
     sparkBurst(d.exit, 40, 'ember', dir, 0.6, 1.1);
     flashAt(d.at, 0xff2a14, 16, 9); flare(d.at, 0xff9070, 2.6, 0.3);
     ultraPost.wave(d.at, 1.4, 1.2); ultraPost.pulse({ flash: 0.1, color: 0x5a0000 });
-  });
-  when('executionPull', d => {
-    const e = d.enemy, at = chest(e), dir = dirOf(e, d.player || Game.player);
-    bloodSpray(at, dir, 55, 1.4); flashAt(at, 0xff3018, 8, 7);
   });
   when('enemyDeath', d => {
     const e = d.enemy;

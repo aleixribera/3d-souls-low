@@ -47,7 +47,7 @@ const abilityLab = (() => {
     const at = e || p, ctx = { x: at.x, y: at.y, z: at.z, enemy: e, action: pw.action, key: pw.key };
     if (pw.v.below) p.hp = Math.min(p.hp, Math.max(1, Math.floor(p.maxHp * pw.v.below * 0.9)));   // a power that waits for low health
     abilityPowers.reset();
-    if (pw.when === 'hits') ctx.strike = { damage: 0, postureDmg: 0 };
+    if (pw.when === 'hits') ctx.strike = { damage: 0 };
     for (let i = pw.when === 'hits' ? pw.v.hits : 1; i > 0; i--) abilityPowers.trigger('self', p, p.kit, pw.when, ctx);   // a `hits` power: its Nth
   }
 

@@ -91,17 +91,32 @@ function peer(url, origin) {
   assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial, hit: 5 }), false, 'a blow that was never under way is refused');
   assert.equal(sim.parry('a', { enemy: e.netId, serial: oldSerial, hit: 0 }), true, 'accept a successful parry of the displayed recent move');
   assert.equal(e.netAttack, newSerial); assert.equal(e.state, 'windup', 'a late parry never cancels an unrelated new move');
-  assert.ok(e.posture > 0, 'late parries still grant shared posture damage');
   // A perfect dodge needs the claimer's own frames to show the dash (pass 85).
   sim.tick(1 / 60); assert.equal(sim.dodged('a', { enemy: e.netId, serial: newSerial }), false, 'no dodge while standing');
   sim.setPlayers([{ ...pose(6, -3), id: 'a', state: 'roll' }, { ...pose(-12, 0), id: 'b' }]);
   assert.equal(sim.dodged('a', { enemy: e.netId, serial: newSerial }), true, 'a dodge while dashing');
-  e.setState('broken');
-  assert.equal(sim.beginExecution('a', { enemy: e.netId }), true);
-  assert.equal(sim.beginExecution('b', { enemy: e.netId }), false, 'execution has a single owner');
-  assert.equal(e.state, 'executed');
-  sim.endExecution('b', e.netId); assert.equal(e.state, 'executed', 'other player cannot finish execution');
-  const before = e.hp; sim.endExecution('a', e.netId); assert.ok(e.hp < before && e.hp >= before - e.def.hp / 2, 'boss execution respects cap');
+  // Pass 100: a counter (a blow after this player's own opening) cracks the guard, one counter an opening; the counter on
+  // a guard cracked to the last is the Finishing Blow, granted to whoever landed it, and only they end it.
+  const X = sim.inspect().CONFIG.finisher, counter = swing => sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0, riposte: true, swing });
+  sim.setPlayers([{ ...pose(6, -3), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
+  assert.equal(counter(7), true); assert.equal(e.cracks, 1, 'a counter cracks the guard');
+  const h1 = e.hp; counter(7);
+  assert.ok(h1 - e.hp > 16, `one counter swing that reaches more than one foe is a counter on each (${h1 - e.hp})`);
+  for (let i = 0; i < 60; i++) sim.tick(1 / 60);
+  counter(); assert.equal(e.cracks, 1, 'one counter an opening');
+  e.cracks = X.cracks; e.crackBy = null;
+  for (let i = 0; i < 60; i++) sim.tick(1 / 60);
+  e.beginAttack(parryable); sim.tick(1 / 60);
+  sim.setPlayers([{ ...pose(e.x + 1.5, e.z), id: 'a', state: 'roll' }, { ...pose(-12, 0), id: 'b' }]);
+  assert.equal(sim.dodged('a', { enemy: e.netId, serial: e.netAttack }), true, 'a fresh opening');
+  sim.setPlayers([{ ...pose(e.x + 1.5, e.z), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
+  assert.equal(counter(), true); assert.equal(e.state, 'executed', 'the counter on a guard cracked to the last is the Finishing Blow');
+  assert.ok(sim.frame().events.some(d => d.type === 'finisher' && d.player === 'a' && d.enemy === e.netId), 'the server grants it to the one who landed it');
+  assert.equal(sim.hit('a', { enemy: e.netId, attack: 'finisher', charge: 0 }), false, 'nobody claims the blow itself');
+  sim.endFinisher('b', e.netId); assert.equal(e.state, 'executed', 'another player cannot end it');
+  const before = e.hp; sim.endFinisher('a', e.netId);
+  assert.ok(e.hp < before && e.hp >= before - e.def.hp * X.damage.bossCap - 1e-6, `a boss's Finishing Blow respects the cap (${before} to ${e.hp})`);
+  assert.equal(e.cracks, 0, 'its guard is whole again');
   // Pass 77: the Antlered Hunger learns a move that landed on nobody. A client's claim that the move it was shown landed
   // stops that (a claim on any other move, or from out of its reach, is refused), and every frame carries what it has learned.
   sim.start('arena', 'antlered'); sim.setPlayers([{ ...pose(18, 0), id: 'a' }]);

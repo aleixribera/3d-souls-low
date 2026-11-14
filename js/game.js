@@ -261,7 +261,6 @@ const Game = {
     resolveCombat(this);
     abilityPowers.tick(dt);   // an ability's legendary still striking (js/abilities.js)
     companions.resolve(this);
-    execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);
     burnInFires(this, dt, p, this.companion && this.companion.body);   // the fires left on the floor (a hit's `fire`, js/enemy.js)
     if (alerting) this.spreadAlert(unaware);

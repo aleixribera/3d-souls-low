@@ -28,7 +28,7 @@
     expect.ok(d.attacks.every(a => a.pose && a.pose.startsWith('tree')) && !d.attacks.some(a => RADAGON.attacks.some(r => r.id === a.id)), 'no borrowed moves: every pose is its own');
     const M = MODEL_DEFS.kindlingTree;
     expect.ok(M.parts.length >= 25 && M.parts.every(q => q.use === 'baked' && q.mesh.startsWith('tree:')) && M.extends !== 'antleredHunger', 'its own Blender figure');
-    expect.ok(d.hp === 2500 && d.posture.max === 105 && d.posture.parry === 50 && d.poise === 270, 'health and posture as before');
+    expect.ok(d.hp === 2500 && d.poise === 270, 'health and poise as before');
     const P = d.phases.rooted, K = d.phases.kindled;
     expect.ok(P.rooted === true && d.speed === 0 && !('speed' in P), 'rooted: it never walks');
     expect.ok(K.at === 0.6 && K.opener === 'uprooted' && K.name === 'The Kindling Tree, Ablaze' && K.ignite && K.rooted === false && K.speed > 0, 'at 60 % it catches and tears itself free');

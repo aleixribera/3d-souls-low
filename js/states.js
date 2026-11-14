@@ -7,17 +7,17 @@ const PS = Object.freeze({   // player
   IDLE: 'idle', WALK: 'walk', JUMP: 'jump', FALL: 'fall', ROLL: 'roll', ATTACK: 'attack',
   JUMP_ATTACK: 'jumpAttack', LAND: 'land', BLOCK: 'block', PARRY: 'parry', USE_ITEM: 'useItem',
   REST: 'rest', HURT: 'hurt', STAGGER: 'stagger', DEAD: 'dead',
-  EXECUTE: 'execute',   // v5.2: running an execution on a kneeling enemy (js/execution.js); untouchable throughout
+  EXECUTE: 'execute',   // pass 100: running the Finishing Blow (js/finisher.js; the old executions' name); untouchable throughout
   HELD: 'held',         // pass 72: in a boss's grip (a hit's `seize`, Player.seize): carried, burned, struggling to break free
 });
 const ES = Object.freeze({   // enemy
   IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
   RETURN: 'return', SEARCH: 'search', CHASE: 'chase', WINDUP: 'windup', ACTIVE: 'active', RECOVER: 'recover',
-  HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', BROKEN: 'broken', DEAD: 'dead',
+  HURT: 'hurt', STAGGER: 'stagger', PARRIED: 'parried', DEAD: 'dead',
   // Bosses with phases (v4.3): PHASE between two health bars (invulnerable), RETREAT leaping away when a fight ends
   // in a retreat (invulnerable, scripted), GONE once it has left (not alive, never drawn).
   PHASE: 'phase', RETREAT: 'retreat', GONE: 'gone',
-  EXECUTED: 'executed',   // v5.2: run through by the player's execution: held still, harmless and untouchable until it ends
+  EXECUTED: 'executed',   // pass 100: held in stopped time through a Finishing Blow (js/finisher.js): harmless and untouchable until it ends
 });
 // The four phases of every attack: wind-up (STARTUP), strike (ACTIVE, the only phase with a hitbox), follow-through
 // (FOLLOW, the blade carries on past the target) and recovery (back to guard; the only one a roll can cancel).

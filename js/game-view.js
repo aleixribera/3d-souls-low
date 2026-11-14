@@ -221,9 +221,9 @@ Object.assign(Game, {
         dist += K.leanPullback * w; pitch += K.leanRaise * w / dist;
       }
     }
-    // An execution: the camera leans in on it, then eases back (CONFIG.execution.camera).
-    const xk = execution.cameraWeight(this, dt, snap);
-    if (xk > 0) { dist *= 1 - CONFIG.execution.camera.push * xk; look.y -= CONFIG.execution.camera.lower * xk; }
+    // A Finishing Blow: the camera leans in on it, then eases back (CONFIG.finisher.camera).
+    const xk = finisher.cameraWeight(this, dt, snap);
+    if (xk > 0) { dist *= 1 - CONFIG.finisher.camera.push * xk; look.y -= CONFIG.finisher.camera.lower * xk; }
     const height = dist * (Z.heightRatio + pitch);
     const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
     // Keep the camera inside the walls and on the player's side of closed gates:

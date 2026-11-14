@@ -3,7 +3,7 @@
 // the crate's odds and what it gives (nothing owned twice while anything is left, a new look worn), the store kept
 // across visits and safe against bad or blocked storage; then the server: a crate ability is offered only to the player
 // whose crates gave it, never in the weekly run, and anything unknown a browser sends is dropped; and the two crate
-// abilities heal on their own triggers (Grave Feast: an execution; Iron Mercy: a parry, once per cooldown).
+// abilities heal on their own triggers (Grave Feast: a Finishing Blow; Iron Mercy: a parry, once per cooldown).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -157,15 +157,15 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   g('abilityClocks')(mercy.perk, mv.cooldown + 0.01); parry(mercy); near(mercy.hp, healed + mercy.maxHp * mv.heal, 'Iron Mercy again after its cooldown');
   const plain = body([]); plain.hp = 40; parry(plain); assert.equal(plain.hp, 40, 'no heal without it');
 
-  // Grave Feast: an execution heals.
+  // Grave Feast: a Finishing Blow heals (pass 100).
   const feast = (ids) => {
-    const p = body(ids); p.hp = 30; e.hp = e.def.hp; e.setState(ES.BROKEN);
-    const X = g('execution'); X.start(p, e);
+    const p = body(ids); p.hp = 30; e.hp = e.def.hp; e.setState(ES.IDLE);
+    const X = g('finisher'); X.start(p, e);
     for (let t = 0; t < 4 && !p.exec?.impact; t += 1 / 60) X.update(p, 1 / 60);
-    assert.ok(p.exec?.impact, 'the execution lands');
+    assert.ok(p.exec?.impact, 'the Finishing Blow lands');
     return p.hp;
   };
-  near(feast(['grave-feast']), 30 + PLAYER_DEF.stats.maxHp * (BY['grave-feast'].levels[0].heal + CONFIG.execution.heal), 'Grave Feast heals on an execution');   // on top of every execution's own (pass 85)
-  near(feast([]), 30 + PLAYER_DEF.stats.maxHp * CONFIG.execution.heal, 'an execution heals a little without it');
+  near(feast(['grave-feast']), 30 + PLAYER_DEF.stats.maxHp * (BY['grave-feast'].levels[0].heal + CONFIG.finisher.heal), 'Grave Feast heals on a Finishing Blow');   // on top of every Finishing Blow's own
+  near(feast([]), 30 + PLAYER_DEF.stats.maxHp * CONFIG.finisher.heal, 'a Finishing Blow heals a little without it');
 }
 console.log('crates: ok');

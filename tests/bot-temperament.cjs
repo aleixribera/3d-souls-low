@@ -1,6 +1,6 @@
 'use strict';
 // Bots as human aids (v7.52.0): a temperament per bot and per fight, waiting out an enemy's string from past its
-// reach, rolling away from a string rather than across it, and leaving executions to the player.
+// reach, rolling away from a string rather than across it, and landing its own Finishing Blow (pass 100).
 // node tests/bot-temperament.cjs   (VERBOSE=1 prints the temperaments drawn)
 const assert = require('node:assert/strict');
 const { createSimulation } = require('../server/headless.cjs');
@@ -90,46 +90,17 @@ function withMood(boss, profile, want) {
   console.log(`Stormcaller: at most ${rollsMax} rolls, outside the spin in ${outside}/4 fights, unhurt in ${untouched}/4.`);
 }
 
-// ---- 4. Executions are the player's ----
-// The second bot's body stands in for a person: no botId, its presses scripted here.
-function kneeling(playerActs, withPlayer = true) {
-  const { sim, list, b, p, e } = duel('ostrey', 'maren', 7, 2);
-  const human = list[1].body;
-  if (withPlayer) {
-    delete human.botId;
-    list[1].brain = { hands: list[1].brain.hands, navigator: list[1].brain.navigator, target: null,
-      think(_dt, me) {
-        const front = { x: e.x + Math.sin(e.yaw) * (e.radius + me.radius + 0.4), z: e.z + Math.cos(e.yaw) * (e.radius + me.radius + 0.4) };
-        const dx = front.x - me.x, dz = front.z - me.z, d = Math.hypot(dx, dz);
-        if (playerActs && e.state === 'broken' && e.stateTime > 0.6) {
-          if (d < 0.5) this.hands.press('light');
-          return { mv: d > 0.2 ? { x: dx / d, z: dz / d, has: true } : { x: 0, z: 0, has: false }, lock: e };
-        }
-        return { mv: { x: 0, z: 0, has: false }, lock: e };
-      } };
-    human.ctl = list[1].brain.hands;
-    human.x = e.x + e.radius + human.radius + 3; human.z = e.z; human.y = e.y; human.savePrev();
-  } else { human.x = e.x - 30; human.savePrev(); human.hp = 0; }
-  e.hitbox = null; e.crack = 1; e.setState('broken');
-  const breakTime = e.def.posture.breakTime;
-  let botAt = null, humanAt = null;
-  for (let t = 0; t < breakTime + 0.5; t += dt) {
-    sim.setPlayers([]); sim.tick(dt);
-    if (botAt === null && p.state === 'execute') botAt = t;
-    if (humanAt === null && human.state === 'execute') humanAt = t;
-  }
-  return { botAt, humanAt, breakTime, tally: b.brain.tally };
-}
+// ---- 4. A bot's counter cracks the guard too: on a guard cracked to the last it is the bot's Finishing Blow (pass 100) ----
 {
-  const taken = kneeling(true);
-  assert.ok(taken.humanAt !== null, 'the player executes the kneeling boss');
-  assert.equal(taken.botAt, null, 'the bot holds off while the player takes it');
-  const left = kneeling(false);
-  assert.ok(left.humanAt === null && left.botAt !== null, 'with the player hanging back, the bot takes it');
-  assert.ok(left.botAt > left.breakTime - 2, `only near the end of the kneel (${left.botAt.toFixed(2)} of ${left.breakTime} s)`);
-  const alone = kneeling(false, false);
-  assert.ok(alone.botAt !== null && alone.botAt < 1.5, 'with no player near, a bot executes at once');
-  console.log(`Executions: the player executes at ${taken.humanAt.toFixed(2)} s and the bot holds off; the player hangs back and the bot executes at ${left.botAt.toFixed(2)} of ${left.breakTime} s; alone it executes at ${alone.botAt.toFixed(2)} s.`);
+  const { sim, list, p, e } = duel('ostrey', 'maren', 7, 2);
+  const other = list[1].body; other.x = e.x - 30; other.savePrev(); other.hp = 0;
+  e.cracks = sim.inspect().CONFIG.finisher.cracks; e.hitbox = null; e.setState('parried'); p.openCounter(1.5, 'deflect', e);
+  const hp = e.hp; let at = null;
+  for (let t = 0; t < 2 && at === null; t += dt) { sim.setPlayers([]); sim.tick(dt); if (p.state === 'execute') at = t; }
+  assert.ok(at !== null, 'the bot counters, and its counter is the Finishing Blow');
+  for (let t = 0; t < 5 && p.state === 'execute'; t += dt) { sim.setPlayers([]); sim.tick(dt); }
+  assert.ok(p.state !== 'execute' && e.hp < hp - 100 && e.cracks === 0, `it lands (${hp} to ${e.hp}) and the guard is whole again (${e.cracks})`);
+  console.log(`Finishing Blow: the bot counters at ${at.toFixed(2)} s; the boss goes from ${hp} to ${e.hp}.`);
 }
 
 // ---- 5. Openings are the player's first, and bots back up whoever the boss is after (pass 35) ----

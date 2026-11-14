@@ -14,7 +14,7 @@
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
-// New in v5.5: the `shielded` reaction (a blow taken on his guard, js/enemy.js), `critMul` (js/execution.js), spectral
+// New in v5.5: the `shielded` reaction (a blow taken on his guard, js/enemy.js), `critMul` (js/finisher.js), spectral
 // `wings`, `tail` and `tailGreat` mounted on the body (js/spectral.js). The rest are the v5.3 / v5.4 fields.
 const crucibleGlint = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));
 const CK_RING = (w, h) => ({ w, h, d: w, fwd: 0, y: h / 2, ground: true });   // a sweep all round him, low (jumpable)
@@ -94,11 +94,9 @@ const CRUCIBLE_KNIGHT = {
   visual: { skin: 0x9a6a3a, skinMetal: 0.4, metal: 0.55, roughness: 0.45, rim: 0.9 },
   hp: 2600, poise: 220, speed: 2.5, turnRate: 3.2, trackRate: 1.7, approach: 0.55, kite: 0.1,
   cooldown: [1.0, 1.9], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0, deathFade: 6, critMul: 0.7,
-  posture: { max: 81, parry: 115, chainGap: 1.8, chainMul: 1.3, decay: 4.5, breakTime: 3.2, hitstop: 0.2 },
-  // The greatshield, as the Shield Warden's: frontal blows while he is not attacking are blocked (0.3 of the damage) and
-  // fill the guard meter (a heavy far more); flank him or punish his recoveries.
-  guard: { arc: 0.95, damageMul: 0.3, knockMul: 0.25, lowerReach: 1.0, blockedMul: 0.5, breakers: ['heavy'],
-           max: 100, heavy: 30, light: 8, decayDelay: 2.5, decay: 8, breakTime: 3.2, hitstop: 0.18 },
+  // The greatshield, as the Shield Warden's: frontal blows while he is not attacking are blocked (0.3 of the damage);
+  // flank him or punish his recoveries. A boss's shield holds against a heavy (pass 100).
+  guard: { arc: 0.95, damageMul: 0.3, knockMul: 0.25, lowerReach: 1.0, breakers: ['heavy'] },
   defaultPhases: ['knight', 'aspect'],
   phases: {
     // Phase 1: sword and shield.

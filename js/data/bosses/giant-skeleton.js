@@ -7,7 +7,7 @@
 // cuffs on its wrists, a broken chain at its ankle. It keeps the hall's last gate and does what the gaol did to them: it
 // takes the living and holds them. Its long left hand is a cell. It closes on you (a hit's `seize`, Player.seize), lifts
 // you to the skull, and the white heat in its spine breathes on you while you struggle (strike or roll, again and again)
-// to tear loose; a blow that breaks its posture opens the hand too. The rest is a gaoler's club and that hand: a sweep and
+// to tear loose; a parry or a Finishing Blow opens the hand too. The rest is a gaoler's club and that hand: a sweep and
 // a raking claw to parry, a slam and a stomp to roll. At half its strength it drives both hands into the floor and the pit
 // gives it more of its dead: the heat fills its ribs (`reveal`), and it leaps on you hand first, wheels the club round, and
 // walks you down with stamps.
@@ -253,8 +253,6 @@ MODEL_DEFS.giantSkeleton = {
     visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
     hp: 1920, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8, approach: 0.5, kite: 0.1,
     cooldown: [1.39, 2.62], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    // Boss posture: replaces poise interrupts (hits never cancel its swings). A break opens its hand too (Player.seize).
-    posture: { max: 70, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['gaol', 'gathered'],
     phases: {
       gaol: { hp: 1920, attacks: ['sweep', 'stomp', 'giantClaw', 'giantSlam', 'giantTaking', 'giantClubClaw', 'giantTakingPunish'] },

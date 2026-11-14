@@ -3,7 +3,7 @@
 // seed that goes on until everyone falls. No bots (pass 52); the first fights from the easier bosses, every 5th fight
 // Crowned (a pick of 4 with a legendary), two bosses at once every few fights, modifiers by name; the fallen rise for
 // the next fight; a refused opening changes nothing; the end of run counts fights won and Crowned fights. Pass 73:
-// the warm-up's bosses (RUSH.opening, at their RUSH.warmHealth share) and each posture break needing more.
+// the warm-up's bosses (RUSH.opening, at their RUSH.warmHealth share).
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { createServer } = require('../server/index.cjs');
@@ -90,13 +90,6 @@ async function peer(origin, name) {
       app.sim.start('arena', id, []); app.sim.setRushFight(warm);
       assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, whole, `${id}: whole from fight ${warm + 1}`);
     }
-    // Each posture break in a fight makes the next need more (CONFIG.endless.breakGrow), on top of the rest after one.
-    app.sim.start('arena', bosses[3], []); app.sim.setRushFight(E.opening);
-    const kneel = app.sim.inspect().Game.enemies.find(x => x.isBoss()), P = kneel.def.posture;
-    const blowsToBreak = () => { let n = 0; kneel.sinceBreak = Infinity; kneel.posture = 0; kneel.setState('idle'); while (!kneel.addPosture(P.max / 10 + 1e-6)) n++; return n + 1; };
-    const firstBreak = blowsToBreak(), secondBreak = blowsToBreak(), thirdBreak = blowsToBreak();
-    assert.equal(firstBreak, 10); assert.ok(secondBreak > firstBreak && thirdBreak > secondBreak, `breaks need more each time: ${firstBreak}, ${secondBreak}, ${thirdBreak}`);
-    assert.equal(kneel.breaks, 3);
     // A boss of RUSH.health (pass 73) has its share in every fight; Story and Practice keep it whole.
     for (const [id, k] of Object.entries(RUSH.health)) {
       app.sim.start('arena', id, []); const e = app.sim.inspect().Game.enemies.find(x => x.isBoss()), whole = e.def.hp;

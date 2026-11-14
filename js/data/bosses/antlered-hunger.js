@@ -9,7 +9,7 @@
 // third rake held back for your roll, a hook back the other way, a second fall, a charge that turns, a kick that wheels
 // into a sweep, a leap that leaps again. An ember collar lights round its antlers for each one (the model's `marks`,
 // js/finale.js), from the skull out to the tips, and embers stream off them through a learned move's wind-up. Break its
-// guard (a posture break, or an execution) and it forgets them all: the collars go dark together, and every move is
+// guard (a Finishing Blow) and it forgets them all: the collars go dark together, and every move is
 // plain again. So the fight is a race: the longer you only dodge, the more of you it knows; press it, parry it, break it.
 // At half its health it throws back its skull and roars (a ring of force through the floor, jumped or rolled), and goes
 // on starving: it leaps on you from afar and tears at you four times running.
@@ -254,7 +254,6 @@
     visual: { skin: 0x5a4632, roughness: 0.85, rim: 0.5 },
     hp: 2600, poise: 240, speed: 3.1, turnRate: 3.4, trackRate: 1.9, approach: 0.8, kite: 0.02,
     cooldown: [0.9, 1.98], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.8, deathFade: 7,
-    posture: { max: 98, parry: 45, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.2, hitstop: 0.22 },
     defaultPhases: ['stalk', 'gorge'],
     phases: {
       stalk: { hp: 2600, attacks: ['rake', 'hook', 'slam', 'charge', 'hindKick'] },

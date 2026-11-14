@@ -114,8 +114,8 @@ function validateData({ visual = true } = {}) {
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
   need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity) && !b.crate).length >= BL.offer
-    && Number.isInteger(BL.legendaries) && BL.legendaries >= 1 && num(BL.posture) && BL.posture >= 0 && BL.posture <= 1,
-    'CONFIG.abilities: first a list of rarities with enough abilities for an offer, legendaries a whole number of 1 or more, posture from 0 to 1.');
+    && Number.isInteger(BL.legendaries) && BL.legendaries >= 1,
+    'CONFIG.abilities: first a list of rarities with enough abilities for an offer, legendaries a whole number of 1 or more.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
@@ -190,9 +190,9 @@ function validateData({ visual = true } = {}) {
   }
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
-  need(PG && ['hit', 'skill', 'deflect', 'dodge', 'execution'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
+  need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
     && num(BP.slack) && BP.slack >= 0 && BP.slack < 1 && num(BP.botReach) && BP.botReach > 0 && num(BP.botHeal) && BP.botHeal > 0 && BP.botHeal <= 1,
-    'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, execution 0 or more }, range above 0, slack from 0 to under 1, botReach above 0, botHeal above 0 up to 1.');
+    'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, finisher 0 or more }, range above 0, slack from 0 to under 1, botReach above 0, botHeal above 0 up to 1.');
   for (const key of ABILITY_KEYS) need(ABILITIES.some(b => b.key === key && !b.crate), `Abilities: key ${key} needs at least one ability to fill it.`);
   if (visual) ABILITY_KEYS.forEach((k, i) => need(Object.hasOwn(DEFAULT_ACTIONS, `ability${i + 1}`), `Key ${k}: no ability${i + 1} binding (js/input.js).`));
   // Levels and crates (js/data/crates.js): every crate ability is a reward, and every reward is whole.
@@ -219,7 +219,7 @@ function validateData({ visual = true } = {}) {
   for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r && !b.crate).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r} outside the crates, to fill an offer.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow'],
-    defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], execution: ['yield', 'late', 'aside'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
+    defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], yieldTo: ['range', 'late'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
     for (const key of fields) need(num(botConfig[group]?.[key]) && botConfig[group][key] >= 0, `Bot ${group}.${key} must be non-negative.`);
   // Temperaments (v7.52.0): ordered positive pairs and positive gaps.
   const pair = r => Array.isArray(r) && r.length === 2 && r.every(num) && r[0] >= 0 && r[1] >= r[0];
@@ -455,8 +455,6 @@ function validateData({ visual = true } = {}) {
     for (const a of d.attacks) if (a) {
       for (const f of a.followUps || []) need(aidList.has(f.attack), `Enemy "${d.id}" attack "${a.id}": follow-up "${f.attack}" is not one of its attacks.`);
       for (const h of a.hits || []) if (h.counter) need(aidList.has(h.counter.answer) && h.counter.answer !== a.id, `Enemy "${d.id}" attack "${a.id}": counter answer "${h.counter.answer}" is not another of its attacks.`);
-      for (const h of a.hits || []) if (h.counter) need(!!(d.posture || d.guard || d.stagger), `Enemy "${d.id}" attack "${a.id}": a counter breaks the stance, so the enemy needs posture, guard or stagger.`);
-      for (const h of a.hits || []) if (h.falter) need(!!d.posture, `Enemy "${d.id}" attack "${a.id}": a falter breaks its posture, so the enemy needs posture.`);
       for (const h of a.hits || []) if (h.abort) need(aidList.has(h.abort.into), `Enemy "${d.id}" attack "${a.id}": abort into "${h.abort.into}" is not one of its attacks.`);
       // Pass 77 (the Antlered Hunger): `learns` names the learned form it comes as once it has learned this attack: another of
       // its attacks, marked `learned: true`, that learns nothing itself and is never chosen by a phase (only learned into).
@@ -493,17 +491,18 @@ function validateData({ visual = true } = {}) {
     if ('lifesteal' in d) need(d.lifesteal && num(d.lifesteal.flat) && d.lifesteal.flat >= 0 && num(d.lifesteal.pct) && d.lifesteal.pct >= 0 && d.lifesteal.pct < 0.2,
       `Enemy "${d.id}": lifesteal needs flat (HP, 0 or more) and pct (a fraction of the bar under 0.2).`);   // v5.9 (Malenia)
     if ('critMul' in d) need(num(d.critMul) && d.critMul > 0 && d.critMul <= 1, `Enemy "${d.id}": critMul must be a number in (0, 1].`);
-    if (d.posture) need(['max', 'parry', 'chainGap', 'chainMul', 'decay', 'breakTime', 'hitstop'].every(k => num(d.posture[k])),
-      `Enemy "${d.id}": posture needs max, parry, chainGap, chainMul, decay, breakTime and hitstop.`);
+    // Pass 100: the posture bar, the stagger meter and the guard meter went (the Finishing Blow, js/finisher.js).
+    need(!('posture' in d) && !('stagger' in d) && !(d.guard && ('max' in d.guard || 'breakTime' in d.guard)), `Enemy "${d.id}": posture, stagger and a guard's meter are gone (pass 100: the Finishing Blow).`);
     // Group scaling is gone (v7.65.0): no enemy grows with the team, so a leftover `groupScale` is a mistake.
     need(!('groupScale' in d), `Enemy "${d.id}": groupScale is gone; no enemy scales with the number of players (CONFIG.pace).`);
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
-    // Pass 55 (the King's Blade): its own still pose while broken (js/attack-anim.js applyKeyPose).
-    if ('brokenPose' in d) need(d.posture && d.brokenPose && typeof d.brokenPose === 'object' && Object.entries(d.brokenPose).every(([k, v]) =>
+    // Pass 55 (the King's Blade): its own pose as a Finishing Blow's cuts open (pass 100: it was the kneel of a posture
+    // break; js/finisher.js executedPose, js/attack-anim.js applyKeyPose).
+    if ('brokenPose' in d) need(d.brokenPose && typeof d.brokenPose === 'object' && Object.entries(d.brokenPose).every(([k, v]) =>
       ['crouch', 'lean', 'kneel'].includes(k) ? num(v) && Math.abs(v) <= 1.5 : Array.isArray(v) && v.length === 3 && v.every(x => num(x) && Math.abs(x) <= 4)),
-      `Enemy "${d.id}": brokenPose is a key pose (bone: [x, y, z] rad; crouch, lean, kneel numbers), for a boss with posture.`);
+      `Enemy "${d.id}": brokenPose is a key pose (bone: [x, y, z] rad; crouch, lean, kneel numbers).`);
     if ('rooted' in d) need(typeof d.rooted === 'boolean', `Enemy "${d.id}": rooted must be true or false.`);   // pass 50 (the Kindling Tree)
     // Pass 68 (the Bell Warden): blows landed on him fill his resonance; at max a `when: 'resonant'` attack answers. A phase may carry its own.
     const resOk = R => R && typeof R === 'object' && num(R.max) && R.max > 0 && num(R.light) && R.light >= 0 && num(R.heavy) && R.heavy >= 0
@@ -598,7 +597,7 @@ function validateData({ visual = true } = {}) {
   need(ABILITIES.some(b => b.rarity === 'legendary'), 'Endless: a Crowned win offers a legendary, so there must be one.');
   need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
     'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');
-  need(EN.opening >= PC.warm && num(EN.breakGrow) && EN.breakGrow >= 0, 'CONFIG.endless: the opening covers the warm-up (CONFIG.pace.warm), and breakGrow is 0 or more.');
+  need(EN.opening >= PC.warm, 'CONFIG.endless: the opening covers the warm-up (CONFIG.pace.warm).');
   need(RUSH.warmHealth && Object.entries(RUSH.warmHealth).every(([id, k]) => RUSH.opening.includes(id) && num(k) && k > 0 && k <= 1),
     'RUSH.warmHealth: a share in (0, 1] for bosses of RUSH.opening.');
   need(RUSH.health && Object.entries(RUSH.health).every(([id, k]) => Object.hasOwn(ENEMY_BY_ID, id) && isBossDef(ENEMY_BY_ID[id]) && num(k) && k > 0 && k <= 1),
@@ -610,17 +609,22 @@ function validateData({ visual = true } = {}) {
     need(Object.keys(m).every(k => ['id', 'name', 'from', ...keys].includes(k)) && keys.some(k => k in m) && keys.every(k => !(k in m) || num(m[k]) && m[k] > 1 && m[k] <= 3),
       `${where}: it changes pace, rest or chain, each above 1 and at most 3 (a modifier never adds damage or health, nor slows a boss).`);
   }
-  const PR = CONFIG.enemy.postureRest;   // v7.65.0: a boss fights a while between posture breaks
-  need(PR && num(PR.time) && PR.time >= 0 && num(PR.mul) && PR.mul >= 0 && PR.mul <= 1, 'CONFIG.enemy.postureRest: time 0 or more and mul from 0 to 1.');
   const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks
   need(AG && ['damage', 'healReach', 'hold', 'margin', 'crowd', 'areaWidth'].every(k => num(AG[k]) && AG[k] >= 0) && num(AG.memory) && AG.memory > 0
     && num(AG.areaMul) && AG.areaMul >= 1, 'CONFIG.aggro: damage, healReach, hold, margin, crowd and areaWidth must be 0 or more, memory above 0 and areaMul 1 or more.');
-  // Executions (js/execution.js): the attack they run, and every tuning number.
-  need(M.attacks.execute && M.attacks.execute.pose && M.attacks.execute.hits.length === 1, 'Player moveset: executions need a one-hit "execute" attack with a pose.');
-  const X = CONFIG.execution;
-  need(X && ['range', 'cone', 'facing', 'floor', 'angleWeight', 'snapTime', 'standoff', 'gap', 'chest', 'thrustHeight', 'hitstop', 'grace', 'push', 'cuePulse', 'cueGlow'].every(k => num(X[k]))
-    && ['base', 'lightMul', 'bossLightMul', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
-    && X.snapTime < M.attacks.execute.hits[0].startup, 'CONFIG.execution: a number is missing, bossCap is above 0.5, or snapTime outlasts the wind-up.');
+  // The Finishing Blow (js/finisher.js): the attack it runs, and every tuning number.
+  { const Fa = M.attacks.finisher, F = CONFIG.finisher;
+    need(Fa && Fa.pose && Fa.hits.length === 1 && Fa.damage === 0, 'Player moveset: the Finishing Blow needs a one-hit "finisher" attack with a pose and no damage of its own.');
+    need(F && Number.isInteger(F.cracks) && F.cracks >= 1 && Number.isInteger(F.steps) && F.steps >= 1
+      && ['fade', 'rest', 'past', 'hitstop', 'grace', 'push'].every(k => num(F[k]) && F[k] >= 0) && F.fade > F.rest
+      && ['base', 'mul', 'bossMul', 'bossCap'].every(k => num(F.damage[k]) && F.damage[k] > 0) && F.damage.bossCap <= 0.5
+      && num(F.heal) && F.heal >= 0 && F.heal < 1 && num(F.camera.rate) && F.camera.rate > 0,
+      'CONFIG.finisher: cracks and steps whole numbers 1 or more, fade above rest, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');
+    const GS = CONFIG.fx && CONFIG.fx.guardCrackShake, burst = b => b && num(b.color) && Number.isInteger(b.count) && b.count >= 0 && num(b.speed) && b.speed >= 0;
+    need(num(F.glow) && F.glow >= 0 && F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
+      && num(F.camera.push) && F.camera.push >= 0 && F.camera.push < 1 && num(F.camera.lower) && F.bursts && ['enter', 'exit', 'step'].every(k => burst(F.bursts[k]))
+      && GS && num(GS.time) && GS.time >= 0 && num(GS.amp) && GS.amp >= 0,
+      'CONFIG.finisher: glow, shake { time, amp } and camera.push (under 1) 0 or more, camera.lower a number, bursts enter, exit and step each { color, count, speed }; CONFIG.fx.guardCrackShake { time, amp } 0 or more.'); }
   for (const group of ['ground', 'air', 'dash', 'counter'])
     for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks && action in M.ground, `Player moveset "${group}.${action}": no attack "${id}", or not a ground action.`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
@@ -720,14 +724,12 @@ function validateData({ visual = true } = {}) {
     && nonNeg(Pl.dashAttackFrom) && Pl.dashAttackFrom < Pl.rollTime && Pl.rollIFrames < Pl.rollTime && nonNeg(Pl.comboGrace),
     'CONFIG.player: dashCharges must be a whole number 1 or more, dashRefill, counterTime and drinkSpeedMul above 0, dashAttackFrom and rollIFrames under rollTime.');
   { const Pa = CONFIG.parry, Ms = CONFIG.enemy.mash;   // the deflect, and the bosses' answer to mashing
-    need(['arm', 'lead', 'grace', 'spamLock', 'reach', 'hitstop', 'riposteTime', 'postureMul'].every(k => num(Pa[k]) && Pa[k] >= 0) && Pa.arm > 0 && Pa.spamLock >= Pa.arm,
-      'CONFIG.parry: arm, lead, grace, spamLock, reach, hitstop, riposteTime and postureMul must be 0 or more, arm above 0 and spamLock at least arm.');
-    need(num(CONFIG.enemy.deflectShare) && CONFIG.enemy.deflectShare >= 0 && CONFIG.enemy.deflectShare <= 1, 'CONFIG.enemy.deflectShare must be from 0 to 1.');
+    need(['arm', 'lead', 'grace', 'spamLock', 'reach', 'hitstop', 'riposteTime'].every(k => num(Pa[k]) && Pa[k] >= 0) && Pa.arm > 0 && Pa.spamLock >= Pa.arm,
+      'CONFIG.parry: arm, lead, grace, spamLock, reach, hitstop and riposteTime must be 0 or more, arm above 0 and spamLock at least arm.');
     need(Ms && Number.isInteger(Ms.hits) && Ms.hits >= 2 && [Ms.gap, Ms.reach, Ms.areaBonus].every(v => num(v) && v >= 0) && Ms.recoverCut >= 0 && Ms.recoverCut <= 1,
       'CONFIG.enemy.mash: hits a whole number 2 or more, gap, reach and areaBonus 0 or more, recoverCut from 0 to 1.');
     const Bp = CONFIG.enemy.press;   // pass 90: every boss presses harder
     need(Bp && num(Bp.rest) && num(Bp.chain) && Bp.rest >= 1 && Bp.rest <= 2 && Bp.chain >= 1 && Bp.chain <= 2, 'CONFIG.enemy.press: rest and chain from 1 to 2.'); }
-  need(num(CONFIG.execution.heal) && CONFIG.execution.heal >= 0 && CONFIG.execution.heal < 1, 'CONFIG.execution.heal must be from 0 to under 1.');
   { const D = CONFIG.hud.damageNumbers;   // the Ability Grounds' damage numbers
     need(Number.isInteger(D.pool) && D.pool > 0 && [D.life, D.rise, D.spread, D.big].every(v => num(v) && v > 0) && Array.isArray(D.lanes) && D.lanes.length && D.lanes.every(num),
       'CONFIG.hud.damageNumbers: pool (whole number), life, rise, spread and big above 0, and lanes (numbers).'); }

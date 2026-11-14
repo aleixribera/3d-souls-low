@@ -255,8 +255,7 @@ MODEL_DEFS.bellWarden = {
     visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
     hp: 2600, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,
     cooldown: [1.34, 2.69], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    posture: { max: 84, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.2 },
-    // Broken: hunched over and stunned, the bell propped on the floor ahead of him (the default kneel sank it through the floor).
+    // As a Finishing Blow's cuts open (js/finisher.js): hunched over and stunned, the bell propped on the floor ahead of him (the default kneel sank it through the floor).
     brokenPose: { crouch: 0.3, lean: 0.25, chest: [0.3, 0, 0], neck: [0.2, 0, 0], head: [0.3, 0, 0], armR: [-1.15, 0, 0.1], elbowR: [-0.3, 0, 0], armL: [-0.3, 0, 0.25], elbowL: [-0.5, 0, 0] },
     defaultPhases: ['silent', 'woken'],
     phases: {

@@ -2,6 +2,13 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **From the Finishing Blow (pass 100, track B):** (1) The look is a stand-in (track A): a cracked foe's tint and
+  bursts, flash-step puffs, `executedPose`'s tremor and sag, the old camera push; the hooks are in `STATE.md`. (2) A
+  teammate's Finishing Blow is drawn only by the held foe (no remote striker flash-steps). (3) Online, a falter or a
+  broken stance opens the counter by a frame event (`opened`); played only in Node, not in a two-browser test. (4)
+  Track A's files keep dead references to postureBreak, executions and ES.BROKEN (listed in `STATE.md`); the lessons
+  `stance`, `execute` and shield now wait on events that never come. (5) The showcase's finale beat needs its cracks.
+
 - **From the sparring scene (pass 97, track A):** (1) PLAN 3d's looping clips of each move on the Controls page are
   not built: a capture of the teacher's demo per drill (`SPARRING_DRILLS[].demo`, the pass's autopilot) to small
   looping videos, shown on each Controls row. (2) The counter window's body cue judged 7 twice (flat): the even blue

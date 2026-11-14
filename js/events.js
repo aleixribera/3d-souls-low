@@ -4,7 +4,8 @@
 // ============================================================================
 // "Something happened" channel. Combat, items, bonfires and menus emit; effects and the
 // lesson cards listen (see registerListeners in the bootstrap). Events:
-//   strike {strike, attacker, target, at, blocked}  parry {target, player}  postureBreak {enemy}
+//   strike {strike, attacker, target, at, blocked}  parry {target, player}
+//   guardCrack {enemy, cracks, by}  finisherStart {player, enemy}  finisherStep  finisher {player, enemy, damage}  finisherEnd (js/finisher.js)
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
 //   impact {x, y, z, fx, enemy} (an attack with `impact` hits the ground)  shot {enemy, bolt}  boltStopped {bolt}  (strike carries projectile: true when a bolt hits)
 //   gateOpened {gate, shortcut} (shortcut: a gate opened from its far side)

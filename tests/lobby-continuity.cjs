@@ -38,12 +38,15 @@ const until = async (test, message, limit = 4000) => {
   for (let i = 0; i < 360; i++) idle.tick(1 / C.tickRate);
   assert.ok(!['windup', 'active', 'recover'].includes(enemy.state), 'an empty arena finishes attacks and returns to idle');
   assert.ok(idle.state.time > 5);
-  // The owner kneels beside its victim: the server range-checks executions (ArenaNet.config.contactSlack).
-  const owner = { ...idle.state.checkpoint, x: enemy.x, y: enemy.y, z: enemy.z + enemy.radius + 0.8, id: 'absent-owner', hp: 120, state: 'idle' };
-  idle.setPlayers([owner]); enemy.setState('broken');
-  assert.ok(idle.beginExecution(owner.id, { enemy: enemy.netId })); idle.setPlayers([]);
+  // The owner lands a Finishing Blow beside its victim (pass 100: a counter on a guard cracked to the last) and leaves.
+  const owner = { ...idle.state.checkpoint, x: enemy.x, y: enemy.y, z: enemy.z + enemy.radius + 0.8, id: 'absent-owner', hp: 120, state: 'roll' };
+  enemy.beginAttack(enemy.baseDef.attacks.find(a => a.id === 'sweep')); idle.setPlayers([owner]); idle.tick(1 / C.tickRate);
+  assert.ok(idle.dodged(owner.id, { enemy: enemy.netId, serial: enemy.netAttack }), 'the owner dodged: a counter is open');
+  idle.setPlayers([{ ...owner, state: 'idle' }]); enemy.cracks = idle.inspect().CONFIG.finisher.cracks;
+  assert.ok(idle.hit(owner.id, { enemy: enemy.netId, attack: 'light', charge: 0, riposte: true }) && enemy.netExec, 'the Finishing Blow is granted');
+  idle.setPlayers([]);
   for (let i = 0; i < 600; i++) idle.tick(1 / C.tickRate);
-  assert.equal(enemy.netExec, null, 'an abandoned execution resolves while the arena is empty');
+  assert.equal(enemy.netExec, null, 'an abandoned Finishing Blow resolves while the arena is empty');
 }
 (async () => {
   let loadingClock = 0;

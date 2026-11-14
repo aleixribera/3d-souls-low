@@ -223,11 +223,10 @@ MODEL_DEFS.oswinFirstCrown = {
     description: 'The first king the Ember ever wore, risen from beneath his throne. Every stamp and every blow of his axe cracks the floor open, and the cracks stay open; when he calls on the throne, every one of them stands up as a wall of fire. Fight where the floor is whole. At 40% he casts the axe down and the Ember takes his hands: he grabs, and only a roll gets clear.',
     scale: 2.2, bulk: 1.3, radius: 1.0, color: 0x6a5a48, weapon: 'greataxe', idle: 'sway',
     visual: { skin: 0x8c8780, skinMetal: 0.1, metal: 0.4, roughness: 0.7, rim: 0.9 },
-    // hp and posture: pass 45 (v7.65.0), a skilled player alone beats him in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1);
+    // hp: pass 45 (v7.65.0), a skilled player alone beats him in about a minute (tools/bot-fights.cjs BOTS=1 CLEAN=1);
     // kept until every boss is reworked (Aleix, 2026-11-13).
     hp: 3500, poise: 280, speed: 2.5, turnRate: 3.0, trackRate: 1.5, approach: 0.5, kite: 0.1,
     cooldown: [2.16, 3.96], flinchTime: 0, staggerTime: 1.5, parriedTime: 1.9, deathFade: 7,
-    posture: { max: 115, parry: 40, chainGap: 1.8, chainMul: 1.3, decay: 4, breakTime: 3.4, hitstop: 0.22 },
     defaultPhases: ['crowned', 'uncrowned'],
     phases: {
       crowned: { hp: 3500,

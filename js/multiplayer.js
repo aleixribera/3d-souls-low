@@ -7,7 +7,7 @@ const multiplayer = (() => {
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
   let embers = [], rescuer = null;   // the latest frame's revive embers (js/revive.js draws them), and who is reviving this player
   let looks = new Map(), looksOf = null;   // each player's blade look, rebuilt when a new roster arrives
-  let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
+  let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
   const rushView = { fight: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
@@ -798,7 +798,7 @@ const multiplayer = (() => {
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
+  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -1110,6 +1110,11 @@ const multiplayer = (() => {
       }
       for (const d of frame.events) if (d.type === 'abilityPower' && d.enemy == null) presentAbility(d, null);
       else if (d.type === 'revive') presentRevive(d);
+      else if (d.type === 'finisher' && d.player === self) startFinisher(d.enemy);   // pass 100: the server granted this player's Finishing Blow
+      else if (d.type === 'opened' && d.player === self) {   // this player's blow broke a stance or a wind-up: a counter (as solo)
+        const e = Game.enemies.find(e => e.netId === d.enemy);
+        if (e && Game.player.alive()) Game.player.openCounter(CONFIG.parry.riposteTime, 'break', e);
+      }
       // Each ember with its cue lines made here, once per frame from the server, not in the drawing (js/revive.js).
       embers = (frame.embers || []).map(m => ({ ...m, saved: m.by ? `${nameOf(m.by)} is reviving you` : '',
         reviving: `Reviving ${nameOf(m.id)}`, standIn: `Stand in the ring to revive ${nameOf(m.id)}` }));
@@ -1117,13 +1122,7 @@ const multiplayer = (() => {
       revive.set(embers, self);
       applyProgress(frame, msg.full);
     } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
-    else if (msg.type === 'execution' && active()) {
-      const e = Game.enemies.find(e => e.netId === msg.enemy);
-      if (msg.accepted && pendingExecution === msg.enemy && e && Game.player.alive()) {
-        grantedEnemy = msg.enemy; execution.start(Game.player, e); grantedEnemy = null;
-      } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
-      pendingExecution = null;
-    } else if (msg.type === 'revive') riseAgain(msg);
+    else if (msg.type === 'revive') riseAgain(msg);
     else if (msg.type === 'abilitiesChosen' && session) { if (ability) { ability.done = true; drawAbilities(); } }   // everyone has chosen: the hold
     // The free pick before fight 1 is over (CONFIG.abilities.first): this body takes its kit, the par follows it, and the boss wakes.
     else if (msg.type === 'firstPick' && session) {
@@ -1237,7 +1236,7 @@ const multiplayer = (() => {
       oldest = Math.min(oldest, time);
       track.pendingEvents = (track.pendingEvents || []).concat(view.crossed);
       // Advance the stream while holding the victim locally; its death/phase
-      // still cannot appear before this player's execution animation finishes.
+      // still cannot appear before this player's Finishing Blow ends.
       if (Game.player.exec?.enemy === e) { e.stateTime += dt; continue; }
       const priorState = e.state;
       if (e.phase !== s.phase && s.phase >= 0) e.enterPhase(s.phase);
@@ -1248,7 +1247,11 @@ const multiplayer = (() => {
         ? lerp(s.stateTime, q.stateTime, alpha) : s.stateTime + Math.max(0, time - a.time);
       e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
       e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
-      e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise; e.frozen = s.frozen || 0;
+      e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0;
+      if ((s.cracks || 0) !== e.cracks) {   // pass 100: the server's cracks; `by` the striker (this player, or another's id)
+        e.cracks = s.cracks || 0; e.crack = e.cracks ? 1 : 0;
+        events.emit('guardCrack', { enemy: e, cracks: e.cracks, by: s.crackBy === self ? Game.player : s.crackBy ?? 'server' });
+      }
       e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
       e.mendPool = s.mend || 0;   // pass 75 (Aldric)
       if (s.learned) { e.learned.length = 0; e.learned.push(...s.learned); } else if (e.learned.length) e.learned.length = 0;   // pass 77 (the Antlered Hunger)
@@ -1324,7 +1327,7 @@ const multiplayer = (() => {
       // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
       } else if (d.type === 'parry' && d.player !== self && e) events.emit('parry', { target: e, player: remotes.get(d.player)?.body || d.player });
       else if (d.type === 'abilityPower' && e) presentAbility(d, e);
-      if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'postureBreak'].includes(d.type) && e) {
+      if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });
       } else if (d.type === 'impact') events.emit('impact', { ...d, enemy: e });
@@ -1360,7 +1363,7 @@ const multiplayer = (() => {
       p.update(dt, Game.mode === 'play' ? Game.moveInput() : { x: 0, z: 0, has: false }, Game.enemies.filter(e => e.alive()), Game.lock);
       // The server owns enemy positions. Other players have no body blocking.
       for (const e of Game.enemies) if (e.state !== ES.EXECUTED) separatePair(p, e, 1);
-      resolveCombat(Game); execution.mark(p, Game.enemies);
+      resolveCombat(Game);
     }
     projectiles.update(Game, dt);
     burnInFires(Game, dt, Game.player);   // the fires the server's enemies left (laid here from their strikes, Enemy.noteFires)
@@ -1413,10 +1416,11 @@ const multiplayer = (() => {
     if (!hitIds.has(hb)) hitIds.set(hb, String(++swing));
     command('hit', { enemy: e.netId, attack: strike.attackId, swing: hitIds.get(hb), charge: strike.charge || 0, riposte: strike.riposte });
     e.tint = 1; e.recoil = 1;
-    return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || e.counterAgainst(Game.player, strike.attackId) === 'turn', broke: false, died: false };   // a counter stance turns it (pass 55)
+    const counter = e.counterAgainst(Game.player, strike.attackId);   // a counter stance turns it, or a breaker breaks it open (pass 55)
+    return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || counter === 'turn', opened: counter === 'break', died: false };
   }
   // A deflect (pass 85): the blow's index goes too, so the server knows a string's last blow (which opens the foe) from
-  // an earlier one (only turned aside, the string goes on). Returns { broke, opened } like Enemy.getDeflected.
+  // an earlier one (only turned aside, the string goes on). Returns { opened } like Enemy.getDeflected.
   function parry(e) {
     const hit = e.hitIndex || 0, last = !!e.attack && hit === e.attack.hits.length - 1;
     command('parry', { enemy: e.netId, serial: e.netSerial, hit });
@@ -1438,7 +1442,13 @@ const multiplayer = (() => {
     command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}),
       ...(ctx.key ? { key: ctx.key } : {}) });   // a number key's press: the server checks its charge and aims it
   }
-  function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
+  // The server granted this player's Finishing Blow on enemy `id` (Simulation.hit): run it here (js/finisher.js).
+  function startFinisher(id) {
+    const e = Game.enemies.find(e => e.netId === id), p = Game.player;
+    if (!e || !p.alive() || p.exec) { if (e) command('finisherEnd', { enemy: id }); return; }   // nothing to run it: let the server end it
+    grantedEnemy = id; finisher.start(p, e); grantedEnemy = null;
+    if (!p.exec) command('finisherEnd', { enemy: id });
+  }
   function rest(b) {
     const p = Game.player; p.hp = p.maxHp; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
     command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
@@ -1514,9 +1524,9 @@ const multiplayer = (() => {
       if (current?.tagName === 'BUTTON') current.click();
     }
   }
-  events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });
+  events.on('finisherEnd', d => { if (active() && d.player === Game.player) command('finisherEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, rest, requestExecution, pad,
+  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, rest, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },

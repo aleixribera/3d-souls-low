@@ -25,7 +25,7 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
     assert.throws(() => sim.start('arena', 'ostrey', [id]), err => err.rejected === true, 'prototype partner ' + id);
     assert.throws(() => sim.gauntlet(undefined, id), err => err.rejected === true, 'prototype boss run ' + id);
     assert.equal(sim.playerAttack(id), null, 'prototype pose attack ' + id);
-    assert.equal(sim.beginExecution('a', { enemy: id }), false);
+    assert.equal(sim.endFinisher('a', id), undefined, 'prototype Finishing Blow ' + id);
   }
   assert.ok(Number.isFinite(e.hp) && e.hp === e.def.hp, 'boss health stays finite and untouched');
   assert.equal(Game.level, level, 'a refused start leaves the level'); assert.equal(Game.enemies, enemies, 'and its enemies');
@@ -54,13 +54,10 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
   assert.ok(Math.hypot(far.x - s.x, far.z - s.z) > 30, 'fixture enemy is far away');
   assert.equal(sim.hit('a', { enemy: far.netId, attack: 'heavy', charge: 1 }), false, 'contact from across the level refused');
   assert.equal(far.hp, hp);
-  far.setState('broken');
-  assert.equal(sim.beginExecution('a', { enemy: far.netId }), false, 'execution out of range refused');
-  far.setState('idle');
   sim.setPlayers([{ ...pose(far.x - 1.2, far.z), y: far.y, id: 'a' }]);
   assert.equal(sim.hit('a', { enemy: far.netId, attack: 'heavy', charge: 0 }), true, 'the same contact at reach is accepted');
   assert.equal(sim.rest('a', 'nowhere'), false);
-  console.log('Simulation: prototype ids, finite health, atomic start, reach, budget, riposte and execution range passed.');
+  console.log('Simulation: prototype ids, finite health, atomic start, reach, budget, riposte and Finishing Blow ids passed.');
 }
 
 // ---- Sleeping empty run --------------------------------------------------------------------------
@@ -169,8 +166,7 @@ function connect(url, origin, headers = {}) {
     a.send({ type: 'ping' }); await a.next('pong');
     assert.equal(app.clients.get(wa.id).pose.attack, null, 'relayed poses carry only real attack ids');
     a.send({ type: 'hit', epoch: session.epoch, seq: 1, enemy: 'duel/ostrey', attack: '__proto__', charge: 0, swing: 's1' });
-    a.send({ type: 'execute', epoch: session.epoch, seq: 2, enemy: 'constructor' });
-    assert.equal((await a.next('execution')).accepted, false);
+    a.send({ type: 'finisherEnd', epoch: session.epoch, seq: 2, enemy: 'constructor' });
     assert.ok(Number.isFinite(app.sim.inspect().Game.duel.hp));
 
     // Repeated ready: one baseline per resync interval and no roster.

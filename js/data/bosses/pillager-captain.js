@@ -290,10 +290,9 @@
     description: 'The Ashbound\'s commander, who put Corvel to the torch. He burns what he takes. His bill thrusts from afar, cuts three times (parry them), cleaves from above (roll it), and its hook sweeps your legs and drags you in for the chop. At half his strength he lights it: where the burning bill lands, fire stays on the floor. Step out of it.',
     scale: 1.45, bulk: 1.25, radius: 0.66, color: 0x3a2c28, weapon: 'spear', idle: 'guard',
     visual: { skin: 0x4a4440, skinMetal: 0.4, metal: 0.35, roughness: 0.55, rim: 0.9, cloak: true },   // blackened mail, a dark cloak (the rags' embers: the model's)
-    // hp and posture: the old Captain's (v7.41.0), now over two phases on one bar.
+    // hp: the old Captain's (v7.41.0), now over two phases on one bar.
     hp: 1800, poise: 200, speed: 2.4, turnRate: 3.4, trackRate: 1.6, approach: 0.55, kite: 0.15,
     cooldown: [1.18, 2.35], flinchTime: 0, staggerTime: 1.4, parriedTime: 1.9,
-    posture: { max: 70, parry: 24, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
     defaultPhases: ['cold', 'lit'],
     phases: {
       cold: { hp: 1800, attacks: ['captainThrust', 'captainCombo', 'captainOverhead', 'captainHook', 'captainWheel', 'captainFurrow', 'captainHaftBack', 'captainThrustPunish'] },

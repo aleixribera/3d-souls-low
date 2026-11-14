@@ -10,9 +10,9 @@
 // abilityPowers for a legendary. Online that is the server, which knows every player's kit and checks each claim.
 
 // The commons' numbers. `less` cuts its Player number by the fraction; the rest raise theirs.
-const ABILITY_MODS = { damage: 'more', maxHp: 'more', posture: 'more',
+const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
   parryWindow: 'more', dashRefill: 'more', rollIFrames: 'more', flaskSpeed: 'more', chargeSpeed: 'more', riposte: 'more',
-  execution: 'more' };
+  finisher: 'more' };
 // The rares' perks, as `when/then`, and the numbers each level of one gives:
 //   dodge/riposte:    a perfect dodge (a roll's i-frames take a blow) opens a riposte for `window` s, as a parry does.
 //   hurt/empower:     losing health makes the next landed blow within `window` s do `damage` more.
@@ -21,14 +21,14 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', posture: 'more',
 //   open/damage:      blows on a boss that is off balance (abilityOpen) do `damage` more.
 //   block/charge:     a blocked blow makes the next heavy within `window` s come out fully charged at once.
 //   unhurt/empower:   `after` s without losing health make the next landed blow do `damage` more.
-//   execute/heal:     an execution heals `heal` of the bar (a crate's).
+//   finisher/heal:    a Finishing Blow heals `heal` of the bar (a crate's).
 //   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
 //   press/heal:       pressed (its key full: `charge` points): heals `heal` of the bar.
 //   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow).
 const ABILITY_PERKS = {
   'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeDash': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
-  'execute/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
+  'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
 };
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.
 function abilityHeal(p, share, perk) {
@@ -37,24 +37,24 @@ function abilityHeal(p, share, perk) {
   events.emit('abilityPerk', { body: p, perk });
 }
 // The legendaries' powers, as `when/then`, and the numbers each level needs (abilityPowers runs them):
-//   land/blast:          a jump attack (of the air attack `action` names) lands as a blast: `damage` and `posture` to every
+//   land/blast:          a jump attack (of the air attack `action` names) lands as a blast: `damage` to every
 //                        enemy within `radius` m.
 //   fullHeavy/lightning: a fully charged heavy that lands calls `strikes` bolts on that enemy, one every `every` s.
 //   dodge/freeze:        a perfect dodge stops time for every enemy within `radius` m for `time` s: no step, no blow.
 //   parry/blades:        a parry rains blades on the parried enemy for `time` s, one every `every` s.
 //   low/bloodMoon:       at or under `below` of the bar, for `time` s the holder's blows do `damage` more and heal
 //                        `drain` of what they deal.
-//   parry/flare:         a parry bursts into fire on the parried enemy: `damage` and `posture` (a rare's).
+//   parry/flare:         a parry bursts into fire on the parried enemy: `damage` (a rare's).
 //   hits/spark:          every `hits`th blow the holder lands, a spark strikes that enemy (a rare's).
 //   hits/gale:           every `hits`th blow the holder lands, a crescent of wind flies from them through that enemy
-//                        and on, `reach` m in all: `damage` and `posture` to every enemy within `width` m of its path.
-//   break/pyre:          a blow or parry of the holder's that breaks an enemy's balance lights a pillar of fire under
-//                        it for `time` s, burning it every `every` s.
+//                        and on, `reach` m in all: `damage` to every enemy within `width` m of its path.
+//   counter/pyre:        a counter of the holder's that lands (a riposte's blow) lights a pillar of fire under the enemy
+//                        for `time` s, burning it every `every` s.
 //   flask/twin:          a summon. Drinking a flask calls an ember twin of the holder for `time` s; every blow the
 //                        holder lands in that time, the twin lands too, on the enemy's far side: `share` of its
-//                        damage and posture.
+//                        damage.
 //   press/hound:         a summon (a rare's, key 3). Pressed, a grave hound comes out of the holder's shadow for `time`
-//                        s: it runs round the enemy's flank and bites it every `every` s (`damage`, `posture`).
+//                        s: it runs round the enemy's flank and bites it every `every` s (`damage`).
 //   low/guardian:        a summon (a rare's, once a fight). Dropping under `below` of its health raises a guardian of
 //                        stone beside the nearest enemy for `time` s: it holds that enemy's eye `draw` s and bashes it
 //                        every `every` s.
@@ -69,16 +69,16 @@ function abilityHeal(p, share, perk) {
 // A level's `cooldown` s spaces its triggers; `once: true` fires once a fight. Blows counted (`hits`) are the
 // holder's own landed and unblocked; a power's own strikes never count, nor set off another power.
 const ABILITY_POWERS = {
-  'land/blast': ['radius', 'damage', 'posture', 'cooldown'], 'fullHeavy/lightning': ['strikes', 'lead', 'every', 'damage', 'posture', 'cooldown'],
-  'dodge/freeze': ['time', 'radius', 'cooldown'], 'parry/blades': ['time', 'every', 'damage', 'posture', 'cooldown'],
-  'low/bloodMoon': ['below', 'time', 'damage', 'drain'], 'parry/flare': ['damage', 'posture', 'cooldown'],
-  'hits/spark': ['hits', 'damage', 'posture'], 'hits/gale': ['hits', 'damage', 'posture', 'reach', 'width'],
-  'break/pyre': ['time', 'every', 'damage', 'posture', 'cooldown'], 'flask/twin': ['time', 'share', 'draw', 'cooldown'],
-  'press/hound': ['charge', 'time', 'every', 'damage', 'posture', 'draw'], 'low/guardian': ['below', 'time', 'every', 'damage', 'posture', 'draw'],
-  'press/lancer': ['charge', 'time', 'every', 'damage', 'posture', 'draw'],
-  'press/flare': ['charge', 'damage', 'posture'], 'press/gale': ['charge', 'damage', 'posture', 'reach', 'width'],
-  'press/blades': ['charge', 'time', 'every', 'damage', 'posture'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage', 'posture'],
-  'press/blast': ['charge', 'radius', 'damage', 'posture'],
+  'land/blast': ['radius', 'damage', 'cooldown'], 'fullHeavy/lightning': ['strikes', 'lead', 'every', 'damage', 'cooldown'],
+  'dodge/freeze': ['time', 'radius', 'cooldown'], 'parry/blades': ['time', 'every', 'damage', 'cooldown'],
+  'low/bloodMoon': ['below', 'time', 'damage', 'drain'], 'parry/flare': ['damage', 'cooldown'],
+  'hits/spark': ['hits', 'damage'], 'hits/gale': ['hits', 'damage', 'reach', 'width'],
+  'counter/pyre': ['time', 'every', 'damage', 'cooldown'], 'flask/twin': ['time', 'share', 'draw', 'cooldown'],
+  'press/hound': ['charge', 'time', 'every', 'damage', 'draw'], 'low/guardian': ['below', 'time', 'every', 'damage', 'draw'],
+  'press/lancer': ['charge', 'time', 'every', 'damage', 'draw'],
+  'press/flare': ['charge', 'damage'], 'press/gale': ['charge', 'damage', 'reach', 'width'],
+  'press/blades': ['charge', 'time', 'every', 'damage'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage'],
+  'press/blast': ['charge', 'radius', 'damage'],
 };
 const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
@@ -102,7 +102,7 @@ function summonStep(s, e, body, dt) {
   if (Math.hypot(tx, tz) > 1e-4) s.yaw = Math.atan2(tx, tz);
   return far - go;
 }
-// The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a break).
+// The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a counter).
 // A press is a key's power fired (below); the server checks it against its own count of that key's charge.
 const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press'];
 
@@ -110,7 +110,7 @@ const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press'];
 // A pressed ability (`key` in its data, `when: 'press'`) belongs to one of four keys, always the same one: 1 Strike, 2
 // Guard, 3 Summon, 4 Ultimate (the `ability1`..`ability4` bindings, js/input.js). A body holds at most one per key.
 // Each fills its own charge from playing well (CONFIG.abilities.press.gain: landed blows, more for a finisher, a full
-// charge or a riposte; deflects, perfect dodges, executions) up to its level's `charge`, and its key fires it when full.
+// charge or a riposte; deflects, perfect dodges, Finishing Blows) up to its level's `charge`, and its key fires it when full.
 // The charge lives in the perk clocks (`charge`, one count per key): on the body for its owner, and on the server for
 // a person, counted from the claims it accepted, so a press is checked against it.
 const ABILITY_KEYS = ['strike', 'guard', 'summon', 'ultimate'];
@@ -125,7 +125,7 @@ function abilityGain(kit, st, n) {
   for (const key in kit.pressed) st.charge[key] = Math.min(kit.pressed[key].v.charge, st.charge[key] + n);
 }
 // The enemy a press strikes: the locked one if alive and in reach, else the nearest live one in reach (null: none).
-// One that can't be hurt now (between phases, being executed) is passed over.
+// One that can't be hurt now (between phases, held through a Finishing Blow) is passed over.
 function pressTarget(body, enemies, lock) {
   const R = CONFIG.abilities.press.range, dist = e => Math.hypot(e.x - body.x, e.z - body.z) - (e.radius || 0);
   const open = e => e.alive() && !e.netExec && e.state !== ES.EXECUTED && !e.invulnerable();
@@ -190,8 +190,8 @@ function kitMight(held) {
 // and each number key's charge (points).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
   charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 } });
-// Off balance, for Opportunist: kneeling, reeling after an execution, opened by a parry, or stopped in time.
-const ABILITY_OPEN = new Set([ES.BROKEN, ES.STAGGER, ES.PARRIED, ES.HURT]);
+// Off balance, for Opportunist: reeling, opened by a parry, or stopped in time.
+const ABILITY_OPEN = new Set([ES.STAGGER, ES.PARRIED, ES.HURT]);
 const abilityOpen = e => e.frozen > 0 || ABILITY_OPEN.has(e.state);
 // Losing health (any blow, a burn, a fall): the perks that wait for it.
 function abilityHurt(kit, st) {
@@ -203,7 +203,7 @@ function abilityClocks(st, dt) {
   st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
   st.stance = Math.max(0, st.stance - dt);
 }
-// The blow a body lands on `e`, with its kit: damage and posture raised, and the one-shot perks it carries spent.
+// The blow a body lands on `e`, with its kit: damage raised, and the one-shot perks it carries spent.
 // Returns `strike` itself when nothing changes it. `strike.riposte` (a parry's or Counterstep's) adds Cold Riposte.
 function abilityStrike(kit, st, e, strike) {
   if (kit === NO_KIT && !(st && st.moon > 0)) return strike;
@@ -216,8 +216,8 @@ function abilityStrike(kit, st, e, strike) {
     if (calm && st.calm >= calm.after) { more += calm.damage; st.calm = 0; spent++; }
     if (st.moon > 0 && st.moonV) more += st.moonV.damage;
   }
-  if (!more && !m.posture) return strike;
-  return { ...strike, damage: strike.damage * (1 + more), postureDmg: strike.postureDmg * (1 + m.posture), empowered: spent > 0 };
+  if (!more) return strike;
+  return { ...strike, damage: strike.damage * (1 + more), empowered: spent > 0 };
 }
 // A blow this body landed (not blocked): Bloodthirst's count, and the Blood Moon's drink. Returns the health it healed.
 function abilityLanded(p, strike) {
@@ -248,7 +248,7 @@ const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two la
 const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
-  // with its own `damage`, `posture` and `twin`.
+  // with its own `damage` and `twin`.
   const running = [];
   const ready = new Map();   // holder + '/' + ability id -> the clock time it may fire again (Infinity: once, spent)
   const waiting = new Map();   // holder + '/' + ability id -> { holder, pw, body }: a low-health summon kept out by another
@@ -268,17 +268,16 @@ const abilityPowers = (() => {
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, running };
   function reset() { running.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); clock = 0; }
-  // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). It builds only
-  // CONFIG.abilities.posture of its posture: the stagger meter is the holder's to earn.
-  function wound(e, damage, posture, holder, power) {
+  // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). Never a counter: the
+  // Finishing Blow is the holder's to earn.
+  function wound(e, damage, holder, power) {
     if (!e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED) return;
     const strike = { attackId: power, air: false, riposte: false, rollOnly: false, shove: false, charge: 0, damage, poise: damage,
-      knock: 0, postureDmg: posture * CONFIG.abilities.posture, destined: false, hitstop: 0, power: true };
+      knock: 0, destined: false, hitstop: 0, power: true };
     const from = { x: e.x - Math.sin(e.yaw), y: e.y, z: e.z - Math.cos(e.yaw) };
     const hp = e.hp, res = e.takeHit(strike, from);
     if (!Number.isFinite(e.hp)) e.hp = hp;
     if (api.credit) api.credit(holder, e, hp - e.hp);
-    if (res.broke) events.emit('postureBreak', { enemy: e });
   }
   const near = (e, x, y, z, r) => e.alive() && Math.hypot(e.x - x, e.z - z) - e.radius <= r && Math.abs(e.y - y) <= CONFIG.height.reach;
   // `ctx`: { enemy } (the one parried, struck, broken or dodged), { x, y, z } (where), { action } (a jump attack's
@@ -315,14 +314,14 @@ const abilityPowers = (() => {
     if (SUMMONS.has(pw.then) && blocked(holder, pw)) return false;
     events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v });
     switch (pw.then) {
-      case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, v.posture, holder, pw.id); break;
-      case 'flare': case 'spark': wound(e, v.damage, v.posture, holder, pw.id); break;
+      case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
+      case 'flare': case 'spark': wound(e, v.damage, holder, pw.id); break;
       case 'gale': {   // from the holder through the enemy and on: everything within `width` m of the path
         const from = body || e, dx = e.x - from.x, dz = e.z - from.z, len = Math.hypot(dx, dz) || 1, ux = dx / len, uz = dz / len;
         for (const o of enemies) {
           if (!o.alive() || Math.abs(o.y - from.y) > CONFIG.height.reach) continue;
           const along = (o.x - from.x) * ux + (o.z - from.z) * uz, off = Math.abs((o.x - from.x) * uz - (o.z - from.z) * ux);
-          if (o === e || along >= -o.radius && along <= v.reach + o.radius && off <= v.width + o.radius) wound(o, v.damage, v.posture, holder, pw.id);
+          if (o === e || along >= -o.radius && along <= v.reach + o.radius && off <= v.width + o.radius) wound(o, v.damage, holder, pw.id);
         }
         break;
       }
@@ -351,7 +350,7 @@ const abilityPowers = (() => {
     const t = twinOf(holder);
     if (!t || !e || !strike || !e.alive()) return;
     const v = t.pw.v;
-    running.push({ pw: t.pw, holder, body, enemy: e, left: 1, next: ECHO_DELAY, n: 0, damage: strike.damage * v.share, posture: (strike.postureDmg || 0) * v.share, twin: t });
+    running.push({ pw: t.pw, holder, body, enemy: e, left: 1, next: ECHO_DELAY, n: 0, damage: strike.damage * v.share, twin: t });
   }
   // The enemy a summon fights: the one it was called on while it lives, else the nearest live one to its holder.
   function foeOf(s) {
@@ -384,7 +383,7 @@ const abilityPowers = (() => {
     if (SUMMON_STRIKERS.has(s.kind) && (s.bite -= dt) <= 0 && Math.hypot(e.x - s.x, e.z - s.z) - (e.radius || 1) <= K[s.kind].reach) {
       s.bite = v.every; s.n++;
       events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, strike: s.n });
-      wound(e, v.damage, v.posture, holder, s.pw.id);
+      wound(e, v.damage, holder, s.pw.id);
     }
   }
   function tick(dt) {
@@ -405,7 +404,7 @@ const abilityPowers = (() => {
       r.next += r.pw.v.every || 0; r.left--; r.n++;
       // A bolt, and a twin's blow, each tell every browser (`strike`: its number): drawn and heard as it lands.
       if (r.pw.then === 'lightning' || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n });
-      wound(e, r.damage ?? r.pw.v.damage, r.posture ?? r.pw.v.posture, r.holder, r.pw.id);
+      wound(e, r.damage ?? r.pw.v.damage, r.holder, r.pw.id);
       if (r.left <= 0) running.splice(i, 1);
     }
   }

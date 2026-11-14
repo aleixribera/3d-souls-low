@@ -9,10 +9,17 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
   the game keeps pass 94's keys (BACKLOG). New `tools/anim-strip.cjs` films a move. Fixed CI's Lessons test (the
   Name row). Deflect (pass 99, in-page `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock.
   Next: deflect frames 5-9, Controls clips, the Finishing Blow look.
-- Track B (pass 98): v7.125.0 a dodge is decided on first overlap (`dashOutlasts`, per `dashNo`), a dodged blow never
-  lands, a landed one closes the counter (`counterClose`); in-page `pass 98 perfect dodge`. v7.126.0 the name
-  (`progress.name`, `js/name-ask.js`; `name-browser.cjs`). Next: no stagger bar, the Finishing Blow replaces
-  executions (07658e1, bfff005): B the count, damage, healing, party rule, server claim; A the look. Off `js/showcase*`.
+- Track B (pass 100): no posture/stagger bar; executions gone. The Finishing Blow (`js/finisher.js`,
+  `CONFIG.finisher`): a counter cracks the guard (`crackGuard`), cracks fade after `fade` s, the 3rd counter is the
+  blow: 90 (boss 480, cap half a bar) + 8% heal, 1.06 s + 0.14 s hitstop, then control. Online the server counts
+  (`cracks`/`crackBy` in snapshots), grants it (`beginFinisher`, frame `finisher`), one counter an opening
+  (`spentOpening`). Breaker: longer counter window. In-page `Finishing Blow`; pass 98's dodge holds.
+- Track A's look hooks (stand-ins in `boot.js`, `ultra-fx.js`, `audio.js`, `executedPose`): `guardCrack {enemy,
+  cracks, by}` (0 = faded/spent), `finisherStart {player, enemy, time, duration}`, `finisherStep {i, from, to}` (each
+  cut), `finisher {damage, lethal, at, exit}`, `finisherEnd {player, enemy, abandoned?}`. State: `p.exec` = control
+  locked (`.duration`, progress `p.attackT`), PS.EXECUTE; foe ES.EXECUTED = time stopped; `e.cracks`, `e.crack`.
+  Dead refs in A's files: camera-feel, animator ES.BROKEN, lessons/long-hall, rig, world-hints, `onboarding.cjs`.
+- Showcase session: its finale counter needs the boss's `cracks` at `CONFIG.finisher.cracks` first.
 - Old docs: `git show v7.56.0:docs/<file>`.
 
 ## Works
@@ -22,12 +29,8 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
   Executioner, Shover, Antlered Hunger, Gargoyle (`tail`, `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`), Giant Skeleton (`carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
   the in-page `model` filter, `Shover`, `Bowman`, `Wisp`, `Ultra performance` and
   validation at load.
-- Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
-  renders grey-white; build long shins/forearms as exact open lofts (`hard`). `hard(outward=fn)` takes a per-face
-  reference point for bands round a limb. Two slots with the same texture (`tabard`/`stripe` are both `rottenCloth`)
-  can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
-  A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
-  the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
+- Figure lessons: thin limbs as open lofts (`hard`), not `soft()`; a band needs its own texture's slot; near-black
+  and edge-on sheets take the rim light white: lower `rim` (model or slot).
 - Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
   `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
@@ -48,7 +51,7 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
   `Story moments:` (`inControl`), `Still Mere:`, `tests/campaign-browser.cjs`; `moments-*.jpg`.
 - Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
-- Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
+- Bots: temperaments, strings, Finishing Blows, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
   `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (10 min; `PERSON=1`: a person stand-in).
 - Scorecard frames: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs`,
@@ -57,8 +60,8 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- Not in CI, failing on a360796 too: `lobby-polish-browser` (Tab wrap; flaky), `enemy-feedback-browser` (break
-  flash), `experience-browser` (320x568 overlap).
+- Not in CI, failing on a360796 too: `lobby-polish-browser` (Tab wrap; flaky), `experience-browser` (320x568
+  overlap). `enemy-feedback-browser` passes again (pass 100).
 
 ## Queued runs
 
@@ -90,6 +93,4 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
-- (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
-  bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP (v7.65.0): Ostrey 3,000, Hale and Harrow 1,700
-  each, the Ringer 3,000, the Regent 2,600, Oswin 3,500, Agathe 3,200, the Kindling Tree 2,500, the King's Blade 3,000.
+- (overridable) Chapters 7-14's words (`STORY.md` 6, 7, 10c-10j) and boss HP (v7.65.0) are the loop's.

@@ -50,19 +50,21 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.ok(early(['keen-eye']) > CONFIG.parry.lead, 'Keen Eye parries it');
   e.state = ES.IDLE; e.attack = null;
 
-  // A blow's bonus: Keen Edge, Breaker, Cold Riposte (a riposte only), Opportunist (a boss off balance), Headsman.
-  const attack = Object.values(PLAYER_DEF.moveset.attacks).find(a => a.id !== 'execute' && a.postureDmg);
+  // A blow's bonus: Keen Edge, Cold Riposte (a riposte only), Opportunist (a boss off balance), Headsman. Breaker
+  // (pass 100) makes the counter window longer.
+  const attack = PLAYER_DEF.moveset.attacks.light;
   const base = g('makeStrike')(attack, false, 0), riposte = g('makeStrike')(attack, true, 0);
-  const sharp = strikeWith(kitOf(['keen-edge', 'breaker']), perkState(), e, base);
-  near(sharp.damage, base.damage * (1 + at('keen-edge', 1).damage), 'Keen Edge'); near(sharp.postureDmg, base.postureDmg * (1 + at('breaker', 1).posture), 'Breaker');
+  const sharp = strikeWith(kitOf(['keen-edge']), perkState(), e, base);
+  near(sharp.damage, base.damage * (1 + at('keen-edge', 1).damage), 'Keen Edge');
+  near(kitOf(['breaker']).mods.counterWindow, at('breaker', 1).counterWindow, 'Breaker: a longer counter window');
   assert.equal(strikeWith(kitOf(['cold-riposte']), perkState(), e, base), base, 'Cold Riposte: nothing on a plain blow');
   near(strikeWith(kitOf(['cold-riposte']), perkState(), e, riposte).damage, riposte.damage * (1 + at('cold-riposte', 1).riposte), 'Cold Riposte');
   assert.equal(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist: the boss on its feet');
-  e.state = ES.BROKEN;
-  near(strikeWith(kitOf(['opportunist']), perkState(), e, base).damage, base.damage * (1 + at('opportunist', 1).damage), 'Opportunist, the boss kneeling');
+  e.state = ES.PARRIED;
+  near(strikeWith(kitOf(['opportunist']), perkState(), e, base).damage, base.damage * (1 + at('opportunist', 1).damage), 'Opportunist, the boss open');
   e.state = ES.IDLE; e.frozen = 1;
   assert.notEqual(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist, the boss stopped in time'); e.frozen = 0;
-  near(g('execution').damageFor(e, at('headsman', 1).execution) / g('execution').damageFor(e), 1 + at('headsman', 1).execution, 'Headsman');
+  near(g('finisher').damageFor(e, at('headsman', 1).finisher) / g('finisher').damageFor(e), 1 + at('headsman', 1).finisher, 'Headsman');
 
   // Vengeance: hurt, the next blow within its window is stronger, once. Patience: unhurt long enough, the next blow double.
   const vk = kitOf(['vengeance']), vs = perkState();
@@ -132,7 +134,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   g('events').on('abilityPower', ev => fired.push(ev));
   powers.reset();
   const holder = ids => { const p = new Player(PLAYER_DEF, e.x, e.z + e.radius + 1, Math.PI, e.y); p.grantAbilities(ids); return p; };
-  const fresh = () => { e.hp = e.def.hp; e.posture = 0; e.frozen = 0; fired.length = 0; };
+  const fresh = () => { e.hp = e.def.hp; e.frozen = 0; fired.length = 0; };
   const step = s => { for (let t = 0; t < s - 1e-9; t += 1 / 60) powers.tick(1 / 60); };
 
   // Meteor Fall: only the jump heavy, a blast on everything near, then its cooldown.
@@ -140,7 +142,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   powers.trigger('m', meteor, meteor.kit, 'land', { x: e.x, y: e.y, z: e.z + 2, action: 'light' });
   assert.equal(e.hp, e.def.hp, 'a jump light is no meteor');
   powers.trigger('m', meteor, meteor.kit, 'land', { x: e.x, y: e.y, z: e.z + 2, action: 'heavy' });
-  assert.ok(e.hp < e.def.hp && e.posture > 0, 'the meteor lands on the boss'); assert.equal(fired[0].power, 'meteor-fall');
+  assert.ok(e.hp < e.def.hp, 'the meteor lands on the boss'); assert.equal(fired[0].power, 'meteor-fall');
   const hp = e.hp; powers.trigger('m', meteor, meteor.kit, 'land', { x: e.x, y: e.y, z: e.z, action: 'heavy' });
   assert.equal(e.hp, hp, 'cooling down'); step(mv.cooldown + 0.05);
   powers.trigger('m', meteor, meteor.kit, 'land', { x: e.x + mv.radius + e.radius + 1, y: e.y, z: e.z, action: 'heavy' });
@@ -185,7 +187,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
 
   // Static Edge and Gale Crescent: every `hits`th landed blow, each counting its own.
   fresh(); const edge = holder(['static-edge', 'gale-crescent']), ev = BY['static-edge'].levels[0], gv = BY['gale-crescent'].levels[0];
-  const blow = { damage: 20, postureDmg: 5 };
+  const blow = { damage: 20 };
   for (let i = 1; i <= gv.hits * ev.hits; i++) powers.trigger('h', edge, edge.kit, 'hits', { enemy: e, strike: blow });
   assert.equal(fired.filter(f => f.power === 'static-edge').length, gv.hits, 'a spark every Nth blow');
   assert.equal(fired.filter(f => f.power === 'gale-crescent').length, ev.hits, 'a crescent every Nth blow');
@@ -196,14 +198,14 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   for (let i = 0; i < gv.hits; i++) powers.trigger('g', far, far.kit, 'hits', { enemy: e, strike: blow });
   near(e.def.hp - e.hp, gv.damage, 'the crescent through the boss');
 
-  // Pyre: only a break lights it; it burns `time` s.
+  // Pyre: only a counter lights it (pass 100); it burns `time` s.
   fresh(); const pyre = holder(['pyre']), yv = BY['pyre'].levels[0];
   powers.trigger('p', pyre, pyre.kit, 'parry', { enemy: e }); assert.equal(fired.length, 0, 'a parry alone lights no pyre');
-  powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e }); step(yv.time + 0.05);
+  powers.trigger('p', pyre, pyre.kit, 'counter', { enemy: e }); step(yv.time + 0.05);
   near(e.def.hp - e.hp, Math.round(yv.time / yv.every) * yv.damage, 'every burn');
-  // A second break while it burns lights it afresh, not a second pillar.
-  fresh(); powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e }); step(yv.cooldown + 0.05);
-  powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e });
+  // A second counter while it burns lights it afresh, not a second pillar.
+  fresh(); powers.trigger('p', pyre, pyre.kit, 'counter', { enemy: e }); step(yv.cooldown + 0.05);
+  powers.trigger('p', pyre, pyre.kit, 'counter', { enemy: e });
   assert.equal(powers.running.filter(r => r.enemy === e).length, 1, 'one pillar a boss'); powers.reset();
   // An Nth blow with nothing to strike leaves the next one due.
   fresh(); const gone = holder(['static-edge']), dead = { ...e, alive: () => false };
@@ -576,7 +578,7 @@ async function peer(origin, name) {
       return app.sim.frame(true).events.filter(ev => ev.type === 'abilityPower');
     };
     const sparkEvery = BY['static-edge'].levels[0].hits, seen = [];
-    for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; boss2.posture = 0; seen.push(...struck()); }
+    for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; seen.push(...struck()); }
     assert.equal(seen.filter(ev => ev.power === 'ember-twin' && ev.strike).length, sparkEvery, "the twin echoes each of b's blows");
     assert.equal(seen.filter(ev => ev.power === 'static-edge').length, 1, 'a spark on the Nth blow the server accepted');
 
@@ -590,9 +592,9 @@ async function peer(origin, name) {
     assert.equal(pressAt(), false, 'an empty key is refused');
     assert.equal(app.sim.abilityClaim(b.id, { when: 'press', key: 'ultimate', enemy: boss2.netId }), false, 'a key it holds nothing in');
     const need = Math.ceil(fv.charge * (1 - g('CONFIG').abilities.press.slack));
-    for (let i = 0; i < need; i++) { for (let k = 0; k < 20; k++) app.sim.tick(1 / 60); boss2.hp = boss2.def.hp; boss2.posture = 0; struck(); }   // at a real swing's pace
+    for (let i = 0; i < need; i++) { for (let k = 0; k < 20; k++) app.sim.tick(1 / 60); boss2.hp = boss2.def.hp; struck(); }   // at a real swing's pace
     assert.ok(st.charge.strike >= need, `the server counts b's blows: ${st.charge.strike}`);
-    boss2.hp = boss2.def.hp; boss2.posture = 0;
+    boss2.hp = boss2.def.hp;
     assert.equal(press().length, 1, 'filled: Fire Burst on the boss'); assert.ok(boss2.hp < boss2.def.hp, 'it burns');
     assert.equal(st.charge.strike, 0, 'and the count starts over'); assert.equal(pressAt(), false, 'so a second press is refused');
     console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting, the guardian holding and the lancer charging, every summon drawing the boss, the twin echoing blows and Static Edge counting them on the server, the number keys (one ability a key, charged, locked in the offers, claimed against the server count), the timed-out pick passed.');

@@ -8,7 +8,7 @@ globalThis.host = (() => {
   let completedFor = 0;
   let fought = 0;   // s of this fight played (not held for loading, not after the last enemy fell): Boss Rush's clock
   let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
-  // This fight's feats per player id ({ parries, executions, revives, rescued: ids revived }, for the end screen's titles) and whose blow
+  // This fight's feats per player id ({ parries, finishers, revives, rescued: ids revived }, for the end screen's titles) and whose blow
   // landed last on a boss (the killing blow, once every boss is down).
   let feats = new Map(), lastHit = null, killer = null;
   // Revive (CONFIG.revive): each fallen person's ember, by owner id: where they fell, who stands on it (`by`), for how
@@ -21,7 +21,7 @@ globalThis.host = (() => {
   let botSerial = 0, wipeOnly = false, acting = null;
   const crowdClocks = new Map();
   // Contact plausibility state, per run: hit budgets per player/enemy and each player's last accepted parry (riposte).
-  const hitBudget = new Map(), lastParry = new Map();
+  const hitBudget = new Map(), lastParry = new Map(), spentOpening = new Map();   // spentOpening: the opening a player's counter used (one counter each)
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
@@ -40,7 +40,7 @@ globalThis.host = (() => {
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
     isAttacking() { return this.state === PS.ATTACK || this.state === PS.JUMP_ATTACK; },
-    // Player's own rule (roll i-frames, executing, and the post-execution grace the pose carries).
+    // Player's own rule (roll i-frames, a Finishing Blow, and the grace after one the pose carries).
     invulnerable() { return Player.prototype.invulnerable.call(this); },
   });
   // Geometry-free equivalent of the scene builders' collision metadata.
@@ -70,12 +70,13 @@ globalThis.host = (() => {
     if (acting && type === 'strike' && d.attacker === acting.body && d.target?.netId)
       eventList.push({ type: 'strike', player: acting.id, enemy: d.target.netId, strike: d.strike, blocked: !!d.blocked, at: d.at });
     if (acting && type === 'parry' && d.target?.netId) eventList.push({ type: 'parry', player: acting.id, enemy: d.target.netId });
+    if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
       x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
-    if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'postureBreak', 'enemyBlink', 'impact'].includes(type))
+    if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
       eventList.push({ type, enemy: e && e.netId, attack: e && e.netAttack, out: d.out, seamless: d.seamless,
         x: d.x, y: d.y, z: d.z, fx: d.fx, hitIndex: e && e.hitIndex });
     // Enemy key-pose markers (tolls, chimes): the marker's index in its attack's own list.
@@ -220,14 +221,14 @@ globalThis.host = (() => {
   const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
   // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest) and each has a share of its
-  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Each posture break makes the
-  // next need more (CONFIG.endless.breakGrow). Nothing raises health or blows. Returns the pace.
+  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Nothing raises health or blows.
+  // Returns the pace.
   function setRushFight(won, modifiers = []) {
     const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
     const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1;
     const B = CONFIG.enemy.press;   // every boss's own press (item 4), under the modifiers
     const pace = rushPace(won) * times('pace'), rest = B.rest * times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = B.chain * times('chain');
-    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.breakGrow = CONFIG.endless.breakGrow; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
     return pace;
   }
   // The party's might (kitMight, CONFIG.swift.might): the mean over `ids` of what each holds. Boss Rush's par divides by it.
@@ -254,7 +255,7 @@ globalThis.host = (() => {
     epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
     feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
-    hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
+    hitBudget.clear(); lastParry.clear(); spentOpening.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
     kits.clear(); perks.clear(); lastDodge.clear(); pendingClaims.length = 0;
@@ -437,7 +438,10 @@ globalThis.host = (() => {
     if (Game.level && checkpoint) { registerPlayer(b.id, b.name); spawnBot(b, bots.size - 1); }
     return { id: b.id, name: b.name };
   }
-  function removeBot(id) { const ok = bots.delete(id); players = players.filter(p => p.id !== id); return ok; }
+  function removeBot(id) {
+    const b = bots.get(id); if (b && b.body && b.body.exec) finisher.abandon(b.body);   // never leave its foe held
+    const ok = bots.delete(id); players = players.filter(p => p.id !== id); return ok;
+  }
   function clearBots() { for (const id of [...bots.keys()]) removeBot(id); }
   function updateBots(dt) {
     if (!bots.size) return;
@@ -509,9 +513,9 @@ globalThis.host = (() => {
   // A fall in this fight: a bot's here, a person's from the server when their pose first reports them dead.
   function noteDeath(id) { if (!results) deaths.set(id, (deaths.get(id) || 0) + 1); }
   // This fight's damage, falls and feats per player, for Boss Rush's run totals and titles.
-  const feat = id => { let f = feats.get(id); if (!f) feats.set(id, f = { parries: 0, executions: 0, revives: 0, rescued: [] }); return f; };
+  const feat = id => { let f = feats.get(id); if (!f) feats.set(id, f = { parries: 0, finishers: 0, revives: 0, rescued: [] }); return f; };
   const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0,
-    ...(feats.get(row.id) || { parries: 0, executions: 0, revives: 0, rescued: [] }), bot: fightBots.has(row.id) }));
+    ...(feats.get(row.id) || { parries: 0, finishers: 0, revives: 0, rescued: [] }), bot: fightBots.has(row.id) }));
   // A fallen person's ember, where their pose fell (the server calls this once per fall, in a party only).
   function fall(id, x, y, z) {
     if (!Game.complete && !embers.has(id) && [x, y, z].every(Number.isFinite)) embers.set(id, { x, y, z, by: null, t: 0, hp: 0 });
@@ -584,12 +588,12 @@ globalThis.host = (() => {
     }
   }
   // Nothing left to simulate: no bots, bolts, reservations or trap warnings, and every enemy dead or resting with its
-  // meters recovered (patrols simply pause). The world clock keeps running; any living player wakes the run.
+  // guard whole again (patrols simply pause). The world clock keeps running; any living player wakes the run.
   const RESTING = new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.DORMANT]);
   function settled() {
     if (bots.size || flying.length || world.traps.some(t => t.state === 'warning')) return false;
     return Game.enemies.every(e => !e.netExec && (!e.alive() ? e.rewarded || e.state === ES.GONE
-      : RESTING.has(e.state) && !(e.huntTime > 0) && e.grounded && !(e.posture > 0) && !(e.guardMeter > 0) && e.poise === e.def.poise
+      : RESTING.has(e.state) && !(e.huntTime > 0) && e.grounded && !(e.cracks > 0) && e.poise === e.def.poise
         && (e.state === ES.PATROL || Math.hypot(e.vx, e.vz) < 0.05)));
   }
   // A boss fights the group (CONFIG.aggro): it remembers who hurt it lately (`e.threat`, damage by player id, fading
@@ -634,7 +638,7 @@ globalThis.host = (() => {
     // disconnects or every remaining player is dead/stale.
     for (const e of Game.enemies) if (e.netExec) {
       e.stateTime += dt;
-      if (time >= e.netExec.until) finishExecution(e);
+      if (time >= e.netExec.until) finishFinisher(e);
     }
     living = players.filter(p => p.alive());   // bots may have fallen or risen this step
     if (!living.length) {
@@ -699,7 +703,7 @@ globalThis.host = (() => {
       results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
       checkpoint, enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
-      hp: e.hp, phase: e.phase, posture: e.posture, guardMeter: e.guardMeter, poise: e.poise, frozen: e.frozen,
+      hp: e.hp, phase: e.phase, cracks: e.cracks, crackBy: e.crackBy ?? null, poise: e.poise, frozen: e.frozen,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
       ...netTargetOf(e), grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
@@ -737,14 +741,18 @@ globalThis.host = (() => {
   function hit(id, msg) {
     const e = enemy(msg.enemy), p = players.find(p => p.id === id);
     const a = ArenaNet.own(PLAYER_DEF.moveset.attacks, msg.attack);
-    if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'execute' || !ArenaNet.finite(msg.charge, C.maxCharge) || msg.charge < 0) return false;
+    if (!p || !p.alive() || !e || !e.alive() || !a || a.id === 'finisher' || !ArenaNet.finite(msg.charge, C.maxCharge) || msg.charge < 0) return false;
     if (!within(p, e, reachOf(a.box), [a.box.y - a.box.h / 2, a.box.y + a.box.h / 2])) return false;
-    // A riposte bonus follows only this player's own recently accepted parry (as the Player's riposte timer), or with
-    // Counterstep their accepted perfect dodge.
-    const kit = kitOf(id), step = kit.perks['dodge/riposte'];
+    // A riposte (a counter) follows only this player's own recently accepted opening deflect (as the Player's riposte
+    // timer) or perfect dodge, and only one counter an opening (pass 100: each cracks the guard).
+    const kit = kitOf(id), step = kit.perks['dodge/riposte'], longer = 1 + (kit.mods.counterWindow || 0);   // Breaker
     // Pass 85: every perfect dodge opens a counter (CONFIG.player.counterTime), Counterstep's window if longer.
-    const riposte = msg.riposte === true && (time - (lastParry.get(id) ?? -Infinity) <= CONFIG.parry.riposteTime + C.riposteSlack ||
-      time - (lastDodge.get(id) ?? -Infinity) <= Math.max(CONFIG.player.counterTime, step ? step.window : 0) + C.riposteSlack);
+    // The window is the latest opening's own; a counter swing that reaches several foes counts on each (one `swing`).
+    const parried = lastParry.get(id) ?? -Infinity, dodgedAt = lastDodge.get(id) ?? -Infinity, opening = Math.max(parried, dodgedAt);
+    const spent = spentOpening.get(id), swing = Number.isSafeInteger(msg.swing) ? msg.swing : null;
+    const fresh = !spent || opening > spent.opening || (swing !== null && spent.opening === opening && spent.swing === swing);
+    const span = opening === dodgedAt ? Math.max(CONFIG.player.counterTime * longer, step ? step.window : 0) : CONFIG.parry.riposteTime * longer;
+    const riposte = msg.riposte === true && fresh && time - opening <= span + C.riposteSlack;
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
@@ -752,12 +760,16 @@ globalThis.host = (() => {
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     if (!result.blocked) gainCharge(id, pressGain(strike));
+    if (riposte && !result.blocked) spentOpening.set(id, { opening, swing });
+    if (result.opened) {   // a stance broken, a wind-up faltered: open, a counter for this player (their browser opens it)
+      lastParry.set(id, time); eventList.push({ type: 'opened', player: id, enemy: e.netId });
+    }
     eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
-    if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     if (a.charge && msg.charge >= 1 && !result.blocked) abilityPowers.trigger(id, holderOf(id), kit, 'fullHeavy', { enemy: e });   // Storm King
     if (!result.blocked && kit.whens.has('hits')) abilityPowers.trigger(id, holderOf(id), kit, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, a twin
-    if (result.broke) abilityPowers.trigger(id, holderOf(id), kit, 'break', { enemy: e });   // Pyre
+    if (riposte && !result.blocked && kit.whens.has('counter')) abilityPowers.trigger(id, holderOf(id), kit, 'counter', { enemy: e });   // Pyre
+    if (result.finisher) beginFinisher(id, e);
     return true;
   }
   // The enemy whose blow (attack `msg.serial`, out lately: winding up or striking) could have reached player `p`, or null.
@@ -778,7 +790,7 @@ globalThis.host = (() => {
       .map(f => f.enemies.find(s => s.id === msg.enemy));
     const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
     // The deflected blow (pass 85): `msg.hit`, its index in the attack. Only the last blow of an attack opens it; an
-    // earlier one is turned aside, the string goes on, and a boss's posture fills by deflectShare.
+    // earlier one is turned aside and the string goes on.
     const hit = msg.hit;
     if (!a || !Number.isSafeInteger(hit) || hit < 0 || hit >= a.hits.length || !canParryHit(a, hit)
       || !recent.some(s => (s.hit || 0) === hit)) return false;   // that very blow was under way
@@ -788,14 +800,12 @@ globalThis.host = (() => {
     // A delayed parry of an old move still succeeded on that player's screen,
     // but must never cancel an unrelated new move on everybody else's screen.
     sleeping = false;
-    const opened = hit === a.hits.length - 1, share = opened ? 1 : CONFIG.enemy.deflectShare;
-    const broke = opened && e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry * share) : false;
+    const opened = hit === a.hits.length - 1;
+    if (opened && e.netAttack === msg.serial) e.getParried();
     if (opened) lastParry.set(id, time);
     feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
-    if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
-    if (broke) abilityPowers.trigger(id, holderOf(id), kitOf(id), 'break', { enemy: e });   // Pyre
     return true;
   }
   // A perfect dodge (pass 85), claimed by the dodger's browser: a blow of that attack was out near them. It allows the
@@ -813,25 +823,24 @@ globalThis.host = (() => {
     if (e && e.netAttack === msg.serial && e.in('attacking')) e.dashedThroughBy();
     return true;
   }
-  function beginExecution(id, msg) {
-    const e = enemy(msg.enemy), p = players.find(p => p.id === id), X = CONFIG.execution;
-    if (!e || !p || !p.alive() || e.state !== ES.BROKEN || e.netExec) return false;
-    // Execution range is between body edges (CONFIG.execution.range), on about the same floor.
-    if (!within(p, e, X.range + p.radius, [-X.floor, p.height + X.floor])) return false;
-    const a = PLAYER_DEF.moveset.attacks.execute;
-    const duration = a.hits.reduce((n, h) => n + h.startup + h.active + (h.follow || 0), 0) + a.recovery;
-    const damage = execution.damageFor(e, kitOf(id).mods.execution);
-    if (!Number.isFinite(damage)) return false;
+  // The Finishing Blow (js/finisher.js), granted here: player `id`'s counter landed on a guard cracked to the last
+  // (Enemy.takeHit). The foe is held until their browser says the blow ended (endFinisher) or its time is up, and the
+  // browser is told to run it (the `finisher` event). Its damage is the server's, dealt as it ends.
+  function beginFinisher(id, e) {
+    const duration = finisher.duration(PLAYER_DEF.moveset.attacks.finisher);
+    const damage = finisher.damageFor(e, kitOf(id).mods.finisher);
+    if (!Number.isFinite(damage) || e.netExec) return;
     e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
-    e.hitbox = null; e.setState(ES.EXECUTED); feat(id).executions++; gainCharge(id, CONFIG.abilities.press.gain.execution);
-    return true;
+    e.hitbox = null; e.vx = e.vz = e.kx = e.kz = 0; e.setState(ES.EXECUTED); e.forgetAll();   // held: no step runs it here
+    feat(id).finishers++; gainCharge(id, CONFIG.abilities.press.gain.finisher);
+    eventList.push({ type: 'finisher', player: id, enemy: e.netId });
   }
-  function finishExecution(e) {
+  function finishFinisher(e) {
     const { damage, player } = e.netExec; e.netExec = null;
     creditDamage(player, Math.min(e.hp, damage)); noteDamage(e, player, Math.min(e.hp, damage));
-    e.hp = Math.max(0, e.hp - damage);
+    e.hp = Math.max(0, e.hp - damage); e.cracks = 0;
     if (e.hp <= 0) { if (!e.outlast()) e.die(); }
-    else { e.posture = 0; e.guardMeter = 0; e.setState(ES.STAGGER); }
+    else { e.poise = e.def.poise; e.setState(ES.STAGGER); }
   }
   function rest(id, bonfire) {
     const p = players.find(p => p.id === id), b = world.bonfires.find(b => b.id === bonfire);
@@ -840,7 +849,7 @@ globalThis.host = (() => {
     checkpoint = b.spawn ? { ...b.spawn } : { x: b.x, y: world.floorY(b.x, b.z, b.y), z: b.z, yaw: p.yaw };
     return true;
   }
-  function endExecution(id, enemyId) { const e = enemy(enemyId); if (e?.netExec?.player === id) finishExecution(e); }
+  function endFinisher(id, enemyId) { const e = enemy(enemyId); if (e?.netExec?.player === id) finishFinisher(e); }
   function lifesteal(id, msg) {
     const e = enemy(msg.enemy);
     if (e?.def.lifesteal && history.some(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && s.hit === msg.hitIndex))) {
@@ -857,7 +866,7 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
-    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, beginExecution, endExecution, lifesteal, landed, rest,
+    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
@@ -876,6 +885,6 @@ globalThis.host = (() => {
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.
     playerAttack: id => ArenaNet.own(PLAYER_DEF.moveset.attacks, id) ? id : null,
     // Test harnesses can inspect state without giving public clients a debug API.
-    inspect: () => ({ Game, world, players, crowd, bot, bots, CONFIG, abilityPowers, holderOf }),
+    inspect: () => ({ Game, world, players, crowd, bot, bots, CONFIG, abilityPowers, holderOf, beginFinisher }),
   };
 })();

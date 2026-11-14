@@ -9,7 +9,7 @@
 // One body, its bot brain playing the person (no allied bot, item 9). A fight ends at a win, a fall or `LIMIT` s (a loss).
 // No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses (bosses mode). JOBS=n splits the work over n child processes, each at
 // idle priority. CURVE='{"rise":0.3}' merges into CONFIG.pace, to try a curve without editing js/config.js.
-// ABILITIES='{"posture":0.7}' merges into CONFIG.abilities. PRESS='{"rest":1.3}' merges into CONFIG.enemy.press (pass 96).
+// ABILITIES='{"pickTime":20}' merges into CONFIG.abilities. PRESS='{"rest":1.3}' merges into CONFIG.enemy.press (pass 96).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
 // BY=1 adds the damage taken by what dealt it, and the last blow of each fall (BY=2: by blow of a string).
 // SLOW='{"oswin":[1.2,1.1,0.8,0.2]}' scales a boss's idle gaps (every `cooldown`), recoveries and follow-up chances, and adds
@@ -105,7 +105,7 @@ function fight(boss, won, seed, partners = [], mods = []) {
   if (process.env.BY) global(sim, 'events').on('strike', d => { if (d.target === body) blow = (d.attacker && d.attacker.attack && d.attacker.attack.id + (process.env.BY === '2' ? '#' + d.attacker.hitIndex + (d.attacker.state === 'recover' || d.attacker.state === 'chase' ? d.attacker.state : '') : '')) || 'blow'; });
   for (; time < LIMIT; time += 1 / 60) {
     sim.setPlayers([]); blow = null; sim.tick(1 / 60);
-    bosses.forEach((e, i) => { if (e.state === ES.BROKEN && was[i] !== ES.BROKEN) breaks++; was[i] = e.state; });   // posture breaks
+    bosses.forEach((e, i) => { if (e.state === ES.EXECUTED && was[i] !== ES.EXECUTED) breaks++; was[i] = e.state; });   // Finishing Blows (pass 100; were posture breaks)
     if (body.hp < prev) { taken += prev - body.hp; const k = blow || 'other'; by[k] = (by[k] || 0) + prev - body.hp; last = k; }
     prev = body.hp;
     if (Game.enemies.every(e => !e.alive())) { result = 'win'; break; }
@@ -139,7 +139,7 @@ function work(job) {
     return [r];
   }
   // Runs: each an Endless run of its own seed, drawn as the server draws it. `fights`: each fight's number, time,
-  // result, posture breaks and par.
+  // result, Finishing Blows (`breaks`) and par.
   return job.runs.map(n => {
     const run = { seed: (5000 + n * 7919) >>> 0 }, fights = [];
     for (let won = 0; ; won++) {
@@ -196,7 +196,7 @@ if (process.env.RUSH_CHILD) {
       const reached = rows.map(r => r.reached).sort((a, b) => a - b);
       console.log(`reached: median ${reached[Math.floor(reached.length / 2)]}  mean ${(reached.reduce((a, b) => a + b, 0) / reached.length).toFixed(1)}  range ${reached[0]}-${reached[reached.length - 1]}  ` +
         `share past 10 ${(reached.filter(n => n > 10).length / reached.length).toFixed(2)}, 15 ${(reached.filter(n => n > 15).length / reached.length).toFixed(2)}, 20 ${(reached.filter(n => n > 20).length / reached.length).toFixed(2)}`);
-      // PLAN.md item 11's stages: each one's fights, falls, win time, swift kills and seconds between posture breaks.
+      // PLAN.md item 11's stages: each one's fights, falls, win time, swift kills and seconds between Finishing Blows.
       const all = rows.flatMap(r => r.fights);
       for (const [from, to] of [[1, 4], [5, 10], [11, 15], [16, 20], [21, 99]]) {
         const f = all.filter(x => x.number >= from && x.number <= to), won = f.filter(x => x.win);

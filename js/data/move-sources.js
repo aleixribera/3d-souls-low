@@ -32,8 +32,6 @@ const borrowScaled = (source, id, k, changes = {}) => {
   Object.assign(a, { origin: { enemy: source.id, attack: id } });
   return typeof changes === 'function' ? (changes(a) || a) : Object.assign(a, changes);
 };
-// A stagger meter (normal enemies of Ashmere's Undead Knight kind): never interrupted until it fills, then it kneels.
-const staggerMeter = (heavy, light, breakTime = 2.2) => ({ max: 100, heavy, light, breakers: ['heavy', 'jumpHeavy'], decayDelay: 2.5, decay: 9.6, breakTime, hitstop: 0.14 });
 
 const BEASTMAN_MOVES = {
   id: 'beastman', name: 'Beastman',
@@ -58,7 +56,6 @@ const ZEALOT_MOVES = {
   visual: { skin: 0xd8c8b4, roughness: 0.55, rim: 0.9 },
   hp: 440, poise: 120, speed: 2.5, turnRate: 3.6, trackRate: 1.8, approach: 0.4, kite: 0.2,
   cooldown: [0.9, 1.8], flinchTime: 0, staggerTime: 1.2, parriedTime: 1.9,
-  stagger: staggerMeter(32, 9, 2.2),
   attacks: [
     borrowScaled(RADAGON, 'hammerTwo', 0.68, { id: 'gzHammer', name: 'Hammer Swings', damage: 24, chance: 1 }),
     borrowScaled(RADAGON, 'lightningSpear', 0.68, { id: 'gzSpear', name: 'Golden Lightning Spear', damage: 22, chance: 0.4, minRange: 7, range: 24 }),
