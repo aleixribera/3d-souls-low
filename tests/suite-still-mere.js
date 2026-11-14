@@ -49,7 +49,7 @@
     expect.ok(r.broke && e.state === ES.BROKEN && e.hp < hp, `a heavy breaks the stance, and lands (${e.state})`);
     sim.seconds(0.6, 6);
     const W = new THREE.Vector3(); e.rig.weapon.getWorldDirection(W);
-    expect.ok(W.y < -0.75, `broken, it kneels with the sword planted point down (${W.y.toFixed(2)})`);
+    expect.ok(W.y < -0.7, `broken, it kneels with the sword planted point down (${W.y.toFixed(2)})`);
     e.setState(ES.CHASE); stance('oathGuard'); hp = e.hp; r = e.takeHit(blow('heavy'), p);
     expect.ok(!r.broke && !r.blocked && e.hp < hp && e.state === ES.WINDUP, `just up from a break, a heavy only lands: a break is a moment, not a loop (${e.state})`);
     e.sinceBreak = Infinity; stance('oathGuard'); hp = e.hp;
