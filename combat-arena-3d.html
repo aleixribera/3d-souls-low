@@ -315,6 +315,11 @@
 
   /* Overhead tags, in screen space. */
   #eTags { position: absolute; inset: 0; overflow: hidden; }
+  /* Damage numbers (the Ability Grounds only): what each blow took, rising off the mannequin. */
+  #dmgNums { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .dmgNum { position: absolute; left: 0; top: 0; display: none; font-size: 20px; letter-spacing: 1px; color: #f0d890; white-space: nowrap;
+    text-shadow: 0 0 3px #000, 0 0 8px #000, 0 2px 0 #000; font-variant-numeric: tabular-nums; will-change: transform, opacity; }
+  .dmgNum.big { font-size: 27px; color: #ffe6a8; }
   .eTag { position: absolute; left: 0; top: 0; width: 64px; height: 5px; background: #060506e0; border: 1px solid var(--gilt-dim);
     box-shadow: 0 0 0 1px #000000c0; overflow: hidden; display: none; opacity: 0.72; }
   .eTag > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
@@ -509,6 +514,7 @@
 <div id="hud" class="hidden">
   <div id="vignette"></div>
   <div id="eTags"></div>
+  <div id="dmgNums"></div>
   <div id="stage">
     <div class="anchor" id="aTL">
       <div id="pBars">
@@ -745,7 +751,7 @@ const GAME_FILES = [
   'kill-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.75.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.76.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

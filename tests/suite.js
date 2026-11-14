@@ -145,7 +145,7 @@
   });
   test('ability grounds: the duel arena and a mannequin; B opens the list, a click wears an ability, Fire sets one off', () => {
     Game.startLevel('test-abilities'); sim.begin();
-    expect.ok(Game.level.layout === 'arena' && Game.enemies.some(e => e.def.id === 'dummy'), 'the battle arena, with a mannequin');
+    expect.ok(Game.level.layout === 'arena' && Game.enemies.some(e => e.def.id === 'greatDummy'), 'the battle arena, with a mannequin');
     const press = () => abilityLab.key(new KeyboardEvent('keydown', { code: 'KeyB' })), row = id => `#abilityLab .lab-row[data-ability="${id}"]`;
     expect.ok(press() && abilityLab.isOpen() && Game.mode === 'lab', 'B opens the list and stops the world');
     const hp = Game.player.maxHp;
@@ -160,13 +160,39 @@
     expect.ok(Game.mode === 'play' && Game.player.kit.powers.some(p => p.id === 'storm-king'), 'Fire wears Storm King and closes the list');
     sim.step(2);
     expect.ok(log.includes('abilityPower'), 'and its power goes off on the mannequin');
-    const dummy = Game.enemies.find(e => e.def.id === 'dummy');
+    const dummy = Game.enemies.find(e => e.def.id === 'greatDummy');
     expect.above(Math.hypot(dummy.x - Game.player.x, dummy.z - Game.player.z), 6, 'from the start point, far off');
     let hit = null; A.events.on('abilityPower', d => { hit = d; });   // events has no unsubscribe: a stray handler after this test only sets `hit`
     press(); document.querySelector(`${row('meteor-fall')} .lab-fire`).click(); sim.step(1);
     expect.ok(hit && hit.power === 'meteor-fall' && Math.hypot(hit.x - dummy.x, hit.z - dummy.z) < 0.01, 'Meteor Fall lands on the mannequin, not at your feet');
     press(); document.querySelector('#abilityLab .lab-tools button').click(); press();
     expect.ok(abilityLab.held.size === 0 && Game.player.kit.powers.length === 0 && Game.player.maxHp === hp, 'All off: back to none');
+  });
+  test('ability grounds: boss-sized mannequins on the big bar, which fills again once emptied; every blow shows its damage', () => {
+    Game.startLevel('test-abilities'); sim.begin(); Game.render(1, STEP);
+    const big = Game.enemies.find(e => e.def.id === 'greatDummy'), R = big.def.refill, hud = A.hud, p = Game.player;
+    const blow = damage => ({ damage, knock: 0, attackId: 'light' });
+    const shown = () => [...document.querySelectorAll('#dmgNums .dmgNum')].filter(el => el.style.display === 'block').map(el => el.textContent);
+    expect.ok(Game.enemies.every(e => e.def.scale >= 2 && e.def.hp >= 2000), 'both mannequins are boss-sized, with a boss\'s health');
+    Game.lock = big; Game.render(1, STEP);
+    expect.ok(!hud.eBars.classList.contains('hidden') && hud.eName.textContent === big.def.name, 'its bar is the big one at the top');
+    big.takeHit(blow(250), p); Game.render(1, STEP);
+    expect.ok(shown().includes('250'), `the blow rises off it as a number (${shown()})`);
+    expect.near(parseFloat(hud.eHp.style.width), (1 - 250 / big.def.hp) * 100, 0.1, 'and the bar drops by it');
+    big.takeHit(blow(big.def.hp), p); sim.seconds(R.delay * 0.5);
+    expect.ok(big.alive() && big.hp === 0, 'emptied, it stands');
+    big.takeHit(blow(100), p);
+    expect.ok(big.hp === 0, 'and takes nothing while empty');
+    sim.seconds(R.delay * 0.5 + R.time * 0.5);
+    expect.ok(big.hp > 0 && big.hp < big.def.hp, `then it fills (${big.hp.toFixed(0)})`);
+    sim.seconds(R.time * 0.6);
+    expect.ok(big.hp === big.def.hp, 'all the way');
+    big.takeHit(blow(40), p);
+    expect.ok(big.hp === big.def.hp - 40, 'and takes blows again');
+    Game.lock = null;
+    trainingAt('dummy'); const d = Game.enemies[0];   // a plain training dummy, in a level without numbers
+    d.takeHit(blow(d.def.hp), Game.player); Game.render(1, STEP);
+    expect.ok(shown().length === 0 && d.hp >= 1, 'no numbers anywhere else, and a plain dummy still never empties');
   });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {

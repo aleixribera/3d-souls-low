@@ -737,7 +737,13 @@ class Enemy {
   // An attack by id: the current phase's, else the base def's (a phase may branch into a move it doesn't choose itself).
   attackById(id) { return this.def.attacks.find(a => a.id === id) || this.baseDef.attacks.find(a => a.id === id); }
   // Training dummies stay rooted. The sparring variant loops one slow, telegraphed swing.
-  updateTraining() {
+  updateTraining(dt) {
+    const R = this.def.refill;   // emptied: it holds at nothing for `delay` s, then fills over `time` s
+    if (R && this.emptyTime > 0) {
+      this.emptyTime += dt;
+      this.hp = Math.min(this.def.hp, Math.max(0, (this.emptyTime - R.delay) / R.time) * this.def.hp);
+      if (this.hp >= this.def.hp) this.emptyTime = 0;
+    }
     if (!this.def.attacks.length) return;
     switch (this.state) {
       case ES.IDLE: if (this.stateTime >= this.def.restTime) this.beginAttack(this.def.attacks[0]); break;
@@ -780,7 +786,9 @@ class Enemy {
     this.recoil = 1; this.recoilF = (dx * s + dz * c) / d; this.recoilS = (dz * s - dx * c) / d;
     this.tint = 1;
     if (this.training) {   // flash and recoil only; a dummy with a stagger meter (the execution dummy) fills it
-      this.hp = Math.max(1, this.hp - strike.damage);
+      // A dummy with a `refill` runs down to empty and takes nothing more until it is full again (updateTraining).
+      if (!this.emptyTime) this.hp = Math.max(this.def.refill ? 0 : 1, this.hp - strike.damage);
+      if (this.def.refill && this.hp <= 0 && !this.emptyTime) this.emptyTime = 1e-6;
       const broke = !!this.def.stagger && this.state !== ES.BROKEN && this.state !== ES.EXECUTED && this.fillMeter(this.def.stagger, strike.attackId);
       return { broke, died: false };
     }
