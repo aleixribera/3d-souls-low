@@ -5,10 +5,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Now
 
 Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gives the Finishing Blow its look (Aleix); no other pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
-- Track A (pass 101): 3c pass 5: the dash as a Blender clip (IK feet) scored 4, 4, 3 vs the old 3, 5, 5: not adopted,
-  the game keeps pass 94's keys (BACKLOG). New `tools/anim-strip.cjs` films a move. Fixed CI's Lessons test (the
-  Name row). Deflect (pass 99, in-page `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock.
-  Next: deflect frames 5-9, Controls clips, the Finishing Blow look.
+- Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
+  `tools/anim-strip.cjs` now draws every step (the visual clocks ran at half speed before). Deflect (in-page
+  `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. Next: the Finishing Blow look.
 - Track B (pass 100): no posture/stagger bar; executions gone. The Finishing Blow (`js/finisher.js`,
   `CONFIG.finisher`): a counter cracks the guard (`crackGuard`), cracks fade after `fade` s, the 3rd counter is the
   blow: 90 (boss 480, cap half a bar) + 8% heal, 1.06 s + 0.14 s hitstop, then control. Online the server counts
@@ -70,7 +69,7 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 
 ## wip// branches
 
-`wip/p101-dash-clip` (Blender dash clip, not adopted). Backlog: `BACKLOG.md`.
+`wip/p101-dash-clip`, `wip/p102-dash-lunge` (dashes, not adopted); `wip/p102-deflect-keys` (unjudged). Backlog: `BACKLOG.md`.
 
 ## Needs Aleix
 
