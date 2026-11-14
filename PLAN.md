@@ -99,6 +99,9 @@ Aleix, 2026-11-13.
 - The ability design (Aleix, 2026-11-14): its own session designs every ability with ChatGPT concept images, shown
   in a private gallery page; the loop builds them later (item 6). Textures and concept art may now use ChatGPT's
   image generation (`VISION.md` and his `CLAUDE.md` changed; the Claude-only texture skill removed).
+- Art direction (Aleix, 2026-11-14): the ability design approach grows into the whole game's style: a game-wide style
+  bible after the abilities, then concept sessions for the player, the bosses and the levels, one at a time; the loop
+  builds from them ("Art direction" section).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -408,6 +411,30 @@ session (the showcase session), not the loop**: the loop doesn't touch the showc
    stays full 1080p when sent as a document. Posting either anywhere stays Aleix's.
 Check: the cinematic seen in the game at desktop and phone width; its test passing; both videos played back, the
 WhatsApp one's size and codecs checked; Aleix watches it.
+
+## Art direction: one style for the whole game (Aleix, 2026-11-14)
+
+Aleix: the ability design session "is doing great"; the same approach should shape "player and boss models, level
+designs, the entire game style basically". Built by design sessions the director starts, one at a time (Aleix's
+ChatGPT Plus limits), never by the loop; the loop builds from their output, with Blender and code, as now.
+
+1. **The abilities first** (the ability design session, `design/abilities/`, in progress). Its style bible is the
+   seed of the rest.
+2. **The game-wide style bible** (`design/style/`): one short session after the abilities ship. The world, the
+   player, the bosses, the levels, the UI and the effects on one page, with ChatGPT concept images judged against real
+   references Aleix approves (art direction is his: the session asks him with a recommendation). It keeps what
+   `VISION.md` and `STORY.md` fix (the dark world, each boss's own idea and story, the real Blender models) and makes
+   the bright anime effects and the dark world one look. If the abilities' bible clashes with the world, this step's
+   answer wins and the abilities' images are adjusted.
+3. **Concept sessions, one at a time**, each following the style bible, each into its own folder of `design/` with
+   specs and images, shown in the same kind of private gallery:
+   - **The player** (`design/player/`): the figure, its blade, its poses for the moveset, its effects.
+   - **The bosses** (`design/bosses/`), in story order: model sheets a Blender build can follow (front, side, back,
+     materials, scale), key poses of each signature attack, its effects; a boss's idea and story stay its own.
+   - **The levels** (`design/levels/`), chapter by chapter: the look of each place, its landmarks, light and mood.
+4. **The loop builds them:** each folder's build order becomes work in its track (the player and Boss Rush's bosses
+   track B and A as today's ownership says, Story's levels and bosses track A), a model rebuilt in Blender against its
+   sheet and judged in the game against the concept images by the blind judge.
 
 ## Before everything else: players know a new version is out (Aleix, 2026-11-13)
 
