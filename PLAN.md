@@ -409,6 +409,12 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
      with a good kit; 15-20 brutal; past 20 impossible. The curve (`CONFIG.pace`) steepens from about fight 8. Item 10's
      targets stand (about 10-12 without abilities, about 20 with a great kit); what changes is that a strong kit must
      be struggling by 15.
+   - **Fight length and Swift kill** (Aleix: the first fights took 2 minutes at least; with abilities he got a Swift
+     kill in almost every later fight). Fights 1-4 last about a minute for a skilled player with no abilities: the
+     warm-up bosses' health comes down until they do (`CONFIG.swift.par`, 45 s, stays the bar to beat). Later, par
+     follows what the player holds as well as the curve, so a Swift kill stays an achievement: a skilled player with a
+     good kit earns it in about one fight in three, not nearly all of them.
    Check: the test bot's runs with no abilities and with the strongest kit the rules allow (2 legendaries, the best
-   posture abilities), against these targets: fight reached, fight times by stage, and seconds between posture breaks
+   posture abilities), against these targets: fight reached, fight times by stage, Swift kills per stage, and seconds
+   between posture breaks
    with that kit; a test of the legendary cap, the warm-up bosses and the free first pick.
