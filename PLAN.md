@@ -302,8 +302,9 @@ The momentum item goes to track A, the legendary and Story ability bars to item 
      be deflected. `stamina` and its bar leave the player.
    - **Poise goes.** Ordinary hits never stagger the player; only attacks marked heavy do, and their wind-up shows it.
    - **Rend goes** (Mother Agathe's hook tearing pieces off your health bar for 22 s): her hook just hits hard.
-   - **The counter window shows:** for its 0.8 s after a perfect dodge, the blade glows (track A, the player's
-     effects).
+   - **The counter window shows:** while a counter is open (0.8 s after a perfect dodge, 1.1 s after deflecting the
+     last blow of an attack), the blade glows; a light or heavy pressed then is the counter, about 2.6 times the
+     damage and far more posture. Only a cue, no effect of its own (track A, the player's effects).
    - **Kept:** the boss's posture bar, the ability keys' charges, and bosses that learn (they read as a boss
      reacting).
    - **The Boss Rush corner:** the fight number only, plus the clock while a Swift kill is still possible (under par);
