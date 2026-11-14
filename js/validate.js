@@ -854,6 +854,7 @@ function validateData({ visual = true } = {}) {
     }
   }
   errors.push(...validateBonfireGuidance());
+  if (typeof SHOWCASE !== 'undefined') validateShowcase(SHOWCASE, need);   // js/data/showcase.js
   return errors;
 }
 function validateBonfireGuidance() {
@@ -899,6 +900,48 @@ function validateBonfireGuidance() {
     }
   }
   return errors;
+}
+// The showcase's script (js/data/showcase.js, js/showcase.js): bosses, phases and strings that exist, keys its kit holds,
+// beats in order inside the show, cuts naming known shots, framings with numbers in range.
+function validateShowcase(S, need) {
+  const tag = 'SHOWCASE', num = v => Number.isFinite(v), len = S.length, fights = Array.isArray(S.fights) ? S.fights : [];
+  need(num(S.bpm) && S.bpm >= 60 && S.bpm <= 200 && num(len) && len > 0 && num(S.preroll) && S.preroll >= 0 && Number.isInteger(S.seed), `${tag}: bpm 60-200, length > 0 beats, preroll >= 0 s and an integer seed.`);
+  need(!!S.pace && Number.isInteger(S.pace.won) && S.pace.won >= 0 && Array.isArray(S.pace.modifiers) && S.pace.modifiers.every(id => id in RUSH_MODIFIER_BY_ID), `${tag}: pace needs won (fights) and known RUSH modifiers.`);
+  need(Array.isArray(S.kit) && S.kit.every(id => id in ABILITY_BY_ID), `${tag}: kit must list known abilities.`);
+  need(BOT_PROFILES.some(p => p.id === S.profile), `${tag}: unknown bot profile "${S.profile}".`);
+  need(fights.length > 0 && fights[0].from === 0 && fights.every((f, i) => i === 0 || f.from > fights[i - 1].from), `${tag}: fights start at beat 0, in order.`);
+  for (const f of fights) {
+    const d = ENEMY_BY_ID[f.boss];
+    need(!!d && isBossDef(d), `${tag}: fight from beat ${f.from}: "${f.boss}" is not a boss.`);
+    if (d) need(f.phase === undefined || (d.phases && f.phase in d.phases && (d.defaultPhases || []).includes(f.phase)), `${tag}: ${f.boss} has no phase "${f.phase}" it fights through.`);
+    need(num(f.health) && f.health > 0 && f.health <= 1, `${tag}: ${f.boss}'s health is a share of its bar, 0-1.`);
+  }
+  const fightAt = b => fights.filter(f => f.from <= b).pop();
+  const keyOf = id => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].key;
+  let prev = -Infinity; const ids = new Set();
+  for (const b of S.beats || []) {
+    const t = `${tag}: beat "${b.id}"`;
+    need(typeof b.id === 'string' && !ids.has(b.id), `${t}: needs a unique id.`); ids.add(b.id);
+    need(num(b.at) && b.at > prev && b.at < (S.title ? S.title.at : len), `${t}: at must be after the beat before it and before the title.`); prev = b.at;
+    need(['dodge', 'deflect', 'ability'].includes(b.kind), `${t}: kind is dodge, deflect or ability.`);
+    if (b.kind === 'ability') need(Number.isInteger(b.key) && b.key >= 1 && b.key <= ABILITY_KEYS.length && (S.kit || []).some(id => keyOf(id) === ABILITY_KEYS[b.key - 1]), `${t}: key ${b.key} is not one the kit holds.`);
+    else {
+      const f = fightAt(b.at), d = f && ENEMY_BY_ID[f.boss], P = d && d.phases && f.phase ? d.phases[f.phase] : null;
+      const a = d && d.attacks.find(x => x.id === b.attack);
+      need(!!a && (!P || !P.attacks || P.attacks.includes(b.attack)), `${t}: ${f ? f.boss : '?'} (${f && f.phase}) has no attack "${b.attack}".`);
+      if (a && b.kind === 'deflect') need(a.hits.some((h, i) => canParryHit(a, i)), `${t}: "${b.attack}" has no blow a deflect can take.`);
+      need(b.counter === undefined || b.counter in PLAYER_DEF.moveset.counter, `${t}: counter is an action with a counter (${Object.keys(PLAYER_DEF.moveset.counter).join(', ')}).`);
+      need(!b.kill || b.counter, `${t}: a kill needs its counter.`);
+    }
+  }
+  const shots = S.shots || {};
+  for (const [id, s] of Object.entries(shots))
+    need(['at', 'look', 'lookUp'].every(k => num(s[k]) && s[k] >= 0 && s[k] <= 1) && ['back', 'side', 'up'].every(k => num(s[k])) && num(s.fov) && s.fov >= 15 && s.fov <= 90
+      && ['push', 'orbit'].every(k => s[k] === undefined || num(s[k])), `${tag}: shot "${id}": at, look, lookUp 0-1; back, side, up in m; fov 15-90.`);
+  const cuts = S.cuts || [];
+  need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
+  for (const k of S.keys || []) need((S.beats || []).some(b => b.kind === 'ability' && b.key === k.key && b.at === k.at) && num(k.for) && k.for > 0, `${tag}: the key cap at beat ${k.at} must match an ability beat.`);
+  need(!!S.title && num(S.title.at) && S.title.at < len, `${tag}: the title comes before the end.`);
 }
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];

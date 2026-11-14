@@ -167,6 +167,7 @@ $('version').textContent = VERSION;
 Game.showMenu('main');
 sparring.offerAtLaunch();   // a player from before the sparring scene is offered it (js/sparring.js)
 autoQuality.show();
+showcase.firstLaunch();   // a new player's first launch: the showcase, once (js/showcase.js)
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;

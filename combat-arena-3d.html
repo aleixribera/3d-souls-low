@@ -709,6 +709,7 @@ const GAME_FILES = [
   'data/bosses/kindling-tree.js',   // after move-sources.js: the Rootbound fight with the Zealot's moves
   'data/bosses/kings-blade.js',   // the Oath Guard and its answer; the torch past half
   'data/rush.js',   // Endless Boss Rush: the opening bosses and the modifiers
+  'data/showcase.js',   // the showcase's script (js/showcase.js)
   'levels/arena.js',
   'data/boss-battle.js',
   'levels/long-hall.js',
@@ -832,6 +833,8 @@ const GAME_FILES = [
   'dodge-moment.js',
   'afterimage.js',   // the dash's pale copies of the body (drawing only)
   'counter-fx.js',   // the counter window and the counter's cut (drawing only)
+  'showcase-music.js',   // the showcase's music cue
+  'showcase.js',   // the showcase: 30 s of the game played live (js/data/showcase.js)
   'boot.js',
 ];
 const LOAD_STAMP = '7.127.0';   // bump for each release; stable within a release so browsers can cache scripts
@@ -864,6 +867,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-torn-abbey.js', 'tests/');   // v7.48.0: Level 12
   await loadScript('suite-ember-root.js', 'tests/');   // v7.50.0: Level 13
   await loadScript('suite-still-mere.js', 'tests/');   // v7.51.0: Level 14
+  await loadScript('suite-showcase.js', 'tests/');   // the showcase: every beat still happens
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');
   await loadScript('debug-combat.js');   // F6 slow motion, F7 enemy tracking colours

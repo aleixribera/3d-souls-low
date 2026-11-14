@@ -74,6 +74,7 @@ Object.assign(Game, {
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Controls', size: 'foot', go: () => { this.controlsFrom = 'main'; this.showMenu('controls'); } },
         { name: 'Changelog', size: 'foot', go: () => this.showMenu('changelog') },
+        ...(typeof showcase !== 'undefined' ? [{ name: 'Watch', size: 'foot', go: () => showcase.play() }] : []),   // the showcase again (js/showcase.js)
         ...(DEV ? [{ name: 'Test Grounds', size: 'foot', go: () => this.showMenu('tests') }] : []),
         ...(update('title') ? [update('title')] : []),
       ] },
