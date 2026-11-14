@@ -238,6 +238,25 @@ const ATTACK_POSES = {
                 armR: [-1.25, 0, -1.5], elbowR: [0.08, 0, 0], weapon: [0.55, 0, -0.55], armL: [0.6, 0, 0.6], elbowL: [-0.25, 0, 0] },
     }],
   },
+  // The Finishing Blow (pass 103): through the flash steps the body flies low, leaning far in, the blade trailing back
+  // along the weapon side; as every cut opens it lands past the foe in its deepest stance, turned away, the sword arm
+  // flung out flat and the blade's point down and back, the head turned to look over the shoulder; held there, still,
+  // then it rises.
+  finisherStrike: {
+    ease: { windup: 'outCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
+    lag: { weapon: 0.1, armR: 0.06, elbowR: 0.08 },
+    hits: [{
+      windup: { crouch: 0.32, lean: 0.55, legL: [-0.95, 0, 0], kneeL: [0.6, 0, 0], legR: [0.75, 0, 0], kneeR: [0.85, 0, 0],
+                spin: [0, 0.3, 0], chest: [0.15, 0.2, 0], neck: [-0.15, -0.1, 0], head: [-0.3, -0.15, 0],
+                armR: [1.0, 0.2, -0.5], elbowR: [-0.2, 0, 0], weapon: [1.25, 0, 0], armL: [-0.6, 0, 0.4], elbowL: [-0.9, 0, 0] },
+      strike: { crouch: 0.44, lean: 0.3, legL: [-1.25, 0, 0], kneeL: [0.55, 0, 0], legR: [1.0, 0, 0], kneeR: [0.2, 0, 0],
+                spin: [0, -0.95, 0.06], chest: [0.12, -0.6, 0.12], neck: [0, 0.55, 0], head: [0.05, 0.65, 0],
+                armR: [-1.1, 0, -1.6], elbowR: [0.05, 0, 0], weapon: [1.05, 0, -0.35], armL: [0.55, 0, 0.7], elbowL: [-0.35, 0, 0] },
+      follow: { crouch: 0.46, lean: 0.28, legL: [-1.28, 0, 0], kneeL: [0.6, 0, 0], legR: [1.02, 0, 0], kneeR: [0.22, 0, 0],
+                spin: [0, -1.0, 0.06], chest: [0.14, -0.62, 0.12], neck: [0, 0.58, 0], head: [0.06, 0.7, 0],
+                armR: [-1.0, 0, -1.62], elbowR: [0.08, 0, 0], weapon: [1.2, 0, -0.4], armL: [0.6, 0, 0.72], elbowL: [-0.3, 0, 0] },
+    }],
+  },
   // The heavy counter, a rising cut (pass 95): dropped into a wide, deep stance with the blade low behind on the weapon
   // side, the point near the ground; it rips up and across in a wide arc as the body straightens onto its toes, and
   // holds there with the blade high over the off shoulder.

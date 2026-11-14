@@ -48,14 +48,24 @@ function validateData({ visual = true } = {}) {
       && Cf.aura.pulse > 0 && Cf.aura.pulse < 3 && Cf.aura.body >= 0 && Cf.aura.body <= 1 && num(Cf.aura.in) && num(Cf.aura.out)
       && Cf.aura.ring && hex(Cf.aura.ring.color) && pos(Cf.aura.ring.from) && pos(Cf.aura.ring.to) && Cf.aura.ring.to < Cf.aura.ring.from,
       'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad), aura (colour, size, boost, min 0 to 1, breath under 0.5, pulse under 3 Hz, body 0 to 1, in and out s, ring colour and from > to m).');
+    const Ff = A.finisherFx, Fk = Ff && Ff.crack, Fz = Ff && Ff.freeze, Fc = Ff && Ff.cut, unit = v => typeof v === 'number' && v >= 0 && v <= 1;
+    need(Fk && pos(Fk.size) && unit(Fk.depth) && pos(Fk.boost) && [Fk.color, Fk.hot, Fk.cold].every(hex) && num(Fk.pop) && Fk.breath >= 0 && Fk.breath < 0.5
+      && Fk.pulse > 0 && Fk.pulse < 3 && unit(Fk.cool) && Fk.cool > 0 && pos(Fk.out) && pos(Fk.burstTime)
+      && Fz && unit(Fz.sat) && unit(Fz.vignette) && unit(Fz.dark) && Fz.dark < 1 && unit(Fz.hold) && num(Fz.in) && num(Fz.out) && unit(Fz.kick) && unit(Fz.flash)
+      && Ff.streak && pos(Ff.streak.width) && num(Ff.streak.life) && unit(Ff.streak.held) && hex(Ff.streak.color)
+      && Fc && pos(Fc.length) && num(Fc.thin) && Fc.wide > Fc.thin && unit(Fc.held) && num(Fc.show) && hex(Fc.color) && hex(Fc.glow) && Fc.delay >= 0
+      && Array.isArray(Fc.heights) && Fc.heights.length > 0 && Fc.heights.every(unit) && Array.isArray(Fc.tilts) && Fc.tilts.length > 0 && Fc.tilts.every(Number.isFinite)
+      && Ff.burst && pos(Ff.burst.size) && num(Ff.burst.time) && hex(Ff.burst.color) && Number.isInteger(Ff.burst.sparks) && unit(Ff.burst.flash)
+      && Ff.camera && Ff.camera.swing >= 0 && Ff.camera.swing < 1.2 && num(Ff.camera.back) && unit(Ff.camera.punch) && pos(Ff.camera.punchRate),
+      'ANIM_SETTINGS.finisherFx: crack (size, depth 0 to 1, boost, colour, hot and cold colours, pop s, breath under 0.5, pulse under 3 Hz, cool 0 to 1, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad), burst (size, time s, colour, sparks, flash 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
     need(Object.entries(A.playerEase || {}).every(([ph, e]) => MARKER_PHASES.includes(ph) && e in EASE), `ANIM_SETTINGS.playerEase: phases ${MARKER_PHASES.join(', ')}, easings from EASE.`);
     const G = A.afterimage, look = g => g && num(g.life) && num(g.opacity) && Number.isInteger(g.color) && g.color >= 0 && g.color <= 0xffffff;
-    need(G && look(G) && look(G.dodge) && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0
+    need(G && look(G) && look(G.dodge) && look(G.finisher) && Number.isInteger(G.finisher.perStep) && G.finisher.perStep >= 1 && G.finisher.perStep <= G.pool && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0
       && Object.keys(CONFIG.VISUALS.fxBudgets).every(b => Number.isInteger(G.perDash && G.perDash[b]) && G.perDash[b] >= 1 && G.perDash[b] <= G.pool),
-      'ANIM_SETTINGS.afterimage: pool (1 to 12 figures), gap (m), core and inLine (0 to 1), cover (m), clear ([from, to] m), life and opacity (0 to 1), a colour, perDash per effect budget (1 to pool), and the same look for `dodge`.');
+      'ANIM_SETTINGS.afterimage: pool (1 to 12 figures), gap (m), core and inLine (0 to 1), cover (m), clear ([from, to] m), life and opacity (0 to 1), a colour, perDash per effect budget (1 to pool), and the same look for `dodge` and `finisher` (its perStep: copies a flash step, 1 to pool).');
   }
   // The changelog in the game (js/data/changelog.js): newest first, starting at the running version.
   need(Array.isArray(CHANGELOG) && CHANGELOG.length && CHANGELOG[0].version === VERSION, `Changelog: the first entry must be the running version ${VERSION} (js/data/changelog.js).`);
@@ -621,10 +631,10 @@ function validateData({ visual = true } = {}) {
       && num(F.heal) && F.heal >= 0 && F.heal < 1 && num(F.camera.rate) && F.camera.rate > 0,
       'CONFIG.finisher: cracks and steps whole numbers 1 or more, fade above rest, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');
     const GS = CONFIG.fx && CONFIG.fx.guardCrackShake, burst = b => b && num(b.color) && Number.isInteger(b.count) && b.count >= 0 && num(b.speed) && b.speed >= 0;
-    need(num(F.glow) && F.glow >= 0 && F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
+    need(F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
       && num(F.camera.push) && F.camera.push >= 0 && F.camera.push < 1 && num(F.camera.lower) && F.bursts && ['enter', 'exit', 'step'].every(k => burst(F.bursts[k]))
       && GS && num(GS.time) && GS.time >= 0 && num(GS.amp) && GS.amp >= 0,
-      'CONFIG.finisher: glow, shake { time, amp } and camera.push (under 1) 0 or more, camera.lower a number, bursts enter, exit and step each { color, count, speed }; CONFIG.fx.guardCrackShake { time, amp } 0 or more.'); }
+      'CONFIG.finisher: shake { time, amp } and camera.push (under 1) 0 or more, camera.lower a number, bursts enter, exit and step each { color, count, speed }; CONFIG.fx.guardCrackShake { time, amp } 0 or more.'); }
   for (const group of ['ground', 'air', 'dash', 'counter'])
     for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks && action in M.ground, `Player moveset "${group}.${action}": no attack "${id}", or not a ground action.`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);

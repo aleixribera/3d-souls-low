@@ -125,7 +125,7 @@ const CONFIG = {
   // `steps` flash steps through the held foe through its wind-up, each ending `past` m beyond the far edge of its body,
   // then every cut opens at once. Every number of the system is here.
   finisher: {
-    cracks: 2, fade: 10, rest: 0.6, steps: 3, past: 1.4, glow: 0.12,   // glow: a cracked foe's tint a crack (stand-in)
+    cracks: 2, fade: 10, rest: 0.6, steps: 3, past: 1.4,   // the cracks' look: ANIM_SETTINGS.finisherFx (js/finisher-fx.js)
     // Damage: `mul` times `base` for normal enemies (90); `bossMul` times `base` for bosses (24 x 20 = 480, about a
     // seventh of a boss's bar), never above `bossCap` of a boss's bar. A blow that would empty a bar leaves 1 hp until
     // the attack ends; the death, phase change or retreat follows it.

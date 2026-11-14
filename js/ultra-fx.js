@@ -488,12 +488,10 @@ void main() {
     mark(e.x, e.y, e.z, 0xffa030, 3 * scaleOf(e), 1.2, 0.9);
     ultraPost.wave(at, 1.1, 1.2);
   });
-  when('finisher', d => {   // pass 100: the Finishing Blow's cuts open (was the execution's)
+  when('finisher', d => {   // the Finishing Blow's cuts open: the blood
     const dir = dirOf(d.at, d.exit);
     bloodSpray(d.exit, dir, 70, 1.6); bloodSpray(d.at, [-dir[0], 0, -dir[2]], 30, 1.1);
-    sparkBurst(d.exit, 40, 'ember', dir, 0.6, 1.1);
-    flashAt(d.at, 0xff2a14, 16, 9); flare(d.at, 0xff9070, 2.6, 0.3);
-    ultraPost.wave(d.at, 1.4, 1.2); ultraPost.pulse({ flash: 0.1, color: 0x5a0000 });
+    sparkBurst(d.exit, 40, 'ember', dir, 0.6, 1.1);   // the burst of light and its wave: js/finisher-fx.js (pass 103)
   });
   when('enemyDeath', d => {
     const e = d.enemy;

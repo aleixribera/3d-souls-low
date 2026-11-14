@@ -4,6 +4,7 @@
 // ============================================================================
 const STRONG_KINDS = ['projectile', 'dash', 'rollOnly', 'shove'];   // attack kinds with their own default chance
 let heavyColor = null;   // a heavy's wind-up tint (CONFIG.VISUALS.heavyTell), made on first use: the server draws nothing
+let finishColor = null;   // a Finishing Blow's red flash on the held foe (pass 103), made on first use
 // An enemy attack's chance per second: its own `chance`, else CONFIG.ai.chance for its kind (the lowest of its kinds).
 function attackChance(a) {
   if (a.chance !== undefined) return a.chance;
@@ -1195,9 +1196,10 @@ class Enemy {
       r.holdHaft(r.haftW);
     }
     r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell || null);   // red: parryable; blue: cannot be parried (this hit); on the shield, claw or foot when that strikes
-    if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
+    // Held in a Finishing Blow (pass 103): dark in the stopped time, a red flash as the cuts open (js/finisher-fx.js).
+    if (this.state === ES.EXECUTED && this.exec) r.setTint(finishColor || (finishColor = new THREE.Color(ANIM_SETTINGS.finisherFx.cut.glow)), this.exec.impact ? this.crack * this.crack * 0.35 : 0);
+    else if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * (this.cracks > 0 ? 0.6 : 1.6));   // a guard crack's own light is its cracks (js/finisher-fx.js)
     else if (heavy > this.tint) r.setTint(heavyColor || (heavyColor = new THREE.Color(CONFIG.VISUALS.heavyTell.color)), heavy * heavy * CONFIG.VISUALS.heavyTell.tint);   // a heavy coming: it will stagger
-    else if (this.cracks > 0 && this.tint < 0.25) r.setTint(CRACK_COLOR, CONFIG.finisher.glow * this.cracks);   // its guard cracked (stand-in, js/finisher.js)
     else r.setTint(HIT_COLOR, this.tint * 0.8);
     if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? Math.min(1, this.resonance / R.max) : 0;   // pass 68: his bronze glows as the blows fill it
       r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }

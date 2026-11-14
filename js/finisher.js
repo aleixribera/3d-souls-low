@@ -14,7 +14,7 @@
 //             ends; the death, phase change or retreat follows it, and a survivor reels (ES.STAGGER).
 // The striker is untouchable throughout (Player.invulnerable) and `grace` s after. In a party anyone's counters crack the
 // guard and the one landing the last gets the blow: the server counts the cracks and grants it (Simulation.hit).
-// Events (track A draws the real look from these; the stand-ins are below and in js/ultra-fx.js, js/audio.js):
+// Events (the look listens to these: js/finisher-fx.js, js/audio.js, js/ultra-fx.js, js/afterimage.js):
 //   guardCrack { enemy, cracks, by }         the crack level changed (0: faded, or spent by a Finishing Blow)
 //   finisherStart { player, enemy, time }    time stops for the foe; `time` s until the cuts open
 //   finisherStep { player, enemy, i, from, to }   one flash step through it
@@ -182,20 +182,26 @@ function executePose(r, p, at) {
   return poseAttackKeys(r, p.attack, at);
 }
 
-// The held foe (ES.EXECUTED, drawn from Enemy.pose; a stand-in for track A's look): frozen mid-move, a tremor through
-// the stopped time, then a jolt as the cuts open and a sag, or a boss's own `brokenPose` (the King's Blade's refusal).
-// Times follow the `finisher` attack.
+// The held foe (ES.EXECUTED, drawn from Enemy.pose; pass 103): frozen in the pose it was caught in (js/finisher-fx.js
+// keeps it), a tremor through the stopped time, then a jolt as the cuts open and a sag, or a boss's own `brokenPose`
+// (the King's Blade's refusal). Without a kept pose (another player's blow seen online), a set stance stands in.
+// Times follow the `finisher` attack. Visual only.
 let finisherCutAt = -1;   // when the cuts open, s into the blow (worked out once: no allocation per frame)
 function executedPose(r, e, tt) {
   if (finisherCutAt < 0) finisherCutAt = phaseSpan(PLAYER_DEF.moveset.attacks.finisher, 'active', 0)[0];
-  const cut = finisherCutAt;
+  const cut = finisherCutAt, kept = typeof finisherFx !== 'undefined' && finisherFx.hold(r, e);
   const k = ease(clamp(tt / 0.1, 0, 1));
-  r.lean(0.08 * k); r.armR.rotation.x = -0.6 * k; r.armL.rotation.x = -0.3 * k;
-  r.spin.rotation.z = Math.sin(tt * 31) * 0.012 * k;
-  if (tt < cut) return;
+  if (!kept) { r.lean(0.08 * k); r.armR.rotation.x = -0.6 * k; r.armL.rotation.x = -0.3 * k; }
+  if (tt < cut) { r.spin.rotation.z += Math.sin(tt * 31) * 0.012 * k; return; }
   const jolt = Math.exp(-(tt - cut) * 8), sag = ease(clamp((tt - cut) / 0.4, 0, 1));
   r.tip.rotation.x -= 0.35 * jolt;
   if (e.def.brokenPose) { applyKeyPose(r, e.def.brokenPose, sag); return; }
+  if (kept) {   // the cuts throw it back, then it folds over them, sinking
+    r.lean(0.5 * sag); r.spin.rotation.x -= 0.4 * jolt; r.head.rotation.x += 0.6 * sag - 0.5 * jolt;
+    r.armR.rotation.x += 0.7 * sag; r.armL.rotation.x += 0.5 * sag; r.weapon.rotation.x += 0.9 * sag;
+    if (r.crouch) r.crouch(0.3 * sag);
+    return;
+  }
   r.lean(0.25 * sag); r.head.rotation.x = 0.45 * sag - 0.5 * jolt;
   r.armR.rotation.x = -0.6 + 0.7 * sag; r.weapon.rotation.x = 0.5 + 0.8 * sag;
 }

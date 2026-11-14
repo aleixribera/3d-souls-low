@@ -101,6 +101,38 @@ const AUDIO = {
       { wave: 'sine', freq: 3300, partials: [[1, 1, 1], [2.1, 0.35, 0.6]], at: 0.02, a: 0.002, d: 0.35, gain: 0.08 },
     ] },
     // The rising cut: a deep heave of air sweeping upward into a ringing edge.
+    // The Finishing Blow (pass 103, js/finisher-fx.js). A guard cracking: a glassy snap, a crackle running through it
+    // and a hard ceramic ping over a dull knock.
+    guardCrack: { bus: 'sfx', priority: 3, cooldown: 0.15, verb: 0.35, heat: 0.7, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [4000, 5500], q: 0.7 }, a: 0.0004, d: 0.012, gain: 0.9, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2600, to: 900, q: 2.2 }, glide: 0.18, at: 0.008, a: 0.002, d: 0.2, dv: 0.4, gain: 1.1, drive: 3 },
+      { wave: 'sine', freq: 1860, partials: [[1, 1, 1], [2.92, 0.5, 0.45], [4.7, 0.28, 0.3]], a: 0.001, d: 0.55, gain: 0.16 },
+      { wave: 'sine', freq: [90, 110], to: 55, a: 0.002, d: 0.22, gain: 0.7, drive: 2 },
+    ] },
+    // Time stopping: the air drawn in and cut off, a deep fall in pitch and a thin, glassy ring hanging over the silence.
+    finisherFreeze: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.6, heat: 0.8, jitter: 20, layers: [
+      { noise: 'pink', filter: { type: 'lowpass', freq: 400, to: 2400 }, glide: 0.12, a: 0.11, h: 0.01, d: 0.06, gain: 0.9 },
+      { wave: 'sine', freq: 170, to: 38, glide: 0.45, a: 0.004, d: 0.6, gain: 0.8, drive: 2 },
+      { wave: 'sine', freq: 3150, partials: [[1, 1, 1], [1.5, 0.4, 0.8], [2.76, 0.3, 0.5]], at: 0.08, a: 0.01, d: 1.3, gain: 0.12 },
+      { noise: 'white', parallel: [{ type: 'bandpass', freq: 3150, q: 40 }, { type: 'bandpass', freq: 4725, q: 34 }], at: 0.08, a: 0.01, d: 1.1, gain: 1.0 },
+    ] },
+    // A flash step through the held foe: one torn stroke of air and a bright steel hiss.
+    finisherStep: { bus: 'sfx', priority: 3, cooldown: 0.05, max: 3, verb: 0.25, heat: 0.4, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 8200, q: 1.3 }, glide: 0.07, a: 0.003, d: 0.1, gain: 1.0 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [6000, 6600], q: 26 }, at: 0.015, a: 0.002, d: 0.22, gain: 1.4 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 700, to: 180 }, a: 0.002, d: 0.09, gain: 0.5 },
+    ] },
+    // Every cut opening at once: three tears of flesh and air one on another, a deep boom that falls away under it,
+    // a long ring of steel over the top.
+    finisherOpen: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.45, heat: 1, jitter: 25, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [2500, 3500], q: 0.7 }, a: 0.0005, d: 0.016, gain: 1.0, drive: 3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, to: 900, q: 1.2 }, glide: 0.3, a: 0.002, d: 0.32, gain: 1.0, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4200, to: 1200, q: 1.4 }, glide: 0.3, at: 0.03, a: 0.002, d: 0.28, gain: 0.8, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5200, to: 1500, q: 1.6 }, glide: 0.3, at: 0.06, a: 0.002, d: 0.26, gain: 0.7, drive: 2 },
+      { wave: 'sine', freq: [58, 66], to: 24, glide: 0.8, a: 0.003, d: 1.1, gain: 1.1, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 80 }, a: 0.002, d: 0.9, gain: 1.0, drive: 2 },
+      { noise: 'white', parallel: [{ type: 'bandpass', freq: 4100, q: 32 }, { type: 'bandpass', freq: 5650, q: 28 }], at: 0.02, a: 0.002, d: 1.4, gain: 1.3 },
+    ] },
     counterRise: { bus: 'sfx', priority: 3, cooldown: 0.1, verb: 0.3, heat: 0.45, jitter: 50, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 250, to: 2600, q: 0.9 }, glide: 0.22, a: 0.06, d: 0.26, gain: 1.1 },
       { noise: 'white', filter: { type: 'bandpass', freq: 1600, to: 6000, q: 1.4 }, glide: 0.22, a: 0.05, d: 0.22, gain: 0.6 },

@@ -425,12 +425,16 @@ function registerAudioListeners() {
   on('counterOpen', d => { if (d.player === Game.player) audio.play('counterOpen', { vel: 1 }); });
   on('parry', d => audio.play('parry', { pos: chest(d.target) }));
   on('hazard', d => audio.play('rotSizzle', { pos: spot(d.player), vel: 0.8 }));   // v7.0: the scarlet rot eating at the feet
-  on('finisher', d => {   // the cuts open (js/finisher.js): flesh, the riposte's boom and the crack, all at once
-    audio.play('hitFlesh', { vel: 1, pos: d.at, pitch: big(d.enemy) * 0.85 });
-    audio.play('riposteBoom', { vel: 1, pos: d.at });
-    audio.play('postureBreak', { vel: 0.8, pos: d.at, pitch: big(d.enemy) * 0.7, delay: 0.04 });
+  // The Finishing Blow (pass 103): time stopping, each flash step (higher each time), every cut opening at once over
+  // the riposte's boom; a guard cracking, higher for each crack.
+  on('finisherStart', d => audio.play('finisherFreeze', { vel: 1, pos: d.player === Game.player ? null : chest(d.enemy) }));
+  on('finisherStep', d => audio.play('finisherStep', { vel: 0.9, pos: d.player === Game.player ? null : chest(d.enemy), pitch: 1 + 0.09 * d.i }));
+  on('finisher', d => {
+    audio.play('finisherOpen', { vel: 1, pos: d.at, pitch: Math.min(1, big(d.enemy)) });
+    audio.play('riposteBoom', { vel: 1, pos: d.at, pitch: big(d.enemy) * 0.85 });
+    audio.play('hitFlesh', { vel: 1, pos: d.at, pitch: big(d.enemy) * 0.8, delay: 0.02 });
   });
-  on('guardCrack', d => { if (d.cracks > 0) audio.play('postureBreak', { pos: chest(d.enemy), pitch: big(d.enemy) * (1 + 0.12 * d.cracks) }); });
+  on('guardCrack', d => { if (d.cracks > 0) audio.play('guardCrack', { vel: 0.8 + 0.2 * d.cracks, pos: chest(d.enemy), pitch: big(d.enemy) * (1 + 0.14 * (d.cracks - 1)) }); });
   on('dodge', d => audio.play('dodge', { vel: 0.6, pos: d.player && d.player !== Game.player ? spot(d.player) : null }));
   on('enemyDeath', d => audio.play('enemyDeath', { pos: chest(d.enemy), pitch: big(d.enemy), vel: clamp(0.5 * ((d.enemy.def && d.enemy.def.scale) || 1), 0.4, 1) }));
   on('playerDeath', () => { audio.play('playerDeath'); audio.play('hurtMoan', { vel: 1, pitch: 0.9, delay: 0.05 }); });

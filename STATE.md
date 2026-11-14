@@ -6,18 +6,19 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gives the Finishing Blow its look (Aleix); no other pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
 - Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
-  `tools/anim-strip.cjs` now draws every step (the visual clocks ran at half speed before). Deflect (in-page
-  `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. Next: the Finishing Blow look.
+  `tools/anim-strip.cjs` draws every step; `finisher` films the 3-counter chain (`CLIP=` an mp4). Deflect (in-page
+  `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. After the pause: deflect frames 5-9,
+  Controls clips, the blow's look.
 - Track B (pass 100): no posture/stagger bar; executions gone. The Finishing Blow (`js/finisher.js`,
   `CONFIG.finisher`): a counter cracks the guard (`crackGuard`), cracks fade after `fade` s, the 3rd counter is the
   blow: 90 (boss 480, cap half a bar) + 8% heal, 1.06 s + 0.14 s hitstop, then control. Online the server counts
   (`cracks`/`crackBy` in snapshots), grants it (`beginFinisher`, frame `finisher`), one counter an opening
   (`spentOpening`). Breaker: longer counter window. In-page `Finishing Blow`; pass 98's dodge holds.
-- Track A's look hooks (stand-ins in `boot.js`, `ultra-fx.js`, `audio.js`, `executedPose`): `guardCrack {enemy,
-  cracks, by}` (0 = faded/spent), `finisherStart {player, enemy, time, duration}`, `finisherStep {i, from, to}` (each
-  cut), `finisher {damage, lethal, at, exit}`, `finisherEnd {player, enemy, abandoned?}`. State: `p.exec` = control
-  locked (`.duration`, progress `p.attackT`), PS.EXECUTE; foe ES.EXECUTED = time stopped; `e.cracks`, `e.crack`.
-  Dead refs in A's files: BACKLOG (pass 100).
+- The Finishing Blow's look (pass 103, `js/finisher-fx.js`, `ANIM_SETTINGS.finisherFx`): glowing body cracks per
+  counter; the blow stops time (grey, darker, foe frozen mid-pose), red flash-step copies,
+  dim cuts all opening at once in a white-to-red X, camera swing and punch, own sounds. Blind judge
+  4, 4, 5; left: the freeze is a grey clump (camera far, no crisp silhouettes), the X a soft bloom pasted on, the
+  foe's reaction hidden behind the player.
 - Showcase: its finale is still a plain killing counter (hp 1); as the Finishing Blow it needs `cracks` at the
   last and its health left alone (`js/showcase.js` 165-170).
 - Old docs: `git show v7.56.0:docs/<file>`.

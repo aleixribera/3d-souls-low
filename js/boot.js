@@ -11,16 +11,7 @@ function registerListeners() {
   });
   events.on('chargeFull', d => { if (!d.player || d.player === Game.player) Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp); });
   events.on('parry', d => { spawnBurst(chest(d.target), F.parry); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
-  // The Finishing Blow (js/finisher.js), stand-ins until track A's look: a burst as a counter cracks the guard (bigger
-  // each crack), a puff of embers off each flash step, blood and embers as the cuts open with a heavy jolt.
-  const X = CONFIG.finisher;
-  events.on('guardCrack', d => {
-    if (!(d.cracks > 0)) return;
-    spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.guardCrack);
-    if (!d.by || d.by === Game.player) Game.addShake(CONFIG.fx.guardCrackShake.time, CONFIG.fx.guardCrackShake.amp * d.cracks);
-  });
-  events.on('finisherStep', d => spawnBurst({ x: d.to.x, y: d.player.y + 1, z: d.to.z }, X.bursts.step));
-  events.on('finisher', d => { spawnBurst(d.at, X.bursts.enter); spawnBurst(d.exit, X.bursts.exit); if (!d.player || d.player === Game.player) Game.addShake(X.shake.time, X.shake.amp); });
+  // The Finishing Blow's cracks, steps and cuts: js/finisher-fx.js (pass 103).
   events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
   events.on('fallDamage', d => {   // a hard landing: dust, and a jolt if it was the player
     groundFx.spawn(d.body.x, d.body.z, CONFIG.fx.hardLanding, d.body.y);
@@ -51,6 +42,7 @@ function registerListeners() {
   summonHound.attach(); // the Grave Hound summon drawn (js/summon-hound.js)
   afterimage.attach();  // the dash's afterimages (js/afterimage.js)
   counterFx.attach();   // the counter window's dim and mark, the counter's cut (js/counter-fx.js)
+  finisherFx.attach();  // the Finishing Blow's cracks, stopped time, steps and cuts (js/finisher-fx.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

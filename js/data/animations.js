@@ -127,6 +127,30 @@ const ANIM_SETTINGS = {
     aura: { color: 0x9fd0ff, size: 2.8, boost: 0.9, min: 0.85, breath: 0.18, pulse: 1.6, body: 0.16, in: 0.06, out: 0.18,
             ring: { color: 0xd8ecff, from: 1.4, to: 0.5 } },
   },
+  // The Finishing Blow's look (pass 103, js/finisher-fx.js).
+  // crack: the glowing cracks on a foe's body, `size` m across for a 1.8 m body, `depth` of its radius toward the
+  //   camera, `boost` bright in `color` (white-`hot` as one opens, growing over `pop` s), breathing `breath` at `pulse`
+  //   Hz (steady with reduced motion); through the last `cool` share of the fade they dim and turn `cold`; they crumble
+  //   over `out` s, or burst over `burstTime` s as the cuts open.
+  // freeze: time stopped: saturation down to `sat` of the level's (reds keep theirs), vignette + `vignette`, the world
+  //   `dark` darker until the cuts open (then at once lit again), drifting dust at `hold` speed, in and out s; the
+  //   colour comes back `kick` over; a `flash` as time stops.
+  // streak: a flash step's blur, `width` m, fading over `life` s but held at `held` until the cuts open.
+  // cut: each step's cut across the foe: `length` m for a 1.8 m body, `thin` and opened `wide` m, held at `held` of its
+  //   brightness until all open at once, shown `show` s after
+  //   opening, at `heights` (shares of the body's height) and `tilts` (rad), drawn `delay` s after the step.
+  // burst: the star of light as the cuts open (`size` m, `time` s), `sparks`, a screen `flash`.
+  // camera: a swing of `swing` rad round the foe through the steps, back over `back` s; a `punch` in as the cuts open.
+  finisherFx: {
+    crack: { size: 1.3, depth: 0.8, boost: 2.0, color: 0xff7a2a, hot: 0xfff2d8, cold: 0x9a2810, pop: 0.18, breath: 0.12, pulse: 1.1,
+             cool: 0.3, out: 0.45, burstTime: 0.3 },
+    freeze: { sat: 0.1, vignette: 0.4, dark: 0.4, hold: 0.06, in: 0.07, out: 0.4, kick: 0.35, flash: 0.08 },
+    streak: { width: 0.14, color: 0xfff1ea, life: 0.2, held: 0.25 },
+    cut: { length: 2.6, thin: 0.025, wide: 0.08, held: 0.3, show: 0.75, color: 0xffffff, glow: 0xff2a1c, delay: 0.03,
+           heights: [0.62, 0.5, 0.74], tilts: [0.6, -0.55, 0.12] },
+    burst: { size: 2.4, time: 0.42, color: 0xff3a24, sparks: 70, flash: 0.07 },
+    camera: { swing: 0.5, back: 0.7, punch: 0.2, punchRate: 6 },
+  },
   // A landing with weight (pass 92): the knees take it, `drop` m at most for a fall at `ref` m/s or faster.
   land: { rise: 0.04, hold: 0.05, fall: 0.22, drop: 0.2, min: 0.35, ref: 9, lean: 0.18 },
   // Dash afterimages (pass 91, js/afterimage.js): a pale copy of the body every `gap` m of a dash, frozen and fading over
@@ -134,7 +158,8 @@ const ANIM_SETTINGS = {
   // is lit at its edges and `core` of that across its middle, and fades in as the body leaves it (`clear`: from, to m);
   // one nearer the camera that covers the body on screen keeps `inLine` of its brightness (bodies `cover` m round).
   afterimage: { pool: 8, gap: 0.55, life: 0.28, opacity: 0.7, core: 0.2, clear: [0.35, 0.9], inLine: 0.12, cover: 0.5, color: 0x9cc8ff, perDash: { bare: 2, normal: 5, ultra: 7 },
-                dodge: { life: 0.5, opacity: 0.8, color: 0xd8ecff } },
+                dodge: { life: 0.5, opacity: 0.8, color: 0xd8ecff },
+                finisher: { life: 0.35, opacity: 0.45, color: 0xff3a22, perStep: 1 } },   // pass 103: a Finishing Blow's flash steps, red to keep its colour in stopped time
   walkBlendRate: 8,        // how fast the walk layer fades in and out (1/s)
   deathBuckleTime: 0.45,   // s for the knees to give way
   walkStates: ['chase', 'patrol', 'return'],   // enemy states that count as walking
