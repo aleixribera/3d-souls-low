@@ -167,6 +167,10 @@ class Player {
     this.usingItem = ITEMS[id]; this.vx = this.vz = 0;
     this.setState(PS.USE_ITEM);
     events.emit('itemUsed', { item: id, player: this });
+    if (id !== 'flask') return;
+    const wind = this.kit.perks['flask/stamina'];   // Second Wind
+    if (wind) { this.stamina = Math.min(this.maxStamina, this.stamina + this.maxStamina * wind.stamina); events.emit('abilityPerk', { body: this, perk: 'flask/stamina' }); }
+    abilityReport(this, 'flask', {});   // Ember Twin
   }
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
   tryGroundAction(mv, face, enemies) {

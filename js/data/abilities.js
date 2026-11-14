@@ -6,13 +6,14 @@
 // short `text` for the card, and one `levels` entry per level (a level's own numbers, not added to the one before).
 // In `text`, {key} is that key's number at the card's level: a percentage, or in ABILITY_UNITS's unit.
 //   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS).
-//   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS).
+//   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
+//              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
-//              resolves it; a legendary is held by one player of a team at most.
+//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`).
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
-const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', radius: 'm', hits: 'n', strikes: 'n' };
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n' };
 // The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
-const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain'];
+const ABILITY_SHARES = ['below', 'heal', 'stamina', 'drain', 'share'];
 const ABILITIES = [
   // ---- Commons: half plain numbers, half one move made better ----
   { id: 'keen-edge', name: 'Keen Edge', rarity: 'common', text: 'Hits do {damage} more damage.', mods: true,
@@ -57,6 +58,13 @@ const ABILITIES = [
     perk: { when: 'block', then: 'charge' }, levels: [{ window: 3 }, { window: 4 }, { window: 5 }] },
   { id: 'patience', name: 'Patience', rarity: 'rare', text: '{after} without getting hit: your next hit does double.',
     perk: { when: 'unhurt', then: 'empower' }, levels: [{ after: 8, damage: 1 }, { after: 6.5, damage: 1 }, { after: 5, damage: 1 }] },
+  { id: 'second-wind', name: 'Second Wind', rarity: 'rare', text: 'Drink a flask: get back {stamina} of your stamina.',
+    perk: { when: 'flask', then: 'stamina' }, levels: [{ stamina: 0.5 }, { stamina: 0.75 }, { stamina: 1 }] },
+  // Small powers: a strike of their own on the boss, drawn and heard (js/ability-fx.js), smaller than a legendary's.
+  { id: 'counterflame', name: 'Counterflame', rarity: 'rare', text: 'Parry: fire bursts on the boss.',
+    power: { when: 'parry', then: 'flare' }, levels: [{ damage: 40, posture: 10, cooldown: 1 }, { damage: 55, posture: 14, cooldown: 1 }, { damage: 70, posture: 18, cooldown: 1 }] },
+  { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark of lightning jumps to the boss.',
+    power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30, posture: 6 }, { hits: 4, damage: 34, posture: 7 }, { hits: 4, damage: 44, posture: 9 }] },
 
   // ---- Legendaries: one big power each, drawn in its own colour (js/ability-fx.js) ----
   { id: 'meteor-fall', name: 'Meteor Fall', rarity: 'legendary', text: 'Jump heavy attack: crash down like a meteor, {radius} wide.',
@@ -74,5 +82,15 @@ const ABILITIES = [
   { id: 'blood-moon', name: 'Blood Moon', rarity: 'legendary', text: 'Low health: a blood moon rises. For {time} your hits heal you.',
     power: { when: 'low', then: 'bloodMoon', once: true },
     levels: [{ below: 0.33, time: 10, damage: 0.4, drain: 0.3 }, { below: 0.33, time: 14, damage: 0.6, drain: 0.45 }] },
+  { id: 'gale-crescent', name: 'Gale Crescent', rarity: 'legendary', text: 'Every {hits}th hit: a crescent of wind cuts through the boss.',
+    power: { when: 'hits', then: 'gale' },
+    levels: [{ hits: 8, damage: 90, posture: 30, reach: 14, width: 1.6 }, { hits: 6, damage: 115, posture: 40, reach: 16, width: 2 }] },
+  { id: 'pyre', name: 'Pyre', rarity: 'legendary', text: "Break the boss's balance: a pillar of fire burns it for {time}.",
+    power: { when: 'break', then: 'pyre' },
+    levels: [{ time: 4, every: 0.4, damage: 26, posture: 0.5, cooldown: 2 }, { time: 6, every: 0.35, damage: 30, posture: 0.5, cooldown: 2 }] },
+  // The first summon: a twin of its holder, made of embers, that fights at the boss's far side and strikes with them.
+  { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Drink a flask: an ember twin fights beside you for {time}, striking as you strike.',
+    power: { when: 'flask', then: 'twin' },
+    levels: [{ time: 12, share: 0.5, cooldown: 20 }, { time: 16, share: 0.7, cooldown: 16 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

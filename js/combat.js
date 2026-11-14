@@ -114,7 +114,7 @@ function resolveCombat(game) {
       const breath = p.kit.perks['parry/stamina'];   // Deep Breath
       if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('abilityPerk', { body: p, perk: 'parry/stamina' }); }
       abilityReport(p, 'parry', { enemy: target });
-      if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); }
+      if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); abilityReport(p, 'break', { enemy: target }); }
     }
   }
   // 1. Player hitboxes against enemy bodies.
@@ -132,9 +132,10 @@ function resolveCombat(game) {
     if (!res.blocked && p.kit !== NO_KIT) {
       abilityLanded(p, strike);
       if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
+      abilityReport(p, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, an Ember Twin's echo
     }
     if (p.rentBy === e && !res.blocked) p.reclaim();   // pass 48: every blow on her tears a piece back (Player.rend)
-    if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); }
+    if (res.broke) { game.hitstop = Math.max(game.hitstop, (e.def.posture || e.def.guard || e.def.stagger).hitstop); events.emit('postureBreak', { enemy: e }); abilityReport(p, 'break', { enemy: e }); }
   }
   for (const hb of enemyHits) {
     if (!p.alive()) continue;

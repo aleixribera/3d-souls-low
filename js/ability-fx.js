@@ -12,6 +12,11 @@
 //                  with a clock turning backwards under it, tinted, until it shatters.
 //   Thousand Blades  ghost copies of the holder's own sword fall on the boss, one each `every` s, for `time` s.
 //   Blood Moon     a red moon over the holder for its time, a crimson aura, and a red slash on each of their blows.
+//   Ember Twin     the first summon: a twin of the holder in embers (js/rig.js's figure, posed as they are) rises at
+//                  the boss's far side; each blow it echoes cuts an ember slash. Burns away when its time is up.
+//   Gale Crescent  a crescent of wind as tall as a house flies from the holder through the boss.
+//   Pyre           a pillar of fire stands under the broken boss for its time.
+// The rares' powers, smaller: Counterflame's burst of fire, Static Edge's spark (a short bolt).
 // The rares' small cues (event `abilityPerk`, the local player's): a flare, motes or a ring. Every mesh is pooled and
 // made at load (warmed by visuals.warmUp); nothing is allocated per frame. Flashes stay under 3 Hz. Tuning:
 // VIS.abilityFx.
@@ -148,22 +153,26 @@ const abilityFx = (() => {
     for (const m of [core, glow, branch, scorch]) put(m);
     return { core, glow, branch, scorch, t: Infinity };
   });
-  function bolt(d, e) {
+  // `small`: Static Edge's spark, a short jump from just over the boss, not a bolt from the sky.
+  function bolt(d, e, small = false) {
     // From the sky down through the boss's front (the side the player sees) into the floor, jagged, wider apart higher up.
     const b = bolts.reduce((a, c) => (a.t > c.t ? a : c)), p = Game.player || e, far = Math.hypot(p.x - e.x, p.z - e.z) || 1;
-    const fx = e.x + (p.x - e.x) / far * (e.radius || 1) * 0.7, fz = e.z + (p.z - e.z) / far * (e.radius || 1) * 0.7, foot = e.y + 0.05, top = foot + (e.height || 2) + S.height;
+    const fx = e.x + (p.x - e.x) / far * (e.radius || 1) * 0.7, fz = e.z + (p.z - e.z) / far * (e.radius || 1) * 0.7, foot = e.y + 0.05, top = foot + (e.height || 2) + (small ? F.spark.height : S.height);
     b.t = 0;
     for (let i = 0; i < SEGS; i++) {
       const k = i / (SEGS - 1), j = (1 - k * 0.8) * S.jitter * (i && i < SEGS - 1 ? 1 : 0.3);
       pts[i].set(fx + (rnd() - 0.5) * j, lerp(top, foot, k), fz + (rnd() - 0.5) * j);
     }
-    shape(b.core, pts, SEGS, S.width); shape(b.glow, pts, SEGS, S.width * 4);
+    const width = small ? S.width * F.spark.width : S.width;
+    shape(b.core, pts, SEGS, width); shape(b.glow, pts, SEGS, width * 4);
     const from = pts[3], dir = rnd() < 0.5 ? -1 : 1;
     for (let i = 0; i < BRANCH; i++) pts[i].set(from.x + dir * i * 0.7 + (rnd() - 0.5) * 0.6, from.y - i * 1.1, from.z + (rnd() - 0.5) * 1.4);
-    shape(b.branch, pts, BRANCH, S.width * 1.6);
-    b.scorch.position.set(fx, foot, fz); b.scorch.scale.set(S.scorch, 1, S.scorch);
+    shape(b.branch, pts, BRANCH, width * 1.6);
+    const scorch = small ? S.scorch * 0.6 : S.scorch;
+    b.scorch.position.set(fx, foot, fz); b.scorch.scale.set(scorch, 1, scorch);
     for (const m of [b.core, b.glow, b.branch, b.scorch]) m.visible = true;
     const c = chestOf(e);
+    if (small) { spawnBurst(c, F.spark.burst); ultraFx.sparkBurst(c, 16, 'storm', null, 0, 0.9); light(c, S.color, 7, 10); return; }
     spawnBurst(c, S.burst); ultraFx.sparkBurst(c, 34, 'storm', null, 0, 1.2); ultraFx.flashAt(c, S.color, 40, 22);
     light(c, S.color, 18, 20); shake(S.shake, e.x, e.z);
   }
@@ -414,6 +423,215 @@ const abilityFx = (() => {
     }
   }
 
+  // ---- Ember Twin (the first summon) ----------------------------------------------------------------------------
+  // A twin of its holder (their own figure, js/rig.js, posed by their own pose every frame) made of embers: bright at
+  // its edges, dim through its middle, flickering, rising out of the floor from the feet up and burning away from
+  // the head down. It stands at the boss's far side, facing it, so the two of them strike together from both sides;
+  // each of its blows (the server's echo, `strike`) cuts an ember slash where it lands. No boss near: at its holder's
+  // side. Two in the pool, made in attach() (the holder's figure needs the game's models) and warmed like the rest.
+  const T = F.twin, twins = [];
+  const emberVertex = `
+    #include <common>
+    #include <skinning_pars_vertex>
+    varying vec3 vN; varying vec3 vV; varying float vY;
+    void main() {
+      #include <skinbase_vertex>
+      #include <beginnormal_vertex>
+      #include <skinnormal_vertex>
+      #include <begin_vertex>
+      #include <skinning_vertex>
+      vec4 world = modelMatrix * vec4(transformed, 1.0), mv = viewMatrix * world;
+      vN = normalize(normalMatrix * objectNormal); vV = -mv.xyz; vY = world.y;
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const emberFragment = `
+    uniform vec3 uColor; uniform vec3 uCore; uniform float uOpacity; uniform float uCut; uniform float uFrom; uniform float uTime; uniform float uBoost;
+    uniform float uRim; uniform float uBody; uniform float uFlicker;
+    varying vec3 vN; varying vec3 vV; varying float vY;
+    void main() {
+      float edge = (vY - uCut) * uFrom;   // rising: the part below the cut is there; burning away: the part above it
+      if (edge > 0.0) discard;
+      float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0);
+      float flick = 1.0 + uFlicker * sin(uTime * 13.0 + vY * 9.0) * sin(uTime * 7.3 - vY * 4.1);
+      float seam = smoothstep(-0.25, 0.0, edge);   // the line it is rising or burning at glows white-hot
+      vec3 c = mix(uColor, uCore, rim * 0.6 + seam) * (uBody + rim * uRim) * flick * uBoost;
+      gl_FragColor = vec4(c, uOpacity * (0.35 + 0.65 * rim + seam));
+    }`;
+  function emberMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Color(T.color) }, uCore: { value: new THREE.Color(T.core) }, uOpacity: { value: 0 }, uCut: { value: 0 },
+        uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uRim: { value: T.rim }, uBody: { value: T.body }, uFlicker: { value: T.flicker } },
+      vertexShader: emberVertex, fragmentShader: emberFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  }
+  function makeTwins() {
+    if (twins.length) return;
+    for (let i = 0; i < 2; i++) {
+      const rig = new Rig(PLAYER_DEF.look), mat = emberMaterial();
+      rig.root.traverse(o => { o.userData.warmUp = true; if (o.isMesh) { o.material = mat; o.castShadow = o.receiveShadow = false; } });
+      rig.root.visible = rig.shadow.visible = false; made.push(rig.root);
+      twins.push({ rig, mat, body: null, left: 0, time: 1, x: 0, y: 0, z: 0, yaw: 0, placed: false, mote: 0, boost: 0, gone: false });
+    }
+  }
+  const twinAt = { x: 0, y: 0, z: 0 }, twinPose = { t: 0, dt: 0, yaw: 0, px: 0, pz: 0 }, TWIN_MOTES = { r: 0.35, speed: 0.4, lift: 1.4, life: [0.4, 0.9], up: 1, size: 0.8 };
+  function twin(d) {
+    const body = d.body;
+    if (!body || !twins.length) return;
+    const t = twins.find(q => q.body === body) || twins.find(q => !q.body) || twins.reduce((a, b) => (a.left < b.left ? a : b));
+    t.body = body; t.left = t.time = d.v.time; t.placed = false; t.boost = 0; t.gone = false; t.enemies = Game.enemies;
+    place(t, 0);
+    const c = { x: t.x, y: t.y + 1, z: t.z };
+    groundFx.ring(t.x, t.z, 1.8, T.color, 0.8, t.y); spawnBurst(c, T.burst);
+    ultraFx.moteBurst(c, 50, T.color, { r: 0.5, speed: 1.2, lift: 3, life: [0.6, 1.4], up: 1 }); ultraFx.sparkBurst(c, 24, 'ember', [0, 1, 0], 0.6, 0.9);
+    light(c, T.color, 10, 12); shake(T.shake, t.x, t.z);
+  }
+  // Where the twin goes this frame: round the nearest live enemy from its holder, `flank` rad off its far side (facing
+  // it), else at their side.
+  function place(t, dt) {
+    const b = t.body;
+    let foe = null, best = T.near;
+    for (const e of Game.enemies) if (e.alive()) { const dd = Math.hypot(e.x - b.x, e.z - b.z); if (dd < best) { best = dd; foe = e; } }
+    let x, z, yaw;
+    if (foe) {
+      const dx = b.x - foe.x, dz = b.z - foe.z, l = Math.hypot(dx, dz) || 1, r = (foe.radius || 1) + T.gap;
+      const c = Math.cos(T.flank), s = Math.sin(T.flank), fx = -dx / l, fz = -dz / l;
+      x = foe.x + (fx * c - fz * s) * r; z = foe.z + (fx * s + fz * c) * r; yaw = Math.atan2(foe.x - x, foe.z - z);
+    } else { x = b.x + Math.cos(b.yaw) * T.side; z = b.z - Math.sin(b.yaw) * T.side; yaw = b.yaw; }
+    const k = t.placed ? 1 - Math.exp(-T.follow * dt) : 1;
+    t.x += (x - t.x) * k; t.z += (z - t.z) * k; t.yaw += angDiff(yaw, t.yaw) * (t.placed ? 1 - Math.exp(-T.turn * dt) : 1);
+    t.y = world.groundAt(t.x, t.z, b.y + 0.5); if (!Number.isFinite(t.y)) t.y = b.y;
+    t.placed = true;
+  }
+  function drawTwins(dt) {
+    const now = effectSlots.time();
+    for (const t of twins) {
+      if (!t.body) continue;
+      const b = t.body, alive = b.alive ? b.alive() : true;
+      if (alive) t.left -= dt; else t.left = Math.min(t.left, T.fade);
+      if (t.left <= 0 || !b.rig || t.enemies !== Game.enemies) { t.body = null;   // a new fight (a new set of enemies) ends it too
+        t.rig.root.visible = false; continue; }
+      place(t, dt);
+      const height = (b.height || 1.8) * 1.15, rising = clamp01((t.time - t.left) / T.rise), fading = clamp01(t.left / T.fade);
+      const u = t.mat.uniforms;
+      if (fading < 1) { u.uFrom.value = -1; u.uCut.value = t.y + height * (1 - fading); }   // burning away, from the head down
+      else { u.uFrom.value = 1; u.uCut.value = t.y - 0.1 + (height + 0.2) * rising; }     // rising, from the feet up
+      if (fading < 1 && !t.gone) { t.gone = true; twinAt.x = t.x; twinAt.y = t.y + 1; twinAt.z = t.z; ultraFx.moteBurst(twinAt, 40, T.color, { r: 0.5, speed: 1, lift: 2.4, life: [0.6, 1.3], up: 1 }); }
+      t.boost = Math.max(0, t.boost - dt / T.strikeGlow);
+      u.uOpacity.value = 0.9 * Math.min(1, rising * 3); u.uTime.value = now; u.uBoost.value = 1 + t.boost * T.strikeBoost;
+      t.rig.root.visible = true;
+      t.rig.place(t.x, t.y, t.z, t.yaw, -Infinity);
+      const real = b.rig;   // the holder's own pose, on the twin's figure
+      b.rig = t.rig;
+      twinPose.t = now; twinPose.dt = dt; twinPose.yaw = t.yaw; twinPose.px = b.x; twinPose.pz = b.z;
+      try { b.pose(b.stateTime, twinPose); } finally { b.rig = real; }
+      t.rig.shadow.visible = false; if (t.rig.warnGlow) t.rig.warnGlow.visible = false;
+      if ((t.mote -= dt) <= 0) { t.mote = T.motes; twinAt.x = t.x; twinAt.y = t.y + height * 0.5; twinAt.z = t.z; ultraFx.moteBurst(twinAt, 3, T.color, TWIN_MOTES); }
+    }
+  }
+  const emberSlashes = Array.from({ length: 4 }, () => ({ m: put(mesh(PLANE, T.color, SLASH)), t: Infinity }));
+  function twinStrike(d, e) {
+    const t = twins.find(q => q.body && q.body === d.body);
+    if (t) t.boost = 1;
+    // Its slash lands on the enemy's side facing the twin.
+    const c = chestOf(e), from = t || d.body || e, dx = from.x - e.x, dz = from.z - e.z, l = Math.hypot(dx, dz) || 1, r = (e.radius || 1) * 0.8;
+    const at = { x: e.x + dx / l * r, y: c.y, z: e.z + dz / l * r };
+    const s = emberSlashes.reduce((a, b) => (a.t > b.t ? a : b));
+    s.t = 0; s.m.visible = true; s.m.position.set(at.x, at.y, at.z); s.m.rotation.set(0, Math.atan2(dx, dz), (rnd() - 0.5) * 1.8);
+    ultraFx.sparkBurst(at, 18, 'ember', [dx / l, 0.2, dz / l], 0.5, 0.9); ultraFx.moteBurst(at, 10, T.color, { r: 0.2, speed: 2, lift: 0.6, life: [0.3, 0.7] });
+    spawnBurst(at, T.hitBurst); light(at, T.color, 5, 8);
+  }
+  function drawEmberSlashes(dt) {
+    for (const s of emberSlashes) {
+      if (s.t === Infinity) continue;
+      s.t += dt; const k = s.t / T.slash;
+      if (k >= 1) { s.t = Infinity; s.m.visible = false; continue; }
+      s.m.material.opacity = 0.95 * (1 - k); s.m.scale.setScalar(T.slashSize * (1 + 0.3 * k));
+    }
+  }
+
+  // ---- Gale Crescent ----------------------------------------------------------------------------------------------
+  // A crescent of wind as tall as a house leaves the holder's blade, flies through the boss and on, `reach` m in all,
+  // shedding pale motes; where it cuts the boss, a white burst. Seen from behind it is the crescent's whole curve.
+  const G = F.gale;
+  const gales = Array.from({ length: 2 }, () => {
+    const g = new THREE.Group(), glow = mesh(PLANE, G.color, SLASH), core = mesh(PLANE, G.core, SLASH);
+    core.scale.setScalar(0.62); core.position.z = 0.02; g.add(glow, core);
+    return { g: put(g), glow, core, t: Infinity, life: 1, x: 0, y: 0, z: 0, ux: 0, uz: 0, reach: 1, e: null, cut: false, mote: 0 };
+  });
+  const galeAt = { x: 0, y: 0, z: 0 }, GALE_MOTES = { r: 0.6, speed: 0.8, lift: 0.3, life: [0.3, 0.7], size: 0.9 };
+  function gale(d, e) {
+    const from = d.body || e, dx = e.x - from.x, dz = e.z - from.z, l = Math.hypot(dx, dz) || 1;
+    const s = gales.reduce((a, b) => (a.t > b.t ? a : b));
+    s.t = 0; s.ux = dx / l; s.uz = dz / l; s.reach = d.v.reach; s.life = s.reach / G.speed; s.e = e; s.cut = false;
+    s.x = from.x + s.ux * 0.8; s.z = from.z + s.uz * 0.8; s.y = (from.y || e.y) + G.lift;
+    s.g.rotation.set(0, Math.atan2(s.ux, s.uz), (rnd() - 0.5) * G.roll); s.g.scale.setScalar(G.size * (d.v.width / 1.6)); s.g.visible = true;
+    galeAt.x = s.x; galeAt.y = s.y; galeAt.z = s.z;
+    ultraFx.moteBurst(galeAt, 24, G.color, { r: 0.6, speed: 3, lift: 0.4, life: [0.3, 0.7] }); light(galeAt, G.color, 8, 10); shake(G.shake, s.x, s.z);
+  }
+  function drawGales(dt) {
+    for (const s of gales) {
+      if (s.t === Infinity) continue;
+      s.t += dt;
+      const k = s.t / s.life, out = clamp01((s.t - s.life) / G.fade);
+      if (out >= 1) { s.t = Infinity; s.g.visible = false; continue; }
+      const go = Math.min(1, k) * s.reach, x = s.x + s.ux * go, z = s.z + s.uz * go;
+      s.g.position.set(x, s.y, z);
+      s.glow.material.opacity = 0.55 * (1 - out) * Math.min(1, s.t / 0.05); s.core.material.opacity = 0.95 * (1 - out) * Math.min(1, s.t / 0.05);
+      if ((s.mote -= dt) <= 0 && out <= 0) { s.mote = 0.025; galeAt.x = x; galeAt.y = s.y; galeAt.z = z; ultraFx.moteBurst(galeAt, 4, G.color, GALE_MOTES); }
+      const e = s.e;
+      if (!s.cut && e && (x - e.x) * s.ux + (z - e.z) * s.uz >= 0) {   // it reaches the boss
+        s.cut = true; const c = chestOf(e);
+        ultraFx.sparkBurst(c, 40, 'parry', [s.ux, 0.1, s.uz], 0.6, 1.2); spawnBurst(c, G.burst); ultraFx.flashAt(c, G.color, 26, 14);
+        light(c, G.color, 12, 14); groundFx.ring(e.x, e.z, (e.radius || 1) + 1.2, G.color, 0.6, e.y);
+      }
+    }
+  }
+
+  // ---- Pyre -------------------------------------------------------------------------------------------------------
+  // A pillar of fire bursts up under the broken boss and burns as long as the power does, following it: a wide glow
+  // round a white-hot core, flickering, a burning ring on the floor and embers pouring up.
+  const PY = F.pyre;
+  const pyres = Array.from({ length: 2 }, () => {
+    const g = new THREE.Group(), glow = mesh(COLUMN, PY.color, FADE), core = mesh(COLUMN, PY.core, FADE), ring = mesh(RING, PY.color), floor = mesh(DISC, PY.color, CRATER);
+    ring.position.y = 0.05; floor.position.y = 0.04; g.add(glow, core, ring, floor);
+    return { g: put(g), glow, core, ring, floor, e: null, t: 0, time: 1, r: 1, mote: 0, pulse: 0 };
+  });
+  const pyreAt = { x: 0, y: 0, z: 0 }, PYRE_MOTES = { r: 0.8, speed: 1, lift: 4, life: [0.5, 1.1], up: 1, size: 1.1 };
+  function pyre(d, e) {
+    const s = pyres.find(q => q.e === e) || pyres.find(q => !q.e) || pyres[0];
+    s.e = e; s.t = 0; s.time = d.v.time; s.r = (e.radius || 1) + PY.pad; s.pulse = 0; s.g.visible = true; s.floor.rotation.y = rnd() * Math.PI * 2;
+    const c = chestOf(e);
+    groundFx.spawn(e.x, e.z, { ring: s.r * 1.4, crack: s.r * 0.5, dust: 10 }, e.y);
+    spawnBurst(c, PY.burst); ultraFx.sparkBurst(c, 40, 'ember', [0, 1, 0], 0.7, 1.3); ultraFx.flashAt(c, PY.color, 30, 16);
+    light(c, PY.color, 14, 16); shake(PY.shake, e.x, e.z);
+  }
+  function drawPyres(game, dt) {
+    const now = effectSlots.time();
+    for (const s of pyres) {
+      if (!s.e) continue;
+      s.t += dt;
+      const e = s.e, end = s.time + PY.fade;
+      if (s.t >= end || !game.enemies.includes(e)) { s.e = null; s.g.visible = false; continue; }
+      const up = clamp01(s.t / PY.rise), k = Math.min(up, clamp01((end - s.t) / PY.fade)), flick = 1 + 0.08 * Math.sin(now * 23) + 0.05 * Math.sin(now * 37 + 1);
+      s.g.position.set(e.x, e.y, e.z);
+      s.glow.scale.set(s.r * flick, PY.height * up, s.r * flick); s.glow.material.opacity = 0.5 * k;
+      s.core.scale.set(s.r * 0.42 * flick, PY.height * 0.85 * up, s.r * 0.42 * flick); s.core.material.opacity = 0.9 * k;
+      s.ring.scale.set(s.r * 1.15, 1, s.r * 1.15); s.ring.material.opacity = 0.8 * k;
+      s.floor.scale.set(s.r * 1.2, 1, s.r * 1.2); s.floor.material.opacity = 0.9 * k; s.floor.rotation.y += dt * 0.4;
+      if ((s.mote -= dt) <= 0 && k > 0.3) { s.mote = PY.motes; pyreAt.x = e.x; pyreAt.y = e.y + 0.4; pyreAt.z = e.z; ultraFx.moteBurst(pyreAt, 6, PY.color, PYRE_MOTES); }
+      if ((s.pulse -= dt) <= 0 && s.t < s.time) { s.pulse = PY.lightEvery; light(chestOf(e), PY.color, 6, 12); }
+    }
+  }
+
+  // ---- The rares' powers: Counterflame and Static Edge ------------------------------------------------------------
+  // Smaller than a legendary's: fire bursting on the parried boss; a short spark of lightning jumping onto it.
+  const FL = F.flare;
+  function flareOn(e) {
+    const c = chestOf(e);
+    ultraFx.flare(c, FL.color, FL.size); spawnBurst(c, FL.burst); ultraFx.sparkBurst(c, 26, 'ember', null, 0, 1);
+    ultraFx.moteBurst(c, 18, FL.color, { r: 0.4, speed: 2.4, lift: 1.2, life: [0.4, 0.9] });
+    groundFx.ring(e.x, e.z, (e.radius || 1) + 0.8, FL.color, 0.55, e.y); light(c, FL.color, 7, 9);
+  }
+
   // ---- The rares' small cues (the local player's own) --------------------------------------------------------------
   function perk(d) {
     const p = d.body;
@@ -423,6 +641,7 @@ const abilityFx = (() => {
     else if (d.perk === 'streak/heal') { ultraFx.moteBurst(c, 26, P.heal, { r: 0.5, speed: 0.8, lift: 1.6, life: [0.7, 1.3] }); groundFx.ring(p.x, p.z, 1.6, P.heal, 0.5, p.y); }
     else if (d.perk === 'parry/stamina') groundFx.ring(p.x, p.z, 1.8, P.stamina, 0.55, p.y);
     else if (d.perk === 'dodge/riposte') groundFx.ring(p.x, p.z, 1.5, P.riposte, 0.5, p.y);
+    else if (d.perk === 'flask/stamina') { ultraFx.moteBurst(c, 20, P.stamina, { r: 0.5, speed: 0.6, lift: 1.4, life: [0.6, 1.1] }); groundFx.ring(p.x, p.z, 1.8, P.stamina, 0.55, p.y); }
     else if (d.perk === 'block/charge') { ultraFx.sparkBurst(c, 16, 'gold', null, 0, 0.7); groundFx.ring(p.x, p.z, 1.4, P.charge, 0.5, p.y); }
   }
 
@@ -434,6 +653,12 @@ const abilityFx = (() => {
     else if (d.then === 'freeze') rift(d);
     else if (d.then === 'blades' && e) blades(d, e);
     else if (d.then === 'bloodMoon') bloodMoon(d);
+    else if (d.then === 'twin' && d.strike && e) twinStrike(d, e);
+    else if (d.then === 'twin') twin(d);
+    else if (d.then === 'gale' && e) gale(d, e);
+    else if (d.then === 'pyre' && e) pyre(d, e);
+    else if (d.then === 'flare' && e) flareOn(e);
+    else if (d.then === 'spark' && e) bolt(d, e, true);
   });
   events.on('abilityPerk', perk);
   events.on('abilityPicked', d => {
@@ -447,10 +672,13 @@ const abilityFx = (() => {
   function render(game) {
     const dt = effectSlots.dt();
     drawMeteors(dt); drawDragons(dt); drawBolts(dt); drawRift(game, dt); drawBlades(game, dt); drawMoons(game, dt);
+    drawTwins(dt); drawEmberSlashes(dt); drawGales(dt); drawPyres(game, dt);
   }
   function clear() {
     for (const o of made) o.visible = false;
-    for (const s of [...meteors, ...bolts, ...dragons, ...waves, ...slashes, ...swords]) s.t = Infinity;
+    for (const s of [...meteors, ...bolts, ...dragons, ...waves, ...slashes, ...swords, ...emberSlashes, ...gales]) s.t = Infinity;
+    for (const t of twins) t.body = null;
+    for (const s of pyres) s.e = null;
     for (const g of dragons) g.e = null;
     for (const b of bubbles) b.e = null;
     for (const r of rains) r.e = null;
@@ -458,7 +686,8 @@ const abilityFx = (() => {
   }
   const moonTrail = [MO.color, CONFIG.VISUALS.ultra.trails.playerBoost * MO.trail];   // the holder's blade trail runs red
   function trail(b) { for (const m of moons) if (m.body === b && m.left > 0) return moonTrail; return null; }
-  return { attach() { Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
+  return { attach() { makeTwins(); Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
+    twins: twins.filter(t => t.body).length, gales: gales.filter(s => s.t !== Infinity).length, pyres: pyres.filter(s => s.e).length,
     meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length, dragons: dragons.filter(g => g.t !== Infinity).length,
     bubbles: bubbles.filter(b => b.e).length, rains: rains.filter(r => r.e).length, swords: swords.filter(s => s.t !== Infinity).length,
     moons: moons.filter(m => m.body).length, slashes: slashes.filter(s => s.t !== Infinity).length }) };

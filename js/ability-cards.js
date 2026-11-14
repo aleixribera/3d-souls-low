@@ -29,7 +29,13 @@ const ABILITY_ICONS = {
   'opportunist': '<circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2"/><path d="M24 4 V14 M24 34 V44 M4 24 H14 M34 24 H44"/>',
   'bastion': '<path d="M24 6 L38 11 V24 C38 33 31 39 24 42 C17 39 10 33 10 24 V11 Z"/><path d="M27 14 L19 26 H27 L21 35"/>',
   'patience': '<path d="M14 6 H34 M14 42 H34"/><path d="M17 6 C17 16 24 19 24 24 C24 29 17 32 17 42 M31 6 C31 16 24 19 24 24 C24 29 31 32 31 42"/><path d="M20 39 C22 36 26 36 28 39"/>',
+  'second-wind': '<path d="M20 8 H28 M21 8 V15 C15 18 13 23 13 28 A11 11 0 0 0 35 28 C35 23 33 18 27 15 V8"/><path d="M18 30 C21 26 25 34 30 30"/><path d="M41 22 V8 M37 12 L41 8 L45 12"/>',
+  'counterflame': '<path d="M8 38 L28 18 M40 38 L20 18"/><path d="M24 3 C18 10 18 14 24 18 C30 14 30 10 24 3 Z"/><path d="M13 42 L5 34 M35 42 L43 34"/>',
+  'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
   // Legendaries
+  'gale-crescent': '<path d="M12 5 C30 9 36 31 16 43 C27 30 25 15 12 5 Z"/><path d="M30 14 H42 M33 24 H46 M30 34 H41"/>',
+  'pyre': '<path d="M24 4 C16 14 13 22 15 30 C16 36 32 36 33 30 C35 22 32 14 24 4 Z"/><path d="M24 18 C21 23 21 27 24 30 C27 27 27 23 24 18 Z"/><path d="M5 42 H43 M10 38 H38"/>',
+  'ember-twin': '<circle cx="15" cy="9" r="4"/><path d="M15 13 V27 M8 19 H22 M15 27 L10 40 M15 27 L20 40"/><circle cx="33" cy="9" r="4" stroke-dasharray="2 2"/><path d="M33 13 V27 M26 19 H40 M33 27 L28 40 M33 27 L38 40" stroke-dasharray="3 2"/>',
   'meteor-fall': '<circle cx="30" cy="22" r="7"/><path d="M6 4 L24 18 M15 3 L26 14 M4 13 L23 21"/><path d="M6 42 H42 M17 42 L21 35 M31 42 L28 35 M24 42 V36"/>',
   'storm-king': '<path d="M9 22 L9 10 L16 16 L24 7 L32 16 L39 10 L39 22 Z"/><path d="M27 26 L19 36 H27 L21 45"/>',
   'time-rift': '<circle cx="24" cy="24" r="16"/><path d="M24 14 V24 L30 28"/><path d="M40 8 L34 14 L38 17 L31 24 L35 27 L28 34" stroke-dasharray="3 2"/>',

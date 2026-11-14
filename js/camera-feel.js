@@ -4,7 +4,7 @@
 // ============================================================================
 // A swing nudges the view forward, a roll widens it a little and dips, a blow taken knocks it away from the attacker
 // with a slight roll, a parry or a heavy hit punches in, landings dip, moving sideways leans the horizon a hair, a
-// legendary ability's power hits the view as hard as it looks.
+// legendary ability's power hits the view as hard as it looks, a rare's less.
 // It offsets the drawn camera after Game.render places it, so it never touches Game.cam, aim or movement. Every
 // motion is a critically damped spring (CONFIG.camera.feel), never a shake. Off with the "Camera motion" option.
 const cameraFeel = (() => {
@@ -41,13 +41,15 @@ const cameraFeel = (() => {
   events.on('land', d => { if (!d.player || isPlayer(d.player)) kick('y', -F.landDip * 1.5); });
   events.on('fallDamage', d => { if (isPlayer(d.body)) kick('y', -F.landDip * 1.3); });
   events.on('bossPhase', () => kick('fov', F.phaseFov));
-  // A legendary's power: in full for its holder, less the further off it is for everyone else.
+  // A power: in full for its holder, less the further off it is for everyone else. A bolt's or a twin's blow kicks
+  // as itself (`strike`, `echo`).
   events.on('abilityPower', d => {
-    const P = F.powers[d.strike ? 'strike' : d.then], p = Game.player;
+    const P = F.powers[d.strike ? (d.then === 'twin' ? 'echo' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }
   });
+  events.on('abilityPerk', d => { if (isPlayer(d.body)) kick('fov', F.perkFov); });   // a rare acting: a small punch in
 
   Game.renderHooks.unshift((game) => {   // first of the hooks: effects drawn after it see the moved camera
     const dt = game.renderDt;

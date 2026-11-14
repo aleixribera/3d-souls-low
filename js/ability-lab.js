@@ -47,7 +47,8 @@ const abilityLab = (() => {
     const at = e || p, ctx = { x: at.x, y: at.y, z: at.z, enemy: e, action: pw.action };
     if (pw.v.below) p.hp = Math.min(p.hp, Math.max(1, Math.floor(p.maxHp * pw.v.below * 0.9)));   // a power that waits for low health
     abilityPowers.reset();
-    abilityPowers.trigger('self', p, p.kit, pw.when, ctx);
+    if (pw.when === 'hits') ctx.strike = { damage: 0, postureDmg: 0 };
+    for (let i = pw.when === 'hits' ? pw.v.hits : 1; i > 0; i--) abilityPowers.trigger('self', p, p.kit, pw.when, ctx);   // a `hits` power: its Nth
   }
 
   function build() {
@@ -78,7 +79,7 @@ const abilityLab = (() => {
         pick.addEventListener('click', ev => step(b, ev.shiftKey ? -1 : 1));
         pick.addEventListener('contextmenu', ev => { ev.preventDefault(); step(b, -1); });
         row.appendChild(pick);
-        if (b.rarity === 'legendary') {
+        if (b.power) {   // a legendary's or a rare's power
           const go = make('button', 'ui-button lab-fire', 'Fire'); go.type = 'button'; go.setAttribute('aria-label', `Fire ${b.name}`);
           go.addEventListener('click', () => fire(b));
           row.appendChild(go);

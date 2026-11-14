@@ -301,8 +301,8 @@ globalThis.host = (() => {
     return { x: p.x, y: p.y, z: p.z, hp: p.hp, maxHp: maxHpOf(id), perk: perkOf(id), alive: () => p.alive() };
   }
   // A person's claim of an ability trigger (ABILITY_CLAIMS): a jump attack landing (from their pose: landing, with that
-  // air attack), a perfect dodge (rolling, of a blow that was out near them lately, as a parry's check) or being this
-  // low (their pose's health). A claim sent ahead of the pose that shows it waits up to C.claimWait s for that pose
+  // air attack), a perfect dodge (rolling, of a blow that was out near them lately, as a parry's check), being this
+  // low (their pose's health) or drinking a flask (their pose: drinking). A claim sent ahead of the pose that shows it waits up to C.claimWait s for that pose
   // (pendingClaims, checked each step). Cooldowns and once-a-fight are the powers' own.
   function abilityClaim(id, msg, retry = false) {
     const wait = () => { if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait }); return false; };
@@ -319,6 +319,9 @@ globalThis.host = (() => {
       if (p.state !== 'roll') return wait();
       lastDodge.set(id, time);
       abilityPowers.trigger(id, body, kit, 'dodge', { enemy: e });
+    } else if (msg.when === 'flask') {
+      if (p.state !== PS.USE_ITEM) return wait();
+      abilityPowers.trigger(id, body, kit, 'flask', {});
     } else {
       const pw = kit.powers.find(q => q.when === 'low');
       if (!pw || !(body.hp > 0 && body.hp <= body.maxHp * pw.v.below)) return wait();
@@ -619,6 +622,8 @@ globalThis.host = (() => {
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (result.broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     if (a.charge && msg.charge >= 1 && !result.blocked) abilityPowers.trigger(id, holderOf(id), kit, 'fullHeavy', { enemy: e });   // Storm King
+    if (!result.blocked && kit.whens.has('hits')) abilityPowers.trigger(id, holderOf(id), kit, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, a twin
+    if (result.broke) abilityPowers.trigger(id, holderOf(id), kit, 'break', { enemy: e });   // Pyre
     return true;
   }
   // The enemy whose blow (attack `msg.serial`, out lately: winding up or striking) could have reached player `p`, or null.
@@ -649,7 +654,8 @@ globalThis.host = (() => {
     lastParry.set(id, time);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
-    abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades
+    abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
+    if (broke) abilityPowers.trigger(id, holderOf(id), kitOf(id), 'break', { enemy: e });   // Pyre
     return true;
   }
   function beginExecution(id, msg) {

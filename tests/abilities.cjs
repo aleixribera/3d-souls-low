@@ -3,7 +3,8 @@
 // legendary measured on real bodies and the boss in the headless simulation, the offers' draw (rarity, last levels,
 // a teammate's legendary, a swift kill's extra card), then the server end to end: the pick between fights, a refused
 // pick, the wait for everyone, a bot's own pick, the abilities carried to the next fight, the server's damage and
-// health limits, the claims it checks (a jump heavy landing, a perfect dodge, a low bar) and the pick that runs out.
+// health limits, the claims it checks (a jump heavy landing, a perfect dodge, a low bar, a flask) and the pick that
+// runs out.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { createSimulation, build } = require('../server/headless.cjs');
@@ -151,6 +152,56 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   const low = moon.hp; g('abilityLanded')(moon, struck); near(moon.hp, low + struck.damage * ov.drain, 'Blood Moon drink');
   moon.perk.moon = 0; powers.trigger('o', moon, moon.kit, 'low', {}); assert.equal(moon.perk.moon, 0, 'once a fight');
   moon.hp = low; powers.reset(); powers.trigger('o', moon, moon.kit, 'low', {}); assert.ok(moon.perk.moon > 0, 'a new fight');
+
+  // Counterflame (a rare's power): a parry bursts fire on the boss, then its cooldown.
+  fresh(); const flame = holder(['counterflame']), fv = BY['counterflame'].levels[0];
+  powers.trigger('f', flame, flame.kit, 'parry', { enemy: e }); near(e.def.hp - e.hp, fv.damage, 'Counterflame');
+  powers.trigger('f', flame, flame.kit, 'parry', { enemy: e }); near(e.def.hp - e.hp, fv.damage, 'Counterflame cooling down');
+
+  // Static Edge and Gale Crescent: every `hits`th landed blow, each counting its own.
+  fresh(); const edge = holder(['static-edge', 'gale-crescent']), ev = BY['static-edge'].levels[0], gv = BY['gale-crescent'].levels[0];
+  const blow = { damage: 20, postureDmg: 5 };
+  for (let i = 1; i <= gv.hits * ev.hits; i++) powers.trigger('h', edge, edge.kit, 'hits', { enemy: e, strike: blow });
+  assert.equal(fired.filter(f => f.power === 'static-edge').length, gv.hits, 'a spark every Nth blow');
+  assert.equal(fired.filter(f => f.power === 'gale-crescent').length, ev.hits, 'a crescent every Nth blow');
+  near(e.def.hp - e.hp, gv.hits * ev.damage + ev.hits * gv.damage, 'Static Edge and Gale Crescent damage');
+  // The crescent cuts what stands on its path past the boss, not beside the holder.
+  const far = holder(['gale-crescent']);
+  fresh(); far.x = e.x; far.z = e.z + e.radius + 4;
+  for (let i = 0; i < gv.hits; i++) powers.trigger('g', far, far.kit, 'hits', { enemy: e, strike: blow });
+  near(e.def.hp - e.hp, gv.damage, 'the crescent through the boss');
+
+  // Pyre: only a break lights it; it burns `time` s.
+  fresh(); const pyre = holder(['pyre']), yv = BY['pyre'].levels[0];
+  powers.trigger('p', pyre, pyre.kit, 'parry', { enemy: e }); assert.equal(fired.length, 0, 'a parry alone lights no pyre');
+  powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e }); step(yv.time + 0.05);
+  near(e.def.hp - e.hp, Math.round(yv.time / yv.every) * yv.damage, 'every burn');
+  // A second break while it burns lights it afresh, not a second pillar.
+  fresh(); powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e }); step(yv.cooldown + 0.05);
+  powers.trigger('p', pyre, pyre.kit, 'break', { enemy: e });
+  assert.equal(powers.running.filter(r => r.enemy === e).length, 1, 'one pillar a boss'); powers.reset();
+  // An Nth blow with nothing to strike leaves the next one due.
+  fresh(); const gone = holder(['static-edge']), dead = { ...e, alive: () => false };
+  for (let i = 1; i < ev.hits; i++) powers.trigger('d', gone, gone.kit, 'hits', { enemy: e, strike: blow });
+  powers.trigger('d', gone, gone.kit, 'hits', { enemy: dead, strike: blow });
+  powers.trigger('d', gone, gone.kit, 'hits', { enemy: e, strike: blow });
+  assert.equal(fired.filter(f => f.power === 'static-edge').length, 1, 'the spark waits for the next blow');
+
+  // Ember Twin: a flask calls it; while it is out each landed blow comes again at `share`, as its own event; then it
+  // goes, and a new fight sends it away.
+  fresh(); const twin = holder(['ember-twin']), wv = BY['ember-twin'].levels[0];
+  assert.ok(twin.kit.whens.has('hits') && twin.kit.whens.has('flask'), 'the twin hears blows and flasks');
+  powers.trigger('w', twin, twin.kit, 'hits', { enemy: e, strike: blow }); step(0.2); assert.equal(e.hp, e.def.hp, 'no twin yet');
+  powers.trigger('w', twin, twin.kit, 'flask', {}); assert.ok(powers.twinOf('w'), 'the twin is out');
+  for (let i = 0; i < 3; i++) { powers.trigger('w', twin, twin.kit, 'hits', { enemy: e, strike: blow }); step(0.2); }
+  near(e.def.hp - e.hp, 3 * blow.damage * wv.share, 'three echoes'); assert.deepEqual(fired.filter(f => f.strike).map(f => f.strike), [1, 2, 3]);
+  step(wv.time); const after = e.hp;
+  powers.trigger('w', twin, twin.kit, 'hits', { enemy: e, strike: blow }); step(0.2); assert.equal(e.hp, after, 'gone when its time is up');
+  powers.reset(); assert.equal(powers.twinOf('w'), null);
+
+  // Second Wind (a rare's perk): a flask drunk gives stamina back.
+  const wind = holder(['second-wind']); wind.stamina = 0; wind.useItem('flask');
+  near(wind.stamina, wind.maxStamina * BY['second-wind'].levels[0].stamina, 'Second Wind');
 }
 
 // ---- 3. The offers -------------------------------------------------------------------------------------------------
@@ -349,6 +400,27 @@ async function peer(origin, name) {
     beside('roll');
     assert.equal(app.sim.abilityClaim(b.id, { when: 'dodge', enemy: boss2.netId, serial }), true, 'rolling through it');
     assert.ok(boss2.frozen > 0, 'Time Rift');
-    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon and Meteor Fall claims, the timed-out pick passed.');
+    boss2.frozen = 0;
+
+    // Ember Twin claimed: only while the pose shows a drink; then the server echoes each of b's landed blows. Static
+    // Edge counts the server's own accepted blows.
+    for (const id of ['ember-twin', 'static-edge']) { forced.set(b.id, [id]); app.sim.offerAbilities([b.id], false); assert.equal(app.sim.pickAbility(b.id, id), true); }
+    app.sim.inspect().abilityPowers.reset();
+    assert.equal(claim(b.id, { when: 'flask' }, S.maxHp).length, 0, 'no flask, no twin');
+    for (let i = 0; i < 40; i++) app.sim.tick(1 / 60);   // the unproven claim's wait runs out
+    const called = claim(b.id, { when: 'flask', pose: { state: 'useItem' } }, S.maxHp);
+    assert.equal(called.length, 1); assert.equal(called[0].power, 'ember-twin');
+    const struck = () => {
+      app.sim.frame(true);
+      app.sim.setPlayers([{ ...session.spawn, id: b.id, x: boss2.x, z: boss2.z + boss2.radius + 0.5, y: boss2.y, yaw: Math.PI, hp: S.maxHp, state: 'idle', poseAge: 0 }]);
+      assert.equal(app.sim.hit(b.id, { enemy: boss2.netId, attack: attack.id, charge: 0 }), true, 'the blow lands');
+      for (let i = 0; i < 10; i++) app.sim.tick(1 / 60);
+      return app.sim.frame(true).events.filter(ev => ev.type === 'abilityPower');
+    };
+    const sparkEvery = BY['static-edge'].levels[0].hits, seen = [];
+    for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; boss2.posture = 0; seen.push(...struck()); }
+    assert.equal(seen.filter(ev => ev.power === 'ember-twin' && ev.strike).length, sparkEvery, "the twin echoes each of b's blows");
+    assert.equal(seen.filter(ev => ev.power === 'static-edge').length, 1, 'a spark on the Nth blow the server accepted');
+    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

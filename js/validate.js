@@ -65,8 +65,8 @@ function validateData({ visual = true } = {}) {
     need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name.trim() && typeof b.text === 'string' && b.text.trim(),
       `${where}: an id (a-z, 0-9, -), a name and a text.`);
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
-    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity === 'legendary'),
-      `${where}: one of mods (a common), perk (a rare) or power (a legendary).`);
+    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity !== 'common'),
+      `${where}: one of mods (a common), perk (a rare) or power (a rare or a legendary).`);
     if (!R || kinds.length !== 1 || !Array.isArray(b.levels)) { need(Array.isArray(b.levels), `${where}: levels must be a list.`); continue; }
     need(b.levels.length === R.levels, `${where}: ${R.levels} levels for a ${b.rarity}.`);
     const plan = b.perk ? ABILITY_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? ABILITY_POWERS[b.power.when + '/' + b.power.then] : null;

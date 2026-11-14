@@ -381,11 +381,16 @@ function validateAudio() {
 const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', 'postureBreak', 'dodge', 'enemyDeath', 'playerDeath', 'groundPound',
   'hardLanding', 'shot', 'boltStopped', 'alert', 'perilous', 'swingLight', 'swingHeavy', 'hurtGrunt', 'hurtMoan', 'flask', 'rest', 'gateOpened', 'trapWarning', 'trapSprung',
   'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle',
-  'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick'];
-// A legendary's sound by its power's `then` (a lightning bolt's `strike` is abilityThunder), a rare's pitch by its perk, a
-// pick's by its rarity.
-const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon' };
-const ABILITY_PERK_PITCH = { empower: 1, 'streak/heal': 1.26, 'parry/stamina': 1.12, 'dodge/riposte': 1.5, 'block/charge': 0.84 };
+  'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick',
+  'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityBreath', 'abilityStep', 'abilityEmpower',
+  'abilityHeal', 'abilityCharge'];
+// A power's sound by its `then`, and its later blows' (`strike`: a lightning bolt, a twin's echo) by STRIKE_SOUNDS; a
+// rare's perk its own (ABILITY_PERK_SOUNDS, at a pitch), a pick's pitch by its rarity.
+const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
+  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark' };
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho' };
+const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1], 'parry/stamina': ['abilityBreath', 1],
+  'flask/stamina': ['abilityBreath', 0.84], 'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.
@@ -451,14 +456,14 @@ function registerAudioListeners() {
   // Thousand Blades rings once for each blow of its rain, as the drawn swords land (every `every` s, js/ability-fx.js).
   const rains = [];   // { e, left, next, every }
   on('abilityPower', d => {
-    const id = d.strike ? 'abilityThunder' : ABILITY_SOUNDS[d.then];
+    const id = d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
     const mine = d.body === Game.player, pos = mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
     audio.play(id, { pos, vel: 1 });
     if (d.then === 'blades' && d.enemy && d.v) for (let i = rains.length - 1; i >= 0; i--) if (rains[i].e === d.enemy) rains.splice(i, 1);   // a new rain on it replaces the old
     if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });
   });
-  on('abilityPerk', d => { if (d.body === Game.player) audio.play('abilityPerk', { pitch: ABILITY_PERK_PITCH[d.perk] || 1 }); });
+  on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch }); } });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
   on('respawn', () => { rains.length = 0; });
   const rainTick = dt => {

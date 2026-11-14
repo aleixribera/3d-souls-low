@@ -36,14 +36,15 @@ const CONFIG = {
     // of stiffness `omega` (1/s). Offsets in m, rolls in rad, fov in degrees. A swing nudges forward (`swing`, heavies
     // `heavy` and dip), a roll widens and dips, a blow taken pushes away from the attacker (scaled by damage over
     // `hurtRef`, blocked x `blockMul`), parries / heavy hits (from `punchFrom` damage) / breaks / executions punch the
-    // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. A legendary's power (its `then`, a
-    // lightning bolt `strike`) kicks [fov, dip] in `powers`, in full for its holder, fading out to `powerNear` m for
-    // the rest. Never past `maxRoll` / `maxFov`.
+    // view in; sideways movement leans the horizon by `strafeRoll` at `moveRef` m/s. A power (its `then`, a lightning
+    // bolt `strike`, a twin's blow `echo`) kicks [fov, dip] in `powers`, in full for its holder, fading out to
+    // `powerNear` m for the rest; a rare's perk acting kicks the holder's view by `perkFov`. Never past `maxRoll` / `maxFov`.
     feel: { omega: 13, swing: 0.05, heavy: 0.1, heavyDip: 0.04, swingRoll: 0.006, rollFov: 3, rollDip: 0.06,
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
-            strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26,
-            powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12] } },
+            strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
+            powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
+              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -543,7 +544,16 @@ const CONFIG = {
     // and `right` of the way across), red motes rising round them every `motes` s, fading in and out over `fade` s,
     // its holder tinted `tint`; each blow's slash `slashSize` m, gone in `slash` s, and their blade trail (Ultra)
     // red at `trail` times its glow. Perks: the rares' small cues; `picked`: the ring round the player as a pick is made, in
-    // its rarity's colour. `shake`: [time, amplitude]; `burst`: the Low
+    // its rarity's colour. Twin (Ember Twin): its embers' `color` and white-hot `core`, how bright its edges (`rim`)
+    // and middle (`body`) burn and how much they `flicker`; it stands `gap` m past the boss's edge, `flank` rad round
+    // from its far side so the boss never hides it from its holder's camera (no boss within
+    // `near` m: `side` m beside its holder), catching up at `follow` and turning at `turn` (1/s); it rises in `rise`
+    // s and burns away in `fade` s, sheds a mote every `motes` s, glows `strikeBoost` brighter for `strikeGlow` s as
+    // it strikes, and its slash is `slashSize` m, gone in `slash` s. Gale: the crescent `size` m across (at a `width`
+    // of 1.6 m), flying `lift` m up at `speed` m/s, tilted up to `roll` rad, gone `fade` s after its reach. Pyre: the
+    // pillar `height` m tall and `pad` m wider than the boss, up in `rise` s, out in `fade` s, motes every `motes` s and
+    // a light every `lightEvery` s. Flare (Counterflame): its flare `size`. Spark (Static Edge): a bolt from `height`
+    // m over the boss, `width` times the storm's. `shake`: [time, amplitude]; `burst`: the Low
     // preset's particles (js/fx.js).
     abilityFx: {
       near: 14, cool: 0x2a0c06,
@@ -558,6 +568,15 @@ const CONFIG = {
         burst: { count: 8, speed: 4, color: 0xffe2a0 } },
       moon: { color: 0xff2a3a, height: 9, size: 4.5, distance: 90, up: 0.62, right: 0.28, skySize: 22, fade: 0.6, tint: 0.12, motes: 0.12, slash: 0.36, slashSize: 3.2, trail: 1.3,
         burst: { count: 30, speed: 5, color: 0xff3a48 } },
+      twin: { color: 0xff6a1e, core: 0xffd8a0, rim: 2.4, body: 0.3, flicker: 0.22, gap: 1.1, flank: 0.85, near: 16, side: 1.4, follow: 7, turn: 10,
+        rise: 0.5, fade: 0.8, motes: 0.06, strikeBoost: 0.8, strikeGlow: 0.25, slash: 0.3, slashSize: 2.6, shake: [0.16, 0.08],
+        burst: { count: 30, speed: 5, color: 0xff8a3a }, hitBurst: { count: 10, speed: 4, color: 0xffa050 } },
+      gale: { color: 0xc8fff0, core: 0xffffff, size: 5.2, lift: 1.3, speed: 34, roll: 0.9, fade: 0.18, shake: [0.14, 0.08],
+        burst: { count: 26, speed: 8, color: 0xdafff6 } },
+      pyre: { color: 0xff5a14, core: 0xffd890, height: 9, pad: 0.5, rise: 0.18, fade: 0.45, motes: 0.05, lightEvery: 0.8, shake: [0.3, 0.2],
+        burst: { count: 34, speed: 7, color: 0xff7a2a } },
+      flare: { color: 0xff8a2a, size: 2.4, burst: { count: 18, speed: 5, color: 0xff9a40 } },
+      spark: { height: 3.2, width: 0.6, burst: { count: 10, speed: 5, color: 0xbcd6ff } },
       perks: { empower: 0xffc070, empowerBurst: { count: 14, speed: 5, color: 0xffc070 }, heal: 0x8fe08a, stamina: 0x8fb8dc,
         riposte: 0xdfe6f0, charge: 0xd9b56b, picked: { common: 0xcfc8b6, rare: 0x8fb8dc, legendary: 0xe59a5c } },
     },

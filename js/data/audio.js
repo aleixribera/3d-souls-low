@@ -216,7 +216,7 @@ const AUDIO = {
       { wave: 'sine', freq: 440, partials: [[1, 0.6, 1], [2.76, 0.12, 0.4]], at: 0.15, a: 0.001, d: 2.4, gain: 0.07 },
     ] },
 
-    // ---- Boss Rush's abilities (v7.75.0): each legendary its own sound, the rares a small chime, the pick a note ----
+    // ---- Boss Rush's abilities (v7.75.0): each power its own sound, each rare's perk its own, the pick a note ----
     // Meteor Fall: a white-hot crack, a sub boom that crunches, fire roaring up, stones raining after.
     abilityBlast: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.55, heat: 1, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [2200, 3200], q: 0.7 }, a: 0.0005, d: 0.03, dv: 0.4, gain: 0.9, drive: 3 },
@@ -274,6 +274,74 @@ const AUDIO = {
     abilityPerk: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.35, heat: 0.15, jitter: 20, layers: [
       { wave: 'sine', freq: 880, partials: [[1, 1, 1], [2.76, 0.3, 0.5], [5.4, 0.1, 0.3]], a: 0.002, d: 0.6, gain: 0.22 },
       { noise: 'white', filter: { type: 'bandpass', freq: 5200, q: 4 }, a: 0.001, d: 0.05, gain: 0.25 },
+    ] },
+    // Ember Twin rising: fire drawn up out of the floor with a breath, a low roar swelling, a ringing double note (two of you).
+    abilityTwin: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.7, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 260, to: 1800, q: 0.7 }, a: 0.35, h: 0.1, d: 0.6, gain: 0.7 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 180, to: 520 }, a: 0.3, h: 0.2, d: 0.9, gain: 0.9, drive: 2 },
+      { wave: 'sawtooth', freq: 55, to: 82, glide: 0.5, filter: { type: 'lowpass', freq: 300, to: 900 }, a: 0.25, h: 0.15, d: 0.7, gain: 0.18, drive: 2 },
+      { wave: 'sine', freq: 392, partials: [[1, 1, 1], [1.5, 0.7, 0.9], [2.01, 0.3, 0.6]], at: 0.38, a: 0.003, d: 1.5, gain: 0.16 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4000 }, at: 0.36, a: 0.001, d: 0.05, gain: 0.35 },
+    ] },
+    // Each of the twin's blows: a short hiss of fire and a crackle on top of the blow itself.
+    abilityEcho: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 2, verb: 0.3, heat: 0.25, jitter: 180, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1400, to: 600, q: 0.9 }, a: 0.005, d: 0.22, gain: 0.55 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3800 }, a: 0.001, d: 0.04, dv: 0.5, gain: 0.4, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 260, to: 90 }, a: 0.002, d: 0.16, gain: 0.5 },
+    ] },
+    // Gale Crescent: a howl of wind tearing past, rising and falling, with a clean blade's whistle through it.
+    abilityGale: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.45, heat: 0.6, jitter: 60, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 700, to: 3400, q: 2.2 }, a: 0.04, h: 0.08, d: 0.45, gain: 0.8 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 300, to: 900, q: 1.1 }, a: 0.03, d: 0.6, gain: 0.6 },
+      { wave: 'sine', freq: 1760, to: 1180, glide: 0.4, a: 0.02, d: 0.45, gain: 0.08 },
+      { noise: 'white', filter: { type: 'highpass', freq: 5200 }, at: 0.12, a: 0.001, d: 0.06, gain: 0.45 },
+      { wave: 'sine', freq: 70, to: 40, at: 0.12, a: 0.004, d: 0.3, gain: 0.5 },
+    ] },
+    // Pyre: the ground cracks, a column of fire roars up and keeps burning, low and hungry.
+    abilityPyre: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 2, verb: 0.55, heat: 0.9, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [2000, 2800], q: 0.7 }, a: 0.0005, d: 0.03, gain: 0.7, drive: 3 },
+      { wave: 'sine', freq: 62, to: 30, a: 0.003, d: 0.9, gain: 1, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 900, to: 260 }, a: 0.05, h: 0.9, d: 1.6, gain: 1, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1500, q: 0.6 }, a: 0.1, h: 0.8, d: 1.4, gain: 0.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 1.5 }, at: 0.2, a: 0.2, h: 0.6, d: 1, gain: 0.08 },
+    ] },
+    // Counterflame: a dry pop of fire bursting on the parried boss.
+    abilityFlare: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.4, heat: 0.45, jitter: 120, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 2600 }, a: 0.0005, d: 0.03, gain: 0.6, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 1600, q: 0.7 }, a: 0.01, d: 0.45, gain: 0.6 },
+      { wave: 'sine', freq: 90, to: 45, a: 0.003, d: 0.25, gain: 0.55, drive: 2 },
+    ] },
+    // Static Edge: a sharp electric snap and a quick crackle.
+    abilitySpark: { bus: 'sfx', priority: 2, cooldown: 0.12, max: 2, verb: 0.3, heat: 0.35, jitter: 220, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 4200 }, a: 0.0004, d: 0.02, gain: 0.8, drive: 4 },
+      { wave: 'sawtooth', freq: 160, fm: { ratio: 0.53, index: 5, decay: 0.2 }, filter: { type: 'bandpass', freq: 2200, q: 1.4 }, a: 0.002, d: 0.16, gain: 0.25, drive: 3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5600, q: 3 }, at: 0.03, a: 0.001, d: 0.09, gain: 0.3 },
+    ] },
+    // The rares' perks, each its own: a deep breath drawn in, then a clear note (stamina back).
+    abilityBreath: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.35, heat: 0.15, jitter: 20, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1900, q: 1.2 }, a: 0.12, d: 0.2, gain: 0.35 },
+      { wave: 'sine', freq: 660, partials: [[1, 1, 1], [2, 0.3, 0.6]], at: 0.12, a: 0.003, d: 0.7, gain: 0.18 },
+    ] },
+    // A step that opens a riposte: a quick swish and a bright high chime.
+    abilityStep: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.35, heat: 0.15, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2400, to: 5200, q: 1.5 }, a: 0.01, d: 0.12, gain: 0.35 },
+      { wave: 'sine', freq: 1320, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], at: 0.05, a: 0.002, d: 0.5, gain: 0.16 },
+    ] },
+    // A blow made stronger: a low thump under a hard ring.
+    abilityEmpower: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.35, heat: 0.25, jitter: 30, layers: [
+      { wave: 'sine', freq: 75, to: 45, a: 0.003, d: 0.25, gain: 0.6, drive: 2 },
+      { wave: 'sine', freq: 520, partials: [[1, 1, 1], [2.76, 0.4, 0.5], [5.4, 0.15, 0.3]], a: 0.002, d: 0.5, gain: 0.2 },
+    ] },
+    // A heal: a soft rising chord.
+    abilityHeal: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.5, heat: 0.15, jitter: 0, layers: [
+      { wave: 'sine', freq: 523, a: 0.04, d: 0.9, gain: 0.14 },
+      { wave: 'sine', freq: 659, at: 0.06, a: 0.04, d: 0.85, gain: 0.12 },
+      { wave: 'sine', freq: 784, at: 0.12, a: 0.04, d: 0.8, gain: 0.1 },
+    ] },
+    // A heavy charged at once: steel scraping up to a ring.
+    abilityCharge: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.35, heat: 0.2, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 4800, q: 6 }, a: 0.08, d: 0.12, gain: 0.35 },
+      { wave: 'sine', freq: 740, fm: { ratio: 1.41, index: 1.5, decay: 0.4 }, at: 0.12, a: 0.002, d: 0.6, gain: 0.14 },
     ] },
     // An ability picked: a struck note, lower and fuller the rarer it is.
     abilityPick: { bus: 'ui', priority: 2, cooldown: 0.1, verb: 0.4, jitter: 0, heat: 0, layers: [
