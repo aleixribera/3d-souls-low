@@ -29,7 +29,7 @@ const showcase = (() => {
   const scratch = { look: new THREE.Vector3() };
 
   // ---- what happened ----------------------------------------------------------------------------
-  const watched = ['dodge', 'parry', 'strike', 'abilityPress', 'abilityPower', 'enemyDeath'];
+  const watched = ['dodge', 'parry', 'strike', 'abilityPress', 'abilityPower', 'finisher', 'enemyDeath'];
   for (const type of watched) events.on(type, d => { if (run && run.live) noteEvent(type, d); });
   function noteEvent(type, d) {
     const b = run.beat, p = Game.player;
@@ -41,18 +41,21 @@ const showcase = (() => {
     else if (type === 'strike' && d.target === p && !d.blocked && (b.begun || !STRING[b.def.kind])) g.hurt++;
     else if (type === 'abilityPress' && d.body === p && d.key === b.keyName) g.press = true;
     else if (type === 'abilityPower' && (d.body === p || d.holder === p)) g.power = true;
-    else if (type === 'enemyDeath' && d.enemy === run.boss) g.kill = true;
+    else if (type === 'finisher' && d.player === p && d.enemy === run.boss) { g.finisher = true; g.lethal = !!d.lethal; }
+    else if (type === 'enemyDeath' && d.enemy === run.boss) { g.kill = true; g.killAt = run.time; }
   }
   const blowKeyOf = e => (e.attackNo || 0) * 64 + (e.hitIndex || 0);
-  // Whether a beat happened: every blow of its string dashed through or deflected and its counter landed, its key's
-  // power fired, its kill made.
+  // Whether a beat happened: every blow of its string dashed through or deflected and its counter landed (as the
+  // Finishing Blow, for a `finisher` beat), its key's power fired, its kill made (by the blow's cuts, for a finisher).
   function verdict(b) {
     const D = b.def, g = b.got, need = [];
     if (D.kind === 'dodge') need.push(['every blow dashed through', g.dodges.size >= b.hits && g.hurt === 0]);
     if (D.kind === 'deflect') need.push(['every blow deflected (dashed where none can be)', g.parries.size >= 1 && g.parries.size + g.dodges.size >= b.hits && g.hurt === 0]);
     if (D.counter) need.push([`the ${D.counter} counter landed`, g.counter]);
     if (D.kind === 'ability') need.push([`key ${D.key} pressed`, g.press], ['its power fired', g.power]);
-    if (D.kill) need.push(['the boss fell', g.kill]);
+    if (D.finisher) need.push(['the counter was the Finishing Blow', g.finisher]);
+    if (D.finisher && D.kill) need.push(['its cuts were lethal', g.lethal]);
+    if (D.kill) need.push(['the boss fell', g.kill], ['before the title', g.kill && g.killAt <= SHOWCASE.title.at * beatS()]);
     return { id: D.id, kind: D.kind, ok: need.every(n => n[1]), need: need.map(([what, ok]) => ({ what, ok: !!ok })),
       dodges: g.dodges.size, parries: g.parries.size, hits: b.hits, hurt: g.hurt };
   }
@@ -70,6 +73,7 @@ const showcase = (() => {
     e.pace = rushPace(S.pace.won) * times('pace'); e.rest = B.rest * times('rest'); e.chain = B.chain * times('chain');
     e.breakGrow = CONFIG.endless.breakGrow; e.kin = [e];
     e.hp = Math.round(e.def.hp * f.health);
+    e.cracks = f.cracks || 0; e.crackTime = 0; e.crackBy = null;   // its guard as the fight is joined (js/finisher.js)
     if (i > 0) e.rig.root.visible = e.rig.shadow.visible = false;
     return e;
   }
@@ -95,7 +99,7 @@ const showcase = (() => {
     const fight = SHOWCASE.fights.reduce((k, f, i) => f.from <= D.at ? i : k, 0);
     return { def: D, fight, land: D.at * beatS(), begun: false, done: false, ends: Infinity, hits: 0, handled: new Set(), side: 1,
       counterId: D.counter ? counterId(D.counter) : null, counterPressed: false, keyName, pressed: false,
-      got: { dodges: new Set(), parries: new Set(), counter: false, hurt: 0, press: false, power: false, kill: false } };
+      got: { dodges: new Set(), parries: new Set(), counter: false, hurt: 0, press: false, power: false, finisher: false, lethal: false, kill: false, killAt: 0 } };
   }
   
   const LEAD = { dodge: 0.05, deflect: 0.08 };   // s before a blow lands that the dash or the deflect is pressed
@@ -165,8 +169,9 @@ const showcase = (() => {
     if (b.handled.size >= b.hits && !mine) {   // the string is over: the counter, then the beat is done
       e.cooldown = Math.max(e.cooldown || 0, 0.3);
       if (D.counter && !b.counterPressed) {
-        if (D.kill && e.alive()) e.hp = Math.min(e.hp, 1);   // the finale: the counter is the killing blow
-        if (p.state === PS.ATTACK && p.attack && p.attack.id === b.counterId) { b.counterPressed = true; b.ends = t + 0.8; return idle; }
+        if (D.kill && !D.finisher && e.alive()) e.hp = Math.min(e.hp, 1);   // a plain killing counter
+        // A Finishing Blow's beat lasts until its foe falls (the blow runs about 1.2 s), at most 3 s.
+        if (p.state === PS.ATTACK && p.attack && p.attack.id === b.counterId) { b.counterPressed = true; b.ends = t + (D.finisher ? 3 : 0.8); return idle; }
         if (p.riposte > 0) {
           b.sawWindow = true;
           if (p.state !== PS.ROLL || p.stateTime > CONFIG.player.rollTime - 0.1) hands.press(D.counter);
@@ -175,7 +180,7 @@ const showcase = (() => {
         if (b.sawWindow) b.done = true;   // the window shut unused: the beat did not happen (the report says so)
         return idle;
       }
-      if (!D.counter || t >= b.ends) b.done = true;
+      if (!D.counter || t >= b.ends || (D.kill && b.counterPressed && !e.alive())) b.done = true;
     }
     return D.kind === 'dodge' && p.state === PS.ROLL ? walk(p.vx, p.vz) : idle;
   }
@@ -348,15 +353,15 @@ const showcase = (() => {
     let next = run.fight; while (next + 1 < S.fights.length && run.time >= S.fights[next + 1].from * beatS() - 1e-9) next++;
     if (next !== run.fight) stage(next);
     run.mv = direct(dt);
-    // No break mid-script (the stagger bar is being redesigned): a string plays out whole, every blow met.
-    if (e.def.posture) e.posture = Math.min(e.posture, e.def.posture.max * (run.beat && STRING[run.beat.def.kind] ? 0 : 0.5));
     Game.setLock(run.boss);
     shared.s = (SHOWCASE.seed + Math.round(run.time / dt) * 0x9e3779b9) >>> 0; Math.random = run.rng;
     try { run.real.update.call(Game, dt); } finally { Math.random = run.real.random; }
-    // Nobody falls but the finale's boss: the player is topped up, the boss kept off its last sliver.
+    // Nobody falls but the finale's boss: the player is topped up, the boss kept off its last sliver. Held in its
+    // Finishing Blow, the finale's boss is on that sliver, so the cuts end it.
     if (p.alive()) p.hp = p.maxHp;
-    const b = run.beat, ending = b && b.def.kill;
-    if (e.alive() && !ending) e.hp = Math.max(e.hp, Math.round(e.def.hp * 0.12));
+    const b = run.beat, ending = b && b.def.kill, blow = e.exec && e.state === ES.EXECUTED;
+    if (blow && ending && b.def.finisher && !e.exec.impact) e.hp = Math.min(e.hp, 1);
+    else if (e.alive() && !ending && !blow) e.hp = Math.max(e.hp, Math.round(e.def.hp * 0.12));
     run.time += dt;
     frameShot(dt);
   }
