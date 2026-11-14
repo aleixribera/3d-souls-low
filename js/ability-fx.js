@@ -644,6 +644,8 @@ const abilityFx = (() => {
     if (!p || p !== Game.player) return;
     const c = chestOf(p), P = F.perks;
     if (d.perk === 'empower' && d.target) { const at = chestOf(d.target); ultraFx.flare(at, P.empower, 2.2); spawnBurst(at, P.empowerBurst); }
+    else if (d.perk === 'execute/heal') { ultraFx.moteBurst(c, 34, P.heal, { r: 0.6, speed: 1, lift: 1.9, life: [0.8, 1.4] }); groundFx.ring(p.x, p.z, 2, P.heal, 0.6, p.y); }
+    else if (d.perk === 'parry/heal') { ultraFx.moteBurst(c, 14, P.heal, { r: 0.4, speed: 0.7, lift: 1.2, life: [0.5, 0.9] }); groundFx.ring(p.x, p.z, 1.3, P.heal, 0.45, p.y); }
     else if (d.perk === 'streak/heal') { ultraFx.moteBurst(c, 26, P.heal, { r: 0.5, speed: 0.8, lift: 1.6, life: [0.7, 1.3] }); groundFx.ring(p.x, p.z, 1.6, P.heal, 0.5, p.y); }
     else if (d.perk === 'parry/stamina') groundFx.ring(p.x, p.z, 1.8, P.stamina, 0.55, p.y);
     else if (d.perk === 'dodge/riposte') groundFx.ring(p.x, p.z, 1.5, P.riposte, 0.5, p.y);

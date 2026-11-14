@@ -394,7 +394,8 @@ const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', free
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust' };
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1], 'parry/stamina': ['abilityBreath', 1],
-  'flask/stamina': ['abilityBreath', 0.84], 'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1] };
+  'flask/stamina': ['abilityBreath', 0.84], 'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1],
+  'execute/heal': ['abilityHeal', 0.8], 'parry/heal': ['abilityHeal', 1.2] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.

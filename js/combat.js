@@ -113,6 +113,8 @@ function resolveCombat(game) {
       events.emit('parry', { target, player: p });
       const breath = p.kit.perks['parry/stamina'];   // Deep Breath
       if (breath) { p.stamina = Math.min(p.maxStamina, p.stamina + p.maxStamina * breath.stamina); events.emit('abilityPerk', { body: p, perk: 'parry/stamina' }); }
+      const mercy = p.kit.perks['parry/heal'];   // Iron Mercy (a crate's)
+      if (mercy && p.perk && p.perk.mercy <= 0) { p.perk.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
       abilityReport(p, 'parry', { enemy: target });
       if (broke) { game.hitstop = Math.max(game.hitstop, target.def.posture.hitstop); events.emit('postureBreak', { enemy: target }); abilityReport(p, 'break', { enemy: target }); }
     }
