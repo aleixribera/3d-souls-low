@@ -54,7 +54,7 @@ jobs:
         env:
           ARENA_SOFTWARE_GL: '1'
           ARENA_TEST_PROGRESS: '1'
-          ARENA_SHARD: ${{ matrix.shard }}/4
+          ARENA_SHARD: ''
         run: |
           cp tests/suite.js tests/suite-fixed.js
           cp tests/suite-unfixed.js tests/suite.js
