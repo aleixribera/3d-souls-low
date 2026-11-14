@@ -4,9 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 91): item 3c pass 1, v7.115.0: moves blend (`Rig.settle`), wind-ups snap, a deflect pose, dash
-  afterimages; `Player.pose` is js/player-pose.js. Judge 3/10 dash, 4/10 deflect (`docs/scorecard/animation-judge.csv`).
-  Next: 3c pass 2 (BACKLOG: low dash lunge, whole-body deflect); then Story's key abilities, its re-tune.
+- Track A (pass 92): item 3c pass 2, v7.119.0: low dash lunge, whole-body deflect with a sidestep, landing dip,
+  camera punch on counters and heavies, cape capped (in-page `pass 92`). Fresh judge 4/10 dash, 4/10 deflect
+  (`docs/scorecard/animation-judge.csv`). Next: 3c's last giveaways (BACKLOG), then Story's key abilities, its re-tune.
 - Track B (pass 90): CI on main runs to the end; v7.114.0 three dashes, slim white bars, guard shown only
   while worn (in-page `pass 90 dash`; `dash-hud-*`); v7.117.0 item 4: bosses press
   (`CONFIG.enemy.press`), curve without wall (`steady`), warm-up health, Bell Warden
