@@ -2,6 +2,11 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- The King's Blade (pass 55, v7.79.0), judge's leftovers: the Turn still reads like Hollis's Turning Cloak (a
+  spin with the cape); the Shield Wall's second cut can't be parried because `noParry` is per attack (a per-hit
+  `noParry` would let the bash be roll-only and the cut parryable); the Shield Burns' wide fling wasn't re-judged.
+  Its figure is 16,138 triangles against the 14,000 budget (Hollis 14,208); no test holds the budget.
+
 - The title's missing parts (pass 49, v7.70.0, `docs/scorecard/title-desktop.jpg`): the castle behind the right half
   (a real Blender model with baked light, inside Normal's 60 fps; the right half is empty until then), Collection in
   the mode list (nothing to collect yet) and Controls in the footer (no Controls screen yet; Options has the lessons).

@@ -4,16 +4,17 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 53, v7.77.0): Agathe pass 2 (his 2026-11-13 feedback), **awaiting Aleix**. Hook in both hands
-  (`grip`, `Rig.holdHaft`; key poses aim `haft`), carved face, black habit, folded mantle. Strips
-  `docs/scorecard/agathe-moves.jpg`, `agathe-grip.jpg`; blind judge 29 vs Hollis 29. The Kindling Tree (pass 50)
-  also awaits Aleix. Next: the King's Blade (ch. 14).
-- Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
-  `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
+- Track A (pass 55, v7.79.0): the King's Blade, its own ("It answers"), **awaiting Aleix**. Blender figure, shield
+  that turns frontal blows into the Answer (hit `counter`; heavy breaks it), Corvel Burns falters (`falter`), shield
+  tells (`tell: 'shield'`), ice floor. Strips `docs/scorecard/kings-blade-moves.jpg`, `-ice.jpg`, `-lab.jpg`; blind
+  judge 51 vs Hollis 51. Agathe (pass 53) and the Kindling Tree also await Aleix. Track A's bosses 7-14 are done.
+- Pass 33 (v7.56.0): every preset draws native (`qualityDraw`, `js/visuals.js`); numbers:
+  `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Track B (pass 54, v7.78.0): item 10 pass 1. Each boss's own data is its new, slower 1x (no multiplier; `[k, beat]`
   per boss and the before/after table in `docs/scorecard/rush-1x-pass54.txt`): alone at fight 1 the bot falls 0.12
   (was 0.55), SKILLED 0.03 (0.24). Curve rise 0.1, scale 8: SKILLED runs reach fight 10 (median, 90% by 18). The bot
   reads bolts and seams. Next (pass 2): Practice's speed setting and its frame; Varn and Oswin, the outliers.
+  **Pass 55 changed every King's Blade move** (kept only your cooldowns; recoveries unscaled): re-measure him.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -48,7 +49,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
-  (an enemy's `holyLight`), `kings-blade.js` (the player's own moves from `PLAYER_DEF`, a shield `guard`); each an old
+  (an enemy's `holyLight`), `kings-blade.js` (own moves since pass 55); each an old
   boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
   another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
@@ -65,12 +66,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- `lobby-polish-browser` (not in CI): passes since pass 52; one run timed out on a click (flaky, as pass 8 saw).
+- `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
 
-CI and container of v7.69.0 (pushes cancel CI: see the newest run). Probes
-(untracked, `.scratch/`): `render-scale.cjs` (`VIEW`, `PRESETS`, `VARIANTS`, `ROOT`), `pass-probe.cjs`.
+None (a push cancels the older CI run: read the newest). Probes (untracked, `.scratch/`): `render-scale.cjs`.
 
 ## wip// branches
 
