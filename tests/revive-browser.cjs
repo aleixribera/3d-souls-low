@@ -15,7 +15,7 @@ const { WebSocket } = require('../server/node_modules/ws');
 const { config: C } = require('../js/net-protocol.js');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 (async () => {
-  const shots = process.argv[2] || '.scratch/revive', app = createServer({ dev: true }), errors = [], peers = [];
+  const shots = process.argv[2] || '.scratch/revive', app = createServer({ dev: true, firstPick: false }), errors = [], peers = [];
   fs.mkdirSync(shots, { recursive: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port, { CONFIG } = app.sim.inspect();

@@ -1,7 +1,7 @@
 'use strict';
 // Boss Rush end to end (v7.35.0 as The Calling; endless since pass 65): two browsers start a run (no bot joins, pass 52),
 // the party beats fight 1, then the run skips ahead to fight 5, Crowned, with its modifiers under the boss bar; its win
-// offers four abilities with a legendary; a pair in fight 7 has a share of its health each, and a wipe there ends the run on the end-of-run screen. Between the fights
+// offers four abilities with a legendary; a pair in the first pair fight (CONFIG.endless.pairFrom) has a share of its health each, and a wipe there ends the run on the end-of-run screen. Between the fights
 // each takes an ability (one by click, one by key); the fallen get up for the next fight.
 // v7.70.0: the abilities rebuilt (25 of them, js/data/abilities.js): tall cards, the held one's kit after the pick.
 // v7.69.0: the kill moment ("Boss 1 down", slowed and embers), a swift kill's fourth card, the next boss dropping
@@ -13,7 +13,7 @@ const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
 const out = process.env.CALLING_SHOTS || '.scratch/calling';
 (async () => {
-  const app = createServer({ dev: true }), errors = [];
+  const app = createServer({ dev: true, firstPick: false }), errors = [];   // the free first pick: tests/rush-alone-browser.cjs
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive && multiplayer.info.receivedFrames > 2, null, { timeout: 90000 });
@@ -133,10 +133,13 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(await a.locator('#rushFight').textContent(), 'Fight 5');
     assert.equal(await a.locator('#rushCrown').textContent(), 'Crowned');
     assert.match(await a.locator('#rushTime').textContent(), /^0:0\d$/);
-    assert.equal(await a.locator('#rushPar').textContent(), `par 0:${String(app.session.par).padStart(2, '0')}`);
-    const mods = app.session.gauntlet.modifiers;
-    assert.equal(mods.length, 2, 'a Crowned fight 5: two modifiers');
-    assert.equal(await a.locator('#rushMods').textContent(), mods.map(id => app.sim.inspect().Game.update.constructor('return RUSH_MODIFIER_BY_ID')()[id].name).join(' · '));
+    const par = app.session.par;
+    assert.equal(await a.locator('#rushPar').textContent(), `par ${Math.floor(par / 60)}:${String(par % 60).padStart(2, '0')}`);
+    // Its modifiers: one from each CONFIG.endless.mods entry it has reached, and one more for a Crowned fight once they start.
+    const mods = app.session.gauntlet.modifiers, E = app.sim.inspect().CONFIG.endless;
+    assert.equal(mods.length, E.mods.filter(from => 5 >= from).length + (5 >= E.mods[0] ? 1 : 0), 'a Crowned fight 5: its modifiers');
+    if (mods.length) assert.equal(await a.locator('#rushMods').textContent(), mods.map(id => app.sim.inspect().Game.update.constructor('return RUSH_MODIFIER_BY_ID')()[id].name).join(' · '));
+    else assert.equal(await a.locator('#rushMods').isVisible(), false, 'none before the modifiers start');
     await a.screenshot({ path: `${out}/crowned-fight.png` });
     // Pause: each ability held, with its level, rarity and what it does.
     await a.evaluate(() => Game.showMenu('pause'));
@@ -176,15 +179,16 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.screenshot({ path: `${out}/crowned-offer-phone.png` });
     await a.setViewportSize({ width: 1280, height: 720 });
     const epoch6 = app.session.epoch;
-    skip = 6;   // on to fight 7, two bosses at once
+    const pairFrom = app.sim.inspect().CONFIG.endless.pairFrom;
+    skip = pairFrom - 1;   // on to the first fight with two bosses at once
     for (const page of [a, b]) await page.keyboard.press('Digit1');
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch6, { timeout: 30000 });
     await Promise.all([ready(a), ready(b)]);
-    assert.equal(app.session.gauntlet.number, 7);
+    assert.equal(app.session.gauntlet.number, pairFrom);
     // A pair (pass 67): each boss has a share of its health, and both browsers' bars match the server's.
     const pairBars = [...app.sim.inspect().Game.enemies].map(e => [e.baseDef.id, e.def.hp]);   // an array of this realm, not the simulation's
-    assert.equal(pairBars.length, 2, 'fight 7: two bosses');
-    assert.ok(app.sim.inspect().Game.enemies.every(e => e.health === app.sim.rushHealth(2) && e.health < 1), 'each boss of a pair has a share of its health');
+    assert.equal(pairBars.length, 2, `fight ${pairFrom}: two bosses`);
+    assert.ok(app.sim.inspect().Game.enemies.every(e => e.health === app.sim.rushHealth(2, pairFrom - 1, e.baseDef.id) && e.health < 1), 'each boss of a pair has a share of its health');
     for (const page of [a, b]) {
       await page.waitForFunction(ids => Game.enemies.map(e => e.baseDef.id).join() === ids, pairBars.map(([id]) => id).join(), { timeout: 30000 });
       assert.deepEqual(await page.evaluate(() => Game.enemies.map(e => [e.baseDef.id, e.def.hp])), pairBars, 'the browser draws the bars the server has');
@@ -192,7 +196,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     blows([aId, bId]);
     await a.waitForTimeout(2500);
     await a.screenshot({ path: `${out}/pair-fight.png` });
-    // Everyone falls in fight 7: the run ends.
+    // Everyone falls in the pair fight: the run ends.
     app.sim.arenaWipeDelay = 0.1;
     for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });

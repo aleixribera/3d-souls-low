@@ -2,7 +2,7 @@
 // Boss Rush is you against the bosses (pass 52, PLAN.md track B item 9): the lobby offers no bot, a run started alone
 // stays alone (no bot joins, none is drawn), and alone, a fall ends the run on the end-of-run screen.
 // The whole run is played from the gamepad alone (PLAN.md track B item 3): the title's Boss Rush, the lobby's Start,
-// the ability pick and the end of the run. (Two people: tests/calling-browser.cjs; every lobby control by pad:
+// the free pick of commons before fight 1 (pass 73), the ability pick and the end of the run. (Two people: tests/calling-browser.cjs; every lobby control by pad:
 // tests/lobby-controller-browser.cjs.) node tests/rush-alone-browser.cjs [screenshot directory]
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -59,7 +59,22 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(app.sim.inspect().bots.size, 0, 'the server simulates no bot');
     assert.equal(await page.evaluate(() => multiplayer.info.players.length), 1);
     assert.equal(await page.locator('.online-name').count(), 0, 'no teammate is drawn');
+    // Before fight 1, a free pick of commons (PLAN.md item 11): the boss waits for it.
+    await page.locator('#abilityScreen').waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => document.activeElement?.dataset?.ability);
+    const free = await page.locator('#abilityChoices button').evaluateAll(bs => bs.map(b => b.dataset.ability));
+    assert.ok(await page.evaluate(ids => ids.every(id => CONFIG.abilities.first.includes(ABILITY_BY_ID[id].rarity)), free), 'the free pick is commons');
+    assert.equal(app.sim.state.fought, 0, 'the boss waits for it');
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: path.join(shots, 'first-pick-desktop.png') });
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(shots, 'first-pick-phone.png') });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await pad(0);
+    await page.locator('#abilityScreen').waitFor({ state: 'hidden', timeout: 30000 });
+    await page.waitForFunction(id => Game.player.kit.ids.includes(id), free[0], { timeout: 10000 });
     await page.waitForTimeout(1500);
+    assert.ok(app.sim.state.fought > 0, 'then the boss wakes');
     await page.screenshot({ path: path.join(shots, 'fight-alone.png') });
     // The first boss falls: the ability pick, walked and taken by pad.
     for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
@@ -73,7 +88,7 @@ const { config: C } = require('../js/net-protocol.js');
     await pad(0);
     await page.locator('#abilityScreen').waitFor({ state: 'hidden', timeout: 30000 });
     await page.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.abilityPending && multiplayer.rush?.fight === 2, null, { timeout: 90000 });
-    assert.deepEqual(await page.evaluate(() => Game.player.kit.ids), [cards[1]], 'A took the focused card');
+    assert.deepEqual(await page.evaluate(() => Game.player.kit.ids), [free[0], cards[1]], 'A took the focused card');
     // Alone, a fall ends the run.
     app.sim.arenaWipeDelay = 0.1;
     await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });

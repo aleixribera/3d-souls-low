@@ -130,6 +130,13 @@ function abilityKit(held) {
   for (const key of Object.keys(mods)) if (ABILITY_MODS[key] === 'less') mods[key] = Math.min(mods[key], 1);
   return Object.freeze({ ids: Object.freeze(ids), mods: Object.freeze(mods), perks: Object.freeze(perks), powers: Object.freeze(powers), whens });
 }
+// How much a kit of `held` ids weighs on a fight (CONFIG.swift.might): each pick (a level) of an ability adds its rarity's
+// might. Boss Rush's par is divided by 1 + the party's.
+function kitMight(held) {
+  let n = 0;
+  for (const id of held || []) { const b = Object.hasOwn(ABILITY_BY_ID, id) && ABILITY_BY_ID[id]; if (b) n += CONFIG.swift.might[b.rarity] || 0; }
+  return n;
+}
 // A body's perk clocks (on the Player; the server keeps one per person): s since it last lost health (`calm`, reset
 // when Patience is spent), Vengeance's and Bastion's s left, the landed blows since it last lost health, and the
 // Blood Moon's s left with its level's numbers, and Iron Mercy's s until it heals again.
@@ -211,11 +218,12 @@ const abilityPowers = (() => {
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, running };
   function reset() { running.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); clock = 0; }
-  // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it).
+  // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). It builds only
+  // CONFIG.abilities.posture of its posture: the stagger meter is the holder's to earn.
   function wound(e, damage, posture, holder, power) {
     if (!e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED) return;
     const strike = { attackId: power, air: false, riposte: false, rollOnly: false, shove: false, charge: 0, damage, poise: damage,
-      knock: 0, postureDmg: posture, destined: false, hitstop: 0, power: true };
+      knock: 0, postureDmg: posture * CONFIG.abilities.posture, destined: false, hitstop: 0, power: true };
     const from = { x: e.x - Math.sin(e.yaw), y: e.y, z: e.z - Math.cos(e.yaw) };
     const hp = e.hp, res = e.takeHit(strike, from);
     if (!Number.isFinite(e.hp)) e.hp = hp;

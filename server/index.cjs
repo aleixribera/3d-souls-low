@@ -105,6 +105,10 @@ function createServer(options = {}) {
   let abilityFor = null;   // Boss Rush, between fights: s since the abilities were offered (null: not offered)
   let abilityPickedAt = -Infinity, abilityAllChosen = false;   // abilityFor at the last pick taken (the pick holds CONFIG.abilities.pickHold s after it), and whether everyone has been told all have chosen
   const abilityRound = new Set();   // the players offered abilities this time (a late arrival is offered once)
+  // Boss Rush's free pick before fight 1 (CONFIG.abilities.first): 'due' at a run's first fight until the party has
+  // loaded, then 'open' while it is offered (the boss waits), null once taken or for any other fight. Never with
+  // createServer({ firstPick: false }) (browser tests about later picks).
+  let firstPick = null;
   let tally = null;   // Boss Rush's totals across its fights: { run, startedAt, beaten, crowned, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
@@ -227,8 +231,11 @@ function createServer(options = {}) {
     if (gauntlet) session.gauntlet = gauntlet;
     if (gauntlet?.run) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
     if (gauntlet?.run) session.pace = sim.setRushFight(gauntlet.fight, gauntlet.modifiers);   // the curve and the fight's modifiers
-    if (gauntlet?.run) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
-    if (gauntlet?.run && gauntlet.partners.length) session.health = sim.rushHealth(1 + gauntlet.partners.length);   // each boss's share of its bars
+    if (gauntlet?.run) session.par = rushParNow();   // the HUD's par time
+    if (gauntlet?.run) {   // each boss's share of its bars (rushHealth): a pair's, a warm-up boss's, its own; only those under 1
+      const shares = [gauntlet.boss, ...gauntlet.partners].map(id => [id, sim.rushHealth(1 + gauntlet.partners.length, gauntlet.fight, id)]).filter(([, k]) => k < 1);
+      if (shares.length) session.health = Object.fromEntries(shares);
+    }
     if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.run) tally = null;
     else if (gauntlet.fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
@@ -237,18 +244,20 @@ function createServer(options = {}) {
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
+    firstPick = options.firstPick !== false && gauntlet?.run && gauntlet.fight === 0 ? 'due' : null;   // firstPick: false, tests that check an exact kit
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
   }
   // Boss Rush, between fights (CONFIG.abilities): once the kill moment has played, every connected player is offered
   // abilities, and the next fight waits until each has chosen or the pick time runs out (then every open offer gets its
   // first ability, someone who left included).
+  // The free pick before fight 1 is the same pick, of CONFIG.abilities.first only, while the boss waits.
   function abilitiesChosen() {
     if (abilityFor === null) {
       abilityFor = 0; abilityPickedAt = -Infinity; abilityAllChosen = false;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) abilityRound.add(id);
-      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight), !session.gauntlet.run?.week);
+      offerRound(ids, true, 0);
       for (const p of clients.values()) sendOffer(p);
     }
     abilityFor += 1 / C.tickRate;
@@ -266,9 +275,32 @@ function createServer(options = {}) {
     if (abilityFor === null) return;
     if (!abilityRound.has(p.id)) {
       abilityRound.add(p.id);
-      sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight, abilityRound.size), !session.gauntlet.run?.week);
+      offerRound([p.id], false, abilityRound.size);
     }
     sendOffer(p);
+  }
+  // This round's offers to `ids`: after a fight, its own (a swift kill's extra card, a Crowned win's legendary); before
+  // fight 1, the free pick (seeded apart from the fights' offers, so the weekly run's is the same for everyone).
+  function offerRound(ids, withBots, round) {
+    const g = session.gauntlet, crates = !g.run?.week;
+    if (firstPick) sim.offerAbilities(ids, withBots, 0, 0, false, sim.offerSeed(g.run, -1, round), crates, sim.abilityFirst);
+    else sim.offerAbilities(ids, withBots, swiftKill() ? sim.swiftExtra : 0, g.fight + 1, !!g.crowned, sim.offerSeed(g.run, g.fight, round), crates);
+  }
+  // Boss Rush's par for this fight (rushPar): its pace, its bosses and what the party holds (CONFIG.swift.might).
+  const rushParNow = () => sim.rushPar(session.gauntlet.fight, 1 + session.gauntlet.partners.length,
+    sim.partyMight([...clients.values()].filter(p => p.hello).map(p => p.id).concat(sim.botList().map(b => b.id))));
+  // Before fight 1 (firstPick): offered once the party has loaded; true once everyone has chosen (or the time ran
+  // out). Then every body takes its kit (`firstPick`: the whole map, so a player still loading builds with it, and the
+  // par that kit sets) and the boss wakes.
+  function firstPickChosen() {
+    if (firstPick === 'due') firstPick = 'open';
+    if (!abilitiesChosen()) return false;
+    firstPickDone(); return true;
+  }
+  function firstPickDone() {
+    firstPick = null; abilityFor = null; abilityRound.clear();
+    session.abilities = sim.abilities(); session.par = rushParNow();
+    for (const p of clients.values()) if (p.hello) send(p, { type: 'firstPick', abilities: session.abilities, par: session.par });
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
   function sendOffer(p) {
@@ -565,6 +597,10 @@ function createServer(options = {}) {
           const allReady = loadNow() - loadStarted >= C.loadTimeout || party.every(p => p.ready && p.pose);
           bossLoadFor = allReady ? bossLoadFor + 1 / C.tickRate : 0;
           bossStarted = allReady && bossLoadFor >= (session.drop ? C.rushDropGrace : session.teamWipeOnly ? C.bossLoadGrace : 0);
+          // The free pick: once open, its clock runs whether or not everyone is loaded (a late joiner), and the boss
+          // wakes once it is taken and everyone is. A fight already over (tests, tools) settles it as if time ran out.
+          if (firstPick && sim.state.complete) { if (firstPick === 'open') { sim.settleAbilities(); firstPickDone(); } else firstPick = null; }
+          if (firstPick === 'open' || (bossStarted && firstPick)) bossStarted = firstPickChosen() && bossStarted;
         }
         const began = performance.now(); sim.tick(1 / C.tickRate, (session.teamWipeOnly || session.opening) && !bossStarted); ticks++;
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();

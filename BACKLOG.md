@@ -2,6 +2,16 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- The run's shape, after item 11's pass 1 (pass 73, `docs/scorecard/run-shape-pass73.txt`):
+  - **A great kit falls short of fight 20**: the best survival kit's median is 17 (none past 20) and two legendaries
+    with the posture abilities only 14. Raising the kit (ability damage, or `CONFIG.abilities.posture` above 0.4 and
+    `breakGrow` below 0.4: breaks are 27-43 s apart, the cap is 15-20 s) or easing the curve past fight 15 are the levers.
+  - **Boss outliers in Boss Rush**: the Bell Warden (falls 0.19 a fight at fight 7 with no kit, the most damage
+    taken), Oswin and Ostrey (0.13), Varn: Boss Rush holds them at 75-90% health (`RUSH.health`). Their own pace, in
+    their definitions, is track A's to judge; then drop their `RUSH.health`.
+  - The par after the warm-up is one number (`CONFIG.swift.late`) for every boss, so the quick bosses give swift kills
+    far more often than the slow ones; a par from each boss's own health would even it out.
+
 - Crates, after item 7's pass 1 (pass 71): no emotes yet (the plan names them; needs an emote system); no common
   crate ability; once everything is owned a crate gives a duplicate ("already yours") and nothing more; xp only from
   Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel

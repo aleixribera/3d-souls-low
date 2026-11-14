@@ -1,7 +1,8 @@
 'use strict';
 // Boss Rush between fights (v7.69.0, PLAN.md track B item 2): each fight's par (CONFIG.swift), the server's fight clock,
 // the kill moment's short wait before the ability pick opens in the arena, a swift kill's extra choice, the next boss
-// dropping straight in (no loading card, a short grace), and each boss's time on the end screen.
+// dropping straight in (no loading card, a short grace), and each boss's time on the end screen. Pass 73: par follows
+// the kit, and the free pick of commons before fight 1 holds the boss until it is taken.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { build } = require('../server/headless.cjs');
@@ -35,6 +36,13 @@ async function peer(origin, name) {
   assert.ok(pars.every((p, i) => i === 0 || p >= pars[i - 1]) && pars[3] > pars[0], 'par grows with the curve: ' + pars.join(', '));
   assert.equal(pars[4], S.max, 'and stops at its cap');
   assert.equal(app.sim.rushPar(0, 2), Math.round(S.par * (1 + S.pair)), 'two bosses at once: a longer par');
+  // Pass 73: par follows the kit too (CONFIG.swift.might), so a strong kit has to fight for a swift kill.
+  const kit = ['keen-edge', 'keen-edge', 'static-edge', 'gale-crescent'], might = 2 * S.might.common + S.might.rare + S.might.legendary;
+  assert.ok(Math.abs(app.sim.inspect().Game.update.constructor('return kitMight')()(kit) - might) < 1e-9, 'a kit weighs its rarities, level by level');
+  const pace10 = app.sim.inspect().Game.update.constructor('return rushPace')()(10);
+  assert.equal(app.sim.rushPar(10, 1, might), Math.round(S.late * pace10 / (1 + might)), 'after the warm-up, the late par divided by 1 + the might');
+  assert.ok(app.sim.rushPar(10, 1, might) < app.sim.rushPar(10), 'a kit shortens the par');
+  assert.equal(app.sim.rushPar(0, 1, 0), app.sim.rushPar(3, 1, 0), "the warm-up's par is the base pace's");
 
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
@@ -65,7 +73,9 @@ async function peer(origin, name) {
     const second = (await a.next('start')).session; session = second;
     assert.equal(second.gauntlet.number, 2);
     assert.equal(second.drop, true, 'the next boss drops straight in');
-    assert.equal(second.par, app.sim.rushPar(1), "its par follows the curve's pace");
+    const might = () => app.sim.partyMight([a.id, ...app.sim.botList().map(b => b.id)]);
+    assert.ok(might() > 0);
+    assert.equal(second.par, app.sim.rushPar(1, 1, might()), "its par follows the curve's pace and the party's kit");
     await arrive(a);
 
     // Fight 2, won under par: nothing until the kill moment has played, then one more choice, marked swift.
@@ -80,8 +90,10 @@ async function peer(origin, name) {
     assert.equal(app.sim.abilities()[bot].length, 2, 'the bots chose too');
     a.send({ type: 'pickAbility', epoch: session.epoch, id: fast.offer[fast.offer.length - 1] });
     session = (await a.next('start')).session;
-    assert.equal(session.par, app.sim.rushPar(2, 1 + session.gauntlet.partners.length));
-    assert.equal(session.health, session.gauntlet.partners.length ? app.sim.rushHealth(1 + session.gauntlet.partners.length) : undefined, 'a lone boss: no health share sent');
+    assert.equal(session.par, app.sim.rushPar(2, 1 + session.gauntlet.partners.length, might()));
+    const met = [session.gauntlet.boss, ...session.gauntlet.partners], shares = met.map(id => app.sim.rushHealth(met.length, 2, id));
+    assert.deepEqual(session.health, shares.some(k => k < 1) ? Object.fromEntries(met.map((id, i) => [id, shares[i]]).filter(([, k]) => k < 1)) : undefined,
+      'each boss under its whole health gets its share; none sent for the rest');
     await arrive(a);
     assert.equal(app.session.gauntlet.number, 3);
 
@@ -101,6 +113,25 @@ async function peer(origin, name) {
     assert.deepEqual(times.map(t => t.swift), [false, true, true]);
     assert.deepEqual(times[2].bosses, [opening[2]], 'the third fight boss in its row');
     assert.equal(times[0].time, S.par + 5); assert.equal(times[0].par, S.par);
-    console.log('RUSH FLOW: par by the curve, the fight clock, the kill moment before the pick, the swift kill, the drop-in next boss and the end screen times passed.');
+
+    // A new run (pass 73): once the party has loaded, a free pick of commons; the boss waits for it, then the body
+    // takes its kit and the par follows it.
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id });
+    session = (await a.next('start')).session; await arrive(a);
+    let first = await a.next('abilities'); while (!first.offer) first = await a.next('abilities');   // past fight 3's taken pick
+    assert.equal(first.offer.length, CONFIG.abilities.offer);
+    const BY = app.sim.inspect().Game.update.constructor('return ABILITY_BY_ID')();
+    assert.ok(first.offer.every(id => CONFIG.abilities.first.includes(BY[id].rarity)), `the free pick is commons: ${first.offer}`);
+    assert.deepEqual(first.held, [], 'it comes before anything is held');
+    await wait(300); await flush(a);
+    assert.equal(app.sim.state.fought, 0, 'the boss waits for the pick');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: first.offer[1] });
+    const taken = await a.next('firstPick');
+    assert.deepEqual(taken.abilities[a.id], [first.offer[1]], 'the body takes the pick before fight 1');
+    assert.equal(taken.par, app.sim.rushPar(0, 1, might()), 'the par follows it');
+    assert.equal(app.session.par, taken.par);
+    await wait(300); pose(a); await flush(a);
+    assert.ok(app.sim.state.fought > 0, 'then the boss wakes');
+    console.log('RUSH FLOW: par by the curve and the kit, the fight clock, the kill moment before the pick, the swift kill, the drop-in next boss, the end screen times and the free first pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

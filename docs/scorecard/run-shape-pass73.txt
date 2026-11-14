@@ -1,0 +1,37 @@
+Pass 73 (PLAN.md item 11, the run's shape). node tools/rush-curve.cjs runs 40, SKILLED=1: the skilled bot alone, a fresh body each fight.
+Config: pace rise 0.15 scale 5 warm 4 warmFrom 0.85; endless pairFrom 9 mods [8,14,20] breakGrow 0.4; abilities posture 0.4, legendaries 2;
+swift par 45 (warm-up), late 100, might common 0.03 rare 0.06 legendary 0.12; RUSH.health bellWarden 0.75 oswin 0.85 ostrey 0.85 varn 0.9.
+KIT=none: no abilities. KIT=strong: damage and survival (keen edge, iron blood, time rift, bloodthirst...). KIT=max: two legendaries
+(gale crescent, storm king) and the posture abilities (breaker x3, static edge, opportunist). The par and swift columns of the run tables
+came from earlier par settings; the swift share at the shipped par (late 100) is the table after them, from the same fights (.scratch/fitpar.py).
+
+== KIT=none
+reached: median 10  mean 10.0  range 3-16  share past 10 0.47, 15 0.05, 20 0.00
+fights  1-4   159 fought  falls 0.01  win time 65s  par 45s  swift 0.01  s/break 34
+fights  5-10  181 fought  falls 0.11  win time 128s  par 104s  swift 0.29  s/break 47
+fights 11-15   58 fought  falls 0.29  win time 170s  par 120s  swift 0.12  s/break 71
+fights 16-20    2 fought  falls 1.00  win time -  par 120s  swift -  s/break 132
+
+== KIT=strong
+reached: median 17  mean 16.2  range 3-20  share past 10 0.97, 15 0.65, 20 0.00
+fights  1-4   159 fought  falls 0.01  win time 62s  par 41s  swift 0.00  s/break 33
+fights  5-10  234 fought  falls 0.00  win time 112s  par 40s  swift 0.00  s/break 43
+fights 11-15  187 fought  falls 0.07  win time 140s  par 52s  swift 0.05  s/break 69
+fights 16-20   69 fought  falls 0.38  win time 167s  par 72s  swift 0.05  s/break 116
+
+== KIT=max
+reached: median 14  mean 13.3  range 5-19  share past 10 0.80, 15 0.25, 20 0.00
+fights  1-4   160 fought  falls 0.00  win time 55s  par 39s  swift 0.02  s/break 27
+fights  5-10  223 fought  falls 0.04  win time 88s  par 36s  swift 0.00  s/break 31
+fights 11-15  132 fought  falls 0.17  win time 101s  par 43s  swift 0.01  s/break 39
+fights 16-20   18 fought  falls 0.56  win time 171s  par 56s  swift 0.00  s/break 90
+
+== swift share of won fights by stage, at late 100
+none  1-4: swift 0.01 n158 med 61s par~45 might 0.00  5-10: swift 0.30 n161 med 129s par~120 might 0.00  11-15: swift 0.12 n41 med 154s par~120 might 0.00  16-20: -  21-99: -
+strong  1-4: swift 0.00 n158 med 59s par~42 might 0.10  5-10: swift 0.25 n234 med 113s par~83 might 0.38  11-15: swift 0.21 n174 med 127s par~110 might 0.67  16-20: swift 0.23 n43 med 150s par~120 might 0.85  21-99: -
+max  1-4: swift 0.02 n160 med 52s par~44 might 0.15  5-10: swift 0.39 n215 med 89s par~74 might 0.49  11-15: swift 0.34 n110 med 99s par~87 might 0.81  16-20: swift 0.38 n8 med 150s par~120 might 1.01  21-99: -
+
+== Before (the pass 72 settings, no kit, 3 x 40 runs): median fight 7-8, falls 0.14-0.19 a fight in 5-10; walls at the pair on fight 7, then fight 12.
+   Without modifiers: median 9. Modifiers from fight 8 and pairs from fight 9: median 9 (falls 0.18 in 5-10, bellWarden 8 of 40 falls).
+== No kit, fight 7 alone (16 each, bosses mode): bellWarden falls 0.19, oswin and ostrey 0.13, the rest 0-0.06: hence RUSH.health.
+== Warm-up (no kit): win time 65 s a fight, falls 0.01, about 34 s between posture breaks.

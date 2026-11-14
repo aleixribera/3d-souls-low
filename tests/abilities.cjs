@@ -293,6 +293,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
     for (const id of offer) {
       assert.ok(held.filter(h => h === id).length < BY[id].levels.length, 'never past its last level');
       assert.ok(!(BY[id].rarity === 'legendary' && sim.abilities().mate.includes(id)), "never a teammate's legendary");
+      if (BY[id].rarity === 'legendary' && !held.includes(id)) assert.ok(new Set(held.filter(h => BY[h].rarity === 'legendary')).size < B.legendaries, 'never a third legendary');
       rarity[BY[id].rarity] = (rarity[BY[id].rarity] || 0) + 1;
     }
     sim.pickAbility('me', offer[round % offer.length]);
@@ -309,6 +310,35 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   }
   assert.ok(shared, 'a legendary offered');
   for (let i = 0; i < 40; i++) { sim.offerAbilities(['me'], false, 1, 40); assert.ok(!sim.abilityOffer('me').includes(shared), "never a legendary on a teammate's offer"); sim.pickAbility('me', sim.abilityOffer('me')[0]); }
+
+  // The legendary cap (pass 73, CONFIG.abilities.legendaries): holding two, a legendary card only levels one of them,
+  // a Crowned win's legendary included; with both at their last level no legendary comes at all.
+  sim.start('arena', 'ostrey');
+  const legends = Object.values(BY).filter(b => b.rarity === 'legendary' && !b.crate).map(b => b.id), two = legends.slice(0, B.legendaries);
+  sim.giveAbilities('cap', two);
+  let seen = 0;
+  for (let i = 0; i < 300; i++) {
+    sim.offerAbilities(['cap'], false, 1, 60, i % 3 === 0);
+    const o = sim.abilityOffer('cap'), l = o.filter(id => BY[id].rarity === 'legendary');
+    assert.ok(l.every(id => two.includes(id)), `past the cap a legendary card is one already held: ${l}`);
+    if (i % 3 === 0) assert.ok(l.length >= 1, 'a Crowned win still offers one');
+    seen += l.length;
+    sim.giveAbilities('cap', two);   // the offer closed, the kit as it was
+  }
+  assert.ok(seen > 0, 'their next levels are offered');
+  const maxed = two.flatMap(id => Array(BY[id].levels.length).fill(id));
+  sim.giveAbilities('cap', maxed);
+  for (let i = 0; i < 100; i++) {
+    sim.offerAbilities(['cap'], false, 1, 60, true);
+    assert.ok(sim.abilityOffer('cap').every(id => BY[id].rarity !== 'legendary'), 'two legendaries at their last level: none offered');
+    sim.giveAbilities('cap', maxed);
+  }
+  // The free pick before fight 1 (CONFIG.abilities.first): commons only.
+  for (let i = 0; i < 100; i++) {
+    sim.offerAbilities(['first' + i], false, 0, 0, false, null, true, B.first);
+    const o = sim.abilityOffer('first' + i);
+    assert.equal(o.length, B.offer); assert.ok(o.every(id => B.first.includes(BY[id].rarity)), `the free pick: ${o}`);
+  }
 
   // Vengeance on the server: a fight's first pose is no wound.
   sim.start('arena', 'ostrey');

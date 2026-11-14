@@ -3,13 +3,14 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.96.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.97.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
   // Practice: `maxGroup`, the most opponents in one 'several at once' group; `fights`, the Boss Rush fights its Speed
   // setting offers, a boss fought at that fight's pace (CONFIG.pace) to learn it slow or rehearse a late run.
-  practice: { maxGroup: 6, fights: [1, 3, 5, 8, 10, 12, 15, 20, 25, 30] },
+  // Past fight 1 (the boss as written), only fights past Boss Rush's warm-up (CONFIG.pace.warm): none slower than 1x.
+  practice: { maxGroup: 6, fights: [1, 6, 8, 10, 12, 15, 18, 20, 25, 30] },
   bossBattle: {
     maxTeam: 6, notice: 100, spacing: 4, startX: 7, rowWidth: 20,
     victoryTime: 2.5,
@@ -200,20 +201,25 @@ const CONFIG = {
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
   // Strikes keep their own timing. Wind-ups quicken only past the base pace and only gently, (pace / boss)^`tell`, and
-  // never below `tellFloor` of their own length: the same tell, a little sooner (9% by fight 10, 32% by 20, the floor's 40% by 25).
+  // never below `tellFloor` of their own length: the same tell, a little sooner (8% by fight 10, 21% by 15, the floor's 40% from 21).
   // `boss` is 1: since pass 54 every boss's own data is its 1x (PLAN.md track B item 10), tuned so the test bot alone
   // finds each about as hard as the rest (tools/rush-curve.cjs bosses), and Story and Practice fight it there too.
-  // Boss Rush's curve: after `won` fights, pace = boss x (1 + rise x (e^(won / scale) - 1)), at most `max`. Exponential:
-  // friendly at first (x1.09 by fight 5), real by fight 10 (x1.3), hard by 15 (x1.8), x3 by 20 and x5.8 by 25, where
-  // it leaves no room to answer (x6 from fight 26). Measured alone (tools/rush-curve.cjs runs, SKILLED, 120 runs, pass
-  // 56): with no abilities a skilled player falls around fight 12 (half of runs end by 12, 90% by 16, none past 20);
-  // with a great kit (KIT=strong) around 19 (90% by 22, none past 24). It depends on the fights won alone: never on
-  // health, damage or the team's size.
-  pace: { boss: 1, rise: 0.09, scale: 6, max: 6, tell: 0.35, tellFloor: 0.6 },
+  // Boss Rush's curve (pass 73, PLAN.md item 11): the warm-up's first `warm` fights run from `warmFrom` up toward `boss`,
+  // reached at fight `warm` + 1; after `won` fights from there, pace = boss x (1 + rise x (e^((won - warm) / scale) - 1)),
+  // at most `max`. Exponential, steeper from about fight 8: x1.26 by fight 10, x1.96 by 15, x3.9 by 20, x6 from 23.
+  // Measured alone (tools/rush-curve.cjs runs, SKILLED, 40 runs each, docs/scorecard/run-shape-pass73.txt): with no
+  // abilities a skilled player falls around fight 10 (median 10, none past 16); with the best survival kit (KIT=strong)
+  // around 17 (65% past 15, none past 20); with two legendaries and the posture abilities (KIT=max) around 14. It
+  // depends on the fights won alone: never on health, damage or the team's size.
+  pace: { boss: 1, rise: 0.15, scale: 5, max: 6, tell: 0.35, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
-  swift: { par: 45, pair: 0.5, max: 120, extra: 1 },
+  // The run's shape (pass 73, PLAN.md item 11): `par` is the warm-up's (CONFIG.pace.warm fights, its bosses lighter);
+  // after it, `late` s, for every boss at its whole health. And par follows the kit: it is divided by 1 + the party's
+  // might, each ability held adding `might[rarity]` for each of its levels (the mean over the party), so every kit has
+  // to fight for a swift kill (the test bot alone: about one fight in three, tools/rush-curve.cjs runs).
+  swift: { par: 45, late: 100, pair: 0.5, max: 120, extra: 1, might: { common: 0.03, rare: 0.06, legendary: 0.12 } },
   // Endless (pass 65, PLAN.md track B item 5): a Boss Rush run goes on until everyone falls. The first `opening` fights
   // draw from RUSH.opening (js/data/rush.js), then every boss. No boss comes back until every boss of its pool has come,
   // and never twice in a row. Every `crowned`th fight is Crowned (its win offers `crownedOffer` abilities, one of them a
@@ -224,7 +230,9 @@ const CONFIG = {
   // its own health, every bar of it: at 0.5 a pair holds about one boss's health between two sets of blows. Measured
   // alone (SKILLED, docs/scorecard/endless-pass67.txt): a skilled bot's median run went from fight 7 to 12. `longest`: a
   // bound on a run's fights for the draw; the curve makes it unreachable.
-  endless: { opening: 3, crowned: 5, crownedOffer: 4, pairFrom: 7, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [4, 12, 20], longest: 999 },
+  // `breakGrow` (pass 73): each posture break in a fight makes the next need this much more (a boss's posture builds at
+  // 1 / (1 + breakGrow x breaks)), on top of CONFIG.enemy.postureRest: the stagger meter stays earned.
+  endless: { breakGrow: 0.4, opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [8, 14, 20], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
@@ -237,8 +245,12 @@ const CONFIG = {
   // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
   // A swift kill's extra card (CONFIG.swift) is never common. Once everyone has chosen, the pick stays up `pickHold` s
   // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
-  abilities: { offer: 3, pickTime: 30, pickHold: 2,
-    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } },
+  // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1. A player holds at
+  // most `legendaries` legendaries; past that a legendary card only levels one already held. A power's blow (a
+  // legendary's, a rare's, a summon's) builds `posture` of its posture number: abilities fill the stagger meter far
+  // less than they hurt.
+  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['common'], legendaries: 2, posture: 0.4,
+    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.25 } },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,

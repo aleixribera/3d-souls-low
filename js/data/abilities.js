@@ -84,32 +84,34 @@ const ABILITIES = [
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark strikes the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30, posture: 6 }, { hits: 4, damage: 34, posture: 7 }, { hits: 4, damage: 44, posture: 9 }] },
 
-  // ---- Legendaries: one big power each, drawn in its own colour (js/ability-fx.js) ----
+  // ---- Legendaries: one big power each, drawn in its own colour (js/ability-fx.js). Pass 73 (PLAN.md item 11): every
+  // effect, sound and camera moment as before; less damage and posture, and longer cooldowns, so one saves a bad
+  // fight without carrying a run. A player holds two at most (CONFIG.abilities.legendaries). ----
   { id: 'meteor-fall', name: 'Meteor Fall', rarity: 'legendary', text: 'Jump heavy: a blast hits all within {radius}.',
     power: { when: 'land', then: 'blast', action: 'heavy' },
-    levels: [{ radius: 4.5, damage: 130, posture: 45, cooldown: 3 }, { radius: 6, damage: 190, posture: 70, cooldown: 3 }] },
+    levels: [{ radius: 4.5, damage: 95, posture: 35, cooldown: 5 }, { radius: 6, damage: 130, posture: 45, cooldown: 5 }] },
   { id: 'storm-king', name: 'Storm King', rarity: 'legendary', text: 'Full heavy hit: {strikes} lightning strikes.',
     power: { when: 'fullHeavy', then: 'lightning' },
-    levels: [{ strikes: 3, lead: 0.75, every: 0.45, damage: 55, posture: 14, cooldown: 4 }, { strikes: 5, lead: 0.75, every: 0.4, damage: 65, posture: 16, cooldown: 4 }] },
+    levels: [{ strikes: 3, lead: 0.75, every: 0.45, damage: 38, posture: 10, cooldown: 6 }, { strikes: 5, lead: 0.75, every: 0.4, damage: 36, posture: 9, cooldown: 6 }] },
   { id: 'time-rift', name: 'Time Rift', rarity: 'legendary', text: 'Perfect dodge: the boss freezes for {time}.',
     power: { when: 'dodge', then: 'freeze' },
-    levels: [{ time: 2.5, radius: 9, cooldown: 14 }, { time: 3.5, radius: 9, cooldown: 11 }] },
+    levels: [{ time: 2, radius: 9, cooldown: 16 }, { time: 2.5, radius: 9, cooldown: 14 }] },
   { id: 'thousand-blades', name: 'Thousand Blades', rarity: 'legendary', text: 'Parry: swords rain on the boss for {time}.',
     power: { when: 'parry', then: 'blades' },
-    levels: [{ time: 3, every: 0.2, damage: 12, posture: 3, cooldown: 8 }, { time: 4.5, every: 0.15, damage: 13, posture: 3, cooldown: 8 }] },
+    levels: [{ time: 3, every: 0.2, damage: 7, posture: 2, cooldown: 10 }, { time: 4.5, every: 0.15, damage: 6, posture: 1, cooldown: 10 }] },
   { id: 'blood-moon', name: 'Blood Moon', rarity: 'legendary', text: 'Low health: for {time}, hits do more and heal.',
     power: { when: 'low', then: 'bloodMoon', once: true },
-    levels: [{ below: 0.33, time: 10, damage: 0.4, drain: 0.3 }, { below: 0.33, time: 14, damage: 0.6, drain: 0.45 }] },
+    levels: [{ below: 0.33, time: 10, damage: 0.3, drain: 0.25 }, { below: 0.33, time: 12, damage: 0.45, drain: 0.35 }] },
   { id: 'gale-crescent', name: 'Gale Crescent', rarity: 'legendary', text: 'Every {hits}th hit: a wind blade cuts the boss.',
     power: { when: 'hits', then: 'gale' },
-    levels: [{ hits: 8, damage: 90, posture: 30, reach: 14, width: 1.6 }, { hits: 6, damage: 115, posture: 40, reach: 16, width: 2 }] },
+    levels: [{ hits: 10, damage: 70, posture: 20, reach: 14, width: 1.6 }, { hits: 8, damage: 90, posture: 26, reach: 16, width: 2 }] },
   { id: 'pyre', name: 'Pyre', rarity: 'legendary', text: 'Break balance: fire burns the boss for {time}.',
     power: { when: 'break', then: 'pyre' },
-    levels: [{ time: 4, every: 0.4, damage: 26, posture: 0.5, cooldown: 2 }, { time: 6, every: 0.35, damage: 30, posture: 0.5, cooldown: 2 }] },
+    levels: [{ time: 4, every: 0.4, damage: 16, posture: 0.5, cooldown: 2 }, { time: 6, every: 0.35, damage: 17, posture: 0.5, cooldown: 2 }] },
   // The first summon: a twin of its holder, made of embers, that fights at the boss's far side and strikes with them.
   { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Flask: a twin fights with you for {time}.',
     power: { when: 'flask', then: 'twin' },
-    levels: [{ time: 12, share: 0.5, draw: 2, cooldown: 20 }, { time: 16, share: 0.7, draw: 3, cooldown: 16 }] },
+    levels: [{ time: 10, share: 0.4, draw: 2, cooldown: 24 }, { time: 12, share: 0.55, draw: 3, cooldown: 20 }] },
 
   // ---- Crate abilities (pass 71, js/data/crates.js): `crate: true` keeps one out of every run's offers until a crate
   // has given it to that player; then it joins their pool like any other. Never offered in the weekly run (one pool

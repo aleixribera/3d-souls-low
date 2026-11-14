@@ -220,14 +220,17 @@ globalThis.host = (() => {
   const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
   // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest) and each has a share of its
-  // health (rushHealth, CONFIG.endless.pairHealth). Nothing raises health or blows. Returns the pace.
+  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Each posture break makes the
+  // next need more (CONFIG.endless.breakGrow). Nothing raises health or blows. Returns the pace.
   function setRushFight(won, modifiers = []) {
     const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
-    const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1, health = rushHealth(count);
+    const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1;
     const pace = rushPace(won) * times('pace'), rest = times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = times('chain');
-    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.setHealth(health); }
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.breakGrow = CONFIG.endless.breakGrow; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
     return pace;
   }
+  // The party's might (kitMight, CONFIG.swift.might): the mean over `ids` of what each holds. Boss Rush's par divides by it.
+  const partyMight = ids => ids.length ? ids.reduce((n, id) => n + kitMight(owned.get(id)), 0) / ids.length : 0;
   // `keepAbilities`: a later fight of the same Calling run; anything else starts with none.
   function start(kind, id, partners = [], keepAbilities = false) {
     // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
@@ -280,8 +283,9 @@ globalThis.host = (() => {
   // (offerSeed: a Boss Rush run's fight) the nth player's draw is mixSeed(seed, n)'s, so a weekly run offers the same
   // cards to everyone who holds the same abilities.
   // `crates` false (the weekly run) leaves every crate ability out; else a player is offered the ones their crates gave
-  // them (setGear).
-  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true) {
+  // them (setGear). `rarities` (a list) keeps the offer to those: the free pick before fight 1 (CONFIG.abilities.first).
+  // A player holding CONFIG.abilities.legendaries legendaries is offered only those again, as their next level.
+  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true, rarities = null) {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
     const pick = list => list[Math.floor(random() * list.length)];
@@ -292,7 +296,9 @@ globalThis.host = (() => {
       random = seed === null ? Math.random : rushSeed(mixSeed(seed, nth));
       const held = owned.get(id) || [], team = teamLegendaries(id);
       const mine = crates && gear.get(id)?.crates;
-      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)) && (!b.crate || !!mine && mine.has(b.id)));
+      const legends = new Set(held.filter(h => ABILITY_BY_ID[h]?.rarity === 'legendary')), capped = legends.size >= B.legendaries;
+      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && (team.has(b.id) || capped && !legends.has(b.id)))
+        && (!b.crate || !!mine && mine.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
       for (let i = offer.length; i < cards; i++) {
@@ -807,8 +813,8 @@ globalThis.host = (() => {
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
-    abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold,
-    rushPar, rushHealth, swiftExtra: CONFIG.swift.extra,
+    abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
+    rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,

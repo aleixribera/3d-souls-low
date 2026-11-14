@@ -55,18 +55,26 @@ function isAreaAttack(a) {
   return AREA_ATTACKS.get(a);
 }
 const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
-// Boss Rush's pace after `won` fights (CONFIG.pace): every boss's own pace, rising exponentially with the fights won.
+// Boss Rush's pace after `won` fights (CONFIG.pace): a warm-up under every boss's own pace for the first `warm` fights,
+// then rising exponentially with the fights won past it.
 function rushPace(won) {
   const P = CONFIG.pace, n = Math.max(0, Number(won) || 0);
-  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp(n / P.scale) - 1)));
+  if (n < P.warm) return P.boss * (P.warmFrom + (1 - P.warmFrom) * n / P.warm);
+  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp((n - P.warm) / P.scale) - 1)));
 }
-// Boss Rush's par (CONFIG.swift): the target length in whole s of a fight after `won` fights won, against `bosses` at once.
-function rushPar(won, bosses = 1) {
-  const S = CONFIG.swift;
-  return Math.min(S.max, Math.round(S.par * rushPace(won) / CONFIG.pace.boss * (1 + S.pair * (Math.max(1, bosses) - 1))));
+// Boss Rush's par (CONFIG.swift): the target length in whole s of a fight after `won` fights won, against `bosses` at
+// once, for a party of `might` (kitMight, js/abilities.js). Never under the base pace's par for a weaker boss.
+function rushPar(won, bosses = 1, might = 0) {
+  const S = CONFIG.swift, base = won < CONFIG.pace.warm ? S.par : S.late;
+  return Math.min(S.max, Math.round(base * Math.max(1, rushPace(won) / CONFIG.pace.boss) * (1 + S.pair * (Math.max(1, bosses) - 1)) / (1 + Math.max(0, might))));
 }
-// Boss Rush's health share (CONFIG.endless.pairHealth): each of `bosses` fought at once has this share of its own bars.
-function rushHealth(bosses) { return bosses > 1 ? CONFIG.endless.pairHealth : 1; }
+// Boss Rush's health share for boss `id`: its RUSH.health share in every fight, times CONFIG.endless.pairHealth when
+// `bosses` are fought at once, or its RUSH.warmHealth share alone in the warm-up (the first CONFIG.pace.warm fights).
+function rushHealth(bosses, won = Infinity, id = null) {
+  const own = id && Object.hasOwn(RUSH.health, id) ? RUSH.health[id] : 1;
+  if (bosses > 1) return CONFIG.endless.pairHealth * own;
+  return own * (won < CONFIG.pace.warm && id && Object.hasOwn(RUSH.warmHealth, id) ? RUSH.warmHealth[id] : 1);
+}
 // A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.
 const pacedChance = (chance, pace) => chance >= 1 || pace === 1 ? chance : 1 - Math.pow(1 - chance, pace);
 
@@ -93,6 +101,7 @@ class Enemy {
     this.hp = def.hp; this.poise = def.poise; this.poiseTimer = 0; this.tint = 0; this.walkPhase = 0;
     this.posture = 0; this.chainTime = Infinity;   // boss posture and time since the last landed hit
     this.sinceBreak = Infinity;                      // time since its last posture break or execution ended
+    this.breaks = 0; this.breakGrow = 0;             // posture breaks this fight; Boss Rush's CONFIG.endless.breakGrow
     this.frozen = 0;   // s left stopped in time (Time Rift, js/abilities.js): no step, no blow, hit as it stands
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
@@ -799,9 +808,9 @@ class Enemy {
     const P = this.def.posture;
     if (!P || this.state === ES.BROKEN) return false;
     const R = CONFIG.enemy.postureRest;
-    this.posture = Math.min(P.max, this.posture + amount * (this.sinceBreak < R.time ? R.mul : 1));
+    this.posture = Math.min(P.max, this.posture + amount * (this.sinceBreak < R.time ? R.mul : 1) / (1 + this.breakGrow * this.breaks));
     if (this.posture < P.max) return false;
-    this.hitbox = null; this.crack = 1;
+    this.hitbox = null; this.crack = 1; this.breaks++;
     this.setState(ES.BROKEN);
     return true;
   }
@@ -818,7 +827,7 @@ class Enemy {
   // Broken at once, its posture full (a counter stance broken, a faltering wind-up). Returns true (it broke).
   breakNow() {
     if (this.def.posture) this.posture = this.def.posture.max;
-    this.hitbox = null; this.crack = 1; this.setState(ES.BROKEN);
+    this.hitbox = null; this.crack = 1; this.breaks++; this.setState(ES.BROKEN);
     return true;
   }
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.

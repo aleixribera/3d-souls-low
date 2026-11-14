@@ -39,8 +39,8 @@ function validateData({ visual = true } = {}) {
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
   need(Number.isInteger(CONFIG.practice.maxGroup) && CONFIG.practice.maxGroup >= 2, 'Practice: maxGroup must be a whole number, 2 or more.');
   const PF = CONFIG.practice.fights;
-  need(Array.isArray(PF) && PF[0] === 1 && PF.every((f, i) => Number.isInteger(f) && (i === 0 || f > PF[i - 1])),
-    'Practice: fights must be whole numbers, rising, starting at 1 (the base pace).');
+  need(Array.isArray(PF) && PF[0] === 1 && PF.every((f, i) => Number.isInteger(f) && (i === 0 || f > PF[i - 1] && f > CONFIG.pace.warm)),
+    'Practice: fights must be whole numbers, rising, starting at 1 (the base pace), the rest past the Boss Rush warm-up.');
   for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
   need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
@@ -59,6 +59,9 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive, pickHold 0 or more and under pickTime.');
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
+  need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity) && !b.crate).length >= BL.offer
+    && Number.isInteger(BL.legendaries) && BL.legendaries >= 1 && num(BL.posture) && BL.posture >= 0 && BL.posture <= 1,
+    'CONFIG.abilities: first a list of rarities with enough abilities for an offer, legendaries a whole number of 1 or more, posture from 0 to 1.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
@@ -425,11 +428,12 @@ function validateData({ visual = true } = {}) {
   }
   const PC = CONFIG.pace;   // a boss's pace and Boss Rush's curve (v7.65.0): it only ever speeds a boss up
   need(PC && num(PC.boss) && PC.boss >= 1 && num(PC.rise) && PC.rise >= 0 && num(PC.scale) && PC.scale > 0 && num(PC.max) && PC.max >= PC.boss
-    && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1,
-    'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more and tellFloor in (0, 1].');
+    && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1 && Number.isInteger(PC.warm) && PC.warm >= 0 && num(PC.warmFrom) && PC.warmFrom > 0 && PC.warmFrom <= 1,
+    'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more, tellFloor in (0, 1], warm a whole number of 0 or more and warmFrom in (0, 1].');
   const SW = CONFIG.swift, KM = CONFIG.killMoment;   // v7.69.0: Boss Rush's par and swift kill, and the kill moment
-  need(SW && num(SW.par) && SW.par > 0 && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.abilities.offer + SW.extra <= ABILITIES.length,
-    'CONFIG.swift: par above 0, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the abilities there are.');
+  need(SW && num(SW.par) && SW.par > 0 && num(SW.late) && SW.late >= SW.par && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.abilities.offer + SW.extra <= ABILITIES.length
+    && SW.might && Object.keys(RAR).every(r => num(SW.might[r]) && SW.might[r] >= 0),
+    'CONFIG.swift: par above 0, late at least par, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the abilities there are, and a might of 0 or more for every rarity.');
   need(KM && num(KM.slow) && KM.slow > 0 && KM.slow <= 1 && ['time', 'embers', 'emberSpeed'].every(k => num(KM[k]) && KM[k] >= 0),
     'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
   // Endless (pass 65): CONFIG.endless and RUSH (js/data/rush.js). A modifier only ever speeds a boss up.
@@ -440,6 +444,11 @@ function validateData({ visual = true } = {}) {
   need(ABILITIES.some(b => b.rarity === 'legendary'), 'Endless: a Crowned win offers a legendary, so there must be one.');
   need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
     'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');
+  need(EN.opening >= PC.warm && num(EN.breakGrow) && EN.breakGrow >= 0, 'CONFIG.endless: the opening covers the warm-up (CONFIG.pace.warm), and breakGrow is 0 or more.');
+  need(RUSH.warmHealth && Object.entries(RUSH.warmHealth).every(([id, k]) => RUSH.opening.includes(id) && num(k) && k > 0 && k <= 1),
+    'RUSH.warmHealth: a share in (0, 1] for bosses of RUSH.opening.');
+  need(RUSH.health && Object.entries(RUSH.health).every(([id, k]) => Object.hasOwn(ENEMY_BY_ID, id) && isBossDef(ENEMY_BY_ID[id]) && num(k) && k > 0 && k <= 1),
+    'RUSH.health: a share in (0, 1] for bosses.');
   need(Array.isArray(RUSH.modifiers) && new Set(RUSH.modifiers.map(m => m.id)).size === RUSH.modifiers.length, 'RUSH.modifiers: a list with different ids.');
   for (const m of RUSH.modifiers) {
     const where = `RUSH modifier "${m.id}"`, keys = ['pace', 'rest', 'chain'];

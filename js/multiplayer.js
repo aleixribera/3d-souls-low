@@ -1117,7 +1117,10 @@ const multiplayer = (() => {
           Game.spawn = { ...session.spawn }; Game.spawnPlayer(); Game.player.grantAbilities(session.abilities?.[self]); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
-          if (session.health > 0 && session.health < 1) for (const e of Game.enemies) if (e.isBoss()) e.setHealth(session.health);   // a Boss Rush pair: the server's bars
+          for (const e of Game.enemies) {   // Boss Rush: the server's bars, each boss's share of its own (rushHealth)
+            const k = e.isBoss() && session.health && Object.hasOwn(session.health, e.baseDef.id) ? Number(session.health[e.baseDef.id]) : 1;
+            if (k > 0 && k < 1) e.setHealth(k);
+          }
           loaded = true; updateRoster();
         };
         // Boss Rush's next boss drops straight in (v7.69.0): the arena is rebuilt at once, with no loading card.
@@ -1171,6 +1174,13 @@ const multiplayer = (() => {
       pendingExecution = null;
     } else if (msg.type === 'revive') riseAgain(msg);
     else if (msg.type === 'abilitiesChosen' && session) { if (ability) { ability.done = true; drawAbilities(); } }   // everyone has chosen: the hold
+    // The free pick before fight 1 is over (CONFIG.abilities.first): this body takes its kit, the par follows it, and the boss wakes.
+    else if (msg.type === 'firstPick' && session) {
+      if (msg.abilities && typeof msg.abilities === 'object') session.abilities = msg.abilities;   // a body still loading builds with it
+      session.par = Number(msg.par) || session.par;
+      if (Game.player && loaded) Game.player.grantAbilities(session.abilities?.[self]);
+      closeAbilities();
+    }
     else if (msg.type === 'abilities' && session) openAbilities(msg);   // also while loading back in: shown once loaded
     else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }

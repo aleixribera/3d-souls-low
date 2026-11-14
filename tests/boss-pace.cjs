@@ -1,7 +1,8 @@
 'use strict';
 // Pace, not team size (v7.65.0, CONFIG.pace), in the headless server simulation:
 // - every boss is the same for one player and for four: health, posture bar and break length;
-// - Boss Rush's curve at fights 1, 5, 10, 15, 20 and 25 raises only the pace, never health or damage (item 10);
+// - Boss Rush's curve at fights 1, 5, 10, 15, 20 and 25 raises only the pace, never health or damage (item 10); a boss's
+//   Boss Rush health share (RUSH.health, RUSH.warmHealth, pass 73) is checked by tests/calling.cjs;
 // - a faster pace means more attacks a minute; wind-ups barely change by fight 10 and stay above
 //   CONFIG.pace.tellFloor of their length at fight 40 (every tell stays readable).
 const assert = require('node:assert/strict');
@@ -16,9 +17,9 @@ function fight(boss, n, won = null) {
   const { Game } = sim.inspect();
   return { sim, Game, spawn, e: Game.enemies.find(e => e.isBoss()) };
 }
-const bars = e => {
+const bars = (e, health = true) => {
   const M = e.def.posture || e.def.stagger || e.def.guard;
-  return JSON.stringify({ hp: e.def.hp, now: e.hp, meter: M ? M.max : null, breakTime: M ? M.breakTime : null, damage: e.def.attacks.map(a => a.hits.map(h => h.damage ?? a.damage)) });   // text: each simulation is its own VM
+  return JSON.stringify({ hp: health ? e.def.hp : 0, now: health ? e.hp : 0, meter: M ? M.max : null, breakTime: M ? M.breakTime : null, damage: e.def.attacks.map(a => a.hits.map(h => h.damage ?? a.damage)) });   // text: each simulation is its own VM
 };
 
 // 1 and 4 players face the same boss.
@@ -29,27 +30,31 @@ for (const boss of bosses) {
 }
 console.log(`${bosses.length} bosses: the same health, posture and breaks for 1 and 4 players`);
 
-// The curve (PLAN.md track B item 10, pass 54): fight n runs at the pace for n - 1 won. It climbs exponentially from
-// every boss's own 1x, speed only: health and damage stay the boss's own at every fight, for every boss.
+// The curve (PLAN.md track B item 10, pass 54; item 11, pass 73): fight n runs at the pace for n - 1 won. The warm-up
+// (CONFIG.pace.warm fights) climbs from a little under 1x to 1x, then the pace climbs exponentially, speed only: health
+// and damage stay the boss's own at every fight, for every boss (a warm-up boss's health is its RUSH.warmHealth share,
+// tests/calling.cjs).
+const PC = createSimulation().inspect().CONFIG.pace;
 const P = { fight: [1, 5, 10, 15, 20, 25], pace: [] };
 for (const boss of bosses) {
-  const plain = bars(fight(boss, 1).e);
+  const plain = bars(fight(boss, 1).e), still = bars(fight(boss, 1).e, false);
   for (const n of P.fight) {
     const { e, sim } = fight(boss, 1, n - 1);
-    assert.equal(bars(e), plain, `${boss}, fight ${n}: health and damage are the boss's own`);
+    // Health: the boss's own, or its Boss Rush share (rushHealth: RUSH.health, a warm-up boss's RUSH.warmHealth).
+    if (n > PC.warm && sim.rushHealth(1, n - 1, boss) === 1) assert.equal(bars(e), plain, `${boss}, fight ${n}: health and damage are the boss's own`);
+    else assert.equal(bars(e, false), still, `${boss}, fight ${n}: damage and posture are the boss's own`);
     assert.equal(e.pace, sim.setRushFight(n - 1), `${boss}, fight ${n}: the boss runs at the curve's pace`);
     if (boss === bosses[0]) P.pace.push(e.pace);
   }
 }
-const base = P.pace[0], at = n => P.pace[P.fight.indexOf(n)] / base;
+const at = n => P.pace[P.fight.indexOf(n)] / PC.boss;
 assert.ok(P.pace.every((p, i) => i === 0 || p > P.pace[i - 1]), `the pace rises fight by fight: ${P.pace.map(p => p.toFixed(2)).join(', ')}`);
-assert.equal(base, 1, 'fight 1 runs at 1x, the boss data as written');
-assert.equal(base, createSimulation().inspect().CONFIG.pace.boss, 'the first fight runs at the base pace, as every boss does outside Boss Rush');
-assert.ok(at(5) < 1.15, `friendly at first: under 15% faster by fight 5 (x${at(5).toFixed(2)})`);
+assert.ok(at(1) >= 0.8 && at(1) < 1, `the warm-up: fight 1 a little under 1x (x${at(1).toFixed(2)})`);
+assert.equal(at(PC.warm + 1), 1, `fight ${PC.warm + 1} runs at 1x, the boss data as written, as every boss does outside Boss Rush`);
+// Item 11's stages for a skilled player alone: 5-10 real, 10-15 hard, 15-20 brutal, past 20 impossible.
 assert.ok(at(10) >= 1.15 && at(10) < 1.4, `real by fight 10: 15 to 40% faster (x${at(10).toFixed(2)})`);
-// Pass 56: the skilled bot alone falls around fight 12 with no abilities and around 19 with a great kit (config.js).
-assert.ok(at(15) >= 1.6 && at(15) < 2.1, `hard by fight 15 (x${at(15).toFixed(2)})`);
-assert.ok(at(20) >= 2.6 && at(20) < 3.5, `about three times as fast by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
+assert.ok(at(15) >= 1.7 && at(15) < 2.3, `hard by fight 15 (x${at(15).toFixed(2)})`);
+assert.ok(at(20) >= 3 && at(20) < 4.5, `brutal by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
 assert.ok(at(25) >= 5, `no room to answer by fight 25 (x${at(25).toFixed(2)})`);
 console.log('pace at fights ' + P.fight.map((n, i) => `${n}: x${P.pace[i].toFixed(2)}`).join(', ') + ` (${bosses.length} bosses: health and damage unchanged)`);
 
