@@ -10,8 +10,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   pillagerCaptain 84/61; interleaved A/B on the 3 slowest scenes 56/23 -> 66/41. Left: PC stand-in calibration
   (`BACKLOG.md`). Frames: `docs/scorecard/baked-light-normal.jpg`. The King's Blade, Agathe, the Kindling Tree:
   **awaiting Aleix**.
-- Track B (pass 59): item 6 pass 1, 31 abilities: Ember Twin (summon), Gale Crescent, Pyre, 3 rares
-  (`tests/abilities.cjs`, `docs/scorecard/abilities-*.jpg`). Next: item 6 pass 2 (BACKLOG). Curve: pass 56.
+- Track B (pass 61, v7.85.0): item 6 pass 2, 32 abilities: Grave Hound (rare summon, own model
+  `tools/blender/hound.py`, `js/summon-hound.js`); summons draw the boss (decoy target, `abilityPowers.decoy`),
+  the twin too (`tests/abilities.cjs`, `docs/scorecard/abilities-hound.jpg`). Curve: BACKLOG. Next: summons 3-4.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
