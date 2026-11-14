@@ -60,6 +60,8 @@ Aleix, 2026-11-13.
   combat, manageable for friends playing for the first time on a laptop; all ten of the director's answers taken (see
   "The player rework" above). `VISION.md` changed with his OK. Then: urgent, the default for the whole game now,
   both tracks first, so he can play all of Story and Boss Rush on it.
+- The player's movement and animation (Aleix, 2026-11-14): good, smooth, responsive, a bit anime; track A's focus
+  in the player rework (item 3c).
 - Ability keys (Aleix, 2026-11-14): pressed abilities each belong to one of the four number keys, always the same
   key; Boss Rush holds one per key, locked once chosen, and offers stop showing that key's others; triggered
   abilities stay frequent; Story gives four along the road, one per key (the player rework, item 3).
@@ -103,9 +105,13 @@ tell (`VISION.md`).
 **How the tracks split** (two writers never touch the same files):
 - **Track B builds the moveset** (`js/player.js`, `js/data/player.js`, `CONFIG.player`, `CONFIG.block`/`parry`, combat,
   the server's claim checks): items 1-2 below, then the abilities' triggers, then Boss Rush's bosses and curve (item 4).
-- **Track A makes the game ready for it** while track B builds: the laptop and first-time part (item 3: input, camera,
-  button hints, the first fight); then, as the moveset lands, every Story level, its regular enemies and its bosses
-  played through with it and re-tuned (item 4), chapter by chapter, so nothing is left on the old system.
+- **Track A makes the game ready for it** while track B builds: the laptop and first-time part (item 3b: input,
+  camera, button hints, the first fight); then **how the player moves and looks** (item 3c), its main focus from
+  there on: track A owns the player's animation (`js/animator.js`, `js/attack-anim.js`, `js/rig.js`, the poses, the
+  movement's feel and the player's effects), track B owns what each move does and its timings (`js/player.js`,
+  `js/data/player.js`); a new attack from track B arrives with a working pose, and track A makes it look and feel
+  right. Then, as the moveset lands, every Story level, its regular enemies and its bosses played through with it and
+  re-tuned (item 4), chapter by chapter, so nothing is left on the old system.
 
 **Done when** the old moveset is gone from the code, every level of Story and every Boss Rush boss has been played
 through with the new one (the test bot and frames, chapter by chapter), and Aleix can play the whole game on it.
@@ -175,6 +181,23 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    controller; lock-on carries the camera so a touchpad never has to. A friend who has never played learns to attack,
    dodge, deflect and heal in their first minute, without a tutorial screen (button hints in the world, the first fight
    forgiving). Normal holds 60 fps on the laptop (track A item 3).
+3c. **Movement and animation: smooth, responsive, a bit anime** (Aleix, 2026-11-14: "the player movement and
+   animations must be good and smooth, responsive, feel like an anime a bit as well"). Track A's focus, pass after
+   pass, until Aleix says it feels right; never folded into another item as an afterthought.
+   - **Responsive:** a press shows on screen on the next frame; starting, stopping and turning are quick (short
+     acceleration, no slide), the dash and every attack start the moment they're pressed, and a buffered press never
+     gets lost. Measure input-to-motion in frames for every action, before and after.
+   - **Smooth:** every motion on real curves, with anticipation, follow-through and overshoot; blends between any two
+     moves (run into dash, dash into attack, string into finisher, any cancel) with no pops or snaps; feet planted, no
+     sliding; the body leans into turns and speed.
+   - **A bit anime:** sharp, readable key poses held for a beat; a smear or arc trail on fast swings; dash afterimages
+     and speed lines; hit-stop and a camera kick on heavy blows, finishers and counters; landing and recovery poses
+     with weight; a stylish stance after a finisher. Flashes stay under 3 Hz and follow `reducedMotion()`.
+   - **References first** (`CLAUDE.md`: show, don't describe): gather clips of the movement and attack animation the
+     feel draws on (the two games of item 1 and anime fights), name the patterns they share, and build from those.
+   Check: input-to-motion frames per action; side-by-side clips of run, dash, the light string, each finisher, a
+   perfect dodge into a counter and a deflect into a riposte, old against new; a blind judge comparing the new clips
+   with the reference clips, scored every pass and plotted, until the curve goes flat; then Aleix plays it.
 4. **The bosses answer** (Aleix, 2026-11-14: free attacks and a dodge with charges must not let a player mash bosses
    down). Shared rules in the engine, not one boss at a time:
    - **No flinch from ordinary hits:** a light or heavy never interrupts a boss's attack. After about 5-6 hits in a
