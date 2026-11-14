@@ -938,8 +938,15 @@ const CONFIG = {
     strafe: 0.55, strafeSwitch: [1.2, 3.4],   // sideways share of its walk, and how often it changes side
     roll: { margin: 0.15, reverseChance: 0.35, ringAngle: [0.15, 0.45], retreatAngle: [0.2, 0.7] },
     parryChanceScale: 0.1,      // one tenth of each companion's former parry preference
+    // finisher / finisherOpening (pass 88): times its taste for heavies, the chance it ends a string with that point's
+    // finisher (a real opening: the second); after the last light it always does.
     tempo: { comboBase: 0.12, comboAggression: 0.45, punishCombo: 0.9, punishWindow: 1.3,
-      punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, regroupBelow: 0.3 },
+      punishRecovery: 0.9, punishCommit: 1.2, finishBelow: 0.16, regroupBelow: 0.3, finisher: 0.8, finisherOpening: 1.6 },
+    // Pass 88, a dash attack: from `gap` m (edge to edge) out, with every dash charge in hand, it dashes in at about `rate`
+    // a second (scaled by its aggression), at most once every `rest` s, striking out of the dash (a heavy by `heavy` times
+    // its taste for them). A dash that slips a blow comes out as the counter while the foe is within `counterReach` m
+    // past its reach (a heavy one by its taste plus `counterHeavy`).
+    dashIn: { gap: [1.8, 3.4], rate: 0.6, rest: 5, heavy: 0.8, counterReach: 1.2, counterHeavy: 0.3 },
     // Risk is chosen on a clock, never re-rolled every frame.
     risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
       combo: 0.9, reserve: 12, earlyRollChance: 0.35, rollLead: [0.12, 0.22] },

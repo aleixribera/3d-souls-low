@@ -207,7 +207,7 @@ const bot = (() => {
     // offered: openings left to a person; backup: s spent behind an enemy that was after someone else; drew: times it
     // pressed to draw an enemy off a hurt or drinking ally; waiting: s spent free within 3 m of a light's reach of an
     // enemy it could hit, not swinging (waiting out a string, a beat before going in, circling, baiting or regrouping).
-    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0, slips: 0 };
+    const tally = { waited: 0, gaps: 0, yielded: 0, executed: 0, offered: 0, backup: 0, drew: 0, waiting: 0, slips: 0, dashIns: 0 };
     let waitedThis = false, nearThis = false, yieldedThis = null, offeredThis = null, sharedThis = null, rescuing = false, unplaced = 0, flankSide = 1, quietSince = 0;
     // Edge gap it keeps from an enemy mid-string: past the reach of the blows it can outrun (at most string.outrun), else its spacing.
     function holdGap(me, o) {
@@ -243,6 +243,7 @@ const bot = (() => {
     let wasAlive = new WeakSet(), cheer = 0;
     let tacticId = null, tacticTimer = 0, tacticDuration = 1, quietTime = 0, healWait = 0, lastHp = 0, lastTargetHp = 0;
     let resetLeft = 0, resetPending = false, decisionLeft = 0, jumpRest = 0, punishLeft = 0, comboChoice = null;
+    let finishChoice = null, dashPlan = null, dashRest = 0;   // pass 88: a string's finisher, a dash attack under way
     let lastAttacking = false, lastMove = null, lastMoveTime = 0;
     const newBurst = () => Math.floor(span([profile.burst[0], profile.burst[1] + 1], rng));
     let burstLeft = newBurst();
@@ -566,10 +567,12 @@ const bot = (() => {
       // Walk toward a gap of `want` m: round to the enemy's back while it is after someone else, else circling as planned.
       const orbit = (want, circle) => flank ? strafe(me, to, gap, want, flank.far ? Math.max(circle, 1) : 0, flank.dir) : strafe(me, to, gap, want, circle);
       if ((tacticTimer -= dt) <= 0) chooseTactic();
-      decisionLeft = Math.max(0, decisionLeft - dt); jumpRest = Math.max(0, jumpRest - dt); resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
+      decisionLeft = Math.max(0, decisionLeft - dt); jumpRest = Math.max(0, jumpRest - dt); dashRest = Math.max(0, dashRest - dt);
+      if (dashPlan && (dashPlan.t -= dt) <= 0) dashPlan = null;   // a dash-in's strike, if the dash never came
+      resetLeft = Math.max(0, resetLeft - dt); punishLeft = Math.max(0, punishLeft - dt);
       const attacking = me.isAttacking();
       if (attacking && (!lastAttacking || me.attack !== lastMove || me.attackT < lastMoveTime)) {
-        comboChoice = null;
+        comboChoice = null; finishChoice = null;
         if (--burstLeft <= 0) resetPending = true;
       }
       if (me.hp < lastHp) { riskLeft = 0; if (resetLeft <= 0) resetPending = true; }
@@ -620,7 +623,7 @@ const bot = (() => {
       }
       hands.hold('block', false);
       if (bolt && bolt.eta <= 0.14) {
-        if (me.canRoll() && (me.isFree() || me.state === PS.ATTACK)) { hands.press('roll'); return { mv: { ...bolt.dir, has: true }, lock: e }; }
+        if (me.canRoll() && (me.isFree() || me.state === PS.ATTACK)) { hands.press('roll'); dashPlan = null; return { mv: { ...bolt.dir, has: true }, lock: e }; }
         if (me.isFree()) { hands.hold('block', true); return { mv: idle, lock: e }; }
       }
       // Greed can trade with the target, but does not ignore another opponent or a projectile to do it.
@@ -654,7 +657,7 @@ const bot = (() => {
           if (blow.eta < 0) s.plan = 'roll';   // caught busy: fall back to whatever still works
         }
         if (s.plan === 'roll' && blow.eta <= lead) {
-          if (me.canRoll()) { const d = rollDir(me, enemy, blow, s.risky); hands.press('roll'); s.done = true; heavyHold = 0; hands.hold('heavy', false); return { mv: { ...d, has: true }, lock: enemy }; }
+          if (me.canRoll()) { const d = rollDir(me, enemy, blow, s.risky); hands.press('roll'); s.done = true; heavyHold = 0; dashPlan = null; hands.hold('heavy', false); return { mv: { ...d, has: true }, lock: enemy }; }
           if (!blow.attack.rollOnly && me.in('free')) { hands.hold('block', true); return { mv: idle, lock: enemy }; }   // no stamina: guard
         }
         // A blow is coming soon: hold off new swings and keep it in front.
@@ -682,6 +685,13 @@ const bot = (() => {
       if (jumpPlan > 0) {   // airborne: bring the blade down
         jumpPlan -= dt;
         if (me.state === PS.JUMP || me.state === PS.FALL) { if (me.vy < 2) { hands.press('heavy'); jumpPlan = 0; } return { mv: { ...to, has: true }, lock: e }; }
+      }
+      // Pass 88, the new moveset. In a dash it went in on (dashPlan), the attack comes out of the dash; a dash that
+      // slipped a blow on the beat (a riposte open) comes out as the counter instead, if the foe is still in reach.
+      if (dashPlan && me.state === PS.ROLL) { hands.press(dashPlan.action); dashPlan = null; return { mv: { ...to, has: true }, lock: e }; }
+      if (me.state === PS.ROLL && me.riposte > 0 && !me.buffer && !str && gap <= C.reach + C.dashIn.counterReach) {
+        const fits = act => window > commit(A()[me.def.moveset.counter[act]]) + C.safety;
+        if (fits('light')) hands.press(rng() < profile.heavy + C.dashIn.counterHeavy && fits('heavy') ? 'heavy' : 'light');
       }
 
       // ---- 3. Heal when hurt and safe; back off first ----
@@ -751,13 +761,19 @@ const bot = (() => {
       const swingGap = !!str && mood.gap !== null && (window >= mood.gap || greedy && !str.more);
       const free = me.riposte > 0 || (str ? swingGap : !settling || [ES.PARRIED, ES.STAGGER].includes(e.state));
       // Chain the combo: in a light's follow-through, press again if the window still holds the next swing.
+      // Pass 88: or end the string with that point's finisher: always after the last light, else by its taste for heavies
+      // (more in a real opening), when the window holds the bigger swing.
       if (me.state === PS.ATTACK && me.attack && me.attack.next && inReach) {
-        const next = A()[me.attack.next.light], tl = attackTimeline(me.attack, me.attackT);
+        const N = me.attack.next, light = N.light && A()[N.light], fin = N.heavy && A()[N.heavy], tl = attackTimeline(me.attack, me.attackT);
         const left = commit(me.attack) - me.attackT;
-        if (tl.phase !== PHASE.STARTUP && comboChoice === null)
+        if (tl.phase !== PHASE.STARTUP && comboChoice === null) {
           comboChoice = rng() < (greedy ? R.combo : keyOpening ? T.punishCombo : T.comboBase + profile.aggression * T.comboAggression);
-        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && attackWindow > left + commit(next) + spare && can(next.cost) && (!str || swingGap)) {
-          hands.press('light'); comboChoice = false;
+          finishChoice = !light || rng() < profile.heavy * (keyOpening ? T.finisherOpening : T.finisher);
+        }
+        const fits = a => a && attackWindow > left + commit(a) + spare;
+        const next = finishChoice && fits(fin) ? fin : light;
+        if (next && comboChoice && (burstLeft > 0 || keyOpening || greedy) && fits(next) && can(next.cost) && (!str || swingGap)) {
+          hands.press(next === fin ? 'heavy' : 'light'); comboChoice = false;
         }
         return { mv: idle, lock: e };
       }
@@ -775,12 +791,24 @@ const bot = (() => {
           decisionLeft = span(profile.think, rng);
           if (str) tally.gaps++, waitedThis = false;
           const rip = me.riposte > 0;
-          if (ready && !(near && !rip) && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && (rip || rng() < profile.heavy)) {
-            hands.press('heavy'); hands.hold('heavy', true); heavyHold = rip ? 0.1 : heavy.charge.hold * (0.5 + 0.5 * rng());
+          // A riposte is the counter (pass 88): a heavy press is its rising cut, never a charge.
+          if (rip && ready && attackWindow > commit(A().counterHeavy) + spare) { hands.press('heavy'); return { mv: idle, lock: e }; }
+          if (!rip && ready && !near && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && rng() < profile.heavy) {
+            hands.press('heavy'); hands.hold('heavy', true); heavyHold = heavy.charge.hold * (0.5 + 0.5 * rng());
             return { mv: idle, lock: e };
           }
-          if (ready && (rip || rng() < profile.heavy) && attackWindow > commit(heavy) + spare && can(heavy.cost)) { hands.press('heavy'); return { mv: idle, lock: e }; }
+          if (!rip && ready && rng() < profile.heavy && attackWindow > commit(heavy) + spare && can(heavy.cost)) { hands.press('heavy'); return { mv: idle, lock: e }; }
           if (can(light.cost)) { hands.press('light'); return { mv: idle, lock: e }; }
+        }
+        // Pass 88: from a few steps out, with both dashes in hand and a long opening, it dashes in and strikes out of the
+        // dash (a heavy by its taste for them).
+        const D = C.dashIn, dashFits = act => window > CONFIG.player.dashAttackFrom + commit(A()[me.def.moveset.dash[act]]) + spare;
+        if (!inReach && !str && !settling && committed && !retreating && decisionLeft <= 0 && dashRest <= 0 && gap >= D.gap[0] && gap <= D.gap[1] &&
+            me.dashes >= CONFIG.player.dashCharges && dashFits('light') && rng() < D.rate * (0.5 + profile.aggression) * dt &&
+            !fireOnLine(me, enemies, to, gap)) {
+          hands.press('roll'); dashPlan = { action: rng() < profile.heavy * D.heavy && dashFits('heavy') ? 'heavy' : 'light', t: 0.25 };
+          decisionLeft = span(profile.think, rng); dashRest = D.rest; tally.dashIns++;
+          return { mv: { ...to, has: true }, lock: e };
         }
         // Flair: from a step or two out, a long opening can take a leaping heavy.
         if (!inReach && !str && !settling && committed && !retreating && decisionLeft <= 0 && gap < 3.2 && window > 2.0 && jumpRest <= 0 && rng() < profile.jump * dt * 14) {
@@ -836,6 +864,16 @@ const bot = (() => {
       }
       if (!px && !pz) return mv;
       return flat((mv.has ? mv.x : 0) + px * R.push, (mv.has ? mv.z : 0) + pz * R.push);
+    }
+    // Pass 88: whether a burning fire lies within its margin of the straight line `len` m from `me` along `dir` (a dash in).
+    function fireOnLine(me, enemies, dir, len) {
+      const F = B().fire;
+      for (const e of enemies) for (const f of e.fires || []) {
+        if (f.time - f.age < F.ending || Math.abs(me.y - f.y) >= CONFIG.height.stepUp) continue;
+        const along = clamp((f.x - me.x) * dir.x + (f.z - me.z) * dir.z, 0, len);
+        if (Math.hypot(me.x + dir.x * along - f.x, me.z + dir.z * along - f.z) < f.r + me.radius + F.margin) return true;
+      }
+      return false;
     }
     // Out of the fire (CONFIG.bot.fire; a hit's `fire`, Enemy.noteFires): a bot within `margin` m of a burning fire steps
     // away from its middle, weighed by `push` against where it was walking; standing in one, it walks straight out (away

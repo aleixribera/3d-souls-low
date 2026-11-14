@@ -175,6 +175,9 @@ function validateData({ visual = true } = {}) {
   for (const key of ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow', 'regroupBelow'])
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
+  { const D = botConfig.dashIn, T = botConfig.tempo;   // pass 88: finishers and dash attacks
+    need(['finisher', 'finisherOpening'].every(k => num(T[k]) && T[k] >= 0) && D && pair(D.gap) && ['rate', 'rest', 'heavy', 'counterReach', 'counterHeavy'].every(k => num(D[k]) && D[k] >= 0),
+      'Bot tempo.finisher and finisherOpening must be 0 or more; dashIn needs gap [near, far] and rate, rest, heavy, counterReach and counterHeavy of 0 or more.'); }
   for (const key of ['windowSlack', 'minWindow', 'reserve'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] > 0, `Bot risk.${key} must be positive.`);
   for (const key of ['combo', 'earlyRollChance'])
@@ -515,8 +518,8 @@ function validateData({ visual = true } = {}) {
   need(X && ['range', 'cone', 'facing', 'floor', 'angleWeight', 'snapTime', 'standoff', 'gap', 'chest', 'thrustHeight', 'hitstop', 'grace', 'push', 'cuePulse', 'cueGlow'].every(k => num(X[k]))
     && ['base', 'lightMul', 'bossLightMul', 'bossCap'].every(k => num(X.damage[k])) && X.damage.bossCap <= 0.5
     && X.snapTime < M.attacks.execute.hits[0].startup, 'CONFIG.execution: a number is missing, bossCap is above 0.5, or snapTime outlasts the wind-up.');
-  for (const group of ['ground', 'air', 'dash'])
-    for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks, `Player moveset "${group}.${action}": no attack "${id}".`);
+  for (const group of ['ground', 'air', 'dash', 'counter'])
+    for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks && action in M.ground, `Player moveset "${group}.${action}": no attack "${id}", or not a ground action.`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
   const tri3 = v => Array.isArray(v) && v.length === 3 && v.every(num);
   for (const [id, W] of Object.entries(WEAPONS)) {   // where a weapon glows with embers (an enemy's visual `embers`)

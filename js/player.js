@@ -167,9 +167,11 @@ class Player {
     this.riposte = 0;
     this.hitbox = null;
   }
-  // The attack an input starts: the follow-up of a combo still running (or just ended), else the opener.
+  // The attack an input starts: with a riposte open (a perfect dodge, an opening deflect), the counter; else the
+  // follow-up of a combo still running (or just ended), else the opener.
   nextAttack(action) {
     const M = this.def.moveset, from = this.comboFrom;
+    if (this.riposte > 0 && M.counter && M.counter[action]) return M.attacks[M.counter[action]];
     return M.attacks[(from && from.next && from.next[action]) || M.ground[action]];
   }
   startAttack(a, mv, face, enemies) {
@@ -287,8 +289,9 @@ class Player {
         const p = this.stateTime / C.rollTime;
         const sp = C.rollSpeed * (1 - C.rollSlow * p * p);
         this.vx = fx * sp; this.vz = fz * sp;
-        // A dash attack: an attack pressed in the dash (held in the buffer) comes out of it once past dashAttackFrom.
-        const dashAttack = this.buffer && M.dash[this.buffer.action];
+        // A dash attack: an attack pressed in the dash (held in the buffer) comes out of it once past dashAttackFrom;
+        // after a perfect dodge in this dash, the counter instead.
+        const dashAttack = this.buffer && ((this.riposte > 0 && M.counter && M.counter[this.buffer.action]) || M.dash[this.buffer.action]);
         if (dashAttack && this.stateTime >= C.dashAttackFrom && this.buffer.action === 'light') {   // a foe on its knees: the execution
           const victim = execution.target(this, enemies);
           if (victim) { execution.start(this, victim); break; }

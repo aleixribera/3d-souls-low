@@ -685,6 +685,8 @@
     // The rest of the string, deflected: the last cut leaves it open, and a riposte follows.
     log.length = 0; const n = deflectString(e, combo);
     expect.ok(n >= 2 && e.state === ES.PARRIED && p.riposte > 0, `the last cut deflected opens it (${e.state}), a riposte is ready`);
+    sim.press('heavy'); sim.until(() => p.state === PS.ATTACK, 0.5);   // pass 88: the riposte is the counter's rising cut, never a charge
+    expect.ok(p.state === PS.ATTACK && p.attack.id === 'counterHeavy' && p.payload.riposte && p.charge === 2, `a heavy now is the heavy counter (${p.attack && p.attack.id})`);
   });
   test('pass 85 deflect: mashing the button deflects nothing (the spam lock)', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
@@ -701,6 +703,12 @@
     sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.04, 2); sim.press('roll');
     sim.until(() => log.includes('dodge'), 0.4);
     expect.ok(log.includes('dodge') && p.riposte > 0, `dodged on the beat: a counter is open (${p.riposte.toFixed(2)} s)`);
+    sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);   // pass 88: out of that dash, the counter
+    expect.ok(p.attack && p.attack.id === 'counter' && p.payload.riposte, `a light in that dash is the counter, with its riposte (${p.attack && p.attack.id})`);
+    e.cooldown = 30; sim.until(() => p.state !== PS.ATTACK, 2); sim.until(() => p.dashes >= CONFIG.player.dashCharges && e.state === ES.CHASE, 4); e.cooldown = 30;
+    expect.ok(e.state === ES.CHASE && p.isFree(), `the boss back on its feet, the player free (${e.state}, ${p.state})`);
+    sim.press('roll'); sim.step(); sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
+    expect.ok(p.attack && p.attack.id === 'dashLight', `an ordinary dash still gives the dash attack (${p.attack && p.attack.id})`);
   });
   test('pass 85 anti-mash: a boss under a run of blows breaks off with its own quick attack; ordinary hits never flinch it', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
@@ -3926,7 +3934,8 @@
       }
       sim.clearEnemies();
     }
-    expect.ok(strikeOf('jumpLight').damage > 22 && strikeOf('jumpHeavy').damage > 59, 'both jump attacks deal more damage');
+    // Pass 85 cut every ordinary blow a third: a jump attack still hits harder than the ground swing it stands in for.
+    expect.ok(strikeOf('jumpLight').damage > strikeOf('light').damage && strikeOf('jumpHeavy').damage > strikeOf('heavy').damage, 'both jump attacks deal more damage than a light and a tapped heavy');
     expect.ok(strikeOf('jumpHeavy').postureDmg > strikeOf('heavy').postureDmg, 'jump heavy rewards bosses with more posture damage');
   });
   test('Combat clarity: all boss attacks glow red exactly when combat allows parrying', () => {
