@@ -2,6 +2,14 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **After item 4's pass (pass 93, track B):** (1) 92 of 197 boss attacks still can't be deflected, nearly all area
+  hits and leaps; PLAN's "a quarter at most" needs either deflectable leaps or a hit-level `noParry` on mixed strings
+  (only the area blow undeflectable, the rest of the string parryable; per-hit `noParry` exists since pass 63).
+  (2) Online, a blow that hit a teammate while its target perfect-dodged still gives the boss the long recovery (the
+  server knows `landed` only for `learns` attacks). (3) Movement (circling, step-ins, re-spacing) is unmeasured on the
+  Boss Rush curve and Story's (`tools/rush-curve.cjs`, `tools/story-curve.cjs`). (4) The area mark is one orange
+  shader on the floor; it may want each boss's own colour.
+
 - **For track B, from item 3c's pass 1 (pass 91, track A; numbers in `docs/animation-references.md`).** The body now
   shows a press on the very next frame; what still feels slow is the moves' own timing, in track B's files: a tapped
   heavy's blow lands 32 frames after the press (startup 0.5 s) and a light's 14 (0.2 s); the run takes 9 frames to full

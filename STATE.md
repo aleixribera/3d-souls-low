@@ -7,13 +7,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 92): item 3c pass 2, v7.119.0: low dash lunge, whole-body deflect with a sidestep, landing dip,
   camera punch on counters and heavies, cape capped (in-page `pass 92`). Fresh judge 4/10 dash, 4/10 deflect
   (`docs/scorecard/animation-judge.csv`). Next: 3c's last giveaways (BACKLOG), then Story's key abilities, its re-tune.
-- Track B (pass 90): CI on main runs to the end; v7.114.0 three dashes, slim white bars, guard shown only
-  while worn (in-page `pass 90 dash`; `dash-hud-*`); v7.117.0 item 4: bosses press
-  (`CONFIG.enemy.press`), curve without wall (`steady`), warm-up health, Bell Warden
-  (`docs/scorecard/rush-curve-pass90.txt`); item 5 frames `captain-laptop-*` (keys alone). v7.118.0: heavy 0.4 s,
-  decel 30 (curve held). Next: the fair area-attack rule (validate.js; Story's bosses too;
-  leap slams unchanged), Boss Rush bosses' movement on one pace, the curve again; the only moveset.
-  Track A: Story's bosses press too (story-curve not re-run); `PS.PARRY` is dead.
+- Track B (pass 93): v7.120.0 item 4: fair area attacks (`CONFIG.area`, `js/area-marks.js`, validate.js; leaps
+  untouched; `docs/scorecard/stomp-mark-giant*.jpg`), deflects (`CONFIG.undeflectable`), bosses move on one pace
+  (`CONFIG.bossMove`); `tests/fair-attacks.cjs`. Next: the Boss Rush curve again (movement unmeasured), the only
+  moveset. Track A: Story's bosses press, circle and recover longer after a dodge too (story-curve not re-run);
+  `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -31,14 +29,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
-- Pace: `CONFIG.pace` (`steady`), `CONFIG.enemy.press`, `rushPace`, `CONFIG.swift`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
+- Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
   `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
-- Boss Rush (pass 65-73): `calling`, `offerAbilities`, `rise`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`,
-  `firstPick` (`server/simulation.js`), `runSummary`; `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs`,
-  `rush-alone-browser.cjs`. Weekly: `server/board.cjs`, `tests/weekly.cjs`.
+- Boss Rush (pass 65-73): `calling`, `offerAbilities`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`
+  (`server/simulation.js`); `tests/calling.cjs`, `calling-browser.cjs`, `rush-alone-browser.cjs`. Weekly: `tests/weekly.cjs`.
 - Revive (pass 64): `js/revive.js`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
@@ -81,8 +78,9 @@ In `BACKLOG.md`.
 
 - (overridable) The skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`).
 - (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight; titles' wording.
-- (overridable) Endless: modifiers from fight 8, pairs from 9; warm-up Giant, Captain, Antlered, Hollis, Hale (55-85%
-  health); Bell Warden, Oswin, Ostrey, Varn 75-90% health in Boss Rush; legendaries a third weaker; "N bosses beaten".
+- (overridable) Endless: modifiers from fight 8, pairs from 9; warm-up bosses at 55-85% health; legendaries a third weaker.
+- (overridable) Pass 93: Aldric's Gaoler's Stamp is gone; each phase keeps 2 undeflectable big moments. A quarter
+  can't hold while area hits and leaps stay undeflectable (92 of 197 boss attacks).
 - (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Story's bosses 0.8x pace, 0.75x health in chapter 1 to 1.1x / 1x; 5 flasks found (ch. 2, 4, 6, 9,
