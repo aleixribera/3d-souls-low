@@ -3,8 +3,9 @@
 // engine frame by frame in headless Edge, every frame captured, its sound (the music cue and every sound of the fight)
 // rendered by an OfflineAudioContext that is suspended at each frame, so picture and sound share one clock.
 //   node tools/showcase-record.cjs [outDir=~/Videos/combat-arena-3d]
-// Writes showcase-<version>-1080p60.mp4 (H.264 + AAC, 1920x1080, 60 fps) and showcase-<version>-whatsapp.mp4 (H.264 +
-// AAC, 1280x720, 30 fps, under 16 MB), then checks both with ffprobe. Needs ffmpeg and ffprobe on PATH (Windows:
+// Writes showcase-<version>-1080p60.mp4 (H.264 + AAC, 1920x1080, 60 fps) and showcase-<version>-whatsapp.mp4 (H.264
+// yuv420p + AAC, faststart, 1920x1080, 30 fps, under 30 MB: it plays inline when sent as a video, and stays 1080p sent
+// as a document), then checks both with ffprobe. Needs ffmpeg and ffprobe on PATH (Windows:
 // `winget install Gyan.FFmpeg`). It only writes files: posting either video anywhere is Aleix's.
 // One headless Edge at idle priority (tests/low-priority.cjs), closed at the end; a run takes a few minutes.
 require('../tests/low-priority.cjs');
@@ -15,7 +16,7 @@ const { spawn, spawnSync } = require('node:child_process');
 const { chromium } = require('../tests/browser.cjs');
 const { createServer } = require('../server/index.cjs');
 
-const FPS = 60, W = 1920, H = 1080, RATE = 48000, WHATSAPP_MB = 16;
+const FPS = 60, W = 1920, H = 1080, RATE = 48000, WHATSAPP_MB = 30;
 const outDir = path.resolve(process.argv[2] || path.join(os.homedir(), 'Videos', 'combat-arena-3d'));
 
 function need(tool) {
@@ -116,10 +117,11 @@ function probe(file) {
     if (report && report.failed) throw new Error('the showcase stopped: ' + report.error);
     if (missed.length) console.warn(`beats that did not happen in this recording: ${missed.join(', ')}`);
     await browser.close();
-    // The release cut (its sound brought to -14 LUFS, as video sites play it), then the WhatsApp one (H.264 Main + AAC-LC, 720p, 30 fps, sized to fit under 16 MB).
+    // The release cut (its sound brought to -14 LUFS, as video sites play it), then the WhatsApp one (H.264 High + AAC-LC,
+    // 1080p, 30 fps, its bitrate capped to fit under WHATSAPP_MB).
     await run(['-i', silent, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-ar', String(RATE), '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', big], 'mux');
     const kbps = Math.floor((WHATSAPP_MB * 0.85 * 8192) / info.seconds) - 128;
-    await run(['-i', big, '-vf', 'scale=1280:720:flags=lanczos,fps=30', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'main', '-level', '3.1', '-pix_fmt', 'yuv420p',
+    await run(['-i', big, '-vf', 'fps=30', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
       '-crf', '20', '-maxrate', `${kbps}k`, '-bufsize', `${kbps * 2}k`, '-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-ar', '44100', '-movflags', '+faststart', small], 'whatsapp');
     const a = probe(big), b = probe(small);
     console.log(JSON.stringify({ frames: shown, beats: report && report.beats.map(x => `${x.id}:${x.ok ? 'ok' : 'MISSED'}`), release: a, whatsapp: b }, null, 1));

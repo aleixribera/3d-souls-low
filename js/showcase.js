@@ -16,9 +16,15 @@
 const showcase = (() => {
   const SEEN_KEY = 'combat-arena-3d.showcase', STEP = () => CONFIG.step;
   const seeded = seed => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  // The game's random during the show: reseeded every step from the step's number, so a different count of draws by
+  // the effects (a quality preset, reduced motion) changes at most that one step, not the rest of the show.
+  const shared = { s: 0 }, sharedRandom = () => { shared.s = (shared.s * 1664525 + 1013904223) >>> 0; return shared.s / 4294967296; };
   const beatS = () => 60 / SHOWCASE.bpm;
   const counterId = action => PLAYER_DEF.moveset.attacks[PLAYER_DEF.moveset.counter[action]].id;
-  const STRING = { dodge: 1, deflect: 1 };   // beat kinds that are a boss's string met blow by blow
+  const STRING = { dodge: 1, deflect: 1 };
+  // The player's stick this step: one object, rewritten (nothing made per step).
+  const IDLE = Object.freeze({ x: 0, z: 0, has: false }), MOVE = { x: 0, z: 0, has: true };
+  const walk = (x, z) => { MOVE.x = x; MOVE.z = z; return MOVE; };   // beat kinds that are a boss's string met blow by blow
   let run = null, last = null, overlay = null, hooked = false;
   const scratch = { look: new THREE.Vector3() };
 
@@ -102,7 +108,7 @@ const showcase = (() => {
   // Presses and movement for one step: the beat's, or the bot's own between beats.
   function direct(dt) {
     const p = Game.player, e = run.boss, hands = run.brain.hands, t = run.time;
-    const idle = { x: 0, z: 0, has: false };
+    const idle = IDLE;
     if (Game.hitstop > 0) return run.mv || idle;   // the game is frozen this step: no clock runs for the hands either
     const b = holding(t);
     if (b !== run.beat) { hands.clear(); run.beat = b; }
@@ -136,7 +142,7 @@ const showcase = (() => {
         e.yaw = Math.atan2(-dx, -dz); e.beginAttack(a); b.begun = true; b.attackNo = e.attackNo; b.hits = e.attack.hits.length; b.ends = t + 6;
         return idle;
       }
-      if (edge > GAP[D.kind] + 0.2 && p.isFree()) return { x: ux, z: uz, has: true };
+      if (edge > GAP[D.kind] + 0.2 && p.isFree()) return walk(ux, uz);
       return idle;
     }
     if (t >= b.ends) { b.done = true; return idle; }
@@ -145,7 +151,7 @@ const showcase = (() => {
     const blow = mine ? bot.nextBlow(e, p) : null;
     if (blow) {
       const key = b.attackNo * 64 + blow.index;
-      if (blow.eta > 0.25 && edge > GAP[D.kind] + 0.2 && p.isFree()) return { x: ux, z: uz, has: true };   // still closing in
+      if (blow.eta > 0.25 && edge > GAP[D.kind] + 0.2 && p.isFree()) return walk(ux, uz);   // still closing in
       const deflect = D.kind === 'deflect' && canParryHit(blow.attack, blow.index);   // a blow a deflect cannot take is dashed
       if (!b.handled.has(key) && blow.eta <= LEAD[deflect ? 'deflect' : 'dodge']) {
         b.handled.add(key);
@@ -153,7 +159,7 @@ const showcase = (() => {
         // Through the string: each dash slips forward past the boss's side, from one side to the other.
         b.side = -b.side; const a = 0.75 * b.side, c = Math.cos(a), s = Math.sin(a);
         hands.press('roll');
-        return { x: ux * c + uz * s, z: -ux * s + uz * c, has: true };
+        return walk(ux * c + uz * s, -ux * s + uz * c);
       }
     }
     if (b.handled.size >= b.hits && !mine) {   // the string is over: the counter, then the beat is done
@@ -164,14 +170,14 @@ const showcase = (() => {
         if (p.riposte > 0) {
           b.sawWindow = true;
           if (p.state !== PS.ROLL || p.stateTime > CONFIG.player.rollTime - 0.1) hands.press(D.counter);
-          return { x: ux, z: uz, has: true };
+          return walk(ux, uz);
         }
         if (b.sawWindow) b.done = true;   // the window shut unused: the beat did not happen (the report says so)
         return idle;
       }
       if (!D.counter || t >= b.ends) b.done = true;
     }
-    return D.kind === 'dodge' && p.state === PS.ROLL ? { x: p.vx, z: p.vz, has: true } : idle;
+    return D.kind === 'dodge' && p.state === PS.ROLL ? walk(p.vx, p.vz) : idle;
   }
 
   // ---- cameras ----------------------------------------------------------------------------------
@@ -251,7 +257,8 @@ const showcase = (() => {
   function drawOverlay() {
     const o = overlay, b = run.time / beatS();
     if (!o) return;
-    const k = SHOWCASE.keys.find(x => b >= x.at - 1 && b < x.at + x.for) || null;
+    let k = null;
+    for (const x of SHOWCASE.keys) if (b >= x.at - 1 && b < x.at + x.for) { k = x; break; }
     if (k !== o.shown) {
       o.shown = k;
       if (k) { o.cap.textContent = String(k.key); const slot = Game.player.kit.pressed[ABILITY_KEYS[k.key - 1]]; o.name.textContent = slot ? ABILITY_BY_ID[slot.id].name : ''; }
@@ -292,11 +299,11 @@ const showcase = (() => {
   // ---- running it -------------------------------------------------------------------------------
   function play(opts = {}) {
     if (run || (typeof multiplayer !== 'undefined' && multiplayer.active())) return false;
-    const S = SHOWCASE, real = { update: Game.update, moveInput: Game.moveInput, pause: Game.pause, requestRestart: Game.requestRestart,
+    const S = SHOWCASE, real = { hints: readKey(CONFIG.hints.storageKey), update: Game.update, moveInput: Game.moveInput, pause: Game.pause, requestRestart: Game.requestRestart,
       manualClock: Game.manualClock, random: Math.random };
     if (!hooked) { Game.renderHooks.push(drawHook); hooked = true; }
     resetOverlay();
-    const rng = seeded(S.seed), brainRng = seeded(S.seed ^ 0x5bd1e995);
+    const rng = sharedRandom, brainRng = seeded(S.seed ^ 0x5bd1e995); shared.s = S.seed >>> 0;
     run = { real, rng, manual: !!opts.manual, onEnd: opts.onEnd || null, toMenu: opts.toMenu !== false, time: -S.preroll, target: -S.preroll, live: false,
       beats: S.beats.map(beatState), beat: null, bosses: [], boss: null, fight: -1, cam: { index: -1 }, fov: CONFIG.camera.fov, music: null, mv: null };
     try {
@@ -310,8 +317,9 @@ const showcase = (() => {
       run.brain = bot.create(BOT_PROFILES.find(x => x.id === S.profile), brainRng);
       p.ctl = run.brain.hands;
       run.bosses = S.fights.map(makeBoss);
+      Game.enemies = run.bosses.slice(); visuals.warmUp(Game.cam);   // every boss drawn once now, not at its fight's cut
       Game.pause = () => {}; Game.requestRestart = () => {};
-      Game.moveInput = () => run.mv || { x: 0, z: 0, has: false };
+      Game.moveInput = () => run.mv || IDLE;
       Math.random = real.random;
       stage(0);
       overlay.root.classList.remove('hidden'); fpsShown(false);
@@ -325,6 +333,8 @@ const showcase = (() => {
     } catch (err) { warnOnce(`Showcase failed to start: ${err && err.message}`); finish(true, err); return false; }
     return true;
   }
+  function readKey(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function writeKey(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* this window keeps none */ } }
   // The FPS counter (js/hud.js) is no part of the show.
   function fpsShown(on) { const f = document.getElementById('fpsCounter'); if (f) f.style.visibility = on ? '' : 'hidden'; }
   function startMusic() {
@@ -341,7 +351,7 @@ const showcase = (() => {
     // No break mid-script (the stagger bar is being redesigned): a string plays out whole, every blow met.
     if (e.def.posture) e.posture = Math.min(e.posture, e.def.posture.max * (run.beat && STRING[run.beat.def.kind] ? 0 : 0.5));
     Game.setLock(run.boss);
-    Math.random = run.rng;
+    shared.s = (SHOWCASE.seed + Math.round(run.time / dt) * 0x9e3779b9) >>> 0; Math.random = run.rng;
     try { run.real.update.call(Game, dt); } finally { Math.random = run.real.random; }
     // Nobody falls but the finale's boss: the player is topped up, the boss kept off its last sliver.
     if (p.alive()) p.hp = p.maxHp;
@@ -372,7 +382,10 @@ const showcase = (() => {
       if (run.time + STEP() <= run.target) run.target = run.time;   // a stalled tab: drop the backlog
       if (run.music) run.music.pump(audio.ctx.currentTime);
       if (run.time >= SHOWCASE.length * beatS() - 1e-6) { finish(); return; }
-      if (render) Game.render(clamp((run.target - run.time) / STEP(), 0, 1), frameDt);
+      if (render) {   // live, the effects' clock (js/effect-slots.js) runs on the frame's real time, as in play
+        if (!run.manual) Game.manualClock = false;
+        try { Game.render(clamp((run.target - run.time) / STEP(), 0, 1), frameDt); } finally { if (run) Game.manualClock = true; }
+      }
     } catch (err) { warnOnce(`Showcase stopped: ${err && err.message}`); finish(true, err); }
   }
   // The end: the beats judged, the game's own controls back, the title screen (the music's last chord rings on).
@@ -381,6 +394,9 @@ const showcase = (() => {
     const r = run, real = r.real;
     last = { beats: r.beats.map(verdict), failed, time: r.time, error: err ? `${err.message} ${(err.stack || '').split('\n').slice(1, 3).join(' ')}` : null };
     run = null;
+    // The bot's moves are not the player's: the in-world hints it counted as learned are given back (js/world-hints.js).
+    writeKey(CONFIG.hints.storageKey, real.hints); if (typeof worldHints !== 'undefined') worldHints.reload();
+    if (typeof dodgeMoment !== 'undefined') dodgeMoment.scale(1);   // a counter's slow motion opened in the show ends with it
     Game.update = real.update; Game.moveInput = real.moveInput; Game.pause = real.pause; Game.requestRestart = real.requestRestart;
     Game.manualClock = real.manualClock; Math.random = real.random;
     if (r.music && failed) r.music.stop();
@@ -394,33 +410,50 @@ const showcase = (() => {
   }
 
   // ---- first launch ------------------------------------------------------------------------------
-  // A new player's first launch plays it once (then the title: the sparring scene, PLAN.md item 3d, is not built yet).
+  // A player's first launch plays it once, then `then` (js/boot.js: the sparring scene, or its offer).
   // Browsers start sound only after a key or a click, so unless the page may already play sound, the game's name waits
   // for one first. Automated browsers (tests) never see it.
   function seen() { try { return !!localStorage.getItem(SEEN_KEY); } catch (e) { return true; } }
   function markSeen() { try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) { /* private mode: it shows again next time */ } }
-  function firstLaunch() {
+  // `then`: what follows it (the sparring scene); the title when there is none. Returns whether it is under way.
+  let gateGo = null;
+  // The controller (js/gamepad.js), before its menus: a button at the gate starts the show; while either shows, the pad
+  // does nothing else (the title is hidden behind them).
+  function pad(pressed) {
+    if (gateGo) { if (pressed.length) gateGo(null); return true; }
+    return !!run;
+  }
+  function firstLaunch(then = () => Game.showMenu('main')) {
     if (seen() || navigator.webdriver || (typeof DEV !== 'undefined' && DEV)) return false;
     markSeen();
     audio.unlock();
-    if (audio.ctx && audio.ctx.state === 'running') return play();
+    const show = () => {   // `then` once, after the show, or at once if it cannot start
+      let ended = false;
+      if (!play({ toMenu: false, onEnd: () => { ended = true; then(); } }) && !ended) then();
+      return true;
+    };
+    if (audio.ctx && audio.ctx.state === 'running') return show();
     const o = buildOverlay(), gate = o.gate;
     let touch = false; try { touch = matchMedia('(pointer: coarse)').matches; } catch (e) { /* no media queries: keys */ }
     gate.querySelector('p').textContent = touch ? 'Tap anywhere' : 'Press any key';
     o.root.classList.remove('hidden'); gate.classList.remove('hidden'); o.root.removeAttribute('aria-hidden');   // the gate is read out
     $('menu').classList.add('hidden');
+    // A key, a click, a tap's end (a browser lets sound start only on those) or a controller button (pad below).
+    const GO = ['keydown', 'mousedown', 'pointerup', 'touchend'];
     const go = ev => {
-      if (ev.type === 'keydown' && (ev.ctrlKey || ev.metaKey || ev.altKey || PASS.has(ev.code))) return;
-      ev.stopImmediatePropagation(); if (ev.cancelable) ev.preventDefault();
-      for (const t of ['keydown', 'pointerdown']) window.removeEventListener(t, go, true);
+      if (ev && ev.type === 'keydown' && (ev.ctrlKey || ev.metaKey || ev.altKey || PASS.has(ev.code))) return;
+      if (ev) { ev.stopImmediatePropagation(); if (ev.cancelable) ev.preventDefault(); }
+      for (const t of GO) window.removeEventListener(t, go, true);
+      gateGo = null;
       audio.unlock();
       const c = audio.ctx, ready = c && c.state !== 'running' && c.resume ? c.resume() : Promise.resolve();
-      Promise.resolve(ready).catch(() => {}).then(() => { gate.classList.add('hidden'); o.root.setAttribute('aria-hidden', 'true'); if (!play()) { o.root.classList.add('hidden'); Game.showMenu('main'); } });
+      Promise.resolve(ready).catch(() => {}).then(() => { gate.classList.add('hidden'); o.root.setAttribute('aria-hidden', 'true'); show(); });
     };
-    for (const t of ['keydown', 'pointerdown']) window.addEventListener(t, go, { capture: true });
+    for (const t of GO) window.addEventListener(t, go, { capture: true, passive: false });
+    gateGo = go;
     return true;
   }
 
-  return { play, frame, firstLaunch, stop: () => finish(true), report: () => last, get running() { return !!run; }, get time() { return run ? run.time : null; },
+  return { play, frame, firstLaunch, pad, stop: () => finish(true), report: () => last, get running() { return !!run; }, get time() { return run ? run.time : null; },
     get beat() { return run && run.beat ? run.beat.def.id : null; }, seenKey: SEEN_KEY };
 })();

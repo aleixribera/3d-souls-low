@@ -165,9 +165,10 @@ autoQuality.firstRun();   // first launch only: the preset this machine should s
 applySettings();
 $('version').textContent = VERSION;
 Game.showMenu('main');
-sparring.offerAtLaunch();   // a player from before the sparring scene is offered it (js/sparring.js)
 autoQuality.show();
-showcase.firstLaunch();   // a new player's first launch: the showcase, once (js/showcase.js)
+// A first launch plays the showcase once (js/showcase.js), then the sparring scene for a new player, or its offer for a
+// player from before it (js/sparring.js); a later launch offers that scene only.
+if (!showcase.firstLaunch(() => sparring.offerAtLaunch() || sparring.before(() => Game.showMenu('main')))) sparring.offerAtLaunch();
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;

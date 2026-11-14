@@ -118,7 +118,10 @@ const showcaseMusic = (() => {
     const list = score(beat);
     function pump(now) {
       if (stopped) return;
-      while (next < list.length && list[next][0] < now + AHEAD) { const [t, fn] = list[next++]; fn(Math.max(t, now)); }
+      while (next < list.length && list[next][0] < now + AHEAD) {   // a note the clock passed (a stalled frame) is dropped
+        const [t, fn] = list[next++];
+        if (t >= now - 0.05) fn(Math.max(t, now));
+      }
     }
     function stop() {
       if (stopped) return;
