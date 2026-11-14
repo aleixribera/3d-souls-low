@@ -27,7 +27,7 @@ side by side, and each should feel like the main event.
   Progression is the player's own skill, a few more flasks along the way, four abilities given at points along the road (one per number key, each keeping its key), and harder enemies. No levelling, no stat
   sheet.
 - **Boss Rush**, with friends, the lobby's default, and alone offline, with no server (Aleix, 2026-11-14). It is the
-  only mode played together. It has to play well and be fun and challenging. An endless run of
+  only mode played together, with its Weekly run on the week's seed. It has to play well and be fun and challenging. An endless run of
   bosses: the first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
   fight, their modifiers shown on screen. Difficulty grows exponentially with the fights won, but subtly: fairly easy
   at first, slowly more challenging for a good while, until it becomes genuinely impossible. It depends only on how

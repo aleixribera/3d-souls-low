@@ -82,8 +82,8 @@ Aleix, 2026-11-13.
 - Abilities (Aleix, 2026-11-14, again): 100 or more quality ones; spectacular in the fight first; cards simple, clean
   and cool, rarity-scaled, with a loop showing how each activates (track B, item 6).
 - Boss Rush offline (Aleix, 2026-11-14): playable alone with no server, the same run, its rewards kept locally;
-  multiplayer is Boss Rush only, so Single/Double/Triple/Quad Boss, the Weekly run and co-op Story leave the lobby
-  (track B, item 1; item 8 cut). `VISION.md` changed with his OK.
+  multiplayer is Boss Rush only, so Single/Double/Triple/Quad Boss and co-op Story leave the lobby; the Weekly run
+  stays (track B, items 1 and 8). `VISION.md` changed with his OK.
 - More attacks can be deflected (Aleix, 2026-11-14): `noParry` only on ground area attacks, grabs and a boss's
   biggest moments, about a quarter at most (the player rework, item 4).
 - The loop's open questions (Aleix, 2026-11-14):
@@ -393,8 +393,8 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
    Rush, Practice. **Multiplayer is Boss Rush only** (Aleix, 2026-11-14): the lobby's Mode option goes, and with it
-   Single, Double, Triple and Quad Boss, the Weekly run and co-op Story (their code goes too, not just the buttons;
-   the server's rate checks stay). **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
+   Single, Double, Triple and Quad Boss and co-op Story (their code goes too, not just the buttons; the server's rate
+   checks stay). The Weekly run stays, as Boss Rush on the week's seed (Aleix, 2026-11-14: "Keep Weekly"). **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
    several, or two teams against each other) or any level, and be fighting in seconds.
    **Boss Rush offline** (Aleix, 2026-11-14): Boss Rush plays alone in the page with no server, the same run as
    online (the same bosses, curve, ability offers, levels and crates). On the title, Boss Rush has two ways in:
@@ -594,7 +594,7 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
    eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
    animation and effects; it should make players want another run just to open the next. Check: odds and saving in a
    test; a frame sequence of a crate rolling and landing, and the Collection.
-8. **The weekly run: cut** (Aleix, 2026-11-14: multiplayer is Boss Rush only). Kept here for the record. Each week, a Weekly mode beside Boss Rush: the same boss order, modifiers and ability offers
+8. **The weekly run** (kept, Aleix, 2026-11-14: Boss Rush on the week's seed, the lobby's one other choice). Each week, a Weekly mode beside Boss Rush: the same boss order, modifiers and ability offers
    for everyone (one seed from the week). A small board in the lobby shows the best fight reached and the fastest
    kills of this week's runs, by lobby name, kept by the server on Aleix's home server (a file on a mounted volume so container
    updates keep it; no accounts, no data beyond the lobby name and the numbers). Check: a test that two runs on the same week's seed meet the same bosses
