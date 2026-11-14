@@ -47,16 +47,17 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   frame (`captain-desktop-string.jpg`) caught the Captain's charge before the string; the laptop run shows the keys
   alone through a full exchange (strings, finishers, two perfect dodges, a counter).
 
-- **Item 3c's next pass (track A), after pass 101:** the deflect (pass 99: judges 5, 4, 5 against the old 3) holds one
-  crouched pose in frames 5-9: drive the hands and chest back and up at frames 3-4, then ease forward with a small
-  damped overshoot and a knee dip. The dash is stalled at 5 over passes 94, 99 and 101. Pass 101 tried a real Blender
-  clip (`wip/p101-dash-clip`: `tools/blender/clips.py`, IK feet that plant and skid, played per frame by
-  `js/player-pose.js`): 4, 4, 3. Low hips read as a kneel, high hips as a leaning plank. Every judge describes the
-  same target: an asymmetric lunge, torso near flat, back leg straight about a body length behind, lead knee deeply
-  bent over a planted foot, then a tight gather (frames 7-9) and a stand. The wanderer's 0.9 m legs reach that only
-  with the hips near 0.45 m, and the dark cloak hides the legs in the strip. Try that one pose on the clip branch, or
-  cut the dash here (the director's call). Not yet: Controls clips; the counter and drink borrow poses; speed lines on
-  finishers. Use a fresh judge each round; `tools/anim-strip.cjs dash|deflect` films the strip.
+- **Item 3c, after pass 102 (the loop paused for the Finishing Blow):** (1) **The dash stops at 5** (Aleix's last
+  try, pass 102). Passes 94, 99, 101 and 102 tried a stride, a lean from the ankles, a held split, a Blender clip and a
+  deep lunge (front thigh level, back leg straight far behind, hips half a metre up): the lunge scored 3, 3, 5 against
+  the kept keys' 4, 5, 4 ("a tipped-over board", "no load-up", "pops upright at frame 9-10"). Branches
+  `wip/p101-dash-clip`, `wip/p102-dash-lunge`. Every judge's common gap is the recovery: a deep pose snapping upright
+  in 1-2 frames, with no settle. (2) **The deflect's middle frames:** `wip/p102-deflect-keys` keys the deflected blow
+  (knocked back and up, a beat, forward past the guard into a knee dip, a smaller bounce and dip, settled), unfilmed
+  and unjudged. Pass 102 found the strip tool drew only the filmed steps, so the deflect's visual clocks ran at half
+  speed: filmed right, the old rebound crouch holds frames 3-7 (0.17 s), not 5-9. Judge the branch against main's
+  deflect before adopting it. Not yet: Controls clips; the counter and drink borrow poses; speed lines on finishers.
+  `tools/anim-strip.cjs dash|deflect <out> 14 2 <zoom>` films a strip (zoom 1.5 dash, 2.2 deflect since pass 102).
 - **Find (pass 92):** `startFight('dummy')` under a hand-stepped clock (`Game.manualClock`) turns positions to NaN: the
   dummy has no `speed` and starts in chase (`approachVel`). Old and new builds alike; tests and captures use other foes.
 
