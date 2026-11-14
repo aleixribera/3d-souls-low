@@ -2871,7 +2871,7 @@
   test('Auto quality: explicit menu recheck replaces cached detection and applies Auto', () => {
     const saved = settings.graphics, from = Game.optionsFrom;
     try {
-      const before = autoQuality.result(); settings.graphics = 'high';
+      const before = autoQuality.result(); settings.graphics = 'normal';
       Game.optionsFrom = 'main'; Game.showMenu('options');
       const item = Game.menuItems.find(i => i.name === 'Check graphics again');
       expect.ok(!!item && typeof item.go === 'function', 'fresh-check action exists');
@@ -2882,29 +2882,29 @@
       expect.ok(visuals.quality() === CONFIG.VISUALS.quality[after.pick], 'new recommendation is applied');
     } finally { settings.graphics = saved; saveSettings(); Game.optionsFrom = from; restoreQuality(); }
   });
-  test('Auto quality: old integrated GPUs remain Low while modern integrated GPUs cap at High', () => {
-    const ready = { frames: { ultra: 3, high: 2 }, cores: 8, memory: 8 };
+  test('Auto quality: older integrated GPUs play Normal while modern integrated GPUs may prove Ultra', () => {
+    const ready = { frames: { ultra: 3 }, cores: 8, memory: 8 };
     for (const name of ['Intel UHD Graphics 620', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])
-      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'low', `${name}: Low`);
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'normal', `${name}: Normal`);
     for (const name of ['Intel Iris Xe Graphics', 'AMD Radeon 780M'])
-      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'high', `${name}: capped at High`);
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'ultra', `${name}: Ultra when it measures under budget`);
     expect.ok(autoQuality.recommend({ ...ready, name: 'WebKit WebGL', cores: 4, memory: 4 }).pick === 'ultra', 'a masked fast adapter qualifies by measured frames, despite privacy-limited hints');
+    expect.ok(autoQuality.choices().join() === 'auto,normal,ultra', 'Options offers Auto, Normal and Ultra');
   });
   test('Auto quality: dedicated GPUs qualify by real frame cost instead of browser CPU hints', () => {
-    const ready = { name: 'NVIDIA GeForce RTX 5060', frames: { ultra: 6, high: 4 }, cores: 4, memory: 4 };
+    const ready = { name: 'NVIDIA GeForce RTX 5060', frames: { ultra: 6 }, cores: 4, memory: 4 };
     for (const screen of [{ width: 1280, height: 720, pixelRatio: 1 }, { width: 1920, height: 1080, pixelRatio: 2 }, { width: 3840, height: 2160, pixelRatio: 1 }])
       expect.ok(autoQuality.recommend({ ...ready, ...screen }).pick === 'ultra', 'already measured frame costs are never scaled a second time');
-    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24, high: 8 } }).pick === 'high', 'a slow Ultra test falls back to measured High');
-    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24, high: 25 } }).pick === 'low', 'both over budget: Low');
-    expect.ok(autoQuality.recommend({ ...ready, frames: {} }).pick === 'low', 'failed measurements remain safe');
+    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24 } }).pick === 'normal', 'a slow Ultra test plays Normal');
+    expect.ok(autoQuality.recommend({ ...ready, frames: {} }).pick === 'normal', 'failed measurements remain safe');
   });
   test('Auto quality: recommendation reasons identify measured limits and failures', () => {
-    const r = autoQuality.recommend({ name: 'RTX 5060', frames: { ultra: 24, high: 8 } });
-    expect.ok(r.reason === 'ultra-over-budget', 'High reason names the Ultra frame limit');
-    expect.ok(autoQuality.recommend({ name: 'RTX 5060', frames: { high: 8 } }).reason === 'ultra-test-failed', 'failed Ultra is distinguishable');
+    const r = autoQuality.recommend({ name: 'RTX 5060', frames: { ultra: 24 } });
+    expect.ok(r.reason === 'ultra-over-budget', 'Normal reason names the Ultra frame limit');
+    expect.ok(autoQuality.recommend({ name: 'RTX 5060', frames: {} }).reason === 'ultra-test-failed', 'failed Ultra is distinguishable');
     expect.ok(autoQuality.summary().includes('Detected GPU:'), 'Options exposes the actual detected adapter');
     const saved = settings.graphics;
-    try { for (const preset of ['low', 'high', 'ultra']) { settings.graphics = preset; expect.ok(autoQuality.effective() === preset, 'manual choice remains authoritative'); } }
+    try { for (const preset of ['normal', 'ultra', 'bare']) { settings.graphics = preset; expect.ok(autoQuality.effective() === preset, 'manual choice remains authoritative'); } }
     finally { settings.graphics = saved; }
   });
   test('Auto quality: 3D benchmark restores the renderer and leaves every live actor untouched', () => {
@@ -2912,7 +2912,7 @@
     const target = renderer.getRenderTarget(), viewport = renderer.getViewport(new THREE.Vector4()), shadows = renderer.shadowMap.enabled;
     // An unrelated earlier draw must not make a valid graphics check fail.
     renderer.getContext().bindTexture(-1, null);
-    const result = qualityBenchmark.measure('high', { width: 640, height: 360, pixelRatio: 1 });
+    const result = qualityBenchmark.measure('normal', { width: 640, height: 360, pixelRatio: 1 });
     expect.ok(Number.isFinite(result.ms) && result.frames > 0 && result.method === 'synchronized-3d-frames', 'real frames were measured');
     expect.ok(result.width === 640 && result.height === 360, 'actual candidate resolution is measured');
     expect.ok(result.drawCalls > 20 && result.triangles > 10000, 'characters and 3D geometry actually issue draws, rather than an empty target');
@@ -2926,55 +2926,58 @@
         if (s.children.length > CONFIG.VISUALS.autoQuality.stage.propCount) throw new Error('injected benchmark failure');
         return draw.call(this, s, c);
       };
-      try { qualityBenchmark.measure('high', { width: 640, height: 360, pixelRatio: 1 }); } catch (e) { failed = true; }
+      try { qualityBenchmark.measure('normal', { width: 640, height: 360, pixelRatio: 1 }); } catch (e) { failed = true; }
     } finally { renderer.render = draw; }
     expect.ok(failed && scene.children.length === roots.length && scene.children.every((o, i) => o === roots[i]), 'failed rendering also releases all temporary roots');
     expect.ok(renderer.getRenderTarget() === target && renderer.shadowMap.enabled === shadows, 'failure restores the renderer');
   });
-  test('Ultra: the presets share their keys and reserve the lighting extras for Ultra', () => {
-    const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.high).sort().join();
-    for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as high`);
-    expect.ok(Q.ultra && Q.ultra.ultra === true && !Q.high.ultra && !Q.low.ultra, 'ultra on Ultra only');
+  test('Ultra: the presets share their keys and reserve sculpted anatomy for Ultra', () => {
+    const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.normal).sort().join();
+    for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as normal`);
+    expect.ok(Q.ultra && Q.ultra.ultra === true && !Q.normal.ultra && !Q.bare.ultra, 'ultra on Ultra only');
     expect.ok(autoQuality.choices()[0] === 'auto' && autoQuality.choices().includes('ultra'), 'the Graphics option offers Auto first, and Ultra');
     const saved = settings.graphics;
     settings.graphics = 'auto';
     expect.ok(autoQuality.effective() in Q && autoQuality.label('auto').startsWith('Auto ('), 'Auto resolves to a real preset and names it');
     settings.graphics = saved;
   });
-  test('High: modern presentation is independent from expensive lighting and keeps native resolution', () => {
-    const { low, high, ultra } = CONFIG.VISUALS.quality;
-    expect.ok(high.combatFx && high.reflections && !low.combatFx && !low.reflections, 'High adds modern effects and cached metal');
-    for (const key of ['shadows', 'ao']) expect.ok(high[key] && ultra[key] && !low[key], `${key} scales across High and Ultra`);
-    for (const key of ['volumetrics', 'refraction']) expect.ok(!high[key] && ultra[key], `${key} stays Ultra only`);
-    expect.ok(high.msaa === 4 && high.lights === 8, 'High keeps AA and lights');
-    for (const q of [low, high, ultra]) for (const dpr of [0.8, 1, 1.25, 1.5, 2, 3]) {
+  test('Normal: every one of Ultra\'s effects, toned down, never switched off, at native resolution', () => {
+    const V = CONFIG.VISUALS, { bare, normal, ultra } = V.quality, C = V.cinematic;
+    for (const key of ['post', 'bloom', 'glows', 'shafts', 'combatFx', 'reflections', 'shadows', 'ao', 'volumetrics', 'refraction', 'proceduralFire'])
+      expect.ok(normal[key] && ultra[key], `${key}: on in Normal as in Ultra`);
+    expect.ok(!bare.post && !bare.combatFx && !bare.shadows && bare.hidden && !normal.hidden && !ultra.hidden, 'Bare: the plain test preset, never offered');
+    expect.ok(normal.msaa > 0 || normal.fxaa, 'Normal smooths its edges (MSAA or FXAA)');
+    expect.ok(normal.lights <= ultra.lights && V.scenery.density.normal <= V.scenery.density.ultra, 'Normal: no more lights or scenery than Ultra');
+    for (const key of ['shadowMap', 'aoSamples', 'scatterLights', 'moonSteps', 'cloudLayers'])
+      expect.ok(C.normal[key] > 0 && C.normal[key] <= C.ultra[key], `cinematic ${key}: toned down, not off`);
+    for (const q of [bare, normal, ultra]) for (const dpr of [0.8, 1, 1.25, 1.5, 2, 3]) {
       const d = qualityDraw(q, dpr);
       expect.ok(d.ratio === dpr, `${q.label} at pixel ratio ${dpr}: the scene at the screen's own resolution`);
       expect.ok(d.soft === Math.min(1, q.softRatio / dpr) && d.msaa === (dpr >= CONFIG.VISUALS.denseScreen ? q.denseMsaa : q.msaa), `${q.label} at ${dpr}: soft buffers and MSAA`);
     }
-    expect.ok(!high.proceduralFire && ultra.proceduralFire && high.modelDetail.tex === 1, 'native textures; ambient procedural fire stays Ultra');
+    expect.ok(normal.modelDetail.tex === 1 && ultra.modelDetail.tex === 1, 'native textures');
     expect.ok(CONFIG.VISUALS.grain.amount <= 0.006 && CONFIG.VISUALS.grain.ultra <= CONFIG.VISUALS.grain.amount, 'fine grain preserves material detail');
   });
   test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
       for (const id of [PLAYER_DEF.look.model]) {   // (Old Ostrey left in v7.58.0, the Castellans in v7.60.0, the Ringer in pass 42, Hollis in pass 44: all Blender now, one detail)
-        KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts(id);
-        KIT.setDetail(Q.high.modelDetail); const high = KIT.modelParts(id);
+        KIT.setDetail(Q.bare.modelDetail); const low = KIT.modelParts(id);
+        KIT.setDetail(Q.normal.modelDetail); const high = KIT.modelParts(id);
         KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
         expect.ok(low.tris < high.tris && high.tris < ultra.tris, `${id}: intermediate triangle count`);
-        KIT.setDetail({ ...Q.high.modelDetail, anatomy: true });
+        KIT.setDetail({ ...Q.normal.modelDetail, anatomy: true });
         expect.ok(KIT.modelParts(id) !== high, `${id}: anatomy has its own cache entry`);
       }
-      KIT.setDetail(Q.low.modelDetail); const low = KIT.modelParts('hollowSoldier');
-      KIT.setDetail(Q.high.modelDetail);
+      KIT.setDetail(Q.bare.modelDetail); const low = KIT.modelParts('hollowSoldier');
+      KIT.setDetail(Q.normal.modelDetail);
       expect.ok(KIT.modelParts('hollowSoldier') === low, 'ordinary enemies reuse base geometry');
     } finally { KIT.setDetail(was); }
   });
   test('High loading: small scene warm-up keeps live targets full-size and restores hidden phase visibility', () => {
     const render = renderer.render, sizes = [];
     try {
-      A.visuals.setQuality('high'); Game.startFight('agathe'); sim.begin();
+      A.visuals.setQuality('normal'); Game.startFight('agathe'); sim.begin();
       const roots = [];
       scene.traverse(o => { if (o.isSkinnedMesh) roots.push([o, o.visible, o.frustumCulled]); });
       const rt = A.visuals.composer.renderTarget1, size = [rt.width, rt.height];
@@ -2993,7 +2996,7 @@
   });
   test('High effects: decorative budgets reduce density while impacts remain visual only', () => {
     try {
-      A.visuals.setQuality('high'); Game.startFight('hale'); sim.begin();
+      A.visuals.setQuality('normal'); Game.startFight('hale'); sim.begin();
       const p = Game.player, e = Game.duel, state = [p.hp, e.hp, e.posture, p.x, e.x];
       const at = { x: p.x, y: p.y + 1, z: p.z };
       ultraFx.sparkBurst(at, 100); ultraFx.bloodSpray(at, [1, 0, 0], 100);
@@ -3005,15 +3008,15 @@
       for (let i = 0; i < 12; i++) Game.render(1, STEP);
       expect.ok(ultraWarnings().length === warnings, 'no effect failures');
       expect.ok([p.hp, e.hp, e.posture, p.x, e.x].every((v, i) => v === state[i]), 'drawing preserves the fight');
-      expect.ok(ultraPost.info().on && renderer.shadowMap.enabled && !ultraPost.info().volumetrics && ultraPost.info().waves === 0, 'High uses shadow/AO lighting without volumetrics or refraction');
-      A.visuals.setQuality('low');
+      expect.ok(ultraPost.info().on && renderer.shadowMap.enabled && ultraPost.info().volumetrics, 'Normal keeps shadows, AO and volumetric light');
+      A.visuals.setQuality('bare');
       expect.ok(!ultraFx.on() && ultraFx.info().sparks === 0 && ultraFx.info().drops === 0 && ultraBoss.info().fires === 0, 'Low releases modern effects');
       expect.ok(ultraPost.info().reflected === 0, 'Low removes metal reflections');
     } finally { restoreQuality(); }
   });
   test('High loading: selected boss assets and all phase meshes are ready before play', () => {
     try {
-      A.visuals.setQuality('high'); sim.begin();
+      A.visuals.setQuality('normal'); sim.begin();
       for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
@@ -3027,10 +3030,10 @@
     const output = new OutputPass(), gl = renderer.getContext();
     let worst = 0, total = 0, count = 0;
     try {
-      A.visuals.setQuality('high'); sim.begin();
+      A.visuals.setQuality('normal'); sim.begin();
       for (const id of ['long-hall', 'burning-town', 'final-castle']) {
         Game.startLevel(id); Game.render(1, STEP);
-        grade.uniforms.uGrain.value = 0;
+        grade.uniforms.uGrain.value = 0; grade.uniforms.uFxaa.value = 0;   // edge smoothing is not part of the colour order
         const read = () => {
           A.visuals.draw(); const pixels = new Uint8Array(canvas.width * canvas.height * 4);
           gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels); return pixels;
@@ -3053,7 +3056,7 @@
   test('High effects: delayed boss decorations cannot cross a level or quality change', () => {
     const schedule = window.setTimeout, callbacks = [];
     try {
-      A.visuals.setQuality('high'); Game.startFight('hale'); sim.begin();
+      A.visuals.setQuality('normal'); Game.startFight('hale'); sim.begin();
       window.setTimeout = fn => { callbacks.push(fn); return 0; };
       ultraBoss.IMPACT.toll(Game.duel.x, Game.duel.y, Game.duel.z, 2, { el: FX_ELEMENTS.toll, scale: 1 });
       window.setTimeout = schedule;
@@ -3072,15 +3075,15 @@
       expect.ok(U.on && U.shadows && renderer.shadowMap.enabled, 'shadows on with Ultra');
       expect.ok(A.visuals.info().pointLights === before, 'the stage keeps its own light count (Ultra lights are not counted)');
       expect.ok(ultraFx.info().fires > 0, 'flames are drawn as procedural fire');
-      A.visuals.setQuality('high'); sim.step(4, 2);
+      A.visuals.setQuality('normal'); sim.step(4, 2);
       const H = ultraPost.info();
-      expect.ok(renderer.shadowMap.enabled && H.on && H.shadowSize === 1024 && H.aoSamples === 8, 'High uses smaller shadow and AO budgets');
-      expect.ok(H.scatteringLights === 0, 'Ultra scattering does not leak into High');
+      expect.ok(renderer.shadowMap.enabled && H.on && H.shadowSize === 1024 && H.aoSamples === 8, 'Normal uses smaller shadow and AO budgets');
+      expect.ok(H.scatteringLights <= CONFIG.VISUALS.cinematic.normal.scatterLights, `Ultra's scattering budget does not leak into Normal (${H.scatteringLights})`);
       let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
-      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights + 1, `High keeps its sun and fixed impact light (${extra})`);
-      expect.above(ultraPost.info().reflected, 0, 'High retains cached metal reflections');
-      expect.ok(ultraFx.info().fires === 0 && flames.every(f => f.mesh.material.visible), 'the old flame cones are back');
-      A.visuals.setQuality('low'); sim.step(4, 2);
+      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights + 1, `Normal keeps its sun and fixed impact light (${extra})`);
+      expect.above(ultraPost.info().reflected, 0, 'Normal retains cached metal reflections');
+      expect.ok(ultraFx.info().fires > 0, 'Normal keeps the procedural fire');
+      A.visuals.setQuality('bare'); sim.step(4, 2);
       expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on && ultraPost.info().bufferSize === null, 'Low releases screen-lighting targets');
       expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'Low restores the whole moon intensity');
       expect.ok(ultraPost.info().reflected === 0, 'Low removes environment maps');
@@ -3199,7 +3202,7 @@
       Game.render(1, STEP);
       expect.above(grade.uniforms.uFlash.value, 0, 'flash still draws');
       expect.above(grade.uniforms.uHurt.value, 0, 'hurt feedback still draws');
-      A.visuals.setQuality('high');
+      A.visuals.setQuality('normal');
       expect.ok(grade.uniforms.uFlash.value === 0 && grade.uniforms.uHurt.value === 0, 'feedback restored without waiting for a frame');
       expect.ok(ultraFx.info().motes === 0 && ultraFx.info().ribbons === 0, 'old particles and owners released');
       A.visuals.setQuality('ultra'); ultraFx.test('souls');
@@ -3218,7 +3221,7 @@
         scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabled++; });
         expect.ok(enabled === 0, `${id}: no legacy light can change Ultra's shader light count`);
       }
-      A.visuals.setQuality('low');
+      A.visuals.setQuality('bare');
       let enabledLow = 0;
       scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabledLow++; });
       expect.ok(enabledLow === 0, 'Low uses the bounded shared effect-light pool instead of per-effect lights');
@@ -3241,7 +3244,7 @@
   });
   test('Low performance: native resolution and dormant post targets stay small', () => {
     try {
-      A.visuals.setQuality('low');
+      A.visuals.setQuality('bare');
       const size = renderer.getDrawingBufferSize(new THREE.Vector2());
       expect.ok(size.x === Math.floor(innerWidth * devicePixelRatio) && size.y === Math.floor(innerHeight * devicePixelRatio), '100% rendering: one pixel per screen pixel');
       for (const target of [A.visuals.composer.renderTarget1, A.visuals.composer.renderTarget2]) expect.ok(target.width === 1 && target.height === 1, 'unused HDR targets stay at 1x1');
@@ -3252,7 +3255,7 @@
     try {
       for (const ratio of [1.5, 2]) {
         Object.defineProperty(window, 'devicePixelRatio', { value: ratio, configurable: true });
-        for (const name of ['low', 'high', 'ultra']) {
+        for (const name of ['bare', 'normal', 'ultra']) {
           A.visuals.setQuality(name);
           const size = renderer.getDrawingBufferSize(new THREE.Vector2()), q = CONFIG.VISUALS.quality[name];
           expect.ok(size.x === Math.floor(innerWidth * ratio) && size.y === Math.floor(innerHeight * ratio), `${name} at ${ratio}x: ${size.x}x${size.y}, the screen's own pixels`);
@@ -3269,7 +3272,7 @@
   });
   test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
     try {
-      A.visuals.setQuality('low'); sim.begin();
+      A.visuals.setQuality('bare'); sim.begin();
       for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);

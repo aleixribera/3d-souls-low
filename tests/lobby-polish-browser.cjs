@@ -16,7 +16,7 @@ const { config: C } = require('../js/net-protocol.js');
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
     }, name);
     await page.goto(url);
@@ -109,13 +109,13 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(await a.locator('#helpTable tr').filter({ hasText: /^Lobby/ }).count(), 1, 'online help names the lobby shortcut');
     await a.waitForFunction(() => !document.getElementById('onlineParty').hidden);
     await a.screenshot({ path: '.scratch/lobby-polish/combat.png' });
-    for (const quality of ['high', 'ultra', 'low']) {
+    for (const quality of ['normal', 'ultra', 'bare']) {
       await a.evaluate(quality => { settings.graphics = quality; applySettings(); }, quality);
       await a.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       assert.deepEqual(await a.evaluate(() => ({ active: multiplayer.active(), mode: Game.mode })), { active: true, mode: 'play' }, 'preset changes preserve online play');
       assert.deepEqual(await a.evaluate(() => { const gl = renderer.getContext(); gl.finish(); return { lost: gl.isContextLost(), error: gl.getError() }; }),
         { lost: false, error: 0 }, `${quality} renders online without WebGL errors`);
-      if (quality !== 'low') await a.screenshot({ path: `.scratch/lobby-polish/combat-${quality}.png` });
+      if (quality !== 'bare') await a.screenshot({ path: `.scratch/lobby-polish/combat-${quality}.png` });
     }
     await a.keyboard.press('Escape');
     assert.equal(await a.locator('#menuTitle').textContent(), 'Online', 'online menu never implies a paused world');

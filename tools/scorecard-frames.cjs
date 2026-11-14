@@ -42,7 +42,7 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
   const open = async (w, h, hash = '') => {
     const page = await browser.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'high', volume: 0, lessons: false })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
     await page.goto(url + hash); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.evaluate(() => document.getElementById('publicLobby')?.classList.add('hidden'));
     return page;

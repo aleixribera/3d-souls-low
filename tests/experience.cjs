@@ -10,7 +10,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 function options(raw, denied = false) {
   const context = vm.createContext({
-    CONFIG: { input: { buffer: 0.2 }, practice: { fights: [1, 5, 10] }, VISUALS: { defaultQuality: 'high', quality: { low: {}, high: {}, ultra: {} } } },
+    CONFIG: { input: { buffer: 0.2 }, practice: { fights: [1, 5, 10] }, VISUALS: { defaultQuality: 'normal', quality: { normal: {}, ultra: {}, bare: {} } } },
     clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
     localStorage: { getItem() { if (denied) throw new Error('Storage denied'); return raw; } },
     performance: { now: () => 1000 }, events: { emit() {} },
@@ -36,6 +36,7 @@ const saved = options(JSON.stringify({ sensitivity: 99, hudScale: 0.01, volume: 
   graphics: 'ultra', cameraMotion: false, screenShake: false, fps: true, hitboxes: true })).settings;
 assert.deepEqual(saved, { ...defaults, sensitivity: 10, hudScale: 0.7, volume: 0, invert: true,
   graphics: 'ultra', cameraMotion: false });
+for (const old of ['low', 'high']) assert.equal(options(JSON.stringify({ graphics: old })).settings.graphics, 'normal', `a saved ${old} becomes Normal`);
 for (const cameraMotion of [true, false]) for (const screenShake of [true, false]) {
   assert.equal(options(JSON.stringify({ cameraMotion, screenShake })).settings.cameraMotion, cameraMotion && screenShake,
     'either disabled legacy camera effect keeps the combined setting off');

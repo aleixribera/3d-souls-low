@@ -13,7 +13,7 @@ const { createServer } = require('../server/index.cjs');
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     const cameraResult = await page.evaluate(() => {

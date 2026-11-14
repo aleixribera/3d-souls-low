@@ -14,7 +14,7 @@ function launch({ gpu, cores = 8, memory = 8, saved = null, recheck = false, fra
     screen: { width: 1920, height: 1080 }, window: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
     renderer: { getContext: () => ({ getExtension: () => ({ UNMASKED_RENDERER_WEBGL: 1 }), getParameter: () => gpu }) },
     qualityBenchmark: { measure(preset) { benchmarks++; if (frames && preset in frames) return { ms: frames[preset], width: 1280, height: 720, frames: 20 }; throw new Error('Simulated unavailable timing'); } },
-    settings, SETTINGS_KEY: 'settings', localStorage: { getItem: () => stored },
+    settings, SETTINGS_KEY: 'settings', OLD_GRAPHICS: { low: 'normal', high: 'normal' }, localStorage: { getItem: () => stored },
     saveSettings() { saves++; stored = JSON.stringify(settings); },
   });
   for (const file of ['js/config.js', 'js/autoquality.js'])
@@ -37,23 +37,32 @@ function launch({ gpu, cores = 8, memory = 8, saved = null, recheck = false, fra
 const cases = [
   ['fast desktop with limited browser hints', { gpu: 'NVIDIA GeForce RTX 5060', cores: 4, memory: 4, frames: { ultra: 6 } }, { first: 'ultra', effective: 'ultra', benchmarks: 1, saves: 1, saved: 'auto' }],
   ['fast masked adapter', { gpu: 'WebKit WebGL', cores: 4, memory: 4, frames: { ultra: 6 } }, { first: 'ultra', effective: 'ultra', benchmarks: 1, saves: 1, saved: 'auto' }],
-  ['measured High fallback', { gpu: 'NVIDIA RTX 5060', frames: { ultra: 24, high: 8 } }, { first: 'high', effective: 'high', benchmarks: 2, saves: 1, saved: 'auto' }],
-  ['both presets over budget', { gpu: 'NVIDIA RTX 5060', frames: { ultra: 24, high: 25 } }, { first: 'low', effective: 'low', benchmarks: 2, saves: 1, saved: 'auto' }],
-  ['fresh UHD laptop', { gpu: 'Intel(R) UHD Graphics 620' }, { first: 'low', effective: 'low', benchmarks: 0, saves: 1, saved: 'auto' }],
-  ['existing Auto laptop', { gpu: 'Intel(R) UHD Graphics 620', saved: { graphics: 'auto' } }, { first: null, effective: 'low', benchmarks: 0, saves: 0, saved: 'auto' }],
-  ['masked GPU with limited hints', { gpu: 'WebKit WebGL', cores: 4, memory: 4 }, { first: 'low', effective: 'low', benchmarks: 2, saves: 1, saved: 'auto' }],
-  ['modern integrated failed timing', { gpu: 'Intel Iris Xe Graphics', memory: 4 }, { first: 'low', effective: 'low', benchmarks: 1, saves: 1, saved: 'auto' }],
-  ['explicit recheck', { gpu: 'NVIDIA GeForce RTX 5060', recheck: true }, { first: 'low', effective: 'low', benchmarks: 4, saves: 1, saved: 'auto' }],
-  ['failed timing', { gpu: 'NVIDIA GeForce RTX 5060' }, { first: 'low', effective: 'low', benchmarks: 2, saves: 1, saved: 'auto' }],
+  ['Ultra over budget', { gpu: 'NVIDIA RTX 5060', frames: { ultra: 24 } }, { first: 'normal', effective: 'normal', benchmarks: 1, saves: 1, saved: 'auto' }],
+  ['fresh UHD laptop', { gpu: 'Intel(R) UHD Graphics 620' }, { first: 'normal', effective: 'normal', benchmarks: 0, saves: 1, saved: 'auto' }],
+  ['existing Auto laptop', { gpu: 'Intel(R) UHD Graphics 620', saved: { graphics: 'auto' } }, { first: null, effective: 'normal', benchmarks: 0, saves: 0, saved: 'auto' }],
+  ['masked GPU with limited hints', { gpu: 'WebKit WebGL', cores: 4, memory: 4 }, { first: 'normal', effective: 'normal', benchmarks: 1, saves: 1, saved: 'auto' }],
+  ['modern integrated failed timing', { gpu: 'Intel Iris Xe Graphics', memory: 4 }, { first: 'normal', effective: 'normal', benchmarks: 1, saves: 1, saved: 'auto' }],
+  ['modern integrated passes Ultra', { gpu: 'Intel Iris Xe Graphics', frames: { ultra: 9 } }, { first: 'ultra', effective: 'ultra', benchmarks: 1, saves: 1, saved: 'auto' }],
+  ['software renderer', { gpu: 'Google SwiftShader' }, { first: 'normal', effective: 'normal', benchmarks: 0, saves: 1, saved: 'auto' }],
+  ['explicit recheck', { gpu: 'NVIDIA GeForce RTX 5060', recheck: true }, { first: 'normal', effective: 'normal', benchmarks: 2, saves: 1, saved: 'auto' }],
+  ['failed timing', { gpu: 'NVIDIA GeForce RTX 5060' }, { first: 'normal', effective: 'normal', benchmarks: 1, saves: 1, saved: 'auto' }],
   ...['unknown', 'constructor', null, 9].map(graphics => [
     `invalid saved graphics: ${graphics}`, { gpu: 'Intel UHD Graphics 620', saved: { graphics } },
-    { first: 'low', effective: 'low', benchmarks: 0, saves: 1, saved: 'auto' },
+    { first: 'normal', effective: 'normal', benchmarks: 0, saves: 1, saved: 'auto' },
   ]),
 ];
-for (const graphics of ['low', 'high', 'ultra']) cases.push([
+for (const graphics of ['normal', 'ultra', 'bare']) cases.push([
   `manual ${graphics}`, { gpu: 'Intel UHD Graphics 620', saved: { graphics } },
   { first: null, effective: graphics, benchmarks: 0, saves: 0, saved: graphics },
 ]);
+// A choice saved before the two presets is still the player's choice: no first-launch test, drawn on Normal (input.js
+// turns the saved name into 'normal' when it reads the options).
+for (const graphics of ['low', 'high']) cases.push([
+  `old manual ${graphics}`, { gpu: 'Intel UHD Graphics 620', saved: { graphics } },
+  { first: null, effective: 'normal', benchmarks: 0, saves: 0, saved: graphics },
+]);
+const Q = vm.runInContext('CONFIG.VISUALS.quality', (() => { const c = vm.createContext({}); vm.runInContext(fs.readFileSync(path.join(root, 'js/config.js'), 'utf8'), c); return c; })());
+assert.deepEqual(Object.keys(Q).filter(k => !Q[k].hidden), ['normal', 'ultra'], 'players see two presets: Normal and Ultra');
 for (const [label, input, expected] of cases) assert.deepEqual(launch(input), expected, label);
 const version = fs.readFileSync(path.join(root, 'js/config.js'), 'utf8').match(/const VERSION = 'v([^']+)'/)[1];
 const stamp = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8').match(/const LOAD_STAMP = '([^']+)'/)[1];

@@ -17,7 +17,7 @@ const ending = chapters.at(-1), completionKey = `combatArena.complete.${ending}`
     const page = await context.newPage(); pages.push(page);
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
       localStorage.setItem('combatArena.story', 'offline-save-sentinel');
     }, name);

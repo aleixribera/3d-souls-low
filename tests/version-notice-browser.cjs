@@ -29,7 +29,7 @@ const { createServer } = require('../server/index.cjs');
   async function open({ old = true, viewport = { width: 1280, height: 720 }, before } = {}) {
     const page = await browser.newPage({ viewport });
     page.on('pageerror', e => errors.push(e.message));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
     if (old) await serveOld(page);
     if (before) await before(page);
     await page.goto(url);

@@ -20,7 +20,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);

@@ -25,7 +25,7 @@ const { createServer } = require('../server/index.cjs');
     await page.exposeFunction('__testProgress', ({ name, ok, ms }) => {
       done++; if (!ok || ms > 5000 || process.env.ARENA_TEST_PROGRESS) console.log(`${String(done).padStart(4)} ${ok ? 'ok  ' : 'FAIL'} ${(ms / 1000).toFixed(1).padStart(6)} s  ${name}`);
     });
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     const loadFailed = () => new Error(`the page threw while loading:\n  ${loadErrors.join('\n  ')}`);
     try {

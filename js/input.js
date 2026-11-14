@@ -115,6 +115,8 @@ const DEFAULT_SETTINGS = Object.freeze({ v: 2, sensitivity: 5, invert: false, hu
   graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true, lessons: true, practiceFight: 1 });
 // The operating system asks for reduced motion: camera motion starts off until the player chooses otherwise.
 const prefersReducedMotion = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+// Saved graphics choices from before the two presets (pass 57): Low and High both became Normal.
+const OLD_GRAPHICS = Object.freeze({ low: 'normal', high: 'normal' });
 function readSettings(value) {
   const clean = { ...DEFAULT_SETTINGS };
   if (prefersReducedMotion()) clean.cameraMotion = false;
@@ -127,6 +129,7 @@ function readSettings(value) {
     if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
   if (clean.volume === 8 && value.v !== 2) clean.volume = 5;   // v7.14: the old default 8 became 5, once (not a later choice of 8)
   if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;
+  else if (typeof value.graphics === 'string' && Object.hasOwn(OLD_GRAPHICS, value.graphics)) clean.graphics = OLD_GRAPHICS[value.graphics];
   if (CONFIG.practice.fights.includes(value.practiceFight)) clean.practiceFight = value.practiceFight;   // Practice's Speed
   return clean;
 }

@@ -46,7 +46,7 @@ function checkVisualData(need, num) {
   need(num(VIS.denseScreen) && VIS.denseScreen > 1, 'CONFIG.VISUALS.denseScreen: the pixel ratio (> 1) from which a screen is dense.');
   need(auto && ['passes', 'rounds', 'warmFrames', 'referenceWidth', 'referenceHeight', 'phoneWidth']
     .every(k => Number.isInteger(auto[k]) && auto[k] > 0)
-    && auto.frameMs && ['high', 'ultra'].every(k => num(auto.frameMs[k]) && auto.frameMs[k] > 0), 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
+    && auto.frameMs && num(auto.frameMs.ultra) && auto.frameMs.ultra > 0, 'CONFIG.VISUALS.autoQuality: invalid benchmark, resolution or hardware thresholds.');
   need(auto.stage && Object.values(auto.stage).every(v => num(v) && v > 0) && auto.stage.aoScale <= 1
     && auto.camera && tri(auto.camera.position) && tri(auto.camera.look) && auto.camera.near > 0 && auto.camera.far > auto.camera.near,
     'CONFIG.VISUALS.autoQuality: invalid 3D scene or camera tuning.');
@@ -57,16 +57,16 @@ function checkVisualData(need, num) {
     try { new RegExp(auto[key]); } catch (e) { valid = false; }
     need(valid, `CONFIG.VISUALS.autoQuality.${key} must be a valid GPU-name pattern.`);
   }
-  need(Q && Q.high && Q.low, 'CONFIG.VISUALS.quality needs "high" and "low" presets.');
-  if (Q && Q.high) for (const [n, q] of Object.entries(Q)) {   // every preset lists the same keys
-    for (const k of Object.keys(Q.high)) need(k in q, `CONFIG.VISUALS.quality.${n} is missing "${k}".`);
-    for (const k of Object.keys(q)) need(k in Q.high, `CONFIG.VISUALS.quality.${n}: unknown key "${k}" (not in "high").`);
+  need(Q && Q.normal && Q.ultra && Q.bare && Object.values(Q).every(q => q.label.toLowerCase() in Q && Q[q.label.toLowerCase()] === q && typeof q.hidden === 'boolean'), 'CONFIG.VISUALS.quality needs "normal", "ultra" and "bare" presets, each keyed by its label in lower case, with hidden (true / false).');
+  if (Q && Q.normal) for (const [n, q] of Object.entries(Q)) {   // every preset lists the same keys
+    for (const k of Object.keys(Q.normal)) need(k in q, `CONFIG.VISUALS.quality.${n} is missing "${k}".`);
+    for (const k of Object.keys(q)) need(k in Q.normal, `CONFIG.VISUALS.quality.${n}: unknown key "${k}" (not in "normal").`);
   }
   for (const [n, q] of Object.entries(Q || {}))
     need(num(q.softRatio) && q.softRatio >= 1 && num(q.bloomScale) && q.bloomScale > 0 && q.bloomScale <= 1 && Number.isInteger(q.lights) && q.lights >= 1
-      && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean' && typeof q.ultra === 'boolean'
+      && typeof q.antialias === 'boolean' && typeof q.simpleSurfaces === 'boolean' && typeof q.glows === 'boolean' && typeof q.ultra === 'boolean' && typeof q.fxaa === 'boolean'
       && Number.isInteger(q.msaa) && q.msaa >= 0 && Number.isInteger(q.denseMsaa) && q.denseMsaa >= 0 && q.denseMsaa <= q.msaa && num(q.particles) && q.particles >= 0 && num(q.embers) && q.embers >= 0,
-      `CONFIG.VISUALS.quality.${n}: softRatio (>= 1), bloomScale (0..1], lights (whole, >= 1), msaa and denseMsaa (whole, >= 0, denseMsaa <= msaa), particles and embers (>= 0), antialias, simpleSurfaces, glows and ultra (true / false).`);
+      `CONFIG.VISUALS.quality.${n}: softRatio (>= 1), bloomScale (0..1], lights (whole, >= 1), msaa and denseMsaa (whole, >= 0, denseMsaa <= msaa), particles and embers (>= 0), antialias, simpleSurfaces, glows, ultra and fxaa (true / false).`);
   for (const [name, q] of Object.entries(Q)) {
     const prefix = `CONFIG.VISUALS.quality.${name}`;
     for (const key of ['combatFx', 'proceduralFire', 'reflections', 'shadows', 'ao', 'volumetrics', 'refraction'])
@@ -90,8 +90,10 @@ function checkVisualData(need, num) {
     need(c && Number.isInteger(c.cloudLayers) && c.cloudLayers >= 1 && c.cloudLayers <= 5
       && [0, 1024, 2048, 4096].includes(c.shadowMap) && c.aoScale > 0 && c.aoScale <= 1
       && Number.isInteger(c.aoSamples) && c.aoSamples >= 4 && c.aoSamples <= 32
-      && num(c.mist) && c.mist >= 0 && c.mist <= 0.1,
-      `CONFIG.VISUALS.cinematic.${name}: invalid sky, shadow, occlusion or mist budget.`);
+      && num(c.mist) && c.mist >= 0 && c.mist <= 0.1
+      && Number.isInteger(c.scatterLights) && c.scatterLights >= 1 && c.scatterLights <= VIS.ultra.scatter.lights
+      && Number.isInteger(c.moonSteps) && c.moonSteps >= 2 && c.moonSteps <= 32 && typeof c.weatheredEnv === 'boolean',
+      `CONFIG.VISUALS.cinematic.${name}: invalid sky, shadow, occlusion, mist or scattering budget (scatterLights 1-${VIS.ultra.scatter.lights}, moonSteps 2-32, weatheredEnv true or false).`);
   }
   const C = VIS.cinematic;
   need(Number.isInteger(C.clouds.size) && C.clouds.size >= 32 && C.clouds.size <= 512
@@ -582,14 +584,33 @@ const GRADE_SHADER = {
     tDiffuse: { value: null }, uShadow: { value: new THREE.Vector3(1, 1, 1) }, uHigh: { value: new THREE.Vector3(1, 1, 1) },
     uSat: { value: 1 }, uContrast: { value: 1 }, uVig: { value: 0 }, uVigSoft: { value: 0.5 }, uGrain: { value: 0 },
     uTime: { value: 0 }, uLow: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
-    uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color() }, uHurt: { value: 0 },
+    uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color() }, uHurt: { value: 0 }, uFxaa: { value: 0 },
   },
   vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 uShadow, uHigh;
-uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow, uFlash, uHurt; uniform vec3 uFlashCol; uniform vec2 uRes; varying vec2 vUv;
+uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow, uFlash, uHurt, uFxaa; uniform vec3 uFlashCol; uniform vec2 uRes; varying vec2 vUv;
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+// Edges smoothed in the grade (a preset's fxaa; Normal's, for a fraction of MSAA's cost): the light's edge found
+// from four diagonal neighbours, then two to four reads along it (FXAA, after Lottes). The scene is HDR here, so the
+// brightness it compares is squashed to 0..1 first.
+float fxLuma(vec3 c) { float l = dot(c, vec3(0.299, 0.587, 0.114)); return l / (1.0 + l); }
+vec3 fxaa(vec2 uv) {
+  vec2 px = 1.0 / uRes;
+  vec3 m = texture2D(tDiffuse, uv).rgb;
+  float lM = fxLuma(m), lNW = fxLuma(texture2D(tDiffuse, uv + vec2(-px.x, px.y)).rgb), lNE = fxLuma(texture2D(tDiffuse, uv + px).rgb),
+        lSW = fxLuma(texture2D(tDiffuse, uv - px).rgb), lSE = fxLuma(texture2D(tDiffuse, uv + vec2(px.x, -px.y)).rgb);
+  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE))), lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+  if (lMax - lMin < max(0.03, lMax * 0.125)) return m;   // no edge: most of the screen stops here
+  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), (lNE + lSE) - (lNW + lSW));
+  float reduce = max((lNW + lNE + lSW + lSE) * 0.03125, 1.0 / 128.0);
+  dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + reduce), -8.0, 8.0) * px;
+  vec3 a = 0.5 * (texture2D(tDiffuse, uv - dir / 6.0).rgb + texture2D(tDiffuse, uv + dir / 6.0).rgb);
+  vec3 b = 0.5 * a + 0.25 * (texture2D(tDiffuse, uv - dir * 0.5).rgb + texture2D(tDiffuse, uv + dir * 0.5).rgb);
+  float lB = fxLuma(b);
+  return lB < lMin || lB > lMax ? a : b;
+}
 void main() {
-  vec3 c = texture2D(tDiffuse, vUv).rgb;
+  vec3 c = uFxaa > 0.5 ? fxaa(vUv) : texture2D(tDiffuse, vUv).rgb;
   // Preserve the old order: HDR -> tone mapping -> output colour space -> artistic grade.
   ${GRADE_OUTPUT}
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -995,8 +1016,8 @@ function floorOf(d, x, z, y) {
 const visuals = (() => {
   const Q = VIS.quality;
   const hemi = new THREE.HemisphereLight(0x000000, 0x000000, 0); scene.add(hemi);
-  // High: scene -> bloom -> combined output/grade. Low: one plain render.
-  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: Q.high.msaa }));
+  // Normal and Ultra: scene -> light pass (js/ultra-post.js) -> bloom -> grade (with FXAA where a preset asks). Bare: one plain render.
+  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: Q.normal.msaa }));
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), VIS.bloom.strength, VIS.bloom.radius, VIS.bloom.threshold);
   const grade = new ShaderPass(GRADE_SHADER);
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(bloom); composer.addPass(grade);
@@ -1359,7 +1380,7 @@ const visuals = (() => {
       bloom.enabled = quality.bloom;
       for (const h of hooks.quality) h(quality);
       KIT.setDetail(quality.modelDetail, { prewarm: quality === previous });   // drops unused models of the old detail
-      if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including High -> Low (one restart)
+      if (quality !== previous) KIT.prewarm();   // cancel menu work for a superseded preset, including Ultra -> Normal (one restart)
       grade.uniforms.uVig.value = quality.vignette ? VIS.vignette.strength : 0;
       grade.uniforms.uVigSoft.value = VIS.vignette.softness;
       grade.uniforms.uGrain.value = quality.grain ? (quality.ultra ? VIS.grain.ultra : VIS.grain.amount) : 0;
@@ -1425,7 +1446,9 @@ const visuals = (() => {
       renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
       const samples = Math.min(draw.msaa, renderer.capabilities.maxSamples || 4);   // the post target's MSAA
       for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== samples) { rt.samples = samples; rt.dispose(); }
-      // LOW never draws these passes. Keep dormant targets tiny, including after switching down from Ultra.
+      // A preset's fxaa smooths edges in the grade instead, where no MSAA does (a dense screen's small pixels need neither).
+      grade.uniforms.uFxaa.value = quality.post && quality.fxaa && samples === 0 && pr < VIS.denseScreen ? 1 : 0;
+      // Bare never draws these passes. Keep dormant targets tiny, including after switching down from Ultra.
       const pw = quality.post ? w : 1, ph = quality.post ? h : 1, ppr = quality.post ? pr : 1, soft = quality.bloomScale * draw.soft;
       composer.setPixelRatio(ppr); composer.setSize(pw, ph);
       bloom.setSize(Math.max(1, Math.round(pw * ppr * soft)), Math.max(1, Math.round(ph * ppr * soft)));   // a soft glow: drawn smaller

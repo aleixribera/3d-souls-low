@@ -242,7 +242,7 @@ void main() {
   // Metal reflections: the level's environment on every metallic material (armour, weapons, iron).
   const reflected = new Set();
   function reflect(m) {
-    if (!quality().reflections || !m.isMeshStandardMaterial || (!m.userData.weathered && m.metalness < U.env.metalFrom) || !envTex) return;
+    if (!quality().reflections || !m.isMeshStandardMaterial || ((!m.userData.weathered || !budget().weatheredEnv) && m.metalness < U.env.metalFrom) || !envTex) return;
     reflected.add(m);
     if (m.envMap === envTex) return;
     if (!m.envMap) m.needsUpdate = true;
@@ -332,7 +332,7 @@ void main() {
     for (const l of extraLights) consider(l, k);
     for (const l of owned) if (l.isPointLight && l.userData.flash) consider(l, k);
     lightList.sort(byScore);
-    const n = quality().volumetrics ? Math.min(MAXL, lightList.length) : 0, view = camera.matrixWorldInverse;
+    const n = quality().volumetrics ? Math.min(MAXL, budget().scatterLights, lightList.length) : 0, view = camera.matrixWorldInverse;
     for (const M of [lightMat, visMat]) M.uniforms.uLCount.value = n;
     for (let i = 0; i < n; i++) {
       const L = lightList[i];
@@ -383,13 +383,13 @@ void main() {
       if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
       sun.shadow.mapSize.set(b.shadowMap, b.shadowMap);
     }
-    if (lightMat.defines.AO_SAMPLES !== b.aoSamples) {
-      lightMat.defines.AO_SAMPLES = b.aoSamples; lightMat.needsUpdate = true;
+    if (lightMat.defines.AO_SAMPLES !== b.aoSamples || lightMat.defines.MOON_STEPS !== b.moonSteps) {
+      lightMat.defines.AO_SAMPLES = b.aoSamples; lightMat.defines.MOON_STEPS = b.moonSteps; lightMat.needsUpdate = true;
     }
     on = q.ao || q.volumetrics || q.refraction;
     lightPass.enabled = on;
     lightMat.uniforms.uAoRadius.value = q.ao ? U.ao.radius : 0;
-    // Clear previous Ultra scattering when switching to High in the same scene.
+    // Clear the previous scattering when a preset without volumetrics follows in the same scene.
     if (!q.volumetrics) lightMat.uniforms.uLCount.value = 0;
     compMat.uniforms.uAoStr.value = q.ao ? U.ao.strength : 0;
     waves.length = 0;
@@ -399,7 +399,7 @@ void main() {
     RIM.strength.value = VIS.rim.strength * (q.shadows ? U.rim : 1);
     for (const l of owned) { if (l.isPointLight ? q.combatFx : q.shadows) scene.add(l); else scene.remove(l); }
     if (!q.shadows) { if (moonBase !== null) moonLight.intensity = moonBase * visuals.moonScale(); for (const e of [...(Game.enemies || []), ...Game.allies()]) if (e && e.rig) e.rig.shadow.material.opacity = 0.45 * e.rig.alphaK; }
-    if (!q.reflections) unreflect();
+    unreflect();   // the sweep below reflects again what this preset reflects
     const aniso = q.shadows ? renderer.capabilities.getMaxAnisotropy() : Math.min(8, renderer.capabilities.getMaxAnisotropy());
     for (const t of Object.values(SURF_TEX)) { t.anisotropy = aniso; t.needsUpdate = true; }
     scene.traverse(o => {

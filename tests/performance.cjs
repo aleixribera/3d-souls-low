@@ -53,7 +53,7 @@ const server = http.createServer((req, res) => {
       const results = [];
       for (const id of ['long-hall', 'sunken-keep', 'burning-town', 'final-castle', 'ostrey', 'hale', 'kindlingTree', 'agathe', 'kingsBlade']) {
         const row = await page.evaluate(async id => {
-          Game.manualClock = true; visuals.setQuality('low');
+          Game.manualClock = true; visuals.setQuality('bare');
           let seed = 12345;
           Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
           const phases = {}, originals = [];

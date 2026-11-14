@@ -13,7 +13,7 @@ const { createServer } = require('../server/index.cjs');
     browser = await chromium.launch({ channel: 'msedge', headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     page.on('pageerror', e => errors.push(e.message));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0,
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0,
       fps: false, hitboxes: false, cameraMotion: true, screenShake: false })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -83,7 +83,7 @@ const { createServer } = require('../server/index.cjs');
       const key = new KeyboardEvent('keydown', { code: 'KeyJ', ctrlKey: true, bubbles: true, cancelable: true });
       window.dispatchEvent(key); return key.defaultPrevented;
     }), false, 'browser shortcuts are left to the browser');
-    assert.equal(await page.evaluate(() => settings.graphics), 'low', 'shortcut never activates a menu item');
+    assert.equal(await page.evaluate(() => settings.graphics), 'bare', 'shortcut never activates a menu item');
     const motionOption = page.getByRole('button', { name: /^Camera motion:/ });
     await motionOption.hover({ position: { x: 100, y: 18 } });
     await motionOption.hover({ position: { x: 102, y: 18 } });
@@ -183,7 +183,7 @@ const { createServer } = require('../server/index.cjs');
     assert.deepEqual(steady, { refused: true, steady: true, enabled: true });
 
     // Inspect the actual game at each quality; these captures retain the established art direction.
-    for (const quality of ['low', 'high', 'ultra']) {
+    for (const quality of ['bare', 'normal', 'ultra']) {
       await page.evaluate(quality => {
         settings.graphics = quality; applySettings(); Game.startLevel('windward-moor'); Game.loading = 0;
         document.getElementById('loading').classList.remove('show');
@@ -194,7 +194,7 @@ const { createServer } = require('../server/index.cjs');
       assert.deepEqual(await page.evaluate(() => { const gl = renderer.getContext(); gl.finish();
         return { lost: gl.isContextLost(), error: gl.getError() }; }), { lost: false, error: 0 });
     }
-    await page.evaluate(() => { settings.graphics = 'low'; applySettings(); Game.showMenu('main'); Game.manualClock = false; });
+    await page.evaluate(() => { settings.graphics = 'bare'; applySettings(); Game.showMenu('main'); Game.manualClock = false; });
     await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     await page.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');

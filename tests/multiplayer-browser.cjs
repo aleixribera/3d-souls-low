@@ -21,7 +21,7 @@ fs.mkdirSync(output, { recursive: true });
     page.on('pageerror', e => { errors.push(e.message); console.error('BROWSER ERROR', e); });
     page.on('console', msg => { if (msg.type() === 'error') { errors.push(msg.text()); console.error(msg.text().slice(0, 250)); } });
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
     }, name);
     if (delay) await page.routeWebSocket('**/lobby', route => {
@@ -211,7 +211,7 @@ fs.mkdirSync(output, { recursive: true });
     const soloContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const soloPage = await soloContext.newPage();
     soloPage.on('pageerror', e => errors.push(e.message));
-    await soloPage.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await soloPage.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
     await soloPage.goto(url);
     await soloPage.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     const solo = await soloPage.evaluate(async () => { Game.manualClock = true; return await __arena.tests.run(); });

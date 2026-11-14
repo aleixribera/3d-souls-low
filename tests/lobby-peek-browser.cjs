@@ -15,7 +15,7 @@ const { createServer } = require('../server/index.cjs');
     const page = await browser.newPage({ viewport });
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
-      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 }));
+      localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
       localStorage.setItem('combatArena.onlineName', name);
     }, name);
     await page.goto(url);

@@ -7,7 +7,7 @@ const http = require('node:http');
 const { chromium } = require('./browser.cjs');
 const root = path.resolve(process.env.AUDIT_ROOT || path.join(__dirname, '..'));
 const output = path.resolve(process.argv[2] || '.scratch/high-quality');
-const variants = (process.argv[3] || 'low,high,no-reflections,base-geometry,fire,full-warmup,ultra').split(',');
+const variants = (process.argv[3] || 'bare,normal,no-reflections,base-geometry,fire,full-warmup,ultra').split(',');
 const scenes = ['long-hall', 'burning-town', 'final-castle', 'hale', 'tree-ablaze'];
 fs.mkdirSync(output, { recursive: true });
 const server = http.createServer((req, res) => {
@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
   let hardware;
   try {
     for (const dpr of (process.env.AUDIT_DPR || '1,2').split(',').map(Number)) for (const variant of variants) {
-      const quality = ['low', 'ultra'].includes(variant) ? variant : 'high';
+      const quality = ['bare', 'ultra'].includes(variant) ? variant : 'normal';
       const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: dpr });
       const page = await context.newPage();
       page.on('pageerror', e => errors.push({ variant, dpr, error: e.message }));
@@ -41,7 +41,7 @@ const server = http.createServer((req, res) => {
         return { gpu: e && gl.getParameter(e.UNMASKED_RENDERER_WEBGL), viewport: [innerWidth, innerHeight] };
       });
       await page.evaluate(variant => {
-        const q = CONFIG.VISUALS.quality.high;
+        const q = CONFIG.VISUALS.quality.normal;
         if (variant === 'no-reflections') q.reflections = false;
         if (variant === 'base-geometry') q.modelDetail = { geo: 1, tex: 1, anatomy: false };
         if (variant === 'fire') q.proceduralFire = true;
@@ -88,7 +88,7 @@ const server = http.createServer((req, res) => {
           for (let i = 0; i < 16; i++) Game.render(1, CONFIG.step);
           const gl = renderer.getContext(), timer = gl.getExtension('EXT_disjoint_timer_query_webgl2');
           const warmCpu = [], warmGpu = [], warmPending = [];
-          if (variant === 'high' || variant === 'full-warmup') {
+          if (variant === 'normal' || variant === 'full-warmup') {
             for (let i = 0; i < 8; i++) {
               await new Promise(requestAnimationFrame);
               const q = timer && gl.createQuery();

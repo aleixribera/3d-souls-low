@@ -33,7 +33,7 @@ const BROWSER_EXTRA = ['onboarding'];
 const OPTIONAL = {
   'bot-duel': 'bot duel benchmark; pass -- <boss|all> <trials>',
   performance: 'Playwright benchmark; pass -- <output-dir>',
-  'high-quality': 'Playwright High preset trials; pass -- <output-dir>',
+  'high-quality': 'Playwright Normal preset trials; pass -- <output-dir>',
   'container-smoke': 'needs a running container; pass -- http://127.0.0.1:3080',
 };
 // Timing-sensitive measurements get one automatic retry (a busy machine can push a latency bound over).

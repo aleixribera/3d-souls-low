@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
     // Reproduce a blocked/missing standalone fullscreen file: startup must never request it.
     await page.route('**/js/fullscreen.js*', route => { obsoleteRequests.push(route.request().url()); return route.abort('blockedbyclient'); });
     page.on('pageerror', e => errors.push(e.message));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'high' })));
+    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal' })));
     await page.goto(`http://127.0.0.1:${server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     assert.deepEqual(obsoleteRequests, [], 'fullscreen adds no separate startup request');

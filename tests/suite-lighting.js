@@ -37,7 +37,7 @@
       start('the-tower');
       const s = bonfireGuidance.state, positions = s.mesh.geometry.attributes.position.array.slice();
       const model = Game.player, before = [model.x, model.y, model.z, model.hp];
-      for (const q of ['low', 'high', 'ultra']) {
+      for (const q of ['bare', 'normal', 'ultra']) {
         visuals.setQuality(q); Game.render(1, CONFIG.step);
         expect.ok(bonfireGuidance.state === s && s.mesh.isPoints, `${q}: one retained point mesh`);
         expect.ok(positions.every((v, i) => s.mesh.geometry.attributes.position.array[i] === v), `${q}: fixed pocket positions`);
@@ -50,7 +50,7 @@
     const saved = settings.graphics;
     try {
       sim.begin();
-      for (const q of ['low', 'high', 'ultra']) {
+      for (const q of ['bare', 'normal', 'ultra']) {
         visuals.setQuality(q); Game.startFight('rootbound'); Game.loading = 0;
         const e = Game.enemies[0], a = e.baseDef.attacks.find(a => a.spectral);
         e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup / 2;

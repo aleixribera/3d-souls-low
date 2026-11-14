@@ -406,7 +406,7 @@ const CONFIG = {
   // Rendering only (section 9b). Nothing here changes how the game plays. Per-level looks are optional
   // fields in a level's `atmosphere`; these are the defaults and the shared tuning.
   VISUALS: {
-    defaultQuality: 'high',
+    defaultQuality: 'normal',
     // Reduced motion (the Camera motion option off, or the OS asking for less motion): full-screen flash and hurt pulses
     // are scaled to these shares (a subtle cue stays), refraction shockwaves stop and the lightning flash is capped here.
     reducedMotion: { flash: 0.3, hurt: 0.45, lightning: 0.35 },
@@ -415,7 +415,7 @@ const CONFIG = {
     effectClock: { maxDt: 0.1, hitstop: 0.12 },
     // Measure actual-resolution 3D frames, including characters, lights, MSAA, shadows and post-processing.
     // CPU/RAM browser hints cannot hard-cap a recognized dedicated GPU; rendered cost determines its preset.
-    autoQuality: { passes: 4, rounds: 5, warmFrames: 3, frameMs: { high: 14, ultra: 14 }, showTime: 7,
+    autoQuality: { passes: 4, rounds: 5, warmFrames: 3, frameMs: { ultra: 14 }, showTime: 7,
                    referenceWidth: 1280, referenceHeight: 720, phoneWidth: 820,
                    camera: { fov: 55, near: 0.1, far: 70, position: [10, 7, 13], look: [0, 1.5, 0] },
                    stage: { halfSize: 14, propCount: 72, propRadius: 10, propHeight: 2.4, lights: 8, lightRadius: 8,
@@ -432,31 +432,36 @@ const CONFIG = {
       // Every preset draws the scene at the screen's own resolution: none caps the pixel ratio (Aleix, 2026-11-13).
       // softRatio: the pixel ratio the soft buffers (bloom, ambient occlusion, light) stop at, so a dense screen costs
       // them nothing more. denseMsaa: the post target's MSAA on a dense screen (pixel ratio >= `denseScreen`), whose
-      // small pixels need fewer samples. antialias: the canvas's own MSAA, fixed when the page loads (High smooths edges in its post target, `msaa`, so it needs none). lights: point lights lit at
+      // small pixels need fewer samples. antialias: the canvas's own MSAA, fixed when the page loads (the post presets smooth edges in their own target, so they need none).
+      // fxaa: smooth edges in the grade instead, where the post target has no MSAA (Normal: four samples cost the laptop
+      // about a tenth of its frame, pass 57). lights: point lights lit at
       // once (the nearest; the rest are switched off). simpleSurfaces: one texture read per pixel for the weathered
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
-      // High shares modern combat effects, surface reflections and budgeted shadows/AO.
-      // Ultra adds sculpted anatomy, denser AO, volumetrics, procedural ambient fire and refraction.
+      // Two presets for players (Aleix, 2026-11-13): Normal for everyone, holding 60 fps on integrated graphics (his
+      // laptop, `tools/bench/laptop.sh`), with every one of Ultra's effects toned down, never switched off; Ultra for
+      // his PC, which adds sculpted anatomy and the full-strength passes. `bare` is not a player's preset: the browser
+      // tests draw with it under software GL (never offered in Options or by Auto; `hidden`).
       // `ultra` identifies the preset for compatibility; features read their own flags. Graphics cycles in this order.
-      low:  { label: 'Low', post: false, bloom: false, vignette: false, grain: false, softRatio: 1, msaa: 0, denseMsaa: 0, antialias: false, bloomScale: 1,
-              lights: 3, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
-              modelDetail: { geo: 1, tex: 1, anatomy: false }, combatFx: false, fxBudget: 'low', proceduralFire: false,
-              reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
-      high: { label: 'High', post: true, bloom: true, vignette: true, grain: true, softRatio: 1, msaa: 4, denseMsaa: 0, antialias: false, bloomScale: 0.5,
-              lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
-              modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'high', proceduralFire: false,
-              reflections: true, shadows: true, ao: true, volumetrics: false, refraction: false, warmupSize: 32 },
-      ultra: { label: 'Ultra', post: true, bloom: true, vignette: true, grain: true, softRatio: 2, msaa: 4, denseMsaa: 4, antialias: false, bloomScale: 0.5,
+      // A preset's key is its label in lower case (the per-preset budgets below are keyed by it).
+      normal: { label: 'Normal', hidden: false, post: true, bloom: true, vignette: true, grain: true, softRatio: 1, msaa: 0, denseMsaa: 0, fxaa: true, antialias: false, bloomScale: 0.5,
+              lights: 4, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
+              modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'normal', proceduralFire: true,
+              reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 32 },
+      ultra: { label: 'Ultra', hidden: false, post: true, bloom: true, vignette: true, grain: true, softRatio: 2, msaa: 4, denseMsaa: 4, fxaa: false, antialias: false, bloomScale: 0.5,
                lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true,
                modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
                reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 0 },
+      bare: { label: 'Bare', hidden: true, post: false, bloom: false, vignette: false, grain: false, softRatio: 1, msaa: 0, denseMsaa: 0, fxaa: false, antialias: false, bloomScale: 1,
+              lights: 3, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
+              modelDetail: { geo: 1, tex: 1, anatomy: false }, combatFx: false, fxBudget: 'bare', proceduralFire: false,
+              reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
     },
     // Fixed pockets of guiding embers; all travel stays local to each pocket.
     guidance: { spacing: 7, particles: 9, lowParticles: 5, height: 0.55, travel: 1.7, spread: 0.22,
                 rise: 0.28, size: 0.10, maxPx: 13, opacity: 0.38, color: 0xffdba0,
                 life: 3.8, near: 1.4, far: 30, fadeBand: 7, arrival: 2.8, floorTolerance: 1.2, sample: 0.35 },
     // A fixed pool, with one/two shadowless lights reserved from the local-light budget.
-    effectLight: { counts: { low: 1, high: 2, ultra: 2 }, range: 8, intensity: 9, decay: 7,
+    effectLight: { counts: { normal: 2, ultra: 2, bare: 1 }, range: 8, intensity: 9, decay: 7,
                    floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,
                    sourceRetention: 1.15, minPower: 0.01, tip: 0.8, maxDt: 0.1,
                    projectile: 0.65, breath: 1.4, sigil: 1.5, pulseSlots: 6,
@@ -464,11 +469,15 @@ const CONFIG = {
                    storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
-    // Shared art direction; expensive screen lighting remains strictly tiered.
+    // Shared art direction; expensive screen lighting remains strictly tiered. scatterLights: how many lights glow in
+    // the fog (volumetrics, at most ultra.scatter.lights); moonSteps: the steps of the moon's rays through its shadow map;
+    // weatheredEnv: weathered stone and wood reflect the level too, not only metal (about 5% of the laptop's frame).
+    // (Measured on the laptop, pass 57, and left out: the moon's shadows drawn every other frame, plain PCF instead of
+    // PCF-soft, and occlusion reading the scene's own depth instead of a second draw: none gained over 3% there.)
     cinematic: {
-      low: { cloudLayers: 1, shadowMap: 0, aoScale: 0.25, aoSamples: 8, mist: 0 },
-      high: { cloudLayers: 3, shadowMap: 1024, aoScale: 0.35, aoSamples: 8, mist: 0.012 },
-      ultra: { cloudLayers: 5, shadowMap: 2048, aoScale: 0.5, aoSamples: 16, mist: 0.022 },
+      bare: { cloudLayers: 1, shadowMap: 0, aoScale: 0.25, aoSamples: 8, mist: 0, scatterLights: 1, moonSteps: 4, weatheredEnv: false },
+      normal: { cloudLayers: 3, shadowMap: 1024, aoScale: 0.35, aoSamples: 8, mist: 0.012, scatterLights: 2, moonSteps: 6, weatheredEnv: false },
+      ultra: { cloudLayers: 5, shadowMap: 2048, aoScale: 0.5, aoSamples: 16, mist: 0.022, scatterLights: 4, moonSteps: 12, weatheredEnv: true },
       clouds: { size: 256, scale: 0.65, speed: 0.003, cover: 0.48, opacity: 0.8, silver: 1.3 },
       mist: { height: 3.2, distance: 65, max: 0.32 },
       stone: { variation: 0.22, cavity: 0.24, mineral: [0.78, 0.86, 0.94] },
@@ -624,7 +633,7 @@ const CONFIG = {
     // js/scenery.js (a level drawn from Blender models). paintGlow: how much of the painted walls shows in the dark; density:
     // the share of a level's trees each preset draws; tracks: prints in the snow (sizes in m across and along a foot, for a
     // body of scale 1), interiorRate: how fast the look changes through a door.
-    scenery: { paintGlow: 0.16, interiorRate: 3, density: { low: 0.45, high: 0.8, ultra: 1 },
+    scenery: { paintGlow: 0.16, interiorRate: 3, density: { normal: 0.8, ultra: 1, bare: 0.45 },
                tracks: { count: 240, stride: 0.72, spread: 0.11, size: [0.2, 0.36], lift: 0.02, airborne: 0.3, opacity: 0.32, color: 0x5a6a80 } },
     realms: {
       ultraBoost: 1.4, lowShare: 0.6, coverRate: 3, hazardPuff: 6,
@@ -672,8 +681,8 @@ const CONFIG = {
     },
     // Decorative budgets never reduce attack rings, sigils, flame jets or warning shapes.
     fxBudgets: {
-      low: { density: 0, capacity: 0, ribbons: 0, ribbonSub: 1, light: 0 },
-      high: { density: 0.55, capacity: 0.55, ribbons: 4, ribbonSub: 2, light: 0.65 },
+      bare: { density: 0, capacity: 0, ribbons: 0, ribbonSub: 1, light: 0 },
+      normal: { density: 0.55, capacity: 0.55, ribbons: 4, ribbonSub: 2, light: 0.65 },
       ultra: { density: 1, capacity: 1, ribbons: 8, ribbonSub: 4, light: 1 },
     },
     ultra: {
