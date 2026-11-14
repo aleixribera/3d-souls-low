@@ -80,7 +80,7 @@ const PLAYER_DEF = {
                    box: { w: 3.8, h: 2.2, d: 3.6, fwd: 0.7, y: 1.2 } },
       // Heavy: hold the button to stop at `charge.at` of the wind-up, coiling for up to `hold` s; up to `mul` x damage and
       // `postureMul` x posture (a full charge is a skill move).
-      heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.5, active: 0.13, follow: 0.2 }], recovery: 0.44,
+      heavy: { id: 'heavy', anim: 'overhead', pose: 'heavyOverhead', hits: [{ startup: 0.4, active: 0.13, follow: 0.2 }], recovery: 0.44,
                charge: { action: 'heavy', at: 0.7, hold: 0.8, mul: 1.7, postureMul: 3, hitstopMul: 1.4 },
                markers: [{ at: 'windup', t: 0.8, event: 'sound', sound: 'swingHeavy', vel: 0.8 }, { at: 'active', t: 0, event: 'glint' }],
                damage: 36, poise: 52, postureDmg: 12, knock: 7, lunge: 3.2, hitstop: 0.12, riposte: { damage: 2.6, poise: 2.5 },

@@ -6,7 +6,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   shows a press on the very next frame; what still feels slow is the moves' own timing, in track B's files: a tapped
   heavy's blow lands 32 frames after the press (startup 0.5 s) and a light's 14 (0.2 s); the run takes 9 frames to full
   speed (accel 26), 12 to stop (decel 22) and 13 to turn round (turnRate 14). Sekiro's step leans fully in 6 frames
-  and runs on without a stop. Candidates, overridable: heavy startup about 0.4 s, decel about 30. Also: the counter's
+  and runs on without a stop. Pass 90 took heavy startup 0.4 s and decel 30 (v7.118.0). Also: the counter's
   attacks borrow `lightBackhand`/`heavyOverhead` poses and want their own pose ids (js/data/player.js). `Player.pose`
   moved from js/player.js to js/player-pose.js (track A's, drawing only); the update loop is untouched.
 

@@ -10,8 +10,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track B (pass 90): CI on main runs to the end; v7.114.0 three dashes, slim white bars, guard shown only
   while worn (in-page `pass 90 dash`; `dash-hud-*`); v7.117.0 item 4: bosses press
   (`CONFIG.enemy.press`), curve without wall (`steady`), warm-up health, Bell Warden
-  (`docs/scorecard/rush-curve-pass90.txt`); item 5 frames `captain-laptop-*` (keys alone). Next, in order:
-  BACKLOG's top timings (heavy startup, decel), the fair area-attack rule (validate.js; Story's bosses too;
+  (`docs/scorecard/rush-curve-pass90.txt`); item 5 frames `captain-laptop-*` (keys alone). v7.118.0: heavy 0.4 s,
+  decel 30 (curve held). Next: the fair area-attack rule (validate.js; Story's bosses too;
   leap slams unchanged), Boss Rush bosses' movement on one pace, the curve again; the only moveset.
   Track A: Story's bosses press too (story-curve not re-run); `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.

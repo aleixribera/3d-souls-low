@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.117.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.118.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -69,7 +69,7 @@ const CONFIG = {
     // exhaustion. The guard (`stamina`; a thin bar shown only while it is worn, pass 90): only blocking wears it down (CONFIG.block); it refills whenever the player
     // isn't blocking, after `staminaDelay` s.
     poiseResetTime: 4, staminaRegen: 52, staminaDelay: 0.75,
-    walkSpeed: 4.3, accel: 26, decel: 22, turnRate: 14,   // v4.1: accel 34, decel 28 (a little more weight)
+    walkSpeed: 4.3, accel: 26, decel: 30, turnRate: 14,   // pass 90: decel 30 (a run stops in about 9 frames, was 12)
     airTurnMul: 0.4,       // turning while airborne, as a fraction of turnRate
     blockSpeedMul: 0.45,   // guarded shuffle: facing stays fixed (or on the lock target) while moving
     jumpVelocity: 8.2, airControl: 9,
