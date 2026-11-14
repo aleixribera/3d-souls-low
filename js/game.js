@@ -193,7 +193,7 @@ const Game = {
     const fresh = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')])
       .filter(([, key]) => !this.cleared.has(key) && !kept.some(a => a.key === key))
       .map(([m, key]) => this.onRoad(new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss,
-        arena: m.arena ? z.trigger : null })));
+        arena: m.arena ? z.trigger : null }), z.might));
     z.actors = [...kept, ...fresh];
     for (const a of z.actors) a.kin = z.actors;   // its zone's fighters: an `alone` boss phase waits for the rest to fall
     z.beaten = z.members.length > 0 && fresh.length === 0;   // every member beaten (before a rest, or a boss): its gate opens

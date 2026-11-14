@@ -36,9 +36,12 @@ const roadFinds = levelId => STORY.chapters.slice(0, Math.max(0, STORY.chapters.
   .flatMap(c => (ALL_LEVELS.find(l => l.id === c.level).flaskFinds || []).map(f => f.id));
 
 Object.assign(Game, {
-  // A level's enemy, made as strong as its chapter of the road (roadMight); unchanged off it.
-  onRoad(e) {
-    if (this.kind === 'level') e.setMight(roadMight(this.level.id, e.isBoss()));
+  // A level's enemy, made as strong as its chapter of the road (roadMight); unchanged off it. `own`: its zone's own
+  // `might` ({ pace, health, damage }, each a share of the road's), e.g. a gentler first fight.
+  onRoad(e, own) {
+    if (this.kind !== 'level') return e;
+    const m = roadMight(this.level.id, e.isBoss()) || { pace: 1, health: 1, damage: 1 }, o = own || {};
+    e.setMight({ pace: m.pace * (o.pace ?? 1), health: m.health * (o.health ?? 1), damage: m.damage * (o.damage ?? 1) });
     return e;
   },
   // ---- level -------------------------------------------------------------------------------------

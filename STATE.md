@@ -4,8 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 82): item 6 pass 1 done: nothing in Story takes the camera or feet (Aldric's retreat; both endings
-  told over the live world). 8 bosses **awaiting Aleix**. Next: the rework's item 3.
+- Track A (pass 84): item 3 pass 1: laptop keys, changeable in Controls; L taps deflect; bosses lock on; a gentle
+  first Hollow (in-page `Controls:`; `BACKLOG.md` top). Next: hints in the world.
 - Track B (pass 83): four summons at once online, party of four (`tests/summons-party-browser.cjs` by hand,
   `docs/scorecard/summons-party.jpg`). Next: the rework's moveset (items 1-2).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.

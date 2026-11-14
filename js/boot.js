@@ -81,6 +81,8 @@ const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
   const code = ev.code;
   if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.isComposing) return;
+  // The Controls screen waits for a new key: this one is it (Escape keeps the old one).
+  if (Game.rebinding && Game.mode !== 'play' && Game.screen === 'controls' && !$('menu').classList.contains('hidden')) { ev.preventDefault(); input.use('keyboard'); if (!ev.repeat) Game.finishRebind(code); return; }
   if (multiplayer.panelOpen) {
     if (code === 'Escape') { ev.preventDefault(); if (!ev.repeat) multiplayer.lobbyBack(); }
     return;

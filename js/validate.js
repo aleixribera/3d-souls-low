@@ -546,6 +546,7 @@ function validateData({ visual = true } = {}) {
     let lastGate = 0;
     for (const g of L.gated) {
       const tag = `${where} zone "${g.id}"`;
+      validateZoneMight(g, tag, need);
       need(g.enemy in ENEMY_BY_ID, `${tag}: unknown enemy "${g.enemy}" (known: ${Object.keys(ENEMY_BY_ID).join(', ')}).`);
       need(num(g.trigger) && g.spawn && num(g.spawn.x) && num(g.spawn.z) && num(g.spawn.yaw) && num(g.gateX),
         `${tag}: needs trigger, spawn { x, z, yaw } and gateX.`);
@@ -773,6 +774,13 @@ const HOUSE_KINDS = ['house', 'tower'];
 /// Room-style level checks (see LEVEL_2 and js/terrain.js): shapes first, then the 3D layout built from them.
 // A level's lesson cards (v7.19.0, js/data/lessons.js): each a known lesson, once, with one trigger whose references exist
 // in this level (a zone, a bonfire, an enemy kind, an earlier lesson of the same list).
+// A gated zone's own `might` (Game.onRoad): { pace, health, damage }, each an optional share of the road's, 0.2-2.
+function validateZoneMight(g, tag, need) {
+  if (!('might' in g)) return;
+  const m = g.might;
+  need(!!m && typeof m === 'object' && Object.keys(m).length > 0 && Object.entries(m).every(([k, v]) => ['pace', 'health', 'damage'].includes(k)
+    && Number.isFinite(v) && v >= 0.2 && v <= 2), `${tag}: might holds pace, health and damage, each a share of the road's from 0.2 to 2.`);
+}
 function validateLessons(L, where, need) {
   need(Array.isArray(L.lessons) && L.lessons.length > 0, `${where}: lessons must be a non-empty list.`);
   if (!Array.isArray(L.lessons)) return;
@@ -947,6 +955,7 @@ function validateRooms(L, where, need, num, visual = true) {
   const zoneIds = new Set();
   for (const g of L.gated) {
     const tag = `${where} zone "${g.id}"`;
+    validateZoneMight(g, tag, need);
     need(!zoneIds.has(g.id), `${tag}: duplicate id.`); zoneIds.add(g.id);
     need(areaOk(g.trigger), `${tag}: trigger must be a rect [x0, x1, z0, z1], or a list of them.`);
     checkGate(g.gate, tag);

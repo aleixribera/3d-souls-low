@@ -105,7 +105,7 @@ const lessons = (() => {
   // ---- drawing ---------------------------------------------------------------------------------------------------
   // Keycaps from the live bindings: the keyboard's first key and its mouse button (or the one key a lesson names), or the
   // controller's buttons.
-  const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Parry', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Roll' };
+  const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Deflect', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Roll' };
   const FACE = { PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y' };
   const cap = label => label.length === 1 ? label.toUpperCase() : label;
   function caps(key) {
@@ -144,7 +144,7 @@ const lessons = (() => {
     const box = $('lesson');
     if (!box) return;
     const on = !!card && owns(g) && playing(g), still = reducedMotion();
-    const sig = on ? `${card.id}|${input.device}|${card.done > 0}|${card.hintTimer > 0 ? card.hint : ''}|${still}` : '';
+    const sig = on ? `${card.id}|${input.device}|${input.bindings}|${card.done > 0}|${card.hintTimer > 0 ? card.hint : ''}|${still}` : '';
     if (sig !== drawn) {
       drawn = sig;
       box.classList.toggle('still', still);   // Camera motion Off or the OS preference: plain fades only
@@ -152,6 +152,8 @@ const lessons = (() => {
       box.setAttribute('aria-hidden', String(!on));
       if (on) {
         if (box.dataset.lesson !== card.id || box.dataset.device !== input.device) { fill(LESSONS[card.id]); box.dataset.lesson = card.id; box.dataset.device = input.device; restartAnim(box); }
+        else if (box.dataset.keys !== String(input.bindings)) fill(LESSONS[card.id]);   // a key changed in Controls
+        box.dataset.keys = String(input.bindings);
         box.classList.toggle('done', card.done > 0);
         $('lessonHint').textContent = card.hintTimer > 0 ? card.hint : '';
       } else { box.classList.remove('done'); delete box.dataset.lesson; }

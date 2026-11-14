@@ -756,9 +756,9 @@ const multiplayer = (() => {
     const rows = [
       ['Move', moveLabel()], ['Look around', usingPad() ? 'Right stick' : 'Mouse · click game first'],
       ['Light attack', bindLabel('light')], ['Heavy attack (hold to charge)', bindLabel('heavy')],
-      ['Dodge / roll', bindLabel('roll')], ['Jump', bindLabel('jump')],
-      ['Block (hold)', bindLabel('block')], ['Parry', bindLabel('parry')],
-      ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
+      ['Dodge', bindLabel('roll')], ['Jump', bindLabel('jump')],
+      ['Block (hold)', bindLabel('block')], ['Deflect (tap as it lands)', bindLabel(usingPad() ? 'parry' : 'block')],
+      ['Abilities', abilityLabel()], ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
       ['Rest at bonfire', bindLabel('rest')], ['Game menu', systemLabel('pause')],
     ];
     const list = el('lobbyControlsList'); list.textContent = '';

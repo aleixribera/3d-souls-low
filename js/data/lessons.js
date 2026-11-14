@@ -15,18 +15,18 @@ const LESSONS = {
   move: { title: 'MOVE', keys: ['move', 'camera'],
     text: () => usingPad() ? 'Walk with the left stick. Turn the view with the right.' : 'Walk, and turn the view with the mouse. Click the view to capture it.',
     check: (g, t) => t.dist >= 5 },
-  roll: { title: 'ROLL', keys: ['roll'], text: () => 'Roll to slip out of harm. It costs stamina, the green bar.',
+  roll: { title: 'DODGE', keys: ['roll'], text: () => 'Dodge to slip out of harm.',
     check: g => g.player.state === PS.ROLL },
   jump: { title: 'JUMP', keys: ['jump'], text: () => 'Jump over low rubble, or onto a foe.',
     check: g => g.player.state === PS.JUMP },
   lock: { title: 'LOCK ON', keys: ['lock'], text: () => 'Fix your eyes on the foe ahead. Lock on again to let go.',
     on: type => type === 'lock', check: g => !!g.lock },   // already locked on (while another card showed): done
   // Done on a swing, hit or miss: the first thing to know is how to strike at all.
-  light: { title: 'ATTACK', keys: ['light'], text: () => 'Swing your sword. Each blow spends a little stamina, the green bar.',
+  light: { title: 'ATTACK', keys: ['light'], text: () => 'Swing your sword. Strike again to carry on the string.',
     check: g => g.player.state === PS.ATTACK && !!g.player.attack && /^light/.test(g.player.attack.id) },
   // The shield, shown as the first red-glinting blow winds up (urgent: the blow is coming). Done on a blow taken on it,
   // or parried.
-  block: { title: 'BLOCK', keys: [{ action: 'block', key: 'KeyL' }], urgent: true,
+  block: { title: 'BLOCK', keys: ['block'], urgent: true,
     text: () => 'Hold to raise your shield and take the blow on it. A red glint means it can be blocked.',
     on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked || type === 'parry' && lessonBy(d, g) },
   // Done on a fully charged heavy that lands; a lighter one says how.
@@ -45,7 +45,8 @@ const LESSONS = {
     on: type => type === 'postureBreak' || type === 'executionEnd' },
   execute: { title: 'EXECUTE', keys: ['light'], urgent: true, text: () => 'It kneels. Step close to its front and strike to finish it.',
     on: (type, d, t, g) => type === 'executionEnd' && d.player === g.player },
-  parry: { title: 'PARRY', keys: ['parry'], text: () => 'Parry a red glint just before it lands, then strike while it reels.',
+  // The block key tapped as a red-glinting blow lands (js/input.js: on a keyboard the parry rides the block key).
+  parry: { title: 'DEFLECT', keys: ['parry'], text: () => 'Tap it as a red glint lands to turn the blow aside, then strike while it reels.',
     on: (type, d, t, g) => type === 'parry' && lessonBy(d, g) },
   rest: { title: 'BONFIRE', keys: ['rest'], arrow: true,
     text: () => 'Rest to heal and refill your flasks. You return here if you fall, and foes you beat stay down.',
@@ -54,9 +55,9 @@ const LESSONS = {
     on: type => type === 'switchTarget' },
   // Done on one roll through a blow. A swing that ends without one says why: rolled too early (its invulnerability over
   // before the blow), too late (hit without having rolled), or not into it at all. Polled, so it works online too.
-  dodge: { title: 'ROLL INTO IT', keys: ['roll'], urgent: true, text: () => 'Roll into the blow as it falls, not away: you pass through untouched.',
+  dodge: { title: 'DODGE INTO IT', keys: ['roll'], urgent: true, text: () => 'Dodge into the blow as it falls, not away: you pass through untouched.',
     on: (type, d, t, g) => {
-      if (type === 'strike' && d.target === g.player && !d.blocked && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early: roll as it falls' : 'Too late: roll sooner';
+      if (type === 'strike' && d.target === g.player && !d.blocked && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early: dodge as it falls' : 'Too late: dodge sooner';
       return type === 'dodge' && d.player === g.player && !d.projectile;
     },
     check: (g, t) => {
@@ -65,19 +66,19 @@ const LESSONS = {
       if (!s && e.state === ES.WINDUP) t.flags.swing = { enemy: e, rolled: false, hit: null };
       else if (s && g.player.state === PS.ROLL && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) s.rolled = true;
       else if (s && s.enemy === e && e.state !== ES.WINDUP && e.state !== ES.ACTIVE) {
-        if (s.hit || s.rolled) t.hint = s.hit || 'Roll into the blow';
+        if (s.hit || s.rolled) t.hint = s.hit || 'Dodge into the blow';
         t.flags.swing = null;
       }
       return false;
     } },
   // Level 1's giant: its hand closes on you (a hit's `seize`). Done on getting out of the grip, however it ends.
-  grip: { title: 'BREAK FREE', keys: ['light', 'roll'], urgent: true, text: () => 'Strike or roll, again and again, to tear loose sooner.',
+  grip: { title: 'BREAK FREE', keys: ['light', 'roll'], urgent: true, text: () => 'Strike or dodge, again and again, to tear loose sooner.',
     on: (type, d, t, g) => type === 'seizeEnd' && d.body === g.player },
   // Level 2: the first raised shield.
   shield: { title: 'SHIELDS', keys: ['heavy'], text: () => 'A raised shield turns light blows. Heavy attacks batter its guard down, or go round it.',
     on: type => type === 'postureBreak' },
   // Level 3: the first blue glint.
-  blue: { title: 'BLUE GLINT', keys: ['roll'], urgent: true, text: () => 'Blue cannot be parried or blocked. Roll through it.',
+  blue: { title: 'BLUE GLINT', keys: ['roll'], urgent: true, text: () => 'Blue cannot be deflected or blocked. Dodge through it.',
     on: (type, d, t, g) => type === 'dodge' && d.player === g.player },
 };
 // When a level's lesson shows (`when`, exactly one of these):

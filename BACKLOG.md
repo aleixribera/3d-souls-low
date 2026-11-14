@@ -2,6 +2,15 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **The rework's item 3, after pass 84 (track A):** laptop keys (`DEFAULT_ACTIONS`), every key changeable in Controls
+  (`BIND_SLOTS`, `bindKey`, `settings.keys`), boss fights lock on once (`bossLocked`), a gentle first Hollow (a zone's
+  `might`). For track B: fill `ability1`..`ability4` (keys 1-4, the d-pad on a pad; the ability lab's D-pad up opens
+  its list there), and replace the deflect stand-in on L (`input.live`: the parry counts only from the guard) with the
+  moveset's own deflect. Left for track A: button hints in the world; turning the view without a mouse outside a
+  lock-on; the fixed controls under the keys aren't reachable by pad on a short screen; item 4's replays.
+  Overridable, for Aleix: ordinary foes keep the first-sight auto-lock; the first Hollow at 0.7 pace, 0.8 health,
+  0.5 damage; abilities on the d-pad. In-page `Lessons: they only watch` flakes locally, on the base commit too.
+
 - **Story's last holds (pass 82, track A item 6):** in Story nothing takes the camera or feet any more, but two
   screens still hold play before it starts: an online campaign's run intro (`showRunIntro` in `js/multiplayer.js`,
   the shared lobby flow, left to Boss Rush's owner) and the loading screen's minimum hold between chapters. Both come

@@ -93,6 +93,14 @@ Object.assign(Game, {
         e.discovered = true;
         if (!this.lock && !this.retarget) this.setLock(e);
       }
+      // A boss fight takes the lock (PLAN.md, the player rework's controls): the moment a boss in lock range turns on the
+      // player, lock-on holds it and the camera follows it, so a touchpad never has to aim. Once per fight (each boss,
+      // each life: a respawn makes it anew); Q lets it go for the rest of that fight. Ordinary foes keep the rules above.
+      if (this.kind !== 'bossBattle') for (const { e } of findEnemies(p, this.enemies, { range: trackingRange(CONFIG.lock.range) })) {
+        if (e.bossLocked || !e.isBoss() || !e.fightingPlayer()) continue;   // findEnemies: awake, alive, no gate between
+        e.bossLocked = true; this.retarget = true;
+        if (this.lock !== e) { this.setLock(e); events.emit('lock', { auto: true }); }
+      }
     }
     const t = this.lock;
     if (t && !t.alive() && p.alive()) {   // the target fell: move straight on to the next one in reach, if any

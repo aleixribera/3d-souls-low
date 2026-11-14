@@ -1214,10 +1214,10 @@
     }
   };
   const shown = id => (document.getElementById(id) || {}).textContent || '';
-  test('block: C and L hold block; the side mouse buttons and Ctrl do not', () => {
+  test('block: L holds block; the side mouse buttons and Ctrl do not', () => {
     input.use('keyboard');   // key labels in the prompt, whatever an earlier gamepad test left
     const p = trainingAt('sparring');
-    for (const code of ['KeyC', 'KeyL']) {
+    for (const code of ['KeyL']) {
       input.down(code); sim.step(2);
       expect.ok(p.state === PS.BLOCK, `${code} blocks (state ${p.state})`);
       input.up(code); sim.step(2);
@@ -1239,7 +1239,95 @@
       expect.ok(caps === 'L', `the BLOCK card shows only L: "${caps}"`);
     })();
     const row = [...document.querySelectorAll('#helpTable tr')].find(r => r.cells[0].textContent.startsWith('Block'));
-    expect.ok(row && row.cells[1].textContent === '[ c / l ]', `help panel: "${row && row.cells[1].textContent}"`);
+    expect.ok(row && row.cells[1].textContent === '[ l ] hold', `help panel: "${row && row.cells[1].textContent}"`);
+  });
+  // ---- the player rework's controls (PLAN.md): the laptop layout, keys moved in Controls, the block key's deflect ----
+  const tap = (code, steps = 1) => { input.down(code); sim.step(steps); input.up(code); };
+  test('Controls: L tapped as a blow lands deflects it; tapped with nothing coming it only guards, never a whiffed parry', () => {
+    const p = trainingAt('sparring'), d = Game.enemies[0], swing = d.def.attacks[0];
+    sim.until(() => d.state === ES.RECOVER && (p.state === PS.IDLE || p.state === PS.WALK), 8); sim.step();
+    const seen = [];
+    input.down('KeyL'); for (let i = 0; i < 3; i++) { sim.step(); seen.push(p.state); }
+    input.up('KeyL'); for (let i = 0; i < 3; i++) { sim.step(); seen.push(p.state); }
+    expect.ok(seen.includes(PS.BLOCK) && !seen.includes(PS.PARRY), `a tap with nothing coming guards and lets go (${seen.join()})`);
+    log.length = 0;
+    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.1, 8); tap('KeyL');
+    sim.until(() => log.includes('parry'), 0.5);
+    expect.ok(log.includes('parry'), 'tapped as it landed: deflected');   // the pad's own parry button: every sim.press('parry')
+  });
+  test('Controls: the laptop layout, and a key moved in Controls (swaps, spares, refusals, saved)', () => {
+    const has = (a, c) => ACTIONS[a].includes(c);
+    expect.ok(has('roll', 'ShiftLeft') && has('jump', 'Space') && has('light', 'KeyJ') && has('heavy', 'KeyK') && has('block', 'KeyL')
+      && has('lock', 'KeyQ') && has('switchTarget', 'Tab') && has('flask', 'KeyE') && has('rest', 'KeyF') && has('talk', 'KeyF'), 'Shift, Space, J, K, L, Q, Tab, E, F');
+    expect.ok([1, 2, 3, 4].every(n => has(`ability${n}`, `Digit${n}`)), 'the number row holds the four ability keys');
+    expect.ok(!GAME_CODES.has('KeyC') && !GAME_CODES.has('KeyG'), 'the old block and flask keys are gone');
+    try {
+      expect.ok(bindKey('roll', 'KeyX') && has('roll', 'KeyX') && !has('roll', 'ShiftLeft') && GAME_CODES.has('KeyX'), `X dodges (${ACTIONS.roll})`);
+      const p = trainingAt(null); tap('KeyX'); sim.step();
+      expect.ok(p.state === PS.ROLL, `X pressed: a dodge (${p.state})`);
+      expect.ok(bindKey('jump', 'KeyX') && has('jump', 'KeyX') && has('roll', 'Space') && !has('roll', 'KeyX'), 'a held key swaps over');
+      expect.ok(bindKey('flask', 'ArrowUp') && has('flask', 'ArrowUp') && !has('up', 'ArrowUp') && has('up', 'KeyW'), 'a spare taken leaves its action');
+      expect.ok(bindKey('block', 'KeyI') && ACTIONS.block[0] === 'KeyI' && has('parry', 'KeyI') && !has('parry', 'KeyL'), 'the deflect follows the block key');
+      expect.ok(!bindKey('light', 'Escape') && !bindKey('light', 'KeyR') && !bindKey('light', 'F1') && !bindKey('light', 'ControlLeft'), 'Esc, R, F1 and Ctrl stay the game\'s');
+      const back = readSettings(JSON.parse(localStorage.getItem(SETTINGS_KEY)));
+      const sorted = k => JSON.stringify(Object.entries(k).sort());
+      expect.ok(sorted(back.keys) === sorted(settings.keys), `saved and read back (${JSON.stringify(back.keys)})`);
+      expect.ok(Object.keys(readSettings({ keys: { roll: 'KeyW' } }).keys).length === 0, 'a saved clash is dropped');
+    } finally { resetBindings(); }
+    expect.ok(Object.keys(DEFAULT_ACTIONS).every(a => JSON.stringify(ACTIONS[a]) === JSON.stringify(DEFAULT_ACTIONS[a])), 'Reset keys: the defaults again');
+  });
+  test('Controls: the screen lists every key that can change; choose a row, press a key; Escape keeps the old one', () => {
+    input.use('keyboard'); Game.controlsFrom = 'main'; Game.showMenu('controls');
+    const key = code => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+    try {
+      const rows = [...document.querySelectorAll('#menuSide .menu-binds .bind')];
+      expect.ok(rows.length === BIND_SLOTS.length, `${rows.length} rows`);
+      const row = rows.find(b => b.querySelector('.n').textContent === 'Dodge'), v = () => row.querySelector('.v').textContent;
+      expect.ok(v() === 'Shift', `Dodge: ${v()}`);
+      row.click(); expect.ok(v() === 'Press a key', `waiting: ${v()}`);
+      key('KeyR'); expect.ok(v() === 'Another key' && has_('roll', 'ShiftLeft'), `R refused: ${v()}`);
+      key('KeyX'); expect.ok(v() === 'X' && ACTIONS.roll.includes('KeyX'), `X: ${v()}`);
+      row.click(); key('Enter'); expect.ok(v() === 'X' && !Game.rebinding, `Enter again lets the row be (${v()})`);
+      row.click(); key('Escape');
+      expect.ok(v() === 'X' && Game.screen === 'controls' && !Game.rebinding, `Escape kept X, still on Controls (${v()})`);
+      expect.ok(document.querySelector('#menuSide dl.menu-controls') && /Camera/.test(document.querySelector('#menuSide dl.menu-controls').textContent), 'the fixed controls under them');
+    } finally { resetBindings(); Game.showMenu('main'); }
+  });
+  const has_ = (a, c) => ACTIONS[a].includes(c);
+  test('Controls: the Options screen\'s Reset to defaults saves the defaults and keeps the keys', () => {
+    const was = settings.sensitivity;
+    try {
+      bindKey('roll', 'KeyX'); settings.sensitivity = DEFAULT_SETTINGS.sensitivity === 9 ? 8 : 9; saveSettings();
+      Game.optionsFrom = 'main'; Game.showMenu('options');
+      Game.menuItems.find(i => i.name === 'Reset to defaults').go();
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      expect.ok(settings.sensitivity === DEFAULT_SETTINGS.sensitivity && saved.sensitivity === DEFAULT_SETTINGS.sensitivity, `reset and saved (${saved.sensitivity})`);
+      expect.ok(has_('roll', 'KeyX') && saved.keys.roll === 'KeyX', 'the keys stay');
+    } finally { resetBindings(); settings.sensitivity = was; saveSettings(); Game.showMenu('main'); }
+  });
+  test('Lock-on: a boss fight locks on by itself, once; Q lets it go for the rest of the fight', () => {
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const e = Game.enemies.find(x => x.isBoss());
+    Game.setLock(null); Game.retarget = false; e.bossLocked = false; e.discovered = true;   // only the boss rule may lock it now
+    sim.until(() => Game.lock === e, 3);
+    expect.ok(Game.lock === e && Game.retarget, `the boss took the lock as its fight began (${Math.hypot(e.x - Game.player.x, e.z - Game.player.z).toFixed(1)} m, fighting ${e.fightingPlayer()}, awake ${e.awake()}, boss ${e.isBoss()}, flag ${e.bossLocked}, lock ${Game.lock && Game.lock.def.id}, kind ${Game.kind})`);
+    sim.press('lock'); sim.step(2);
+    expect.ok(!Game.lock, 'Q let it go');
+    sim.seconds(1.5);
+    expect.ok(!Game.lock, 'and it stays let go for this fight');
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const h = sim.spawn('hollow', 16, 0, undefined, -Math.PI / 2); h.discovered = true; h.setState(ES.CHASE);
+    Game.setLock(null); Game.retarget = false; sim.step(3);
+    expect.ok(!Game.lock, 'an ordinary foe does not');
+  });
+  test('Lessons: the first fight is a forgiving one: the Long Hall\'s first Hollow waits longer and hits half as hard', () => {
+    Game.startLevel('long-hall'); sim.begin();
+    const z = Game.zones.find(z => z.id === 'zone-hollow'), e = z.actors[0], road = roadMight('long-hall', false);
+    const next = Game.zones.find(z => z.id === 'zone-knight').actors[0];
+    expect.near(e.damageMul, road.damage * 0.5, 1e-6, 'half the damage');
+    expect.near(e.pace, road.pace * 0.7, 1e-6, 'a slower pace');
+    expect.near(next.damageMul, road.damage, 1e-6, 'the next fight is the road\'s own');
   });
   // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
   const cadence = (kind, seconds) => {
@@ -1265,7 +1353,7 @@
   });
   const dodges = [];
   A.events.on('dodge', d => dodges.push(d));
-  // The ROLL INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
+  // The DODGE INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
   // toward it or `away` from it. What the card shows once that swing is over: done, or a hint.
   const dodgeRoll = (before, away = false, fresh = true) => {
     if (fresh) { trainingAt('dodge', 'long-hall'); A.lessons.forget(); A.lessons.show('dodge'); }   // each try starts unlearned
@@ -1278,11 +1366,11 @@
     const card = A.lessons.card;
     return { done: !!card && card.id === 'dodge' && card.done, hint: card ? card.hint : '' };
   };
-  test('Lessons: a roll through the swing finishes ROLL INTO IT; early, late or clear of it shows a hint', withLessons(() => {
+  test('Lessons: a roll through the swing finishes DODGE INTO IT; early, late or clear of it shows a hint', withLessons(() => {
     const timed = dodgeRoll(0.1);
     expect.ok(timed.done, `rolled through the swing as it landed: done (hint "${timed.hint}")`);
     expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === TRAINING.dodge, `one dodge event (${dodges.length})`);
-    for (const [before, away, want] of [[0.45, false, 'Too early: roll as it falls'], [0.9, false, 'Too early: roll as it falls'], [-0.05, false, 'Too late: roll sooner'], [0.5, true, 'Roll into the blow']]) {
+    for (const [before, away, want] of [[0.45, false, 'Too early: dodge as it falls'], [0.9, false, 'Too early: dodge as it falls'], [-0.05, false, 'Too late: dodge sooner'], [0.5, true, 'Dodge into the blow']]) {
       const r = dodgeRoll(before, away);
       expect.ok(!r.done && r.hint === want, `rolled ${before} s before it landed${away ? ', away' : ''}: "${r.hint}" (want "${want}")`);
     }
@@ -1290,7 +1378,7 @@
     sim.seconds(CONFIG.lessons.hintTime + 0.1); Game.render(1, STEP);
     expect.ok(A.lessons.card.hint === '' && shown('lessonHint') === '', `the hint goes after a while ("${shown('lessonHint')}")`);
     dodgeRoll(0.45); const next = dodgeRoll(-0.05, false, false);
-    expect.ok(next.hint === 'Too late: roll sooner', `the next hint replaces it ("${next.hint}")`);
+    expect.ok(next.hint === 'Too late: dodge sooner', `the next hint replaces it ("${next.hint}")`);
   }));
   test('events: dodge fires once for a swing rolled through, and for a bolt', withLessons(() => {
     dodgeRoll(0.1);
@@ -2603,11 +2691,13 @@
       // Controls from the footer: every control with its pad button (the pad was used last), B back.
       for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
       until('PadRight', 'Controls'); press('PadA');
-      const binding = name => { const row = [...document.querySelectorAll('#menuSide .menu-controls div')].find(r => r.firstChild.textContent === name); return row && row.lastChild.textContent; };
-      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Roll') === 'B / ○' && binding('Light attack') === 'RB / R1',
-        `Controls lists the pad's buttons (${Game.screen}: Roll ${binding('Roll')}, Light ${binding('Light attack')})`);
-      expect.ok(binding('Parry') === 'LT / L2 just before the blow lands' && !binding('Help'), `notes follow the binding, F1 is left out (${binding('Parry')})`);
-      input.use('keyboard'); expect.ok(binding('Roll') === 'Shift' && binding('Block (hold)') === 'C / L' && binding('Help') === 'F1', `the keys after a key press (${binding('Roll')}, ${binding('Block (hold)')})`);
+      const binding = name => { const row = [...document.querySelectorAll('#menuSide .menu-binds .bind')].find(r => r.querySelector('.n').textContent === name); return row && row.querySelector('.v').textContent; };
+      const fixed = name => { const row = [...document.querySelectorAll('#menuSide .menu-controls div')].find(r => r.firstChild.textContent === name); return row && row.lastChild.textContent; };
+      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Dodge') === 'B / ○' && binding('Light attack') === 'RB / R1',
+        `Controls lists the pad's buttons, starting on Back (${Game.screen}, ${on()}: Dodge ${binding('Dodge')}, Light ${binding('Light attack')})`);
+      expect.ok(binding('Block and deflect') === 'LB / L1, LT / L2' && !fixed('Help'), `the pad's own deflect trigger, F1 left out (${binding('Block and deflect')})`);
+      input.use('keyboard'); expect.ok(binding('Dodge') === 'Shift' && binding('Block and deflect') === 'L' && fixed('Help') === 'F1', `the keys after a key press (${binding('Dodge')}, ${binding('Block and deflect')})`);
+      input.use('pad');
       press('PadB'); expect.ok(Game.screen === 'main', 'B leaves Controls');
       for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
       until('PadRight', 'Changelog'); press('PadA');

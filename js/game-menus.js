@@ -115,10 +115,13 @@ Object.assign(Game, {
       options: { title: 'Options', layout: 'options', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby',
         back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: options,
         focus: Math.max(0, options.findIndex(it => it.size === 'cat' && it.cat === this.optionsCategory)) },
-      // Controls (the title's footer and pause): every control and its binding for the device used last, beside nothing
-      // to choose; Back is the only entry (showControls draws the list).
+      // Controls (the title's footer and pause): every key the player can change, one row each (choose it, then press the
+      // new key; js/input.js bindKey), then the fixed ones for the device used last (showControls draws both).
       controls: { title: 'Controls', layout: 'controls', overlay: this.controlsFrom === 'pause', back: this.controlsFrom === 'pause' ? 'pause' : 'main',
-        items: [{ name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.controlsFrom === 'pause' ? 'pause' : 'main') }] },
+        focus: usingPad() ? BIND_SLOTS.length + 1 : 0,   // a pad's buttons stay put (its rows only show them): it starts on Back
+        items: [...BIND_SLOTS.map(s => ({ name: s.name, note: s.desc || '', size: 'bind', kind: 'bind', slot: s.id, go: () => this.rebind(s.id) })),
+          { name: 'Reset keys', size: 'foot', desc: '', go: () => { this.rebinding = null; resetBindings(); events.emit('device', { device: input.device }); } },
+          { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.controlsFrom === 'pause' ? 'pause' : 'main') }] },
     };
   },
   // Options' entries. A setting's `kind` is its control: 'toggle' (Off/On), 'cycle' (‹ value ›) or 'slider' (`min`..`max`
@@ -150,7 +153,8 @@ Object.assign(Game, {
       slider('sound', 'Volume', 'volume', 0, 10, ''),
       { name: 'Reset to defaults', size: 'foot', desc: '', go: () => {
         const graphics = settings.graphics;   // the quality stays: changing it rebuilds the shaders, and Auto already chose it
-        Object.assign(settings, readSettings(null), { graphics }); saveSettings(); applySettings(); this.showMenu('options', true);
+        Object.assign(settings, readSettings(null), { graphics, keys: settings.keys });   // the keys have their own reset (Controls)
+        saveSettings(); applySettings(); this.showMenu('options', true);
       } },
       { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(back) },
     ];
@@ -209,7 +213,7 @@ Object.assign(Game, {
       this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu
       this.cam.pitch = 0;
     } else this.mode = 'pause';
-    this.screen = screen; this.clearControls(); this.setLock(null);
+    this.screen = screen; this.clearControls(); this.setLock(null); this.rebinding = null;
     if (document.pointerLockElement) document.exitPointerLock();
     const layout = s.layout || 'list', title = layout === 'title', menu = $('menu');
     menu.classList.toggle('title-menu', title);
@@ -236,8 +240,9 @@ Object.assign(Game, {
       b.type = 'button';
       if (title ? it.size === 'mode' || it.desc : at !== 'foot') b.setAttribute('aria-describedby', 'menuDesc');
       b.className = title ? titleClass[it.size] : at === 'foot' ? 'ui-text-button' + (this.isBackItem(it) ? ' menu-back' : '')
-        : 'menuBtn ui-row' + (it.size === 'set' ? ' setting' : '') + (it.size ? ` ${it.size}` : '');
+        : 'menuBtn ui-row' + (it.size === 'set' || it.size === 'bind' ? ' setting' : '') + (it.size ? ` ${it.size}` : '');
       b.innerHTML = '<span class="n"></span>';
+      if (it.note) { const note = document.createElement('span'); note.className = 'note'; note.textContent = it.note; b.appendChild(note); }
       if (title && it.size === 'primary') { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.appendChild(key); }
       if (!title && this.isBackItem(it)) { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.prepend(key); }
       if (it.kind) b.appendChild(this.menuControl(it, i));
@@ -277,12 +282,13 @@ Object.assign(Game, {
   // Where an entry sits off the title: Back (and any `size: 'foot'` entry) in the footer, Options' settings beside their
   // categories, everything else in the list.
   isBackItem(it) { return it.name === 'Back' && it.cue === 'menuBack'; },
-  itemPlace(it) { return it.size === 'foot' || this.isBackItem(it) ? 'foot' : it.size === 'set' ? 'side' : 'list'; },
+  itemPlace(it) { return it.size === 'foot' || this.isBackItem(it) ? 'foot' : it.size === 'set' || it.size === 'bind' ? 'side' : 'list'; },
   // An Options setting's control (its `kind`): an Off/On pair, a value cycled in place (‹ value ›) or a slider with its
   // number. Each part takes a click; the keys and the pad change the focused setting with left and right.
   menuControl(it, i) {
     const v = document.createElement('span');
-    v.className = 'v ' + { toggle: 'seg', cycle: 'cyc', slider: 'slide' }[it.kind]; v.setAttribute('aria-hidden', 'true');
+    v.className = 'v ' + { toggle: 'seg', cycle: 'cyc', slider: 'slide', bind: 'key' }[it.kind]; v.setAttribute('aria-hidden', 'true');
+    if (it.kind === 'bind') return v;   // its key, written by fillRow
     const cur = () => this.menuItems[i];
     const part = (cls, text, fn) => {
       const p = document.createElement('span'); p.className = cls; p.textContent = text; v.appendChild(p);
@@ -307,6 +313,13 @@ Object.assign(Game, {
     b.querySelector('.n').textContent = it.name;
     const v = it.kind && b.querySelector('.v');
     if (!v) return;
+    if (it.kind === 'bind') {   // a key of the Controls screen: its key, or what it waits for
+      const s = BIND_SLOTS.find(x => x.id === it.slot), waiting = this.rebinding === it.slot;
+      v.textContent = waiting ? this.rebindRefused ? 'Another key' : 'Press a key' : slotLabel(s);
+      v.classList.toggle('waiting', waiting); b.classList.toggle('waiting', waiting);
+      b.setAttribute('aria-label', waiting ? `${it.name}: press the new key, or Escape to keep ${slotLabel(s)}` : `${it.name}: ${slotLabel(s)}${it.note ? `. ${it.note}` : ''}`);
+      return;
+    }
     if (it.kind === 'toggle') { v.children[0].classList.toggle('on', !it.value); v.children[1].classList.toggle('on', !!it.value); }
     else if (it.kind === 'cycle') v.children[1].textContent = it.value;
     else {
@@ -371,9 +384,10 @@ Object.assign(Game, {
     if (layout === 'controls') this.showControls();
     hint.classList.add('ui-hints'); hint.textContent = '';
     if (s.hint) { hint.textContent = s.hint; return; }
-    const keys = layout === 'controls' ? [] : [[pad ? 'D-pad' : '↑ ↓', 'Move']];   // Controls has only Back, which shows its key
+    // Controls on a pad has only Back, which shows its key; on a keyboard, Enter on a row waits for its new key.
+    const keys = layout === 'controls' && pad ? [] : [[pad ? 'D-pad' : '↑ ↓', 'Move']];
     if (layout === 'options') keys.push(['← →', 'Change']);
-    if (layout !== 'controls') keys.push([pad ? 'A' : 'Enter', 'Select']);
+    if (layout !== 'controls' || !pad) keys.push([pad ? 'A' : 'Enter', layout === 'controls' ? 'Change key' : 'Select']);
     if (layout === 'title' || layout === 'pause') keys.push(['', VERSION]);
     for (const [key, label] of keys) {
       const item = document.createElement('span'), cap = document.createElement('span');
@@ -381,20 +395,46 @@ Object.assign(Game, {
     }
     if (layout === 'title') this.titleKeys();
   },
-  // The Controls screen's list (js/input.js controlRows), redrawn when the device changes: what each control does, its
-  // keys or buttons, and a note where it needs one.
+  // The Controls screen, redrawn when the device or a key changes: the keys the player can change (rows in two columns,
+  // each with its key), then the fixed controls (js/input.js controlRows) with a note where one needs it.
   showControls() {
     const side = $('menuSide'), list = document.createElement('dl');
     const online = typeof multiplayer !== 'undefined' && multiplayer.connected;
+    let binds = side.querySelector('.menu-binds');
+    if (!binds) { binds = document.createElement('div'); binds.className = 'menu-binds'; side.prepend(binds); }
+    (this.menuItems || []).forEach((it, i) => {
+      const b = this.menuButtons[i];
+      if (it.kind !== 'bind' || !b) return;
+      if (b.parentNode !== binds) binds.appendChild(b);
+      this.fillRow(b, it);
+    });
+    // Filled down the first column, then the next: three columns on a wide screen, two on a narrow one, one on a phone.
+    for (const n of [2, 3]) binds.style.setProperty(`--rows${n}`, Math.ceil(binds.children.length / n));
     list.className = 'menu-controls';
-    for (const [name, keys, note] of controlRows(online)) {
+    const FIXED = ['Camera', 'Jump attack', 'Lobby', 'Restart', 'Game menu', 'Pause', 'Help'];
+    for (const [name, keys, note] of controlRows(online).filter(r => FIXED.includes(r[0]))) {
       const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
       dt.textContent = name;
       dd.textContent = keycap(keys).replace(/(^|\s)([a-z])(?=\s|$)/g, (m, a, b) => a + b.toUpperCase());   // "c / l" -> "C / L"
       if (note) { const span = document.createElement('span'); span.textContent = (keys ? ' ' : '') + note; dd.appendChild(span); }
       row.append(dt, dd); list.appendChild(row);
     }
-    side.replaceChildren(list);
+    const old = side.querySelector('dl.menu-controls');
+    if (old) old.replaceWith(list); else side.appendChild(list);
+  },
+  // Choosing a key's row waits for the new key (js/boot.js hands it to finishRebind); choosing it again lets it be.
+  // A controller's buttons stay as they are.
+  rebind(slot) {
+    if (usingPad()) { if (this.rebinding) { this.rebinding = null; this.showControls(); } return; }   // a pad's buttons stay put
+    this.rebinding = this.rebinding === slot ? null : slot; this.rebindRefused = false;
+    this.showControls();
+  },
+  finishRebind(code) {
+    if (code === 'Escape' || code === 'Enter' || code === 'NumpadEnter') { this.rebinding = null;   // Esc, or Enter again: keep the old key
+      events.emit('menuBack'); this.showControls(); return; }
+    if (!bindKey(this.rebinding, code)) { this.rebindRefused = true; this.showControls(); return; }   // R, F1...: still waiting
+    this.rebinding = null; events.emit('menuConfirm');
+    events.emit('device', { device: input.device });   // every key cap and line redraws from the new keys
   },
   // The primary button shows the confirm key while it is what that key does: on the chosen mode or on the button itself.
   titleKeys() {
@@ -414,8 +454,6 @@ Object.assign(Game, {
       events.emit('menuMove'); this.select(to, true);
       return;
     }
-    // Controls has only Back: up and down scroll its list where the screen is too short to show it whole.
-    if (this.menuLayout === 'controls') { $('menuSide').scrollBy(0, dir === 'down' ? 80 : dir === 'up' ? -80 : 0); return; }
     if (this.menuLayout === 'title' && it) {
       // Rows: each mode, the primary, New game (when shown), then the footer's entries together. Up and down go row
       // to row (wrapping); left and right go along the footer.
@@ -445,6 +483,10 @@ Object.assign(Game, {
       if (here === 'foot') to = col[(k + d + col.length) % col.length];
       else if (it && it.adjust) { if (!(it.kind === 'toggle' && (d > 0) === !!it.value)) this.adjust(d); return; }
       else if (it && it.size === 'cat' && d > 0) { this.chooseCategory(it.cat); const set = column('side'); if (set.length) to = set[0]; }
+      else if (it && it.size === 'bind') {   // across the columns, as many as the screen shows
+        const binds = document.querySelector('#menuSide .menu-binds'), cols = binds ? getComputedStyle(binds).gridTemplateColumns.split(' ').length : 1;
+        to = cols > 1 ? col[k + d * Math.ceil(col.length / cols)] ?? this.selected : this.selected;
+      }
       else if (here === 'side' && d < 0) to = items.findIndex(x => x.size === 'cat' && x.cat === this.optionsCategory);
     }
     if (here !== 'foot') this.lastColumn = here;

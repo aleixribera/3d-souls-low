@@ -46,8 +46,10 @@ const LEVEL_1 = {
              { id: 'east-87', x: 87, side: -1 }, { id: 'west-141', x: 141, side: 1 }],
   // Gated zones in order: entering x > trigger spawns the enemy; its gate at gateX lifts on its death.
   // The level is complete when every gate is open.
+  // The first fight is a forgiving one (PLAN.md, first-time friends): the Hollow waits longer between its blows, and
+  // they hurt half as much, while the cards teach lock-on, the block and the flask.
   gated: [
-    { id: 'zone-hollow', enemy: 'hollow', trigger: 16, spawn: { x: 28, z: 0, yaw: -Math.PI / 2 }, gateX: 34 },
+    { id: 'zone-hollow', enemy: 'hollow', trigger: 16, spawn: { x: 28, z: 0, yaw: -Math.PI / 2 }, gateX: 34, might: { pace: 0.7, health: 0.8, damage: 0.5 } },
     { id: 'zone-knight', enemy: 'knight', trigger: 64, spawn: { x: 75, z: 0, yaw: -Math.PI / 2 }, gateX: 82 },
     { id: 'zone-rogue', enemy: 'rogue', trigger: 112, spawn: { x: 121, z: 0, yaw: -Math.PI / 2 }, gateX: 128 },
     { id: 'zone-giant', enemy: 'giant', trigger: 146, spawn: { x: 160, z: 0, yaw: -Math.PI / 2 }, gateX: 170 },
