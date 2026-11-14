@@ -7,6 +7,19 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel
   reads as flat red at fighting distance.
 
+- The Giant Skeleton, after its pass 1 (pass 72; judge 63, 67, 69 vs Hollis 80). Left:
+  - **The gaol on its figure** (the judge's gap, character 5 vs 9): the irons read as thin bracelets. A heavy manacle
+    on the claw with a broken chain (~1.2 m) that swings on The Taking and The Long Claw and wraps the held player;
+    an iron collar and chain at the neck for the silhouette from behind. The figure is at 13,188 of 14,000 triangles:
+    take them from the ribs or skull. The name is the most generic part (the judge offered "The Gaol Giant"; Aleix's call).
+  - **Effects** (5 vs 9): the grip's burn shows only for the local player (no bodies list for other players);
+    the throw lands only about 2 m away.
+  - **Moves:** the Bonewheel turns the torso on the spine rather than the whole body; check the claw and foot glows'
+    positions in play, not only in the lab.
+  - **Balance:** bots find it easy (3 bots 6/6 in 31 s, 31 damage; one bot 4/4 in 64 s), which may suit Ashmere's
+    first boss.
+  - `js/data/bosses/godfrey.js` is no longer borrowed from: it can go, together with the tests that name it.
+
 - The Pillager Captain, after his pass 2 (pass 66; judge vs Hollis 4-6 vs 5-7). Pass 66 gave the strikes their own
   ends (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots that step out of fires, and a check that a
   parry glint sits only on a parryable hit. Left:

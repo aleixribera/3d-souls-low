@@ -4,11 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 68): item 4 (Ashmere's five bosses), the Bell Warden pass 1 (`bell-warden.js`, tests `Bell Warden`):
-  Blender figure with a baked bell maul, `resonance` (blows fill it, `when: 'resonant'` answers with a toll all round),
-  the Waking at half health (chains fall, `hum` glow). Strips `docs/scorecard/warden-moves.jpg`; blind judge 76 vs
-  Hollis 58; bots 3: 6/6 43 s 161 dmg, solo 3/4. Leftovers in `BACKLOG.md`. He, the Pillager Captain, the King's Blade,
-  Agathe, the Kindling Tree: **awaiting Aleix**. Next Track A: the third of Ashmere's bosses by PLAN.md item 4.
+- Track A (pass 72): item 4, the Giant Skeleton pass 1 (`giant-skeleton.js`; `seize`, `PS.HELD`, a model's `tells`;
+  in-page `Giant Skeleton`). Strips `docs/scorecard/giant-moves.jpg`; judge 69 vs Hollis 80 (gap: the gaol on its
+  figure); bots 6/6 31 s. It, the Bell Warden, the Pillager Captain, the King's Blade, Agathe, the Kindling Tree:
+  **awaiting Aleix**. Next: its pass 2, then the next Ashmere boss (`BACKLOG.md`).
 - Track B (pass 71): item 7 done (pass 1): `CRATES`, `js/progress.js`, `js/crate-screen.js`, `setGear`; `tests/crates.cjs`,
   frames `docs/scorecard/crate-*.jpg`. Next: item 11.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
@@ -19,7 +18,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Toll Wisp,
-  Executioner, Shover, Antlered Hunger, Gargoyle (a `tail` bone, wings on `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`, an opt-in idle angle), Giant Skeleton (booleans: `carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
+  Executioner, Shover, Antlered Hunger, Gargoyle (`tail`, `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`), Giant Skeleton (`carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by
   the in-page `model` filter, `Shover`, `Bowman`, `Wisp`, `Ultra performance` and
   validation at load.
 - Figure lessons: a long thin limb built with `soft()` decimates to slivers whose normals tip toward its capped end and
