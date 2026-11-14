@@ -86,6 +86,11 @@ Aleix, 2026-11-13.
   stays (track B, items 1 and 8). `VISION.md` changed with his OK.
 - More attacks can be deflected (Aleix, 2026-11-14): `noParry` only on ground area attacks, grabs and a boss's
   biggest moments, about a quarter at most (the player rework, item 4).
+- After his run (Aleix, 2026-11-14): "the difficulty scaling is perfect now". One count, the fight; hidden meters
+  go (guard, poise, rend), the counter window shows, the ability keys sit bottom centre, "Crowned in" goes; the
+  modifiers named for what they do; the first pick a rare; momentum through attacks; legendaries OP, at one level,
+  uncapped, the dragon the floor, but not "wins the fight by itself"; fewer plain stat buffs; Story's four abilities
+  cool as fuck and the same all story ("Next, small" section, item 6, rework item 3).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -94,7 +99,7 @@ Aleix, 2026-11-13.
     strengthened, so picking is a real choice (item 11).
   - Swift kill's par comes from each boss's own health, so it is as hard to earn against every boss (item 11).
   - The loop's other Boss Rush defaults stand: modifiers from fight 8, pairs from 9; the warm-up's easier bosses at
-    reduced health; legendaries a third weaker with the same spectacle; revive as built; Practice groups up to 6; "The
+    reduced health; legendaries stronger and uncapped (overturned 2026-11-14, below); revive as built; Practice groups up to 6; "The
     crown answered" / "Team wiped". The Bell Warden, Oswin, Ostrey and Varn are fixed in their own pace (track A),
     then lose Boss Rush's health discount.
   - The Ember Twin stays an ember copy of your own figure.
@@ -141,12 +146,12 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    charged blows), and item 6's spectacle bar makes them the highlight of every fight.
 2. **The moveset:**
    - **No stamina for attacking or dodging,** and no exhaustion. The dodge has 3 charges that refill more slowly, one at
-     a time (Aleix, 2026-11-14, over 2 quick ones; start near 1.3 s each and tune). Blocking still wears your guard
-     down, so turtling stays risky.
+     a time (Aleix, 2026-11-14, over 2 quick ones; start near 1.3 s each and tune). Blocking takes reduced damage
+     and wears nothing down (no guard bar; Aleix, 2026-11-14).
    - **The HUD: no stamina bar** (Aleix: "why is there still a stamina bar? This new white dash bar should be it").
      Where the green bar sat, the dash charges show as three very slim white horizontal bars side by side, each
-     filling as it comes back; no diamonds. The guard isn't a standing bar: its wear shows only while blocking or
-     refilling (thin, beside the dash bars, fading out once full), so a newcomer sees one bar under health, not two.
+     filling as it comes back; no diamonds. No guard bar at all (Aleix, 2026-11-14: no hidden meters), so a
+     newcomer sees one bar under health.
    - **A dash for a roll:** about 0.35 s, i-frames kept. A perfect dodge (right on the hit) opens a short counter
      window, drawn with a beat of slow motion; the simulation and the other players never slow.
    - **Cancels:** any attack cancels into a dodge or a deflect once its hit is out. The wind-up still commits.
@@ -187,8 +192,13 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
      - **Boss Rush:** you hold at most one pressed ability per key, and the one you choose stays: no replacing it
        (Aleix, 2026-11-14). Its card shows its key. Once a key is filled, later offers never show another ability for
        that key; the one you hold can still come back as its next level. Triggered abilities (no key) stay frequent in
-       every offer, so a run keeps building after the four keys are full; they follow item 6 and 11's rules (at most 2
-       legendaries held).
+       every offer, so a run keeps building after the four keys are full; they follow item 6's rules (no cap on any rarity: the
+       four keys already limit what you fire; Aleix, 2026-11-14).
+     - **Story's four are cool as fuck** (Aleix, 2026-11-14): made for Story, not taken from Boss Rush's pool; each a
+       signature technique tied to the place or person that gives it, built to item 6's legendary bar (its own effect
+       or model, camera moment and sound); the fourth, before the finale, is the biggest moment in the game. They stay
+       the same all through the story (Aleix), unless the loop finds one truly great story moment for one to grow, which
+       goes to "Needs Aleix" first.
      - **Story:** no picks. The player is given four pressed abilities at points along the road, one per key, each
        keeping its key for good: key 1 early (chapter 1-2), then 2 and 3 through the middle chapters, then 4 for the
        last stretch before the finale, each given in the story by a place or a person, never a menu. Which four, and
@@ -277,6 +287,42 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
 Check: a test of each move (dash charges, cancels, every string and finisher, deflect timing and its posture, drinking
 on the move); a clip of a full string, a perfect dodge into a counter and a deflected string into a riposte; the
 Pillager Captain in Practice at desktop and laptop size, the touchpad alone driving it; then Aleix's go.
+
+## Next, small: fixes from Aleix's run (2026-11-14)
+
+Track B's next pass after the one in progress takes all of these at once (Aleix: "Yes" to the order); they are small.
+The momentum item goes to track A, the legendary and Story ability bars to item 6 and rework item 3.
+
+1. **One count: the fight.** The HUD counted fights while the run's tally, the end screen and the lobby board counted
+   bosses (a fight against two bosses added 2), so they disagreed from fight 9. The fight number is the only count,
+   everywhere (HUD, end screen, board, Crowned every 5th fight); a fight against two bosses is one fight; "bosses
+   beaten" goes. Check: a test of a run with a two-boss fight, the HUD, end screen and board showing the same number.
+2. **No hidden meters** (Aleix: "keep the game simpler"):
+   - **The guard bar goes.** Blocking takes reduced damage (chip damage) and never breaks; it stops nothing that can't
+     be deflected. `stamina` and its bar leave the player.
+   - **Poise goes.** Ordinary hits never stagger the player; only attacks marked heavy do, and their wind-up shows it.
+   - **Rend goes** (Mother Agathe's hook tearing pieces off your health bar for 22 s): her hook just hits hard.
+   - **The counter window shows:** for its 0.8 s after a perfect dodge, the blade glows (track A, the player's
+     effects).
+   - **Kept:** the boss's posture bar, the ability keys' charges, and bosses that learn (they read as a boss
+     reacting).
+   - **The Boss Rush corner:** the fight number only, plus the clock while a Swift kill is still possible (under par);
+     "Crowned in" and "par" go.
+   - **The ability keys sit bottom centre** (Aleix), not bottom right.
+   Check: frames of the HUD in a boss fight, blocking and after a perfect dodge, at desktop and phone width.
+3. **The bosses' modifiers say what they do.** They change only a boss's speed, and their names hid it ("Unbroken"
+   reads as unbreakable but means longer combos). Renamed (the director's pick; Aleix may rename):
+   **Faster** (was Quickened: the boss's whole pace times 1.12), **Fewer pauses** (was Restless: its rests between
+   attacks 1.5 times shorter), **Longer combos** (was Unbroken: its follow-ups chain as if its pace were 1.8 times
+   higher). Shown under the boss's bar, as now.
+4. **The first pick is a rare** (Aleix: the start was a struggle, then the abilities came). The run's free first
+   offer before fight 1 is of rares, not commons, so a key ability comes from the start. The curve stays: "the
+   difficulty scaling is perfect now".
+5. **Momentum, not static attacks** (track A, part of rework item 3c; Aleix: "static attacks break the flow too much,
+   keep player momentum for a bit"). An attack started from a run keeps the run's speed and slides forward, easing off
+   over about 0.2 s; each hit of the light string steps forward and can be steered through the whole string, not only
+   the wind-up; a string that ends with movement held flows straight into the run, with no recovery pose. Check:
+   input-to-motion and speed curves in frames, run into each attack and back, old against new; a clip.
 
 ## Before everything else: players know a new version is out (Aleix, 2026-11-13)
 
@@ -549,8 +595,18 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
      has its own look and sound; no "+X% damage" filler. Rares as spectacular as today's legendaries and legendaries a
      clear step above that. Two kinds of pass, taken in turn: a spectacle pass that lifts existing abilities to the
      new bar (the plainest first, judged on frames and a short clip of each moment), and a growth pass that adds new
-     ones, each with its own look, sound and moment. Every new one keeps item 11's rules (at most 2 legendaries held,
-     posture earned, no single ability carrying a run) and `AGENTS.md`'s short card text.
+     ones, each with its own look, sound and moment. Every new one keeps item 11's posture rule and `AGENTS.md`'s short card
+     text.
+   - **Legendaries: OP, at full power, the dragon is the floor** (Aleix, 2026-11-14). A legendary comes at its one
+     and only level: never offered again, no upgrades. The lightning dragon is the baseline, not the top: every
+     legendary is more spectacular than it and stronger than today's, its own big effect or model, camera moment and
+     sound. Strong enough to turn a fight, not to end it on its own (Aleix: relax on "wins the fight by itself").
+     **No cap on any rarity:** the four keys already limit what you fire, and two or three legendaries in one offer by
+     pure luck is allowed (the rare-luck run is part of the fun). The curve past fight 20 is measured against such
+     kits.
+   - **Fewer plain stat buffs** (Aleix: "most of the upgrades I'm getting are common stat buffs"). Even commons do
+     something you see in the fight (a small effect on a trigger) more than they add a number; plain stat buffs are at
+     most a third of the commons and come up less often in offers. Hard to design that many, "but still, let's try".
    - **The feel: anime techniques** (Aleix: the cool attacks and effects of a show like Naruto Shippuden). Signature
      moves with a big moment: a lightning dragon that tears out of a fully charged heavy blow, a counter that fires when
      you parry, clones that strike together, a wind blade, a fire burst. `VISION.md`'s rule holds: the spectacle and
@@ -642,12 +698,11 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
    at 21 by being careless; some abilities filled the boss's posture so fast he beat it in an instant). The end must
    come from the bosses, not a slip. Right after item 7's pass in progress, ahead of everything else left.
    - **A warm-up.** Fights 1-4 draw only the easiest bosses and start a little under 1x, reaching 1x by fight 5. Every
-     run starts with one free pick of common abilities before fight 1, so it never opens empty-handed.
-   - **Fewer legendaries.** Each player holds at most 2 legendaries in a run; past that, a legendary card only levels
-     up one already held. Their odds grow more slowly as the run goes on. A Crowned win still offers one (item 5).
-   - **A legendary is a big moment, not a win button.** Every effect, sound and camera moment stays (the spectacle bar,
-     item 6); only raw damage, posture and how often it fires come down, until no single legendary carries a run. It
-     should save a bad fight, not make every fight easy.
+     run starts with one free pick of rare abilities before fight 1 (Aleix, 2026-11-14; was commons), so it never
+     opens empty-handed.
+   - **Legendaries: superseded** (Aleix, 2026-11-14): no cap on holding them, no levels, stronger, not a third weaker;
+     item 6's "Legendaries" rule. Their odds still grow slowly as the run goes on, and a Crowned win still offers one
+     (item 5).
    - **The stagger meter stays earned** (Aleix: it is super important). Abilities, summons included, fill a boss's
      posture far less than they deal damage, and each posture break in a fight makes the next one need more, on top
      of `postureRest`. Target: even a strong kit breaks a boss no more than about every 15-20 s, and an execution is
@@ -668,7 +723,7 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
      follows what the player holds as well as the curve, so a Swift kill stays an achievement: a skilled player with a
      good kit earns it in about one fight in three, not nearly all of them. Each boss's par comes from its own
      health (Aleix, 2026-11-14), so quick and slow bosses give Swift kills about as often.
-   Check: the test bot's runs with no abilities and with the strongest kit the rules allow (2 legendaries, the best
-   posture abilities), against these targets: fight reached, fight times by stage, Swift kills per stage, and seconds
+   Check: the test bot's runs with no abilities and with a strong kit (three legendaries, the best posture
+   abilities), against these targets: fight reached, fight times by stage, Swift kills per stage, and seconds
    between posture breaks
    with that kit; a test of the legendary cap, the warm-up bosses and the free first pick.
