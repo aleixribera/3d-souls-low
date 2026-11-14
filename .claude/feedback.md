@@ -97,3 +97,5 @@ took it (once taken).
   ("Parry: a hound bites the boss."), with no flavour text and no restating what the card's name or rarity shows.
   Applies to the existing pool now and to every ability added later.
   Taken by pass 70 (v7.93.0): every text rewritten, capped in `js/validate.js` (9 words, 56 characters), AGENTS.md rule 10.
+- 2026-11-14: "Very quickly remove the auto fullscreen". Done in v7.116.0 by the loop chat: the first click or key no
+  longer enters fullscreen.
