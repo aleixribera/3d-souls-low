@@ -12,7 +12,7 @@ const { createServer } = require('../server/index.cjs');
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
-      localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.onlineName', name); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -23,7 +23,8 @@ const { createServer } = require('../server/index.cjs');
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive, null, { timeout: 90000 });
   try {
     const a = await player('Ash'), b = await player('Ember');
-    for (const [choice, title, goal] of [['campaign/ashmere', 'STORY · ASHMERE', 'Defeat the Gaoler King.'], ['gauntlet/boss-only', 'SINGLE BOSS', 'Defeat every boss.']]) {
+    const intros = await a.evaluate(() => Object.fromEntries(LOBBY_INTROS.map(i => [i.id, i.goal])));
+    for (const [choice, title, goal] of [['calling/boss-rush', 'BOSS RUSH', intros['boss-rush']], ['calling/weekly', 'WEEKLY RUN', intros.weekly]]) {
       await a.evaluate(() => multiplayer.show());
       await a.locator('#lobbyAdventure').selectOption(choice); await a.locator('#lobbyStart').click();
       await Promise.all([a, b].map(p => p.locator('#runIntroScreen').waitFor({ timeout: 90000 })));
@@ -43,11 +44,12 @@ const { createServer } = require('../server/index.cjs');
       assert.deepEqual(await a.evaluate(() => [Game.player.x, Game.player.z]), before, 'player waits safely behind the ceremony');
       await a.waitForFunction(() => document.querySelector('#runIntroTitle').getAnimations().every(a => a.playState === 'finished'));
       fs.mkdirSync('.scratch/run-intro', { recursive: true });
-      if (choice === 'gauntlet/boss-only') {
-        await a.screenshot({ path: '.scratch/run-intro/gauntlet.png' });
+      if (choice === 'calling/boss-rush') {
+        await a.screenshot({ path: '.scratch/run-intro/boss-rush.png' });
         await a.setViewportSize({ width: 390, height: 740 });
         assert.ok(await a.locator('.intro-message').evaluate(el => el.scrollWidth <= el.clientWidth));
-        await a.screenshot({ path: '.scratch/run-intro/gauntlet-narrow.png' });
+        await a.screenshot({ path: '.scratch/run-intro/boss-rush-narrow.png' });
+        await a.setViewportSize({ width: 1280, height: 720 });
       } else await a.screenshot({ path: `.scratch/run-intro/${choice.split('/')[1]}.png` });
       await Promise.all([ready(a), ready(b)]);
       assert.equal(await a.locator('#menu').evaluate(el => el.inert), false);
@@ -57,6 +59,8 @@ const { createServer } = require('../server/index.cjs');
     const late = await player('Late arrival'); await ready(late);
     assert.equal(await late.locator('#runIntroScreen').isVisible(), false, 'late join never replays an opening');
     assert.equal(app.session.epoch, epoch);
+    // Boss Rush's next fight follows the ability pick: a short one here, nobody choosing.
+    app.sim.abilityPickTime = 0.5;
     const boss = app.sim.inspect().Game.duel; boss.hp = 0; boss.die(); app.sim.tick(5);
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 20000 });
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
@@ -73,6 +77,6 @@ const { createServer } = require('../server/index.cjs');
     await b.emulateMedia({ reducedMotion: 'reduce' });
     assert.equal(await b.locator('#runIntroTitle').evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.deepEqual(errors, []);
-    console.log('Gold openings: both stories and gauntlet, safe loading, input guards, narrow layout, late join, auto advance, cancellation and reduced motion passed.');
+    console.log('Gold openings: Boss Rush and the Weekly Run, safe loading, input guards, narrow layout, late join, auto advance, cancellation and reduced motion passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -16,7 +16,7 @@ const { createServer } = require('../server/index.cjs');
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
-      localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.onlineName', name); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     }, name);
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -38,9 +38,9 @@ const { createServer } = require('../server/index.cjs');
     await b.waitForFunction(() => multiplayer.connected);
     await a.waitForFunction(() => /1 playing now/.test(document.querySelector('#menuDesc').textContent));
     assert.equal(await a.evaluate(() => Game.menuItems[1].lobbyState), 'live');
-    await b.locator('#lobbyAdventure').selectOption('campaign/ashmere');
+    await b.locator('#lobbyAdventure').selectOption('calling/weekly');
     await b.locator('#lobbyStart').click();
-    await a.waitForFunction(() => /Ashmere · /.test(document.querySelector('#menuDesc').textContent), null, { timeout: 15000 });
+    await a.waitForFunction(() => /playing now · Weekly/.test(document.querySelector('#menuDesc').textContent), null, { timeout: 15000 });
     await a.screenshot({ path: '.scratch/lobby-peek/title-live.png' });
     // Off the title it stops asking.
     let asked = 0;

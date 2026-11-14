@@ -10,7 +10,7 @@ const { build } = require('../server/headless.cjs');
 const { WebSocket } = require('../server/node_modules/ws');
 const { config: C, FrameDecoder } = require('../js/net-protocol.js');
 (async () => {
-  const app = createServer(), peers = [];
+  const app = createServer({ firstPick: false }), peers = [];
   let poseTimer, pingTimer, measuring = false, legacyTime = -Infinity, legacySignature = '', legacyBytes = 0;
   const pings = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -43,7 +43,7 @@ const { config: C, FrameDecoder } = require('../js/net-protocol.js');
       assert.ok(ws.extensions.includes('permessage-deflate'), 'WebSocket compression negotiated');
     }
     const starting = Promise.all(peers.map(p => p.next('start')));
-    peers[0].send({ type: 'control', action: 'start', kind: 'level', id: 'final-castle' });
+    peers[0].send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['ostrey'] });
     const [{ session }] = await starting;
     const enemies = app.sim.inspect().Game.enemies;
     for (let i = 0; i < peers.length; i++) {
@@ -66,7 +66,7 @@ const { config: C, FrameDecoder } = require('../js/net-protocol.js');
     await delay(6000);
     measuring = false;
     const seconds = (performance.now() - began) / 1000;
-    const measured = { players: 3, level: 'final-castle', seconds: +seconds.toFixed(2),
+    const measured = { players: 3, fight: 'ostrey', seconds: +seconds.toFixed(2),
       compressedBytesPerSecond: Math.round((written() - before) / seconds),
       previousFullFrameBytesPerSecond: Math.round(legacyBytes / seconds), metrics: app.metrics,
       localPingP95Ms: +pings.sort((a, b) => a - b)[Math.floor(pings.length * 0.95)].toFixed(2) };

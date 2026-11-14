@@ -1,7 +1,8 @@
 'use strict';
+// A fight's numbers per player (Simulation.fightTally): what Boss Rush's run summary adds up.
 const assert = require('node:assert/strict');
 const { createSimulation } = require('../server/headless.cjs');
-const { config: C, FrameEncoder, FrameDecoder } = require('../js/net-protocol.js');
+const { config: C } = require('../js/net-protocol.js');
 const sim = createSimulation();
 function begin(kind = 'arena', id = 'ostrey') {
   sim.start(kind, id);
@@ -26,9 +27,8 @@ function complete() {
   for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
   sim.tick(1 / C.tickRate);
   assert.equal(sim.state.complete, true);
-  assert.equal(sim.frame(false).results, null, 'victory appears before the leaderboard');
-  sim.tick(C.leaderboardDelay);
-  return JSON.parse(JSON.stringify(sim.frame(false).results));
+  sim.tick(C.rushKillTime);
+  return JSON.parse(JSON.stringify(sim.fightTally())).sort((a, b) => b.damage - a.damage || a.name.localeCompare(b.name));   // out of the vm's realm
 }
 let e = begin();
 assert.equal(hit('ash', e, { damage: 100000 }), true);
@@ -36,13 +36,9 @@ assert.equal(hit('ember', e), true);
 e.hp = 3;
 assert.equal(hit('ember', e), true);
 const rows = complete();
-assert.deepEqual(rows.map(r => [r.id, r.damage, r.rank]), [['ember', 19, 1], ['ash', 16, 2], ['idle', 0, 3]], 'trusted damage, overkill cap, zero damage participants and descending ranks');
+assert.deepEqual(rows.map(r => [r.id, r.damage]), [['ember', 19], ['ash', 16], ['idle', 0]], 'trusted damage, overkill cap and zero damage participants');
 sim.registerPlayer('ash', 'Changed after victory');
-assert.equal(sim.frame(false).results[1].name, 'Ash', 'completed results remain frozen');
-const encoder = new FrameEncoder(), decoder = new FrameDecoder();
-assert.deepEqual(decoder.decode(JSON.parse(JSON.stringify(encoder.encode(sim.frame(false), [])))).frame.results, rows, 'late-ready full baseline carries results');
-sim.tick(C.leaderboardTime);
-assert.equal(sim.frame(false).results, null, 'results expire after their reading time');
+assert.equal(sim.fightTally().find(r => r.id === 'ash').name, 'Ash', 'a won fight keeps its numbers');
 
 e = begin(); e.hp = 100; finisherBy('ash', e);
 const held = e.hp;
@@ -69,7 +65,7 @@ e = begin();
 hit('ash', e); hit('ember', e);
 sim.setPlayers([]);
 const ties = complete();
-assert.deepEqual(ties.map(r => [r.name, r.damage, r.rank]), [['Ash', 16, 1], ['Ember', 16, 1], ['Idle', 0, 3]], 'ties share a rank and disconnected contributors remain');
+assert.deepEqual(ties.map(r => [r.name, r.damage]), [['Ash', 16], ['Ember', 16], ['Idle', 0]], 'disconnected contributors remain');
 
 e = begin('arena', 'varn'); e.hp = 10;
 hit('ash', e);
@@ -90,4 +86,4 @@ assert.ok(removed < 24 && removed >= 0);
 assert.equal(complete().find(r => r.id === 'ash').damage, removed, 'blocked hits count actual chip damage');
 begin();
 assert.deepEqual(complete().map(r => r.damage), [0, 0, 0], 'each new epoch resets all totals');
-console.log('Damage leaderboard: trusted totals, chip damage, overkill, Finishing Blows, phases, ties, disconnects, delayed display, baselines and reset passed.');
+console.log('Fight tally: trusted totals, chip damage, overkill, Finishing Blows, phases, disconnects, a won fight kept and reset passed.');

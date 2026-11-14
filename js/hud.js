@@ -68,11 +68,9 @@ const hud = {
     this.won.classList.toggle('rush', !!rush);
     this.wonTitle.textContent = rush ? `Fight ${run.number} won` : 'ENEMY FELLED';
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
-      : online ? 'Open the lobby to choose your next fight.' : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
+      : `${systemLabel('restart')} to fight again · ${systemLabel('pause')} to pause`;
     const next = game.level && game.level.next && ALL_LEVELS.find(l => l.id === game.level.next);
-    const road = online && multiplayer.campaign;
-    $('completeHint').textContent = road ? road.next ? 'Next chapter incoming… Your party continues together.' : 'Adventure complete. Open the lobby to choose what comes next.'
-      : game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
+    $('completeHint').textContent = game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
     this.promptKey.textContent = keycap(bindLabel('rest'));
     this.talkKey.textContent = keycap(bindLabel('talk'));
@@ -400,8 +398,7 @@ const hud = {
     const waitingForTeam = typeof multiplayer !== 'undefined' && multiplayer.waitingForTeamWipe;
     $('diedStatus').textContent = waitingForTeam ? game.duelWon() ? 'Boss defeated' : 'Waiting for your team…' : 'Returning to the last bonfire…';
     if (waitingForTeam)
-      this.diedTip.textContent = multiplayer.gauntlet ? game.duelWon() ? multiplayer.gauntlet.next ? 'Next boss incoming. You return with full health.' : CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id]?.then ? `All bosses defeated. ${CONFIG.multiplayer.gauntlets[CONFIG.multiplayer.gauntlets[multiplayer.gauntlet.id].then].name} next…` : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.'
-        : game.duelWon() ? 'Open the lobby to choose another fight.' : 'The arena restarts when everyone falls.';
+      this.diedTip.textContent = game.duelWon() ? multiplayer.gauntlet?.next ? 'Next boss incoming. You return with full health.' : 'All bosses defeated. Returning to lobby…' : 'A team wipe ends the run.';
     this.wasAlive = p.alive();
     this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)

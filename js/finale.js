@@ -9,7 +9,6 @@
 // get the Level 5 jumps (Test Grounds) and F10, which empties the current boss bar.
 const finale = (() => {
   const F = CONFIG.finale, V3 = THREE.Vector3;
-  const onlineGame = () => typeof multiplayer !== 'undefined' && multiplayer.active();
   let L = null;         // the level being scripted (one with `ending`), or null
   let group = null;     // this level's own drawn things
   let st = null;        // its state; rebuilt on every level start
@@ -134,12 +133,12 @@ const finale = (() => {
   }
 
   // ---- every fixed step of a level ------------------------------------------------------------------------------
-  function update(game, dt, online = false) {
+  function update(game, dt) {
     if (!st) return;
     const p = game.player;
     // The fog gate: open until the player is inside the throne room with the fight on; then it drops behind them and
     // stays down until they win or die (the respawn puts them back at the bonfire outside, the gate open again).
-    if (st.fog && !online) {
+    if (st.fog) {
       const f = st.fog, zone = game.zones.find(z => z.id === f.zoneId), won = zone.gate.open;
       // Inside: in the zone, on the gate's floor and clear of the gate's own doorway (on whichever side the room lies).
       const b = f.gate.box, pad = 0.3, clear = p.x < b.x0 - pad || p.x > b.x1 + pad || p.z < b.z0 - pad || p.z > b.z1 + pad;
@@ -394,7 +393,7 @@ const finale = (() => {
     const e = d.enemy;
     if (!st || !isBoss(e) || !e.lastPhase() || !L.ending) return;
     st.ending = { boss: e, t: 0, stage: 0 };
-    if (!onlineGame()) try { localStorage.setItem(storeKey(L.id), '1'); } catch (err) { /* private window: the flag is just not kept */ }
+    try { localStorage.setItem(storeKey(L.id), '1'); } catch (err) { /* private window: the flag is just not kept */ }
   });
 
   // ---- the ending ------------------------------------------------------------------------------------------------------
@@ -403,7 +402,7 @@ const finale = (() => {
   // into ash; the bell tolls once and falls silent; his blade stays standing in the floor. Then the ending's lines rise
   // one at a time over the live world (`#ending` takes no input and sits under the menus), counted on the fixed step,
   // so the pause menu holds them. An ending with a level after it (the end of Act I) then carries on like any chapter:
-  // a fade and the next level (online, the server carries the party on). The story's last ending rolls the credits over
+  // a fade and the next level. The story's last ending rolls the credits over
   // the world, still walkable, then offers the way back: Talk or Enter.
   function updateEnding(game, dt) {
     const E = st.ending, D = F.death;
@@ -426,7 +425,7 @@ const finale = (() => {
     if (i < n) return;
     const after = t - n * X.card;
     if (O.next) {   // the end of Act I: on like any chapter
-      if (onlineGame() || O.left || !Game.player.alive()) return;
+      if (O.left || !Game.player.alive()) return;
       if (O.fadeFrom == null) { O.fadeFrom = t; $('fade').classList.add('show'); }
       if (t - O.fadeFrom >= CONFIG.nextLevel.fadeTime) { O.left = true; const next = O.next; Game.loadingFirst(...Game.levelCard(next), () => Game.startLevel(next)); }
       return;
@@ -478,21 +477,18 @@ const finale = (() => {
     if (!O || !O.canLeave) return;
     hideEnding(); st.ending = null;
     events.emit('endingDone');   // Story mode (js/story.js) marks the story complete and shows its own screen
-    if (onlineGame()) { $('fade').classList.remove('show'); multiplayer.show(); }
-    else if (Game.mode === 'play') { Game.reset(); Game.showMenu('main'); }
+    if (Game.mode === 'play') { Game.reset(); Game.showMenu('main'); }
   }
   // Builds the lines (and, at the road's end, the credits) over the world; returns what tellEnding plays.
   function showEnding() {
     hideEnding();
-    const online = onlineGame();
     const cards = (LORE.endings && LORE.endings[L.id]) || LORE.ending;   // the ending's words are data (js/data/lore.js, from STORY.md)
     const next = Game.nextLevelId();
     // The credits: the road the level ends (its campaign's chapters), who walked beside you, who stood in the way.
     const road = story.owner(L.id) || story.campaigns[STORY.id], R = road.def;
     const credits = `<h2>THE ROAD</h2>${road.chapterIds().map(id => `<p>${road.levelName(id)}</p>`).join('')}
-        <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>${Game.story && !online && R.companion ? `<p>${R.companion.name}</p>` : ''}
+        <h2>WHO WALKED BESIDE YOU</h2><p>${R.credits.companion}</p>${Game.story && R.companion ? `<p>${R.companion.name}</p>` : ''}
         <h2>THOSE WHO STOOD IN THE WAY</h2>${R.credits.foes.map(f => `<p>${f}</p>`).join('')}`;
-    const where = online ? 'the lobby' : 'the title';
     overlay = document.createElement('div');
     overlay.id = 'ending';
     overlay.innerHTML = `<style>
@@ -517,7 +513,7 @@ const finale = (() => {
         <h2>MADE BY</h2><p>Aleix</p><p>with Claude</p>
         <h2>BUILT WITH</h2><p>Three.js, and nothing to download</p></div>
       <div class="thanks">THANK YOU FOR PLAYING</div>
-      <div class="back">Press <span class="how"></span> to return to ${where}</div>`);
+      <div class="back">Press <span class="how"></span> to return to the title</div>`);
     document.body.appendChild(overlay);
     const O = { cards: [...overlay.querySelectorAll('.card')], roll: overlay.querySelector('.roll'), thanks: overlay.querySelector('.thanks'),
       back: overlay.querySelector('.back'), how: overlay.querySelector('.back .how'), next, shown: -1, rolling: false, rollH: 0, rollT: 0, drawT: 0, rollY: 1,
@@ -566,9 +562,8 @@ const finale = (() => {
   Game.renderHooks.push(render);
   return {
     reset, update, devItems, jump, depleteBoss, seenSightings, skipSightings,
-    updateOnline: (game, dt) => update(game, dt, true),
-    cancelEnding() { if (st) st.ending = null; hideEnding(); $('fade').classList.remove('show'); },
     leaveEnding,
+    cancelEnding() { if (st) st.ending = null; hideEnding(); $('fade').classList.remove('show'); },   // the tests' way out of an ending
     holdsTalk: () => !!(st && st.ending && st.ending.view && st.ending.view.canLeave),
     completed(id = 'final-castle') { try { return localStorage.getItem(storeKey(id)) === '1'; } catch (err) { return false; } },
     get state() { return st; },

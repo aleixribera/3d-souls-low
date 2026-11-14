@@ -1,5 +1,6 @@
 'use strict';
-// Opt-in co-op. Solo play never opens a socket or changes simulation authority.
+// Opt-in co-op: Boss Rush and the weekly run, the only online modes (PLAN.md track B item 1). Solo play never opens a
+// socket or changes simulation authority.
 CONFIG.multiplayer = ArenaNet.config;
 const multiplayer = (() => {
   const C = CONFIG.multiplayer;
@@ -41,8 +42,8 @@ const multiplayer = (() => {
     <div id="lobbyModes" role="group" aria-labelledby="lobbyAdventureTitle"></div>
     <p id="lobbyAdventureSummary" class="lobby-summary"></p>
     <div class="lobby-primary"><button id="lobbyResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button><button id="lobbyStart" class="ui-primary">Start together</button></div>
-    <div id="lobbyRunActions" class="lobby-actions" role="group" aria-label="Party controls" hidden><button id="lobbyRestart" class="ui-button">Restart level</button>
-    <button id="lobbyNext" class="ui-button">Next level</button><button id="lobbyReturn" class="ui-button">Return everyone to lobby</button></div></div>
+    <div id="lobbyRunActions" class="lobby-actions" role="group" aria-label="Party controls" hidden><button id="lobbyRestart" class="ui-button">Restart run</button>
+    <button id="lobbyReturn" class="ui-button">Return everyone to lobby</button></div></div>
     <div id="lobbyWaiting"><p class="lobby-waiting-text"></p><button id="lobbyGuestResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button></div>
     <button id="lobbyRetry" class="ui-primary" hidden>Try again</button>
     </section><section class="lobby-party" aria-labelledby="lobbyPartyTitle">
@@ -59,10 +60,10 @@ const multiplayer = (() => {
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
-    <p class="lobby-controls-tip">Attacks cost nothing; you have three dashes. Blocking takes a little damage. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
+    <p class="lobby-controls-tip">Attacks cost nothing; you have three dashes. Blocking takes a little damage. Tap block on the beat to deflect.</p></section>
     </div>`;
   const style = document.createElement('style');
-  style.textContent = `#publicLobby,#onlineParty,#onlineLeaderboard,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
+  style.textContent = `#publicLobby,#onlineParty,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
     #publicLobby{position:fixed;inset:0;z-index:90;background:var(--ui-veil);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text);overflow:auto;box-sizing:border-box;color-scheme:dark;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;overscroll-behavior:contain}
     #publicLobby .lobby-adventure :is(.ui-row,select){scroll-margin-bottom:96px}
     #publicLobby.hidden,#publicLobby [hidden]{display:none!important}#publicLobby *{box-sizing:border-box}
@@ -129,7 +130,6 @@ const multiplayer = (() => {
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;width:210px;max-width:calc(100vw - 36px);box-sizing:border-box;pointer-events:none;color:var(--mp-ink);font:12px/1.5 system-ui;text-shadow:0 1px 2px #000;background:linear-gradient(160deg,#12171acc,#0d1113a8);padding:10px 12px;border:1px solid var(--mp-line);border-radius:8px;box-shadow:0 8px 24px #0006;backdrop-filter:blur(3px)}
     .online-level{margin:0 0 8px;color:var(--mp-gold-hi,#f3dca3);font:600 11px/1.4 system-ui;text-align:left;letter-spacing:.1em;text-transform:uppercase}
     .online-level[hidden]{display:none}
-    #onlinePartyDetails{color:var(--mp-muted);font-size:10px;letter-spacing:.04em}#onlinePartyDetails:empty{display:none}
     #onlineAlive{margin-top:6px;text-align:left;font:12px/1.5 system-ui;max-height:24vh;overflow:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent}
     #onlineAlive .alive-title{color:var(--mp-muted);font-size:10px;font-weight:600;letter-spacing:.14em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--mp-line)}
     #onlineAlive .alive-player{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:3px 7px;margin-bottom:8px}
@@ -165,90 +165,6 @@ const multiplayer = (() => {
     body.spectator-view #died,body.spectator-view #pBars{display:none}body.spectator-view canvas#view.dying{filter:none;transition:none}
     #onlineParty.hidden{display:none}`;
   document.head.appendChild(style); document.body.appendChild(panel);
-  const leaderboard = document.createElement('section'); leaderboard.id = 'onlineLeaderboard'; leaderboard.hidden = true;
-  leaderboard.setAttribute('aria-labelledby', 'leaderboardTitle');
-  leaderboard.setAttribute('aria-live', 'polite');
-  leaderboard.innerHTML = '<div class="results-card"><p class="results-kicker">VICTORY · PARTY RESULTS</p><h2 id="leaderboardTitle">Damage leaderboard</h2><p id="leaderboardEncounter"></p><div class="results-scroll"><table><thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col">Total damage</th></tr></thead><tbody id="leaderboardRows"></tbody></table></div></div>';
-  document.body.appendChild(leaderboard);
-  const resultsStyle = document.createElement('style');
-  resultsStyle.textContent = `#onlineLeaderboard[hidden]{display:none}
-    #onlineLeaderboard{position:fixed;inset:0;z-index:45;display:grid;place-items:center;padding:18px;box-sizing:border-box;pointer-events:none;background:radial-gradient(ellipse,#080b0dcc,transparent 80%);color:var(--mp-ink);font:14px/1.5 system-ui}
-    #onlineLeaderboard .results-card{position:relative;width:min(560px,100%);max-height:76dvh;box-sizing:border-box;padding:26px 26px 20px;text-align:center;background:linear-gradient(160deg,#21231ff7,#0d1315f7);border:1px solid var(--mp-line-hi);border-radius:10px;box-shadow:0 22px 80px #000b;animation:lobby-arrive .3s ease-out}
-    #onlineLeaderboard .results-card:before{content:'';position:absolute;left:26px;right:26px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--mp-gold),transparent)}
-    #onlineLeaderboard h2{margin:6px 0 4px;font:400 clamp(24px,4vw,32px)/1.25 Georgia,serif;color:var(--mp-gold-hi)}
-    #onlineLeaderboard p{margin:0 0 18px;color:var(--mp-muted);overflow-wrap:anywhere}#onlineLeaderboard .results-kicker{margin:0;font-size:10px;font-weight:600;letter-spacing:.24em;color:var(--mp-gold)}
-    #onlineLeaderboard .results-scroll{max-height:46dvh;overflow:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#756443 transparent;text-align:left}
-    #onlineLeaderboard table{width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed}
-    #onlineLeaderboard th{color:var(--mp-faint);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;text-align:left;padding:0 10px}
-    #onlineLeaderboard th:first-child{width:58px}#onlineLeaderboard th:last-child{width:118px;text-align:right}
-    #onlineLeaderboard td{padding:10px;font-variant-numeric:tabular-nums;background:#ffffff06;border-top:1px solid #ffffff0d;border-bottom:1px solid #ffffff0d}
-    #onlineLeaderboard td:first-child{border-left:1px solid #ffffff0d;border-radius:6px 0 0 6px;text-align:center}
-    #onlineLeaderboard td:first-child:before{content:attr(data-rank);display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#2b2f2c;color:#d8d3c2;font-weight:700;font-size:13px}
-    #onlineLeaderboard td:first-child{font-size:0}
-    #onlineLeaderboard td:nth-child(2){overflow-wrap:anywhere;font-weight:500}
-    #onlineLeaderboard td:last-child{border-right:1px solid #ffffff0d;border-radius:0 6px 6px 0;text-align:right;color:var(--mp-gold-hi);font-weight:650;background:linear-gradient(270deg,#dcbb7426 calc(var(--share,0)*100%),transparent 0) ,#ffffff06}
-    #onlineLeaderboard tr[data-rank="1"] td:first-child:before{background:linear-gradient(135deg,#f6dc9b,#c39a4f);color:#1d180e;box-shadow:0 0 14px #dcbb7466}
-    #onlineLeaderboard tr[data-rank="2"] td:first-child:before{background:linear-gradient(135deg,#e5e7e6,#9ea3a4);color:#16191a}
-    #onlineLeaderboard tr[data-rank="3"] td:first-child:before{background:linear-gradient(135deg,#e2a77a,#9b6239);color:#1c120b}
-    #onlineLeaderboard tr[data-self=true] td{background-color:#dcbb7414;border-color:#c9a96a55}
-    body.online-results #won,body.online-results #complete{visibility:hidden}
-    @media(max-width:450px){#onlineLeaderboard .results-card{padding:20px 12px 14px}#onlineLeaderboard{font-size:12px}#onlineLeaderboard th:first-child{width:44px}#onlineLeaderboard th:last-child{width:96px}#onlineLeaderboard td{padding:8px 6px}}
-    @media(prefers-reduced-motion:reduce){#onlineLeaderboard .results-card{animation:none}}`;
-  document.head.appendChild(resultsStyle);
-  let leaderboardRows = null;
-  function clearLeaderboard() {
-    leaderboardRows = null; leaderboard.hidden = true; document.body.classList.remove('online-results');
-    el('leaderboardRows').replaceChildren();
-  }
-  function updateLeaderboard() {
-    const rows = session?.gauntlet?.run ? null : latestFrame?.results;   // Boss Rush: the ability pick follows the kill at once
-    if (rows && !leaderboardRows) {
-      leaderboardRows = rows;
-      el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, ...(session.partners || [])].map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & ');
-      for (const row of rows) {
-        const tr = document.createElement('tr'); tr.dataset.self = String(row.id === self); tr.dataset.playerId = row.id; tr.dataset.rank = row.rank;
-        tr.style.setProperty('--share', String(row.damage / Math.max(1, ...rows.map(x => x.damage))));
-        for (const value of [row.rank, row.name + (row.id === self ? ' (you)' : ''), row.damage.toLocaleString(undefined, { maximumFractionDigits: 1 })]) {
-          const td = document.createElement('td'); td.textContent = value; if (!tr.children.length) td.dataset.rank = value; tr.appendChild(td);
-        }
-        el('leaderboardRows').appendChild(tr);
-      }
-    }
-    const visible = !!rows && active() && Game.mode === 'play' && Game.loading <= 0 && panel.classList.contains('hidden') && runIntro.hidden;
-    leaderboard.hidden = !visible; document.body.classList.toggle('online-results', visible);
-  }
-  const wipeScreen = document.createElement('section'); wipeScreen.id = 'teamWipeScreen'; wipeScreen.hidden = true;
-  wipeScreen.tabIndex = -1; wipeScreen.setAttribute('role', 'alert'); wipeScreen.setAttribute('aria-label', 'Team wiped');
-  wipeScreen.innerHTML = '<div class="wipe-message"><p class="wipe-kicker" id="teamWipeKicker">BOSS RUSH · RUN ENDED</p><h1>TEAM WIPED</h1><div class="wipe-rule"></div><p id="teamWipeScore"></p><p class="wipe-return">Returning to lobby…</p></div>';
-  document.body.appendChild(wipeScreen);
-  const wipeStyle = document.createElement('style');
-  wipeStyle.textContent = `#teamWipeScreen[hidden]{display:none}
-    #teamWipeScreen{position:fixed;inset:0;z-index:120;display:grid;place-items:center;box-sizing:border-box;padding:24px;text-align:center;color:#c94242;background:radial-gradient(ellipse at center,#350910 0%,#130206 55%,#030001 100%);box-shadow:inset 0 0 130px #000;animation:wipe-veil .8s ease-out both;outline:none}
-    #teamWipeScreen .wipe-message{width:100%;animation:wipe-arrive 1.6s cubic-bezier(.16,1,.3,1) both}
-    #teamWipeScreen h1{font:400 clamp(36px,9vw,108px)/1.2 Georgia,serif;letter-spacing:.13em;margin:20px 0;text-indent:.13em;color:#d74747;text-shadow:0 0 30px #c3142570,0 2px 12px #000}
-    #teamWipeScreen p{font:14px/1.7 Georgia,serif;letter-spacing:.1em;color:#c18c8c}
-    #teamWipeScreen .wipe-kicker{font:11px/1.6 system-ui;letter-spacing:.3em;color:#a26167}
-    #teamWipeScreen .wipe-rule{height:1px;width:min(480px,80%);margin:26px auto;background:linear-gradient(90deg,transparent,#b33040,transparent)}
-    #teamWipeScreen .wipe-return{margin-top:36px;font-size:12px;color:#95686d}
-    #teamWipeScreen #teamWipeScore{display:inline-block;padding:6px 18px;border:1px solid #b3304055;border-radius:999px;background:#2a070c99;color:#e3b0a8;font:600 13px/1.6 system-ui;letter-spacing:.14em;text-transform:uppercase}#teamWipeScreen #teamWipeScore:empty{display:none}
-    #teamWipeScreen .wipe-return:before{content:'';display:inline-block;width:10px;height:10px;margin-right:10px;vertical-align:-1px;border:1px solid #95686d;border-top-color:transparent;border-radius:50%;animation:wipe-spin 1s linear infinite}
-    @keyframes wipe-spin{to{transform:rotate(360deg)}}
-    @keyframes wipe-veil{from{opacity:0}to{opacity:1}}
-    @keyframes wipe-arrive{from{opacity:0;transform:scale(1.12);filter:blur(5px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
-    @media(prefers-reduced-motion:reduce){#teamWipeScreen,#teamWipeScreen .wipe-message,#teamWipeScreen .wipe-return:before{animation:none}}`;
-  document.head.appendChild(wipeStyle);
-  let wipeTimer = null;
-  function clearTeamWipe() { clearTimeout(wipeTimer); wipeTimer = null; wipeScreen.hidden = true; panel.inert = false; }
-  function showTeamWipe(run) {
-    clearTeamWipe();
-    el('teamWipeKicker').textContent = `${run?.name || 'BOSS RUSH'} · RUN ENDED`;
-    el('teamWipeScore').textContent = !run ? '' : run.run ? `Reached fight ${run.number}` : `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}`;
-    panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
-    wipeTimer = setTimeout(() => {
-      clearTeamWipe();
-      if (connected) { show(); if (!usingPad()) el('lobbyLeave').focus(); }
-    }, C.teamWipeScreenTime * 1000);
-  }
   // The end of a Calling run, won or wiped: the fight it reached, its time, and each player's damage and falls. It stays until
   // the player closes it (Escape, B, Lobby) or the leader starts the same run again for the same group.
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
@@ -501,7 +417,7 @@ const multiplayer = (() => {
   }
   window.addEventListener('keydown', ev => { if (!runIntro.hidden) { ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
-  party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><div id="onlinePartyDetails"></div><section id="onlineAlive" aria-label="Players alive"></section>';
+  party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><section id="onlineAlive" aria-label="Players alive"></section>';
   const allyMeters = new Map();
   function makeAllyHealth(parent, id) {
     const meter = document.createElement('div'), fill = document.createElement('span');
@@ -592,7 +508,6 @@ const multiplayer = (() => {
     focusLobbyControl(open ? el('lobbyControlsClose') : el('lobbyHelp'));
   }
   function lobbyBack() {
-    if (!wipeScreen.hidden) return;
     if (summary) { closeRunSummary(); return; }
     if (!el('lobbyControls').hidden) toggleLobbyHelp(false);
     else if (active()) hide();
@@ -708,14 +623,13 @@ const multiplayer = (() => {
       ['Dodge', bindLabel('roll')], ['Jump', bindLabel('jump')],
       ['Block (hold)', bindLabel('block')], ['Deflect (tap as it lands)', bindLabel(usingPad() ? 'parry' : 'block')],
       ['Abilities', abilityLabel()], ['Lock on / off', bindLabel('lock')], ['Heal with flask', bindLabel('flask')],
-      ['Rest at bonfire', bindLabel('rest')], ['Game menu', systemLabel('pause')],
+      ['Game menu', systemLabel('pause')],
     ];
     const list = el('lobbyControlsList'); list.textContent = '';
     for (const [action, binding] of rows) {
       const row = document.createElement('div'), name = document.createElement('dt'), keys = document.createElement('dd');
       name.textContent = action; keys.textContent = keycap(binding); row.append(name, keys); list.appendChild(row);
     }
-    el('lobbyTalkKey').textContent = keycap(bindLabel('talk'));
   }
   events.on('device', buildControls);
   buildControls();
@@ -762,7 +676,7 @@ const multiplayer = (() => {
   function clearControlPending() { clearTimeout(controlDeadline); controlDeadline = null; controlPending = null; }
   function control(action, data = {}) {
     if (!connected || self !== leader || controlPending) return;
-    if (['start', 'restart', 'next', 'lobby'].includes(action)) {
+    if (['start', 'restart', 'lobby'].includes(action)) {
       controlPending = action; notice(''); updateRoster();
       controlDeadline = setTimeout(() => { clearControlPending(); updateRoster(); notice('The request did not finish. Please try again.'); }, C.connectTimeout);
     }
@@ -774,7 +688,7 @@ const multiplayer = (() => {
     if (panel.contains(document.activeElement)) document.activeElement.blur();
   }
   function overlayVisibility() {
-    updateLeaderboard(); drawAbilities();
+    drawAbilities();
     party.hidden = !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
@@ -793,12 +707,8 @@ const multiplayer = (() => {
   }
   function hide() { setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
-  function chapterCard(id) {
-    const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
-    return chapter ? [chapter.title, chapter.line] : null;
-  }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
+  function resetStream() { closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -817,7 +727,6 @@ const multiplayer = (() => {
     socket = null;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; ping = null; resetStream(); clearRemotes(); clearControlPending();
     roster = []; rosterSignature = ''; panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false');
-    finale.cancelEnding();
     heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;
     party.classList.add('hidden'); closePanel(); notice('');
     if (Game.player) Game.clearActors();
@@ -874,7 +783,6 @@ const multiplayer = (() => {
     el('lobbyWaiting').hidden = connected && self === leader || !connected;
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
-  const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
   const weeklyChosen = () => el('lobbyAdventure').value === 'calling/' + C.weekly.id;
   // The weekly board (server/board.cjs): this week's furthest runs and fastest kills, by the party's names. The leader
   // sees it with the weekly run chosen; everyone else, who has no mode list, always.
@@ -909,21 +817,10 @@ const multiplayer = (() => {
       k => [[ArenaNet.own(ENEMY_BY_ID, k.boss)?.name || k.boss, 'board-main'], [names(k), 'board-names'], [runClock(seconds(k.time)), 'board-time']]);
   }
   function adventureSummary() {
-    const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
-    const campaign = STORIES.find(s => s.id === id), run = ArenaNet.own(C.gauntlets, id);
+    const value = el('lobbyAdventure').value;
     for (const button of el('lobbyModes').children) button.setAttribute('aria-pressed', String(button.dataset.mode === value));
-    el('lobbyAdventureSummary').textContent = callingChosen() ? `Boss after boss until everyone falls, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`
-      : weeklyChosen() ? 'Boss Rush with this week\'s bosses, modifiers and abilities, the same for everyone.' : run
-      ? `Every boss, ${run.size > 1 ? `${run.size} at a time` : 'one at a time'}${run.then ? `, then ${C.gauntlets[run.then].name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}` : ''}. The fallen watch until the fight ends; a team wipe ends the run.`
-      : campaign ? `${campaign.chapters.length} chapters, together. Checkpoints are shared.`
-      : 'Play this encounter together.';
-  }
-  // The running adventure, in a few words ("Ashmere: The Long Hall"), or ''.
-  function runName() {
-    if (!session) return '';
-    if (session.campaign) return `${STORIES.find(s => s.id === session.campaign.id)?.short || session.campaign.name}: ${session.campaign.title.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}`;
-    if (session.gauntlet) return session.gauntlet.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    return session.kind === 'level' ? ALL_LEVELS.find(l => l.id === session.id)?.name || '' : ArenaNet.own(ENEMY_BY_ID, session.id)?.name || '';
+    el('lobbyAdventureSummary').textContent = weeklyChosen() ? 'Boss Rush with this week\'s bosses, modifiers and abilities, the same for everyone.'
+      : `Boss after boss until everyone falls, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`;
   }
   // ---- the title screen's look at the lobby (v7.19.0) ------------------------------------------------------------
   // How many are inside and what they play, asked only while the title shows (CONFIG.titleLobby). A page with no lobby
@@ -966,18 +863,13 @@ const multiplayer = (() => {
     el('lobbyRunActions').hidden = !session;
     el('lobbyLiveWarning').hidden = !active();
     el('lobbyRestart').disabled = !session || !!controlPending;
-    el('lobbyNext').hidden = !!session?.gauntlet;
-    el('lobbyNext').disabled = !session || !!controlPending || !!session.gauntlet || !!(session.campaign && (!latestFrame?.complete || !session.campaign.next));
-    el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
-    el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session || !!controlPending;
     el('lobbyStart').disabled = !connected || !!controlPending;
     el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start a new run' : roster.length > 1 ? 'Start together' : 'Start';
     el('lobbyManage').hidden = !owner || roster.length < 2;
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
-    // A boss run already names itself in the status line above.
-    el('lobbyWaiting').firstElementChild.textContent = session?.gauntlet ? '' : session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'}`
-      : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start.`;
+    // A run under way names itself in the status line above.
+    el('lobbyWaiting').firstElementChild.textContent = session ? '' : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start.`;
     updateConnection(); adventureSummary(); drawBoard(); updateLobbyPadHint();
     const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name]), self, leader, owner });
     if (signature !== rosterSignature) {
@@ -1004,16 +896,12 @@ const multiplayer = (() => {
     }
   }
   function updateStatus() {
-    const road = session?.campaign;
-    const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
-    const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
-    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS RUSH'} · ${session.gauntlet.run ? `Fight ${session.gauntlet.number}` : `${session.gauntlet.number}/${session.gauntlet.total}`}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    const levelTag = session?.gauntlet ? `${session.gauntlet.name} · Fight ${session.gauntlet.number}` : '';
     for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
       const tag = el(id);
       tag.hidden = !connected || !levelTag;
       tag.textContent = levelTag;
     }
-    el('onlinePartyDetails').textContent = session?.gauntlet ? '' : road?.name || 'Public lobby';
     updateAlivePanel();
     party.classList.toggle('hidden', !active()); updateConnection(); overlayVisibility();
   }
@@ -1027,11 +915,9 @@ const multiplayer = (() => {
       if (name && name !== roster.find(p => p.id === self)?.name) send({ type: 'name', name });
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
-      // The leader's Mode: Boss Rush first (the lobby's default), the fixed boss runs, then the story played together.
-      const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
+      // The leader's Mode: Boss Rush (the lobby's default) or the weekly run; online play has no other.
       const titled = name => name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, { kind: 'calling', id: C.weekly.id, name: titled(C.weekly.name) }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: titled(run.name) })),
-        ...stories.map(entry => ({ kind: 'campaign', id: entry.id, name: STORIES.find(s => s.id === entry.id).lobbyName }))];
+      const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, { kind: 'calling', id: C.weekly.id, name: titled(C.weekly.name) }];
       el('lobbyModes').textContent = '';
       for (const entry of modes) {
         const option = document.createElement('option'); option.value = `${entry.kind}/${entry.id}`; option.textContent = entry.name; select.appendChild(option);
@@ -1041,7 +927,7 @@ const multiplayer = (() => {
         row.onclick = () => { if (select.value !== option.value) { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); } };
         el('lobbyModes').appendChild(row);
       }
-      select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
+      select.value = `calling/${C.calling.id}`;
       el('lobbyStatus').textContent = ''; updateRoster();
       if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
     } else if (msg.type === 'board') {
@@ -1051,20 +937,19 @@ const multiplayer = (() => {
       if (msg.notice && roster.length > 1) notice(msg.notice, true);
     } else if (msg.type === 'start') {
       clearControlPending(); notice(''); crateScreen.close();   // a fight starting takes over from the Collection or a roll
-      finale.cancelEnding();
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeAbilities();
-      if (msg.opening) runIntroPending = session.gauntlet?.id || session.campaign?.id || null;
+      if (msg.opening) runIntroPending = session.gauntlet.id;
       const current = session;
       Game.story = false; closePanel();
-      const loadingCard = session.kind === 'arena' ? Game.duelCard(session.id, session.partners || []) : Game.levelCard(session.id);
-      el('lobbyAdventure').value = session.gauntlet ? `${session.gauntlet.run ? 'calling' : 'gauntlet'}/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
+      const loadingCard = Game.duelCard(session.id, session.partners || []);
+      el('lobbyAdventure').value = `calling/${session.gauntlet.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
         const build = () => {
           if (session !== current || !connected) return;
-          if (session.kind === 'level') Game.startLevel(session.id); else Game.startFight(session.id, session.partners || []);
+          Game.startFight(session.id, session.partners || []);
           Game.spawn = { ...session.spawn }; Game.spawnPlayer(); Game.player.grantAbilities(session.abilities?.[self]); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
@@ -1081,12 +966,9 @@ const multiplayer = (() => {
       begin();
     } else if (msg.type === 'stop') {
       clearControlPending();
-      const endedRun = session?.gauntlet;
-      finale.cancelEnding();
       session = null; loaded = false; resetStream(); clearRemotes(); closeAbilities(); Game.loading = 0; el('loading').classList.remove('show');
       if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
       if (msg.summary) showRunSummary(msg.summary);
-      else if (msg.reason === 'team-wipe') showTeamWipe(endedRun);
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
       const packet = decoder.decode(msg), frame = packet.frame;
       if (latestFrame && frame.time <= latestFrame.time) return;
@@ -1120,9 +1002,8 @@ const multiplayer = (() => {
         reviving: `Reviving ${nameOf(m.id)}`, standIn: `Stand in the ring to revive ${nameOf(m.id)}` }));
       rescuer = embers.find(m => m.id === self)?.by || null;
       revive.set(embers, self);
-      applyProgress(frame, msg.full);
-    } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
-    else if (msg.type === 'revive') riseAgain(msg);
+      applyProgress(frame);
+    } else if (msg.type === 'revive') riseAgain(msg);
     else if (msg.type === 'abilitiesChosen' && session) { if (ability) { ability.done = true; drawAbilities(); } }   // everyone has chosen: the hold
     // The free pick before fight 1 is over (CONFIG.abilities.first): this body takes its kit, the par follows it, and the boss wakes.
     else if (msg.type === 'firstPick' && session) {
@@ -1219,7 +1100,7 @@ const multiplayer = (() => {
       if (r.look !== look) { r.look = look; crateScreen.wearLook(r.body.rig, look); }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
-      r.name.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
+      r.name.textContent = s.name + (s.hp <= 0 ? ' · defeated' : '');
       updateAllyHealth(r.health, s.hp, s.name);
     }
     for (const [id, r] of remotes) if (!ids.has(id)) { r.body.rig.dispose(); r.label.remove(); remotes.delete(id); }
@@ -1276,39 +1157,9 @@ const multiplayer = (() => {
     }
     playback = oldest;
   }
-  // Progress is authoritative and immediate; it never waits behind an enemy's
-  // personal presentation clock. Animate gates on every simulation step.
-  function applyProgress(frame, initial) {
-    for (const s of frame.gates) {
-      const g = world.gates.find(g => g.id === s.id); if (!g) continue;
-      const opened = g.netOpen === false && s.open; g.netOpen = s.open;
-      const entry = (Game.level.sealed || []).find(x => x.id === s.id && x.fog);
-      const zone = entry && Game.zones.find(z => z.id === entry.fog);
-      g.open = s.open || !!(zone && !inArea(zone.trigger, Game.player.x, Game.player.z));
-      if (initial) g.lift = g.open ? 1 : 0;
-      if (opened && !entry) events.emit('gateOpened', { gate: g });
-    }
-    for (const s of frame.traps) {
-      const t = world.traps.find(t => t.id === s.id); if (!t) continue;
-      if (s.state === 'sprung' && t.state !== 'sprung') { world.openHole(t.region, t.collapse); events.emit('trapSprung', { trap: t }); }
-      else if (s.state === 'warning' && t.state === 'set') events.emit('trapWarning', { trap: t });
-      Object.assign(t, s);
-    }
-    if (frame.complete && !Game.complete) {
-      Game.complete = true;
-      if (Game.kind === 'level') events.emit('levelComplete');
-      updateRoster();
-      if (session.campaign) notice(session.campaign.next ? 'Chapter complete. Everyone continues to the next chapter automatically.' : session.campaign.done);
-    }
-  }
-  function animateGates(dt) {
-    for (const g of world.gates) {
-      const entry = (Game.level.sealed || []).find(x => x.id === g.id && x.fog);
-      const zone = entry && Game.zones.find(z => z.id === entry.fog);
-      if (g.netOpen !== undefined) g.open = g.netOpen || !!(zone && !inArea(zone.trigger, Game.player.x, Game.player.z));
-      g.lift = g.open ? Math.min(1, g.lift + dt / CONFIG.level.gateLiftTime)
-        : Math.max(0, g.lift - dt / CONFIG.finale.fogClose);
-    }
+  // The fight's end is authoritative and immediate; it never waits behind an enemy's personal presentation clock.
+  function applyProgress(frame) {
+    if (frame.complete && !Game.complete) { Game.complete = true; updateRoster(); }
   }
   // A legendary, anyone's (js/ability-fx.js draws it): one on an enemy comes with that enemy's sample, one on none (a
   // Meteor's blast, a Blood Moon) as its frame arrives. The Blood Moon's own part, its drink, is this body's.
@@ -1348,18 +1199,15 @@ const multiplayer = (() => {
     const p = Game.player, c = Game.cam;
     p.savePrev(); for (const e of Game.enemies) e.savePrev(); c.prevPos.copy(c.pos); c.prevLook.copy(c.look);
     sampleEnemies(dt);
-    animateGates(dt);
     // 'ending' mode: the shared stream still steps, the player's own movement and combat do not. The endings no longer
     // set it (pass 82: they play over the world); tests use it to run this update with the player held still.
     if (Game.mode === 'ending') return;
     if (!p.alive()) {
-      Game.deathTimer += dt;
-      if (!session.teamWipeOnly && Game.deathTimer >= CONFIG.death.respawnDelay) { Game.spawnPlayer(); Game.setLock(null); Game.retarget = true; events.emit('respawn', { player: Game.player }); }
-      else p.update(dt, { x: 0, z: 0, has: false }, [], null);
+      Game.deathTimer += dt;   // the fallen watch (or are revived) until the fight ends: no respawn online
+      p.update(dt, { x: 0, z: 0, has: false }, [], null);
     } else if (Game.hitstop > 0) { Game.hitstop = Math.max(0, Game.hitstop - dt); input.hold(dt); }
     else {
       if (Game.mode === 'play') Game.updateLock(dt);
-      if (input.peek('rest') && Game.restWins()) { input.consume('rest'); Game.tryRest(); }
       p.update(dt, Game.mode === 'play' ? Game.moveInput() : { x: 0, z: 0, has: false }, Game.enemies.filter(e => e.alive()), Game.lock);
       // The server owns enemy positions. Other players have no body blocking.
       for (const e of Game.enemies) if (e.state !== ES.EXECUTED) separatePair(p, e, 1);
@@ -1367,18 +1215,9 @@ const multiplayer = (() => {
     }
     projectiles.update(Game, dt);
     burnInFires(Game, dt, Game.player);   // the fires the server's enemies left (laid here from their strikes, Enemy.noteFires)
-    if (Game.kind === 'level') { finale.updateOnline(Game, dt); lore.update(Game, dt); updateHazards(dt); }   // the finale first: the ending's way back reads Talk before the lore does
     Game.updateCamera(dt, false);
     // One death sequence per body, whatever killed it (a blow, rot, a script): as Game.update does.
     if (!Game.player.alive() && Game.deathOf !== Game.player) Game.onPlayerDeath();
-  }
-  function updateHazards(dt) {
-    const p = Game.player;
-    if (!p.alive() || p.invulnerable()) return;
-    for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
-      p.hp = Math.max(0, p.hp - h.dps * dt);
-      if (p.hp <= 0) { p.die(); return; }   // the end of the online step starts the death sequence
-    }
   }
   function remoteSample(r, now) {
     while (r.samples.length > 1 && r.samples[1].at <= now) r.samples.shift();
@@ -1449,10 +1288,6 @@ const multiplayer = (() => {
     grantedEnemy = id; finisher.start(p, e); grantedEnemy = null;
     if (!p.exec) command('finisherEnd', { enemy: id });
   }
-  function rest(b) {
-    const p = Game.player; p.hp = p.maxHp; p.refillItems(); p.vx = p.vz = 0; p.setState(PS.REST);
-    command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
-  }
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
   el('lobbyTutorial').onclick = () => { leave(); sparring.start({ then: () => join() }); };   // the sparring scene, then back into the lobby (js/sparring.js)
   el('lobbyGuestResume').onclick = hide;
@@ -1499,7 +1334,7 @@ const multiplayer = (() => {
     if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
-  el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
+  el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby');
   function lobbyMove(direction) {
     const focus = ensureLobbyFocus(), controls = lobbyControls();
     if (!focus) return;
@@ -1507,7 +1342,7 @@ const multiplayer = (() => {
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
   function pad(pressed, dt = CONFIG.step) {
-    if (!wipeScreen.hidden || summaryPad(pressed)) return;
+    if (summaryPad(pressed)) return;
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }
@@ -1526,11 +1361,10 @@ const multiplayer = (() => {
   }
   events.on('finisherEnd', d => { if (active() && d.player === Game.player) command('finisherEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, chapterCard, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, rest, pad,
+  return { join, leave, show, hide, active, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },
-    get campaign() { return connected ? session?.campaign || null : null; },
     get waitingForTeamWipe() { return waitingForTeamWipe(); },
     get spectatorMode() { return waitingForTeamWipe(); },
     get runIntroActive() { return !runIntro.hidden; },

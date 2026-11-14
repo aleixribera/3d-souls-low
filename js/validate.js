@@ -12,10 +12,10 @@ function validateData({ visual = true } = {}) {
   const introIds = new Set();
   for (const intro of LOBBY_INTROS) {
     need(!introIds.has(intro.id), `Duplicate lobby intro: ${intro.id}.`); introIds.add(intro.id);
-    need(ArenaNet.config.gauntlets[intro.id] || [ArenaNet.config.calling.id, ArenaNet.config.weekly.id].includes(intro.id) || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
+    need([ArenaNet.config.calling.id, ArenaNet.config.weekly.id].includes(intro.id), `Unknown lobby intro: ${intro.id}.`);
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
-  for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id, ...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   // The player's look (pass 91, js/player-pose.js, Rig.settle): blend times, the deflect's pose, the player's easings.
   if (visual) {
     const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
@@ -108,7 +108,6 @@ function validateData({ visual = true } = {}) {
   for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
   need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
-  need(num(botConfig.assignmentTime) && botConfig.assignmentTime > 0, 'Bot assignmentTime must be positive.');
   need(Array.isArray(botConfig.follow) && botConfig.follow.length === 2 && botConfig.follow.every(num) && botConfig.follow[0] > 0 && botConfig.follow[1] > botConfig.follow[0],
     'Bot follow needs ordered positive inner/outer distances.');
   for (const key of ['cell', 'sample', 'tile', 'clearance', 'heightTolerance', 'maxDrop', 'anchor', 'anchors', 'maxNodes', 'searchSteps', 'waypoint', 'lookAhead',

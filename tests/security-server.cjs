@@ -19,11 +19,12 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
   sim.start('arena', 'ostrey');
   const { Game } = sim.inspect(), e = Game.duel, level = Game.level, enemies = Game.enemies;
   sim.setPlayers([{ ...pose(e.x - 1.5, e.z), id: 'a' }]);
+  for (const id of ['long-hall', ...PROTO]) assert.throws(() => sim.start('level', id), err => err.rejected === true, 'no level online: ' + id);
   for (const id of PROTO) {
     assert.equal(sim.hit('a', { enemy: e.netId, attack: id, charge: 0 }), false, 'prototype attack id ' + id);
     assert.throws(() => sim.start('arena', id), err => err.rejected === true, 'prototype opponent ' + id);
     assert.throws(() => sim.start('arena', 'ostrey', [id]), err => err.rejected === true, 'prototype partner ' + id);
-    assert.throws(() => sim.gauntlet(undefined, id), err => err.rejected === true, 'prototype boss run ' + id);
+    assert.throws(() => sim.calling({ seed: 1, opening: [id] }), err => err.rejected === true, 'prototype boss run ' + id);
     assert.equal(sim.playerAttack(id), null, 'prototype pose attack ' + id);
     assert.equal(sim.endFinisher('a', id), undefined, 'prototype Finishing Blow ' + id);
   }
@@ -44,28 +45,25 @@ const PROTO = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueO
   for (let i = 0; i < Math.ceil(C.hitInterval * 60) + 1; i++) { sim.setPlayers([{ ...pose(e.x - 1.5, e.z), id: 'a' }]); sim.tick(1 / 60); }
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0 }), true, 'the budget refills at swing pace');
 
-  // Out of reach: across the level from every place the enemy stood.
-  sim.start('level', 'long-hall');
-  const far = sim.inspect().Game.enemies.reduce((best, x) => !best || x.x > best.x ? x : best, null);
-  const s = sim.state.checkpoint;
-  sim.setPlayers([{ ...pose(s.x, s.z), y: s.y, id: 'a' }]);
+  // Out of reach: across the arena from every place the enemy stood.
+  sim.start('arena', 'giant');
+  const far = sim.inspect().Game.duel;
+  sim.setPlayers([{ ...pose(far.x - 30, far.z), id: 'a' }]);
   for (let i = 0; i < 5; i++) sim.tick(1 / 60);
   hp = far.hp;
-  assert.ok(Math.hypot(far.x - s.x, far.z - s.z) > 30, 'fixture enemy is far away');
-  assert.equal(sim.hit('a', { enemy: far.netId, attack: 'heavy', charge: 1 }), false, 'contact from across the level refused');
+  assert.equal(sim.hit('a', { enemy: far.netId, attack: 'heavy', charge: 1 }), false, 'contact from across the arena refused');
   assert.equal(far.hp, hp);
   sim.setPlayers([{ ...pose(far.x - 1.2, far.z), y: far.y, id: 'a' }]);
   assert.equal(sim.hit('a', { enemy: far.netId, attack: 'heavy', charge: 0 }), true, 'the same contact at reach is accepted');
-  assert.equal(sim.rest('a', 'nowhere'), false);
   console.log('Simulation: prototype ids, finite health, atomic start, reach, budget, riposte and Finishing Blow ids passed.');
 }
 
 // ---- Sleeping empty run --------------------------------------------------------------------------
 {
   const sim = createSimulation();
-  sim.start('level', 'long-hall'); sim.setPlayers([]);
+  sim.start('arena', 'ostrey'); sim.setPlayers([]);
   for (let i = 0; i < 60 * 20 && !sim.sleeping; i++) sim.tick(1 / 60);
-  assert.ok(sim.sleeping, 'an empty, settled level sleeps');
+  assert.ok(sim.sleeping, 'an empty, settled arena sleeps');
   const t = sim.state.time, x = sim.inspect().Game.enemies.map(e => e.x);
   let began = performance.now();
   for (let i = 0; i < 600; i++) sim.tick(1 / 60);
@@ -150,16 +148,17 @@ function connect(url, origin, headers = {}) {
     assert.ok(rosters.length >= 1 && rosters.length <= 3, 'twenty renames coalesce: ' + rosters.length);
     assert.equal(rosters.at(-1).players.find(p => p.id === wa.id).name, 'Leader 19', 'the coalesced roster is current');
 
-    // Prototype ids over the wire and a refused start keep the run.
-    a.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'constructor' });
-    assert.match((await a.next('error')).message, /Unknown boss run/);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: '__proto__' });
-    assert.match((await a.next('error')).message, /Unknown level or opponent/);
-    assert.equal(app.session, null);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
+    // Online play is Boss Rush only: any other mode, prototype ids over the wire and a refused start keep the run.
+    const rush = opening => ({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening });
+    for (const [kind, id] of [['gauntlet', 'boss-only'], ['campaign', 'ashmere'], ['level', 'long-hall'], ['arena', 'ostrey'], ['calling', 'constructor'], ['calling', '__proto__']])
+      a.send({ type: 'control', action: 'start', kind, id });
+    a.send(rush(['__proto__']));
+    assert.match((await a.next('error')).message, /Unknown Boss Rush run/);
+    assert.equal(app.session, null, 'no other mode starts');
+    a.send(rush(['ostrey']));
     const { session } = await a.next('start');
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'toString' });
-    assert.match((await a.next('error')).message, /Unknown level or opponent/);
+    a.send(rush(['toString']));
+    assert.match((await a.next('error')).message, /Unknown Boss Rush run/);
     assert.equal(app.session.epoch, session.epoch, 'a refused start keeps the current run');
     a.send({ type: 'ready', epoch: session.epoch });
     a.send({ type: 'pose', epoch: session.epoch, pose: pose(0, 0, { attack: 'constructor', state: 'attack' }) });

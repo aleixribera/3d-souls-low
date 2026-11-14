@@ -214,40 +214,34 @@ function createServer(options = {}) {
   }
   // A Boss Rush run's end: the summary for the end screen, after a weekly run's board has it.
   function endRun(outcome) { const summary = runSummary(outcome); recordWeekly(summary); return summary; }
-  // For Boss Rush, `id` is the run ({ seed, opening }, sim.calling) and `boss` the fight's index.
-  function start(kind, id, campaignId = null, boss = undefined, opening = false) {
+  // Online play is Boss Rush only (and its weekly run): one fight of `run` ({ seed, opening[, week] }, sim.calling),
+  // `fight` counting from 0. `opening`: the run's start, with its intro card.
+  function start(run, fight = 0, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
-    const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : kind === 'calling' ? sim.calling(id, boss ?? 0) : null;
-    if (gauntlet) { kind = 'arena'; id = gauntlet.boss; }
-    const campaign = kind === 'campaign' ? sim.campaign(id) : campaignId ? sim.campaign(campaignId, id) : null;
-    if ((kind === 'campaign' || campaignId) && !campaign) throw Object.assign(new Error('Unknown campaign or chapter'), { rejected: true });
-    if (campaign) { kind = 'level'; id = campaign.level; }
-    // A later fight of Boss Rush keeps the run's abilities; anything else starts without.
-    try { session = sim.start(kind, id, gauntlet?.partners || [], !!gauntlet?.run && gauntlet.fight > 0); } catch (e) {
+    const gauntlet = sim.calling(run, fight);
+    // A later fight of the run keeps the run's abilities; a new run starts without.
+    try { session = sim.start('arena', gauntlet.boss, gauntlet.partners, fight > 0); } catch (e) {
       // A failure after validation leaves the simulation half-built: end the run properly for everyone.
-      if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another level.', 'error');
+      if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another run.', 'error');
       throw e;
     }
-    if (tally?.run.week && !tally.recorded && !(gauntlet?.run && gauntlet.fight > 0)) recordWeekly(runSummary('left'));   // a weekly run given up
+    if (tally?.run.week && !tally.recorded && fight === 0) recordWeekly(runSummary('left'));   // a weekly run given up
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
-    if (gauntlet) session.gauntlet = gauntlet;
-    if (gauntlet?.run) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
-    if (gauntlet?.run) session.pace = sim.setRushFight(gauntlet.fight, gauntlet.modifiers);   // the curve and the fight's modifiers
-    if (gauntlet?.run) session.par = rushParNow();   // the HUD's par time
-    if (gauntlet?.run) {   // each boss's share of its bars (rushHealth): a pair's, a warm-up boss's, its own; only those under 1
-      const shares = [gauntlet.boss, ...gauntlet.partners].map(id => [id, sim.rushHealth(1 + gauntlet.partners.length, gauntlet.fight, id)]).filter(([, k]) => k < 1);
-      if (shares.length) session.health = Object.fromEntries(shares);
-    }
-    if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
-    if (!gauntlet?.run) tally = null;
-    else if (gauntlet.fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), won: 0, crowned: 0, times: [], players: new Map() };
-    if (tally) tally.at = gauntlet.number;   // the fight the run is in: the HUD's number
+    session.gauntlet = gauntlet;
+    session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
+    session.pace = sim.setRushFight(fight, gauntlet.modifiers);   // the curve and the fight's modifiers
+    session.par = rushParNow();   // the HUD's par time
+    // Each boss's share of its bars (rushHealth): a pair's, a warm-up boss's, its own; only those under 1.
+    const shares = [gauntlet.boss, ...gauntlet.partners].map(id => [id, sim.rushHealth(1 + gauntlet.partners.length, fight, id)]).filter(([, k]) => k < 1);
+    if (shares.length) session.health = Object.fromEntries(shares);
+    if (fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
+    if (fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), won: 0, crowned: 0, times: [], players: new Map() };
+    tally.at = gauntlet.number;   // the fight the run is in: the HUD's number
     tallied = false;
-    if (campaign) session.campaign = campaign;
-    if (opening && (campaign?.intro || gauntlet)) session.opening = true;
+    if (opening) session.opening = true;
     for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
-    firstPick = options.firstPick !== false && gauntlet?.run && gauntlet.fight === 0 ? 'due' : null;   // firstPick: false, tests that check an exact kit
+    firstPick = options.firstPick !== false && fight === 0 ? 'due' : null;   // firstPick: false, tests that check an exact kit
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
   }
@@ -347,31 +341,23 @@ function createServer(options = {}) {
     noteActivity(p);
     if (p.id !== leader) { error(p, 'Only the lobby leader can use that control.'); return; }
     if (msg.action === 'start') {
-      if (!['campaign', 'level', 'arena', 'gauntlet', 'calling'].includes(msg.kind) || !net.id(msg.id)) return;
+      // The lobby starts Boss Rush or the weekly run, nothing else. `opening` (optional): the first fights' bosses by
+      // hand (tests, tools); the draw goes on after them. The weekly run has none: its run is this week's.
+      const weekly = msg.id === C.weekly.id;
+      if (msg.kind !== 'calling' || !weekly && msg.id !== C.calling.id || msg.opening !== undefined && (weekly || !Array.isArray(msg.opening) || msg.opening.length > sim.catalog().bosses.length)) return;
       try {
-        if (msg.kind === 'calling') {
-          // `opening` (optional): the first fights' bosses by hand (tests, tools); the draw goes on after them. The
-          // weekly run has none: its run is this week's.
-          const weekly = msg.id === C.weekly.id;
-          if (!weekly && msg.id !== C.calling.id || msg.opening !== undefined && (weekly || !Array.isArray(msg.opening) || msg.opening.length > sim.catalog().bosses.length)) return;
-          const run = weekly ? sim.weeklyRun(dateNow()) : sim.newRun(msg.opening ? msg.opening.map(String) : []);
-          sim.calling(run);   // refuse a bad opening before anything starts
-          // Boss Rush is the party against the bosses (PLAN.md track B item 9): no bot ever fills it.
-          start('calling', run, null, 0, true);
-        } else start(msg.kind, msg.id, null, undefined, true);
+        const run = weekly ? sim.weeklyRun(dateNow()) : sim.newRun(msg.opening ? msg.opening.map(String) : []);
+        sim.calling(run);   // refuse a bad opening before anything starts
+        // Boss Rush is the party against the bosses (PLAN.md track B item 9): no bot ever fills it.
+        start(run, 0, true);
       } catch (e) {
         if (!e.rejected) console.error('Start failed:', e);
-        error(p, e.rejected ? e.message : 'That adventure could not start. Choose another.');
+        error(p, e.rejected ? e.message : 'That run could not start. Try again.');
       }
     // A weekly run restarts as this week's run (it may have begun last week); any other Boss Rush run as itself.
-    } else if (msg.action === 'restart' && session) session.gauntlet?.run ? start('calling', session.gauntlet.run.week ? sim.weeklyRun(dateNow()) : session.gauntlet.run, null, 0, true)
-      : session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
+    } else if (msg.action === 'restart' && session) start(session.gauntlet.run.week ? sim.weeklyRun(dateNow()) : session.gauntlet.run, 0, true);
     else if (msg.action === 'lobby') {
       stop('The leader returned everyone to the lobby.');
-    } else if (msg.action === 'next' && session && !session.gauntlet) {
-      const game = sim.inspect().Game, next = session.campaign ? session.campaign.next : game.level.next;
-      if (game.complete && next && sim.catalog().levels.some(l => l.id === next)) start('level', next, session.campaign?.id);
-      else error(p, 'Finish this level first, or select another level.');
     } else if (msg.action === 'transfer' && clients.has(msg.player) && clients.get(msg.player).hello) {
       if (!isActive(clients.get(msg.player), activityNow())) { error(p, 'That player is inactive. They must provide input before becoming leader.'); return; }
       leader = msg.player; sendRoster();
@@ -476,8 +462,6 @@ function createServer(options = {}) {
       if (net.id(msg.enemy) && claim(p, `heal/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.lifesteal(p.id, msg);
     } else if (msg.type === 'landed') {   // pass 77: an attack the Antlered Hunger would learn struck this player
       if (net.id(msg.enemy) && claim(p, `land/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.landed(p.id, msg);
-    } else if (msg.type === 'rest') {
-      if (net.id(msg.bonfire) && sim.rest(p.id, msg.bonfire)) { session.spawn = sim.state.checkpoint; broadcast({ type: 'checkpoint', spawn: session.spawn }); }
     }
   }
   // Static files. The page's scripts load as `js/<file>?v=<LOAD_STAMP>`; the served page adds this release's build
@@ -621,9 +605,8 @@ function createServer(options = {}) {
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (tally) { tallyFight(false); stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: endRun('wiped') }); }
-            else if (session.gauntlet) stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
-            else start(session.kind, session.id);
+            tallyFight(false);
+            stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: endRun('wiped') });
             break;
           }
         }
@@ -636,33 +619,21 @@ function createServer(options = {}) {
             for (const p of clients.values()) sendFrame(p, frame, players);
           }
         }
-        // A campaign carries the entire party through its data-defined chapter
-        // order, using the same completion delay as solo story play.
-        if (session.campaign?.next && sim.state.completedFor >= Math.max(sim.campaignAdvanceTime, C.leaderboardDelay + C.leaderboardTime)) {
-          start('level', session.campaign.next, session.campaign.id);
-          break;
-        }
         // Boss Rush: once the kill moment has played, the fight's time is kept and the ability pick opens in the arena.
-        if (session.gauntlet && sim.state.completedFor >= (session.gauntlet.run ? C.rushKillTime : Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime))) {
-          if (session.gauntlet.run && tally && !tallied) { tallyFight(true); tallied = true; }
-          if (session.gauntlet.run && session.gauntlet.next && !abilitiesChosen()) continue;
-          const run = C.gauntlets[session.gauntlet.id];
-          // Boss Rush: the fallen rise for the next fight with everyone else; it ends only when everyone falls (or at
+        if (sim.state.completedFor >= C.rushKillTime) {
+          if (!tallied) { tallyFight(true); tallied = true; }
+          if (session.gauntlet.next && !abilitiesChosen()) continue;
+          // The fallen rise for the next fight with everyone else; the run ends only when everyone falls (or at
           // CONFIG.endless.longest, which no one reaches).
-          if (session.gauntlet.run) {
-            if (session.gauntlet.next) start('calling', session.gauntlet.run, null, session.gauntlet.next);
-            else stop(`${session.gauntlet.name} COMPLETE · ${tally ? tally.won : 0} fights won.`, 'run-complete', tally ? { summary: endRun('won') } : {});
-          } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
-          // A survived run carries the party on into the next, harder run, with its own opening.
-          else if (run.then) start('gauntlet', run.then, null, undefined, true);
-          else stop(`${run.name} COMPLETE · Every boss defeated. The whole party conquered the gauntlet!`);
+          if (session.gauntlet.next) start(session.gauntlet.run, session.gauntlet.next);
+          else stop(`${session.gauntlet.name} COMPLETE · ${tally.won} fights won.`, 'run-complete', { summary: endRun('won') });
           break;
         }
       }
     } catch (e) {
       // Through the ordinary stop path: players lose ready/pose/encoder state and get the stop and a roster.
       console.error('Simulation stopped:', e);
-      try { stop('The session stopped after a server error. The leader can start another level.', 'error'); }
+      try { stop('The session stopped after a server error. The leader can start another run.', 'error'); }
       catch (err) { console.error('Stopping after a simulation error failed:', err); session = null; }
     }
   }, 1000 / C.tickRate); timer.unref();

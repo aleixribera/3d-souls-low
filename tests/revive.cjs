@@ -40,7 +40,7 @@ async function peer(origin, name) {
   const same = runTitles([row('a', { damage: 1400 }), row('b')]);
   assert.notEqual(same[0].title, same[1].title, 'two plain runs still read differently');
 
-  const app = createServer(), peers = [];
+  const app = createServer({ firstPick: false }), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   const { CONFIG, Game } = app.sim.inspect(), R = CONFIG.revive;
@@ -57,7 +57,7 @@ async function peer(origin, name) {
   const until = async (test, ms, what) => { for (let t = 0; t < ms; t += 20) { if (test()) return; await wait(20); } assert.fail('Timed out: ' + what); };
   try {
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Bram'), c = await peer(origin, 'Cole'); peers.push(a, b, c);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['ostrey'] });
     session = (await a.next('start')).session; await b.next('start'); await c.next('start');
     assert.equal(session.teamWipeOnly, true);
     const boss = Game.enemies[0], s = session.spawn;
@@ -115,10 +115,13 @@ async function peer(origin, name) {
     assert.equal(app.clients.get(a.id).pose.hp, 0, 'a fall without a revive stays down');
     assert.ok(ember(a.id), 'the new fall leaves a new ember');
 
-    // Alone, a fall leaves no ember. The others leave; Ash, down and alone, wipes and starts over.
+    // Alone, a fall leaves no ember. The others leave; Ash, down and alone, wipes (the run ends) and starts another.
     for (const p of [b, c]) { feed.delete(p); p.ws.close(); }
     await until(() => app.clients.size === 1, 3000, 'the others leave');
     assert.equal(ember(c.id), undefined, 'a leaver takes their ember');
+    assert.equal((await a.next('stop')).reason, 'team-wipe');
+    session = null;
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['ostrey'] });
     session = (await a.next('start')).session;
     a.send({ type: 'ready', epoch: session.epoch }); place(a, off(s, 0, 0)); await flush(a);
     place(a, off(s, 0, 0), 0); await flush(a);

@@ -240,7 +240,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     for (const page of [a, b]) await page.locator('#runSummary').waitFor({ timeout: 30000 });
     assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Reached fight 1');
     assert.equal(await a.locator('#runSummaryCrowned').textContent(), '0');
-    assert.equal(await a.locator('#teamWipeScreen').isVisible(), false, 'the summary replaces the short wipe card');
+    assert.equal(await a.locator('#teamWipeScreen').count(), 0, 'the summary is the only end screen');
     await a.waitForTimeout(300);
     await a.screenshot({ path: `${out}/summary-wiped-desktop.png` });
     await a.setViewportSize({ width: 390, height: 844 });

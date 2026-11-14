@@ -5,6 +5,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Now
 
 Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
+- v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, level starts, rests, gates and
+  the leaderboard/team-wipe screens went (code too); a wipe ends the run on its summary. Protocol 3.
 - Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
   `tools/anim-strip.cjs` draws every step; `finisher` films the 3-counter chain (`CLIP=` an mp4). Deflect (in-page
   `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. After the pause: deflect frames 5-9,
@@ -40,8 +42,8 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
 - Boss Rush (pass 65-73): `calling`, `offerAbilities`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`
   (`server/simulation.js`); `tests/calling.cjs`, `calling-browser.cjs`, `rush-alone-browser.cjs`. Weekly: `tests/weekly.cjs`.
 - Revive (pass 64): `js/revive.js`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
-- The end of Act I (v7.36.0): `LORE.ending`, `showEnding` (`js/finale.js`), `LEVEL_5.next`, `goesOn`, `resume`,
-  `campaignAdvanceTime`; in-page `Story`, `Church`, `tests/campaign-browser.cjs`; `docs/scorecard/act1-*.jpg`.
+- The end of Act I (v7.36.0): `LORE.ending`, `showEnding` (`js/finale.js`), `LEVEL_5.next`, `goesOn`, `resume`;
+  in-page `Story`, `Church`; `docs/scorecard/act1-*.jpg`.
 - Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
   `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
@@ -49,7 +51,7 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
   boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30; over the world, pass 82): `LORE.endings`, `tellEnding` in `js/finale.js`; in-page
-  `Story moments:` (`inControl`), `Still Mere:`, `tests/campaign-browser.cjs`; `moments-*.jpg`.
+  `Story moments:` (`inControl`), `Still Mere:`; `moments-*.jpg`.
 - Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
 - Bots: temperaments, strings, Finishing Blows, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
@@ -60,9 +62,8 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
 
 ## Broken
 
-- `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568), `boss-only-browser` (adventure count),
-  `calling-browser` (a swift mark on a Crowned offer).
+- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568), `calling-browser` (a swift mark on a
+  Crowned offer).
 
 ## Queued runs
 

@@ -164,7 +164,7 @@ const Game = {
   tryRest() {
     const p = this.player, b = this.canRest();
     if (!b || !p.isFree()) return;
-    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.rest(b); return; }
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) return;   // online is Boss Rush: no bonfires
     p.hp = p.maxHp; p.vx = p.vz = 0;
     p.setState(PS.REST);
     p.refillItems();

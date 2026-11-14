@@ -1,11 +1,12 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { selectAdventure } = require('./browser-adventure.cjs');
+const { pinRush, selectRush } = require('./browser-adventure.cjs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
 (async () => {
-  const app = createServer({ dev: true });
+  const app = createServer({ dev: true, firstPick: false });
+  pinRush(app, ['ostrey']);
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [], suspended = new WeakSet();
@@ -54,11 +55,13 @@ const { config: C } = require('../js/net-protocol.js');
   };
   try {
     const a = await player('Leader');
-    await selectAdventure(a, 'level/long-hall'); await a.locator('#lobbyStart').click(); await ready(a);
+    await selectRush(a); await a.locator('#lobbyStart').click(); await ready(a);
     const epoch = app.session.epoch, oldId = await a.evaluate(() => multiplayer.info.self);
-    const zone = app.sim.inspect().Game.zones.find(z => z.id === 'zone-hollow');
-    for (const e of zone.actors) { e.hp = 0; e.die(); }
-    await a.waitForFunction(id => world.gates.find(g => g.id === id).open, zone.id);
+    // Hold the boss still and wound her: the run's state every reconnect must find again.
+    for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
+    const boss = app.sim.inspect().Game.duel; boss.hp -= 30;
+    const wounded = hp => a.waitForFunction(hp => Game.duel && Math.abs(Game.duel.hp - hp) < 0.5, hp);
+    await wounded(boss.hp);
 
     // Reproduce a lone leader's suspended tab, followed by a new active joiner.
     const devtools = await a.context().newCDPSession(a);
@@ -83,7 +86,7 @@ const { config: C } = require('../js/net-protocol.js');
     await ready(a); assert.equal(await a.evaluate(() => multiplayer.info.self), oldId);
     await assertSaved(a, saved);
     assert.equal(app.session.epoch, epoch);
-    assert.ok(await a.evaluate(id => world.gates.find(g => g.id === id).open, zone.id));
+    await wounded(boss.hp);
 
     // A hard reload uses the private persisted credential too.
     await a.reload(); await a.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });

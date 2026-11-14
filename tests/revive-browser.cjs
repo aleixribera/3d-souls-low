@@ -40,7 +40,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ volume: 0 }));
-      localStorage.setItem('combatArena.onlineName', 'Ash');
+      localStorage.setItem('combatArena.onlineName', 'Ash'); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     });
     await page.goto(origin + '/combat-arena-3d.html#dev');
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });

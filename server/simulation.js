@@ -7,7 +7,7 @@ globalThis.host = (() => {
   let players = [], checkpoint = null;
   let completedFor = 0;
   let fought = 0;   // s of this fight played (not held for loading, not after the last enemy fell): Boss Rush's clock
-  let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
+  let damage = new Map(), closed = false, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots (`closed`: the fight is won, its numbers kept)
   // This fight's feats per player id ({ parries, finishers, revives, rescued: ids revived }, for the end screen's titles) and whose blow
   // landed last on a boss (the killing blow, once every boss is down).
   let feats = new Map(), lastHit = null, killer = null;
@@ -17,7 +17,6 @@ globalThis.host = (() => {
   // Bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared enemies. Since
   // pass 52 no player's party gets one: they are the loop's test players (tools/bot-fights.cjs, the tests). id -> { id, name, profile, brain, body, ... }
   const bots = new Map();
-  let followers = new Map(), assignLeft = 0, partyKey = '';
   let botSerial = 0, wipeOnly = false, acting = null;
   const crowdClocks = new Map();
   // Contact plausibility state, per run: hit budgets per player/enemy and each player's last accepted parry (riposte).
@@ -29,14 +28,6 @@ globalThis.host = (() => {
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
   const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), pendingClaims = [];
   const C = ArenaNet.config;
-  for (const story of STORIES) {
-    if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
-      throw new Error(`Campaign ${story.id} has an unknown or empty chapter list.`);
-  }
-  if (!STORIES.some(s => s.id === C.defaultCampaign)) throw new Error('Unknown default multiplayer campaign: ' + C.defaultCampaign);
-  const choice = C.defaultAdventure;
-  if (!(choice.kind === 'gauntlet' && C.gauntlets[choice.id] || choice.kind === 'calling' && choice.id === C.calling.id || choice.kind === 'campaign' && STORIES.some(s => s.id === choice.id && s.lobbyName)))
-    throw new Error('Unknown default lobby adventure: ' + choice.kind + '/' + choice.id);
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
     isAttacking() { return this.state === PS.ATTACK || this.state === PS.JUMP_ATTACK; },
@@ -129,45 +120,19 @@ globalThis.host = (() => {
     }
   }
   function catalog() {
-    return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l) && !l.sparring).map(l => ({ id: l.id, name: l.name })),
-      campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
-      defaultAdventure: { ...C.defaultAdventure },
-      bosses: ENEMY_DEFS.filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
+    return { version: VERSION, bosses: ENEMY_DEFS.filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };
   }
-  function campaign(id, level) {
-    const story = STORIES.find(s => s.id === id); if (!story) return null;
-    const index = level === undefined ? 0 : story.chapters.findIndex(c => c.level === level);
-    const chapter = story.chapters[index]; if (!chapter) return null;
-    return { id: story.id, name: story.name, intro: LOBBY_INTROS.some(x => x.id === story.id), level: chapter.level, title: chapter.title, line: chapter.line,
-      number: index + 1, total: story.chapters.length, next: story.chapters[index + 1]?.level || null,
-      done: ALL_LEVELS.find(l => l.id === story.chapters.at(-1).level)?.ending ? story.done : story.goesOn || story.done };   // the road goes on, unbuilt
-  }
-  // What a session is, in a few words, for the title screen of someone about to join (v7.19.0): "Ashmere · The Long
-  // Hall", "Boss Only", "Duel: Hollow Soldier". Null when nothing runs.
+  // What a session is, in a few words, for the title screen of someone about to join (v7.19.0): "Boss Rush",
+  // "Weekly Run". Null when nothing runs.
   function describe(session) {
-    if (!session) return null;
-    const title = t => t.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase());
-    if (session.campaign) { const story = STORIES.find(s => s.id === session.campaign.id); return `${story ? story.short : session.campaign.name} · ${title(session.campaign.title)}`; }
-    if (session.gauntlet) return title(session.gauntlet.name);
-    if (session.kind === 'level') { const L = ALL_LEVELS.find(l => l.id === session.id); return L ? L.name : null; }
-    const d = ArenaNet.own(ENEMY_BY_ID, session.id);
-    return d ? `Duel: ${d.name}` : null;
+    if (!session?.gauntlet) return null;
+    return session.gauntlet.name.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase());
   }
-  // One encounter of a boss run: `size` consecutive catalog bosses, referenced by the first one's id.
   const rejected = message => Object.assign(new Error(message), { rejected: true });   // a refused request, safe to show
-  function gauntlet(boss, id = 'boss-only') {
-    const run = ArenaNet.own(C.gauntlets, id); if (!run) throw rejected('Unknown boss run');
-    const bosses = catalog().bosses;
-    const index = boss === undefined ? 0 : bosses.findIndex(e => e.id === boss);
-    if (index < 0 || index % run.size) throw rejected('Unknown gauntlet boss');
-    const group = bosses.slice(index, index + run.size);
-    return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
-      total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
-  }
   // One fight of Boss Rush (C.calling), endless (CONFIG.endless, RUSH in js/data/rush.js): `run` is { seed, opening },
   // `fight` counts from 0. Every fight is drawn in turn from the run's seed, so a run replays the same bosses and
   // modifiers; `opening` (ids, optional) sets the first fights' bosses by hand (tests, tools). The same shape as a
-  // gauntlet encounter, plus the run to carry on, whether it is Crowned and its modifiers' ids.
+  // fight: its first boss, the others (`partners`), the run to carry on, whether it is Crowned and its modifiers' ids.
   const rushSeed = seed => { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   // A weekly run (C.weekly) carries its `week` ('2026-W46'), whose seed it must be, and no opening.
   function calling(run, fight = 0) {
@@ -233,35 +198,35 @@ globalThis.host = (() => {
   }
   // The party's might (kitMight, CONFIG.swift.might): the mean over `ids` of what each holds. Boss Rush's par divides by it.
   const partyMight = ids => ids.length ? ids.reduce((n, id) => n + kitMight(owned.get(id)), 0) / ids.length : 0;
-  // `keepAbilities`: a later fight of the same Calling run; anything else starts with none.
+  // A fight in the arena: enemy `id` and its `partners` (Boss Rush's fights; the tests and tools fight any enemy).
+  // `keepAbilities`: a later fight of the same Boss Rush run; anything else starts with none.
   function start(kind, id, partners = [], keepAbilities = false) {
     // Validate every wire-supplied id before touching Game/world, so a refused start leaves the run intact.
-    if (!['level', 'arena'].includes(kind)) throw rejected('Unknown game mode');
-    if (!Array.isArray(partners)) throw rejected('Unknown level or opponent');
+    if (kind !== 'arena') throw rejected('Unknown game mode');
+    if (!Array.isArray(partners)) throw rejected('Unknown opponent');
     const own = id => ArenaNet.own(ENEMY_BY_ID, id);
-    if (kind === 'level' && !catalog().levels.some(l => l.id === id) || kind === 'arena' && !own(id) || partners.length && (kind !== 'arena' || partners.some(p => !own(p)))) throw rejected('Unknown level or opponent');
-    const d = kind === 'arena' && own(id), L = d && d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    const level = kind === 'level' ? ALL_LEVELS.find(l => l.id === id) : L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
+    if (!own(id) || partners.some(p => !own(p))) throw rejected('Unknown opponent');
+    const d = own(id), L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
+    const level = L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     const nextWorld = makeWorld(level, collisionStage(level));
-    Game.kind = kind; Game.story = false; Game.duelId = kind === 'arena' ? id : null; Game.duelPartners = [...partners];
+    Game.kind = kind; Game.story = false; Game.duelId = id; Game.duelPartners = [...partners];
     Game.level = level; world = nextWorld;
     Game.cleared = new Set(); Game.complete = false; crowd.reset(); crowdClocks.clear();
     const s = Game.level.playerStart || Game.level.start;
     checkpoint = { ...s, y: world.floorY(s.x, s.z, s.y) };
-    Game.zones = kind === 'arena' ? [] : (Game.level.gated || []).map(z => ({ ...z, members: z.enemies || [{ enemy: z.enemy, spawn: z.spawn }], actors: [], gate: world.gates.find(g => g.id === z.id) }));
+    Game.zones = [];
     Game.enemies = Game.makeEnemies();
-    for (const z of Game.zones) Game.spawnZone(z);
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
-    damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
+    damage = new Map(); closed = false; deaths = new Map(); fightBots = new Set();
     feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); sleeping = false; settleCheck = 0;
-    wipeOnly = kind === 'arena' && isBossDef(d);
+    wipeOnly = isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
     kits.clear(); perks.clear(); lastDodge.clear(); pendingClaims.length = 0;
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
-    return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: kind === 'arena' && isBossDef(d) };
+    return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: isBossDef(d) };
   }
   function setPlayers(list) { players = list.map(s => proxy(s, s.id)).concat(botBodies()); }
   const botBodies = () => [...bots.values()].filter(b => b.body).map(b => b.body);
@@ -446,13 +411,7 @@ globalThis.host = (() => {
   function updateBots(dt) {
     if (!bots.size) return;
     BotNavigation.tick();   // one shared floor-sample budget for every bot's route search this step
-    const B = CONFIG.bot, people = players.filter(p => !p.botId && p.alive());
-    const liveBots = botBodies().filter(p => p.alive());
-    const key = people.map(p => p.id).sort().join(',') + '/' + liveBots.map(p => p.id).sort().join(',');
-    if (Game.kind === 'level' && ((assignLeft -= dt) <= 0 || key !== partyKey)) {
-      followers = BotNavigation.assign(people, liveBots, Game.enemies, followers);
-      assignLeft = B.assignmentTime; partyKey = key;
-    }
+    const B = CONFIG.bot;
     for (const b of bots.values()) {
       const p = b.body; if (!p) continue;
       if (!p.alive()) {
@@ -463,8 +422,7 @@ globalThis.host = (() => {
       }
       if (b.hitstop > 0) { b.hitstop = Math.max(0, b.hitstop - dt); continue; }
       const allies = players.filter(o => o !== p && o.alive());
-      const lead = Game.kind === 'level' ? people.find(p => p.id === followers.get(b.id)) : null;
-      const { mv, lock } = b.brain.think(dt, p, Game.enemies, allies, flying, lead);
+      const { mv, lock } = b.brain.think(dt, p, Game.enemies, allies, flying, null);
       const before = Game.enemies.map(e => e.hp);
       acting = b;
       try {
@@ -480,12 +438,6 @@ globalThis.host = (() => {
       }
       const fire = fireUnder(Game, p);   // a bot burns in them like a person (each client burns its own body)
       if (fire) { p.hp = Math.max(0, p.hp - fire.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD); }
-      // Only sustained failed walking can request a short, collision-checked unstick along its route.
-      const rescue = b.brain.navigator.recovery;
-      if (Game.kind === 'level' && p.alive() && !b.brain.target && rescue && lead) {
-        p.x = rescue.x; p.y = rescue.y; p.z = rescue.z;
-        p.vx = p.vy = p.vz = p.kx = p.kz = 0; p.savePrev();
-      }
     }
   }
   // A chase camera behind the bot, facing its fight, for teammates who spectate it (the same view format browsers send).
@@ -505,13 +457,13 @@ globalThis.host = (() => {
   const botList = () => [...bots.values()].map(b => ({ id: b.id, name: b.name, ready: true, hp: b.body ? b.body.hp : null, bot: true }));
   const botsDown = () => [...bots.values()].every(b => !b.body || !b.body.alive());
   function registerPlayer(id, name) {
-    if (results) return;
+    if (closed) return;
     const row = damage.get(id);
     damage.set(id, { id, name, damage: row?.damage || 0 });
     if (bots.has(id)) fightBots.add(id);   // still a bot in the tally if it leaves the party mid-fight
   }
   // A fall in this fight: a bot's here, a person's from the server when their pose first reports them dead.
-  function noteDeath(id) { if (!results) deaths.set(id, (deaths.get(id) || 0) + 1); }
+  function noteDeath(id) { if (!closed) deaths.set(id, (deaths.get(id) || 0) + 1); }
   // This fight's damage, falls and feats per player, for Boss Rush's run totals and titles.
   const feat = id => { let f = feats.get(id); if (!f) feats.set(id, f = { parries: 0, finishers: 0, revives: 0, rescued: [] }); return f; };
   const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0,
@@ -545,53 +497,19 @@ globalThis.host = (() => {
   const reviving = id => { for (const m of embers.values()) if (m.by === id) return true; return false; };
   function creditDamage(id, amount) {
     const row = damage.get(id);
-    if (row && !results) row.damage += Math.max(0, amount);
+    if (row && !closed) row.damage += Math.max(0, amount);
   }
+  // The fight is won once every enemy is down: its numbers are kept from then on, and the embers go.
   function progress(dt) {
-    const living = players.filter(p => p.alive());
-    for (const z of Game.zones) {
-      for (const p of living) {
-        const entered = typeof z.trigger === 'number' ? p.x > z.trigger : inArea(z.trigger, p.x, p.z);
-        const floor = z.actors[0]?.home.y ?? p.y;
-        if (Game.level.wakeZones && entered && !z.gate.open && Math.abs(p.y - floor) <= CONFIG.height.reach + 1)
-          for (const e of Game.enemies) if (e.zone === z.id && e.alive()) {
-            e.huntTime = CONFIG.ai.huntTime;
-            if (e.state === ES.SEARCH) { e.lastSeen = { x: p.x, z: p.z }; e.searchLook = 0; e.stateTime = 0; }
-            else if (e.in('unaware') || e.state === ES.DORMANT) e.wake(p);
-          }
-      }
-      if ((z.beaten || z.actors.length && z.actors.every(e => !e.alive())) && !z.gate.open) { z.gate.open = true; eventList.push({ type: 'gateOpened', id: z.id }); }
-    }
-    for (const g of world.gates) if (!g.open && g.opensFrom && living.some(p => inRect(g.opensFrom, p.x, p.z) && Math.abs(p.y - g.y) <= CONFIG.height.reach)) {
-      g.open = true; eventList.push({ type: 'gateOpened', id: g.id, shortcut: true });
-    }
-    // Fog seals only once somebody enters its arena; other players can cross it
-    // through a co-op entrance allowance in the client, without moving the boss.
-    for (const data of Game.level.sealed || []) if (data.fog) {
-      const z = Game.zones.find(z => z.id === data.fog), g = world.gates.find(g => g.id === data.id);
-      if (z && g) g.open = z.gate.open || !living.some(p => inArea(z.trigger, p.x, p.z));
-    }
-    for (const t of world.traps) {
-      if (t.state === 'set' && living.some(p => p.grounded && p.state !== PS.EXECUTE && inRect(t.trigger, p.x, p.z) && Math.abs(p.y - t.y) < CONFIG.height.stepUp)) {
-        t.state = 'warning'; t.timer = 0; eventList.push({ type: 'trapWarning', id: t.id });
-      } else if (t.state === 'warning') t.timer += dt;
-      else if (t.state === 'sprung') t.dropTime += dt;
-      if (t.state === 'warning' && t.timer >= t.warning) { t.state = 'sprung'; world.openHole(t.region, t.collapse); eventList.push({ type: 'trapSprung', id: t.id }); }
-    }
-    Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : Game.enemies.every(e => !e.alive());
+    Game.complete = Game.enemies.every(e => !e.alive());
     completedFor = Game.complete ? completedFor + dt : 0;
-    if (Game.complete && !results) {
-      killer = lastHit; embers.clear();
-      results = [...damage.values()].map(row => ({ ...row }))
-        .sort((a, b) => b.damage - a.damage || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-      for (let i = 0; i < results.length; i++) results[i].rank = i && results[i].damage === results[i - 1].damage ? results[i - 1].rank : i + 1;
-    }
+    if (Game.complete && !closed) { closed = true; killer = lastHit; embers.clear(); }
   }
-  // Nothing left to simulate: no bots, bolts, reservations or trap warnings, and every enemy dead or resting with its
+  // Nothing left to simulate: no bots, bolts or reservations, and every enemy dead or resting with its
   // guard whole again (patrols simply pause). The world clock keeps running; any living player wakes the run.
   const RESTING = new Set([ES.IDLE, ES.PATROL, ES.LURK, ES.DORMANT]);
   function settled() {
-    if (bots.size || flying.length || world.traps.some(t => t.state === 'warning')) return false;
+    if (bots.size || flying.length) return false;
     return Game.enemies.every(e => !e.netExec && (!e.alive() ? e.rewarded || e.state === ES.GONE
       : RESTING.has(e.state) && !(e.huntTime > 0) && e.grounded && !(e.cracks > 0) && e.poise === e.def.poise
         && (e.state === ES.PATROL || Math.hypot(e.vx, e.vz) < 0.05)));
@@ -653,7 +571,6 @@ globalThis.host = (() => {
       progress(dt); return;
     }
     if (embers.size && !Game.complete) reviveStep(dt);
-    const was = new Set(Game.enemies.filter(e => e.in('unaware') || e.state === ES.DORMANT));
     const groups = new Map(living.map(p => [p.id, { player: p, enemies: [] }]));
     // Choose targets first, then run each player's crowd independently. Fights
     // in separate rooms must not slow one another or circle the first player.
@@ -686,10 +603,6 @@ globalThis.host = (() => {
       }
       crowdClocks.set(id, crowd.sinceStart);
     }
-    if (Game.kind === 'level' && Game.level.alert) for (const e of Game.enemies) if (was.has(e) && !e.in('unaware') && e.state !== ES.DORMANT) {
-      const p = living.find(p => p.id === e.netTarget) || living[0];
-      for (const other of Game.enemies) if (other !== e && other.alive() && (other.zone && other.zone === e.zone || Math.hypot(other.x - e.x, other.z - e.z) < CONFIG.alert.radius && !sightLost(e, other))) other.wake(p);
-    }
     for (let i = 0; i < Game.enemies.length; i++) for (let j = i + 1; j < Game.enemies.length; j++) separatePair(Game.enemies[i], Game.enemies[j], 0.5);
     abilityPowers.tick(dt);   // lightning and blades still striking
     if (pendingClaims.length) retryClaims();
@@ -700,8 +613,7 @@ globalThis.host = (() => {
   }
   function frame(drain = true) {
     const result = { epoch, time, complete: Game.complete, fought: Math.floor(fought * 10 + 1e-6) / 10,
-      results: results && completedFor >= C.leaderboardDelay && completedFor < C.leaderboardDelay + C.leaderboardTime ? results : null,
-      checkpoint, enemies: Game.enemies.map(e => ({
+      enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
       hp: e.hp, phase: e.phase, cracks: e.cracks, crackBy: e.crackBy ?? null, poise: e.poise, frozen: e.frozen,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
@@ -711,9 +623,7 @@ globalThis.host = (() => {
       ...(e.mendPool > 0 ? { mend: Math.round(e.mendPool) } : null),   // pass 75: Aldric's open wounds (his bar, his cracks)
       ...(e.learned.length ? { learned: e.learned.slice() } : null),   // pass 77: the attacks the Antlered Hunger has learned (its antlers)
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
-    })), gates: world.gates.map(g => ({ id: g.id, open: g.open })),
-      traps: world.traps.map(t => ({ id: t.id, state: t.state, timer: t.timer, dropTime: t.dropTime })),
-      events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [],
+    })), events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [],
       embers: [...embers].map(([id, m]) => ({ id, x: m.x, y: m.y, z: m.z, t: Math.min(1, m.t / CONFIG.revive.time), by: m.by })) };
     return result;
   }
@@ -842,13 +752,6 @@ globalThis.host = (() => {
     if (e.hp <= 0) { if (!e.outlast()) e.die(); }
     else { e.poise = e.def.poise; e.setState(ES.STAGGER); }
   }
-  function rest(id, bonfire) {
-    const p = players.find(p => p.id === id), b = world.bonfires.find(b => b.id === bonfire);
-    if (!p || !p.alive() || !b || Math.hypot(p.x - b.x, p.z - b.z) >= CONFIG.rest.range + C.contactTolerance || Math.abs(world.floorY(b.x, b.z, b.y) - p.y) >= CONFIG.height.reach || b.litBy && !Game.zones.find(z => z.id === b.litBy)?.gate.open) return false;
-    if (Game.enemies.some(e => e.alive() && !e.in('unaware') && Math.hypot(e.x - p.x, e.z - p.z) < CONFIG.rest.blockRange && !gateBetween(e, p))) return false;
-    checkpoint = b.spawn ? { ...b.spawn } : { x: b.x, y: world.floorY(b.x, b.z, b.y), z: b.z, yaw: p.yaw };
-    return true;
-  }
   function endFinisher(id, enemyId) { const e = enemy(enemyId); if (e?.netExec?.player === id) finishFinisher(e); }
   function lifesteal(id, msg) {
     const e = enemy(msg.enemy);
@@ -864,22 +767,16 @@ globalThis.host = (() => {
     const box = h.box || a.box, reach = (box ? reachOf(box) : 0) + p.radius;
     if (within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial && s.hit === msg.hitIndex)) e.landed = true;
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
-    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed, rest,
+    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
-    get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && roadFlasks(Game.level.id, true) || 0); },
+    playerMaxFlasks: PLAYER_DEF.inventory.find(it => it.item === 'flask').max,
     arenaWipeDelay: CONFIG.death.respawnDelay,
-    // A level with an `ending` and a chapter after it (Aldric's: the end of Act I) moves on only once its death scene and
-    // cards have played in the browsers (js/finale.js), not after the usual level-complete pause.
-    get campaignAdvanceTime() {
-      const F = CONFIG.finale, L = Game.kind === 'level' && Game.level, plain = CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime;
-      return L && L.ending ? Math.max(plain, F.death.overlay + (((LORE.endings || {})[L.id] || LORE.ending).length + 1) * F.ending.card) : plain;   // a card's slack
-    },
     get state() { return { epoch, time, checkpoint, complete: Game.complete, completedFor, fought }; },
     get sleeping() { return sleeping; },
     // Server-side whitelist for relayed poses: a real player attack id (own property) or nothing.

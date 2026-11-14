@@ -26,9 +26,9 @@ agents: a draft, changed whenever the code changes.
 5. The simulation runs at a fixed 1/60 s step. Rendering interpolates and never changes game state. Combat emits
    events (`js/events.js`); visuals, camera, HUD and audio only listen.
 6. Every death goes through `Player.die()` and `Game.onPlayerDeath`.
-7. Multiplayer: the server owns shared enemies, gates and traps; each client owns its own player's movement, health
-   and defence; the server range- and rate-checks every claim (hits, executions, parries, rests). The server runs
-   `validateData({ visual: false })` at startup, so browser-only checks sit behind `visual`.
+7. Multiplayer: online play is Boss Rush and the Weekly Run. The server owns the shared enemies; each client owns its own
+   player's movement, health and defence; the server range- and rate-checks every claim (hits, executions, parries).
+   The server runs `validateData({ visual: false })` at startup, so browser-only checks sit behind `visual`.
 8. Every storage access is wrapped in try/catch. A change to the save format bumps `CONFIG.story.saveVersion`.
 9. Drawing allocates nothing per frame in hot paths. Screen flashes stay under 3 Hz and follow `reducedMotion()`.
 10. An ability's card text is only its trigger and its effect, in the fewest plain words ("Parry: a hound hunts the boss

@@ -222,8 +222,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Antlered Hunger's hide (`beastHide`, the `bark` pattern) reads as gnarled wood more than a stag's hide (v7.49.0,
   `docs/scorecard/hunger-lab.jpg`); a hide or fur texture of its own in the same texture pass. Ysolde is 3,504
   triangles, over the 3,000 enemy budget (load warning).
-- `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
-  without the v7.34.0 change: flaky (pass 2, 2026-11-13).
 - `abilities` (Node check) failed once on CI at `tests/abilities.cjs:572` (the Ember Twin pick returned false; run
   43632565109, a tooling-only commit) and passes locally 3/3: flaky (loop chat, 2026-11-14).
 - Bots lose to bosses far more since v7.13.1 by design (bisected, pass 26): companions take greedy exchanges and forward

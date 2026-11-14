@@ -46,7 +46,7 @@ for (let tick = 0; tick < 3000; tick++) {
 assert.ok(worst < 0.3, `jitter delay stays bounded instead of growing: ${worst}`);
 assert.ok(minWindup >= 0.95, `wind-ups retain their full duration: ${minWindup}`);
 
-const sim = createSimulation(); sim.start('level', 'final-castle');
+const sim = createSimulation(); sim.start('arena', 'hale', ['harrow']);   // Boss Rush's biggest frame: a pair
 const encoder = new FrameEncoder(), decoder = new FrameDecoder();
 let frame = sim.frame(false), first = encoder.encode(frame, []);
 assert.equal(first.full, true);
@@ -59,7 +59,7 @@ const hit = encoder.encode(frame, [{ id: 'player', name: 'Friend', hp: 120 }]);
 decoded = decoder.decode(JSON.parse(JSON.stringify(hit)));
 assert.equal(decoded.frame.enemies[0].hp, frame.enemies[0].hp);
 assert.equal(decoded.frame.enemies[0].def, frame.enemies[0].def, 'unchanged fields survive delta decoding');
-assert.ok(Buffer.byteLength(JSON.stringify(hit)) < Buffer.byteLength(JSON.stringify(first)) / 4, 'delta frame is materially smaller');
+assert.ok(Buffer.byteLength(JSON.stringify(hit.frame.enemies)) < Buffer.byteLength(JSON.stringify(first.frame.enemies)) / 4, 'an enemy delta is materially smaller');
 const camera = { position: [3, 5, -8], quaternion: [0, 0, 0, 1], fov: 64 };
 assert.deepEqual(cameraView({ ...camera, ignored: 'untrusted' }), camera, 'camera fields are whitelisted');
 for (const invalid of [null, { ...camera, position: [Infinity, 0, 0] }, { ...camera, quaternion: [0, 0, 0, 0] },
@@ -72,5 +72,5 @@ const left = decoder.decode(encoder.encode(frame, [])); assert.equal(left.player
 sim.start('arena', 'ostrey'); const restarted = encoder.encode(sim.frame(false), []);
 assert.equal(restarted.full, true); assert.equal(decoder.decode(restarted).frame.enemies.length, 1, 'new epoch clears old actors');
 const raw = Buffer.byteLength(JSON.stringify(first)), packed = zlib.deflateRawSync(JSON.stringify(first), { level: C.compressionLevel }).length;
-assert.ok(packed < raw / 3, 'Funnel traffic compresses efficiently');
-console.log(`Network timing: full telegraphs, independent clocks, bounded jitter and delta round trips passed. Initial castle snapshot ${raw} → ${packed} bytes compressed.`);
+assert.ok(packed < raw / 2, 'Funnel traffic compresses efficiently');
+console.log(`Network timing: full telegraphs, independent clocks, bounded jitter and delta round trips passed. Initial pair snapshot ${raw} → ${packed} bytes compressed.`);

@@ -72,7 +72,7 @@ async function serve(options) {
     assert.deepEqual(a.welcome.board, { week: '2026-W46', runs: [], kills: [] }, 'the welcome brings this week\'s board');
     const pose = (dead = false) => a.send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, hp: dead ? 0 : 120, state: dead ? 'dead' : 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } });
     const ready = async () => { a.send({ type: 'ready', epoch: session.epoch }); pose(); a.send({ type: 'ping' }); await a.next('pong'); };
-    const finishFight = () => { for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); } sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime)); };
+    const finishFight = () => { for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); } sim.tick(C.rushKillTime + 0.1); };
     const weekly = async () => {
       a.send({ type: 'control', action: 'start', kind: 'calling', id: C.weekly.id });
       session = (await a.next('start')).session;
@@ -128,7 +128,7 @@ async function serve(options) {
     // A weekly run given up after a win counts too: a restart (as this week's run) or the lobby.
     monday.send({ type: 'control', action: 'start', kind: 'calling', id: C.weekly.id }); session = (await monday.next('start')).session;
     const go = async () => { monday.send({ type: 'ready', epoch: session.epoch }); monday.send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, hp: 120, state: 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } }); monday.send({ type: 'ping' }); await monday.next('pong'); };
-    await go(); for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
+    await go(); for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } app.sim.tick(C.rushKillTime + 0.1);
     const o = await monday.next('abilities'); monday.send({ type: 'pickAbility', epoch: session.epoch, id: o.offer[0] }); await monday.next('abilities');
     session = (await monday.next('start')).session; await go();
     monday.send({ type: 'control', action: 'restart' });

@@ -29,7 +29,7 @@ async function join(origin, name) {
   return { ws, send, next, id: welcome.id, welcome, clear: () => queue.length = 0 };
 }
 (async () => {
-  const app = createServer(), peers = [];
+  const app = createServer({ firstPick: false }), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${app.server.address().port}`;
   try {
@@ -47,8 +47,9 @@ async function join(origin, name) {
     const botRow = app.sim.addBot();
     assert.ok(botRow.name, 'a test bot is named');
 
-    // A boss arena: the guests fall at once; the bot fights on, alone, and the run is not wiped while it stands.
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'giant' });
+    // A Boss Rush fight (the Giant Skeleton pinned): the guests fall at once; the bot fights on, alone, and the run is
+    // not wiped while it stands.
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['giant'] });
     const { session } = await a.next('start');
     const dead = { ...session.spawn, hp: 0, state: 'dead', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true };
     for (const p of peers) { p.send({ type: 'ready', epoch: session.epoch }); p.send({ type: 'pose', epoch: session.epoch, pose: dead }); }

@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { selectAdventure } = require('./browser-adventure.cjs');
+const { pinRush, selectRush } = require('./browser-adventure.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('./browser.cjs');
@@ -10,7 +10,7 @@ const output = path.resolve(process.argv[2] || '.scratch/multiplayer-browser');
 fs.mkdirSync(output, { recursive: true });
 (async () => {
   let activityClock = 0;
-  const app = createServer({ dev: true, activityNow: () => activityClock });
+  const app = createServer({ dev: true, firstPick: false, activityNow: () => activityClock });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [], pages = [], timers = new Set();
@@ -68,7 +68,7 @@ fs.mkdirSync(output, { recursive: true });
     await b.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Aleix/ }).getByRole('button', { name: 'Make leader' }).click();
     await a.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
     console.log('Keyboard/controller activity, five-minute AFK handoff and lobby controls on both browsers passed.');
-    await selectAdventure(a, 'arena/ostrey');
+    pinRush(app, ['ostrey']); await selectRush(a);
     await a.locator('#lobbyStart').click();
     for (const p of [a, b]) await p.waitForFunction(() => __arena.multiplayer.info.ready && __arena.multiplayer.info.receivedFrames > 2 && __arena.multiplayer.info.remotes === 1, { timeout: 90000 });
     console.log('Two browsers joined Margit, including one with 150 ms delayed incoming messages.');
@@ -135,7 +135,7 @@ fs.mkdirSync(output, { recursive: true });
     await a.locator('#lobbyPlayers .lobby-player').filter({ hasText: /^Friend/ }).getByRole('button', { name: 'Make leader' }).click();
     await b.waitForFunction(() => __arena.multiplayer.info.self === __arena.multiplayer.info.leader);
     await b.evaluate(() => multiplayer.show());
-    await selectAdventure(b, 'arena/varn');
+    pinRush(app, ['varn']); await selectRush(b);
     await b.locator('#lobbyStart').click();
     for (const p of [a, b, c]) await p.waitForFunction(() => __arena.multiplayer.info.ready && Game.duelId === 'varn', { timeout: 90000 });
     // Pass 100: a's counter on Aldric's guard cracked to the last: the server grants the Finishing Blow (Simulation.hit),
@@ -162,54 +162,17 @@ fs.mkdirSync(output, { recursive: true });
     await a.waitForFunction(() => Game.player.state !== PS.EXECUTE && Game.duel.phase === 1, { timeout: 15000 });
     assert.ok(!(await a.evaluate(() => window.__coopPhaseStates)).includes('execute'), 'boss transitions wait for the Finishing Blow to end');
     console.log('Online Finishing Blow: cracks in frames, the server\'s grant, local invulnerability and deferred boss phase passed.');
-    await b.evaluate(() => multiplayer.show());
-    await selectAdventure(b, 'level/long-hall');
-    await b.locator('#lobbyStart').click();
-    for (const p of [a, b, c]) await p.waitForFunction(() => __arena.multiplayer.info.ready && Game.level.id === 'long-hall', { timeout: 90000 });
-    const killZone = id => {
-      const zone = app.sim.inspect().Game.zones.find(z => z.id === id);
-      for (const e of zone.actors) { e.hp = 0; e.die(); }
-    };
-    killZone('zone-hollow');
-    for (const p of [a, b, c]) await p.waitForFunction(() => {
-      const g = world.gates.find(g => g.id === 'zone-hollow');
-      return g.open && g.lift === 1 && g.mesh.position.y > g.y;
-    });
-    assert.equal(app.sim.inspect().world.gates.find(g => g.id === 'zone-hollow').open, true);
-    await a.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
-    await a.waitForFunction(() => Game.player.alive(), { timeout: 20000 });
-    assert.equal(await b.evaluate(() => Game.player.alive()), true);
-    await b.evaluate(() => multiplayer.show());
-    await selectAdventure(b, 'level/burning-town');
-    await b.locator('#lobbyStart').click();
-    for (const p of [a, b, c]) await p.waitForFunction(() => __arena.multiplayer.info.ready && Game.level.id === 'burning-town', { timeout: 90000 });
-    killZone('zone-lower-gate');
-    for (const p of [a, b, c]) await p.waitForFunction(() => {
-      const g = world.gates.find(g => g.id === 'zone-lower-gate');
-      return g.open && g.lift === 1 && !g.mesh.visible && Math.abs(g.mesh.rotation.z) > 0.5;
-    });
-    await a.evaluate(() => {
-      const g = world.gates.find(g => g.id === 'fountain-shortcut');
-      Game.player.x = 6; Game.player.y = g.y; Game.player.z = 50; Game.player.vy = 0; Game.player.hp = Game.player.maxHp;
-    });
-    for (const p of [a, b, c]) await p.waitForFunction(() => {
-      const g = world.gates.find(g => g.id === 'fountain-shortcut');
-      return g.open && g.lift === 1 && g.mesh.position.y > g.y;
-    });
+    // A player who leaves mid-run and joins again lands in the same fight.
     await c.evaluate(() => multiplayer.leave());
     await c.getByRole('button', { name: 'Join public lobby', exact: false }).click();
-    await c.waitForFunction(() => {
-      if (!__arena.multiplayer.info.ready || Game.level.id !== 'burning-town') return false;
-      const g = world.gates.find(g => g.id === 'zone-lower-gate');
-      return g.open && g.lift === 1 && !g.mesh.visible;
-    }, null, { timeout: 90000 });
-    console.log('All three clients: portcullis rises, barricade falls/disappears, shortcut opens and late join preserves open gates.');
+    await c.waitForFunction(() => __arena.multiplayer.info.ready && Game.duelId === 'varn', null, { timeout: 90000 });
+    console.log('All three clients: a late rejoin lands in the running fight.');
     await c.evaluate(() => multiplayer.leave());
     await b.waitForFunction(() => __arena.multiplayer.info.players.length === 2);
     await b.evaluate(() => multiplayer.show());
     await b.locator('#lobbyReturn').click();
     await a.waitForFunction(() => !__arena.multiplayer.active() && __arena.multiplayer.connected);
-    console.log('Shared damage, personal health, late join, leader transfer, level switch, individual death and leave passed.');
+    console.log('Shared damage, personal health, late join, leader transfer, a new run and leave passed.');
     for (const p of [a, b]) await p.evaluate(() => multiplayer.leave());
     assert.equal(errors.length, 0, JSON.stringify(errors));
     if (process.env.ARENA_COOP_ONLY) return;

@@ -12,7 +12,7 @@
 // Adding a level to a campaign: write the level as usual (js/levels/, data/levels.js), then add a chapter where it falls.
 // The order here, not the levels' `next`, drives the campaign. Every line here must agree with STORY.md.
 const STORY = {
-  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', lobbyName: 'Story (Ashmere)', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
+  id: 'ashmere', name: 'Ashmere: The Gaoler King', short: 'Ashmere', menuTitle: 'ASHMERE', menuSub: 'THE GAOLER KING',
   description: 'Start here. From the prison to the king, and over the pass. The controls are taught on the way.',
   chapters: [
     { level: 'long-hall', title: 'THE LONG HALL', line: 'You wake in the Gaoler King\'s cells, in the old hall of judgment. The hall beyond is long, and not empty.' },
