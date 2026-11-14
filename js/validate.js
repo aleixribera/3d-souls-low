@@ -918,6 +918,7 @@ function validateBonfireGuidance() {
 function validateShowcase(S, need) {
   const tag = 'SHOWCASE', num = v => Number.isFinite(v), len = S.length, fights = Array.isArray(S.fights) ? S.fights : [];
   need(num(S.bpm) && S.bpm >= 60 && S.bpm <= 200 && num(len) && len > 0 && num(S.preroll) && S.preroll >= 0 && Number.isInteger(S.seed), `${tag}: bpm 60-200, length > 0 beats, preroll >= 0 s and an integer seed.`);
+  need(num(S.again) && S.again > 0, `${tag}: again is the hours between two showings at launch, > 0.`);
   need(!!S.pace && Number.isInteger(S.pace.won) && S.pace.won >= 0 && Array.isArray(S.pace.modifiers) && S.pace.modifiers.every(id => id in RUSH_MODIFIER_BY_ID), `${tag}: pace needs won (fights) and known RUSH modifiers.`);
   need(Array.isArray(S.kit) && S.kit.every(id => id in ABILITY_BY_ID), `${tag}: kit must list known abilities.`);
   need(BOT_PROFILES.some(p => p.id === S.profile), `${tag}: unknown bot profile "${S.profile}".`);
