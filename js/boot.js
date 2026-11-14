@@ -160,9 +160,10 @@ applySettings();
 $('version').textContent = VERSION;
 Game.showMenu('main');
 autoQuality.show();
-// A first launch plays the showcase once (js/showcase.js), then the sparring scene for a new player, or its offer for a
-// player from before it (js/sparring.js); a later launch offers that scene only.
-if (!showcase.firstLaunch(() => sparring.offerAtLaunch() || sparring.before(() => Game.showMenu('main')))) sparring.offerAtLaunch();
+// A launch on a new version plays the showcase, once a day at most (js/showcase.js). After it, the very first launch
+// goes on to the sparring scene for a new player (js/sparring.js); every launch offers that scene to a player from before.
+const toTitle = () => { if (!sparring.offerAtLaunch()) Game.showMenu('main'); };
+if (!showcase.firstLaunch(first => first ? sparring.offerAtLaunch() || sparring.before(() => Game.showMenu('main')) : toTitle())) sparring.offerAtLaunch();
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;

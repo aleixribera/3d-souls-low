@@ -23,6 +23,7 @@
 // the boss falls by 60 and the title comes up over it.
 const SHOWCASE = {
   bpm: 128, length: 64, seed: 20261114, preroll: 1.6,
+  again: 24,   // h: a launch on a version it has not played for yet plays it, at most once in this many hours (Aleix)
   pace: { won: 16, modifiers: ['quickened', 'unbroken'] },   // fight 17 of a run, with two of its modifiers
   kit: ['wind-blade', 'thunder-call'],                        // keys 1 and 4; Thunder Call is the lightning dragon
   profile: 'maren',                                           // the bot's temperament between beats (BOT_PROFILES)

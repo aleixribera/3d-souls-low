@@ -10,7 +10,9 @@
 // It cannot be skipped: keys and clicks do nothing while it plays, pause and restart are held off.
 //   showcase.play({ manual, onEnd })  starts it; `manual`: the caller steps it with frame(dt) (tests, the recorder)
 //   showcase.frame(dt, { render })    one frame of a manual run
-//   showcase.firstLaunch()            plays it once for a new player (boot.js); true if it will
+//   showcase.firstLaunch(then)        plays it at launch on a new version, once a day at most (boot.js); true if it will.
+//                                     then(first): after it; `first` on the very first launch (no save of it at all)
+//   showcase.claim({ version, now })  whether this launch plays it ('first' or 'update'), noting it if so (tests)
 //   showcase.report()                 the last run's beats: what each needed and whether it happened
 //   showcase.stop()                   ends a run at once (a test that failed half-way)
 const showcase = (() => {
@@ -430,12 +432,31 @@ const showcase = (() => {
     if (r.onEnd) r.onEnd(last);
   }
 
-  // ---- first launch ------------------------------------------------------------------------------
-  // A player's first launch plays it once, then `then` (js/boot.js: the sparring scene, or its offer).
+  // ---- at launch ---------------------------------------------------------------------------------
+  // Every player sees it after each update (PLAN.md "The showcase", Aleix 2026-11-15): a launch on a version it has not
+  // played for yet plays it, unless it played less than SHOWCASE.again hours ago. The save keeps the version and the
+  // time it last played; '1' is the save from before (seen once, version unknown). With storage blocked it plays once
+  // per page load at most. Never into a lobby or a run under way: that launch leaves the save alone, so the next plays it.
   // Browsers start sound only after a key or a click, so unless the page may already play sound, the game's name waits
-  // for one first. Automated browsers (tests) never see it.
-  function seen() { try { return !!localStorage.getItem(SEEN_KEY); } catch (e) { return true; } }
-  function markSeen() { try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) { /* private mode: it shows again next time */ } }
+  // for one first. Automated browsers (tests) never see it at launch. A save time ahead of the clock (a clock set
+  // back) counts as long ago.
+  const thisLoad = { played: false };
+  function claim({ version = VERSION, now = Date.now(), load = thisLoad } = {}) {
+    if (Game.mode !== 'menu' || run || waiting || (typeof multiplayer !== 'undefined' && (multiplayer.connected || multiplayer.active()))) return false;
+    let last, raw;
+    try {
+      raw = localStorage.getItem(SEEN_KEY);
+      try { last = raw ? JSON.parse(raw) : null; } catch (e) { last = null; }
+      if (raw && (!last || typeof last !== 'object')) last = { version: null, at: 0 };   // '1', or anything unreadable
+    } catch (e) {   // storage blocked
+      if (load.played) return false;
+      load.played = true; return 'update';   // nothing known of this player: not taken for a new one
+    }
+    const age = last ? now - (Number(last.at) || 0) : Infinity;
+    if (last && (last.version === version || (age >= 0 && age < SHOWCASE.again * 3600 * 1000))) return false;
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify({ version, at: now })); } catch (e) { load.played = true; }
+    return raw ? 'update' : 'first';
+  }
   // `then`: what follows it (the sparring scene); the title when there is none. Returns whether it is under way.
   let gateGo = null;
   // The controller (js/gamepad.js), before its menus: a button at the gate starts the show; while either shows, the pad
@@ -445,8 +466,8 @@ const showcase = (() => {
     return !!run || waiting;
   }
   function firstLaunch(then = () => Game.showMenu('main')) {
-    if (seen() || navigator.webdriver || (typeof DEV !== 'undefined' && DEV)) return false;
-    markSeen();
+    const why = navigator.webdriver || (typeof DEV !== 'undefined' && DEV) ? false : claim();
+    if (!why) return false;
     audio.unlock();
     // `then` once, after the show, or at once if it cannot start. Never before the page has finished loading (its
     // models, textures and fonts): until then the title stays hidden, so the show is the first thing seen.
@@ -459,7 +480,7 @@ const showcase = (() => {
       const start = () => requestAnimationFrame(() => requestAnimationFrame(() => {
         waiting = false;
         let ended = false;
-        const after = () => { $('loading').classList.remove('show'); then(); };   // a start that failed half-way ends here too
+        const after = () => { $('loading').classList.remove('show'); then(why === 'first'); };   // a start that failed half-way ends here too
         if (!play({ toMenu: false, onEnd: () => { ended = true; after(); } }) && !ended) after();
       }));
       if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });
@@ -488,5 +509,5 @@ const showcase = (() => {
   }
 
   return { play, frame, firstLaunch, pad, stop: () => finish(true), report: () => last, get running() { return !!run; }, get time() { return run ? run.time : null; },
-    get beat() { return run && run.beat ? run.beat.def.id : null; }, seenKey: SEEN_KEY };
+    get beat() { return run && run.beat ? run.beat.def.id : null; }, claim, seenKey: SEEN_KEY };
 })();
