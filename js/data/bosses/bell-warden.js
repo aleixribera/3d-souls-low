@@ -215,7 +215,7 @@ MODEL_DEFS.bellWarden = {
   // shaking; then arms flung wide and the toll rings out all round him. Roll it, or be out of reach.
   const answer = { id: 'wardenAnswer', name: 'The Answering Toll', anim: 'stomp', pose: 'wardenAnswer', when: 'resonant', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 60,
     markers: [tollSound(0.5)],
-    hits: [{ startup: 1.05, active: 0.42, follow: 0.4, box: BURST(3.6), impact: { ring: 4.2, crack: 0, dust: 10, shake: 0.14 } }], recovery: 1.7,
+    hits: [{ startup: 1.05, active: 0.2, follow: 0.62, box: BURST(3.6), impact: { ring: 4.2, crack: 0, dust: 10, shake: 0.14 } }], recovery: 1.7,
     damage: 34, poise: 60, knock: 14, lunge: 0, range: 3.6, box: BURST(3.6) };
   // Drinking where he can see it: the charge, sooner.
   const chargePunish = { ...JSON.parse(JSON.stringify(charge)), id: 'wardenChargePunish', when: 'healing', minRange: 0, chance: 3,
@@ -226,7 +226,7 @@ MODEL_DEFS.bellWarden = {
   // him (roll it, or be out of reach). He cannot be hurt through it (as every boss's change).
   const waking = { id: 'wardenWaking', name: 'The Waking', anim: 'stomp', pose: 'wardenWaking', noParry: true, rollOnly: true, invulnerable: true, tracking: { rate: 1.4, commit: 0.5 }, chance: 0.1,
     markers: [tollSound(0.35)],
-    hits: [{ startup: 1.5, active: 0.5, follow: 0.5, box: BURST(4.4), impact: { ring: 5.2, crack: 0, dust: 16, shake: 0.2 } }], recovery: 1.9,
+    hits: [{ startup: 1.5, active: 0.2, follow: 0.8, box: BURST(4.4), impact: { ring: 5.2, crack: 0, dust: 16, shake: 0.2 } }], recovery: 1.9,
     damage: 30, poise: 50, knock: 14, lunge: 0, range: 3.0, box: BURST(4.4) };   // range: chosen only close in (it is mostly his opener)
   // The Bronze Fall: crouched, the bell swung behind him; a leap, and down on you mouth-first. Roll it.
   const fall = { id: 'wardenFall', name: 'The Bronze Fall', anim: 'overhead', pose: 'wardenFall', tracking: { rate: 2.4, commit: 0.45 }, rollOnly: true, minRange: 4, chance: 0.5,
@@ -240,8 +240,8 @@ MODEL_DEFS.bellWarden = {
     recovery: 1.45, damage: 28, poise: 50, knock: 7, lunge: 1.0, range: 3.4, box: SLAM };
   // Woken, his answer rings twice.
   const answerTwice = { ...JSON.parse(JSON.stringify(answer)), id: 'wardenAnswerTwice', name: 'The Answering Peal',
-    hits: [{ startup: 0.95, active: 0.42, follow: 0.2, box: BURST(3.6), impact: { ring: 4.2, crack: 0, dust: 10, shake: 0.14 } },
-           { startup: 0.85, active: 0.42, follow: 0.4, box: BURST(4.0), impact: { ring: 4.8, crack: 0, dust: 10, shake: 0.14 } }] };
+    hits: [{ startup: 0.95, active: 0.2, follow: 0.42, box: BURST(3.6), impact: { ring: 4.2, crack: 0, dust: 10, shake: 0.14 } },
+           { startup: 0.85, active: 0.2, follow: 0.62, box: BURST(4.0), impact: { ring: 4.8, crack: 0, dust: 10, shake: 0.14 } }] };
 
   // His bronze hums under your blows: `light` a blow, `heavy` one of the `breakers`; after `delay` s with none it fades at
   // `decay` a second. Full (`max`), his `when: 'resonant'` answer is due; for `rest` s after it starts blows do not fill it

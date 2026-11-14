@@ -139,7 +139,7 @@ class Enemy {
     this.phase = i;
     this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
     if (this.health !== 1) this.def.hp = Math.round(this.def.hp * this.health);
-    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
+    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0; this.resonance = 0;   // a new phase rings from silence
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
   }
@@ -1031,7 +1031,7 @@ class Enemy {
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
-    if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? this.resonance / R.max : 0;   // pass 68: his bronze glows as the blows fill it
+    if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? Math.min(1, this.resonance / R.max) : 0;   // pass 68: his bronze glows as the blows fill it
       r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }
   }
 }
