@@ -4,8 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 84): item 3 pass 1: laptop keys, changeable in Controls; L taps deflect; bosses lock on; a gentle
-  first Hollow (in-page `Controls:`; `BACKLOG.md` top). Next: hints in the world.
+- Track A (pass 86): item 3 pass 2: keys beside the foe (Attack, Deflect, Dodge) from the bindings, until done 3
+  times (`js/world-hints.js`, in-page `World hints`, `world-hint-*.jpg`); CI's 3/4 timeout fixed (a test left ~360
+  figures in the scene). Next: lessons' words on the new moves; then re-tune Story once the moveset is the only one.
 - Track B (pass 85): rework items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`). Next, in order: (1) ability
   triggers, 1-4 keys; (2) own poses for the new moves, bots on them (0.2 s i-frames, deflects); (3) Boss Rush bosses
   and curve (item 4); (4) item 5's proof and clips, then the only moveset. Track A: lessons and hints still say
@@ -60,7 +61,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 - In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
-- CI on v7.107.0: in-page 3/4 timed out, `Ultra: Hale and the Kindling Tree` took 1,126 s on SwiftShader.
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs

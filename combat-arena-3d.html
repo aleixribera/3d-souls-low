@@ -361,6 +361,14 @@
   .dmgNum { position: absolute; left: 0; top: 0; display: none; font-size: 20px; letter-spacing: 1px; color: #f0d890; white-space: nowrap;
     text-shadow: 0 0 3px #000, 0 0 8px #000, 0 2px 0 #000; font-variant-numeric: tabular-nums; will-change: transform, opacity; }
   .dmgNum.big { font-size: 27px; color: #ffe6a8; }
+  /* Button hints in the world (js/world-hints.js): the player's own key over a foe, at the moment it is needed. */
+  #worldHint { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 8px; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; transform-origin: 0 50%; font: 13px/1 Arial, sans-serif; letter-spacing: 2px; text-transform: uppercase;
+    color: #e8dcb8; text-shadow: 0 0 3px #000, 0 0 8px #000; white-space: nowrap; will-change: transform, opacity; }
+  #worldHint.show { opacity: 1; }
+  #worldHint .lesson-cap { min-width: 36px; height: 36px; padding: 0 10px; font-size: 17px; letter-spacing: 0; text-transform: none; }
+  #worldHint[data-kind="deflect"] .lesson-cap { border-color: #d0573f; box-shadow: 0 3px 0 #000, inset 0 1px 0 #ffffff26, inset 0 -2px 0 #00000070, 0 0 14px #ff40205a; }
+  #worldHint[data-kind="dodge"] .lesson-cap { border-color: #5f8fd8; box-shadow: 0 3px 0 #000, inset 0 1px 0 #ffffff26, inset 0 -2px 0 #00000070, 0 0 14px #4080ff5a; }
   .eTag { position: absolute; left: 0; top: 0; width: 64px; height: 5px; background: #060506e0; border: 1px solid var(--gilt-dim);
     box-shadow: 0 0 0 1px #000000c0; overflow: hidden; display: none; opacity: 0.72; }
   .eTag > div { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; }
@@ -556,6 +564,7 @@
   <div id="vignette"></div>
   <div id="eTags"></div>
   <div id="dmgNums"></div>
+  <div id="worldHint" aria-hidden="true"><kbd class="lesson-cap key" id="worldHintKey"></kbd><span id="worldHintWord"></span></div>
   <div id="stage">
     <div class="anchor" id="aTL">
       <div id="pBars">
@@ -773,6 +782,7 @@ const GAME_FILES = [
   'lore.js',
   'story.js',
   'lessons.js',
+  'world-hints.js',   // the player's own key over a foe, the first times (after lessons.js and hud.js)
   'impact.js',
   'camera-feel.js',
   'effect-slots.js',
@@ -809,7 +819,7 @@ const GAME_FILES = [
   'dodge-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.109.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.110.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

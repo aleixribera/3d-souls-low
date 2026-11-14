@@ -2,6 +2,12 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **World hints, after pass 86 (track A):** keys beside the foe for Attack, Deflect, Dodge. Not yet: a hint for the
+  dash attack, the finisher, jump attacks and the flask in the world (the HUD's "Press E to heal" stays); the lesson
+  cards still teach the old moves in places (stamina, the parry's words). A test that empties `Game.enemies` without
+  `sim.clearEnemies()` leaves figures in the scene for every later test (pass 86 fixed two; a check in the runner would
+  catch the next).
+
 - **The rework's item 3, after pass 84 (track A):** laptop keys (`DEFAULT_ACTIONS`), every key changeable in Controls
   (`BIND_SLOTS`, `bindKey`, `settings.keys`), boss fights lock on once (`bossLocked`), a gentle first Hollow (a zone's
   `might`). For track B: fill `ability1`..`ability4` (keys 1-4, the d-pad on a pad; the ability lab's D-pad up opens

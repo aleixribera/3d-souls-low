@@ -2393,7 +2393,7 @@
     expect.above(parseFloat(hud.pHpTrail.style.width), 85, 'the trail waits through its hold');
     for (let i = 0; i < 60 * 3; i++) Game.render(1, STEP);
     expect.near(parseFloat(hud.pHpTrail.style.width), 50, 1, 'then it drains down to the bar');
-    p.hp = p.maxHp; Game.enemies.length = 0; hud.idle = H.calmDelay + 1;
+    p.hp = p.maxHp; sim.clearEnemies(); hud.idle = H.calmDelay + 1;
     for (let i = 0; i < 60 * (H.calmFadeOut + 1); i++) { hud.idle = H.calmDelay + 1; Game.render(1, STEP); }
     expect.above(hud.calm, 0.99, 'dimmed after a quiet spell');
     A.events.emit('strike', { strike: {}, attacker: null, target: p, at: { x: p.x, y: p.y + 1, z: p.z }, blocked: false });
@@ -3091,7 +3091,9 @@
   // ---- Story moments (pass 82, PLAN.md track A item 6): nothing takes movement or the camera from the player -------------
   test('Story moments: in every chapter, Ysolde, the inscriptions, the scenes and the sightings play while the player walks and turns the camera', () => {
     const lore = A.lore, LS = () => A.lore.state;
-    const quiet = () => { Game.enemies = []; sturdy(Game.player); };   // the moments, not the fights
+    // The moments, not the fights. sim.clearEnemies disposes their figures: emptying the list alone left ~360 in the scene,
+    // every later test drew them all, and a 15 s Ultra fight took 19 min on CI's software WebGL (v7.107.0).
+    const quiet = () => { sim.clearEnemies(); sturdy(Game.player); };
     const seen = { npc: 0, inscription: 0, scene: 0, sighting: 0 };
     for (const id of A.STORY.chapters.map(c => c.level)) {
       const D = A.LORE.levels[id] || {};
@@ -4074,6 +4076,47 @@
     trainingAt(null, 'the-tower'); Game.render(1, STEP);
     expect.ok(!arrow.visible, 'nor other levels');
   }));
+
+  // ---- Button hints in the world (pass 86, PLAN.md rework item 3b) ---------------------------------------------------
+  test('World hints: the player\'s own key over the foe to strike, deflect a red blow or dodge a blue one, until learned', () => {
+    const H = CONFIG.hints, W = A.worldHints, el = document.getElementById('worldHint');
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons, wasParry = [...ACTIONS.parry];
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+      const p = Game.player, e = sim.spawn('knight', p.x + 2.4, p.z);
+      const show = () => { Game.render(1, STEP); return W.shown; };
+      let s = show();
+      expect.ok(s && s.kind === 'attack' && s.key === 'J' && s.word === 'Attack' && el.classList.contains('show'), `a foe in reach: Attack over it (${JSON.stringify(s && { ...s, enemy: 0 })})`);
+      const r = el.getBoundingClientRect();
+      expect.ok(r.width > 0 && r.left >= 0 && r.right <= window.innerWidth && r.top >= 0, 'drawn on screen, over the foe');
+      const red = e.baseDef.attacks.find(a => canParryHit(a, 0)), hit = red.hits[0];
+      e.beginAttack(red); e.stateTime = 0;
+      if (hit.startup > H.lead + 0.05) expect.ok(!show(), 'early in the wind-up: nothing yet');
+      e.stateTime = hit.startup - H.lead * 0.5; s = show();
+      expect.ok(s && s.kind === 'deflect' && s.key === 'L', `a red blow about to land: Deflect, L (${s && s.kind} ${s && s.key})`);
+      e.holdLeft = 1; expect.ok(!show(), 'a held blow: not yet, its delay still to come'); e.holdLeft = null;
+      ACTIONS.parry = ['PadLT', 'KeyP']; s = show();
+      expect.ok(s && s.key === 'P', `a rebound key shows at once (${s && s.key})`);
+      ACTIONS.parry = wasParry;
+      e.attack = { ...red, hits: red.hits.map(h => ({ ...h, noParry: true })) }; s = show();
+      expect.ok(s && s.kind === 'dodge' && s.key === 'Shift', `a blue blow: Dodge, Shift (${s && s.kind} ${s && s.key})`);
+      e.attack = red;
+      for (let i = 0; i < H.learn; i++) events.emit('parry', { target: e, player: p });
+      expect.ok(!show(), `deflected ${H.learn} times: the Deflect hint is gone`);
+      expect.ok(W.done.deflect === H.learn, 'kept as learned');
+      e.setState(ES.CHASE); settings.lessons = false;
+      expect.ok(!show() && !el.classList.contains('show'), 'the Lessons option off: no hints');
+      settings.lessons = true;
+      expect.ok(show() && W.shown.kind === 'attack', 'on again: Attack, not yet learned');
+      e.setState(ES.LURK); expect.ok(!show(), 'a foe lying in wait gives nothing away'); e.setState(ES.CHASE);
+    } finally {
+      settings.lessons = wasLessons; ACTIONS.parry = wasParry;
+      try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
 
   // shard [k, n]: only the k-th (0-based) of n equal runs of consecutive matching tests, so CI can split the suite
   // across jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once.

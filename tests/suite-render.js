@@ -130,6 +130,7 @@
       const jet = e.rig.flameJet; watch(jet.layers[0].material);
       Game.enemies.length = 0; Game.render(1, CONFIG.step);
       expect.ok(disposed.has(jet.layers[0].material) && !jet.g.parent && e.rig.flameJet === null, 'jet removed with its owner');
+      e.rig.dispose();   // dropped from the list only: its figure would stay in the scene for every later test
     } finally { Game.hitstop = hit; restoreQuality(); }
   });
 

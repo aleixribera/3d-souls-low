@@ -135,9 +135,9 @@ Object.assign(Game, {
     return [
       ...[['game', 'Game'], ['camera', 'Camera'], ['graphics', 'Graphics'], ['sound', 'Sound']].map(([cat, name]) => ({ size: 'cat', cat, name, desc: '',
         go: () => { this.chooseCategory(cat); this.select(this.menuItems.findIndex(it => it.size === 'set' && it.cat === cat)); } })),
-      toggle('game', 'Lessons', 'lessons', 'Cards that teach the controls the first time a level needs them.'),
+      toggle('game', 'Lessons', 'lessons', 'Cards and key hints that teach the controls the first times they are needed.'),
       { size: 'set', cat: 'game', name: 'Show lessons again', desc: 'Forget which lessons you have learned, so every card shows again.',
-        go: () => { lessons.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
+        go: () => { lessons.forget(); worldHints.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
       toggle('camera', 'Camera motion', 'cameraMotion', 'Swing and shake from attacks, rolls and impacts. Off for a steadier view.'),
       slider('camera', 'Camera speed', 'sensitivity', 1, 10, 'How fast the mouse and the right stick turn the camera.'),
       toggle('camera', 'Invert camera', 'invert', '', v => v === true),
