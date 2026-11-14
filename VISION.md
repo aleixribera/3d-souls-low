@@ -48,7 +48,13 @@ side by side, and each should feel like the main event.
 
 ## How it should feel
 
-- **Anime action, not slow Souls action.** Fast and flashy; abilities are a central part of the combat.
+- **Anime action, not slow Souls action.** This is the feel of the whole game, not one feature. Fast and flashy:
+  the player moves and strikes like an anime fighter (quick, sharp key poses, trails and afterimages, hits that land
+  with weight), and abilities are a central part of the combat, each a technique with its own big moment. The target,
+  in Aleix's words after a run: "I felt like an anime character directing abilities and coordinating to kill the
+  boss, while the boss also tried to catch me off guard." The bosses are the other half of that duel: spectacular,
+  fast and cunning, but always fair, their danger in combos rather than any single unreadable attack. The feel only,
+  never a show's names, characters, symbols or looks.
 - **Manageable for friends playing for the first time, on a laptop.**
 - **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
   its tell. Nothing hits without warning. Each of a boss's attacks has its own wind-up, so players rarely mistake one

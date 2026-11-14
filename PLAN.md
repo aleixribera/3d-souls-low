@@ -8,6 +8,11 @@ Aleix, 2026-11-13.
 
 - The bar for every item is `VISION.md`'s: AAA quality and polish, runs on a toaster, fun and challenging, makes
   players come back.
+- **Anime action is the feel of every item** (Aleix, 2026-11-14), not only the player rework: how the player moves
+  and strikes (item 3c), every ability's moment in the fight and its card (item 6), the bosses' moves and effects, the
+  camera (hit-stop, kicks, a beat of slow motion on a perfect dodge), sound, and the reward moments. Each pass asks of
+  what it built: does this make the player feel like an anime fighter directing techniques against a boss that tries
+  to catch them off guard? A pass that ships something plain where a moment belongs hasn't met the bar.
 - A pass has full authority over what it works on: balance, numbers, windows, frequency, the code underneath. If an
   item sits on a weak foundation (an old system, a stand-in, a shaky rule), the pass fixes or rebuilds that first, as
   part of the item, instead of building on top of it (the iterate skill now says the same).
