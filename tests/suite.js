@@ -693,18 +693,64 @@
     hp0 = e.hp; e.takeHit(strikeOf('light'), behind(e));
     expect.near(hp0 - e.hp, strikeOf('light').damage, 0.01, 'full damage from behind');
   });
-  test('Bell Warden: a posture boss with a roll-only slam, an uncapped push and a gap-closing charge', () => {
+  test('Bell Warden: a posture boss with a roll-only hammerfall, an uncapped push and a gap-closing charge', () => {
     Game.startFight('bellWarden'); sim.begin(); Game.render(1, STEP);
     const e = Game.duel, A2 = id => e.def.attacks.find(a => a.id === id);
     expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'posture bar at the top of the screen');
-    expect.ok(makeStrike(A2('bellSlam')).rollOnly && !!A2('bellSlam').impact, 'slam: roll-only, with a ground flash');
-    expect.ok(makeStrike(A2('bellShove')).shove && A2('bellShove').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
-    expect.ok(A2('bellSweep').tracking.rate > 0, 'sweep: tracks');
+    expect.ok(makeStrike(A2('wardenHammerfall')).rollOnly && !!A2('wardenHammerfall').hits[0].impact, 'hammerfall: roll-only, with a ground flash');
+    expect.ok(makeStrike(A2('wardenPush')).shove && A2('wardenPush').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
+    expect.ok(A2('wardenSweep').tracking.rate > 0, 'sweep: tracks');
     let n = 0;
     while (e.state !== ES.BROKEN && n++ < 30) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(10); }
     expect.ok(e.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
     const far = attacksAt('bellWarden', 8), near = attacksAt('bellWarden', 2.5);
-    expect.ok(far.includes('bellCharge') && !near.includes('bellCharge'), `charge: only from range (8 m: ${far.join(', ')}; 2.5 m: ${near.join(', ')})`);
+    expect.ok(far.includes('wardenCharge') && !near.includes('wardenCharge'), `charge: only from range (8 m: ${far.join(', ')}; 2.5 m: ${near.join(', ')})`);
+  });
+  // Pass 68: his own moves, and his bronze rings under your blows (`resonance`) until he answers it.
+  test('Bell Warden: blows fill his resonance, he answers it with a toll all round him, and a break empties it', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, R = e.def.resonance, p = Game.player;
+    expect.ok(R && R.max === 6 && e.rig.hum && e.rig.hum.opacity === 0, 'silent: his bronze takes six blows, and is dark at rest');
+    quiet(e); e.takeHit(strikeOf('light'), behind(e));
+    expect.near(e.resonance, R.light, 1e-6, 'a light blow fills it by one');
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.near(e.resonance, R.light + R.heavy, 1e-6, 'a heavy blow by two');
+    Game.render(1, STEP);
+    expect.above(e.rig.hum.opacity, 0, 'and his bronze glows with it');
+    quiet(e); sim.seconds(R.delay - 0.5);
+    expect.near(e.resonance, R.light + R.heavy, 1e-6, 'it holds a while after the last blow');
+    quiet(e); sim.seconds(1.5);
+    expect.below(e.resonance, R.light + R.heavy - 0.5, 'then fades');
+    // full: the next attack he starts, close in, is his answer, and it gives the ringing back
+    quiet(e); for (let i = 0; i < 3; i++) { e.posture = 0; e.takeHit(strikeOf('heavy'), behind(e)); }   // (posture kept low: a break would empty it)
+    expect.near(e.resonance, R.max, 1e-6, 'three heavy blows fill it');
+    faceOff(e, p, 2.5); starts.length = 0; e.notice = 1; e.setState(ES.CHASE);
+    sim.until(() => starts.some(s => s.enemy === e), 6);
+    const first = starts.find(s => s.enemy === e);
+    expect.ok(first && first.attack.id === 'wardenAnswer', `he answers (${first && first.attack.id})`);
+    expect.ok(e.resonance === 0, 'the answer empties it');
+    const box = first.attack.hits[0].box || first.attack.box;
+    expect.ok(first.attack.rollOnly && box.fwd === 0 && box.w >= 7 && box.d >= 7 && box.h > 2, 'all round him, too tall to jump: rolled, never parried');
+    // a break: empties it, and blows on him while he lies open do not fill it
+    sim.until(() => e.state !== ES.WINDUP && e.state !== ES.ACTIVE && e.state !== ES.RECOVERY, 6);
+    quiet(e); e.takeHit(strikeOf('heavy'), behind(e));
+    let n = 0; while (e.state !== ES.BROKEN && n++ < 40) { e.takeHit(strikeOf('heavy'), behind(e)); if (e.state !== ES.BROKEN) quiet(e); }
+    expect.ok(e.state === ES.BROKEN, `broken after ${n} heavy blows`);
+    sim.step(); e.takeHit(strikeOf('light'), behind(e));
+    expect.ok(e.resonance === 0, `a break empties it, and blows on him broken do not fill it (${e.resonance})`);
+  });
+  test('Bell Warden: at half his strength he rings himself awake; the chains fall, the crack lights, his bronze fills sooner', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, W = e.rig.weaponSlotMeshes;
+    expect.ok(W.muffle.visible && !W.toll.visible, 'silent: chained, the crack dark');
+    expect.ok(!e.def.attacks.some(a => a.origin), 'every move his own (none borrowed)');
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.name === 'The Bell Warden, Woken' && e.state === ES.ACTIVE && e.attack.id === 'wardenWaking', 12);
+    expect.ok(e.attack && e.attack.id === 'wardenWaking', `he wakes with the Waking (${e.attack && e.attack.id})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(2); Game.render(1, STEP);
+    expect.ok(!W.muffle.visible && W.toll.visible, 'woken: the chains gone, the crack lit');
+    expect.ok(e.def.resonance.max < A.ENEMY_BY_ID.bellWarden.phases.silent.resonance.max, 'his bronze fills sooner');
+    expect.ok(e.def.attacks.some(a => a.id === 'wardenAnswerTwice') || A.ENEMY_BY_ID.bellWarden.phases.woken.attacks.includes('wardenAnswerTwice'), 'and answers twice');
   });
   test('mixed crowd: the gallery bowmen shoot down into the fight', () => {
     Game.startLevel('test-mixed'); sim.begin(); shots.length = 0; starts.length = 0;
@@ -898,11 +944,10 @@
   });
   test('attack chance: stepping in, a boss uses all its close attacks, not only its longest', () => {
     Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); starts.length = 0;
-    // v7.44.0: 120 -> 400 s. The slam (chance 0.45) is rare beside the hammer chain; after v7.43.0's Blender figure
-    // shifted the seeded draws, 120 s held no slam (400 s: chain 37, charge 7, chop 6, sweep 5, shove 3, slam 3).
+    // v7.44.0: 120 -> 400 s (the rarest close attack needed the time). Pass 68: his own moves; the rarest is still the push.
     sim.seconds(400);
     const used = new Set(starts.map(s => s.attack.id));
-    expect.ok(['bellSweep', 'bellSlam', 'bellShove'].every(id => used.has(id)), `close attacks used: ${[...used].join(', ')}`);
+    expect.ok(['wardenSweep', 'wardenHammerfall', 'wardenPush'].every(id => used.has(id)), `close attacks used: ${[...used].join(', ')}`);
   });
   test('attack chance: an attack with a higher chance starts more often', () => {
     const swing = A.ENEMY_BY_ID.hollow.attacks.find(a => a.id === 'swing');
@@ -1797,9 +1842,8 @@
   const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
   const STORY_BOSS_MOVES = [
     { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
-    { id: 'bellWarden', level: 'the-tower', hp: 2600, total: 6, added: 2 },
-  ];
-  test('Story boss moves: exactly 1 / 2 additions and doubled health in levels and duels', () => {
+  ];   // pass 68: the Bell Warden's borrowed pair gave way to his own moves (js/data/bosses/bell-warden.js)
+  test('Story boss moves: exactly 1 addition and doubled health in levels and duels', () => {
     for (const b of STORY_BOSS_MOVES) {
       const d = A.ENEMY_BY_ID[b.id];
       expect.ok(d.attacks.length === b.total && d.attacks.filter(a => a.origin).length === b.added, `${b.id}: exact move counts`);
@@ -1809,7 +1853,7 @@
       const e = Game.enemies.find(e => e.def.id === b.id);
       expect.ok(e && e.hp === b.hp && e.def.hp === b.hp, `${b.id}: doubled level health`);
     }
-    expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave');
+    expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.origin || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave, and no borrowed moves');
     const aldric = A.ENEMY_BY_ID.varn;
     expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1600 && aldric.phases.knell.hp === 1700, 'Aldric health as set in v7.65.0');
     expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');

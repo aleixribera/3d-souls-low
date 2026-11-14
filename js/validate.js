@@ -336,6 +336,12 @@ function validateData({ visual = true } = {}) {
       ['crouch', 'lean', 'kneel'].includes(k) ? num(v) && Math.abs(v) <= 1.5 : Array.isArray(v) && v.length === 3 && v.every(x => num(x) && Math.abs(x) <= 4)),
       `Enemy "${d.id}": brokenPose is a key pose (bone: [x, y, z] rad; crouch, lean, kneel numbers), for a boss with posture.`);
     if ('rooted' in d) need(typeof d.rooted === 'boolean', `Enemy "${d.id}": rooted must be true or false.`);   // pass 50 (the Kindling Tree)
+    // Pass 68 (the Bell Warden): blows landed on him fill his resonance; at max a `when: 'resonant'` attack answers. A phase may carry its own.
+    const resOk = R => R && typeof R === 'object' && num(R.max) && R.max > 0 && num(R.light) && R.light >= 0 && num(R.heavy) && R.heavy >= 0
+      && Array.isArray(R.breakers) && R.breakers.every(b => typeof b === 'string') && num(R.delay) && R.delay >= 0 && num(R.decay) && R.decay >= 0
+      && (!('rest' in R) || num(R.rest) && R.rest >= 0);
+    const hasAnswer = ids => d.attacks.some(a => a && a.when === 'resonant' && (!ids || ids.includes(a.id)));
+    if ('resonance' in d) need(resOk(d.resonance) && hasAnswer(), `Enemy "${d.id}": resonance needs max (above 0), light, heavy, breakers (attack ids), delay and decay (and an optional rest, s), and an attack with when: 'resonant'.`);
     need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
     if ('echoColor' in d) need(Number.isInteger(d.echoColor) && d.echoColor >= 0 && d.echoColor <= 0xffffff, `Enemy "${d.id}": echoColor must be a colour (0xrrggbb).`);   // pass 44
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
@@ -361,6 +367,7 @@ function validateData({ visual = true } = {}) {
         for (const k of ['rend', 'storm', 'rooted']) if (ph && k in ph) need(typeof ph[k] === 'boolean', `${tag}: ${k} must be true or false.`);
         if (ph && 'ignite' in ph) need(ph.ignite === true || ph.ignite === 'weapon', `${tag}: ignite must be true (he burns) or 'weapon' (only his weapon does: js/finale.js).`);   // pass 63
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
+        if (ph && 'resonance' in ph) need(resOk(ph.resonance) && hasAnswer(ph.attacks), `${tag}: resonance needs max (above 0), light, heavy, breakers, delay and decay, and one of its attacks with when: 'resonant'.`);   // pass 68
         if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);

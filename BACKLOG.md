@@ -116,11 +116,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Pillager Captain (v7.41.0, pass 16): the helm's face reads as a plain bucket from the front (a visor ridge or
   breaths would break it up); the `dentedSteel` plate shows horizontal streaks; the halberd's glowing edge is the kit's
   flat yellow card (`embers.edge`), not a lit blade (`docs/scorecard/captain-lab.jpg`). Its second step, stage 4.
-- The Bell Warden (v7.43.0, pass 18): the bell maul is the kit's (10-sided, 355 triangles) and rests at 0.65 rad
-  (`weapon.rest`) so the bell stands on its lip, its lower rim a little into the floor; the eyes' halo blooms white over
-  the helm's window on the tower top; the mail sleeves show the `knightMail` grid (`docs/scorecard/bellwarden-lab.jpg`,
-  `bellwarden-tower.jpg`). `weapon.rest` and `weapon.size` are checked when a rig is built (`checkModel`), not at load.
-  Second step, stage 4.
+- The Bell Warden, pass 1 done (pass 68: own Blender figure and bell maul, resonance, the Answering Toll, the
+  Waking; `docs/scorecard/warden-moves.jpg`, `bellwarden-lab.jpg`, `bellwarden-tower.jpg`; blind judge 76 vs Hollis
+  58). Leftovers for pass 2: the Bell of Waking itself on the tower top (a real prop he guards and the player rings);
+  his effects are glow sprites and rings, no bronze dust or sound-wave shimmer; his bronze reads muddy against the
+  night sky (a rim light or brighter trim); the broken pose holds the maul upright in the air (not leaning on it);
+  the slams' bell sits ~0.2 m into the floor at the deepest frame. The same judge found Hollis's chained hits hold one
+  pose through wind-up, strike and follow in the model-lab strips (Courtesy 2-4, Largesse, Ravenous 5) and The
+  Feast's blades below the floor: check whether that is the strip sampler or his poses.
 - The Ringer, pass 2 (pass 42 did pass 1, v7.64.0: Blender figure, 12 own moves, the `tether` circle, knells drawn by
   `js/ring-waves.js`; `docs/scorecard/ringer-*`): her torso reads boxy and her fists like mittens in the lab; the
   clapper is 2.7 m, so any new floor blow needs its `pitch` checked against the floor (the weapon bone's world position

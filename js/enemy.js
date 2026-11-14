@@ -31,6 +31,7 @@ const REACTIONS = {
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
   struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
   seamed: e => e.seams.length >= CONFIG.seams.callAt,   // pass 47: enough of the floor cracked open to call it up (Oswin)
+  resonant: e => !!e.def.resonance && e.resonance >= e.def.resonance.max,   // pass 68: its `resonance` is full (the Bell Warden)
 };
 // Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
 const FOLLOW_IF = {
@@ -96,6 +97,8 @@ class Enemy {
     this.guardMeter = 0; this.guardTime = 0;         // guard or stagger meter, and time since it last filled
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
+    this.resonance = 0;                              // a def's `resonance` (pass 68): how full of the blows it took it is
+    this.resonanceRest = 0;                          // ... and how long after its answer before blows fill it again
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -290,6 +293,9 @@ class Enemy {
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     this.sinceBreak = this.state === ES.BROKEN || this.state === ES.EXECUTED ? 0 : this.sinceBreak + dt;   // CONFIG.enemy.postureRest
+    // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a break empties it (the opening is yours).
+    if (this.resonanceRest > 0) this.resonanceRest -= dt;
+    if (d.resonance) this.resonance = this.sinceBreak === 0 ? 0 : this.struckTime > d.resonance.delay ? Math.max(0, this.resonance - d.resonance.decay * dt) : this.resonance;
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
@@ -641,6 +647,7 @@ class Enemy {
     this.moveRun = attack.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = attack.id;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
+    if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
     if (this.attack.rollOnly) events.emit('perilous', { enemy: this, attack: this.attack });
@@ -862,6 +869,10 @@ class Enemy {
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
     this.struckTime = 0;   // the `struck` reaction (v5.9)
+    // A def's `resonance` (pass 68): each blow that lands fills it (a heavy one more), except while it lies open (parried,
+    // broken: the riposte and the execution are yours). Full, its `when: 'resonant'` answer is due (REACTIONS).
+    const R = def.resonance;
+    if (R && this.state !== ES.PARRIED && this.state !== ES.BROKEN && !(this.resonanceRest > 0)) this.resonance = Math.min(R.max, this.resonance + (R.breakers.includes(strike.attackId) ? R.heavy : R.light));
     if (!this.def.rooted) { this.kx += kx; this.kz += kz; }   // a rooted phase (pass 50) is not knocked back either
     if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
@@ -1020,6 +1031,8 @@ class Enemy {
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
+    if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? this.resonance / R.max : 0;   // pass 68: his bronze glows as the blows fill it
+      r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }
   }
 }
 

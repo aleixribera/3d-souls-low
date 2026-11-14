@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.94.0', title: 'The Bell Warden', text: 'The Tower\'s boss fights his own way now, with a bell maul in both hands, and he rings when you hit him. Land too many blows and he answers with a toll all round him: strike two or three times, then step away. His falling slams can only be rolled. At half his strength the chains that muffle him fall and he rings himself awake, filling faster and answering twice.' },
   { version: 'v7.93.0', title: 'Know your abilities', text: 'After you choose an ability, the pick stays up a moment once everyone has chosen, so you can see what you took and read the others. Your abilities, with what each does, are listed under the cards and in pause. Every ability now says only what sets it off and what it does, in as few words as possible.' },
   { version: 'v7.92.0', title: 'The weekly run', text: 'The lobby has a Weekly Run beside Boss Rush: all week, everyone meets the same bosses, modifiers and ability choices, and a new one starts every Monday. A small board in the lobby shows this week\'s furthest runs and fastest kills, by the names you played under.' },
   { version: 'v7.91.0', title: 'Pairs, fairer', text: 'In Boss Rush, when two bosses come at once, each now has half its health, every bar of it. Two sets of blows still make a pair the hardest step of a run, but it is a step now, not the wall where most runs ended.' },

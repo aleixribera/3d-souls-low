@@ -27,8 +27,9 @@ const BOSS_FX = {
     giantBonebreaker: { impact: 'shatter' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'quake', windup: 'gather' },
     captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather' } } },
-  bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { bellSlam: { impact: 'toll', windup: 'gather' },
-    bellHammerChain: { impact: 'toll' }, bellStompChop: { impact: 'toll' } } },
+  bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
+    wardenAnswer: { impact: 'toll', windup: 'gather' }, wardenAnswerTwice: { impact: 'toll', windup: 'gather' }, wardenWaking: { impact: 'toll', windup: 'gather' },
+    wardenFall: { impact: 'toll' }, wardenThreeTolls: { impact: 'toll' } } },
   varn: { element: 'steel', aura: 0xff8040, phases: { throne: 'fire', knell: 'fire' }, attacks: {
     varnStomp: { impact: 'shatter' }, varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     knellStomp: { impact: 'blaze' }, tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },

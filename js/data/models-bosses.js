@@ -40,42 +40,7 @@ MODEL_DEFS.giantSkeleton = {
   },
 };
 
-MODEL_DEFS.bellWarden = {
-  extends: 'ironKnight', faction: 'ironbound', budget: 'boss', fit: 1.0, limbSides: 8, rim: 0.45,
-  proportions: { shoulderX: 0.37, torsoW: 0.265, torsoD: 0.19, armR: 0.085, legR: 0.1, headR: 0.14, handR: 0.075, footLen: 0.34 },
-  posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
-  materials: {
-    bronze: { tex: 'bellBronze', tint: 0x9cb8aa, decay: 0.5, size: 512, double: true },
-    trim: { tex: 'wornGilt', decay: 0.4 },
-    mail: { tex: 'knightMail', tint: 0x707a79, decay: 0.7 },
-    rust: { tex: 'rustedIron', tint: 0x6a7a62, decay: 0.8 },
-    iron: { tex: 'dentedSteel', tint: 0x4a5058, decay: 0.8 },
-    cloth: { tex: 'oathLinen', tint: 0xbcb4a0, decay: 0.65, double: true, rim: 0.15 },   // edge-on, a strip took the rim as a white line
-    leather: { tex: 'crackedLeather', tint: 0x5e6860, decay: 0.7 },
-    void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
-    eye: { glow: 0xb8ffd0 },
-  },
-  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
-  bones: { loinF: { parent: 'spin', at: [0.0, -0.02, 0.2] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.2] } },
-  // v7.43.0: built in Blender (tools/blender/bellwarden.py), one piece per bone. A bellkeeper chained in bronze: a bell
-  // for a helm with a barred gaol window, bells for pauldrons and skirt, crossed chains locked at the breast, shackles.
-  parts: Object.entries({
-    head: ['bronze', 'void', 'trim'], neck: ['iron'],
-    chest: ['bronze', 'trim', 'iron'], spin: ['bronze', 'bronze.1', 'trim', 'leather', 'iron'],
-    loinF: ['cloth'], loinB: ['cloth'],
-    armL: ['mail', 'bronze', 'trim'], armR: ['mail', 'bronze', 'trim'],
-    elbowL: ['bronze', 'trim', 'iron', 'iron.1'], elbowR: ['bronze', 'trim', 'iron', 'iron.1'],
-    legL: ['mail'], legR: ['mail'],
-    kneeL: ['bronze', 'iron', 'iron.1'], kneeR: ['bronze', 'iron', 'iron.1'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bell:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
-  weapon: { use: 'bellMaul', rest: 0.65, slots: { blade: 'bronze', guard: 'rust', grip: 'iron' } },   // rest: the bell sits on its lip, not sunk in the floor
-  eyes: { color: 0xb8ffd0, size: 0.016, spread: 0.06, at: [0, 0.062, 0.165] },
-  anim: {
-    idle: { breathRate: 0.9, breath: 0.014, headDrift: 0.03, sway: 0.01, twitch: 0 }, walk: { twist: 0.07, roll: 0.03, headNod: 0.03, elbow: 0.25, drag: 0 },
-    flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1, slump: 0.7 },
-    cloth: [{ bone: 'loinF', gain: 0.1, k: 70, damp: 6, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 60, damp: 5.5, flutter: 0.04 }],
-  },
-};
+// MODEL_DEFS.bellWarden: js/data/bosses/bell-warden.js (pass 68).
 
 // ---- Level 5 (v4.3) -------------------------------------------------------------------------------------------------
 // Aldric, the Gaoler King: the castle's lord, the last king to swear the Oath of the Open Hand. Ironbound plate gone dark

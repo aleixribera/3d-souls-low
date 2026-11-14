@@ -1638,6 +1638,8 @@ const KIT = (() => {
     if ('breathFrom' in M && !known(M.breathFrom)) bad(`breathFrom names unknown bone "${M.breathFrom}".`);
     for (const H of M.halos || []) if (!(known(H.bone) && Array.isArray(H.at) && H.at.length === 3 && Number.isInteger(H.color) && H.size > 0 && H.opacity > 0 && H.opacity <= 1))
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
+    if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
+      bad('hum needs a bone, at [x, y, z], a color and a size above 0.');   // pass 68
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
     if ('grip' in M) {   // (pass 53) a two-handed haft on a weapon built in Blender
@@ -1736,6 +1738,9 @@ const KIT = (() => {
     for (const H of M.halos || []) {   // (v7.58.0, opt-in) a soft light round a lit thing the body carries (a lantern)
       const s = glowSprite(H.color, 1.2, H.size, H.opacity, 0.6); s.position.set(...H.at); rig.bones[H.bone].add(s);
       rig.glows.push({ mat: s.material, base: H.opacity });
+    }
+    if (M.hum) {   // (pass 68, opt-in) a glow that swells with the boss's resonance (Enemy.pose sets its opacity); dark at rest
+      const s = glowSprite(M.hum.color, 1.4, M.hum.size, 0, 0.6); s.position.set(...M.hum.at); rig.bones[M.hum.bone].add(s); rig.hum = s.material;
     }
     if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.58.0, opt-in) where a `breath` attack's fire comes from
     rig.fit = M.fit ?? 1;

@@ -1275,6 +1275,7 @@ const multiplayer = (() => {
       e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
       e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
       e.hp = s.hp; e.posture = s.posture; e.guardMeter = s.guardMeter; e.poise = s.poise; e.frozen = s.frozen || 0;
+      e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
       e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
       e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
       e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;

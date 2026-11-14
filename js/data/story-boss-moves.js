@@ -1,5 +1,5 @@
 'use strict';
-// One / two additional moves for the giant / Warden, borrowed from the move sources (js/data/bosses/).
+// One additional move for the giant, borrowed from the move sources (js/data/bosses/).
 // Load after those definitions and before validation. Copy nested data so story tuning never changes a source boss.
 // Timings, tracking, movement and key poses come from the source; damage is tuned to the story encounter, and the
 // recovery to the borrowing boss's pace (pass 54, PLAN.md track B item 10: each boss's own 1x).
@@ -20,13 +20,4 @@
     }),
   );
 
-  // The bell is a massive hammer: a sweep/backswing/slam and a stomp into a chop.
-  ENEMY_BY_ID.bellWarden.attacks.push(
-    borrow(RADAGON, 'hammerCombo', {
-      id: 'bellHammerChain', name: 'Bell Hammer Chain', damage: 30, recovery: 1.2,
-    }),
-    borrow(RADAGON, 'stompChop', {
-      id: 'bellStompChop', name: 'Stomp and Toll', damage: 28, recovery: 1.08,
-    }),
-  );
 }

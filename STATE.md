@@ -4,10 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 66): item 4 (Ashmere's five bosses), the Pillager Captain pass 2 (`pillager-captain.js`, test
-  `Pillager Captain`): own end poses per strike (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots
-  step out of fires (`CONFIG.bot.fire`, `bot.offFires`, test `bot-behavior` "Bot fire"). Judge vs Hollis 4-6 vs 5-7;
-  leftovers in `BACKLOG.md`. He, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Baked light accepted.
+- Track A (pass 68): item 4 (Ashmere's five bosses), the Bell Warden pass 1 (`bell-warden.js`, tests `Bell Warden`):
+  Blender figure with a baked bell maul, `resonance` (blows fill it, `when: 'resonant'` answers with a toll all round),
+  the Waking at half health (chains fall, `hum` glow). Strips `docs/scorecard/warden-moves.jpg`; blind judge 76 vs
+  Hollis 58; bots 3: 6/6 43 s 161 dmg, solo 3/4. Leftovers in `BACKLOG.md`. He, the Pillager Captain, the King's Blade,
+  Agathe, the Kindling Tree: **awaiting Aleix**. Next Track A: the third of Ashmere's bosses by PLAN.md item 4.
 - Track B (pass 70): pick feedback done (frames `docs/scorecard/pick-*.jpg`, `pause-abilities.jpg`). Next: item 7.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before

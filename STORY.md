@@ -68,6 +68,10 @@ face. The Seven called it *the hunger that wears a king*.
   burns after it.
 - **Toll Wisps**: the souls of the tower's old bell-ringers, bound to small bells of their own. They ring before
   they strike, out of a habit older than death.
+- **The Bell Warden** was the tower's bellkeeper, chained into bronze cast like the Bell he keeps, his hands still
+  on a bell maul. He rings when struck: too many blows and he gives the ringing back as a toll all round him, so you
+  strike two or three times and step away. Muffle chains keep him quiet; at half his strength he breaks them and rings
+  himself awake, as the Bell above him was meant to wake Ashmere.
 - **Gargoyles**: the castle's carved guardians, woken by the Ember's heat.
 
 ---

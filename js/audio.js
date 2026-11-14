@@ -413,6 +413,8 @@ function registerAudioListeners() {
     else {
       audio.play('hitFlesh', { vel, pos, pitch: big(d.target) });
       if (d.strike && d.strike.riposte) audio.play('riposteBoom', { vel, pos });
+      const R = d.target && d.target.def && d.target.def.resonance;   // pass 68: his bronze rings, higher the fuller it is
+      if (R) audio.play('bronzeRing', { vel, pos, pitch: 1 + 0.6 * (d.target.resonance || 0) / R.max });
     }
   });
   on('parry', d => audio.play('parry', { pos: chest(d.target) }));

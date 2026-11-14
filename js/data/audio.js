@@ -415,6 +415,11 @@ const AUDIO = {
       { wave: 'sine', freq: 41, a: 0.01, d: 5, gain: 0.35 },
       { noise: 'pink', filter: { type: 'bandpass', freq: 900, q: 1.2 }, a: 0.001, d: 0.12, gain: 0.25 },
     ] },
+    // Pass 68: a blow landing on the Bell Warden's bronze, a dull struck bell; it climbs as his resonance fills (js/audio.js).
+    bronzeRing: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 3, verb: 0.6, heat: 0.2, jitter: 0, layers: [
+      { wave: 'sine', freq: 196, partials: [[1, 1, 1], [2.0, 0.5, 0.7], [2.76, 0.4, 0.55], [5.4, 0.15, 0.3]], a: 0.002, d: 1.8, gain: 0.32 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1400, q: 1.5 }, a: 0.001, d: 0.06, gain: 0.2 },
+    ] },
     // A Toll Wisp's little bell before it shoots: bright, short, clear.
     wispToll: { bus: 'sfx', priority: 2, cooldown: 0.2, verb: 0.5, heat: 0.1, jitter: 60, layers: [
       { wave: 'sine', freq: [980, 1060], partials: [[1, 1, 1], [2.76, 0.4, 0.5], [5.4, 0.15, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },

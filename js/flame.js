@@ -66,7 +66,7 @@ const flame = (() => {
           R.concealed = true;
           for (const sl of conceal) {
             if (sl === 'weapon') { for (const m of R.weaponMeshes || []) m.visible = false; if (R.glint) R.glint.sprite.visible = false; }
-            else if (R.slotMeshes && R.slotMeshes[sl]) R.slotMeshes[sl].visible = false;
+            else for (const m of [R.slotMeshes && R.slotMeshes[sl], R.weaponSlotMeshes && R.weaponSlotMeshes[sl]]) if (m) m.visible = false;   // a body slot, or one of a baked weapon's (pass 68: the Bell Warden's chains)
           }
           if (R.chest) { R.chest.getWorldPosition(from); spawnBurst({ x: from.x, y: from.y, z: from.z }, F.concealBurst); }
         }

@@ -188,26 +188,7 @@ const ENEMY_DEFS = [
         damage: 16, poise: 34, knock: 8, lunge: 3.2, range: 1.7, box: { w: 1.6, h: 1.7, d: 1.5, fwd: 1.2, y: 1.2 } },
     ],
   },
-  {
-    id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden', description: 'Keeper of the tower bell. A sweeping, charging colossus whose slam cannot be blocked and whose push sends you off the top.',
-    scale: 1.9, bulk: 1.25, radius: 0.85, color: 0x4a5a48, weapon: 'bell', idle: 'sway',
-    visual: { skin: 0x6a7a62, skinMetal: 0.35, metal: 0.35, roughness: 0.5, rim: 0.8 },   // verdigris bronze
-    hp: 2600, poise: 220, speed: 1.9, turnRate: 2.6, trackRate: 1.2, approach: 0.6, kite: 0.15,   // a boss: steps in and uses its strong attacks more often
-    cooldown: [1.34, 2.69], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    posture: { max: 84, parry: 29, chainGap: 1.8, chainMul: 1.35, decay: 4.5, breakTime: 3.4, hitstop: 0.2 },
-    attacks: [
-      { id: 'bellSweep', name: 'Tracking Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 2.2, commit: 0.7 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.3, hits: [{ startup: 1.3, active: 0.14, follow: 0.4 }], recovery: 1.2,
-        damage: 40, poise: 70, knock: 9, lunge: 1.0, range: 3.4, box: { w: 5.5, h: 2.0, d: 4.0, fwd: 2.0, y: 1.2 } },
-      { id: 'bellSlam', name: 'Bell Slam', anim: 'chop', pose: 'hollowOverhead', tracking: { rate: 2, commit: 0.5 }, poseScale: 1.35, rollOnly: true, chance: 0.45, hits: [{ startup: 1.7, active: 0.14, follow: 0.41, hold: { at: 0.5, time: [0.5, 1.1], chance: 0.7 } }], recovery: 1.44,
-        damage: 72, poise: 90, knock: 8, lunge: 1.2, range: 3.0, box: { w: 2.4, h: 3.0, d: 4.2, fwd: 2.4, y: 1.0 },
-        impact: { ring: 3.4, crack: 1.9, dust: 16, shake: 0.12 } },
-      { id: 'bellShove', name: 'Bell Push', anim: 'shove', pose: 'enemyShove', tracking: { rate: 1.8, commit: 0.65 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, shove: true, chance: 0.45, hits: [{ startup: 1.35, active: 0.18, follow: 0.2 }], recovery: 1.02,
-        damage: 14, poise: 40, knock: 28, lunge: 2.6, range: 2.8, box: { w: 3.0, h: 2.4, d: 2.2, fwd: 1.6, y: 1.2 } },
-      { id: 'bellCharge', name: 'Charge', anim: 'thrust', pose: 'enemyShove', tracking: { rate: 2, commit: 0.35 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.2, minRange: 5, dash: { speed: 11, from: 0.4 },
-        hits: [{ startup: 1.15, active: 0.16, follow: 0.34 }], recovery: 1.14, damage: 36, poise: 70, knock: 12, lunge: 3, range: 12,
-        box: { w: 2.4, h: 2.4, d: 2.6, fwd: 1.4, y: 1.2 } },
-    ],
-  },
+  // The Bell Warden: his own file since pass 68 (js/data/bosses/bell-warden.js).
   // ---- Level 5: the castle (v4.3) ---------------------------------------------------------------------------------
   {
     // A gargoyle: carved stone that crouches on the castle's ledges (placement `perch`) and springs at whoever passes.

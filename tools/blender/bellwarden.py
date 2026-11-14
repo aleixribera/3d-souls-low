@@ -12,7 +12,10 @@
 # chains crossed over it and locked at the breast. Small bells for pauldrons, mouths down over the arms. A bell for a
 # skirt, ribbed and flaring to a lip at the knee, linen strips hanging over it front and back, a handbell at the belt.
 # Bronze vambraces and greaves; iron gauntlets closed in fists, shackles at the wrists and ankles with broken chain
-# hanging from them. Boss budget: 14,000 triangles with the kit's bell maul.
+# hanging from them. Boss budget: 14,000 triangles with the bell maul.
+# Pass 68: his own weapon, baked on the `weapon` bone (below) in place of the kit's: a cast bell on an iron-banded haft,
+# held in both hands (MODEL_DEFS `grip`), chained shut while he keeps it silent (`muffle`), its crack lit once it wakes
+# (`toll`, hidden until the second phase reveals it).
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
@@ -21,7 +24,7 @@ from figure_lib import *
 import bpy, bmesh
 from mathutils import Vector
 
-begin({'bronze': (0.3, 0.42, 0.36), 'trim': (0.62, 0.52, 0.28), 'iron': (0.22, 0.23, 0.25), 'mail': (0.3, 0.32, 0.31),
+begin({'wood': (0.25, 0.2, 0.16), 'muffle': (0.2, 0.2, 0.21), 'toll': (0.7, 1.0, 0.82), 'bronze': (0.3, 0.42, 0.36), 'trim': (0.62, 0.52, 0.28), 'iron': (0.22, 0.23, 0.25), 'mail': (0.3, 0.32, 0.31),
        'leather': (0.22, 0.24, 0.22), 'cloth': (0.62, 0.6, 0.52), 'void': (0.02, 0.02, 0.02)}, prefix='bell:')
 
 SX, EL, WR = .37, 1.25, .95
@@ -235,5 +238,62 @@ for s, n in ((1, 'L'), (-1, 'R')):
         blob(bm, (hx, .045, .225), .046, (1.0, .75, 1.25), 1)
         blob(bm, (hx, .048, -.06), .055, (1.0, .9, .8), 1)
     soft(f'knee{n}__iron.1', sabaton, 100, voxel=.008)
+
+# ==== THE BELL MAUL (on the weapon bone): a cast bell on an iron-banded haft =================================================
+# The haft runs along +z through the right fist (x -SX, y WR - .05), its origin the right wrist; the game's 1.9x makes it
+# 2.6 m. Its head is a bell cast like his helm, crown on the haft and mouth leading the blow: canons bolted into a forged
+# socket, iron straps down its shoulder, an inscription band, a heavy sound-bow, the clapper hanging inside. While he keeps
+# it silent, chains are wound round its waist and across its mouth (`muffle`, concealed when it wakes); once it wakes, the
+# old crack from its first ringing glows up its flank and round its lip (`toll`, hidden until then).
+BX, BY = -SX, WR - .05
+B0 = .97            # the bell's crown, along the haft
+BELL = [(0, .085), (.02, .118), (.05, .138), (.1, .15), (.17, .155), (.24, .163), (.3, .18), (.36, .207), (.41, .238), (.45, .262), (.475, .272), (.49, .274)]
+def br(h): return lerp_rows([(-hh, r) for hh, r in BELL], -h)[0]
+def bell_at(a, h, lift=0.0):   # a point on the bell's outside, `a` round its axis (0: the head's "up", +y), `h` down from the crown
+    r = br(h) + lift; return (BX + math.sin(a) * r, BY + math.cos(a) * r, B0 + h)
+hard('weapon__wood', lambda bm: tube(bm, [(BX, BY, -.5), (BX, BY, -.1), (BX, BY, .4), (BX, BY, B0 - .06)], [.026, .029, .028, .026], 8))
+hard('weapon__bronze', lambda bm: lathe(bm, (BX, BY, B0), (0, 0, 1), BELL, 20), thick=.016, outward=lambda c: (BX, BY, min(max(c.z, B0), B0 + .5)))
+def maul_trim(bm):
+    for h0, h1, lift in ((.13, .175, .008), (.415, .49, .014)):   # the inscription band; the sound-bow's thick lip
+        rows = [h0, (h0 + h1) / 2, h1]
+        rings = [[bm.verts.new(G(*bell_at(k / 20 * math.tau, h, lift + (.006 if h == rows[1] else 0)))) for k in range(20)] for h in rows]
+        bridge(bm, rings, True, False)
+    for k in range(4):   # cast ribs over the crown, between the straps
+        a = math.pi / 4 + k * math.pi / 2
+        tube(bm, [bell_at(a, h, .004) for h in (.01, .04, .08, .12)], [.008, .009, .01, .01], 4)
+hard('weapon__trim', maul_trim, outward=lambda c: (BX, BY, c.z))
+def maul_iron(bm):
+    tube(bm, [(BX, BY, B0 - .14), (BX, BY, B0 - .04), (BX, BY, B0 + .02)], [.036, .042, .05], 10)    # the socket
+    for k in range(4):   # straps from the socket down over the bell's shoulder, riveted
+        a = k * math.pi / 2
+        tube(bm, [(BX + math.sin(a) * .045, BY + math.cos(a) * .045, B0 - .02), bell_at(a, .03, .012), bell_at(a, .1, .012), bell_at(a, .15, .01)], [.012, .013, .013, .011], 4)
+        stud(bm, bell_at(a, .085, .022), .011)
+    for z in (-.32, .1, .55):   # iron bands along the haft
+        tube(bm, [(BX, BY, z), (BX, BY, z + .045)], [.033, .033], 10)
+    tube(bm, [(BX, BY, -.47), (BX, BY, -.56), (BX, BY, -.62)], [.036, .03, .012], 8)   # the iron shoe at the butt
+    tube(bm, [(BX, BY, B0 + .02), (BX, BY, B0 + .3), (BX, BY, B0 + .38)], [.014, .014, .012], 5)   # the clapper's shank ...
+    blob(bm, (BX, BY, B0 + .4), .055, (1, 1, 1.15), 1)                                            # ... and its ball
+hard('weapon__iron', maul_iron)
+def muffle(bm):   # chains wound round the waist, and a bar of chain across the mouth, padlocked
+    for h in (.22, .29):
+        chain(bm, lambda t, h=h: Vector(bell_at(t * math.tau, h + .025 * math.sin(t * math.tau * 2), .02)), 22,
+              lambda p: (p.x - BX, p.y - BY, 0), L=.05, W=.03, wire=.009)
+    for a in (0.3, math.pi + 0.3):
+        p0, p1 = Vector(bell_at(a, .47, .02)), Vector(bell_at(a + math.pi, .47, .02))
+        chain(bm, lambda t, p0=p0, p1=p1: p0.lerp(p1, t) + Vector((0, 0, .03 * math.sin(math.pi * t))), 11, lambda p: (0, 0, 1), L=.05, W=.03, wire=.009)
+    c = Vector(bell_at(.4, .26, .06))
+    blob(bm, c, .04, (1.0, .45, .9), 1)
+soft('weapon__muffle', muffle, 900, voxel=.006)
+def toll(bm):   # the crack from the bell's first ringing, up its flank from the lip, and the inside of the lip, lit
+    r = random.Random(5)
+    for a0 in (1.2, 1.2 + math.pi):
+        pts, a = [], a0
+        for i in range(8):
+            h = .49 - i * .05; a += r.uniform(-.09, .09)
+            pts.append(bell_at(a, h, .003))
+        tube(bm, pts, [.011, .01, .009, .008, .007, .006, .005, .003], 4)
+    rings = [[bm.verts.new(G(*bell_at(k / 20 * math.tau, h, -lift))) for k in range(20)] for h, lift in ((.488, .012), (.47, .022))]
+    bridge(bm, rings, True, False)
+hard('weapon__toll', toll, outward=lambda c: (BX, BY, B0 + .2))
 
 result = tally()
