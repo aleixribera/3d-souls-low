@@ -111,6 +111,9 @@ Aleix, 2026-11-13.
   - Aleix plays the eight bosses awaiting him (the Antlered Hunger, Aldric, the Gaol Giant, the Bell Warden, the
     Pillager Captain, the King's Blade, Agathe, the Kindling Tree). The loop doesn't wait for him: a boss the blind
     judge scores below the Regent Hollis gets its pass 2 anyway, and his notes, when they come, win over the judge.
+- The player's name (Aleix, 2026-11-14): asked once, the first time a player opens online play; kept with the save,
+  changed in Settings, never asked in solo or offline play; no generated `Player N` anywhere once it is set ("Next,
+  small" section, 6).
 
 ## A model or boss is done when
 
@@ -291,7 +294,8 @@ Pillager Captain in Practice at desktop and laptop size, the touchpad alone driv
 ## Next, small: fixes from Aleix's run (2026-11-14)
 
 Track B's next pass after the one in progress takes all of these at once (Aleix: "Yes" to the order); they are small.
-The momentum item goes to track A, the legendary and Story ability bars to item 6 and rework item 3.
+The momentum item goes to track A, the legendary and Story ability bars to item 6 and rework item 3. The player's
+name (6 below) came later the same day and goes with track B's.
 
 1. **One count: the fight.** The HUD counted fights while the run's tally, the end screen and the lobby board counted
    bosses (a fight against two bosses added 2), so they disagreed from fight 9. The fight number is the only count,
@@ -339,6 +343,24 @@ The momentum item goes to track A, the legendary and Story ability bars to item 
    over about 0.2 s; each hit of the light string steps forward and can be steered through the whole string, not only
    the wind-up; a string that ends with movement held flows straight into the run, with no recovery pose. Check:
    input-to-motion and speed curves in frames, run into each attack and back, old against new; a clip.
+6. **Your name, asked once** (Aleix, 2026-11-14; track B, with items 1-4). Today the name is a "Your name" box inside
+   the public lobby panel (`#lobbyName`, the pad's name editor `#lobbyNameEditor`, `js/multiplayer.js`), kept apart
+   from progress in `combatArena.onlineName`; left empty, the server calls you `Player N` by join order
+   (`server/index.cjs`, the hello), so the same player shows up under a different made-up name from visit to visit.
+   - **Asked once:** the first time a player opens online play (the public lobby) with no name, the game asks for one
+     before joining: one field, typed or with the pad's name editor, then on into the lobby. Never asked again.
+   - **Kept with the save:** the name is stored with the player's own saved data, not a lobby-only key, and goes into
+     any save export the game has or gets. A name already in `combatArena.onlineName` counts as set, so returning
+     players are never asked.
+   - **Changed in Settings:** a Name row in Settings opens the same editor; a change made while in the lobby reaches the
+     party at once. The box in the lobby panel goes; the lobby only shows the name.
+   - **Solo and offline never ask:** Story, offline Boss Rush and Practice alone don't mention it.
+   - **One name everywhere:** the lobby, the party list, the weekly board and in play show the chosen name; nothing
+     shows a `Player N` once a name is set. The server keeps `Player N` only for a page that sends no name (an old
+     build).
+   Check: a browser test from empty storage: solo play never asks; opening online asks once, and the name shows in the
+   party list; a reload joins with no ask; a rename in Settings shows in the party list. Frames of the ask and the
+   Settings row at desktop and phone width.
 
 ## Before everything else: players know a new version is out (Aleix, 2026-11-13)
 
