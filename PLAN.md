@@ -54,8 +54,28 @@ Aleix, 2026-11-13.
 - Chapters 6-14's words: the loop's draft stands. Story text is a draft the loop may rewrite.
 - THE ROAD GOES ON stays until the ending ships; after that the story keeps growing until Aleix stops it.
 - What replaces the Elden Ring bosses: nothing. Boss Rush, Practice and the lobby modes use the story's own bosses:
-  Ashmere's five (Pillager Captain, Bell Warden, Giant Skeleton, Aldric, the Antlered Hunger) and chapters 7-14's
+  Ashmere's five (Pillager Captain, Bell Warden, the Gaol Giant, Aldric, the Antlered Hunger) and chapters 7-14's
   (Ostrey, Hale and Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade).
+- The loop's open questions (Aleix, 2026-11-14):
+  - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
+    fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
+    the wall at 21 (x3 at 20, x5 at 21) go (track B, item 11).
+  - Damage and posture abilities are worth as much as health ones: health picks trimmed a little, damage picks
+    strengthened, so picking is a real choice (item 11).
+  - Swift kill's par comes from each boss's own health, so it is as hard to earn against every boss (item 11).
+  - The loop's other Boss Rush defaults stand: modifiers from fight 8, pairs from 9; the warm-up's easier bosses at
+    reduced health; legendaries a third weaker with the same spectacle; revive as built; Practice groups up to 6; "The
+    crown answered" / "Team wiped". The Bell Warden, Oswin, Ostrey and Varn are fixed in their own pace (track A),
+    then lose Boss Rush's health discount.
+  - The Ember Twin stays an ember copy of your own figure.
+  - The Giant Skeleton is renamed **the Gaol Giant**, everywhere (data, story text, these files).
+  - No emotes, anywhere: crates hold blade looks, other looks and abilities (item 7).
+  - Story's climb (0.8x pace and 0.75x health in chapter 1 up to 1.1x / 1x, five flasks found) stands; Aleix
+    adjusts it after playing.
+  - The loop's words for chapters 7-14 and the ending stand; Aleix flags lines as he plays, and the loop rewrites them.
+  - Aleix plays the eight bosses awaiting him (the Antlered Hunger, Aldric, the Gaol Giant, the Bell Warden, the
+    Pillager Captain, the King's Blade, Agathe, the Kindling Tree). The loop doesn't wait for him: a boss the blind
+    judge scores below the Regent Hollis gets its pass 2 anyway, and his notes, when they come, win over the judge.
 
 ## A model or boss is done when
 
@@ -197,8 +217,8 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
      before and after, and bring the slow ones into line.
    - **The curve** (one `CONFIG` rule, exponential in fights won but subtle, as `VISION.md` says) scales only the
      boss's pace: faster attack patterns (shorter wind-up-to-wind-up gaps and recoveries, quicker follow-ups, longer
-     strings), each tell staying readable. Not its health, not its damage (Aleix). The genuinely impossible end comes
-     from patterns too fast to answer, not from one-shots or a long bar.
+     strings), each tell staying readable. Not its health, not its damage (Aleix). A run ends because the patterns
+     grow too fast to answer, never from one-shots, a long bar or a sudden wall (item 11).
    - **Bots play like a decent friend, not a machine.** Full player stats stay (v7.57.0). Slower, less even reactions,
      about twice the mistimed rolls, a later flask and less backing off. They play the same all run: no extra
      sloppiness as it goes on (Aleix: the bosses already get harder). Target: early on, about one bot falls every three
@@ -288,7 +308,7 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
    of the end screen's highlights alone and with four players.
 5. **Endless.** A run goes on until everyone falls. The first few fights draw from the easier bosses, then every boss
    can come, each fight harder on item 10's curve: fair at first, real by fight 10-12 without abilities, about 20 with
-   a great kit, then genuinely impossible. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
+   a great kit, and on from there, slowly harder with no wall. Bosses still spread their attention over the group (`CONFIG.aggro`); modifiers appear after
    the first few fights (faster, an extra phase of new moves, burning ground, a second boss; none adds damage or
    health) and are shown by name under the boss's bar; every few fights two bosses come at once.
    - **Crowned bosses.** Every 5th fight is a Crowned boss (Aleix, 2026-11-13, over every 10th): its own new final
@@ -334,14 +354,14 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
      what the new level adds), so a run builds a strong kit. Abilities come only during a run, between fights in the
      arena, and end with it. An ability acts on its owner and the boss and touches teammates only lightly (a small
      shared buff at most), never slowing, moving or linking them. Item 2's pace curve is tuned against a stacked kit,
-     solo and in a party, so it still reaches impossible.
+     solo and in a party, so it keeps climbing past what any kit can hold for long.
    Check: the odds in a test; every legendary and summon seen working in a real fight, alone and in a party of four,
    with frames of each one's moment; rare ones seen with their effect and sound; a test of the curve against a
    late-run kit.
 7. **Levels and crates** (waits until the upgrades session has shipped the new abilities; Aleix, 2026-11-13: the
    roll keeps its animation and effects, in the game's style). Playing earns levels, kept per browser. Each level-up
    gives one crate, opened on the
-   end-of-run screen: mostly small things (a weapon look, an emote, a common ability), rarely a special ability that
+   end-of-run screen: mostly small things (a weapon look, another look, a common ability; no emotes, Aleix, 2026-11-14), rarely a special ability that
    joins your ability pool. A small Collection page off the lobby shows what you own and what's locked. No money, no
    shop, no loadout screen. Opening a crate is a roll like the old CS case opening: a strip of rewards spins past,
    eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
@@ -377,8 +397,8 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
      or damage, tells always readable, the modifiers and Crowned phases on top), re-tuned to these targets for one
      skilled player alone:
      - no abilities: falls around fight 10-12;
-     - with abilities: about 20, and only a rare, great kit gets there;
-     - beyond that it is impossible, whatever the kit.
+     - with abilities: about 20, and a great kit goes on past it;
+     - no wall: the climb goes on, slowly harder, with no cap a run can hit (Aleix, 2026-11-14).
      Friends get further (nothing scales with team size); that's fine.
    - **Abilities count.** Measure each target twice with the test bot: with no abilities, and with a strong kit
      (scripted picks from item 6's pool, the best a lucky run could hold). Until item 6 has shipped, measure the
@@ -406,14 +426,21 @@ Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in
      of `postureRest`. Target: even a strong kit breaks a boss no more than about every 15-20 s, and an execution is
      a reward, never the whole fight. `breaker` and every ability's `posture` are re-tuned against it.
    - **The shape**, for one skilled player alone: fights 1-4 a warm-up to learn on; 5-10 real fights; 10-15 hard even
-     with a good kit; 15-20 brutal; past 20 impossible. The curve (`CONFIG.pace`) steepens from about fight 8. Item 10's
+     with a good kit; 15-20 brutal; past 20 harder still, fight after fight. The curve (`CONFIG.pace`) steepens from
+     about fight 8 and then keeps climbing at a steady rate: no ease after 15, no wall at 21 (pass 76's ease and wall
+     go; Aleix, 2026-11-14: "let the player enjoy their skills"). A great kit can carry a skilled player past 20 for a
+     good while. Item 10's
      targets stand (about 10-12 without abilities, about 20 with a great kit); what changes is that a strong kit must
      be struggling by 15.
+   - **Every kind of pick is worth taking** (Aleix, 2026-11-14). Health picks carried the bot further than damage and
+     posture (pass 76: fight 18 vs 16). Health picks come down a little and damage picks go up, until a damage kit and
+     a health kit reach about the same fight.
    - **Fight length and Swift kill** (Aleix: the first fights took 2 minutes at least; with abilities he got a Swift
      kill in almost every later fight). Fights 1-4 last about a minute for a skilled player with no abilities: the
      warm-up bosses' health comes down until they do (`CONFIG.swift.par`, 45 s, stays the bar to beat). Later, par
      follows what the player holds as well as the curve, so a Swift kill stays an achievement: a skilled player with a
-     good kit earns it in about one fight in three, not nearly all of them.
+     good kit earns it in about one fight in three, not nearly all of them. Each boss's par comes from its own
+     health (Aleix, 2026-11-14), so quick and slow bosses give Swift kills about as often.
    Check: the test bot's runs with no abilities and with the strongest kit the rules allow (2 legendaries, the best
    posture abilities), against these targets: fight reached, fight times by stage, Swift kills per stage, and seconds
    between posture breaks
