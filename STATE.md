@@ -9,8 +9,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `noParry`, lit at half with fire on the floor (`fire`, `js/ground-fire.js`). Solo bot clean 71 s. Blind judge vs
   Hollis 5-6 vs 7-9; left for pass 2 in `BACKLOG.md`. Frames: `docs/scorecard/captain-*.jpg`. He, the King's Blade,
   Agathe, the Kindling Tree: **awaiting Aleix**. Baked light (pass 60) accepted.
-- Track B (pass 64, v7.87.0): item 4, co-op moments: a fallen friend's ember; stand in its ring 3 s to raise them
-  (the boss turns on you); a title under each name on the end screen. Next: item 5, Endless.
+- Track B (pass 65, v7.89.0): item 5 pass 1, Endless: Crowned every 5th, pairs from 7, 3 pace-only modifiers.
+  A lone skilled bot still falls at fight 7 (median; target 10-12): the pair is the wall
+  (`docs/scorecard/endless-pass65.txt`, frames `endless-*.jpg`). Next: item 5 pass 2, pair health; rest in `BACKLOG.md`.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -28,17 +29,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
-- Pace, not team size (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate` (`js/enemy.js`), `setRushFight`
-  (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`. Between fights (v7.69.0): `CONFIG.swift`,
-  `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`. Measuring (pass 54): `tools/rush-curve.cjs`
-  `bosses` (each boss alone at a fight's pace) and `runs` (shuffled runs to the first fall); `SKILLED=1`, `CURVE=`,
-  `SLOW=`/`PATCH=`, `BY=1`, `KIT=strong` (`sim.giveAbilities`). Practice's Speed: `settings.practiceFight`,
-  `CONFIG.practice.fights`, `practiceWon`; in-page `Practice: Speed`.
+- Pace (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate`, `setRushFight`; `tests/boss-pace.cjs`. Between fights:
+  `CONFIG.swift`, `rushPar`, `js/kill-moment.js`; `tests/rush-flow.cjs`. `tools/rush-curve.cjs` `bosses`, `runs`,
+  `pairs` (`SKILLED=1`, `CURVE=`, `ENDLESS=`, `BY=1`, `KIT=strong`). Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
-- Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
-  (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
+- Boss Rush, endless (pass 65): `calling(run, fight)` / `offerAbilities` / `rise` / `fightTally`, `RUSH`,
+  `CONFIG.endless` (`server/simulation.js`), `runSummary` (`server/index.cjs`), `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
   Revive, titles (pass 64): `js/revive.js`, `reviveStep`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
@@ -86,6 +84,8 @@ In `BACKLOG.md`.
   bosses fight at the new, slower 1x until track A item 5: Hollis is slower than when you judged him.
 - (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight, not only
   Boss Rush; the titles' wording is the loop's.
+- (overridable) Endless: modifiers Quickened (pace 1.12), Restless (rests 1.5x shorter), Unbroken (strings 1.8x) from
+  fight 4/4/6; opening pool Giant, Pillager Captain, Bell Warden, Antlered; end title "N bosses beaten".
 - (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:

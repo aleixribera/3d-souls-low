@@ -151,6 +151,7 @@ const multiplayer = (() => {
     .online-name-text{display:block;overflow:hidden;text-overflow:ellipsis}.online-name .ally-health{margin:4px 0 1px}
     @media(prefers-reduced-motion:reduce){.ally-health-fill,#publicLobby button,#publicLobby input,#publicLobby select{transition:none}#publicLobby .lobby-card{animation:none}#publicLobby button:active{transform:none}}
     @media(max-width:800px){#onlineParty{top:118px;width:168px;right:12px;font-size:11px;padding:8px 10px}}
+    @media(max-width:640px){#onlineParty{top:162px}}
     #onlineSpectator{position:fixed;z-index:50;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(460px,calc(100vw - 24px));color:#fff0c9;text-align:center;font:14px/1.5 system-ui}
     #onlineSpectator[hidden],#spectatorControls[hidden]{display:none}
     #spectatorControls{padding:10px 12px 8px;background:linear-gradient(160deg,#151b1cf0,#0d1112f0);border:1px solid var(--mp-line-hi);border-radius:10px;box-shadow:0 10px 30px #000a;backdrop-filter:blur(4px)}

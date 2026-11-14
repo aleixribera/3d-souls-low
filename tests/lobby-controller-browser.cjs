@@ -131,6 +131,6 @@ const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(i
     await pad(a, 1);
     assert.equal(await a.evaluate(() => multiplayer.connected), false, 'B leaves idle lobby for main menu');
     assert.deepEqual(errors, []);
-    console.log('Lobby controller: stick/D-pad, held repeat, mode list, cyclers, name keyboard, roster focus, leader transfer, start, resume, return and leave passed.');
+    console.log('Lobby controller: stick/D-pad, held repeat, mode list, name keyboard, roster focus, leader transfer, start, resume, return and leave passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
