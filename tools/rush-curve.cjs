@@ -34,17 +34,23 @@ const skill = process.env.SKILLED ? 0.25 : 1;
 // then one picked after each fight won, in this order: fight n holds the first n. KIT=strong is item 10's "rare, great
 // kit": a lucky run's best picks, two legendaries the bot can use (Time Rift on its dodges, Blood Moon when low) among
 // health, damage and healing. KIT=max (pass 73, item 11's check) is the strongest kit the rules allow for the stagger
-// meter: two legendaries that strike as the bot fights (Gale Crescent, Storm King) and the posture abilities. Or a list
-// of ability ids. No KIT: no abilities.
+// meter: two legendaries that strike as the bot fights (Gale Crescent, Meteor Fall: pass 76, as the bot never holds a
+// heavy to its full charge, so Storm King never fired) and the posture abilities, with no health until fight 13.
+// KIT=best (pass 76) is a lucky run's great kit: those two legendaries with health, posture, damage and healing. Or a
+// list of ability ids. No KIT: no abilities.
 const KITS = {
-  max: ['breaker', 'gale-crescent', 'breaker', 'static-edge', 'gale-crescent', 'breaker', 'opportunist', 'storm-king', 'keen-edge',
-    'breaker', 'static-edge', 'storm-king', 'iron-blood', 'opportunist', 'keen-edge', 'static-edge', 'iron-blood', 'opportunist',
+  max: ['breaker', 'gale-crescent', 'breaker', 'static-edge', 'gale-crescent', 'breaker', 'opportunist', 'meteor-fall', 'keen-edge',
+    'breaker', 'static-edge', 'meteor-fall', 'iron-blood', 'opportunist', 'keen-edge', 'static-edge', 'iron-blood', 'opportunist',
     'keen-edge', 'ash-lancer', 'iron-blood', 'ash-lancer', 'keen-edge', 'iron-blood', 'ash-lancer', 'bloodthirst', 'bloodthirst',
     'bloodthirst', 'deep-lungs', 'deep-lungs', 'deep-lungs'],
   strong: ['keen-edge', 'iron-blood', 'keen-edge', 'time-rift', 'bloodthirst', 'iron-blood', 'keen-edge', 'long-shadow', 'time-rift',
     'iron-blood', 'bloodthirst', 'keen-edge', 'blood-moon', 'long-shadow', 'iron-blood', 'keen-edge', 'bloodthirst',
     'quick-draught', 'opportunist', 'blood-moon', 'long-shadow', 'quick-draught', 'opportunist', 'vengeance', 'vengeance',
     'opportunist', 'vengeance', 'quick-draught', 'quick-draught', 'deep-lungs', 'deep-lungs'],
+  best: ['iron-blood', 'gale-crescent', 'breaker', 'iron-blood', 'gale-crescent', 'keen-edge', 'meteor-fall', 'iron-blood',
+    'bloodthirst', 'breaker', 'meteor-fall', 'iron-blood', 'static-edge', 'keen-edge', 'bloodthirst', 'breaker', 'opportunist',
+    'keen-edge', 'static-edge', 'bloodthirst', 'breaker', 'keen-edge', 'opportunist', 'static-edge', 'long-shadow', 'long-shadow',
+    'opportunist', 'long-shadow', 'deep-lungs', 'deep-lungs', 'deep-lungs'],
 };
 const kitList = process.env.KIT ? KITS[process.env.KIT] || process.env.KIT.split(',') : [];
 const probe = createSimulation();

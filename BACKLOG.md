@@ -2,10 +2,15 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
-- The run's shape, after item 11's pass 1 (pass 73, `docs/scorecard/run-shape-pass73.txt`):
-  - **A great kit falls short of fight 20**: the best survival kit's median is 17 (none past 20) and two legendaries
-    with the posture abilities only 14. Raising the kit (ability damage, or `CONFIG.abilities.posture` above 0.4 and
-    `breakGrow` below 0.4: breaks are 27-43 s apart, the cap is 15-20 s) or easing the curve past fight 15 are the levers.
+- The run's shape, after item 11's passes 1 and 2 (passes 73, 76, `docs/scorecard/run-shape-pass76.txt`):
+  - **The test bot doesn't play to its kit**: it never holds a heavy to full charge, so Storm King never fires for it
+    (Thousand Blades and Ember Twin barely: 0.2 a fight). Pass 76 measures with Meteor Fall instead. A bot that plays to
+    what it holds (full charges with Storm King, jump heavies with Meteor Fall) is bot code, outside the rush-curve tools.
+  - **Health carries the bot, not damage**: two legendaries with the posture abilities and no health reach fight 16, a
+    kit with health 18, though the first kills 20-30% faster. Whether damage picks should keep up is a design call.
+  - **No kit sits at the floor of 10-12** (mean 9.9): its runs end in fights 5-10 at x1.0-1.25, with a modifier from
+    fight 8 and a pair at 9 (pass 73's choices, awaiting Aleix) and the bosses' own 1x; the curve isn't the lever.
+  - The first load's "Recommended graphics applied" note covers the title on a phone (390 px wide).
   - **Boss outliers in Boss Rush**: the Bell Warden (falls 0.19 a fight at fight 7 with no kit, the most damage
     taken), Oswin and Ostrey (0.13), Varn: Boss Rush holds them at 75-90% health (`RUSH.health`). Their own pace, in
     their definitions, is track A's to judge; then drop their `RUSH.health`.

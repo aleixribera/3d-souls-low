@@ -56,11 +56,12 @@ function isAreaAttack(a) {
 }
 const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
 // Boss Rush's pace after `won` fights (CONFIG.pace): a warm-up under every boss's own pace for the first `warm` fights,
-// then rising exponentially with the fights won past it.
+// then rising exponentially with the fights won past it, and from fight `wall` on `wallRise` times as fast again each fight.
 function rushPace(won) {
   const P = CONFIG.pace, n = Math.max(0, Number(won) || 0);
   if (n < P.warm) return P.boss * (P.warmFrom + (1 - P.warmFrom) * n / P.warm);
-  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp((n - P.warm) / P.scale) - 1)));
+  const past = Math.max(0, n + 2 - P.wall);   // fight n + 1 is the first past the wall when n + 1 >= wall
+  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp((n - P.warm) / P.scale) - 1)) * Math.pow(P.wallRise, past));
 }
 // Boss Rush's par (CONFIG.swift): the target length in whole s of a fight after `won` fights won, against `bosses` at
 // once, for a party of `might` (kitMight, js/abilities.js). Never under the base pace's par for a weaker boss.

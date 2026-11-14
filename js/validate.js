@@ -435,8 +435,9 @@ function validateData({ visual = true } = {}) {
   }
   const PC = CONFIG.pace;   // a boss's pace and Boss Rush's curve (v7.65.0): it only ever speeds a boss up
   need(PC && num(PC.boss) && PC.boss >= 1 && num(PC.rise) && PC.rise >= 0 && num(PC.scale) && PC.scale > 0 && num(PC.max) && PC.max >= PC.boss
-    && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1 && Number.isInteger(PC.warm) && PC.warm >= 0 && num(PC.warmFrom) && PC.warmFrom > 0 && PC.warmFrom <= 1,
-    'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more, tellFloor in (0, 1], warm a whole number of 0 or more and warmFrom in (0, 1].');
+    && num(PC.tell) && PC.tell >= 0 && num(PC.tellFloor) && PC.tellFloor > 0 && PC.tellFloor <= 1 && Number.isInteger(PC.warm) && PC.warm >= 0 && num(PC.warmFrom) && PC.warmFrom > 0 && PC.warmFrom <= 1
+    && Number.isInteger(PC.wall) && PC.wall > PC.warm && num(PC.wallRise) && PC.wallRise >= 1,
+    'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more, tellFloor in (0, 1], warm a whole number of 0 or more, warmFrom in (0, 1], wall a fight past the warm-up and wallRise 1 or more.');
   const SW = CONFIG.swift, KM = CONFIG.killMoment;   // v7.69.0: Boss Rush's par and swift kill, and the kill moment
   need(SW && num(SW.par) && SW.par > 0 && num(SW.late) && SW.late >= SW.par && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.abilities.offer + SW.extra <= ABILITIES.length
     && SW.might && Object.keys(RAR).every(r => num(SW.might[r]) && SW.might[r] >= 0),

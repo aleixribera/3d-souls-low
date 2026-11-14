@@ -7,8 +7,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 75): item 4, Aldric pass 1: own greatsword, poses, the Ember's mend. Strips
   `docs/scorecard/aldric-moves.jpg`; judge 75, 77 vs Hollis 82 (gap: `BACKLOG.md`). He, the Giant, the Bell Warden,
   the Pillager Captain, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Next: the next Ashmere boss.
-- Track B (pass 73): item 11 done (pass 1). Bots (`docs/scorecard/run-shape-pass73.txt`): no kit median fight 10,
-  survival kit 17, posture kit 14 (short of 20); breaks 27-43 s; swift 1 in 3.
+- Track B (pass 76): item 11 pass 2 done, its check passes (`docs/scorecard/run-shape-pass76.txt`): no kit ~10, great
+  kit 18 (1 in 10 reach 20), fight 21 a wall; breaks 28-35 s; swift 1 in 3. Next: the next item in PLAN.md's order.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -28,7 +28,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
 - Pace (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate`, `setRushFight`; `tests/boss-pace.cjs`. Between fights:
   `CONFIG.swift`, `rushPar`, `js/kill-moment.js`; `tests/rush-flow.cjs`. `tools/rush-curve.cjs` `bosses`, `runs`,
-  `pairs` (`SKILLED=1`, `CURVE=`, `ENDLESS=`, `ABILITIES=`, `KIT=strong|max`). Practice's Speed: `CONFIG.practice.fights`.
+  `pairs` (`SKILLED=1`, `CURVE=`, `ENDLESS=`, `ABILITIES=`, `KIT=strong|max|best`); the wall (pass 76): `CONFIG.pace.wall`. Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
@@ -80,17 +80,16 @@ In `BACKLOG.md`.
 
 ## Needs Aleix
 
-- (overridable) Item 10's skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`). Story
-  bosses fight at the new, slower 1x until track A item 5: Hollis is slower than when you judged him.
-- (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight, not only
-  Boss Rush; the titles' wording is the loop's.
+- (overridable) The skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`).
+- (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight; titles' wording.
 - (overridable) Endless: modifiers from fight 8, pairs from 9; warm-up Giant, Captain, Antlered, Hollis, Hale (55-85%
   health); Bell Warden, Oswin, Ostrey, Varn 75-90% health in Boss Rush; legendaries a third weaker; "N bosses beaten".
 - (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
-- (overridable) Swift kill: par 45 s, 100 s after the warm-up (less with a kit) adds a card. The pick holds 2 s after the last choice.
+- (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.
+- (overridable) Boss Rush eases after fight 15, then a wall at 21 (x3 at 20, x5 at 21): "impossible past 20".
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.

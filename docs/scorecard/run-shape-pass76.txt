@@ -1,0 +1,52 @@
+Pass 76 (PLAN.md item 11, pass 2: close the gap to its targets). node tools/rush-curve.cjs runs 60, SKILLED=1: the skilled bot alone, a fresh body each fight.
+Shipped: CONFIG.pace rise 0.22 scale 6.5 (was 0.15, 5), wall 21 and wallRise 1.5 (new); CONFIG.swift.might.legendary 0.18 (was 0.12).
+Practice's Speed offers fight 21 in place of 30. Pace by fight: 10 x1.25, 15 x1.80, 18 x2.41, 20 x2.99, 21 x5.04, 22 on x6
+(pass 73: 1.26, 1.96, 2.87, 3.86, 4.53, x6 from 23).
+
+Finding: Storm King never fired for the bot. It needs a heavy held to its full charge, and the bot lets go at 50-100% of the
+hold, so pass 73's KIT=max carried a dead legendary. Fires per fight at fight 12 (.scratch/powers.cjs, 20 fights): Storm King 0,
+Meteor Fall 4.6, Pyre 2.6, Gale Crescent 3-4, Static Edge 6-8, Thousand Blades 0.2, Ember Twin 0.2. KIT=max now takes Meteor Fall.
+KIT=best (new): a lucky run's great kit, Gale Crescent and Meteor Fall among health, posture, damage and healing.
+
+Before (pass 73's curve, 40 runs, medians): max with Storm King 14, max with Meteor Fall 15, best 17, strong 17, none 10.
+Curves tried (medians best/strong/none/max): rise .025 scale 3.1: -/18/10/15; rise .25 scale 6.5: 17/17/9/-;
+rise .2 scale 6.5 wall 1.5: 19/19/9/16; rise .2 scale 6 wall 1.5 (60 runs): 17/18/9/15; shipped (60 runs): 18/18/9/16.
+Powers' posture 0.7 (was 0.4) with breakGrow 0.15: max 15 (from 14), breaks 25-32 s. Posture is not the lever; health is:
+at fight 8 the max kit falls 0.03 a fight against the survival kit's 0.00, with fights 20-30% shorter.
+
+== KIT=none
+reached: median 9  mean 9.9  range 2-19  share past 10 0.40, 15 0.05, 20 0.00
+fights  1-4   237 fought  falls 0.01  win time 65s  par 45s  swift 0.00  s/break 34
+fights  5-10  274 fought  falls 0.12  win time 133s  par 109s  swift 0.33  s/break 50
+fights 11-15   80 fought  falls 0.26  win time 165s  par 120s  swift 0.24  s/break 69
+fights 16-20    6 fought  falls 0.50  win time 288s  par 120s  swift 0.00  s/break 210
+== KIT=best
+reached: median 18  mean 17.4  range 5-21  share past 10 0.93, 15 0.77, 20 0.10
+fights  1-4   240 fought  falls 0.00  win time 59s  par 38s  swift 0.00  s/break 31
+fights  5-10  349 fought  falls 0.01  win time 86s  par 74s  swift 0.34  s/break 32
+fights 11-15  277 fought  falls 0.04  win time 96s  par 84s  swift 0.38  s/break 41
+fights 16-20  169 fought  falls 0.24  win time 128s  par 103s  swift 0.31  s/break 70
+fights 21-99    6 fought  falls 1.00
+== KIT=strong
+reached: median 18  mean 16.9  range 1-24  share past 10 0.90, 15 0.75, 20 0.13
+fights  1-4   236 fought  falls 0.01  win time 62s  par 41s  swift 0.00  s/break 33
+fights  5-10  340 fought  falls 0.01  win time 118s  par 83s  swift 0.21  s/break 46
+fights 11-15  262 fought  falls 0.03  win time 141s  par 91s  swift 0.20  s/break 66
+fights 16-20  162 fought  falls 0.23  win time 174s  par 110s  swift 0.16  s/break 123
+fights 21-99   11 fought  falls 0.73  (one run of 60 won fights 21-23 at x5-6)
+== KIT=max
+reached: median 16  mean 14.8  range 6-20  share past 10 0.77, 15 0.53, 20 0.00
+fights  1-4   240 fought  falls 0.00  win time 55s  par 38s  swift 0.01  s/break 28
+fights  5-10  336 fought  falls 0.04  win time 81s  par 73s  swift 0.41  s/break 29
+fights 11-15  222 fought  falls 0.06  win time 87s  par 83s  swift 0.49  s/break 35
+fights 16-20   87 fought  falls 0.37  win time 110s  par 99s  swift 0.45  s/break 60
+
+== Falls a fight, KIT=best: 15-16 (x1.75) 0.07; 17 (x2.0) 0.15; 18 (x2.25) 0.31; 19 (a pair) 0.59; 20 (Crowned) 0.45; 21 (x5) 1.00.
+== KIT=strong: 15-16 0.07; 17 0.21; 18 0.21; 19 (a pair) 0.38; 20 0.50; 21 0.88. Fight 21: 13 of 14 lost over both kits.
+== No kit, the same 60 seeds: mean 9.9 (pass 73: 10.0 on 40). Its runs end in fights 5-10 (falls 0.12 a fight) at x1.0-1.25,
+   which this pass leaves as it was (pace at fights 5-10 within 0.01).
+== Against item 11's check: no kit about 10 (target 10-12, at its floor); a great kit 18, 10-13% reach 20, fight 21 a wall
+   (target about 20, impossible past it); struggling from 15 (falls 0.07 a fight at 15-16, a quarter from 17). Posture breaks
+   with the strongest posture kit 28-35 s apart in fights 1-15 (cap: no closer than 15-20 s). Fights 1-4 take 55-65 s (target
+   about a minute). Swift kills: about 1 in 3 with a great kit (0.31-0.38), 0.41-0.49 with the all-out kit, 0.16-0.21 with
+   the survival kit.
