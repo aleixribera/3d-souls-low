@@ -117,9 +117,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   `js/storm-rend.js`; `docs/scorecard/agathe-lab.jpg`, `abbey-agathe.jpg`). Bots don't know bolts (Track B's area):
   `js/bot.js` doesn't step off a locked mark (`e.bolt`, `locked`) and doesn't press her to tear pieces back
   (`body.rent`/`rentBy`). The server's parry claim checks `canParryAttack`, not `canParryHit` for the claimed hit: a
-  future bolt inside a parryable attack could be parried by a modified client. Figure: the face reads as a mask close
-  up, the mantle hangs flat as a board, the habit is brown rather than black; the HUD shows torn pieces in Destined
-  Death's gold, not her red. The rent is not carried in a multiplayer resume. No one has fought her by hand yet.
+  future bolt inside a parryable attack could be parried by a modified client. Pass 53 (v7.77.0) did the grip, the
+  haft's angle, the face, habit and mantle. Left: the face still lumpy close up (voxel remesh at 1,500 tris); the
+  veil reads as a ball from behind; the mantle goes plank-like in lunges (the judge); the right fist only lines up
+  with the haft, it doesn't slide along it (`Rig.holdHaft`); no frame from inside the abbey yet (`agathe-duel.jpg`
+  is the arena). The HUD shows torn pieces in Destined Death's gold, not her red. The rent is not carried in a multiplayer resume. No one has fought her by hand yet.
 - Chapter 11, Aurel in Ash (v7.46.0, pass 21), rough; its second step: the Cinderfolk's own figure (stand-in: the
   Hollow Soldier charred). The level is the burned capital's layout as it was; the ash gate and the plaza could show the gold of
   chapter 10 burned (charred gilt, a dry fountain) so the two chapters read as one city.

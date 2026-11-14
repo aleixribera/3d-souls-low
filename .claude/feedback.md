@@ -72,6 +72,7 @@ took it (once taken).
   strikes; keep them. Her model and weapon animations need polish: in several attacks the hook is held and rotated
   wrong. Fix the grip and the weapon's angle through every attack (check each tell and strike in the model lab and in
   the abbey), and polish the model (the backlog already notes her face reads as a mask). This is her second pass.
+  Taken by pass 53 (v7.77.0).
 - 2026-11-14, how a boss's final pass is judged (on top of `VISION.md`, `PLAN.md` track A item 2 and track B item 10,
   with the Regent Hollis as the bar). Three additions, for every boss redo and polish pass from now on:
   1. **Grip and angle in motion.** Every attack is checked from wind-up to recovery as a short clip or a frame strip,

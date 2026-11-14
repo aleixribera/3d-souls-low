@@ -4,10 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 50, item 2, v7.73.0): the Kindling Tree pass 1, **awaiting Aleix** (not final until he fights it).
-  Blender figure; rooted (hit `burrow`, drawn by `js/root-heave.js`; hit `still`; `rooted`), uprooted at 60%.
-  Strips `docs/scorecard/tree-moves.jpg`; blind judge 50 vs Hollis 48. In-page `Ember Root`. Agathe (pass 48) also
-  awaits Aleix. Pass 2s in BACKLOG; next: the King's Blade (ch. 14).
+- Track A (pass 53, v7.77.0): Agathe pass 2 (his 2026-11-13 feedback), **awaiting Aleix**. Hook in both hands
+  (`grip`, `Rig.holdHaft`; key poses aim `haft`), carved face, black habit, folded mantle. Strips
+  `docs/scorecard/agathe-moves.jpg`, `agathe-grip.jpg`; blind judge 29 vs Hollis 29. The Kindling Tree (pass 50)
+  also awaits Aleix. Next: the King's Blade (ch. 14).
 - Pass 33 (v7.56.0, render-scale complaint; `PLAN.md` item 3's 100% part): every preset draws native (`qualityDraw`,
   `js/visuals.js`); numbers, close-ups: `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
 - Track B (pass 52, v7.74.0): item 9 done: no bot in the lobby or any party (bots are test players only:
