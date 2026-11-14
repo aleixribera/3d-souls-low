@@ -81,6 +81,11 @@ Aleix, 2026-11-13.
   before the rework, a Tutorial button in the lobby, clips on the Controls page (item 3d).
 - Abilities (Aleix, 2026-11-14, again): 100 or more quality ones; spectacular in the fight first; cards simple, clean
   and cool, rarity-scaled, with a loop showing how each activates (track B, item 6).
+- Boss Rush offline (Aleix, 2026-11-14): playable alone with no server, the same run, its rewards kept locally;
+  multiplayer is Boss Rush only, so Single/Double/Triple/Quad Boss, the Weekly run and co-op Story leave the lobby
+  (track B, item 1; item 8 cut). `VISION.md` changed with his OK.
+- More attacks can be deflected (Aleix, 2026-11-14): `noParry` only on ground area attacks, grabs and a boss's
+  biggest moments, about a quarter at most (the player rework, item 4).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -257,6 +262,11 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
      attack timing follows one pace value, so Boss Rush's speed scaling moves everything together. Track B for Boss
      Rush's bosses, track A for Story's enemies and bosses (item 4's chapter-by-chapter pass); the test bot measures
      it.
+   - **More attacks can be deflected** (Aleix, 2026-11-14: "more attacks should be parriable"). Today 155 of the
+     bosses' 242 attacks can't be parried. With the deflect, most can: `noParry` stays only on area attacks from the
+     ground, grabs, and each boss's one or two biggest moments, about a quarter of a boss's attacks at most
+     (`js/validate.js` checks it). A deflected heavy blow pushes the player back a little and fills the boss's posture
+     more; each deflect has its own spark and sound. A move that can't be deflected looks it (its wind-up says so).
    - **Then the bot:** every boss a little more aggressive (fewer idle gaps, more strings that punish mashing), tells
      always readable; the test bot plays each boss on the new moves, and only a boss it finds trivial gets its own
      rework. Item 10's and 11's targets are measured again.
@@ -375,16 +385,25 @@ after the abilities). If the track reaches item 6 before that session has shippe
 comes back to item 6 the moment it lands.
 Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in progress, ahead of everything left.
 Next in this track (2026-11-14): the player rework comes first (its own section at the top, urgent; Aleix). After it:
+Boss Rush offline and the lobby cut to Boss Rush only (item 1), then
 item 11's third pass (the wall and the ease go, picks evened, par per boss), the summons' own moves, then item 6's new
 bar (Aleix, 2026-11-14: way more spectacular abilities and a really wide
 pool), whose spectacle and growth passes then take every other track-B pass for as long as the pool is short of it,
 the end screen's highlights (item 4, still unbuilt) fitting in between.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
-   Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
-   co-op. **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
-   several, or two teams against each other) or any level, and be fighting in seconds. Check: frames of the title,
-   the lobby option and Practice at desktop and phone width; a test starts each mode.
+   Rush, Practice. **Multiplayer is Boss Rush only** (Aleix, 2026-11-14): the lobby's Mode option goes, and with it
+   Single, Double, Triple and Quad Boss, the Weekly run and co-op Story (their code goes too, not just the buttons;
+   the server's rate checks stay). **Practice** replaces the 1v1 Arena, Boss vs Boss and the Levels menu: pick any enemy or boss (one or
+   several, or two teams against each other) or any level, and be fighting in seconds.
+   **Boss Rush offline** (Aleix, 2026-11-14): Boss Rush plays alone in the page with no server, the same run as
+   online (the same bosses, curve, ability offers, levels and crates). On the title, Boss Rush has two ways in:
+   **Play alone** (always there) and **Join lobby** (when the lobby answers). Alone, the page runs what the server
+   runs online (the run, the shared enemies, the offers) from the same engine code, no second copy; levels, crates and
+   the Collection are kept in the local save, so a run alone counts like one online. Next in track B after the player
+   rework, ahead of item 11's third pass.
+   Check: frames of the title, the lobby and Practice at desktop and phone width; a test starts each mode; a Boss Rush
+   run to fight 5 played with the page opened as a file (no server), its level and crate kept after a reload.
 2. **Fast fights, bots that fall** (Aleix, 2026-11-13: bosses are damage sponges and bots never die; make it more
    frenetic, with more dopamine). Next in this track: the next track-B pass takes it, ahead of item 3's remaining
    screens, which resume after it. Since then allied bots have left Boss Rush (item 9): the parts below about bots
@@ -575,7 +594,7 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
    eases to a stop on one, and that one reward is shown with its name, description and what it does, with great
    animation and effects; it should make players want another run just to open the next. Check: odds and saving in a
    test; a frame sequence of a crate rolling and landing, and the Collection.
-8. **The weekly run.** Each week, a Weekly mode beside Boss Rush: the same boss order, modifiers and ability offers
+8. **The weekly run: cut** (Aleix, 2026-11-14: multiplayer is Boss Rush only). Kept here for the record. Each week, a Weekly mode beside Boss Rush: the same boss order, modifiers and ability offers
    for everyone (one seed from the week). A small board in the lobby shows the best fight reached and the fastest
    kills of this week's runs, by lobby name, kept by the server on Aleix's home server (a file on a mounted volume so container
    updates keep it; no accounts, no data beyond the lobby name and the numbers). Check: a test that two runs on the same week's seed meet the same bosses
