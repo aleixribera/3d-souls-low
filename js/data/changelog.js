@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.129.0', title: 'The Finishing Blow', text: 'The stagger bar and executions are gone. Every counter now cracks a foe\'s guard, and the third counter in a row becomes the Finishing Blow: time stops, you cut through it, and it takes a big chunk of health and heals you. Cracks fade if you stop countering. In a party everyone\'s counters count, and whoever lands the third gets the blow. Breaker now gives you longer to counter. The look is rough for now.' },
   { version: 'v7.128.0', title: 'The showcase', text: 'Your next launch opens on 30 seconds of the game at its best: a fighter takes on three late Boss Rush bosses, cut to its own music. Watch, on the title, plays it again.' },
   { version: 'v7.127.0', title: 'A deflect with a kick', text: 'A deflected blow now flings your sword up and rocks your shoulders back before you settle low over the blade. While dashing, your lower foot stays on the floor instead of sinking into it.' },
   { version: 'v7.126.0', title: 'Your name', text: 'Online play asks your name once and keeps it with your save. Change it any time in Options.' },

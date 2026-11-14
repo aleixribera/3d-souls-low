@@ -18,8 +18,9 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
   cracks, by}` (0 = faded/spent), `finisherStart {player, enemy, time, duration}`, `finisherStep {i, from, to}` (each
   cut), `finisher {damage, lethal, at, exit}`, `finisherEnd {player, enemy, abandoned?}`. State: `p.exec` = control
   locked (`.duration`, progress `p.attackT`), PS.EXECUTE; foe ES.EXECUTED = time stopped; `e.cracks`, `e.crack`.
-  Dead refs in A's files: camera-feel, animator ES.BROKEN, lessons/long-hall, rig, world-hints, `onboarding.cjs`.
-- Showcase session: its finale counter needs the boss's `cracks` at `CONFIG.finisher.cracks` first.
+  Dead refs in A's files: BACKLOG (pass 100).
+- Showcase: its finale is still a plain killing counter (hp 1); as the Finishing Blow it needs `cracks` at the
+  last and its health left alone (`js/showcase.js` 165-170).
 - Old docs: `git show v7.56.0:docs/<file>`.
 
 ## Works
@@ -53,15 +54,15 @@ Paused by Aleix, 2026-11-14. Passes 100 and 102 finish, then one track-A pass gi
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
 - Bots: temperaments, strings, Finishing Blows, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
   `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (10 min; `PERSON=1`: a person stand-in).
-- Scorecard frames: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
-- Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs`,
-  `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>`, `lab-probe.cjs <id>`, `solo-multi.cjs "<f>" "<f>" ...`.
+- Scorecard frames: `tools/scorecard-frames.cjs`.
+- Capture scripts (untracked, `.scratch/`): `lab-many.cjs`, `lab-zoom.cjs`, `enemy-play.cjs`, `lab-probe.cjs`,
+  `solo-multi.cjs`.
 
 ## Broken
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- Not in CI, failing on a360796 too: `lobby-polish-browser` (Tab wrap; flaky), `experience-browser` (320x568
-  overlap). `enemy-feedback-browser` passes again (pass 100).
+- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568), `boss-only-browser` (adventure count),
+  `calling-browser` (a swift mark on a Crowned offer).
 
 ## Queued runs
 
