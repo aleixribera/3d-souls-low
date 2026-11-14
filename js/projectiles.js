@@ -125,7 +125,7 @@ const projectiles = (() => {
       const along = Math.max(1, (target.x - b.x) * s + (target.z - b.z) * c), t = along / A.speed;
       const dy = target.y + target.height * P.aimAt - b.y;
       b.vx = s * A.speed; b.vz = c * A.speed; b.vy = dy / t + 0.5 * A.gravity * t;
-      b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.passed.clear(); b.live = true;
+      b.g = A.gravity; b.size = A.size; b.age = 0; b.owner = owner; b.strike = makeStrike(attack); b.strike.damage *= owner.damageMul || 1; b.passed.clear(); b.live = true;
       prepareLook(b, A);
       b.mesh.visible = true;
       events.emit('shot', { enemy: owner, bolt: b });

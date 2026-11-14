@@ -40,6 +40,8 @@ const LEVEL_2 = {
     { id: 'exit', rect: [130, 136, -4, 4], floor: 0x4a4030, wall: 0x5a5040, light: 0xffd080, dim: true, lamps: [[133, 3.3]] },
   ],
   // Bonfires: `spawn` is where resting (and dying) puts the player back.
+  // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
+  flaskFinds: [{ id: 'keep-pilgrim', x: 35.6, z: -9.0 }],
   bonfires: [{ id: 'keep-start', x: 3.5, z: -5.5, spawn: { x: 5, z: -3.4, yaw: Math.PI / 2 } },
              { id: 'keep-shrine', x: 78, z: 45, spawn: { x: 78, z: 42.4, yaw: Math.PI / 2 } }],
   gated: [

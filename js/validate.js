@@ -654,6 +654,9 @@ function validateData({ visual = true } = {}) {
       need(typeof c.title === 'string' && c.title && typeof c.line === 'string', `${tag}: needs a title and a line.`);
       if ('loadout' in c) for (const [id, r] of Object.entries(c.loadout || {}))
         need(id in ITEMS && r && (r.min === undefined || num(r.min)) && (r.max === undefined || num(r.max)), `${tag}: loadout "${id}" must be an item with numeric min / max.`);
+      // Pass 79: a chapter's own `might` for its bosses (roadMight), over CONFIG.story.road's climb.
+      if ('might' in c) need(c.might && typeof c.might === 'object' && Object.entries(c.might).every(([k, v]) => ['pace', 'health', 'damage'].includes(k) && num(v) && v >= 0.3 && v <= 3),
+        `${tag}: might may set pace, health and damage, each a number from 0.3 to 3.`);
     }
     need(new Set(storyIds).size === storyIds.length && (C.chapters || []).length > 0, `${w}: each level may appear only once, and there must be a chapter.`);
     // A road whose last chapter has no `ending` goes on (its later chapters not built yet): it says so in `goesOn`.
@@ -662,6 +665,15 @@ function validateData({ visual = true } = {}) {
     storyIdsAll.push(...(C.chapters || []).map(c => c && c.level));
   }
   need(new Set(storyIdsAll).size === storyIdsAll.length, 'Story: a level may be a chapter of only one campaign.');
+  // The road's climb (pass 79, CONFIG.story.road): each value a [first chapter, last chapter] pair of positive numbers.
+  const R = CONFIG.story.road;
+  for (const who of ['foes', 'bosses']) for (const k of ['pace', 'health', 'damage'])
+    need(R && R[who] && Array.isArray(R[who][k]) && R[who][k].length === 2 && R[who][k].every(v => num(v) && v >= 0.3 && v <= 3),
+      `CONFIG.story.road.${who}.${k} must be [first, last], each a number from 0.3 to 3.`);
+  // Flasks found on the road (a level's `flaskFinds`): only on a chapter of a campaign, each id unique on every road.
+  const findIds = ALL_LEVELS.flatMap(L => (Array.isArray(L.flaskFinds) ? L.flaskFinds : []).map(f => f && f.id));
+  need(new Set(findIds).size === findIds.length, 'Levels: every flaskFinds id must be unique.');
+  for (const L of ALL_LEVELS) if ('flaskFinds' in L) need(storyIdsAll.includes(L.id), `Level "${L.id}": flaskFinds only on a chapter of a Story road.`);
   // Lore (js/data/lore.js, v5.1): the NPC's model, and per level a dialogue, inscriptions and scenes with readable text.
   const lines = a => Array.isArray(a) && a.length > 0 && a.every(t => typeof t === 'string' && t.trim().length > 0);
   need(LORE.npc && typeof LORE.npc.name === 'string' && LORE.npc.model in MODEL_DEFS && num(LORE.npc.scale) && num(LORE.npc.bulk), 'Lore: the NPC needs a name, a model in MODEL_DEFS, scale and bulk.');
@@ -994,8 +1006,11 @@ function validateRooms(L, where, need, num, visual = true) {
   }
   // The last level's extras (v4.3, js/finale.js): out-of-reach sightings, ambush hints, developer jumps.
   if ('ending' in L) need(typeof L.ending === 'boolean', `${where}: ending must be true or false.`);
-  // v7.0: a level may grant more flasks, and may lay hazard floors (rot) that hurt while stood in.
-  if ('flasks' in L) need(Number.isInteger(L.flasks) && L.flasks >= 1 && L.flasks <= 12, `${where}: flasks must be a whole number from 1 to 12.`);
+  // Pass 79: the flasks found in a level (`flaskFinds`, Game.updateLevel), each an id and a spot on a floor. v7.0: a level may
+  // lay hazard floors (rot) that hurt while stood in.
+  need(!('flasks' in L), `${where}: flasks are found now (flaskFinds), not granted by a level.`);
+  if ('flaskFinds' in L) need(Array.isArray(L.flaskFinds) && L.flaskFinds.every(f => f && typeof f.id === 'string' && f.id.length > 0 && onFloor(f.x, f.z, f.y)),
+    `${where}: each of flaskFinds needs an id and x, z (and y) on a floor.`);
   if ('hazards' in L) need(Array.isArray(L.hazards), `${where}: hazards must be a list.`);
   for (const h of Array.isArray(L.hazards) ? L.hazards : []) {
     const tag = `${where} hazard "${h && h.id}"`;

@@ -16,7 +16,7 @@ const LEVEL_13 = {
   description: 'Under everything, the Ember is a root. Inside its first growth: hollows of living red-gold wood, joined by roots over a burning deep. The roots have no rail. Where it began, the root has been given limbs.',
   help: 'Level 13: the roots have no rail: a fall is death. The Rootbound sink into the wood and rise where you stand, throw thorns of fire, and mark the floor to burn: step off the mark.',
   completeHint: 'The root is cut. Far off, under the storm, there is water that never burned…',
-  wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5, flasks: 9,
+  wallHeight: 8, gateHeight: 3.2, gateThickness: 0.5,
   atmosphere: { background: 0x1e100a, fog: 0x3e2418, fogDensity: 0.0095,
                 moon: { color: 0xffd0a0, intensity: 2.3, position: [-30, 34, 12] },
                 ambient: { color: 0x5a4636, intensity: 1.3 },

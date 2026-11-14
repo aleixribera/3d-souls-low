@@ -16,7 +16,7 @@ const LEVEL_9 = {
   description: 'Thrale\'s gaol, hung among the stars: stone cells on nothing, bridges with no rail, prisoners who never left. In the great ring, the one who rang Thrale\'s bell.',
   help: 'Level 9: the bridges have no rail and the sky has no floor. The cells have a low kerb: jump it only if you mean to. Wisps ring from the floating rocks: their bolts reach you on the bridges.',
   completeHint: 'The Ringer is still. Her chain lies open on the stones, as it has for a long time…',
-  wallHeight: 6, gateHeight: 3.2, gateThickness: 0.5, flasks: 7,
+  wallHeight: 6, gateHeight: 3.2, gateThickness: 0.5,
   // Night in a sealed sky: violet and teal, stars and a band of mist, runes and motes of blue light.
   atmosphere: { background: 0x070814, fog: 0x14162a, fogDensity: 0.0095,
                 moon: { color: 0x9aa8ff, intensity: 2.0, position: [-10, 40, 20] },
@@ -66,6 +66,8 @@ const LEVEL_9 = {
     { id: 'rise-1', rect: [62, 74, -1.5, 1.5], axis: 'x', from: 0, to: 6, stairs: true, height: 6, edges: { n: 'open', s: 'open' }, floor: 0x40405a, wall: 0x50506a },
     { id: 'rise-2', rect: [103.5, 106.5, 44, 56], axis: 'z', from: 6, to: 12, stairs: true, height: 6, edges: { e: 'open', w: 'open' }, floor: 0x40405a, wall: 0x50506a },
   ],
+  // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
+  flaskFinds: [{ id: 'gaol-prisoner', x: 47.5, z: 6.8 }],
   bonfires: [{ id: 'night-landing', x: 3, z: -4.5, spawn: { x: 5, z: -3, yaw: Math.PI / 2 } },
              { id: 'night-isle', x: 108, y: 6, z: -3, spawn: { x: 106, y: 6, z: -1.5, yaw: 0 } },
              { id: 'night-last', x: 132, y: 12, z: 62.8, spawn: { x: 134, y: 12, z: 64.5, yaw: Math.PI / 2 } }],

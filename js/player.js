@@ -485,7 +485,7 @@ class Player {
     const by = H.by, S = H.S;
     for (const a of ['light', 'heavy', 'roll', 'parry']) if (this.ctl && this.ctl.consume(a)) { H.left -= S.escape; events.emit('struggle', { body: this, enemy: by }); }
     H.left -= dt;
-    this.hp = Math.max(0, this.hp - S.dps * dt);
+    this.hp = Math.max(0, this.hp - S.dps * (by.damageMul || 1) * dt);
     if (this.hp <= 0) { this.held = null; this.die(); return; }
     const gripping = by.alive() && (by.state === ES.ACTIVE || by.state === ES.RECOVER) && by.attack && by.attack.id === H.attackId;
     if (H.left <= 0 || !gripping) { this.releaseHold(gripping && this.stateTime >= S.time - 1e-6); return; }   // thrown only when he lets go himself

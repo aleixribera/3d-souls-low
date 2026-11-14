@@ -17,7 +17,7 @@ const LEVEL_8 = {
   description: 'Thrale\'s border fortress over the sea, in the rain. The great gate is barred: go round by the cliffs, the outer rampart and the hall of statues, up to the tower roof.',
   help: 'Level 8: the great gate is barred, so take the side passage south. Things crouch on the walls over the cliff walk. On the tower roof the castellans fight together: keep one between you and the other.',
   completeHint: 'Both castellans have fallen. Saltgrave\'s gate is open to the road inland…',
-  wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5, flasks: 6,
+  wallHeight: 10, gateHeight: 3.4, gateThickness: 0.5,
   // Night, a storm off the sea: heavy rain, lightning, wet blue-grey stone, sea-grey and salt-white banners.
   atmosphere: { background: 0x1e252e, fog: 0x34404c, fogDensity: 0.0145,
                 moon: { color: 0xb8c8e0, intensity: 2.2, position: [10, 30, -20] },

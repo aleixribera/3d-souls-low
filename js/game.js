@@ -22,6 +22,7 @@ const Game = {
   spawn: null, deathTimer: 0,
   hazardTimers: new Map(),   // the human's hazard-floor tick clocks (Player.standInHazards)
   cleared: new Set(),    // checkpoints: keys of the enemies killed before the last rest (they stay dead until a restart)
+  found: new Set(),      // Story: the ids of the flasks found on the road (a level's `flaskFinds`; js/story.js saves them)
   loading: 0,            // s the loading screen still holds the world (CONFIG.loading)
   zoomTarget: CONFIG.zoom.default, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
@@ -83,7 +84,7 @@ const Game = {
     // A dispersed enemy tied to a zone (`zone`) is not brought back once that zone's gate is open: its area is won.
     const won = s => s.zone && this.zones.some(z => z.id === s.zone && z.gate.open);
     return this.level.dispersed.map(s => [s, this.placementKey(s)]).filter(([s, key]) => !won(s) && !this.cleared.has(key))
-      .map(([s, key]) => new Enemy(ENEMY_BY_ID[s.enemy], { ...this.spawnSpec(s, s.behavior), zone: s.zone, key }));
+      .map(([s, key]) => this.onRoad(new Enemy(ENEMY_BY_ID[s.enemy], { ...this.spawnSpec(s, s.behavior), zone: s.zone, key })));
   },
   // Full restart of the current fight or level.
   reset() {
@@ -121,8 +122,9 @@ const Game = {
     this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
     story.applyProgress(this.player);   // Story mode: carried capacities (nothing otherwise)
     if (typeof crateScreen !== 'undefined') crateScreen.wearLook(this.player.rig, progress.look);   // the blade look a crate gave (drawn only)
-    // v7.0: a level may grant more flasks (`flasks`: at least this many); a carried larger stock stays.
-    const fl = this.kind === 'level' && this.level.flasks, it = fl && this.player.inventory.flask;
+    // Pass 79: off Story's own road (the lobby's story, Practice's levels) a chapter grants the flasks a player who found
+    // every one so far would hold (roadFlasks); in Story they are the ones carried and found.
+    const fl = this.kind === 'level' && !this.story && roadFlasks(this.level.id, true), it = fl && this.player.inventory.flask;
     if (it && it.max < fl) it.max = it.count = fl;
     companions.reset(this);
     this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();   // a new body: no death sequence or hit-pause carries over
@@ -190,8 +192,8 @@ const Game = {
     z.spawned = true;
     const fresh = z.members.map(m => [m, this.placementKey({ ...m, ...m.spawn }, z.id + '/')])
       .filter(([, key]) => !this.cleared.has(key) && !kept.some(a => a.key === key))
-      .map(([m, key]) => new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss,
-        arena: m.arena ? z.trigger : null }));
+      .map(([m, key]) => this.onRoad(new Enemy(ENEMY_BY_ID[m.enemy], { ...this.spawnSpec({ ...m, ...m.spawn }, m.behavior || 'gated'), zone: z.id, key, boss: m.boss,
+        arena: m.arena ? z.trigger : null })));
     z.actors = [...kept, ...fresh];
     for (const a of z.actors) a.kin = z.actors;   // its zone's fighters: an `alone` boss phase waits for the rest to fall
     z.beaten = z.members.length > 0 && fresh.length === 0;   // every member beaten (before a rest, or a boss): its gate opens

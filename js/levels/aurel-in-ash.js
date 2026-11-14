@@ -17,7 +17,7 @@ const LEVEL_11 = {
   description: 'The same city, burning: what the hunger cannot keep, it burns. Halfway down the market lane the street gives way; fight out of the cellars and on through the cinders to the throne, where the first king it ever wore has risen.',
   help: 'Level 11: the burnt streets are not sound. The Cinderfolk lie in the ash until you pass. The first king\'s blows crack the throne floor open, and when he calls on the throne the cracks burn: fight where the floor is whole.',
   completeHint: 'The first crown lies in the ash. Below the city, the root is still burning…',
-  wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5, flasks: 8,
+  wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5,
   atmosphere: { background: 0x1a1614, fog: 0x2e2622, fogDensity: 0.016,
                 moon: { color: 0xd0a080, intensity: 1.8, position: [20, 30, 30] },
                 ambient: { color: 0x4a3c36, intensity: 1.45 },

@@ -2,9 +2,45 @@
 // ============================================================================
 // 11c. Game: level rules
 // ============================================================================
-// A level's rules each step: zones and gates, shortcuts, traps, hazards, the next level,
+// A level's rules each step: zones and gates, shortcuts, traps, hazards, flasks found, the next level,
 // and alerts. Methods of `Game` (js/game.js).
+
+// ---- the road's climb (pass 79, PLAN.md track A item 5) -------------------------------------------------------------
+// Story grows harder chapter by chapter: its regular enemies' health and damage, and its bosses' pace, health and damage,
+// run from the first chapter's values to the last's (CONFIG.story.road, linear in the chapter's place on the road). A
+// chapter's own `might` sets its bosses' instead. The level is its chapter wherever it is played (Story, the lobby's
+// story, Practice's levels); Boss Rush and Practice's duels never meet it. Flasks grow too, but only as they are found.
+// A level's place on the road, 0 (its first chapter) to 1 (its last), or null for a level off the road.
+function roadPlace(levelId) {
+  const ids = STORY.chapters.map(c => c.level), i = ids.indexOf(levelId);
+  return i < 0 ? null : ids.length > 1 ? i / (ids.length - 1) : 1;
+}
+// An enemy's strength on that chapter, { pace, health, damage } (Enemy.setMight), or null off the road.
+function roadMight(levelId, boss) {
+  const t = roadPlace(levelId);
+  if (t === null) return null;
+  const R = CONFIG.story.road[boss ? 'bosses' : 'foes'], own = boss && STORY.chapters.find(c => c.level === levelId).might || {};
+  const at = k => own[k] ?? (R[k] ? lerp(R[k][0], R[k][1], t) : 1);
+  return { pace: at('pace'), health: at('health'), damage: at('damage') };
+}
+// The flasks of one who found every flask on the road before `levelId` (and in it too, with `through`): the player's own
+// and one for each of those levels' `flaskFinds`. Null off the road.
+function roadFlasks(levelId, through = false) {
+  const ids = STORY.chapters.map(c => c.level), i = ids.indexOf(levelId);
+  if (i < 0) return null;
+  const own = PLAYER_DEF.inventory.find(it => it.item === 'flask').max;
+  return ids.slice(0, through ? i + 1 : i).reduce((n, id) => n + (ALL_LEVELS.find(l => l.id === id).flaskFinds || []).length, own);
+}
+// The ids of every flask found on the road before `levelId`.
+const roadFinds = levelId => STORY.chapters.slice(0, Math.max(0, STORY.chapters.findIndex(c => c.level === levelId)))
+  .flatMap(c => (ALL_LEVELS.find(l => l.id === c.level).flaskFinds || []).map(f => f.id));
+
 Object.assign(Game, {
+  // A level's enemy, made as strong as its chapter of the road (roadMight); unchanged off it.
+  onRoad(e) {
+    if (this.kind === 'level') e.setMight(roadMight(this.level.id, e.isBoss()));
+    return e;
+  },
   // ---- level -------------------------------------------------------------------------------------
   // Gated zones: spawn on entry, lift the gate when all the zone's enemies fall. Complete when all gates are open.
   // Shortcut gates (`opensFrom`) open for good once the player reaches their far side, on the gate's floor; sealed
@@ -39,6 +75,15 @@ Object.assign(Game, {
         events.emit('gateOpened', { gate: g, shortcut: true });
       }
       if (g.open) g.lift = Math.min(1, g.lift + dt / V.gateLiftTime);
+    }
+    // Flasks found on the road (pass 79; Story alone, js/story.js saves them): walked over, one more flask for the rest
+    // of the road, full at once. Off Story's own road the chapter already grants them (spawnPlayer).
+    if (this.story && p.alive()) for (const f of this.level.flaskFinds || []) {
+      const F = CONFIG.story.find;
+      if (this.found.has(f.id) || Math.hypot(p.x - f.x, p.z - f.z) > F.range || Math.abs(world.floorY(f.x, f.z, f.y) - p.y) > F.floorGap) continue;
+      const it = p.inventory.flask;
+      this.found.add(f.id); it.max++; it.count++;
+      events.emit('flaskFound', { find: f, player: p, flasks: it.max });
     }
     // Hazard floors (a level's `hazards`, Player.standInHazards). Enemies are of the rot and wade through it unharmed.
     p.standInHazards(dt, this.hazardTimers);

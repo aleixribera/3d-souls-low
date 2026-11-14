@@ -826,7 +826,7 @@ globalThis.host = (() => {
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
-    get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
+    get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && roadFlasks(Game.level.id, true) || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
     // A level with an `ending` and a chapter after it (Aldric's: the end of Act I) moves on only once its death scene and
     // cards have played in the browsers (js/finale.js), not after the usual level-complete pause.

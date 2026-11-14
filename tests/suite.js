@@ -1934,8 +1934,8 @@
       Game.startFight(b.id); sim.begin();
       expect.ok(Game.duel.hp === b.hp && Game.duel.def.hp === b.hp, `${b.id}: doubled duel health`);
       Game.startLevel(b.level); sim.begin();
-      const e = Game.enemies.find(e => e.def.id === b.id);
-      expect.ok(e && e.hp === b.hp && e.def.hp === b.hp, `${b.id}: doubled level health`);
+      const e = Game.enemies.find(e => e.def.id === b.id), road = Math.round(b.hp * roadMight(b.level, true).health);   // pass 79: its chapter's share
+      expect.ok(e && e.hp === road && e.def.hp === road, `${b.id}: its chapter's share of its health in its level (${e && e.def.hp}, ${road})`);
     }
     expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.origin || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave, and no borrowed moves');
     const aldric = A.ENEMY_BY_ID.varn;
@@ -2594,6 +2594,39 @@
     expect.ok(Math.hypot(Game.player.x - saved.spawn.x, Game.player.z - saved.spawn.z) < 0.5, 'at the bonfire');
     expect.ok(Game.zones[0].gate.open && Game.zones[0].actors.length === 0, 'the won zone stays won');
   }));
+  // Pass 79 (PLAN.md track A item 5): flasks are found along the road, kept through a death and a Continue.
+  test('Story: a flask found on the road is one more for the rest of the road, saved at once', withSave(() => {
+    S().jumpTo('sunken-keep'); sim.begin();
+    const f = Game.level.flaskFinds[0], it = Game.player.inventory.flask, had = roadFlasks('sunken-keep');
+    expect.ok(it.max === had && it.count === had, `the flasks found before the keep (${it.max}, ${had})`);
+    expect.ok(A.lore.state.finds.length === 1 && A.lore.state.finds[0].core.visible, 'its light is drawn');
+    Game.player.x = f.x; Game.player.z = f.z + 0.5; Game.player.y = world.floorY(f.x, f.z, f.y);
+    for (const e of Game.enemies) if (e.alive()) e.x += 500;
+    sim.seconds(0.2); Game.render(1, STEP);
+    expect.ok(it.max === had + 1 && it.count === had + 1 && Game.found.has(f.id), `taken: one flask more, full (${it.max})`);
+    expect.ok(S().data.finds.includes(f.id) && S().data.progress.inventory.flask.max === had + 1, 'saved at once');
+    expect.ok(document.querySelectorAll('#pFlasks .flask').length === had + 1, 'the flask row grows');
+    sim.seconds(0.2);
+    expect.ok(Game.player.inventory.flask.max === had + 1, 'taken once');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(Game.player.inventory.flask.max === had + 1, `kept through a death (${Game.player.inventory.flask.max})`);
+    S().quit(); S().resume(); sim.begin();
+    expect.ok(Game.player.inventory.flask.max === had + 1 && Game.found.has(f.id) && A.lore.state.finds.length === 0, 'kept through Continue, and lies there no more');
+  }));
+  // Pass 79: every chapter is a step up; the lobby's story and Practice's levels grant the chapter's flasks.
+  test('Story road: flasks and enemies climb chapter by chapter, Boss Rush untouched', () => {
+    const ids = STORY.chapters.map(c => c.level), flasks = ids.map(id => roadFlasks(id, true));
+    expect.ok(roadFlasks(ids[0]) === PLAYER_DEF.inventory[0].max && flasks.every((n, i) => !i || n >= flasks[i - 1]) && flasks.at(-1) > flasks[0], `flasks: ${flasks}`);
+    const boss = ids.map(id => roadMight(id, true)), foe = ids.map(id => roadMight(id, false));
+    expect.ok(foe.every((m, i) => !i || (m.damage > foe[i - 1].damage && m.health >= foe[i - 1].health)), 'foes hit harder every chapter');
+    expect.ok(boss[0].pace < 1 && boss.at(-1).pace >= 1, `bosses start slow and reach 1x (${boss[0].pace}, ${boss.at(-1).pace})`);
+    Game.startLevel('torn-abbey'); sim.begin();
+    const late = Game.enemies.find(e => !e.isBoss() && e.def.id === 'rendingBrother');
+    expect.ok(late && late.damageMul === roadMight('torn-abbey', false).damage && late.health === roadMight('torn-abbey', false).health && late.pace === roadMight('torn-abbey', false).pace, 'a level\'s foes are as strong as its chapter');
+    expect.ok(Game.player.inventory.flask.max === roadFlasks('torn-abbey', true), 'off Story, the chapter\'s flasks');
+    Game.startFight('hollis'); sim.begin();
+    expect.ok(Game.duel.pace === CONFIG.pace.boss && Game.duel.damageMul === 1 && Game.duel.health === 1, 'a duel is the boss as written');
+  });
   test('Story: a broken or foreign save never crashes and offers a new story', withSave(() => {
     for (const bad of ['{not json', JSON.stringify({ v: 1, level: 'nowhere' }), JSON.stringify({ v: 99 }), '"x"']) {
       localStorage.setItem(CONFIG.story.saveKey, bad);
