@@ -225,11 +225,7 @@ const ATTACK_POSES = {
 // biggest wind-up).
 ATTACK_POSES.enemyDoubleSlash = { hits: [ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.lightBackhand.hits[0]] };
 ATTACK_POSES.enemyTripleCut = { hits: [ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.lightBackhand.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
-// Aldric, the Ember-Crowned (Level 5, v4.3): four cuts ending in the big overhead; a rising cut into a leaping crash; three
-// stamps of the blade (each a toll and a ring of fire) and a last overhead blast.
-ATTACK_POSES.knellChain = { hits: [ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.lightBackhand.hits[0], ATTACK_POSES.lightDiagonal.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
-ATTACK_POSES.risingCrash = { hits: [ATTACK_POSES.lightBackhand.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
-ATTACK_POSES.tollingStamp = { hits: [ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.enemyStomp.hits[0], ATTACK_POSES.hollowOverhead.hits[0]] };
+// Aldric's own poses: js/data/bosses/aldric.js (pass 75).
 // The Gargoyle's own (v4.3.1): it has no weapon, so its blows are claws and its whole body. A rake with the right claw,
 // then the left; and a pounce, crouched low with both arms back, then both claws driven down as it lands.
 ATTACK_POSES.clawRake = { hits: [

@@ -475,6 +475,12 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: [2800, 4200], q: 1.2 }, a: 0.02, d: 0.35, gain: 0.18 },
       { noise: 'brown', filter: { type: 'lowpass', freq: 260 }, a: 0.05, d: 0.4, gain: 0.25 },
     ] },
+    // The Ember drawing a wound shut (pass 75, Aldric's `mend`): a breath of fire drawn in, swelling, a crackle, a low glow.
+    emberMend: { bus: 'sfx', priority: 2, cooldown: 1.2, max: 1, verb: 0.35, heat: 0.25, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 260, to: 1500, q: 0.8 }, glide: 0.9, a: 0.85, d: 0.3, gain: 0.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [2600, 3600], q: 1.4 }, at: 0.35, a: 0.5, d: 0.25, gain: 0.1 },
+      { wave: 'sine', freq: 62, to: 96, glide: 0.9, a: 0.8, d: 0.45, gain: 0.3 },
+    ] },
     // Fire catching all at once: a roaring whoosh.
     fireRoar: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.7, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1400, q: 0.6 }, a: 0.3, d: 1.8, gain: 0.8 },

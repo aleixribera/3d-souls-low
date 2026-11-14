@@ -17,6 +17,16 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel
   reads as flat red at fighting distance.
 
+- Aldric, after his pass 1 (pass 75; a blind judge 75, then 77 after the Iron Shoulder fix, vs Hollis 82;
+  `docs/scorecard/aldric-moves.jpg`). Done: his own Blender greatsword in both hands and 12 own poses
+  (`js/data/bosses/aldric.js`), the Ember's `mend` (each attacker's wound closes once they stop; a break seals it),
+  the Iron Shoulder answering a string of blows, his throne-room bars 1600/1700 to 1400/1500 (bots: solo 147 s vs
+  132 s before, 4 bots 52-55 s, about 390 hp mended a 4-bot fight). Left:
+  - The Iron Shoulder's blade still trails low back-left like the Gaol Sweep's haul (0.85 vs 1.2 s startups).
+  - The Sentence and the Lunge both cock at chest height.
+  - The model: the helm reads as a bucket, the pauldrons as stacked balls, dark on dark (judge "model" 70).
+  - The wound shows on the bar, the cracks and inward embers; brighter cracks for a bigger wound are not done.
+  - Track B: 26 posture a parry and 2.1-4 s cooldowns make the break (the mend's counter) slow.
 - The Giant Skeleton, after its pass 2 (pass 74; a fresh judge 61, 63, 67 vs Hollis 71). Done: a manacle on the claw
   with a ~1.2 m chain that swings (`chainClaw`, `anim.hang`), a collar with a chain down the back, a dragging ankle
   chain, four small fused skulls, a femur club of its own bound in iron, ember eyes. Left:

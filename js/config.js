@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.98.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.99.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -391,6 +391,7 @@ const CONFIG = {
     igniteAt: 9.0,                            // when his armour catches (the visual change)
     glow: { color: 0xff5a18, base: 0.1, pulse: 0.06, rate: 3.2 },   // the burning armour's emissive glow
     embers: 30,                               // embers rising off him per second, burning
+    mend: { lit: 0.5, embers: 24, from: [1.3, 2.3], life: 0.7, chest: 1.35 },   // pass 75: a closing wound draws embers in from `from` m to his chest (× scale) over `life` s; lit `lit` s after it last shrank
     pillarFall: 1.6,                          // s a toppling pillar takes to land
     roomLight: 3.2,                           // the throne room's fire light once he burns
     death: { stagger: 1.2, kneel: 2.6, blaze: 4.4, fade: 9.5, overlay: 11.5 },   // s after the killing blow
@@ -405,7 +406,7 @@ const CONFIG = {
          trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, refundPulse: 0.45,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
-         tallyHold: 1.4, postureWarn: 0.8,
+         tallyHold: 1.4, postureWarn: 0.8, mendLit: 0.3,   // mendLit (pass 75): s a closing wound stays lit after it last shrank
          // Damage numbers (only on a level with `damageNumbers`, the Ability Grounds): each rises `rise` px over `life` s.
          damageNumbers: { pool: 16, life: 0.9, rise: 54, spread: 58, lanes: [0, 1, -1, 0.5, -0.5], big: 120 },
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,

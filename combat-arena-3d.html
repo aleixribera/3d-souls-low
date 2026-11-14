@@ -253,6 +253,10 @@
   .hp { background: linear-gradient(#cc4034, #8a1c14 52%, #50100b); --glow: #ff7a60; z-index: 1; }
   .st { background: linear-gradient(#7cb068, #467a3c 52%, #274c22); --glow: #b8f090; z-index: 1; }
   .po { background: linear-gradient(#f4d27a, #bc8a30 52%, #7c5a1c); --glow: #ffe49a; z-index: 1; }
+  /* An open wound the Ember will close (a boss's `mend`, pass 75): past the end of his bar, in ember; brighter as it closes. */
+  .mend { background: linear-gradient(#ffc070, #e8701e 52%, #8a3008); box-shadow: inset 0 0 5px #ffd49080; z-index: 2; width: 0; opacity: 0.85;
+    transition: filter 0.25s, opacity 0.25s; }
+  .mend.closing { filter: brightness(1.35); opacity: 1; }
   #pStTrail { background: linear-gradient(#cfe0a8, #8aa466); opacity: 0.8; }
 
   /* Player vitals, top left. Dims when calm (--calm 0..1), brightens and swells back at the first threat. */
@@ -556,7 +560,7 @@
       <div id="eBars" class="hidden">
         <div id="eName"></div>
         <div id="eDmg"></div>
-        <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
+        <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div><div class="mend" id="eHpMend"></div></div>
         <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
       <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown"></span><span id="rushTime"></span><span id="rushPar"></span></div>
@@ -662,6 +666,7 @@ const GAME_FILES = [
   'data/bosses/pillager-captain.js',
   'data/bosses/bell-warden.js',
   'data/bosses/giant-skeleton.js',
+  'data/bosses/aldric.js',
   'data/boss-fx.js',
   'data/move-sources.js',   // the Beastman's and the Zealot's moves, for the Rending Brothers and the Rootbound
   'data/bosses/agathe.js',   // after move-sources.js: her Rending Brothers fight with the Beastman's moves
@@ -782,7 +787,7 @@ const GAME_FILES = [
   'kill-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.98.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.99.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

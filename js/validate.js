@@ -379,6 +379,12 @@ function validateData({ visual = true } = {}) {
       && (!('rest' in R) || num(R.rest) && R.rest >= 0);
     const hasAnswer = ids => d.attacks.some(a => a && a.when === 'resonant' && (!ids || ids.includes(a.id)));
     if ('resonance' in d) need(resOk(d.resonance) && hasAnswer(), `Enemy "${d.id}": resonance needs max (above 0), light, heavy, breakers (attack ids), delay and decay (and an optional rest, s), and an attack with when: 'resonant'.`);
+    // Pass 75 (Aldric): `share` of each blow landed opens a wound (at most `cap` of the bar) that closes at `rate` of the bar a
+    // second once no blow has landed for `delay` s. A phase may carry its own.
+    const mendOk = M => M && typeof M === 'object' && num(M.share) && M.share > 0 && M.share <= 1 && num(M.cap) && M.cap > 0 && M.cap <= 1
+      && num(M.delay) && M.delay >= 0 && num(M.rate) && M.rate > 0;
+    const MEND_MSG = 'mend needs share and cap (fractions above 0, up to 1), delay (s, 0 or more) and rate (a fraction of the bar a second, above 0).';
+    if ('mend' in d) need(mendOk(d.mend), `Enemy "${d.id}": ${MEND_MSG}`);
     need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
     if ('echoColor' in d) need(Number.isInteger(d.echoColor) && d.echoColor >= 0 && d.echoColor <= 0xffffff, `Enemy "${d.id}": echoColor must be a colour (0xrrggbb).`);   // pass 44
     // Boss phases (v4.3): each a full health bar; attacks named by id; the transition into it in seconds.
@@ -405,6 +411,7 @@ function validateData({ visual = true } = {}) {
         if (ph && 'ignite' in ph) need(ph.ignite === true || ph.ignite === 'weapon', `${tag}: ignite must be true (he burns) or 'weapon' (only his weapon does: js/finale.js).`);   // pass 63
         if (ph && 'tether' in ph) need(num(ph.tether) && ph.tether >= 2 && ph.tether <= 40, `${tag}: tether must be a radius in m (2 to 40) round where it stands.`);   // pass 42
         if (ph && 'resonance' in ph) need(resOk(ph.resonance) && hasAnswer(ph.attacks), `${tag}: resonance needs max (above 0), light, heavy, breakers, delay and decay, and one of its attacks with when: 'resonant'.`);   // pass 68
+        if (ph && 'mend' in ph) need(mendOk(ph.mend), `${tag}: ${MEND_MSG}`);   // pass 75
         if (ph && 'echoColor' in ph) need(Number.isInteger(ph.echoColor) && ph.echoColor >= 0 && ph.echoColor <= 0xffffff, `${tag}: echoColor must be a colour (0xrrggbb).`);   // pass 44
         if (ph && 'fill' in ph) need(num(ph.fill) && ph.fill > 0 && ph.fill <= 1 && !('at' in ph), `${tag}: fill must be a fraction (0 to 1] of a refilled bar.`);   // v5.9
         if (ph && 'transition' in ph) need(num(ph.transition) && ph.transition > 0, `${tag}: transition must be seconds above 0.`);

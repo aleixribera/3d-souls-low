@@ -185,7 +185,7 @@ class Rig {
   gripPlace(f, s) {
     const G = this.grip;
     let z = clamp(HAFT_TMP.e.copy(s).sub(f).dot(HAFT_TMP.n), G.span[0], G.span[1]);
-    if (Math.abs(z) < G.gap) z = z < 0 && G.span[0] < -G.gap ? -G.gap : G.gap;
+    if (Math.abs(z) < G.gap) z = (z < 0 && G.span[0] < -G.gap) || G.span[1] < G.gap ? -G.gap : G.gap;   // a span wholly below the fist (pass 75) keeps below it
     return z;
   }
   // A two-bone reach (chest frame): turns `arm` and bends `elbow` (about x) so the point `len` down the forearm lies at

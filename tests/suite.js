@@ -1939,7 +1939,7 @@
     }
     expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.origin || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave, and no borrowed moves');
     const aldric = A.ENEMY_BY_ID.varn;
-    expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1600 && aldric.phases.knell.hp === 1700, 'Aldric health as set in v7.65.0');
+    expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1400 && aldric.phases.knell.hp === 1500, 'Aldric health as set in v7.65.0; the throne room bars trimmed for the mending Ember (pass 75)');
     expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');
   });
   test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
@@ -2294,7 +2294,7 @@
     sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
     sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
     expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
-    expect.ok(b.hp === b.def.hp && b.def.hp === 1700, 'a fresh full bar');
+    expect.ok(b.hp === b.def.hp && b.def.hp === 1500, 'a fresh full bar');
     expect.ok(!F.room.windows[0].mesh.visible && F.room.pillars.every(P => P.t > 0), 'the glass burst and the pillars fell');
     b.deplete(); sim.step(2);
     expect.ok(!b.alive() && Game.zones.find(z => z.id === 'zone-throne').gate.open && !!F.ending, 'his last bar: dead, the ending runs');
@@ -2334,6 +2334,36 @@
     expect.ok(seams[0].visible, 'the Ember-Crowned: the cracks burn');
     e.hp = 0; e.state = ES.DEAD; Game.render(1, STEP);
     expect.ok(!seams[0].visible, 'dead: they go out');
+  });
+  // Pass 75: the Undying Ember will not let him stay hurt (`mend`); keep at him, or break him.
+  test('Aldric: the Ember closes his wounds once you stop, a break seals them, and his cracks light while one is open', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, M = e.def.mend, D = A.ENEMY_BY_ID.varn, seams = e.rig.burnMeshes, s = strikeOf('heavy');
+    expect.ok(M && e.def.phaseId === 'throne' && !D.phases.field.mend && D.phases.knell.mend, 'the throne room mends him; the field does not');
+    const rebukes = ph => D.phases[ph].attacks.filter(id => D.attacks.find(a => a.id === id).when === 'struck').length;
+    expect.ok(rebukes('field') === 0 && rebukes('throne') === 1 && rebukes('knell') === 1, 'in the throne room he answers a string of blows');
+    const foe = { ...behind(e), id: 'foe' }, ally = { ...inFrontOf(e), id: 'ally' };   // two players, known by id as on the server
+    quiet(e); e.takeHit(s, foe);
+    const hurt = e.hp, wound = s.damage * M.share;
+    expect.near(e.mendPool, wound, 1e-6, 'a blow opens a wound of its share');
+    Game.render(1, STEP); expect.ok(seams[0].visible, 'his cracks light while it is open');
+    quiet(e); sim.seconds(M.delay - 0.4);
+    expect.near(e.hp, hurt, 1e-6, 'it holds a while after the last blow');
+    quiet(e); sim.seconds(0.4 + wound / (M.rate * e.def.hp) + 0.3);
+    expect.near(e.hp, hurt + wound, 1e-3, 'then the Ember closes it, and no more than it');
+    expect.ok(e.mendPool === 0, 'the wound is gone'); Game.render(1, STEP); expect.ok(!seams[0].visible, 'and his cracks go dark');
+    // Co-op: each player's wound is their own. The one who stops pressing loses it while the other keeps striking.
+    e.posture = 0; quiet(e); e.takeHit(s, foe);
+    for (let k = 0; k < 5; k++) { quiet(e); sim.seconds(0.9); e.posture = 0; quiet(e); e.takeHit(s, ally); }
+    const own = who => e.wounds.filter(w => w.who === who.id).reduce((t, w) => t + w.pool, 0);
+    expect.ok(own(foe) === 0 && own(ally) > 0, `the idle player's wound closed while the other's stays open (${own(foe)}, ${own(ally)})`);
+    let n = 0; while (e.mendPool < M.cap * e.def.hp - 1e-6 && n++ < 40) { e.posture = 0; quiet(e); e.takeHit(s, foe); }
+    e.posture = 0; quiet(e); e.takeHit(s, foe);
+    expect.near(e.mendPool, M.cap * e.def.hp, 1e-6, `at most ${M.cap} of his bar open at once`);
+    n = 0; while (e.state !== ES.BROKEN && n++ < 40) { e.takeHit(s, foe); if (e.state !== ES.BROKEN) quiet(e); }
+    expect.ok(e.state === ES.BROKEN && e.hp > 0, `broken after ${n} heavy blows`);
+    sim.step(); e.takeHit(strikeOf('light'), foe);
+    expect.ok(e.mendPool === 0, `a break seals his wounds, and blows on him broken open none (${e.mendPool})`);
   });
   test('Aldric: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
     Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);

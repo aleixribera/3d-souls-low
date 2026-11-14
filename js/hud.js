@@ -28,7 +28,7 @@ const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
-  eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
+  eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eMend: $('eHpMend'), lastMend: 0, mendClosing: 0, mendShown: true, eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
@@ -277,12 +277,17 @@ const hud = {
     this.eDmg.classList.toggle('show', this.tallyTimer > 0 && this.tally >= 1);
     if (!e) return;
     const eh = clamp01(e.hp / e.def.hp);
-    if (e !== this.target) { this.target = e; this.bossLag.set(eh); this.eName.textContent = e.def.name; this.lastBossHp = e.hp; this.tally = this.tallyTimer = 0; this.lastPosture = e.posture || 0; }
+    if (e !== this.target) { this.target = e; this.bossLag.set(eh); this.eName.textContent = e.def.name; this.lastBossHp = e.hp; this.tally = this.tallyTimer = 0; this.lastPosture = e.posture || 0; this.lastMend = 0; this.mendClosing = 0; }
     if (e.hp < this.lastBossHp - 1e-6) { this.tally += this.lastBossHp - e.hp; this.tallyTimer = H.tallyHold; this.eDmg.textContent = `−${Math.round(this.tally)}`; }
     this.lastBossHp = e.hp;
     if (this.eName.textContent !== e.def.name) this.eName.textContent = e.def.name;   // a boss's next phase renames it
     const trail = this.bossLag.update(eh, dt);
     this.eHp.style.width = eh * 100 + '%'; this.eTrail.style.width = trail * 100 + '%';
+    // A `mend` boss's open wounds (pass 75): the ember stretch past his bar's end the Ember will close; lit while it closes.
+    const mend = e.mendPool > 0 && e.alive() ? Math.min(1 - eh, e.mendPool / e.def.hp) : 0;
+    this.mendClosing = mend < this.lastMend - 1e-6 && mend > 0 ? H.mendLit : Math.max(0, this.mendClosing - dt); this.lastMend = mend;
+    if (mend > 0 || this.mendShown) { this.eMend.style.left = eh * 100 + '%'; this.eMend.style.width = mend * 100 + '%'; this.mendShown = mend > 0; }
+    this.eMend.classList.toggle('closing', this.mendClosing > 0);
     this.ePost.classList.toggle('hidden', !e.def.posture);
     if (e.def.posture) {
       const pr = e.posture / e.def.posture.max;

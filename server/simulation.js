@@ -690,6 +690,7 @@ globalThis.host = (() => {
       ...netTargetOf(e), grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,
       vx: e.vx, vy: e.vy, vz: e.vz, ...(e.def.resonance ? { resonance: Math.round(e.resonance * 100) / 100 } : null),   // pass 68: his bronze's glow and ring
+      ...(e.mendPool > 0 ? { mend: Math.round(e.mendPool) } : null),   // pass 75: Aldric's open wounds (his bar, his cracks)
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
     })), gates: world.gates.map(g => ({ id: g.id, open: g.open })),
       traps: world.traps.map(t => ({ id: t.id, state: t.state, timer: t.timer, dropTime: t.dropTime })),

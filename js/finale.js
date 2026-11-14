@@ -32,6 +32,7 @@ const finale = (() => {
     s.mesh.material.color.set(color).multiplyScalar(2.2); s.mesh.scale.setScalar(size);
     s.mesh.position.set(x, y, z); s.mesh.visible = true;
     s.vx = rand(-0.5, 0.5); s.vz = rand(-0.5, 0.5); s.vy = up * rand(0.6, 1.3); s.life = s.max = life * rand(0.7, 1.2);
+    return s;
   }
   function fireRing(x, y, z, from, to, time) {
     let r = rings.find(q => q.t >= q.time + 0.5);
@@ -216,7 +217,7 @@ const finale = (() => {
   }
 
   // ---- drawing, every frame -------------------------------------------------------------------------------------
-  const tmp = new V3();
+  const tmp = new V3(), mendSeen = new WeakMap();   // per boss: its open wounds as last drawn (render-only)
   function render(game, placed) {
     const dt = effectSlots.real(), t = performance.now() / 1000;   // the render delta (Game.renderDt), not a fixed 60th
     // Any boss that burns (a phase with `ignite`), in a level or a duel: glowing armour, embers on the blade and off him.
@@ -224,7 +225,18 @@ const finale = (() => {
       if (!isBoss(e) || !e.rig || e.asleep) continue;
       const hot = burning(e) && e.alive();
       if (e.rig.embers) e.rig.embers.visible = hot;
-      if (e.rig.burnMeshes) for (const m of e.rig.burnMeshes) m.visible = hot;   // a model's `burn` slots: the fire showing through
+      // A `mend` boss (pass 75, Aldric): his cracks light while a wound is open; as the Ember closes it, embers stream back
+      // into his chest from round him, and it breathes in once as the closing starts.
+      const pool = e.alive() && e.mendPool > 0 ? e.mendPool : 0, seen = mendSeen.get(e) || { pool: 0, lit: 0 };
+      const closing = pool > 0 && pool < seen.pool - 1e-6;
+      if (closing && seen.lit <= 0) play('emberMend', { x: e.x, y: e.y + 1.6, z: e.z });
+      seen.lit = closing ? F.mend.lit : Math.max(0, seen.lit - dt); seen.pool = pool; mendSeen.set(e, seen);
+      if (seen.lit > 0 && pool > 0 && Math.random() < F.mend.embers * dt) {
+        const a = rand(0, Math.PI * 2), r = rand(F.mend.from[0], F.mend.from[1]), y = e.y + rand(0.4, 2.6), cy = e.y + F.mend.chest * (e.def.scale || 1);
+        const sx = e.x + Math.sin(a) * r, sz = e.z + Math.cos(a) * r, q = ember(sx, y, sz, 0xff9a40, 0, F.mend.life, 0.16);
+        if (q) { q.life = q.max = F.mend.life; q.vx = (e.x - sx) / F.mend.life; q.vy = (cy - y) / F.mend.life; q.vz = (e.z - sz) / F.mend.life; }
+      }
+      if (e.rig.burnMeshes) for (const m of e.rig.burnMeshes) m.visible = hot || pool > 0;   // a model's `burn` slots: the fire showing through
       if (!hot || e.def.ignite === 'weapon') continue;   // (pass 63) only his weapon burns: no glowing armour, no embers off him
       const G = F.glow, k = G.base + G.pulse * Math.sin(t * G.rate);
       for (const m of e.rig.bodyMats) m.emissive.r += ((G.color >> 16) & 255) / 255 * k, m.emissive.g += ((G.color >> 8) & 255) / 255 * k, m.emissive.b += (G.color & 255) / 255 * k;

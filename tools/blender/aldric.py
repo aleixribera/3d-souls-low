@@ -5,7 +5,7 @@
 # (the model's posture leans him a little and bends the elbows in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().
 # Bones at rest: spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0); arms at x +-.38, y 1.55,
-# elbows y 1.25, wrists y .95 (the greatsword's grip runs along z through the right fist; the kit builds it); hips x +-.15,
+# elbows y 1.25, wrists y .95 (his greatsword runs along z through the right fist: the weapon bone, below); hips x +-.15,
 # y .90, knees .45. Cloth bones (they swing): loinF (0, .93, .19), loinB (0, .93, -.19), and the cloak's chain capeA
 # (0, 1.58, -.25), capeB (0, 1.16, -.25), capeC (0, .74, -.25), capeD (0, .38, -.25).
 # The look (the MODEL_DEFS brief): a soldier-king in ironbound plate gone dark bronze. A closed great helm with a dark eye
@@ -27,7 +27,8 @@ from mathutils import Vector
 
 begin({'plate': (0.24, 0.2, 0.15), 'gilt': (0.62, 0.5, 0.26), 'dark': (0.16, 0.15, 0.15), 'iron': (0.3, 0.26, 0.23),
        'mail': (0.3, 0.31, 0.33), 'leather': (0.2, 0.18, 0.16), 'tabard': (0.2, 0.26, 0.36), 'stripe': (0.56, 0.45, 0.22),
-       'cloak': (0.5, 0.49, 0.48), 'cloakHem': (0.3, 0.28, 0.27), 'void': (0.02, 0.02, 0.02), 'burn': (1.0, 0.45, 0.12)},
+       'cloak': (0.5, 0.49, 0.48), 'cloakHem': (0.3, 0.28, 0.27), 'void': (0.02, 0.02, 0.02), 'burn': (1.0, 0.45, 0.12),
+       'blade': (0.55, 0.55, 0.57)},
       prefix='aldric:')
 
 SX, EL, WR = .38, 1.25, .95
@@ -372,5 +373,51 @@ for s, n in ((1, 'L'), (-1, 'R')):
         blob(bm, (hx, .045, .21), .043, (1.0, .75, 1.25), 1)
         blob(bm, (hx, .048, -.057), .052, (1.0, .9, .8), 1)
     soft(f'knee{n}__plate.1', sabaton, 90, voxel=.008)
+
+# ==== THE GAOLER'S BLADE (pass 75, on the weapon bone; it replaces the kit's greatsword) ===================================
+# His own: a broad, plain soldier's greatsword, the blade he carried as a just king, with the gaol forged onto its hilt. The
+# blade runs along +z through the right fist (x -SX, y WR - .05: the gauntlet's grip line), its flat facing x and its edges
+# up and down in y (an edge leads every cut). A dark fuller down each face; a squared iron ricasso; a heavy iron cross
+# whose two ends are manacle cuffs, a shackle forged onto each side of the guard; a long leather grip for both hands (the
+# left closes on it below the right, `grip.span`); and for a pommel the Oath's lock, a gilt padlock whose shackle is locked
+# round the grip's end, a keyhole in each face. The game's 1.75x makes it 3.0 m long, 2.4 of it blade.
+BX, BY = -SX, WR - .05
+def blade_rows(bm, rows, sides_fn):
+    """A lofted blade: rows (z, half-width w, half-thickness t), each a ring of points from sides_fn; a point at the end."""
+    rings = [[bm.verts.new(G(*p)) for p in sides_fn(z, w, t)] for z, w, t in rows[:-1]]
+    bridge(bm, rings, True, False)
+    bm.faces.new(list(reversed(rings[0])))
+    tip = bm.verts.new(G(BX, BY, rows[-1][0])); r = rings[-1]
+    for k in range(len(r)): bm.faces.new((r[k], r[(k + 1) % len(r)], tip))
+def hexa(z, w, t):   # a flat face with a bevel to each edge: the edge, the bevel, the flat, the bevel, the other edge
+    return [(BX, BY + w, z), (BX + t * .9, BY + w * .45, z), (BX + t * .9, BY - w * .45, z), (BX, BY - w, z),
+            (BX - t * .9, BY - w * .45, z), (BX - t * .9, BY + w * .45, z)]
+BLADE = [(.16, .06, .017), (.4, .058, .016), (.8, .054, .015), (1.1, .048, .013), (1.25, .036, .011), (1.33, .018, .008), (1.38, 0, 0)]
+hard('weapon__blade', lambda bm: blade_rows(bm, BLADE, hexa))
+def fuller(bm):   # a dark groove down each face, from the ricasso to two thirds of the way up
+    for s in (1, -1):
+        rows = [(.18, .013), (.6, .012), (.95, .009), (1.05, .0)]
+        L = [bm.verts.new(G(BX + s * .0165, BY + w, z)) for z, w in rows]; R = [bm.verts.new(G(BX + s * .0165, BY - w, z)) for z, w in rows]
+        for i in range(len(rows) - 1):
+            if rows[i + 1][1] > 0: bm.faces.new((L[i], L[i + 1], R[i + 1], R[i]))
+            else: bm.faces.new((L[i], L[i + 1], R[i]))
+hard('weapon__dark', fuller, outward=lambda c: (BX, BY, c.z))
+def hilt_iron(bm):
+    tube(bm, [(BX, BY, .06), (BX, BY, .16)], [.028, .026], 4)   # the squared ricasso
+    tube(bm, [(BX, BY - .19, .062), (BX, BY - .09, .066), (BX, BY, .068), (BX, BY + .09, .066), (BX, BY + .19, .062)],
+         [.019, .022, .025, .022, .019], 6)                          # the cross
+    for s in (1, -1):                                                # a manacle cuff at each end, its hinge knuckle outside
+        loop(bm, [(BX + math.sin(k / 10 * math.tau) * .042, BY + s * (.235 + math.cos(k / 10 * math.tau) * .042), .06) for k in range(10)], .011, 5)
+        blob(bm, (BX, BY + s * .283, .06), .014, (1.2, .9, 1.2), 1)
+    for z in (.02, -.29): tube(bm, [(BX, BY, z - .012), (BX, BY, z + .012)], [.027, .027], 8)   # the grip's ferrules
+hard('weapon__iron', hilt_iron)
+hard('weapon__leather', lambda bm: tube(bm, [(BX, BY, .03 - k * .032) for k in range(11)],
+                                        [.024 if k % 2 else .021 for k in range(11)], 7))   # bound in ridged leather
+def oath_lock(bm):   # the pommel: a gilt padlock, its shackle locked round the grip's end
+    blob(bm, (BX, BY, -.36), .048, (.62, 1.15, .95), 1)
+    arc = [(BX, BY + math.cos(k / 6 * math.pi) * .03, -.31 + math.sin(k / 6 * math.pi) * .028) for k in range(7)]
+    tube(bm, [(BX, BY + .03, -.33)] + arc + [(BX, BY - .03, -.33)], [.008] * 9, 5)
+hard('weapon__gilt', oath_lock)
+hard('weapon__void', lambda bm: [blob(bm, (BX + s * .029, BY, -.365), .011, (.3, 1.0, 1.6), 1) for s in (1, -1)])   # a keyhole in each face
 
 result = tally()

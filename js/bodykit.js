@@ -1638,7 +1638,7 @@ const KIT = (() => {
     if ('grip' in M) {   // (pass 53) a two-handed haft on a weapon built in Blender
       const G = M.grip, n = v => typeof v === 'number' && Number.isFinite(v);
       if (!(G && Array.isArray(G.span) && G.span.length === 2 && G.span.every(n) && G.span[0] < G.span[1] && Array.isArray(G.rest) && G.rest.length === 3 && G.rest.every(n) && ['y', 'gap', 'fist'].every(k => !(k in G) || n(G[k])))) bad("grip needs span [from, to] (where the left hand may hold the haft, along it from the fist), rest [pitch, yaw, roll], and optional y (the haft's line off the wrist, in the haft's frame), fist (the fist's middle below the wrist) and gap.");
-      else if (('fist' in G && !(G.fist >= 0 && G.fist < 0.2)) || ('gap' in G && !(G.gap >= 0 && G.gap < G.span[1]))) bad('grip.fist must be from 0 to 0.2 and grip.gap at least 0 and less than the end of span.');
+      else if (('fist' in G && !(G.fist >= 0 && G.fist < 0.2)) || ('gap' in G && !(G.gap >= 0 && G.gap < Math.max(G.span[1], -G.span[0])))) bad('grip.fist must be from 0 to 0.2 and grip.gap at least 0 and less than the far end of span (either side of the fist).');
       if (!M.parts.some(o => o.weapon)) bad('grip needs a weapon built into the figure (weapon: true parts).');
       if (!(M.posture && M.posture.elbowR && M.posture.elbowL)) bad('grip needs posture.elbowR and posture.elbowL (Rig.holdHaft turns the forearms from them every frame).');
     }

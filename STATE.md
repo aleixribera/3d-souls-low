@@ -4,9 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 74): item 4, Giant pass 2: irons, fused skulls, own club. Strips `docs/scorecard/giant-moves.jpg`;
-  judge 61, 63, 67 vs Hollis 71 (gap: `BACKLOG.md`). It, the Bell Warden, the Pillager Captain, the King's Blade,
-  Agathe, the Kindling Tree: **awaiting Aleix**. Next: the next Ashmere boss.
+- Track A (pass 75): item 4, Aldric pass 1: own greatsword, poses, the Ember's mend. Strips
+  `docs/scorecard/aldric-moves.jpg`; judge 75, 77 vs Hollis 82 (gap: `BACKLOG.md`). He, the Giant, the Bell Warden,
+  the Pillager Captain, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Next: the next Ashmere boss.
 - Track B (pass 73): item 11 done (pass 1). Bots (`docs/scorecard/run-shape-pass73.txt`): no kit median fight 10,
   survival kit 17, posture kit 14 (short of 20); breaks 27-43 s; swift 1 in 3.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.

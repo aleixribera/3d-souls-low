@@ -108,6 +108,8 @@ class Enemy {
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
     this.resonance = 0;                              // a def's `resonance` (pass 68): how full of the blows it took it is
     this.resonanceRest = 0;                          // ... and how long after its answer before blows fill it again
+    this.mendPool = 0;                               // a def's `mend` (pass 75): the open wounds the Ember will close, in hp
+    this.wounds = [0, 1, 2, 3].map(() => ({ who: null, pool: 0, since: 0 }));   // ... one per attacker, so each closes on its own
     this.crack = 0;                                  // visual: posture-break flash
     this.recoil = 0; this.recoilF = 0; this.recoilS = 0;   // visual: knockback lean in local axes
     this.seed = rand(0, 1000); this.tempo = rand(0.85, 1.2);   // idle personality offsets
@@ -148,7 +150,7 @@ class Enemy {
     this.phase = i;
     this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
     if (this.health !== 1) this.def.hp = Math.round(this.def.hp * this.health);
-    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0; this.resonance = 0;   // a new phase rings from silence
+    this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0; this.resonance = 0; this.clearWounds();   // a new phase rings from silence, unwounded
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
   }
@@ -305,6 +307,22 @@ class Enemy {
     // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a break empties it (the opening is yours).
     if (this.resonanceRest > 0) this.resonanceRest -= dt;
     if (d.resonance) this.resonance = this.sinceBreak === 0 ? 0 : this.struckTime > d.resonance.delay ? Math.max(0, this.resonance - d.resonance.decay * dt) : this.resonance;
+    // A def's `mend` (pass 75, Aldric): a break or an execution seals his open wounds; once the one who opened a wound has
+    // landed no blow for `delay` s the Ember closes it again, `rate` of his bar a second in all. Each attacker's wound is
+    // its own, so in co-op the one who stops pressing loses theirs while the others keep theirs open.
+    const Mn = d.mend;
+    if (Mn && this.mendPool > 0 && this.wounds.some(w => w.pool > 0)) {   // a client's pool comes from the server's snapshot
+      if (this.sinceBreak === 0) this.clearWounds();
+      else if (this.alive()) {
+        let budget = Mn.rate * d.hp * dt, sum = 0;
+        for (const w of this.wounds) {
+          w.since += dt;
+          if (w.pool > 0 && w.since > Mn.delay && budget > 0) { const h = Math.min(w.pool, budget, d.hp - this.hp); this.hp += h; w.pool -= h; budget -= h; }
+          sum += w.pool;
+        }
+        this.mendPool = sum;
+      }
+    }
     if (this.state === ES.EXECUTED) { this.vx = this.vz = this.kx = this.kz = 0; return; }   // held on the blade (js/execution.js)
     if (this.training) { this.updateTraining(dt); return; }
     if (this.state === ES.GONE) return;
@@ -842,6 +860,9 @@ class Enemy {
   }
 
   // One strike from `from`. Returns { broke (posture), died }.
+  // Seal every open wound (a break, an execution, a new phase).
+  clearWounds() { for (const w of this.wounds) { w.pool = 0; w.who = null; } this.mendPool = 0; }
+
   takeHit(strike, from) {
     this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
@@ -883,6 +904,20 @@ class Enemy {
     // broken: the riposte and the execution are yours). Full, its `when: 'resonant'` answer is due (REACTIONS).
     const R = def.resonance;
     if (R && this.state !== ES.PARRIED && this.state !== ES.BROKEN && !(this.resonanceRest > 0)) this.resonance = Math.min(R.max, this.resonance + (R.breakers.includes(strike.attackId) ? R.heavy : R.light));
+    // A def's `mend` (pass 75): `share` of the blow opens a wound the Ember will close (at most `cap` of the bar open at
+    // once), except while he lies open (parried, broken): the riposte and the execution stay.
+    const Mn = def.mend;
+    // Whose wound: a body's own, by its id where it has one (the server rebuilds a player's proxy at every pose), else the
+    // body itself (the solo player); a bolt's or a power's `from` is a new point each time, so those share one wound.
+    const who = !Mn || !from ? null : from.id != null ? from.id : 'hp' in from ? from : null;
+    if (Mn && this.state !== ES.PARRIED && this.state !== ES.BROKEN && this.hp > 0) {
+      let w = this.wounds.find(o => o.who === who && o.pool > 0) || this.wounds.find(o => o.pool <= 0);
+      if (!w) w = this.wounds.reduce((a, b) => (b.since > a.since ? b : a));   // all four open: the one left alone longest
+      const add = Math.max(0, Math.min(Mn.cap * def.hp, this.mendPool + strike.damage * Mn.share, def.hp - this.hp) - this.mendPool);
+      w.who = who; w.pool += add; w.since = 0; this.mendPool += add;
+    } else if (Mn) {   // a riposte opens none but keeps the striker's own wound open
+      const w = this.wounds.find(o => o.who === who && o.pool > 0); if (w) w.since = 0;
+    }
     if (!this.def.rooted) { this.kx += kx; this.kz += kz; }   // a rooted phase (pass 50) is not knocked back either
     if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };   // a boss with another bar, or retreating
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
