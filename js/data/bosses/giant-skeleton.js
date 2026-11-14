@@ -25,7 +25,11 @@
 // A spectral giant: a huge domed skull hung low before the chest on a long neck, a crack over the crown and the jaw
 // hanging open; a barrel of ribs (three snapped) on a spine that burns white (`core`); long knuckled bones, a long clawed
 // left hand, a fist of bone round the club. Pass 72: the gaol on it (iron cuffs and broken chain), and the heat that fills
-// its ribs once it is gathered (`heat`, hidden until the second phase reveals it).
+// its ribs once it is gathered (`heat`, hidden until the second phase reveals it). Pass 74: the gaol made heavy enough to
+// read in the fight: a manacle on the claw with a broken chain about 1.2 m long that swings from it (`chainClaw`, a
+// `hang`), and an iron collar whose chain lies down its back; the skulls of four of the other dead fused into its pelvis,
+// shoulders and back, and its club built with it: a great thigh bone bound in gaol iron, cell nails through its knuckles and
+// another skull fused to its end.
 MODEL_DEFS.giantSkeleton = {
   extends: 'hollowBase', faction: 'oldbones', budget: 'boss', fit: 1.04, limbSides: 8, rim: 2.4,
   proportions: { shoulderX: 0.34, torsoW: 0.16, torsoD: 0.12, armR: 0.072, legR: 0.08, headR: 0.29, handR: 0.06, footLen: 0.32 },
@@ -41,22 +45,28 @@ MODEL_DEFS.giantSkeleton = {
     heat: { glow: 0xffb060 },
     eye: { glow: 0xc8d8ff },
   },
+  bones: { chainClaw: { parent: 'elbowL', at: [0.088, -0.36, 0.004] } },   // the claw's chain hangs plumb from its manacle's ring
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   parts: Object.entries({
-    head: ['bone', 'bone.1', 'bone.2', 'void', 'core', 'dark'], neck: ['core', 'dark'],
-    chest: ['core', 'dark', 'dark.1', 'bone', 'bone.1', 'bone.2', 'heat'], spin: ['bone', 'bone.1', 'bone.2'],
+    head: ['bone', 'bone.1', 'bone.2', 'void', 'core', 'dark'], neck: ['core', 'dark', 'iron'],
+    chest: ['core', 'dark', 'dark.1', 'bone', 'bone.1', 'bone.2', 'bone.3', 'void', 'heat'], spin: ['bone', 'bone.1', 'bone.2', 'bone.3', 'void'],
     armL: ['bone'], armR: ['bone'], elbowL: ['bone', 'bone.1', 'iron'], elbowR: ['bone', 'bone.1', 'iron'],
-    legL: ['bone'], legR: ['bone'], kneeL: ['bone', 'bone.1', 'iron'], kneeR: ['bone', 'bone.1'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
-  weapon: { use: 'boneClub', rest: 0.5, slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },   // rest: the club's head on the floor, not sunk in it
+    legL: ['bone'], legR: ['bone'], kneeL: ['bone', 'bone.1', 'iron'], kneeR: ['bone', 'bone.1'], chainClaw: ['iron'],
+    weapon: ['bone', 'bone.1', 'void', 'iron'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+    ...(bone === 'weapon' ? { weapon: true } : {}) }))),
+  weapon: null,            // pass 74: its club is part of the figure (the `weapon: true` pieces above): a gaol-ironed thigh bone
+  weaponRest: 0.5,         // the club's head on the floor, not sunk in it
   hidden: ['heat'],        // the heat in its ribs: shown by the gathered phase's `reveal`
   // Where a blow that is not the club's shows its wind-up glow (a hit's `tell`): the claw, and each foot.
   tells: { claw: { bone: 'elbowL', at: [0, -0.5, 0.02] }, footL: { bone: 'kneeL', at: [0, -0.38, 0.06] }, footR: { bone: 'kneeR', at: [0, -0.38, 0.06] } },
-  eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.105, at: [0, 0.265, 0.2] },
+  eyes: { color: 0xff9a48, size: 0.02, spread: 0.105, at: [0, 0.265, 0.19] },   // pass 74: embers deep in the sockets (the heat that raised it), not white discs
   aura: { color: 0xcfdcff, size: 3.6, opacity: 0.16 },
   anim: {
     idle: { breathRate: 0.6, breath: 0.02, headDrift: 0.1, sway: 0.025, twitch: 0 }, walk: { twist: 0.12, roll: 0.06, headNod: 0.07, elbow: 0.3, drag: 0.35 },
     flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1.2, slump: 1 },
+    cloth: [],   // no loincloth (its own `bones` replace hollowBase's loin bones)
+    hang: [{ bone: 'chainClaw', k: 14, damp: 1.6, gain: 0.06 }],   // a heavy chain about 1.2 m long: slow, wide swings
   },
 };
 

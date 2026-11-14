@@ -1319,14 +1319,6 @@ const KIT = (() => {
         wrap: [...wraps, streamerA, streamerB],
       };
     },
-    // A club made of one fused thigh bone: a long shaft, a great knuckled end, vertebra spikes.
-    boneClub() {
-      const shaft = uvScale(xf(KIT_GEO.Cylinder(0.06, 0.1, 1.1, 6), 0, 0, 0.45, Math.PI / 2, 0, 0), 1, 2);
-      const head = roughen(xf(sphere(0.3, 8, 6), 0, 0, 1.2, 0, 0, 0, 1, 1, 1.25), 0.05, 77);
-      const knobs = [xf(sphere(0.16, 6, 4), 0.2, 0.12, 1.0), xf(sphere(0.15, 6, 4), -0.2, 0.1, 1.15), xf(sphere(0.13, 6, 4), 0.0, -0.22, 1.05)];
-      const spikes = [[0.22, 0.2, 1.3, 0.6], [-0.22, 0.2, 1.35, -0.6], [0, 0.32, 1.1, 0], [0.1, -0.3, 1.3, 3]].map(([x, y, z, a]) => xf(KIT_GEO.Cone(0.05, 0.22, 4), x, y, z, 0, 0, a));
-      return { blade: [head, ...knobs, ...spikes], grip: [shaft], guard: [roughen(xf(sphere(0.09, 5, 4), 0, 0, -0.12), 0.02, 79)] };
-    },
     // A halberd: a long haft, an axe blade with a hooked beak behind and a spike on top.
     halberd() {
       const haft = xf(tube(0.03, 0.03, 2.5, 5), 0, 0, 0.55, Math.PI / 2, 0, 0);
@@ -1640,6 +1632,7 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
       bad('hum needs a bone, at [x, y, z], a color and a size above 0.');   // pass 68
+    for (const c of M.anim?.cloth || []) if (!known(c.bone)) bad(`anim.cloth names unknown bone "${c.bone}" (a model's own \`bones\` replace the ones it extends).`);
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
     if ('grip' in M) {   // (pass 53) a two-handed haft on a weapon built in Blender

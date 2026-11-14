@@ -6,18 +6,22 @@
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().
 # Bones at rest: spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0); arms at x +-.34, y 1.55;
 # the left arm is 30% longer (elbow y 1.16, wrist .77) and hangs as a claw, the right is the club arm (elbow 1.25, wrist
-# .95; the bone club's haft runs along z through the right fist, and the kit builds it); hips x +-.15, y .90, knees .45.
+# .95; the club's haft runs along z through the right fist, built here since pass 74); hips x +-.15, y .90, knees .45.
 # The look (the MODEL_DEFS brief): a huge domed skull with deep sockets under a heavy brow, a crack across the crown, a
 # long jaw hanging open on blunt teeth; a deep barrel of ribs, three of them snapped, on a spine that burns white from
 # the skull's base down into the pelvis (`core`, a glow slot); heavy clavicles and shoulder blades; a broad pelvis;
 # long bones with knuckled heads and condyles, radius and ulna, tibia and fibula; a long clawed left hand and a right
-# fist of bone closed round the club; splayed bony feet. Boss budget: 14,000 triangles with the kit's bone club.
+# fist of bone closed round the club; splayed bony feet. Boss budget: 14,000 triangles (a soft budget; pass 74 sits at ~14,800).
 # Pass 72: the gaol on it (iron cuffs on both wrists and the left ankle, a broken chain off the ankle and the claw's wrist,
 # `iron`), and the heat that fills its ribs in its second phase (`heat`, a glow slot hidden until then).
+# Pass 74 (the judge's gap: the gaol read as thin bracelets): a heavy manacle on the claw with a ~1.2 m broken chain on its
+# own bone (chainClaw at (SX+.088, WRL+.03, .004), anim.hang), and an iron collar whose chain lies down the back; the
+# skull, jaw, ribs and heat gave up triangles for them. Its club is built here now (a gaol-ironed thigh bone, a skull fused on
+# its end; the kit's lumpy club goes), and four skulls of the other dead are fused into its pelvis, shoulders and back.
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
-from snow_lib import G, blob, new_obj
+from snow_lib import G, blob, new_obj, box
 from figure_lib import *
 import bpy, bmesh
 from mathutils import Vector
@@ -74,7 +78,7 @@ def skull(bm):
         knob(bm, (s * .16, 1.885, .17), 1, (.055, .04, .06), 2)                                           # the cheekbone
         tube(bm, [(s * .17, 1.885, .15), (s * .215, 1.89, .05), (s * .21, 1.88, -.04)], [.026, .022, .02], 6)   # its arch
         knob(bm, (s * .2, 1.83, -.05), 1, (.035, .05, .03), 2)                                            # the jaw hinge's knob
-sk = soft('head__bone', skull, 1850, voxel=.007, noise=.0025)   # pass 72: 2100 -> 1850, room for the irons
+sk = soft('head__bone', skull, 1200, voxel=.007, noise=.0025)   # pass 72: 2100 -> 1850, pass 74: 1200, room for the irons
 carve(sk, SOCK + [NOSE])
 def mandible(bm):   # hanging open: the chin dropped and pushed forward
     for s in (-1, 1):
@@ -84,7 +88,7 @@ def mandible(bm):   # hanging open: the chin dropped and pushed forward
         knob(bm, (s * .19, 1.845, -.05), 1, (.025, .032, .03), 2)
         knob(bm, (s * .165, 1.69, -.0), 1, (.03, .035, .035), 2)   # the angle of the jaw
     knob(bm, (0, 1.672, .205), 1, (.05, .04, .03), 2)
-soft('head__bone.1', mandible, 700, voxel=.007, noise=.002)
+soft('head__bone.1', mandible, 440, voxel=.007, noise=.002)
 def teeth(bm):
     for i in range(-4, 5):   # upper row: blunt, a few missing
         if i in (-3, 2): continue
@@ -152,7 +156,7 @@ def rib_point(s, i, th):
 def ribs(bm):
     for i in range(len(RIBS)):
         for s in (-1, 1):
-            e = rib_end(s, i); n = 9
+            e = rib_end(s, i); n = 6   # pass 74: 9 -> 6 segments, room for the collar
             pts = [rib_point(s, i, math.pi - .12 - (math.pi - .12 - e) * k / n) for k in range(n + 1)]
             r = .017 + .004 * math.sin(i / 8 * math.pi)
             rad = [r * .8] + [r] * (n - 1) + [r * (.25 if (s, i) in BROKEN else .75)]
@@ -289,8 +293,8 @@ for s, n in ((1, 'L'), (-1, 'R')):
 def cuff(bm, c, r, h, sides=8):
     """An iron band round a limb at c (axis y): a rolled rim top and bottom, the band between, and the staple."""
     c = V(*c)
-    loop(bm, [c + V(r * math.cos(a), h / 2, r * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .012, 4)
-    loop(bm, [c + V(r * math.cos(a), -h / 2, r * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .012, 4)
+    loop(bm, [c + V(r * math.cos(a), h / 2, r * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .012, 3)
+    loop(bm, [c + V(r * math.cos(a), -h / 2, r * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .012, 3)
     ring = lambda rr, y: [bm.verts.new(G(*(c + V(rr * math.cos(k / sides * math.tau), y, rr * math.sin(k / sides * math.tau))))) for k in range(sides)]
     ob_, ot, ib, it = ring(r * .98, -h / 2), ring(r * .98, h / 2), ring(r * .84, -h / 2), ring(r * .84, h / 2)
     for k in range(sides):   # the band: a closed ring of iron between the rims (outside, inside, top, bottom)
@@ -300,29 +304,137 @@ def cuff(bm, c, r, h, sides=8):
 def link(bm, c, d, u, L=.032, W=.019, wire=.0075):
     c, d, u = V(*c), V(*d).normalized(), V(*u).normalized()
     loop(bm, [c + d * (L * math.cos(a)) + u * (W * math.sin(a)) for a in [k / 8 * math.tau for k in range(8)]], wire, 3)
-def chain(bm, pts, wire=.0075):
+def chain(bm, pts, wire=.0075, W=.018):
     """Links along a polyline, each turned a quarter from the last; the last one broken open."""
     for i in range(len(pts) - 1):
         a, b = V(*pts[i]), V(*pts[i + 1]); d = b - a
         side = d.cross(V(0, 1, 0)) if abs(d.normalized().y) < .9 else d.cross(V(1, 0, 0))
         u = side if i % 2 else d.cross(side)
-        link(bm, (a + b) / 2, d, u, d.length * .62, .018, wire)
-def irons(where, c, r, h, links):
+        link(bm, (a + b) / 2, d, u, d.length * .62, W, wire)
+def irons(where, c, r, h, links, wire=.0075, W=.018):
     def build(bm):
         cuff(bm, c, r, h)
-        if links: chain(bm, links)
+        if links: chain(bm, links, wire, W)
     hard(where, build)
-# the claw's wrist: a cuff and three links hanging off its staple
-irons('elbowL__iron', (SX, WRL + .085, -.004), .058, .055,
-      [(SX, WRL + .045, .056), (SX + .01, WRL + .0, .07), (SX + .016, WRL - .05, .07), (SX + .02, WRL - .1, .062)])
+# Pass 74: the claw's manacle, heavy enough to read at fighting distance (the judge: "thin bracelets"), and the broken
+# chain that hangs from its ring on its own bone (`chainClaw`, anim.hang), swinging when the hand moves.
+MAN = (SX, WRL + .1, .004)                     # the manacle round the claw's wrist
+RING = (SX + .088, WRL + .06, .004)            # its ring, under the lock on the outer side; chainClaw hangs from its foot
+CHAIN_TOP = (RING[0], RING[1] - .03, RING[2])  # = the chainClaw bone (elbowL at (SX, ELL, 0)): at (.088, -.36, .004)
+def manacle(bm):
+    c = V(*MAN); r, h, sides = .074, .13, 10
+    for y in (h / 2, -h / 2, 0):              # three heavy rolled rims: top, bottom, and a ridge round the middle
+        loop(bm, [c + V(r * 1.02 * math.cos(a), y, r * 1.02 * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .017 if y else .011, 3)
+    ring = lambda rr, y: [bm.verts.new(G(*(c + V(rr * math.cos(k / sides * math.tau), y, rr * math.sin(k / sides * math.tau))))) for k in range(sides)]
+    ob_, ot, ib, it = ring(r, -h / 2), ring(r, h / 2), ring(r * .8, -h / 2), ring(r * .8, h / 2)
+    for k in range(sides):
+        j = (k + 1) % sides
+        for q in ((ob_[k], ob_[j], ot[j], ot[k]), (ib[j], ib[k], it[k], it[j]), (ot[k], ot[j], it[j], it[k]), (ib[k], ib[j], ob_[j], ob_[k])): bm.faces.new(q)
+    tube(bm, [c + V(-r * .2, -h * .45, -r * 1.06), c + V(-r * .2, h * .45, -r * 1.06)], [.02, .02], 6)   # the hinge, behind
+    x0 = c.x + r * .95                                                       # the lock: a block on the outer side
+    box(bm, x0, x0 + .04, c.y - .05, c.y + .04, c.z - .035, c.z + .035)
+    loop(bm, [V(*RING) + V(.028 * math.cos(a), .028 * math.sin(a), 0) for a in [k / 8 * math.tau for k in range(8)]], .009, 4)   # its ring
+hard('elbowL__iron', manacle)
+def claw_chain(bm):   # ~1.2 m in the game (scale 2.3): ten heavy links falling plumb from the ring, the last one torn open
+    top = V(*CHAIN_TOP); n, step = 10, .052
+    for i in range(n):
+        a, b = top + V(0, -step * i, 0), top + V(0, -step * (i + 1), 0); d = b - a
+        u = V(1, 0, 0) if i % 2 else V(0, 0, 1)
+        L, W = d.length * .64, .03
+        pts = [(a + b) / 2 + d.normalized() * (L * math.cos(t)) + u * (W * math.sin(t)) for t in [k / 8 * math.tau for k in range(8)]]
+        if i == n - 1: pts = pts[:6]                                           # torn: the link's foot is gone
+        if i == n - 1:
+            for j in range(len(pts) - 1): tube(bm, [pts[j], pts[j + 1]], [.015, .015], 3)
+        else: loop(bm, pts, .015, 3)
+hard('chainClaw__iron', claw_chain)
 irons('elbowR__iron', (-SX, WRR + .07, .004), .056, .05, None)   # the club arm's cuff, its chain long gone
 # the left ankle: a cuff and a broken chain trailing back along the floor
 irons('kneeL__iron', (.15 + .02, .15, -.004), .07, .06,
-      [(.17, .1, .066), (.18, .04, .095), (.19, .016, .045), (.2, .015, -.02), (.21, .015, -.085)])
+      [(.17, .1, .066), (.18, .04, .095), (.19, .02, .045), (.2, .02, -.025), (.21, .02, -.095), (.22, .02, -.165), (.235, .02, -.235),
+       (.25, .02, -.305), (.27, .02, -.375)], .011, .026)   # pass 74: longer and heavier, dragging behind it on the floor
+# Pass 74: the gaol's collar round the neck (a thick iron band, its hasp at the throat, the hinge and a ring at the nape),
+# and the chain that was fixed to that ring, lying down the back beside the spine and broken off at the left shoulder
+# blade. All of it rides the neck, so the chain never parts from the ring; it is drawn where the chest's back will be once
+# the posture has pitched the neck .75 further forward than the chest (`on_back`), so in the game it lies on the back.
+COL = (0, 1.632, -.105)
+NECK_P, NECK_PITCH = V(0, 1.62, 0), .75
+def on_back(p):
+    """A point drawn in the chest's frame, moved to the neck's rest frame (undoing the neck's extra posture pitch)."""
+    q = V(*p) - NECK_P; c, s_ = math.cos(-NECK_PITCH), math.sin(-NECK_PITCH)
+    return NECK_P + V(q.x, q.y * c - q.z * s_, q.y * s_ + q.z * c)
+def collar(bm):
+    c = V(*COL); r, h, sides = .122, .075, 12
+    for y in (h / 2, -h / 2):
+        loop(bm, [c + V(r * 1.02 * math.cos(a), y, r * 1.02 * math.sin(a)) for a in [k / sides * math.tau for k in range(sides)]], .015, 3)
+    ring = lambda rr, y: [bm.verts.new(G(*(c + V(rr * math.cos(k / sides * math.tau), y, rr * math.sin(k / sides * math.tau))))) for k in range(sides)]
+    ob_, ot, ib, it = ring(r, -h / 2), ring(r, h / 2), ring(r * .86, -h / 2), ring(r * .86, h / 2)
+    for k in range(sides):
+        j = (k + 1) % sides
+        for q in ((ob_[k], ob_[j], ot[j], ot[k]), (ib[j], ib[k], it[k], it[j]), (ot[k], ot[j], it[j], it[k]), (ib[k], ib[j], ob_[j], ob_[k])): bm.faces.new(q)
+    box(bm, -.03, .03, c.y - .05, c.y + .05, c.z + r * .96, c.z + r * 1.2)                        # the hasp at the throat
+    tube(bm, [c + V(0, -h * .5, -r * 1.05), c + V(0, h * .5, -r * 1.05)], [.02, .02], 6)          # the hinge at the nape
+    nape = c + V(0, 0, -r * 1.05 - .035)
+    loop(bm, [nape + V(0, .03 * math.sin(a), -.03 * math.cos(a)) for a in [k / 8 * math.tau for k in range(8)]], .01, 4)   # the nape's ring
+    # the chain, in the chest's frame: from the ring (where the posture takes it, ~(0, 1.81, -.19)) over onto the back
+    pts = [(0, 1.79, -.205), (.01, 1.73, -.225), (.025, 1.665, -.24), (.04, 1.6, -.248), (.055, 1.535, -.248), (.075, 1.47, -.244),
+           (.105, 1.415, -.238), (.145, 1.38, -.23), (.19, 1.36, -.222)]
+    pts = [on_back(p) for p in pts]
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]; d = b - a
+        out = (a - NECK_P); out = V(0, out.y, out.z).normalized()       # away from the body, roughly
+        u = out if i % 2 else d.cross(out).normalized()
+        L, W = d.length * .64, .026
+        lk = [(a + b) / 2 + d.normalized() * (L * math.cos(t)) + u * (W * math.sin(t)) for t in [k / 8 * math.tau for k in range(8)]]
+        if i == len(pts) - 2:
+            for j in range(5): tube(bm, [lk[j], lk[j + 1]], [.013, .013], 3)                         # torn open
+        else: loop(bm, lk, .013, 3)
+hard('neck__iron', collar)
+# ---- pass 74: the gaol's dead, made one (the judge: "one ordinary skeleton"): skulls of the others fused into it ---------------
+def skull_pts(c, r, fwd, up):
+    """A small skull's frame: centre c, size r, facing fwd, crown toward up. Returns P(local x, y, z) -> game point."""
+    f = V(*fwd).normalized(); u = V(*up); u = (u - f * u.dot(f)).normalized(); x = u.cross(f)
+    return lambda lx, ly, lz: V(*c) + (x * lx + u * ly + f * lz) * r
+def small_skull(bm, P, r):
+    blob(bm, P(0, .15, -.05), r, (1, .92, 1.08), 2)              # the dome
+    blob(bm, P(0, -.35, .35), r * .62, (1, .7, .8), 1)            # the face and upper jaw
+    for sx in (-1, 1): blob(bm, P(sx * .45, -.3, .2), r * .25, (1, .8, 1), 1)   # cheekbones
+    blob(bm, P(0, -.85, .3), r * .42, (1.1, .5, .8), 1)           # the jaw, half sunk
+def small_hollows(bm, P, r):
+    for sx in (-1, 1): blob(bm, P(sx * .33, -.15, .74), r * .22, (1, .85, .6), 0)   # sockets
+    blob(bm, P(0, -.45, .82), r * .1, (1, 1.3, .6), 0)                              # the nose
+SK_PELVIS = (skull_pts((.1, .85, .14), .1, (.35, -.1, 1), (0, 1, 0)), .1)            # sunk in the pelvis, front left, looking out
+SK_SHOULDER = (skull_pts((-.19, 1.6, .09), .1, (-.5, .35, 1), (0, 1, -.2)), .1)       # on the right clavicle, under the club arm
+SK_LSHOULDER = (skull_pts((.25, 1.67, .03), .11, (.6, .3, 1), (.2, 1, -.1)), .11)     # on top of the left shoulder, looking out
+SK_BACK = (skull_pts((-.1, 1.36, -.26), .1, (-.3, 0, -1), (0, 1, 0)), .1)              # between the shoulder blades, looking back
+soft('spin__bone.3', lambda bm: small_skull(bm, *SK_PELVIS), 200, voxel=.006, noise=.002)
+soft('chest__bone.3', lambda bm: [small_skull(bm, *k) for k in (SK_SHOULDER, SK_LSHOULDER, SK_BACK)], 560, voxel=.006, noise=.002)
+hard('spin__void', lambda bm: small_hollows(bm, *SK_PELVIS))
+hard('chest__void', lambda bm: [small_hollows(bm, *k) for k in (SK_SHOULDER, SK_LSHOULDER, SK_BACK)])
+
+# ---- pass 74: its club, built here in place of the kit's (on the weapon bone: origin the right wrist (-SX, WRR, 0), the haft
+# along +z through the fist): a great thigh bone of one of the dead, bigger than its own, its knuckled end bound in gaol iron
+# and driven through with cell nails, and the skull of another fused onto the end. The kit's club reached z 1.55; so does this.
+CX, CY = -SX, WRR
+def club_bone(bm):
+    tube(bm, [(CX, CY, -.2), (CX, CY, -.12), (CX, CY, .1), (CX, CY, .5), (CX, CY, .85), (CX, CY, 1.02)], [.05, .075, .07, .062, .075, .1], 8)
+    blob(bm, (CX + .015, CY, -.24), .085, (1, 1, 1), 1)                   # the femoral head: the pommel
+    for sx in (-1, 1): blob(bm, (CX + sx * .1, CY - .01, 1.17), .17, (1, 1.05, 1.1), 2)   # the two great condyles: the head
+    blob(bm, (CX, CY + .03, 1.06), .14, (1.5, 1.1, 1), 1)                 # between them, the bone's flare
+soft('weapon__bone', club_bone, 440, voxel=.01, noise=.004)
+SK_CLUB = (skull_pts((CX, CY + .06, 1.36), .1, (0, .25, 1), (0, 1, 0)), .1)      # fused to the end, facing the blow
+soft('weapon__bone.1', lambda bm: small_skull(bm, *SK_CLUB), 200, voxel=.007, noise=.002)
+hard('weapon__void', lambda bm: small_hollows(bm, *SK_CLUB))
+def club_iron(bm):
+    for z, r in ((.88, .085), (.98, .1)):                                 # two gaol bands round the neck of the bone
+        loop(bm, [V(CX + r * math.cos(a), CY + r * math.sin(a), z) for a in [k / 10 * math.tau for k in range(10)]], .02, 4)
+    for x, y, z, dx, dy in ((.2, .05, 1.2, 1, .3), (-.2, .08, 1.18, -1, .4), (.05, .2, 1.15, .2, 1), (-.08, -.17, 1.2, -.3, -1), (.18, -.12, 1.08, .8, -.6)):
+        b = V(CX + x * .55, CY + y * .55, z); t = b + V(dx, dy, .15).normalized() * .2
+        tube(bm, [b, t], [.022, .004], 4)                                  # cell nails driven through the knuckles
+hard('weapon__iron', club_iron)
 def heat(bm):   # a white-hot mass in the barrel of the ribs, round the spine: the pit's heat, gathered
     for c, sc in (((0, 1.3, .0), (.13, .16, .09)), ((.04, 1.42, -.01), (.09, .08, .07)), ((-.05, 1.2, .01), (.1, .09, .07)),
                   ((.07, 1.25, .03), (.06, .07, .06)), ((-.06, 1.37, .02), (.06, .06, .05))):
         knob(bm, c, 1, sc, 2)
-soft('chest__heat', heat, 360, voxel=.014, noise=.01)
+soft('chest__heat', heat, 220, voxel=.014, noise=.01)
 
 result = tally()

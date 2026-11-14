@@ -4,10 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 72): item 4, the Giant Skeleton pass 1 (`giant-skeleton.js`; `seize`, `PS.HELD`, a model's `tells`;
-  in-page `Giant Skeleton`). Strips `docs/scorecard/giant-moves.jpg`; judge 69 vs Hollis 80 (gap: the gaol on its
-  figure); bots 6/6 31 s. It, the Bell Warden, the Pillager Captain, the King's Blade, Agathe, the Kindling Tree:
-  **awaiting Aleix**. Next: its pass 2, then the next Ashmere boss (`BACKLOG.md`).
+- Track A (pass 74): item 4, Giant pass 2: irons, fused skulls, own club. Strips `docs/scorecard/giant-moves.jpg`;
+  judge 61, 63, 67 vs Hollis 71 (gap: `BACKLOG.md`). It, the Bell Warden, the Pillager Captain, the King's Blade,
+  Agathe, the Kindling Tree: **awaiting Aleix**. Next: the next Ashmere boss.
 - Track B (pass 73): item 11 done (pass 1). Bots (`docs/scorecard/run-shape-pass73.txt`): no kit median fight 10,
   survival kit 17, posture kit 14 (short of 20); breaks 27-43 s; swift 1 in 3.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
@@ -92,6 +91,7 @@ In `BACKLOG.md`.
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) Swift kill: par 45 s, 100 s after the warm-up (less with a kit) adds a card. The pick holds 2 s after the last choice.
+- (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second

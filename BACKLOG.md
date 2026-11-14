@@ -17,11 +17,15 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel
   reads as flat red at fighting distance.
 
-- The Giant Skeleton, after its pass 1 (pass 72; judge 63, 67, 69 vs Hollis 80). Left:
-  - **The gaol on its figure** (the judge's gap, character 5 vs 9): the irons read as thin bracelets. A heavy manacle
-    on the claw with a broken chain (~1.2 m) that swings on The Taking and The Long Claw and wraps the held player;
-    an iron collar and chain at the neck for the silhouette from behind. The figure is at 13,188 of 14,000 triangles:
-    take them from the ribs or skull. The name is the most generic part (the judge offered "The Gaol Giant"; Aleix's call).
+- The Giant Skeleton, after its pass 2 (pass 74; a fresh judge 61, 63, 67 vs Hollis 71). Done: a manacle on the claw
+  with a ~1.2 m chain that swings (`chainClaw`, `anim.hang`), a collar with a chain down the back, a dragging ankle
+  chain, four small fused skulls, a femur club of its own bound in iron, ember eyes. Left:
+  - **The dead made one** (the judge's gap): the fused skulls read as joint caps and vanish in the level frame. Make two
+    or three half a human skull's size with open jaws, add broken arms and rib stubs jutting from shoulders and spine to
+    break the silhouette, and warm the spine and rib glow toward ember orange (`core` is white). Chains read as thin
+    links: thicker wire. The figure is at 14,836 tris, over the 14,000 soft budget: find them in the ribs or club.
+  - Not done: the claw's chain doesn't wrap the held player; the collar is hidden from the front by the skull. The name
+    is the most generic part (the judge offered "The Gaol Giant"; Aleix's call).
   - **Effects** (5 vs 9): the grip's burn shows only for the local player (no bodies list for other players);
     the throw lands only about 2 m away.
   - **Moves:** the Bonewheel turns the torso on the spine rather than the whole body; check the claw and foot glows'
