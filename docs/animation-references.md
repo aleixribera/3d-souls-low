@@ -62,3 +62,13 @@ Pass 92 (dash and deflect, item 3c pass 2): head height at the lowest frame, sta
 to 66%, deflect press 100% to 85%, landing 99% to 89%. One judge resumed over two rounds scored both 5 then 5
 (flat); a fresh judge on the final build scored dash 4, deflect 4. A resumed judge grows lenient: start a fresh
 one each round. Strips: `scorecard/anim-p92-dash.jpg`, `scorecard/anim-p92-deflect.jpg`.
+
+Pass 94 (item 3c pass 3; no reference frames this time, only the patterns above, since fetching clips needs Aleix's
+OK): the dash became five key poses on a curve (loaded, push-off, stride with the legs swapping, skid, rise), the
+held guard and the deflect hold the blade diagonal across the body with the off-hand on the grip, the cape has a limit
+per strip so a low dash can't stand it on end. Two fresh judges, one per round, both scored the pass 93 build 3 and
+this one 5 for dash and deflect (the leg swap in round 2 didn't move it: flat). Head height in the dash now dips and
+rises (72% to 78% and back to 71%) instead of holding. Strips: `scorecard/anim-p94-dash.jpg`,
+`scorecard/anim-p94-deflect.jpg`, the counter glow `scorecard/anim-p94-counter.jpg`. Next loop: a side or
+three-quarter camera for the deflect (front-on, the judge can't see the knees bend) and a whole-body lean from the
+ankles in the dash.

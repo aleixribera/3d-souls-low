@@ -159,6 +159,8 @@ class Player {
     else if (auto !== null) this.yaw = auto;           // near an enemy: aim at it
     else if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
     this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
+    // The run's speed, carried forward (momentum); never more than a run, so an attack out of a dash keeps its own reach.
+    this.carry = clamp(this.vx * Math.sin(this.yaw) + this.vz * Math.cos(this.yaw), 0, CONFIG.player.walkSpeed);
     this.payload = makeStrike(a, this.riposte > 0, 0);
     if (a.charge && this.perk.bastion > 0) {   // Bastion: a blocked blow readied this heavy, fully charged at once
       this.perk.bastion = 0; this.chargeT = a.charge.hold; this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, 1);
@@ -316,8 +318,9 @@ class Player {
         }
         const tl = attackTimeline(a, this.attackT), prev = attackTimeline(a, t0);
         emitAttackEvents(this, a, t0, this.attackT);
-        // Commitment: only a slight steer during the wind-up (locked on, it turns as slowly), none once the swing is out.
-        if (tl.phase === PHASE.STARTUP && face === null && mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.attackSteer * dt);
+        // Commitment: only a slight steer during the wind-up (locked on, it turns as slowly), none once the swing is out;
+        // the light string (`flow`) steers through every phase.
+        if ((a.flow || tl.phase === PHASE.STARTUP) && face === null && mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), (a.flow ? C.momentum.flowSteer : C.attackSteer) * dt);
         // A fresh hitbox (and hit list) for each strike of the attack.
         if (tl.phase === PHASE.ACTIVE && (prev.phase !== PHASE.ACTIVE || prev.hitIndex !== tl.hitIndex))
           this.hitbox = new Hitbox(this, a.box, this.payload);
@@ -325,7 +328,10 @@ class Player {
         // A chargeable swing lunges only after its charge point, and a held charge plants the feet.
         const lungeFrom = ch ? Math.max(C.lungeStart, ch.at) : C.lungeStart;
         const lunging = this.charge !== 1 && (tl.phase === PHASE.ACTIVE || (tl.phase === PHASE.STARTUP && tl.p > lungeFrom));
-        approachVel(this, lunging ? fx * a.lunge : 0, lunging ? fz * a.lunge : 0, C.accel * dt);
+        // The run carried in eases off over momentum.carryTime; the lunge takes over when it is the faster.
+        this.carry = Math.max(0, (this.carry || 0) - C.walkSpeed / C.momentum.carryTime * dt);
+        const sp = this.charge === 1 ? 0 : Math.max(lunging ? a.lunge : 0, this.carry);
+        approachVel(this, fx * sp, fz * sp, C.accel * dt);
         // Cancels: once the blow has landed (or missed), a dash or a deflect cuts the rest short. Recovery is where a buffered attack
         // chains the string (or a heavy ends it with that point's finisher).
         if (this.cancellable() && this.wantsRoll()) { this.startRoll(mv); break; }
@@ -337,7 +343,9 @@ class Player {
         if (tl.phase === PHASE.RECOVERY && this.buffer && this.buffer.action !== 'roll') {
           this.comboFrom = a; this.startAttack(this.nextAttack(this.buffer.action), mv, face, enemies); this.chainPose = attackEndPose(a); break;
         }
-        if (tl.done) { this.comboFrom = a; this.comboTimer = C.comboGrace; this.setState(PS.IDLE); }
+        // A string let go with movement held flows straight into the run (it can still be picked up: comboGrace).
+        const flowOut = a.flow && mv.has && !this.buffer && tl.phase === PHASE.RECOVERY && tl.p >= C.momentum.flowOut;
+        if (tl.done || flowOut) { this.comboFrom = a; this.comboTimer = C.comboGrace; this.setState(PS.IDLE); }
         break;
       }
       case PS.BLOCK: {

@@ -25,10 +25,19 @@ function validateData({ visual = true } = {}) {
     need(D && D.clang && Array.isArray(D.clang.step) && D.clang.step.length === 2 && D.clang.step.every(v => Number.isFinite(v) && Math.abs(v) <= 0.6),
       'ANIM_SETTINGS.deflect.clang.step: [side, back] m the body steps off its line (at most 0.6 each).');
     need(A.clothClamp > 0 && A.clothSpeed > 0, 'ANIM_SETTINGS.clothClamp (rad) and clothSpeed (m/s): both above 0.');
+    for (const [id, M] of Object.entries(MODEL_DEFS)) for (const c of (M.anim && M.anim.cloth) || [])
+      need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);
     const Da = A.dash, L = A.land, r3 = v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite);
-    need(Da && num(Da.rise) && num(Da.hold) && Math.abs(Da.lean) < 1.5 && Math.abs(Da.tip) < 0.5 && Number.isFinite(Da.head)
-      && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(Da[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(Da[b])),
-      'ANIM_SETTINGS.dash: rise (s), hold (0 to 1 of the dash), lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
+    const Dk = Da && Da.keys;
+    need(Da && num(Da.rise) && Array.isArray(Dk) && Dk.length >= 2 && Dk[0].at === 0 && Dk[Dk.length - 1].at === 1
+      && Dk.every((k, i) => (i === 0 || k.at > Dk[i - 1].at) && Math.abs(k.lean) < 1.5 && Math.abs(k.tip) < 0.5 && Number.isFinite(k.head)
+        && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(k[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(k[b]))),
+      'ANIM_SETTINGS.dash: rise (s) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
+    const Cg = A.counterGlow;
+    need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1,
+      'ANIM_SETTINGS.counterGlow: a colour, emissive (above 0, at most 4), min (0 to 1) and glint (0 to 1).');
+    const Gd = A.guard;
+    need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
     need(Object.entries(A.playerEase || {}).every(([ph, e]) => MARKER_PHASES.includes(ph) && e in EASE), `ANIM_SETTINGS.playerEase: phases ${MARKER_PHASES.join(', ')}, easings from EASE.`);
     const G = A.afterimage, look = g => g && num(g.life) && num(g.opacity) && Number.isInteger(g.color) && g.color >= 0 && g.color <= 0xffffff;
@@ -536,6 +545,7 @@ function validateData({ visual = true } = {}) {
   for (const a of Object.values(M.attacks)) {
     checkAttack(a, 'Player');
     need(a.feel === undefined || a.feel === 'heavy', `Player attack "${a.id}": feel must be 'heavy' or left out.`);
+    need(a.flow === undefined || a.flow === true, `Player attack "${a.id}": flow must be true or left out.`);
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
   const PC = CONFIG.pace;   // a boss's pace and Boss Rush's curve (v7.65.0): it only ever speeds a boss up
@@ -671,7 +681,9 @@ function validateData({ visual = true } = {}) {
   need(AI.kite >= 0 && AI.kite <= 1 && AI.leashResume > 0 && AI.leashResume <= 1 && Se.speedMul > 0 && nonNeg(Se.arrive) && nonNeg(Se.look) && Se.max > 0,
     'CONFIG.ai: kite must be 0..1, leashResume above 0 and at most 1, search.speedMul and search.max above 0, search.arrive and search.look 0 or more.');
   need(Vi.cone > 0 && Vi.cone <= Math.PI && nonNeg(Vi.near), 'CONFIG.vision: cone must be above 0 and at most pi (rad), near 0 or more.');
-  const Pl = CONFIG.player;
+  const Pl = CONFIG.player, Mo = Pl.momentum;
+  need(Mo && num(Mo.carryTime) && Mo.carryTime > 0 && num(Mo.flowSteer) && Mo.flowSteer > 0 && num(Mo.flowOut) && Mo.flowOut >= 0 && Mo.flowOut <= 1,
+    'CONFIG.player.momentum: carryTime (s) and flowSteer (rad/s) above 0, flowOut from 0 to 1 (of the recovery).');
   // The pass-85 moveset: dash charges, the counter after a perfect dodge, the dash attack, drinking on the move.
   need(Number.isInteger(Pl.dashCharges) && Pl.dashCharges >= 1 && [Pl.dashRefill, Pl.counterTime, Pl.drinkSpeedMul].every(v => num(v) && v > 0)
     && nonNeg(Pl.dashAttackFrom) && Pl.dashAttackFrom < Pl.rollTime && Pl.rollIFrames < Pl.rollTime && nonNeg(Pl.comboGrace),

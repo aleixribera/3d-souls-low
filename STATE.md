@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 92): item 3c pass 2, v7.119.0: low dash lunge, whole-body deflect with a sidestep, landing dip,
-  camera punch on counters and heavies, cape capped (in-page `pass 92`). Fresh judge 4/10 dash, 4/10 deflect
-  (`docs/scorecard/animation-judge.csv`). Next: 3c's last giveaways (BACKLOG), then Story's key abilities, its re-tune.
+- Track A (pass 94): v7.121.0 3c pass 3: keyed dash (`ANIM_SETTINGS.dash.keys`), guard/deflect blade across the
+  body, cape `max` per strip, momentum (`CONFIG.player.momentum`, attacks' `flow`), counter blade glow (in-page
+  `pass 94`). Fresh judges: dash 3 to 5, deflect 3 to 5, flat over 2 rounds (BACKLOG). Next Track A pass (95): the
+  counter window from PLAN.md e67106f, building on the glow (`ANIM_SETTINGS.counterGlow`).
 - Track B (pass 93): v7.120.0 item 4: fair area attacks (`CONFIG.area`, `js/area-marks.js`, validate.js; leaps
   untouched; `docs/scorecard/stomp-mark-giant*.jpg`), deflects (`CONFIG.undeflectable`), bosses move on one pace
   (`CONFIG.bossMove`); `tests/fair-attacks.cjs`. Next: the Boss Rush curve again (movement unmeasured), the only

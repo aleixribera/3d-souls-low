@@ -189,6 +189,9 @@ class ModelAnimator {
     const twistV = this.lastTwist === undefined || dt <= 0 ? 0 : (tw - this.lastTwist) / dt, bendV = this.lastBend === undefined || dt <= 0 ? 0 : (bend - this.lastBend) / dt;
     this.lastTwist = tw; this.lastBend = bend;
     const turn = (this.lastYaw === undefined || dt <= 0 ? 0 : angDiff(yaw, this.lastYaw) / dt) + twistV * G.clothTwist; this.lastYaw = yaw;
+    // Pass 94: a strip lies on a back bent forward and swings out from there, so its outward limit (`clothClamp` from
+    // plumb) shrinks by the body's forward pitch: a cape on a low dash trails, it doesn't stream out flat.
+    const L = G.clothClamp, hi = Math.max(0, L - Math.max(0, r.tip.rotation.x + r.spin.rotation.x + r.chest.rotation.x));
     let left = dt;
     while (left > 1e-5) {
       const h = Math.min(left, G.maxClothDt); left -= h;
@@ -198,15 +201,15 @@ class ModelAnimator {
         c.vs += (-K.k * (c.s - tz) - K.damp * c.vs) * h; c.s += c.vs * h;
         // The strip stops at its limit instead of winding past it (pass 92: after a dash a cape stood on end for a
         // while, its spring far beyond what was drawn).
-        const L = G.clothClamp;
-        if (c.a > L || c.a < -L) { c.a = clamp(c.a, -L, L); c.va = 0; }
+        const top = Math.min(hi, K.max ?? hi);   // a strip's own outward limit (a long cape's)
+        if (c.a > top || c.a < -L) { c.a = clamp(c.a, -L, top); c.va = 0; }
         if (c.s > L || c.s < -L) { c.s = clamp(c.s, -L, L); c.vs = 0; }
       }
     }
     // A strip hung from another swings at most `clothClamp` from plumb all told, so a chain of three never stands on end.
     for (const c of this.cloth) {
-      const L = G.clothClamp, ba = c.up ? c.up.da : 0, bs = c.up ? c.up.ds : 0;
-      const x = clamp(c.a, -L - ba, L - ba), z = clamp(c.s, -L - bs, L - bs);
+      const ba = c.up ? c.up.da : 0, bs = c.up ? c.up.ds : 0;
+      const x = clamp(c.a, -L - ba, Math.min(hi, c.c.max ?? hi) - ba), z = clamp(c.s, -L - bs, L - bs);
       c.bone.rotation.x = x; c.bone.rotation.z = z; c.da = ba + x; c.ds = bs + z;
     }
   }

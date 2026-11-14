@@ -165,9 +165,11 @@ MODEL_DEFS.wanderer = {
     walk: { twist: 0.12, roll: 0.04, headNod: 0.03, elbow: 0.3, drag: 0 },
     flinch: { head: 1, chest: 1, arms: 1 },
     death: { buckle: 1, slump: 1 },
-    // Damped harder since pass 92: out of a dash the cape falls back in a beat instead of flying like a flag.
-    cloth: [{ bone: 'capeA', gain: 0.09, k: 38, damp: 7, flutter: 0.035 }, { bone: 'capeB', gain: 0.07, k: 34, damp: 6.4, flutter: 0.05 },
-            { bone: 'capeC', gain: 0.06, k: 30, damp: 5.8, flutter: 0.07, sideways: 1.2 },
+    // Damped harder since pass 92: out of a dash the cape falls back in a beat instead of flying like a flag. Pass 94:
+    // the long cape swings out at most `max` rad from the back all told (more toward its hem, so it curves), so a
+    // dash trails it instead of holding it out like a board.
+    cloth: [{ bone: 'capeA', gain: 0.09, k: 38, damp: 7, flutter: 0.035, max: 0.25 }, { bone: 'capeB', gain: 0.07, k: 34, damp: 6.4, flutter: 0.05, max: 0.4 },
+            { bone: 'capeC', gain: 0.06, k: 30, damp: 5.8, flutter: 0.07, sideways: 1.2, max: 0.55 },
             { bone: 'scarfTail', gain: 0.14, k: 55, damp: 4, flutter: 0.08 }],
   },
 };

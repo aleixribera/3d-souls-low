@@ -3837,7 +3837,7 @@
     expect.ok(p.state === PS.ROLL, 'dashing');
     expect.ok(head() < standHead * 0.85 && r.spin.rotation.x > 0.45, `the dash snaps low and leaning (head ${head().toFixed(2)} of ${standHead.toFixed(2)} m, lean ${r.spin.rotation.x.toFixed(2)})`);
     for (let i = 0; i < 8; i++) { sim.step(1, 1); cape = cape && capeOk(); }
-    expect.ok(head() < standHead * 0.85, 'and holds it');
+    expect.ok(head() < standHead * 0.85, 'and stays low');
     for (let i = 0; i < 40; i++) { sim.step(1, 1); cape = cape && capeOk(); }
     expect.ok(cape, 'a cape chain swings at most clothClamp from plumb all told, through and after a dash');
     const hang = r.anim ? Math.max(...r.anim.cloth.map(swing)) : 0;
@@ -3845,7 +3845,8 @@
     sim.hold('block'); sim.step(3, 1);
     expect.ok(r.spin.position.y < standHip - 0.05, `a deflect press braces the hips (${r.spin.position.y.toFixed(2)} of ${standHip.toFixed(2)} m)`);
     p.deflectedBlow = { enemy: null, key: 'look' }; sim.step(4, 1);
-    expect.ok(r.tip.rotation.x < -0.05 && r.armL.rotation.x < -0.8 && r.armL.rotation.z < 0.6, `a blow turned aside rocks the body back, the off-hand kept by the hilt (${r.tip.rotation.x.toFixed(2)}, ${r.armL.rotation.x.toFixed(2)}, ${r.armL.rotation.z.toFixed(2)})`);
+    const byHilt = r.elbowL.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(v));   // forearm's length or so
+    expect.ok(r.tip.rotation.x < -0.05 && byHilt < 0.5, `a blow turned aside rocks the body back, the off-hand kept by the hilt (${r.tip.rotation.x.toFixed(2)}, elbow ${byHilt.toFixed(2)} m from it)`);
     const off = Math.hypot(r.root.position.x - p.x, r.root.position.z - p.z);
     expect.ok(off > 0.12, `and the body is drawn stepped off its line, where the player stands still (${off.toFixed(2)} m)`);
     sim.release('block'); sim.step(40, 1);
@@ -3853,6 +3854,46 @@
     for (let i = 0; i < 180 && (p.state === PS.JUMP || p.state === PS.FALL); i++) sim.step(1, 1);
     sim.step(3, 1);
     expect.ok(r.spin.position.y < standHip - 0.04, `a landing bends the knees (${r.spin.position.y.toFixed(2)} m)`);
+  });
+  test('Player look: the dash steps through its poses, the guard holds the blade across the body, an open counter lights the blade (pass 94)', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player, r = p.rig, v = new THREE.Vector3(), w = new THREE.Vector3(), inv = new THREE.Matrix4();
+    sim.step(30, 1);
+    sim.press('roll'); sim.step(5, 1); const leg = r.legR.rotation.x, arm = r.armL.rotation.x;
+    sim.step(8, 1);
+    expect.ok(p.state === PS.ROLL && leg - r.legR.rotation.x > 0.8 && Math.abs(r.armL.rotation.x - arm) > 0.5,
+      `mid-dash the back leg swings through to the front and the free arm with it (leg ${leg.toFixed(2)} to ${r.legR.rotation.x.toFixed(2)}, arm ${arm.toFixed(2)} to ${r.armL.rotation.x.toFixed(2)})`);
+    sim.step(40, 1);
+    sim.hold('block'); sim.step(40, 1);
+    if (r.glint) {   // a modelled body: the blade from its hilt to its glint, in the body's own frame (x: the off side)
+      r.root.updateMatrixWorld(true); inv.copy(r.root.matrixWorld).invert();
+      const hilt = r.weapon.getWorldPosition(v).applyMatrix4(inv), d = r.glint.sprite.getWorldPosition(w).applyMatrix4(inv).sub(hilt).normalize();
+      expect.ok(d.y > 0.2 && d.y < 0.8 && d.x > 0.5 && Math.abs(hilt.x) < 0.3 && hilt.z > 0.2,
+        `the held guard lays the blade across the body, tip up to the off side (dir ${d.x.toFixed(2)}, ${d.y.toFixed(2)}, ${d.z.toFixed(2)}; hilt ${hilt.x.toFixed(2)}, ${hilt.z.toFixed(2)})`);
+    }
+    sim.release('block'); sim.step(30, 1);
+    const glow = () => r.weaponMat.emissive.b, plain = glow();
+    p.riposte = CONFIG.player.counterTime; sim.step(1, 1); const open = glow();
+    sim.step(30, 1); const closing = glow();
+    p.riposte = 0; sim.step(1, 1);
+    expect.ok(open > plain + 0.5 && closing < open && closing > plain && Math.abs(glow() - plain) < 1e-6,
+      `an open counter lights the blade, dimming as it closes, and only then (${plain.toFixed(2)}, ${open.toFixed(2)}, ${closing.toFixed(2)}, ${glow().toFixed(2)})`);
+  });
+  test('Momentum: an attack from a run carries its speed, the light string steers and lets go into the run (pass 94)', () => {
+    Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.step(10);   // the open arena: room to run
+    const p = Game.player, speed = () => Math.hypot(p.vx, p.vz);
+    sim.move(1, 0); sim.step(40); const run = speed();
+    sim.press('light'); sim.step(6);
+    expect.ok(p.state === PS.ATTACK && speed() > run * 0.5, `six frames into a light from a run, still moving (${speed().toFixed(2)} of ${run.toFixed(2)} m/s)`);
+    expect.ok(sim.until(() => p.attackPhase() === PHASE.ACTIVE, 1) >= 0, 'the blow comes out');
+    const yaw = p.yaw; sim.move(0, 1); sim.step(3);
+    expect.ok(Math.abs(angDiff(p.yaw, yaw)) > 0.1, `the light string steers while its blow is out (${angDiff(p.yaw, yaw).toFixed(2)} rad)`);
+    const a = p.attack, whole = Math.round((a.hits.reduce((s, h) => s + h.startup + h.active + (h.follow || 0), 0) + a.recovery) / STEP);
+    const left = sim.until(() => p.state !== PS.ATTACK, 1);
+    expect.ok(left >= 0 && p.attackT < whole * STEP - a.recovery * 0.5, `with movement held it lets go into the run before its recovery ends (${p.attackT.toFixed(2)} of ${(whole * STEP).toFixed(2)} s)`);
+    sim.step(8);
+    expect.ok(p.state === PS.WALK && speed() > run * 0.6, `and runs on (${p.state}, ${speed().toFixed(2)} m/s)`);
+    sim.move(null);
   });
   test('Low performance: native resolution and dormant post targets stay small', () => {
     try {

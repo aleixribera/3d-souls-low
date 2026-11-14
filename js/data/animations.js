@@ -53,24 +53,51 @@ const ANIM_SETTINGS = {
   // `drop` m in a split stance; a blow turned aside rocks the body back and off the line at the feet (`tip`), turns and
   // rolls the torso with the hit and steps the whole body `step` [side, back] m off its line, the off-hand braced by the
   // hilt (a fresh judge: a flared free arm read as a T-pose), then it settles. Holds are short (round 2: "frozen crouch").
+  // Pass 94 (a fresh judge: "the blade sits straight up"): every guard pose holds the blade across the body, hilt in
+  // front of the chest a little to the sword side, tip up toward the off side, the off-hand on the grip. Arm and blade
+  // angles were solved on the wanderer's model for a hilt point and blade direction, then checked in frames.
   deflect: {
-    rise: 0.045, hold: 0.07, fall: 0.16, drop: 0.1,
-    pose: { armR: [-1.2, -0.3, 0.1], elbowR: [-1, 0, 0], weapon: [0.5, 1.4, 0], armL: [-1.1, 0, 0.4], elbowL: [-1.1, 0, 0],
-            chest: [-0.05, -0.3, 0], head: [0.05, 0.25, 0],   // the blade slanted up across the face, tip to the off side
-            spin: [0.1, -0.22, 0], legL: [-0.38, 0, 0.06], kneeL: [0.35, 0, 0], legR: [0.34, 0, -0.06], kneeR: [0.3, 0, 0] },
-    clang: { rise: 0.03, hold: 0.04, fall: 0.26, drop: 0.16, step: [0.26, 0.12],
-             pose: { armR: [-1.55, -0.2, 0.2], elbowR: [-1.35, 0, 0], weapon: [1, 1.3, 0], chest: [-0.24, -0.12, 0], head: [-0.22, 0.1, 0],
-                     tip: [-0.13, 0, 0.14], spin: [-0.18, -0.32, -0.12], armL: [-1.3, 0, 0.3], elbowL: [-1.2, 0, 0],   // the off-hand stays by the hilt
+    rise: 0.045, hold: 0.07, fall: 0.16, drop: 0.15,
+    pose: { armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+            chest: [-0.05, -0.3, 0], head: [0.05, 0.25, 0],   // the blade pushed out across the body to meet the blow, tip low to the off side
+            spin: [0.1, -0.22, 0], legL: [-0.45, 0, 0.06], kneeL: [0.7, 0, 0], legR: [0.4, 0, -0.06], kneeR: [0.6, 0, 0] },   // knees braced (pass 94)
+    clang: { rise: 0.03, hold: 0.04, fall: 0.26, drop: 0.2, step: [0.26, 0.12],
+             pose: { armR: [-0.61, 0.09, 0.73], elbowR: [-0.3, 0, 0], weapon: [0.85, 1, 0], chest: [-0.24, -0.12, 0], head: [-0.22, 0.1, 0],
+                     tip: [-0.13, 0, 0.14], spin: [-0.18, -0.32, -0.12], armL: [-0.59, -0.6, -0.47], elbowL: [-0.66, 0, 0],   // knocked back to the chest, still across it
                      legL: [-0.12, 0, 0.06], kneeL: [0.2, 0, 0], legR: [0.62, 0, -0.1], kneeR: [0.5, 0, 0] } },
   },
+  // The held guard (pass 94; a vertical high guard until then): the blade diagonal across the body, both hands on the
+  // grip, the hips down `drop` m.
+  guard: { drop: 0.05,
+           pose: { armR: [-0.5, 0.56, 0.25], elbowR: [-1, 0, 0], weapon: [0.82, 0.49, 0], armL: [-0.92, -0.26, -0.79], elbowL: [-0.03, 0, 0] } },
   // The dash's key pose (pass 92, the blind judge: "a long, low, leaning lunge"): in `rise` s the front leg reaches far
   // ahead, the back leg stretches out behind and the hips sink between them (as far as the front foot stays planted),
   // the torso pitches `lean` rad forward and the body `tip` rad at the feet, both arms and the blade trail; held to
   // `hold` of the dash, then eased out (Rig.settle carries it into the run). Leg and arm targets are [x, y, z] rad, knees
   // and elbows a bend; `head` lifts the eyes back to the path.
-  dash: { rise: 0.05, hold: 0.62, lean: 0.6, tip: 0.1, head: -0.45,
-          legL: [-1.3, 0, 0.08], kneeL: 1.4, legR: [0.9, 0, -0.06], kneeR: 0,
-          armR: [0.85, 0.1, -0.4], elbowR: -0.25, weapon: [1.2, 0, 0], armL: [0.75, -0.1, 0.5], elbowL: -0.2 },
+  // Pass 94 (a fresh judge: "the body locks into a single forward lean"): the dash steps through key poses instead of
+  // holding one, on a smooth curve through each (`at`: share of the dash). `rise` s: when the push-off is struck (the
+  // first afterimage waits for it).
+  dash: { rise: 0.05, keys: [
+    { at: 0, lean: 0.5, tip: 0.06, head: -0.35,   // loaded: both knees bent, arms going back
+      legL: [-0.5, 0, 0.06], kneeL: 1.2, legR: [0.45, 0, -0.06], kneeR: 0.7,
+      armR: [0.5, 0.1, -0.3], elbowR: -0.3, weapon: [1.1, 0, 0], armL: [0.4, -0.1, 0.4], elbowL: -0.4 },
+    { at: 0.16, lean: 0.72, tip: 0.14, head: -0.55,   // push-off: the back leg drives straight, arms swept back
+      legL: [-1, 0, 0.08], kneeL: 1.35, legR: [0.95, 0, -0.06], kneeR: 0.05,
+      armR: [1, 0.15, -0.4], elbowR: -0.15, weapon: [1.3, 0, 0], armL: [0.95, -0.1, 0.5], elbowL: -0.15 },
+    { at: 0.42, lean: 0.55, tip: 0.1, head: -0.45,   // the stride: the back leg swung through and reaching, the old front leg behind, free arm swung through
+      legL: [0.55, 0, 0.08], kneeL: 0.5, legR: [-1.15, 0, -0.06], kneeR: 1.3,
+      armR: [1.1, 0.2, -0.45], elbowR: -0.2, weapon: [1.25, 0, 0], armL: [-0.5, -0.1, 0.35], elbowL: -0.9 },
+    { at: 0.7, lean: 0.3, tip: -0.08, head: -0.2,   // the skid: the new front heel braking, back knee low, body rising, free arm bent out a little
+      legL: [0.5, 0, 0.12], kneeL: 1.3, legR: [-1, 0, -0.08], kneeR: 0.3,
+      armR: [0.35, 0.1, -0.6], elbowR: -0.5, weapon: [1, 0.2, 0], armL: [-0.45, 0, 0.45], elbowL: -0.8 },
+    { at: 1, lean: 0.12, tip: 0, head: -0.05,   // up toward stance, blade forward again
+      legL: [0.3, 0, 0.05], kneeL: 0.5, legR: [-0.45, 0, -0.03], kneeR: 0.5,
+      armR: [-0.2, 0, -0.15], elbowR: -0.2, weapon: [0.6, 0, 0], armL: [-0.1, 0, 0.3], elbowL: -0.2 },
+  ] },
+  // The counter window on the blade (pass 94, js/player-pose.js): `color` glowing at `emissive` times its strength,
+  // which runs from 1 as the window opens down to `min` as it shuts; the blade's glint held at `glint` of that.
+  counterGlow: { color: 0xcfe6ff, emissive: 1.6, min: 0.3, glint: 0.6 },
   // A landing with weight (pass 92): the knees take it, `drop` m at most for a fall at `ref` m/s or faster.
   land: { rise: 0.04, hold: 0.05, fall: 0.22, drop: 0.2, min: 0.35, ref: 9, lean: 0.18 },
   // Dash afterimages (pass 91, js/afterimage.js): a pale copy of the body every `gap` m of a dash, frozen and fading over

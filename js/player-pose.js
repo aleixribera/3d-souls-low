@@ -16,21 +16,32 @@ function deflectEnvelope(age, D) {
   if (age < D.rise + D.hold) return 1;
   return 1 - EASE.inOutSine(clamp((age - D.rise - D.hold) / D.fall, 0, 1));
 }
-// The dash (pass 92): a long, low, leaning lunge, snapped into at once and held (ANIM_SETTINGS.dash).
-function dashPose(r, tt, rollTime) {
-  const D = ANIM_SETTINGS.dash, hold = D.hold * rollTime;
-  const k = tt < D.rise ? EASE.outCubic(tt / D.rise) : tt < hold ? 1 : 1 - EASE.inOutSine(clamp((tt - hold) / Math.max(rollTime - hold, 0.01), 0, 1)) * 0.6;
-  r.legL.rotation.set(D.legL[0] * k, D.legL[1] * k, D.legL[2] * k); r.kneeL.rotation.x = D.kneeL * k;
-  r.legR.rotation.set(D.legR[0] * k, D.legR[1] * k, D.legR[2] * k); r.kneeR.rotation.x = D.kneeR * k;
-  r.armR.rotation.set(lerp(r.armR.rotation.x, D.armR[0], k), D.armR[1] * k, D.armR[2] * k);
-  r.armL.rotation.set(lerp(r.armL.rotation.x, D.armL[0], k), D.armL[1] * k, D.armL[2] * k);
-  if (r.elbowL) { r.elbowL.rotation.x += D.elbowL * k; r.elbowR.rotation.x += D.elbowR * k; }
-  r.weapon.rotation.set(lerp(r.weapon.rotation.x, D.weapon[0], k), D.weapon[1] * k, D.weapon[2] * k);
-  // The hips sink until the front foot is on the floor: a split stance, not a squat (Rig.crouch bends both knees alike).
-  const tl = D.legL[0] * k, reach = LEG_SEG * (Math.cos(tl) + Math.cos(tl + D.kneeL * k));
-  r.spin.position.y -= 2 * LEG_SEG - reach; r.crouchDrop += 2 * LEG_SEG - reach;   // so a later crouch() this frame bends from here
-  r.lean(D.lean * k); r.tip.rotation.x += D.tip * k; r.head.rotation.x += D.head * k;
+// The dash (pass 94; a held lunge in pass 92): it steps through its key poses (ANIM_SETTINGS.dash.keys) on a smooth
+// curve through each, so the body never freezes in one pose: a loaded push-off, the back leg driving, a long low
+// stride with the trailing heel kicked up and the free arm swinging through, a skid on the front heel as the dash
+// slows, and up toward stance (Rig.settle carries it into the run). `u` is the share of the dash gone.
+// One channel of the keys at segment `i`, `s` of the way to the next: a Catmull-Rom curve (no allocation).
+function keyCurve(K, i, s, name, j) {
+  const n = K.length, a = K[Math.max(i - 1, 0)][name], b = K[i][name], c = K[Math.min(i + 1, n - 1)][name], d = K[Math.min(i + 2, n - 1)][name];
+  const p0 = j < 0 ? a : a[j], p1 = j < 0 ? b : b[j], p2 = j < 0 ? c : c[j], p3 = j < 0 ? d : d[j], s2 = s * s, s3 = s2 * s;
+  return 0.5 * (2 * p1 + (p2 - p0) * s + (2 * p0 - 5 * p1 + 4 * p2 - p3) * s2 + (3 * p1 - p0 - 3 * p2 + p3) * s3);
 }
+function dashPose(r, tt, rollTime) {
+  const K = ANIM_SETTINGS.dash.keys, u = clamp(tt / rollTime, 0, 1);
+  let i = 0; while (i < K.length - 2 && u > K[i + 1].at) i++;
+  const s = clamp((u - K[i].at) / (K[i + 1].at - K[i].at), 0, 1);
+  const legLx = keyCurve(K, i, s, 'legL', 0), kneeL = keyCurve(K, i, s, 'kneeL', -1), legRx = keyCurve(K, i, s, 'legR', 0), kneeR = keyCurve(K, i, s, 'kneeR', -1);
+  r.legL.rotation.set(legLx, keyCurve(K, i, s, 'legL', 1), keyCurve(K, i, s, 'legL', 2)); r.kneeL.rotation.x = kneeL;
+  r.legR.rotation.set(legRx, keyCurve(K, i, s, 'legR', 1), keyCurve(K, i, s, 'legR', 2)); r.kneeR.rotation.x = kneeR;
+  for (const b of DASH_LIMBS) r[b].rotation.set(keyCurve(K, i, s, b, 0), keyCurve(K, i, s, b, 1), keyCurve(K, i, s, b, 2));
+  if (r.elbowL) { r.elbowL.rotation.x += keyCurve(K, i, s, 'elbowL', -1); r.elbowR.rotation.x += keyCurve(K, i, s, 'elbowR', -1); }
+  // The hips sink until the lower foot is on the floor: a split stance, not a squat (Rig.crouch bends both knees alike).
+  const reach = LEG_SEG * Math.max(Math.cos(legLx) + Math.cos(legLx + kneeL), Math.cos(legRx) + Math.cos(legRx + kneeR));
+  const drop = Math.max(0, 2 * LEG_SEG - reach);
+  r.spin.position.y -= drop; r.crouchDrop += drop;   // so a later crouch() this frame bends from here
+  r.lean(keyCurve(K, i, s, 'lean', -1)); r.tip.rotation.x += keyCurve(K, i, s, 'tip', -1); r.head.rotation.x += keyCurve(K, i, s, 'head', -1);
+}
+const DASH_LIMBS = ['armR', 'armL', 'weapon'];
 // A landing with weight (pass 92): the knees give under the fall and come back up (visual clock `ldAge` on the rig).
 function landPose(p, r, dt) {
   const L = ANIM_SETTINGS.land, air = p.state === PS.JUMP || p.state === PS.FALL || p.state === PS.JUMP_ATTACK;
@@ -69,6 +80,23 @@ function deflectPose(p, r, dt, yaw) {
     r.root.position.x += dx; r.root.position.z += dz;
     if (r.shadow) { r.shadow.position.x += dx; r.shadow.position.z += dz; }
   }
+}
+
+// The counter window, shown (pass 94, PLAN.md "Next, small" 2): while a counter is open (after a perfect dodge or a
+// deflect that opened the foe) the blade burns a cold white, dimming as the window closes; a cue only. A steady glow,
+// no pulse, so it needs nothing for reducedMotion. Returns its strength (0 when shut); `cwFull` is the window's length.
+function counterGlow(p, r) {
+  if (!(p.riposte > 0)) { r.cwFull = r.cwLeft = 0; return 0; }
+  if (p.riposte > (r.cwLeft || 0) + 1e-6) r.cwFull = p.riposte;   // opened, or opened again
+  r.cwLeft = p.riposte;
+  const G = ANIM_SETTINGS.counterGlow;
+  return G.min + (1 - G.min) * clamp(p.riposte / r.cwFull, 0, 1);
+}
+function drawCounterGlow(r, k) {
+  if (!(k > 0)) return;
+  const G = ANIM_SETTINGS.counterGlow, c = r.cwColor || (r.cwColor = new THREE.Color(G.color)), m = r.weaponMat, e = G.emissive * k;
+  m.emissive.r += c.r * e; m.emissive.g += c.g * e; m.emissive.b += c.b * e;
+  m.color.lerp(c, 0.5 * k);
 }
 
 Player.prototype.pose = function (tt, ctx) {
@@ -111,7 +139,7 @@ Player.prototype.pose = function (tt, ctx) {
     }
     case PS.BLOCK:
       r.walk(this.walkPhase, 0.3 * clamp(Math.hypot(this.vx, this.vz) / 2, 0, 1));   // short guarded steps
-      r.armR.rotation.set(-1.45, 0, -0.5); r.weapon.rotation.set(0.2, 0, 1.2); r.armL.rotation.x = -1.3; r.tip.rotation.x = 0.06; break;
+      poseToward(r, ANIM_SETTINGS.guard.pose, 1); r.crouch(ANIM_SETTINGS.guard.drop); r.tip.rotation.x = 0.06; break;   // the blade held across the body
     case PS.USE_ITEM: {   // drinking on the move: the legs walk, the off hand lifts the flask
       r.walk(this.walkPhase, 0.4 * clamp(Math.hypot(this.vx, this.vz) / 2, 0, 1));
       const k = Math.sin(clamp(tt * this.drinkRate() / this.usingItem.useTime, 0, 1) * Math.PI);
@@ -135,6 +163,7 @@ Player.prototype.pose = function (tt, ctx) {
     }
   }
   if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
+  const cw = counterGlow(this, r);
   if (r.anim) r.anim.updatePlayer(this, tt, ctx, glint, true);   // a modelled body's secondary motion (js/animator.js), visual only
   r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
   const vdt = Game.hitstop > 0 ? 0 : Math.min(ctx.dt || 0, 0.1);   // the visual clocks hold through a hit-pause
@@ -142,8 +171,10 @@ Player.prototype.pose = function (tt, ctx) {
   deflectPose(this, r, vdt, ctx.yaw);
   // One move into the next without a snap (a chained swing is its own move); a body back from the dead starts clean.
   r.settle(this.state, this.state === PS.ATTACK || this.state === PS.EXECUTE ? this.attack : null, tt, r.settleKey !== PS.DEAD);
+  // An open counter holds a star of light on the blade, over whatever the move's own layers set (they still run).
+  if (r.anim && cw > 0) r.anim.glintK = Math.max(r.anim.glintK, ANIM_SETTINGS.counterGlow.glint * cw);
   if (r.anim) r.anim.finishPlayer(this, ctx);   // the cloth swings from the blended body, not the snapped one
   if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
-  else r.setFlash(Math.max(this.flash, this.riposte > 0 ? 0.3 : 0, this.chargeGlow));
+  else { r.setFlash(Math.max(this.flash, this.chargeGlow)); drawCounterGlow(r, cw); }
   r.setTint(HURT_COLOR, this.tint * 0.9);
 };

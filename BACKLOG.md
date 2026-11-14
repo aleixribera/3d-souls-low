@@ -24,14 +24,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   frame (`captain-desktop-string.jpg`) caught the Captain's charge before the string; the laptop run shows the keys
   alone through a full exchange (strings, finishers, two perfect dodges, a counter).
 
-- **Item 3c's next pass (track A), after pass 92:** the dash is a low lunge and the deflect moves the whole body and
-  steps off the line; a fresh judge scored both 4 (`docs/scorecard/animation-judge.csv`). Its giveaways: the dash holds
-  one frozen pose (it wants a push-off, the legs striding or skidding, the trailing arm swinging, then rising), and the
-  deflect's blade sits in a vertical high guard (it wants a diagonal across the body, knees braced, a short recoil).
-  Pass 92 tucked the free arm the judge called a T-pose; that fix is not yet rescored. Not yet: the counter and drink
-  still borrow poses (the counter's pose ids are track B's, above); the cape streams flat for a moment after a dash;
-  a perfect dodge's brighter afterimages are untested in frames; speed lines on finishers. Use a fresh judge each round:
-  one resumed over rounds grows lenient (5 and 5, where a fresh one gave 4 and 4).
+- **Item 3c's next pass (track A), after pass 94:** the dash steps through five keys, the guard and deflect hold the
+  blade across the body; two fresh judges scored dash 5 and deflect 5 (from 3), flat over the two rounds, so start a
+  new loop. Their giveaways: the dash still folds at the waist with the free arm hanging in front (it wants a lean
+  from the ankles, the free arm trailing, clearer scissoring); the deflect's legs never visibly react (capture it from
+  the side or three-quarter: front-on, the knee bend that is there can't be seen) and wants a sharp 3-4 frame recoil.
+  The light string's flow back into the run is tested but not yet in a strip. Not yet: the counter and drink still
+  borrow poses (pose ids are track B's, above); a perfect dodge's brighter afterimages untested in frames; speed lines
+  on finishers. Use a fresh judge each round: one resumed over rounds grows lenient.
 
 - **Find (pass 92):** `startFight('dummy')` under a hand-stepped clock (`Game.manualClock`) turns positions to NaN: the
   dummy has no `speed` and starts in chase (`approachVel`). Old and new builds alike; tests and captures use other foes.

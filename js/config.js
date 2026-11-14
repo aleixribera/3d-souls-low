@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.120.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.121.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -90,6 +90,11 @@ const CONFIG = {
     bufferWindow: 0.4, bufferGrace: 0.1,
     lungeStart: 0.55,            // ground attacks lunge from this fraction of the wind-up
     attackSteer: 3.2,            // rad/s the player may turn during an attack's wind-up (none once the strike is out)
+    // Momentum through attacks (pass 94, PLAN.md "Next, small" 5; Aleix: "static attacks break the flow too much"): an
+    // attack started on the move keeps that speed forward and eases off over `carryTime` s (full walking speed); a
+    // `flow` attack (the light string) steers at `flowSteer` rad/s through every phase, and with movement held its
+    // recovery gives way to the run once `flowOut` of the recovery has passed.
+    momentum: { carryTime: 0.22, flowSteer: 4.5, flowOut: 0.3 },
     comboGrace: 0.35,            // after an attack ends, a press this soon still continues its string
     // Drinking on the move: a flask is drunk walking at `drinkSpeedMul` of walking speed; a blow that lands cuts it short.
     drinkSpeedMul: 0.55,
