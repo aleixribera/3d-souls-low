@@ -415,10 +415,11 @@ const CONFIG = {
              restArrow: { color: 0xffc860, size: 0.28, height: 2.6, bob: 0.25, bobSpeed: 3 } },
   // Button hints in the world (js/world-hints.js, pass 86): the player's own key beside the foe at the moment it is
   // needed: strike a foe in `reach` m, deflect a red blow or dodge a blue one in its last `lead` s of wind-up from a foe
-  // within `range` m (online, one facing the player within `facing` rad). Each goes once the player has done it
-  // `learn` times (kept per player); the Lessons option and "Show lessons again" govern them too. Drawn `side` m past
-  // the foe's flank on the camera's right, at `height` x its height.
-  hints: { reach: 3.2, range: 7, lead: 0.6, facing: 0.8, learn: 3, side: 0.35, height: 0.6, storageKey: 'combatArena.hints' },
+  // within `range` m (online, one facing the player within `facing` rad); a finisher, dash or jump attack with a foe in
+  // `near` m (pass 89). Each goes once the player has done it `learn` times (kept per player); the Lessons option and
+  // "Show lessons again" govern them too. Drawn `side` m past the foe's flank on the camera's right, at `height` x its
+  // height.
+  hints: { reach: 3.2, range: 7, near: 6, lead: 0.6, facing: 0.8, learn: 3, side: 0.35, height: 0.6, storageKey: 'combatArena.hints' },
   // The title screen's look at the public lobby (js/multiplayer.js peek): every `interval` s while the title shows,
   // giving up on one request after `timeout` s.
   titleLobby: { interval: 8, timeout: 4 },
@@ -465,9 +466,10 @@ const CONFIG = {
          exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
          text: { restBlocked: 'Enemies too close to rest', exhausted: 'Out of stamina', controller: 'Best played with a controller',
                  // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.
-                 deathTips: ['Tip: watch your stamina. Empty it and you can’t roll until it refills.',
-                             'Tip: roll through a strike as it lands, not before.',
-                             'Tip: red attacks can be parried. Roll blue attacks.',
+                 deathTips: ['Tip: you have two dashes. Spent, each comes back in a moment.',
+                             'Tip: dash through a strike as it lands, not before, and counter while time slows.',
+                             'Tip: tap block as a red attack lands to deflect it. Dash through blue attacks.',
+                             'Tip: a heavy pressed in a string of lights ends it with a finisher.',
                              'Tip: resting at a bonfire keeps every enemy you have beaten dead.'],
                  staminaTipTime: 6 },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',

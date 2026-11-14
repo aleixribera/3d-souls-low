@@ -1492,7 +1492,7 @@
   });
   const dodges = [];
   A.events.on('dodge', d => dodges.push(d));
-  // The DODGE INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
+  // The DASH INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
   // toward it or `away` from it. What the card shows once that swing is over: done, or a hint.
   const dodgeRoll = (before, away = false, fresh = true) => {
     if (fresh) { trainingAt('dodge', 'long-hall'); A.lessons.forget(); A.lessons.show('dodge'); }   // each try starts unlearned
@@ -1505,11 +1505,11 @@
     const card = A.lessons.card;
     return { done: !!card && card.id === 'dodge' && card.done, hint: card ? card.hint : '' };
   };
-  test('Lessons: a roll through the swing finishes DODGE INTO IT; early, late or clear of it shows a hint', withLessons(() => {
+  test('Lessons: a roll through the swing finishes DASH INTO IT; early, late or clear of it shows a hint', withLessons(() => {
     const timed = dodgeRoll(0.1);
     expect.ok(timed.done, `rolled through the swing as it landed: done (hint "${timed.hint}")`);
     expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === TRAINING.dodge, `one dodge event (${dodges.length})`);
-    for (const [before, away, want] of [[0.45, false, 'Too early: dodge as it falls'], [0.9, false, 'Too early: dodge as it falls'], [-0.05, false, 'Too late: dodge sooner'], [0.5, true, 'Dodge into the blow']]) {
+    for (const [before, away, want] of [[0.45, false, 'Too early: dash as it lands'], [0.9, false, 'Too early: dash as it lands'], [-0.05, false, 'Too late: dash sooner'], [0.5, true, 'Dash into the blow']]) {
       const r = dodgeRoll(before, away);
       expect.ok(!r.done && r.hint === want, `rolled ${before} s before it landed${away ? ', away' : ''}: "${r.hint}" (want "${want}")`);
     }
@@ -1517,7 +1517,7 @@
     sim.seconds(CONFIG.lessons.hintTime + 0.1); Game.render(1, STEP);
     expect.ok(A.lessons.card.hint === '' && shown('lessonHint') === '', `the hint goes after a while ("${shown('lessonHint')}")`);
     dodgeRoll(0.45); const next = dodgeRoll(-0.05, false, false);
-    expect.ok(next.hint === 'Too late: dodge sooner', `the next hint replaces it ("${next.hint}")`);
+    expect.ok(next.hint === 'Too late: dash sooner', `the next hint replaces it ("${next.hint}")`);
   }));
   test('events: dodge fires once for a swing rolled through, and for a bolt', withLessons(() => {
     dodgeRoll(0.1);
@@ -4110,7 +4110,7 @@
   test('World hints: the player\'s own key over the foe to strike, deflect a red blow or dodge a blue one, until learned', () => {
     const H = CONFIG.hints, W = A.worldHints, el = document.getElementById('worldHint');
     let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
-    const wasLessons = settings.lessons, wasParry = [...ACTIONS.parry];
+    const wasLessons = settings.lessons, wasBlock = [...ACTIONS.block];
     try {
       W.forget(); settings.lessons = true;
       Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sturdy(Game.player);
@@ -4126,11 +4126,11 @@
       e.stateTime = hit.startup - H.lead * 0.5; s = show();
       expect.ok(s && s.kind === 'deflect' && s.key === 'L', `a red blow about to land: Deflect, L (${s && s.kind} ${s && s.key})`);
       e.holdLeft = 1; expect.ok(!show(), 'a held blow: not yet, its delay still to come'); e.holdLeft = null;
-      ACTIONS.parry = ['PadLT', 'KeyP']; s = show();
+      ACTIONS.block = ['KeyP', 'PadLB']; s = show();
       expect.ok(s && s.key === 'P', `a rebound key shows at once (${s && s.key})`);
-      ACTIONS.parry = wasParry;
+      ACTIONS.block = wasBlock;
       e.attack = { ...red, hits: red.hits.map(h => ({ ...h, noParry: true })) }; s = show();
-      expect.ok(s && s.kind === 'dodge' && s.key === 'Shift', `a blue blow: Dodge, Shift (${s && s.kind} ${s && s.key})`);
+      expect.ok(s && s.kind === 'dodge' && s.key === 'Shift' && s.word === 'Dash', `a blue blow: Dash, Shift (${s && s.kind} ${s && s.key})`);
       e.attack = red;
       for (let i = 0; i < H.learn; i++) events.emit('parry', { target: e, player: p });
       expect.ok(!show(), `deflected ${H.learn} times: the Deflect hint is gone`);
@@ -4141,7 +4141,42 @@
       expect.ok(show() && W.shown.kind === 'attack', 'on again: Attack, not yet learned');
       e.setState(ES.LURK); expect.ok(!show(), 'a foe lying in wait gives nothing away'); e.setState(ES.CHASE);
     } finally {
-      settings.lessons = wasLessons; ACTIONS.parry = wasParry;
+      settings.lessons = wasLessons; ACTIONS.block = wasBlock;
+      try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
+  test('World hints: the moves made out of another (finisher, dash attack, jump attack) and a charged number key, until learned', () => {
+    const H = CONFIG.hints, W = A.worldHints, M = PLAYER_DEF.moveset.attacks;
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons;
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+      const p = Game.player, e = sim.spawn('knight', p.x + 2.4, p.z);
+      const show = () => { Game.render(1, STEP); return W.shown; };
+      const as = (state, attack = null) => { p.attack = attack; p.setState(state); return show(); };
+      const blow = id => events.emit('strike', { strike: makeStrike(M[id]), attacker: p, target: e, at: e, blocked: false });
+      let s = as(PS.ATTACK, M.light);
+      expect.ok(s && s.kind === 'finisher' && s.key === 'K' && s.word === 'Finisher', `mid-string: Finisher, K (${s && s.kind} ${s && s.key} ${s && s.word})`);
+      s = as(PS.ATTACK, M.light4); expect.ok(s && s.kind === 'finisher', 'the string\'s last light too');
+      s = as(PS.ATTACK, M.finisher1); expect.ok(!s || s.kind !== 'finisher', 'not during a finisher');
+      s = as(PS.ROLL); expect.ok(s && s.kind === 'dashAttack' && s.key === 'J' && s.word === 'Dash attack', `in a dash: Dash attack, J (${s && s.kind})`);
+      s = as(PS.JUMP); expect.ok(s && s.kind === 'jumpAttack' && s.key === 'J' && s.word === 'Jump attack', `in the air: Jump attack, J (${s && s.kind})`);
+      p.dropped = true; s = as(PS.FALL); expect.ok(!s || s.kind !== 'jumpAttack', 'dropped from a grip: no plunge'); p.dropped = false;
+      e.x = p.x + H.near + 1; s = as(PS.JUMP); expect.ok(!s, `a foe beyond ${H.near} m: nothing`); e.x = p.x + 2.4;
+      for (let i = 0; i < H.learn; i++) { blow('finisher1'); blow('dashLight'); blow('jumpLight'); }
+      expect.ok(W.done.finisher === H.learn && W.done.dashAttack === H.learn && W.done.jumpAttack === H.learn, `each learned by landing it (${JSON.stringify(W.done)})`);
+      s = as(PS.ROLL); expect.ok(!s || s.kind === 'attack', 'learned: the dash shows only Attack, if anything');
+      p.grantAbilities(['fire-burst']); s = as(PS.IDLE);
+      expect.ok(!s || s.kind === 'attack', 'a key not yet charged: nothing for it');
+      p.perk.charge.strike = p.kit.pressed.strike.v.charge; s = show();
+      expect.ok(s && s.kind === 'strike' && s.key === '1' && s.word === 'Fire Burst', `a charged key: its number and its ability (${s && s.kind} ${s && s.key} ${s && s.word})`);
+      e.x = p.x + CONFIG.abilities.press.range + 2; s = show(); expect.ok(!s, 'no foe in its reach: nothing'); e.x = p.x + 2.4;
+      for (let i = 0; i < H.learn; i++) events.emit('abilityPress', { body: p, key: 'strike', ability: 'fire-burst' });
+      s = show(); expect.ok(!s || s.kind === 'attack', `pressed ${H.learn} times: learned (${s && s.kind})`);
+    } finally {
+      settings.lessons = wasLessons;
       try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
       W.reload();
     }

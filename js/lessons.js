@@ -105,7 +105,7 @@ const lessons = (() => {
   // ---- drawing ---------------------------------------------------------------------------------------------------
   // Keycaps from the live bindings: the keyboard's first key and its mouse button (or the one key a lesson names), or the
   // controller's buttons.
-  const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Deflect', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Roll' };
+  const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Deflect', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Dash' };
   const FACE = { PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y' };
   const cap = label => label.length === 1 ? label.toUpperCase() : label;
   function caps(key) {

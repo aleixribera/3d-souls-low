@@ -15,19 +15,19 @@ const LESSONS = {
   move: { title: 'MOVE', keys: ['move', 'camera'],
     text: () => usingPad() ? 'Walk with the left stick. Turn the view with the right.' : 'Walk, and turn the view with the mouse. Click the view to capture it.',
     check: (g, t) => t.dist >= 5 },
-  roll: { title: 'DODGE', keys: ['roll'], text: () => 'Dodge to slip out of harm.',
+  roll: { title: 'DASH', keys: ['roll'], text: () => 'Dash out of harm. You have two dashes, each back in a moment.',
     check: g => g.player.state === PS.ROLL },
   jump: { title: 'JUMP', keys: ['jump'], text: () => 'Jump over low rubble, or onto a foe.',
     check: g => g.player.state === PS.JUMP },
   lock: { title: 'LOCK ON', keys: ['lock'], text: () => 'Fix your eyes on the foe ahead. Lock on again to let go.',
     on: type => type === 'lock', check: g => !!g.lock },   // already locked on (while another card showed): done
   // Done on a swing, hit or miss: the first thing to know is how to strike at all.
-  light: { title: 'ATTACK', keys: ['light'], text: () => 'Swing your sword. Strike again to carry on the string.',
+  light: { title: 'ATTACK', keys: ['light'], text: () => 'Swing your sword. Keep striking for a string of four.',
     check: g => g.player.state === PS.ATTACK && !!g.player.attack && /^light/.test(g.player.attack.id) },
   // The shield, shown as the first red-glinting blow winds up (urgent: the blow is coming). Done on a blow taken on it,
-  // or parried.
+  // or deflected.
   block: { title: 'BLOCK', keys: ['block'], urgent: true,
-    text: () => 'Hold to raise your shield and take the blow on it. A red glint means it can be blocked.',
+    text: () => 'Hold to take a red-glinting blow on your shield. Each one wears your guard down.',
     on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked || type === 'parry' && lessonBy(d, g) },
   // Done on a fully charged heavy that lands; a lighter one says how.
   heavy: { title: 'HEAVY ATTACK', keys: ['heavy'], text: () => 'Hold until the blade glows, then let go. Slow, but it breaks guards.',
@@ -39,25 +39,26 @@ const LESSONS = {
     } },
   jumpAttack: { title: 'JUMP ATTACK', keys: ['jump', 'heavy'], text: () => 'Jump at a foe, then strike in the air to come down on it.',
     on: (type, d, t, g) => type === 'strike' && lessonBy(d, g) && !!d.strike.air },
-  flask: { title: 'HEAL', keys: ['flask'], urgent: true, text: () => 'Drink from your flask. Bonfires fill it again.',
+  flask: { title: 'HEAL', keys: ['flask'], urgent: true, text: () => 'Drink from your flask. You can walk as you drink; a hit cuts it short.',
     on: (type, d, t, g) => type === 'itemUsed' && d.item === 'flask' && d.player === g.player },
-  stance: { title: 'BREAK ITS STANCE', keys: ['heavy'], text: () => 'Armoured foes shrug off light blows. Heavy ones bring them to their knees.',
+  stance: { title: 'BREAK ITS STANCE', keys: ['heavy'], text: () => 'Armoured foes shrug off light blows. Heavies and finishers bring them to their knees.',
     on: type => type === 'postureBreak' || type === 'executionEnd' },
   execute: { title: 'EXECUTE', keys: ['light'], urgent: true, text: () => 'It kneels. Step close to its front and strike to finish it.',
     on: (type, d, t, g) => type === 'executionEnd' && d.player === g.player },
-  // The block key tapped as a red-glinting blow lands (js/input.js: on a keyboard the parry rides the block key).
-  parry: { title: 'DEFLECT', keys: ['parry'], text: () => 'Tap it as a red glint lands to turn the blow aside, then strike while it reels.',
+  // The block key tapped as a red-glinting blow lands (one key: held it blocks, tapped it deflects).
+  parry: { title: 'DEFLECT', keys: ['block'], text: () => 'Tap, don\'t hold, as a red blow lands to turn it aside. Turn a string\'s last blow and strike back.',
     on: (type, d, t, g) => type === 'parry' && lessonBy(d, g) },
   rest: { title: 'BONFIRE', keys: ['rest'], arrow: true,
     text: () => 'Rest to heal and refill your flasks. You return here if you fall, and foes you beat stay down.',
     on: type => type === 'rest' },
   switch: { title: 'SWITCH TARGET', keys: ['switchTarget'], urgent: true, text: () => 'More than one foe. Move your lock to the other.',
     on: type => type === 'switchTarget' },
-  // Done on one roll through a blow. A swing that ends without one says why: rolled too early (its invulnerability over
-  // before the blow), too late (hit without having rolled), or not into it at all. Polled, so it works online too.
-  dodge: { title: 'DODGE INTO IT', keys: ['roll'], urgent: true, text: () => 'Dodge into the blow as it falls, not away: you pass through untouched.',
+  // Done on one dash through a blow (a perfect dodge: the counter's slow beat follows). A swing that ends without one
+  // says why: dashed too early (its invulnerability over before the blow), too late (hit without having dashed), or not
+  // into it at all. Polled, so it works online too.
+  dodge: { title: 'DASH INTO IT', keys: ['roll'], urgent: true, text: () => 'Dash into the blow as it lands: you pass through, and time slows for your counter.',
     on: (type, d, t, g) => {
-      if (type === 'strike' && d.target === g.player && !d.blocked && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early: dodge as it falls' : 'Too late: dodge sooner';
+      if (type === 'strike' && d.target === g.player && !d.blocked && t.flags.swing) t.flags.swing.hit = t.flags.swing.rolled ? 'Too early: dash as it lands' : 'Too late: dash sooner';
       return type === 'dodge' && d.player === g.player && !d.projectile;
     },
     check: (g, t) => {
@@ -66,19 +67,19 @@ const LESSONS = {
       if (!s && e.state === ES.WINDUP) t.flags.swing = { enemy: e, rolled: false, hit: null };
       else if (s && g.player.state === PS.ROLL && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) s.rolled = true;
       else if (s && s.enemy === e && e.state !== ES.WINDUP && e.state !== ES.ACTIVE) {
-        if (s.hit || s.rolled) t.hint = s.hit || 'Dodge into the blow';
+        if (s.hit || s.rolled) t.hint = s.hit || 'Dash into the blow';
         t.flags.swing = null;
       }
       return false;
     } },
   // Level 1's giant: its hand closes on you (a hit's `seize`). Done on getting out of the grip, however it ends.
-  grip: { title: 'BREAK FREE', keys: ['light', 'roll'], urgent: true, text: () => 'Strike or dodge, again and again, to tear loose sooner.',
+  grip: { title: 'BREAK FREE', keys: ['light', 'roll'], urgent: true, text: () => 'Strike or dash, again and again, to tear loose sooner.',
     on: (type, d, t, g) => type === 'seizeEnd' && d.body === g.player },
   // Level 2: the first raised shield.
   shield: { title: 'SHIELDS', keys: ['heavy'], text: () => 'A raised shield turns light blows. Heavy attacks batter its guard down, or go round it.',
     on: type => type === 'postureBreak' },
   // Level 3: the first blue glint.
-  blue: { title: 'BLUE GLINT', keys: ['roll'], urgent: true, text: () => 'Blue cannot be deflected or blocked. Dodge through it.',
+  blue: { title: 'BLUE GLINT', keys: ['roll'], urgent: true, text: () => 'Blue cannot be deflected or blocked. Dash through it.',
     on: (type, d, t, g) => type === 'dodge' && d.player === g.player },
 };
 // When a level's lesson shows (`when`, exactly one of these):
