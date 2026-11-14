@@ -400,8 +400,9 @@ session (the showcase session), not the loop**: the loop doesn't touch the showc
    plays it live on a fixed seed, so it looks the same each time; a test runs it every release and fails when a beat
    stops happening; each big new mechanic adds a beat.
 5. **A real video too:** a tool records the same cinematic at each release: a 1080p 60 fps MP4, and a **WhatsApp
-   version** (Aleix) that WhatsApp sends as a playable video, not a file: MP4, H.264 and AAC, 720p, 30 fps, under
-   16 MB. Posting either anywhere stays Aleix's.
+   version** (Aleix), 1080p (Aleix, 2026-11-14) and shareable: MP4, H.264 (yuv420p, faststart) and AAC, 1080p, 30 fps,
+   under about 30 MB, so it plays inline when sent as a video (WhatsApp itself scales it to 720p with HD on) and
+   stays full 1080p when sent as a document. Posting either anywhere stays Aleix's.
 Check: the cinematic seen in the game at desktop and phone width; its test passing; both videos played back, the
 WhatsApp one's size and codecs checked; Aleix watches it.
 
