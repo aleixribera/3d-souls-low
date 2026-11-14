@@ -4075,6 +4075,9 @@
       for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
         Game.startFight(id);
         expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
+        // One frame first, so the counts below see only the bolts: as the page's first test, the first frame's own
+        // uploads (the scene's, not a bolt's) would otherwise count against them.
+        Game.render(1, STEP);
         const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;
         const enemy = Game.enemies[0], shot = enemy.baseDef.attacks.find(a => a.projectile);
         if (shot) {
