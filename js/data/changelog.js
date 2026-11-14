@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.127.0', title: 'A deflect with a kick', text: 'A deflected blow now flings your sword up and rocks your shoulders back before you settle low over the blade. While dashing, your lower foot stays on the floor instead of sinking into it.' },
   { version: 'v7.126.0', title: 'Your name', text: 'Online play asks your name once and keeps it with your save. Change it any time in Options.' },
   { version: 'v7.125.0', title: 'A dodge you can trust', text: 'When the dodge flash and sound play, the blow has truly missed you. A blow that does land now closes your counter.' },
   { version: 'v7.124.0', title: 'Sparring', text: 'New players now spar before their first Story road or Boss Rush: a pale teacher shows each move with its keys, then you do it against a sparring partner, from the dash and the perfect dodge to the counter, the string, a finisher, the deflect, the riposte, your abilities and drinking on the move. It takes about a minute, can be skipped from the pause menu, and is always there under Practice and the lobby\'s Tutorial button. While a counter is open, your body now keeps a cold halo and a ring at your feet that closes in until the window ends.' },
