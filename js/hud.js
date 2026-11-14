@@ -200,6 +200,42 @@ const hud = {
     }
     for (let i = n; i < this.tags.length; i++) { this.tags[i].el.style.display = this.tags[i].gEl.style.display = 'none'; this.tags[i].enemy = null; }
   },
+  // Damage numbers (a level with `damageNumbers`: the Ability Grounds). Each enemy's health is read every frame and
+  // a drop rises off it as a number, so blows and every ability's damage all show. A fixed pool, reused.
+  numRoot: $('dmgNums'), nums: [], numNext: 0, numHp: new WeakMap(), numPos: new THREE.Vector3(),
+  updateNumbers(game, dt) {
+    const D = CONFIG.hud.damageNumbers, on = !!(game.level && game.level.damageNumbers), v = this.numPos;
+    if (on && !this.nums.length)
+      for (let i = 0; i < D.pool; i++) {
+        const el = document.createElement('div'); el.className = 'dmgNum'; this.numRoot.appendChild(el);
+        this.nums.push({ el, enemy: null, age: D.life, side: 0 });
+      }
+    if (on) for (const e of game.enemies) {
+      const was = this.numHp.get(e);
+      this.numHp.set(e, e.hp);
+      if (was === undefined || e.hp >= was - 0.5) continue;
+      const n = this.nums[this.numNext], dmg = Math.round(was - e.hp);
+      this.numNext = (this.numNext + 1) % this.nums.length;
+      n.enemy = e; n.age = 0; n.side = D.lanes[this.numNext % D.lanes.length];   // side to side, so a flurry does not stack up
+      n.el.textContent = dmg;
+      n.el.classList.toggle('big', dmg >= D.big);
+    }
+    if (!this.nums.length) return;
+    const w = window.innerWidth, h = window.innerHeight, s = this.scale, still = reducedMotion();
+    for (const n of this.nums) {
+      n.age += dt;
+      const e = n.enemy, shown = on && e && n.age < D.life && game.enemies.includes(e);
+      if (shown) {
+        const q = e.rig.root.position;
+        v.set(q.x, q.y + e.height * 0.8, q.z).project(camera);
+        if (v.z < -1 || v.z >= 1) { n.el.style.display = 'none'; continue; }
+        const k = n.age / D.life, up = still ? 0 : D.rise * (1 - (1 - k) * (1 - k));
+        n.el.style.transform = `translate(${(v.x + 1) / 2 * w + n.side * D.spread * s}px, ${(1 - v.y) / 2 * h - up * s}px) translate(-50%, -50%) scale(${s})`;
+        n.el.style.opacity = (k < 0.6 ? 1 : (1 - k) / 0.4).toFixed(3);
+        n.el.style.display = 'block';
+      } else if (n.enemy) { n.el.style.display = 'none'; n.enemy = null; }
+    }
+  },
   // Player vitals: health with a lag trail, a heal glow, a hit shake and a low-health pulse; stamina with a trail of
   // what was just spent, a pause shade while it waits to regenerate, an empty pulse, a winded flush and a refund glow.
   updateVitals(game, dt) {
@@ -303,12 +339,13 @@ const hud = {
   },
   update(game, dt) {
     if (game.kind === 'bossBattle') { this.updateTags(game, dt); bossBattle.drawHud(game); return; }
-    const H = CONFIG.hud, t = game.target(), e = t && t.def.posture ? t : null;   // the top bar is for bosses only
+    const H = CONFIG.hud, t = game.target(), e = t && (t.def.posture || t.def.bossBar) ? t : null;   // the top bar: bosses and the great mannequins
     const p = game.player;
     this.clock += dt;
     this.updateControlsTips(game, dt);
     for (const k of ['healTimer', 'hurtTimer', 'refundTimer', 'deniedTimer']) this[k] = Math.max(0, this[k] - dt);
     this.updateTags(game, dt);
+    this.updateNumbers(game, dt);
     this.updateCalm(game, t, dt);
     this.updateVitals(game, dt);
     this.updateBoss(e, dt);

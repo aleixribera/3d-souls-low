@@ -494,6 +494,15 @@ const TRAINING_DEFS = [
   { id: 'executionDummy', name: 'Execution Dummy', scale: 1.5, bulk: 1.3, radius: 0.6, color: 0x6a4a3a, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
     hp: 300, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [],
     stagger: { max: 100, heavy: 55, light: 36, breakers: ['heavy', 'jumpHeavy'], showBar: true, decayDelay: 4, decay: 8, breakTime: 4.5, hitstop: 0.14 } },
+  // The Ability Grounds' great mannequins (v7.76.0): boss-sized, with a boss's health and the big bar at the top
+  // (`bossBar`). The bar runs out like a boss's, holds empty for `refill.delay` s, then fills again over `refill.time` s.
+  // The sparring one swings its slow, telegraphed blow at boss reach, for the abilities a parry or a dodge sets off.
+  { id: 'greatDummy', name: 'Great Mannequin', scale: 2.1, bulk: 1.25, radius: 0.95, color: 0x7a6440, weapon: 'none', visual: { skin: 0x8a7650, roughness: 0.95 },
+    hp: 3000, poise: Infinity, flinchTime: 0, parriedTime: 1.6, attacks: [], bossBar: true, refill: { delay: 1.5, time: 1.2 } },
+  { ...SPARRING_DUMMY, id: 'greatSparringDummy', name: 'Great Sparring Mannequin', scale: 2.1, bulk: 1.25, radius: 0.95, hp: 3000,
+    bossBar: true, refill: { delay: 1.5, time: 1.2 },
+    attacks: SPARRING_DUMMY.attacks.map(a => ({ ...a, id: 'greatTrainingSwing', name: 'Great Training Swing', range: 5.5,
+      box: { w: 2.4, h: 4.8, d: 4.6, fwd: 2.8, y: 2.4 } })) },
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));
 // A boss (the big bar at the top, no overhead bar): posture or phases. Practice lists them apart from the enemies.

@@ -259,6 +259,9 @@ function validateData({ visual = true } = {}) {
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
     need(d.weapon in WEAPONS, `Enemy "${d.id}": unknown weapon "${d.weapon}".`);
+    if ('bossBar' in d) need(d.bossBar === true && TRAINING_DEFS.includes(d), `Enemy "${d.id}": bossBar is for training dummies (a boss has it already), true or left out.`);
+    if ('refill' in d) need(TRAINING_DEFS.includes(d) && d.refill && num(d.refill.delay) && d.refill.delay >= 0 && num(d.refill.time) && d.refill.time > 0,
+      `Enemy "${d.id}": refill is for training dummies, { delay (s, 0 or more), time (s, above 0) }.`);
     if ('noRepeat' in d) need(Number.isInteger(d.noRepeat) && d.noRepeat > 0, `Enemy "${d.id}": noRepeat must be a positive whole number.`);
     if (d.crowd) need(['busyMul', 'busyCooldown', 'groupCooldown'].every(k => !(k in d.crowd) || (num(d.crowd[k]) && d.crowd[k] >= 0)),
       `Enemy "${d.id}": crowd may set busyMul, busyCooldown and groupCooldown (numbers, 0 or more).`);
@@ -372,6 +375,7 @@ function validateData({ visual = true } = {}) {
     if ('cull' in L) need(typeof L.cull === 'boolean', `${where}: cull must be true or false.`);
     if ('lessons' in L) validateLessons(L, where, need);
     if ('abilityLab' in L) need(L.abilityLab === true, `${where}: abilityLab must be true or left out.`);
+    if ('damageNumbers' in L) need(L.damageNumbers === true, `${where}: damageNumbers must be true or left out (Boss Rush and Story have none).`);
     for (const k of ['wakeZones', 'clearGates', 'steer', 'fullTracking']) if (k in L) need(typeof L[k] === 'boolean', `${where}: ${k} must be true or false.`);
     if (L.layout === 'rooms') { validateRooms(L, where, need, num, visual); continue; }
     if (L.layout === 'arena') {   // a level in the duel arena (the Ability Grounds): training dummies inside its walls
@@ -436,6 +440,9 @@ function validateData({ visual = true } = {}) {
   const Pl = CONFIG.player;
   need(nonNeg(Pl.exhaustDelay) && Pl.exhaustRecover > 0 && Pl.exhaustRecover <= PLAYER_DEF.stats.maxStamina,
     'CONFIG.player: exhaustDelay must be 0 or more, exhaustRecover above 0 and at most the player maxStamina.');
+  { const D = CONFIG.hud.damageNumbers;   // the Ability Grounds' damage numbers
+    need(Number.isInteger(D.pool) && D.pool > 0 && [D.life, D.rise, D.spread, D.big].every(v => num(v) && v > 0) && Array.isArray(D.lanes) && D.lanes.length && D.lanes.every(num),
+      'CONFIG.hud.damageNumbers: pool (whole number), life, rise, spread and big above 0, and lanes (numbers).'); }
   need(Array.isArray(CONFIG.hud.text.deathTips) && CONFIG.hud.text.deathTips.length > 0 && CONFIG.hud.text.deathTips.every(t => typeof t === 'string' && t),
     'CONFIG.hud.text.deathTips must be a list of tips (text).');
   const D = CONFIG.death;

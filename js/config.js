@@ -355,6 +355,8 @@ const CONFIG = {
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8,
+         // Damage numbers (only on a level with `damageNumbers`, the Ability Grounds): each rises `rise` px over `life` s.
+         damageNumbers: { pool: 16, life: 0.9, rise: 54, spread: 58, lanes: [0, 1, -1, 0.5, -0.5], big: 120 },
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
          online: { noticeTime: 7 },
          exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
