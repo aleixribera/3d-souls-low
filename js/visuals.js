@@ -84,7 +84,7 @@ function checkVisualData(need, num) {
       && Number.isInteger(b.ribbonSub) && b.ribbonSub >= 1 && b.ribbonSub <= VIS.ultra.trails.sub,
       `CONFIG.VISUALS.fxBudgets.${name}: invalid density, capacity, light or ribbon budget.`);
   }
-  need(VIS.defaultQuality in Q, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a quality preset.`);
+  need(VIS.defaultQuality in Q && !Q[VIS.defaultQuality].hidden, `CONFIG.VISUALS.defaultQuality "${VIS.defaultQuality}" is not a player's quality preset.`);
   for (const name of Object.keys(Q)) {
     const c = VIS.cinematic[name];
     need(c && Number.isInteger(c.cloudLayers) && c.cloudLayers >= 1 && c.cloudLayers <= 5
@@ -1373,7 +1373,6 @@ const visuals = (() => {
     look: () => A,
     decals,
     qualityLabel: name => (Q[name] || Q[VIS.defaultQuality]).label,
-    nextQuality(name, d) { const k = Object.keys(Q), i = Math.max(0, k.indexOf(name)); return k[(i + d + k.length * 2) % k.length]; },
     setQuality(name) {
       const previous = quality;
       quality = Q[name] || Q[VIS.defaultQuality];

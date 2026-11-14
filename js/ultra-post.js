@@ -13,7 +13,8 @@
 const ultraPost = (() => {
   const U = VIS.ultra, S = U.shadows, SC = U.scatter, MAXL = SC.lights, MAXW = U.waves.max;
   const quality = () => visuals.quality();
-  const budget = () => VIS.cinematic[quality().label.toLowerCase()];
+  let budgetOf = null, budgetIs = null;   // the preset's cinematic budget, looked up once per preset (no string per frame)
+  const budget = () => { const q = quality(); if (q !== budgetOf) { budgetOf = q; budgetIs = VIS.cinematic[q.label.toLowerCase()]; } return budgetIs; };
   let on = false, W = 1, H = 1, soft = 1, moonBase = null, open = false, envTex = null, lastDef = null, sweeps = 0;
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
   const sunUp = new THREE.Vector3(), sunRight = new THREE.Vector3(), sunUp2 = new THREE.Vector3(), sunCenter = new THREE.Vector3();
@@ -242,7 +243,10 @@ void main() {
   // Metal reflections: the level's environment on every metallic material (armour, weapons, iron).
   const reflected = new Set();
   function reflect(m) {
-    if (!quality().reflections || !m.isMeshStandardMaterial || ((!m.userData.weathered || !budget().weatheredEnv) && m.metalness < U.env.metalFrom) || !envTex) return;
+    if (!quality().reflections || !m.isMeshStandardMaterial || ((!m.userData.weathered || !budget().weatheredEnv) && m.metalness < U.env.metalFrom) || !envTex) {
+      if (envTex && m.envMap === envTex) { m.envMap = null; m.needsUpdate = true; }   // reflected under another preset, then untracked
+      return;
+    }
     reflected.add(m);
     if (m.envMap === envTex) return;
     if (!m.envMap) m.needsUpdate = true;
