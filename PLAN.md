@@ -102,6 +102,10 @@ Aleix, 2026-11-13.
 - Art direction (Aleix, 2026-11-14): the ability design approach grows into the whole game's style: a game-wide style
   bible after the abilities, then concept sessions for the player, the bosses and the levels, one at a time; the loop
   builds from them ("Art direction" section).
+- Replays (Aleix, 2026-11-15): every multiplayer Boss Rush run recorded as a game replay (state, not video), watched
+  only by him in the game's own renderer from a tailnet-only Homepage card; no notice to players; a summary per run
+  and notes pinned to moments as feedback; kept 60 days, starred ones forever. Built now, by one pass, start to
+  finish (its own section, first).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -130,6 +134,44 @@ Aleix, 2026-11-13.
 
 The agent has seen it working in a preview, standing and through every attack, and judged whether it will work in the
 game; then a frame of it in its level. Both images in the pass report. Triangle counts are a soft warning, not a rule.
+
+## Now, before anything else: replays of multiplayer runs (Aleix, 2026-11-15)
+
+Aleix: "records the game in some way as a replay (not video, game replay) and allows me to view all of them. I want
+to see when my friends play and how they play, it can also be useful for feedback." **Built now, start to finish, by
+one loop pass, ahead of everything else in both tracks** (Aleix: "right now"); the pause until Friday doesn't apply
+to it.
+
+1. **What's recorded:** every multiplayer Boss Rush run on the server, from the first fight to its end, each fight a
+   chapter: every player and bot, the bosses and enemies, abilities fired and picked, hits, downs, deaths, Finishing
+   Blows. Offline runs aren't (they never reach the server).
+2. **State, not inputs:** each client owns its own movement and the server only sees poses, so the recorder keeps
+   what the server already has: the poses players send, its own snapshots and events (`js/events.js` names), at the
+   snapshot rate or lower. Content is named by string id (rule 4), so a replay keeps playing after later releases;
+   an id that no longer exists plays as a plain stand-in rather than failing. Recording costs the live game nothing
+   noticeable (server tick and bandwidth measured before and after).
+3. **Private:** only Aleix watches, from a **Replays** card on his Homepage, tailnet only. Nothing about replays is
+   reachable through the game's public address (:8443 through Funnel); the replay list and viewer answer on their
+   own tailnet-only door. Players aren't told in the lobby (Aleix: no notice). The homelab side (the port in
+   `homelab.toml`, the compose port, `hl expose --apply`, the Homepage card) follows the homelab repo's own
+   `CLAUDE.md` and `bin/deploy`.
+4. **The viewer** is the game's own renderer playing the recording, so a replay looks exactly like the match:
+   - a list of runs: date, who played, fight reached, length, how it ended; newest first;
+   - follow any player from behind, or a free camera;
+   - speed 0.25× to 8×, pause, scrub;
+   - a timeline marked with fight starts, deaths and downs, legendary picks and Finishing Blows; jump to the next
+     death.
+5. **Feedback:** each run also writes a short summary: what killed each player and how often, which boss attacks
+   land most, abilities picked, time per fight. The loop reads them when tuning bosses (track B's bot targets, the
+   fair-attacks rule in rework item 4). In the viewer Aleix can pin a note at any moment ("this stomp felt unfair");
+   notes reach the loop as his feedback, with the run and the moment, read like `.claude/feedback.md`.
+6. **Kept:** every run 60 days, runs Aleix stars forever. Compressed, written in batches, not every frame: the
+   server's SSD is 80% worn. In `data/`, so the nightly backup has them; the size per hour of play measured and
+   noted.
+Check: a real multiplayer run (two browsers, or one and the server's bots) recorded, then watched in the viewer from
+the Homepage card on desktop and phone width, following each player, at several speeds, jumping to a death; a note
+pinned and seen by the loop; the replay address refused from the public one; the live game's tick and bandwidth
+unchanged within noise; an old replay played after a data change.
 
 ## First, urgent: the player rework, the whole game (Aleix, 2026-11-14)
 
