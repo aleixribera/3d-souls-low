@@ -1022,6 +1022,9 @@ const multiplayer = (() => {
       connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
       resumeToken = typeof msg.token === 'string' ? msg.token : ''; board = msg.board && typeof msg.board === 'object' ? msg.board : null;
       try { localStorage.setItem('combatArena.onlineToken', resumeToken); } catch {}
+      // A rename made while this was connecting went out with nothing to carry it: send it now.
+      const name = progress.name;
+      if (name && name !== roster.find(p => p.id === self)?.name) send({ type: 'name', name });
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       // The leader's Mode: Boss Rush first (the lobby's default), the fixed boss runs, then the story played together.

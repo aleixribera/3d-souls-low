@@ -16,7 +16,7 @@ const nameAsk = (() => {
     <button id="nameAskCancel" class="ui-text-button" type="button"><span class="ui-key" aria-hidden="true"></span>Cancel</button></div>
     <p id="nameAskHint" class="ui-hints"></p></form>`;
   const style = document.createElement('style');
-  style.textContent = `#nameAsk{position:fixed;inset:0;z-index:130;overflow:auto;background:var(--ui-veil);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text);color-scheme:dark}
+  style.textContent = `#nameAsk{position:fixed;inset:0;z-index:130;overflow:auto;background:#080a0c;color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text);color-scheme:dark}
     #nameAsk[hidden],#nameAsk [hidden]{display:none!important}#nameAsk *{box-sizing:border-box}
     #nameAsk .name-card{display:flex;flex-direction:column;gap:18px;width:100%;max-width:560px;padding:max(28px,12vh) max(16px,5vw) 24px}
     #nameAskField{display:block;width:100%;min-height:56px;padding:0 14px;background:var(--ui-well);color:var(--ui-ink);border:1px solid var(--ui-line-hi);border-radius:2px;font:400 26px var(--ui-display)}
@@ -67,8 +67,8 @@ const nameAsk = (() => {
     else if (field.value.length < max) field.value += key;
     refresh();
   }
-  function buildKeys() {
-    const previous = document.activeElement?.dataset.nameKey; keys.textContent = '';
+  function buildKeys() {   // the focused key stays focused across the case toggle
+    const previous = keys.contains(document.activeElement) ? document.activeElement.dataset.nameKey : null; keys.textContent = '';
     const add = (label, key, action = false) => {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.dataset.nameKey = key;
       if (action) b.className = 'name-action';
@@ -108,6 +108,7 @@ const nameAsk = (() => {
     if (root.hidden) return;
     const then = ask?.then, name = ArenaNet.name(field.value);
     if (keep && !name) return;
+    if (root.contains(document.activeElement)) document.activeElement.blur();
     root.hidden = true; ask = null;
     for (const n of root.querySelectorAll('.pad-selected')) n.classList.remove('pad-selected');
     if (before && before.isConnected) before.focus({ preventScroll: true });
@@ -125,6 +126,8 @@ const nameAsk = (() => {
   window.addEventListener('keydown', ev => {
     if (root.hidden) return;
     ev.stopImmediatePropagation(); input.use('keyboard');
+    // A key held from the row that opened the ask must not type into it or press Save.
+    if (ev.repeat && ['Enter', 'NumpadEnter', 'Space'].includes(ev.code)) { ev.preventDefault(); return; }
     const inField = document.activeElement === field;
     if (ev.code === 'Escape') { ev.preventDefault(); if (!ev.repeat) close(false); return; }
     if (ev.code === 'Tab') {

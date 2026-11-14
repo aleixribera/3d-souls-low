@@ -40,8 +40,7 @@ const { config: C } = require('../js/net-protocol.js');
     p.x = Game.spawn.x + 1; p.z = Game.spawn.z; p.y = world.floorY(p.x, p.z, Game.spawn.y); p.yaw = 0.7;
     p.vx = p.vy = p.vz = 0; p.grounded = true; p.setState(PS.IDLE); p.savePrev();
     p.hp = 61; p.item('flask').count = 1;
-    document.getElementById('lobbyName').value = 'Remembered knight';
-    document.getElementById('lobbyName').onchange();
+    progress.setName('Remembered knight');
     return { x: p.x, y: p.y, z: p.z, hp: p.hp, flasks: p.item('flask').count };
   });
   const assertSaved = async (page, saved) => {
@@ -50,7 +49,8 @@ const { config: C } = require('../js/net-protocol.js');
       return { x: p.x, y: p.y, z: p.z, hp: p.hp, flasks: p.item('flask').count };
     });
     for (const [key, value] of Object.entries(saved)) assert.ok(Math.abs(current[key] - value) < 0.05, key + ' is recovered: ' + current[key] + '/' + value);
-    assert.equal(await page.locator('#lobbyName').inputValue(), 'Remembered knight');
+    assert.equal(await page.evaluate(() => progress.name), 'Remembered knight');
+    await page.waitForFunction(() => multiplayer.info.players.some(p => p.id === multiplayer.info.self && p.name === 'Remembered knight'));
   };
   try {
     const a = await player('Leader');

@@ -60,6 +60,7 @@ const { createServer } = require('../server/index.cjs');
     await a.keyboard.type('Ser Vale'); await a.keyboard.press('Enter');
     await a.waitForFunction(() => multiplayer.connected);
     assert.deepEqual(await partyNames(a), ['Ser Vale (you)'], 'the chosen name shows in the party list');
+    await a.screenshot({ path: `${out}/lobby-desktop.png` });
     assert.equal(await a.locator('#publicLobby input').count(), 0, 'the lobby only shows the name');
     assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('arena.progress')).name), 'Ser Vale', 'kept with the save');
 

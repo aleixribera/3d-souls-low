@@ -110,7 +110,7 @@ const progress = (() => {
   }
   return {
     get xp() { return state.xp; }, get crates() { return state.crates; }, get look() { return state.look; },
-    get owned() { return [...state.owned]; }, get name() { return state.name; },
+    get owned() { return [...state.owned]; }, get name() { sync(); return state.name; },   // read rarely; another tab may have named you since
     get level() { return levelOf(state.xp); },
     owns: id => state.owned.includes(id),
     // The crate abilities this browser may be offered in Boss Rush (sent to the server with the look).
