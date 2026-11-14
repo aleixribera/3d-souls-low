@@ -4,6 +4,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
+Paused by Aleix, 2026-11-14. Passes 100 and 102 finish; no new pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
 - Track A (pass 101): 3c pass 5: the dash as a Blender clip (IK feet) scored 4, 4, 3 vs the old 3, 5, 5: not adopted,
   the game keeps pass 94's keys (BACKLOG). New `tools/anim-strip.cjs` films a move. Fixed CI's Lessons test (the
   Name row). Deflect (pass 99, in-page `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock.
