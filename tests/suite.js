@@ -2327,7 +2327,7 @@
       expect.ok(Game.enemies[0].pace === CONFIG.pace.boss, 'Fight 1: its own pace');
     } finally { settings.practiceFight = was; saveSettings(); Game.practiceGroup.length = 0; Game.showMenu('main'); }
   });
-  test('Menus: the gamepad alone walks the title, Practice, Options and pause', () => {
+  test('Menus: the gamepad alone walks the title, Practice, Options, Controls, the changelog and pause', () => {
     sim.begin();
     const read = gamepad.read, idle = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 0, 0, 0] };
     const press = code => {   // one press and release of a pad button
@@ -2361,12 +2361,29 @@
       press('PadLeft'); expect.ok(settings.sensitivity === speed, 'left steps it back');
       press('PadB'); expect.ok(on() === 'Camera', 'B on a setting returns to its category');
       until('PadDown', 'Reset to defaults'); until('PadRight', 'Back'); press('PadA'); expect.ok(Game.screen === 'main', 'Back in the footer leaves Options');
+      // Controls from the footer: every control with its pad button (the pad was used last), B back.
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Controls'); press('PadA');
+      const binding = name => { const row = [...document.querySelectorAll('#menuSide .menu-controls div')].find(r => r.firstChild.textContent === name); return row && row.lastChild.textContent; };
+      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Roll') === 'B / ○' && binding('Light attack') === 'RB / R1',
+        `Controls lists the pad's buttons (${Game.screen}: Roll ${binding('Roll')}, Light ${binding('Light attack')})`);
+      expect.ok(binding('Parry') === 'LT / L2 just before the blow lands' && !binding('Help'), `notes follow the binding, F1 is left out (${binding('Parry')})`);
+      input.use('keyboard'); expect.ok(binding('Roll') === 'Shift' && binding('Block (hold)') === 'C / L' && binding('Help') === 'F1', `the keys after a key press (${binding('Roll')}, ${binding('Block (hold)')})`);
+      press('PadB'); expect.ok(Game.screen === 'main', 'B leaves Controls');
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Changelog'); press('PadA');
+      expect.ok(Game.screen === 'changelog' && on() === `${CHANGELOG[0].version}  ·  ${CHANGELOG[0].title}`, `the changelog opens on the newest entry (${on()})`);
+      press('PadDown'); expect.ok($('menuDesc').textContent === CHANGELOG[1].text, 'down reads the next entry');
+      press('PadB'); expect.ok(Game.screen === 'main', 'B leaves the changelog');
       // Pause: Start opens it, Options and back, Start resumes.
       Game.startFight(ENEMY_DEFS.find(isBossDef).id); Game.tickLoading(CONFIG.loading.time + 0.01);
       expect.ok(Game.mode === 'play', `a fight (${Game.mode})`);
       press('PadStart'); expect.ok(Game.mode === 'pause' && Game.screen === 'pause' && on() === 'Resume', 'Start pauses, on Resume');
       until('PadDown', 'Options'); press('PadA'); expect.ok(Game.screen === 'options', 'Options from pause');
       press('PadB'); expect.ok(Game.screen === 'pause', 'B goes back to pause');
+      until('PadDown', 'Controls'); press('PadA');
+      expect.ok(Game.screen === 'controls' && Game.mode === 'pause' && $('menu').classList.contains('overlay'), `Controls from pause, over the fight (${Game.mode})`);
+      press('PadB'); expect.ok(Game.screen === 'pause' && on() === 'Resume', `B goes back to pause (${Game.screen}, on ${on()})`);
       press('PadStart'); expect.ok(Game.mode === 'play', 'Start resumes');
     } finally { gamepad.read = read; gamepad.release(); multiplayer.join = multiplayerJoin; input.suspended = suspended; Game.showMenu('main'); }
   });

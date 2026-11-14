@@ -52,6 +52,25 @@ function bindLabel(action, extraMouse) {
 const moveLabel = () => usingPad() ? '[ Left stick ]' : `[ ${['up', 'left', 'down', 'right'].map(a => keyLabel(ACTIONS[a][0])).join(' ')} ]`;
 const systemLabel = name => `[ ${keyLabel(usingPad() && SYSTEM_PAD[name] || SYSTEM_KEYS[name])} ]`;
 const menuLabel = name => usingPad() ? keyLabel(MENU_PAD[name]) : MENU_KEYS[name].map(keyLabel).join('/');
+// Every control, from the live bindings and the device used last: [what it does, its binding ("[ j / LMB ]", or ''),
+// a note after it ('' if none)]. The help panel (F1, js/hud.js) and the Controls screen (js/game-menus.js) read it.
+// online: the restart key opens the lobby instead.
+function controlRows(online) {
+  const pad = usingPad();
+  return [
+    ['Move', moveLabel(), ''], ['Camera', pad ? 'Right stick' : 'Mouse', pad ? '' : '(click the view to capture it)'],
+    ['Jump', bindLabel('jump'), ''], ['Roll', bindLabel('roll'), ''],
+    ['Light attack', bindLabel('light'), ''], ['Heavy attack', bindLabel('heavy'), ''],
+    ['Jump attack', '', 'Light or heavy while airborne'],
+    ['Block (hold)', pad ? bindLabel('block') : `[ ${ACTIONS.block.filter(c => !isPadCode(c)).map(keyLabel).filter((v, i, a) => a.indexOf(v) === i).join(' / ')} ]`, ''],
+    ['Parry', bindLabel('parry'), 'just before the blow lands'],
+    ['Lock-on', bindLabel('lock'), ''], ['Switch target', bindLabel('switchTarget'), 'while locked on'],
+    ['Rest at bonfire', bindLabel('rest'), ''], ['Use flask', bindLabel('flask'), ''], ['Talk / read', bindLabel('talk'), ''],
+    online ? ['Lobby', systemLabel('restart'), ''] : ['Restart', systemLabel('restart'), 'twice'],
+    [online ? 'Game menu' : 'Pause', systemLabel('pause'), ''],
+    ...(pad ? [] : [['Help', `[ ${keyLabel(SYSTEM_KEYS.help)} ]`, '']]),   // F1 has no pad button
+  ];
+}
 
 const input = {
   device: 'keyboard',   // 'keyboard' (keys and mouse) or 'pad': the last one used, for button labels

@@ -69,6 +69,14 @@
     grid-template-areas: "title title" "sub sub" "notice notice" "list side" "list desc"; }
   #menu.options-menu #menuSide { margin-top: 32px; border-top: 1px solid var(--ui-line); }
   #menu.options-menu #menuDesc { margin-top: 14px; padding-left: 16px; color: var(--ui-muted); }
+  /* Controls: the title, then every control in two columns of rows (what it does, its keys or buttons, a note). */
+  #menu.controls-menu #menuBox { grid-template-columns: minmax(0, 920px); grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "title" "sub" "notice" "side"; }
+  #menu.controls-menu #menuSide { margin-top: 32px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #ffffff30 transparent; }
+  .menu-controls { margin: 0; columns: 2; column-gap: 72px; font: 400 var(--ui-size-text)/1.35 var(--ui-text); }
+  .menu-controls div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--ui-line); break-inside: avoid; }
+  .menu-controls dt { color: var(--ui-muted); } .menu-controls dd { margin: 0; text-align: right; color: var(--ui-ink); font-weight: 600; }
+  .menu-controls dd span { color: var(--ui-muted); font-weight: 400; }
   .menuBtn.setting { justify-content: space-between; min-height: 56px; border-bottom: 1px solid var(--ui-line); font-size: 18px; }
   .menuBtn.setting[hidden] { display: none; }
   .menuBtn .v { flex: none; display: flex; align-items: center; width: 240px; font: 500 var(--ui-size-text)/1 var(--ui-text); color: var(--ui-ink); }
@@ -100,6 +108,9 @@
     #menu.options-menu #menuList .ui-row { width: auto; padding: 0 10px 0 9px; font-size: 16px; }
     #menu.options-menu #menuSide { margin-top: 18px; }
     #menu.options-menu #menuDesc { padding-left: 0; }
+    #menu.controls-menu #menuBox { grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-areas: "title" "sub" "notice" "side"; padding-bottom: 110px; }
+    #menu.controls-menu #menuSide { margin-top: 18px; }
+    .menu-controls { columns: 1; }
     .menuBtn.setting { gap: 10px; font-size: 16px; padding-right: 8px; }
     .menuBtn .v { width: min(180px, 52%); }
     #menuFoot { left: 20px; right: 20px; bottom: max(28px, env(safe-area-inset-bottom)); }

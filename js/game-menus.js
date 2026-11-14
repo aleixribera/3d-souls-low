@@ -9,18 +9,22 @@ Object.assign(Game, {
   screens() {
     const S = story.screens(this);
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
+    const controlsRow = { name: 'Controls', desc: '', go: () => { this.controlsFrom = 'pause'; this.showMenu('controls'); } };
     const pauseItems = online ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Lobby', desc: 'The players, and the leader\'s controls.', go: () => multiplayer.show() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        controlsRow,
         { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
       ] : this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        controlsRow,
         { name: 'Quit to title', desc: 'Saves first. Continue brings you back to your last bonfire.', cue: 'menuBack', go: () => story.quit() },
       ] : [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        controlsRow,
         { name: this.kind === 'level' ? 'Leave the level' : this.kind === 'bossBattle' ? 'Leave the battle' : 'Leave the fight', desc: '', cue: 'menuBack', go: () => {
           // Back to the Practice list the fight was started from.
           const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? this.practiceFromGroup ? 'practiceGroup'
@@ -60,6 +64,7 @@ Object.assign(Game, {
         { name: '', size: 'primary', go: () => { const m = this.menuItems[this.titleMode]; if (m) m.go(); } },
         { name: 'New game', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.newGame) m.newGame(); } },
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
+        { name: 'Controls', size: 'foot', go: () => { this.controlsFrom = 'main'; this.showMenu('controls'); } },
         { name: 'Changelog', size: 'foot', go: () => this.showMenu('changelog') },
         ...(DEV ? [{ name: 'Test Grounds', size: 'foot', go: () => this.showMenu('tests') }] : []),
         ...(update('title') ? [update('title')] : []),
@@ -107,6 +112,10 @@ Object.assign(Game, {
       options: { title: 'Options', layout: 'options', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby',
         back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: options,
         focus: Math.max(0, options.findIndex(it => it.size === 'cat' && it.cat === this.optionsCategory)) },
+      // Controls (the title's footer and pause): every control and its binding for the device used last, beside nothing
+      // to choose; Back is the only entry (showControls draws the list).
+      controls: { title: 'Controls', layout: 'controls', overlay: this.controlsFrom === 'pause', back: this.controlsFrom === 'pause' ? 'pause' : 'main',
+        items: [{ name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.controlsFrom === 'pause' ? 'pause' : 'main') }] },
     };
   },
   // Options' entries. A setting's `kind` is its control: 'toggle' (Off/On), 'cycle' (‹ value ›) or 'slider' (`min`..`max`
@@ -185,7 +194,8 @@ Object.assign(Game, {
     if (screen === 'practice' || screen === 'practiceGroup') this.practiceAdding = false;   // Esc from a list being added from
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
-    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()));
+    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()))
+      || (screen === 'controls' && this.controlsFrom === 'pause');
     if (!inGame) {
       this.mode = 'menu';
       this.zoomTarget = this.cam.zoom = CONFIG.zoom.default;   // zoom resets when returning to the menu
@@ -197,6 +207,7 @@ Object.assign(Game, {
     menu.classList.toggle('title-menu', title);
     menu.classList.toggle('pause-menu', layout === 'pause');
     menu.classList.toggle('options-menu', layout === 'options');
+    menu.classList.toggle('controls-menu', layout === 'controls');
     menu.classList.toggle('still', reducedMotion());
     menu.classList.toggle('story-menu', screen === 'story');
     menu.classList.toggle('boss-team-menu', screen === 'bossBattle');
@@ -248,7 +259,7 @@ Object.assign(Game, {
       this.menuButtons.push(b);
     });
     if (layout === 'pause') { this.pauseKey = null; this.tickPause(); }
-    this.showMenuHint();
+    this.showMenuHint();   // draws the Controls screen's list too
     if (!keepSelection) this.menuTouched = false;
     if (title) this.chooseMode(keepSelection && this.titleMode != null ? this.titleMode : s.focus);   // a redraw keeps the chosen mode
     if (layout === 'options') this.chooseCategory(this.optionsCategory);
@@ -349,17 +360,33 @@ Object.assign(Game, {
   showMenuHint() {
     const s = this.screens()[this.screen], hint = $('menuHint'), layout = s.layout || 'list', pad = usingPad();
     for (const b of this.menuButtons || []) if (b.classList.contains('menu-back')) b.querySelector('.ui-key').textContent = pad ? 'B' : 'Esc';
+    if (layout === 'controls') this.showControls();
     hint.classList.add('ui-hints'); hint.textContent = '';
     if (s.hint) { hint.textContent = s.hint; return; }
-    const keys = [[pad ? 'D-pad' : '↑ ↓', 'Move']];
+    const keys = layout === 'controls' ? [] : [[pad ? 'D-pad' : '↑ ↓', 'Move']];   // Controls has only Back, which shows its key
     if (layout === 'options') keys.push(['← →', 'Change']);
-    keys.push([pad ? 'A' : 'Enter', 'Select']);
+    if (layout !== 'controls') keys.push([pad ? 'A' : 'Enter', 'Select']);
     if (layout === 'title' || layout === 'pause') keys.push(['', VERSION]);
     for (const [key, label] of keys) {
       const item = document.createElement('span'), cap = document.createElement('span');
       cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hint.appendChild(item);
     }
     if (layout === 'title') this.titleKeys();
+  },
+  // The Controls screen's list (js/input.js controlRows), redrawn when the device changes: what each control does, its
+  // keys or buttons, and a note where it needs one.
+  showControls() {
+    const side = $('menuSide'), list = document.createElement('dl');
+    const online = typeof multiplayer !== 'undefined' && multiplayer.connected;
+    list.className = 'menu-controls';
+    for (const [name, keys, note] of controlRows(online)) {
+      const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = name;
+      dd.textContent = keycap(keys).replace(/(^|\s)([a-z])(?=\s|$)/g, (m, a, b) => a + b.toUpperCase());   // "c / l" -> "C / L"
+      if (note) { const span = document.createElement('span'); span.textContent = (keys ? ' ' : '') + note; dd.appendChild(span); }
+      row.append(dt, dd); list.appendChild(row);
+    }
+    side.replaceChildren(list);
   },
   // The primary button shows the confirm key while it is what that key does: on the chosen mode or on the button itself.
   titleKeys() {
@@ -379,6 +406,8 @@ Object.assign(Game, {
       events.emit('menuMove'); this.select(to, true);
       return;
     }
+    // Controls has only Back: up and down scroll its list where the screen is too short to show it whole.
+    if (this.menuLayout === 'controls') { $('menuSide').scrollBy(0, dir === 'down' ? 80 : dir === 'up' ? -80 : 0); return; }
     if (this.menuLayout === 'title' && it) {
       // Rows: each mode, the primary, New game (when shown), then the footer's entries together. Up and down go row
       // to row (wrapping); left and right go along the footer.
