@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.132.0', title: 'The opening waits for the page', text: 'The opening cinematic now starts once the game has finished loading, and plays at its real speed.' },
   { version: 'v7.131.0', title: 'The Finishing Blow lands', text: 'Counters now crack a foe with glowing fissures that cool as they fade. The Finishing Blow stops time: the world goes grey and dark, the foe freezes mid-swing, you flash-step through it in red, and every cut opens at once in a burst, with its own sound and a camera that swings round the hit.' },
   { version: 'v7.130.0', title: 'The showcase ends on the Finishing Blow', text: 'The showcase that opens the game now ends on the Finishing Blow: the King\'s Blade\'s guard cracks, and the third counter flash-steps through him before the title comes up.' },
   { version: 'v7.129.0', title: 'The Finishing Blow', text: 'The stagger bar and executions are gone. Every counter now cracks a foe\'s guard, and the third counter in a row becomes the Finishing Blow: time stops, you cut through it, and it takes a big chunk of health and heals you. Cracks fade if you stop countering. In a party everyone\'s counters count, and whoever lands the third gets the blow. Breaker now gives you longer to counter. The look is rough for now.' },

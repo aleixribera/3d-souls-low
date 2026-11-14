@@ -293,8 +293,9 @@ const showcase = (() => {
 
   // ---- holding the controls ---------------------------------------------------------------------
   const PASS = new Set(['F5', 'F11', 'F12']);
+  let waiting = false;   // a first launch waiting for the page to load: the hidden title takes no input either
   const swallow = ev => {
-    if (!run) return;
+    if (!run && !waiting) return;
     if (ev.type === 'keydown' || ev.type === 'keyup') { if (ev.ctrlKey || ev.metaKey || ev.altKey || PASS.has(ev.code)) return; }
     ev.stopImmediatePropagation(); if (ev.cancelable) ev.preventDefault();
   };
@@ -332,9 +333,20 @@ const showcase = (() => {
       const ctx = audio.ctx; audio.ctx = null;
       try { run.live = true; while (run.time < -1e-9) step(); } finally { audio.ctx = ctx; }
       run.time = run.target = 0;
-      startMusic();
-      if (!run.manual) { run.started = performance.now(); requestAnimationFrame(tick); }
       frameShot(0);
+      if (run.manual) startMusic();
+      else {
+        // The first frame is drawn now and the clock and music start two frames later: drawing the cast for the first
+        // time (shaders, uploads) takes long, and a clock already running would race to catch it up.
+        const r = run;
+        Game.manualClock = false;
+        try { Game.render(0, 0); } finally { Game.manualClock = true; }
+        requestAnimationFrame(() => requestAnimationFrame(now => {
+          if (run !== r) return;
+          startMusic(); run.started = now; run.lastNow = now; run.shift = 0;
+          requestAnimationFrame(tick);
+        }));
+      }
     } catch (err) { warnOnce(`Showcase failed to start: ${err && err.message}`); finish(true, err); return false; }
     return true;
   }
@@ -365,13 +377,17 @@ const showcase = (() => {
     run.time += dt;
     frameShot(dt);
   }
-  // The clock: the music's own (audio time) when it plays, else the wall clock. A slow frame catches up a few steps at
-  // most; the rest is dropped, as the game's frame loop does.
+  // The clock: the music's own (audio time) when it plays, else the wall clock. A short hitch catches up over a few
+  // frames (with music, so the cuts stay on the beat); a stall (the tab hidden, a long hang) is not caught up at all:
+  // the clock is moved on by it (`shift`), so the show resumes at its own speed instead of racing through what it missed.
+  const STALL = { music: 1, wall: 0.25 };   // s behind: a stall, not a hitch
   function tick(now) {
     if (!run || run.manual) return;
     requestAnimationFrame(tick);
     const frameDt = Math.min(0.25, (now - (run.lastNow ?? now)) / 1000); run.lastNow = now;
-    const c = audio.ctx, t = run.music && c && c.state === 'running' ? c.currentTime - run.music.t0 : (now - run.started) / 1000;
+    const c = audio.ctx, onMusic = !!(run.music && c && c.state === 'running');
+    let t = (onMusic ? c.currentTime - run.music.t0 : (now - run.started) / 1000) - run.shift;
+    if (t - run.time > (onMusic ? STALL.music : STALL.wall)) { run.shift += t - run.time - STEP(); t = run.time + STEP(); }
     advance(t, frameDt, true);
   }
   function frame(dt, opts = {}) {
@@ -426,15 +442,27 @@ const showcase = (() => {
   // does nothing else (the title is hidden behind them).
   function pad(pressed) {
     if (gateGo) { if (pressed.length) gateGo(null); return true; }
-    return !!run;
+    return !!run || waiting;
   }
   function firstLaunch(then = () => Game.showMenu('main')) {
     if (seen() || navigator.webdriver || (typeof DEV !== 'undefined' && DEV)) return false;
     markSeen();
     audio.unlock();
-    const show = () => {   // `then` once, after the show, or at once if it cannot start
-      let ended = false;
-      if (!play({ toMenu: false, onEnd: () => { ended = true; then(); } }) && !ended) then();
+    // `then` once, after the show, or at once if it cannot start. Never before the page has finished loading (its
+    // models, textures and fonts): until then the title stays hidden, so the show is the first thing seen.
+    // The game's loading screen covers the wait and the show's own setup (seconds on a slow machine), painted before it.
+    const show = () => {
+      $('menu').classList.add('hidden');
+      $('loadName').textContent = ''; $('loadTip').textContent = ''; $('loadPadText').textContent = CONFIG.hud.text.controller;
+      $('loading').classList.add('show');
+      waiting = true;
+      const start = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+        waiting = false;
+        let ended = false;
+        const after = () => { $('loading').classList.remove('show'); then(); };   // a start that failed half-way ends here too
+        if (!play({ toMenu: false, onEnd: () => { ended = true; after(); } }) && !ended) after();
+      }));
+      if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });
       return true;
     };
     if (audio.ctx && audio.ctx.state === 'running') return show();
