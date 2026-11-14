@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.86.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.87.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -238,7 +238,13 @@ const CONFIG = {
   // constant of `memory` s); the lowest wins. It keeps a target at least `hold` s and changes only for one `margin` m
   // better. It never turns mid-attack. With two or more players within `crowd` m of its body, its area attacks (a hit `areaWidth` m wide or more, or a
   // ring round it) are `areaMul` times as likely. Ordinary enemies keep the closest player; one player sees no change.
-  aggro: { damage: 1.5, memory: 8, healReach: 10, hold: 3, margin: 1.5, crowd: 4, areaWidth: 4.5, areaMul: 3 },
+  // Whoever is reviving a teammate (CONFIG.revive) scores `revive` m lower and draws it without waiting out `hold`.
+  aggro: { damage: 1.5, memory: 8, healReach: 10, hold: 3, margin: 1.5, crowd: 4, areaWidth: 4.5, areaMul: 3, revive: 14 },
+  // Revive (Boss Rush's co-op moment, the server's `reviveStep`): in a party, a fallen player leaves an ember where
+  // they fell. A living teammate within `range` m of it (and `height` m of its floor) for `time` s straight brings them
+  // back with `health` of their bar and `grace` s untouchable; stepping off or losing health starts it over. Each fall
+  // leaves one ember. Alone, a fall ends the run.
+  revive: { time: 3, range: 1.5, height: 1.5, health: 1 / 3, grace: 1.2 },
   // How far each placement behaviour notices the player. The one place notice ranges are set.
   notice: { arena: 30, gated: 14, ambush: 7.8, patrol: 9, slumber: 5.5, sentry: 26, perch: 15, dummy: 0, sparring: 0 },
   // Levels with `alert`: an enemy that notices the player wakes unaware enemies within `radius` (with a clear line
@@ -479,6 +485,10 @@ const CONFIG = {
     guidance: { spacing: 7, particles: 9, lowParticles: 5, height: 0.55, travel: 1.7, spread: 0.22,
                 rise: 0.28, size: 0.10, maxPx: 13, opacity: 0.38, color: 0xffdba0,
                 life: 3.8, near: 1.4, far: 30, fadeBand: 7, arrival: 2.8, floorTolerance: 1.2, sample: 0.35 },
+    // A fallen teammate's ember (js/revive.js): `sparks` rising `rise` m over `life` s (`fast` times as quick while
+    // someone revives), a ring at the reach to stand in that fills as the revive runs; `near` m: the cue to stand in it.
+    revive: { sparks: 22, rise: 1.6, life: 1.8, fast: 2.6, size: 0.11, maxPx: 16, color: 0xff7a32, hot: 0xffd890,
+              ring: 0.07, near: 7, burst: 46, burstSpeed: 4.5 },
     // A fixed pool, with one/two shadowless lights reserved from the local-light budget.
     effectLight: { counts: { normal: 2, ultra: 2, bare: 1 }, range: 8, intensity: 9, decay: 7,
                    floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,

@@ -8,6 +8,12 @@ globalThis.host = (() => {
   let completedFor = 0;
   let fought = 0;   // s of this fight played (not held for loading, not after the last enemy fell): Boss Rush's clock
   let damage = new Map(), results = null, deaths = new Map(), fightBots = new Set();   // this fight's damage, falls and bots
+  // This fight's feats per player id ({ parries, executions, revives, rescued: ids revived }, for the end screen's titles) and whose blow
+  // landed last on a boss (the killing blow, once every boss is down).
+  let feats = new Map(), lastHit = null, killer = null;
+  // Revive (CONFIG.revive): each fallen person's ember, by owner id: where they fell, who stands on it (`by`), for how
+  // long (`t` s) and with what health when last seen (a loss starts it over). `risen`: revives finished, not yet sent.
+  const embers = new Map(), risen = [];
   // Bots (v7.11): real Player bodies pressing BotHands (js/bot.js), simulated here beside the shared enemies. Since
   // pass 52 no player's party gets one: they are the loop's test players (tools/bot-fights.cjs, the tests). id -> { id, name, profile, brain, body, ... }
   const bots = new Map();
@@ -203,6 +209,7 @@ globalThis.host = (() => {
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
     epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); results = null; deaths = new Map(); fightBots = new Set(); followers.clear(); assignLeft = 0; partyKey = '';
+    feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
     hitBudget.clear(); lastParry.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = kind === 'arena' && isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
@@ -416,8 +423,37 @@ globalThis.host = (() => {
   }
   // A fall in this fight: a bot's here, a person's from the server when their pose first reports them dead.
   function noteDeath(id) { if (!results) deaths.set(id, (deaths.get(id) || 0) + 1); }
-  // This fight's damage and falls per player, for Boss Rush's run totals.
-  const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0, bot: fightBots.has(row.id) }));
+  // This fight's damage, falls and feats per player, for Boss Rush's run totals and titles.
+  const feat = id => { let f = feats.get(id); if (!f) feats.set(id, f = { parries: 0, executions: 0, revives: 0, rescued: [] }); return f; };
+  const fightTally = () => [...damage.values()].map(row => ({ id: row.id, name: row.name, damage: row.damage, deaths: deaths.get(row.id) || 0,
+    ...(feats.get(row.id) || { parries: 0, executions: 0, revives: 0, rescued: [] }), bot: fightBots.has(row.id) }));
+  // A fallen person's ember, where their pose fell (the server calls this once per fall, in a party only).
+  function fall(id, x, y, z) {
+    if (!Game.complete && !embers.has(id) && [x, y, z].every(Number.isFinite)) embers.set(id, { x, y, z, by: null, t: 0, hp: 0 });
+  }
+  // The one standing on an ember keeps it while they stay within reach and lose no health; otherwise the closest living
+  // person within reach (and not reviving another) starts over. `time` s straight on it brings its owner back.
+  const revivingOther = (id, mine) => { for (const m of embers.values()) if (m !== mine && m.by === id) return true; return false; };
+  function reviveStep(dt) {
+    const R = CONFIG.revive;
+    for (const [owner, m] of embers) {
+      let by = null, near = Infinity;
+      for (const p of players) {
+        if (p.id === owner || bots.has(p.id) || !p.alive() || Math.abs(p.y - m.y) > R.height || revivingOther(p.id, m)) continue;
+        const d = Math.hypot(p.x - m.x, p.z - m.z);
+        if (d > R.range) continue;
+        if (p.id === m.by) { by = p; break; }
+        if (d < near) { by = p; near = d; }
+      }
+      m.t = by && by.id === m.by && by.hp >= m.hp - 1e-6 ? m.t + dt : 0;
+      m.by = by ? by.id : null; m.hp = by ? by.hp : 0;
+      if (by && m.t >= R.time - 1e-9) {
+        embers.delete(owner); risen.push({ id: owner, by: by.id }); feat(by.id).revives++; feat(by.id).rescued.push(owner);
+        eventList.push({ type: 'revive', player: owner, by: by.id });
+      }
+    }
+  }
+  const reviving = id => { for (const m of embers.values()) if (m.by === id) return true; return false; };
   function creditDamage(id, amount) {
     const row = damage.get(id);
     if (row && !results) row.damage += Math.max(0, amount);
@@ -456,6 +492,7 @@ globalThis.host = (() => {
     Game.complete = Game.kind === 'level' ? Game.zones.length > 0 && Game.zones.every(z => z.gate.open) : Game.enemies.every(e => !e.alive());
     completedFor = Game.complete ? completedFor + dt : 0;
     if (Game.complete && !results) {
+      killer = lastHit; embers.clear();
       results = [...damage.values()].map(row => ({ ...row }))
         .sort((a, b) => b.damage - a.damage || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
       for (let i = 0; i < results.length; i++) results[i].rank = i && results[i].damage === results[i - 1].damage ? results[i - 1].rank : i + 1;
@@ -474,7 +511,7 @@ globalThis.host = (() => {
   // over `memory` s). A drinker within `healReach` of its body draws it at once; otherwise the lowest score (distance less recent
   // damage) wins, once the current target has been held `hold` s and only by `margin` m.
   function noteDamage(e, id, amount) {
-    if (amount > 0 && e.isBoss()) { e.threat = e.threat || new Map(); e.threat.set(id, (e.threat.get(id) || 0) + amount); }
+    if (amount > 0 && e.isBoss()) { e.threat = e.threat || new Map(); e.threat.set(id, (e.threat.get(id) || 0) + amount); lastHit = id; }
   }
   function fadeThreat(e, dt) {
     if (!e.threat) return;
@@ -488,10 +525,13 @@ globalThis.host = (() => {
     let drinker = null, near = A.healReach;
     for (const p of valid) if (p.state === PS.USE_ITEM) { const d = distance(p) - e.radius; if (d <= near) { drinker = p; near = d; } }
     if (drinker) return drinker;
-    const score = p => distance(p) - A.damage * 100 * (e.threat?.get(p.id) || 0) / bar;
+    // Whoever is reviving a teammate leans it hard their way, and draws it without waiting out `hold`.
+    const lean = p => embers.size && reviving(p.id) ? A.revive : 0;
+    const score = p => distance(p) - A.damage * 100 * (e.threat?.get(p.id) || 0) / bar - lean(p);
     let best = null, bestScore = Infinity;
     for (const p of valid) { const s = score(p); if (s < bestScore) { best = p; bestScore = s; } }
     if (!current || !best || best === current) return best || current;
+    if (lean(best) && !lean(current)) return best;
     return time - (e.targetSince ?? -Infinity) >= A.hold && bestScore < score(current) - A.margin ? best : current;
   }
   function tick(dt, holdSimulation = false) {
@@ -523,6 +563,7 @@ globalThis.host = (() => {
       }
       progress(dt); return;
     }
+    if (embers.size && !Game.complete) reviveStep(dt);
     const was = new Set(Game.enemies.filter(e => e.in('unaware') || e.state === ES.DORMANT));
     const groups = new Map(living.map(p => [p.id, { player: p, enemies: [] }]));
     // Choose targets first, then run each player's crowd independently. Fights
@@ -581,7 +622,8 @@ globalThis.host = (() => {
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
     })), gates: world.gates.map(g => ({ id: g.id, open: g.open })),
       traps: world.traps.map(t => ({ id: t.id, state: t.state, timer: t.timer, dropTime: t.dropTime })),
-      events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [] };
+      events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [],
+      embers: [...embers].map(([id, m]) => ({ id, x: m.x, y: m.y, z: m.z, t: Math.min(1, m.t / CONFIG.revive.time), by: m.by })) };
     return result;
   }
   // Clients report contacts against their displayed world. Resolve values from
@@ -654,7 +696,7 @@ globalThis.host = (() => {
     // but must never cancel an unrelated new move on everybody else's screen.
     sleeping = false;
     const broke = e.netAttack === msg.serial ? e.getParried() : e.def.posture ? e.addPosture(e.def.posture.parry) : false;
-    lastParry.set(id, time);
+    lastParry.set(id, time); feat(id).parries++;
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     if (broke) eventList.push({ type: 'postureBreak', enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
@@ -671,7 +713,7 @@ globalThis.host = (() => {
     const damage = execution.damageFor(e, kitOf(id).mods.execution);
     if (!Number.isFinite(damage)) return false;
     e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
-    e.hitbox = null; e.setState(ES.EXECUTED);
+    e.hitbox = null; e.setState(ES.EXECUTED); feat(id).executions++;
     return true;
   }
   function finishExecution(e) {
@@ -695,7 +737,9 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
+    fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
+    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime,

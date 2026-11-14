@@ -5,6 +5,7 @@ const multiplayer = (() => {
   const C = CONFIG.multiplayer;
   let socket = null, self = null, leader = null, catalog = null, session = null, connected = false, capacity = C.defaultCapacity;
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
+  let embers = [], rescuer = null;   // the latest frame's revive embers (js/revive.js draws them), and who is reviving this player
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
@@ -296,6 +297,7 @@ const multiplayer = (() => {
     #runSummary tbody tr:last-child td{border-bottom:1px solid var(--ui-line)}
     #runSummary td:first-child{overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}#runSummary td small{margin-left:10px;color:var(--ui-muted);font:var(--ui-size-hint)/1 var(--ui-text)}
     #runSummary tr[data-self=true] td:first-child{color:var(--ui-accent-hi)}
+    #runSummary .summary-title{display:block;margin-top:3px;font:var(--ui-size-hint)/1.35 var(--ui-text);color:var(--ui-muted)}#runSummary tr[data-self=true] .summary-title{color:var(--ui-ink)}
     #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:36px}
     #runSummary #runSummaryAgain{width:auto;min-width:220px}
     #runSummary button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -327,7 +329,9 @@ const multiplayer = (() => {
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
-      const name = document.createElement('td'); name.textContent = r.name;
+      // The run's title for this player (server/index.cjs runTitles) under their name.
+      const name = document.createElement('td'), who = document.createElement('span'); who.textContent = r.name; name.appendChild(who);
+      if (r.title) { const title = document.createElement('span'); title.className = 'summary-title'; title.textContent = r.title; name.appendChild(title); }
       tr.appendChild(name);
       for (const value of [r.damage, r.deaths]) { const td = document.createElement('td'); td.textContent = Number(value).toLocaleString(); tr.appendChild(td); }
       rows.appendChild(tr);
@@ -682,6 +686,8 @@ const multiplayer = (() => {
     }
     spectatorWasWaiting = waiting;
     const candidates = waiting ? spectatorCandidates() : [];
+    // Whoever is reviving this player is the one to watch.
+    if (waiting && rescuer && rescuer !== spectatorTarget && candidates.some(([id]) => id === rescuer)) spectatorTarget = rescuer;
     if (!candidates.some(([id]) => id === spectatorTarget)) spectatorTarget = candidates[0]?.[0] || null;
     spectator.hidden = !waiting || Game.mode !== 'play' || !panel.classList.contains('hidden') || Game.loading > 0 || !abilityScreen.hidden;   // the ability pick covers the spectator bar
     document.body.classList.toggle('spectator-view', waiting);
@@ -820,7 +826,7 @@ const multiplayer = (() => {
     return chapter ? [chapter.title, chapter.line] : null;
   }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); }
+  function resetStream() { clearLeaderboard(); clearTeamWipe(); closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; pendingExecution = null; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
   function retryConnection(message) {
     if (!reconnectWanted) return;
     leave(message, true);
@@ -1123,6 +1129,12 @@ const multiplayer = (() => {
         }
       }
       for (const d of frame.events) if (d.type === 'abilityPower' && d.enemy == null) presentAbility(d, null);
+      else if (d.type === 'revive') presentRevive(d);
+      // Each ember with its cue lines made here, once per frame from the server, not in the drawing (js/revive.js).
+      embers = (frame.embers || []).map(m => ({ ...m, saved: m.by ? `${nameOf(m.by)} is reviving you` : '',
+        reviving: `Reviving ${nameOf(m.id)}`, standIn: `Stand in the ring to revive ${nameOf(m.id)}` }));
+      rescuer = embers.find(m => m.id === self)?.by || null;
+      revive.set(embers, self);
       applyProgress(frame, msg.full);
     } else if (msg.type === 'checkpoint' && active()) { session.spawn = msg.spawn; Game.spawn = { ...msg.spawn }; }
     else if (msg.type === 'execution' && active()) {
@@ -1131,9 +1143,31 @@ const multiplayer = (() => {
         grantedEnemy = msg.enemy; execution.start(Game.player, e); grantedEnemy = null;
       } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
       pendingExecution = null;
-    } else if (msg.type === 'abilities' && session) openAbilities(msg);   // also while loading back in: shown once loaded
+    } else if (msg.type === 'revive') riseAgain(msg);
+    else if (msg.type === 'abilities' && session) openAbilities(msg);   // also while loading back in: shown once loaded
     else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
+  }
+  // Revive (CONFIG.revive): a teammate stood on this player's ember long enough (the server decided it). Up again where
+  // they fell, with the bar the server gave and a moment untouchable; the next pose, sent at once, tells the server.
+  const nameOf = id => id === self ? 'you' : roster.find(p => p.id === id)?.name || remotes.get(id)?.samples.at(-1)?.name || 'A friend';
+  function riseAgain(msg) {
+    const p = Game.player;
+    if (!active() || msg.epoch !== session.epoch || !session.teamWipeOnly || !p || p.alive() || !(msg.hp > 0)) return;
+    p.hp = Math.min(p.maxHp, msg.hp); p.lastHp = p.hp; p.execGrace = CONFIG.revive.grace;
+    p.vx = p.vz = 0; p.setState(p.grounded ? PS.IDLE : PS.FALL);
+    Game.deathOf = null; Game.deathTimer = 0; Game.hitstop = 0; canvas.classList.remove('dying');
+    Game.cam.yaw = p.yaw; Game.updateCamera(0, true); input.clear();
+    lastPose = 0;
+  }
+  // Everyone sees a rise: a burst of embers where the ember was, the sound, and a line saying who brought whom back.
+  function presentRevive(d) {
+    const m = embers.find(m => m.id === d.player), body = d.player === self ? Game.player : remotes.get(d.player)?.samples.at(-1);
+    const at = m || body;
+    if (at) revive.burst(at.x, at.y, at.z);
+    events.emit('revive', { x: at?.x ?? 0, y: at?.y ?? 0, z: at?.z ?? 0, self: d.player === self || d.by === self });
+    const who = nameOf(d.by), whom = nameOf(d.player);
+    hud.toast(d.by === self ? `You revived ${whom}` : `${who} revived ${whom}`);
   }
   // Reconnect is the only time personal resources come back from the server. Ordinary frames never reconcile them.
   // Resume at the saved position without replaying an old attack, roll, flask or execution animation.

@@ -111,7 +111,7 @@
       const enemies = changes('enemies', frame.enemies), gates = changes('gates', frame.gates), traps = changes('traps', frame.traps), people = changes('players', players);
       return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, fought: frame.fought, results: frame.results,
         checkpoint: frame.checkpoint, enemies: enemies.patches, gates: gates.patches, traps: traps.patches,
-        events: frame.events, shots: frame.shots, server: frame.server }, players: people.patches,
+        events: frame.events, shots: frame.shots, embers: (frame.embers || []).map(wire), server: frame.server }, players: people.patches,
         removed: { enemies: enemies.removed, gates: gates.removed, traps: traps.removed, players: people.removed } };
     }
   }

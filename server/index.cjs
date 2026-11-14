@@ -22,6 +22,36 @@ function clientAddress(req, trustProxy) {
   return forwarded ? forwarded.replace(/^::ffff:/i, '').slice(0, 64) : null;
 }
 
+// Boss Rush's end screen: one title per player, the most notable thing of their run (PLAN.md track B item 4). Each
+// candidate has a weight; the heaviest wins, and two players get the same words only when their numbers tie. Alone,
+// the title is yours.
+const count = n => Number(n).toLocaleString('en-US');
+const clock = s => s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+function runTitles(rows, times = [], won = false) {
+  const party = rows.length > 1, fights = times.length + (won ? 0 : 1), total = rows.reduce((n, r) => n + r.damage, 0);
+  const timed = times.filter(t => Number.isFinite(t.time));
+  const fastest = timed.length ? timed.reduce((a, b) => b.time < a.time ? b : a) : null;
+  const options = rows.map(r => {
+    const list = [], add = (weight, text) => list.push({ weight, text });
+    // Revives name the one brought back when it was always the same friend.
+    const saved = [...new Set(r.rescued || [])].map(id => rows.find(o => o.id === id)?.name || 'a friend');
+    if (r.revives) add(4 + 2 * r.revives, saved.length === 1 ? `Revived ${saved[0]}${r.revives > 1 ? ` ${r.revives} times` : ''}`
+      : saved.length === r.revives ? `Revived ${r.revives} friends` : `${r.revives} revives`);
+    if (r.parries >= 3) add(0.6 * r.parries, `${r.parries} perfect parries`);
+    if (r.executions >= 2) add(0.8 * r.executions, `${r.executions} executions`);
+    if (fastest && (party ? fastest.killer === r.id : true)) add(fastest.swift ? 3 : 1.5, `Fastest kill: ${clock(fastest.time)}`);
+    if (party && r.kills >= 2) add(1.2 * r.kills, `Final blow on ${r.kills} bosses`);
+    if (party && total > 0 && r.damage / total >= 1.25 / rows.length) add(1.5 * rows.length * r.damage / total, `Most damage: ${count(r.damage)}`);
+    if (!r.deaths && fights >= 2) add(0.5 * fights, 'Never fell');
+    add(0, `${count(r.damage)} damage dealt`);
+    return list;
+  });
+  // Greedy over every player's options, heaviest first; a title already given goes to nobody else.
+  const titles = new Map(), used = new Set();
+  const all = options.flatMap((list, i) => list.map(o => ({ ...o, i }))).sort((a, b) => b.weight - a.weight);
+  for (const o of all) if (!titles.has(o.i) && !used.has(o.text)) { titles.set(o.i, o.text); used.add(o.text); }
+  return rows.map((r, i) => ({ ...r, title: titles.get(i) || options[i].at(-1).text }));
+}
 function createServer(options = {}) {
   const capacity = Number(options.capacity ?? process.env.MAX_PLAYERS ?? C.defaultCapacity);
   const trustProxy = options.trustProxy ?? process.env.TRUST_PROXY !== '0';
@@ -56,7 +86,10 @@ function createServer(options = {}) {
       if (previous && previous !== p) { remember(previous); previous.ws.close(1008, 'You joined from another tab. Rejoin here to take over.'); }
       p.id = memory.id;
       p.name = memory.name;
-      if (session && memory.epoch === session.epoch) { p.pose = memory.pose; p.arenaDefeated = memory.arenaDefeated; }
+      if (session && memory.epoch === session.epoch) {
+        p.pose = memory.pose; p.arenaDefeated = memory.arenaDefeated;
+        if (p.arenaDefeated && p.pose) sim.fall(p.id, p.pose.x, p.pose.y, p.pose.z);   // their ember comes back with them
+      }
     }
     pending.delete(p); clients.set(p.id, p);
     p.memory = memory; p.token = token;
@@ -138,19 +171,23 @@ function createServer(options = {}) {
   // against par (CONFIG.swift); under par is a swift kill.
   function tallyFight(won) {
     for (const r of sim.fightTally()) {
-      const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0 };
-      row.name = r.name; row.damage += r.damage; row.deaths += r.deaths; tally.players.set(r.id, row);
+      const row = tally.players.get(r.id) || { id: r.id, name: r.name, bot: r.bot, damage: 0, deaths: 0, parries: 0, executions: 0, revives: 0, rescued: [], kills: 0 };
+      row.name = r.name; for (const key of ['damage', 'deaths', 'parries', 'executions', 'revives']) row[key] += r[key] || 0;
+      row.rescued = row.rescued.concat(r.rescued || []);
+      tally.players.set(r.id, row);
     }
     if (!won) return;
     const g = session.gauntlet, time = Math.floor(sim.state.fought + 1e-6);   // whole seconds, as the HUD shows them
     tally.beaten += 1 + (g.partners?.length || 0);
-    tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par });
+    const killer = sim.fightKiller, row = killer && tally.players.get(killer);
+    if (row) row.kills++;
+    tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par, killer: row ? killer : null });
   }
   // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, and each player's totals, most
   // damage first. The roster lets the leader start the same run again.
   const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
-    players: [...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths) });
+    players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
   // For Boss Rush, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
@@ -176,7 +213,7 @@ function createServer(options = {}) {
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
-    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
+    for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
     arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
     accumulator = 0; sinceSnapshot = 0; server.lastSignature = null;
     broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
@@ -293,7 +330,14 @@ function createServer(options = {}) {
     // A personal respawn cannot re-enter an ongoing boss attempt. Only a new
     // shared session clears this player's defeat, including repeated ready messages.
     const down = s.hp <= 0 || s.state === 'dead';
-    if (session.teamWipeOnly && down && !p.arenaDefeated) { p.arenaDefeated = true; sim.noteDeath(p.id); }
+    if (session.teamWipeOnly && down && !p.arenaDefeated) {
+      p.arenaDefeated = true; sim.noteDeath(p.id);
+      // In a party, the fall leaves an ember a teammate can revive them from (CONFIG.revive). Alone, it ends the run.
+      if ([...clients.values()].some(q => q !== p && q.hello && (q.arenaDefeated || participating(q)))) sim.fall(p.id, s.x, s.y, s.z);
+    }
+    // A revive the server granted takes hold with this player's first living pose; until then they stay down.
+    let rose = 0;
+    if (p.revive && !down) { rose = p.revive.hp; p.arenaDefeated = false; p.revive = null; }
     sim.notePose(p.id, s.hp);   // health lost: the perks that wait for it (Vengeance, Patience)
     p.pose = { ...Object.fromEntries(P.required.map(key => [key, s[key]])), state: s.state,
       // Only a real player attack id (own property) is relayed: peers index their attack table with it.
@@ -303,6 +347,7 @@ function createServer(options = {}) {
       ...Object.fromEntries(P.personal.filter(key => key !== 'exhausted').map(key => [key, resource(key)])), exhausted: s.exhausted ?? p.pose?.exhausted ?? false,
       view: net.cameraView(s.view) };
     if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
+    if (rose) p.pose.hp = Math.min(p.pose.hp, rose);   // up with the bar the revive gave, no more
     p.lastPose = performance.now(); p.poseSeq++; remember(p);
   }
   function message(p, msg) {
@@ -460,7 +505,8 @@ function createServer(options = {}) {
       pending.delete(p);
       if (address) { const n = (addresses.get(address) || 1) - 1; if (n > 0) addresses.set(address, n); else addresses.delete(address); }
       if (clients.get(p.id) !== p) return; // A replacement connection (or nobody) owns this identity now.
-      remember(p); clients.delete(p.id);
+      remember(p); clients.delete(p.id); p.revive = null;
+      if (session) sim.dropEmber(p.id);
       if (!refreshLeader('disconnect')) queueRoster();
     });
     const deadline = setTimeout(() => { if (!p.hello) ws.close(1008, 'Join timed out.'); }, C.connectTimeout); deadline.unref();
@@ -489,6 +535,11 @@ function createServer(options = {}) {
         tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();
         accumulator -= 1 / C.tickRate; sinceSnapshot += 1 / C.tickRate;
         if (session.teamWipeOnly) {
+          // Revives finished this step: the fallen player rises at the ember with part of their bar (CONFIG.revive).
+          for (const r of sim.takeRisen()) {
+            const q = clients.get(r.id);
+            if (q?.arenaDefeated) { q.revive = { ...r, hp: sim.reviveHealth(q.id) }; send(q, { type: 'revive', epoch: session.epoch, hp: sim.reviveHealth(q.id), by: r.by }); }
+          }
           const party = [...clients.values()].filter(p => p.hello && (p.arenaDefeated || participating(p)));
           // Active loaders get bounded time; away players do not prevent a real team defeat.
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
@@ -552,4 +603,4 @@ if (require.main === module) {
   app.server.listen(Number(process.env.PORT || 3000), process.env.HOST || '0.0.0.0', () => console.log(`Combat Arena ${app.sim.catalog().version}: one public lobby on port ${app.server.address().port}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => app.close().then(() => process.exit(0)));
 }
-module.exports = { createServer };
+module.exports = { createServer, runTitles };

@@ -10,9 +10,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   pillagerCaptain 84/61; interleaved A/B on the 3 slowest scenes 56/23 -> 66/41. Left: PC stand-in calibration
   (`BACKLOG.md`). Frames: `docs/scorecard/baked-light-normal.jpg`. The King's Blade, Agathe, the Kindling Tree:
   **awaiting Aleix**.
-- Track B (pass 62, v7.86.0): item 6 cut, 34 abilities, four summons: Stone Guardian, Lancer of Ash in enemy
-  figures (`js/summon-figures.js`; own models in BACKLOG); a low summon kept out waits its turn; hound fade fixed
-  (`tests/abilities.cjs`, `docs/scorecard/abilities-summons.jpg`). Next: item 4, co-op moments.
+- Track B (pass 64, v7.87.0): item 4, co-op moments: a fallen friend's ember; stand in its ring 3 s to raise them
+  (the boss turns on you); a title under each name on the end screen. Next: item 5, Endless.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -42,6 +41,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Boss Rush (once The Calling), its blessings, end screen (v7.35.0): `calling()` / `offerBlessings` / `rise` / `fightTally`
   (`server/simulation.js`), `runSummary` (`server/index.cjs`), `BLESSINGS`, `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
+  Revive, titles (pass 64): `js/revive.js`, `reviveStep`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
   Continue from a beaten castle goes on (`resume`), the server's `campaignAdvanceTime` getter. Checked by the in-page
@@ -85,14 +85,15 @@ In `BACKLOG.md`.
 
 - (overridable) Item 10's skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`). Story
   bosses fight at the new, slower 1x until track A item 5: Hollis is slower than when you judged him.
+- (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight, not only
+  Boss Rush; the titles' wording is the loop's.
 - (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
-- (overridable) Swift kill (v7.69.0): par 45 s, more with pace or a pair, adds a card; a kill says "Boss 7 down".
+- (overridable) Swift kill: par 45 s (more with pace or a pair) adds a card.
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
-- (overridable) The end screen's titles: "The crown answered" for a won Calling, "Team wiped" for a lost one; the run
-  time counts from the leader's start, the opening card and blessing picks included.
+- (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
   bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP (v7.65.0): Ostrey 3,000, Hale and Harrow 1,700
   each, the Ringer 3,000, the Regent 2,600, Oswin 3,500, Agathe 3,200, the Kindling Tree 2,500, the King's Blade 3,000.
