@@ -110,7 +110,7 @@ function createServer(options = {}) {
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
   const kicked = new Map();   // player id -> when the leader last removed them
-  const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })).concat(sim.botList()) });
+  const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null, ...(p.look ? { look: p.look } : {}) })).concat(sim.botList()) });
   function send(p, data) {
     if (p.ws.readyState !== WebSocket.OPEN) return;
     if (p.ws.bufferedAmount > C.maxBuffered) { p.ws.close(1013, 'Connection too slow. Rejoin the lobby.'); return; }
@@ -193,7 +193,7 @@ function createServer(options = {}) {
   }
   // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, Crowned fights won, and each
   // player's totals, most damage first.
-  const runSummary = outcome => ({ outcome, id: tally.id, name: tally.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
+  const runSummary = outcome => ({ outcome, key: tally.key, id: tally.id, name: tally.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
   // The end of a weekly run goes on this week's board, once, and everyone in the lobby sees the new board. However it
@@ -231,7 +231,7 @@ function createServer(options = {}) {
     if (gauntlet?.run && gauntlet.partners.length) session.health = sim.rushHealth(1 + gauntlet.partners.length);   // each boss's share of its bars
     if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.run) tally = null;
-    else if (gauntlet.fight === 0) tally = { run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
+    else if (gauntlet.fight === 0) tally = { key: randomBytes(8).toString('hex'), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
@@ -248,7 +248,7 @@ function createServer(options = {}) {
       abilityFor = 0; abilityPickedAt = -Infinity; abilityAllChosen = false;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) abilityRound.add(id);
-      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight));
+      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight), !session.gauntlet.run?.week);
       for (const p of clients.values()) sendOffer(p);
     }
     abilityFor += 1 / C.tickRate;
@@ -266,7 +266,7 @@ function createServer(options = {}) {
     if (abilityFor === null) return;
     if (!abilityRound.has(p.id)) {
       abilityRound.add(p.id);
-      sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight, abilityRound.size));
+      sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight, abilityRound.size), !session.gauntlet.run?.week);
     }
     sendOffer(p);
   }
@@ -299,6 +299,7 @@ function createServer(options = {}) {
     p.name = `Player ${clients.size + 1}`;
     identify(p, memory, token);
     p.name = net.name(msg.name) || p.name; p.hello = true; p.foreground = msg.foreground !== false;
+    p.look = sim.setGear(p.id, msg.look, msg.crates);   // what this browser's crates gave it (js/data/crates.js)
     p.loadingSince = performance.now(); remember(p);
     if (session) sim.registerPlayer(p.id, p.name);
     noteActivity(p);
@@ -395,6 +396,7 @@ function createServer(options = {}) {
     }
     // Poses, transport keepalives, loading and animation clocks are not input.
     if (msg.type === 'activity') { noteActivity(p); return; }
+    if (msg.type === 'gear') { const look = sim.setGear(p.id, msg.look, msg.crates); if (look !== p.look) { p.look = look; queueRoster(); } return; }   // a crate opened in the lobby
     if (msg.type === 'ping') { send(p, { type: 'pong', sent: msg.sent }); return; }
     if (msg.type === 'name') {
       noteActivity(p);

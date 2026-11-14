@@ -407,6 +407,21 @@ const AUDIO = {
       { wave: 'sine', freq: 523, partials: [[1, 1, 1], [2, 0.4, 0.7], [3, 0.2, 0.5], [4.2, 0.08, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },
       { wave: 'sine', freq: 784, at: 0.07, a: 0.002, d: 0.9, gain: 0.14 },
     ] },
+    // The crate roll (js/crate-screen.js): a whoosh as the strip sets off, a dry click as each reward passes the mark,
+    // and a deep struck landing (lower the rarer the reward).
+    crateOpen: { bus: 'ui', priority: 2, cooldown: 0.2, verb: 0.3, jitter: 40, heat: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 380, to: 2600, q: 1.4 }, glide: 0.5, a: 0.06, d: 0.55, gain: 0.32 },
+      { wave: 'sine', freq: 140, to: 90, a: 0.004, d: 0.3, gain: 0.22 },
+    ] },
+    crateTick: { bus: 'ui', priority: 1, cooldown: 0.025, max: 3, verb: 0.05, jitter: 30, heat: 0, layers: [
+      { wave: 'triangle', freq: 2100, to: 1500, a: 0.0005, d: 0.022, gain: 0.16 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3200 }, a: 0.0005, d: 0.012, gain: 0.1 },
+    ] },
+    crateLand: { bus: 'ui', priority: 3, cooldown: 0.3, verb: 0.55, jitter: 0, heat: 0, layers: [
+      { wave: 'sine', freq: 98, to: 62, glide: 0.4, a: 0.003, d: 0.9, gain: 0.5 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 900 }, a: 0.002, d: 0.25, gain: 0.35 },
+      { wave: 'sine', freq: 392, partials: [[1, 1, 1], [2.01, 0.5, 0.8], [3.02, 0.25, 0.6], [5.1, 0.1, 0.4]], at: 0.03, a: 0.002, d: 1.8, gain: 0.2 },
+    ] },
 
     // ---- Level 5: the castle (v4.3) ----
     // The great bell tolling far off: a deep strike with inharmonic partials and a very long ring.

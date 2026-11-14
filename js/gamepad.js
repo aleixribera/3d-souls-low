@@ -54,6 +54,7 @@ const gamepad = {
     if ((now.size || ls.x || ls.y || rs.x || rs.y) && typeof multiplayer !== 'undefined') multiplayer.activity();
     if (pressed.length || ls.x || ls.y || rs.x || rs.y) input.use('pad');
     for (const c of released) input.up(c);
+    if (typeof crateScreen !== 'undefined' && crateScreen.pad(pressed, dt)) return;   // the Collection and the crate roll, over anything
     if (typeof multiplayer !== 'undefined' && multiplayer.runIntroActive) { input.clear(); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.abilityPad(pressed)) return;

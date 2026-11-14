@@ -213,6 +213,7 @@ class Rig {
     const S = shield ? this.shieldGlow : null, kw = S ? 0 : k;
     this.weaponMat.color.copy(this.weaponBase).lerp(color, kw);
     this.weaponMat.emissive.copy(color).multiplyScalar(kw * 1.6);
+    if (this.weaponGlow) this.weaponMat.emissive.add(this.weaponGlow);   // a glowing blade look (js/crate-screen.js)
     const G = color === WARN_COLOR ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
     this.warnGlow.material.color.setHex(G.color).multiplyScalar(G.boost);
     if (this.shieldGlow) {
@@ -224,6 +225,7 @@ class Rig {
   setFlash(k) {
     this.weaponMat.color.copy(this.weaponBase).lerp(HIT_COLOR, clamp(k, 0, 1));
     this.weaponMat.emissive.copy(HIT_COLOR).multiplyScalar(k * 2.5);
+    if (this.weaponGlow) this.weaponMat.emissive.add(this.weaponGlow);
     this.setGlow(0);
     if (this.shieldGlow) this.shieldGlow.visible = false;
   }

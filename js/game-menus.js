@@ -61,6 +61,9 @@ Object.assign(Game, {
         { ...S.main[0], size: 'mode' },
         { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Join public lobby', go: () => multiplayer.join() },
         { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
+        // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
+        ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(), start: 'Open the Collection',
+          go: () => crateScreen.collection(() => this.refreshTitleCollection()) }] : []),
         { name: '', size: 'primary', go: () => { const m = this.menuItems[this.titleMode]; if (m) m.go(); } },
         { name: 'New game', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.newGame) m.newGame(); } },
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
@@ -171,6 +174,11 @@ Object.assign(Game, {
     Object.assign(this.menuItems[at], t);
     if (!this.menuTouched) this.select(t.reachable ? at : 0, !!document.activeElement && $('menuBox').contains(document.activeElement));
     this.chooseMode(this.titleMode);   // the line, when Boss Rush is the chosen mode
+  },
+  refreshTitleCollection() {
+    if (this.screen !== 'main' || this.mode !== 'menu') return;
+    const it = (this.menuItems || []).find(x => x.collection);
+    if (it) { it.line = crateScreen.titleLine(); this.chooseMode(this.titleMode); }
   },
   // The title's chosen mode: its row is pressed, and the primary button and the line under the rows follow it.
   chooseMode(i) {

@@ -35,6 +35,9 @@ const ABILITY_ICONS = {
   'ash-lancer': '<path d="M7 41 L36 12"/><path d="M33 9 L44 4 L39 15 Z"/><path d="M12 42 L17 37"/><path d="M4 30 L11 23 M11 46 L18 39 M3 21 L8 16" stroke-dasharray="2 2"/>',
   'grave-hound': '<path d="M44 22 L31 20 L26 13 L23 19 L13 21 C9 22 8 27 12 29 L20 31 L15 39 L25 32 L32 34 L44 28"/><path d="M44 22 L36 25 L44 28"/><circle cx="30" cy="24" r="1.5"/><path d="M4 18 H9 M3 25 H7 M5 32 H10" stroke-dasharray="2 2"/>',
   'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
+  // Crate rares (js/data/crates.js)
+  'grave-feast': '<path d="M21 4 V17 L24 23 L27 17 V4 Z"/><path d="M16 8 H32"/><path d="M24 44 C15 38 10 33 10 28 A7 7 0 0 1 22 24 M26 24 A7 7 0 0 1 38 28 C38 33 33 38 24 44"/>',
+  'iron-mercy': '<path d="M8 38 L28 18 M40 38 L20 18"/><path d="M6 34 L12 40 M42 34 L36 40"/><path d="M24 3 V15 M18 9 H30"/>',
   // Legendaries
   'gale-crescent': '<path d="M12 5 C30 9 36 31 16 43 C27 30 25 15 12 5 Z"/><path d="M30 14 H42 M33 24 H46 M30 34 H41"/>',
   'pyre': '<path d="M24 4 C16 14 13 22 15 30 C16 36 32 36 33 30 C35 22 32 14 24 4 Z"/><path d="M24 18 C21 23 21 27 24 30 C27 27 27 23 24 18 Z"/><path d="M5 42 H43 M10 38 H38"/>',

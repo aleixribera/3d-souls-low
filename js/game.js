@@ -120,6 +120,7 @@ const Game = {
     const s = this.spawn, y = world.floorY(s.x, s.z, s.y);
     this.player = new Player(PLAYER_DEF, s.x, s.z, s.yaw, Number.isFinite(y) ? y : 0);
     story.applyProgress(this.player);   // Story mode: carried capacities (nothing otherwise)
+    if (typeof crateScreen !== 'undefined') crateScreen.wearLook(this.player.rig, progress.look);   // the blade look a crate gave (drawn only)
     // v7.0: a level may grant more flasks (`flasks`: at least this many); a carried larger stock stays.
     const fl = this.kind === 'level' && this.level.flasks, it = fl && this.player.inventory.flask;
     if (it && it.max < fl) it.max = it.count = fl;

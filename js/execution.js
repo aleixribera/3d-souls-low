@@ -83,6 +83,8 @@ const execution = (() => {
     const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), y = e.y + e.height * C.chest;
     events.emit('execution', { player: p, enemy: e, damage: dmg, lethal: X.lethal,
       at: { x: e.x + fx * e.radius * 0.8, y, z: e.z + fz * e.radius * 0.8 }, exit: { x: e.x - fx * e.radius * 1.1, y, z: e.z - fz * e.radius * 1.1 } });
+    const feast = p.kit && p.kit.perks['execute/heal'];   // Grave Feast (a crate's)
+    if (feast) abilityHeal(p, feast.heal, 'execute/heal');
   }
 
   // One fixed step of PS.EXECUTE (from Player.update).

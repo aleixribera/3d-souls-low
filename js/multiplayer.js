@@ -6,6 +6,7 @@ const multiplayer = (() => {
   let socket = null, self = null, leader = null, catalog = null, session = null, connected = false, capacity = C.defaultCapacity;
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
   let embers = [], rescuer = null;   // the latest frame's revive embers (js/revive.js draws them), and who is reviving this player
+  let looks = new Map(), looksOf = null;   // each player's blade look, rebuilt when a new roster arrives
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
@@ -57,7 +58,7 @@ const multiplayer = (() => {
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
-    <button id="lobbyOptions" class="ui-text-button">Options</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
+    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Collection</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
@@ -268,7 +269,7 @@ const multiplayer = (() => {
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
   runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
   runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Crowned</dt><dd id="runSummaryCrowned"></dd></div><div><dt>Time</dt><dd id="runSummaryTime"></dd></div></dl>'
-    + '<ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
+    + '<section id="runSummaryRewards" aria-label="Rewards"></section><ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
     + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
     + '<div class="summary-actions"><button type="button" id="runSummaryAgain" class="ui-primary">Run again</button><button type="button" id="runSummaryLobby" class="ui-text-button"><span class="ui-key" id="runSummaryLobbyKey" aria-hidden="true"></span>Lobby</button><p id="runSummaryWait"></p></div></div>';
   document.body.appendChild(runSummary);
@@ -281,7 +282,14 @@ const multiplayer = (() => {
     #runSummary .summary-panel{width:min(720px,100%)}
     @media(min-width:960px){#runSummary .summary-panel{display:grid;width:min(1000px,100%);grid-template-columns:minmax(0,1fr) minmax(0,380px);column-gap:72px;align-items:start}
       #runSummary h2,#runSummary .summary-facts,#runSummary .summary-actions{grid-column:1/-1}
-      #runSummary table{grid-column:1;grid-row:3}#runSummary #runSummaryTimes{grid-column:2;grid-row:3;margin:28px 0 0}}
+      #runSummary table{grid-column:1;grid-row:3/5}#runSummary #runSummaryRewards{grid-column:2;grid-row:3}#runSummary #runSummaryTimes{grid-column:2;grid-row:4;margin:28px 0 0}}
+    #runSummaryRewards{margin:0 0 28px}#runSummaryRewards:empty{display:none}
+    #runSummaryRewards h3{margin:0 0 8px;font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
+    #runSummary .summary-rewards{margin:0;border-top:1px solid var(--ui-line)}
+    #runSummary .summary-rewards div{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--ui-line)}
+    #runSummary .summary-rewards dt{font-size:var(--ui-size-text);color:var(--ui-muted)}#runSummary .summary-rewards dd{margin:0;font:400 19px/1.2 var(--ui-display)}
+    #runSummaryRewards .crates-xp{display:block;width:100%;height:3px;margin:10px 0 0;background:var(--ui-line)}
+    #runSummaryRewards .summary-crate{margin-top:14px}
     #runSummary h2{margin:0;font:400 var(--ui-size-title)/1.1 var(--ui-display);color:var(--ui-ink);text-wrap:balance}
     #runSummary.summary-wiped h2{color:var(--ui-alarm)}
     #runSummary .summary-facts{display:flex;gap:56px;margin:32px 0 28px}
@@ -330,6 +338,8 @@ const multiplayer = (() => {
       for (const [text, cls] of parts) { const span = document.createElement('span'); span.textContent = text; if (cls) span.className = cls; li.appendChild(span); }
       times.appendChild(li);
     }
+    // This browser's xp, level and crates (js/crate-screen.js): xp only for those who played the run.
+    crateScreen.runRewards(el('runSummaryRewards'), data, (data.players || []).some(r => r.id === self));
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
@@ -351,7 +361,7 @@ const multiplayer = (() => {
     el('runSummaryAgain').hidden = !owner;
     el('runSummaryWait').textContent = owner || !connected ? '' : `${roster.find(p => p.id === leader)?.name || 'The leader'} can start this run again.`;
   }
-  const summaryButtons = () => [el('runSummaryAgain'), el('runSummaryLobby')].filter(b => !b.hidden);
+  const summaryButtons = () => [el('runSummaryCrate'), el('runSummaryAgain'), el('runSummaryLobby')].filter(b => b && !b.hidden);
   function closeRunSummary(focusLobby = true) {
     if (!summary) return;
     summary = null; runSummary.hidden = true; panel.inert = false;
@@ -389,6 +399,7 @@ const multiplayer = (() => {
   document.body.appendChild(abilityScreen);
   let ability = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
   function openAbilities(msg) {
+    if (msg.offer) crateScreen.close();
     if (!msg.offer) {   // the server took this player's pick
       if (ability) { ability.held = msg.held || []; ability.chosen = ability.chosen || ability.held[ability.held.length - 1] || null; drawHeld(); drawAbilities(); }
       return;
@@ -888,7 +899,7 @@ const multiplayer = (() => {
       socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
       const joining = socket;
       const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
-      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value, token: resumeToken, foreground }); };
+      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value, token: resumeToken, foreground, ...gear() }); };
       socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
       socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
         if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
@@ -1088,7 +1099,7 @@ const multiplayer = (() => {
       roster = msg.players; leader = msg.leader; updateRoster(); drawRunSummary();
       if (msg.notice && roster.length > 1) notice(msg.notice, true);
     } else if (msg.type === 'start') {
-      clearControlPending(); notice('');
+      clearControlPending(); notice(''); crateScreen.close();   // a fight starting takes over from the Collection or a roll
       finale.cancelEnding();
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeAbilities();
@@ -1242,8 +1253,11 @@ const multiplayer = (() => {
         label.className = 'online-name'; label.dataset.playerId = s.id; document.body.appendChild(label);
         const name = document.createElement('span'); name.className = 'online-name-text'; label.appendChild(name);
         const health = makeAllyHealth(label, s.id);
-        r = { body, label, name, health, samples: [] }; remotes.set(s.id, r);
+        r = { body, label, name, health, samples: [], look: undefined }; remotes.set(s.id, r);
       }
+      if (looksOf !== roster) { looksOf = roster; looks = new Map(roster.map(p => [p.id, p.look])); }
+      const look = looks.get(s.id);   // the blade look their crates gave them
+      if (r.look !== look) { r.look = look; crateScreen.wearLook(r.body.rig, look); }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
       r.name.textContent = s.name + (s.hp <= 0 ? session.teamWipeOnly ? ' · defeated' : ' · returning to checkpoint' : '');
@@ -1462,6 +1476,11 @@ const multiplayer = (() => {
   el('lobbyHelp').onclick = () => toggleLobbyHelp();
   el('lobbyControlsClose').onclick = () => toggleLobbyHelp(false);
   el('lobbyOptions').onclick = () => { closePanel(); Game.optionsFrom = 'lobby'; Game.showMenu('options'); };
+  el('lobbyCollection').onclick = () => crateScreen.collection();
+  // What this browser's crates gave it (js/progress.js): the server shows the look to the others and offers the
+  // crate abilities in Boss Rush. Sent with hello, and again whenever it changes in the lobby.
+  const gear = () => ({ look: progress.look, crates: progress.abilities() });
+  progress.onChange(() => { if (connected) send({ type: 'gear', ...gear() }); });
   // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller; a text box keeps its
   // own arrows. Roster refreshes retain the same controls, so a teammate joining never
   // interrupts typing or selection.

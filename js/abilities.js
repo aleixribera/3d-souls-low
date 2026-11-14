@@ -23,10 +23,19 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', maxStamina: 'more', stamin
 //   block/charge:     a blocked blow makes the next heavy within `window` s come out fully charged at once.
 //   unhurt/empower:   `after` s without losing health make the next landed blow do `damage` more.
 //   flask/stamina:    drinking a flask gives back `stamina` of the bar.
+//   execute/heal:     an execution heals `heal` of the bar (a crate's).
+//   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
 const ABILITY_PERKS = {
   'parry/stamina': ['stamina'], 'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeStamina': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'], 'flask/stamina': ['stamina'],
+  'execute/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'],
 };
+// A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.
+function abilityHeal(p, share, perk) {
+  if (!p.alive()) return;
+  p.hp = Math.min(p.hpCap(), p.hp + p.maxHp * share);
+  events.emit('abilityPerk', { body: p, perk });
+}
 // The legendaries' powers, as `when/then`, and the numbers each level needs (abilityPowers runs them):
 //   land/blast:          a jump attack (of the air attack `action` names) lands as a blast: `damage` and `posture` to every
 //                        enemy within `radius` m.
@@ -123,8 +132,8 @@ function abilityKit(held) {
 }
 // A body's perk clocks (on the Player; the server keeps one per person): s since it last lost health (`calm`, reset
 // when Patience is spent), Vengeance's and Bastion's s left, the landed blows since it last lost health, and the
-// Blood Moon's s left with its level's numbers.
-const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null });
+// Blood Moon's s left with its level's numbers, and Iron Mercy's s until it heals again.
+const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0 });
 // Off balance, for Opportunist: kneeling, reeling after an execution, opened by a parry, or stopped in time.
 const ABILITY_OPEN = new Set([ES.BROKEN, ES.STAGGER, ES.PARRIED, ES.HURT]);
 const abilityOpen = e => e.frozen > 0 || ABILITY_OPEN.has(e.state);
@@ -135,7 +144,7 @@ function abilityHurt(kit, st) {
   if (v) st.vengeance = v.window;
 }
 function abilityClocks(st, dt) {
-  st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt);
+  st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
 }
 // The blow a body lands on `e`, with its kit: damage and posture raised, and the one-shot perks it carries spent.
 // Returns `strike` itself when nothing changes it. `strike.riposte` (a parry's or Counterstep's) adds Cold Riposte.

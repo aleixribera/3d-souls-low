@@ -27,7 +27,7 @@ globalThis.host = (() => {
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
   // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
-  const owned = new Map(), offers = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), pendingClaims = [];
+  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), pendingClaims = [];
   const C = ArenaNet.config;
   for (const story of STORIES) {
     if (!story.chapters.length || story.chapters.some(c => !ALL_LEVELS.some(l => l.id === c.level) || TEST_LEVELS.some(l => l.id === c.level)))
@@ -279,7 +279,9 @@ globalThis.host = (() => {
   // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer. With a `seed`
   // (offerSeed: a Boss Rush run's fight) the nth player's draw is mixSeed(seed, n)'s, so a weekly run offers the same
   // cards to everyone who holds the same abilities.
-  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null) {
+  // `crates` false (the weekly run) leaves every crate ability out; else a player is offered the ones their crates gave
+  // them (setGear).
+  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true) {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
     const pick = list => list[Math.floor(random() * list.length)];
@@ -289,7 +291,8 @@ globalThis.host = (() => {
       if (offers.has(id)) continue;
       random = seed === null ? Math.random : rushSeed(mixSeed(seed, nth));
       const held = owned.get(id) || [], team = teamLegendaries(id);
-      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)));
+      const mine = crates && gear.get(id)?.crates;
+      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)) && (!b.crate || !!mine && mine.has(b.id)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
       for (let i = offer.length; i < cards; i++) {
@@ -306,6 +309,14 @@ globalThis.host = (() => {
       offers.set(id, offer);
       if (bots.has(id)) pickAbility(id, pick(offer));
     }
+  }
+  // What a person's crates gave them (js/data/crates.js), as their browser says: the blade look they wear (shown to
+  // the others) and the crate abilities that join their pool. Anything unknown is dropped. Returns the look kept.
+  function setGear(id, look, crates) {
+    const L = typeof look === 'string' && CRATE_BY_ID[look]?.kind === 'look' ? look : null;
+    const list = Array.isArray(crates) ? crates.slice(0, CRATES.rewards.length).filter(a => typeof a === 'string' && ABILITY_BY_ID[a]?.crate === true) : [];
+    gear.set(id, { look: L, crates: new Set(list) });
+    return L;
   }
   // The seed of a Boss Rush fight's offers: the run's seed and the fight; `round` sets a late arrival's apart.
   const offerSeed = (run, fight, round = 0) => mixSeed(run.seed, fight, round);
@@ -795,7 +806,7 @@ globalThis.host = (() => {
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
-    offerAbilities, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
+    offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold,
     rushPar, rushHealth, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,

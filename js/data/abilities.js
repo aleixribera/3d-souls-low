@@ -110,5 +110,13 @@ const ABILITIES = [
   { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Flask: a twin fights with you for {time}.',
     power: { when: 'flask', then: 'twin' },
     levels: [{ time: 12, share: 0.5, draw: 2, cooldown: 20 }, { time: 16, share: 0.7, draw: 3, cooldown: 16 }] },
+
+  // ---- Crate abilities (pass 71, js/data/crates.js): `crate: true` keeps one out of every run's offers until a crate
+  // has given it to that player; then it joins their pool like any other. Never offered in the weekly run (one pool
+  // for everyone). ----
+  { id: 'grave-feast', name: 'Grave Feast', rarity: 'rare', crate: true, text: 'Execution: heal {heal}.',
+    perk: { when: 'execute', then: 'heal' }, levels: [{ heal: 0.25 }, { heal: 0.35 }, { heal: 0.45 }] },
+  { id: 'iron-mercy', name: 'Iron Mercy', rarity: 'rare', crate: true, text: 'Parry: heal {heal}, once per {cooldown}.',
+    perk: { when: 'parry', then: 'heal' }, levels: [{ heal: 0.06, cooldown: 3 }, { heal: 0.09, cooldown: 2.5 }, { heal: 0.12, cooldown: 2 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));
