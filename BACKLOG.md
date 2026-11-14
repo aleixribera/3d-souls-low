@@ -2,15 +2,15 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
-- The Pillager Captain (pass 63, item 4 pass 1), for his pass 2. The blind judge scored him under Hollis (5-6 vs 7-9).
-  - **Strikes look alike.** Most of them end in the same crouched forward lunge (the thrust, cleave, Three Cuts hit 3,
-    hook hit 2, furrow hit 1, firebrand hit 2; `docs/scorecard/captain-moves.jpg`), and the strike and follow-through
-    frames barely differ. Give each its own end: the cleave driven down, the furrow on the floor. The haft-back reads
-    weakly.
-  - **The figure:** pauldrons and limbs read as stacked rings, the rust texture is smeared, and the hook and spike
-    can't be seen at fighting distance. He sinks into the dark square cold (`captain-town.jpg`).
-  - **Fires:** bots don't step out of them (`js/bot.js`). Kindling's ring can land fires inside the square's walls. A
-    marker can show a parry glint on a hit that can't be parried (`js/attack-anim.js` checks the attack, not the hit).
+- The Pillager Captain, after his pass 2 (pass 66; judge vs Hollis 4-6 vs 5-7). Pass 66 gave the strikes their own
+  ends (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots that step out of fires, and a check that a
+  parry glint sits only on a parryable hit. Left:
+  - **Ends:** the hook's and the firebrand's second hits still end in the thrust's kneeling lunge, and each combo's
+    last hit holds its strike frame with no follow-through.
+  - **The figure:** the hook and spike still merge into one pale crescent at fighting distance; pauldrons and limbs
+    read as stacked rings, the cape is a flat board from the side with a smeared rust texture, and he sinks into the
+    dark square (`captain-town.jpg`). The lab shows a black wing-shaped mesh at the firebrand's wind-up end.
+  - **Fires:** Kindling's ring can land fires inside the square's walls.
   - **Ideas:** a thrown firepot for a mid-range answer; burning dressing round his square that grows as the fight goes.
 
 - Two presets, what pass 2 (pass 60, baked light) left: the PC stand-in within 15% of the laptop per scene

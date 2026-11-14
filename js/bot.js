@@ -495,7 +495,15 @@ const bot = (() => {
       return best;
     }
 
+    // Every decision, then out of the fires on the floor (offFires); but not a dodge's own direction (a roll pressed this
+    // step goes where it was aimed, its i-frames carry it through a fire) nor a defence that must stand still (`hold`:
+    // outside a blow's box, or waiting to jump it).
     function think(dt, me, enemies, allies, bolts = [], leader = null) {
+      const out = decide(dt, me, enemies, allies, bolts, leader);
+      if (me.alive() && !out.hold && !hands.peek('roll')) out.mv = offFires(me, enemies, out.mv);
+      return out;
+    }
+    function decide(dt, me, enemies, allies, bolts, leader) {
       const C = B(), P = CONFIG.player, R = C.risk;
       hands.tick(dt);
       const idle = { x: 0, z: 0, has: false };
@@ -615,7 +623,7 @@ const bot = (() => {
         const { blow, s, enemy } = urgent;
         const iFrames = P.rollIFrames - 0.02, lead = s.risky || s.slip ? s.lead : Math.max(0.01, Math.min(s.lead, iFrames - (blow.end - blow.eta)));
         if (s.plan === 'space') {
-          if (outsideBox(me, enemy, blow)) return { mv: idle, lock: enemy };
+          if (outsideBox(me, enemy, blow)) return { mv: idle, lock: enemy, hold: true };
           if (me.isFree() && blow.eta > lead) return { mv: { ...s.walk, has: true }, lock: enemy };
           s.plan = 'roll';   // tracked, boxed in, or too little space: use the emergency dodge
         }
@@ -627,11 +635,11 @@ const bot = (() => {
             (!bolt || bolt.eta > flight) && enemies.every(o => o === enemy || !o.alive() || !level(o, me) || gateBetween(o, me) || opening(o, me) > flight);
           if (safe) {
             hands.press('jump'); hands.hold('heavy', false); heavyHold = jumpPlan = 0; s.done = true;
-            return { mv: idle, lock: enemy };
+            return { mv: idle, lock: enemy, hold: true };
           }
           s.plan = 'roll';   // late notice or another threat appeared: keep the grounded response
         }
-        if (s.plan === 'jump') return { mv: idle, lock: enemy };
+        if (s.plan === 'jump') return { mv: idle, lock: enemy, hold: true };
         if (s.plan === 'parry' && me.canAct() && blow.eta <= s.lead) {
           if (me.isFree() || me.state === PS.BLOCK) { hands.press('parry'); s.done = true; return { mv: idle, lock: enemy }; }
           if (blow.eta < 0) s.plan = 'roll';   // caught busy: fall back to whatever still works
@@ -821,6 +829,27 @@ const bot = (() => {
       }
       if (!px && !pz) return mv;
       return flat((mv.has ? mv.x : 0) + px * R.push, (mv.has ? mv.z : 0) + pz * R.push);
+    }
+    // Out of the fire (CONFIG.bot.fire; a hit's `fire`, Enemy.noteFires): a bot within `margin` m of a burning fire steps
+    // away from its middle, weighed by `push` against where it was walking; standing in one, it walks straight out (away
+    // from the enemy that laid it, if it stands on the very middle). A fire with under `ending` s left is let be.
+    function offFires(me, enemies, mv) {
+      const F = B().fire; let px = 0, pz = 0, inside = false;
+      for (const e of enemies) {
+        const L = e.fires; if (!L || !L.length) continue;
+        for (const f of L) {
+          if (f.time - f.age < F.ending || Math.abs(me.y - f.y) >= CONFIG.height.stepUp) continue;
+          const d = Math.hypot(me.x - f.x, me.z - f.z), want = f.r + me.radius + F.margin;
+          if (d >= want) continue;
+          if (d < f.r + me.radius * 0.5) inside = true;
+          let dx = me.x - f.x, dz = me.z - f.z, n = d;
+          if (n < 1e-3) { dx = me.x - e.x; dz = me.z - e.z; n = Math.hypot(dx, dz); if (n < 1e-3) { dx = 1; dz = 0; n = 1; } }
+          const k = 1 - d / want; px += dx / n * k; pz += dz / n * k;
+        }
+      }
+      if (!px && !pz) return mv;
+      if (inside) return flat(px, pz);
+      return flat((mv.has ? mv.x : 0) + px * F.push, (mv.has ? mv.z : 0) + pz * F.push);
     }
     // Walk toward a gap of `want` m, circling to `dir` (the bot's current side) by `circle` (0..1 of CONFIG.bot.strafe).
     function strafe(me, to, gap, want, circle, dir = side) {

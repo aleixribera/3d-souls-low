@@ -864,6 +864,9 @@ const CONFIG = {
     // rad of the line from them to the enemy they face, when it is no farther out than they are plus `laneDepth` m);
     // `push` weighs this against where it was walking.
     room: { player: 2.4, bot: 1.6, lane: 0.65, laneDepth: 1.5, push: 1.8 },
+    // Fire on the floor (pass 66; bot.offFires): it keeps `margin` m out of a burning fire, weighing that by `push`
+    // against where it was walking, walks straight out of one it stands in, and lets be one with under `ending` s left.
+    fire: { margin: 0.5, push: 2.5, ending: 0.4 },
     // Support (pass 35): a bot is a normal player, with a player's full stats; it helps rather than carries by how it
     // plays. With a person within execution.yield m of its enemy: a stagger or a long recovery the person stands in
     // reach of (`near` m past a light's reach) is theirs for its first `first` s, or until they swing, and the bot never

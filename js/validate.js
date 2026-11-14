@@ -130,6 +130,8 @@ function validateData({ visual = true } = {}) {
     'Bot caution needs below, dry and slip shares (0..1), non-negative spacing, hunted, company and safety, and patience of 1 or more.');
   need(RM && ['player', 'bot', 'lane', 'laneDepth', 'push'].every(k => num(RM[k]) && RM[k] >= 0) && RM.lane < Math.PI,
     'Bot room needs non-negative player, bot, laneDepth and push, and a lane under pi.');
+  const BF = botConfig.fire;
+  need(BF && ['margin', 'push', 'ending'].every(k => num(BF[k]) && BF[k] >= 0), 'Bot fire needs non-negative margin (m), push and ending (s).');
   const RD = CONFIG.rend, ST = CONFIG.storm;
   need(RD && Number.isInteger(RD.max) && RD.max >= 1 && num(RD.cut) && RD.cut > 0 && RD.cut * RD.max < 0.6 && num(RD.time) && RD.time > 0,
     'CONFIG.rend needs max (whole pieces, 1 or more), cut (a fraction; all of them under 0.6 of the bar) and time (s).');

@@ -4,11 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 63, v7.88.0): item 4 (Ashmere's five bosses) pass 1, the Pillager Captain
-  (`js/data/bosses/pillager-captain.js`, test `Pillager Captain`): a two-handed bill, the hook's `pull`, per-hit
-  `noParry`, lit at half with fire on the floor (`fire`, `js/ground-fire.js`). Solo bot clean 71 s. Blind judge vs
-  Hollis 5-6 vs 7-9; left for pass 2 in `BACKLOG.md`. Frames: `docs/scorecard/captain-*.jpg`. He, the King's Blade,
-  Agathe, the Kindling Tree: **awaiting Aleix**. Baked light (pass 60) accepted.
+- Track A (pass 66): item 4 (Ashmere's five bosses), the Pillager Captain pass 2 (`pillager-captain.js`, test
+  `Pillager Captain`): own end poses per strike (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots
+  step out of fires (`CONFIG.bot.fire`, `bot.offFires`, test `bot-behavior` "Bot fire"). Judge vs Hollis 4-6 vs 5-7;
+  leftovers in `BACKLOG.md`. He, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Baked light accepted.
 - Track B (pass 65, v7.89.0): item 5 pass 1, Endless: Crowned every 5th, pairs from 7, 3 pace-only modifiers.
   A lone skilled bot still falls at fight 7 (median; target 10-12): the pair is the wall
   (`docs/scorecard/endless-pass65.txt`, frames `endless-*.jpg`). Next: item 5 pass 2, pair health; rest in `BACKLOG.md`.

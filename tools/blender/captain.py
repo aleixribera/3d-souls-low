@@ -291,15 +291,15 @@ def plate(bm, outline, t0, t1, reach):
         bm.faces.new((f[j], f[i], b[i], b[j]))
 BLADE = [(.02, HEAD - .16), (.09, HEAD - .2), (.17, HEAD - .2), (.25, HEAD - .12), (.3, HEAD + .0), (.315, HEAD + .12),
          (.3, HEAD + .24), (.25, HEAD + .33), (.19, HEAD + .36), (.13, HEAD + .29), (.06, HEAD + .2), (.02, HEAD + .14)]
-HOOK = [(-.02, HEAD + .07), (-.1, HEAD + .08), (-.18, HEAD + .06), (-.25, HEAD + .0), (-.285, HEAD - .08), (-.275, HEAD - .17),
-        (-.24, HEAD - .1), (-.19, HEAD - .045), (-.11, HEAD - .03), (-.02, HEAD - .05)]
+HOOK = [(-.02, HEAD + .08), (-.12, HEAD + .1), (-.22, HEAD + .08), (-.31, HEAD + .01), (-.37, HEAD - .09), (-.38, HEAD - .21),
+        (-.32, HEAD - .13), (-.25, HEAD - .065), (-.13, HEAD - .04), (-.02, HEAD - .055)]   # pass 66: longer and thicker, to read at fighting distance
 def head(bm):
     plate(bm, BLADE, .016, .004, .3)
-    plate(bm, HOOK, .014, .004, .28)
+    plate(bm, HOOK, .022, .007, .38)
     # the spike: a square bodkin from the socket's top
-    base = [bm.verts.new(G(BX + dx, BY + dy, HEAD + .02)) for dx, dy in ((.022, 0), (0, .022), (-.022, 0), (0, -.022))]
-    mid = [bm.verts.new(G(BX + dx * 1.15, BY + dy * 1.15, HEAD + .14)) for dx, dy in ((.022, 0), (0, .022), (-.022, 0), (0, -.022))]
-    tip = bm.verts.new(G(BX, BY, HEAD + .46))
+    base = [bm.verts.new(G(BX + dx, BY + dy, HEAD + .02)) for dx, dy in ((.032, 0), (0, .032), (-.032, 0), (0, -.032))]   # pass 66: heavier
+    mid = [bm.verts.new(G(BX + dx * 1.2, BY + dy * 1.2, HEAD + .16)) for dx, dy in ((.032, 0), (0, .032), (-.032, 0), (0, -.032))]
+    tip = bm.verts.new(G(BX, BY, HEAD + .6))
     for k in range(4):
         j = (k + 1) % 4
         bm.faces.new((base[k], base[j], mid[j], mid[k])); bm.faces.new((mid[k], mid[j], tip))

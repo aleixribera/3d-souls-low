@@ -553,3 +553,23 @@ console.log('Forward rolls: ' + rollHits[1] + '/32 punished; ordinary escapes ' 
   b.brain.think(dt, p, [e], [], [{ x: p.x, z: p.z - 1, vx: 0, vz: 10, size: 0.1 }]);
   assert.ok(b.brain.hands.peek('roll') && !b.brain.hands.peek('light'), 'a bolt interrupts the risky play');
 }
+
+// Fire on the floor (pass 66, the Pillager Captain's `fire`): a bot standing in a burning fire walks out of it, and one
+// walking in to fight keeps clear of a fire between it and the boss instead of standing in it.
+{
+  for (const profile of profiles) {
+    const { sim, p, e } = waiting('pillagerCaptain', profile);
+    e.fires.push({ x: p.x, y: p.y, z: p.z, r: 1.2, time: 8, dps: 12, age: 1, no: 1 });
+    const f = e.fires[0], hp = p.hp; let out = -1;
+    for (let t = 0; t < 3; t += dt) { sim.setPlayers([]); sim.tick(dt); if (Math.hypot(p.x - f.x, p.z - f.z) > f.r + p.radius * 0.5) { out = t; break; } }
+    assert.ok(out >= 0 && out < 1.5, profile + ' walks out of the fire it stands in (out after ' + out.toFixed(2) + ' s)');
+    assert.ok(hp - p.hp < 20, profile + ' loses little to it (' + (hp - p.hp).toFixed(1) + ')');
+  }
+  const { sim, p, e } = waiting('pillagerCaptain', 'maren');
+  p.z = e.z + e.radius + p.radius + 5;
+  e.fires.push({ x: e.x, y: e.y, z: e.z + e.radius + 1.6, r: 1.1, time: 8, dps: 12, age: 1, no: 1 });
+  const f = e.fires[0]; let inside = 0;
+  for (let t = 0; t < 4; t += dt) { sim.setPlayers([]); sim.tick(dt); if (Math.hypot(p.x - f.x, p.z - f.z) < f.r + p.radius * 0.5) inside += dt; }
+  assert.ok(inside < 0.3, 'a bot going in keeps out of a fire in its way (' + inside.toFixed(2) + ' s in it)');
+  console.log('Bot fire: out of a fire in under 1.5 s for every temperament; ' + inside.toFixed(2) + ' s in one on the way in.');
+}

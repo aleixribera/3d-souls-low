@@ -3414,7 +3414,7 @@
       Game.startFight(d.id); Game.loading = 0; sim.begin();
       const e = Game.duel, p = Game.player;
       for (const a of d.attacks) for (let i = 0; i < a.hits.length; i++) {
-        const parryable = !a.rollOnly && !a.projectile && !a.noParry && !a.hits[i].echo && !a.hits[i].erupt;   // a gilt echo or a wall of fire: never
+        const parryable = canParryHit(a, i);   // a gilt echo, a wall of fire, a hook's pull or a hit marked noParry: never
         e.attack = a; e.hitIndex = i; e.setState(ES.WINDUP); e.stateTime = Math.max(0, a.hits[i].startup - CONFIG.parry.lead / 2); e.yaw = 0;
         p.x = e.x; p.z = e.z + Math.max(0.1, a.box.fwd); p.y = e.y; p.yaw = Math.PI;
         expect.ok((parryTiming(p, e, 0) !== null) === parryable, `${d.id}/${a.id}/${i}: actual parry result`);

@@ -156,6 +156,7 @@ function checkAttackAnim(a, tag, need) {
   if ('tracking' in a) need(a.tracking && num(a.tracking.rate) && a.tracking.rate > 0 && num(a.tracking.commit) && a.tracking.commit >= 0 && a.tracking.commit <= 1,
     `${tag}: tracking needs rate (rad/s) and commit (0 to 1: the share of the wind-up spent turning before it locks).`);
   if (a.markers && a.markers.some(m => m && m.parry)) need(canParryAttack(a), `${tag}: a parry glint on an attack that cannot be parried.`);
+  for (const m of a.markers || []) if (m && m.parry && Number.isInteger(m.hit ?? 0)) need(canParryHit(a, m.hit ?? 0), `${tag}: a parry glint on hit ${m.hit ?? 0}, which cannot be parried (pull, noParry, echo, erupt or bolt).`);
   if ('charge' in a) {
     const C = a.charge;
     need(C && ['at', 'hold', 'mul', 'hitstopMul'].every(k => num(C[k])) && C.at > 0 && C.at < 1 && C.hold > 0 && typeof C.action === 'string',

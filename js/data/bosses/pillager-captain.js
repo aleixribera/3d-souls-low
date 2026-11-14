@@ -94,35 +94,42 @@
   // spike out at full reach.
   const hip = { crouch: 0.22, lean: 0.05, legL: [-0.5, 0, 0], legR: [0.5, 0, 0], spin: [0, -0.45, 0], chest: [0, -0.2, 0], neck: [0, 0.25, 0], head: [0, 0.3, 0],
     armR: [-0.35, 0, -0.2], elbowR: [-1.2, 0, 0], haft: [0.08, 0.15, 1.6], armL: [-0.9, 0, -0.3], elbowL: [-0.7, 0, 0] };
-  const driven = { crouch: 0.26, lean: 0.45, legL: [-1.0, 0, 0], kneeL: [0.5, 0, 0], legR: [0.6, 0, 0], spin: [0, 0.15, 0], chest: [0.15, 0.05, 0], head: [-0.2, 0, 0],
-    armR: [-1.6, 0, 0.05], elbowR: [-0.05, 0, 0], haft: [0.02, 0.08, 1.6], armL: [-1.6, 0, -0.1], elbowL: [-0.1, 0, 0] };
+  // (pass 66) It ends tall, a fencer's lunge: the front knee bent, the back leg straight out behind, his right shoulder
+  // turned in and both arms at full reach, the spike a little up, at your chest. No other strike ends standing this long.
+  const driven = { crouch: 0.2, lean: 0.28, legL: [-0.85, 0, 0], kneeL: [0.55, 0, 0], legR: [0.6, 0, 0], spin: [0, 0.55, 0], chest: [0.05, 0.15, 0], neck: [0, -0.3, 0], head: [-0.1, -0.3, 0],
+    armR: [-1.5, 0, 0.15], elbowR: [-0.05, 0, 0], haft: [-0.08, 0.12, 1.6], armL: [-1.45, 0, -0.25], elbowL: [-0.15, 0, 0] };
   ATTACK_POSES.pillagerThrust = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
-    hits: [{ windup: hip, strike: driven, follow: { ...driven, lean: 0.5 } }] };
+    hits: [{ windup: hip, strike: driven, follow: { ...driven, lean: 0.32, legR: [0.65, 0, 0] } }] };
 
   // Three Cuts: the bill raised high over his right shoulder; cut down across to his left knee, back up across to his
   // right shoulder, then heaved overhead and brought straight down.
   const highRight = { crouch: 0.1, lean: -0.1, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.7, 0], chest: [-0.1, -0.3, 0], neck: [0, 0.3, 0], head: [0, 0.4, 0],
     armR: [-2.5, 0, -0.5], elbowR: [-0.6, 0, 0], haft: [-1.1, -0.7, 3.9], armL: [-1.8, 0, -0.4], elbowL: [-0.9, 0, 0] };
-  const lowLeft = { crouch: 0.32, lean: 0.35, legL: [-0.7, 0, 0], kneeL: [0.3, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.7, 0], chest: [0.25, 0.3, 0], neck: [0, -0.2, 0], head: [0, -0.3, 0],
-    armR: [-0.9, 0, 0.6], elbowR: [-0.1, 0, 0], haft: [0.45, 0.8, 3.9], armL: [-0.6, 0, 0.4], elbowL: [-0.6, 0, 0] };
+  // (pass 66) The first cut ends upright and wound to his left, the bill run down past his left hip behind him.
+  const lowLeft = { crouch: 0.14, lean: 0.12, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], spin: [0, 1.0, 0], chest: [0.1, 0.4, 0], neck: [0, -0.3, 0], head: [0, -0.45, 0],
+    armR: [-0.7, 0, 1.0], elbowR: [-0.05, 0, 0], haft: [0.6, 1.7, 3.9], armL: [-0.3, 0, 0.6], elbowL: [-0.7, 0, 0] };
   const upRight = { crouch: 0.12, lean: 0.05, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.8, 0], chest: [-0.05, -0.35, 0], neck: [0, 0.3, 0], head: [0, 0.4, 0],
     armR: [-2.0, 0, -0.7], elbowR: [-0.2, 0, 0], haft: [-0.6, -0.8, 0.8], armL: [-1.3, 0, -0.5], elbowL: [-0.6, 0, 0] };
   const heave = { crouch: 0.08, lean: -0.2, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], chest: [-0.25, 0, 0], head: [-0.05, 0, 0],
     armR: [-2.9, 0, 0.1], elbowR: [-0.8, 0, 0], haft: [-2.4, 0, 3.14], armL: [-2.7, 0, -0.15], elbowL: [-0.9, 0, 0] };
-  const chopped = { crouch: 0.36, lean: 0.5, legL: [-0.8, 0, 0], legR: [0.5, 0, 0], chest: [0.4, 0, 0], head: [0.1, 0, 0],
-    armR: [-1.0, 0, 0], elbowR: [0, 0, 0], haft: [0.3, 0, 3.14], armL: [-1.0, 0, -0.1], elbowL: [-0.2, 0, 0] };
+  // (pass 66) The third cut ends square on, feet wide, the bill stopped at knee height straight ahead of him.
+  const chopped = { crouch: 0.16, lean: 0.04, legL: [-0.6, 0, -0.12], legR: [0.45, 0, 0.12], chest: [0.08, 0, 0], neck: [-0.1, 0, 0], head: [0.05, 0, 0],
+    armR: [-1.05, 0, 0.05], elbowR: [-0.1, 0, 0], haft: [0.26, 0, 3.14], armL: [-0.95, 0, -0.05], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.pillagerThreeCuts = { ease: swing, lag: { weapon: 0.08, armR: 0.03 },
-    hits: [{ windup: highRight, strike: lowLeft, follow: lowLeft }, { windup: { ...lowLeft, crouch: 0.36 }, strike: upRight, follow: upRight },
-      { windup: heave, strike: chopped, follow: { ...chopped, crouch: 0.4 } }] };
+    hits: [{ windup: highRight, strike: lowLeft, follow: lowLeft }, { windup: { ...lowLeft, crouch: 0.2 }, strike: upRight, follow: upRight },
+      { windup: heave, strike: chopped, follow: { ...chopped, crouch: 0.2 } }] };
 
   // Overhead Cleave: the bill heaved up and back behind his head, his back arched, held; brought down into the floor
   // ahead with all his weight.
   const arched = { crouch: 0.15, lean: -0.35, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], chest: [-0.4, 0, 0], neck: [-0.15, 0, 0], head: [-0.1, 0, 0],
     armR: [-3.0, 0, 0.15], elbowR: [-1.1, 0, 0], haft: [-2.75, 0, 3.14], armL: [-2.9, 0, -0.15], elbowL: [-1.2, 0, 0] };
-  const cleft = { crouch: 0.5, lean: 0.6, legL: [-0.95, 0, 0], kneeL: [0.4, 0, 0], legR: [0.55, 0, 0], kneeR: [0.3, 0, 0], chest: [0.45, 0, 0], head: [0.15, 0, 0],
-    armR: [-0.85, 0, 0], elbowR: [0, 0, 0], haft: [0.5, 0, 3.14], armL: [-0.85, 0, -0.1], elbowL: [-0.15, 0, 0] };
+  // (pass 66) It ends with the blade buried in the floor ahead, his back bent over the haft and his eyes up at you; then he
+  // wrenches it out, haft twisting.
+  const cleft = { crouch: 0.3, lean: 0.62, legL: [-1.0, 0, 0], kneeL: [0.5, 0, 0], legR: [0.7, 0, 0], kneeR: [0.15, 0, 0], chest: [0.55, 0, 0], neck: [-0.2, 0, 0], head: [-0.3, 0, 0],
+    armR: [-0.55, 0, 0], elbowR: [0, 0, 0], haft: [0.58, 0, 3.14], armL: [-0.5, 0, -0.05], elbowL: [-0.1, 0, 0] };
+  const wrenched = { ...cleft, crouch: 0.34, lean: 0.4, spin: [0, -0.3, 0], chest: [0.4, -0.15, 0], elbowR: [-0.7, 0, 0], elbowL: [-0.6, 0, 0], haft: [0.5, -0.12, 2.7] };
   ATTACK_POSES.pillagerCleave = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: arched, strike: cleft, follow: { ...cleft, crouch: 0.52 } }] };
+    hits: [{ windup: arched, strike: cleft, follow: wrenched }] };
 
   // The Hook: the bill laid out low on his right, the hook turned toward you, his eyes on you over his left shoulder; swept
   // across at your shins and hauled in (you with it); then a short chop down.
@@ -130,19 +137,25 @@
     armR: [-0.9, 0, -1.0], elbowR: [-0.1, 0, 0], haft: [0.45, -0.75, 1.6], armL: [-0.8, 0, -0.3], elbowL: [-0.8, 0, 0] };
   const hooked = { crouch: 0.32, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.6, 0], chest: [0.15, 0.25, 0], neck: [0, -0.2, 0], head: [0, -0.3, 0],
     armR: [-1.1, 0, 0.4], elbowR: [-0.1, 0, 0], haft: [0.4, 0.5, 1.6], armL: [-0.7, 0, 0.4], elbowL: [-0.5, 0, 0] };
-  const hauledIn = { crouch: 0.25, lean: -0.15, legL: [-0.4, 0, 0], legR: [0.55, 0, 0], kneeR: [0.25, 0, 0], spin: [0, 0.2, 0], chest: [-0.15, 0.1, 0], head: [0.05, 0, 0],
-    armR: [-0.5, 0, -0.1], elbowR: [-1.5, 0, 0], haft: [0.1, 0.15, 1.6], armL: [-0.4, 0, 0.2], elbowL: [-1.4, 0, 0] };
+  // (pass 66) Hauled in: square in a wide horse stance, he leans away, both fists pulled to his right hip, the head trailing low across
+  // to his left front where the hook has you.
+  const hauledIn = { crouch: 0.34, lean: -0.3, legL: [0.05, 0, -0.42], kneeL: [0.35, 0, 0], legR: [0.1, 0, 0.42], kneeR: [0.35, 0, 0], spin: [0, -0.5, 0], chest: [-0.2, -0.3, 0], neck: [0, 0.2, 0], head: [0.05, 0.3, 0],
+    armR: [0.2, 0, -0.3], elbowR: [-1.2, 0, 0], haft: [0.32, 0.6, 1.6], armL: [-0.4, 0, 0.3], elbowL: [-1.0, 0, 0] };
   const shortUp = { crouch: 0.12, lean: -0.05, legL: [-0.45, 0, 0], legR: [0.4, 0, 0], chest: [-0.15, 0, 0], head: [-0.05, 0, 0],
     armR: [-2.4, 0, 0.1], elbowR: [-1.0, 0, 0], haft: [-1.5, 0.05, 3.14], armL: [-2.1, 0, -0.1], elbowL: [-1.1, 0, 0] };
+  // (pass 66) The chop after the hook is short and choked up, the haft angled across to his right, his weight back.
+  const hookChop = { crouch: 0.2, lean: 0.12, legL: [-0.5, 0, 0], legR: [0.55, 0, 0], kneeR: [0.2, 0, 0], spin: [0, -0.3, 0], chest: [0.2, -0.15, 0], head: [0.1, 0.2, 0],
+    armR: [-1.15, 0, -0.25], elbowR: [-0.6, 0, 0], haft: [0.66, -0.3, 3.14], armL: [-0.95, 0, 0.1], elbowL: [-1.0, 0, 0] };
   ATTACK_POSES.pillagerHook = { ease: swing, lag: { weapon: 0.1 },
-    hits: [{ windup: laidOut, strike: hooked, follow: hauledIn }, { windup: shortUp, strike: chopped, follow: chopped }] };
+    hits: [{ windup: laidOut, strike: hooked, follow: hauledIn }, { windup: shortUp, strike: hookChop, follow: { ...hookChop, crouch: 0.24 } }] };
 
   // The Reaping Wheel: wound right round, his back half to you, looking over his left shoulder; he turns full round with
   // the bill at full reach, and back the other way, low.
   const wound = { crouch: 0.22, lean: 0.1, legL: [-0.3, 0, 0], legR: [0.45, 0, 0], spin: [0, -1.5, 0], chest: [0, -0.45, 0], neck: [0, 0.6, 0], head: [0, 0.9, 0],
     armR: [-1.2, 0, -1.2], elbowR: [-0.1, 0, 0], haft: [0.1, -0.7, 4.7], armL: [-1.0, 0, -0.6], elbowL: [-0.6, 0, 0] };
-  const wheeled = { crouch: 0.25, lean: 0.12, legL: [-0.45, 0, 0], legR: [0.4, 0, 0], spin: [0, 5.0, 0], chest: [0.05, 0.4, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
-    armR: [-1.4, 0, 0.9], elbowR: [0, 0, 0], haft: [0.12, 0.5, 4.7], armL: [-0.7, 0, 0.8], elbowL: [-0.4, 0, 0] };
+  // (pass 66) The first turn ends tall, the bill at shoulder height and full reach.
+  const wheeled = { crouch: 0.08, lean: -0.05, legL: [-0.45, 0, 0], legR: [0.4, 0, 0], spin: [0, 5.0, 0], chest: [-0.05, 0.4, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
+    armR: [-1.75, 0, 1.1], elbowR: [0, 0, 0], haft: [-0.2, 0.5, 4.7], armL: [-1.0, 0, 0.8], elbowL: [-0.4, 0, 0] };
   const reapBack = { crouch: 0.42, lean: 0.3, legL: [-0.55, 0, 0], kneeL: [0.3, 0, 0], legR: [0.5, 0, 0], spin: [0, 2.6, 0], chest: [0.25, -0.5, 0], neck: [0, 0.4, 0], head: [0, 0.6, 0],
     armR: [-1.2, 0, -1.0], elbowR: [0, 0, 0], haft: [0.45, -0.4, 1.6], armL: [-0.8, 0, -0.5], elbowL: [-0.5, 0, 0] };
   ATTACK_POSES.pillagerWheel = { ease: { ...swing, active: 'linear' }, lag: { weapon: 0.08, armR: 0.04 },
@@ -152,8 +165,9 @@
   // through the floor ahead of him, then a rising cut.
   const dragged = { crouch: 0.42, lean: 0.35, legL: [-0.6, 0, 0], legR: [0.55, 0, 0], spin: [0, -0.9, 0], chest: [0.3, -0.3, 0], neck: [0, 0.5, 0], head: [0, 0.6, 0],
     armR: [0.3, 0, -0.5], elbowR: [-0.1, 0, 0], haft: [0.35, -2.0, 3.14], armL: [-0.5, 0, -0.4], elbowL: [-0.8, 0, 0] };
-  const scraped = { crouch: 0.45, lean: 0.4, legL: [-0.8, 0, 0], kneeL: [0.3, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.2, 0], chest: [0.3, 0.1, 0], head: [0.1, 0, 0],
-    armR: [-0.8, 0, 0.1], elbowR: [-0.1, 0, 0], haft: [0.4, 0.1, 3.14], armL: [-0.8, 0, 0], elbowL: [-0.4, 0, 0] };
+  // (pass 66) It ends in a deep squat, twisted to his left, the blade flat along the floor ahead of his left foot.
+  const scraped = { crouch: 0.55, lean: 0.35, legL: [-0.95, 0, -0.15], kneeL: [0.6, 0, 0], legR: [0.75, 0, 0.1], kneeR: [0.45, 0, 0], spin: [0, 0.6, 0], chest: [0.35, 0.25, 0], neck: [-0.15, 0, 0], head: [-0.15, -0.2, 0],
+    armR: [-0.45, 0, 0.3], elbowR: [0, 0, 0], haft: [0.38, 0.45, 3.14], armL: [-0.25, 0, 0.3], elbowL: [-0.3, 0, 0] };
   const risen = { crouch: 0.08, lean: -0.15, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.2, 0], chest: [-0.2, 0.1, 0], head: [-0.15, 0, 0],
     armR: [-2.6, 0, 0.1], elbowR: [-0.2, 0, 0], haft: [-1.3, 0.05, 0], armL: [-2.2, 0, -0.1], elbowL: [-0.4, 0, 0] };
   ATTACK_POSES.pillagerFurrow = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.1 },
@@ -163,8 +177,9 @@
   // shoe driven back into you.
   const gathered = { crouch: 0.15, spin: [0, -0.3, 0], chest: [0, -0.2, 0], neck: [0, -0.5, 0], head: [0, -1.0, 0],
     armR: [-1.1, 0, -0.1], elbowR: [-0.4, 0, 0], haft: [-0.1, 0.05, 3.14], armL: [-1.1, 0, -0.2], elbowL: [-0.3, 0, 0] };
-  const rammed = { crouch: 0.22, lean: -0.2, legL: [-0.2, 0, 0], legR: [0.55, 0, 0], spin: [0, -0.2, 0], chest: [-0.15, -0.2, 0], neck: [0, -0.5, 0], head: [0, -1.0, 0],
-    armR: [0.3, 0, -0.2], elbowR: [-1.5, 0, 0], haft: [0.05, 0.05, 3.14], armL: [0.2, 0, -0.1], elbowL: [-1.5, 0, 0] };
+  // (pass 66) He stands up tall, feet together, and leans back into you, turned half round, both fists pulled to his right hip so the shoe drives out behind.
+  const rammed = { crouch: 0.03, lean: -0.22, legL: [-0.05, 0, -0.05], legR: [0.12, 0, 0.05], spin: [0, -0.7, 0], chest: [-0.15, -0.35, 0], neck: [0, -0.6, 0], head: [0, -1.0, 0],
+    armR: [0.5, 0, -0.25], elbowR: [-1.3, 0, 0], haft: [0.15, 0.1, 3.14], armL: [0.3, 0, -0.1], elbowL: [-1.4, 0, 0] };
   ATTACK_POSES.pillagerHaftBack = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.05 },
     hits: [{ windup: gathered, strike: rammed, follow: rammed }] };
 
@@ -173,18 +188,25 @@
   // his feet, and the fire runs out round him.
   const skyward = { crouch: 0.25, lean: -0.15, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], chest: [-0.3, 0, 0], neck: [-0.3, 0, 0], head: [-0.55, 0, 0],
     armR: [-3.0, 0, 0.15], elbowR: [-0.2, 0, 0], haft: [-1.6, 0, 3.14], armL: [-2.9, 0, -0.15], elbowL: [-0.3, 0, 0] };
-  const grounded = { crouch: 0.45, lean: 0.3, legL: [-0.6, 0, 0], kneeL: [0.3, 0, 0], legR: [0.5, 0, 0], chest: [0.3, 0, 0], head: [0.2, 0, 0],
-    armR: [-0.9, 0, 0], elbowR: [-0.6, 0, 0], haft: [1.1, 0, 3.14], armL: [-1.0, 0, -0.2], elbowL: [-0.8, 0, 0] };
+  // (pass 66) He ends on one knee, the bill planted head-first at his feet like a stake, his head bowed over it.
+  const grounded = { crouch: 0.6, lean: 0.15, legL: [-1.25, 0, 0], kneeL: [1.2, 0, 0], legR: [0.35, 0, 0], kneeR: [1.4, 0, 0], chest: [0.25, 0, 0], neck: [0.2, 0, 0], head: [0.35, 0, 0],
+    armR: [-1.7, 0, 0], elbowR: [-1.2, 0, 0], haft: [1.25, 0, 3.14], armL: [-1.75, 0, -0.1], elbowL: [-1.25, 0, 0] };
   ATTACK_POSES.pillagerKindling = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: skyward, strike: grounded, follow: grounded }] };
 
   // The Firebrand: the burning bill swung back low on his right; a wide sweep across in front of him that leaves a crescent
   // of fire, then the haft levelled and the spike driven through it at you.
   const brandBack = { crouch: 0.3, lean: 0.15, legL: [-0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, -1.1, 0], chest: [0.05, -0.35, 0], neck: [0, 0.4, 0], head: [0, 0.55, 0],
     armR: [-1.0, 0, -1.1], elbowR: [-0.1, 0, 0], haft: [0.3, -0.9, 4.7], armL: [-0.9, 0, -0.3], elbowL: [-0.8, 0, 0] };
-  const brandAcross = { crouch: 0.28, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.4, 0, 0], spin: [0, 1.0, 0], chest: [0.1, 0.35, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
-    armR: [-1.4, 0, 0.7], elbowR: [0, 0, 0], haft: [0.3, 0.8, 4.7], armL: [-0.6, 0, 0.6], elbowL: [-0.5, 0, 0] };
+  // (pass 66) The sweep ends side-on in a wide straddle, one-handed at full reach out to his left, the left hand let go and flung back.
+  const brandAcross = { crouch: 0.3, lean: 0.12, legL: [-0.25, 0, -0.5], kneeL: [0.3, 0, 0], legR: [0.2, 0, 0.45], spin: [0, 1.3, 0], chest: [0.15, 0.45, 0], neck: [0, -0.4, 0], head: [0, -0.5, 0],
+    armR: [-1.3, 0, 1.25], elbowR: [0, 0, 0], haft: [0.3, 1.4, 4.7], grip: false, armL: [-0.2, 0, -0.9], elbowL: [-0.3, 0, 0] };
+  // (pass 66) Then the haft raised over his right shoulder, the spike down at you, and stabbed down through the flames.
+  const overhand = { crouch: 0.14, lean: -0.05, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.55, 0], chest: [-0.1, -0.25, 0], neck: [0, 0.3, 0], head: [0, 0.35, 0],
+    armR: [-2.4, 0, -0.35], elbowR: [-1.4, 0, 0], haft: [-0.3, 0.1, 1.6], armL: [-1.5, 0, -0.3], elbowL: [-0.7, 0, 0] };
+  const stabbed = { crouch: 0.2, lean: 0.25, legL: [-0.85, 0, 0], kneeL: [0.45, 0, 0], legR: [0.55, 0, 0], spin: [0, 0.35, 0], chest: [0.25, 0.15, 0], head: [0.15, -0.15, 0],
+    armR: [-1.35, 0, 0.1], elbowR: [-0.1, 0, 0], haft: [0.2, 0.06, 1.6], armL: [-0.95, 0, -0.1], elbowL: [-0.35, 0, 0] };
   ATTACK_POSES.pillagerFirebrand = { ease: swing, lag: { weapon: 0.1, armR: 0.04 },
-    hits: [{ windup: brandBack, strike: brandAcross, follow: { ...brandAcross, spin: [0, 1.2, 0] } }, { windup: hip, strike: driven, follow: driven }] };
+    hits: [{ windup: brandBack, strike: brandAcross, follow: { ...brandAcross, spin: [0, 1.5, 0] } }, { windup: overhand, strike: stabbed, follow: { ...stabbed, crouch: 0.24 } }] };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
