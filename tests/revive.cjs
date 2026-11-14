@@ -75,12 +75,14 @@ async function peer(origin, name) {
     assert.equal(ember(a.id).t, 0, 'out of reach: no revive'); assert.equal(ember(a.id).by, null);
     assert.ok(app.clients.get(a.id).arenaDefeated);
 
-    // Bram steps onto it: the revive starts and the boss turns on him.
+    // Bram steps onto it: the revive starts and the boss turns on him. It never turns mid-attack, so a string of its
+    // longer than the revive would let the revive finish first (CI, pass 81): the revive is made long while it turns.
+    const reviveTime = R.time; R.time = 8;
     place(b, off(s, 0.6, 0));
     await until(() => ember(a.id)?.by === b.id && ember(a.id).t > 0, 2000, 'the revive starts');
-    await until(() => boss.netTarget === b.id, 6000, 'the boss turns on the reviver');
+    await until(() => boss.netTarget === b.id, 7500, 'the boss turns on the reviver');
     // A hit (health lost) starts it over.
-    await until(() => ember(a.id).t > 0.3, 3000, 'the revive gets under way');
+    await until(() => ember(a.id).t > 0.12, 3000, 'the revive gets under way');   // t is a share of R.time (8 s here)
     place(b, off(s, 0.6, 0), 90); await flush(b); await wait(60);
     assert.ok(ember(a.id).t < 0.1, `a hit starts it over (${ember(a.id).t})`);
     // Stepping off starts it over too.
@@ -92,6 +94,7 @@ async function peer(origin, name) {
     assert.ok(ember(c.id), 'Cole has his own ember');
 
     // Bram stands on Ash's ember unhurt for the whole time: Ash is offered the rise.
+    R.time = reviveTime;
     const started = Date.now();
     place(b, off(s, 0.6, 0), 90);
     const msg = await a.next('revive', (R.time + 2) * 1000);

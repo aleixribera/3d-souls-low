@@ -112,9 +112,13 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
 - Abilities, item 6 cut at pass 62 (two passes, then cut). Every summon has its own Blender model now (the guardian
   since pass 78, `tools/blender/guardian.py`; the lancer since pass 80, `tools/blender/lancer_of_ash.py`), and both
-  strike with moves of their own since pass 81 (`VISUALS.abilityFx.<kind>.moves`, model lab shows them). Left:
-  "a party of four" is three local bodies beside the player (`docs/scorecard/abilities-summons.jpg`); all four
-  summons seen in a real online party of four browsers. A drawn boss waits for the end of its attack string to turn (the draw only
+  strike with moves of their own since pass 81 (`VISUALS.abilityFx.<kind>.moves`, model lab shows them). Since pass 83
+  all four are seen out at once in an online party of four, each called through the server's own checks, drawn where
+  the server has them, a teammate's twin too (`tests/summons-party-browser.cjs`, one page and three Node clients, by
+  hand; `docs/scorecard/summons-party.jpg`). Left: the legendaries in a party of four the same way (item 6's check).
+  Two players' summons of one kind on the same side of the boss stand in the same spot (each places itself by its
+  own holder only). On a phone (390 px) the party list covers the middle right of the fight and the healing tip
+  overlaps the fight line (the test's phone frame). A drawn boss waits for the end of its attack string to turn (the draw only
   starts between attacks): if that feels late, let the draw begin at its next recovery. `KIT=strong` is still the
   pass 56 list; a kit with the twin, hound and Gale reached median 6 vs 4 (12 runs, pass 61); re-run it with the
   guardian and lancer in the pool.

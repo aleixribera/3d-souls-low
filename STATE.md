@@ -6,8 +6,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Track A (pass 82): item 6 pass 1 done: nothing in Story takes the camera or feet (Aldric's retreat; both endings
   told over the live world). 8 bosses **awaiting Aleix**. Next: the rework's item 3.
-- Track B (pass 81): guardian and lancer strike with their own moves in turn, wound up ahead of each blow
-  (`docs/scorecard/summon-moves.jpg`, test `summons:`). Next: BACKLOG item 6 (the party-of-four check).
+- Track B (pass 83): four summons at once online, party of four (`tests/summons-party-browser.cjs` by hand,
+  `docs/scorecard/summons-party.jpg`). Next: the rework's moveset (items 1-2).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).

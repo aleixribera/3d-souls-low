@@ -1474,8 +1474,11 @@ const multiplayer = (() => {
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }
   function landed(e) { command('landed', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }   // pass 77: an attack it would learn struck me
   // An ability's trigger only this browser sees (ABILITY_CLAIMS, js/abilities.js): the server checks it and fires.
+  // The pose that shows it (drinking, landing, rolling, this low) goes first: the server waits only C.claimWait s for
+  // it, and a slow frame after a drink used to let that run out, so the Ember Twin never came (pass 83).
   function abilityClaim(when, ctx) {
     if (!ABILITY_CLAIMS.includes(when)) return;   // a parry or a landed heavy: the server sees those itself
+    publishPose();
     command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}) });
   }
   function requestExecution(e) { if (!pendingExecution) { pendingExecution = e.netId; command('execute', { enemy: e.netId }); } }
