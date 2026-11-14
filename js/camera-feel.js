@@ -20,12 +20,15 @@ const cameraFeel = (() => {
   const isPlayer = b => b && b === Game.player;
   const heavy = a => a && (a.feel === 'heavy' || a.charge);   // charged heavies, or attacks that opt in (jumpHeavy)
 
+  // A counter (a riposte's blow, pass 92): its swing kicks like a heavy's and the view punches in as it starts.
+  const counter = b => !!(b && b.payload && b.payload.riposte);
   events.on('attackPhase', d => {
     if (!isPlayer(d.actor) || d.phase !== PHASE.ACTIVE) return;
-    const H = heavy(d.attack);
+    const C = counter(d.actor), H = heavy(d.attack) || C;
     kick('z', H ? F.heavy : F.swing);
     kick('roll', (d.hitIndex % 2 ? -1 : 1) * F.swingRoll * (H ? 1.6 : 1));
     if (H) kick('y', -F.heavyDip);
+    if (C) kick('fov', F.counterFov);
   });
   events.on('strike', d => {
     if (isPlayer(d.target)) {   // knocked away from the blow
@@ -33,7 +36,11 @@ const cameraFeel = (() => {
       const [lx, lz] = d.attacker ? local(d.target.x - d.attacker.x, d.target.z - d.attacker.z) : [0, -1];
       kick('x', lx * F.hurtPush * k); kick('z', lz * F.hurtPush * k);
       kick('roll', (lx >= 0 ? -1 : 1) * F.hurtRoll * k); kick('fov', F.hurtFov * k);
-    } else if (isPlayer(d.attacker) && !d.blocked && (d.strike.damage || 0) >= F.punchFrom) kick('fov', F.hitFov);
+    } else if (isPlayer(d.attacker) && !d.blocked) {   // a heavy, a finisher or a counter landing punches in (pass 92), and any big blow
+      const big = d.strike.riposte || (d.strike.charge > 0) || heavy(d.attacker.attack);
+      if (big || (d.strike.damage || 0) >= F.punchFrom) kick('fov', big ? F.heavyHitFov : F.hitFov);
+      if (big) kick('y', -F.heavyDip * 0.6);
+    }
   });
   events.on('parry', d => { if (d.player && !isPlayer(d.player)) return; kick('fov', F.parryFov); kick('z', F.parryPush); });
   events.on('postureBreak', () => kick('fov', F.breakFov));

@@ -3815,6 +3815,47 @@
       expect.ok(camera.fov === CONFIG.camera.fov, 'off: the plain field of view');
     } finally { settings.cameraMotion = saved; }
   });
+  test('Camera feel: a counter, and a heavy or finisher landing, punch the view in (pass 92)', () => {
+    const saved = settings.cameraMotion, punch = fn => { Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(5, 1); const p = Game.player, a = p.attack, pl = p.payload; try { fn(p); } finally { p.attack = a; p.payload = pl; } Game.render(1, STEP); Game.render(1, STEP); return cameraFeel.state().fov; };
+    try {
+      settings.cameraMotion = true;
+      const swing = (p, riposte) => { p.payload = { riposte }; events.emit('attackPhase', { actor: p, attack: { id: 'light' }, phase: PHASE.ACTIVE, hitIndex: 0 }); };
+      const counter = punch(p => swing(p, true)), plain = punch(p => swing(p, false));
+      expect.ok(counter < -0.4 && Math.abs(plain) < 0.1, `a counter's swing punches in, a plain light's doesn't (fov ${counter.toFixed(2)} / ${plain.toFixed(2)})`);
+      const land = (p, feel) => { p.attack = { feel }; events.emit('strike', { strike: { damage: 20, riposte: false, charge: 0 }, attacker: p, target: Game.duel, at: { x: p.x, y: 1, z: p.z }, blocked: false }); };
+      const heavy = punch(p => land(p, 'heavy')), light = punch(p => land(p, undefined));
+      expect.ok(heavy < -0.4 && Math.abs(light) < 0.1, `a finisher landing punches in, a light's doesn't (fov ${heavy.toFixed(2)} / ${light.toFixed(2)})`);
+    } finally { settings.cameraMotion = saved; }
+  });
+  test('Player look: a low dashing lunge, a whole-body deflect, a landing with weight, a cape that never stands on end (pass 92)', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player, r = p.rig, v = new THREE.Vector3(), L = ANIM_SETTINGS.clothClamp + 1e-6;
+    const head = () => { r.root.updateMatrixWorld(true); return r.head.getWorldPosition(v).y - r.root.position.y; };
+    const swing = c => { let x = 0, z = 0; for (let q = c; q; q = q.up) { x += q.bone.rotation.x; z += q.bone.rotation.z; } return Math.max(Math.abs(x), Math.abs(z)); };   // from plumb, summed up the drawn bones
+    const capeOk = () => !r.anim || r.anim.cloth.every(c => swing(c) <= L + 1e-6);
+    let cape = true;
+    sim.step(30, 1); const standHead = head(), standHip = r.spin.position.y;
+    sim.press('roll'); for (let i = 0; i < 4; i++) { sim.step(1, 1); cape = cape && capeOk(); }   // 4 frames in: the lunge is struck at once
+    expect.ok(p.state === PS.ROLL, 'dashing');
+    expect.ok(head() < standHead * 0.85 && r.spin.rotation.x > 0.45, `the dash snaps low and leaning (head ${head().toFixed(2)} of ${standHead.toFixed(2)} m, lean ${r.spin.rotation.x.toFixed(2)})`);
+    for (let i = 0; i < 8; i++) { sim.step(1, 1); cape = cape && capeOk(); }
+    expect.ok(head() < standHead * 0.85, 'and holds it');
+    for (let i = 0; i < 40; i++) { sim.step(1, 1); cape = cape && capeOk(); }
+    expect.ok(cape, 'a cape chain swings at most clothClamp from plumb all told, through and after a dash');
+    const hang = r.anim ? Math.max(...r.anim.cloth.map(swing)) : 0;
+    expect.ok(hang < 0.5, `and hangs again soon after (${hang.toFixed(2)} rad from plumb)`);
+    sim.hold('block'); sim.step(3, 1);
+    expect.ok(r.spin.position.y < standHip - 0.05, `a deflect press braces the hips (${r.spin.position.y.toFixed(2)} of ${standHip.toFixed(2)} m)`);
+    p.deflectedBlow = { enemy: null, key: 'look' }; sim.step(4, 1);
+    expect.ok(r.tip.rotation.x < -0.05 && r.armL.rotation.x < -0.8 && r.armL.rotation.z < 0.6, `a blow turned aside rocks the body back, the off-hand kept by the hilt (${r.tip.rotation.x.toFixed(2)}, ${r.armL.rotation.x.toFixed(2)}, ${r.armL.rotation.z.toFixed(2)})`);
+    const off = Math.hypot(r.root.position.x - p.x, r.root.position.z - p.z);
+    expect.ok(off > 0.12, `and the body is drawn stepped off its line, where the player stands still (${off.toFixed(2)} m)`);
+    sim.release('block'); sim.step(40, 1);
+    sim.press('jump'); sim.step(3, 1);   // drawn every step, so the look sees the fall
+    for (let i = 0; i < 180 && (p.state === PS.JUMP || p.state === PS.FALL); i++) sim.step(1, 1);
+    sim.step(3, 1);
+    expect.ok(r.spin.position.y < standHip - 0.04, `a landing bends the knees (${r.spin.position.y.toFixed(2)} m)`);
+  });
   test('Low performance: native resolution and dormant post targets stay small', () => {
     try {
       A.visuals.setQuality('bare');

@@ -21,7 +21,15 @@ function validateData({ visual = true } = {}) {
     const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
     need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');
     const D = A.deflect;
-    need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s) and a pose of [x, y, z] per bone, for the press and its clang.');
+    need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && num(d.drop) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press and its clang.');
+    need(D && D.clang && Array.isArray(D.clang.step) && D.clang.step.length === 2 && D.clang.step.every(v => Number.isFinite(v) && Math.abs(v) <= 0.6),
+      'ANIM_SETTINGS.deflect.clang.step: [side, back] m the body steps off its line (at most 0.6 each).');
+    need(A.clothClamp > 0 && A.clothSpeed > 0, 'ANIM_SETTINGS.clothClamp (rad) and clothSpeed (m/s): both above 0.');
+    const Da = A.dash, L = A.land, r3 = v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite);
+    need(Da && num(Da.rise) && num(Da.hold) && Math.abs(Da.lean) < 1.5 && Math.abs(Da.tip) < 0.5 && Number.isFinite(Da.head)
+      && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(Da[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(Da[b])),
+      'ANIM_SETTINGS.dash: rise (s), hold (0 to 1 of the dash), lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
+    need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
     need(Object.entries(A.playerEase || {}).every(([ph, e]) => MARKER_PHASES.includes(ph) && e in EASE), `ANIM_SETTINGS.playerEase: phases ${MARKER_PHASES.join(', ')}, easings from EASE.`);
     const G = A.afterimage, look = g => g && num(g.life) && num(g.opacity) && Number.isInteger(g.color) && g.color >= 0 && g.color <= 0xffffff;
     need(G && look(G) && look(G.dodge) && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0

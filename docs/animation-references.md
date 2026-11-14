@@ -57,3 +57,8 @@ blows' start-up are the moves' own timing (CONFIG.player and js/data/player.js),
 Each pass, a subagent sees a reference strip and two strips of ours (before and after), unlabelled, and scores ours
 0 to 10 on motion alone: `scorecard/animation-judge.csv`, plotted by `node tools/animation-judge-plot.cjs` to
 `scorecard/animation-judge.svg`.
+
+Pass 92 (dash and deflect, item 3c pass 2): head height at the lowest frame, standing = 100%: dash 74% (pass 91)
+to 66%, deflect press 100% to 85%, landing 99% to 89%. One judge resumed over two rounds scored both 5 then 5
+(flat); a fresh judge on the final build scored dash 4, deflect 4. A resumed judge grows lenient: start a fresh
+one each round. Strips: `scorecard/anim-p92-dash.jpg`, `scorecard/anim-p92-deflect.jpg`.

@@ -6,13 +6,41 @@
 // animator's secondary motion, the weapon's lag, the deflect's own pose, and Rig.settle, which blends one move into the
 // next so nothing snaps. What each move does and when is js/player.js's; nothing here changes game state.
 
-// The deflect's own pose (pass 91): a press snaps the blade across the body and holds it a beat; a blow turned aside
-// knocks it back. Visual clocks live on the rig: `dfAge` since the last press, `clAge` since the last deflected blow.
+// The deflect's own pose (pass 91; the whole body since pass 92): a press snaps the blade across the body, the hips
+// drop into a braced stance and hold it a beat; a blow turned aside rocks the body back, a foot steps out and the free
+// arm flares. Visual clocks live on the rig: `dfAge` since the last press, `clAge` since the last deflected blow.
+// A key pose's weight at `age` s: snapped in over `rise`, held `hold`, let go over `fall` (s).
 function deflectEnvelope(age, D) {
   if (!(age >= 0)) return 0;
   if (age < D.rise) return EASE.outCubic(age / D.rise);
   if (age < D.rise + D.hold) return 1;
   return 1 - EASE.inOutSine(clamp((age - D.rise - D.hold) / D.fall, 0, 1));
+}
+// The dash (pass 92): a long, low, leaning lunge, snapped into at once and held (ANIM_SETTINGS.dash).
+function dashPose(r, tt, rollTime) {
+  const D = ANIM_SETTINGS.dash, hold = D.hold * rollTime;
+  const k = tt < D.rise ? EASE.outCubic(tt / D.rise) : tt < hold ? 1 : 1 - EASE.inOutSine(clamp((tt - hold) / Math.max(rollTime - hold, 0.01), 0, 1)) * 0.6;
+  r.legL.rotation.set(D.legL[0] * k, D.legL[1] * k, D.legL[2] * k); r.kneeL.rotation.x = D.kneeL * k;
+  r.legR.rotation.set(D.legR[0] * k, D.legR[1] * k, D.legR[2] * k); r.kneeR.rotation.x = D.kneeR * k;
+  r.armR.rotation.set(lerp(r.armR.rotation.x, D.armR[0], k), D.armR[1] * k, D.armR[2] * k);
+  r.armL.rotation.set(lerp(r.armL.rotation.x, D.armL[0], k), D.armL[1] * k, D.armL[2] * k);
+  if (r.elbowL) { r.elbowL.rotation.x += D.elbowL * k; r.elbowR.rotation.x += D.elbowR * k; }
+  r.weapon.rotation.set(lerp(r.weapon.rotation.x, D.weapon[0], k), D.weapon[1] * k, D.weapon[2] * k);
+  // The hips sink until the front foot is on the floor: a split stance, not a squat (Rig.crouch bends both knees alike).
+  const tl = D.legL[0] * k, reach = LEG_SEG * (Math.cos(tl) + Math.cos(tl + D.kneeL * k));
+  r.spin.position.y -= 2 * LEG_SEG - reach; r.crouchDrop += 2 * LEG_SEG - reach;   // so a later crouch() this frame bends from here
+  r.lean(D.lean * k); r.tip.rotation.x += D.tip * k; r.head.rotation.x += D.head * k;
+}
+// A landing with weight (pass 92): the knees give under the fall and come back up (visual clock `ldAge` on the rig).
+function landPose(p, r, dt) {
+  const L = ANIM_SETTINGS.land, air = p.state === PS.JUMP || p.state === PS.FALL || p.state === PS.JUMP_ATTACK;
+  if (air) { r.ldVy = Math.min(r.ldVy ?? 0, p.vy); r.ldAge = undefined; return; }
+  if (r.ldVy !== undefined && r.ldVy < 0) { r.ldK = p.state === PS.LAND ? 0 : clamp(-r.ldVy / L.ref, L.min, 1); r.ldAge = 0; }   // a jump attack's landing has its own pose
+  else if (r.ldAge !== undefined) r.ldAge += dt;
+  r.ldVy = undefined;
+  if (p.state !== PS.IDLE && p.state !== PS.WALK && p.state !== PS.BLOCK) return;
+  const k = deflectEnvelope(r.ldAge, L) * (r.ldK || 0);
+  if (k > 0.001) { r.crouch(L.drop * k); r.lean(L.lean * k); r.head.rotation.x -= L.lean * 0.6 * k; }
 }
 function poseToward(r, pose, k) {
   if (!(k > 0.001)) return;
@@ -22,7 +50,7 @@ function poseToward(r, pose, k) {
     bone.rotation.set(lerp(bone.rotation.x, v[0], k), lerp(bone.rotation.y, v[1], k), lerp(bone.rotation.z, v[2], k));
   }
 }
-function deflectPose(p, r, dt) {
+function deflectPose(p, r, dt, yaw) {
   const D = ANIM_SETTINGS.deflect;
   if (r.dfLast === undefined) { r.dfLast = p.deflect; r.clBlow = p.deflectedBlow; }   // a new rig (a twin's) starts at rest
   if (p.deflect > (r.dfLast ?? 0) + 1e-6) r.dfAge = 0;                       // a fresh press arms the deflect
@@ -34,6 +62,13 @@ function deflectPose(p, r, dt) {
   const c = deflectEnvelope(r.clAge, D.clang), k = Math.max(deflectEnvelope(r.dfAge, D), c);
   poseToward(r, D.pose, k);
   poseToward(r, D.clang.pose, c);
+  if (k > 0.001) r.crouch(lerp(D.drop, D.clang.drop, c) * k);   // the hips drop with it; the feet stay planted
+  if (c > 0.001) {   // a blow turned aside: the whole body steps off its line (to its left and back), then back in
+    const side = D.clang.step[0] * c, back = D.clang.step[1] * c, sy = Math.sin(yaw), cy = Math.cos(yaw);
+    const dx = cy * side - sy * back, dz = -sy * side - cy * back;   // drawing only: Rig.place puts the root back next frame
+    r.root.position.x += dx; r.root.position.z += dz;
+    if (r.shadow) { r.shadow.position.x += dx; r.shadow.position.z += dz; }
+  }
 }
 
 Player.prototype.pose = function (tt, ctx) {
@@ -45,13 +80,7 @@ Player.prototype.pose = function (tt, ctx) {
     case PS.WALK: r.walk(this.walkPhase, 0.6); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
     case PS.JUMP: case PS.FALL:
       r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
-    case PS.ROLL: {   // the dash: a low forward lunge, blade trailing
-      const p = clamp(tt / C.rollTime, 0, 1), k = Math.sin(Math.min(1, p * 1.6) * Math.PI * 0.5) * (1 - ease(Math.max(0, p - 0.6) / 0.4));
-      r.legL.rotation.x = -0.8 * k; r.kneeL.rotation.x = 0.9 * k; r.legR.rotation.x = 0.6 * k; r.kneeR.rotation.x = 0.5 * k;
-      r.armL.rotation.x = 0.7 * k; r.armR.rotation.x = 0.9 * k; r.weapon.rotation.x = 0.4 * k;
-      r.crouch(0.28 * k); r.lean(0.55 * k);
-      break;
-    }
+    case PS.ROLL: dashPose(r, tt, C.rollTime); break;   // the dash: a long, low, leaning lunge, blade trailing
     case PS.ATTACK: {
       const at = this.charge === 1 ? this.attackT : this.attackT + (tt - this.stateTime), ch = this.attack.charge;
       if (this.attack.pose) {   // four-phase key poses (js/attack-anim.js)
@@ -108,7 +137,9 @@ Player.prototype.pose = function (tt, ctx) {
   if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
   if (r.anim) r.anim.updatePlayer(this, tt, ctx, glint, true);   // a modelled body's secondary motion (js/animator.js), visual only
   r.applyLag(ctx.yaw, Math.hypot(this.vx, this.vz), ctx.dt);
-  deflectPose(this, r, Game.hitstop > 0 ? 0 : Math.min(ctx.dt || 0, 0.1));
+  const vdt = Game.hitstop > 0 ? 0 : Math.min(ctx.dt || 0, 0.1);   // the visual clocks hold through a hit-pause
+  landPose(this, r, vdt);
+  deflectPose(this, r, vdt, ctx.yaw);
   // One move into the next without a snap (a chained swing is its own move); a body back from the dead starts clean.
   r.settle(this.state, this.state === PS.ATTACK || this.state === PS.EXECUTE ? this.attack : null, tt, r.settleKey !== PS.DEAD);
   if (r.anim) r.anim.finishPlayer(this, ctx);   // the cloth swings from the blended body, not the snapped one

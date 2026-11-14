@@ -83,7 +83,7 @@ const afterimage = (() => {
       const x = r.root.position.x, z = r.root.position.z, cap = reducedMotion() ? 1 : A.perDash[visuals.quality().fxBudget] ?? A.perDash.normal;
       if (!wasDash || fresh) { made = 0; perfect = false; fresh = false; }
       if (dodgeArmed) { dodgeArmed = false; perfect = true; spawn(r, A.dodge); made++; lastX = x; lastZ = z; }
-      else if (made < cap && (made === 0 || Math.hypot(x - lastX, z - lastZ) >= A.gap)) {
+      else if (made < cap && (made === 0 ? p.stateTime >= ANIM_SETTINGS.dash.rise : Math.hypot(x - lastX, z - lastZ) >= A.gap)) {   // the first once the lunge is struck
         spawn(r, perfect ? A.dodge : A); made++; lastX = x; lastZ = z;
       }
     }
