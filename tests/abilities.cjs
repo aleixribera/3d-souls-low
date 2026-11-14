@@ -234,6 +234,40 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.equal(powers.twinOf('h'), null, 'gone with its holder'); assert.equal(powers.decoy(e), null, 'and the boss is free');
   powers.reset();
 
+  // Stone Guardian: low health raises it once a fight, beside the boss (it doesn't run there); it holds the boss
+  // `draw` s and bashes every `every` s. Lancer of Ash: a break sends it charging from its holder; it thrusts.
+  fresh(); e.state = ES.IDLE;
+  const guard = holder(['stone-guardian']), sgv = BY['stone-guardian'].levels[0];
+  powers.trigger('g', guard, guard.kit, 'low', {}); assert.equal(powers.summonOf('g'), null, 'no guardian while its holder is well');
+  guard.hp = guard.maxHp * sgv.below * 0.9; powers.trigger('g', guard, guard.kit, 'low', {});
+  const sgs = powers.summonOf('g'); assert.ok(sgs && sgs.kind === 'guardian', 'low health raises the guardian');
+  assert.ok(Math.hypot(sgs.x - e.x, sgs.z - e.z) < e.radius + K.guardian.gap + 0.05, 'it rises beside the boss');
+  step(K.arrive + 0.05);
+  assert.ok(powers.decoy(e) && powers.decoy(e).height === K.guardian.height, 'it draws the boss');
+  assert.ok(e.hp < e.def.hp, 'it bashes');
+  step(sgv.draw - 0.2); assert.ok(powers.decoy(e), `it holds the boss ${sgv.draw} s`);
+  step(0.3); assert.equal(powers.decoy(e), null, 'then lets it go');
+  const bashed = fired.filter(f => f.power === 'stone-guardian' && f.strike).length;
+  step(sgv.every * 2); assert.equal(fired.filter(f => f.power === 'stone-guardian' && f.strike).length, bashed + 2, 'a bash every `every` s');
+  step(sgv.time); assert.equal(powers.summonOf('g'), null, 'gone when its time is up');
+  powers.trigger('g', guard, guard.kit, 'low', {}); assert.equal(powers.summonOf('g'), null, 'once a fight');
+  // Low health is told once: with the twin out then, the guardian waits for it to go, and rises after.
+  powers.reset(); fresh(); e.state = ES.IDLE;
+  const both = holder(['stone-guardian', 'ember-twin']), bwv = BY['ember-twin'].levels[0];
+  powers.trigger('b', both, both.kit, 'flask', {}); assert.ok(powers.twinOf('b'), 'the twin is out');
+  both.hp = both.maxHp * sgv.below * 0.9; powers.trigger('b', both, both.kit, 'low', {});
+  assert.equal(powers.summonOf('b').kind, 'twin', 'no guardian while the twin is out');
+  step(bwv.time + 0.1); assert.equal(powers.summonOf('b')?.kind, 'guardian', 'the guardian rises when the twin is gone');
+  powers.reset(); fresh(); e.state = ES.IDLE;
+  const lan = holder(['ash-lancer']), alv = BY['ash-lancer'].levels[0];
+  powers.trigger('l', lan, lan.kit, 'break', { enemy: e });
+  const als = powers.summonOf('l'); assert.ok(als && als.kind === 'lancer', 'a break sends the lancer');
+  assert.ok(Math.hypot(als.x - lan.x, als.z - lan.z) < 1e-6, 'from its holder');
+  step(1); assert.ok(Math.hypot(als.x - e.x, als.z - e.z) - e.radius <= K.lancer.reach, 'it charges to the boss');
+  assert.ok(e.hp < e.def.hp && fired.some(f => f.power === 'ash-lancer' && f.draw), 'it thrusts and draws the boss');
+  powers.trigger('l', lan, lan.kit, 'break', { enemy: e }); assert.equal(fired.filter(f => f.power === 'ash-lancer' && !f.strike && !f.draw).length, 1, 'its cooldown spaces it');
+  powers.reset();
+
   // Second Wind (a rare's perk): a flask drunk gives stamina back.
   const wind = holder(['second-wind']); wind.stamina = 0; wind.useItem('flask');
   near(wind.stamina, wind.maxStamina * BY['second-wind'].levels[0].stamina, 'Second Wind');
@@ -456,6 +490,6 @@ async function peer(origin, name) {
     for (let i = 0; i < sparkEvery; i++) { boss2.hp = boss2.def.hp; boss2.posture = 0; seen.push(...struck()); }
     assert.equal(seen.filter(ev => ev.power === 'ember-twin' && ev.strike).length, sparkEvery, "the twin echoes each of b's blows");
     assert.equal(seen.filter(ev => ev.power === 'static-edge').length, 1, 'a spark on the Nth blow the server accepted');
-    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting and both summons drawing the boss, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
+    console.log('ABILITIES: kits and levels, every common, rare and legendary on a body and the boss, the offers\' odds and limits, the pick through the server, server damage and health, the Blood Moon, Meteor Fall, Time Rift and Ember Twin claims, the hound biting, the guardian holding and the lancer charging, every summon drawing the boss, the twin echoing blows and Static Edge counting them on the server, the timed-out pick passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

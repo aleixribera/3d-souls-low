@@ -41,10 +41,10 @@ const cameraFeel = (() => {
   events.on('land', d => { if (!d.player || isPlayer(d.player)) kick('y', -F.landDip * 1.5); });
   events.on('fallDamage', d => { if (isPlayer(d.body)) kick('y', -F.landDip * 1.3); });
   events.on('bossPhase', () => kick('fov', F.phaseFov));
-  // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a hound's
+  // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a striking summon's
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
   events.on('abilityPower', d => {
-    const P = F.powers[d.draw ? 'draw' : d.strike ? (d.then === 'twin' ? 'echo' : d.then === 'hound' ? 'bite' : 'strike') : d.then], p = Game.player;
+    const P = F.powers[d.draw ? 'draw' : d.strike ? (d.then === 'twin' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }

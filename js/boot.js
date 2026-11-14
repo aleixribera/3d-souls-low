@@ -73,6 +73,7 @@ function registerListeners() {
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (`blink`, `sigil` hits; js/holy.js)
   abilityFx.attach(); // Boss Rush's legendaries drawn (`abilityPower`, `abilityPerk`; js/ability-fx.js)
   summonHound.attach(); // the Grave Hound summon drawn (js/summon-hound.js)
+  summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }
 

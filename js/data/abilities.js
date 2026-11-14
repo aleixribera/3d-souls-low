@@ -9,7 +9,7 @@
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
-//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`, `hound`).
+//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`, `hound`, `guardian`, `lancer`).
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
 const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n' };
 // The numbers that are a share of something whole (of the health or stamina bar, of the damage dealt): never above 1.
@@ -68,6 +68,17 @@ const ABILITIES = [
     power: { when: 'parry', then: 'hound' },
     levels: [{ time: 8, every: 1.2, damage: 16, posture: 5, draw: 2, cooldown: 14 }, { time: 10, every: 1.1, damage: 20, posture: 6, draw: 2.5, cooldown: 12 },
       { time: 12, every: 1, damage: 24, posture: 7, draw: 3, cooldown: 10 }] },
+  // A summon that holds the boss: a guardian of stone that rises when its holder is nearly down and keeps the boss on
+  // it for a long breath, battering it with its shield now and then. Once a fight.
+  { id: 'stone-guardian', name: 'Stone Guardian', rarity: 'rare', text: 'Low health: a stone guardian rises and holds the boss for {draw}.',
+    power: { when: 'low', then: 'guardian', once: true },
+    levels: [{ below: 0.33, time: 9, every: 2, damage: 14, posture: 12, draw: 4 }, { below: 0.33, time: 11, every: 1.8, damage: 18, posture: 15, draw: 5 },
+      { below: 0.33, time: 13, every: 1.6, damage: 22, posture: 18, draw: 6 }] },
+  // A summon that hits: a lancer of ash that charges the boss whose balance its holder broke, and thrusts at it.
+  { id: 'ash-lancer', name: 'Lancer of Ash', rarity: 'rare', text: "Break the boss's balance: a lancer of ash charges it and thrusts for {time}.",
+    power: { when: 'break', then: 'lancer' },
+    levels: [{ time: 6, every: 0.9, damage: 18, posture: 4, draw: 1, cooldown: 12 }, { time: 7, every: 0.8, damage: 22, posture: 5, draw: 1.2, cooldown: 10 },
+      { time: 8, every: 0.7, damage: 26, posture: 6, draw: 1.5, cooldown: 8 }] },
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark of lightning jumps to the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30, posture: 6 }, { hits: 4, damage: 34, posture: 7 }, { hits: 4, damage: 44, posture: 9 }] },
 

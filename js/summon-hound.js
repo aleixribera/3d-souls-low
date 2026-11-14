@@ -86,7 +86,7 @@ const summonHound = (() => {
     if (!hounds.length) return;
     const body = d.body;
     let h = hounds.find(q => q.body && q.body === body);
-    const renew = !!h;
+    const renew = !!h && h.left > H.fade;   // one fading away comes again fresh, as the engine's does
     h = h || hounds.find(q => !q.body) || hounds.reduce((a, b) => (a.left < b.left ? a : b));
     h.body = body; h.enemy = d.enemy; h.left = d.v.time; h.enemies = Game.enemies;
     if (renew) { h.time = d.v.time + H.rise; h.gone = false; return; }   // risen already: it stays up
@@ -182,7 +182,8 @@ const summonHound = (() => {
       const rising = clamp01((h.time - h.left) / H.rise), fading = clamp01(h.left / H.fade);
       for (const m of h.mats) {
         const u = m.uniforms;
-        if (fading < 1) { u.uFrom.value = -1; u.uCut.value = h.y - 0.1 + 1.5 * fading; } else { u.uFrom.value = 1; u.uCut.value = h.y - 0.1 + 1.5 * rising; }
+        // The part above the cut is gone: rising, the cut climbs from the feet; fading, it sinks from the head.
+        u.uFrom.value = 1; u.uCut.value = h.y - 0.1 + 1.5 * (fading < 1 ? fading : rising);
         u.uOpacity.value = 0.95 * Math.min(1, rising * 3); u.uTime.value = now;
         u.uBoost.value = 1 + (h.lunge !== Infinity ? H.biteBoost * (1 - h.lunge / H.lunge) : 0) + (h.howl !== Infinity ? H.biteBoost * 0.6 : 0);
       }

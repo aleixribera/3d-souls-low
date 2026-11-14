@@ -31,6 +31,8 @@ const ABILITY_ICONS = {
   'patience': '<path d="M14 6 H34 M14 42 H34"/><path d="M17 6 C17 16 24 19 24 24 C24 29 17 32 17 42 M31 6 C31 16 24 19 24 24 C24 29 31 32 31 42"/><path d="M20 39 C22 36 26 36 28 39"/>',
   'second-wind': '<path d="M20 8 H28 M21 8 V15 C15 18 13 23 13 28 A11 11 0 0 0 35 28 C35 23 33 18 27 15 V8"/><path d="M18 30 C21 26 25 34 30 30"/><path d="M41 22 V8 M37 12 L41 8 L45 12"/>',
   'counterflame': '<path d="M8 38 L28 18 M40 38 L20 18"/><path d="M24 3 C18 10 18 14 24 18 C30 14 30 10 24 3 Z"/><path d="M13 42 L5 34 M35 42 L43 34"/>',
+  'stone-guardian': '<path d="M24 6 L37 11 V23 C37 32 31 38 24 42 C17 38 11 32 11 23 V11 Z"/><path d="M24 6 V42"/><path d="M17 17 L20 22 L17 28"/><path d="M4 45 H44" stroke-dasharray="3 2"/>',
+  'ash-lancer': '<path d="M7 41 L36 12"/><path d="M33 9 L44 4 L39 15 Z"/><path d="M12 42 L17 37"/><path d="M4 30 L11 23 M11 46 L18 39 M3 21 L8 16" stroke-dasharray="2 2"/>',
   'grave-hound': '<path d="M44 22 L31 20 L26 13 L23 19 L13 21 C9 22 8 27 12 29 L20 31 L15 39 L25 32 L32 34 L44 28"/><path d="M44 22 L36 25 L44 28"/><circle cx="30" cy="24" r="1.5"/><path d="M4 18 H9 M3 25 H7 M5 32 H10" stroke-dasharray="2 2"/>',
   'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
   // Legendaries

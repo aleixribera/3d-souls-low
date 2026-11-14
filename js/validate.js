@@ -61,8 +61,15 @@ function validateData({ visual = true } = {}) {
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
-    && num(SUM[k].flank) && num(SUM[k].speed) && SUM[k].speed > 0 && num(SUM[k].height) && SUM[k].height > 0) && num(SUM.hound.reach) && SUM.hound.reach > 0,
-    `CONFIG.abilities.summons: arrive, near, side and radius 0 or more; each summon (${[...SUMMONS].join(', ')}) a gap, a flank, a speed and a height above 0; the hound a reach above 0.`);
+    && num(SUM[k].flank) && num(SUM[k].speed) && SUM[k].speed > 0 && num(SUM[k].height) && SUM[k].height > 0 && [undefined, true, false].includes(SUM[k].rises)) && [...SUMMON_STRIKERS].every(k => num(SUM[k].reach) && SUM[k].reach > 0),
+    `CONFIG.abilities.summons: arrive, near, side and radius 0 or more; each summon (${[...SUMMONS].join(', ')}) a gap, a flank, a speed and a height above 0 (rises true or false); each that strikes (${[...SUMMON_STRIKERS].join(', ')}) a reach above 0.`);
+  // A summon drawn in an enemy's figure (js/summon-figures.js): an enemy with a model, and one of its attacks to strike with.
+  if (visual) for (const [k, F] of Object.entries(CONFIG.VISUALS.abilityFx)) if (F && F.figure !== undefined) {
+    const d = ENEMY_BY_ID[F.figure];
+    need(!!d && !!d.model && d.attacks.some(a => a.id === F.move && ATTACK_POSES[a.pose]), `CONFIG.VISUALS.abilityFx.${k}: figure must be an enemy with a model and move one of its attacks with key poses.`);
+    need(['windup', 'rise', 'fade', 'strikeGlow', 'cryTime', 'turn', 'scale'].every(n => num(F[n]) && F[n] > 0) && !!F.guard && !!F.cry,
+      `CONFIG.VISUALS.abilityFx.${k}: a figure needs windup, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
+  }
   for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
   for (const b of ABILITIES) {
     const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);

@@ -45,7 +45,7 @@ const CONFIG = {
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
-              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03] } },
+              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -225,11 +225,13 @@ const CONFIG = {
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
-    // `arrive` s after it is called; a hound bites from `reach` m off the enemy's body. With no enemy within `near` m
+    // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
+    // a guardian or a lancer strikes from `reach` m off the enemy's body. With no enemy within `near` m
     // of its holder it stands `side` m to their right. While it draws an enemy, that enemy fights a body of `radius` m
     // and its kind's `height` m (sight lines, shots aimed at it).
     summons: { arrive: 0.7, near: 16, side: 1.4, radius: 0.5,
-      twin: { gap: 1.1, flank: 0.85, speed: 14, height: 1.8 }, hound: { gap: 0.6, flank: -1.25, speed: 10, height: 1, reach: 1.3 } } },
+      twin: { gap: 1.1, flank: 0.85, speed: 14, height: 1.8, rises: true }, hound: { gap: 0.6, flank: -1.25, speed: 10, height: 1, reach: 1.3 },
+      guardian: { gap: 0.7, flank: 1.75, speed: 4, height: 2.3, reach: 1.5, rises: true }, lancer: { gap: 1.3, flank: -0.4, speed: 13, height: 1.9, reach: 2.2 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -594,6 +596,19 @@ const CONFIG = {
       hound: { color: 0x3dffa0, core: 0xdcffe8, eye: 0xc8ffd8, rim: 2.6, body: 0.22, bone: 0.7, flicker: 0.18, turn: 9, rise: 0.55, fade: 0.7,
         gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
         shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
+      // The Stone Guardian and the Lancer of Ash (js/summon-figures.js): for now each wears an enemy's figure (`figure`,
+      // an enemy id, at `scale` times its size) and strikes with that enemy's `move` (one of its attacks, the last
+      // `windup` s of its wind-up played before each blow). `solid`: lit stone (`stone`) with a glowing rim, rising out
+      // of the floor; else a ghost of light, rising from the feet up. `guard`: a key pose held while it isn't striking;
+      // `cry`: the one it strikes, `cryTime` s, as it draws the boss's eye.
+      guardian: { figure: 'warden', move: 'wardenBash', scale: 1.22, solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
+        flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, windup: 0.45, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
+        guard: { armL: [-0.75, 0, -0.25] }, cry: { armR: [-2.3, 0, 0.3], armL: [-0.9, 0, -0.5], chest: [-0.25, 0, 0], head: [-0.3, 0, 0] },
+        burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xbfe0ff } },
+      lancer: { figure: 'lancer', move: 'lancerJab', scale: 1.04, solid: false, color: 0xa08cff, core: 0xf0eaff, rim: 2.5, body: 0.26,
+        flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, windup: 0.3, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],
+        guard: {}, cry: { armR: [-2.6, 0, 0.2], chest: [-0.2, 0, 0], head: [-0.35, 0, 0] },
+        burst: { count: 26, speed: 6, color: 0xb8a8ff }, hitBurst: { count: 10, speed: 5, color: 0xd8ccff } },
       gale: { color: 0xc8fff0, core: 0xffffff, size: 5.2, lift: 1.3, speed: 34, roll: 0.9, fade: 0.18, shake: [0.14, 0.08],
         burst: { count: 26, speed: 8, color: 0xdafff6 } },
       pyre: { color: 0xff5a14, core: 0xffd890, height: 9, pad: 0.5, rise: 0.18, fade: 0.45, motes: 0.05, lightEvery: 0.8, shake: [0.3, 0.2],

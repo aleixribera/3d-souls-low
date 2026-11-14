@@ -383,14 +383,16 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle',
   'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick',
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityBreath', 'abilityStep', 'abilityEmpower',
-  'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt'];
+  'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
+  'abilityLancer', 'abilityThrust'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
-  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound' };
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite' };
-const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl' };
+  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
+  guardian: 'abilityGuardian', lancer: 'abilityLancer' };
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust' };
+const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1], 'parry/stamina': ['abilityBreath', 1],
   'flask/stamina': ['abilityBreath', 0.84], 'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };

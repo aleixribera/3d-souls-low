@@ -26,11 +26,15 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   js/multiplayer.js) still has its own look: a glowing crest, a blurred title scaling in and drifting embers, against
   item 3's "no dopamine on menus" and one type system; and the lobby's controls list is its own copy of
   `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
-- Abilities, what item 6 pass 2 (pass 61) left: two more summons for item 6's four (a stone guardian that draws the
-  boss longer; one more), each its own Blender model, on `CONFIG.abilities.summons` and `summonStep`. Item 6's check
-  also wants every summon seen in a party of four. A drawn boss waits for the end of its attack string to turn (the
-  draw only starts between attacks): if that feels late, let the draw begin at its next recovery. `KIT=strong` is
-  still the pass 56 list; a kit with the twin, hound and Gale reached median 6 vs 4 (12 runs, pass 61).
+- Abilities, item 6 cut at pass 62 (two passes, then cut). The cut: the Stone Guardian and the Lancer of Ash wear
+  enemy figures (the Shield Warden's and the Ashen Lancer's Blender models, recoloured by `js/summon-figures.js`,
+  `VISUALS.abilityFx.<kind>.figure/move`), and "a party of four" is three local bodies beside the player
+  (`.scratch/summon-frames.cjs`, `docs/scorecard/abilities-summons.jpg`). The real version: each its own Blender
+  model (a guardian of carved stone, a lancer of ash and cinder) like the Grave Hound, and all four summons seen in a
+  real online party of four browsers. A drawn boss waits for the end of its attack string to turn (the draw only
+  starts between attacks): if that feels late, let the draw begin at its next recovery. `KIT=strong` is still the
+  pass 56 list; a kit with the twin, hound and Gale reached median 6 vs 4 (12 runs, pass 61); re-run it with the
+  guardian and lancer in the pool.
 - The blessing pick in tall cards (rarity, drawn icons, level I → II, pad keys, phone 2×2) is built and tested on
   `wip/blessing-tall-cards` (pass 49), parked when the pick moved to the upgrades-from-zero session (PLAN.md item 6).
 

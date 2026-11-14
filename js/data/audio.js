@@ -309,6 +309,39 @@ const AUDIO = {
       { wave: 'sine', freq: 330, to: 520, glide: 0.35, a: 0.12, h: 0.45, d: 0.6, gain: 0.12 },
       { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1500, q: 0.7 }, a: 0.3, h: 0.3, d: 0.7, gain: 0.3 },
     ] },
+    // Stone Guardian rising: stone grinding up out of the floor, a deep thud as it stands, a cold ringing note over it.
+    abilityGuardian: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.3, jitter: 25, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 420, to: 180 }, a: 0.25, h: 0.35, d: 0.4, gain: 1, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 400, q: 1.4 }, a: 0.2, h: 0.3, d: 0.3, gain: 0.45 },
+      { wave: 'sine', freq: 58, to: 36, at: 0.78, a: 0.003, d: 0.5, gain: 1, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 260, to: 90 }, at: 0.78, a: 0.002, d: 0.35, gain: 0.8 },
+      { wave: 'sine', freq: 294, partials: [[1, 1, 1], [2.32, 0.4, 0.6], [3.9, 0.15, 0.4]], at: 0.8, a: 0.004, d: 1.6, gain: 0.1 },
+    ] },
+    // Each of its shield bashes: stone on flesh, a heavy flat thump with grit after it.
+    abilityBash: { bus: 'sfx', priority: 2, cooldown: 0.1, max: 2, verb: 0.3, heat: 0.2, jitter: 120, layers: [
+      { wave: 'sine', freq: 90, to: 45, a: 0.002, d: 0.22, gain: 0.9, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 200 }, a: 0.001, d: 0.16, gain: 0.8 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 1.5 }, at: 0.02, a: 0.001, d: 0.09, gain: 0.25 },
+    ] },
+    // A summon of stone or ash drawing the boss: a struck shield or haft and a low horn-like call over it.
+    abilityChallenge: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.3, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2400, q: 2 }, a: 0.0005, d: 0.06, gain: 0.6 },
+      { wave: 'sawtooth', freq: 110, to: 123, glide: 0.3, filter: { type: 'lowpass', freq: 500, to: 900 }, at: 0.05, a: 0.12, h: 0.45, d: 0.6, gain: 0.16 },
+      { wave: 'sine', freq: 220, to: 247, glide: 0.3, at: 0.05, a: 0.12, h: 0.45, d: 0.6, gain: 0.1 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 200 }, a: 0.002, d: 0.3, gain: 0.6 },
+    ] },
+    // Lancer of Ash rising: ash swept up on a cold wind, a thin metallic ring as its spear comes level.
+    abilityLancer: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.4, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 2600, q: 0.8 }, a: 0.3, h: 0.08, d: 0.5, gain: 0.6 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, a: 0.2, d: 0.4, gain: 0.2 },
+      { wave: 'sine', freq: 1320, partials: [[1, 1, 1], [1.51, 0.5, 0.8], [2.76, 0.2, 0.5]], at: 0.32, a: 0.003, d: 1.2, gain: 0.07 },
+    ] },
+    // Each of its thrusts: a quick whistle of the spear and a hard punch as it lands.
+    abilityThrust: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.25, heat: 0.2, jitter: 150, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 3600, q: 2.5 }, a: 0.01, d: 0.08, gain: 0.5 },
+      { wave: 'sine', freq: 140, to: 70, at: 0.06, a: 0.002, d: 0.14, gain: 0.7, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1100, to: 500, q: 1.2 }, at: 0.06, a: 0.003, d: 0.12, gain: 0.4 },
+    ] },
     // Each of the twin's blows: a short hiss of fire and a crackle on top of the blow itself.
     abilityEcho: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 2, verb: 0.3, heat: 0.25, jitter: 180, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 1400, to: 600, q: 0.9 }, a: 0.005, d: 0.22, gain: 0.55 },
