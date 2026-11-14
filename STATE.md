@@ -4,10 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 89): 3b: lessons and death tips on the new moves; world hints (in-page `World hints`) for finishers,
-  dash and jump attacks, a charged key 1-4. Next: item 3c (smooth, responsive, a bit anime; track A owns the player's
-  animation), references and input-to-motion frames first. Behind 3c: Story's key abilities, its re-tune;
-  the counter, deflect and drink poses are 3c's.
+- Track A (pass 91): item 3c pass 1, v7.115.0: moves blend (`Rig.settle`), wind-ups snap, a deflect pose, dash
+  afterimages; `Player.pose` is js/player-pose.js. Judge 3/10 dash, 4/10 deflect (`docs/scorecard/animation-judge.csv`).
+  Next: 3c pass 2 (BACKLOG: low dash lunge, whole-body deflect); then Story's key abilities, its re-tune.
 - Track B (pass 88): items 1-2 rough (in-page `pass 85`); keys 1-4 (in-page `pass 87`); the counter, a riposte's own
   move (`moveset.counter`, stand-in poses); bots end strings with finishers, dash in, counter (`CONFIG.bot.dashIn`,
   `bot-behavior.cjs`). Next: (1) Boss Rush bosses and curve (item 4); (2) item 5's proof, then the only moveset.
