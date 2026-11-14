@@ -81,6 +81,7 @@ async function peer(origin, name) {
     a.send({ type: 'pickAbility', epoch: session.epoch, id: fast.offer[fast.offer.length - 1] });
     session = (await a.next('start')).session;
     assert.equal(session.par, app.sim.rushPar(2, 1 + session.gauntlet.partners.length));
+    assert.equal(session.health, session.gauntlet.partners.length ? app.sim.rushHealth(1 + session.gauntlet.partners.length) : undefined, 'a lone boss: no health share sent');
     await arrive(a);
     assert.equal(app.session.gauntlet.number, 3);
 

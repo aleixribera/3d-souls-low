@@ -74,6 +74,16 @@ async function peer(origin, name) {
     assert.ok(boss.rest > 1 && boss.chain > 1, 'Restless and Unbroken set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
     app.sim.setRushFight(0); assert.ok(boss.rest === 1 && boss.chain === 1, 'a fight without modifiers is plain');
+    assert.equal(boss.def.hp, hp, 'a boss alone keeps its whole health');
+    // A pair (pass 67): each boss has CONFIG.endless.pairHealth of its own health, its later bars too.
+    app.sim.start('arena', bosses[0], [bosses[1]]); app.sim.setRushFight(6);
+    const pair = app.sim.inspect().Game.enemies, own = e => e.baseDef.phases ? e.baseDef.phases[e.def.phaseId].hp ?? e.baseDef.hp : e.baseDef.hp;
+    for (const e of pair) {
+      assert.equal(e.def.hp, Math.round(own(e) * E.pairHealth), `${e.baseDef.id}: a share of its bar in a pair`);
+      assert.equal(e.hp, e.def.hp, 'it starts the pair at full share');
+      if ((e.phaseIds || []).length > 1) { e.enterPhase(1); assert.equal(e.def.hp, Math.round(own(e) * E.pairHealth), `${e.baseDef.id}: its next bar too`); }
+    }
+    assert.equal(app.sim.rushHealth(2), E.pairHealth); assert.equal(app.sim.rushHealth(1), 1);
     // A Crowned win's offer: four cards, one of them a legendary, for every player.
     for (let i = 0; i < 30; i++) {
       app.sim.offerAbilities(['crowned-' + i], false, 0, 5, true);

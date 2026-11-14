@@ -220,9 +220,11 @@ const CONFIG = {
   // legendary); from fight `pairFrom`, every `pairEvery`th fight brings two bosses at once (never a Crowned one). From fight
   // `mods[0]` a fight carries one modifier (RUSH.modifiers), one more from each later entry; a Crowned fight one more still.
   // `pairRest`: two bosses at once rest this much as fast between attacks as one alone (below 1: longer rests), so a pair
-  // is a step up, not a wall (tools/rush-curve.cjs pairs). `longest`: a bound on a run's fights for the draw; the curve
-  // makes it unreachable.
-  endless: { opening: 3, crowned: 5, crownedOffer: 4, pairFrom: 7, pairEvery: 5, pairRest: 0.35, mods: [4, 12, 20], longest: 999 },
+  // is a step up, not a wall (tools/rush-curve.cjs pairs). `pairHealth` (pass 67): each boss of a pair has this share of
+  // its own health, every bar of it: at 0.5 a pair holds about one boss's health between two sets of blows. Measured
+  // alone (SKILLED, docs/scorecard/endless-pass67.txt): a skilled bot's median run went from fight 7 to 12. `longest`: a
+  // bound on a run's fights for the draw; the curve makes it unreachable.
+  endless: { opening: 3, crowned: 5, crownedOffer: 4, pairFrom: 7, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [4, 12, 20], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.

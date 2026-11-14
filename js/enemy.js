@@ -64,6 +64,8 @@ function rushPar(won, bosses = 1) {
   const S = CONFIG.swift;
   return Math.min(S.max, Math.round(S.par * rushPace(won) / CONFIG.pace.boss * (1 + S.pair * (Math.max(1, bosses) - 1))));
 }
+// Boss Rush's health share (CONFIG.endless.pairHealth): each of `bosses` fought at once has this share of its own bars.
+function rushHealth(bosses) { return bosses > 1 ? CONFIG.endless.pairHealth : 1; }
 // A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.
 const pacedChance = (chance, pace) => chance >= 1 || pace === 1 ? chance : 1 - Math.pow(1 - chance, pace);
 
@@ -121,6 +123,7 @@ class Enemy {
     this.baseDef = def; this.boss = opts.boss || null;
     this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
     this.rest = 1; this.chain = 1;   // an Endless modifier's (RUSH.modifiers): rests this many times faster, strings as if this much faster
+    this.health = 1;   // its bars' share of its own health (setHealth: Boss Rush's pairs)
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -132,9 +135,19 @@ class Enemy {
     const base = this.baseDef, P = base.phases[this.phaseIds[i]];
     this.phase = i;
     this.def = { ...base, ...P, attacks: P.attacks ? P.attacks.map(id => base.attacks.find(a => a.id === id)) : base.attacks, phaseId: this.phaseIds[i] };
+    if (this.health !== 1) this.def.hp = Math.round(this.def.hp * this.health);
     this.hp = this.def.hp; this.poise = this.def.poise; this.posture = 0;
     this.ranged = this.def.attacks.some(a => a.projectile);
     this.attackReach = reachOf(this.def.attacks);
+  }
+  // Its bars at `share` of its own health (rushHealth): this bar and every later phase's, the health it has left kept in
+  // proportion. Everything reading `def.hp` (the bar, the server's checks, phases' `at`) sees the share.
+  setHealth(share) {
+    const k = share > 0 ? share : 1, was = this.def.hp, raw = was / this.health;
+    if (k === this.health) return;
+    if (this.def === this.baseDef) this.def = { ...this.baseDef };   // a def without phases is shared: scale a copy
+    this.health = k; this.def.hp = Math.round(raw * k);
+    this.hp = Math.min(this.def.hp, this.hp * this.def.hp / was);
   }
   // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
   // waits for the pull-out), checkpoints and saves (a beaten boss stays beaten).

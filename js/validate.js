@@ -388,8 +388,8 @@ function validateData({ visual = true } = {}) {
   // Endless (pass 65): CONFIG.endless and RUSH (js/data/rush.js). A modifier only ever speeds a boss up.
   const EN = CONFIG.endless, whole = (v, min) => Number.isInteger(v) && v >= min;
   need(EN && whole(EN.opening, 0) && whole(EN.crowned, 2) && whole(EN.crownedOffer, CONFIG.abilities.offer) && EN.crownedOffer <= ABILITIES.length &&
-    whole(EN.pairFrom, EN.opening + 1) && whole(EN.pairEvery, 1) && num(EN.pairRest) && EN.pairRest > 0 && EN.pairRest <= 1 && Array.isArray(EN.mods) && EN.mods.every((f, i) => whole(f, 1) && (!i || f > EN.mods[i - 1])) && whole(EN.longest, 2),
-    'CONFIG.endless: opening 0 or more, crowned 2 or more, crownedOffer from CONFIG.abilities.offer to the abilities there are, pairFrom past the opening, pairEvery 1 or more, pairRest in (0, 1], mods rising fight numbers, longest 2 or more.');
+    whole(EN.pairFrom, EN.opening + 1) && whole(EN.pairEvery, 1) && num(EN.pairRest) && EN.pairRest > 0 && EN.pairRest <= 1 && num(EN.pairHealth) && EN.pairHealth > 0 && EN.pairHealth <= 1 && Array.isArray(EN.mods) && EN.mods.every((f, i) => whole(f, 1) && (!i || f > EN.mods[i - 1])) && whole(EN.longest, 2),
+    'CONFIG.endless: opening 0 or more, crowned 2 or more, crownedOffer from CONFIG.abilities.offer to the abilities there are, pairFrom past the opening, pairEvery 1 or more, pairRest and pairHealth in (0, 1], mods rising fight numbers, longest 2 or more.');
   need(ABILITIES.some(b => b.rarity === 'legendary'), 'Endless: a Crowned win offers a legendary, so there must be one.');
   need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
     'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');

@@ -1,7 +1,7 @@
 'use strict';
 // Boss Rush end to end (v7.35.0 as The Calling; endless since pass 65): two browsers start a run (no bot joins, pass 52),
 // the party beats fight 1, then the run skips ahead to fight 5, Crowned, with its modifiers under the boss bar; its win
-// offers four abilities with a legendary; a wipe in fight 6 ends the run on the end-of-run screen. Between the fights
+// offers four abilities with a legendary; a pair in fight 7 has a share of its health each, and a wipe there ends the run on the end-of-run screen. Between the fights
 // each takes an ability (one by click, one by key); the fallen get up for the next fight.
 // v7.70.0: the abilities rebuilt (25 of them, js/data/abilities.js): tall cards, the held one's kit after the pick.
 // v7.69.0: the kill moment ("Boss 1 down", slowed and embers), a swift kill's fourth card, the next boss dropping
@@ -156,11 +156,23 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/crowned-offer.png` });
     const epoch6 = app.session.epoch;
+    skip = 6;   // on to fight 7, two bosses at once
     for (const page of [a, b]) await page.keyboard.press('Digit1');
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch6, { timeout: 30000 });
     await Promise.all([ready(a), ready(b)]);
-    assert.equal(app.session.gauntlet.number, 6);
-    // Everyone falls in fight 6: the run ends.
+    assert.equal(app.session.gauntlet.number, 7);
+    // A pair (pass 67): each boss has a share of its health, and both browsers' bars match the server's.
+    const pairBars = [...app.sim.inspect().Game.enemies].map(e => [e.baseDef.id, e.def.hp]);   // an array of this realm, not the simulation's
+    assert.equal(pairBars.length, 2, 'fight 7: two bosses');
+    assert.ok(app.sim.inspect().Game.enemies.every(e => e.health === app.sim.rushHealth(2) && e.health < 1), 'each boss of a pair has a share of its health');
+    for (const page of [a, b]) {
+      await page.waitForFunction(ids => Game.enemies.map(e => e.baseDef.id).join() === ids, pairBars.map(([id]) => id).join(), { timeout: 30000 });
+      assert.deepEqual(await page.evaluate(() => Game.enemies.map(e => [e.baseDef.id, e.def.hp])), pairBars, 'the browser draws the bars the server has');
+    }
+    blows([aId, bId]);
+    await a.waitForTimeout(2500);
+    await a.screenshot({ path: `${out}/pair-fight.png` });
+    // Everyone falls in fight 7: the run ends.
     app.sim.arenaWipeDelay = 0.1;
     for (const page of [a, b]) await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });

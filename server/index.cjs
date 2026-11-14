@@ -208,6 +208,7 @@ function createServer(options = {}) {
     if (gauntlet?.run) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
     if (gauntlet?.run) session.pace = sim.setRushFight(gauntlet.fight, gauntlet.modifiers);   // the curve and the fight's modifiers
     if (gauntlet?.run) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
+    if (gauntlet?.run && gauntlet.partners.length) session.health = sim.rushHealth(1 + gauntlet.partners.length);   // each boss's share of its bars
     if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
     if (!gauntlet?.run) tally = null;
     else if (gauntlet.fight === 0) tally = { run: gauntlet.run, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };

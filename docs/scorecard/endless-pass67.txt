@@ -1,0 +1,19 @@
+# Endless (track B item 5), pass 67: a pair's health. Skilled bot alone (SKILLED=1), no abilities, modifiers on,
+# pairRest 0.35, tools/rush-curve.cjs with ENDLESS='{"pairHealth":h}'. Before: pass 65 (endless-pass65.txt), median 7.
+# Target (PLAN.md): a skilled player alone falls around fight 10-12 without abilities.
+
+## Whole runs (runs N): fight reached
+pairHealth 1 (pass 65, 48 runs):  median 7,  mean 8.4,  fell at fight 7: most runs
+pairHealth 0.6 (48 runs):         median 10, mean 9.3,  range 2-16, fell at 7: 12, at 12: 10, reached 10+: 24, fell to a pair: 22
+pairHealth 0.55 (64 runs):        median 10, mean 9.4,  range 1-16, fell at 7: 11, at 12: 17, reached 10+: 34, fell to a pair: 28
+pairHealth 0.5 (48 runs, shipped): median 12, mean 10.4, range 2-16, fell at 7: 5,  at 12: 10, reached 10+: 31, fell to a pair: 15
+
+## Pairs alone at the pace for 6 won (fight 7), 48 random pairs (pairs 48 6)
+pairHealth 1 (pass 65): falls 0.38, win time 217 s
+pairHealth 0.7:         falls 0.21, win time 179 s
+pairHealth 0.6:         falls 0.25, win time 148 s
+pairHealth 0.55:        falls 0.19, win time 138 s
+pairHealth 0.5:         falls 0.17, win time 129 s (shipped)
+
+A pair is still the run's sharpest step (fights 7 and 12 are where most runs end), now a step and not the wall.
+Frame: docs/scorecard/endless-pair.jpg (fight 7 in tests/calling-browser.cjs: two bosses, each on half its bar).

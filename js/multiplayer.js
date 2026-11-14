@@ -1051,6 +1051,7 @@ const multiplayer = (() => {
           Game.spawn = { ...session.spawn }; Game.spawnPlayer(); Game.player.grantAbilities(session.abilities?.[self]); restorePlayer(msg.resume);
           hud.controlsTipsTimer = tipsRemaining;
           for (const e of Game.enemies) e.netId = e.key || 'duel/' + e.baseDef.id;
+          if (session.health > 0 && session.health < 1) for (const e of Game.enemies) if (e.isBoss()) e.setHealth(session.health);   // a Boss Rush pair: the server's bars
           loaded = true; updateRoster();
         };
         // Boss Rush's next boss drops straight in (v7.69.0): the arena is rebuilt at once, with no loading card.

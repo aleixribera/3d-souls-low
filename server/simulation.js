@@ -205,13 +205,13 @@ globalThis.host = (() => {
   // A new run: a fresh seed, and the leader's opening bosses if any.
   const newRun = (opening = []) => ({ seed: Math.floor(Math.random() * 0x100000000) >>> 0, opening: [...opening] });
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
-  // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest). Their health and blows stay
-  // their own. Returns the pace.
+  // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest) and each has a share of its
+  // health (rushHealth, CONFIG.endless.pairHealth). Nothing raises health or blows. Returns the pace.
   function setRushFight(won, modifiers = []) {
     const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
-    const together = Game.enemies.filter(e => e.isBoss()).length > 1;
+    const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1, health = rushHealth(count);
     const pace = rushPace(won) * times('pace'), rest = times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = times('chain');
-    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; }
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.setHealth(health); }
     return pace;
   }
   // `keepAbilities`: a later fight of the same Calling run; anything else starts with none.
@@ -775,7 +775,7 @@ globalThis.host = (() => {
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime,
-    rushPar, swiftExtra: CONFIG.swift.extra,
+    rushPar, rushHealth, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },
     arenaWipeDelay: CONFIG.death.respawnDelay,
