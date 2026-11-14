@@ -60,6 +60,8 @@ Aleix, 2026-11-13.
   combat, manageable for friends playing for the first time on a laptop; all ten of the director's answers taken (see
   "The player rework" above). `VISION.md` changed with his OK. Then: urgent, the default for the whole game now,
   both tracks first, so he can play all of Story and Boss Rush on it.
+- Ability keys (Aleix, 2026-11-14): pressed abilities each belong to one of the four number keys, always the same
+  key; Boss Rush holds one per key; Story gives four along the road, one per key (the player rework, item 3).
 - Abilities (Aleix, 2026-11-14): way more spectacular, super cool, and a really wide pool: 80 or more, at least 20
   legendary and 8 summons (track B, item 6).
 - The loop's open questions (Aleix, 2026-11-14):
@@ -141,10 +143,25 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    | E | flask |
    | F | interact |
 
-   - **Abilities on the number row** (Aleix: "use the number bar"). Some abilities become ones you fire on a press, each
-     on its own number key (pad: the d-pad), each with its own charge filled by playing well (hits, deflects, perfect
-     dodges) and shown on the HUD by its key. Abilities with their own triggers keep them. You choose the moment, like
-     an anime finisher. Item 6 decides which abilities are pressed and which trigger, and its pool grows both kinds.
+   - **Abilities on the number row** (Aleix: "use the number bar"; "the numbers for the abilities are key to get
+     right"). Some abilities are fired on a press, each with its own charge filled by playing well (hits, deflects,
+     perfect dodges) and shown on the HUD by its key (pad: the d-pad). Abilities with their own triggers keep them and
+     need no key. You choose the moment, like an anime finisher. **Every pressed ability belongs to one of four keys,
+     always the same key, for muscle memory** (Aleix, 2026-11-14). The four keys (the director's pick, Aleix may
+     rename or re-sort them):
+     - **1, Strike:** a burst of attack (a wind blade, a fire burst, a flurry).
+     - **2, Guard:** defence and counters (a barrier, a counter stance, a quick heal).
+     - **3, Summon:** the summons (item 6; one at a time already).
+     - **4, Ultimate:** legendary finishers, the longest charge and the biggest moment.
+     - **Boss Rush:** you hold at most one pressed ability per key. Its card shows its key; a card for a key you already
+       fill says what it replaces, and taking it swaps the old one out (taking the same one again levels it, as now).
+       Triggered abilities sit outside the four keys and follow item 6 and 11's rules (at most 2 legendaries held).
+     - **Story:** no picks. The player is given four pressed abilities at points along the road, one per key, each
+       keeping its key for good: key 1 early (chapter 1-2), then 2 and 3 through the middle chapters, then 4 for the
+       last stretch before the finale, each given in the story by a place or a person, never a menu. Which four, and
+       where, is the loop's to choose by `STORY.md`, then Aleix's to judge.
+     Item 6's pool grows each key's group as well as the triggered ones; `js/validate.js` checks every pressed
+     ability names exactly one key.
    - **Lock-on is automatic in boss fights:** it turns on when a boss fight starts and the camera follows the boss, so a
      touchpad never has to aim; Q frees it. Ordinary enemies stay manual.
    - **The attacks:** a 4-hit light string; a heavy finisher from any point in it, each its own move; a held heavy

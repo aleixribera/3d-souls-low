@@ -24,7 +24,7 @@ An action game in the browser with Souls-like bosses, that Aleix plays with his 
 side by side, and each should feel like the main event.
 
 - **Story**, alone: one road through a dark world, chapter by chapter. It keeps growing until Aleix says it's done.
-  Progression is the player's own skill, a few more flasks along the way, and harder enemies. No levelling, no stat
+  Progression is the player's own skill, a few more flasks along the way, four abilities given at points along the road (one per number key, each keeping its key), and harder enemies. No levelling, no stat
   sheet.
 - **Boss Rush**, with friends, the lobby's default. It has to play well and be fun and challenging. An endless run of
   bosses: the first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
