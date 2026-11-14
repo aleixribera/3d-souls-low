@@ -2,6 +2,11 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **Story's last holds (pass 82, track A item 6):** in Story nothing takes the camera or feet any more, but two
+  screens still hold play before it starts: an online campaign's run intro (`showRunIntro` in `js/multiplayer.js`,
+  the shared lobby flow, left to Boss Rush's owner) and the loading screen's minimum hold between chapters. Both come
+  before play, not during it; Story's could become a title over the first steps of the level.
+
 - The run's shape, after item 11's passes 1 and 2 (passes 73, 76, `docs/scorecard/run-shape-pass76.txt`):
   - **The test bot doesn't play to its kit**: it never holds a heavy to full charge, so Storm King never fires for it
     (Thousand Blades and Ember Twin barely: 0.2 a fight). Pass 76 measures with Meteor Fall instead. A bot that plays to

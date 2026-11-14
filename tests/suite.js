@@ -2871,7 +2871,8 @@
       const heads = roll ? [...roll.querySelectorAll('h2')].map(h => h.textContent) : [];
       expect.ok(heads.slice(0, 3).join() === 'THE ROAD,WHO WALKED BESIDE YOU,THOSE WHO STOOD IN THE WAY', `the credits (${heads})`);
       expect.ok(/The Still Mere/.test(roll.textContent) && /Ysolde of Corvel/.test(roll.textContent) && /The King's Blade/.test(roll.textContent), 'the road, Ysolde and the last foe are named');
-      sim.until(() => overlay.classList.contains('rolling'), 10); sim.step(30);
+      sim.until(() => overlay.classList.contains('rolling'), 10);
+      sim.step(30, 1);   // drawn each step: the credits move on the drawn frame
       expect.ok(/translateY\(-/.test(roll.style.transform), `the credits roll (${roll.style.transform})`);
       inControl('the credits');
       sim.press('talk'); sim.step();

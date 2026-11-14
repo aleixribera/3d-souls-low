@@ -4,8 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 79): item 5 pass 1: 5 flasks found (4 -> 9), a climb by chapter; bot wins 75% -> 84%
-  (`docs/scorecard/story-climb-pass79.txt`, `flask-find-*.jpg`). 8 bosses **awaiting Aleix**. Next: item 6.
+- Track A (pass 82): item 6 pass 1 done: nothing in Story takes the camera or feet (Aldric's retreat; both endings
+  told over the live world). 8 bosses **awaiting Aleix**. Next: the rework's item 3.
 - Track B (pass 81): guardian and lancer strike with their own moves in turn, wound up ahead of each blow
   (`docs/scorecard/summon-moves.jpg`, test `summons:`). Next: BACKLOG item 6 (the party-of-four check).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
@@ -48,8 +48,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (an enemy's `holyLight`), `kings-blade.js` (own moves since pass 55); each an old
   boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
-- The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
-  by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
+- The story's ending (pass 30; over the world, pass 82): `LORE.endings`, `tellEnding` in `js/finale.js`; in-page
+  `Story moments:` (`inControl`), `Still Mere:`, `tests/campaign-browser.cjs`; `moments-*.jpg`.
 - Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
 - Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
@@ -91,7 +91,7 @@ In `BACKLOG.md`.
 - (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.
 - (overridable) Boss Rush eases after fight 15, then a wall at 21 (x3 at 20, x5 at 21): "impossible past 20".
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
-- (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
+- (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second
   bar name, enemy descriptions (`STORY.md` 6, 7, 10c-10j). HP (v7.65.0): Ostrey 3,000, Hale and Harrow 1,700
