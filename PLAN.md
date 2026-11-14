@@ -65,8 +65,17 @@ Aleix, 2026-11-13.
 - Ability keys (Aleix, 2026-11-14): pressed abilities each belong to one of the four number keys, always the same
   key; Boss Rush holds one per key, locked once chosen, and offers stop showing that key's others; triggered
   abilities stay frequent; Story gives four along the road, one per key (the player rework, item 3).
-- Abilities (Aleix, 2026-11-14): way more spectacular, super cool, and a really wide pool: 80 or more, at least 20
-  legendary and 8 summons (track B, item 6).
+- Abilities (Aleix, 2026-11-14): way more spectacular, super cool, and a really wide pool (now 100 or more, below;
+  track B, item 6).
+- Fair attacks (Aleix, 2026-11-14): he hates the stomps (Earth Stomp worst): unclear wind-up, a big area that hurts
+  from afar with no warning. Every attack must make sense and give time and sight to react; the challenge is the
+  combos, never one impossible attack. Area attacks show their reach and stop tracking; the leap slams stay as they
+  are (the player rework, item 4).
+- Enemy movement (Aleix, 2026-11-14): reworked to fit the dash and to scale with Boss Rush's pace (item 4).
+- The sparring scene (Aleix, 2026-11-14): played before the first boss, offered up to three times to players from
+  before the rework, a Tutorial button in the lobby, clips on the Controls page (item 3d).
+- Abilities (Aleix, 2026-11-14, again): 100 or more quality ones; spectacular in the fight first; cards simple, clean
+  and cool, rarity-scaled, with a loop showing how each activates (track B, item 6).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -184,8 +193,8 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
      presses one key at a time.
 3b. **First-time friends on a laptop.** Everything plays on a laptop keyboard and touchpad as well as with a mouse or a
    controller; lock-on carries the camera so a touchpad never has to. A friend who has never played learns to attack,
-   dodge, deflect and heal in their first minute, without a tutorial screen (button hints in the world, the first fight
-   forgiving). Normal holds 60 fps on the laptop (track A item 3).
+   dodge, deflect and heal in their first minute, without a tutorial screen (button hints in the world, the sparring
+   scene of item 3d, the first fight forgiving). Normal holds 60 fps on the laptop (track A item 3).
 3c. **Movement and animation: smooth, responsive, a bit anime** (Aleix, 2026-11-14: "the player movement and
    animations must be good and smooth, responsive, feel like an anime a bit as well"). Track A's focus, pass after
    pass, until Aleix says it feels right; never folded into another item as an afterthought.
@@ -203,6 +212,20 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
    Check: input-to-motion frames per action; side-by-side clips of run, dash, the light string, each finisher, a
    perfect dodge into a counter and a deflect into a riposte, old against new; a blind judge comparing the new clips
    with the reference clips, scored every pass and plotted, until the curve goes flat; then Aleix plays it.
+3d. **The new combat, shown: a sparring scene** (Aleix, 2026-11-14: for a new player and for one who remembers the old
+   combat, "showing the new combat in a way they can understand and apply"). Track A, after 3b, once the moveset has
+   landed.
+   - **Played, never watched** (`VISION.md`: the game never takes control). In a small arena, a sparring figure shows
+     each move with its key over it, then the player does it against the figure: the dash and a perfect dodge, the
+     light string into a heavy finisher, a deflect into a riposte, an ability on its number key, a flask drunk on the
+     move. About 90 seconds; skippable at any moment; no text beyond each move's name and key.
+   - **When it runs:** before a new player's first Story boss and before their first Boss Rush fight. A player whose
+     save is from before the rework is offered it at launch, up to three times (Aleix: "make it appear 3 times"; read
+     as: offered on their first three launches until they play it through).
+   - **A Tutorial button in the lobby** (Aleix) starts it for anyone, any time; Practice has it too.
+   - **The Controls page** shows a short looping clip of each move beside its key.
+   Check: a test that it runs, skips and is offered no more than three times; a clip of a full run through it; a
+   first-time player's key presses in it match what the figure showed (the test bot follows it).
 4. **The bosses answer** (Aleix, 2026-11-14: free attacks and a dodge with charges must not let a player mash bosses
    down). Shared rules in the engine, not one boss at a time:
    - **No flinch from ordinary hits:** a light or heavy never interrupts a boss's attack. After about 5-6 hits in a
@@ -215,6 +238,20 @@ through with the new one (the test bot and frames, chapter by chapter), and Alei
      ripostes and abilities carry most of a fight's damage.
    - **Dodge spam:** the 2 charges cap it; a dodge that isn't on an attack only moves you; a mistimed dodge's end has a
      short window without i-frames.
+   - **Every attack fair on its own** (Aleix, 2026-11-14, on the stomps: "the animation is never clear, and suddenly
+     you have a massive area attack that damages you from afar and with no warning"). Every attack makes sense and
+     gives time and sight to react; **the hard part is a boss chaining several attacks, never one impossible attack.**
+     First the area attacks, every boss's (the stomps, `anim: 'stomp'`, with the Earth Stomp worst; shockwaves, roots
+     and bursts from the ground): a clear, held wind-up pose; the ground shows the attack's whole reach from the start
+     of the wind-up; it stops following you well before it lands; it never hurts anyone outside what it showed; you
+     can always dash through it. A rule in the engine, checked by `js/validate.js`, not boss by boss. A boss that only
+     borrowed a stomp loses it. **The leap slams stay exactly as they are** (Aleix: "keep the jumping as is right now,
+     don't modify it"). Then every other attack is held to the same rule; one that can't be made fair goes.
+   - **Enemies move for the new player** (Aleix, 2026-11-14). Regular enemies and bosses close in faster, circle you,
+     re-space after your dash and recover properly when dodged, so they fit a player who dashes. All their movement and
+     attack timing follows one pace value, so Boss Rush's speed scaling moves everything together. Track B for Boss
+     Rush's bosses, track A for Story's enemies and bosses (item 4's chapter-by-chapter pass); the test bot measures
+     it.
    - **Then the bot:** every boss a little more aggressive (fewer idle gaps, more strings that punish mashing), tells
      always readable; the test bot plays each boss on the new moves, and only a boss it finds trivial gets its own
      rework. Item 10's and 11's targets are measured again.
@@ -483,7 +520,9 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
      (a cut goes to `BACKLOG.md` with why). A big pool doesn't hurt: aim for 30 or more, at least 8 legendary and at
      least 4 summons, every one fun to get and fun to use. Reached at v7.103.0 (36: 12 common, 16 rare, 8 legendary;
      4 summons). **The new bar (Aleix, 2026-11-14): way more spectacular, super cool, a really wide pool.** Aim for
-     80 or more, at least 20 legendary and 8 summons, rares as spectacular as today's legendaries and legendaries a
+     **100 or more quality abilities** (Aleix, 2026-11-14): about 25 legendary, at least 8 summons, at least 12 in each
+     key's group (Strike, Guard, Summon, Ultimate), the rest triggered. Quality: each does something no other does and
+     has its own look and sound; no "+X% damage" filler. Rares as spectacular as today's legendaries and legendaries a
      clear step above that. Two kinds of pass, taken in turn: a spectacle pass that lifts existing abilities to the
      new bar (the plainest first, judged on frames and a short clip of each moment), and a growth pass that adds new
      ones, each with its own look, sound and moment. Every new one keeps item 11's rules (at most 2 legendaries held,
@@ -497,6 +536,15 @@ the end screen's highlights (item 4, still unbuilt) fitting in between.
      and their own sounds, just smaller. Common: small, mostly numbers, still with a light touch of effect and sound
      so taking one feels like something. Effects stay inside `CONFIG` budgets on Normal (Track A item 3), flashes
      under 3 Hz, `reducedMotion()` respected.
+   - **The feeling to aim for** (Aleix, 2026-11-14, after a run): "I already felt like an anime character directing
+     abilities and coordinating to kill the boss, while the boss also tried to catch me off guard." The spectacle is
+     first **in the fight**: every rare and legendary's moment in the arena is the thing to make spectacular; the card
+     comes second.
+   - **The cards** (Aleix, 2026-11-14): "simple and easy to understand, but very clean and cool". Common plain; rare an
+     animated edge, a few particles and a reveal sound; legendary a short reveal of its own, in its element's look
+     (fire, lightning), held a beat. Hovering or selecting a card plays a short loop of the ability in action that
+     **shows how it activates** (its key, or the moment that triggers it: a deflect, a full charge). An exception to
+     calm menus for the cards only; flashes under 3 Hz, `reducedMotion()` respected.
    - **Triggers** come from moments the combat already has, through `js/events.js`: a fully charged heavy, a perfect
      parry, a perfect dodge, an execution, a posture break, drinking a flask, dropping under a third of your health,
      every Nth hit. The hardest moments carry the legendaries.
