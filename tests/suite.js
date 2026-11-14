@@ -616,16 +616,21 @@
       expect.ok(ids[at] === `finisher${at}` && M[`finisher${at}`].damage > M.light.damage * 1.5, `after ${at} light: ${ids.join()}`);
     }
   });
-  test('pass 85 dash: two charges, each comes back; no stamina', () => {
+  test('pass 90 dash: three charges, back one at a time; no stamina', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
     const p = Game.player, C = CONFIG.player;
-    sim.press('roll'); sim.step(2); expect.ok(p.state === PS.ROLL && Math.abs(p.dashes - (C.dashCharges - 1)) < 0.05, `first dash (${p.dashes.toFixed(2)} left)`);
-    sim.until(() => p.state !== PS.ROLL, 1); sim.press('roll'); sim.step(2);
-    expect.ok(p.state === PS.ROLL && p.dashes < 1, `second dash (${p.dashes.toFixed(2)} left)`);
-    sim.until(() => p.state !== PS.ROLL, 1); sim.press('roll'); sim.step(2);
-    expect.ok(p.state !== PS.ROLL, 'no third dash until a charge is back');
+    expect.ok(C.dashCharges === 3, `three dash charges (${C.dashCharges})`);
+    for (let i = 1; i <= C.dashCharges; i++) {
+      sim.press('roll'); sim.step(2);
+      expect.ok(p.state === PS.ROLL && p.dashes > C.dashCharges - i - 0.05 && p.dashes < C.dashCharges - i + 0.75, `dash ${i} (${p.dashes.toFixed(2)} left)`);
+      sim.until(() => p.state !== PS.ROLL, 1);
+    }
+    sim.press('roll'); sim.step(2);
+    expect.ok(p.state !== PS.ROLL, 'no fourth dash until a charge is back');
     expect.ok(p.stamina === p.maxStamina, 'dashing costs no guard');
-    sim.seconds(C.dashRefill + 0.1); sim.press('roll'); sim.step(2);
+    p.dashes = 0; sim.seconds(C.dashRefill + 0.1);   // from empty, one charge comes back per dashRefill s, not all at once
+    expect.ok(p.dashes >= 1 && p.dashes < 1.2, `from empty, one charge back after ${C.dashRefill} s (${p.dashes.toFixed(2)})`);
+    sim.press('roll'); sim.step(2);
     expect.ok(p.state === PS.ROLL, 'a charge came back');
   });
   test('pass 85 cancels: a dash or a deflect cuts an attack short once its blow is out, never in the wind-up', () => {
@@ -1738,7 +1743,7 @@
     events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
     expect.ok(A.lessons.card.id === 'heavy' && A.lessons.card.done && A.lessons.learned('heavy'), 'a full charge: done, and learned');
   }));
-  test('pass 85 guard: an empty green bar never stops attacking, dashing or jumping', () => {
+  test('pass 85 guard: an empty guard never stops attacking, dashing or jumping', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0); log.length = 0;
     const p = Game.player; sim.step(2);
     p.spend(p.stamina);
@@ -1747,7 +1752,12 @@
     expect.ok(p.state === PS.ROLL && !log.includes('staminaDenied'), 'it still dashes');
     sim.until(() => p.state !== PS.ROLL, 1); sim.press('light'); sim.step(2);
     expect.ok(p.state === PS.ATTACK, 'it still attacks');
-    expect.ok(document.querySelectorAll('#pDash i').length === CONFIG.player.dashCharges, 'a diamond per dash charge under the bar');
+    expect.ok(document.querySelectorAll('#pDash i').length === CONFIG.player.dashCharges, 'a slim bar per dash charge under health');
+    // Pass 90 (Aleix): the guard bar shows only while it is worn or the player blocks, and is gone when full.
+    const pSt = document.getElementById('pSt');
+    hud.updateVitals(Game, 0); expect.ok(pSt.classList.contains('shown'), 'a worn guard shows');
+    p.stamina = p.maxStamina; hud.updateVitals(Game, 0);
+    expect.ok(!pSt.classList.contains('shown') || p.state === PS.BLOCK, 'a full guard hides');
   });
   test('v4.2.4 vision: unaware enemies see in a cone only; a searching one walks to where it last saw the player', () => {
     Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);

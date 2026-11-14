@@ -27,7 +27,7 @@ const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el
 const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
-  pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
+  pSt: $('pSt'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eMend: $('eHpMend'), lastMend: 0, mendClosing: 0, mendShown: true, eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
   rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
@@ -39,7 +39,7 @@ const hud = {
   // State of its own. Timers count down in seconds; the listeners at the bottom of this file set them.
   hpLag: new LagMeter(), stLag: new LagMeter(), bossLag: new LagMeter(), calm: 0, idle: 0, clock: 0,
   target: null, restedTimer: 0, lastPosture: 0, postFlash: 0, lastBossHp: 0, tally: 0, tallyTimer: 0,
-  healTimer: 0, hurtTimer: 0, refundTimer: 0, deniedTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
+  healTimer: 0, hurtTimer: 0, wasAlive: true, popFlask: -1, wasEmpty: false, toastList: [],
   // Texts built from the live key bindings and the current level.
   buildTexts(game) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.connected, run = online && multiplayer.gauntlet;
@@ -74,7 +74,6 @@ const hud = {
     $('completeHint').textContent = road ? road.next ? 'Next chapter incoming… Your party continues together.' : 'Adventure complete. Open the lobby to choose what comes next.'
       : game.level && game.level.completeHint ? game.level.completeHint : next ? `Onward to ${next.name}…`
       : `${systemLabel('restart')} to restart · ${systemLabel('pause')} to pause and leave`;
-    this.pExhaust.textContent = CONFIG.hud.text.exhausted;
     this.promptKey.textContent = keycap(bindLabel('rest'));
     this.talkKey.textContent = keycap(bindLabel('talk'));
     this.execKey.textContent = keycap(bindLabel('light'));
@@ -90,7 +89,7 @@ const hud = {
     this.groupTip.hidden = true;
     this.hpLag.set(1); this.stLag.set(1); this.bossLag.set(1);
     this.target = null; this.restedTimer = 0; this.idle = 0; this.calm = 0; this.tally = this.tallyTimer = 0;
-    this.healTimer = this.hurtTimer = this.refundTimer = this.deniedTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
+    this.healTimer = this.hurtTimer = 0; this.wasAlive = true; this.popFlask = -1; this.wasEmpty = false;
     for (const t of this.toastList) t.el.remove();
     this.toastList = [];
     for (const el of [this.died, this.won, this.complete, this.rested]) el.classList.remove('show');
@@ -134,7 +133,8 @@ const hud = {
   },
 
   // ---- pieces ----------------------------------------------------------------------------------
-  // Dash charges (pass 85): one diamond per charge, filling back from below; written only when a step of it changes.
+  // Dash charges (pass 90, Aleix): a slim white bar per charge under health, each filling left to right as it comes
+  // back, one at a time; written only when a step of it changes.
   syncDashes(p) {
     const n = CONFIG.player.dashCharges;
     if (!this.dashPips) {
@@ -299,8 +299,8 @@ const hud = {
       } else if (n.enemy) { n.el.style.display = 'none'; n.enemy = null; }
     }
   },
-  // Player vitals: health with a lag trail, a heal glow, a hit shake and a low-health pulse; stamina with a trail of
-  // what was just spent, a pause shade while it waits to regenerate, an empty pulse, a winded flush and a refund glow.
+  // Player vitals: health with a lag trail, a heal glow, a hit shake and a low-health pulse. Under it the dash charges
+  // (syncDashes), and beside them a thin guard bar that shows only while blocking or refilling, then fades (Aleix, pass 90).
   updateVitals(game, dt) {
     const H = CONFIG.hud, p = game.player;
     const ph = clamp01(p.hp / p.maxHp), sp = clamp01(p.stamina / p.maxStamina);
@@ -318,11 +318,7 @@ const hud = {
     this.wasEmpty = empty;
     const stTrail = this.stLag.update(sp, dt * 4);   // spent stamina trails away faster than health
     this.pStFill.style.width = sp * 100 + '%'; this.pStTrail.style.width = stTrail * 100 + '%';
-    this.pSt.classList.toggle('exhausted', !!p.exhausted);
-    this.pExhaust.classList.toggle('show', !!p.exhausted && p.alive());
-    this.pExhaust.classList.toggle('flash', this.deniedTimer > 0 && !!p.exhausted);
-    this.pSt.classList.toggle('waiting', p.staminaDelay > 0 && sp < 1);
-    this.pSt.classList.toggle('refund', this.refundTimer > 0);
+    this.pSt.classList.toggle('shown', p.alive() && (p.state === PS.BLOCK || sp < 0.999));
     this.syncDashes(p);
     this.syncAbilityKeys(p);
     this.syncFlasks(p.item('flask'));
@@ -413,7 +409,7 @@ const hud = {
     const p = game.player;
     this.clock += dt;
     this.updateControlsTips(game, dt);
-    for (const k of ['healTimer', 'hurtTimer', 'refundTimer', 'deniedTimer']) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['healTimer', 'hurtTimer']) this[k] = Math.max(0, this[k] - dt);
     this.updateTags(game, dt);
     this.updateNumbers(game, dt);
     this.updateCalm(game, t, dt);
@@ -464,16 +460,14 @@ const hud = {
 function registerHudListeners() {
   const H = CONFIG.hud;
   events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked) hud.hurtTimer = H.hurtTime; });
-  events.on('parry', d => { if (d.player && d.player !== Game.player) return; hud.idle = 0; hud.refundTimer = H.refundPulse; });   // a parry refunds its stamina
-  events.on('dodge', d => { if (d.player && d.player !== Game.player) return; hud.idle = 0; hud.refundTimer = H.refundPulse; });
+  events.on('parry', d => { if (!d.player || d.player === Game.player) hud.idle = 0; });
+  events.on('dodge', d => { if (!d.player || d.player === Game.player) hud.idle = 0; });
   events.on('itemUsed', d => { if (d.item === 'flask' && d.player === Game.player) {
     hud.popFlask = d.player.item('flask').count; hud.dismissHealingTip();
   } });
   events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
   events.on('abilityPress', d => { if (d.body === Game.player) hud.keyPressed(d.key, true); });
   events.on('abilityNotReady', d => { if (d.body === Game.player) hud.keyPressed(d.key, false); });
-  events.on('staminaDenied', d => { if (d.player !== Game.player) return; hud.deniedTimer = H.exhaustedFlash; restart(hud.pSt, 'empty');
-    hud.pSt.addEventListener('animationend', () => hud.pSt.classList.remove('empty'), { once: true }); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
   events.on('saveFailed', () => hud.toast(H.toasts.saveFailed));

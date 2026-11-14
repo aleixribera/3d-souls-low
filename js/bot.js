@@ -732,7 +732,7 @@ const bot = (() => {
       const retreating = (resetLeft > 0 || wary) && !keyOpening && !pressing && !greedy;
       const committed = greedy || keyOpening || pressing || !retreating && settled;
       const attackWindow = window + (greedy && window >= R.minWindow ? R.windowSlack : 0);
-      const can = () => true;   // pass 85: attacks and jumps cost nothing (the green bar is the guard)
+      const can = () => true;   // pass 85: attacks and jumps cost nothing (only blocking wears the guard)
       // A kneeling enemy is a player's to execute: wait off its flank, and take it only near the end of the kneel.
       const leave = k => {
         const near = allies.find(a => !a.botId && a.alive() && Math.hypot(a.x - k.x, a.z - k.z) <= X.yield);

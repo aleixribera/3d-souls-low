@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.113.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.114.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -66,7 +66,7 @@ const CONFIG = {
           sizeDist: 0.6, sepDist: 0.28, maxExtra: 6, markerGap: 0.45 },
   player: {
     // The player rework (pass 85, PLAN.md "First, urgent"): no stamina for attacking, dashing or jumping, and no
-    // exhaustion. The green bar is the guard: only blocking wears it down (CONFIG.block); it refills whenever the player
+    // exhaustion. The guard (`stamina`; a thin bar shown only while it is worn, pass 90): only blocking wears it down (CONFIG.block); it refills whenever the player
     // isn't blocking, after `staminaDelay` s.
     poiseResetTime: 4, staminaRegen: 52, staminaDelay: 0.75,
     walkSpeed: 4.3, accel: 26, decel: 22, turnRate: 14,   // v4.1: accel 34, decel 28 (a little more weight)
@@ -81,7 +81,7 @@ const CONFIG = {
     // blow within `counterTime` s is a counter (a riposte strike), drawn with a beat of slow motion (js/dodge-moment.js).
     rollTime: 0.36, rollIFrames: 0.3, rollSpeed: 13.5, rollSlow: 0.62,   // i-frames kept (PLAN.md): every boss strike was timed to 0.3 s
     rollExitKeep: 0.35,          // speed kept when a dash ends
-    dashCharges: 2, dashRefill: 0.85, counterTime: 0.8,
+    dashCharges: 3, dashRefill: 1.3, counterTime: 0.8,
     // A dash attack: a light or heavy pressed from `dashAttackFrom` s into a dash (or buffered in it) comes out as the
     // moveset's `dash` attack instead of waiting for the dash to end.
     dashAttackFrom: 0.14,
@@ -103,7 +103,7 @@ const CONFIG = {
   // Ground pound visuals (no gameplay effect). Pools are fixed; the oldest effect is reused first.
   groundPound: { maxRings: 6, maxCracks: 6, maxDust: 60, ringTime: 0.45, crackTime: 4, crackFade: 1.5,
                  dustLife: 0.9, shakeTime: 0.2 },
-  // Blocking wears the guard (the green bar, `stamina`) down; an empty guard breaks into a stagger.
+  // Blocking wears the guard (`stamina`, a thin bar beside the dashes while worn) down; an empty guard breaks into a stagger.
   block: { damageMul: 0.15, poiseMul: 0.2, knockMul: 0.35, staminaBase: 6, staminaPerDamage: 0.75,
            breakTime: 1.35, hitstop: 0.05 },
   // The deflect (pass 85; it replaced the parry, and keeps its name in code, events and claims): block pressed as a
@@ -455,7 +455,7 @@ const CONFIG = {
   // (by `calmDim`) over `calmFadeOut` s; any threat brings them back over `calmFadeIn` s.
   hud: { fps: { interval: 0.5 },   // FPS counter refresh (s)
          refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
-         trailHold: 0.45, healFlash: 0.9, hitShake: 0.3, refundPulse: 0.45,
+         trailHold: 0.45, healFlash: 0.9, hitShake: 0.3,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,
          tallyHold: 1.4, postureWarn: 0.8, mendLit: 0.3,   // mendLit (pass 75): s a closing wound stays lit after it last shrank
@@ -463,10 +463,9 @@ const CONFIG = {
          damageNumbers: { pool: 16, life: 0.9, rise: 54, spread: 58, lanes: [0, 1, -1, 0.5, -0.5], big: 120 },
          toastTime: 3.2, maxToasts: 3, controlsTipsTime: 30,
          online: { noticeTime: 7 },
-         exhaustedFlash: 0.9,   // s the stamina bar's "out of stamina" note stays bright after a press it refused
-         text: { restBlocked: 'Enemies too close to rest', exhausted: 'Out of stamina', controller: 'Best played with a controller',
+         text: { restBlocked: 'Enemies too close to rest', controller: 'Best played with a controller',
                  // One shows under YOU DIED; the first whenever the player was exhausted in the last `staminaTipTime` s.
-                 deathTips: ['Tip: you have two dashes. Spent, each comes back in a moment.',
+                 deathTips: ['Tip: you have three dashes. Spent, they come back one at a time.',
                              'Tip: dash through a strike as it lands, not before, and counter while time slows.',
                              'Tip: tap block as a red attack lands to deflect it. Dash through blue attacks.',
                              'Tip: a heavy pressed in a string of lights ends it with a finisher.',

@@ -62,7 +62,7 @@ const multiplayer = (() => {
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
-    <p class="lobby-controls-tip">Attacks and dashes cost nothing. The green bar is your guard. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
+    <p class="lobby-controls-tip">Attacks cost nothing; you have three dashes. Blocking wears your guard. Tap block on the beat to deflect. Talk / read: <span id="lobbyTalkKey"></span>.</p></section>
     </div>`;
   const style = document.createElement('style');
   style.textContent = `#publicLobby,#onlineParty,#onlineLeaderboard,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}

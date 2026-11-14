@@ -15,7 +15,7 @@ const LESSONS = {
   move: { title: 'MOVE', keys: ['move', 'camera'],
     text: () => usingPad() ? 'Walk with the left stick. Turn the view with the right.' : 'Walk, and turn the view with the mouse. Click the view to capture it.',
     check: (g, t) => t.dist >= 5 },
-  roll: { title: 'DASH', keys: ['roll'], text: () => 'Dash out of harm. You have two dashes, each back in a moment.',
+  roll: { title: 'DASH', keys: ['roll'], text: () => 'Dash out of harm. You have three dashes; they come back one at a time.',
     check: g => g.player.state === PS.ROLL },
   jump: { title: 'JUMP', keys: ['jump'], text: () => 'Jump over low rubble, or onto a foe.',
     check: g => g.player.state === PS.JUMP },

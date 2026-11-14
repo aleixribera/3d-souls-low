@@ -270,7 +270,6 @@
   .mend { background: linear-gradient(#ffc070, #e8701e 52%, #8a3008); box-shadow: inset 0 0 5px #ffd49080; z-index: 2; width: 0; opacity: 0.85;
     transition: filter 0.25s, opacity 0.25s; }
   .mend.closing { filter: brightness(1.35); opacity: 1; }
-  #pStTrail { background: linear-gradient(#cfe0a8, #8aa466); opacity: 0.8; }
 
   /* Player vitals, top left. Dims when calm (--calm 0..1), brightens and swells back at the first threat. */
   #pBars { position: relative; padding: 14px 40px 12px 18px; transform-origin: top left;
@@ -279,37 +278,30 @@
     background: radial-gradient(ellipse at 0 50%, #000000a8, #00000000 72%); }
   #pBars::after { content: ''; position: absolute; left: 0; top: 10px; bottom: 8px; width: 1px;   /* gilt spine, a diamond at its head */
     background: linear-gradient(#c9a85e00, var(--gilt) 25%, var(--gilt) 75%, #c9a85e00); }
-  #pHp, #pSt { transform-origin: left center; }
-  #pHp { width: 320px; height: 14px; }
-  #pSt { width: 258px; height: 8px; margin-top: 5px; }
+  #pHp { width: 320px; height: 14px; transform-origin: left center; }
   #pHp.hit { animation: barShake var(--hit-shake, 0.3s) linear; }
   #pHp.heal { border-color: #f0dca0; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 2px #ffd88a90, inset 0 0 8px #ffe8b080; }
   #pHp.heal .hp { filter: brightness(1.45) saturate(0.85); }
   #pHp.low { animation: lowPulse 0.9s ease-in-out infinite; }
   #pHp.low .hp { filter: brightness(1.2); }
   #pHpCut { position: absolute; right: 0; top: 0; bottom: 0; width: 0; background: repeating-linear-gradient(135deg, #1a0306 0 4px, #4a0a12 4px 7px); box-shadow: inset 2px 0 0 #c01828; }
-  #pSt.refund { border-color: #d8f0b0; box-shadow: 0 0 0 1px #000000d8, 0 0 12px 2px #b8f09080; }
-  #pSt.waiting .st { filter: saturate(0.55) brightness(0.8); }      /* regeneration paused */
-  #pSt.empty, #pSt.exhausted { border-color: #c4402e; }
-  #pSt.empty { animation: emptyPulse 0.6s ease-out; }
-  #pSt.exhausted .st { background: linear-gradient(#b86a50, #7a3a28 52%, #4a2014); --glow: #ff9070; }
-  #pSt.exhausted { animation: windedPulse 0.7s ease-in-out infinite; }
   @keyframes barShake { 0% { transform: translateX(0); } 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); }
     70% { transform: translateX(-2px); } 100% { transform: translateX(0); } }
   @keyframes lowPulse { 50% { border-color: #e0604a; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 3px #d0301c90, inset 0 0 6px #000000b0; } }
   @keyframes emptyPulse { 0% { box-shadow: 0 0 0 1px #000000d8, 0 0 16px 4px #ff4a30c0; transform: scaleY(1.9); } 100% { transform: scaleY(1); } }
-  /* Exhausted: a small note under the stamina bar, faint while it lasts, bright for a moment after a refused press. */
-  #pExhaust { height: 0; margin-top: 0; overflow: hidden; font-size: 11px; letter-spacing: 2px; color: #e07a5c; text-shadow: 0 0 4px #000;
-    opacity: 0; transition: opacity 0.25s; font-variant: small-caps; }
-  #pExhaust.show { opacity: 0.55; }
-  #pExhaust.flash { opacity: 1; color: #ff9a76; }
-  @keyframes windedPulse { 50% { box-shadow: 0 0 0 1px #000000d8, 0 0 10px 2px #d0402880; } }
-
-  /* Dash charges (pass 85): one diamond each under the guard bar, filling from below as it comes back. */
-  #pDash { display: flex; gap: 9px; height: 12px; margin: 6px 0 0 3px; }
-  #pDash i { width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid #c9a85e; box-shadow: 0 0 0 1px #000000c0;
-    background: linear-gradient(0deg, #f0dca0 calc(var(--k, 1) * 100%), #00000080 calc(var(--k, 1) * 100%)); }
-  #pDash i.ready { border-color: #f6e6b0; box-shadow: 0 0 0 1px #000000c0, 0 0 6px 1px #ffd88a80; }
+  /* Under health (pass 90, Aleix): the dash charges, slim white bars side by side, each filling as it comes back; and
+     the guard, thin, beside them, shown only while it is worn (blocking, or refilling after), fading out once full. */
+  #pMove { display: flex; align-items: center; gap: 10px; width: 320px; height: 7px; margin-top: 7px; }
+  #pDash { display: flex; gap: 5px; flex: 0 0 66%; }
+  #pDash i { flex: 1; height: 3px; box-shadow: 0 0 0 1px #000000b8, 0 1px 4px #000000a0;
+    background: linear-gradient(90deg, #f4f1ea calc(var(--k, 1) * 100%), #ffffff2a calc(var(--k, 1) * 100%)); transition: box-shadow 0.2s; }
+  #pDash i.ready { box-shadow: 0 0 0 1px #000000b8, 0 0 5px #ffffff70; }
+  #pSt { flex: 1; height: 3px; border: 0; background: #00000090; box-shadow: 0 0 0 1px #000000b8; opacity: 0; transition: opacity 0.6s; }
+  #pSt::after, #pSt .st::after { display: none; }
+  #pSt .st { background: #a9b8c8; }
+  #pSt .trail { background: #e8e0c8; opacity: 0.7; }
+  #pSt.shown { opacity: 1; transition-duration: 0.12s; }
+  #pSt.empty { background: #6a1810; animation: emptyPulse 0.6s ease-out; }
   #pFlasks { margin-top: 12px; height: 18px; transition: opacity 0.3s; opacity: calc(1 - var(--calm) * 0.5); }
   .flask { display: inline-block; position: relative; width: 11px; height: 14px; margin-right: 7px; vertical-align: bottom;
     border: 1px solid #5d5132; border-radius: 3px 3px 6px 6px; background: #0d0b0a; box-shadow: 0 0 0 1px #000c, inset 0 1px 0 #ffffff12;
@@ -482,7 +474,7 @@
 
   /* Narrow windows (portrait, small): the vitals shrink and the boss bar moves under them, so nothing overlaps. */
   #hud.narrow { --mx: 16px; --my: 14px; }
-  #hud.narrow #pHp { width: 220px; } #hud.narrow #pSt { width: 176px; }
+  #hud.narrow #pHp, #hud.narrow #pMove { width: 220px; }
   #hud.narrow #aTC { top: 104px; }
   #hud.narrow #eHp, #hud.narrow #ePost { width: min(620px, calc(100vw / var(--u) - 2 * var(--mx))); }
   #hud.narrow #eName { font-size: 14px; letter-spacing: 3px; }
@@ -569,9 +561,10 @@
     <div class="anchor" id="aTL">
       <div id="pBars">
         <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
-        <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
-        <div id="pDash" aria-hidden="true"></div>
-        <div id="pExhaust"></div>
+        <div id="pMove">
+          <div id="pDash" aria-hidden="true"></div>
+          <div class="bar" id="pSt"><div class="trail" id="pStTrail"></div><div class="st" id="pStFill"></div></div>
+        </div>
         <div id="pFlasks"></div>
       </div>
       <aside id="controlsTips" class="hud-tip" aria-label="Basic controls" hidden>
@@ -819,7 +812,7 @@ const GAME_FILES = [
   'dodge-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.113.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.114.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
