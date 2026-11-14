@@ -56,6 +56,9 @@ Aleix, 2026-11-13.
 - What replaces the Elden Ring bosses: nothing. Boss Rush, Practice and the lobby modes use the story's own bosses:
   Ashmere's five (Pillager Captain, Bell Warden, the Gaol Giant, Aldric, the Antlered Hunger) and chapters 7-14's
   (Ostrey, Hale and Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade).
+- The player rework (Aleix, 2026-11-14): anime action instead of slow Souls action, abilities at the centre of the
+  combat, manageable for friends playing for the first time on a laptop; all ten of the director's answers taken (see
+  "The player rework" above). `VISION.md` changed with his OK.
 - Abilities (Aleix, 2026-11-14): way more spectacular, super cool, and a really wide pool: 80 or more, at least 20
   legendary and 8 summons (track B, item 6).
 - The loop's open questions (Aleix, 2026-11-14):
@@ -125,6 +128,46 @@ left open, and any solo play in it, stays on the old build and nothing says so.
      the AGENTS.md row and the minor release per model.
    Check: no link to a deleted file anywhere (grep), the game loads, `npm run test:node` passes.
 
+## The player rework: anime action, abilities at the centre (Aleix, 2026-11-14)
+
+Both modes. "Make it less Souls-like and a bit more action-like", "a bit more like anime action instead of slow Souls
+action", abilities "a central part of the combat", and "manageable with friends playing for the first time on a
+laptop". The bosses stay as they are in spirit: every attack told and dodgeable on its tell (`VISION.md`). In
+track B's order this comes after item 11's third pass and the summons' own moves, ahead of item 6's spectacle and
+growth passes (abilities are tuned on the moveset players will really use). Track A takes the moveset as it lands.
+
+1. **The feel.** A mix of a fast deflect-and-counter game (Sekiro) and a flashy, approachable action game (Stellar
+   Blade), with anime action's speed and flair; their feel only, never their names or looks. Abilities are a central
+   part of the fight, not a garnish: the moveset gives them moments to fire on (perfect dodges, deflects, finishers,
+   charged blows), and item 6's spectacle bar makes them the highlight of every fight.
+2. **The moveset:**
+   - **No stamina for attacking or dodging,** and no exhaustion. The dodge has 2 charges that refill quickly. Blocking
+     still wears your guard down, so turtling stays risky.
+   - **A dash for a roll:** about 0.35 s, i-frames kept. A perfect dodge (right on the hit) opens a short counter
+     window, drawn with a beat of slow motion; the simulation and the other players never slow.
+   - **Cancels:** any attack cancels into a dodge or a deflect once its hit is out. The wind-up still commits.
+   - **Combos:** light strings of 4-5 hits; a heavy finisher from any point in the string, each its own move
+     (light-light-heavy differs from four lights and a heavy); a dash attack out of the dodge; the jump attack stays.
+     No juggling.
+   - **The deflect** replaces the parry: block pressed as a hit lands deflects it, more forgiving than today's parry
+     window, with spamming block not working. Each deflect fills the boss's posture; a deflected string can end in a
+     riposte.
+   - **Healing:** flasks drunk while walking, quicker, cut short by a hit; a small heal on every execution.
+   - Abilities whose triggers change (perfect dodge, full charge, parry) move to their new moments.
+3. **First-time friends on a laptop.** Everything plays on a laptop keyboard and touchpad as well as with a mouse or a
+   controller; lock-on carries the camera so a touchpad never has to. A friend who has never played learns to attack,
+   dodge, deflect and heal in their first minute, without a tutorial screen (button hints in the world, the first fight
+   forgiving). Normal holds 60 fps on the laptop (track A item 3).
+4. **The bosses answer.** Once the moveset has landed, every boss gets a little more aggressive (fewer idle gaps, more
+   strings that punish mashing), tells always readable, and item 10's and 11's targets are measured again with the new
+   moves.
+5. **Narrow first.** The new moveset goes into Practice against one boss (the Pillager Captain) for Aleix to play
+   before it spreads. His play decides; then it becomes the game's moveset, Story and Boss Rush.
+
+Check: a test of each move (dash charges, cancels, every string and finisher, deflect timing and its posture, drinking
+on the move); a clip of a full string, a perfect dodge into a counter and a deflected string into a riposte; the
+Pillager Captain in Practice at desktop and laptop size, the touchpad alone driving it; then Aleix's go.
+
 ## Track A: Story
 
 1. **The ending** (pass 30, in progress).
@@ -191,7 +234,7 @@ after the abilities). If the track reaches item 6 before that session has shippe
 comes back to item 6 the moment it lands.
 Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in progress, ahead of everything left.
 Next in this track (2026-11-14): item 11's third pass (the wall and the ease go, picks evened, par per boss), ahead of
-the summons' own moves; then item 6's new bar (Aleix, 2026-11-14: way more spectacular abilities and a really wide
+the summons' own moves; then the player rework (its own section above); then item 6's new bar (Aleix, 2026-11-14: way more spectacular abilities and a really wide
 pool), whose spectacle and growth passes then take every other track-B pass for as long as the pool is short of it,
 the end screen's highlights (item 4, still unbuilt) fitting in between.
 

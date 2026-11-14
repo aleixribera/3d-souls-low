@@ -20,7 +20,7 @@ players want to keep coming back. The end result must be excellent.
 
 ## The game
 
-A Souls-like in the browser that Aleix plays with his friends, who are new to the genre. It has two main modes, built
+An action game in the browser with Souls-like bosses, that Aleix plays with his friends, who are new to the genre. It has two main modes, built
 side by side, and each should feel like the main event.
 
 - **Story**, alone: one road through a dark world, chapter by chapter. It keeps growing until Aleix says it's done.
@@ -48,6 +48,8 @@ side by side, and each should feel like the main event.
 
 ## How it should feel
 
+- **Anime action, not slow Souls action.** Fast and flashy; abilities are a central part of the combat.
+- **Manageable for friends playing for the first time, on a laptop.**
 - **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
   its tell. Nothing hits without warning. Each of a boss's attacks has its own wind-up, so players rarely mistake one
   attack for another.
