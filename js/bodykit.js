@@ -1651,6 +1651,7 @@ const KIT = (() => {
     }
     if (M.eyes && 'halo' in M.eyes && !(typeof M.eyes.halo === 'number' && M.eyes.halo >= 0 && M.eyes.halo <= 1)) bad('eyes.halo (the glow round the eyes) must be an opacity from 0 to 1.');
     if ('guardArm' in M && !(M.guardArm && typeof M.guardArm === 'object' && Object.keys(M.guardArm).length > 0 && Object.entries(M.guardArm).every(([b, v]) => ['armL', 'elbowL'].includes(b) && Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && Math.abs(x) <= Math.PI)))) bad('guardArm sets armL and/or elbowL to [x, y, z] (rad) while the shield is up.');   // (pass 55)
+    if ('tells' in M && !(M.tells && typeof M.tells === 'object' && Object.entries(M.tells).every(([n, T]) => n !== 'shield' && T && known(T.bone) && Array.isArray(T.at) && T.at.length === 3 && T.at.every(Number.isFinite)))) bad('tells is { <name>: { bone, at: [x, y, z] } }: where on which bone a hit with `tell: <name>` shows its wind-up halo (a shield is shieldTell).');   // (pass 72)
     if ('shieldTell' in M && !(M.shieldTell && known(M.shieldTell.bone) && Array.isArray(M.shieldTell.at) && M.shieldTell.at.length === 3 && M.shieldTell.at.every(Number.isFinite))) bad('shieldTell is { bone, at: [x, y, z] }: where on which bone the shield\'s wind-up halo shows.');   // (pass 55)
     if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -1.6 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -1.6 to 1.6.');   // (pass 48) below -0.5 a long haft stands upright, like a crook
     if (M.weapon) {
@@ -1750,10 +1751,14 @@ const KIT = (() => {
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);
     if (M.grip) { rig.grip = { y: -0.045, gap: 0.2, fist: 0.06, ...M.grip }; rig.gripWrist = rig.weapon.position.clone(); rig.haftNow = [...M.grip.rest]; rig.gripW = 0; rig.gripZ = 0; rig.haftW = 1; }   // (pass 53, opt-in) a two-handed haft: Rig.holdHaft
     rig.warnGlow = makeWarnGlow(); rig.weapon.add(rig.warnGlow);
-    rig.shieldGlow = null;
-    if (M.shieldTell) {   // (pass 55, opt-in) the wind-up halo on the shield, for hits whose blow is the shield's (`tell: 'shield'`)
-      rig.shieldGlow = makeWarnGlow(); rig.bones[M.shieldTell.bone].add(rig.shieldGlow); rig.shieldGlow.position.set(...M.shieldTell.at);
+    // (pass 55, opt-in) the wind-up halo on the shield, for hits whose blow is the shield's (`tell: 'shield'`); (pass 72) on
+    // any named part of the figure (`tells`: a claw, a foot), for hits whose blow is that part's (`tell: '<name>'`)
+    rig.shieldGlow = null; rig.tellGlows = null;
+    for (const [n, T] of Object.entries({ ...(M.tells || {}), ...(M.shieldTell ? { shield: M.shieldTell } : {}) })) {
+      const g = makeWarnGlow(); rig.bones[T.bone].add(g); g.position.set(...T.at);
+      (rig.tellGlows || (rig.tellGlows = {}))[n] = g;
     }
+    if (rig.tellGlows && rig.tellGlows.shield) rig.shieldGlow = rig.tellGlows.shield;
     // A glint of light that flashes along the weapon as a strike begins (driven by the animator): at the far end of the
     // weapon's own geometry, so every weapon gets one without data.
     const box = built.weaponBox;

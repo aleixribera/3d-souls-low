@@ -1572,5 +1572,15 @@ function registerVisualListeners() {
   events.on('playerDeath', d => visuals.blood(chest(d.player), VIS.blood.deathSize));
   events.on('rest', d => visuals.flare(d.bonfire));
   events.on('gateOpened', d => visuals.gateDust(d.gate));
+  // A boss's grip (pass 72): the hand closing, each struggle, and the letting go; embers burn off you while it holds you.
+  events.on('seized', d => spawnBurst(chest(d.body), VIS.grip.seize));
+  events.on('struggle', d => spawnBurst(chest(d.body), VIS.grip.struggle));
+  events.on('seizeEnd', d => spawnBurst(chest(d.body), VIS.grip.free));
+  let burnt = 0;   // embers off your body while it is held
+  Game.renderHooks.push(game => {
+    const p = game.player; if (!p || p.state !== PS.HELD) { burnt = 0; return; }
+    burnt += game.renderDt || 0; if (burnt < VIS.grip.every) return; burnt = 0;
+    spawnBurst(chest(p), VIS.grip.burn);
+  });
   events.on('perilous', d => groundFx.ring(d.enemy.x, d.enemy.z, VIS.rollOnlyGlow.ring * d.enemy.def.scale, VIS.rollOnlyGlow.color, VIS.rollOnlyGlow.opacity, d.enemy.y));
 }

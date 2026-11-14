@@ -41,6 +41,8 @@ const cameraFeel = (() => {
   events.on('land', d => { if (!d.player || isPlayer(d.player)) kick('y', -F.landDip * 1.5); });
   events.on('fallDamage', d => { if (isPlayer(d.body)) kick('y', -F.landDip * 1.3); });
   events.on('bossPhase', () => kick('fov', F.phaseFov));
+  events.on('seized', d => { if (isPlayer(d.body)) { kick('fov', F.hurtFov); kick('y', F.landDip * 2); } });   // a boss's hand closing on you (pass 72)
+  events.on('struggle', d => { if (isPlayer(d.body)) kick('roll', (Math.random() < 0.5 ? -1 : 1) * F.hurtRoll); });
   // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a striking summon's
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
   events.on('abilityPower', d => {

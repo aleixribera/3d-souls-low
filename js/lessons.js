@@ -50,6 +50,7 @@ const lessons = (() => {
       && (canParryHit(e.attack, e.hitIndex) ? 'red' : 'blue') === w.glint);
     if ('kneel' in w) return g.enemies.some(e => awake(e) && (e.execReady || e.state === ES.BROKEN && near(p, e, C.kneelRange)));
     if ('group' in w) return !!g.lock && g.lockCandidates().length >= w.group;
+    if ('held' in w) return p.state === PS.HELD;
     if ('hurt' in w) { const f = p.item('flask'); return p.hp < p.maxHp * w.hurt && !!f && f.count > 0 && p.state !== PS.USE_ITEM; }
     if ('after' in w) {   // that lesson has had its turn: shown (done or not) this run, or learned before
       const before = plan.find(e => e.lesson === w.after);

@@ -70,6 +70,9 @@ const LESSONS = {
       }
       return false;
     } },
+  // Level 1's giant: its hand closes on you (a hit's `seize`). Done on getting out of the grip, however it ends.
+  grip: { title: 'BREAK FREE', keys: ['light', 'roll'], urgent: true, text: () => 'Strike or roll, again and again, to tear loose sooner.',
+    on: (type, d, t, g) => type === 'seizeEnd' && d.body === g.player },
   // Level 2: the first raised shield.
   shield: { title: 'SHIELDS', keys: ['heavy'], text: () => 'A raised shield turns light blows. Heavy attacks batter its guard down, or go round it.',
     on: type => type === 'postureBreak' },
@@ -87,4 +90,5 @@ const LESSONS = {
 //   { group: n }               locked on, with n or more foes in sight
 //   { hurt: fraction }         health below that fraction of the bar, with a flask left
 //   { after: lesson id }       right after that lesson of the same level is done (or learned)
-const LESSON_TRIGGERS = ['x', 'zone', 'near', 'enemy', 'glint', 'kneel', 'group', 'hurt', 'after'];
+//   { held: true }             in a foe's grip (Player.seize)
+const LESSON_TRIGGERS = ['x', 'zone', 'near', 'enemy', 'glint', 'kneel', 'group', 'hurt', 'after', 'held'];

@@ -5,40 +5,7 @@
 //   Pillager Captain (ASHEN HOST) a horned helm, a cloak torn into strips, a halberd whose edge glows
 //   Bell Warden      (IRONBOUND)  a verdigris bronze colossus: bell helm, bell skirt, a temple bell for a hammer (Blender, v7.43.0)
 
-MODEL_DEFS.giantSkeleton = {
-  // v5.5, after the reference art: a spectral giant. Pale translucent bone lit from within (strong rim, bright
-  // vein texture, a cold aura), a huge domed skull hung low before the chest on a long neck, a deep rib cage,
-  // long femur-thick limbs with heavy knuckled joints, and a spine that burns white down to the pelvis.
-  extends: 'hollowBase', faction: 'oldbones', budget: 'boss', fit: 1.04, limbSides: 8, rim: 2.4,
-  proportions: { shoulderX: 0.34, torsoW: 0.16, torsoD: 0.12, armR: 0.072, legR: 0.08, headR: 0.29, handR: 0.06, footLen: 0.32 },
-  limbs: { armL: { len: 1.3, thick: 1.15 }, legL: { thick: 1.15 } },
-  // v7.45.0: neck 0.9 -> 0.75, head -0.45 -> -0.95, so the skull's face looks down at the player, not at the floor
-  posture: { chest: [0.55, 0, 0.04], neck: [0.75, 0, -0.06], head: [-0.95, 0, 0.1], elbowL: [-0.25, 0, 0], elbowR: [-0.3, 0, 0] },
-  materials: {
-    bone: { tex: 'spectralBone', tint: 0xd8dde6, decay: 0.55, size: 512 },
-    dark: { tex: 'spectralBone', tint: 0xaab0bc, decay: 0.8 },
-    void: { tex: 'ashSoot', tint: 0x181a20, decay: 0.4 },
-    core: { glow: 0xe8eeff },
-    eye: { glow: 0xc8d8ff },
-  },
-  // v7.45.0: built in Blender (tools/blender/giant.py), one piece per bone: a domed skull with scowling sockets, a crack
-  // over the crown and the jaw hanging open; a barrel of ribs (three snapped) on a spine that burns white (`core`) from
-  // the skull's base into the pelvis; long bones with knuckled ends; a long claw on the left, a fist round the club.
-  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
-  parts: Object.entries({
-    head: ['bone', 'bone.1', 'bone.2', 'void', 'core', 'dark'], neck: ['core', 'dark'],
-    chest: ['core', 'dark', 'dark.1', 'bone', 'bone.1', 'bone.2'], spin: ['bone', 'bone.1', 'bone.2'],
-    armL: ['bone'], armR: ['bone'], elbowL: ['bone', 'bone.1'], elbowR: ['bone', 'bone.1'],
-    legL: ['bone'], legR: ['bone'], kneeL: ['bone', 'bone.1'], kneeR: ['bone', 'bone.1'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
-  weapon: { use: 'boneClub', rest: 0.5, slots: { blade: 'bone', grip: 'bone', guard: 'dark' } },   // rest: the club's head on the floor, not sunk in it
-  eyes: { color: 0xc8d8ff, size: 0.024, spread: 0.105, at: [0, 0.265, 0.2] },
-  aura: { color: 0xcfdcff, size: 3.6, opacity: 0.16 },
-  anim: {
-    idle: { breathRate: 0.6, breath: 0.02, headDrift: 0.1, sway: 0.025, twitch: 0 }, walk: { twist: 0.12, roll: 0.06, headNod: 0.07, elbow: 0.3, drag: 0.35 },
-    flinch: { head: 0.4, chest: 0.4, arms: 0.4 }, death: { buckle: 1.2, slump: 1 },
-  },
-};
+// MODEL_DEFS.giantSkeleton: js/data/bosses/giant-skeleton.js (pass 72).
 
 // MODEL_DEFS.bellWarden: js/data/bosses/bell-warden.js (pass 68).
 

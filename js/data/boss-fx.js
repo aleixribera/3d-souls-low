@@ -23,8 +23,9 @@ const FX_ELEMENTS = {
   toll:  { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
 };
 const BOSS_FX = {
-  giant: { element: 'bone', aura: 0xd8d0c0, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
-    giantBonebreaker: { impact: 'shatter' } } },
+  giant: { element: 'bone', aura: 0xd8d0c0, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
+    giantSlam: { impact: 'shatter', windup: 'gather' }, giantClubClaw: { impact: 'shatter' }, giantGathering: { impact: 'shatter', windup: 'gather' },
+    giantPitStomps: { impact: 'shatter' }, giantReach: { impact: 'shatter', windup: 'gather' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'quake', windup: 'gather' },
     captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather' } } },
   bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },

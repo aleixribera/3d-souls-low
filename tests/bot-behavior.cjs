@@ -333,7 +333,7 @@ for (const profile of profiles) {
     b.brain = sim.inspect().bot.create({ ...b.profile, parry: 0, evade: 0 }, seeded(seed * 131)); p.ctl = b.brain.hands;
     p.z = e.z + e.radius + p.radius + 0.5; p.vx = p.vz = 0; e.yaw = 0;
     // Late in the wind-up: given the whole of it, a bot now walks out past the stomp's reach instead (v7.52.0).
-    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = 0.85;   // 0.95 before v7.69.0's slower notice
+    e.beginAttack(e.baseDef.attacks.find(a => a.id === 'stomp')); e.holdLeft = 0; e.stateTime = e.attack.hits[0].startup - 0.55;   // 0.55 s before it lands (pass 72: from its end, as its wind-up changes)
     for (let i = 0; i < 2 * 60; i++) {
       sim.setPlayers([]); sim.tick(dt);
       if (p.state === 'jump') { jumps++; break; }

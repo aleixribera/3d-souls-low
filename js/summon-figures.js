@@ -173,7 +173,7 @@ const summonFigures = (() => {
       if ((f.mote -= dt) <= 0) { f.mote = F.motes; at.x = f.x; at.y = f.y + 0.3 + Math.random() * K.height * 0.8; at.z = f.z; ultraFx.moteBurst(at, 2, F.color, MOTES); }
       const r = f.rig;
       r.place(f.x, f.y + lift, f.z, f.yaw, F.solid && fading >= 1 ? f.y : -Infinity);
-      r.warnGlow.visible = false; if (r.shieldGlow) r.shieldGlow.visible = false;
+      r.warnGlow.visible = false; if (r.tellGlows) for (const n in r.tellGlows) r.tellGlows[n].visible = false;
       r.root.visible = true;
     }
   }

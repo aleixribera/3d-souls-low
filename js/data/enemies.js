@@ -61,27 +61,7 @@ const ENEMY_DEFS = [
         box: { w: 1.7, h: 1.2, d: 1.7, fwd: 1.1, y: 1.0 } },
     ],
   },
-  {
-    id: 'giant', model: 'giantSkeleton', name: 'Giant Skeleton', description: 'A towering ruin of bone. Every blow is a catastrophe.',
-    scale: 2.3, bulk: 1.2, radius: 0.95, color: 0xb9b3a0, weapon: 'club', idle: 'sway',
-    visual: { skin: 0xcfc8b2, bareArms: true, roughness: 0.75, rim: 0.8 },   // bone
-    hp: 1920, poise: 220, speed: 1.4, turnRate: 2.2, trackRate: 0.8,
-    cooldown: [1.39, 2.62], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
-    // Boss posture: replaces poise interrupts (hits never cancel its swings). Every landed hit builds it by the
-    // attack's postureDmg, times `chainMul` when it lands within `chainGap` s of the previous one. A parry adds
-    // `parry`. It drains at `decay`/s once `chainGap` s pass without a hit. (v4.2.1: chainMul 1.5 -> 1.35, parry -15%.)
-    posture: { max: 70, parry: 32, chainGap: 1.8, chainMul: 1.35, decay: 5, breakTime: 3.2, hitstop: 0.2 },
-    // v4.2.4: its sweep and stomp were active 0.24 / 0.2 s over boxes too wide to roll out of, so a roll's 0.3 s of
-    // invulnerability had almost no margin; now 0.12 s, the rest added to the follow-through.
-    attacks: [
-      { id: 'sweep', name: 'Club Sweep', anim: 'sweep', pose: 'hollowSwing', tracking: { rate: 1.4, commit: 0.6 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.25, hits: [{ startup: 1.75, active: 0.12, follow: 0.42 }], recovery: 1.43,
-        damage: 62, poise: 95, knock: 12, lunge: 0.6, range: 3.6,
-        box: { w: 7.0, h: 2.2, d: 4.6, fwd: 2.4, y: 1.3 } },
-      { id: 'stomp', name: 'Stomp', anim: 'stomp', pose: 'enemyStomp', tracking: { rate: 1.2, commit: 0.5 }, markers: [{ event: 'glint', parry: true }], poseScale: 1.1, hits: [{ startup: 1.4, active: 0.12, follow: 0.38, hold: { at: 0.55, time: [0.4, 0.9], chance: 0.5 } }], recovery: 1.1,
-        damage: 46, poise: 75, knock: 8, lunge: 0, range: 2.4,
-        box: { w: 5.6, h: 0.8, d: 5.6, fwd: 0.6, y: 0.4 } },
-    ],
-  },
+  // The Giant Skeleton: its own file since pass 72 (js/data/bosses/giant-skeleton.js).
   {
     id: 'warden', model: 'ironWarden', name: 'Shield Warden', description: 'Hides behind a great shield. Circle it, parry it, or batter its guard down.',
     scale: 1.12, bulk: 1.15, radius: 0.48, color: 0x56636e, weapon: 'sword', offhand: 'kite', idle: 'still',

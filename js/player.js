@@ -52,7 +52,7 @@ class Player {
   isFree() { return this.in('free'); }
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; }
+  setState(s) { if (s !== PS.FALL) this.dropped = false; this.state = s; this.stateTime = 0; }
   // Emptying the bar exhausts the player (CONFIG.player.exhaustDelay, exhaustRecover): a longer wait before it refills,
   // and no stamina action until it is back to exhaustRecover.
   spend(amount) {
@@ -227,7 +227,8 @@ class Player {
       }
       case PS.JUMP:
       case PS.FALL: {
-        if (this.canAct()) {
+        if (this.dropped) for (const a in M.air) this.ctl.consume(a);   // a fall from a grip: struggle presses are not plunges
+        else if (this.canAct()) {
           const action = Object.keys(M.air).find(a => this.ctl.consume(a));
           if (action) {
             this.beginAttack(M.attacks[M.air[action]], mv, face, enemies);
@@ -354,8 +355,10 @@ class Player {
         break;
       }
       case PS.EXECUTE: execution.update(this, dt); break;
+      case PS.HELD: this.updateHeld(dt); break;
       case PS.DEAD: approachVel(this, 0, 0, C.decel * dt); break;
     }
+    if (this.state === PS.HELD) { this.walkPhase = 0; return; }   // carried: no physics of its own
     // Locked on: keep facing the target, except while committed to a roll or a swing already released.
     const released = (this.state === PS.ATTACK && this.attackPhase() !== PHASE.STARTUP) || (this.state === PS.JUMP_ATTACK && this.hitbox);
     if (face !== null && !this.in('noLockFacing') && !released)
@@ -407,7 +410,7 @@ class Player {
   }
   // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
   // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
-  die() { if (this.exec) execution.abandon(this); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+  die() { if (this.exec) execution.abandon(this); if (this.held) this.releaseHold(false); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
   checkFall() {
     if (!this.alive()) return;
@@ -461,6 +464,57 @@ class Player {
     if (!by || !by.alive()) { this.reclaim(true); return; }   // she fell: all of it comes back
     if ((this.rentTime -= dt) <= 0) this.closeRent();
   }
+  // A seize (pass 72, the Giant Skeleton's hand; a hit's `seize`): caught, you are carried from where you stood to `at`
+  // ([side, up, fwd] m from him, along his facing) over `lift` s and held there, burning `dps` a second, for at most `time`
+  // s. Every strike, roll or parry pressed in his grip wins back `escape` s. The grip breaks too when he stops the attack
+  // that holds you (a break of his posture, a parry, a phase, his death): a friend can free you. Out of it, you are flung
+  // `throw` m/s away from him and fall.
+  seize(by, S, attackId) {
+    if (this.exec) execution.abandon(this);
+    const yaw = by.yaw, s = Math.sin(yaw), c = Math.cos(yaw), dx = this.x - by.x, dz = this.z - by.z;
+    // Where you were caught, in his frame: the carry starts there.
+    this.held = { by, S, attackId, left: S.time, from: [dx * c - dz * s, this.y - by.y, dx * s + dz * c] };
+    this.hitbox = null; this.buffer = null; this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0;
+    this.setState(PS.HELD);
+    events.emit('seized', { body: this, enemy: by });
+  }
+  // The hold, one step: carried, burned and struggling; out of it once the time is up or his attack ends.
+  updateHeld(dt) {
+    const H = this.held;
+    if (!H) { this.setState(PS.FALL); return; }   // a body told it is held with no grip on it (a stale frame)
+    const by = H.by, S = H.S;
+    for (const a of ['light', 'heavy', 'roll', 'parry']) if (this.ctl && this.ctl.consume(a)) { H.left -= S.escape; events.emit('struggle', { body: this, enemy: by }); }
+    H.left -= dt;
+    this.hp = Math.max(0, this.hp - S.dps * dt);
+    if (this.hp <= 0) { this.held = null; this.die(); return; }
+    const gripping = by.alive() && (by.state === ES.ACTIVE || by.state === ES.RECOVER) && by.attack && by.attack.id === H.attackId;
+    if (H.left <= 0 || !gripping) { this.releaseHold(gripping && this.stateTime >= S.time - 1e-6); return; }   // thrown only when he lets go himself
+    const k = S.lift > 0 ? Math.min(1, this.stateTime / S.lift) : 1, e = 1 - (1 - k) * (1 - k) * (1 - k);   // out-cubic
+    const lx = H.from[0] + (S.at[0] - H.from[0]) * e, ly = H.from[1] + (S.at[1] - H.from[1]) * e, lz = H.from[2] + (S.at[2] - H.from[2]) * e;
+    const s = Math.sin(by.yaw), c = Math.cos(by.yaw);
+    this.x = by.x + lx * c + lz * s; this.z = by.z - lx * s + lz * c; this.y = by.y + ly;
+    this.clampFrom(by);
+    this.yaw = by.yaw + Math.PI;   // facing him
+    this.vx = this.vy = this.vz = 0; this.kx = this.kz = 0; this.grounded = false; this.peak = this.y;
+  }
+  // Kept in the world as if moved there from his body: his hand never carries you through a closed gate or a wall
+  // (the world's clamp decides the side of a gate from where you were).
+  clampFrom(by) {
+    const ox = this.px, oz = this.pz; this.px = by.x; this.pz = by.z;
+    clampToWorld(this);
+    this.px = ox; this.pz = oz;
+  }
+  // Out of a grip, falling from where he held you: `thrown` (he let go himself) flung away from him, else only dropped.
+  releaseHold(thrown) {
+    const H = this.held; this.held = null;
+    if (!H) return;
+    const dx = this.x - H.by.x, dz = this.z - H.by.z, d = Math.hypot(dx, dz) || 1, t = thrown ? H.S.throw : 0;
+    this.kx = dx / d * t; this.kz = dz / d * t;
+    this.clampFrom(H.by);
+    this.grounded = false; this.peak = this.y; this.vy = 0;
+    this.setState(PS.FALL); this.dropped = true;
+    events.emit('seizeEnd', { body: this, enemy: H.by, thrown });
+  }
   // Damage, block, guard break, hurt and stagger from one strike. Returns { blocked, died }.
   takeHit(strike, from) {
     const B = CONFIG.block, C = CONFIG.player;
@@ -474,6 +528,12 @@ class Player {
       else { blocked = true; damage *= B.damageMul; poise *= B.poiseMul; knock *= B.knockMul; }
     }
     this.hp = Math.max(0, this.hp - damage);
+    if (this.state === PS.HELD) {   // already in a grip: the blow hurts, but nothing throws you out of it
+      this.tint = 1;
+      if (this.hp <= 0) { this.die(); return { blocked: false, died: true }; }
+      return { blocked: false };
+    }
+    if (strike.seize && !blocked && strike.seizeBy && this.hp > 0) { this.tint = 1; this.seize(strike.seizeBy, strike.seize, strike.seizeAttack); return { blocked: false }; }
     if (strike.pull && !blocked) {   // pass 63, a hook: dragged in to `pull` m from him instead of thrown back (the knock glides knock / friction m)
       const k = Math.max(0, d - strike.pull) * C.knockFriction;
       this.kx = -dx / d * k; this.kz = -dz / d * k;
@@ -568,6 +628,15 @@ class Player {
       case PS.EXECUTE: glint = executePose(r, this, this.attackT + (tt - this.stateTime)); break;   // js/execution.js
       case PS.HURT: case PS.STAGGER: flinchPose(r, this.state === PS.STAGGER, tt / this.stunTime, tt, this.hitK || 1); break;
       case PS.DEAD: deathPose(r, tt, C.deathFade); break;
+      case PS.HELD: {   // in a giant's fist: legs kicking, both hands pushing at the grip, head thrown back
+        const k = Math.min(1, tt / 0.25), w = Math.sin(tt * 9), v = Math.sin(tt * 7 + 1.3);
+        r.spin.rotation.x = -0.25 * k; if (r.chest) r.chest.rotation.x = -0.2 * k; r.head.rotation.x = -0.45 * k + 0.08 * w;
+        r.armL.rotation.set((-1.9 + 0.35 * v) * k, 0, 0.35 * k); r.armR.rotation.set((-1.7 - 0.35 * v) * k, 0, -0.35 * k);
+        if (r.elbowL) { r.elbowL.rotation.x = -0.9 * k; r.elbowR.rotation.x = -1.0 * k; }
+        r.legL.rotation.x = (0.25 + 0.45 * w) * k; r.legR.rotation.x = (0.25 - 0.45 * w) * k;
+        if (r.kneeL) { r.kneeL.rotation.x = (0.6 + 0.4 * v) * k; r.kneeR.rotation.x = (0.6 - 0.4 * v) * k; }
+        break;
+      }
     }
     if (this.brace > 0) { r.crouch(0.12 * this.brace); r.tip.rotation.x -= 0.14 * this.brace; }
     if (r.anim) r.anim.updatePlayer(this, tt, ctx, glint);   // a modelled body's secondary motion (js/animator.js), visual only

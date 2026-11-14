@@ -570,6 +570,10 @@ const CONFIG = {
     // Every unparryable attack has a cold blue blade. Roll-only attacks also show a faint ground ring
     // as the wind-up starts (`ring`: size, `opacity`: its peak).
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
+    // A body in a boss's grip (a hit's `seize`, pass 72): bone splinters as the hand closes, white-hot embers off it every
+    // `every` s while it burns, a spray at each struggle, and a last one when it is thrown or tears loose.
+    grip: { seize: { color: 0xe8e0cc, count: 22, speed: 5 }, burn: { color: 0xffb060, count: 3, speed: 2.2 }, every: 0.09,
+            struggle: { color: 0xfff0d8, count: 7, speed: 3.5 }, free: { color: 0xffa040, count: 18, speed: 5 } },
     // A ring hitbox (a knell along the floor) drawn where it is, as wide as it hits, on every preset (js/ring-waves.js);
     // `fade` s after it closes. A boss's binding circle (a phase's `tether`, js/tether.js): its line `width` m, the
     // flash and `dust` when it breaks.

@@ -4,7 +4,7 @@
 // ============================================================================
 // The game's bosses are its own since v7.54.0, so this def has no figure and is in no list: it is never fought as it is.
 // Its moves are copied and renamed by the Kindling Tree (kindling-tree.js), the Rootbound (through ZEALOT_MOVES,
-// js/data/move-sources.js) and two moves of the Bell Warden (js/data/story-boss-moves.js).
+// js/data/move-sources.js).
 // It goes when they get moves of their own (PLAN.md track A).
 
 // ---- key poses (js/data/attack-poses.js format), built from the shared ones ----------------------------------------------

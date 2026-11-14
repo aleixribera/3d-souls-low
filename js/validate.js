@@ -270,6 +270,19 @@ function validateData({ visual = true } = {}) {
       }
       if ('noParry' in h) need(h.noParry === true, `${tag}: hit ${i + 1}'s noParry must be true (the attack's other hits may still be parried).`);
       if ('pull' in h) need(num(h.pull) && h.pull >= 0.8 && h.pull <= 4 && !a.shove && !a.projectile, `${tag}: hit ${i + 1}'s pull must be 0.8 to 4 m (not on a shove or a projectile).`);
+      // A `seize` (pass 72, the Giant Skeleton; Player.seize): a hand that closes on you and carries you to `at` ([side, up,
+      // fwd] m from him) over `lift` s, burning `dps` a second for at most `time` s; each press in the grip wins back
+      // `escape` s; thrown `throw` m/s when he lets go. It is the attack's last hit, roll-only, and he still holds the
+      // attack (its follow and recovery) for the whole grip, so his letting go is never a stale frame.
+      if ('seize' in h) {
+        const S = h.seize;
+        need(S && Array.isArray(S.at) && S.at.length === 3 && S.at.every(num) && S.at[1] >= 0 && S.at[1] <= 4 && Math.hypot(S.at[0], S.at[2]) <= 5
+          && num(S.lift) && S.lift >= 0 && num(S.time) && S.time > S.lift && S.time <= 4 && num(S.dps) && S.dps >= 0 && S.dps <= 30
+          && num(S.escape) && S.escape > 0 && S.escape <= 1 && num(S.throw) && S.throw >= 0 && S.throw <= 20
+          && i === a.hits.length - 1 && !a.followUps && (!a.track || a.tracking) && !a.projectile && !a.shove && !h.pull && !h.echo && !h.bolt && !h.erupt && !(h.box || a.box).ring
+          && S.time <= (h.follow || 0) + a.recovery + 1e-6,
+          `${tag}: hit ${i + 1}'s seize needs at ([side, up 0-4, fwd] within 5 m), lift (s), time (s, above lift, at most 4 and within the hit's follow and the recovery), dps (0-30), escape (0-1 s) and throw (0-20 m/s); only on the attack's last hit, with no followUps, a tracking turn (not track) if it turns (he would spin chasing the body in his hand), and not with a projectile, shove, pull, echo, bolt, erupt or ring.`);
+      }
       // A `still` hit (pass 50): it does not turn through its wind-up, so it falls where the hit before it was aimed.
       if ('still' in h) need(h.still === true && i > 0, `${tag}: hit ${i + 1}'s still must be true, and not on the first hit.`);
       // A `bolt` (pass 48): lightning on the spot its target stood as the mark locked (Enemy.noteBolt); `lock` a fraction of
@@ -300,7 +313,7 @@ function validateData({ visual = true } = {}) {
         && (!('breakers' in h.counter) || (Array.isArray(h.counter.breakers) && h.counter.breakers.every(x => typeof x === 'string'))) && !h.falter,
         `${tag}: a hit's counter needs answer (an attack id), optionally arc (rad), from (0 to 1 of its wind-up) and breakers (player attack ids); not with falter.`);
       if ('falter' in h) need(h.falter && Number.isInteger(h.falter.hits) && h.falter.hits > 0, `${tag}: a hit's falter needs hits (a whole number above 0).`);
-      if ('tell' in h) need(h.tell === 'shield', `${tag}: a hit's tell can only be 'shield' (its wind-up glows on the model's shieldTell).`);   // v5.9: overrides the attack's
+      if ('tell' in h) need(typeof h.tell === 'string' && h.tell.length > 0, `${tag}: a hit's tell names where its wind-up glows: 'shield' (the model's shieldTell) or one of the model's tells.`);   // v5.9: overrides the attack's
       if ('sigil' in h) need(num(h.sigil) && h.sigil > 0, `${tag}: a hit's sigil is the radius (m) of the rune drawn where it strikes.`);
       if (h.leap && 'back' in h.leap) need(num(h.leap.back) && h.leap.back > 0, `${tag}: a hit's leap.back must be metres above 0.`);
       if ('abort' in h) need(h.abort && num(h.abort.at) && h.abort.at > 0 && h.abort.at < 1 && num(h.abort.beyond) && typeof h.abort.into === 'string',
@@ -320,7 +333,7 @@ function validateData({ visual = true } = {}) {
       for (const h of a.hits || []) if (h.counter) need(!!(d.posture || d.guard || d.stagger), `Enemy "${d.id}" attack "${a.id}": a counter breaks the stance, so the enemy needs posture, guard or stagger.`);
       for (const h of a.hits || []) if (h.falter) need(!!d.posture, `Enemy "${d.id}" attack "${a.id}": a falter breaks its posture, so the enemy needs posture.`);
       for (const h of a.hits || []) if (h.abort) need(aidList.has(h.abort.into), `Enemy "${d.id}" attack "${a.id}": abort into "${h.abort.into}" is not one of its attacks.`);
-      if (visual && (a.hits || []).some(h => h.tell === 'shield')) { const M = d.model && KIT.resolve(d.model); need(!!(M && M.shieldTell), `Enemy "${d.id}" attack "${a.id}": a shield tell needs a model with shieldTell.`); }
+      if (visual) for (const h of (a.hits || []).filter(h => h.tell)) { const M = d.model && KIT.resolve(d.model); need(!!(M && (h.tell === 'shield' ? M.shieldTell : M.tells && M.tells[h.tell])), `Enemy "${d.id}" attack "${a.id}": tell "${h.tell}" needs the model's ${h.tell === 'shield' ? 'shieldTell' : 'tells.' + h.tell}.`); }
     }
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
@@ -715,6 +728,7 @@ function validateLessons(L, where, need) {
       const v = w[keys[0]];
       if (keys[0] === 'x' || keys[0] === 'hurt' || keys[0] === 'group') need(Number.isFinite(v) && v >= 0, `${tag}: ${keys[0]} must be a number.`);
       if (keys[0] === 'hurt') need(v > 0 && v < 1, `${tag}: hurt is a fraction of the bar.`);
+      if (keys[0] === 'held') need(v === true, `${tag}: held must be true.`);
       if (keys[0] === 'zone') need((L.gated || []).some(z => z.id === v), `${tag}: no zone "${v}" in this level.`);
       if (keys[0] === 'near') need((L.bonfires || []).some(b => b.id === v), `${tag}: no bonfire "${v}" in this level.`);
       if (keys[0] === 'enemy') need(v in ENEMY_BY_ID, `${tag}: no enemy "${v}".`);

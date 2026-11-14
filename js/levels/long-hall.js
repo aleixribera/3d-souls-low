@@ -21,7 +21,8 @@ const LEVEL_1 = {
   // The controls, taught where the hall first asks for them (js/data/lessons.js), essentials first: the list is the
   // course, in teaching order (v7.19.1). In the corridor out of the cell: walk, swing, roll. The first duel: lock on,
   // block as its first blow winds up; a flask when hurt. The patrolling Hollow: the heavy and the jump attack. The Knight: break its stance, execute.
-  // The Rogue: parry. The second fire: rest. The pair past it: switch target. The Giant: roll into its swing.
+  // The Rogue: parry. The second fire: rest. The pair past it: switch target. The Giant: roll into its swing, and break
+  // out of its hand.
   lessons: [
     { lesson: 'move', when: { x: 0 } },
     { lesson: 'light', when: { after: 'move' } },
@@ -37,6 +38,7 @@ const LEVEL_1 = {
     { lesson: 'rest', when: { near: 'after-rogue' } },
     { lesson: 'switch', when: { group: 2 } },
     { lesson: 'dodge', when: { zone: 'zone-giant' } },
+    { lesson: 'grip', when: { held: true } },
   ],
   bonfires: [{ id: 'hall-start', x: 2.6, z: -3.4 }, { id: 'after-rogue', x: 130.5, z: -4.2 }],
   alcoveWidth: 2.8, alcoveDepth: 2.2,

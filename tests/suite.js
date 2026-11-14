@@ -752,6 +752,92 @@
     expect.ok(e.def.resonance.max < A.ENEMY_BY_ID.bellWarden.phases.silent.resonance.max, 'his bronze fills sooner');
     expect.ok(e.def.attacks.some(a => a.id === 'wardenAnswerTwice') || A.ENEMY_BY_ID.bellWarden.phases.woken.attacks.includes('wardenAnswerTwice'), 'and answers twice');
   });
+  // Pass 72: the Giant Skeleton's own fight. Its long hand takes you (a hit's `seize`, Player.seize).
+  const freed = [];   // every grip that ended: who, whether thrown
+  A.events.on('seizeEnd', d => freed.push(d));
+  const taken = (e, p, id = 'giantTaking') => {   // the giant's hand closing on a player before it
+    faceOff(e, p, 2.4); quiet(e); e.beginAttack(e.def.attacks.find(a => a.id === id));
+    sim.until(() => p.state === PS.HELD, 3);
+  };
+  test('Giant Skeleton: its hand takes you up to its skull and burns you; it throws you down when it lets go', () => {
+    Game.startFight('giant'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, p = Game.player, S = e.def.attacks.find(a => a.id === 'giantTaking').hits[0].seize;
+    p.maxHp = p.hp = 400; freed.length = 0;
+    expect.ok(!e.def.attacks.some(a => a.origin), 'every move its own (none borrowed)');
+    taken(e, p);
+    expect.ok(p.state === PS.HELD, `the hand closes on you (${p.state})`);
+    const t0 = clock, hp0 = p.hp;
+    sim.seconds(S.lift + 0.1);
+    expect.above(p.y - e.y, S.at[1] - 0.2, 'lifted up before its skull');
+    expect.near(Math.hypot(p.x - e.x, p.z - e.z), Math.hypot(S.at[0], S.at[2]), 0.3, 'held in its hand, not left where you stood');
+    sim.seconds(1);
+    expect.near(hp0 - p.hp, S.dps * (S.lift + 1.1), 3, 'its heat burns you while it holds you');
+    sim.until(() => p.state !== PS.HELD, 4);
+    expect.near(clock - t0, S.time, 0.1, `held its full ${S.time} s when you do not struggle`);
+    expect.ok(freed.length === 1 && freed[0].thrown && freed[0].body === p, 'and thrown when it lets go');
+    const d0 = Math.hypot(p.x - e.x, p.z - e.z); sim.step(20);
+    expect.above(Math.hypot(p.x - e.x, p.z - e.z) - d0, 1, 'flung away from it');
+    sim.until(() => p.grounded, 3); sim.step(30);
+    expect.ok(p.alive() && p.state !== PS.HELD, `you land and fight on (${p.state})`);
+  });
+  test('Giant Skeleton: struggling tears you loose sooner, and a posture break opens its hand', () => {
+    Game.startFight('giant'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, p = Game.player, S = e.def.attacks.find(a => a.id === 'giantTaking').hits[0].seize;
+    p.maxHp = p.hp = 400; freed.length = 0;
+    taken(e, p); let t0 = clock;
+    for (let i = 0; i < 40 && p.state === PS.HELD; i++) { sim.press(i % 2 ? 'roll' : 'light'); sim.step(6); }
+    expect.ok(p.state !== PS.HELD, 'torn loose');
+    expect.below(clock - t0, S.time - 1, `struggling cuts the grip short (${(clock - t0).toFixed(2)} s of ${S.time})`);
+    // a fresh grip, then a blow that breaks its posture: the hand opens, and you drop, not thrown
+    Game.startFight('giant'); sim.begin(); freed.length = 0;
+    const e2 = Game.duel, p2 = Game.player; p2.maxHp = p2.hp = 400;
+    taken(e2, p2); sim.seconds(0.7);
+    expect.ok(p2.state === PS.HELD, 'held again');
+    e2.posture = e2.def.posture.max - 1; e2.takeHit(strikeOf('heavy'), behind(e2));
+    expect.ok(e2.state === ES.BROKEN, `its posture breaks (${e2.state})`);
+    sim.step(2);
+    expect.ok(p2.state !== PS.HELD && freed.length === 1 && !freed[0].thrown, 'and its hand opens: dropped, not thrown');
+  });
+  test('Giant Skeleton: a roll through the open hand is never caught, and a death in its hand is a death', () => {
+    Game.startFight('giant'); sim.begin();
+    const e = Game.duel, p = Game.player; sturdy(p);
+    faceOff(e, p, 2.4); quiet(e); e.beginAttack(e.def.attacks.find(a => a.id === 'giantTaking'));
+    sim.until(() => e.state === ES.WINDUP && e.stateTime > e.attack.hits[0].startup - 0.12, 3);
+    sim.press('roll'); sim.until(() => e.state !== ES.ACTIVE && e.state !== ES.WINDUP, 2);
+    expect.ok(p.state !== PS.HELD, `rolled through it (${p.state})`);
+    expect.ok(makeStrike(e.def.attacks.find(a => a.id === 'giantTaking')).rollOnly, 'no guard holds it');
+    Game.startFight('giant'); sim.begin();
+    const e2 = Game.duel, p2 = Game.player; p2.maxHp = 400; p2.hp = 20;
+    taken(e2, p2); sim.until(() => !p2.alive(), 3);
+    expect.ok(!p2.alive() && p2.state === PS.DEAD && !p2.held, `burned to death in its hand (${p2.state})`);
+  });
+  test('Giant Skeleton: its hand never carries you through a wall, and struggling free is not a plunge', () => {
+    Game.startFight('giant'); sim.begin();
+    const e = Game.duel, p = Game.player, W = world; p.maxHp = p.hp = 400;
+    expect.ok(!W.solids && Number.isFinite(W.maxX), 'the duel is an open arena with a wall at maxX');
+    p.yaw = Math.PI / 2; p.x = p.px = W.maxX - 0.6 - 2.4; taken(e, p);   // its back near the wall, you between: its hand reaches past the wall
+    e.x = e.px = W.maxX - 0.6; e.yaw = Math.PI / 2;   // it turns to face the wall with you in its hand
+    sim.step(30);
+    expect.ok(p.state === PS.HELD, `held (${p.state})`);
+    expect.below(p.x, W.maxX - p.radius + 1e-6, `held inside the wall, not past it (${(p.x - W.maxX).toFixed(2)} m)`);
+    let plunged = false;
+    for (let i = 0; i < 40 && p.state === PS.HELD; i++) { sim.press(i % 2 ? 'heavy' : 'light'); sim.step(6); }
+    for (let i = 0; i < 20 && !p.grounded; i++) { sim.press('light'); sim.step(2); plunged = plunged || p.state === PS.JUMP_ATTACK; }
+    expect.ok(!plunged, 'the presses that tore you loose do not become a plunging attack on the way down');
+  });
+  test('Giant Skeleton: at half its strength it gathers more of its dead; the heat fills its ribs, and it reaches for you from afar', () => {
+    Game.startFight('giant'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, H = e.rig.slotMeshes.heat;
+    expect.ok(H && !H.visible, 'its ribs dark at first');
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.name === 'The Giant Skeleton, Gathered' && e.state === ES.ACTIVE && e.attack.id === 'giantGathering', 12);
+    expect.ok(e.attack && e.attack.id === 'giantGathering', `it gathers (${e.attack && e.attack.id})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(2); Game.render(1, STEP);
+    expect.ok(H.visible, 'the heat fills its ribs');
+    const reach = e.def.attacks.find(a => a.id === 'giantReach');
+    expect.ok(reach && reach.minRange >= 4 && reach.hits[0].leap && reach.hits[0].seize, 'and it leaps hand first on you from afar');
+    expect.ok(!A.ENEMY_BY_ID.giant.phases.gaol.attacks.includes('giantReach'), 'only once gathered');
+  });
   test('mixed crowd: the gallery bowmen shoot down into the fight', () => {
     Game.startLevel('test-mixed'); sim.begin(); shots.length = 0; starts.length = 0;
     const p = Game.player; sturdy(p); sim.place(24, 0);
@@ -1840,13 +1926,10 @@
 
   // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
   const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
-  const STORY_BOSS_MOVES = [
-    { id: 'giant', level: 'long-hall', hp: 1920, total: 3, added: 1 },
-  ];   // pass 68: the Bell Warden's borrowed pair gave way to his own moves (js/data/bosses/bell-warden.js)
-  test('Story boss moves: exactly 1 addition and doubled health in levels and duels', () => {
-    for (const b of STORY_BOSS_MOVES) {
-      const d = A.ENEMY_BY_ID[b.id];
-      expect.ok(d.attacks.length === b.total && d.attacks.filter(a => a.origin).length === b.added, `${b.id}: exact move counts`);
+  const STORY_BOSS_MOVES = [];   // pass 68 and 72: the Bell Warden's and the Giant Skeleton's borrowed moves gave way to their own
+  test('Story boss moves: none borrowed, and doubled health in levels and duels', () => {
+    for (const b of [{ id: 'giant', level: 'long-hall', hp: 1920 }]) {
+      expect.ok(!A.ENEMY_BY_ID[b.id].attacks.some(a => a.origin), `${b.id}: no borrowed moves`);
       Game.startFight(b.id); sim.begin();
       expect.ok(Game.duel.hp === b.hp && Game.duel.def.hp === b.hp, `${b.id}: doubled duel health`);
       Game.startLevel(b.level); sim.begin();
@@ -3465,13 +3548,13 @@
         Game.render(0, STEP);
         const color = parryable ? WARN_COLOR : ROLL_ONLY_COLOR;
         const glow = a.hits[i].echo ? 0 : clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own
-        // A blow told on the shield (`tell: 'shield'`, a model with a shieldTell) glows there and leaves the weapon dark.
-        const onShield = a.hits[i].tell === 'shield' && !!e.rig.shieldGlow;
+        // A blow told on the shield, claw or foot (`tell`, a model's shieldTell or tells) glows there and leaves the weapon dark.
+        const T = a.hits[i].tell && e.rig.tellGlows && e.rig.tellGlows[a.hits[i].tell], onShield = !!T;
         expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(onShield ? 0 : glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
         const G = parryable ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
         expect.ok(sameColor(e.rig.warnGlow.material.color, new THREE.Color(G.color).multiplyScalar(G.boost)), `${d.id}/${a.id}/${i}: halo colour`);
-        if (onShield) expect.ok(e.rig.shieldGlow.visible === glow > 0.002 && sameColor(e.rig.shieldGlow.material.color, e.rig.warnGlow.material.color)
-          && Math.abs(e.rig.shieldGlow.material.opacity - glow * CONFIG.VISUALS.windupGlow.opacity) < 1e-6, `${d.id}/${a.id}/${i}: shield glow`);
+        if (T) expect.ok(T.visible === glow > 0.002 && sameColor(T.material.color, e.rig.warnGlow.material.color)
+          && Math.abs(T.material.opacity - glow * CONFIG.VISUALS.windupGlow.opacity) < 1e-6, `${d.id}/${a.id}/${i}: ${a.hits[i].tell} glow`);
         checked++;
       }
     }

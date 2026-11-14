@@ -73,6 +73,12 @@ face. The Seven called it *the hunger that wears a king*.
   strike two or three times and step away. Muffle chains keep him quiet; at half his strength he breaks them and rings
   himself awake, as the Bell above him was meant to wake Ashmere.
 - **Gargoyles**: the castle's carved guardians, woken by the Ember's heat.
+- **The Giant Skeleton** is the gaol's dead, made one. Those who died in the Long Hall's cells went down the pit at the
+  hall's end, and the Ember's heat leaking up through it stood their bones up again as one giant, still in its irons:
+  cuffs on its wrists, a broken chain at its ankle. It keeps the hall's last gate and does what the gaol did to them:
+  its long left hand is a cell. It takes the living up to its skull and holds them while the heat in its spine burns
+  them; you tear loose by struggling, or by breaking its stance. At half its strength it drives its hands into the
+  floor and the pit gives it more of its dead, and the heat fills its ribs.
 
 ---
 

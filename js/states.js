@@ -8,6 +8,7 @@ const PS = Object.freeze({   // player
   JUMP_ATTACK: 'jumpAttack', LAND: 'land', BLOCK: 'block', PARRY: 'parry', USE_ITEM: 'useItem',
   REST: 'rest', HURT: 'hurt', STAGGER: 'stagger', DEAD: 'dead',
   EXECUTE: 'execute',   // v5.2: running an execution on a kneeling enemy (js/execution.js); untouchable throughout
+  HELD: 'held',         // pass 72: in a boss's grip (a hit's `seize`, Player.seize): carried, burned, struggling to break free
 });
 const ES = Object.freeze({   // enemy
   IDLE: 'idle', PATROL: 'patrol', LURK: 'lurk', DORMANT: 'dormant', RISE: 'rise', LEAP: 'leap',
@@ -27,8 +28,8 @@ const PLAYER_GROUPS = {
   airborne: new Set([PS.JUMP, PS.FALL]),
   falls: new Set([PS.IDLE, PS.WALK, PS.BLOCK, PS.PARRY, PS.USE_ITEM, PS.REST, PS.HURT, PS.STAGGER]),   // no floor below: start falling
   attacking: new Set([PS.ATTACK, PS.JUMP_ATTACK]),
-  noRegen: new Set([PS.EXECUTE, PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD]),
-  noLockFacing: new Set([PS.EXECUTE, PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND]),
+  noRegen: new Set([PS.EXECUTE, PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.BLOCK, PS.ROLL, PS.PARRY, PS.DEAD, PS.HELD]),
+  noLockFacing: new Set([PS.EXECUTE, PS.ROLL, PS.DEAD, PS.STAGGER, PS.REST, PS.LAND, PS.HELD]),
   stunned: new Set([PS.HURT, PS.STAGGER]),
   // Busy states whose roll and attack presses go through the Souls-style input buffer (Player.bufferInputs).
   buffers: new Set([PS.ATTACK, PS.ROLL, PS.LAND, PS.PARRY, PS.HURT, PS.STAGGER, PS.USE_ITEM]),

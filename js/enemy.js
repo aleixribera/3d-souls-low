@@ -696,6 +696,7 @@ class Enemy {
     const strike = makeStrike(this.attack);
     if (hit.damage) strike.damage = hit.damage;
     if (hit.pull) { strike.pull = hit.pull; strike.rollOnly = true; }   // pass 63: the hook drags you in to this far from him (Player.takeHit); no guard holds it
+    if (hit.seize) { strike.seize = hit.seize; strike.seizeBy = this; strike.seizeAttack = this.attack.id; strike.rollOnly = true; }   // pass 72: a hand that closes on you (Player.seize); no guard holds it
     if (!hit.bolt && !this.attack.projectile && (this.attack.rend ?? this.def.rend)) { strike.rend = true; strike.rendBy = this; }   // pass 48: the hook keeps what it tears
     if (hit.bolt) {   // the storm strikes where its mark lay; a mark never seen strikes nothing
       const B = this.bolt;
@@ -1027,7 +1028,7 @@ class Enemy {
       r.haftW += ((HAFT_HELD[this.state] ? 1 : 0) - r.haftW) * (1 - Math.exp(-CONFIG.fx.haftBlendRate * ctx.dt));
       r.holdHaft(r.haftW);
     }
-    r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell === 'shield');   // red: parryable; blue: cannot be parried (this hit); on the shield when the shield strikes
+    r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell || null);   // red: parryable; blue: cannot be parried (this hit); on the shield, claw or foot when that strikes
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
