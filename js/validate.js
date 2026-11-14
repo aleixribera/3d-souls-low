@@ -21,12 +21,14 @@ function validateData({ visual = true } = {}) {
     const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
     need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');
     const D = A.deflect;
-    need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && num(d.drop) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press and its clang.');
-    need(D && D.clang && Array.isArray(D.clang.step) && D.clang.step.length === 2 && D.clang.step.every(v => Number.isFinite(v) && Math.abs(v) <= 0.6),
-      'ANIM_SETTINGS.deflect.clang.step: [side, back] m the body steps off its line (at most 0.6 each).');
-    const Rb = D && D.clang && D.clang.rebound;
-    need(Rb && num(Rb.delay) && num(Rb.rise) && num(Rb.hold) && num(Rb.fall) && num(Rb.drop) && rot(Rb.pose),
-      'ANIM_SETTINGS.deflect.clang.rebound: delay, rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone.');
+    need(D && num(D.rise) && num(D.hold) && num(D.fall) && num(D.drop) && rot(D.pose), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press.');
+    need(D && D.clang && num(D.clang.attack) && Array.isArray(D.clang.step) && D.clang.step.length === 2 && D.clang.step.every(v => Number.isFinite(v) && Math.abs(v) <= 0.6),
+      'ANIM_SETTINGS.deflect.clang: attack (s), and step: [side, back] m the body steps off its line (at most 0.6 each).');
+    const CK = D && D.clang && D.clang.keys, ckBones = CK && CK[0] && Object.keys(CK[0]).filter(n => Array.isArray(CK[0][n])).sort().join();
+    need(Array.isArray(CK) && CK.length >= 3 && CK[0].at === 0 && CK[CK.length - 1].w === 0 && CK.every((q, i) => (i === 0 || (num(q.at) && q.at > CK[i - 1].at))
+      && q.w >= 0 && q.w <= 1 && q.drop >= 0 && q.drop < 0.4 && Number.isFinite(q.step) && rot(Object.fromEntries(Object.entries(q).filter(([, v]) => Array.isArray(v))))
+      && Object.keys(q).filter(n => Array.isArray(q[n])).sort().join() === ckBones),
+      'ANIM_SETTINGS.deflect.clang.keys: 3 or more, `at` from 0 rising under 1 s, w 0 to 1 (0 on the last), drop 0 to 0.4 m, a step share, and the same bones as [x, y, z] in each.');
     need(A.clothClamp > 0 && A.clothSpeed > 0, 'ANIM_SETTINGS.clothClamp (rad) and clothSpeed (m/s): both above 0.');
     for (const [id, M] of Object.entries(MODEL_DEFS)) for (const c of (M.anim && M.anim.cloth) || [])
       need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);

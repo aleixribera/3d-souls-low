@@ -62,18 +62,51 @@ const ANIM_SETTINGS = {
             chest: [-0.05, -0.3, 0], head: [0.05, 0.25, 0],   // the blade pushed out across the body to meet the blow, tip low to the off side
             spin: [0.1, -0.22, 0], legL: [-0.45, 0, 0.06], kneeL: [0.7, 0, 0], legR: [0.4, 0, -0.06], kneeR: [0.6, 0, 0] },   // knees braced (pass 94)
     // Pass 99 (two fresh judges, the Sekiro deflect as the reference): the blow knocks the sword arm and blade out and
-    // aside (3 frames in) while the torso gives only a little, and `rebound` starts `delay` s after it, during the hold,
-    // so the blade peaks for about a frame: the body comes back over the blade, chest forward and the hips staying `drop`
-    // m down, then eases off at once into the guard
-    // (no held crouch: a round-1 judge saw "one identical crouched pose").
-    clang: { rise: 0.05, hold: 0.03, fall: 0.2, drop: 0.16, step: [0.26, 0.14],
-             pose: { armR: [-0.3, 0.2, 1.05], elbowR: [-0.5, 0, 0], weapon: [0.55, 0.7, 0.25], chest: [-0.24, -0.2, 0], head: [-0.2, 0.12, 0],
-                     tip: [-0.12, 0, 0.12], spin: [-0.2, -0.38, -0.12], armL: [-0.59, -0.6, -0.47], elbowL: [-0.66, 0, 0],   // the blade knocked out wide, the body turned with it
-                     legL: [-0.12, 0, 0.06], kneeL: [0.2, 0, 0], legR: [0.62, 0, -0.1], kneeR: [0.5, 0, 0] },
-             rebound: { delay: 0.06, rise: 0.07, hold: 0.01, fall: 0.3, drop: 0.07,
-                        pose: { armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
-                                chest: [0.12, -0.26, 0], head: [0.04, 0.22, 0], tip: [0.03, 0, 0], spin: [0.1, -0.24, 0],   // over the blade again
-                                legL: [-0.6, 0, 0.1], kneeL: [0.85, 0, 0], legR: [0.5, 0, -0.1], kneeR: [0.7, 0, 0] } } },   // wide and low
+    // aside while the torso gives only a little, then the body comes back over the blade, the hips staying low.
+    // Pass 102 (a judge: frames 5-9 "hold one crouched pose"): the blow is keyed, not one rebound pose. `keys` run on a
+    // smooth curve (s since the blow, `at`): knocked back and up, a beat further, driven forward past the guard into a
+    // deep knee dip, a smaller bounce up, a smaller dip, settled; `w` is how much of the body the keys hold (0 at the
+    // end, back to whatever the body was doing), `drop` the hips' drop (m), `step` the share of `step` [side, back] m the
+    // whole body is drawn off its line. A blow eases the keys in over `attack` s; one landing mid-reaction fades the
+    // last out under it over the same time. Every key names the same bones.
+    clang: { attack: 0.04, step: [0.26, 0.14], keys: [
+      { at: 0, w: 1, drop: 0.15, step: 0,   // the guard the press struck
+        armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+        chest: [-0.05, -0.3, 0], head: [0.05, 0.25, 0], tip: [0, 0, 0], spin: [0.1, -0.22, 0],
+        legL: [-0.45, 0, 0.06], kneeL: [0.7, 0, 0], legR: [0.4, 0, -0.06], kneeR: [0.6, 0, 0] },
+      { at: 0.05, w: 1, drop: 0.05, step: 1,   // knocked back and up: the blade flung out wide, shoulders back, hips rising
+        armR: [-0.25, 0.25, 1.15], elbowR: [-0.6, 0, 0], weapon: [0.45, 0.75, 0.3], armL: [-0.62, -0.62, -0.5], elbowL: [-0.7, 0, 0],
+        chest: [-0.3, -0.18, 0], head: [-0.24, 0.1, 0], tip: [-0.14, 0, 0.12], spin: [-0.24, -0.4, -0.12],
+        legL: [-0.14, 0, 0.06], kneeL: [0.24, 0, 0], legR: [0.64, 0, -0.1], kneeR: [0.48, 0, 0] },
+      { at: 0.09, w: 1, drop: 0.04, step: 1.05,   // the beat: a little further still
+        armR: [-0.22, 0.27, 1.2], elbowR: [-0.64, 0, 0], weapon: [0.42, 0.76, 0.32], armL: [-0.62, -0.64, -0.5], elbowL: [-0.72, 0, 0],
+        chest: [-0.34, -0.17, 0], head: [-0.27, 0.1, 0], tip: [-0.16, 0, 0.13], spin: [-0.27, -0.41, -0.13],
+        legL: [-0.14, 0, 0.06], kneeL: [0.24, 0, 0], legR: [0.66, 0, -0.1], kneeR: [0.5, 0, 0] },
+      { at: 0.14, w: 1, drop: 0.14, step: 0.85,   // driven forward: the blade back across the body
+        armR: [-0.8, 0.05, 0.8], elbowR: [-0.1, 0, 0], weapon: [0.9, 1.05, 0.05], armL: [-0.5, -0.1, -0.56], elbowL: [-0.62, 0, 0],
+        chest: [0.06, -0.26, 0], head: [0, 0.2, 0], tip: [0, 0, 0.04], spin: [0.04, -0.27, -0.03],
+        legL: [-0.5, 0, 0.08], kneeL: [0.8, 0, 0], legR: [0.5, 0, -0.08], kneeR: [0.66, 0, 0] },
+      { at: 0.19, w: 1, drop: 0.24, step: 0.7,   // past the guard: chest over the blade, the knees dipping deep
+        armR: [-1, 0, 0.62], elbowR: [-0.04, 0, 0], weapon: [1.05, 1.12, 0], armL: [-0.56, -0.03, -0.5], elbowL: [-0.56, 0, 0],
+        chest: [0.3, -0.22, 0], head: [0.14, 0.2, 0], tip: [0.07, 0, 0], spin: [0.16, -0.2, 0],
+        legL: [-0.74, 0, 0.1], kneeL: [1.08, 0, 0], legR: [0.6, 0, -0.1], kneeR: [0.88, 0, 0] },
+      { at: 0.26, w: 1, drop: 0.1, step: 0.45,   // a bounce back up
+        armR: [-0.84, 0, 0.76], elbowR: [-0.02, 0, 0], weapon: [0.95, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+        chest: [-0.02, -0.28, 0], head: [0.02, 0.24, 0], tip: [-0.01, 0, 0], spin: [0.06, -0.24, 0],
+        legL: [-0.4, 0, 0.06], kneeL: [0.6, 0, 0], legR: [0.36, 0, -0.06], kneeR: [0.5, 0, 0] },
+      { at: 0.33, w: 1, drop: 0.15, step: 0.25,   // a smaller dip
+        armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+        chest: [0.13, -0.26, 0], head: [0.07, 0.22, 0], tip: [0.02, 0, 0], spin: [0.1, -0.22, 0],
+        legL: [-0.52, 0, 0.08], kneeL: [0.78, 0, 0], legR: [0.44, 0, -0.07], kneeR: [0.66, 0, 0] },
+      { at: 0.42, w: 0.6, drop: 0.12, step: 0.08,   // settled
+        armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+        chest: [0.04, -0.28, 0], head: [0.04, 0.24, 0], tip: [0, 0, 0], spin: [0.08, -0.22, 0],
+        legL: [-0.45, 0, 0.06], kneeL: [0.7, 0, 0], legR: [0.4, 0, -0.06], kneeR: [0.6, 0, 0] },
+      { at: 0.56, w: 0, drop: 0.12, step: 0,   // let go
+        armR: [-0.86, 0, 0.74], elbowR: [-0.02, 0, 0], weapon: [0.96, 1.13, 0], armL: [-0.48, -0.03, -0.58], elbowL: [-0.6, 0, 0],
+        chest: [0.04, -0.28, 0], head: [0.04, 0.24, 0], tip: [0, 0, 0], spin: [0.08, -0.22, 0],
+        legL: [-0.45, 0, 0.06], kneeL: [0.7, 0, 0], legR: [0.4, 0, -0.06], kneeR: [0.6, 0, 0] },
+    ] },
   },
   // The held guard (pass 94; a vertical high guard until then): the blade diagonal across the body, both hands on the
   // grip, the hips down `drop` m.

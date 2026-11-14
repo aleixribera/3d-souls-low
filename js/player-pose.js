@@ -66,28 +66,45 @@ function poseToward(r, pose, k) {
     bone.rotation.set(lerp(bone.rotation.x, v[0], k), lerp(bone.rotation.y, v[1], k), lerp(bone.rotation.z, v[2], k));
   }
 }
+// The deflected blow's keyed reaction (pass 102; ANIM_SETTINGS.deflect.clang.keys): the keys' pose at `age` s since the
+// blow, written into CLANG_POSE (with its hips' drop and step share in CLANG_AT); returns how much of the body it holds.
+const CLANG_BONES = ['armR', 'elbowR', 'weapon', 'armL', 'elbowL', 'chest', 'head', 'tip', 'spin', 'legL', 'kneeL', 'legR', 'kneeR'];
+const CLANG_POSE = Object.fromEntries(CLANG_BONES.map(b => [b, [0, 0, 0]])), CLANG_AT = { drop: 0, step: 0 };
+function clangAt(K, age) {
+  if (!(age >= 0) || age >= K[K.length - 1].at) return 0;
+  let i = 0; while (i < K.length - 2 && age > K[i + 1].at) i++;
+  const s = clamp((age - K[i].at) / (K[i + 1].at - K[i].at), 0, 1);
+  for (const b of CLANG_BONES) { const o = CLANG_POSE[b]; o[0] = keyCurve(K, i, s, b, 0); o[1] = keyCurve(K, i, s, b, 1); o[2] = keyCurve(K, i, s, b, 2); }
+  CLANG_AT.drop = keyCurve(K, i, s, 'drop', -1); CLANG_AT.step = keyCurve(K, i, s, 'step', -1);
+  return clamp(keyCurve(K, i, s, 'w', -1), 0, 1);
+}
 function deflectPose(p, r, dt, yaw) {
-  const D = ANIM_SETTINGS.deflect;
+  const D = ANIM_SETTINGS.deflect, C = D.clang, K = C.keys;
   if (r.dfLast === undefined) { r.dfLast = p.deflect; r.clBlow = p.deflectedBlow; }   // a new rig (a twin's) starts at rest
   if (p.deflect > (r.dfLast ?? 0) + 1e-6) r.dfAge = 0;                       // a fresh press arms the deflect
   else if (r.dfAge !== undefined) r.dfAge += dt;
   r.dfLast = p.deflect;
-  const R = D.clang.rebound;
-  if (p.deflectedBlow && p.deflectedBlow !== r.clBlow) {   // a blow turned aside; one still rebounding fades out under it
-    r.rbFrom = r.clAge === undefined ? 0 : deflectEnvelope(r.clAge - R.delay, R); r.clBlow = p.deflectedBlow; r.clAge = 0;
+  if (p.deflectedBlow && p.deflectedBlow !== r.clBlow) {   // a blow turned aside; one still reacting fades out under it
+    r.clOld = r.clAge !== undefined && r.clAge < K[K.length - 1].at ? r.clAge : undefined; r.clBlow = p.deflectedBlow; r.clAge = 0;
   }
-  else if (r.clAge !== undefined) r.clAge += dt;
+  else if (r.clAge !== undefined) { r.clAge += dt; if (r.clOld !== undefined) r.clOld += dt; }
+  const ramp = r.clAge === undefined ? 0 : EASE.outCubic(clamp(r.clAge / C.attack, 0, 1));
+  if (ramp >= 1) r.clOld = undefined;
   if (p.state !== PS.IDLE && p.state !== PS.WALK && p.state !== PS.BLOCK) return;   // any other move takes the body (Rig.settle blends it)
-  const c = deflectEnvelope(r.clAge, D.clang), k = Math.max(deflectEnvelope(r.dfAge, D), c);
-  // Pass 99 (a fresh judge: "the body below the arms never reacts"): after the blow kicks blade and shoulders back, the
-  // body rebounds into it, chest over the blade and the hips held in a braced crouch, then settles.
-  const b = r.clAge === undefined ? 0 : Math.max(deflectEnvelope(r.clAge - R.delay, R), (r.rbFrom || 0) * clamp(1 - r.clAge / R.delay, 0, 1));
+  const k = deflectEnvelope(r.dfAge, D);
   poseToward(r, D.pose, k);
-  poseToward(r, D.clang.pose, c);
-  poseToward(r, R.pose, b);
-  if (k > 0.001 || b > 0.001) r.crouch(lerp(D.drop, D.clang.drop, c) * k + R.drop * b);   // the hips drop with it; the feet stay planted
-  if (c > 0.001) {   // a blow turned aside: the whole body steps off its line (to its left and back), then back in
-    const side = D.clang.step[0] * c, back = D.clang.step[1] * c, sy = Math.sin(yaw), cy = Math.cos(yaw);
+  let drop = D.drop * k, step = 0;
+  // Pass 102 (a judge: "frames 5-9 hold one crouched pose"): the blow knocks blade and shoulders back and up, then the
+  // body drives forward past the guard into a knee dip and settles in smaller swings, all on one curve.
+  if (r.clOld !== undefined) {
+    const w = clangAt(K, r.clOld) * (1 - ramp);
+    if (w > 0.001) { poseToward(r, CLANG_POSE, w); drop = lerp(drop, CLANG_AT.drop, w); step = CLANG_AT.step * w; }
+  }
+  const w = clangAt(K, r.clAge) * ramp;
+  if (w > 0.001) { poseToward(r, CLANG_POSE, w); drop = lerp(drop, CLANG_AT.drop, w); step = lerp(step, CLANG_AT.step, w); }
+  if (drop > 0.001) r.crouch(drop);   // the hips drop with it; the feet stay planted
+  if (Math.abs(step) > 0.001) {   // a blow turned aside: the whole body steps off its line (to its left and back), then back in
+    const side = C.step[0] * step, back = C.step[1] * step, sy = Math.sin(yaw), cy = Math.cos(yaw);
     const dx = cy * side - sy * back, dz = -sy * side - cy * back;   // drawing only: Rig.place puts the root back next frame
     r.root.position.x += dx; r.root.position.z += dz;
     if (r.shadow) { r.shadow.position.x += dx; r.shadow.position.z += dz; }
