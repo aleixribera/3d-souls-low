@@ -29,6 +29,9 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }
+  // The server has a player's fall (its pose with no health), counted for the end of the run: a fight finished before
+  // that pose arrives would miss it.
+  const fallen = async id => { for (let t = 0; !app.clients.get(id)?.arenaDefeated; t++) { if (t > 200) throw new Error('the server never saw the fall'); await new Promise(r => setTimeout(r, 25)); } };
   const finishFight = () => { for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } };
   // A blow from each player at the first boss, through the server's own hit check, so the run's damage is real.
   const blows = ids => {
@@ -72,6 +75,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
     const epoch = app.session.epoch, aId = await a.evaluate(() => multiplayer.info.self);
+    await fallen(aId);
     // a is offered these four (the draw itself is tests/abilities.cjs's).
     const draw = app.sim.offerAbilities;
     app.sim.offerAbilities = (ids, ...rest) => {
@@ -131,6 +135,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     // a falls again: they watch the rest of this fight.
     await a.evaluate(() => { const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); });
     await a.waitForFunction(() => multiplayer.spectating);
+    await fallen(aId);
     finishFight();
     for (const page of [a, b]) await page.locator('#publicLobby:not(.hidden)').waitFor({ timeout: 30000 });
     assert.match(await a.locator('#lobbyNotice').textContent(), /BOSS RUSH COMPLETE · All 3 bosses beaten/);
