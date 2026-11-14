@@ -8,7 +8,7 @@
     interpolation: 1 / 30, maxHistory: 240, historySeconds: 3, stalePlayer: 3,
     heartbeat: 15000, idleTimeout: 45000, connectTimeout: 10000,
     messagesPerSecond: 100, maxName: 24, maxCoordinate: 100000,
-    maxCharge: 1, respawnSpread: 0.85, remoteRange: 100, maxClaims: 2048,
+    maxCharge: 1, respawnSpread: 0.85, remoteRange: 100, maxClaims: 2048, claimWait: 0.4, maxPendingClaims: 64,
     targetHysteresis: 0.8, maxBots: 3, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
@@ -29,13 +29,11 @@
     // it is the party against the bosses, alone or with friends (pass 52).
     calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3 }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
-    // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the blessing pick
+    // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the ability pick
     // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.
     rushKillTime: 2.5, rushDropGrace: 1,
     runIntroScreenTime: 5,
     leaderboardDelay: 1, leaderboardTime: 6,
-    riseSlack: 0.5,   // s: a Rise Again claim may come this much sooner than CONFIG.blessings.riseDelay (latency)
-    riseAnswer: 2,   // s: after a granted Rise Again, dead poses this long are the ones sent before the answer arrived
     spectatorFov: [10, 150],
     // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
     // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.

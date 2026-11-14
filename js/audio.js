@@ -380,7 +380,13 @@ function validateAudio() {
 // Every sound id the listeners below ask for (checked at load by validateAudio).
 const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', 'postureBreak', 'dodge', 'enemyDeath', 'playerDeath', 'groundPound',
   'hardLanding', 'shot', 'boltStopped', 'alert', 'perilous', 'swingLight', 'swingHeavy', 'hurtGrunt', 'hurtMoan', 'flask', 'rest', 'gateOpened', 'trapWarning', 'trapSprung',
-  'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle'];
+  'levelComplete', 'lockOn', 'switchTarget', 'pause', 'resume', 'uiMove', 'uiConfirm', 'uiBack', 'uiAdjust', 'rotSizzle',
+  'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick'];
+// A legendary's sound by its power's `then` (a lightning bolt's `strike` is abilityThunder), a rare's pitch by its perk, a
+// pick's by its rarity.
+const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon' };
+const ABILITY_PERK_PITCH = { empower: 1, 'streak/heal': 1.26, 'parry/stamina': 1.12, 'dodge/riposte': 1.5, 'block/charge': 0.84 };
+const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.
   const on = (type, fn) => events.on(type, d => { try { fn(d); } catch (e) { if (!audio.warned.has(type)) { audio.warned.add(type); console.warn(`audio: the "${type}" sound failed:`, e); } } });
@@ -441,9 +447,35 @@ function registerAudioListeners() {
   on('menuConfirm', () => audio.play('uiConfirm'));
   on('menuBack', () => audio.play('uiBack'));
   on('menuAdjust', d => audio.play('uiAdjust', { pitch: d.dir < 0 ? 0.84 : 1.12 }));
+  // Boss Rush's abilities: a legendary's power where it strikes (its holder's own, close), a rare's chime, the pick.
+  // Thousand Blades rings once for each blow of its rain, as the drawn swords land (every `every` s, js/ability-fx.js).
+  const rains = [];   // { e, left, next, every }
+  on('abilityPower', d => {
+    const id = d.strike ? 'abilityThunder' : ABILITY_SOUNDS[d.then];
+    if (!id) return;
+    const mine = d.body === Game.player, pos = mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
+    audio.play(id, { pos, vel: 1 });
+    if (d.then === 'blades' && d.enemy && d.v) for (let i = rains.length - 1; i >= 0; i--) if (rains[i].e === d.enemy) rains.splice(i, 1);   // a new rain on it replaces the old
+    if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });
+  });
+  on('abilityPerk', d => { if (d.body === Game.player) audio.play('abilityPerk', { pitch: ABILITY_PERK_PITCH[d.perk] || 1 }); });
+  on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
+  on('respawn', () => { rains.length = 0; });
+  const rainTick = dt => {
+    // The rain falls while the world runs: in play, and online in the menus too (the server goes on striking).
+    if (Game.mode !== 'play' && !(Game.mode === 'pause' && typeof multiplayer !== 'undefined' && multiplayer.active())) return;
+    for (let i = rains.length - 1; i >= 0; i--) {
+      const r = rains[i];
+      if ((r.next -= dt) > 0) continue;
+      r.next += r.every;
+      if (!r.e.alive() || !Game.enemies.includes(r.e) || --r.left < 0) { rains.splice(i, 1); continue; }   // gone with its level
+      audio.play('abilityBlade', { pos: chest(r.e), vel: 0.5 + 0.3 * Math.random() });
+    }
+  };
   // Browsers start audio only after a key press, click or touch; and a hidden tab goes quiet.
   for (const type of ['keydown', 'mousedown', 'pointerdown', 'touchstart']) window.addEventListener(type, () => audio.unlock(), { capture: true, passive: true });
   document.addEventListener('visibilitychange', () => document.hidden ? audio.suspend() : audio.wake());
-  const loop = ms => { requestAnimationFrame(loop); try { audio.tick(ms); } catch (e) { if (!audio.warned.has('tick')) { audio.warned.add('tick'); console.warn('audio: the watcher failed:', e); } } };
+  let last = 0;
+  const loop = ms => { requestAnimationFrame(loop); const dt = last ? Math.min(0.1, (ms - last) / 1000) : 0; last = ms; try { rainTick(dt); audio.tick(ms); } catch (e) { if (!audio.warned.has('tick')) { audio.warned.add('tick'); console.warn('audio: the watcher failed:', e); } } };
   requestAnimationFrame(loop);
 }

@@ -33,11 +33,12 @@ const execution = (() => {
     for (const e of enemies) { const s = score(p, e); if (s !== null && s < bestScore) { bestScore = s; best = e; } }
     return best;
   }
-  function damageFor(e) {
+  // `more`: the executioner's Headsman ability (its kit's `execution`).
+  function damageFor(e, more = 0) {
     const D = CONFIG.execution.damage, boss = isBossLike(e);
     // `critMul` (v5.5, opt-in per def): a foe that shrugs off part of a critical blow (the Crucible Knight, 0.7).
     const dmg = PLAYER_DEF.moveset.attacks.light.damage * (boss ? D.bossLightMul : D.lightMul) * (e.def.critMul ?? 1);
-    return boss ? Math.min(dmg, e.def.hp * D.bossCap) : dmg;   // e.def: a boss's current phase, so its current bar
+    return (boss ? Math.min(dmg, e.def.hp * D.bossCap) : dmg) * (1 + more);   // e.def: a boss's current phase, so its current bar
   }
 
   function start(p, e) {
@@ -73,7 +74,7 @@ const execution = (() => {
   }
 
   function impact(p, X) {
-    const e = X.enemy, C = CONFIG.execution, dmg = damageFor(e);
+    const e = X.enemy, C = CONFIG.execution, dmg = damageFor(e, p.kit.mods.execution);
     X.impact = true;
     X.lethal = !e.training && e.hp - dmg <= 0;
     if (!(typeof multiplayer !== 'undefined' && multiplayer.active())) e.hp = Math.max(1, e.hp - dmg);   // the bar empties only when the animation lets it

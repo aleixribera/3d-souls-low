@@ -143,6 +143,31 @@
       expect.ok(Number.isFinite(Game.cam.pos.y), `${L.id}: camera position is finite`);
     }
   });
+  test('ability grounds: the duel arena and a mannequin; B opens the list, a click wears an ability, Fire sets one off', () => {
+    Game.startLevel('test-abilities'); sim.begin();
+    expect.ok(Game.level.layout === 'arena' && Game.enemies.some(e => e.def.id === 'dummy'), 'the battle arena, with a mannequin');
+    const press = () => abilityLab.key(new KeyboardEvent('keydown', { code: 'KeyB' })), row = id => `#abilityLab .lab-row[data-ability="${id}"]`;
+    expect.ok(press() && abilityLab.isOpen() && Game.mode === 'lab', 'B opens the list and stops the world');
+    const hp = Game.player.maxHp;
+    document.querySelector(`${row('iron-blood')} .lab-pick`).click();
+    expect.ok(abilityLab.held.get('iron-blood') === 1 && Game.player.maxHp > hp, 'a click wears Iron Blood: more health');
+    expect.ok(press() && !abilityLab.isOpen() && Game.mode === 'play', 'B again: back to the fight');
+    expect.ok(abilityLab.pad(['PadUp']) && abilityLab.isOpen(), 'a pad opens it with D-pad up');
+    expect.ok(abilityLab.key(new KeyboardEvent('keydown', { code: 'KeyR' })) && Game.mode === 'lab', 'no key reaches the game behind it');
+    expect.ok(abilityLab.pad(['PadB']) && !abilityLab.isOpen() && Game.mode === 'play', 'and B on the pad closes it');
+    press(); log.length = 0;
+    document.querySelector(`${row('storm-king')} .lab-fire`).click();
+    expect.ok(Game.mode === 'play' && Game.player.kit.powers.some(p => p.id === 'storm-king'), 'Fire wears Storm King and closes the list');
+    sim.step(2);
+    expect.ok(log.includes('abilityPower'), 'and its power goes off on the mannequin');
+    const dummy = Game.enemies.find(e => e.def.id === 'dummy');
+    expect.above(Math.hypot(dummy.x - Game.player.x, dummy.z - Game.player.z), 6, 'from the start point, far off');
+    let hit = null; A.events.on('abilityPower', d => { hit = d; });   // events has no unsubscribe: a stray handler after this test only sets `hit`
+    press(); document.querySelector(`${row('meteor-fall')} .lab-fire`).click(); sim.step(1);
+    expect.ok(hit && hit.power === 'meteor-fall' && Math.hypot(hit.x - dummy.x, hit.z - dummy.z) < 0.01, 'Meteor Fall lands on the mannequin, not at your feet');
+    press(); document.querySelector('#abilityLab .lab-tools button').click(); press();
+    expect.ok(abilityLab.held.size === 0 && Game.player.kit.powers.length === 0 && Game.player.maxHp === hp, 'All off: back to none');
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

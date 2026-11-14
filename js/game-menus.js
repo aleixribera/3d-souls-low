@@ -24,7 +24,7 @@ Object.assign(Game, {
         { name: this.kind === 'level' ? 'Leave the level' : this.kind === 'bossBattle' ? 'Leave the battle' : 'Leave the fight', desc: '', cue: 'menuBack', go: () => {
           // Back to the Practice list the fight was started from.
           const back = this.kind === 'bossBattle' ? 'bossBattle' : this.kind === 'arena' ? this.practiceFromGroup ? 'practiceGroup'
-            : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? 'practiceLevels' : 'main';
+            : isBossDef(ENEMY_BY_ID[this.duelId]) ? 'practiceBosses' : 'practiceEnemies' : this.kind === 'level' ? this.level.abilityLab ? 'practice' : 'practiceLevels' : 'main';
           if (this.kind !== 'bossBattle') this.reset(); this.showMenu(back); } },
       ];
     // A newer version on the server (js/version-check.js): a reload button last in pause and on the title.
@@ -73,6 +73,7 @@ Object.assign(Game, {
         { name: 'Fight several at once', desc: `Up to ${P.maxGroup} enemies and bosses, all against you together.`, go: () => this.showMenu('practiceGroup') },
         { name: 'Boss vs Boss', desc: 'Two teams of up to six bosses fight each other while you watch.', go: () => this.showMenu('bossBattle') },
         { name: 'Play a level', desc: 'Any level of the story, on its own.', go: () => this.showMenu('practiceLevels') },
+        { name: 'Try abilities', desc: TEST_ABILITIES.description, go: () => this.loadingFirst(TEST_ABILITIES.name, TEST_ABILITIES.description, () => this.startLevel(TEST_ABILITIES.id)) },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Each list is titled by what it does; the only line under a title is the group's live count.
       practiceBosses: { title: adding ? 'Add a boss' : 'Fight a boss', sub: adding ? `${group.length} / ${P.maxGroup} in the group` : '', back: adding ? 'practiceGroup' : 'practice',
@@ -305,8 +306,10 @@ Object.assign(Game, {
     else if (this.kind === 'level' && this.level) rows.push([this.story ? 'Chapter' : 'Level', this.level.name]);
     else if (this.kind === 'arena' && this.duelId) rows.push(['Fighting', [this.duelId, ...(this.duelPartners || [])].map(id => ENEMY_BY_ID[id].name).join(', ')]);
     if (mp) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);
-    const held = ((this.player && this.player.blessings) || []).map(id => BLESSING_BY_ID[id] && BLESSING_BY_ID[id].name).filter(Boolean);
-    if (held.length) rows.push(['Blessings', held.join(', ')]);
+    // The abilities held, each once, with its level when above I (js/abilities.js).
+    const ids = (this.player && this.player.kit && this.player.kit.ids) || [], marks = ['', '', ' II', ' III', ' IV'];
+    const held = [...new Set(ids)].map(id => ABILITY_BY_ID[id].name + (marks[abilityLevel(ABILITY_BY_ID[id], ids)] || ''));
+    if (held.length) rows.push(['Abilities', held.join(', ')]);
     return { rows, note: mp ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
   },
   tickPause() {
@@ -435,7 +438,7 @@ Object.assign(Game, {
   pause(fromPointer, fromFocus = false) {
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     if (online && multiplayer.runIntroActive) return;
-    if (fromPointer && online && (multiplayer.spectatorMode || multiplayer.blessingPending)) return;   // the blessing pick freed the mouse
+    if (fromPointer && online && (multiplayer.spectatorMode || multiplayer.abilityPending)) return;   // the ability pick freed the mouse
     if (this.mode !== 'play' || (!online && !this.player.alive())) return;   // online menus remain available while dead or spectating
     this.showMenu('pause');
     events.emit('pause');

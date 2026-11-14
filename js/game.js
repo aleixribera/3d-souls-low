@@ -65,6 +65,7 @@ const Game = {
     return { ...base, x: entry.x, y: entry.y, z: entry.z, yaw: entry.yaw };
   },
   makeEnemies() {
+    abilityPowers.reset();   // a new set of enemies: no power still striking, every cooldown and once-a-fight ready
     if (this.kind === 'bossBattle') return bossBattle.spawn(this);
     if (this.kind === 'arena') {
       const s = this.level.enemyStart, ids = [this.duelId, ...this.duelPartners];
@@ -125,13 +126,6 @@ const Game = {
     this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();   // a new body: no death sequence or hit-pause carries over
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
-    canvas.classList.remove('dying');
-  },
-  // Rise Again (CONFIG.blessings): a fresh body gets up where the fallen one lies (riseBody), a respawn that doesn't move.
-  risePlayer() {
-    const old = this.player;
-    this.player = riseBody(old, this.spawn); old.rig.dispose();
-    this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();
     canvas.classList.remove('dying');
   },
 
@@ -259,6 +253,7 @@ const Game = {
     }
     separateBodies(p, this.enemies);
     resolveCombat(this);
+    abilityPowers.tick(dt);   // an ability's legendary still striking (js/abilities.js)
     companions.resolve(this);
     execution.mark(p, this.enemies);   // the kneeling enemy an execution would take (the cue)
     projectiles.update(this, dt);
@@ -269,6 +264,7 @@ const Game = {
     if (!p.alive() && this.deathOf !== p) this.onPlayerDeath();
     this.updateCamera(dt, false);
     if (typeof lessons !== 'undefined') lessons.update(this, dt);   // reads only: which card to show (js/lessons.js)
+    if (typeof abilityLab !== 'undefined') abilityLab.update(this);   // the ability grounds' kit and fired powers (js/ability-lab.js)
   },
 
   render(alpha, frameDt = CONFIG.step) {

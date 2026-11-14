@@ -1,6 +1,6 @@
 'use strict';
 // Boss Rush between fights (v7.69.0, PLAN.md track B item 2): each fight's par (CONFIG.swift), the server's fight clock,
-// the kill moment's short wait before the blessing pick opens in the arena, a swift kill's extra choice, the next boss
+// the kill moment's short wait before the ability pick opens in the arena, a swift kill's extra choice, the next boss
 // dropping straight in (no loading card, a short grace), and each boss's time on the end screen.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -57,11 +57,11 @@ async function peer(origin, name) {
     // Fight 1, won over par: the kill moment plays, then three choices and no swift kill.
     kill(); app.sim.tick(S.par + 5);
     assert.equal(Math.round(app.sim.state.fought), S.par + 5, "the server's clock stops when the boss falls");
-    const slow = await a.next('blessings');
-    assert.equal(slow.offer.length, CONFIG.blessings.offer, 'no extra choice over par');
+    const slow = await a.next('abilities');
+    assert.equal(slow.offer.length, CONFIG.abilities.offer, 'no extra choice over par');
     assert.equal(slow.swift, false);
-    a.send({ type: 'bless', epoch: session.epoch, id: slow.offer[0] });
-    assert.equal((await a.next('blessings')).offer, null, 'the pick is taken');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: slow.offer[0] });
+    assert.equal((await a.next('abilities')).offer, null, 'the pick is taken');
     const second = (await a.next('start')).session; session = second;
     assert.equal(second.gauntlet.number, 2);
     assert.equal(second.drop, true, 'the next boss drops straight in');
@@ -70,15 +70,15 @@ async function peer(origin, name) {
 
     // Fight 2, won under par: nothing until the kill moment has played, then one more choice, marked swift.
     kill(); app.sim.tick(C.rushKillTime - 0.5); await flush(a);
-    assert.equal(a.queue.some(m => m.type === 'blessings'), false, 'the pick waits for the kill moment');
+    assert.equal(a.queue.some(m => m.type === 'abilities'), false, 'the pick waits for the kill moment');
     app.sim.tick(1);
-    const fast = await a.next('blessings');
-    assert.equal(fast.offer.length, CONFIG.blessings.offer + S.extra, 'a swift kill: an extra choice');
+    const fast = await a.next('abilities');
+    assert.equal(fast.offer.length, CONFIG.abilities.offer + S.extra, 'a swift kill: an extra choice');
     assert.equal(fast.swift, true);
     assert.equal(new Set(fast.offer).size, fast.offer.length, 'all different');
     const bot = app.sim.botList()[0].id;
-    assert.equal(app.sim.blessings()[bot].length, 2, 'the bots chose too');
-    a.send({ type: 'bless', epoch: session.epoch, id: fast.offer[fast.offer.length - 1] });
+    assert.equal(app.sim.abilities()[bot].length, 2, 'the bots chose too');
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: fast.offer[fast.offer.length - 1] });
     session = (await a.next('start')).session;
     assert.equal(session.gauntlet.partners.length, 1, 'the last fight: two bosses');
     assert.equal(session.par, app.sim.rushPar(2, 2));

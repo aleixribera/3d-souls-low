@@ -216,6 +216,71 @@ const AUDIO = {
       { wave: 'sine', freq: 440, partials: [[1, 0.6, 1], [2.76, 0.12, 0.4]], at: 0.15, a: 0.001, d: 2.4, gain: 0.07 },
     ] },
 
+    // ---- Boss Rush's abilities (v7.75.0): each legendary its own sound, the rares a small chime, the pick a note ----
+    // Meteor Fall: a white-hot crack, a sub boom that crunches, fire roaring up, stones raining after.
+    abilityBlast: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.55, heat: 1, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [2200, 3200], q: 0.7 }, a: 0.0005, d: 0.03, dv: 0.4, gain: 0.9, drive: 3 },
+      { wave: 'sine', freq: [52, 58], to: 22, a: 0.003, d: 1.5, gain: 1.2, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 700, to: 80 }, a: 0.003, d: 1.7, gain: 1.2, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 380, to: 1300, q: 0.6 }, at: 0.04, a: 0.08, d: 1.6, gain: 0.7 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2600, q: 0.8 }, at: 0.25, a: 0.1, d: 1.3, gain: 0.12 },
+    ] },
+    // Storm King's dragon leaving the blade: an electric snarl that climbs, crackling, as it flies to the boss.
+    abilityDragon: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 2, verb: 0.45, heat: 0.6, jitter: 80, layers: [
+      { wave: 'sawtooth', freq: 70, to: 210, glide: 0.7, fm: { ratio: 0.51, index: 4, decay: 1 }, filter: { type: 'bandpass', freq: 500, to: 2400, q: 1.6 }, a: 0.03, h: 0.45, d: 0.35, gain: 0.5, drive: 4 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, to: 6400, q: 2.5 }, a: 0.01, h: 0.5, d: 0.25, gain: 0.35, drive: 3 },
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.02, dv: 0.4, gain: 0.6 },
+      { wave: 'sine', freq: 46, to: 64, a: 0.15, h: 0.4, d: 0.3, gain: 0.45 },
+    ] },
+    // Each bolt: a split-second crack overhead, then thunder rolling away.
+    abilityThunder: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 3, verb: 0.6, heat: 0.9, jitter: 200, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: [3000, 4500], q: 0.7 }, a: 0.0004, d: 0.025, dv: 0.4, gain: 1, drive: 4 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2800, to: 500, q: 0.5 }, a: 0.001, d: 0.3, gain: 0.5, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 420, to: 90 }, at: 0.03, a: 0.06, h: 0.2, d: 1.6, gain: 1 },
+      { wave: 'sine', freq: 44, to: 28, at: 0.02, a: 0.01, d: 1.2, gain: 0.6, drive: 2 },
+    ] },
+    // Time Rift: the world's sound sucked backwards, a glassy chime, and a clock ticking slow.
+    abilityFreeze: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.8, heat: 0.7, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 3000, to: 260, q: 0.9 }, a: 0.35, d: 0.25, gain: 0.6 },
+      { wave: 'sine', freq: 1240, to: 980, glide: 1.6, partials: [[1, 1, 1], [2.76, 0.35, 0.6], [5.4, 0.12, 0.4]], at: 0.33, a: 0.002, d: 2.4, gain: 0.32 },
+      { wave: 'sine', freq: 72, to: 36, glide: 1.4, at: 0.3, a: 0.01, d: 1.8, gain: 0.7 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3600, q: 18 }, at: 0.75, a: 0.001, d: 0.05, gain: 0.7 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2800, q: 18 }, at: 1.35, a: 0.001, d: 0.05, gain: 0.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3600, q: 18 }, at: 1.95, a: 0.001, d: 0.05, gain: 0.35 },
+    ] },
+    // Thousand Blades: a choir of steel rising as the swords gather...
+    abilityBlades: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.7, heat: 0.5, jitter: 40, layers: [
+      { wave: 'sine', freq: 660, partials: [[1, 1, 1], [1.5, 0.6, 0.9], [2, 0.4, 0.8], [3.01, 0.2, 0.5]], a: 0.25, d: 1.5, gain: 0.22 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3800, to: 5200, q: 12 }, a: 0.2, d: 1, gain: 0.5 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 2600, q: 0.8 }, a: 0.3, d: 0.4, gain: 0.25 },
+    ] },
+    // ...and each one: a ring of steel and a thud into the floor.
+    abilityBlade: { bus: 'sfx', priority: 1, cooldown: 0.05, max: 3, verb: 0.3, heat: 0.2, jitter: 250, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.01, dv: 0.4, gain: 0.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [3000, 4200], q: 22 }, a: 0.001, d: 0.32, gain: 1.2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 320, to: 120 }, a: 0.002, d: 0.14, gain: 0.6 },
+    ] },
+    // Blood Moon: a low drone swelling up, a slow heartbeat, a thin choir high above.
+    abilityMoon: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.6, jitter: 0, layers: [
+      { wave: 'sine', freq: 41, a: 0.7, h: 0.6, d: 2.4, gain: 0.8 },
+      { wave: 'sawtooth', freq: 82, filter: { type: 'lowpass', freq: 240, to: 520 }, a: 0.9, h: 0.4, d: 2.2, gain: 0.12 },
+      { wave: 'sine', freq: 60, to: 40, at: 0.1, a: 0.005, d: 0.2, gain: 1 },
+      { wave: 'sine', freq: 52, to: 36, at: 0.36, a: 0.005, d: 0.22, gain: 0.75 },
+      { wave: 'sine', freq: 60, to: 40, at: 1.15, a: 0.005, d: 0.2, gain: 0.9 },
+      { wave: 'sine', freq: 52, to: 36, at: 1.41, a: 0.005, d: 0.22, gain: 0.65 },
+      { wave: 'sine', freq: 740, partials: [[1, 1, 1], [1.19, 0.7, 1], [1.5, 0.5, 1]], a: 0.9, d: 2.2, gain: 0.05 },
+    ] },
+    // A rare acting: a short bright chime (each kind at its own pitch).
+    abilityPerk: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.35, heat: 0.15, jitter: 20, layers: [
+      { wave: 'sine', freq: 880, partials: [[1, 1, 1], [2.76, 0.3, 0.5], [5.4, 0.1, 0.3]], a: 0.002, d: 0.6, gain: 0.22 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5200, q: 4 }, a: 0.001, d: 0.05, gain: 0.25 },
+    ] },
+    // An ability picked: a struck note, lower and fuller the rarer it is.
+    abilityPick: { bus: 'ui', priority: 2, cooldown: 0.1, verb: 0.4, jitter: 0, heat: 0, layers: [
+      { wave: 'sine', freq: 523, partials: [[1, 1, 1], [2, 0.4, 0.7], [3, 0.2, 0.5], [4.2, 0.08, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },
+      { wave: 'sine', freq: 784, at: 0.07, a: 0.002, d: 0.9, gain: 0.14 },
+    ] },
+
     // ---- Level 5: the castle (v4.3) ----
     // The great bell tolling far off: a deep strike with inharmonic partials and a very long ring.
     bellToll: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 2, verb: 0.8, heat: 0.5, jitter: 0, layers: [

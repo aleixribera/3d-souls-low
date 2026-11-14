@@ -71,6 +71,7 @@ function registerListeners() {
   blackBlade.attach(); // the cursed sphere and line blasts drawn (`destined`, `sphere` attacks; js/blackblade.js)
   flame.attach();      // flame breath and revealed parts drawn (`breath` attacks, phase `reveal`; js/flame.js)
   holy.attach();       // teleport flashes, floor runes and light pillars drawn (`blink`, `sigil` hits; js/holy.js)
+  abilityFx.attach(); // Boss Rush's legendaries drawn (`abilityPower`, `abilityPerk`; js/ability-fx.js)
   registerAudioListeners();
 }
 
@@ -84,6 +85,7 @@ window.addEventListener('keydown', ev => {
   }
   input.use('keyboard');
   if (multiplayer.spectatorKey(ev)) return;
+  if (abilityLab.key(ev)) return;   // B: the ability grounds' list
   if (code === SYSTEM_KEYS.help) {
     ev.preventDefault();
     if (!ev.repeat && Game.mode === 'play') hud.help.classList.toggle('hidden');
@@ -194,7 +196,7 @@ function frame(now) {
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   multiplayer.heartbeat(now);
   if (Game.mode === 'pause') Game.tickPause();   // online, pause's run clock goes on (redrawn once a second)
-  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.blessingOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
+  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
   if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale;   // timeScale < 1: the F6 slow motion of developer builds
