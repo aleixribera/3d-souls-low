@@ -1,4 +1,4 @@
-// Browser checks for fullscreen, the Story entry flow and readable lesson cards.
+// Browser checks for no auto fullscreen, the Story entry flow and readable lesson cards.
 // NODE_PATH=<directory containing playwright> node tests/onboarding.cjs [output-directory]
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const assert = require('node:assert/strict');
@@ -29,15 +29,14 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
     assert.deepEqual(obsoleteRequests, [], 'fullscreen adds no separate startup request');
     await page.getByRole('button', { name: 'Practice', exact: true }).click();
-    await page.waitForFunction(() => !!document.fullscreenElement);
-    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Practice', 'first click both enters fullscreen and chooses Practice');
-    await page.evaluate(() => document.exitFullscreen());
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'the first click never enters fullscreen');
+    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Practice', 'the first click chooses Practice');
     await page.getByRole('button', { name: 'Story', exact: true }).click();
     assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Story');
-    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'leaving fullscreen is respected');
-    await page.getByRole('button', { name: 'Options', exact: true }).click();
+        await page.getByRole('button', { name: 'Options', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: /^Fullscreen:/ }).count(), 0, 'Options omits the fullscreen control');
-    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'opening Options respects leaving fullscreen');
+    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'Options never enters fullscreen');
     // Prepare a saved game, keeping all starting actions on the same screen.
     await page.evaluate(() => {
       Game.manualClock = true;
@@ -96,6 +95,6 @@ const server = http.createServer((req, res) => {
       }
     }
     assert.deepEqual(errors, []);
-    console.log('Onboarding: native fullscreen, respected exit, simplified Options, Story mouse/controller flow, save protection and lesson card layouts passed.');
+    console.log('Onboarding: no auto fullscreen, simplified Options, Story mouse/controller flow, save protection and lesson card layouts passed.');
   } finally { await browser.close(); }
 })().catch(err => { console.error(err); process.exitCode = 1; }).finally(() => server.close());

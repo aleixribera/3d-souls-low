@@ -16,7 +16,7 @@ const { createServer } = require('../server/index.cjs');
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, null, { timeout: 120000 });
-    await page.evaluate(() => { Game.manualClock = true; fullscreen.attempted = true; });
+    await page.evaluate(() => { Game.manualClock = true; });
     await page.getByRole('button', { name: 'Practice', exact: true }).click(); await page.keyboard.press('Enter');   // a click chooses the mode, Enter starts it
     await page.getByRole('button', { name: 'Boss vs Boss', exact: true }).click();
     const start = page.getByRole('button', { name: 'Start battle', exact: true });

@@ -17,7 +17,7 @@ const { createServer } = require('../server/index.cjs');
       fps: false, hitboxes: false, cameraMotion: true, screenShake: false })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.evaluate(() => { Game.manualClock = true; fullscreen.attempted = true; });
+    await page.evaluate(() => { Game.manualClock = true; });
     await page.waitForFunction(() => /\d+ FPS/.test(document.getElementById('fpsCounter').textContent));
     assert.equal(await page.locator('#fpsCounter').isVisible(), true, 'FPS is visible despite an old saved Off preference');
     await page.keyboard.press('F3');
