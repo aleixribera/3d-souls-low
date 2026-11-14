@@ -73,6 +73,7 @@ function validateData({ visual = true } = {}) {
     need(!!d && !!d.model && d.attacks.some(a => a.id === F.move && ATTACK_POSES[a.pose]), `CONFIG.VISUALS.abilityFx.${k}: figure must be an enemy with a model and move one of its attacks with key poses.`);
     need(['windup', 'rise', 'fade', 'strikeGlow', 'cryTime', 'turn', 'scale'].every(n => num(F[n]) && F[n] > 0) && !!F.guard && !!F.cry,
       `CONFIG.VISUALS.abilityFx.${k}: a figure needs windup, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
+    need(['solid', 'floor'].every(n => F[n] === undefined || typeof F[n] === 'boolean'), `CONFIG.VISUALS.abilityFx.${k}: solid and floor are true or false.`);
     // Its own model (pass 78): a model definition, each slot it colours and lights one of that model's materials.
     if ('model' in F) {
       const mats = [], used = [];   // its materials and the slots its parts are drawn in, through what it extends

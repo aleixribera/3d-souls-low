@@ -97,13 +97,11 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   js/multiplayer.js) still has its own look: a glowing crest, a blurred title scaling in and drifting embers, against
   item 3's "no dopamine on menus" and one type system; and the lobby's controls list is its own copy of
   `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
-- Abilities, item 6 cut at pass 62 (two passes, then cut). The cut: the Stone Guardian and the Lancer of Ash wear
-  enemy figures (the Shield Warden's and the Ashen Lancer's Blender models, recoloured by `js/summon-figures.js`,
-  `VISUALS.abilityFx.<kind>.figure/move`), and "a party of four" is three local bodies beside the player
-  (`.scratch/summon-frames.cjs`, `docs/scorecard/abilities-summons.jpg`). The real version: each its own Blender
-  model (a lancer of ash and cinder, like the Grave Hound; the guardian has its own since pass 78: `model`/`slots` in
-  its `abilityFx`, `tools/blender/guardian.py`), and all four summons seen in a
-  real online party of four browsers. A drawn boss waits for the end of its attack string to turn (the draw only
+- Abilities, item 6 cut at pass 62 (two passes, then cut). Every summon has its own Blender model now (the guardian
+  since pass 78, `tools/blender/guardian.py`; the lancer since pass 80, `tools/blender/lancer_of_ash.py`); both still
+  strike with an enemy's key poses (`VISUALS.abilityFx.<kind>.figure/move`), so a move of their own is open. Left:
+  "a party of four" is three local bodies beside the player (`docs/scorecard/abilities-summons.jpg`); all four
+  summons seen in a real online party of four browsers. A drawn boss waits for the end of its attack string to turn (the draw only
   starts between attacks): if that feels late, let the draw begin at its next recovery. `KIT=strong` is still the
   pass 56 list; a kit with the twin, hound and Gale reached median 6 vs 4 (12 runs, pass 61); re-run it with the
   guardian and lancer in the pool.

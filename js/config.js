@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.102.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.103.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -648,18 +648,19 @@ const CONFIG = {
         gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
         shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
       // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each strikes with the `move` of the `figure` enemy
-      // (one of its attacks, the last `windup` s of its wind-up played before each blow). A `model` (pass 78: the
-      // guardian's) is its own figure at `scale` and `bulk`, each material slot drawn in its `slots` colour and its `glows`
-      // lit; without one it wears the `figure` enemy's at `scale` times its size (the lancer, until it has its own).
-      // `solid`: lit stone (`stone`, or the slot's colour) with a glowing rim, rising out of the floor; else a ghost of
-      // light, rising from the feet up. `guard`: a key pose held while it isn't striking; `cry`: the one it strikes,
-      // `cryTime` s, as it draws the boss's eye.
-      guardian: { figure: 'warden', move: 'wardenBash', model: 'stoneGuardian', scale: 1.37, bulk: 1.06,
+      // (one of its attacks, the last `windup` s of its wind-up played before each blow). A `model` (the guardian's since
+      // pass 78, the lancer's since pass 80) is its own figure at `scale` and `bulk`, each material slot drawn in its
+      // `slots` colour and its `glows` lit; without one it wears the `figure` enemy's at `scale` times its size.
+      // `solid`: lit (`stone`, or the slot's colour) with a glowing rim; else a ghost of light. `floor`: it rises out of
+      // the floor; else it forms from the feet up. `guard`: a key pose held while it isn't striking; `cry`: the one it
+      // strikes, `cryTime` s, as it draws the boss's eye.
+      guardian: { figure: 'warden', move: 'wardenBash', model: 'stoneGuardian', scale: 1.37, bulk: 1.06, floor: true,
         slots: { stone: 0x8e897e, worn: 0x504d47 }, glows: ['rune'], solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
         flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, windup: 0.45, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
         guard: { armL: [-0.75, 0, -0.25] }, cry: { armR: [-2.3, 0, 0.3], armL: [-0.9, 0, -0.5], chest: [-0.25, 0, 0], head: [-0.3, 0, 0] },
         burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xbfe0ff } },
-      lancer: { figure: 'lancer', move: 'lancerJab', scale: 1.04, solid: false, color: 0xa08cff, core: 0xf0eaff, rim: 2.5, body: 0.26,
+      lancer: { figure: 'lancer', move: 'lancerJab', model: 'lancerOfAsh', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
+        solid: true, stone: 0x4a4644, color: 0xa08cff, core: 0xf0eaff, rim: 1.25, body: 0.26,
         flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, windup: 0.3, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],
         guard: {}, cry: { armR: [-2.6, 0, 0.2], chest: [-0.2, 0, 0], head: [-0.35, 0, 0] },
         burst: { count: 26, speed: 6, color: 0xb8a8ff }, hitBurst: { count: 10, speed: 5, color: 0xd8ccff } },

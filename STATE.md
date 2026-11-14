@@ -7,8 +7,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 77): item 4, the Antlered Hunger pass 1: learns each move you escape, a lit antler collar per move;
   `docs/scorecard/hunger-moves.jpg`; judge 62, 66, 63 vs Hollis 75, 72, 74 (gaps: BACKLOG). It, Aldric, the
   Giant, Bell Warden, Pillager Captain, King's Blade, Agathe, Kindling Tree: **awaiting Aleix**. Next: item 5.
-- Track B (pass 78): the Stone Guardian's own Blender model (`docs/scorecard/summon-guardian.jpg`); the Lancer of
-  Ash still wears the Ashen Lancer. A node-check flake (26/27, rerun 27/27). Next: the Lancer of Ash's model.
+- Track B (pass 80): the Lancer of Ash's own Blender model (`docs/scorecard/summon-lancer.jpg`), solid ash plate,
+  violet cinders (overridable: was a ghost); CI's red render-audit test fixed. Next: the summons' own moves.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).

@@ -4,15 +4,16 @@
 // their blows, the boss they draw) are the engine's (js/abilities.js); this listens to their `abilityPower` events, the
 // server's for everyone online.
 // ============================================================================
-// The guardian is its own Blender model (pass 78: tools/blender/guardian.py, MODEL_DEFS.stoneGuardian, the kind's `model`),
-// each of its material slots in its own colour of the summon's shader (`slots`) and its `glows` lit. The lancer still wears
-// an enemy's figure (the kind's `figure`) until it has a model of its own (BACKLOG.md). Both strike with an enemy's `move`
-// (the attack of the `figure` enemy), its key poses played on the summon's own clock: the end of the wind-up just before
-// each blow the engine lands, then the strike and recovery.
-// The guardian is lit stone with a cold glowing rim: it rises out of the floor where it will stand, holds its shield up,
-// and raises its sword in a challenge as it draws the boss. The lancer is a ghost of violet light: it rises from the feet
-// up at its holder's side, charges the boss, and thrusts. Both crumble or burn away from the head down. Four of each
-// in the pool (one a player), made at attach and warmed like the rest; nothing allocated per frame.
+// Each is its own Blender model (the kind's `model`: the guardian since pass 78, tools/blender/guardian.py; the lancer
+// since pass 80, tools/blender/lancer_of_ash.py), each of its material slots in its own colour of the summon's shader
+// (`slots`) and its `glows` lit. Both strike with an enemy's `move` (the attack of the `figure` enemy), its key poses
+// played on the summon's own clock: the end of the wind-up just before each blow the engine lands, then the strike and
+// recovery.
+// The guardian is lit stone with a cold glowing rim: it rises out of the floor where it will stand (`floor`), holds its
+// shield up, and raises its sword in a challenge as it draws the boss. The lancer is ash and charred plate with cinders of
+// violet light in it: it forms from the feet up at its holder's side, a glowing seam climbing it, charges the boss, and
+// thrusts. Both crumble or burn away from the head down. Four of each in the pool (one a player), made at attach and
+// warmed like the rest; nothing allocated per frame.
 const summonFigures = (() => {
   const KINDS = ['guardian', 'lancer'], pool = [];
   const vertex = `
@@ -180,9 +181,9 @@ const summonFigures = (() => {
       pose(f, dt, now);
       const rising = clamp01((f.time - f.left) / F.rise), fading = clamp01(f.left / F.fade), tall = K.height + 0.3, u = f.mat.uniforms;
       let lift = 0;
-      if (fading < 1) { u.uFrom.value = 1; u.uCut.value = f.y - 0.1 + tall * fading; }   // crumbling or burning away from the head down
-      else if (F.solid) { lift = -tall * (1 - rising) * (1 - rising); u.uFrom.value = -1; u.uCut.value = f.y; }   // stone rises out of the floor
-      else { u.uFrom.value = 1; u.uCut.value = f.y - 0.1 + tall * rising; }   // light rises from the feet up
+      if (fading < 1) { u.uFrom.value = 1; u.uCut.value = f.y - 0.1 + (tall + 0.4) * fading; }   // crumbling or burning away from the head down
+      else if (F.floor) { lift = -tall * (1 - rising) * (1 - rising); u.uFrom.value = -1; u.uCut.value = f.y; }   // stone rises out of the floor
+      else { u.uFrom.value = 1; u.uCut.value = rising < 1 ? f.y - 0.1 + (tall + 0.4) * rising : f.y + 99; }   // it forms from the feet up (a crest or a raised spear over its height too)
       u.uOpacity.value = 0.92 * Math.min(1, rising * 3); u.uTime.value = now; u.uBoost.value = 1 + f.boost * F.strikeBoost;
       if (fading < 1 && !f.gone) { f.gone = true; at.x = f.x; at.y = f.y + 1; at.z = f.z; spawnBurst(at, F.burst); ultraFx.moteBurst(at, 30, F.color, { r: 0.5, speed: 0.9, lift: 2, life: [0.5, 1.1], up: 1 }); }
       if ((f.mote -= dt) <= 0) { f.mote = F.motes; at.x = f.x; at.y = f.y + 0.3 + Math.random() * K.height * 0.8; at.z = f.z; ultraFx.moteBurst(at, 2, F.color, MOTES); }

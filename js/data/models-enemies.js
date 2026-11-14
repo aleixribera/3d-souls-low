@@ -752,3 +752,41 @@ MODEL_DEFS.stoneGuardian = {
   eyes: null,     // its eyes are the hood's two slits of light (the `rune` slot)
   anim: { ...IRONBOUND_ANIM, cloth: [{ bone: 'loinF', gain: 0.04, k: 120, damp: 10, flutter: 0 }, { bone: 'loinB', gain: 0.05, k: 110, damp: 10, flutter: 0 }] },
 };
+
+// The Lancer of Ash (pass 80, built in Blender: tools/blender/lancer_of_ash.py): the Lancer of Ash ability's summon, a
+// knight burnt down to ash that still holds its charge. A tall keeled helm with one slit of cinder light and a plume of
+// charred strands, a narrow cuirass with a hole burnt through the breast and cinder cracking out of it, one great layered
+// pauldron on the guard side, ash plate over a charred body, a torn cape and ragged tassets, and a spear longer than
+// itself whose leaf blade burns along its edges. No enemy wears it. In a fight the summon draws it in its own shader, slot
+// by slot (VIS.abilityFx.lancer.slots, js/summon-figures.js); these materials are what the model lab shows.
+MODEL_DEFS.lancerOfAsh = {
+  extends: 'ironKnight', fit: 1.0, budget: 'enemy',
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.33, torsoW: 0.22, torsoD: 0.15, armR: 0.05, legR: 0.075 },
+  // The spear held level at the hip, the off hand forward on the shaft (the Ashen Lancer's guard).
+  posture: { chest: [0.12, 0, 0], neck: [0.04, 0, 0], head: [-0.08, 0, 0], armL: [0.18, 0, 0.12], elbowL: [-0.48, 0, 0.18],
+    armR: [-0.12, 0, -0.14], elbowR: [-0.62, 0, -0.05] },
+  materials: {
+    ash: { tex: 'stone', tint: 0xb4b0aa, decay: 0.6 },
+    char: { tex: 'ashSoot', tint: 0x4a4644, decay: 0.85 },
+    cinder: { glow: 0xc8b8ff },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  bones: {
+    loinF: { parent: 'spin', at: [0.0, -0.02, 0.15] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.15] },
+    capeA: { parent: 'chest', at: [0, 0.54, -0.16] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] },
+  },
+  parts: Object.entries({
+    head: ['ash', 'char', 'cinder'], neck: ['char'], chest: ['ash', 'char', 'cinder'], spin: ['char', 'ash', 'cinder'],
+    loinF: ['char'], loinB: ['char'], capeA: ['char'], capeB: ['char'],
+    armL: ['char', 'ash'], armR: ['char', 'ash'], elbowL: ['ash', 'cinder', 'char'], elbowR: ['ash', 'cinder', 'char'],
+    legL: ['char', 'ash'], legR: ['char', 'ash'], kneeL: ['ash', 'char'], kneeR: ['ash', 'char'],
+    weapon: ['char', 'ash', 'cinder'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `ashlancer:${bone}__${s}`, bone, slot: s, tile: 0.42,
+    ...(bone === 'weapon' ? { weapon: true } : {}) }))),
+  weapon: null,   // the spear is part of the figure (the `weapon: true` pieces above)
+  eyes: null,     // its eyes are the visor's slit of light (the `cinder` slot)
+  anim: { ...IRONBOUND_ANIM, cloth: [
+    { bone: 'loinF', gain: 0.12, k: 60, damp: 5, flutter: 0.05 }, { bone: 'loinB', gain: 0.16, k: 52, damp: 4.6, flutter: 0.06 },
+    { bone: 'capeA', gain: 0.09, k: 38, damp: 4.2, flutter: 0.04 }, { bone: 'capeB', gain: 0.1, k: 34, damp: 3.6, flutter: 0.07, sideways: 1.1 },
+  ] },
+};

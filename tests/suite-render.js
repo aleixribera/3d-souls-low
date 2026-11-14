@@ -111,7 +111,7 @@
   test('Render audit: effect slots sweep departed actors and the effect clock honours hand-stepping and hit-pause', () => {
     const hit = Game.hitstop;
     try {
-      sim.begin();
+      start('long-hall');   // its own stage: a shard may run it first, with no level loaded
       expect.ok(effectSlots.real() === CONFIG.step, 'a hand-stepped frame is one fixed step');
       Game.hitstop = 0.1;
       expect.near(effectSlots.dt(), CONFIG.step * CONFIG.VISUALS.effectClock.hitstop, 1e-9, 'a hit-pause slows drawn effects');

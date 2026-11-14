@@ -37,6 +37,7 @@ const FILES = {
   'kings-blade': { sources: ['kings_blade'] },
   'hound': { sources: ['hound'] },
   'guardian': { sources: ['guardian'] },
+  'lancer-of-ash': { sources: ['lancer_of_ash'] },
 };
 
 function readGlb(file) {
