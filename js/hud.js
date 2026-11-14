@@ -29,7 +29,7 @@ const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   pSt: $('pSt'), pExhaust: $('pExhaust'), diedTip: $('diedTip'), pStFill: $('pStFill'), pStTrail: $('pStTrail'), flaskRow: $('pFlasks'), flasks: [],
   eBars: $('eBars'), eHp: $('eHpFill'), eTrail: $('eHpTrail'), eName: $('eName'), eDmg: $('eDmg'), ePost: $('ePost'), ePostFill: $('ePostFill'),
-  rushClock: $('rushClock'), rushFight: $('rushFight'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushKey: -1, wonTitle: $('wonTitle'),
+  rushClock: $('rushClock'), rushFight: $('rushFight'), rushCrown: $('rushCrown'), rushTime: $('rushTime'), rushPar: $('rushPar'), rushMods: $('rushMods'), rushKey: -1, wonTitle: $('wonTitle'),
   died: $('died'), won: $('won'), complete: $('complete'), rested: $('rested'), prompt: $('prompt'), promptKey: $('promptKey'), promptText: $('promptText'), talk: $('talk'), talkKey: $('talkKey'), talkText: $('talkText'), execCue: $('execCue'), execKey: $('execKey'),
   sub: $('subtitle'), subName: $('subName'), subText: $('subText'),
   confirm: $('confirm'), toasts: $('toasts'), vignette: $('vignette'),
@@ -64,7 +64,7 @@ const hud = {
     $('helpLevel').textContent = game.level ? game.level.help || '' : '';
     $('helpHint').textContent = usingPad() ? '' : `${keyLabel(SYSTEM_KEYS.help)}: help`;
     // Boss Rush's kill moment (js/kill-moment.js): "Boss n down", with the run's count of bosses beaten.
-    const rush = run && run.roster;
+    const rush = run && run.run;
     this.won.classList.toggle('rush', !!rush);
     this.wonTitle.textContent = rush ? `Boss ${run.defeated + 1 + (run.partners ? run.partners.length : 0)} down` : 'ENEMY FELLED';
     $('wonHint').textContent = run ? run.next ? 'Next boss incoming… Everyone returns with full health and flasks.' : 'All bosses defeated! Returning to the lobby…'
@@ -357,16 +357,22 @@ const hud = {
     this.won.classList.toggle('show', game.duelWon() && (p.alive() || typeof multiplayer !== 'undefined' && multiplayer.active() && multiplayer.info.session.gauntlet));
     this.complete.classList.toggle('show', game.kind === 'level' && game.complete && p.alive() && !game.level.ending);   // the last level ends its own way (js/finale.js)
   },
-  // Boss Rush's streak (v7.69.0): the fight's number, its clock and its par; written only when a second turns over.
+  // Boss Rush's streak (v7.69.0): the fight's number, how far the next Crowned fight is (Endless, CONFIG.endless), its
+  // clock and its par, and under them the fight's modifiers by name; written only when a second turns over.
   updateRush() {
     const r = typeof multiplayer !== 'undefined' && multiplayer.rush;
     this.rushClock.hidden = !r;
-    if (!r) { this.rushKey = -1; return; }
+    if (!r) { this.rushKey = -1; this.rushMods.hidden = true; return; }
     const sec = Math.floor(r.clock), key = (r.fight * 4096 + sec) * 4096 + r.par;
     if (key === this.rushKey) return;
     this.rushKey = key;
     const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
     this.rushFight.textContent = `Fight ${r.fight}`; this.rushTime.textContent = clock(sec); this.rushPar.textContent = `par ${clock(r.par)}`;
+    const every = CONFIG.endless.crowned, left = every - (r.fight % every);
+    this.rushCrown.textContent = r.crowned ? 'Crowned' : `Crowned in ${left}`;
+    this.rushCrown.classList.toggle('now', r.crowned);
+    this.rushMods.textContent = r.modifiers.map(id => RUSH_MODIFIER_BY_ID[id]?.name || '').filter(Boolean).join(' · ');
+    this.rushMods.hidden = !r.modifiers.length;
     this.rushClock.classList.toggle('over', sec > r.par);
   },
   helpOpen() { return !this.help.classList.contains('hidden'); },

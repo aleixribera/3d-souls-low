@@ -24,10 +24,10 @@
       'boss-triples': Object.freeze({ name: 'TRIPLE BOSS', size: 3, then: 'boss-quads' }),
       'boss-quads': Object.freeze({ name: 'QUAD BOSS', size: 4, then: null }),
     }),
-    // Boss Rush (v7.35.0 as The Calling; the lobby's default since v7.60.0): a co-op run of bosses the leader shapes. `length` bosses (from `minLength` to every boss in the
-    // game), random or chosen by hand, fought one at a time except the last two, who come together. No bot joins:
-    // it is the party against the bosses, alone or with friends (pass 52).
-    calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH', length: 5, minLength: 3 }),
+    // Boss Rush (v7.35.0 as The Calling; the lobby's default since v7.60.0; endless since pass 65, CONFIG.endless): a
+    // co-op run of bosses that goes on until everyone falls. No bot joins: it is the party against the bosses, alone or
+    // with friends (pass 52).
+    calling: Object.freeze({ id: 'boss-rush', name: 'BOSS RUSH' }),
     bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
     // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the ability pick
     // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.

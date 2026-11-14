@@ -111,8 +111,8 @@ const bot = (() => {
     if (!e.alive() || ENEMY_GROUPS.hidden.has(e.state)) return Infinity;
     // A boss's pace (Enemy.pace) runs its recoveries and cooldown faster and its tell (Enemy.tellRate) its wind-ups:
     // their seconds are read in real time here.
-    const pace = e.pace > 0 ? e.pace : 1, tell = e.tellRate ? e.tellRate() : 1;
-    const cool = Math.max(0, e.cooldown || 0) * C.windowTrust / pace, base = d.cooldown ? d.cooldown[0] * C.windowTrust / pace : 0;
+    const pace = e.pace > 0 ? e.pace : 1, tell = e.tellRate ? e.tellRate() : 1, rests = pace * (e.rest > 0 ? e.rest : 1);
+    const cool = Math.max(0, e.cooldown || 0) * C.windowTrust / rests, base = d.cooldown ? d.cooldown[0] * C.windowTrust / rests : 0;
     // A far enemy must first walk in (its own blows' reach), unless it can dash or leap.
     const long = Math.max(...attacksOf(e).map(a => reach(e, a, a.hits[0], me)));
     const walk = Number.isFinite(long) ? Math.max(0, edge(me, e) + me.radius - long) / Math.max(0.5, d.speed || 2) : 0;

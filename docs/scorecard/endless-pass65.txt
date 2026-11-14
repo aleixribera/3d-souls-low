@@ -1,0 +1,26 @@
+# Endless (track B item 5), pass 65. Skilled bot alone (SKILLED=1), no abilities, tools/rush-curve.cjs.
+# A run is one seed of the server's own draw (sim.calling), fought until the first fall; a fall at fight N means
+# the run reached N. Target (PLAN.md): real by fight 10-12 without abilities.
+
+## Runs, 48 seeds (runs 48)
+pairRest 1 (pairs as hard as two lone bosses), no modifiers (MODS=0): median 7, mean 7.0, range 2-12
+pairRest 1, modifiers on:                                              median 7, mean 6.7, range 2-12 (40/48 fell at fight 7)
+pairRest 0.35, modifiers on (shipped):                                 median 7, mean 8.4, range 2-14
+
+## Pairs alone at the pace for 6 won (fight 7), 48 random pairs (pairs 48 6)
+pairRest 1:    falls 0.85, win time 235 s
+pairRest 0.5:  falls 0.48, win time 235 s
+pairRest 0.35: falls 0.38, win time 217 s (shipped)
+pairRest 0.25: falls 0.40, win time 207 s (rests stop helping: a pair is two health bars, ~210 s of flasks)
+
+Left: the pair is still the lone player's wall (fight 7). Next lever: less health per boss in a pair (an enemy
+health scale that the bar and the server's damage checks share), not shorter attacks.
+
+## Run lines, pairRest 0.35
+run 41  reached fight 12  (x1.47)  fell to kingsBlade+varn
+run 42  reached fight 14  (x1.70)  fell to bellWarden
+run 43  reached fight 7  (x1.15)  fell to ringer+hollis
+run 44  reached fight 7  (x1.15)  fell to giant+ostrey
+run 45  reached fight 7  (x1.15)  fell to ringer+ostrey
+run 46  reached fight 10  (x1.31)  fell to kingsBlade
+run 47  reached fight 7  (x1.15)  fell to kindlingTree+harrow

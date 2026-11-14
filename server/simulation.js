@@ -163,29 +163,55 @@ globalThis.host = (() => {
     return { id, name: run.name, boss: group[0].id, partners: group.slice(1).map(e => e.id), number: index / run.size + 1,
       total: Math.ceil(bosses.length / run.size), defeated: index, bosses: bosses.length, next: bosses[index + run.size]?.id || null };
   }
-  // One fight of Boss Rush (C.calling): `roster` is the run's boss ids in order, fought one at a time except the last
-  // two, who come together. `fight` counts from 0. The same shape as a gauntlet encounter, plus the roster to carry on.
-  function calling(roster, fight = 0) {
-    const R = C.calling, bosses = catalog().bosses;
-    if (!Array.isArray(roster) || roster.length < R.minLength || roster.length > bosses.length ||
-      roster.some(id => typeof id !== 'string' || !bosses.some(e => e.id === id)) || new Set(roster).size !== roster.length) throw rejected('Choose at least ' + R.minLength + ' different bosses for Boss Rush');
-    const fights = [...roster.slice(0, -2).map(id => [id]), roster.slice(-2)];
-    if (!Number.isInteger(fight) || fight < 0 || fight >= fights.length) throw rejected('Unknown fight of Boss Rush');
-    const group = fights[fight];
-    return { id: R.id, name: R.name, roster: [...roster], fight, boss: group[0], partners: group.slice(1), number: fight + 1,
-      total: fights.length, defeated: fight, bosses: roster.length, next: fight + 1 < fights.length ? fight + 1 : null };
+  // One fight of Boss Rush (C.calling), endless (CONFIG.endless, RUSH in js/data/rush.js): `run` is { seed, opening },
+  // `fight` counts from 0. Every fight is drawn in turn from the run's seed, so a run replays the same bosses and
+  // modifiers; `opening` (ids, optional) sets the first fights' bosses by hand (tests, tools). The same shape as a
+  // gauntlet encounter, plus the run to carry on, whether it is Crowned and its modifiers' ids.
+  const rushSeed = seed => { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  function calling(run, fight = 0) {
+    const E = CONFIG.endless, all = catalog().bosses.map(e => e.id), opening = run?.opening || [];
+    if (!run || !Number.isInteger(run.seed) || run.seed < 0 || run.seed > 0xffffffff || !Array.isArray(opening) || opening.length > all.length ||
+      opening.some(id => typeof id !== 'string' || !all.includes(id)) || new Set(opening).size !== opening.length) throw rejected('Unknown Boss Rush run');
+    if (!Number.isInteger(fight) || fight < 0 || fight >= E.longest) throw rejected('Unknown fight of Boss Rush');
+    const rng = rushSeed(run.seed), seen = new Set(), drawn = [], draw = list => list[Math.floor(rng() * list.length)];
+    let prev = [], defeated = 0, plan = null;
+    for (let n = 0; n <= fight; n++) {
+      const number = n + 1, crowned = number % E.crowned === 0;
+      const size = !crowned && number >= E.pairFrom && (number - E.pairFrom) % E.pairEvery === 0 ? 2 : 1;
+      const pool = number <= E.opening ? RUSH.opening : all, bosses = [];
+      for (let i = 0; i < size; i++) {
+        let id = i === 0 ? opening[n] : null;
+        if (!id) {   // one not yet met in this round of the pool, not in the last fight, not already in this one
+          const fresh = () => pool.filter(b => !seen.has(b) && !prev.includes(b) && !bosses.includes(b));
+          let left = fresh();
+          if (!left.length) {   // a new round of the pool: the last third of it met stays out a while longer
+            seen.clear(); const keep = Math.floor(pool.length / 3); if (keep) for (const b of drawn.slice(-keep)) seen.add(b);
+            left = fresh();
+          }
+          if (!left.length) left = pool.filter(b => !bosses.includes(b));
+          id = draw(left);
+        }
+        bosses.push(id); seen.add(id); drawn.push(id);
+      }
+      const count = E.mods.filter(from => number >= from).length + (crowned && number >= E.mods[0] ? 1 : 0);
+      const open = RUSH.modifiers.filter(m => number >= m.from).map(m => m.id), modifiers = [];
+      while (modifiers.length < count && open.length) modifiers.push(open.splice(Math.floor(rng() * open.length), 1)[0]);
+      plan = { bosses, crowned, modifiers, defeated };
+      defeated += bosses.length; prev = bosses;
+    }
+    return { id: C.calling.id, name: C.calling.name, run: { seed: run.seed, opening: [...opening] }, fight, boss: plan.bosses[0], partners: plan.bosses.slice(1),
+      number: fight + 1, crowned: plan.crowned, modifiers: plan.modifiers, defeated: plan.defeated, next: fight + 1 < E.longest ? fight + 1 : null };
   }
-  // A random roster of `length` different bosses from every boss in the game.
-  function randomRoster(length = C.calling.length) {
-    const ids = catalog().bosses.map(e => e.id);
-    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-    return ids.slice(0, clamp(Math.floor(Number(length)) || C.calling.length, C.calling.minLength, ids.length));
-  }
-  // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won. Their health and blows stay
+  // A new run: a fresh seed, and the leader's opening bosses if any.
+  const newRun = (opening = []) => ({ seed: Math.floor(Math.random() * 0x100000000) >>> 0, opening: [...opening] });
+  // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
+  // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest). Their health and blows stay
   // their own. Returns the pace.
-  function setRushFight(won) {
-    const pace = rushPace(won);
-    for (const e of Game.enemies) if (e.isBoss()) e.pace = pace;
+  function setRushFight(won, modifiers = []) {
+    const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
+    const together = Game.enemies.filter(e => e.isBoss()).length > 1;
+    const pace = rushPace(won) * times('pace'), rest = times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = times('chain');
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; }
     return pace;
   }
   // `keepAbilities`: a later fight of the same Calling run; anything else starts with none.
@@ -235,15 +261,18 @@ globalThis.host = (() => {
   // Abilities (CONFIG.abilities). An offer: `offer` cards (`extra` more after a swift kill, CONFIG.swift, never common),
   // each of a rarity drawn by its weight after `won` fights won, then one of that rarity this player may still take:
   // not at its last level, not a legendary a teammate holds, not already on the card before. With `withBots`, every bot
-  // is offered too and takes one at once.
-  function offerAbilities(ids, withBots = true, extra = 0, won = 0) {
+  // is offered too and takes one at once. After a Crowned fight (`crowned`, CONFIG.endless) the offer has at least
+  // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer.
+  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false) {
     const B = CONFIG.abilities, pick = list => list[Math.floor(Math.random() * list.length)];
+    const cards = crowned ? Math.max(B.offer + extra, CONFIG.endless.crownedOffer) : B.offer + extra;
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       if (offers.has(id)) continue;
       const held = owned.get(id) || [], team = teamLegendaries(id);
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)));
-      const offer = [];
-      for (let i = 0; i < B.offer + extra; i++) {
+      const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
+      if (legend) offer.push(legend.id);
+      for (let i = offer.length; i < cards; i++) {
         const left = open.filter(b => !offer.includes(b.id) && (i < B.offer || b.rarity !== 'common'));
         const weights = Object.entries(B.rarity).map(([r, R]) => [r, left.some(b => b.rarity === r) ? R.weight + R.grow * won : 0]);
         const total = weights.reduce((n, [, w]) => n + w, 0);
@@ -252,6 +281,7 @@ globalThis.host = (() => {
         for (const [r, w] of weights) { if (w > 0 && roll < w) { rarity = r; break; } roll -= w; }
         offer.push(pick(left.filter(b => b.rarity === rarity)).id);
       }
+      if (legend && offer.length > 1) { const at = Math.floor(Math.random() * offer.length); [offer[0], offer[at]] = [offer[at], offer[0]]; }
       if (!offer.length) continue;
       offers.set(id, offer);
       if (bots.has(id)) pickAbility(id, pick(offer));
@@ -739,7 +769,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,

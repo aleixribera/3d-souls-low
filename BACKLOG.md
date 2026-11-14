@@ -218,3 +218,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   (`KIT=strong`) is one scripted list; re-check it whenever the pool grows. Swift-kill par (45 s) was set for the old pace: the bot's 1x fights run
   68-139 s. Follow-up chances were divided by k; the engine's own inverse, 1 - (1 - c)^(1/k), keeps strings about
   twice as common (the King's Blade's three cuts: 0.11 now, 0.22 that way) if they feel too rare.
+- Endless (track B item 5, pass 65, `docs/scorecard/endless-pass65.txt`). Shipped: the seeded draw (easier bosses for 3
+  fights, no repeats in a round of the pool), Crowned every 5th fight (a 4-card pick with a legendary, the HUD's
+  countdown), pairs from fight 7 every 5th fight (they rest longer: `CONFIG.endless.pairRest`), three pace-only
+  modifiers (`js/data/rush.js`) named under the timer, an end screen of bosses beaten and Crowned reached. Left:
+  - The Crowned boss's own final phase of new moves: needs each boss's files, after track A's moves pass.
+  - The Crowned arena change (light, ground, hazards; baked, inside Normal's budget).
+  - Modifiers "an extra phase of new moves" and "burning ground" (a hazard system the arenas lack); more pace-only ones.
+  - A swift kill on a Crowned fight adds no card (the pick is 4 either way).
+  - A pair is still the run's wall for a lone player (falls at fight 7 in the scorecard); party pairs are unmeasured.

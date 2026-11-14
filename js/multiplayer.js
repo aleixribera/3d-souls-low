@@ -9,10 +9,10 @@ const multiplayer = (() => {
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0, pendingExecution = null;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
-  const rushView = { fight: 0, beaten: 0, clock: 0, par: 0 };   // what `multiplayer.rush` hands the HUD
+  const rushView = { fight: 0, beaten: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
+  const noModifiers = Object.freeze([]);
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
   let lobbyPadDirection = null, lobbyPadTimer = 0, nameDraft = '', nameLowercase = false;
-  let callingPicks = [];   // Boss Rush's hand-picked roster, in fight order
   let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
   const labelPosition = new THREE.Vector3();
@@ -39,11 +39,6 @@ const multiplayer = (() => {
     <select id="lobbyAdventure" class="ui-mirror" tabindex="-1" aria-hidden="true"></select>
     <div id="lobbyModes" role="group" aria-labelledby="lobbyAdventureTitle"></div>
     <p id="lobbyAdventureSummary" class="lobby-summary"></p>
-    <div id="lobbyCalling" hidden><div class="lobby-calling-row"><div><label for="lobbyCallingRoster" class="ui-label">Roster</label>
-    <div class="ui-cycle"><button type="button" class="ui-step" data-cycle="lobbyCallingRoster" data-step="-1" tabindex="-1" aria-hidden="true">‹</button><select id="lobbyCallingRoster"><option value="random">Random</option><option value="pick">By hand</option></select><button type="button" class="ui-step" data-cycle="lobbyCallingRoster" data-step="1" tabindex="-1" aria-hidden="true">›</button></div></div>
-    <div id="lobbyCallingCount"><label for="lobbyCallingLength" class="ui-label">Bosses</label>
-    <div class="ui-cycle"><button type="button" class="ui-step" data-cycle="lobbyCallingLength" data-step="-1" tabindex="-1" aria-hidden="true">‹</button><select id="lobbyCallingLength"></select><button type="button" class="ui-step" data-cycle="lobbyCallingLength" data-step="1" tabindex="-1" aria-hidden="true">›</button></div></div></div>
-    <div id="lobbyCallingPick" role="group" aria-label="Bosses, in the order you meet them" hidden></div></div>
     <div class="lobby-primary"><button id="lobbyResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button><button id="lobbyStart" class="ui-primary">Start together</button></div>
     <div id="lobbyRunActions" class="lobby-actions" role="group" aria-label="Party controls" hidden><button id="lobbyRestart" class="ui-button">Restart level</button>
     <button id="lobbyNext" class="ui-button">Next level</button><button id="lobbyReturn" class="ui-button">Return everyone to lobby</button></div></div>
@@ -84,10 +79,6 @@ const multiplayer = (() => {
     #publicLobby h2{margin:0}
     #lobbyModes{display:flex;flex-direction:column;gap:2px}
     #publicLobby .lobby-summary{margin:10px 0 0;padding-left:16px;color:var(--ui-muted);line-height:1.5;min-height:3em}
-    #lobbyCalling{margin:16px 0 0}#lobbyCalling .lobby-calling-row{display:flex;gap:12px}#lobbyCalling .lobby-calling-row>div{flex:1 1 0;min-width:0}
-    #lobbyCallingPick{display:flex;flex-direction:column;gap:2px;margin-top:12px;max-height:228px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent}
-    #publicLobby #lobbyCallingPick button{font-size:17px;min-height:38px;padding-left:10px;flex:none}
-    #publicLobby #lobbyCallingPick button:before{content:attr(data-order);flex:none;width:18px;font:600 var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-accent);font-variant-numeric:tabular-nums}
     #publicLobby .lobby-primary{position:sticky;bottom:0;z-index:1;display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 0;background:#080a0c}
     #publicLobby[data-running=true] #lobbyStart{background:transparent;color:var(--ui-ink);border:1px solid var(--ui-line);min-height:44px;font-weight:500}
     #publicLobby[data-running=true] #lobbyStart:hover{background:var(--ui-hover)}
@@ -138,7 +129,7 @@ const multiplayer = (() => {
       #publicLobby .lobby-party{margin-top:32px}#publicLobby .ui-title{font-size:32px}#lobbyControlsList{grid-template-columns:1fr}#lobbyPlayers{max-height:none}
       #publicLobby .lobby-summary{min-height:0}#publicLobby .lobby-footer{margin-top:28px}}
     @media(max-height:640px) and (min-width:761px){#publicLobby .lobby-card{padding-top:20px}#publicLobby .lobby-header{margin-bottom:14px}#publicLobby .ui-title{font-size:32px}
-      #publicLobby #lobbyModes .ui-row{min-height:36px}#publicLobby .lobby-summary{min-height:0;margin-top:6px}#lobbyCalling{margin-top:10px}#publicLobby .lobby-primary{margin-top:16px}}
+      #publicLobby #lobbyModes .ui-row{min-height:36px}#publicLobby .lobby-summary{min-height:0;margin-top:6px}#publicLobby .lobby-primary{margin-top:16px}}
     #onlineParty{position:fixed;right:18px;top:42px;z-index:25;width:210px;max-width:calc(100vw - 36px);box-sizing:border-box;pointer-events:none;color:var(--mp-ink);font:12px/1.5 system-ui;text-shadow:0 1px 2px #000;background:linear-gradient(160deg,#12171acc,#0d1113a8);padding:10px 12px;border:1px solid var(--mp-line);border-radius:8px;box-shadow:0 8px 24px #0006;backdrop-filter:blur(3px)}
     .online-level{margin:0 0 8px;color:var(--mp-gold-hi,#f3dca3);font:600 11px/1.4 system-ui;text-align:left;letter-spacing:.1em;text-transform:uppercase}
     .online-level[hidden]{display:none}
@@ -213,7 +204,7 @@ const multiplayer = (() => {
     el('leaderboardRows').replaceChildren();
   }
   function updateLeaderboard() {
-    const rows = session?.gauntlet?.roster ? null : latestFrame?.results;   // Boss Rush: the ability pick follows the kill at once
+    const rows = session?.gauntlet?.run ? null : latestFrame?.results;   // Boss Rush: the ability pick follows the kill at once
     if (rows && !leaderboardRows) {
       leaderboardRows = rows;
       el('leaderboardEncounter').textContent = session.kind === 'level' ? Game.level.name : [session.id, ...(session.partners || [])].map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & ');
@@ -254,7 +245,7 @@ const multiplayer = (() => {
   function showTeamWipe(run) {
     clearTeamWipe();
     el('teamWipeKicker').textContent = `${run?.name || 'BOSS RUSH'} · RUN ENDED`;
-    el('teamWipeScore').textContent = run ? `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}` : '';
+    el('teamWipeScore').textContent = !run ? '' : run.run ? `Bosses defeated · ${run.defeated ?? run.number - 1}` : `Bosses defeated · ${run.defeated ?? run.number - 1} / ${run.bosses ?? run.total}`;
     panel.inert = true; wipeScreen.hidden = false; input.clear(); wipeScreen.focus();
     wipeTimer = setTimeout(() => {
       clearTeamWipe();
@@ -265,7 +256,7 @@ const multiplayer = (() => {
   // the player closes it (Escape, B, Lobby) or the leader starts the same run again for the same group.
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
   runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
-  runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Time</dt><dd id="runSummaryTime"></dd></div><div><dt>Bosses beaten</dt><dd id="runSummaryBeaten"></dd></div></dl>'
+  runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Crowned</dt><dd id="runSummaryCrowned"></dd></div><div><dt>Time</dt><dd id="runSummaryTime"></dd></div></dl>'
     + '<ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
     + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
     + '<div class="summary-actions"><button type="button" id="runSummaryAgain" class="ui-primary">Run again</button><button type="button" id="runSummaryLobby" class="ui-text-button"><span class="ui-key" id="runSummaryLobbyKey" aria-hidden="true"></span>Lobby</button><p id="runSummaryWait"></p></div></div>';
@@ -314,14 +305,16 @@ const multiplayer = (() => {
   function showRunSummary(data) {
     summary = data;
     runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
-    el('runSummaryTitle').textContent = data.outcome === 'won' ? 'Every boss beaten' : (data.players || []).length > 1 ? 'Team wiped' : 'You fell';   // alone, a fall ends the run
+    // Endless: the bosses beaten are the title (PLAN.md track B item 3's end of run), then the Crowned fights won.
+    const beaten = Math.max(0, Math.floor(Number(data.beaten) || 0));
+    el('runSummaryTitle').textContent = beaten ? `${beaten} ${beaten === 1 ? 'boss' : 'bosses'} beaten` : 'No boss beaten';
+    el('runSummaryCrowned').textContent = String(Math.max(0, Math.floor(Number(data.crowned) || 0)));
     el('runSummaryTime').textContent = runClock(Math.max(0, Math.round(Number(data.time) || 0)));
-    el('runSummaryBeaten').textContent = `${data.beaten} / ${data.bosses}`;
     // Each boss's time against its par; under par was a swift kill.
     const times = el('runSummaryTimes'); times.replaceChildren();
     for (const t of Array.isArray(data.times) ? data.times : []) {
       const li = document.createElement('li'), seconds = Math.max(0, Math.round(Number(t.time) || 0)), par = Math.max(0, Math.round(Number(t.par) || 0));
-      const parts = [[(t.bosses || []).map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & '), ''], [runClock(seconds), t.swift ? 'swift' : ''],
+      const parts = [[(t.crowned ? 'Crowned: ' : '') + (t.bosses || []).map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & '), ''], [runClock(seconds), t.swift ? 'swift' : ''],
         [t.swift ? 'Swift kill' : 'par ' + runClock(par), t.swift ? 'swift' : 'par']];
       for (const [text, cls] of parts) { const span = document.createElement('span'); span.textContent = text; if (cls) span.className = cls; li.appendChild(span); }
       times.appendChild(li);
@@ -358,8 +351,8 @@ const multiplayer = (() => {
     buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
   }
   runSummary.querySelector('#runSummaryAgain').onclick = () => {
-    const again = summary?.roster; closeRunSummary(false);
-    if (again) control('start', { kind: 'calling', id: C.calling.id, roster: again });
+    const again = !!summary; closeRunSummary(false);
+    if (again) control('start', { kind: 'calling', id: C.calling.id });
   };
   runSummary.querySelector('#runSummaryLobby').onclick = () => closeRunSummary();
   window.addEventListener('keydown', ev => {
@@ -394,7 +387,7 @@ const multiplayer = (() => {
     msg.offer.forEach((id, i) => {
       const b = ArenaNet.own(ABILITY_BY_ID, id); if (!b) return;
       // A swift kill's extra choice (CONFIG.swift) is the last one, and says so.
-      const card = abilityCard(b, ability.held, i + 1, !!msg.swift && i === msg.offer.length - 1 && i >= CONFIG.abilities.offer);
+      const card = abilityCard(b, ability.held, i + 1, !!msg.swift && !msg.crowned && i === msg.offer.length - 1 && i >= CONFIG.abilities.offer);
       card.onclick = () => chooseAbility(id);
       list.appendChild(card);
     });
@@ -533,11 +526,11 @@ const multiplayer = (() => {
   }
   const el = id => document.getElementById(id);
   // What the controller and the arrow keys move through: the name keyboard or the controls sheet while one is open,
-  // else the whole lobby (the mirrored mode select and the cyclers' arrow buttons are skipped: they have their own row).
+  // else the whole lobby (the mirrored mode select is skipped: the mode list is its row).
   function lobbyControls() {
     const root = !el('lobbyNameEditor').hidden ? el('lobbyNameEditor') : !el('lobbyControls').hidden ? el('lobbyControls') : panel;
     return [...root.querySelectorAll('button,input,select')].filter(node => !node.disabled && !node.hidden && node.offsetParent
-      && !node.classList.contains('ui-mirror') && !node.classList.contains('ui-step'));
+      && !node.classList.contains('ui-mirror'));
   }
   function focusLobbyControl(node) {
     for (const previous of panel.querySelectorAll('.pad-selected')) previous.classList.remove('pad-selected');
@@ -567,7 +560,7 @@ const multiplayer = (() => {
     const hints = el('lobbyPadHint'); hints.textContent = '';
     const rows = !el('lobbyNameEditor').hidden
       ? [[pad ? 'D-pad' : '↑ ↓ ← →', 'Move'], [pad ? 'A' : 'Enter', 'Type'], [pad ? 'X' : 'Backspace', 'Delete'], [pad ? 'B' : 'Esc', 'Cancel']]
-      : [[pad ? 'D-pad' : '↑ ↓', 'Move'], ...el('lobbyCalling').offsetParent ? [['← →', 'Change']] : [], [pad ? 'A' : 'Enter', 'Select']];
+      : [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select']];
     for (const [key, label] of rows) {
       const item = document.createElement('span'), cap = document.createElement('span');
       cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hints.appendChild(item);
@@ -902,30 +895,11 @@ const multiplayer = (() => {
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
   const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
-  const callingByHand = () => callingChosen() && el('lobbyCallingRoster').value === 'pick';
-  // Boss Rush's roster as the leader has it: the picks, or a length for the server to fill at random.
-  function callingRequest() {
-    return callingByHand() ? { roster: [...callingPicks] } : { length: Number(el('lobbyCallingLength').value) || C.calling.length };
-  }
-  function callingSummary() {
-    const names = callingPicks.map(id => catalog?.bosses.find(b => b.id === id)?.name || id);
-    const count = callingByHand() ? names.length : Number(el('lobbyCallingLength').value) || C.calling.length;
-    const order = !callingByHand() ? '' : names.length < C.calling.minLength ? ` Pick ${C.calling.minLength - names.length} more.`
-      : ` ${names.slice(0, -2).join(', ')}, then ${names.slice(-2).join(' and ')} together.`;
-    return `${count} bosses in a row, the last two together. The fallen rise for the next fight; a team wipe ends the run.${order}`;
-  }
   function adventureSummary() {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
     const campaign = STORIES.find(s => s.id === id), run = ArenaNet.own(C.gauntlets, id);
-    el('lobbyCalling').hidden = !callingChosen();
-    el('lobbyCallingPick').hidden = !callingByHand();
-    el('lobbyCallingCount').hidden = callingByHand();   // a hand-picked run is as long as its picks
     for (const button of el('lobbyModes').children) button.setAttribute('aria-pressed', String(button.dataset.mode === value));
-    for (const button of el('lobbyCallingPick').children) {
-      const at = callingPicks.indexOf(button.dataset.boss);
-      button.setAttribute('aria-pressed', String(at >= 0)); button.dataset.order = at >= 0 ? String(at + 1) : '';
-    }
-    el('lobbyAdventureSummary').textContent = callingChosen() ? callingSummary() : run
+    el('lobbyAdventureSummary').textContent = callingChosen() ? `Boss after boss until everyone falls, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.` : run
       ? `Every boss, ${run.size > 1 ? `${run.size} at a time` : 'one at a time'}${run.then ? `, then ${C.gauntlets[run.then].name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}` : ''}. The fallen watch until the fight ends; a team wipe ends the run.`
       : campaign ? `${campaign.chapters.length} chapters, together. Checkpoints are shared.`
       : 'Play this encounter together.';
@@ -983,7 +957,7 @@ const multiplayer = (() => {
     el('lobbyNext').textContent = session?.campaign ? 'Next chapter' : 'Next level';
     el('lobbyRestart').textContent = session?.gauntlet ? 'Restart boss run' : session?.campaign ? 'Restart chapter' : 'Restart level';
     el('lobbyReturn').disabled = !session || !!controlPending;
-    el('lobbyStart').disabled = !connected || !!controlPending || callingByHand() && callingPicks.length < C.calling.minLength;
+    el('lobbyStart').disabled = !connected || !!controlPending;
     el('lobbyStart').textContent = controlPending === 'start' ? 'Starting…' : session ? 'Start a new run' : roster.length > 1 ? 'Start together' : 'Start';
     el('lobbyManage').hidden = !owner || roster.length < 2;
     if (!owner) { panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false'); }
@@ -1019,7 +993,7 @@ const multiplayer = (() => {
     const road = session?.campaign;
     const story = session?.kind === 'level' && STORIES.find(s => s.chapters.some(c => c.level === session.id));
     const number = road?.number || (story ? story.chapters.findIndex(c => c.level === session.id) + 1 : null);
-    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS RUSH'} · ${session.gauntlet.number}/${session.gauntlet.total}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
+    const levelTag = session?.gauntlet ? `${session.gauntlet.name || 'BOSS RUSH'} · ${session.gauntlet.run ? `Fight ${session.gauntlet.number}` : `${session.gauntlet.number}/${session.gauntlet.total}`}` : number ? `Level ${number}${road ? '/' + road.total : ''}` : '';
     for (const id of ['onlineCurrentLevel', 'lobbyCurrentLevel']) {
       const tag = el(id);
       tag.hidden = !connected || !levelTag;
@@ -1051,22 +1025,6 @@ const multiplayer = (() => {
         row.onclick = () => { if (select.value !== option.value) { select.value = option.value; select.dispatchEvent(new Event('change', { bubbles: true })); } };
         el('lobbyModes').appendChild(row);
       }
-      // Boss Rush: how many bosses, and every boss in the game to pick from by hand.
-      const length = el('lobbyCallingLength'); length.textContent = '';
-      for (let n = C.calling.minLength; n <= catalog.bosses.length; n++) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); length.appendChild(option); }
-      length.value = String(C.calling.length);
-      callingPicks = callingPicks.filter(id => catalog.bosses.some(b => b.id === id));
-      el('lobbyCallingPick').textContent = '';
-      for (const boss of catalog.bosses) {
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'ui-row'; button.textContent = boss.name;
-        button.dataset.boss = boss.id; button.dataset.padKey = 'callingBoss/' + boss.id;
-        button.onclick = () => {
-          const at = callingPicks.indexOf(boss.id);
-          if (at >= 0) callingPicks.splice(at, 1); else callingPicks.push(boss.id);
-          updateRoster();
-        };
-        el('lobbyCallingPick').appendChild(button);
-      }
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
       el('lobbyStatus').textContent = ''; updateRoster();
       if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
@@ -1082,7 +1040,7 @@ const multiplayer = (() => {
       const current = session;
       Game.story = false; closePanel();
       const loadingCard = session.kind === 'arena' ? Game.duelCard(session.id, session.partners || []) : Game.levelCard(session.id);
-      el('lobbyAdventure').value = session.gauntlet ? `${session.gauntlet.roster ? 'calling' : 'gauntlet'}/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
+      el('lobbyAdventure').value = session.gauntlet ? `${session.gauntlet.run ? 'calling' : 'gauntlet'}/${session.gauntlet.id}` : session.campaign ? `campaign/${session.campaign.id}` : `${session.kind}/${session.id}`;
       const begin = () => {
         if (session !== current || !connected) return;
         if (Game.pendingLoad) { deferredStart = begin; return; }
@@ -1438,30 +1396,15 @@ const multiplayer = (() => {
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
   el('lobbyAdventure').onchange = () => updateRoster();   // the row's click already sounds
-  el('lobbyCallingLength').onchange = el('lobbyCallingRoster').onchange = () => updateRoster();
   el('lobbyManage').onclick = () => {
     const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));
     if (open) el('lobbyPlayers').scrollTop = 0;
   };
   el('lobbyHelp').onclick = () => toggleLobbyHelp();
   el('lobbyControlsClose').onclick = () => toggleLobbyHelp(false);
-  // A cycler (‹ value ›): its arrows step the select; a click on the value steps forward, never opening a native list.
-  // Left / right stop at the ends; Enter, A and a click step forward and wrap round to the first value.
-  const cycle = (select, step, wrap = false) => {
-    const count = select.options.length;
-    const next = wrap ? (select.selectedIndex + step + count) % count : clamp(select.selectedIndex + step, 0, count - 1);
-    if (next === select.selectedIndex) return;
-    select.selectedIndex = next; select.dispatchEvent(new Event('change', { bubbles: true })); events.emit('menuAdjust', { dir: step });
-  };
-  for (const button of panel.querySelectorAll('.ui-step'))
-    button.onclick = () => { const select = el(button.dataset.cycle); focusLobbyControl(select); cycle(select, Number(button.dataset.step)); };
-  for (const select of panel.querySelectorAll('.ui-cycle select')) {
-    select.addEventListener('mousedown', ev => { ev.preventDefault(); if (ev.button !== 0) return; focusLobbyControl(select); cycle(select, 1, true); });
-    select.addEventListener('keydown', ev => { if (ev.code === 'Enter' || ev.code === 'Space') { ev.preventDefault(); cycle(select, 1, true); } });
-  }
   el('lobbyOptions').onclick = () => { closePanel(); Game.optionsFrom = 'lobby'; Game.showMenu('options'); };
-  // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller (left / right change a
-  // cycler); a text box keeps its own arrows. Roster refreshes retain the same controls, so a teammate joining never
+  // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller; a text box keeps its
+  // own arrows. Roster refreshes retain the same controls, so a teammate joining never
   // interrupts typing or selection.
   const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   window.addEventListener('keydown', ev => {
@@ -1483,9 +1426,9 @@ const multiplayer = (() => {
     if (ev.target.matches('button,input,select')) events.emit('menuMove'); });
   panel.addEventListener('click', ev => {
     const button = ev.target.closest('button');
-    if (button && !button.disabled && !button.classList.contains('ui-step') && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
+    if (button && !button.disabled && !['lobbyResume', 'lobbyGuestResume'].includes(button.id)) events.emit(button.id === 'lobbyLeave' ? 'menuBack' : 'menuConfirm');
   });
-  el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1), ...(callingChosen() ? callingRequest() : {}) }); };
+  el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
   el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
   function lobbyMove(direction) {
@@ -1501,8 +1444,6 @@ const multiplayer = (() => {
       } else focusLobbyControl(candidates.sort((a, b) => Math.abs(Number(a.dataset.nameColumn) - column) - Math.abs(Number(b.dataset.nameColumn) - column))[0]);
       return;
     }
-    // Boss Rush's cyclers change with left / right.
-    if (focus.closest('.ui-cycle') && (direction === 'left' || direction === 'right')) { cycle(focus, direction === 'left' ? -1 : 1); return; }
     const current = controls.indexOf(focus), step = direction === 'up' || direction === 'left' ? -1 : 1;
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
@@ -1523,7 +1464,6 @@ const multiplayer = (() => {
     if (pressed.includes('PadA')) {
       const current = document.activeElement || focus;
       if (current === el('lobbyName')) openNameEditor();
-      else if (current?.closest?.('.ui-cycle')) cycle(current, 1, true);
       else if (current?.tagName === 'BUTTON') current.click();
     }
   }
@@ -1544,8 +1484,9 @@ const multiplayer = (() => {
     // One object, refilled: the HUD reads it every frame.
     get rush() {
       const g = connected && loaded ? session?.gauntlet : null;
-      if (!g?.roster) return null;
+      if (!g?.run) return null;
       rushView.fight = g.number; rushView.beaten = g.defeated + 1 + (g.partners?.length || 0);
+      rushView.crowned = !!g.crowned; rushView.modifiers = Array.isArray(g.modifiers) ? g.modifiers : noModifiers;
       rushView.clock = latestFrame?.fought || 0; rushView.par = session.par || 0;
       return rushView;
     },

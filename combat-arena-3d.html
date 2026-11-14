@@ -324,6 +324,12 @@
   #rushClock[hidden] { display: none; }
   #rushPar { color: var(--gilt); }
   #rushClock.over #rushPar { color: #8a8170; }
+  #rushCrown { color: #b3a68c; }
+  #rushCrown.now { color: var(--gilt); }
+  /* Endless's modifiers (js/data/rush.js), by name under the streak. */
+  #rushMods { margin-top: 2px; text-align: center; font-size: 13px; letter-spacing: 2px; color: #e0915a; font-variant: small-caps;
+    text-shadow: 0 0 3px #000, 0 0 10px #000; white-space: nowrap; }
+  #rushMods[hidden] { display: none; }
 
   /* Overhead tags, in screen space. */
   #eTags { position: absolute; inset: 0; overflow: hidden; }
@@ -552,7 +558,8 @@
         <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div></div>
         <div class="bar hidden" id="ePost"><div class="po" id="ePostFill"></div></div>
       </div>
-      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushTime"></span><span id="rushPar"></span></div>
+      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown"></span><span id="rushTime"></span><span id="rushPar"></span></div>
+      <div id="rushMods" hidden></div>
       <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
         <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>
     </div>
@@ -657,6 +664,7 @@ const GAME_FILES = [
   'data/bosses/agathe.js',   // after move-sources.js: her Rending Brothers fight with the Beastman's moves
   'data/bosses/kindling-tree.js',   // after move-sources.js: the Rootbound fight with the Zealot's moves
   'data/bosses/kings-blade.js',   // the Oath Guard and its answer; the torch past half
+  'data/rush.js',   // Endless Boss Rush: the opening bosses and the modifiers
   'levels/arena.js',
   'data/boss-battle.js',
   'levels/long-hall.js',

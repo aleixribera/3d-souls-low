@@ -5,7 +5,7 @@
 // accent that means "you / interactive"; square corners; no gradients; focus is a filled row with an accent edge.
 //
 // Pieces: .ui-title (a screen's title), .ui-label (a field's name), .ui-row (a choice in a list; aria-pressed=true is
-// the chosen one), .ui-cycle (a value changed in place: ‹ select ›), .ui-primary (the screen's one strong action),
+// the chosen one), .ui-primary (the screen's one strong action),
 // .ui-button (any other action), .ui-text-button (quiet actions in a footer), .ui-key (a key cap inside a button, the
 // key that does the same thing), .ui-hints (the navigation keys for the device used last).
 (() => {
@@ -24,13 +24,6 @@
   .ui-row:hover{background:var(--ui-hover);color:var(--ui-ink)}
   .ui-row[aria-pressed=true]{color:var(--ui-accent-hi);border-left-color:var(--ui-accent);background:var(--ui-accent-wash)}
   .ui-row:focus-visible,.ui-row.pad-selected{outline:1px solid var(--ui-accent);outline-offset:-1px;background:#d9b56b24;color:var(--ui-ink)}
-  .ui-cycle{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:stretch;min-height:44px;border:1px solid var(--ui-line);background:var(--ui-well)}
-  .ui-cycle:focus-within{border-color:var(--ui-accent)}
-  .ui-cycle .ui-step{all:unset;display:grid;place-items:center;cursor:pointer;color:var(--ui-accent);font:18px/1 var(--ui-text)}
-  .ui-cycle .ui-step:hover{background:var(--ui-hover);color:var(--ui-accent-hi)}
-  .ui-cycle select{all:unset;min-width:0;text-align:center;text-align-last:center;cursor:pointer;font:400 17px/44px var(--ui-display);color:var(--ui-ink);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ui-cycle select:focus-visible,.ui-cycle select.pad-selected{background:#d9b56b24;outline:none}
   .ui-primary{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;padding:0 20px;
     font:600 17px/1 var(--ui-text);color:var(--ui-accent-ink);background:var(--ui-accent);border:0;border-radius:2px;cursor:pointer;transition:background-color .12s}
   .ui-primary:hover{background:var(--ui-accent-hi)}

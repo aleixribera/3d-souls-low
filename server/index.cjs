@@ -99,7 +99,7 @@ function createServer(options = {}) {
   let tallied = false;   // Boss Rush: this fight's win is in the run's tally
   let abilityFor = null;   // Boss Rush, between fights: s since the abilities were offered (null: not offered)
   const abilityRound = new Set();   // the players offered abilities this time (a late arrival is offered once)
-  let tally = null;   // Boss Rush's totals across its fights: { roster, startedAt, beaten, players: id -> row }
+  let tally = null;   // Boss Rush's totals across its fights: { run, startedAt, beaten, crowned, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
   let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
   let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
@@ -179,16 +179,17 @@ function createServer(options = {}) {
     if (!won) return;
     const g = session.gauntlet, time = Math.floor(sim.state.fought + 1e-6);   // whole seconds, as the HUD shows them
     tally.beaten += 1 + (g.partners?.length || 0);
+    if (g.crowned) tally.crowned++;
     const killer = sim.fightKiller, row = killer && tally.players.get(killer);
     if (row) row.kills++;
-    tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par, killer: row ? killer : null });
+    tally.times.push({ bosses: [g.boss, ...(g.partners || [])], time, par: session.par, swift: time <= session.par, killer: row ? killer : null, ...(g.crowned ? { crowned: true } : {}) });
   }
-  // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, and each player's totals, most
-  // damage first. The roster lets the leader start the same run again.
-  const runSummary = outcome => ({ outcome, name: C.calling.name, roster: tally.roster, bosses: tally.roster.length, beaten: tally.beaten, times: tally.times,
+  // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, Crowned fights won, and each
+  // player's totals, most damage first.
+  const runSummary = outcome => ({ outcome, name: C.calling.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
-  // For Boss Rush, `id` is the run's roster (boss ids in order) and `boss` the fight's index.
+  // For Boss Rush, `id` is the run ({ seed, opening }, sim.calling) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
     const gauntlet = kind === 'gauntlet' ? sim.gauntlet(boss, id) : kind === 'calling' ? sim.calling(id, boss ?? 0) : null;
@@ -197,19 +198,19 @@ function createServer(options = {}) {
     if ((kind === 'campaign' || campaignId) && !campaign) throw Object.assign(new Error('Unknown campaign or chapter'), { rejected: true });
     if (campaign) { kind = 'level'; id = campaign.level; }
     // A later fight of Boss Rush keeps the run's abilities; anything else starts without.
-    try { session = sim.start(kind, id, gauntlet?.partners || [], !!gauntlet?.roster && gauntlet.fight > 0); } catch (e) {
+    try { session = sim.start(kind, id, gauntlet?.partners || [], !!gauntlet?.run && gauntlet.fight > 0); } catch (e) {
       // A failure after validation leaves the simulation half-built: end the run properly for everyone.
       if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another level.', 'error');
       throw e;
     }
     for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
     if (gauntlet) session.gauntlet = gauntlet;
-    if (gauntlet?.roster) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
-    if (gauntlet?.roster) session.pace = sim.setRushFight(gauntlet.fight);   // the curve: faster with every fight won
-    if (gauntlet?.roster) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
-    if (gauntlet?.roster && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
-    if (!gauntlet?.roster) tally = null;
-    else if (gauntlet.fight === 0) tally = { roster: gauntlet.roster, startedAt: performance.now(), beaten: 0, times: [], players: new Map() };
+    if (gauntlet?.run) session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
+    if (gauntlet?.run) session.pace = sim.setRushFight(gauntlet.fight, gauntlet.modifiers);   // the curve and the fight's modifiers
+    if (gauntlet?.run) session.par = sim.rushPar(gauntlet.fight, 1 + gauntlet.partners.length);   // the HUD's par time
+    if (gauntlet?.run && gauntlet.fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
+    if (!gauntlet?.run) tally = null;
+    else if (gauntlet.fight === 0) tally = { run: gauntlet.run, startedAt: performance.now(), beaten: 0, crowned: 0, times: [], players: new Map() };
     tallied = false;
     if (campaign) session.campaign = campaign;
     if (opening && (campaign?.intro || gauntlet)) session.opening = true;
@@ -226,7 +227,7 @@ function createServer(options = {}) {
       abilityFor = 0;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) abilityRound.add(id);
-      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1);
+      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned);
       for (const p of clients.values()) sendOffer(p);
     }
     abilityFor += 1 / C.tickRate;
@@ -238,13 +239,13 @@ function createServer(options = {}) {
   // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
   function offerLate(p) {
     if (abilityFor === null) return;
-    if (!abilityRound.has(p.id)) { abilityRound.add(p.id); sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1); }
+    if (!abilityRound.has(p.id)) { abilityRound.add(p.id); sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned); }
     sendOffer(p);
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
   function sendOffer(p) {
     const offer = sim.abilityOffer(p.id);
-    if (p.hello && offer) send(p, { type: 'abilities', offer, left: Math.max(0, sim.abilityPickTime - abilityFor), held: sim.abilities()[p.id] || [], swift: swiftKill() });
+    if (p.hello && offer) send(p, { type: 'abilities', offer, left: Math.max(0, sim.abilityPickTime - abilityFor), held: sim.abilities()[p.id] || [], swift: swiftKill(), crowned: !!session.gauntlet?.crowned });
   }
   // This fight was won under its par (CONFIG.swift): its ability offer has an extra choice.
   const swiftKill = () => !!tally?.times.length && tally.times[tally.times.length - 1].swift && tallied;
@@ -285,17 +286,18 @@ function createServer(options = {}) {
       if (!['campaign', 'level', 'arena', 'gauntlet', 'calling'].includes(msg.kind) || !net.id(msg.id)) return;
       try {
         if (msg.kind === 'calling') {
-          if (msg.id !== C.calling.id || msg.roster !== undefined && (!Array.isArray(msg.roster) || msg.roster.length > sim.catalog().bosses.length)) return;
-          const roster = msg.roster ? msg.roster.map(String) : sim.randomRoster(msg.length);
-          sim.calling(roster);   // refuse a bad roster before anything starts
+          // `opening` (optional): the first fights' bosses by hand (tests, tools); the draw goes on after them.
+          if (msg.id !== C.calling.id || msg.opening !== undefined && (!Array.isArray(msg.opening) || msg.opening.length > sim.catalog().bosses.length)) return;
+          const run = sim.newRun(msg.opening ? msg.opening.map(String) : []);
+          sim.calling(run);   // refuse a bad opening before anything starts
           // Boss Rush is the party against the bosses (PLAN.md track B item 9): no bot ever fills it.
-          start('calling', roster, null, 0, true);
+          start('calling', run, null, 0, true);
         } else start(msg.kind, msg.id, null, undefined, true);
       } catch (e) {
         if (!e.rejected) console.error('Start failed:', e);
         error(p, e.rejected ? e.message : 'That adventure could not start. Choose another.');
       }
-    } else if (msg.action === 'restart' && session) session.gauntlet?.roster ? start('calling', session.gauntlet.roster, null, 0, true)
+    } else if (msg.action === 'restart' && session) session.gauntlet?.run ? start('calling', session.gauntlet.run, null, 0, true)
       : session.gauntlet ? start('gauntlet', session.gauntlet.id, null, undefined, true) : start(session.kind, session.id, session.campaign?.id);
     else if (msg.action === 'lobby') {
       stop('The leader returned everyone to the lobby.');
@@ -567,14 +569,15 @@ function createServer(options = {}) {
           break;
         }
         // Boss Rush: once the kill moment has played, the fight's time is kept and the ability pick opens in the arena.
-        if (session.gauntlet && sim.state.completedFor >= (session.gauntlet.roster ? C.rushKillTime : Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime))) {
-          if (session.gauntlet.roster && tally && !tallied) { tallyFight(true); tallied = true; }
-          if (session.gauntlet.roster && session.gauntlet.next && !abilitiesChosen()) continue;
+        if (session.gauntlet && sim.state.completedFor >= (session.gauntlet.run ? C.rushKillTime : Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime))) {
+          if (session.gauntlet.run && tally && !tallied) { tallyFight(true); tallied = true; }
+          if (session.gauntlet.run && session.gauntlet.next && !abilitiesChosen()) continue;
           const run = C.gauntlets[session.gauntlet.id];
-          // Boss Rush: the fallen rise for the next fight with everyone else; the last fight ends the run.
-          if (session.gauntlet.roster) {
-            if (session.gauntlet.next) start('calling', session.gauntlet.roster, null, session.gauntlet.next);
-            else stop(`${C.calling.name} COMPLETE · All ${session.gauntlet.bosses} bosses beaten.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
+          // Boss Rush: the fallen rise for the next fight with everyone else; it ends only when everyone falls (or at
+          // CONFIG.endless.longest, which no one reaches).
+          if (session.gauntlet.run) {
+            if (session.gauntlet.next) start('calling', session.gauntlet.run, null, session.gauntlet.next);
+            else stop(`${C.calling.name} COMPLETE · ${tally ? tally.beaten : 0} bosses beaten.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);

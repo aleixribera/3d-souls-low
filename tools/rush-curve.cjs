@@ -1,10 +1,13 @@
 'use strict';
 // Boss Rush's difficulty, measured alone with the test bot as the person stand-in (pass 54, PLAN.md track B item 10).
 //   node tools/rush-curve.cjs bosses [trials] [fight]   each boss alone at the pace of `fight` fights won (default 0, 1x)
-//   node tools/rush-curve.cjs runs [runs]                whole runs: fight n at the curve's pace for n - 1 won, a fresh body
-//                                                        each fight (as Boss Rush), until the first fall; prints the fight reached
+//   node tools/rush-curve.cjs runs [runs]                whole Endless runs (sim.calling: its draw, pairs and modifiers), fight n
+//                                                        at the curve's pace for n - 1 won, a fresh body each fight (as Boss
+//                                                        Rush), until the first fall; prints the fight reached. MODS=0: no modifiers
+//   node tools/rush-curve.cjs pairs [trials] [fight]     two different random bosses at once, as Endless's pairs, at the pace of
+//                                                        `fight` fights won; ENDLESS='{"pairRest":0.4}' merges into CONFIG.endless
 // One body, its bot brain playing the person (no allied bot, item 9). A fight ends at a win, a fall or `LIMIT` s (a loss).
-// No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses. JOBS=n splits the work over n child processes, each at
+// No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses (bosses mode). JOBS=n splits the work over n child processes, each at
 // idle priority. CURVE='{"rise":0.3}' merges into CONFIG.pace, to try a curve without editing js/config.js.
 // BY=1 adds the damage taken by what dealt it, and the last blow of each fall (BY=2: by blow of a string).
 // SLOW='{"oswin":[1.2,1.1,0.8,0.2]}' scales a boss's idle gaps (every `cooldown`), recoveries and follow-up chances, and adds
@@ -37,12 +40,14 @@ const KITS = {
 const kitList = process.env.KIT ? KITS[process.env.KIT] || process.env.KIT.split(',') : [];
 const probe = createSimulation();
 if (curve) Object.assign(global(probe, 'CONFIG').pace, curve);   // the printed pace follows CURVE too
+if (process.env.ENDLESS) Object.assign(global(probe, 'CONFIG').endless, JSON.parse(process.env.ENDLESS));
 const ALL = probe.catalog().bosses.map(b => b.id);
 const only = process.env.ONLY ? process.env.ONLY.split(',') : ALL;
 
 function global(sim, name) { return sim.inspect().Game.update.constructor('return ' + name)(); }
 function setup(sim) {
   if (curve) Object.assign(global(sim, 'CONFIG').pace, curve);
+  if (process.env.ENDLESS) Object.assign(global(sim, 'CONFIG').endless, JSON.parse(process.env.ENDLESS));
   if (skill !== 1) for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill;
   const byId = global(sim, 'ENEMY_BY_ID');
   for (const [id, [cd, rec, fu, beat = 0]] of Object.entries(slow)) {
@@ -68,11 +73,11 @@ function setup(sim) {
     }
   }
 }
-// One fight alone: { result: 'win' | 'loss', time, taken }.
-function fight(boss, won, seed) {
+// One fight alone: { result: 'win' | 'loss', time, taken }. `partners`: bosses fought with it; `mods`: Endless modifiers.
+function fight(boss, won, seed, partners = [], mods = []) {
   const sim = createSimulation({ seed, maxBots: 1 }); setup(sim); sim.addBot();
-  sim.start('arena', boss, []); sim.setPlayers([]);
-  sim.setRushFight(won);
+  sim.start('arena', boss, partners); sim.setPlayers([]);
+  sim.setRushFight(won, mods);
   const { Game, players } = sim.inspect(), body = players[0];
   delete body.botId;   // the person stand-in
   if (kitList.length) sim.giveAbilities(body.id, kitList.slice(0, won));
@@ -101,14 +106,24 @@ function work(job) {
       return r;
     });
   }
-  // Runs: each its own shuffled order of every boss, round again once all are fought (Endless isn't built yet).
+  if (job.mode === 'pairs') {
+    const r = { boss: 'pairs', wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, by: {}, fell: {} };
+    for (const t of job.trials) {
+      let s = (777 + t * 7919) >>> 0; const rnd = () => { s = Math.imul(s ^ (s >>> 15), 2246822519) + 0x6d2b79f5 >>> 0; return s / 4294967296; };
+      const a = only[Math.floor(rnd() * only.length)], rest = only.filter(b => b !== a), b = rest[Math.floor(rnd() * rest.length)];
+      const f = fight(a, job.won, 9000 + t, [b]);
+      r.fights++; r.time += f.time; r.taken += f.taken;
+      if (f.result === 'win') { r.wins++; r.winTime += f.time; } else r.fell[a + '+' + b] = (r.fell[a + '+' + b] || 0) + 1;
+    }
+    return [r];
+  }
+  // Runs: each an Endless run of its own seed, drawn as the server draws it.
   return job.runs.map(n => {
-    let s = (5000 + n * 7919) >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const order = [];
+    const run = { seed: (5000 + n * 7919) >>> 0 };
     for (let won = 0; ; won++) {
-      if (!order.length) { const ids = [...only]; for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; } order.push(...ids); }
-      const boss = order.shift(), f = fight(boss, won, 9000 + n * 101 + won);
-      if (f.result !== 'win' || won >= 40) return { run: n, reached: won + 1, fell: f.result !== 'win' ? boss : null, pace: probe.inspect().Game.update.constructor('return rushPace')()(won) };
+      const g = probe.calling(run, won), mods = process.env.MODS === '0' ? [] : g.modifiers;
+      const f = fight(g.boss, won, 9000 + n * 101 + won, g.partners, mods);
+      if (f.result !== 'win' || won >= 40) return { run: n, reached: won + 1, fell: f.result !== 'win' ? [g.boss, ...g.partners].join('+') : null, pace: probe.inspect().Game.update.constructor('return rushPace')()(won) };
     }
   });
 }
@@ -119,15 +134,19 @@ if (process.env.RUSH_CHILD) {
   // Bosses: each boss's fights in slices of at most 8, so one boss alone spreads over every job too.
   const slices = [];
   if (mode === 'bosses') for (const b of only) for (let t = 0; t < count; t += 8) slices.push([b, t, Math.min(count, t + 8)]);
-  const items = mode === 'bosses' ? slices : Array.from({ length: count }, (_, i) => i);
+  const items = mode === 'bosses' ? slices : Array.from({ length: count }, (_, i) => i);   // runs, or pairs' trials
   const parts = Array.from({ length: jobs }, (_, j) => items.filter((_, i) => i % jobs === j)).filter(p => p.length);
-  const job = p => mode === 'bosses' ? { mode, bosses: p, count, won: fightArg } : { mode, runs: p };
+  const job = p => mode === 'bosses' ? { mode, bosses: p, count, won: fightArg } : mode === 'pairs' ? { mode, trials: p, won: fightArg } : { mode, runs: p };
   Promise.all(parts.map(p => new Promise((res, rej) => {
     const child = fork(__filename, process.argv.slice(2), { env: { ...process.env, RUSH_CHILD: '1' } });
     child.on('message', res); child.on('error', rej); child.send(job(p));
   }))).then(out => {
     let rows = out.flat();
-    if (mode === 'bosses') {
+    if (mode === 'pairs') {
+      const m = rows.reduce((t, r) => { for (const k of ['wins', 'time', 'winTime', 'taken', 'fights']) t[k] += r[k]; Object.assign(t.fell, r.fell); return t; }, { wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, fell: {} });
+      console.log(`# pairs alone, ${count} fights at the pace for ${fightArg} won, pairRest ${global(probe, 'CONFIG').endless.pairRest}${process.env.ENDLESS ? ' (ENDLESS ' + process.env.ENDLESS + ')' : ''}, ${skill === 1 ? 'the default bot' : 'SKILLED'}`);
+      console.log(`pairs  wins ${m.wins}/${m.fights}  falls ${((m.fights - m.wins) / m.fights).toFixed(2)}  time ${(m.time / m.fights).toFixed(0)}s  win time ${m.wins ? (m.winTime / m.wins).toFixed(0) + 's' : '-'}  taken ${(m.taken / m.fights).toFixed(0)}`);
+    } else if (mode === 'bosses') {
       const merged = new Map();   // a boss's slices back into one row
       for (const r of rows) {
         const m = merged.get(r.boss);

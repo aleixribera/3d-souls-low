@@ -18,7 +18,7 @@ Voice: archaic, understated, melancholic, tender in places. No modern words, no 
 These gold title cards introduce a new shared run; they do not replace chapter loading lines or change the story.
 
 - **STORY · ASHMERE** — “Defeat the Gaoler King.”
-- **BOSS RUSH** — “Answer every boss that comes. The last two come together.”
+- **BOSS RUSH** — “Answer every boss that comes, until the last of you falls.”
 - **SINGLE BOSS** — “Defeat every boss.”
 - **DOUBLE BOSS** — “Defeat every boss, two at a time.”
 - **TRIPLE BOSS** — “Defeat every boss, three at a time.”

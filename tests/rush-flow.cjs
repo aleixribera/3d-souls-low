@@ -39,16 +39,16 @@ async function peer(origin, name) {
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   let session;
-  const pose = p => p.send({ type: 'pose', epoch: session.epoch, pose: {
-    ...session.spawn, hp: 120, state: 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } });
+  const pose = (p, dead = false) => p.send({ type: 'pose', epoch: session.epoch, pose: {
+    ...session.spawn, hp: dead ? 0 : 120, state: dead ? 'dead' : 'idle', stateTime: 0, attackT: 0, chargeT: 0, walkPhase: 0, grounded: true } });
   const flush = async p => { p.send({ type: 'ping' }); await p.next('pong'); };
   const kill = () => { for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); } };
   const arrive = async p => { p.send({ type: 'ready', epoch: session.epoch }); pose(p); await flush(p); };
   try {
     const a = await peer(origin, 'Ash'); peers.push(a);
     app.sim.addBot();   // a test player beside Ash: since pass 52 no bot fills a party
-    const bosses = app.sim.catalog().bosses.map(e => e.id), roster = [bosses[0], bosses[3], bosses[5], bosses[7]];
-    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster });
+    const bosses = app.sim.catalog().bosses.map(e => e.id), opening = [bosses[0], bosses[3], bosses[5], bosses[7]];
+    a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening });
     session = (await a.next('start')).session;
     assert.equal(session.par, S.par, 'the first fight carries its par');
     assert.ok(!session.drop, 'the first fight opens with its card');
@@ -80,19 +80,25 @@ async function peer(origin, name) {
     assert.equal(app.sim.abilities()[bot].length, 2, 'the bots chose too');
     a.send({ type: 'pickAbility', epoch: session.epoch, id: fast.offer[fast.offer.length - 1] });
     session = (await a.next('start')).session;
-    assert.equal(session.gauntlet.partners.length, 1, 'the last fight: two bosses');
-    assert.equal(session.par, app.sim.rushPar(2, 2));
+    assert.equal(session.par, app.sim.rushPar(2, 1 + session.gauntlet.partners.length));
     await arrive(a);
     assert.equal(app.session.gauntlet.number, 3);
 
-    // The last fight ends the run: each boss's time against its par, on the end screen.
+    // Fight 3 won at once; in fight 4 everyone falls and the run ends: each boss's time against its par, on the end screen.
     kill(); app.sim.tick(C.rushKillTime + 0.5);
+    let third = await a.next('abilities'); while (!third.offer) third = await a.next('abilities');   // past fight 2's taken pick
+    a.send({ type: 'pickAbility', epoch: session.epoch, id: third.offer[0] });
+    session = (await a.next('start')).session; await arrive(a);
+    assert.equal(session.gauntlet.number, 4);
+    app.sim.arenaWipeDelay = 0.1;
+    for (const body of app.sim.inspect().players) if (body.botId) { body.hp = 0; body.die(); }
+    pose(a, true); await flush(a);
     const stop = await a.next('stop');
-    assert.equal(stop.reason, 'run-complete');
+    assert.equal(stop.reason, 'team-wipe');
     const times = stop.summary.times;
-    assert.equal(times.length, 3, 'one row a fight');
+    assert.equal(times.length, 3, 'one row a fight won');
     assert.deepEqual(times.map(t => t.swift), [false, true, true]);
-    assert.deepEqual(times[2].bosses, roster.slice(2), 'the pair shares a row');
+    assert.deepEqual(times[2].bosses, [opening[2]], 'the third fight boss in its row');
     assert.equal(times[0].time, S.par + 5); assert.equal(times[0].par, S.par);
     console.log('RUSH FLOW: par by the curve, the fight clock, the kill moment before the pick, the swift kill, the drop-in next boss and the end screen times passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }

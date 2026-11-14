@@ -214,6 +214,15 @@ const CONFIG = {
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
   swift: { par: 45, pair: 0.5, max: 120, extra: 1 },
+  // Endless (pass 65, PLAN.md track B item 5): a Boss Rush run goes on until everyone falls. The first `opening` fights
+  // draw from RUSH.opening (js/data/rush.js), then every boss. No boss comes back until every boss of its pool has come,
+  // and never twice in a row. Every `crowned`th fight is Crowned (its win offers `crownedOffer` abilities, one of them a
+  // legendary); from fight `pairFrom`, every `pairEvery`th fight brings two bosses at once (never a Crowned one). From fight
+  // `mods[0]` a fight carries one modifier (RUSH.modifiers), one more from each later entry; a Crowned fight one more still.
+  // `pairRest`: two bosses at once rest this much as fast between attacks as one alone (below 1: longer rests), so a pair
+  // is a step up, not a wall (tools/rush-curve.cjs pairs). `longest`: a bound on a run's fights for the draw; the curve
+  // makes it unreachable.
+  endless: { opening: 3, crowned: 5, crownedOffer: 4, pairFrom: 7, pairEvery: 5, pairRest: 0.35, mods: [4, 12, 20], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.

@@ -68,13 +68,10 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyOptions');
     await a.evaluate(() => document.activeElement.blur()); await a.keyboard.press('Shift+Tab');
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyOptions', 'backward Tab enters at the last control when focus was lost');
-    // v7.63.0: the arrow keys move like the controller, and left / right step a cycler.
+    // v7.63.0: the arrow keys move like the controller.
     await a.locator('#lobbyStart').focus(); await a.keyboard.press('ArrowUp');
-    assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyCallingLength', 'arrow up from Start');
-    await a.keyboard.press('ArrowRight');
-    assert.equal(await a.locator('#lobbyCallingLength').inputValue(), String(C.calling.length + 1), 'arrow right steps the cycler');
-    await a.keyboard.press('ArrowLeft');
-    assert.match(await a.locator('#lobbyPadHint').textContent(), /Move.*Change.*Enter.*Select/, 'keyboard hints');
+    assert.match(await a.evaluate(() => document.activeElement.dataset.padKey || ''), /^mode\//, 'arrow up from Start reaches the mode list');
+    assert.match(await a.locator('#lobbyPadHint').textContent(), /Move.*Enter.*Select/, 'keyboard hints');
     assert.equal(await a.locator('#lobbyLeave .ui-key').textContent(), 'Esc', "Back's key sits on Leave lobby");
     const b = await player('Ember');
     await a.waitForFunction(() => multiplayer.info.players.length === 2);

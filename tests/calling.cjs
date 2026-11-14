@@ -1,6 +1,8 @@
 'use strict';
-// The Calling (v7.35.0): the leader's co-op boss rush. A chosen or random roster, no bots (pass 52), one boss at a
-// time with the last two together, the fallen rising for the next fight, a refused roster changing nothing.
+// Boss Rush (v7.35.0 as The Calling), endless since pass 65 (PLAN.md track B item 5): a run of bosses drawn from its
+// seed that goes on until everyone falls. No bots (pass 52); the first fights from the easier bosses, every 5th fight
+// Crowned (a pick of 4 with a legendary), two bosses at once every few fights, modifiers by name; the fallen rise for
+// the next fight; a refused opening changes nothing; the end of run counts bosses beaten and Crowned fights.
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { createServer } = require('../server/index.cjs');
@@ -27,6 +29,8 @@ async function peer(origin, name) {
   const app = createServer(), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
+  const G = name => app.sim.inspect().Game.update.constructor('return ' + name)();
+  const E = G('CONFIG').endless, RUSH = G('RUSH'), ABILITY_BY_ID = G('ABILITY_BY_ID');
   let session;
   const pose = (p, dead = false) => p.send({ type: 'pose', epoch: session.epoch, pose: {
     ...session.spawn, hp: dead ? 0 : 120, state: dead ? 'dead' : 'idle', stateTime: 0,
@@ -39,93 +43,124 @@ async function peer(origin, name) {
     app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
   };
   try {
+    // ---- The draw (sim.calling), for many seeds ----
+    const bosses = app.sim.catalog().bosses.map(e => e.id);
+    for (let seed = 1; seed <= 40; seed++) {
+      const fights = Array.from({ length: 30 }, (_, n) => app.sim.calling({ seed: seed * 7919 }, n));
+      fights.forEach((g, n) => {
+        const number = n + 1, met = [g.boss, ...g.partners];
+        assert.equal(g.number, number); assert.equal(g.next, n + 1, 'a run never runs out of fights');
+        if (number <= E.opening) assert.ok(RUSH.opening.includes(g.boss), `fight ${number} draws from the easier bosses (${g.boss})`);
+        assert.equal(g.crowned, number % E.crowned === 0, `every ${E.crowned}th fight is Crowned (fight ${number})`);
+        assert.equal(met.length, [7, 12, 17, 22, 27].includes(number) ? 2 : 1, `two bosses at once on fights 7, 12, 17... (fight ${number})`);
+        assert.equal(new Set(met).size, met.length, 'never the same boss twice in a fight');
+        if (n) assert.ok(met.every(id => ![fights[n - 1].boss, ...fights[n - 1].partners].includes(id)), `no boss twice in a row (fight ${number})`);
+        assert.equal(g.modifiers.length, number < E.mods[0] ? 0 : Math.min(RUSH.modifiers.length, E.mods.filter(f => number >= f).length + (g.crowned ? 1 : 0)), `fight ${number}'s modifier count`);
+        assert.ok(g.modifiers.every(id => RUSH.modifiers.find(m => m.id === id).from <= number), 'a modifier only from its own fight');
+        assert.equal(g.defeated, fights.slice(0, n).reduce((k, f) => k + 1 + f.partners.length, 0), 'defeated counts the bosses before');
+      });
+      // The first round of the whole roster meets every boss before any comes back, the opening's apart.
+      const later = fights.slice(E.opening).flatMap(g => [g.boss, ...g.partners]).slice(0, bosses.length - E.opening);
+      assert.equal(new Set(later).size, later.length, 'no boss comes back before the others have come');
+      assert.deepEqual(app.sim.calling({ seed: seed * 7919 }, 17), fights[17], 'a seed replays the same run');
+    }
+    const forced = app.sim.calling({ seed: 3, opening: [bosses[9], bosses[5]] }, 1);
+    assert.equal(forced.boss, bosses[5], 'an opening by hand sets the first fights');
+    // The curve and the modifiers: pace only, never health or damage.
+    app.sim.start('arena', bosses[0], []);
+    const boss = app.sim.inspect().Game.enemies[0], hp = boss.maxHp ?? boss.def.hp;
+    const plain = app.sim.setRushFight(10), quick = app.sim.setRushFight(10, ['quickened', 'restless', 'unbroken']);
+    assert.ok(Math.abs(quick / plain - RUSH.modifiers.find(m => m.id === 'quickened').pace) < 1e-9, 'Quickened speeds the whole pace');
+    assert.ok(boss.rest > 1 && boss.chain > 1, 'Restless and Unbroken set the rests and the strings');
+    assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
+    app.sim.setRushFight(0); assert.ok(boss.rest === 1 && boss.chain === 1, 'a fight without modifiers is plain');
+    // A Crowned win's offer: four cards, one of them a legendary, for every player.
+    for (let i = 0; i < 30; i++) {
+      app.sim.offerAbilities(['crowned-' + i], false, 0, 5, true);
+      const offer = app.sim.abilityOffer('crowned-' + i);
+      assert.equal(offer.length, E.crownedOffer); assert.ok(offer.some(id => ABILITY_BY_ID[id].rarity === 'legendary'), 'a legendary on every Crowned offer');
+      app.sim.pickAbility('crowned-' + i, offer.find(id => ABILITY_BY_ID[id].rarity !== 'legendary'));   // a taken legendary leaves the others' offers
+    }
+
+    // ---- A run over the wire ----
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Ember'); peers.push(a, b);
     const owner = () => [a, b].find(p => p.id === app.leader) || a;
-    // Between fights everyone takes an ability (tests/abilities.cjs covers the pick itself).
     const pickAbility = async () => {
-      for (const p of [a, b]) { p.send({ type: 'pickAbility', epoch: session.epoch, id: (await p.next('abilities')).offer[0] }); await p.next('abilities'); }
+      const offers = [];
+      for (const p of [a, b]) { const o = await p.next('abilities'); offers.push(o); p.send({ type: 'pickAbility', epoch: session.epoch, id: o.offer[0] }); await p.next('abilities'); }
+      return offers;
     };
-    const bosses = app.sim.catalog().bosses.map(e => e.id);
     const call = async extra => {
       owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, ...extra });
       const opened = await a.next('start'); session = opened.session; await b.next('start');
       return opened;
     };
+    const nextFight = async () => { session = (await a.next('start')).session; await b.next('start'); };
 
-    // A refused roster starts nothing and adds no bot.
-    for (const roster of [bosses.slice(0, 2), [bosses[0], bosses[0], bosses[1]], [bosses[0], bosses[1], 'nobody']]) {
-      owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster });
-      assert.match((await owner().next('error')).message, /Choose at least 3 different bosses/);
+    // A refused opening starts nothing and adds no bot.
+    for (const opening of [[bosses[0], bosses[0]], [bosses[0], 'nobody']]) {
+      owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening });
+      assert.match((await owner().next('error')).message, /Unknown Boss Rush run/);
     }
-    owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, roster: 'all' }); await flush(owner());
-    assert.equal(app.session, null, 'a malformed roster starts nothing');
+    owner().send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: 'all' }); await flush(owner());
+    assert.equal(app.session, null, 'a malformed opening starts nothing');
     assert.equal(app.sim.botList().length, 0, 'a refused run adds no bot');
 
-    // A hand-picked roster of three: one fight alone, then the last two together. Two players and no bot (pass 52).
-    const roster = [bosses[3], bosses[0], bosses[7]];
-    // Every fight's tally gets 10.4 damage more per player, so the run's totals show two fights folded together.
+    // Two players and no bot: fight 1 alone, the fallen rise for fight 2.
     const tally = app.sim.fightTally; app.sim.fightTally = () => tally().map(r => ({ ...r, damage: r.damage + 10.4 }));
-    const opened = await call({ roster });
-    assert.equal(opened.opening, true, 'The Calling opens with its own card');
+    const opened = await call({ opening: [bosses[3], bosses[0]] });
+    assert.equal(opened.opening, true, 'Boss Rush opens with its own card');
     assert.equal(app.sim.botList().length, 0, 'no bot fills the party');
-    assert.deepEqual(session.gauntlet.roster, roster);
-    assert.equal(session.id, roster[0]); assert.deepEqual(session.partners || [], []);
-    assert.equal(session.gauntlet.number, 1); assert.equal(session.gauntlet.total, 2);
+    assert.equal(session.id, bosses[3]); assert.deepEqual(session.partners || [], []);
+    assert.equal(session.gauntlet.number, 1); assert.equal(session.gauntlet.crowned, false); assert.deepEqual(session.gauntlet.modifiers, []);
     assert.equal(session.teamWipeOnly, true);
     assert.equal(app.sim.describe(session), 'Boss Rush');
+    const seed = session.gauntlet.run.seed;
     ready(a); ready(b); await flush(b);
     pose(a, true); await flush(a); pose(a); await flush(a);
     assert.equal(app.clients.get(a.id).pose.hp, 0, 'a fallen player stays down for the rest of the fight');
-    finishFight(); await pickAbility();
-    session = (await a.next('start')).session; await b.next('start');
-    assert.equal(session.gauntlet.number, 2); assert.equal(session.gauntlet.defeated, 1);
-    assert.equal(session.id, roster[1]); assert.deepEqual(session.partners, [roster[2]], 'the last two bosses come together');
-    assert.deepEqual(Array.from(app.sim.inspect().Game.enemies, e => e.baseDef.id), roster.slice(1));
+    finishFight(); await pickAbility(); await nextFight();
+    assert.equal(session.gauntlet.number, 2); assert.equal(session.gauntlet.defeated, 1); assert.equal(session.id, bosses[0]);
     ready(a); ready(b); await flush(b);
     assert.equal(app.clients.get(a.id).pose.hp, 120, 'the fallen rise for the next fight');
-    finishFight();
-    const done = await a.next('stop'); await b.next('stop');
-    assert.match(done.message, /BOSS RUSH COMPLETE · All 3 bosses beaten/);
-    assert.equal(app.session, null);
-    // The end of the run: its time, every boss beaten, and each player's damage and deaths over both fights.
-    const won = done.summary, row = id => won.players.find(r => r.id === id);
-    assert.equal(won.outcome, 'won'); assert.equal(won.beaten, 3); assert.equal(won.bosses, 3); assert.deepEqual(won.roster, roster);
-    assert.ok(Number.isInteger(won.time) && won.time >= 0, 'the run time is whole seconds');
-    assert.equal(won.players.length, 2, 'both players');
-    assert.equal(row(a.id).deaths, 1, 'Ash fell once'); assert.equal(row(b.id).deaths, 0);
-    assert.equal(row(a.id).name, 'Ash');
-    assert.ok(won.players.every(r => r.damage >= 21), 'damage adds up over the fights');
-    assert.ok(won.players.every((r, i) => !i || won.players[i - 1].damage >= r.damage), 'most damage first');
     app.sim.fightTally = tally;
-    // Again: the leader starts the same roster for the same group.
-    await call({ roster: won.roster });
-    assert.deepEqual(session.gauntlet.roster, roster); assert.equal(session.gauntlet.number, 1);
 
-    // A random roster: the length the leader chose, every boss different, drawn from every boss in the game.
-    await call({ length: 4 });
-    const random = session.gauntlet.roster;
-    assert.equal(random.length, 4); assert.equal(new Set(random).size, 4); assert.ok(random.every(id => bosses.includes(id)));
-    assert.equal(session.gauntlet.total, 3);
-    await call({});
-    assert.equal(session.gauntlet.roster.length, C.calling.length, 'the default run is ' + C.calling.length + ' bosses');
-    await call({ length: 999 });
-    assert.equal(session.gauntlet.roster.length, bosses.length, 'a longer run than there are bosses meets every boss once');
+    // Restart: the same run from its first fight. Then on to the first Crowned fight and past it.
+    owner().send({ type: 'control', action: 'restart' }); await nextFight();
+    assert.equal(session.gauntlet.number, 1); assert.equal(session.gauntlet.run.seed, seed, 'a restart replays the same run');
+    for (let number = 1; number < E.crowned; number++) {
+      ready(a); ready(b); await flush(b);
+      if (number >= E.mods[0]) assert.ok(session.gauntlet.modifiers.length >= 1, `fight ${number} carries a modifier`);
+      finishFight(); const offers = await pickAbility();
+      assert.ok(offers.every(o => !o.crowned), 'an ordinary fight is no Crowned offer');
+      await nextFight();
+    }
+    assert.equal(session.gauntlet.number, E.crowned); assert.equal(session.gauntlet.crowned, true, `fight ${E.crowned} is Crowned`);
+    ready(a); ready(b); await flush(b); finishFight();
+    const crownedOffers = await pickAbility();
+    for (const o of crownedOffers) {
+      assert.equal(o.crowned, true); assert.equal(o.offer.length, E.crownedOffer, 'a Crowned win offers four');
+      assert.ok(o.offer.some(id => ABILITY_BY_ID[id].rarity === 'legendary'), 'one of them a legendary');
+    }
+    await nextFight();
+    assert.equal(session.gauntlet.number, E.crowned + 1); assert.equal(session.gauntlet.crowned, false);
 
-    // Restart starts the same roster from its first fight; a team wipe ends the run.
-    ready(a); ready(b); await flush(b); finishFight(); await pickAbility();
-    session = (await a.next('start')).session; await b.next('start');
-    const whole = session.gauntlet.roster;
-    assert.equal(session.gauntlet.number, 2);
-    owner().send({ type: 'control', action: 'restart' });
-    session = (await a.next('start')).session; await b.next('start');
-    assert.equal(session.gauntlet.number, 1); assert.deepEqual(session.gauntlet.roster, whole);
+    // A team wipe ends the run: bosses beaten, Crowned fights won, each player's totals.
     ready(a); ready(b); await flush(b);
     app.sim.arenaWipeDelay = 0.1;
     pose(a, true); pose(b, true); await flush(a); await flush(b);
     const wipe = await a.next('stop'); await b.next('stop');
     assert.equal(wipe.reason, 'team-wipe'); assert.match(wipe.message, /TEAM WIPED.*BOSS RUSH/);
-    assert.equal(wipe.summary.outcome, 'wiped'); assert.equal(wipe.summary.beaten, 0, 'a restart starts the tally again');
-    assert.equal(wipe.summary.bosses, whole.length); assert.equal(wipe.summary.players.find(r => r.id === b.id).deaths, 1);
-    console.log('BOSS RUSH: refused rosters, picked roster, no bot in the party, last two together, the fallen rise, run complete, random and default lengths, restart, wipe, the end-of-run totals and again passed.');
+    const end = wipe.summary, row = id => end.players.find(r => r.id === id);
+    assert.equal(end.outcome, 'wiped'); assert.equal(end.beaten, E.crowned, 'a restart starts the tally again');
+    assert.equal(end.crowned, 1, 'one Crowned fight won');
+    assert.equal(end.times.length, E.crowned); assert.equal(end.times[E.crowned - 1].crowned, true, 'the Crowned fight is marked');
+    assert.equal(end.players.length, 2); assert.equal(row(b.id).deaths, 1); assert.equal(row(a.id).name, 'Ash');
+    assert.ok(Number.isInteger(end.time) && end.time >= 0, 'the run time is whole seconds');
+    assert.ok(!('roster' in end) && !('bosses' in end), 'an endless run has no length');
+    // Again: a new run.
+    await call({});
+    assert.equal(session.gauntlet.number, 1); assert.ok(RUSH.opening.includes(session.id), 'a new run opens on an easier boss');
+    console.log('BOSS RUSH (endless): the draw (easier first, Crowned every 5th, pairs, no repeats, modifiers, seeds replay), pace-only modifiers, the Crowned offer, refused openings, no bot, the fallen rise, restart, a Crowned fight over the wire, the wipe and its summary passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

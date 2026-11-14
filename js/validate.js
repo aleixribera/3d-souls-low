@@ -383,6 +383,21 @@ function validateData({ visual = true } = {}) {
     'CONFIG.swift: par above 0, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the abilities there are.');
   need(KM && num(KM.slow) && KM.slow > 0 && KM.slow <= 1 && ['time', 'embers', 'emberSpeed'].every(k => num(KM[k]) && KM[k] >= 0),
     'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
+  // Endless (pass 65): CONFIG.endless and RUSH (js/data/rush.js). A modifier only ever speeds a boss up.
+  const EN = CONFIG.endless, whole = (v, min) => Number.isInteger(v) && v >= min;
+  need(EN && whole(EN.opening, 0) && whole(EN.crowned, 2) && whole(EN.crownedOffer, CONFIG.abilities.offer) && EN.crownedOffer <= ABILITIES.length &&
+    whole(EN.pairFrom, EN.opening + 1) && whole(EN.pairEvery, 1) && num(EN.pairRest) && EN.pairRest > 0 && EN.pairRest <= 1 && Array.isArray(EN.mods) && EN.mods.every((f, i) => whole(f, 1) && (!i || f > EN.mods[i - 1])) && whole(EN.longest, 2),
+    'CONFIG.endless: opening 0 or more, crowned 2 or more, crownedOffer from CONFIG.abilities.offer to the abilities there are, pairFrom past the opening, pairEvery 1 or more, pairRest in (0, 1], mods rising fight numbers, longest 2 or more.');
+  need(ABILITIES.some(b => b.rarity === 'legendary'), 'Endless: a Crowned win offers a legendary, so there must be one.');
+  need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
+    'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');
+  need(Array.isArray(RUSH.modifiers) && new Set(RUSH.modifiers.map(m => m.id)).size === RUSH.modifiers.length, 'RUSH.modifiers: a list with different ids.');
+  for (const m of RUSH.modifiers) {
+    const where = `RUSH modifier "${m.id}"`, keys = ['pace', 'rest', 'chain'];
+    need(typeof m.id === 'string' && /^[a-z][a-z-]*$/.test(m.id) && typeof m.name === 'string' && m.name.length > 0 && whole(m.from, 1), `${where}: an id, a name and the fight it may come from.`);
+    need(Object.keys(m).every(k => ['id', 'name', 'from', ...keys].includes(k)) && keys.some(k => k in m) && keys.every(k => !(k in m) || num(m[k]) && m[k] > 1 && m[k] <= 3),
+      `${where}: it changes pace, rest or chain, each above 1 and at most 3 (a modifier never adds damage or health, nor slows a boss).`);
+  }
   const PR = CONFIG.enemy.postureRest;   // v7.65.0: a boss fights a while between posture breaks
   need(PR && num(PR.time) && PR.time >= 0 && num(PR.mul) && PR.mul >= 0 && PR.mul <= 1, 'CONFIG.enemy.postureRest: time 0 or more and mul from 0 to 1.');
   const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks

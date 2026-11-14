@@ -78,7 +78,7 @@ const { config: C } = require('../js/net-protocol.js');
     app.sim.arenaWipeDelay = 0.1;
     await page.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
     await page.locator('#runSummary').waitFor({ timeout: 30000 });
-    assert.equal(await page.locator('#runSummaryTitle').textContent(), 'You fell');
+    assert.equal(await page.locator('#runSummaryTitle').textContent(), '1 boss beaten', 'the bosses beaten are the title');
     assert.equal(await page.locator('#runSummaryRows tr').count(), 1, 'the end of the run lists Ash alone');
     assert.equal(app.session, null);
     assert.match(await page.locator('#lobbyNotice').textContent(), /^YOU FELL · /, 'the lobby says it plainly too');

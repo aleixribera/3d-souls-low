@@ -55,21 +55,16 @@ const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(i
     assert.equal(await a.locator('#lobbyStart.pad-selected').count(), 0, 'a click takes the focus ring off Start');
     await a.locator('#lobbyName').fill('Leader');
     await a.locator('#lobbyName').dispatchEvent('change');
-    // v7.63.0: the mode is a visible list mirroring the select; Start has the focus; Boss Rush's settings are cyclers.
+    // v7.63.0: the mode is a visible list mirroring the select; Start has the focus. Boss Rush has no settings (endless, pass 65).
     assert.deepEqual(await a.locator('#lobbyModes .ui-row').evaluateAll(rows => rows.map(r => r.dataset.mode)), adventures, 'one row per mode');
     assert.equal(await a.locator('#lobbyModes .ui-row[aria-pressed=true]').textContent(), 'Boss Rush');
     await navigate(a, 'lobbyStart');
-    assert.match(await a.locator('#lobbyPadHint').textContent(), /D-pad.*Move.*Change.*A.*Select/, 'hints follow the controller');
+    assert.match(await a.locator('#lobbyPadHint').textContent(), /D-pad.*Move.*A.*Select/, 'hints follow the controller');
     assert.equal(await a.locator('#lobbyLeave .ui-key').textContent(), 'B', "Back's key sits on Leave lobby");
     await pad(a, 12);
-    assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyCallingLength', 'up from Start reaches the boss count');
-    await pad(a, 15);
-    assert.equal(await a.locator('#lobbyCallingLength').inputValue(), String(C.calling.length + 1), 'right steps the cycler');
-    await pad(a, 0); await pad(a, 14); await pad(a, 14);
-    assert.equal(await a.locator('#lobbyCallingLength').inputValue(), String(C.calling.length), 'A steps forward, left steps back');
+    assert.match(await a.evaluate(() => document.activeElement.dataset.padKey || ''), /^mode\//, 'up from Start reaches the mode list');
     await navigate(a, 'mode/gauntlet/boss-only'); await pad(a, 0);
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'A picks the focused mode');
-    assert.equal(await a.locator('#lobbyCalling').isVisible(), false, "Boss Rush's settings go with it");
     await pad(a, 13, undefined, true);
     assert.notEqual(await a.evaluate(() => document.activeElement.dataset.padKey), 'mode/gauntlet/boss-pairs', 'held D-pad moves on past the next row');
     assert.equal(await a.locator('#lobbyAdventure').inputValue(), 'gauntlet/boss-only', 'moving never changes the mode');

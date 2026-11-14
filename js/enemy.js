@@ -120,6 +120,7 @@ class Enemy {
     // away instead of dying (the opening of Level 5).
     this.baseDef = def; this.boss = opts.boss || null;
     this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
+    this.rest = 1; this.chain = 1;   // an Endless modifier's (RUSH.modifiers): rests this many times faster, strings as if this much faster
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -376,7 +377,7 @@ class Enemy {
         if (sightLost(this, player)) { this.stepIn = false; this.searchLook = 0; this.setState(ES.SEARCH); break; }
         this.lastSeen = { x: player.x, z: player.z };
         this.yaw = turnToward(this.yaw, toPlayer, d.turnRate * dt);
-        this.cooldown -= dt * crowd.cooldownRate(this) * this.pace;   // slower while other enemies are mid-attack
+        this.cooldown -= dt * crowd.cooldownRate(this) * this.pace * this.rest;   // slower while other enemies are mid-attack
         if (!reach) {   // too far above or below: an archer shoots from where it stands, the rest go to the brink and wait
           this.cued = null;   // a kin's cue goes stale
           const shot = this.ranged && this.chooseAttack(dist, toPlayer, dt, true);
@@ -745,7 +746,7 @@ class Enemy {
   // (`if`, FOLLOW_IF) holds and whose `chance` rolls starts at once instead of the recovery: a combo that branches.
   followUp() {
     for (const f of this.attack.followUps || []) {
-      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= pacedChance(f.chance, this.pace)) continue;
+      if (!FOLLOW_IF[f.if || 'any'](this, this.playerDist, this.playerRel) || this.spent(this.attackById(f.attack)) || Math.random() >= pacedChance(f.chance, this.pace * this.chain)) continue;
       this.beginAttack(this.attackById(f.attack));
       return true;
     }
