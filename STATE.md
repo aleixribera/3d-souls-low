@@ -4,12 +4,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 60, v7.84.0): item 3 pass 2, baked light (`js/baked-light.js`, test `Baked light:`): every
-  level's fixed lights and the moon's visibility in a 1 m volume, both presets; Normal has no shadow map. Laptop
-  (fps / 1% low): every level 67-108 mean (aurel-in-ash 67/47, burning-town 76/48), 4-player kingsBlade 82/60,
-  pillagerCaptain 84/61; interleaved A/B on the 3 slowest scenes 56/23 -> 66/41. Left: PC stand-in calibration
-  (`BACKLOG.md`). Frames: `docs/scorecard/baked-light-normal.jpg`. The King's Blade, Agathe, the Kindling Tree:
-  **awaiting Aleix**.
+- Track A (pass 63, v7.88.0): item 4 (Ashmere's five bosses) pass 1, the Pillager Captain
+  (`js/data/bosses/pillager-captain.js`, test `Pillager Captain`): a two-handed bill, the hook's `pull`, per-hit
+  `noParry`, lit at half with fire on the floor (`fire`, `js/ground-fire.js`). Solo bot clean 71 s. Blind judge vs
+  Hollis 5-6 vs 7-9; left for pass 2 in `BACKLOG.md`. Frames: `docs/scorecard/captain-*.jpg`. He, the King's Blade,
+  Agathe, the Kindling Tree: **awaiting Aleix**. Baked light (pass 60) accepted.
 - Track B (pass 64, v7.87.0): item 4, co-op moments: a fallen friend's ember; stand in its ring 3 s to raise them
   (the boss turns on you); a title under each name on the end screen. Next: item 5, Endless.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
