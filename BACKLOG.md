@@ -2,6 +2,13 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- Two presets, what pass 1 (pass 57) left: Normal still dips to 50-59 fps on the laptop in long-hall, burning-town
+  and aurel-in-ash (1% lows 35-41). The laptop's Intel GPU is fill-rate bound: per-pixel cuts paid (MSAA to FXAA,
+  6 to 4 lights, stone reflections), draw-call cuts gave under 3% (moon shadows every other frame, plain PCF, AO from
+  the scene's own depth). Next lever: baked lighting (an irradiance volume per level in place of most pool lights).
+  Also left: the PC stand-in within 15% of the laptop per scene (`tools/bench/pc-bench.cjs` runs in about 2 min but
+  is not calibrated), and Auto: integrated GPUs now get Normal (50-75 fps on the laptop) where Low gave 116-230.
+
 - The King's Blade (pass 55, v7.79.0), judge's leftovers: the Turn still reads like Hollis's Turning Cloak (a
   spin with the cape); the Shield Wall's second cut can't be parried because `noParry` is per attack (a per-hit
   `noParry` would let the bash be roll-only and the cut parryable); the Shield Burns' wide fling wasn't re-judged.

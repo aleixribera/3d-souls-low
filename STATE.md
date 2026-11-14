@@ -4,18 +4,19 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 55, v7.79.0): the King's Blade, its own ("It answers"), **awaiting Aleix**. Blender figure, shield
-  that turns frontal blows into the Answer (hit `counter`; heavy breaks it), Corvel Burns falters (`falter`), shield
-  tells (`tell: 'shield'`), ice floor. Strips `docs/scorecard/kings-blade-moves.jpg`, `-ice.jpg`, `-lab.jpg`; blind
-  judge 51 vs Hollis 51. Agathe (pass 53) and the Kindling Tree also await Aleix. Track A's bosses 7-14 are done.
-- Pass 33 (v7.56.0): every preset draws native (`qualityDraw`, `js/visuals.js`); numbers:
-  `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
+- Track A (pass 57): item 3 pass 1, two presets (Normal, Ultra; hidden `bare` for CI; old saves become Normal).
+  Normal: no MSAA but FXAA, 4 lights, no stone reflections, volumetrics/refraction/fire at small budgets. Laptop
+  (`tools/bench/laptop.sh`, fps / 1% low): long-hall 67/36, burning-town 50-59/35, aurel-in-ash 54-59/35, final-castle
+  60-65/41, still-mere 70-73/45, 4-player King's Blade 69-75/47 (old High 33-53). **Not yet 60 everywhere**: pass 2
+  is baked lighting. PC stand-in `tools/bench/pc-bench.cjs` (uncalibrated). Auto now gives integrated GPUs
+  Normal (was Low, 116-230 fps). The King's Blade (pass 55, `docs/scorecard/kings-blade-*.jpg`), Agathe, the Kindling
+  Tree: **awaiting Aleix**.
 - Track B (pass 58, v7.81.0): item 3's open checks: Controls screen (`docs/scorecard/controls-*.jpg`), pad-alone
   walk (`Menus:`, `rush-alone-browser`). Left: the title's castle, Collection, rewards (item 7). Next: item 6.
   Item 10 (pass 56): fight 12 without abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
-  commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
+  commit (Python and Git Bash heredocs drop backslashes).
 
 ## Works
 
@@ -70,7 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Queued runs
 
-None (a push cancels the older CI run: read the newest). Probes (untracked, `.scratch/`): `render-scale.cjs`.
+None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cjs`.
 
 ## wip// branches
 
