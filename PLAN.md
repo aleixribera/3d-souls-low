@@ -104,7 +104,8 @@ Aleix, 2026-11-13.
   builds from them ("Art direction" section).
 - Replays (Aleix, 2026-11-15): every multiplayer Boss Rush run recorded as a game replay (state, not video), watched
   only by him in the game's own renderer from a tailnet-only Homepage card; no notice to players; a summary per run
-  and notes pinned to moments as feedback; kept 60 days, starred ones forever. Built now, by one pass, start to
+  and notes pinned to moments as feedback; kept 60 days, starred ones forever. The viewer "especially good, usable,
+  no weird errors nor inconveniences" (its own bar in the section). Built now, by one pass, start to
   finish (its own section, first).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
@@ -161,6 +162,22 @@ to it.
    - speed 0.25× to 8×, pause, scrub;
    - a timeline marked with fight starts, deaths and downs, legendary picks and Finishing Blows; jump to the next
      death.
+   **Especially good, no weird errors nor inconveniences** (Aleix, 2026-11-15). The viewer is a product of its own,
+   held to the game's UI rules (the design skills, the design-audit rule book), on desktop and on the phone:
+   - Opens from the card straight to the list, and a run starts playing within a couple of seconds; a long run
+     streams, it never makes you wait for the whole file.
+   - Every state has a plain answer, never a blank page or a stack trace: no runs yet, a run still being played (it
+     shows, marked live, and plays up to now), a run cut short by a crash or a restart (plays what it has), a run
+     from an old version, a file that is damaged (says so in one line, the list still works).
+   - Comfortable on the phone: touch to scrub, tap a player to follow them, pinch or drag for the free camera, big
+     enough controls, the layout fits portrait and landscape, no horizontal scroll. Keyboard on desktop (space,
+     arrows, number keys for speed, the player keys) with the keys shown once, not in a help wall.
+   - It remembers: each run's link opens it at the same moment (share a link to a moment with yourself), the last
+     speed and camera stay, a run you left resumes where you were.
+   - Fast to find things: the list filters by player and by date, shows who played, how far they got and how it
+     ended at a glance; starring and deleting a run are one tap (deleting asks once).
+   - Light on the PC and the phone: one replay's 3D at a time, nothing running when the tab is hidden, the game's
+     low settings used on a weak device.
 5. **Feedback:** each run also writes a short summary: what killed each player and how often, which boss attacks
    land most, abilities picked, time per fight. The loop reads them when tuning bosses (track B's bot targets, the
    fair-attacks rule in rework item 4). In the viewer Aleix can pin a note at any moment ("this stomp felt unfair");
@@ -169,7 +186,8 @@ to it.
    server's SSD is 80% worn. In `data/`, so the nightly backup has them; the size per hour of play measured and
    noted.
 Check: a real multiplayer run (two browsers, or one and the server's bots) recorded, then watched in the viewer from
-the Homepage card on desktop and phone width, following each player, at several speeds, jumping to a death; a note
+the Homepage card on desktop and phone width (frames of every state above, the console clean, a full design-audit of
+its screens), following each player, at several speeds, jumping to a death; a note
 pinned and seen by the loop; the replay address refused from the public one; the live game's tick and bandwidth
 unchanged within noise; an old replay played after a data change.
 
