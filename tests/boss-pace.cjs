@@ -34,7 +34,7 @@ console.log(`${bosses.length} bosses: the same health, posture and breaks for 1 
 // (CONFIG.pace.warm fights) climbs from a little under 1x to 1x, then the pace climbs exponentially, speed only: health
 // and damage stay the boss's own at every fight, for every boss (a warm-up boss's health is its RUSH.warmHealth share,
 // tests/calling.cjs).
-const PC = createSimulation().inspect().CONFIG.pace;
+const PC = createSimulation().inspect().CONFIG.pace, rushPace = won => fight('pillagerCaptain', 1).sim.setRushFight(won);
 const P = { fight: [1, 5, 10, 15, 20, 21, 25], pace: [] };
 for (const boss of bosses) {
   const plain = bars(fight(boss, 1).e), still = bars(fight(boss, 1).e, false);
@@ -51,13 +51,15 @@ const at = n => P.pace[P.fight.indexOf(n)] / PC.boss;
 assert.ok(P.pace.every((p, i) => i === 0 || p > P.pace[i - 1]), `the pace rises fight by fight: ${P.pace.map(p => p.toFixed(2)).join(', ')}`);
 assert.ok(at(1) >= 0.8 && at(1) < 1, `the warm-up: fight 1 a little under 1x (x${at(1).toFixed(2)})`);
 assert.equal(at(PC.warm + 1), 1, `fight ${PC.warm + 1} runs at 1x, the boss data as written, as every boss does outside Boss Rush`);
-// Item 11's stages for a skilled player alone: 5-10 real, 10-15 hard, 15-20 brutal, past 20 impossible. Pass 76: the
-// climb eases past 15 so a great kit can reach fight 20, and the wall (CONFIG.pace.wall) makes everything past it impossible.
-assert.ok(at(10) >= 1.15 && at(10) < 1.4, `real by fight 10: 15 to 40% faster (x${at(10).toFixed(2)})`);
-assert.ok(at(15) >= 1.7 && at(15) < 2.3, `hard by fight 15 (x${at(15).toFixed(2)})`);
-assert.ok(at(20) >= 2.6 && at(20) < 3.6, `brutal by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
-assert.ok(PC.wall === 21 && at(21) >= 4.3 && at(21) >= 1.4 * at(20), `past fight 20, the wall: fight 21 beyond any kit (x${at(21).toFixed(2)})`);
-assert.ok(at(25) >= 5, `no room to answer by fight 25 (x${at(25).toFixed(2)})`);
+// Item 11's stages for a skilled player alone: 5-10 real, 10-15 hard, 15-20 brutal, past 20 harder still. Pass 90 (the
+// moveset, PLAN.md rework item 4): steeper to fight 15, then no wall and no ease: from CONFIG.pace.steady fights won the
+// same step every fight, and no run reaches the cap.
+assert.ok(at(10) >= 1.3 && at(10) < 1.7, `real by fight 10: 30 to 70% faster (x${at(10).toFixed(2)})`);
+assert.ok(at(15) >= 2.1 && at(15) < 3, `hard by fight 15 (x${at(15).toFixed(2)})`);
+assert.ok(at(20) >= 3 && at(20) < 4.5, `brutal by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
+const step = at(21) - at(20);
+assert.ok(PC.steady < 20 && step > 0 && Math.abs((at(25) - at(21)) / 4 - step) < 1e-9, `past fight 20 the same step every fight, no wall (${step.toFixed(3)} a fight)`);
+assert.ok(rushPace(39) < PC.max, `no run reaches the cap: fight 40 at x${rushPace(39).toFixed(2)}, under x${PC.max}`);
 console.log('pace at fights ' + P.fight.map((n, i) => `${n}: x${P.pace[i].toFixed(2)}`).join(', ') + ` (${bosses.length} bosses: health and damage unchanged)`);
 
 // What the pace does: more attacks a minute, the same wind-ups. One stand-in in front of the boss for a minute.

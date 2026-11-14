@@ -39,9 +39,9 @@ async function peer(origin, name) {
   // Pass 73: par follows the kit too (CONFIG.swift.might), so a strong kit has to fight for a swift kill.
   const kit = ['keen-edge', 'keen-edge', 'static-edge', 'gale-crescent'], might = 2 * S.might.common + S.might.rare + S.might.legendary;
   assert.ok(Math.abs(app.sim.inspect().Game.update.constructor('return kitMight')()(kit) - might) < 1e-9, 'a kit weighs its rarities, level by level');
-  const pace10 = app.sim.inspect().Game.update.constructor('return rushPace')()(10);
-  assert.equal(app.sim.rushPar(10, 1, might), Math.round(S.late * pace10 / (1 + might)), 'after the warm-up, the late par divided by 1 + the might');
-  assert.ok(app.sim.rushPar(10, 1, might) < app.sim.rushPar(10), 'a kit shortens the par');
+  const pace6 = app.sim.inspect().Game.update.constructor('return rushPace')()(6);   // fight 7: under the cap with no kit (CONFIG.swift.max)
+  assert.equal(app.sim.rushPar(6, 1, might), Math.min(S.max, Math.round(S.late * pace6 / (1 + might))), 'after the warm-up, the late par divided by 1 + the might');
+  assert.ok(app.sim.rushPar(6, 1, might) < app.sim.rushPar(6), 'a kit shortens the par');
   assert.equal(app.sim.rushPar(0, 1, 0), app.sim.rushPar(3, 1, 0), "the warm-up's par is the base pace's");
 
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));

@@ -246,7 +246,7 @@ MODEL_DEFS.bellWarden = {
   // His bronze hums under your blows: `light` a blow, `heavy` one of the `breakers`; after `delay` s with none it fades at
   // `decay` a second. Full (`max`), his `when: 'resonant'` answer is due; for `rest` s after it starts blows do not fill it
   // (three of you would otherwise fill it again before he has finished answering).
-  const RESONANCE = { max: 6, light: 1, heavy: 2, breakers: ['heavy', 'jumpHeavy'], delay: 2.5, decay: 1.2, rest: 5 };
+  const RESONANCE = { max: 6, light: 1, heavy: 2, breakers: ['heavy', 'jumpHeavy'], delay: 1.2, decay: 3, rest: 5 };
 
   const WARDEN = {
     id: 'bellWarden', model: 'bellWarden', name: 'Bell Warden',
@@ -265,7 +265,7 @@ MODEL_DEFS.bellWarden = {
       // At half his strength he rings himself awake: the chains fall from the bell, its crack lights, and his bronze fills faster.
       woken: { at: 0.5, name: 'The Bell Warden, Woken', opener: 'wardenWaking', conceal: ['muffle'], reveal: ['toll'],
         revealBurst: { color: 0xb8ffd0, count: 40, speed: 6 },
-        resonance: { ...RESONANCE, max: 4, decay: 1.0 },
+        resonance: { ...RESONANCE, max: 4, decay: 2.5 },
         cooldown: [1.1, 2.2], approach: 0.75, kite: 0.05, speed: 2.1, trackRate: 1.5,
         attacks: ['wardenWaking', 'wardenSweep', 'wardenHammerfall', 'wardenPush', 'wardenBackhand', 'wardenUpswing', 'wardenFall', 'wardenThreeTolls',
                   'wardenAnswerTwice', 'wardenChargePunish'] },

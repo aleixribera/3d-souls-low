@@ -10,6 +10,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   attacks borrow `lightBackhand`/`heavyOverhead` poses and want their own pose ids (js/data/player.js). `Player.pose`
   moved from js/player.js to js/player-pose.js (track A's, drawing only); the update loop is untouched.
 
+- **Boss Rush after pass 90 (track B):** at 1x the skilled bot's fight length runs from about 69 s (the castellans)
+  to 160 s (the King's Blade, Agathe, the Antlered, Hollis): item 10's "each about as hard" band is wide on the new
+  moves. With no kit the swift-kill par sits at its 120 s cap from about fight 9 (`CONFIG.swift`). The desktop proof
+  frame (`captain-desktop-string.jpg`) caught the Captain's charge before the string; the laptop run shows the keys
+  alone through a full exchange (strings, finishers, two perfect dodges, a counter).
+
 - **Item 3c's next pass (track A):** the judge's giveaways (`docs/scorecard/animation-judge.csv`): the dash should be a
   long, low, leaning lunge (the pose, not the distance), and the deflect should move the whole body (recoil, a weight
   shift, the free arm), not the sword arm alone. Not yet: a perfect dodge's brighter afterimages are untested in frames

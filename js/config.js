@@ -3,15 +3,15 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.116.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.117.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
   // Practice: `maxGroup`, the most opponents in one 'several at once' group; `fights`, the Boss Rush fights its Speed
   // setting offers, a boss fought at that fight's pace (CONFIG.pace) to learn it slow or rehearse a late run.
   // Past fight 1 (the boss as written), only fights past Boss Rush's warm-up (CONFIG.pace.warm): none slower than 1x;
-  // 21 is the first past the curve's wall (CONFIG.pace.wall), 25 its top speed.
-  practice: { maxGroup: 6, fights: [1, 6, 8, 10, 12, 15, 18, 20, 21, 25] },
+  // 25 and 30 for a long run's late fights (no wall since pass 90: the curve climbs the same step every fight).
+  practice: { maxGroup: 6, fights: [1, 6, 8, 10, 12, 15, 18, 20, 25, 30] },
   bossBattle: {
     maxTeam: 6, notice: 100, spacing: 4, startX: 7, rowWidth: 20,
     victoryTime: 2.5,
@@ -168,7 +168,8 @@ const CONFIG = {
   // in the chapter's place on the road; a chapter's `might` sets its bosses' own. Its own, never Boss Rush's: CONFIG.pace,
   // CONFIG.swift and RUSH stay Boss Rush's. Foes keep their health near their own (no sponges) and hit harder; bosses
   // start slow and light (a newcomer's first boss) and end a little past 1x. Measured with tools/story-curve.cjs
-  // (docs/scorecard/story-climb-pass79.txt): the default bot alone wins the first bosses every time, the last about 3 in 4.
+  // (docs/scorecard/story-climb-pass79.txt, before pass 90's CONFIG.enemy.press): the default bot alone wins the first
+  // bosses every time, the last about 3 in 4.
   // `find`: a flask found on the road (a level's `flaskFinds`) is taken within `range` m, on its floor (`floorGap`); drawn
   // as a warm `color` light (js/lore.js) that fades over `fade` s once taken.
   story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story' }, saveVersion: 1, titleTime: 3.2,
@@ -195,6 +196,10 @@ const CONFIG = {
            // quickest attack that reaches within its range + `reach` m (an area attack counts `areaBonus` s quicker), even
            // from `recoverCut` of the way through a recovery.
            mash: { hits: 6, gap: 1.0, reach: 0.5, areaBonus: 0.15, recoverCut: 0.35 },
+           // The bosses answer the new moveset (pass 90, PLAN.md rework item 4), every boss everywhere: its idle gaps run
+           // `rest` times as fast and its follow-ups come as at `chain` times its pace (Enemy.rest / chain, which Boss
+           // Rush's modifiers multiply). Wind-ups, strikes and recoveries keep their own timing: every tell stays as told.
+           press: { rest: 1.15, chain: 1.25 },
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
@@ -231,18 +236,19 @@ const CONFIG = {
   // player does. What a boss changes is its pace (Enemy.pace, 1 = its own data): its recoveries play and its idle gaps
   // run out `pace` times as fast, and each follow-up's chance becomes 1 - (1 - chance)^pace, so strings run longer.
   // Strikes keep their own timing. Wind-ups quicken only past the base pace and only gently, (pace / boss)^`tell`, and
-  // never below `tellFloor` of their own length: the same tell, a little sooner (8% by fight 10, 19% by 15, the floor's 40% from 21).
+  // never below `tellFloor` of their own length: the same tell, a little sooner (10% by fight 10, 20% by 15, 27% by 20,
+  // the floor only from about fight 40).
   // `boss` is 1: since pass 54 every boss's own data is its 1x (PLAN.md track B item 10), tuned so the test bot alone
-  // finds each about as hard as the rest (tools/rush-curve.cjs bosses), and Story and Practice fight it there too.
-  // Boss Rush's curve (pass 73, PLAN.md item 11): the warm-up's first `warm` fights run from `warmFrom` up toward `boss`,
-  // reached at fight `warm` + 1; after `won` fights from there, pace = boss x (1 + rise x (e^((won - warm) / scale) - 1)),
-  // times `wallRise` for each fight from fight `wall` on, at most `max`. Exponential, steeper from about fight 8, easing
-  // past 15 so a great kit can reach 20 (pass 76), then the wall: x1.25 by fight 10, x1.8 by 15, x3 by 20, x5 at 21, x6
-  // from 22. Measured alone (tools/rush-curve.cjs runs, SKILLED, 60 runs each, docs/scorecard/run-shape-pass76.txt): with
-  // no abilities a skilled player falls around fight 10 (mean 9.9, none past 19); with a great kit (KIT=best or strong)
-  // around 18 (75% past 15, 10-13% past 20, fight 21 lost 13 times in 14); with two legendaries, the posture abilities
-  // and no health (KIT=max) around 16. It depends on the fights won alone: never on health, damage or the team's size.
-  pace: { boss: 1, rise: 0.22, scale: 6.5, max: 6, tell: 0.35, tellFloor: 0.6, warm: 4, warmFrom: 0.85, wall: 21, wallRise: 1.5 },
+  // finds each about as hard as the rest (tools/rush-curve.cjs bosses), and Story and Practice fight it there too, with CONFIG.enemy.press.
+  // Boss Rush's curve (pass 90, PLAN.md rework item 4, on the new moveset; no wall, no ease): the warm-up's first `warm`
+  // fights run from `warmFrom` up toward `boss`, reached at fight `warm` + 1; after `won` fights from there,
+  // pace = boss x (1 + rise x (e^((min(won, steady) - warm) / scale) - 1)), and past `steady` fights won the same step
+  // every fight (the curve's slope there), at most `max`, which no run reaches: x1.5 by fight 10, x2.5 by 15, x3.5 by 20,
+  // +0.2 a fight after. Measured alone with three dashes (tools/rush-curve.cjs runs, SKILLED, 60 runs each,
+  // docs/scorecard/rush-curve-pass90.txt): with no abilities a skilled player falls around fight 10 (median 10, 2% past
+  // 15); with a great kit around 20 (KIT=strong: median 19, 80% past 15, 40% past 20; KIT=best: median 21). Fights 1-4
+  // take about a minute. It depends on the fights won alone: never on health, damage or the team's size.
+  pace: { boss: 1, rise: 0.45, scale: 6.5, steady: 11, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.

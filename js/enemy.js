@@ -56,12 +56,13 @@ function isAreaAttack(a) {
 }
 const groupedChance = a => attackChance(a) * (isAreaAttack(a) ? CONFIG.aggro.areaMul : 1);
 // Boss Rush's pace after `won` fights (CONFIG.pace): a warm-up under every boss's own pace for the first `warm` fights,
-// then rising exponentially with the fights won past it, and from fight `wall` on `wallRise` times as fast again each fight.
+// then rising exponentially with the fights won past it up to `steady` won, and on from there at the rate it had reached,
+// the same step every fight (pass 90: no wall, no ease; PLAN.md item 11).
 function rushPace(won) {
   const P = CONFIG.pace, n = Math.max(0, Number(won) || 0);
   if (n < P.warm) return P.boss * (P.warmFrom + (1 - P.warmFrom) * n / P.warm);
-  const past = Math.max(0, n + 2 - P.wall);   // fight n + 1 is the first past the wall when n + 1 >= wall
-  return Math.min(P.max, P.boss * (1 + P.rise * (Math.exp((n - P.warm) / P.scale) - 1)) * Math.pow(P.wallRise, past));
+  const k = Math.exp((Math.min(n, P.steady) - P.warm) / P.scale), past = Math.max(0, n - P.steady);
+  return Math.min(P.max, P.boss * (1 + P.rise * (k - 1) + P.rise / P.scale * k * past));
 }
 // Boss Rush's par (CONFIG.swift): the target length in whole s of a fight after `won` fights won, against `bosses` at
 // once, for a party of `might` (kitMight, js/abilities.js). Never under the base pace's par for a weaker boss.
@@ -139,7 +140,9 @@ class Enemy {
     // away instead of dying (the opening of Level 5).
     this.baseDef = def; this.boss = opts.boss || null;
     this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
-    this.rest = 1; this.chain = 1;   // an Endless modifier's (RUSH.modifiers): rests this many times faster, strings as if this much faster
+    // Rests this many times faster, strings as if this much faster: a boss's CONFIG.enemy.press, times an Endless modifier's (RUSH.modifiers).
+    const press = this.isBoss() ? CONFIG.enemy.press : null;
+    this.rest = press ? press.rest : 1; this.chain = press ? press.chain : 1;
     this.health = 1;   // its bars' share of its own health (setHealth: Boss Rush's pairs, Story's chapters)
     this.damageMul = 1;   // its blows' share of their own damage (setMight: Story's chapters)
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;

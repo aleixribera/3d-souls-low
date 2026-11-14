@@ -225,7 +225,8 @@ globalThis.host = (() => {
   function setRushFight(won, modifiers = []) {
     const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
     const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1;
-    const pace = rushPace(won) * times('pace'), rest = times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = times('chain');
+    const B = CONFIG.enemy.press;   // every boss's own press (item 4), under the modifiers
+    const pace = rushPace(won) * times('pace'), rest = B.rest * times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = B.chain * times('chain');
     for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.breakGrow = CONFIG.endless.breakGrow; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
     return pace;
   }

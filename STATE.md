@@ -7,11 +7,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 91): item 3c pass 1, v7.115.0: moves blend (`Rig.settle`), wind-ups snap, a deflect pose, dash
   afterimages; `Player.pose` is js/player-pose.js. Judge 3/10 dash, 4/10 deflect (`docs/scorecard/animation-judge.csv`).
   Next: 3c pass 2 (BACKLOG: low dash lunge, whole-body deflect); then Story's key abilities, its re-tune.
-- Track B (pass 88): items 1-2 rough (in-page `pass 85`); keys 1-4 (in-page `pass 87`); the counter, a riposte's own
-  move (`moveset.counter`, stand-in poses); bots end strings with finishers, dash in, counter (`CONFIG.bot.dashIn`,
-  `bot-behavior.cjs`). Next: (1) Boss Rush bosses and curve (item 4); (2) item 5's proof, then the only moveset.
-  Track A: lessons say stamina/parry; dash/jump attacks, keys 1-4 want hints; the counter, deflect and drink want own
-  poses (pass 88's draft dropped); `PS.PARRY` is dead. CI on 2b1244c: shard 1's Bell Warden cap fixed (pass 88).
+- Track B (pass 90): CI on main runs to the end; v7.114.0 three dashes, slim white bars, guard shown only
+  while worn (in-page `pass 90 dash`; `dash-hud-*`); v7.117.0 item 4: bosses press
+  (`CONFIG.enemy.press`), curve without wall (`steady`), warm-up health, Bell Warden
+  (`docs/scorecard/rush-curve-pass90.txt`); item 5 frames `captain-laptop-*` (keys alone). Next, in order:
+  BACKLOG's top timings (heavy startup, decel), the fair area-attack rule (validate.js; Story's bosses too;
+  leap slams unchanged), Boss Rush bosses' movement on one pace, the curve again; the only moveset.
+  Track A: Story's bosses press too (story-curve not re-run); `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -29,7 +31,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   can't be told apart however the tints differ: give a band its own texture's slot (v7.34.0 used `trim`).
   A near-black material takes the rim light as a white outline, and a broad sheet seen edge-on reads flat white:
   the model's `rim` and a slot's own `rim` (v7.37.0) scale it; gold and thin shafts want a lower `rim` (v7.39.0).
-- Pace: `CONFIG.pace` (`wall`), `rushPace`, `CONFIG.swift`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
+- Pace: `CONFIG.pace` (`steady`), `CONFIG.enemy.press`, `rushPace`, `CONFIG.swift`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
   `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
@@ -88,7 +90,7 @@ In `BACKLOG.md`.
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.
-- (overridable) Boss Rush eases after fight 15, then a wall at 21 (x3 at 20, x5 at 21): "impossible past 20".
+- (overridable) Boss Rush: no wall; x1.5 at fight 10, x2.5 at 15, x3.5 at 20, then +0.2 a fight (pass 90).
 - (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
 - (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.

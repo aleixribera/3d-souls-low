@@ -17,7 +17,7 @@
 //   chain: their follow-ups come as if their pace were this many times higher (longer strings).
 const RUSH = {
   opening: ['giant', 'pillagerCaptain', 'antlered', 'hollis', 'hale'],
-  warmHealth: { giant: 0.85, pillagerCaptain: 0.85, antlered: 0.55, hollis: 0.55, hale: 0.85 },
+  warmHealth: { giant: 0.7, pillagerCaptain: 0.7, antlered: 0.45, hollis: 0.45, hale: 0.7 },
   health: { bellWarden: 0.75, oswin: 0.85, ostrey: 0.85, varn: 0.9 },
   modifiers: [
     { id: 'quickened', name: 'Quickened', from: 4, pace: 1.12 },

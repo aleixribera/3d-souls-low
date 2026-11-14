@@ -1,0 +1,32 @@
+Boss Rush curve on the new moveset (pass 90, PLAN.md rework item 4)
+Tool: SKILLED=1 JOBS=10 [KIT=best|strong] CURVE=... node tools/rush-curve.cjs runs 60 (one skilled bot alone).
+
+Old curve (pass 76: wall at 21, ease past 15) on the new moveset, two dashes:
+  kit      median  past 10  past 15  past 20
+  none       14     0.78     0.30     0.02
+  best       23     0.98     0.95     0.83
+  strong     21     0.98     0.88     0.60
+  The new moves made the bot stronger: the curve no longer met item 10/11's targets.
+
+New curve (CONFIG.pace rise 0.45, steady 11, tell 0.25, no wall), bosses press harder (CONFIG.enemy.press rest 1.15,
+chain 1.25), warm-up health 0.7 / 0.45, three dashes at 1.3 s:
+  kit      median  past 10  past 15  past 20   fights 1-4 win time
+  none       10     0.45     0.02     0.00      64 s
+  best       21     0.92     0.77     0.50      57 s
+  strong     19     1.00     0.80     0.40      59 s
+  Pace: x0.85 at fight 1, x1.0 at 5, x1.52 at 10, x2.48 at 15, x3.50 at 20, then +0.2 a fight (x7.6 at 40, cap 12).
+  Targets (item 10/11): no abilities falls around 10-12; a strong kit about 20, struggling by 15; no wall, no ease;
+  fights 1-4 about a minute. Met.
+
+Candidates tried (none / best / strong medians): steady 13 tell .35: 11/17/18; rise .5 scale 6 steady 12: 11/17/17;
+steady 11 tell .35: 11/19/-; steady 13 tell .25: 10/19/20; steady 11 tell .25 (chosen): 10/21/19.
+
+Per-boss at 1x (rush-curve bosses, 48 trials each, skilled): damage taken a fight 48.9 before the press, 46.2 with it
+(two dashes), 50.0 with three dashes at 1.3 s. Default bot: 106.1 (two at 0.85), 104.3 (three at 1.3).
+Fight length at 1x is wide: about 69 s (the castellans) to 160 s (the King's Blade, Agathe, the Antlered, Hollis).
+
+Bell Warden: his resonance filled from ordinary bursts between his swings (light 1, delay 2.5 s, decay 1.2/s). Now it
+fades after 1.2 s at 3/s (woken: 2.5/s), so only mashing fills it, as item 4's break-off asks.
+
+Damage share with no abilities (skilled bot, .scratch/damage-share.cjs): ordinary hits 45%, executions 32%, skill
+(counters, finishers, ripostes) 22%: skill and executions carry most of a fight.

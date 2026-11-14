@@ -73,9 +73,10 @@ async function peer(origin, name) {
     const boss = app.sim.inspect().Game.enemies[0], hp = boss.maxHp ?? boss.def.hp;
     const plain = app.sim.setRushFight(10), quick = app.sim.setRushFight(10, ['quickened', 'restless', 'unbroken']);
     assert.ok(Math.abs(quick / plain - RUSH.modifiers.find(m => m.id === 'quickened').pace) < 1e-9, 'Quickened speeds the whole pace');
-    assert.ok(boss.rest > 1 && boss.chain > 1, 'Restless and Unbroken set the rests and the strings');
+    const press = G('CONFIG').enemy.press;   // every boss's own press (pass 90), under the modifiers
+    assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Restless and Unbroken set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
-    app.sim.setRushFight(E.opening); assert.ok(boss.rest === 1 && boss.chain === 1, 'a fight without modifiers is plain');
+    app.sim.setRushFight(E.opening); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
     assert.equal(boss.def.hp, hp, 'a boss alone keeps its whole health');
     // The warm-up (pass 73): its bosses come at their RUSH.warmHealth share; every fight after it, whole.
     const warm = G('CONFIG').pace.warm;
