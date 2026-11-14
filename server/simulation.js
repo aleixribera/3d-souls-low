@@ -796,7 +796,7 @@ globalThis.host = (() => {
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
     offerAbilities, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
-    abilityPickTime: CONFIG.abilities.pickTime,
+    abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold,
     rushPar, rushHealth, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
     get playerMaxFlasks() { return Math.max(PLAYER_DEF.inventory.find(it => it.item === 'flask').max, Game.kind === 'level' && Game.level.flasks || 0); },

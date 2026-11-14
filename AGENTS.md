@@ -31,6 +31,8 @@ agents: a draft, changed whenever the code changes.
    `validateData({ visual: false })` at startup, so browser-only checks sit behind `visual`.
 8. Every storage access is wrapped in try/catch. A change to the save format bumps `CONFIG.story.saveVersion`.
 9. Drawing allocates nothing per frame in hot paths. Screen flashes stay under 3 Hz and follow `reducedMotion()`.
+10. An ability's card text is only its trigger and its effect, in the fewest plain words ("Parry: a hound hunts the boss
+    for 8 s."): no flavour, nothing its name or rarity already shows (Aleix). `js/validate.js` caps it.
 
 ## Run and test
 

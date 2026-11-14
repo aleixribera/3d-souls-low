@@ -55,7 +55,8 @@ function validateData({ visual = true } = {}) {
     'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
   // Boss Rush's abilities (v7.70.0, js/abilities.js): every card can be drawn and read.
   const BL = CONFIG.abilities, RAR = BL.rarity || {};
-  need(Number.isInteger(BL.offer) && BL.offer >= 1 && num(BL.pickTime) && BL.pickTime > 0, 'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive.');
+  need(Number.isInteger(BL.offer) && BL.offer >= 1 && num(BL.pickTime) && BL.pickTime > 0 && num(BL.pickHold) && BL.pickHold >= 0 && BL.pickHold < BL.pickTime,
+    'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive, pickHold 0 or more and under pickTime.');
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
@@ -71,10 +72,15 @@ function validateData({ visual = true } = {}) {
       `CONFIG.VISUALS.abilityFx.${k}: a figure needs windup, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
   }
   for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
+  // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
+  const ABILITY_TEXT_MAX = { words: 9, chars: 56 };
   for (const b of ABILITIES) {
     const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);
     need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name.trim() && typeof b.text === 'string' && b.text.trim(),
       `${where}: an id (a-z, 0-9, -), a name and a text.`);
+    if (typeof b.text === 'string') { const words = b.text.replace(/\{\w+\}/g, 'n').trim().split(/\s+/).length;
+      need(words <= ABILITY_TEXT_MAX.words && b.text.length <= ABILITY_TEXT_MAX.chars,
+        `${where}: its text is ${words} words and ${b.text.length} characters; at most ${ABILITY_TEXT_MAX.words} and ${ABILITY_TEXT_MAX.chars}: only the trigger and the effect.`); }
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
     need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity !== 'common'),
       `${where}: one of mods (a common), perk (a rare) or power (a rare or a legendary).`);

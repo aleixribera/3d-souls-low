@@ -103,6 +103,7 @@ function createServer(options = {}) {
   let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
   let tallied = false;   // Boss Rush: this fight's win is in the run's tally
   let abilityFor = null;   // Boss Rush, between fights: s since the abilities were offered (null: not offered)
+  let abilityPickedAt = -Infinity, abilityAllChosen = false;   // abilityFor at the last pick taken (the pick holds CONFIG.abilities.pickHold s after it), and whether everyone has been told all have chosen
   const abilityRound = new Set();   // the players offered abilities this time (a late arrival is offered once)
   let tally = null;   // Boss Rush's totals across its fights: { run, startedAt, beaten, crowned, players: id -> row }
   let metricsAt = last, ticks = 0, payloadBytes = 0, tickTimes = [];
@@ -244,7 +245,7 @@ function createServer(options = {}) {
   // first ability, someone who left included).
   function abilitiesChosen() {
     if (abilityFor === null) {
-      abilityFor = 0;
+      abilityFor = 0; abilityPickedAt = -Infinity; abilityAllChosen = false;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) abilityRound.add(id);
       sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight));
@@ -252,7 +253,11 @@ function createServer(options = {}) {
     }
     abilityFor += 1 / C.tickRate;
     const waiting = [...clients.values()].filter(p => p.hello && sim.abilityOffer(p.id));
-    if (waiting.length && abilityFor < sim.abilityPickTime) return false;
+    if (!waiting.length && !abilityAllChosen) {   // everyone has chosen: the pick screens say so for the hold
+      abilityAllChosen = true;
+      for (const p of clients.values()) if (p.hello) send(p, { type: 'abilitiesChosen' });
+    }
+    if (abilityFor < sim.abilityPickTime && (waiting.length || abilityFor < abilityPickedAt + sim.abilityPickHold)) return false;   // everyone chose: a short hold
     sim.settleAbilities();
     return true;
   }
@@ -400,7 +405,7 @@ function createServer(options = {}) {
     if (!session || msg.epoch !== session.epoch) return;
     if (msg.type === 'pickAbility') {   // a pick from this player's own open offer, while the offers are open
       noteActivity(p);
-      if (abilityFor !== null && sim.pickAbility(p.id, msg.id)) send(p, { type: 'abilities', offer: null, held: sim.abilities()[p.id] || [] });
+      if (abilityFor !== null && sim.pickAbility(p.id, msg.id)) { abilityPickedAt = abilityFor; send(p, { type: 'abilities', offer: null, held: sim.abilities()[p.id] || [] }); }
       return;
     }
     if (msg.type === 'ready') {

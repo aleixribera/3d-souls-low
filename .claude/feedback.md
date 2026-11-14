@@ -90,7 +90,10 @@ took it (once taken).
      cards stay readable.
   2. Every ability the player holds can be looked up at any time (trigger, effect, rarity), so they can remember how
      each works and plan synergies.
+  Taken by pass 70 (v7.93.0): a 2 s hold after the last pick (`CONFIG.abilities.pickHold`), the held list under the
+  cards and in pause.
 - 2026-11-14, **standing rule** for every ability (and blessing) description: "Simplify descriptions to the maximum
   aswell for abilities, and make that a rule". Each says only the trigger and the effect, in the fewest plain words
   ("Parry: a hound bites the boss."), with no flavour text and no restating what the card's name or rarity shows.
   Applies to the existing pool now and to every ability added later.
+  Taken by pass 70 (v7.93.0): every text rewritten, capped in `js/validate.js` (9 words, 56 characters), AGENTS.md rule 10.

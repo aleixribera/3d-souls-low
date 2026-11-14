@@ -385,12 +385,12 @@ const multiplayer = (() => {
   // look: js/ability-cards.js.
   const abilityScreen = document.createElement('section'); abilityScreen.id = 'abilityScreen'; abilityScreen.hidden = true;
   abilityScreen.setAttribute('aria-labelledby', 'abilityTitle');
-  abilityScreen.innerHTML = '<div class="ability-panel"><div class="ability-head"><h2 id="abilityTitle">Choose an ability</h2><span id="abilityClock"></span></div><div class="ability-time" aria-hidden="true"><i id="abilityTimeFill"></i></div><div id="abilityChoices" role="group" aria-labelledby="abilityTitle"></div><p id="abilityStatus" aria-live="polite"></p></div>';
+  abilityScreen.innerHTML = '<div class="ability-panel"><div class="ability-head"><h2 id="abilityTitle">Choose an ability</h2><span id="abilityClock"></span></div><div class="ability-time" aria-hidden="true"><i id="abilityTimeFill"></i></div><div id="abilityChoices" role="group" aria-labelledby="abilityTitle"></div><p id="abilityStatus" aria-live="polite"></p><section id="abilityHeld" aria-labelledby="abilityHeldTitle"></section></div>';
   document.body.appendChild(abilityScreen);
   let ability = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
   function openAbilities(msg) {
     if (!msg.offer) {   // the server took this player's pick
-      if (ability) { ability.held = msg.held || []; ability.chosen = ability.chosen || ability.held[ability.held.length - 1] || null; drawAbilities(); }
+      if (ability) { ability.held = msg.held || []; ability.chosen = ability.chosen || ability.held[ability.held.length - 1] || null; drawHeld(); drawAbilities(); }
       return;
     }
     ability = { offer: msg.offer, held: msg.held || [], chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '' };
@@ -405,7 +405,15 @@ const multiplayer = (() => {
     const n = list.children.length;
     abilityScreen.style.setProperty('--pick-w', `${n * 216 + (n - 1) * 12}px`);   // the row of tall cards, and the title over it
     input.clear(); if (document.pointerLockElement) document.exitPointerLock();
-    abilityScreen.hidden = true; drawAbilities();
+    abilityScreen.hidden = true; drawHeld(); drawAbilities();
+  }
+  // What this player holds, under the cards (abilityHeldList): what each does and its trigger, to plan the next.
+  function drawHeld() {
+    const box = el('abilityHeld'), list = ability && abilityHeldList(ability.held.filter(id => ArenaNet.own(ABILITY_BY_ID, id)));
+    box.replaceChildren();
+    if (!list) return;
+    const title = document.createElement('h3'); title.id = 'abilityHeldTitle'; title.textContent = 'Your abilities';
+    box.append(title, list);
   }
   function chooseAbility(id) {
     if (!ability || ability.chosen || !active()) return;
@@ -429,7 +437,8 @@ const multiplayer = (() => {
       button.setAttribute('aria-pressed', String(button.dataset.ability === ability.chosen));
       button.disabled = !!ability.chosen && button.dataset.ability !== ability.chosen;
     }
-    const status = ability.chosen ? 'Waiting for the others.' : '';   // what is already yours shows on its card's level
+    // Once chosen, the pick holds a moment (CONFIG.abilities.pickHold): the choice in gold, the others still readable.
+    const status = ability.chosen && !ability.done && roster.filter(p => !p.bot).length > 1 ? 'Waiting for the others.' : '';
     if (el('abilityStatus').textContent !== status) el('abilityStatus').textContent = status;
     abilityScreen.classList.toggle('ability-pad', usingPad());
     if (opening) el('abilityChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
@@ -1150,6 +1159,7 @@ const multiplayer = (() => {
       } else if (!msg.accepted) notice('Another player took that execution, or the opening has ended.');
       pendingExecution = null;
     } else if (msg.type === 'revive') riseAgain(msg);
+    else if (msg.type === 'abilitiesChosen' && session) { if (ability) { ability.done = true; drawAbilities(); } }   // everyone has chosen: the hold
     else if (msg.type === 'abilities' && session) openAbilities(msg);   // also while loading back in: shown once loaded
     else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
     else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }

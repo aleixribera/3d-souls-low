@@ -30,7 +30,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   in the mode list (nothing to collect yet). Controls is in the footer since pass 58.
   The `story` screen is no longer reached from the title (Story starts the road last played; New game asks first); a
   second road would need its own way in.
-- The menus' missing parts (pass 51, `docs/scorecard/menus-*.jpg`): pause shows abilities as names, not icons; the
+- The menus' missing parts (pass 51, `docs/scorecard/menus-*.jpg`): the
   end of run has no Crowned count, no "Your best run" (no record kept yet) and no rewards column (no crates yet), so
   the per-boss times take the right side. Pass 58 added Controls and the pad-alone walk (in-page `Menus:`,
   `rush-alone-browser`; the lobby's own pad test is `lobby-controller-browser`). The run intro (`#runIntroScreen`,

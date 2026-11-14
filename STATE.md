@@ -8,8 +8,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `Pillager Captain`): own end poses per strike (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots
   step out of fires (`CONFIG.bot.fire`, `bot.offFires`, test `bot-behavior` "Bot fire"). Judge vs Hollis 4-6 vs 5-7;
   leftovers in `BACKLOG.md`. He, the King's Blade, Agathe, the Kindling Tree: **awaiting Aleix**. Baked light accepted.
-- Track B (pass 69): item 8, the weekly run (lobby mode, one seed per ISO week, the week's board in `BOARD_FILE`;
-  homelab mounts `data/combat-arena`). Frames `docs/scorecard/weekly-*.jpg`. Next: item 7.
+- Track B (pass 70): pick feedback done (frames `docs/scorecard/pick-*.jpg`, `pause-abilities.jpg`). Next: item 7.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -37,6 +36,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `CONFIG.endless` (`server/simulation.js`), `runSummary` (`server/index.cjs`), `js/multiplayer.js`; checked by
   `tests/calling.cjs`, `blessings.cjs`, `calling-browser.cjs` (frames `docs/scorecard/calling-*`, `summary-*.jpg`).
   Pair health (pass 67): `rushHealth`, `Enemy.setHealth`; same tests. Weekly (pass 69): `server/board.cjs`, `tests/weekly.cjs`.
+  Pick hold, held list (pass 70): `pickHold`, `abilityHeldList`; `calling-browser`.
   Revive, titles (pass 64): `js/revive.js`, `reviveStep`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding`'s interlude in `js/finale.js` (an ending with a next level),
   `LEVEL_5.next`, chapter 6 in `js/data/story.js`, `goesOn` / THE ROAD GOES ON (`js/story.js`, `js/game-level.js`),
@@ -71,7 +71,7 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 
 ## wip// branches
 
-- `wip/blessing-tall-cards` (pass 49): the tall-card blessing pick, for the upgrades session (PLAN.md item 6).
+- `wip/crates` (pass 70): item 7's data (`js/data/crates.js`) and two crate abilities, not wired in.
 
 ## Backlog
 
@@ -89,7 +89,7 @@ In `BACKLOG.md`.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
-- (overridable) Swift kill: par 45 s (more with pace or a pair) adds a card.
+- (overridable) Swift kill: par 45 s (more with pace or a pair) adds a card. The pick holds 2 s after the last choice.
 - (overridable) The ending's cards are the loop's wording of `STORY.md` 9b.
 - (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
 - (overridable) Chapters 7-14's words are the loop's: Ysolde's lines, the inscriptions, each boss's story and second

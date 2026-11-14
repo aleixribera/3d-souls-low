@@ -62,6 +62,7 @@
     color: var(--ui-muted); font-variant-numeric: tabular-nums; }
   .menu-facts dt { margin: 0; } .menu-facts dd { margin: 0; color: var(--ui-ink); overflow-wrap: anywhere; } .menu-facts dd span { color: var(--ui-muted); }
   .menu-facts .over { color: var(--ui-alarm); }
+  .menu-held-title { margin: 26px 0 12px; padding-top: 16px; border-top: 1px solid var(--ui-line); font: 400 var(--ui-size-row)/1.2 var(--ui-display); color: var(--ui-ink); }
   .menu-side-note { margin: 22px 0 0; font: 400 var(--ui-size-text)/1.5 var(--ui-text); color: var(--ui-muted); }
   /* Options: categories as rows on the left, the chosen one's settings as rows on the right, each with the control that
      fits it (a value cycled in place, a slider with its number, an Off/On pair), and the focused one's help under them. */
@@ -777,7 +778,7 @@ const GAME_FILES = [
   'kill-moment.js',
   'boot.js',
 ];
-const LOAD_STAMP = '7.92.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.93.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

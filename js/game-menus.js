@@ -328,11 +328,9 @@ Object.assign(Game, {
       if (this.practiceWon > 0 && this.enemies.some(e => e.isBoss())) rows.push(['Speed', `Fight ${this.practiceWon + 1}`, ` · ${rushPace(this.practiceWon).toFixed(2)}×`]);
     }
     if (mp) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);
-    // The abilities held, each once, with its level when above I (js/abilities.js).
-    const ids = (this.player && this.player.kit && this.player.kit.ids) || [], marks = ['', '', ' II', ' III', ' IV'];
-    const held = [...new Set(ids)].map(id => ABILITY_BY_ID[id].name + (marks[abilityLevel(ABILITY_BY_ID[id], ids)] || ''));
-    if (held.length) rows.push(['Abilities', held.join(', ')]);
-    return { rows, note: mp ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
+    // The abilities held: each with its level, rarity and what it does (abilityHeldList, js/ability-cards.js).
+    const held = (this.player && this.player.kit && this.player.kit.ids) || [];
+    return { rows, held, note: mp ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
   },
   tickPause() {
     if (this.screen !== 'pause' || this.mode !== 'pause') return;
@@ -353,6 +351,8 @@ Object.assign(Game, {
       }
       side.appendChild(dl);
     }
+    const held = abilityHeldList(f.held);
+    if (held) { const h = document.createElement('h3'); h.className = 'menu-held-title'; h.textContent = 'Abilities'; side.append(h, held); }
     if (f.note) { const p = document.createElement('p'); p.className = 'menu-side-note'; p.textContent = f.note; side.appendChild(p); }
   },
   // The footer's keys follow the device used last, so this is redone when it changes: the hints on the right (with the

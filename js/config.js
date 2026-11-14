@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.92.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.93.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -235,8 +235,9 @@ const CONFIG = {
   // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,
   // plus `grow` for each fight won (rarer as the run goes on); a rarity with nothing left to offer gives way to the
   // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
-  // A swift kill's extra card (CONFIG.swift) is never common.
-  abilities: { offer: 3, pickTime: 30,
+  // A swift kill's extra card (CONFIG.swift) is never common. Once everyone has chosen, the pick stays up `pickHold` s
+  // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
+  abilities: { offer: 3, pickTime: 30, pickHold: 2,
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.5 } },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived

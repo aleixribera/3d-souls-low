@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.93.0', title: 'Know your abilities', text: 'After you choose an ability, the pick stays up a moment once everyone has chosen, so you can see what you took and read the others. Your abilities, with what each does, are listed under the cards and in pause. Every ability now says only what sets it off and what it does, in as few words as possible.' },
   { version: 'v7.92.0', title: 'The weekly run', text: 'The lobby has a Weekly Run beside Boss Rush: all week, everyone meets the same bosses, modifiers and ability choices, and a new one starts every Monday. A small board in the lobby shows this week\'s furthest runs and fastest kills, by the names you played under.' },
   { version: 'v7.91.0', title: 'Pairs, fairer', text: 'In Boss Rush, when two bosses come at once, each now has half its health, every bar of it. Two sets of blows still make a pair the hardest step of a run, but it is a step now, not the wall where most runs ended.' },
   { version: 'v7.90.0', title: 'The Captain, sharper', text: 'The Pillager Captain\'s strikes each end their own way now, so you can tell the thrust from the chop from the hook by where he stops, and the hook and spike on his bill are bigger. Bot companions now step out of his fires instead of standing in them.' },

@@ -104,10 +104,20 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.locator('#abilityChoices button', { hasText: 'Time Rift' }).click();
     app.sim.offerAbilities = draw; skip = 4;   // on to fight 5, Crowned
     assert.equal(await a.locator('#abilityStatus').textContent(), 'Waiting for the others.');
+    // Chosen: the choice stays in gold, the others readable; what a holds, with what it does, under the cards.
+    await a.locator('#abilityHeld .held-list li[data-ability="time-rift"]').waitFor({ timeout: 5000 });
+    assert.match(await a.locator('#abilityHeld .held-text').textContent(), /^Perfect dodge: the boss freezes for \d/);
+    assert.equal(await a.locator('#abilityChoices button[aria-pressed=true]').getAttribute('data-ability'), 'time-rift');
+    assert.ok(await a.locator('#abilityChoices button:disabled').evaluateAll(bs => bs.length === 3 && bs.every(b => Number(getComputedStyle(b).opacity) >= 0.6)), 'the cards not taken stay readable');
+    await a.screenshot({ path: `${out}/ability-chosen.png` });
     assert.equal(app.session.epoch, epoch, 'the next fight waits for every pick');
     const bPick = await b.locator('#abilityChoices button').first().getAttribute('data-ability');
     await b.keyboard.press('Digit1');
+    const lastPick = Date.now();
+    await a.waitForFunction(() => !document.getElementById('abilityStatus').textContent, null, { timeout: 5000 });   // everyone chose: no more waiting
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
+    const held = Date.now() - lastPick, hold = await a.evaluate(() => CONFIG.abilities.pickHold);
+    assert.ok(held >= hold * 1000 - 250 && held < hold * 1000 + 3000, `everyone chose: the pick holds ${hold} s, then goes on (${held} ms)`);
     assert.equal(await b.evaluate(() => multiplayer.info.session.drop && !document.getElementById('loading').classList.contains('show')), true, 'the next boss drops straight in, no loading card');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(await a.locator('#abilityScreen').isVisible(), false);
@@ -128,6 +138,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(mods.length, 2, 'a Crowned fight 5: two modifiers');
     assert.equal(await a.locator('#rushMods').textContent(), mods.map(id => app.sim.inspect().Game.update.constructor('return RUSH_MODIFIER_BY_ID')()[id].name).join(' · '));
     await a.screenshot({ path: `${out}/crowned-fight.png` });
+    // Pause: each ability held, with its level, rarity and what it does.
+    await a.evaluate(() => Game.showMenu('pause'));
+    assert.deepEqual(await a.locator('#menuSide .held-list li').evaluateAll(ls => ls.map(l => l.dataset.ability)), ['time-rift']);
+    await a.waitForTimeout(200); await a.screenshot({ path: `${out}/pause-held.png` });
+    await a.evaluate(() => Game.resume());
     await a.setViewportSize({ width: 390, height: 844 });
     await a.waitForTimeout(300);
     assert.ok(await a.evaluate(() => ['rushClock', 'rushMods'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })), 'the streak and the modifiers fit a phone');
@@ -155,6 +170,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     }
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/crowned-offer.png` });
+    await a.setViewportSize({ width: 390, height: 844 }); await a.waitForTimeout(300);
+    assert.ok(await a.evaluate(() => { const s = document.getElementById('abilityScreen'), c = document.querySelector('#abilityChoices button').getBoundingClientRect();
+      return document.documentElement.scrollWidth <= innerWidth && s.scrollTop === 0 && c.top >= 0 && !!document.querySelector('#abilityHeld .held-list'); }), 'on a phone the first card shows, the abilities held under the cards');
+    await a.screenshot({ path: `${out}/crowned-offer-phone.png` });
+    await a.setViewportSize({ width: 1280, height: 720 });
     const epoch6 = app.session.epoch;
     skip = 6;   // on to fight 7, two bosses at once
     for (const page of [a, b]) await page.keyboard.press('Digit1');

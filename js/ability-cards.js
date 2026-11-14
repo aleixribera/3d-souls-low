@@ -54,9 +54,10 @@ function abilityAmount(key, x) {
   if (unit === 'n') return String(Math.round(x));
   return Math.round(x * 100) + '%';
 }
-// A card's text at `level` as parts ({ text, strong }): each number in bold, as "before → after" on an upgrade.
-function abilityCardText(b, level) {
-  const now = abilityAt(b, level), was = level > 1 ? abilityAt(b, level - 1) : null, parts = [];
+// A card's text at `level` as parts ({ text, strong }): each number in bold, as "before → after" on an upgrade
+// (`plain`: the level's own numbers only, as held).
+function abilityCardText(b, level, plain = false) {
+  const now = abilityAt(b, level), was = level > 1 && !plain ? abilityAt(b, level - 1) : null, parts = [];
   let from = 0;
   for (const m of b.text.matchAll(/\{(\w+)\}/g)) {
     const a = abilityAmount(m[1], now[m[1]]), w = was && abilityAmount(m[1], was[m[1]]);
@@ -88,6 +89,26 @@ function abilityCard(b, held, key, swift) {
   card.append(well, words);
   return card;
 }
+// The abilities `ids` holds (one per pick, repeated by upgrades), each once at its level: a small icon, the name with
+// its level, the rarity and what it does now. Shown under the pick and in pause (Aleix, 2026-11-14: what each one
+// does, its trigger, always at hand). Null when nothing is held.
+function abilityHeldList(ids) {
+  const held = [...new Set(ids || [])].map(id => ABILITY_BY_ID[id]).filter(Boolean);
+  if (!held.length) return null;
+  const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+  const list = make('ul', 'held-list');
+  for (const b of held) {
+    const level = abilityLevel(b, ids), li = make('li'); li.dataset.rarity = b.rarity; li.dataset.ability = b.id;
+    const icon = make('span', 'held-icon'); icon.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>`;
+    const head = make('span', 'held-head'), name = make('strong', 'held-name', b.name);
+    if (level > 1) name.appendChild(make('span', 'held-level', ABILITY_LEVEL_MARK[level - 1]));
+    head.append(name, make('span', 'held-rarity', ABILITY_RARITY_WORD[b.rarity]));
+    const text = make('span', 'held-text');
+    for (const part of abilityCardText(b, level, true)) text.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
+    li.append(icon, head, text); list.appendChild(li);
+  }
+  return list;
+}
 // The pick's look. Tall cards in a row over the HUD; on a narrow or short screen, rows (a 2×2 grid when wide enough).
 (() => {
   const style = document.createElement('style');
@@ -117,12 +138,16 @@ function abilityCard(b, held, key, swift) {
   .bcard-rarity .swift{font-style:normal;color:var(--ui-ink)}.bcard-rarity .swift::before{content:'·';margin:0 .45em;color:var(--ui-muted)}
   .bcard:hover:not(:disabled){background:#14171a;border-color:var(--ui-line-hi)}
   .bcard:focus-visible,.bcard[aria-pressed=true]{border-color:var(--ui-accent);outline:1px solid var(--ui-accent);outline-offset:-1px;background:#17150f}
-  .bcard:disabled{opacity:.4;cursor:default}
+  .bcard:disabled{opacity:.62;cursor:default}
+  #abilityHeld{margin-top:22px;padding-top:14px;border-top:1px solid var(--ui-line)}#abilityHeld:empty{display:none}
+  #abilityHeld h3{margin:0 0 10px;font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
+  #abilityHeld .held-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
   #abilityScreen.ability-pad .ui-key{display:none}
   #abilityStatus{margin:14px 0 0;color:var(--ui-muted)}#abilityStatus:empty{display:none}
   @media (hover:none){#abilityChoices .ui-key{display:none}}
   @media (max-width:900px),(max-height:560px){
-    #abilityScreen{place-items:end center;padding-top:16px}
+    #abilityScreen{display:flex;flex-direction:column;align-items:center;padding-top:16px}
+    #abilityScreen .ability-panel{margin-top:auto}
     #abilityScreen .ability-panel{width:min(100%,640px)}
     #abilityScreen h2{font-size:22px}
     #abilityChoices{display:grid;grid-template-columns:1fr;gap:8px}
@@ -133,6 +158,14 @@ function abilityCard(b, held, key, swift) {
     .bcard-name{flex-direction:row;align-items:baseline;gap:10px;margin-top:0;font-size:19px}
     .bcard-text{margin-top:5px}
     .bcard-foot{margin-top:0;padding-top:7px;font-size:12px}}
-  @media (max-height:560px) and (min-width:600px){#abilityScreen .ability-panel{width:min(100%,860px)}#abilityChoices{grid-template-columns:1fr 1fr}}`;
+  @media (max-height:560px) and (min-width:600px){#abilityScreen .ability-panel{width:min(100%,860px)}#abilityChoices{grid-template-columns:1fr 1fr}}
+  .held-list{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;display:grid;gap:10px 24px;margin:0;padding:0;list-style:none}
+  .held-list li{--rc:var(--body);display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:12px;align-items:start}
+  .held-list li[data-rarity=rare]{--rc:var(--rare)}.held-list li[data-rarity=legendary]{--rc:var(--leg)}
+  .held-icon{grid-row:1/3;width:28px;height:28px;margin-top:1px}.held-icon svg{width:28px;height:28px;fill:none;stroke:var(--rc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .held-head{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .held-name{font:400 16px/1.25 var(--ui-display);color:var(--ui-ink);overflow-wrap:anywhere}.held-level{margin-left:7px;font:500 13px/1 var(--ui-text);color:var(--ui-accent)}
+  .held-rarity{margin-left:auto;flex:none;font:500 13px/1.2 var(--ui-text);color:var(--rc)}
+  .held-text{font:400 14px/1.4 var(--ui-text);color:var(--body)}.held-text b{color:var(--ui-ink);font-weight:600;white-space:nowrap}`;
   document.head.appendChild(style);
 })();
