@@ -4,9 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 86): item 3 pass 2: keys beside the foe (Attack, Deflect, Dodge) from the bindings, until done 3
-  times (`js/world-hints.js`, in-page `World hints`, `world-hint-*.jpg`); CI's 3/4 timeout fixed (a test left ~360
-  figures in the scene). Next: lessons' words on the new moves; then re-tune Story once the moveset is the only one.
+- Track A (pass 86): item 3: keys beside the foe from the bindings, until done 3 times (`js/world-hints.js`, in-page
+  `World hints`, `world-hint-*.jpg`); CI shard 3: a leak of ~360 figures and a NaN camera (`Story moments`) fixed.
+  Next: lessons' words on the new moves; re-tune Story once the moveset is the only one.
 - Track B (pass 87): items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`); abilities on keys 1-4 (`ABILITY_KEYS`,
   `CONFIG.abilities.press`), filled by blows, deflects, dodges, executions; Boss Rush locks a filled key (in-page
   `pass 87`, `tests/abilities.cjs`, `number-keys-*.jpg`). Dash i-frames 0.3 s again (CI's 3 boss tests). Next: (1)
@@ -60,8 +60,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
+- In-page `Combat clarity: jump heavies` fails since the moveset ("both jump attacks deal more damage"): track B.
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
-- In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs
