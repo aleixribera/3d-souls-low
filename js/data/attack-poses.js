@@ -241,3 +241,61 @@ ATTACK_POSES.clawPounce = { hits: [
     strike: { crouch: 0.3, lean: 0.45, chest: [0.6, 0, 0], armR: [-1.2, 0, 0.3], armL: [-1.2, 0, -0.3], elbowR: [-0.1, 0, 0], elbowL: [-0.1, 0, 0], head: [0.2, 0, 0] },
     follow: { crouch: 0.35, lean: 0.5, chest: [0.7, 0, 0], armR: [-0.6, 0, 0.3], armL: [-0.6, 0, -0.3], elbowR: [-0.2, 0, 0], elbowL: [-0.2, 0, 0] } },
 ] };
+
+// ---- Summons' own moves (pass 81; drawn by js/summon-figures.js, timed by CONFIG.VISUALS.abilityFx.<kind>.moves) --------
+// No enemy or boss strikes with these. The Stone Guardian (sword in armR, a headstone shield on armL):
+// Grave Cleave: the sword hauled up behind the hood, the shield held out, then one heavy chop straight down.
+ATTACK_POSES.guardianCleave = {
+  ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutSine' },
+  hits: [{
+    windup: { crouch: 0.04, lean: -0.1, legL: [-0.25, 0, 0], legR: [0.2, 0, 0], spin: [0, -0.25, 0], chest: [-0.2, -0.15, 0], neck: [-0.05, 0.1, 0],
+              head: [-0.12, 0.12, 0], armR: [-2.3, 0, 0.15], elbowR: [-0.3, 0, 0], weapon: [-0.35, 0, 0], armL: [-0.55, 0, -0.3], elbowL: [-0.5, 0, 0] },
+    strike: { crouch: 0.14, lean: 0.32, legL: [-0.5, 0, 0], kneeL: [0.35, 0, 0], legR: [0.3, 0, 0], kneeR: [0.25, 0, 0], spin: [0, 0.22, 0],
+              chest: [0.34, 0.14, 0], neck: [0.08, -0.08, 0], head: [0.12, -0.1, 0], armR: [-1.0, 0, 0.05], elbowR: [-0.05, 0, 0], weapon: [0.9, 0, 0],
+              armL: [-0.45, 0, -0.4], elbowL: [-0.4, 0, 0] },
+    follow: { crouch: 0.16, lean: 0.36, legL: [-0.52, 0, 0], kneeL: [0.37, 0, 0], legR: [0.32, 0, 0], kneeR: [0.27, 0, 0], spin: [0, 0.26, 0],
+              chest: [0.38, 0.16, 0], neck: [0.08, -0.1, 0], head: [0.12, -0.12, 0], armR: [-0.85, 0, 0.05], elbowR: [-0.05, 0, 0], weapon: [1.0, 0, 0],
+              armL: [-0.42, 0, -0.42], elbowL: [-0.42, 0, 0] },
+  }],
+};
+// Headstone Slam: the headstone hoisted over the hood in the off hand, then driven rim-first into the floor before it.
+ATTACK_POSES.guardianSlam = {
+  ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutSine' },
+  lag: { armL: 0.06, elbowL: 0.08 },
+  hits: [{
+    windup: { crouch: 0.03, lean: -0.14, legL: [-0.2, 0, 0], legR: [0.15, 0, 0], spin: [0, 0.3, 0], chest: [-0.25, 0.2, 0], neck: [-0.05, -0.15, 0],
+              head: [-0.15, -0.18, 0], armL: [-2.75, 0, -0.1], elbowL: [-0.3, 0, 0], armR: [-0.15, 0, 0.3], elbowR: [-0.25, 0, 0], weapon: [0.6, 0, 0] },
+    strike: { crouch: 0.2, lean: 0.42, legL: [-0.6, 0, 0], kneeL: [0.5, 0, 0], legR: [0.38, 0, 0], kneeR: [0.4, 0, 0], spin: [0, -0.28, 0],
+              chest: [0.42, -0.22, 0], neck: [0.1, 0.1, 0], head: [0.2, 0.12, 0], armL: [-0.95, 0, -0.1], elbowL: [-0.05, 0, 0],
+              armR: [-0.3, 0, 0.35], elbowR: [-0.3, 0, 0], weapon: [0, 0, 0] },
+    follow: { crouch: 0.22, lean: 0.45, legL: [-0.62, 0, 0], kneeL: [0.52, 0, 0], legR: [0.4, 0, 0], kneeR: [0.42, 0, 0], spin: [0, -0.3, 0],
+              chest: [0.45, -0.24, 0], neck: [0.1, 0.1, 0], head: [0.2, 0.14, 0], armL: [-0.9, 0, -0.08], elbowL: [-0.04, 0, 0],
+              armR: [-0.3, 0, 0.37], elbowR: [-0.3, 0, 0], weapon: [0, 0, 0] },
+  }],
+};
+// The Lancer of Ash (the spear in armR, the off hand forward on the shaft):
+// Cinder Thrust: coiled low with the spear drawn back along its side, then the whole body driven down the shaft.
+ATTACK_POSES.lancerThrust = {
+  ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
+  hits: [{
+    windup: { crouch: 0.1, lean: 0.06, legL: [-0.35, 0, 0], kneeL: [0.15, 0, 0], legR: [0.3, 0, 0], kneeR: [0.25, 0, 0], spin: [0, -0.55, 0],
+              chest: [-0.05, -0.35, 0], neck: [0, 0.25, 0], head: [0, 0.3, 0], armR: [0.15, 0, -0.1], elbowR: [-0.5, 0, 0], weapon: [0.35, 0, 0],
+              armL: [-0.3, 0, 0.25], elbowL: [-0.6, 0, 0] },
+    strike: { crouch: 0.12, lean: 0.3, legL: [-0.7, 0, 0], kneeL: [0.25, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.35, 0], chest: [0.25, 0.3, 0],
+              neck: [0.08, -0.18, 0], head: [0.04, -0.22, 0], armR: [-0.7, 0, 0.1], elbowR: [0.25, 0, 0], armL: [-0.9, 0, -0.15], elbowL: [0.1, 0, 0] },
+    follow: { crouch: 0.13, lean: 0.33, legL: [-0.72, 0, 0], kneeL: [0.26, 0, 0], legR: [0.47, 0, 0], spin: [0, 0.42, 0], chest: [0.28, 0.34, 0],
+              neck: [0.08, -0.22, 0], head: [0.04, -0.27, 0], armR: [-0.75, 0, 0.12], elbowR: [0.27, 0, 0], armL: [-0.86, 0, -0.15], elbowL: [0.12, 0, 0] },
+  }],
+};
+// Falling Pike: a crouch, a leap (the move's `hop`) with the spear raised point-down over the helm, and the fall driving it in.
+ATTACK_POSES.lancerPike = {
+  ease: { windup: 'outCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' },
+  hits: [{
+    windup: { crouch: 0.05, lean: -0.1, legL: [-0.55, 0, 0], kneeL: [0.9, 0, 0], legR: [0.2, 0, 0], kneeR: [0.7, 0, 0], chest: [-0.2, 0, 0],
+              head: [0.15, 0, 0], armR: [-2.9, 0, 0.1], elbowR: [-0.35, 0, 0], weapon: [1.25, 0, 0], armL: [-2.5, 0, -0.2], elbowL: [-0.6, 0, 0] },
+    strike: { crouch: 0.22, lean: 0.36, legL: [-0.7, 0, 0], kneeL: [0.5, 0, 0], legR: [0.45, 0, 0], kneeR: [0.5, 0, 0], chest: [0.36, 0, 0],
+              head: [0.25, 0, 0], armR: [-1.0, 0, 0.1], elbowR: [-0.1, 0, 0], weapon: [1.6, 0, 0], armL: [-0.9, 0, -0.1], elbowL: [-0.3, 0, 0] },
+    follow: { crouch: 0.24, lean: 0.4, legL: [-0.72, 0, 0], kneeL: [0.52, 0, 0], legR: [0.47, 0, 0], kneeR: [0.52, 0, 0], chest: [0.4, 0, 0],
+              head: [0.25, 0, 0], armR: [-0.95, 0, 0.1], elbowR: [-0.1, 0, 0], weapon: [1.6, 0, 0], armL: [-0.85, 0, -0.1], elbowL: [-0.3, 0, 0] },
+  }],
+};

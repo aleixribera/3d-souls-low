@@ -106,8 +106,8 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   item 3's "no dopamine on menus" and one type system; and the lobby's controls list is its own copy of
   `controlRows`. Only `solo-browser` runs on CI: the multi-page `*-browser.cjs` tests run by hand.
 - Abilities, item 6 cut at pass 62 (two passes, then cut). Every summon has its own Blender model now (the guardian
-  since pass 78, `tools/blender/guardian.py`; the lancer since pass 80, `tools/blender/lancer_of_ash.py`); both still
-  strike with an enemy's key poses (`VISUALS.abilityFx.<kind>.figure/move`), so a move of their own is open. Left:
+  since pass 78, `tools/blender/guardian.py`; the lancer since pass 80, `tools/blender/lancer_of_ash.py`), and both
+  strike with moves of their own since pass 81 (`VISUALS.abilityFx.<kind>.moves`, model lab shows them). Left:
   "a party of four" is three local bodies beside the player (`docs/scorecard/abilities-summons.jpg`); all four
   summons seen in a real online party of four browsers. A drawn boss waits for the end of its attack string to turn (the draw only
   starts between attacks): if that feels late, let the draw begin at its next recovery. `KIT=strong` is still the

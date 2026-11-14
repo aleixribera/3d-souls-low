@@ -67,12 +67,20 @@ function validateData({ visual = true } = {}) {
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
     && num(SUM[k].flank) && num(SUM[k].speed) && SUM[k].speed > 0 && num(SUM[k].height) && SUM[k].height > 0 && [undefined, true, false].includes(SUM[k].rises)) && [...SUMMON_STRIKERS].every(k => num(SUM[k].reach) && SUM[k].reach > 0),
     `CONFIG.abilities.summons: arrive, near, side and radius 0 or more; each summon (${[...SUMMONS].join(', ')}) a gap, a flank, a speed and a height above 0 (rises true or false); each that strikes (${[...SUMMON_STRIKERS].join(', ')}) a reach above 0.`);
-  // A summon drawn in an enemy's figure (js/summon-figures.js): an enemy with a model, and one of its attacks to strike with.
-  if (visual) for (const [k, F] of Object.entries(CONFIG.VISUALS.abilityFx)) if (F && F.figure !== undefined) {
-    const d = ENEMY_BY_ID[F.figure];
-    need(!!d && !!d.model && d.attacks.some(a => a.id === F.move && ATTACK_POSES[a.pose]), `CONFIG.VISUALS.abilityFx.${k}: figure must be an enemy with a model and move one of its attacks with key poses.`);
-    need(['windup', 'rise', 'fade', 'strikeGlow', 'cryTime', 'turn', 'scale'].every(n => num(F[n]) && F[n] > 0) && !!F.guard && !!F.cry,
-      `CONFIG.VISUALS.abilityFx.${k}: a figure needs windup, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
+  // A summon drawn as a figure (js/summon-figures.js): its own model and its own moves (pass 81), each a timeline of key
+  // poses no enemy or boss strikes with (VISION.md: no two share attacks).
+  const enemyPoses = new Set(ENEMY_DEFS.flatMap(d => [...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])])
+    .filter(a => a && typeof a === 'object').map(a => a.pose));
+  if (visual) for (const [k, F] of Object.entries(CONFIG.VISUALS.abilityFx)) if (F && (F.moves !== undefined || F.guard !== undefined)) {   // a figure: it stands guard
+    need(Array.isArray(F.moves) && F.moves.length > 0 && F.moves.every(a => a && typeof a.name === 'string' && ATTACK_POSES[a.pose] && !enemyPoses.has(a.pose)
+      && Array.isArray(a.hits) && a.hits.length === ATTACK_POSES[a.pose].hits.length && a.hits.every(h => num(h.startup) && h.startup > 0 && num(h.active) && h.active > 0)
+      && num(a.recovery) && a.recovery >= 0 && (a.hop === undefined || num(a.hop) && a.hop >= 0)
+      && (a.impact === undefined || ['ahead', 'ring', 'crack', 'dust', 'chunks', 'shake'].every(n => num(a.impact[n]) && a.impact[n] >= 0))),
+      `CONFIG.VISUALS.abilityFx.${k}: moves must be a list of { name, pose (key poses no enemy uses, one per hit), hits [{ startup, active above 0 }], recovery, hop?, impact? { ahead, ring, crack, dust, chunks, shake } }.`);
+    if (Array.isArray(F.moves)) F.moves.forEach((a, i) => a && Array.isArray(a.hits) && checkAttackAnim(a, `CONFIG.VISUALS.abilityFx.${k}.moves[${i}]`, need));
+    need(F.idle === undefined || F.idle in IDLE_STYLES, `CONFIG.VISUALS.abilityFx.${k}: idle must be an idle style (${Object.keys(IDLE_STYLES).join(', ')}).`);
+    need(typeof F.model === 'string' && ['rise', 'fade', 'strikeGlow', 'cryTime', 'turn', 'scale'].every(n => num(F[n]) && F[n] > 0) && !!F.guard && !!F.cry,
+      `CONFIG.VISUALS.abilityFx.${k}: a figure needs a model, rise, fade, strikeGlow, cryTime, turn and scale above 0, and guard and cry poses.`);
     need(['solid', 'floor'].every(n => F[n] === undefined || typeof F[n] === 'boolean'), `CONFIG.VISUALS.abilityFx.${k}: solid and floor are true or false.`);
     // Its own model (pass 78): a model definition, each slot it colours and lights one of that model's materials.
     if ('model' in F) {

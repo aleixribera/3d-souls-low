@@ -657,22 +657,35 @@ const CONFIG = {
       hound: { color: 0x3dffa0, core: 0xdcffe8, eye: 0xc8ffd8, rim: 2.6, body: 0.22, bone: 0.7, flicker: 0.18, turn: 9, rise: 0.55, fade: 0.7,
         gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
         shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
-      // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each strikes with the `move` of the `figure` enemy
-      // (one of its attacks, the last `windup` s of its wind-up played before each blow). A `model` (the guardian's since
-      // pass 78, the lancer's since pass 80) is its own figure at `scale` and `bulk`, each material slot drawn in its
-      // `slots` colour and its `glows` lit; without one it wears the `figure` enemy's at `scale` times its size.
-      // `solid`: lit (`stone`, or the slot's colour) with a glowing rim; else a ghost of light. `floor`: it rises out of
-      // the floor; else it forms from the feet up. `guard`: a key pose held while it isn't striking; `cry`: the one it
-      // strikes, `cryTime` s, as it draws the boss's eye.
-      guardian: { figure: 'warden', move: 'wardenBash', model: 'stoneGuardian', scale: 1.37, bulk: 1.06, floor: true,
+      // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each is its own `model` (the guardian's since
+      // pass 78, the lancer's since pass 80) at `scale` and `bulk`, each material slot drawn in its `slots` colour and its
+      // `glows` lit, standing in the `idle` style. `solid`: lit (`stone`, or the slot's colour) with a glowing rim; else a
+      // ghost of light. `floor`: it rises out of the floor; else it forms from the feet up. `guard`: a key pose held while
+      // it isn't striking; `cry`: the one it strikes, `cryTime` s, as it draws the boss's eye.
+      // `moves` (pass 81): its own blows, taken in turn, one per blow the engine lands. Each is drawn from its key poses
+      // (`pose`, js/data/attack-poses.js; no enemy strikes with them) on the timeline of its `hits` and `recovery`, its
+      // wind-up played before the blow is due. `hop`: m it leaps through the wind-up and falls through the strike;
+      // `impact`: where the blow meets the floor, `ahead` m before it (a ring, a crack, dust, stone chunks, `shake` x the
+      // kind's shake if the player is near).
+      guardian: { model: 'stoneGuardian', idle: 'still', scale: 1.37, bulk: 1.06, floor: true,
         slots: { stone: 0x8e897e, worn: 0x504d47 }, glows: ['rune'], solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
-        flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, windup: 0.45, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
+        flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
         guard: { armL: [-0.75, 0, -0.25] }, cry: { armR: [-2.3, 0, 0.3], armL: [-0.9, 0, -0.5], chest: [-0.25, 0, 0], head: [-0.3, 0, 0] },
+        moves: [
+          { name: 'Grave Cleave', pose: 'guardianCleave', hits: [{ startup: 0.5, active: 0.12, follow: 0.16 }], recovery: 0.55 },
+          { name: 'Headstone Slam', pose: 'guardianSlam', hits: [{ startup: 0.55, active: 0.14, follow: 0.2 }], recovery: 0.6,
+            impact: { ahead: 1.1, ring: 2.6, crack: 2, dust: 12, chunks: 8, shake: 1 } },
+        ],
         burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xbfe0ff } },
-      lancer: { figure: 'lancer', move: 'lancerJab', model: 'lancerOfAsh', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
+      lancer: { model: 'lancerOfAsh', idle: 'guard', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
         solid: true, stone: 0x4a4644, color: 0xa08cff, core: 0xf0eaff, rim: 1.25, body: 0.26,
-        flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, windup: 0.3, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],
+        flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],
         guard: {}, cry: { armR: [-2.6, 0, 0.2], chest: [-0.2, 0, 0], head: [-0.35, 0, 0] },
+        moves: [
+          { name: 'Cinder Thrust', pose: 'lancerThrust', hits: [{ startup: 0.28, active: 0.08, follow: 0.1 }], recovery: 0.22 },
+          { name: 'Falling Pike', pose: 'lancerPike', hits: [{ startup: 0.32, active: 0.1, follow: 0.1 }], recovery: 0.18, hop: 0.9,
+            impact: { ahead: 1.2, ring: 1.6, crack: 1.2, dust: 8, chunks: 0, shake: 0.7 } },
+        ],
         burst: { count: 26, speed: 6, color: 0xb8a8ff }, hitBurst: { count: 10, speed: 5, color: 0xd8ccff } },
       gale: { color: 0xc8fff0, core: 0xffffff, size: 5.2, lift: 1.3, speed: 34, roll: 0.9, fade: 0.18, shake: [0.14, 0.08],
         burst: { count: 26, speed: 8, color: 0xdafff6 } },

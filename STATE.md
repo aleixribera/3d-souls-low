@@ -6,8 +6,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Track A (pass 79): item 5 pass 1: 5 flasks found (4 -> 9), a climb by chapter; bot wins 75% -> 84%
   (`docs/scorecard/story-climb-pass79.txt`, `flask-find-*.jpg`). 8 bosses **awaiting Aleix**. Next: item 6.
-- Track B (pass 80): the Lancer of Ash's own Blender model (`docs/scorecard/summon-lancer.jpg`), solid ash plate,
-  violet cinders (overridable: was a ghost); CI's red render-audit test fixed. Next: the summons' own moves.
+- Track B (pass 81): guardian and lancer strike with their own moves in turn, wound up ahead of each blow
+  (`docs/scorecard/summon-moves.jpg`, test `summons:`). Next: BACKLOG item 6 (the party-of-four check).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).

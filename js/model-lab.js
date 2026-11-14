@@ -47,6 +47,9 @@ if (DEV) (() => {
     lab.player = !def && PLAYER_DEF.look.model === id ? new Player(PLAYER_DEF, 0, 0, 0) : null;
     lab.rig = lab.enemy ? lab.enemy.rig : lab.player ? lab.player.rig : new Rig({ scale: 1, bulk: 1, color: 0x888888, weapon: 'sword', model: id, variant: lab.variant });
     lab.modes = [{ name: 'idle', type: 'idle' }, { name: 'walk', type: 'walk' }];
+    // A summon's own model (CONFIG.VISUALS.abilityFx.<kind>.model): its moves, as js/summon-figures.js draws them.
+    lab.summon = Object.keys(VIS.abilityFx).find(k => VIS.abilityFx[k] && VIS.abilityFx[k].model === id && VIS.abilityFx[k].moves) || null;
+    if (lab.summon) VIS.abilityFx[lab.summon].moves.forEach((a, i) => lab.modes.push({ name: a.name, type: 'summon', i, a }));
     if (def) {
       for (const a of def.attacks) lab.modes.push({ name: a.name, type: 'attack', a });
       lab.modes.push({ name: 'hurt', type: 'hurt' }, { name: 'stagger', type: 'stagger' }, { name: 'parried', type: 'parried' }, { name: 'death', type: 'dead' });
@@ -118,7 +121,12 @@ if (DEV) (() => {
     lab.raf = requestAnimationFrame(loop);
     const now = performance.now(), dt = Math.min(0.1, (now - lab.last) / 1000); lab.last = now; lab.t += dt;
     const r = lab.rig, e = lab.enemy, m = lab.modes[lab.mode];
-    if (e) simulate(e, m, dt, now / 1000); else if (lab.player) simulatePlayer(lab.player, m, dt, now / 1000); else r.reset();
+    if (e) simulate(e, m, dt, now / 1000); else if (lab.player) simulatePlayer(lab.player, m, dt, now / 1000);
+    else if (m.type === 'summon') {   // the move on a loop, a beat of guard between
+      if (!lab.frozen) lab.tt += dt;
+      const end = phaseSpan(m.a, 'recovery', m.a.hits.length - 1)[0] + m.a.recovery;
+      r.place(0, summonFigures.poseAt(r, lab.summon, m.i, lab.tt % (end + 0.6), now / 1000), 0, 0);
+    } else { r.reset(); r.place(0, 0, 0, 0); }   // back on the floor after a leap
     const R = lab.renderer, W = innerWidth, H = innerHeight, w = W / 4;
     R.setScissorTest(true);
     VIEWS.forEach((v, i) => {

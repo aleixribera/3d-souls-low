@@ -194,6 +194,39 @@
     d.takeHit(blow(d.def.hp), Game.player); Game.render(1, STEP);
     expect.ok(shown().length === 0 && d.hp >= 1, 'no numbers anywhere else, and a plain dummy still never empties');
   });
+  test('summons: the Stone Guardian and the Lancer of Ash strike with moves of their own, in turn, wound up before the blow lands', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);   // the level's first step resets every power
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), FX = CONFIG.VISUALS.abilityFx;
+    const enemyPoses = new Set(A.ENEMY_DEFS.flatMap(d => d.attacks.map(a => a.pose)));
+    for (const k of ['guardian', 'lancer']) {
+      const M = FX[k].moves;
+      expect.ok(M.length >= 2 && M.every(m => !enemyPoses.has(m.pose)) && new Set(M.map(m => m.pose)).size === M.length, `the ${k} has moves no enemy strikes with (${M.map(m => m.name).join(', ')})`);
+    }
+    p.grantAbilities(['stone-guardian', 'ash-lancer']); abilityPowers.reset();
+    p.x = e.x - 6.5; p.z = e.z + 2.5; Game.lock = e; p.hp = Math.floor(p.maxHp * 0.2);
+    const ctx = { x: e.x, y: e.y, z: e.z, enemy: e };
+    abilityPowers.trigger('self', p, p.kit, 'low', ctx); abilityPowers.trigger('second', p, p.kit, 'break', ctx);   // two holders: one summon each
+    const seq = { guardian: [], lancer: [] }, early = { guardian: 0, lancer: 0 };
+    let hop = 0, hopOff = 0;
+    for (let i = 0; i < 6 * 60; i++) {
+      sim.step(1, 1);
+      for (const f of summonFigures.info()) {
+        const M = FX[f.kind].moves, s = seq[f.kind];
+        if (f.move && f.move !== s[s.length - 1]) s.push(f.move);
+        if (f.move && f.n >= 1 && f.move === M[f.n % M.length].pose) early[f.kind]++;   // the next blow's move, before the engine lands it
+        if (f.kind === 'lancer') { hop = Math.max(hop, f.hop); if (f.move !== 'lancerPike') hopOff = Math.max(hopOff, f.hop); }
+      }
+    }
+    for (const k of ['guardian', 'lancer']) {
+      const M = FX[k].moves, s = seq[k];
+      expect.above(s.length, 2, `the ${k} strikes again and again (${s.join(', ')})`);
+      expect.ok(s.every((pose, j) => pose === M[j % M.length].pose), `the ${k}'s blows take its moves in turn (${s.join(', ')})`);
+      expect.above(early[k], 6, `the ${k} winds up before its blow lands (${early[k]} frames ahead)`);
+    }
+    expect.above(hop, FX.lancer.moves.find(m => m.pose === 'lancerPike').hop * 0.8, `Falling Pike leaps (${hop.toFixed(2)} m)`);
+    expect.ok(hopOff === 0, 'and only Falling Pike leaves the floor');
+    Game.lock = null;
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();
