@@ -76,6 +76,7 @@ async function peer(origin, name) {
     app.sim.setRushFight(0); assert.ok(boss.rest === 1 && boss.chain === 1, 'a fight without modifiers is plain');
     assert.equal(boss.def.hp, hp, 'a boss alone keeps its whole health');
     // A pair (pass 67): each boss has CONFIG.endless.pairHealth of its own health, its later bars too.
+    const sharedHp = JSON.stringify([bosses[0], bosses[1]].map(id => app.sim.inspect().Game.update.constructor('return ENEMY_BY_ID')()[id].hp));
     app.sim.start('arena', bosses[0], [bosses[1]]); app.sim.setRushFight(6);
     const pair = app.sim.inspect().Game.enemies, own = e => e.baseDef.phases ? e.baseDef.phases[e.def.phaseId].hp ?? e.baseDef.hp : e.baseDef.hp;
     for (const e of pair) {
@@ -84,6 +85,7 @@ async function peer(origin, name) {
       if ((e.phaseIds || []).length > 1) { e.enterPhase(1); assert.equal(e.def.hp, Math.round(own(e) * E.pairHealth), `${e.baseDef.id}: its next bar too`); }
     }
     assert.equal(app.sim.rushHealth(2), E.pairHealth); assert.equal(app.sim.rushHealth(1), 1);
+    assert.equal(JSON.stringify(pair.map(e => e.baseDef.hp)), sharedHp, 'the shared definitions keep their health');
     // A Crowned win's offer: four cards, one of them a legendary, for every player.
     for (let i = 0; i < 30; i++) {
       app.sim.offerAbilities(['crowned-' + i], false, 0, 5, true);

@@ -143,10 +143,10 @@ class Enemy {
   // Its bars at `share` of its own health (rushHealth): this bar and every later phase's, the health it has left kept in
   // proportion. Everything reading `def.hp` (the bar, the server's checks, phases' `at`) sees the share.
   setHealth(share) {
-    const k = share > 0 ? share : 1, was = this.def.hp, raw = was / this.health;
+    const k = share > 0 ? share : 1, was = this.def.hp, B = this.baseDef;
     if (k === this.health) return;
-    if (this.def === this.baseDef) this.def = { ...this.baseDef };   // a def without phases is shared: scale a copy
-    this.health = k; this.def.hp = Math.round(raw * k);
+    if (this.def === B) this.def = { ...B };   // a def without phases is shared: scale a copy
+    this.health = k; this.def.hp = Math.round(((this.phaseIds && B.phases[this.def.phaseId].hp) ?? B.hp) * k);
     this.hp = Math.min(this.def.hp, this.hp * this.def.hp / was);
   }
   // A boss: a def with posture or phases (isBossDef), or any `boss` placement. The one rule for executions (a boss's result
