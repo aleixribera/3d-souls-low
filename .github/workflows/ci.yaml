@@ -58,9 +58,9 @@ jobs:
         run: |
           cp tests/suite.js tests/suite-fixed.js
           cp tests/suite-unfixed.js tests/suite.js
-          for i in 1 2 3; do echo "== unfixed $i"; node tests/solo-browser.cjs "Low loading" 2>&1 | grep -E 'passed|failed|Error:' | cut -c1-200 || true; done
+          for i in 1 2 3 4 5 6 7 8; do echo "== unfixed $i"; node tests/solo-browser.cjs "Low loading" 2>&1 | grep -E 'passed|failed|Error:' | cut -c1-200 || true; done
           cp tests/suite-fixed.js tests/suite.js
-          for i in 1 2 3; do echo "== fixed $i"; node tests/solo-browser.cjs "Low loading" 2>&1 | grep -E 'passed|failed|Error:' | cut -c1-200 || true; done
+          for i in 1 2 3 4 5 6 7 8; do echo "== fixed $i"; node tests/solo-browser.cjs "Low loading" 2>&1 | grep -E 'passed|failed|Error:' | cut -c1-200 || true; done
       - name: Upload suite results
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
