@@ -188,6 +188,8 @@ soon as the upgrades session has shipped it, ahead of everything below, then ite
 after the abilities). If the track reaches item 6 before that session has shipped, it goes on with the next item and
 comes back to item 6 the moment it lands.
 Then (Aleix, 2026-11-14): item 11 (the run's shape) right after item 7's pass in progress, ahead of everything left.
+Next in this track (2026-11-14): item 11's third pass (the wall and the ease go, picks evened, par per boss), ahead of
+the summons' own moves; then the end screen's highlights (item 4), which are still unbuilt.
 
 1. **Boss Rush and Practice.** The Calling becomes **Boss Rush**, the lobby's default. The title screen: Story, Boss
    Rush, Practice. The leader's small Mode option: Boss Rush, Single, Double, Triple, Quad Boss, and the story for
