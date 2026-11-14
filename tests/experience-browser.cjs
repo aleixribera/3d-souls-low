@@ -15,6 +15,7 @@ const { createServer } = require('../server/index.cjs');
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0,
       fps: false, hitboxes: false, cameraMotion: true, screenShake: false })));
+    await page.addInitScript(() => localStorage.setItem('combatArena.onlineName', 'Tester'));   // online play asks for a name otherwise
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.evaluate(() => { Game.manualClock = true; });
@@ -53,7 +54,7 @@ const { createServer } = require('../server/index.cjs');
     await page.evaluate(() => { Game.optionsFrom = 'main'; Game.optionsCategory = 'game'; Game.showMenu('options'); });
     assert.deepEqual(await page.locator('#menuList .n').allTextContents(), ['Game', 'Camera', 'Graphics', 'Sound']);
     const shownSettings = () => page.locator('#menuSide .menuBtn:not([hidden])').evaluateAll(bs => bs.map(b => b.getAttribute('aria-label') || b.textContent));
-    assert.deepEqual(await shownSettings(), ['Lessons: On', 'Show lessons again']);
+    assert.deepEqual(await shownSettings(), ['Name: Tester', 'Lessons: On', 'Show lessons again']);
     await page.keyboard.press('ArrowDown');
     assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
     assert.deepEqual(await shownSettings(), ['Camera motion: Off', 'Camera speed: 5', 'Invert camera: Off'], 'moving onto a category shows its settings');

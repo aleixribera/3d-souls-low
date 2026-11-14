@@ -13,7 +13,7 @@ const multiplayer = (() => {
   const rushView = { fight: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
   const noModifiers = Object.freeze([]);
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
-  let lobbyPadDirection = null, lobbyPadTimer = 0, nameDraft = '', nameLowercase = false;
+  let lobbyPadDirection = null, lobbyPadTimer = 0;
   let rosterSignature = '', needsReload = false, controlPending = null, controlDeadline = null;
   const viewPosition = new THREE.Vector3(), viewRotation = new THREE.Quaternion(), nextViewRotation = new THREE.Quaternion();
   const labelPosition = new THREE.Vector3();
@@ -47,9 +47,6 @@ const multiplayer = (() => {
     <button id="lobbyRetry" class="ui-primary" hidden>Try again</button>
     </section><section class="lobby-party" aria-labelledby="lobbyPartyTitle">
     <div class="lobby-section-title"><h2 id="lobbyPartyTitle">Party</h2><span id="lobbyCount"></span></div>
-    <label for="lobbyName" class="ui-label">Your name</label><input id="lobbyName" maxlength="24" autocomplete="nickname" placeholder="Your name" spellcheck="false">
-    <section id="lobbyNameEditor" class="lobby-name-editor" aria-label="Edit your name" hidden>
-      <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
     <div class="lobby-party-actions"><button id="lobbyManage" class="ui-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button></div>
     <section id="lobbyBoard" aria-labelledby="lobbyBoardTitle" hidden><div class="lobby-section-title"><h2 id="lobbyBoardTitle">This week</h2><span id="lobbyBoardReset"></span></div>
@@ -94,11 +91,7 @@ const multiplayer = (() => {
     #publicLobby .lobby-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:16px}
     #publicLobby .lobby-section-title h2{font:400 var(--ui-size-head)/1.2 var(--ui-display);color:var(--ui-ink)}
     #lobbyCount{font:var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
-    #publicLobby input{display:block;width:100%;min-height:44px;padding:0 12px;background:var(--ui-well);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:2px;font:400 17px var(--ui-display)}
-    #publicLobby input:hover{border-color:var(--ui-line-hi)}
-    #publicLobby input:focus-visible,#publicLobby input.pad-selected{outline:1px solid var(--ui-accent);outline-offset:-1px;border-color:var(--ui-accent)}
-    #publicLobby input:disabled{opacity:.5}
-    #lobbyPlayers{max-height:min(320px,40vh);overflow:auto;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;margin:18px 0 0;border-top:1px solid var(--ui-line)}
+    #lobbyPlayers{max-height:min(320px,40vh);overflow:auto;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;margin:0;border-top:1px solid var(--ui-line)}
     #publicLobby .lobby-player{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-height:46px;padding:6px 4px 6px 13px;border-bottom:1px solid var(--ui-line);border-left:3px solid transparent}
     #publicLobby .lobby-player[data-self=true]{border-left-color:var(--ui-accent)}
     #publicLobby .lobby-player-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 18px/1.3 var(--ui-display)}
@@ -118,14 +111,6 @@ const multiplayer = (() => {
     #publicLobby .lobby-footer{grid-area:foot;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;margin-top:max(20px,3vh);padding-top:12px;border-top:1px solid var(--ui-line)}
     #publicLobby .lobby-footer-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:-10px}
     #lobbyPadHint:empty{display:none}
-    #publicLobby .lobby-name-editor{margin:12px 0;padding:14px;border:1px solid var(--ui-line-hi);background:var(--ui-panel)}
-    #lobbyNamePreview{display:block;min-height:1.5em;padding:10px 12px;margin-bottom:12px;background:var(--ui-well);color:var(--ui-ink);font:400 19px var(--ui-display);white-space:pre-wrap;overflow-wrap:anywhere}
-    #lobbyNameKeys{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
-    #publicLobby #lobbyNameKeys button{min-height:40px;padding:0;font:500 15px var(--ui-text);color:var(--ui-ink);background:#ffffff08;border:1px solid var(--ui-line);border-radius:2px;cursor:pointer}
-    #publicLobby #lobbyNameKeys button:hover{background:var(--ui-hover)}
-    #publicLobby #lobbyNameKeys button:focus-visible,#publicLobby #lobbyNameKeys button.pad-selected{outline:1px solid var(--ui-accent);outline-offset:-1px;background:#d9b56b33}
-    #publicLobby #lobbyNameKeys .name-action{grid-column:span 2;font-size:var(--ui-size-hint)}
-    #publicLobby.editing-name .lobby-adventure{display:none}#publicLobby.editing-name .lobby-party{grid-column:1/-1;max-width:640px}
     #publicLobby .lobby-controls{position:fixed;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;
       padding:24px 28px;background:var(--ui-panel);border:1px solid var(--ui-line-hi);box-shadow:0 0 0 100vmax #000000a8}
     #publicLobby .lobby-controls-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
@@ -557,10 +542,10 @@ const multiplayer = (() => {
     for (const p of players) if (allyMeters.has(p.id)) updateAllyHealth(allyMeters.get(p.id), p.hp, p.name);
   }
   const el = id => document.getElementById(id);
-  // What the controller and the arrow keys move through: the name keyboard or the controls sheet while one is open,
-  // else the whole lobby (the mirrored mode select is skipped: the mode list is its row).
+  // What the controller and the arrow keys move through: the controls sheet while it is open, else the whole lobby (the
+  // mirrored mode select is skipped: the mode list is its row).
   function lobbyControls() {
-    const root = !el('lobbyNameEditor').hidden ? el('lobbyNameEditor') : !el('lobbyControls').hidden ? el('lobbyControls') : panel;
+    const root = !el('lobbyControls').hidden ? el('lobbyControls') : panel;
     return [...root.querySelectorAll('button,input,select')].filter(node => !node.disabled && !node.hidden && node.offsetParent
       && !node.classList.contains('ui-mirror'));
   }
@@ -581,57 +566,21 @@ const multiplayer = (() => {
     const next = preferred || controls[0]; focusLobbyControl(next); return next;
   }
   // The keys for the device used last: Back's key sits on the button it presses (Return to game, Close or Leave lobby),
-  // and the footer names the rest (move, change, select; type and delete in the name keyboard).
+  // and the footer names the rest (move, select).
   function updateLobbyPadHint() {
     const pad = usingPad();
     panel.classList.toggle('lobby-pad', pad);
-    const back = !el('lobbyControls').hidden ? 'lobbyControlsClose' : el('lobbyNameEditor').hidden
-      ? ['lobbyResume', 'lobbyGuestResume'].find(id => !el(id).hidden && el(id).offsetParent) || 'lobbyLeave' : null;
+    const back = !el('lobbyControls').hidden ? 'lobbyControlsClose'
+      : ['lobbyResume', 'lobbyGuestResume'].find(id => !el(id).hidden && el(id).offsetParent) || 'lobbyLeave';
     for (const id of ['lobbyResume', 'lobbyGuestResume', 'lobbyLeave', 'lobbyControlsClose'])
       el(id).querySelector('.ui-key').textContent = id === back ? pad ? 'B' : 'Esc' : '';
     const hints = el('lobbyPadHint'); hints.textContent = '';
-    const rows = !el('lobbyNameEditor').hidden
-      ? [[pad ? 'D-pad' : '↑ ↓ ← →', 'Move'], [pad ? 'A' : 'Enter', 'Type'], [pad ? 'X' : 'Backspace', 'Delete'], [pad ? 'B' : 'Esc', 'Cancel']]
-      : [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select']];
-    for (const [key, label] of rows) {
+    for (const [key, label] of [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select']]) {
       const item = document.createElement('span'), cap = document.createElement('span');
       cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hints.appendChild(item);
     }
   }
   events.on('device', updateLobbyPadHint);
-  function closeNameEditor(save = false, restoreFocus = true) {
-    if (save) { el('lobbyName').value = nameDraft; el('lobbyName').dispatchEvent(new Event('change', { bubbles: true })); }
-    el('lobbyNameEditor').hidden = true;
-    panel.classList.remove('editing-name');
-    if (restoreFocus) focusLobbyControl(el('lobbyName'));
-    updateLobbyPadHint();
-  }
-  function nameKey(key) {
-    if (key === 'done' || key === 'cancel') { closeNameEditor(key === 'done'); return; }
-    if (key === 'case') { nameLowercase = !nameLowercase; buildNameKeys(); return; }
-    if (key === 'delete') nameDraft = nameDraft.slice(0, -1);
-    else if (nameDraft.length < C.maxName) nameDraft += key;
-    el('lobbyNamePreview').textContent = nameDraft || 'Your name';
-  }
-  function buildNameKeys() {
-    const previous = document.activeElement?.dataset.nameKey, keys = el('lobbyNameKeys'); keys.textContent = '';
-    const characters = (nameLowercase ? 'abcdefghijklmnopqrstuvwxyz' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') + '0123456789-_. ';
-    const add = (label, key, row, column, action = false) => {
-      const button = document.createElement('button'); button.textContent = label; button.dataset.nameKey = key;
-      button.dataset.nameRow = row; button.dataset.nameColumn = column;
-      if (action) button.className = 'name-action';
-      button.onclick = () => nameKey(key); keys.appendChild(button);
-    };
-    [...characters].forEach((char, i) => add(char === ' ' ? '␣' : char, char, Math.floor(i / 10), i % 10));
-    [['Space', ' '], ['Delete', 'delete'], [nameLowercase ? 'ABC' : 'abc', 'case'], ['Cancel', 'cancel'], ['Done', 'done']]
-      .forEach(([label, key], i) => add(label, key, 4, i * 2 + 0.5, true));
-    focusLobbyControl([...keys.children].find(node => node.dataset.nameKey === previous) || keys.firstElementChild);
-  }
-  function openNameEditor() {
-    nameDraft = el('lobbyName').value; el('lobbyNameEditor').hidden = false;
-    panel.classList.add('editing-name');
-    el('lobbyNamePreview').textContent = nameDraft || 'Your name'; buildNameKeys(); updateLobbyPadHint();
-  }
   // The controls sheet: one overlay over the lobby, with its own Close (Esc / B).
   // While it is open, the lobby behind it takes no clicks.
   function setLobbyHelp(open) {
@@ -645,8 +594,7 @@ const multiplayer = (() => {
   function lobbyBack() {
     if (!wipeScreen.hidden) return;
     if (summary) { closeRunSummary(); return; }
-    if (!el('lobbyNameEditor').hidden) closeNameEditor();
-    else if (!el('lobbyControls').hidden) toggleLobbyHelp(false);
+    if (!el('lobbyControls').hidden) toggleLobbyHelp(false);
     else if (active()) hide();
     else leave();
   }
@@ -776,9 +724,8 @@ const multiplayer = (() => {
     clearTimeout(noticeTimer); el('lobbyNotice').textContent = s; el('lobbyNotice').hidden = !s;
     if (s && transient) noticeTimer = setTimeout(() => notice(''), CONFIG.hud.online.noticeTime * 1000);
   };
-  let savedName = '', resumeToken = '', foreground = !document.hidden;
-  try { savedName = localStorage.getItem('combatArena.onlineName') || ''; resumeToken = localStorage.getItem('combatArena.onlineToken') || ''; } catch {}
-  el('lobbyName').value = savedName;
+  let resumeToken = '', foreground = !document.hidden;
+  try { resumeToken = localStorage.getItem('combatArena.onlineToken') || ''; } catch {}
   function send(data) { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data)); }
   function flushActivity(now) {
     if (connected && activityPending && now - lastActivitySent >= C.activityInterval) {
@@ -832,7 +779,7 @@ const multiplayer = (() => {
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
   function show() {
-    closeNameEditor(false, false); setLobbyHelp(false);
+    setLobbyHelp(false);
     lobbyPadDirection = null; lobbyPadTimer = 0;
     panel.classList.remove('hidden');
     el('menu').inert = true; hud.root.inert = true;
@@ -844,7 +791,7 @@ const multiplayer = (() => {
     updateRoster(); overlayVisibility();
     updateLobbyPadHint(); focusLobbyControl(ensureLobbyFocus());
   }
-  function hide() { closeNameEditor(false, false); setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
+  function hide() { setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
   function chapterCard(id) {
     const chapter = connected && session?.campaign && STORIES.find(s => s.id === session.campaign.id)?.chapters.find(c => c.level === id);
@@ -861,7 +808,7 @@ const multiplayer = (() => {
   }
   function leave(message = '', retry = false) {
     publishPose();
-    closeNameEditor(false, false); setLobbyHelp(false);
+    setLobbyHelp(false);
     joinAttempt++;
     clearTimeout(reconnectTimer); reconnectTimer = null;
     if (!retry) { reconnectWanted = false; reconnectAttempt = 0; }
@@ -880,6 +827,8 @@ const multiplayer = (() => {
   async function join(retry = false) {
     if (connected) { show(); return; }
     if (starting) return;
+    // The first time online play opens with no name, it asks for one (js/name-ask.js); never again after that.
+    if (!progress.name) { nameAsk.open({ action: 'Join', then: () => join(retry) }); return; }
     clearTimeout(reconnectTimer); reconnectTimer = null;
     reconnectWanted = true;
     const attempt = ++joinAttempt;
@@ -900,7 +849,7 @@ const multiplayer = (() => {
       socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
       const joining = socket;
       const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
-      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: el('lobbyName').value, token: resumeToken, foreground, ...gear() }); };
+      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: progress.name, token: resumeToken, foreground, ...gear() }); };
       socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
       socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
         if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
@@ -923,7 +872,6 @@ const multiplayer = (() => {
     el('lobbyRetry').hidden = connected || starting || reconnectWanted;
     el('lobbyRetry').textContent = needsReload ? 'Reload game' : 'Try again';
     el('lobbyWaiting').hidden = connected && self === leader || !connected;
-    el('lobbyName').disabled = !connected;
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
   const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
@@ -1073,8 +1021,7 @@ const multiplayer = (() => {
     if (msg.type === 'welcome') {
       connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
       resumeToken = typeof msg.token === 'string' ? msg.token : ''; board = msg.board && typeof msg.board === 'object' ? msg.board : null;
-      el('lobbyName').value = roster.find(p => p.id === self)?.name || el('lobbyName').value;
-      try { localStorage.setItem('combatArena.onlineToken', resumeToken); localStorage.setItem('combatArena.onlineName', el('lobbyName').value); } catch {}
+      try { localStorage.setItem('combatArena.onlineToken', resumeToken); } catch {}
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
       const select = el('lobbyAdventure'); select.textContent = '';
       // The leader's Mode: Boss Rush first (the lobby's default), the fixed boss runs, then the story played together.
@@ -1509,10 +1456,14 @@ const multiplayer = (() => {
   // What this browser's crates gave it (js/progress.js): the server shows the look to the others and offers the
   // crate abilities in Boss Rush. Sent with hello, and again whenever it changes in the lobby.
   const gear = () => ({ look: progress.look, crates: progress.abilities() });
-  progress.onChange(() => { if (connected) send({ type: 'gear', ...gear() }); });
-  // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller; a text box keeps its
-  // own arrows. Roster refreshes retain the same controls, so a teammate joining never
-  // interrupts typing or selection.
+  // The name lives with the save too (js/name-ask.js): a change made in Options while online reaches the party at once.
+  progress.onChange(() => {
+    if (!connected) return;
+    send({ type: 'gear', ...gear() });
+    if (progress.name && progress.name !== roster.find(p => p.id === self)?.name) send({ type: 'name', name: progress.name });
+  });
+  // Native keyboard focus stays inside the dialog, and the arrow keys move like the controller. Roster refreshes retain
+  // the same controls, so a teammate joining never interrupts a selection.
   const ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   window.addEventListener('keydown', ev => {
     if (panel.classList.contains('hidden') || panel.inert) return;
@@ -1520,7 +1471,6 @@ const multiplayer = (() => {
     if (ARROWS[ev.code] && document.activeElement?.tagName !== 'INPUT' && !ev.altKey && !ev.ctrlKey && !ev.metaKey) {
       ev.preventDefault(); lobbyMove(ARROWS[ev.code]); return;
     }
-    if (ev.code === 'Backspace' && !el('lobbyNameEditor').hidden) { ev.preventDefault(); nameKey('delete'); return; }
     if (ev.code !== 'Tab') return;
     const controls = lobbyControls(), at = controls.indexOf(document.activeElement);
     ev.preventDefault();
@@ -1537,20 +1487,9 @@ const multiplayer = (() => {
   });
   el('lobbyStart').onclick = () => { const value = el('lobbyAdventure').value, slash = value.indexOf('/'); control('start', { kind: value.slice(0, slash), id: value.slice(slash + 1) }); };
   el('lobbyRestart').onclick = () => control('restart'); el('lobbyReturn').onclick = () => control('lobby'); el('lobbyNext').onclick = () => control('next');
-  el('lobbyName').onchange = () => { const name = ArenaNet.name(el('lobbyName').value) || roster.find(p => p.id === self)?.name || ''; el('lobbyName').value = name; try { localStorage.setItem('combatArena.onlineName', name); } catch {} send({ type: 'name', name }); };
   function lobbyMove(direction) {
     const focus = ensureLobbyFocus(), controls = lobbyControls();
     if (!focus) return;
-    if (!el('lobbyNameEditor').hidden) {
-      const row = Number(focus.dataset.nameRow), column = Number(focus.dataset.nameColumn);
-      const horizontal = direction === 'left' || direction === 'right', forward = direction === 'right' || direction === 'down';
-      const targetRow = horizontal ? row : (row + (forward ? 1 : -1) + 5) % 5;
-      const candidates = controls.filter(node => Number(node.dataset.nameRow) === targetRow);
-      if (horizontal) {
-        const at = candidates.indexOf(focus); focusLobbyControl(candidates[(at + (forward ? 1 : -1) + candidates.length) % candidates.length]);
-      } else focusLobbyControl(candidates.sort((a, b) => Math.abs(Number(a.dataset.nameColumn) - column) - Math.abs(Number(b.dataset.nameColumn) - column))[0]);
-      return;
-    }
     const current = controls.indexOf(focus), step = direction === 'up' || direction === 'left' ? -1 : 1;
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
@@ -1559,7 +1498,6 @@ const multiplayer = (() => {
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }
-    if (pressed.includes('PadX') && !el('lobbyNameEditor').hidden) nameKey('delete');
     const C = CONFIG.gamepad, S = C.menuStick;
     const direction = gamepad.down.has('PadUp') || gamepad.move.y > S ? 'up'
       : gamepad.down.has('PadDown') || gamepad.move.y < -S ? 'down'
@@ -1570,8 +1508,7 @@ const multiplayer = (() => {
     } else if (direction && (lobbyPadTimer -= dt) <= 0) { lobbyPadTimer = C.menuRepeat; lobbyMove(direction); }
     if (pressed.includes('PadA')) {
       const current = document.activeElement || focus;
-      if (current === el('lobbyName')) openNameEditor();
-      else if (current?.tagName === 'BUTTON') current.click();
+      if (current?.tagName === 'BUTTON') current.click();
     }
   }
   events.on('executionEnd', d => { if (active() && d.player === Game.player) command('executionEnd', { enemy: d.enemy.netId }); });

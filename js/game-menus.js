@@ -134,8 +134,9 @@ Object.assign(Game, {
           { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(this.controlsFrom === 'pause' ? 'pause' : 'main') }] },
     };
   },
-  // Options' entries. A setting's `kind` is its control: 'toggle' (Off/On), 'cycle' (‹ value ›) or 'slider' (`min`..`max`
-  // with its number); a setting without one is an action. Its `desc` is the help line, only where it tells you something.
+  // Options' entries. A setting's `kind` is its control: 'toggle' (Off/On), 'cycle' (‹ value ›), 'slider' (`min`..`max`
+  // with its number) or 'text' (its value, shown; choosing the row edits it); a setting without one is an action. Its
+  // `desc` is the help line, only where it tells you something.
   optionsItems() {
     const toggle = (cat, name, key, desc, on = v => v !== false) => ({ size: 'set', cat, name, kind: 'toggle', value: on(settings[key]), desc,
       adjust: d => { settings[key] = d ? d > 0 : !on(settings[key]); } });   // left is Off, right is On, Enter flips
@@ -145,6 +146,9 @@ Object.assign(Game, {
     return [
       ...[['game', 'Game'], ['camera', 'Camera'], ['graphics', 'Graphics'], ['sound', 'Sound']].map(([cat, name]) => ({ size: 'cat', cat, name, desc: '',
         go: () => { this.chooseCategory(cat); this.select(this.menuItems.findIndex(it => it.size === 'set' && it.cat === cat)); } })),
+      // The name online play shows (js/name-ask.js); kept with the save.
+      { size: 'set', cat: 'game', name: 'Name', kind: 'text', value: progress.name || 'Not set', desc: 'What your party and the weekly board see.',
+        go: () => nameAsk.open({ action: 'Save', then: () => { if (this.screen === 'options') this.showMenu('options', true); } }) },
       toggle('game', 'Lessons', 'lessons', 'Cards and key hints that teach the controls the first times they are needed.'),
       { size: 'set', cat: 'game', name: 'Show lessons again', desc: 'Forget which lessons you have learned, so every card shows again.',
         go: () => { lessons.forget(); worldHints.forget(); settings.lessons = true; saveSettings(); this.showMenu('options', true); } },
@@ -297,8 +301,9 @@ Object.assign(Game, {
   // number. Each part takes a click; the keys and the pad change the focused setting with left and right.
   menuControl(it, i) {
     const v = document.createElement('span');
-    v.className = 'v ' + { toggle: 'seg', cycle: 'cyc', slider: 'slide', bind: 'key' }[it.kind]; v.setAttribute('aria-hidden', 'true');
+    v.className = 'v ' + { toggle: 'seg', cycle: 'cyc', slider: 'slide', bind: 'key', text: 'text' }[it.kind]; v.setAttribute('aria-hidden', 'true');
     if (it.kind === 'bind') return v;   // its key, written by fillRow
+    if (it.kind === 'text') { v.appendChild(document.createElement('span')); return v; }
     const cur = () => this.menuItems[i];
     const part = (cls, text, fn) => {
       const p = document.createElement('span'); p.className = cls; p.textContent = text; v.appendChild(p);
@@ -332,6 +337,7 @@ Object.assign(Game, {
     }
     if (it.kind === 'toggle') { v.children[0].classList.toggle('on', !it.value); v.children[1].classList.toggle('on', !!it.value); }
     else if (it.kind === 'cycle') v.children[1].textContent = it.value;
+    else if (it.kind === 'text') v.children[0].textContent = it.value;
     else {
       const f = `${((it.value - it.min) / (it.max - it.min) * 100).toFixed(1)}%`;
       v.querySelector('i').style.width = f; v.querySelector('b').style.left = f; v.querySelector('.num').textContent = it.value;

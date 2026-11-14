@@ -16,7 +16,7 @@ const near = (a, b, what, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps * Math.
 // A browser's progress in its own realm, over `storage` (a Map, or a store whose calls throw).
 function browser(storage) {
   const ctx = vm.createContext({ console, Math, JSON, localStorage: storage });
-  for (const f of ['js/data/abilities.js', 'js/data/crates.js', 'js/progress.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+  for (const f of ['js/net-protocol.js', 'js/data/abilities.js', 'js/data/crates.js', 'js/progress.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   return vm.runInContext('({ progress, CRATES, CRATE_BY_ID, ABILITY_BY_ID, crateRarity })', ctx);
 }
 const store = () => { const m = new Map(); return { m, getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v)) }; };
@@ -94,6 +94,27 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
   const d = browser(blocked).progress;
   const e = d.award({ won: 3, time: 200 }, 'b'); assert.ok(e.xp > 0); assert.equal(d.xp, e.xp);
+  assert.equal(d.setName('Kept'), true); assert.equal(d.name, 'Kept', 'a name set with storage blocked lasts the visit');
+}
+
+// ---- 3b. The player's name, kept with the save (PLAN.md "Next, small" 6) -------------------------------------------
+{
+  const s = store(), a = browser(s).progress;
+  assert.equal(a.name, '', 'a new player has no name');
+  assert.equal(a.setName('  <b>Ser Vale</b>\u0007  '), true); assert.equal(a.name, 'bSer Vale/b', 'cleaned as the server cleans it');
+  assert.equal(a.setName('   '), false, 'an empty name is refused'); assert.equal(a.name, 'bSer Vale/b');
+  assert.equal(a.setName('x'.repeat(40)), true); assert.equal(a.name.length, 24, 'capped at the protocol length');
+  a.setName('Ser Vale'); a.award({ won: 2, time: 0 }, 'n1');
+  assert.equal(JSON.parse(s.getItem('arena.progress')).name, 'Ser Vale', 'stored in the save itself');
+  assert.equal(browser(s).progress.name, 'Ser Vale', 'the next visit keeps it');
+  // Another tab counting a run keeps the name a first tab set.
+  const b = browser(s).progress; a.setName('Vale'); b.award({ won: 1, time: 0 }, 'n2');
+  assert.equal(browser(s).progress.name, 'Vale');
+  // A name chosen in the old lobby box counts as set; one the server made up by join order does not.
+  const old = store(); old.setItem('combatArena.onlineName', 'Friend'); assert.equal(browser(old).progress.name, 'Friend');
+  const made = store(); made.setItem('combatArena.onlineName', 'Player 3'); assert.equal(browser(made).progress.name, '');
+  const both = store(); both.setItem('combatArena.onlineName', 'Old'); both.setItem('arena.progress', JSON.stringify({ name: 'New' }));
+  assert.equal(browser(both).progress.name, 'New', 'the save wins over the old key');
 }
 
 // ---- 4. The server: crate abilities only for those who own them, never in the weekly run ------------------------------

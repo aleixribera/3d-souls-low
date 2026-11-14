@@ -1,6 +1,5 @@
 'use strict';
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
@@ -50,11 +49,8 @@ const adventures = ['calling/' + C.calling.id, 'calling/' + C.weekly.id, ...Obje
     assert.equal(await a.locator('#lobbyAdventure option[value^="level/"]').count(), 0, 'no individual levels in the dropdown');
     assert.equal(await a.getByRole('button', { name: 'Edit name', exact: true }).count(), 0, 'no separate name-edit action');
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyStart', 'focus lands on Start when the lobby opens');
-    await a.locator('#lobbyName').click();
-    assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'mouse activation keeps normal text entry');
+    await a.locator('#lobbyHelp').click(); await a.locator('#lobbyControlsClose').click();
     assert.equal(await a.locator('#lobbyStart.pad-selected').count(), 0, 'a click takes the focus ring off Start');
-    await a.locator('#lobbyName').fill('Leader');
-    await a.locator('#lobbyName').dispatchEvent('change');
     // v7.63.0: the mode is a visible list mirroring the select; Start has the focus. Boss Rush has no settings (endless, pass 65).
     assert.deepEqual(await a.locator('#lobbyModes .ui-row').evaluateAll(rows => rows.map(r => r.dataset.mode)), adventures, 'one row per mode');
     assert.equal(await a.locator('#lobbyModes .ui-row[aria-pressed=true]').textContent(), 'Boss Rush');
@@ -72,32 +68,14 @@ const adventures = ['calling/' + C.calling.id, 'calling/' + C.weekly.id, ...Obje
     await navigate(a, 'mode/campaign/ashmere');
     await pad(a, null, [0, 1, 0, 0]);
     assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyStart', 'left stick moves focus');
-    await pad(a, 3);
-    assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'unrelated controller buttons never open the keyboard');
-    await navigate(a, 'lobbyName');
-    assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'focusing the name box does not open the keyboard');
-    await pad(a, 0);
-    assert.equal(await a.locator('#lobbyNameEditor').isVisible(), true, 'A on the name box opens the controller keyboard');
-    await pad(a, 0);
-    assert.equal(await a.locator('#lobbyNamePreview').textContent(), 'LeaderA');
-    await pad(a, 2);
-    assert.equal(await a.locator('#lobbyNamePreview').textContent(), 'Leader', 'X deletes');
-    await pad(a, 0); await pad(a, 12); await pad(a, 14); await pad(a, 0);
-    assert.equal(await a.locator('#lobbyNameEditor').isVisible(), false, 'controller can reach Done');
-    assert.equal(await a.locator('#lobbyName').inputValue(), 'LeaderA');
-    await a.waitForFunction(() => multiplayer.info.players.some(p => p.name === 'LeaderA'));
-    assert.equal(await a.evaluate(() => document.activeElement.id), 'lobbyName', 'Done returns focus to the name box');
-    await pad(a, 0); await pad(a, 0); await pad(a, 1);
-    assert.equal(await a.locator('#lobbyName').inputValue(), 'LeaderA', 'B cancels name edits');
-    await pad(a, 0); await a.setViewportSize({ width: 390, height: 740 });
-    assert.ok(await a.locator('.lobby-card').evaluate(el => el.scrollWidth <= el.clientWidth), 'controller keyboard fits narrow layout');
-    fs.mkdirSync('.scratch/lobby-controller', { recursive: true });
-    await a.screenshot({ path: '.scratch/lobby-controller/name-keyboard.png' });
-    await pad(a, 1); await a.setViewportSize({ width: 1280, height: 720 });
+    // The name and its pad keyboard are their own ask now (tests/name-browser.cjs).
+    await a.setViewportSize({ width: 390, height: 740 });
+    assert.ok(await a.locator('.lobby-card').evaluate(el => el.scrollWidth <= el.clientWidth), 'the lobby fits a narrow layout');
+    await a.setViewportSize({ width: 1280, height: 720 });
     const bId = await b.evaluate(() => multiplayer.info.self), transfer = 'transfer/' + bId;
     await navigate(a, 'lobbyManage'); await pad(a, 0);
     await navigate(a, transfer);
-    await b.locator('#lobbyName').fill('Renamed friend'); await b.locator('#lobbyName').dispatchEvent('change');
+    await b.evaluate(() => progress.setName('Renamed friend'));
     await a.waitForFunction(() => multiplayer.info.players.some(p => p.name === 'Renamed friend'));
     assert.equal(await a.evaluate(() => document.activeElement.dataset.padKey), transfer, 'roster updates preserve controller focus');
     await pad(a, 0);
@@ -131,6 +109,6 @@ const adventures = ['calling/' + C.calling.id, 'calling/' + C.weekly.id, ...Obje
     await pad(a, 1);
     assert.equal(await a.evaluate(() => multiplayer.connected), false, 'B leaves idle lobby for main menu');
     assert.deepEqual(errors, []);
-    console.log('Lobby controller: stick/D-pad, held repeat, mode list, name keyboard, roster focus, leader transfer, start, resume, return and leave passed.');
+    console.log('Lobby controller: stick/D-pad, held repeat, mode list, roster focus, leader transfer, start, resume, return and leave passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -4,12 +4,18 @@
 // run earns xp (CRATES.xp); each level gives a crate; opening one draws a reward by CRATES.odds among the rarities that
 // still hold something you don't own. What is in a crate is js/data/crates.js; the roll and the Collection are
 // js/crate-screen.js. Nothing here touches a fight: the blade look is drawn, and the crate abilities only join this
-// player's Boss Rush pool (the server's setGear).
+// player's Boss Rush pool (the server's setGear). The player's name lives here too (PLAN.md "Next, small" 6), so it is
+// kept with the rest of the save: asked once by js/name-ask.js, changed in Options.
 // ============================================================================
 const progress = (() => {
   const KEY = 'arena.progress', KEEP_RUNS = 24;   // the last runs counted, so a summary shown twice pays once
   const starts = () => CRATES.rewards.filter(r => r.start).map(r => r.id);
-  const blank = () => ({ xp: 0, crates: 0, owned: starts(), look: starts().find(id => CRATE_BY_ID[id].kind === 'look'), counted: [] });
+  // Before the name was saved here, the lobby kept it under its own key: a name chosen there counts as chosen. One the
+  // server made up by join order ("Player 3", which old builds stored back) does not.
+  function legacyName() {
+    try { const n = ArenaNet.name(localStorage.getItem('combatArena.onlineName') || ''); return /^Player \d+$/.test(n) ? '' : n; } catch { return ''; }
+  }
+  const blank = () => ({ xp: 0, crates: 0, owned: starts(), look: starts().find(id => CRATE_BY_ID[id].kind === 'look'), counted: [], name: legacyName() });
   const whole = (x, most = 1e9) => Number.isInteger(x) && x >= 0 ? Math.min(x, most) : 0;
   // A stored state made safe: unknown rewards dropped, the start rewards always owned, a look you own.
   function clean(s) {
@@ -18,7 +24,7 @@ const progress = (() => {
     const owned = [...new Set([...b.owned, ...(Array.isArray(s.owned) ? s.owned.filter(id => typeof id === 'string' && CRATE_BY_ID[id]) : [])])];
     const look = typeof s.look === 'string' && owned.includes(s.look) && CRATE_BY_ID[s.look].kind === 'look' ? s.look : b.look;
     const counted = Array.isArray(s.counted) ? s.counted.filter(k => typeof k === 'string' && k.length <= 80).slice(-KEEP_RUNS) : [];
-    return { xp: whole(s.xp), crates: whole(s.crates, 999), owned, look, counted };
+    return { xp: whole(s.xp), crates: whole(s.crates, 999), owned, look, counted, name: ArenaNet.name(s.name) || b.name };
   }
   function read() {
     try { const raw = localStorage.getItem(KEY); if (raw) return clean(JSON.parse(raw)); } catch { /* unreadable: start again */ }
@@ -90,6 +96,13 @@ const progress = (() => {
     save();
     return { reward, fresh, strip: strip(reward, rng) };
   }
+  // The name, cleaned as the server cleans it; an empty one is refused. True when it changed.
+  function setName(value) {
+    sync();
+    const name = ArenaNet.name(value);
+    if (!name || name === state.name) return false;
+    state.name = name; save(); return true;
+  }
   function wear(id) {
     sync();
     if (!state.owned.includes(id) || CRATE_BY_ID[id]?.kind !== 'look' || state.look === id) return false;
@@ -97,12 +110,12 @@ const progress = (() => {
   }
   return {
     get xp() { return state.xp; }, get crates() { return state.crates; }, get look() { return state.look; },
-    get owned() { return [...state.owned]; },
+    get owned() { return [...state.owned]; }, get name() { return state.name; },
     get level() { return levelOf(state.xp); },
     owns: id => state.owned.includes(id),
     // The crate abilities this browser may be offered in Boss Rush (sent to the server with the look).
     abilities: () => crateAbilities(state.owned),
-    levelOf, runXp, award, open, wear, draw, strip,
+    levelOf, runXp, award, open, wear, setName, draw, strip,
     onChange: fn => { listeners.push(fn); },
     reload() { state = read(); },   // tests: read the store again
   };

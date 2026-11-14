@@ -99,6 +99,8 @@
   .menuBtn .v.cyc > span { display: grid; place-items: center; min-width: 0; height: 100%; }
   .menuBtn .v.cyc .al, .menuBtn .v.cyc .ar { color: var(--ui-accent); font: 18px/1 var(--ui-text); }
   .menuBtn .v.cyc .al:hover, .menuBtn .v.cyc .ar:hover { background: var(--ui-hover); color: var(--ui-accent-hi); }
+  .menuBtn .v.text { justify-content: flex-end; min-width: 0; font: 400 19px/1.2 var(--ui-display); }
+  .menuBtn .v.text > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .menuBtn .v.seg > span { flex: 1; display: grid; place-items: center; height: 42px; border: 1px solid var(--ui-line); color: var(--ui-muted); }
   .menuBtn .v.seg > span + span { border-left: 0; }
   .menuBtn .v.seg > span.on { background: var(--ui-accent-wash); border-color: var(--ui-accent); color: var(--ui-accent-hi); }
@@ -822,7 +824,8 @@ const GAME_FILES = [
   'quality-benchmark.js',
   'autoquality.js',
   'version-check.js',
-  'progress.js',     // levels and crates: this browser's xp, crates and rewards
+  'progress.js',     // levels and crates: this browser's xp, crates and rewards, and the player's name
+  'name-ask.js',     // the name, asked once online and changed in Options (its keys before every other screen's)
   'crate-screen.js', // the crate roll, the Collection, a blade look (before multiplayer.js: its keys come first)
   'multiplayer.js',
   'kill-moment.js',
