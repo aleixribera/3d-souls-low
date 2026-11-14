@@ -261,6 +261,13 @@ globalThis.host = (() => {
     offers.delete(id); owned.set(id, [...(owned.get(id) || []), ability]); kits.delete(id);
     return true;
   }
+  // Tools and tests only (tools/rush-curve.cjs's KIT): player `id` holds exactly `held` (ids, repeated by upgrades) at
+  // once, with no offer; a bot's body takes the kit straight away. Never reached from the wire.
+  function giveAbilities(id, held) {
+    owned.set(id, [...held]); offers.delete(id); kits.delete(id);
+    const b = bots.get(id);
+    if (b && b.body) b.body.grantAbilities(owned.get(id));
+  }
   // Out of time: everyone still choosing takes the first ability offered.
   function settleAbilities() { for (const [id, offer] of [...offers]) pickAbility(id, offer[0]); }
   // A player's kit from what they hold, kept until they take another.
@@ -681,7 +688,7 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, randomRoster, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,
-    offerAbilities, settleAbilities, pickAbility, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
+    offerAbilities, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, maxStaminaOf, notePose, abilityClaim,
     abilityPickTime: CONFIG.abilities.pickTime,
     rushPar, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,

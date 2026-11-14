@@ -10,11 +10,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   judge 51 vs Hollis 51. Agathe (pass 53) and the Kindling Tree also await Aleix. Track A's bosses 7-14 are done.
 - Pass 33 (v7.56.0): every preset draws native (`qualityDraw`, `js/visuals.js`); numbers:
   `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Track B (pass 54, v7.78.0): item 10 pass 1. Each boss's own data is its new, slower 1x (no multiplier; `[k, beat]`
-  per boss and the before/after table in `docs/scorecard/rush-1x-pass54.txt`): alone at fight 1 the bot falls 0.12
-  (was 0.55), SKILLED 0.03 (0.24). Curve rise 0.1, scale 8: SKILLED runs reach fight 10 (median, 90% by 18). The bot
-  reads bolts and seams. Next (pass 2): Practice's speed setting and its frame; Varn and Oswin, the outliers.
-  **Pass 55 changed every King's Blade move** (kept only your cooldowns; recoveries unscaled): re-measure him.
+- Track B (pass 56, v7.80.0): item 10 pass 2, done (leftovers: BACKLOG). Practice's Speed (frames
+  `docs/scorecard/practice-speed-*.png`); Varn, Oswin and pass 55's King's Blade re-timed into the band (SKILLED
+  alone: every boss 0.00-0.11 falls at fight 1, 0.01-0.12 at 11); curve rise 0.09, scale 6: runs reach fight 12 with
+  no abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit; Python and heredocs in Git Bash here drop backslashes, so edit such text with the Edit tool.
@@ -35,7 +34,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Pace, not team size (v7.65.0): `CONFIG.pace`, `rushPace`/`tellRate` (`js/enemy.js`), `setRushFight`
   (`server/simulation.js`); `tests/boss-pace.cjs`, `boss-only-browser.cjs`. Between fights (v7.69.0): `CONFIG.swift`,
   `rushPar`, `fought`, `js/kill-moment.js`; `tests/rush-flow.cjs`. Measuring (pass 54): `tools/rush-curve.cjs`
-  `bosses` (each boss alone at a fight's pace) and `runs` (shuffled runs to the first fall); `SKILLED=1`, `CURVE=`.
+  `bosses` (each boss alone at a fight's pace) and `runs` (shuffled runs to the first fall); `SKILLED=1`, `CURVE=`,
+  `SLOW=`/`PATCH=`, `BY=1`, `KIT=strong` (`sim.giveAbilities`). Practice's Speed: `settings.practiceFight`,
+  `CONFIG.practice.fights`, `practiceWon`; in-page `Practice: Speed`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`; in-page `Menus:`.

@@ -47,9 +47,10 @@ assert.equal(base, 1, 'fight 1 runs at 1x, the boss data as written');
 assert.equal(base, createSimulation().inspect().CONFIG.pace.boss, 'the first fight runs at the base pace, as every boss does outside Boss Rush');
 assert.ok(at(5) < 1.15, `friendly at first: under 15% faster by fight 5 (x${at(5).toFixed(2)})`);
 assert.ok(at(10) >= 1.15 && at(10) < 1.4, `real by fight 10: 15 to 40% faster (x${at(10).toFixed(2)})`);
-assert.ok(at(15) >= 1.4 && at(15) < 1.8, `hard by fight 15 (x${at(15).toFixed(2)})`);
-assert.ok(at(20) >= 1.9 && at(20) < 2.4, `about twice as fast by fight 20 (x${at(20).toFixed(2)})`);
-assert.ok(at(25) >= 2.7, `no room to answer by fight 25 (x${at(25).toFixed(2)})`);
+// Pass 56: the skilled bot alone falls around fight 12 with no abilities and around 19 with a great kit (config.js).
+assert.ok(at(15) >= 1.6 && at(15) < 2.1, `hard by fight 15 (x${at(15).toFixed(2)})`);
+assert.ok(at(20) >= 2.6 && at(20) < 3.5, `about three times as fast by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
+assert.ok(at(25) >= 5, `no room to answer by fight 25 (x${at(25).toFixed(2)})`);
 console.log('pace at fights ' + P.fight.map((n, i) => `${n}: x${P.pace[i].toFixed(2)}`).join(', ') + ` (${bosses.length} bosses: health and damage unchanged)`);
 
 // What the pace does: more attacks a minute, the same wind-ups. One stand-in in front of the boss for a minute.

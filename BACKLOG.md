@@ -180,9 +180,12 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   draws them as people (Make leader / Remove do nothing). Dev only; drop bots from `roster()` if it ever shows.
 - Pass 52: a party where one player went away also gets YOU FELL in the lobby notice (the server counts the party
   that took part).
-- Item 10 (pass 54, `docs/scorecard/rush-1x-pass54.txt`): Varn (the Last Toll's rings) and Oswin (the Headsman's
-  delayed blow, the seams) still drop the skilled bot 4 fights in 32 at 1x and end most runs; slowing them past ~1.8x
-  stopped helping, so the next lever is those moves or the bot's read of them. The strong-kit measure waits for a
-  scripted kit in `tools/rush-curve.cjs`. Swift-kill par (45 s) was set for the old pace: the bot's 1x fights run
+- Item 10 (cut after pass 56, `docs/scorecard/rush-1x-pass56.txt`; skilled bot alone, 256 fights): every boss falls
+  0.00-0.11 at fight 1 and 0.01-0.12 at fight 11 now. Still at the band's top: Ostrey 0.11/0.12 (lanternBreath; not
+  touched), Varn 0.08/0.11 (knellLeap is what's left), the King's Blade 0.02/0.09 (the Answer: the bot strikes into
+  the Oath Guard's front, a read a person learns), Oswin 0.03/0.08 (firstHunger's eruptions were 10 of 21 falls before:
+  a bot or seam read). The default bot still falls 0.29 to Oswin and Ostrey at fight 1 (TOTAL 0.14). Fight times run
+  68-149 s (the King's Blade ~140 s, Bell Warden ~150 s at fight 11): health is item 2's. The strong kit
+  (`KIT=strong`) is one scripted list; re-check it whenever the pool grows. Swift-kill par (45 s) was set for the old pace: the bot's 1x fights run
   68-139 s. Follow-up chances were divided by k; the engine's own inverse, 1 - (1 - c)^(1/k), keeps strings about
   twice as common (the King's Blade's three cuts: 0.11 now, 0.22 that way) if they feel too rare.

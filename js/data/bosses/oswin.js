@@ -234,26 +234,26 @@ MODEL_DEFS.oswinFirstCrown = {
         attacks: ['tread', 'headsman', 'threefold', 'sceptre', 'kingsLeap', 'turn', 'longLive', 'leapPunish'] },
       // Past the worst of his hurt: the axe cast down, the Ember in his hands.
       uncrowned: { at: 0.4, name: 'Oswin, Uncrowned', opener: 'crownCastDown', conceal: ['weapon'], ignite: true,
-        cooldown: [1.44, 2.88], approach: 0.75, kite: 0, speed: 3.2, trackRate: 1.9,
+        cooldown: [2.4, 4.0], approach: 0.75, kite: 0, speed: 3.2, trackRate: 1.9,
         attacks: ['crownCastDown', 'kingsHold', 'emberFists', 'groundBreaker', 'grasp', 'twinTread', 'firstHunger', 'holdPunish', 'backhand'] },
     },
     attacks: [
       // ---- crowned ------------------------------------------------------------------------------------------------------
       // The King's Tread: the knee lifted high, the foot thrown down; the floor splits ahead of him and stays split.
       { id: 'tread', name: 'The King\'s Tread', anim: 'stomp', pose: 'oswinTread', noParry: true, tracking: { rate: 2.0, commit: 0.6 }, chance: 0.6,
-        hits: [{ startup: 0.95, active: 0.2, follow: 0.25, seam: { from: 1.4, len: 9 }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 1.08,
+        hits: [{ startup: 0.95, active: 0.2, follow: 0.25, seam: { from: 1.4, len: 9 }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 1.5,
         followUps: [{ attack: 'threefold', if: 'near', chance: 0.22 }, { attack: 'headsman', chance: 0.17 }],
         damage: 26, poise: 45, knock: 7, lunge: 0, range: 9, box: CRACK },
       // The Headsman's Fall: the axe straight up over his head, held; straight down, and the floor splits on from the bit.
       { id: 'headsman', name: 'The Headsman\'s Fall', anim: 'chop', pose: 'oswinHeadsman', tracking: { rate: 2.0, commit: 0.65 }, markers: glint(0), chance: 0.7,
-        hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.2, 0.8], chance: 0.5 }, seam: { from: 3.0, len: 6 },
-                 impact: { ring: 2.4, crack: 2.0, dust: 16, shake: 0.16 } }], recovery: 2.7,
+        hits: [{ startup: 1.3, active: 0.16, follow: 0.4, hold: { at: 0.6, time: [0.2, 0.8], chance: 0.3 }, seam: { from: 3.0, len: 6 },
+                 impact: { ring: 2.4, crack: 2.0, dust: 16, shake: 0.16 } }], recovery: 3.4,
         damage: 44, poise: 75, knock: 9, lunge: 1.0, range: 5.2, box: CHOP },
       // Threefold Reign: across at the waist, back across, then heaved up and down into the floor ahead.
       { id: 'threefold', name: 'Threefold Reign', anim: 'sweep', pose: 'oswinThreefold', noParry: true, tracking: { rate: 2.6, commit: 0.65 }, chance: 0.6,
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.5 },
-               { startup: 0.55, active: 0.16, follow: 0.52, step: { from: 0.2, speed: 3, side: 0 } },
-               { startup: 0.95, active: 0.16, follow: 0.45, box: CHOP, seam: { from: 3.0, len: 6 }, impact: { ring: 2.4, crack: 1.8, dust: 14, shake: 0.14 } }], recovery: 2.52,
+        hits: [{ startup: 1.05, active: 0.16, follow: 0.85 },
+               { startup: 0.55, active: 0.16, follow: 0.87, step: { from: 0.2, speed: 3, side: 0 } },
+               { startup: 0.95, active: 0.16, follow: 0.45, box: CHOP, seam: { from: 3.0, len: 6 }, impact: { ring: 2.4, crack: 1.8, dust: 14, shake: 0.14 } }], recovery: 3.2,
         damage: 30, poise: 50, knock: 7, lunge: 1.4, range: 4.4, box: WAIST },
       // The Sceptre's Reach: the crowned butt driven straight out at you; then the head brought round and up through you.
       { id: 'sceptre', name: 'The Sceptre\'s Reach', anim: 'thrust', pose: 'oswinSceptre', tracking: { rate: 2.8, commit: 0.7 }, markers: glint(0), chance: 0.5, minRange: 3,
@@ -271,8 +271,8 @@ MODEL_DEFS.oswinFirstCrown = {
         damage: 28, poise: 45, knock: 8, lunge: 0, range: 4.6, box: { w: 6.4, h: 2.0, d: 6.4, fwd: -0.4, y: 1.3 } },
       // Long Live the King: with three seams or more open, the haft driven into the floor at his feet; then his head thrown
       // back, and every open seam stands up as a wall of fire. Stand where the floor is whole.
-      { id: 'longLive', name: 'Long Live the King', anim: 'stomp', pose: 'oswinLongLive', noParry: true, when: 'seamed', tracking: { rate: 1.6, commit: 0.4 }, chance: 0.5,
-        hits: [{ startup: 0.9, active: 0.25, follow: 0.5, box: RING(0.6, 3.6, 1.2, 0.25), impact: { ring: 3.0, crack: 1.4, dust: 14, shake: 0.12 } },
+      { id: 'longLive', name: 'Long Live the King', anim: 'stomp', pose: 'oswinLongLive', noParry: true, when: 'seamed', tracking: { rate: 1.6, commit: 0.4 }, chance: 0.25,
+        hits: [{ startup: 0.9, active: 0.25, follow: 0.8, box: RING(0.6, 3.6, 1.2, 0.25), impact: { ring: 3.0, crack: 1.4, dust: 14, shake: 0.12 } },
                { startup: 1.25, active: 0.45, follow: 0.4, erupt: true, box: FIRE, damage: 40 }], recovery: 3.24,
         damage: 22, poise: 60, knock: 9, lunge: 0, range: 40, box: RING(0.6, 3.6, 1.2, 0.25) },
       // Drinking where he can see it: the leap, sooner.
@@ -290,19 +290,19 @@ MODEL_DEFS.oswinFirstCrown = {
 
       // ---- uncrowned ------------------------------------------------------------------------------------------------------
       // The King's Hold: arms spread wide, a lunge, and they close. Roll it.
-      { id: 'kingsHold', name: 'The King\'s Hold', anim: 'bash', pose: 'oswinHold', noParry: true, rollOnly: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.5,
-        hits: [{ startup: 1.0, active: 0.18, follow: 0.6 }], recovery: 3.24,
+      { id: 'kingsHold', name: 'The King\'s Hold', anim: 'bash', pose: 'oswinHold', noParry: true, rollOnly: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.35,
+        hits: [{ startup: 1.0, active: 0.18, follow: 0.6 }], recovery: 3.8,
         damage: 56, poise: 90, knock: 12, lunge: 4.5, range: 5, box: GRAB },
       // Fists of the Ember: a hook from the left, one from the right, both fists into the floor; it splits ahead.
       { id: 'emberFists', name: 'Fists of the Ember', anim: 'sweep', pose: 'oswinFists', noParry: true, tracking: { rate: 3.0, commit: 0.7 }, chance: 0.7,
-        hits: [{ startup: 0.75, active: 0.14, follow: 0.46, step: { from: 0.3, speed: 3.5, side: 0 } },
-               { startup: 0.42, active: 0.14, follow: 0.5, step: { from: 0.1, speed: 3.5, side: 0 } },
+        hits: [{ startup: 0.75, active: 0.14, follow: 0.71, step: { from: 0.3, speed: 3.5, side: 0 } },
+               { startup: 0.42, active: 0.14, follow: 0.75, step: { from: 0.1, speed: 3.5, side: 0 } },
                { startup: 0.85, active: 0.16, follow: 0.45, box: { w: 2.6, h: 2.0, d: 3.6, fwd: 2.0, y: 0.9 }, seam: { from: 2.2, len: 6 },
-                 impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 2.16,
+                 impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 2.8,
         damage: 24, poise: 40, knock: 6, lunge: 1.4, range: 3.8, box: FIST },
       // Ground Breaker: both hands clasped high, then down: a ring along the floor (jump it), and three seams from him.
       { id: 'groundBreaker', name: 'Ground Breaker', anim: 'stomp', pose: 'oswinBreaker', noParry: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.5,
-        hits: [{ startup: 1.15, active: 0.35, follow: 0.4, seam: { from: 1.6, len: 7, spread: [-2.1, 0, 2.1] }, impact: { ring: 5.5, crack: 2.4, dust: 26, shake: 0.2 } }], recovery: 2.88,
+        hits: [{ startup: 1.15, active: 0.35, follow: 0.4, seam: { from: 1.6, len: 7, spread: [-2.1, 0, 2.1] }, impact: { ring: 5.5, crack: 2.4, dust: 26, shake: 0.2 } }], recovery: 3.4,
         damage: 32, poise: 55, knock: 9, lunge: 0, range: 8, box: RING(0.8, 9, 1.8, 0.35) },
       // Lunging Grasp: one hand out, a runner's crouch; he springs at you. Roll it.
       { id: 'grasp', name: 'Lunging Grasp', anim: 'thrust', pose: 'oswinGrasp', noParry: true, rollOnly: true, tracking: { rate: 2.4, commit: 0.4 }, minRange: 5, chance: 0.5,
@@ -310,12 +310,12 @@ MODEL_DEFS.oswinFirstCrown = {
         damage: 50, poise: 85, knock: 12, lunge: 0, range: 11, box: GRAB },
       // Twin Tread: the right foot, then the left, each splitting the floor ahead, a little to each side.
       { id: 'twinTread', name: 'Twin Tread', anim: 'stomp', pose: 'oswinTwinTread', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.5,
-        hits: [{ startup: 0.85, active: 0.2, follow: 0.55, seam: { from: 1.4, len: 9, spread: [0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } },
-               { startup: 0.65, active: 0.2, follow: 0.35, seam: { from: 1.4, len: 9, spread: [-0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 1.98,
+        hits: [{ startup: 0.85, active: 0.2, follow: 0.8, seam: { from: 1.4, len: 9, spread: [0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } },
+               { startup: 0.65, active: 0.2, follow: 0.35, seam: { from: 1.4, len: 9, spread: [-0.25] }, impact: { ring: 2.6, crack: 1.8, dust: 16, shake: 0.14 } }], recovery: 2.6,
         damage: 26, poise: 45, knock: 7, lunge: 0, range: 9, box: CRACK },
       // The First Hunger: on one knee, both hands driven into the floor, and again: every open seam burns, then burns again.
-      { id: 'firstHunger', name: 'The First Hunger', anim: 'stomp', pose: 'oswinHunger', noParry: true, when: 'seamed', tracking: { rate: 1.4, commit: 0.4 }, chance: 0.6,
-        hits: [{ startup: 1.3, active: 0.4, follow: 0.6, erupt: { keep: true }, box: FIRE, impact: { ring: 2.0, crack: 0.8, dust: 10, shake: 0.12 } },
+      { id: 'firstHunger', name: 'The First Hunger', anim: 'stomp', pose: 'oswinHunger', noParry: true, when: 'seamed', tracking: { rate: 1.4, commit: 0.4 }, chance: 0.15,
+        hits: [{ startup: 1.3, active: 0.4, follow: 1.0, erupt: { keep: true }, box: FIRE, impact: { ring: 2.0, crack: 0.8, dust: 10, shake: 0.12 } },
                { startup: 0.85, active: 0.4, follow: 0.5, erupt: true, box: FIRE }], recovery: 3.6,
         damage: 36, poise: 60, knock: 9, lunge: 0, range: 40, box: FIRE },
       // The Backhand: behind him, a look over his shoulder; the back of his burning hand comes round with him.

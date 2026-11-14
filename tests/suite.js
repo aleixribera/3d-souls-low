@@ -2298,6 +2298,35 @@
     pick('practice', 'Boss vs Boss'); expect.ok(Game.screen === 'bossBattle' && Game.screens().bossBattle.back === 'practice', 'two teams of bosses');
     Game.practiceGroup.length = 0; Game.showMenu('main');
   });
+  test('Practice: Speed fights a boss at a later Boss Rush fight\'s pace, its health and blows its own', () => {
+    sim.begin();
+    const was = settings.practiceFight, boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
+    try {
+      settings.practiceFight = 1;
+      Game.showMenu('practiceBosses');
+      const at = () => Game.menuItems.findIndex(it => it.name === 'Speed');
+      expect.ok(at() === 0 && Game.selected === 1, `Speed heads the bosses, the list opens on the first boss (${at()}, ${Game.selected})`);
+      Game.select(at(), false); Game.menuStep('right'); Game.menuStep('right');
+      const fight = CONFIG.practice.fights[2];
+      expect.ok(settings.practiceFight === fight && Game.menuButtons[at()].querySelector('.val').textContent === `Fight ${fight}`, `right twice: Fight ${fight} (${settings.practiceFight})`);
+      Game.menuStep('left'); Game.menuStep('right');
+      Game.select(Game.menuItems.findIndex(it => it.name === boss.name), false); Game.confirm();
+      const e = Game.enemies[0];
+      expect.ok(Game.kind === 'arena' && Math.abs(e.pace - rushPace(fight - 1)) < 1e-9 && e.pace > 1, `the boss at fight ${fight}'s pace (${e.pace})`);
+      expect.ok(e.hp === e.def.hp, `its health its own (${e.hp})`);
+      Game.pause(false);
+      expect.ok(Game.pauseFacts().rows.some(r => r[0] === 'Speed' && r[1] === `Fight ${fight}`), 'pause names the speed');
+      Game.resume();
+      Game.practiceGroup.length = 0; Game.practiceGroup.push(boss.id, foe.id);
+      Game.showMenu('practiceGroup');
+      expect.ok(Game.menuItems[Game.selected].name === 'Fight' && Game.menuItems.some(it => it.name === 'Speed'), 'the group offers Speed and still opens on Fight');
+      Game.confirm();
+      expect.ok(Game.enemies[0].pace === rushPace(fight - 1) && Game.enemies[1].pace === 1, 'in a group, the boss at that pace; a common foe as ever');
+      settings.practiceFight = 1;
+      Game.showMenu('practiceBosses'); Game.select(Game.menuItems.findIndex(it => it.name === boss.name), false); Game.confirm();
+      expect.ok(Game.enemies[0].pace === CONFIG.pace.boss, 'Fight 1: its own pace');
+    } finally { settings.practiceFight = was; saveSettings(); Game.practiceGroup.length = 0; Game.showMenu('main'); }
+  });
   test('Menus: the gamepad alone walks the title, Practice, Options and pause', () => {
     sim.begin();
     const read = gamepad.read, idle = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 0, 0, 0] };

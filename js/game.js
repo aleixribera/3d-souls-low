@@ -77,6 +77,7 @@ const Game = {
       });
       this.duel = list[0];
       for (const e of list) e.kin = list;   // a pair of bosses fought together waits on each other (an `alone` phase)
+      if (this.practiceWon > 0) for (const e of list) if (e.isBoss()) e.pace = rushPace(this.practiceWon);   // Practice's Speed
       return list;
     }
     // A dispersed enemy tied to a zone (`zone`) is not brought back once that zone's gate is open: its area is won.

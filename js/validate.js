@@ -38,6 +38,9 @@ function validateData({ visual = true } = {}) {
   for (const k of ['notice', 'spacing', 'startX', 'rowWidth', 'victoryTime']) need(num(CONFIG.bossBattle[k]) && CONFIG.bossBattle[k] > 0, `Boss battle: ${k} must be positive.`);
   for (const [k, v] of Object.entries(CONFIG.bossBattle.camera)) need(num(v) && v > 0, `Boss battle camera: ${k} must be positive.`);
   need(Number.isInteger(CONFIG.practice.maxGroup) && CONFIG.practice.maxGroup >= 2, 'Practice: maxGroup must be a whole number, 2 or more.');
+  const PF = CONFIG.practice.fights;
+  need(Array.isArray(PF) && PF[0] === 1 && PF.every((f, i) => Number.isInteger(f) && (i === 0 || f > PF[i - 1])),
+    'Practice: fights must be whole numbers, rising, starting at 1 (the base pace).');
   for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
   need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};

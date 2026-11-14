@@ -93,7 +93,7 @@ const input = {
 const SETTINGS_KEY = 'combat-arena-3d.settings';
 // `v`: the settings format (2 since v7.18: the one-time volume migration below has run).
 const DEFAULT_SETTINGS = Object.freeze({ v: 2, sensitivity: 5, invert: false, hudScale: 1,
-  graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true, lessons: true });
+  graphics: CONFIG.VISUALS.defaultQuality, volume: 5, cameraMotion: true, lessons: true, practiceFight: 1 });
 // The operating system asks for reduced motion: camera motion starts off until the player chooses otherwise.
 const prefersReducedMotion = () => { try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 function readSettings(value) {
@@ -108,6 +108,7 @@ function readSettings(value) {
     if (Number.isFinite(value[key])) clean[key] = Math.round(clamp(value[key], min, max) / step) / (1 / step);
   if (clean.volume === 8 && value.v !== 2) clean.volume = 5;   // v7.14: the old default 8 became 5, once (not a later choice of 8)
   if (['auto', ...Object.keys(CONFIG.VISUALS.quality)].includes(value.graphics)) clean.graphics = value.graphics;
+  if (CONFIG.practice.fights.includes(value.practiceFight)) clean.practiceFight = value.practiceFight;   // Practice's Speed
   return clean;
 }
 let savedSettings = null;

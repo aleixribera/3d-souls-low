@@ -1,0 +1,53 @@
+# Boss Rush: the outliers brought into the band, and the strong-kit curve (pass 56, PLAN.md track B item 10, pass 2)
+# Alone, no abilities, the skilled bot (SKILLED=1: a quarter of the bot's mistimed rolls), 256 fights per boss:
+#   SKILLED=1 JOBS=8 node tools/rush-curve.cjs bosses 256 <won>      (won 0: fight 1 at x1.00; won 10: fight 11 at x1.25)
+#   BY=1 adds what dealt the damage taken and the last blow; PATCH / SLOW try a pace before it goes into the data.
+# falls = the share of fights that ended with the bot down; time = mean fight length.
+#
+#                  fight 1 (x1.00)             fight 11 (x1.25)
+# boss             before        after         before        after
+# giant            0.04          0.04          0.09          0.09
+# pillagerCaptain  0.01          0.01          0.01          0.01
+# bellWarden       0.04          0.04          0.08          0.08
+# varn             0.21 130s     0.08 130s     0.26          0.11 134s
+# antlered         0.02          0.02          0.08          0.08
+# ostrey           0.11          0.11          0.12          0.12
+# hale + harrow    0.00          0.00          0.02          0.02
+# ringer           0.02          0.02          0.03          0.03
+# hollis           0.00          0.00          0.03          0.03
+# oswin            0.14          0.03 132s     0.21          0.08 137s
+# agathe           0.02          0.02          0.04          0.04
+# kindlingTree     0.04          0.04          0.07          0.07
+# kingsBlade (55)  0.14 177s     0.02 140s     0.31 217s     0.09 143s   (pass 55's new moves, re-timed here)
+# TOTAL            0.05          0.03          0.09          0.07
+# (the default bot at fight 1 after: TOTAL 0.14; oswin 0.29, ostrey 0.29, ringer 0.21, varn 0.20, agathe 0.20)
+#
+# What changed (pace fields; Varn's knell phase also hits softer, his throne phase untouched):
+#   varn, knell phase: idle gaps [1.1, 2.5] -> [1.6, 3.0]; recoveries x1.6 (knellSweep 2.2, knellCleave 2.2,
+#     knellDelay 2.9, knellLunge 2.4, knellStomp 3.2, knellLeap 4.8, tollingChain 3.2, ashWave 2.9, burningAscent 4.8);
+#     damage about x0.8 (knellSweep 34, knellCleave 26, knellDelay 44, knellLunge 30, knellStomp 36, knellLeap 50,
+#     tollingChain 22, ashWave 28, burningAscent 32, lastToll 32); knellDelay's hold 0.8 -> 0.5; knellLeap 0.45 -> 0.25;
+#     the Last Toll 0.25 -> 0.12, its rings 0.75 -> 1.1 s apart. His knell-phase blows averaged ~42 against Hollis's ~28.
+#   oswin (pace only): uncrowned idle gaps [1.44, 2.88] -> [2.4, 4.0]; recoveries tread 1.5, headsman 3.4, threefold 3.2,
+#     kingsHold 3.8, emberFists 2.8, groundBreaker 3.4, twinTread 2.6; beats +0.25-0.4 (threefold, longLive, emberFists,
+#     twinTread, firstHunger); headsman's hold 0.5 -> 0.3; mix-ups longLive 0.5 -> 0.25, kingsHold 0.5 -> 0.35,
+#     firstHunger 0.6 -> 0.15.
+#   kingsBlade (pace only; pass 55 kept pass 54's idle gaps): every recovery x1.6, +0.3 s between a string's blows,
+#     follow-ups x0.6 (keepingRiver -> theTurn 0.36, crownsWeight -> keepingRiver 0.18). x1.9 and +0.45 measured 0.01 at
+#     both fights: too easy for the last boss.
+#
+# Left in BACKLOG: ostrey 0.11-0.12 (lanternBreath), varn's knellLeap, oswin's firstHunger eruptions (10 of 21 falls
+# before), the King's Blade's Answer (the bot strikes into the Oath Guard's front: a read a person learns).
+#
+# The curve: pace = 1 + rise x (e^(won / scale) - 1), at most 6. Runs: every boss shuffled, a fresh body each fight, fight n at the pace for
+# n - 1 won, until the first fall (SKILLED=1 JOBS=8 node tools/rush-curve.cjs runs 120; KIT=strong adds a scripted kit,
+# one pick per fight won: tools/rush-curve.cjs KITS.strong).
+#   curve                     pace at 5 / 10 / 15 / 20 / 25     kit      reached fight (120 runs): median p25-p75 p90 max
+#   old  rise 0.1,  scale 8      1.06 1.21 1.48 1.98 2.91         none     14   7-17   19   23
+#                                                                 strong   25   22-27  28   33
+#   new  rise 0.09, scale 6      1.09 1.31 1.84 3.05 5.82         none     12   8-14   16   20
+#                                                                 strong   19   17-21  22   24
+# Targets (PLAN.md item 10): no abilities around fight 10-12; a rare great kit about 20; beyond that impossible.
+# Runs end most (new curve, no kit) at bellWarden 19, kingsBlade 14, oswin 14, giant 10; (strong) antlered 27,
+# bellWarden 21, kingsBlade 13: among the longest fights, where a faster boss has the most time to land a blow.
+# tests/boss-pace.cjs checks the curve at fights 1, 5, 10, 15, 20 and 25, health and damage unchanged.

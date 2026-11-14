@@ -35,12 +35,18 @@ Object.assign(Game, {
     const levelItem = l => ({ name: l.name + (l.ending && finale.completed(l.id) ? '  ✦' : ''), desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) });
     // Practice's opponent lists: a pick starts the fight at once, or, while building a group, joins the group.
     const duelItem = d => ({ name: d.name, desc: d.description, go: () => {
-      if (!adding) { this.practiceFromGroup = false; this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)); return; }
+      if (!adding) { this.practiceFromGroup = false; this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id, [], settings.practiceFight - 1)); return; }
       if (group.length < P.maxGroup) group.push(d.id);
       this.practiceAdding = false; this.showMenu('practiceGroup');
     } });
     const options = this.optionsItems();
     const pickBack = { name: 'Back', desc: '', cue: 'menuBack', go: () => { this.practiceAdding = false; this.showMenu(adding ? 'practiceGroup' : 'practice'); } };
+    // Practice's Speed (PLAN.md track B item 10): a boss at the pace of a later Boss Rush fight, kept with the settings.
+    const fight = settings.practiceFight, fights = P.fights;
+    const speed = { name: 'Speed', size: 'setting', kind: 'cycle', value: `Fight ${fight}`,
+      desc: fight === 1 ? 'Each boss at its own pace, as in the first fight of a Boss Rush.'
+        : `As in a Boss Rush at fight ${fight}: ${rushPace(fight - 1).toFixed(2)} times the pace. Health and damage stay the same.`,
+      adjust: d => { const i = Math.max(0, fights.indexOf(settings.practiceFight)); settings.practiceFight = fights[(i + (d || 1) + fights.length) % fights.length]; } };
     return {
       ...S.screens, ...bossBattle.screens(this),
       // The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, one line
@@ -76,19 +82,21 @@ Object.assign(Game, {
         { name: 'Try abilities', desc: TEST_ABILITIES.description, go: () => this.loadingFirst(TEST_ABILITIES.name, TEST_ABILITIES.description, () => this.startLevel(TEST_ABILITIES.id)) },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Each list is titled by what it does; the only line under a title is the group's live count.
+      // Speed heads the bosses, and the list opens on the first of them.
       practiceBosses: { title: adding ? 'Add a boss' : 'Fight a boss', sub: adding ? `${group.length} / ${P.maxGroup} in the group` : '', back: adding ? 'practiceGroup' : 'practice',
-        items: [...ENEMY_DEFS.filter(isBossDef).map(duelItem), pickBack] },
+        focus: 1, items: [speed, ...ENEMY_DEFS.filter(isBossDef).map(duelItem), pickBack] },
       practiceEnemies: { title: adding ? 'Add an enemy' : 'Fight an enemy', sub: adding ? `${group.length} / ${P.maxGroup} in the group` : '', back: adding ? 'practiceGroup' : 'practice',
         items: [...ENEMY_DEFS.filter(d => !isBossDef(d)).map(duelItem), pickBack] },
       // Opens on Fight once the group has someone in it, else on adding a boss.
-      practiceGroup: { title: 'Several at once', sub: `${group.length} / ${P.maxGroup}`, back: 'practice', focus: group.length ? group.length + 2 : 0, items: [
+      practiceGroup: { title: 'Several at once', sub: `${group.length} / ${P.maxGroup}`, back: 'practice', focus: group.length ? group.length + 3 : 0, items: [
         ...group.map((id, i) => ({ name: `${ENEMY_BY_ID[id].name}  ×`, label: `Remove ${ENEMY_BY_ID[id].name}`, desc: 'Remove from the group.',
           go: () => { group.splice(i, 1); this.showMenu('practiceGroup', true); } })),
         ...[['Add a boss', 'practiceBosses'], ['Add an enemy', 'practiceEnemies']].map(([name, screen]) => ({ name: `+ ${name}`, disabled: group.length >= P.maxGroup,
           desc: group.length >= P.maxGroup ? 'The group is full. Remove one to add another.' : 'The same one may be added more than once.',
           go: () => { this.practiceAdding = true; this.showMenu(screen); } })),
+        speed,
         { name: 'Fight', disabled: !group.length, desc: group.length > 1 ? `Fight all ${group.length} at once.` : group.length ? 'Fight it alone, or add more first.' : 'Add at least one enemy or boss.',
-          go: () => { const [first, ...rest] = group; this.practiceFromGroup = true; this.loadingFirst(...this.duelCard(first, rest), () => this.startFight(first, rest)); } },
+          go: () => { const [first, ...rest] = group; this.practiceFromGroup = true; this.loadingFirst(...this.duelCard(first, rest), () => this.startFight(first, rest, settings.practiceFight - 1)); } },
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
       practiceLevels: { title: 'Play a level', back: 'practice', items: [...LEVELS.map(levelItem),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('practice') }] },
@@ -304,7 +312,10 @@ Object.assign(Game, {
     const clock = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec) % 60).padStart(2, '0')}`;
     if (r) rows.push(['Fight', String(r.fight)], ['Time', clock(r.clock), ` / par ${clock(r.par)}`, r.clock > r.par]);
     else if (this.kind === 'level' && this.level) rows.push([this.story ? 'Chapter' : 'Level', this.level.name]);
-    else if (this.kind === 'arena' && this.duelId) rows.push(['Fighting', [this.duelId, ...(this.duelPartners || [])].map(id => ENEMY_BY_ID[id].name).join(', ')]);
+    else if (this.kind === 'arena' && this.duelId) {
+      rows.push(['Fighting', [this.duelId, ...(this.duelPartners || [])].map(id => ENEMY_BY_ID[id].name).join(', ')]);
+      if (this.practiceWon > 0 && this.enemies.some(e => e.isBoss())) rows.push(['Speed', `Fight ${this.practiceWon + 1}`, ` · ${rushPace(this.practiceWon).toFixed(2)}×`]);
+    }
     if (mp) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);
     // The abilities held, each once, with its level when above I (js/abilities.js).
     const ids = (this.player && this.player.kit && this.player.kit.ids) || [], marks = ['', '', ' II', ' III', ' IV'];
@@ -459,9 +470,10 @@ Object.assign(Game, {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   },
   // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
-  startFight(id, partners = []) {
+  // `won`: Practice's Speed, its bosses at Boss Rush's pace after that many fights won (0: their own pace).
+  startFight(id, partners = [], won = 0) {
     const d = ENEMY_BY_ID[id], L = d.arena && ALL_LEVELS.find(l => l.id === d.arena);
-    this.kind = 'arena'; this.duelId = id; this.duelPartners = partners;
+    this.kind = 'arena'; this.duelId = id; this.duelPartners = partners; this.practiceWon = won;
     this.level = L ? { ...L, fullTracking: ARENA.fullTracking, playerStart: d.playerStart, enemyStart: d.enemyStart } : ARENA;
     this.enterPlay(); this.reset(); this.showLoading(...this.duelCard(id, partners));
   },
