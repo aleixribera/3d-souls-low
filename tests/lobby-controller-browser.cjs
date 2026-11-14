@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
-const adventures = ['calling/' + C.calling.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id), 'campaign/ashmere'];
+const adventures = ['calling/' + C.calling.id, 'calling/' + C.weekly.id, ...Object.keys(C.gauntlets).map(id => 'gauntlet/' + id), 'campaign/ashmere'];
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));

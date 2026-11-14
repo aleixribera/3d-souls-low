@@ -51,6 +51,9 @@ const multiplayer = (() => {
       <output id="lobbyNamePreview" aria-live="polite"></output><div id="lobbyNameKeys"></div></section>
     <div id="lobbyPlayers" aria-label="Players"></div>
     <div class="lobby-party-actions"><button id="lobbyManage" class="ui-text-button" aria-expanded="false" aria-controls="lobbyPlayers" hidden>Manage party</button></div>
+    <section id="lobbyBoard" aria-labelledby="lobbyBoardTitle" hidden><div class="lobby-section-title"><h2 id="lobbyBoardTitle">This week</h2><span id="lobbyBoardReset"></span></div>
+    <h3 class="ui-label">Furthest</h3><ol id="lobbyBoardRuns" aria-label="Furthest runs this week"></ol>
+    <h3 class="ui-label">Fastest kills</h3><ol id="lobbyBoardKills" aria-label="Fastest kills this week"></ol></section>
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
@@ -102,6 +105,13 @@ const multiplayer = (() => {
     #publicLobby .lobby-player button{min-height:34px;padding:0 10px;font-size:var(--ui-size-hint)}
     #publicLobby .lobby-player-actions{display:none;flex-basis:100%;gap:6px}#publicLobby.managing-party .lobby-player-actions{display:flex}
     #publicLobby .lobby-party-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+    #lobbyBoard{margin-top:28px}#lobbyBoard .lobby-section-title{margin-bottom:4px}#lobbyBoard h3{margin:14px 0 0}#lobbyBoardReset{font:var(--ui-size-hint)/1 var(--ui-text);color:var(--ui-muted)}
+    #lobbyBoard ol{margin:6px 0 0;padding:0;list-style:none;border-top:1px solid var(--ui-line);font-variant-numeric:tabular-nums}
+    #lobbyBoard li{display:grid;grid-template-columns:minmax(64px,auto) minmax(0,1fr) auto;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid var(--ui-line)}
+    #lobbyBoard li.board-empty{display:block;color:var(--ui-muted)}
+    #lobbyBoard .board-main{font:400 17px/1.3 var(--ui-display);color:var(--ui-ink)}
+    #lobbyBoard .board-names{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ui-muted)}
+    #lobbyBoard .board-time{color:var(--ui-muted)}
     #publicLobby .lobby-hint{margin:10px 0 0;font:var(--ui-size-hint)/1.5 var(--ui-text);color:var(--ui-muted)}
     #publicLobby #lobbyLiveWarning{margin:0 0 14px}
     #publicLobby .lobby-footer{grid-area:foot;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;margin-top:max(20px,3vh);padding-top:12px;border-top:1px solid var(--ui-line)}
@@ -352,8 +362,8 @@ const multiplayer = (() => {
     buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
   }
   runSummary.querySelector('#runSummaryAgain').onclick = () => {
-    const again = !!summary; closeRunSummary(false);
-    if (again) control('start', { kind: 'calling', id: C.calling.id });
+    const again = summary; closeRunSummary(false);
+    if (again) control('start', { kind: 'calling', id: again.id === C.weekly.id ? C.weekly.id : C.calling.id });
   };
   runSummary.querySelector('#runSummaryLobby').onclick = () => closeRunSummary();
   window.addEventListener('keydown', ev => {
@@ -896,11 +906,45 @@ const multiplayer = (() => {
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
   const callingChosen = () => el('lobbyAdventure').value === 'calling/' + C.calling.id;
+  const weeklyChosen = () => el('lobbyAdventure').value === 'calling/' + C.weekly.id;
+  // The weekly board (server/board.cjs): this week's furthest runs and fastest kills, by the party's names. The leader
+  // sees it with the weekly run chosen; everyone else, who has no mode list, always.
+  let board = null;
+  function untilNextWeek(now = Date.now()) {
+    const d = new Date(now), monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 7 - (d.getUTCDay() + 6) % 7);
+    const hours = Math.max(1, Math.ceil((monday - now) / 3600000));
+    const days = Math.ceil(hours / 24);
+    return hours < 24 ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : `${days} ${days === 1 ? 'day' : 'days'}`;
+  }
+  function drawBoard() {
+    const section = el('lobbyBoard'), owner = connected && self === leader;
+    section.hidden = !connected || !board || owner && !weeklyChosen();
+    if (section.hidden) return;
+    // The leader's left column holds the modes, so the board goes under the party; a guest's left column is free.
+    const home = owner ? panel.querySelector('.lobby-party') : el('lobbyWaiting');
+    if (section.parentNode !== home) home.appendChild(section);
+    el('lobbyBoardReset').textContent = `New run in ${untilNextWeek()}`;
+    const fill = (list, rows, empty, cells) => {
+      list.replaceChildren();
+      if (!rows.length) { const li = document.createElement('li'); li.className = 'board-empty'; li.textContent = empty; list.appendChild(li); return; }
+      for (const row of rows) {
+        const li = document.createElement('li');
+        for (const [text, cls] of cells(row)) { const span = document.createElement('span'); span.className = cls; span.textContent = text; if (cls === 'board-names') span.title = text; li.appendChild(span); }
+        list.appendChild(li);
+      }
+    };
+    const names = r => (Array.isArray(r.names) ? r.names : []).join(', '), seconds = n => Math.max(0, Math.round(Number(n) || 0));
+    fill(el('lobbyBoardRuns'), Array.isArray(board.runs) ? board.runs : [], 'No runs yet this week.',
+      r => [[`Fight ${seconds(r.reached)}`, 'board-main'], [names(r), 'board-names'], [runClock(seconds(r.time)), 'board-time']]);
+    fill(el('lobbyBoardKills'), Array.isArray(board.kills) ? board.kills : [], 'No kills yet this week.',
+      k => [[ArenaNet.own(ENEMY_BY_ID, k.boss)?.name || k.boss, 'board-main'], [names(k), 'board-names'], [runClock(seconds(k.time)), 'board-time']]);
+  }
   function adventureSummary() {
     const value = el('lobbyAdventure').value, id = value.slice(value.indexOf('/') + 1);
     const campaign = STORIES.find(s => s.id === id), run = ArenaNet.own(C.gauntlets, id);
     for (const button of el('lobbyModes').children) button.setAttribute('aria-pressed', String(button.dataset.mode === value));
-    el('lobbyAdventureSummary').textContent = callingChosen() ? `Boss after boss until everyone falls, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.` : run
+    el('lobbyAdventureSummary').textContent = callingChosen() ? `Boss after boss until everyone falls, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`
+      : weeklyChosen() ? 'Boss Rush with this week\'s bosses, modifiers and abilities, the same for everyone.' : run
       ? `Every boss, ${run.size > 1 ? `${run.size} at a time` : 'one at a time'}${run.then ? `, then ${C.gauntlets[run.then].name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}` : ''}. The fallen watch until the fight ends; a team wipe ends the run.`
       : campaign ? `${campaign.chapters.length} chapters, together. Checkpoints are shared.`
       : 'Play this encounter together.';
@@ -965,7 +1009,7 @@ const multiplayer = (() => {
     // A boss run already names itself in the status line above.
     el('lobbyWaiting').firstElementChild.textContent = session?.gauntlet ? '' : session ? `${runName() ? `${runName()} is underway.` : 'Your party is already playing.'}`
       : `Waiting for ${roster.find(p => p.id === leader)?.name || 'the leader'} to start.`;
-    updateConnection(); adventureSummary(); updateLobbyPadHint();
+    updateConnection(); adventureSummary(); drawBoard(); updateLobbyPadHint();
     const signature = JSON.stringify({ roster: roster.map(p => [p.id, p.name]), self, leader, owner });
     if (signature !== rosterSignature) {
       rosterSignature = signature; el('lobbyPlayers').textContent = '';
@@ -1007,7 +1051,7 @@ const multiplayer = (() => {
   function receive(msg) {
     if (msg.type === 'welcome') {
       connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
-      resumeToken = typeof msg.token === 'string' ? msg.token : '';
+      resumeToken = typeof msg.token === 'string' ? msg.token : ''; board = msg.board && typeof msg.board === 'object' ? msg.board : null;
       el('lobbyName').value = roster.find(p => p.id === self)?.name || el('lobbyName').value;
       try { localStorage.setItem('combatArena.onlineToken', resumeToken); localStorage.setItem('combatArena.onlineName', el('lobbyName').value); } catch {}
       activityPending = false; lastActivitySent = -Infinity; heldActivity.clear();
@@ -1015,7 +1059,7 @@ const multiplayer = (() => {
       // The leader's Mode: Boss Rush first (the lobby's default), the fixed boss runs, then the story played together.
       const stories = catalog.campaigns.filter(entry => STORIES.some(s => s.id === entry.id && s.lobbyName));
       const titled = name => name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: titled(run.name) })),
+      const modes = [{ kind: 'calling', id: C.calling.id, name: titled(C.calling.name) }, { kind: 'calling', id: C.weekly.id, name: titled(C.weekly.name) }, ...Object.entries(C.gauntlets).map(([id, run]) => ({ kind: 'gauntlet', id, name: titled(run.name) })),
         ...stories.map(entry => ({ kind: 'campaign', id: entry.id, name: STORIES.find(s => s.id === entry.id).lobbyName }))];
       el('lobbyModes').textContent = '';
       for (const entry of modes) {
@@ -1029,6 +1073,8 @@ const multiplayer = (() => {
       select.value = `${catalog.defaultAdventure.kind}/${catalog.defaultAdventure.id}`;
       el('lobbyStatus').textContent = ''; updateRoster();
       if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
+    } else if (msg.type === 'board') {
+      board = msg.board && typeof msg.board === 'object' ? msg.board : null; drawBoard();
     } else if (msg.type === 'roster') {
       roster = msg.players; leader = msg.leader; updateRoster(); drawRunSummary();
       if (msg.notice && roster.length > 1) notice(msg.notice, true);

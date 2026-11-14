@@ -12,10 +12,10 @@ function validateData({ visual = true } = {}) {
   const introIds = new Set();
   for (const intro of LOBBY_INTROS) {
     need(!introIds.has(intro.id), `Duplicate lobby intro: ${intro.id}.`); introIds.add(intro.id);
-    need(ArenaNet.config.gauntlets[intro.id] || intro.id === ArenaNet.config.calling.id || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
+    need(ArenaNet.config.gauntlets[intro.id] || [ArenaNet.config.calling.id, ArenaNet.config.weekly.id].includes(intro.id) || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
-  for (const id of [ArenaNet.config.calling.id, ...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id, ...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   // The changelog in the game (js/data/changelog.js): newest first, starting at the running version.
   need(Array.isArray(CHANGELOG) && CHANGELOG.length && CHANGELOG[0].version === VERSION, `Changelog: the first entry must be the running version ${VERSION} (js/data/changelog.js).`);
   const changeLabels = new Set();

@@ -168,10 +168,12 @@ globalThis.host = (() => {
   // modifiers; `opening` (ids, optional) sets the first fights' bosses by hand (tests, tools). The same shape as a
   // gauntlet encounter, plus the run to carry on, whether it is Crowned and its modifiers' ids.
   const rushSeed = seed => { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  // A weekly run (C.weekly) carries its `week` ('2026-W46'), whose seed it must be, and no opening.
   function calling(run, fight = 0) {
-    const E = CONFIG.endless, all = catalog().bosses.map(e => e.id), opening = run?.opening || [];
+    const E = CONFIG.endless, all = catalog().bosses.map(e => e.id), opening = run?.opening || [], week = run?.week;
     if (!run || !Number.isInteger(run.seed) || run.seed < 0 || run.seed > 0xffffffff || !Array.isArray(opening) || opening.length > all.length ||
-      opening.some(id => typeof id !== 'string' || !all.includes(id)) || new Set(opening).size !== opening.length) throw rejected('Unknown Boss Rush run');
+      opening.some(id => typeof id !== 'string' || !all.includes(id)) || new Set(opening).size !== opening.length ||
+      week !== undefined && (typeof week !== 'string' || !/^\d{4}-W\d{2}$/.test(week) || run.seed !== weekSeed(week) || opening.length)) throw rejected('Unknown Boss Rush run');
     if (!Number.isInteger(fight) || fight < 0 || fight >= E.longest) throw rejected('Unknown fight of Boss Rush');
     const rng = rushSeed(run.seed), seen = new Set(), drawn = [], draw = list => list[Math.floor(rng() * list.length)];
     let prev = [], defeated = 0, plan = null;
@@ -199,11 +201,23 @@ globalThis.host = (() => {
       plan = { bosses, crowned, modifiers, defeated };
       defeated += bosses.length; prev = bosses;
     }
-    return { id: C.calling.id, name: C.calling.name, run: { seed: run.seed, opening: [...opening] }, fight, boss: plan.bosses[0], partners: plan.bosses.slice(1),
+    const mode = week ? C.weekly : C.calling;
+    return { id: mode.id, name: mode.name, run: { seed: run.seed, opening: [...opening], ...(week ? { week } : {}) }, fight, boss: plan.bosses[0], partners: plan.bosses.slice(1),
       number: fight + 1, crowned: plan.crowned, modifiers: plan.modifiers, defeated: plan.defeated, next: fight + 1 < E.longest ? fight + 1 : null };
   }
   // A new run: a fresh seed, and the leader's opening bosses if any.
   const newRun = (opening = []) => ({ seed: Math.floor(Math.random() * 0x100000000) >>> 0, opening: [...opening] });
+  // The weekly run (C.weekly): one seed per ISO week (UTC, from Monday 00:00), the same for every lobby.
+  function weekOf(ms = Date.now()) {
+    const d = new Date(ms), day = (d.getUTCDay() + 6) % 7;   // Monday 0
+    const thursday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day + 3), year = new Date(thursday).getUTCFullYear();
+    return `${year}-W${String(1 + Math.floor((thursday - Date.UTC(year, 0, 1)) / 604800000)).padStart(2, '0')}`;
+  }
+  // FNV-1a over bytes: seeds made from a week's name, or from a run, a fight and a player (4 bytes each).
+  const fnv = bytes => { let h = 0x811c9dc5; for (const n of bytes) { h ^= n & 0xff; h = Math.imul(h, 0x01000193); } return h >>> 0; };
+  const weekSeed = week => fnv([...('weekly:' + week)].map(c => c.charCodeAt(0)));
+  const mixSeed = (...ints) => fnv(ints.flatMap(n => [n, n >>> 8, n >>> 16, n >>> 24]));
+  const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
   // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest) and each has a share of its
   // health (rushHealth, CONFIG.endless.pairHealth). Nothing raises health or blows. Returns the pace.
@@ -262,12 +276,18 @@ globalThis.host = (() => {
   // each of a rarity drawn by its weight after `won` fights won, then one of that rarity this player may still take:
   // not at its last level, not a legendary a teammate holds, not already on the card before. With `withBots`, every bot
   // is offered too and takes one at once. After a Crowned fight (`crowned`, CONFIG.endless) the offer has at least
-  // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer.
-  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false) {
-    const B = CONFIG.abilities, pick = list => list[Math.floor(Math.random() * list.length)];
+  // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer. With a `seed`
+  // (offerSeed: a Boss Rush run's fight) the nth player's draw is mixSeed(seed, n)'s, so a weekly run offers the same
+  // cards to everyone who holds the same abilities.
+  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null) {
+    const B = CONFIG.abilities;
+    let random = Math.random, nth = -1;
+    const pick = list => list[Math.floor(random() * list.length)];
     const cards = crowned ? Math.max(B.offer + extra, CONFIG.endless.crownedOffer) : B.offer + extra;
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
+      nth++;
       if (offers.has(id)) continue;
+      random = seed === null ? Math.random : rushSeed(mixSeed(seed, nth));
       const held = owned.get(id) || [], team = teamLegendaries(id);
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && team.has(b.id)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
@@ -277,16 +297,18 @@ globalThis.host = (() => {
         const weights = Object.entries(B.rarity).map(([r, R]) => [r, left.some(b => b.rarity === r) ? R.weight + R.grow * won : 0]);
         const total = weights.reduce((n, [, w]) => n + w, 0);
         if (total <= 0) break;
-        let roll = Math.random() * total, rarity = weights[0][0];
+        let roll = random() * total, rarity = weights[0][0];
         for (const [r, w] of weights) { if (w > 0 && roll < w) { rarity = r; break; } roll -= w; }
         offer.push(pick(left.filter(b => b.rarity === rarity)).id);
       }
-      if (legend && offer.length > 1) { const at = Math.floor(Math.random() * offer.length); [offer[0], offer[at]] = [offer[at], offer[0]]; }
+      if (legend && offer.length > 1) { const at = Math.floor(random() * offer.length); [offer[0], offer[at]] = [offer[at], offer[0]]; }
       if (!offer.length) continue;
       offers.set(id, offer);
       if (bots.has(id)) pickAbility(id, pick(offer));
     }
   }
+  // The seed of a Boss Rush fight's offers: the run's seed and the fight; `round` sets a late arrival's apart.
+  const offerSeed = (run, fight, round = 0) => mixSeed(run.seed, fight, round);
   // The ids a teammate of `id` holds or has on an open offer: a legendary among them is not offered to `id` nor taken.
   function teamLegendaries(id) {
     const team = new Set();
@@ -769,7 +791,7 @@ globalThis.host = (() => {
       const hp = e.hp; e.lifesteal(); if (!Number.isFinite(e.hp)) e.hp = hp;
     }
   }
-  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
+  return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, campaign, gauntlet, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, beginExecution, endExecution, lifesteal, rest,
     playerMaxHp: PLAYER_DEF.stats.maxHp, playerMaxStamina: PLAYER_DEF.stats.maxStamina, playerMaxPoise: PLAYER_DEF.stats.maxPoise,

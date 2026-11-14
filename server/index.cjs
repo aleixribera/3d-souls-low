@@ -7,6 +7,7 @@ const { randomUUID, randomBytes } = require('node:crypto');
 const { WebSocketServer, WebSocket } = require('ws');
 const net = require('../js/net-protocol.js');
 const { createSimulation, build, root } = require('./headless.cjs');
+const { createBoard } = require('./board.cjs');
 const C = net.config;
 
 // The client's address: the socket's own, or the last X-Forwarded-For entry added by a loopback/private proxy
@@ -61,6 +62,10 @@ function createServer(options = {}) {
   const addresses = new Map(), hellos = new Map();   // address -> open sockets; address -> { count, at } joins this minute
   const activityNow = options.activityNow || (() => performance.now());
   const loadNow = options.loadNow || (() => performance.now());
+  // The weekly run (C.weekly): the week comes from the wall clock (`dateNow`, ms); its board is kept in `boardFile`.
+  const dateNow = options.dateNow || Date.now;
+  const board = createBoard({ file: options.boardFile ?? process.env.BOARD_FILE ?? null, size: C.weekly.board,
+    bosses: sim.catalog().bosses.map(e => e.id), weekOf: () => sim.weekOf(dateNow()) });
   const memories = new Map(); // Private browser credentials; never included in roster or pose broadcasts.
   const freshPose = p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000;
   const participating = p => p.hello && p.foreground && (p.ready && p.pose ? freshPose(p) : performance.now() - p.loadingSince < C.loadTimeout);
@@ -186,9 +191,19 @@ function createServer(options = {}) {
   }
   // What the end-of-run screen shows: the run's time in whole seconds, bosses beaten, Crowned fights won, and each
   // player's totals, most damage first.
-  const runSummary = outcome => ({ outcome, name: C.calling.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
+  const runSummary = outcome => ({ outcome, id: session.gauntlet.id, name: session.gauntlet.name, beaten: tally.beaten, crowned: tally.crowned, times: tally.times,
     time: Math.round((performance.now() - tally.startedAt) / 1000),
     players: runTitles([...tally.players.values()].map(r => ({ ...r, damage: Math.round(r.damage) })).sort((a, b) => b.damage - a.damage || a.deaths - b.deaths), tally.times, outcome === 'won') });
+  // The end of a weekly run goes on this week's board, and everyone in the lobby sees the new board.
+  function recordWeekly(summary) {
+    const week = tally?.run.week;
+    if (!week) return;
+    const reached = summary.times.length + (summary.outcome === 'won' ? 0 : 1);
+    if (board.record(week, { names: summary.players.filter(r => !r.bot).map(r => r.name), reached, beaten: summary.beaten, time: summary.time, fights: summary.times }))
+      broadcast({ type: 'board', board: board.current() });
+  }
+  // A Boss Rush run's end: the summary for the end screen, after a weekly run's board has it.
+  function endRun(outcome) { const summary = runSummary(outcome); recordWeekly(summary); return summary; }
   // For Boss Rush, `id` is the run ({ seed, opening }, sim.calling) and `boss` the fight's index.
   function start(kind, id, campaignId = null, boss = undefined, opening = false) {
     // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
@@ -228,7 +243,7 @@ function createServer(options = {}) {
       abilityFor = 0;
       const ids = [...clients.values()].filter(p => p.hello).map(p => p.id);
       for (const id of ids) abilityRound.add(id);
-      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned);
+      sim.offerAbilities(ids, true, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight));
       for (const p of clients.values()) sendOffer(p);
     }
     abilityFor += 1 / C.tickRate;
@@ -240,7 +255,10 @@ function createServer(options = {}) {
   // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
   function offerLate(p) {
     if (abilityFor === null) return;
-    if (!abilityRound.has(p.id)) { abilityRound.add(p.id); sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned); }
+    if (!abilityRound.has(p.id)) {
+      abilityRound.add(p.id);
+      sim.offerAbilities([p.id], false, swiftKill() ? sim.swiftExtra : 0, session.gauntlet.fight + 1, !!session.gauntlet.crowned, sim.offerSeed(session.gauntlet.run, session.gauntlet.fight, abilityRound.size));
+    }
     sendOffer(p);
   }
   // This player's open offer (if any), the time left to choose, and what they hold.
@@ -275,7 +293,7 @@ function createServer(options = {}) {
     p.loadingSince = performance.now(); remember(p);
     if (session) sim.registerPlayer(p.id, p.name);
     noteActivity(p);
-    send(p, { id: p.id, token: p.token, build, catalog: sim.catalog(), ...roster(), type: 'welcome' });
+    send(p, { id: p.id, token: p.token, build, catalog: sim.catalog(), board: board.current(), ...roster(), type: 'welcome' });
     if (session) send(p, { type: 'start', session, resume: p.pose });
     if (session) offerLate(p);
     queueRoster();
@@ -287,9 +305,11 @@ function createServer(options = {}) {
       if (!['campaign', 'level', 'arena', 'gauntlet', 'calling'].includes(msg.kind) || !net.id(msg.id)) return;
       try {
         if (msg.kind === 'calling') {
-          // `opening` (optional): the first fights' bosses by hand (tests, tools); the draw goes on after them.
-          if (msg.id !== C.calling.id || msg.opening !== undefined && (!Array.isArray(msg.opening) || msg.opening.length > sim.catalog().bosses.length)) return;
-          const run = sim.newRun(msg.opening ? msg.opening.map(String) : []);
+          // `opening` (optional): the first fights' bosses by hand (tests, tools); the draw goes on after them. The
+          // weekly run has none: its run is this week's.
+          const weekly = msg.id === C.weekly.id;
+          if (!weekly && msg.id !== C.calling.id || msg.opening !== undefined && (weekly || !Array.isArray(msg.opening) || msg.opening.length > sim.catalog().bosses.length)) return;
+          const run = weekly ? sim.weeklyRun(dateNow()) : sim.newRun(msg.opening ? msg.opening.map(String) : []);
           sim.calling(run);   // refuse a bad opening before anything starts
           // Boss Rush is the party against the bosses (PLAN.md track B item 9): no bot ever fills it.
           start('calling', run, null, 0, true);
@@ -548,7 +568,7 @@ function createServer(options = {}) {
           const wiped = (party.length > 0 || sim.botList().length > 0) && party.every(p => p.ready && p.pose && p.arenaDefeated) && sim.botsDown();
           arenaWipeFor = wiped && sim.inspect().Game.enemies.some(e => e.alive()) ? arenaWipeFor + 1 / C.tickRate : 0;
           if (arenaWipeFor >= sim.arenaWipeDelay) {
-            if (tally) { tallyFight(false); stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: runSummary('wiped') }); }
+            if (tally) { tallyFight(false); stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe', { summary: endRun('wiped') }); }
             else if (session.gauntlet) stop(`${party.length > 1 ? 'TEAM WIPED' : 'YOU FELL'} · The boss run ends here. Choose ${session.gauntlet.name} to try again from the start.`, 'team-wipe');
             else start(session.kind, session.id);
             break;
@@ -578,7 +598,7 @@ function createServer(options = {}) {
           // CONFIG.endless.longest, which no one reaches).
           if (session.gauntlet.run) {
             if (session.gauntlet.next) start('calling', session.gauntlet.run, null, session.gauntlet.next);
-            else stop(`${C.calling.name} COMPLETE · ${tally ? tally.beaten : 0} bosses beaten.`, 'run-complete', tally ? { summary: runSummary('won') } : {});
+            else stop(`${session.gauntlet.name} COMPLETE · ${tally ? tally.beaten : 0} bosses beaten.`, 'run-complete', tally ? { summary: endRun('won') } : {});
           } else if (session.gauntlet.next) start('gauntlet', session.gauntlet.id, null, session.gauntlet.next);
           // A survived run carries the party on into the next, harder run, with its own opening.
           else if (run.then) start('gauntlet', run.then, null, undefined, true);
