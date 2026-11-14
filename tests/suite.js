@@ -2943,8 +2943,9 @@
   });
   test('Normal: every one of Ultra\'s effects, toned down, never switched off, at native resolution', () => {
     const V = CONFIG.VISUALS, { bare, normal, ultra } = V.quality, C = V.cinematic;
-    for (const key of ['post', 'bloom', 'glows', 'shafts', 'combatFx', 'reflections', 'shadows', 'ao', 'volumetrics', 'refraction', 'proceduralFire'])
+    for (const key of ['post', 'bloom', 'glows', 'shafts', 'combatFx', 'reflections', 'ao', 'volumetrics', 'refraction', 'proceduralFire', 'baked'])
       expect.ok(normal[key] && ultra[key], `${key}: on in Normal as in Ultra`);
+    expect.ok(!normal.shadows && ultra.shadows && !bare.baked, 'Normal takes the moon\'s shadows from baked light, Ultra from its shadow map');
     expect.ok(!bare.post && !bare.combatFx && !bare.shadows && bare.hidden && !normal.hidden && !ultra.hidden, 'Bare: the plain test preset, never offered');
     expect.ok(normal.msaa > 0 || normal.fxaa, 'Normal smooths its edges (MSAA or FXAA)');
     expect.ok(normal.lights <= ultra.lights && V.scenery.density.normal <= V.scenery.density.ultra, 'Normal: no more lights or scenery than Ultra');
@@ -3008,7 +3009,7 @@
       for (let i = 0; i < 12; i++) Game.render(1, STEP);
       expect.ok(ultraWarnings().length === warnings, 'no effect failures');
       expect.ok([p.hp, e.hp, e.posture, p.x, e.x].every((v, i) => v === state[i]), 'drawing preserves the fight');
-      expect.ok(ultraPost.info().on && renderer.shadowMap.enabled && ultraPost.info().volumetrics, 'Normal keeps shadows, AO and volumetric light');
+      expect.ok(ultraPost.info().on && bakedLight.active() && !renderer.shadowMap.enabled && ultraPost.info().volumetrics, 'Normal keeps baked light and shadows, AO and volumetric light');
       A.visuals.setQuality('bare');
       expect.ok(!ultraFx.on() && ultraFx.info().sparks === 0 && ultraFx.info().drops === 0 && ultraBoss.info().fires === 0, 'Low releases modern effects');
       expect.ok(ultraPost.info().reflected === 0, 'Low removes metal reflections');
@@ -3077,10 +3078,10 @@
       expect.ok(ultraFx.info().fires > 0, 'flames are drawn as procedural fire');
       A.visuals.setQuality('normal'); sim.step(4, 2);
       const H = ultraPost.info();
-      expect.ok(renderer.shadowMap.enabled && H.on && H.shadowSize === 1024 && H.aoSamples === 8, 'Normal uses smaller shadow and AO budgets');
+      expect.ok(!renderer.shadowMap.enabled && bakedLight.active() && H.on && H.aoSamples === 8, 'Normal: baked shadows instead of a shadow map, a smaller AO budget');
       expect.ok(H.scatteringLights <= CONFIG.VISUALS.cinematic.normal.scatterLights, `Ultra's scattering budget does not leak into Normal (${H.scatteringLights})`);
       let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
-      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights + 1, `Normal keeps its sun and fixed impact light (${extra})`);
+      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights, `Normal keeps its fixed impact light, and no shadowed sun (${extra})`);
       expect.above(ultraPost.info().reflected, 0, 'Normal retains cached metal reflections');
       expect.ok(ultraFx.info().fires > 0, 'Normal keeps the procedural fire');
       A.visuals.setQuality('bare'); sim.step(4, 2);

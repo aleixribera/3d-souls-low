@@ -230,6 +230,7 @@ void main() {
       if (o.isPointLight) { if (!o.userData.ultra && !stageLights.has(o)) extraLights.push(o); return; }
       if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine)) return;
       const m = Array.isArray(o.material) ? o.material[0] : o.material;
+      if (o.isMesh) for (const mm of Array.isArray(o.material) ? o.material : [o.material]) bakedLight.prepare(mm);   // baked light (js/baked-light.js), blood decals too
       if (o.isSprite || o.isPoints || o.isLine || o.userData.noDepth || !m || (m.transparent && !m.depthWrite) || m.blending === THREE.AdditiveBlending) {
         noDepth.push(o); return;
       }
@@ -318,8 +319,8 @@ void main() {
   // ---- per frame ------------------------------------------------------------------------------------------------------
   const lightList = [], lightSlots = [];   // lightSlots: reused records, so a frame allocates nothing
   const byScore = (a, b) => b.score - a.score;
-  function consider(l, k) {
-    if (!l.visible || !(l.intensity > 0)) return;
+  function consider(l, k, drawn = true) {   // drawn: only a light the scene draws (a baked source glows undrawn)
+    if ((drawn && !l.visible) || !(l.intensity > 0)) return;
     for (let a = l.parent; a; a = a.parent) if (!a.visible) return;
     l.getWorldPosition(v3);
     const R = Math.min(l.distance > 0 ? l.distance : 14, 16) * SC.reach, d2 = v3.distanceToSquared(camera.position);
@@ -332,7 +333,8 @@ void main() {
   function gatherLights() {
     lightList.length = 0;
     const k = SC.light * (scene.fog ? scene.fog.density : SC.fogRef) / SC.fogRef;
-    for (const l of visuals.lights()) consider(l, k);
+    if (bakedLight.active()) for (const l of visuals.lightSources()) consider(l, k, false);   // baked: the sources themselves
+    else for (const l of visuals.lights()) consider(l, k);
     for (const l of extraLights) consider(l, k);
     for (const l of owned) if (l.isPointLight && l.userData.flash) consider(l, k);
     lightList.sort(byScore);

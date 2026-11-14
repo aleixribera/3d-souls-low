@@ -89,4 +89,44 @@
     start('sunken-keep'); Game.render(1, CONFIG.step);
     expect.ok(effectLighting.info().storm === 0, 'no storm light in the next level');
   });
+  test('Baked light: Normal lights a level from its baked volume, walls stop the light and cast the moon\'s shadow', () => {
+    const saved = settings.graphics, v = new THREE.Vector3(), lum = c => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    try {
+      visuals.setQuality('normal'); start('burning-town'); Game.render(1, CONFIG.step);
+      const I = bakedLight.info();
+      expect.ok(I && I.active && I.lights === stage.lightSources.length, `every light source baked (${I && I.lights})`);
+      expect.ok(I.cells[0] * I.cells[1] * I.cells[2] <= VIS.baked.maxVolume && I.ms < 2000, `bounded volume, baked in ${I.ms} ms`);
+      expect.ok(!renderer.shadowMap.enabled && stage.lightPool.every(l => !l.visible || l.intensity === 0), 'no shadow map and no pooled light drawn');
+      let baked = 0; stage.group.traverse(o => { if (o.isMesh && o.material && o.material.defines && 'BAKED_LIGHT' in o.material.defines) baked++; });
+      expect.above(baked, 0, 'the level\'s materials read the volume');
+      // Near a light it is lit; a point straight behind a wall from a light gets none of it (another light may reach it).
+      const T = terrainFor(Game.level), boxes = T.solids.filter(b => !b.low && b.kind !== 'prop');
+      const inBox = (x, y, z) => boxes.some(b => x > b.x0 - 0.4 && x < b.x1 + 0.4 && y > b.y0 - 0.4 && y < b.y1 + 0.4 && z > b.z0 - 0.4 && z < b.z1 + 0.4);
+      let lit = 0, dark = 0, behind = 0;
+      for (const l of stage.lightSources) {
+        l.getWorldPosition(v);
+        const a = bakedLight.at(v.x, v.y, v.z); if (a && !a.solid && a.light > 0) lit++;
+        for (const b of boxes) {
+          if (!(b.y0 < v.y - 0.5 && b.y1 > v.y + 1)) continue;
+          for (const [ax, other] of [['x', 'z'], ['z', 'x']]) {
+            if (!(v[other] > b[other + '0'] + 0.6 && v[other] < b[other + '1'] - 0.6)) continue;
+            const before = b[ax + '0'] - v[ax], after = v[ax] - b[ax + '1'];
+            const P = { y: v.y, [other]: v[other], [ax]: before > 0.3 && before < 3 ? b[ax + '1'] + 1.5 : after > 0.3 && after < 3 ? b[ax + '0'] - 1.5 : NaN };
+            if (Number.isNaN(P[ax]) || inBox(P.x, P.y, P.z)) continue;
+            const s = bakedLight.at(P.x, P.y, P.z); if (!s || s.solid) continue;
+            behind++; if (s.light < 0.05 * lum(l.color) * l.intensity / Math.hypot(P.x - v.x, P.z - v.z)) dark++;
+          }
+        }
+      }
+      expect.ok(lit === stage.lightSources.length, `lit at every light (${lit}/${stage.lightSources.length})`);
+      expect.ok(dark >= 3 && dark * 2 >= behind, `dark behind walls (${dark} of ${behind})`);
+      // The moon: the open middle of the arena sees it; the foot of the wall on the moon's side is in its shadow.
+      Game.startFight('ostrey'); Game.loading = 0; sim.begin(); Game.render(1, CONFIG.step);
+      const x = Math.sign(moonLight.position.x) * (ARENA.halfX - 0.5);   // inside the wall that faces the moon
+      expect.ok(bakedLight.at(0, 0.5, 0).moon > 0.95 && bakedLight.at(-x, 0.5, 0).moon > 0.95, 'moonlit in the open and by the far wall');
+      expect.ok(bakedLight.at(x, 0.5, 0).moon < 0.05, `shadowed at the foot of the moon-side wall (${bakedLight.at(x, 0.5, 0).moon})`);
+      visuals.setQuality('bare');
+      expect.ok(bakedLight.info() === null && !bakedLight.active(), 'Bare drops the volume');
+    } finally { settings.graphics = saved; applySettings(); }
+  });
 })();

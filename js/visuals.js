@@ -1076,8 +1076,10 @@ const visuals = (() => {
   let lightAt = null;
   const lightOrder = [], lightD = l => (l.position.x - lightAt.x) ** 2 + (l.position.y - lightAt.y) ** 2 + (l.position.z - lightAt.z) ** 2;
   const byLightDistance = (a, b) => lightD(a) - lightD(b);
+  // The stage's point lights drawn at once: none while baked light (js/baked-light.js) lights the level.
+  const stageLit = () => typeof bakedLight !== 'undefined' && bakedLight.active() ? 0 : quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()];
   function limitLights(all = false) {
-    const L = st.lights, n = Math.min(quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()], L.length);
+    const L = st.lights, n = Math.min(stageLit(), L.length);
     if (n >= L.length) { if (all) for (const l of L) l.visible = true; return; }
     if (st.pooled) { for (let i = 0; i < L.length; i++) L[i].visible = i < n; return; }
     // Sorted in a reused list by squared distance from the player (or camera), with one comparator: no per-frame copies.
@@ -1370,6 +1372,7 @@ const visuals = (() => {
     quality: () => quality,
     lowHealth: () => lowHp,
     lights: () => st.lights,   // the point lights quality.lights limits (visible ones are lit this frame)
+    lightSources: () => (stage && stage.lightSources) || st.lights,   // every fixed light source of the stage, drawn or not
     look: () => A,
     decals,
     qualityLabel: name => (Q[name] || Q[VIS.defaultQuality]).label,
@@ -1518,7 +1521,7 @@ const visuals = (() => {
         }
       }
       debris.update(dt);
-      if (stage && stage.lightPool && p) poolLights(stage, p, Math.min(quality.lights - VIS.effectLight.counts[quality.label.toLowerCase()], stage.lightPool.length));
+      if (stage && stage.lightPool && p) poolLights(stage, p, Math.min(stageLit(), stage.lightPool.length));
       limitLights();
       const V = VIS.vignette, want = p && p.alive() ? clamp((V.lowHealthAt - p.hp / p.maxHp) / V.lowHealthAt, 0, 1) : 0;
       lowHp += (want - lowHp) * (1 - Math.exp(-V.lowHealthRate * dt));

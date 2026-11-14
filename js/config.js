@@ -440,23 +440,31 @@ const CONFIG = {
       // stone instead of three. glows: flame halos and light pools on the floor. bloomScale: bloom drawn at this fraction of the screen.
       // Two presets for players (Aleix, 2026-11-13): Normal for everyone, holding 60 fps on integrated graphics (his
       // laptop, `tools/bench/laptop.sh`), with every one of Ultra's effects toned down, never switched off; Ultra for
-      // his PC, which adds sculpted anatomy and the full-strength passes. `bare` is not a player's preset: the browser
-      // tests draw with it under software GL (never offered in Options or by Auto; `hidden`).
+      // his PC, which adds sculpted anatomy and the full-strength passes. Both light the level from baked light
+      // (`baked`, js/baked-light.js); Normal takes the moon's shadows from it too, Ultra keeps its moon shadow map.
+      // `bare` is not a player's preset: the browser tests draw with it under software GL (never offered in Options or by Auto; `hidden`).
       // `ultra` identifies the preset for compatibility; features read their own flags. Graphics cycles in this order.
       // A preset's key is its label in lower case (the per-preset budgets below are keyed by it).
       normal: { label: 'Normal', hidden: false, post: true, bloom: true, vignette: true, grain: true, softRatio: 1, msaa: 0, denseMsaa: 0, fxaa: true, antialias: false, bloomScale: 0.5,
               lights: 4, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: false,
               modelDetail: { geo: { enemy: 1, player: 1.25, boss: 1.25 }, tex: 1, anatomy: false }, combatFx: true, fxBudget: 'normal', proceduralFire: true,
-              reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 32 },
+              reflections: true, shadows: false, ao: true, volumetrics: true, refraction: true, baked: true, warmupSize: 32 },
       ultra: { label: 'Ultra', hidden: false, post: true, bloom: true, vignette: true, grain: true, softRatio: 2, msaa: 4, denseMsaa: 4, fxaa: false, antialias: false, bloomScale: 0.5,
                lights: 8, simpleSurfaces: false, glows: true, particles: 1, shafts: true, debris: true, grass: 1, embers: 1, ultra: true,
                modelDetail: { geo: { enemy: 1.25, player: 1.6, boss: 1.6 }, tex: 1, anatomy: true }, combatFx: true, fxBudget: 'ultra', proceduralFire: true,
-               reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, warmupSize: 0 },
+               reflections: true, shadows: true, ao: true, volumetrics: true, refraction: true, baked: true, warmupSize: 0 },
       bare: { label: 'Bare', hidden: true, post: false, bloom: false, vignette: false, grain: false, softRatio: 1, msaa: 0, denseMsaa: 0, fxaa: false, antialias: false, bloomScale: 1,
               lights: 3, simpleSurfaces: true, glows: false, particles: 0.25, shafts: false, debris: false, grass: 0.25, embers: 0.5, ultra: false,
               modelDetail: { geo: 1, tex: 1, anatomy: false }, combatFx: false, fxBudget: 'bare', proceduralFire: false,
-              reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, warmupSize: 32 },
+              reflections: false, shadows: false, ao: false, volumetrics: false, refraction: false, baked: false, warmupSize: 32 },
     },
+    // Baked light (js/baked-light.js), on presets with `baked`: a level's fixed point lights and the moon's visibility
+    // baked into a grid of `cell` m cells (coarser on a level that would need more than `maxVolume` cells), each light
+    // reaching at most `range` m (`openRange` for a light with no range of its own, a bonfire) and `maxCells` cells,
+    // stopped by walls, floors and houses grown by `pad` m. A surface reads the grid `offset` m out along its normal;
+    // the share of the light with no main direction lights it as fill at `fill`. Colours are stored as
+    // sqrt(c / (c + encode)), so dim light keeps its precision.
+    baked: { cell: 1, maxVolume: 1500000, range: 30, openRange: 24, maxCells: 30, pad: 0.3, offset: 0.5, fill: 0.4, encode: 4 },
     // Fixed pockets of guiding embers; all travel stays local to each pocket.
     guidance: { spacing: 7, particles: 9, lowParticles: 5, height: 0.55, travel: 1.7, spread: 0.22,
                 rise: 0.28, size: 0.10, maxPx: 13, opacity: 0.38, color: 0xffdba0,

@@ -37,6 +37,10 @@ const effectLighting = (() => {
   visuals.hooks.beforeDraw.push(() => {
     if (player !== Game.player) { clear(); player = Game.player; }
     if (!stage || !Game.player) return;
+    if (bakedLight.active()) {   // baked light already holds every fixed source: an idle slot stays dark
+      for (const s of pool) if (s.light.visible && s.key === null) s.light.intensity = 0;
+      return;
+    }
     // A culled level's fallbacks come from visuals (records { source, fade }); otherwise the unlit lights, nearest first.
     const fallbacks = stage.lightPool ? stage.lightFallbacks || idle : null;
     if (!fallbacks) {

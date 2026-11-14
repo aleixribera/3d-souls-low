@@ -48,7 +48,9 @@ const qualityBenchmark = (() => {
       moon.shadow.mapSize.setScalar(CONFIG.VISUALS.cinematic[preset]?.shadowMap || CONFIG.VISUALS.ultra.shadows.moonMap);
       Object.assign(moon.shadow.camera, { left: -B.shadowBox, right: B.shadowBox, top: B.shadowBox, bottom: -B.shadowBox });
       moon.shadow.camera.updateProjectionMatrix(); test.add(moon);
-      for (let i = 0; i < Math.min(B.lights, q.lights); i++) {
+      // A baked preset draws only its effect lights (the stage's lights are in the volume, js/baked-light.js).
+      const lights = q.baked ? CONFIG.VISUALS.effectLight.counts[preset] : q.lights;
+      for (let i = 0; i < Math.min(B.lights, lights); i++) {
         const a = i * Math.PI * 2 / B.lights, l = new THREE.PointLight(i % 2 ? 0xff9038 : 0x8fbaff, B.lightPower, B.lightRange);
         l.position.set(Math.cos(a) * B.lightRadius, B.lightHeight, Math.sin(a) * B.lightRadius); test.add(l);
       }

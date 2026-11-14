@@ -447,6 +447,11 @@ function validateData({ visual = true } = {}) {
   const Cu = CONFIG.cull;
   need(Number.isInteger(Cu.maxLights) && Cu.maxLights >= 1 && Cu.lightRange > 0 && Cu.fadeBand > 0 && Cu.enemyRange > Math.max(...Object.values(CONFIG.notice)),
     'CONFIG.cull: maxLights must be a whole number of at least 1, ranges above 0, and enemyRange beyond every notice range.');
+  const Bk = CONFIG.VISUALS.baked;
+  need(Bk.cell > 0 && Number.isInteger(Bk.maxCells) && Bk.maxCells >= 3 && Bk.maxCells <= 120 && Number.isInteger(Bk.maxVolume) && Bk.maxVolume >= 1000
+    && Bk.range > 0 && Bk.openRange > 0 && Bk.pad >= 0 && Bk.offset >= 0 && Bk.fill >= 0 && Bk.encode > 0
+    && Object.values(CONFIG.VISUALS.quality).every(q => typeof q.baked === 'boolean'),
+    'CONFIG.VISUALS.baked: cell, ranges and encode above 0, maxCells a whole number from 3 to 120, maxVolume a whole number of at least 1000, pad, offset and fill not negative; every preset says whether it is `baked`.');
   const AI = CONFIG.ai, nonNeg = v => num(v) && v >= 0;
   need(['basic', 'dash', 'rollOnly', 'shove', 'projectile'].every(k => nonNeg(AI.chance[k])) && nonNeg(AI.approach) && AI.busyMul >= 0 && AI.busyMul <= 1 && nonNeg(AI.gap)
     && nonNeg(AI.holdInset) && AI.holdMax > 0 && nonNeg(AI.holdBand) && AI.holdSpeedMul > 0 && nonNeg(AI.stepOut) && nonNeg(AI.commitReach) && nonNeg(AI.busyCooldown),
