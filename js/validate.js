@@ -31,11 +31,11 @@ function validateData({ visual = true } = {}) {
     for (const [id, M] of Object.entries(MODEL_DEFS)) for (const c of (M.anim && M.anim.cloth) || [])
       need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);
     const Da = A.dash, L = A.land, r3 = v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite);
-    const Dk = Da && Da.keys;
-    need(Da && num(Da.rise) && Da.lift >= 0 && Da.lift <= 0.3 && Array.isArray(Dk) && Dk.length >= 2 && Dk[0].at === 0 && Dk[Dk.length - 1].at === 1
-      && Dk.every((k, i) => (i === 0 || k.at > Dk[i - 1].at) && Math.abs(k.lean) < 1.5 && Math.abs(k.tip) < 0.5 && Number.isFinite(k.head)
-        && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(k[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(k[b]))),
-      'ANIM_SETTINGS.dash: rise (s), lift (0 to 0.3 m) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
+    // The dash's clip (pass 101, js/baked/clips.js, made by tools/blender/clips.py): every frame of every bone a quaternion.
+    const Cl = Da && typeof CLIPS !== 'undefined' && CLIPS[Da.clip], fin = (v, n) => Array.isArray(v) && v.length === n && v.every(Number.isFinite);
+    need(Da && num(Da.rise) && Cl && Cl.frames >= 2 && fin(Cl.hip, Cl.frames * 3) && Object.keys(Cl.bones).length
+      && Object.entries(Cl.bones).every(([b, q]) => ['spin', 'chest', 'neck', 'head', 'legL', 'kneeL', 'legR', 'kneeR', 'armL', 'elbowL', 'armR', 'elbowR', 'weapon'].includes(b) && fin(q, Cl.frames * 4)),
+      'ANIM_SETTINGS.dash: rise (s) and a clip in CLIPS (js/baked/clips.js) with frames, hip (x, y, z per frame) and a quaternion per frame for each of its bones.');
     const Cg = A.counterGlow;
     need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1
       && Cg.flare >= 0 && Cg.flare <= 4 && num(Cg.flareTime),

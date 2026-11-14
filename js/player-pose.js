@@ -16,37 +16,25 @@ function deflectEnvelope(age, D) {
   if (age < D.rise + D.hold) return 1;
   return 1 - EASE.inOutSine(clamp((age - D.rise - D.hold) / D.fall, 0, 1));
 }
-// The dash (pass 94; a held lunge in pass 92): it steps through its key poses (ANIM_SETTINGS.dash.keys) on a smooth
-// curve through each, so the body never freezes in one pose: a loaded push-off, the back leg driving, a long low
-// stride with the trailing heel kicked up and the free arm swinging through, a skid on the front heel as the dash
-// slows, and up toward stance (Rig.settle carries it into the run). `u` is the share of the dash gone.
-// One channel of the keys at segment `i`, `s` of the way to the next: a Catmull-Rom curve (no allocation).
-function keyCurve(K, i, s, name, j) {
-  const n = K.length, a = K[Math.max(i - 1, 0)][name], b = K[i][name], c = K[Math.min(i + 1, n - 1)][name], d = K[Math.min(i + 2, n - 1)][name];
-  const p0 = j < 0 ? a : a[j], p1 = j < 0 ? b : b[j], p2 = j < 0 ? c : c[j], p3 = j < 0 ? d : d[j], s2 = s * s, s3 = s2 * s;
-  return 0.5 * (2 * p1 + (p2 - p0) * s + (2 * p0 - 5 * p1 + 4 * p2 - p3) * s2 + (3 * p1 - p0 - 3 * p2 + p3) * s3);
+// The dash (pass 101; hand-set key poses on the hip and knee joints until pass 99): a clip authored in Blender
+// (ANIM_SETTINGS.dash.clip, js/baked/clips.js), played over the dash's length. `u` is the share of the dash gone.
+function dashPose(r, tt, rollTime) { playClip(r, CLIPS[ANIM_SETTINGS.dash.clip], clamp(tt / rollTime, 0, 1)); }
+// A baked clip at `u` (0 to 1) of its length: each bone's local turn, eased between the two nearest frames, and the hips
+// moved by the clip's offset (a lower body bends from there for a later crouch() this frame). Allocates nothing.
+const CLIP_QA = new THREE.Quaternion(), CLIP_QB = new THREE.Quaternion();
+function playClip(r, C, u) {
+  const names = C.names || (C.names = Object.keys(C.bones));
+  const x = u * (C.frames - 1), i = Math.min(Math.floor(x), C.frames - 2), s = x - i;
+  for (let n = 0; n < names.length; n++) {
+    const bone = r[names[n]] || (r.bones && r.bones[names[n]]), q = C.bones[names[n]], a = i * 4;
+    if (!bone) continue;
+    CLIP_QA.set(q[a], q[a + 1], q[a + 2], q[a + 3]); CLIP_QB.set(q[a + 4], q[a + 5], q[a + 6], q[a + 7]);
+    bone.quaternion.copy(CLIP_QA).slerp(CLIP_QB, s);
+  }
+  const h = C.hip, a = i * 3, dy = lerp(h[a + 1], h[a + 4], s);
+  r.spin.position.x += lerp(h[a], h[a + 3], s); r.spin.position.y += dy; r.spin.position.z += lerp(h[a + 2], h[a + 5], s);
+  r.crouchDrop += Math.max(0, -dy);
 }
-function dashPose(r, tt, rollTime) {
-  const K = ANIM_SETTINGS.dash.keys, u = clamp(tt / rollTime, 0, 1);
-  let i = 0; while (i < K.length - 2 && u > K[i + 1].at) i++;
-  const s = clamp((u - K[i].at) / (K[i + 1].at - K[i].at), 0, 1);
-  const legLx = keyCurve(K, i, s, 'legL', 0), kneeL = keyCurve(K, i, s, 'kneeL', -1), legRx = keyCurve(K, i, s, 'legR', 0), kneeR = keyCurve(K, i, s, 'kneeR', -1);
-  r.legL.rotation.set(legLx, keyCurve(K, i, s, 'legL', 1), keyCurve(K, i, s, 'legL', 2)); r.kneeL.rotation.x = kneeL;
-  r.legR.rotation.set(legRx, keyCurve(K, i, s, 'legR', 1), keyCurve(K, i, s, 'legR', 2)); r.kneeR.rotation.x = kneeR;
-  for (const b of DASH_LIMBS) r[b].rotation.set(keyCurve(K, i, s, b, 0), keyCurve(K, i, s, b, 1), keyCurve(K, i, s, b, 2));
-  if (r.elbowL) { r.elbowL.rotation.x += keyCurve(K, i, s, 'elbowL', -1); r.elbowR.rotation.x += keyCurve(K, i, s, 'elbowR', -1); }
-  // The hips sit where the lower foot meets the floor once the whole body is tipped at the feet: a split stance, not a
-  // squat (Rig.crouch bends both knees alike). Pass 99: the tip counts, so the body can lean from the ankles in one
-  // line from the driving foot to the head (a forward tip lifts the back foot and sinks the front one, so the hips
-  // rise or drop to keep the lower foot planted) instead of folding at the waist.
-  const tip = keyCurve(K, i, s, 'tip', -1), tn = Math.tan(tip);
-  const drop = Math.max(-ANIM_SETTINGS.dash.lift, 2 * LEG_SEG - LEG_SEG * Math.max(footReach(legLx, kneeL, tn), footReach(legRx, kneeR, tn)));
-  r.spin.position.y -= drop; r.crouchDrop += Math.max(0, drop);   // so a later crouch() this frame bends from here
-  r.lean(keyCurve(K, i, s, 'lean', -1)); r.tip.rotation.x += tip; r.head.rotation.x += keyCurve(K, i, s, 'head', -1);
-}
-const DASH_LIMBS = ['armR', 'armL', 'weapon'];
-// The hip's height over one foot, in leg segments: thigh at `a`, knee bent `k`, the body tipped by atan(tn) at the feet.
-function footReach(a, k, tn) { return Math.cos(a) + Math.cos(a + k) - (Math.sin(a) + Math.sin(a + k)) * tn; }
 // A landing with weight (pass 92): the knees give under the fall and come back up (visual clock `ldAge` on the rig).
 function landPose(p, r, dt) {
   const L = ANIM_SETTINGS.land, air = p.state === PS.JUMP || p.state === PS.FALL || p.state === PS.JUMP_ATTACK;

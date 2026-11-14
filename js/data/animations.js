@@ -79,35 +79,14 @@ const ANIM_SETTINGS = {
   // grip, the hips down `drop` m.
   guard: { drop: 0.05,
            pose: { armR: [-0.5, 0.56, 0.25], elbowR: [-1, 0, 0], weapon: [0.82, 0.49, 0], armL: [-0.92, -0.26, -0.79], elbowL: [-0.03, 0, 0] } },
-  // The dash's key pose (pass 92, the blind judge: "a long, low, leaning lunge"): in `rise` s the front leg reaches far
-  // ahead, the back leg stretches out behind and the hips sink between them (as far as the front foot stays planted),
-  // the torso pitches `lean` rad forward and the body `tip` rad at the feet, both arms and the blade trail; held to
-  // `hold` of the dash, then eased out (Rig.settle carries it into the run). Leg and arm targets are [x, y, z] rad, knees
-  // and elbows a bend; `head` lifts the eyes back to the path.
-  // Pass 94 (a fresh judge: "the body locks into a single forward lean"): the dash steps through key poses instead of
-  // holding one, on a smooth curve through each (`at`: share of the dash). `rise` s: when the push-off is struck (the
-  // first afterimage waits for it).
-  // Pass 99: two fresh judges, one round each with the Stellar Blade dodge as the reference, scored these keys 5 both
-  // times and two new sets 4 (a lean in one line from the ankles: "the legs stay tucked"; a held wide split: "one frozen
-  // lunge sliding"), so these stay. What changed: the hips now sit where the lower foot meets the floor with the tip
-  // counted (the front foot sank into the floor before), rising at most `lift` m.
-  dash: { rise: 0.05, lift: 0.12, keys: [
-    { at: 0, lean: 0.5, tip: 0.06, head: -0.35,   // loaded: both knees bent, arms going back
-      legL: [-0.5, 0, 0.06], kneeL: 1.2, legR: [0.45, 0, -0.06], kneeR: 0.7,
-      armR: [0.5, 0.1, -0.3], elbowR: -0.3, weapon: [1.1, 0, 0], armL: [0.4, -0.1, 0.4], elbowL: -0.4 },
-    { at: 0.16, lean: 0.72, tip: 0.14, head: -0.55,   // push-off: the back leg drives straight, arms swept back
-      legL: [-1, 0, 0.08], kneeL: 1.35, legR: [0.95, 0, -0.06], kneeR: 0.05,
-      armR: [1, 0.15, -0.4], elbowR: -0.15, weapon: [1.3, 0, 0], armL: [0.95, -0.1, 0.5], elbowL: -0.15 },
-    { at: 0.42, lean: 0.55, tip: 0.1, head: -0.45,   // the stride: the back leg swung through and reaching, the old front leg behind, free arm swung through
-      legL: [0.55, 0, 0.08], kneeL: 0.5, legR: [-1.15, 0, -0.06], kneeR: 1.3,
-      armR: [1.1, 0.2, -0.45], elbowR: -0.2, weapon: [1.25, 0, 0], armL: [-0.5, -0.1, 0.35], elbowL: -0.9 },
-    { at: 0.7, lean: 0.3, tip: -0.08, head: -0.2,   // the skid: the new front heel braking, back knee low, body rising, free arm bent out a little
-      legL: [0.5, 0, 0.12], kneeL: 1.3, legR: [-1, 0, -0.08], kneeR: 0.3,
-      armR: [0.35, 0.1, -0.6], elbowR: -0.5, weapon: [1, 0.2, 0], armL: [-0.45, 0, 0.45], elbowL: -0.8 },
-    { at: 1, lean: 0.12, tip: 0, head: -0.05,   // up toward stance, blade forward again
-      legL: [0.3, 0, 0.05], kneeL: 0.5, legR: [-0.45, 0, -0.03], kneeR: 0.5,
-      armR: [-0.2, 0, -0.15], elbowR: -0.2, weapon: [0.6, 0, 0], armL: [-0.1, 0, 0.3], elbowL: -0.2 },
-  ] },
+  // The dash. Passes 92 to 99 drew it from five hand-set key poses on the hip and knee joints (a judge's 5 at best: "one
+  // hunched pose folded at the waist", "one frozen lunge sliding"). Pass 101: a clip authored in Blender
+  // (tools/blender/clips.py, played from js/baked/clips.js): the root travels as the game moves the body and IK sets the
+  // feet on the floor, so the back foot drives, the body launches in one line from that foot to the head with the
+  // back leg flung out behind, the front foot lands and skids under a low crouch, and the body rises into a wide
+  // stance, arms out. `clip`: its name in CLIPS, played over the dash's length. `rise` s: when the push-off is
+  // struck (the first afterimage waits for it).
+  dash: { rise: 0.05, clip: 'dash' },
   // The counter window on the blade (pass 94, js/player-pose.js): `color` glowing at `emissive` times its strength,
   // which runs from 1 as the window opens down to `min` as it shuts; the blade's glint held at `glint` of that.
   // Pass 95: it flares as the window opens, `flare` times brighter on top, easing off over `flareTime` s.
