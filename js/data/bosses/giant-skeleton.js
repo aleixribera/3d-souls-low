@@ -227,7 +227,7 @@ MODEL_DEFS.giantSkeleton = {
     damage: 10, poise: 50, knock: 0, lunge: 0, range: 11, box: SCOOP };
   // The Bonewheel: the club straight out to its right, coiled to its left; whirled round twice. Roll it, or be out of reach.
   const wheel = { id: 'giantWheel', name: 'The Bonewheel', anim: 'sweep', pose: 'giantWheel', tracking: { rate: 1.6, commit: 0.4 }, rollOnly: true, noParry: true, chance: 0.4,
-    hits: [{ startup: 1.35, active: 0.32, follow: 0.05 }, { startup: 0.12, active: 0.32, follow: 0.5 }], recovery: 1.5,
+    hits: [{ startup: 1.35, active: 0.2, follow: 0.12 }, { startup: 0.12, active: 0.2, follow: 0.55 }], recovery: 1.5,
     damage: 26, poise: 60, knock: 10, lunge: 0.8, range: 3.8, box: WHEEL };
   // Pit Stomps: right, left, right toward you, hunched and marching, the third the hardest. Roll them, or jump them.
   const pitStomps = { id: 'giantPitStomps', name: 'Pit Stomps', anim: 'stomp', pose: 'giantPitStomps', tracking: { rate: 2.0, commit: 0.7 }, rollOnly: true, chance: 0.4,

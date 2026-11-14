@@ -766,12 +766,13 @@
     expect.ok(!e.def.attacks.some(a => a.origin), 'every move its own (none borrowed)');
     taken(e, p);
     expect.ok(p.state === PS.HELD, `the hand closes on you (${p.state})`);
-    const t0 = clock, hp0 = p.hp;
+    sim.until(() => !(Game.hitstop > 0), 1);   // the catch's hit-pause freezes both sides: not the grip's time
+    const t0 = clock - p.stateTime, hp0 = p.hp + S.dps * p.stateTime;
     sim.seconds(S.lift + 0.1);
     expect.above(p.y - e.y, S.at[1] - 0.2, 'lifted up before its skull');
     expect.near(Math.hypot(p.x - e.x, p.z - e.z), Math.hypot(S.at[0], S.at[2]), 0.3, 'held in its hand, not left where you stood');
     sim.seconds(1);
-    expect.near(hp0 - p.hp, S.dps * (S.lift + 1.1), 3, 'its heat burns you while it holds you');
+    expect.near(hp0 - p.hp, S.dps * (clock - t0), 3, 'its heat burns you while it holds you');
     sim.until(() => p.state !== PS.HELD, 4);
     expect.near(clock - t0, S.time, 0.1, `held its full ${S.time} s when you do not struggle`);
     expect.ok(freed.length === 1 && freed[0].thrown && freed[0].body === p, 'and thrown when it lets go');
@@ -3598,7 +3599,7 @@
   const lessonsIn = id => (A.ALL_LEVELS.find(l => l.id === id).lessons || []).map(e => e.lesson);
   test('Lessons: Level 1 teaches the basics first, in order; Levels 2 and 3 add one each; the rest have none', () => {
     const hall = lessonsIn('long-hall');
-    expect.ok(hall.join() === 'move,light,roll,lock,block,flask,heavy,jumpAttack,stance,execute,parry,rest,switch,dodge', `Level 1's course: ${hall}`);
+    expect.ok(hall.join() === 'move,light,roll,lock,block,flask,heavy,jumpAttack,stance,execute,parry,rest,switch,dodge,grip', `Level 1's course: ${hall}`);
     expect.ok(lessonsIn('sunken-keep').join() === 'shield' && lessonsIn('burning-town').join() === 'blue', 'one lesson in Level 2 and one in Level 3');
     const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town'].includes(l.id)).map(l => l.id);
     expect.ok(others.length === 0, `no other level teaches: ${others}`);
