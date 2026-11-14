@@ -338,6 +338,7 @@ const TRAINING_DEFS = [
     bossBar: true, refill: { delay: 1.5, time: 1.2 },
     attacks: SPARRING_DUMMY.attacks.map(a => ({ ...a, id: 'greatTrainingSwing', name: 'Great Training Swing', range: 5.5,
       box: { w: 2.4, h: 4.8, d: 4.6, fwd: 2.8, y: 2.4 } })) },
+  SPARRING_PARTNER,   // the sparring scene's (js/data/sparring.js)
 ];
 const ENEMY_BY_ID = Object.fromEntries([...ENEMY_DEFS, ...TRAINING_DEFS, ...TEST_DEFS].map(d => [d.id, d]));
 // A boss (the big bar at the top, no overhead bar): posture or phases. Practice lists them apart from the enemies.

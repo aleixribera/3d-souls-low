@@ -27,7 +27,7 @@ const LESSONS = {
   // The shield, shown as the first red-glinting blow winds up (urgent: the blow is coming). Done on a blow taken on it,
   // or deflected.
   block: { title: 'BLOCK', keys: ['block'], urgent: true,
-    text: () => 'Hold to take a red-glinting blow on your shield. Each one wears your guard down.',
+    text: () => 'Hold to take a red-glinting blow on your blade for less damage. Tap as it lands to deflect it.',
     on: (type, d, t, g) => type === 'strike' && d.target === g.player && d.blocked || type === 'parry' && lessonBy(d, g) },
   // Done on a fully charged heavy that lands; a lighter one says how.
   heavy: { title: 'HEAVY ATTACK', keys: ['heavy'], text: () => 'Hold until the blade glows, then let go. Slow, but it breaks guards.',

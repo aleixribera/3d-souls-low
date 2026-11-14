@@ -342,6 +342,25 @@
   .dmgNum { position: absolute; left: 0; top: 0; display: none; font-size: 20px; letter-spacing: 1px; color: #f0d890; white-space: nowrap;
     text-shadow: 0 0 3px #000, 0 0 8px #000, 0 2px 0 #000; font-variant-numeric: tabular-nums; will-change: transform, opacity; }
   .dmgNum.big { font-size: 27px; color: #ffe6a8; }
+  /* The sparring card (js/sparring.js, pass 97): the drill's name and keys over the teacher while it shows the move
+     (cold), over the partner while the player tries it (gilt), sealed bright once done; a diamond per drill. */
+  #sparCard { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 18px 9px;
+    pointer-events: none; opacity: 0; transition: opacity 0.2s, border-color 0.25s; transform-origin: 50% 100%; white-space: nowrap; will-change: transform, opacity;
+    background: linear-gradient(#0d0b0ee6, #08070bd6); border: 1px solid #6e5d36a0; box-shadow: inset 0 1px 0 #ffffff0d, 0 8px 22px #000a; }
+  #sparCard.show { opacity: 1; }
+  #sparCard .spar-name { font: 17px/1.2 Georgia, serif; font-variant: small-caps; letter-spacing: 3px; color: #dcc086; text-shadow: 0 0 8px #000; transition: color 0.25s; }
+  #sparCard.teach { border-color: #7f9cc8b0; }
+  #sparCard.teach .spar-name { color: #cddcf2; }
+  #sparCard.well { border-color: #f0e0a8; box-shadow: inset 0 1px 0 #ffffff1a, 0 0 22px #d9a84a55, 0 8px 22px #000a; }
+  #sparCard.well .spar-name { color: #fff4d6; }
+  #sparCard.well .spar-keys { opacity: 0.4; }
+  #sparCard .spar-keys { display: flex; gap: 6px; transition: opacity 0.25s; }
+  #sparCard .spar-keys:empty { display: none; }
+  #sparCard .spar-then, #sparCard .spar-times { align-self: center; font: 14px/1 Georgia, serif; color: #b9a473; }
+  #sparCard .spar-steps { display: flex; gap: 7px; padding-top: 1px; }
+  #sparCard .spar-steps span { width: 5px; height: 5px; transform: rotate(45deg); border: 1px solid #c9a85e88; }
+  #sparCard .spar-steps span.on { background: #c9a85e; border-color: #c9a85e; }
+  #sparCard .spar-steps span.now { border-color: #f0e0a8; background: #f0e0a855; }
   /* Button hints in the world (js/world-hints.js): the player's own key over a foe, at the moment it is needed. */
   #worldHint { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 8px; pointer-events: none;
     opacity: 0; transition: opacity 0.15s; transform-origin: 0 50%; font: 13px/1 Arial, sans-serif; letter-spacing: 2px; text-transform: uppercase;
@@ -549,6 +568,7 @@
   <div id="counterDim"></div>
   <div id="eTags"></div>
   <div id="dmgNums"></div>
+  <div id="sparCard" aria-live="polite"><div class="spar-name"></div><div class="spar-keys"></div><div class="spar-steps" aria-hidden="true"></div></div>
   <div id="worldHint" aria-hidden="true"><kbd class="lesson-cap key" id="worldHintKey"></kbd><span id="worldHintWord"></span></div>
   <div id="stage">
     <div class="anchor" id="aTL">
@@ -654,6 +674,7 @@ const GAME_FILES = [
   'data/crates.js',  // levels and crates: what a crate holds
   'data/lessons.js',
   'data/test-enemies.js',
+  'data/sparring.js',   // the sparring scene's partner and drills
   'data/enemies.js',
   'data/props.js',
   'data/look.js',
@@ -709,6 +730,7 @@ const GAME_FILES = [
   'levels/test-town.js',
   'levels/test-training.js',
   'levels/test-abilities.js',
+  'levels/sparring.js',
   'data/levels.js',
   'data/bonfire-guidance.js',
   'data/story.js',
@@ -768,6 +790,7 @@ const GAME_FILES = [
   'lore.js',
   'story.js',
   'lessons.js',
+  'sparring.js',   // the sparring scene (after lessons.js)
   'world-hints.js',   // the player's own key over a foe, the first times (after lessons.js and hud.js)
   'impact.js',
   'camera-feel.js',
@@ -808,7 +831,7 @@ const GAME_FILES = [
   'counter-fx.js',   // the counter window and the counter's cut (drawing only)
   'boot.js',
 ];
-const LOAD_STAMP = '7.123.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.124.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

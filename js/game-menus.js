@@ -16,6 +16,11 @@ Object.assign(Game, {
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
         controlsRow,
         { name: 'Leave lobby', desc: 'Return to solo play.', go: () => multiplayer.leave() },
+      ] : this.level && this.level.sparring && typeof sparring !== 'undefined' && sparring.active() ? [   // the sparring scene: skipped at any moment (js/sparring.js)
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Skip the tutorial', desc: '', cue: 'menuBack', go: () => sparring.skip() },
+        { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        controlsRow,
       ] : this.story ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
@@ -59,7 +64,7 @@ Object.assign(Game, {
       // says who is in it right now (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
       main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
         { ...S.main[0], size: 'mode' },
-        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Join public lobby', go: () => multiplayer.join() },
+        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Join public lobby', go: () => sparring.before(() => multiplayer.join()) },   // a new player spars first
         { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
         // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
         ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(), start: 'Open the Collection',
@@ -77,11 +82,16 @@ Object.assign(Game, {
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
                 ...TEST_DEFS.map(d => ({ name: `Duel: ${d.name}`, desc: d.description, go: () => this.loadingFirst(`Duel: ${d.name}`, d.description, () => this.startFight(d.id)) })),
                 { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
+      // A player from before the sparring scene, at launch (js/sparring.js offerAtLaunch), up to three times.
+      sparOffer: { title: 'The new combat', back: 'main', items: [
+        { name: 'Spar', desc: 'About a minute. Skip it from the pause menu at any time.', go: () => sparring.start({ back: 'main' }) },
+        { name: 'Not now', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       changelog: { title: 'Changelog', back: 'main', items: [   // js/data/changelog.js, newest first
         ...CHANGELOG.map(c => ({ name: `${c.version}  ·  ${c.title}`, desc: c.text })),
         { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       // Practice: any enemy, boss or level, fighting within two picks. It replaced the 1v1 Arena and the Levels menu.
       practice: { title: 'Practice', back: 'main', items: [
+        { name: 'Tutorial', desc: 'The moves, one at a time, against a sparring partner.', go: () => sparring.start({ back: 'practice' }) },
         { name: 'Fight a boss', desc: 'Any boss of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceBosses'); } },
         { name: 'Fight an enemy', desc: 'Any common foe of the story, alone against you.', go: () => { this.practiceAdding = false; this.showMenu('practiceEnemies'); } },
         { name: 'Fight several at once', desc: `Up to ${P.maxGroup} enemies and bosses, all against you together.`, go: () => this.showMenu('practiceGroup') },

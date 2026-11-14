@@ -72,3 +72,9 @@ rises (72% to 78% and back to 71%) instead of holding. Strips: `scorecard/anim-p
 `scorecard/anim-p94-deflect.jpg`, the counter glow `scorecard/anim-p94-counter.jpg`. Next loop: a side or
 three-quarter camera for the deflect (front-on, the judge can't see the knees bend) and a whole-body lean from the
 ankles in the dash.
+
+Pass 97 (the counter window's sign on the body, with the Stellar Blade perfect-dodge clip as the reference strip, kept
+in `.scratch/` only): a halo and a floor ring that closes in hold on the player for the whole window
+(`ANIM_SETTINGS.counterFx.aura`). Two fresh judges on five frames across one window: 2 to 7, then 3 to 7 after the
+halo held its strength to the end (flat). Strip: `scorecard/anim-p97-window.jpg`. Next: a rim light that keeps the
+body's own shading instead of the even blue fill.

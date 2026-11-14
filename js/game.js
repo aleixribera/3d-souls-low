@@ -15,7 +15,8 @@ const Game = {
   practiceFromGroup: false,   // Practice: the fight under way was started from the group (its pause menu goes back there)
   selected: 0,
   companion: null,       // optional local campaign ally (js/companions.js)
-  allies() { return companions.actors(this); },
+  allies() { const a = companions.actors(this); if (this.teacher) a.push(this.teacher); return a; },   // the sparring teacher drawn too (js/sparring.js)
+  teacher: null,
   player: null, enemies: [], zones: [], renderHooks: [], timeScale: 1, hitstop: 0, shake: 0, shakeDur: 1, shakeAmp: 0, complete: false,
   lock: null, lockLost: 0, lockHidden: 0, restartArm: 0,
   retarget: true,        // always-retarget lock-on (see updateLock): off once Q lets go of a lock
@@ -42,7 +43,7 @@ const Game = {
       if (retainPrograms) scene.remove(b.rig.root, b.rig.shadow);
       else b.rig.dispose();
     }
-    this.player = null; this.companion = null; companions.hide(); this.enemies = []; this.zones = []; this.duel = null;
+    this.player = null; this.teacher = null; this.companion = null; companions.hide(); this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     particleBatch.visible = false; particleBatch.count = 0;
     groundFx.clear(); swordTrail.clear(); projectiles.clear();
@@ -109,6 +110,7 @@ const Game = {
       finale.reset(this);   // the last level's own script (js/finale.js): nothing on other levels
       lore.reset(this);     // the NPC, inscriptions and scenes of a story level (js/lore.js)
       if (typeof lessons !== 'undefined') lessons.reset(this);   // the level's lesson cards (js/lessons.js; not on the server)
+      if (typeof sparring !== 'undefined') sparring.reset(this);   // the sparring ring's teacher and drills (js/sparring.js)
       this.enemies = this.makeEnemies();
       if (this.kind === 'bossBattle') this.updateCamera(0, true);
       if (this.kind === 'level') for (const z of this.zones) this.spawnZone(z);
@@ -269,6 +271,7 @@ const Game = {
     if (!p.alive() && this.deathOf !== p) this.onPlayerDeath();
     this.updateCamera(dt, false);
     if (typeof lessons !== 'undefined') lessons.update(this, dt);   // reads only: which card to show (js/lessons.js)
+    if (typeof sparring !== 'undefined') sparring.update(this, dt);   // the sparring ring's drills and teacher (js/sparring.js)
     if (typeof abilityLab !== 'undefined') abilityLab.update(this);   // the ability grounds' kit and fired powers (js/ability-lab.js)
   },
 

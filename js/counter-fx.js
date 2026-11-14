@@ -61,12 +61,36 @@ const counterFx = (() => {
     s.visible = false; s.renderOrder = order; scene.add(s); pooledFx.push(s); return s;
   };
   const cuts = [], marks = [];
-  let made = false;
+  let made = false, aura = null, ring = null, auraK = 0;
+  const auraColor = new THREE.Color();
   function make() {
     if (made) return;
     made = true; textures();
     for (let i = 0; i < 4; i++) cuts.push({ s: sprite(LINE, 13), age: Infinity, open: 0, kind: 'line', x: 0, y: 0, z: 0, rot: 0, sparked: false });
     for (let i = 0; i < 2; i++) marks.push({ s: sprite(STAR, 13), age: Infinity, foe: null });
+    // Pass 97: the window's sign on the body, for all of it: a cold halo round the figure (the body hides its middle, so
+    // it reads as light around the silhouette) and a ring on the floor that closes in as the window runs out.
+    aura = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
+    aura.visible = false; aura.renderOrder = 12; scene.add(aura); pooledFx.push(aura);
+    ring = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 12; scene.add(ring); pooledFx.push(ring);
+  }
+  // The halo and ring follow the body while a window is open (k: 1 as it opens, 0 as it shuts); a slow breath under
+  // 3 Hz, steady with reduced motion. The body itself takes a faint cold light too (over the pose's own tint).
+  function drawAura(p, open, left, real, t) {
+    const A = S().aura;
+    auraK = open ? Math.min(1, auraK + real / A.in) : Math.max(0, auraK - real / A.out);
+    const show = auraK > 0.002 && p && p.rig;
+    aura.visible = ring.visible = !!show;
+    if (!show) return;
+    const r = p.rig, q = r.root.position, breath = reducedMotion() ? 1 : 1 + A.breath * Math.sin(t * Math.PI * 2 * A.pulse);
+    const k = auraK * (A.min + (1 - A.min) * left) * breath, h = p.height || 1.8;
+    aura.position.set(q.x, q.y + h * 0.5, q.z); aura.scale.set(A.size * 0.7, A.size, 1);
+    aura.material.color.setHex(A.color).multiplyScalar(A.boost * k);
+    ring.position.set(q.x, (r.shadow ? r.shadow.position.y : q.y) + 0.04, q.z);
+    const R = lerp(A.ring.to, A.ring.from, left);   // the band is a fixed share of the radius: it thins as it closes
+    ring.scale.set(R, R, 1); ring.material.color.setHex(A.ring.color).multiplyScalar(auraK * (0.85 + 0.15 * left));
+    if (r.bodyMats) { auraColor.setHex(A.color).multiplyScalar(A.body * k); for (const m of r.bodyMats) m.emissive.add(auraColor); }
   }
   // ---- the window opens ----
   const v = new THREE.Vector3(), up = new THREE.Vector3(), spot = { x: 0, y: 0, z: 0 };
@@ -125,6 +149,8 @@ const counterFx = (() => {
     dim = want > dim ? Math.min(want, dim + real / K.dim.in * K.dim.peak) : Math.max(want, dim - real / K.dim.out * K.dim.peak);
     if (dimEl && (dim > 0 || shownDim !== '0')) { const o = dim > 0 ? dim.toFixed(3) : '0'; if (shownDim !== o) dimEl.style.opacity = shownDim = o; }
     if (!made) return;
+    const open = !!p && p.alive() && p.riposte > 0 && game.mode === 'play';
+    drawAura(p, open, open ? clamp(p.riposte / (full || p.riposte), 0, 1) : 0, real, performance.now() / 1000);
     for (const M of marks) {
       if (M.age === Infinity) continue;
       M.age += real;
@@ -156,6 +182,7 @@ const counterFx = (() => {
   function clear() {
     for (const C of cuts) { C.age = Infinity; C.s.visible = false; }
     for (const M of marks) { M.age = Infinity; M.s.visible = false; M.foe = null; }
+    auraK = 0; if (aura) aura.visible = ring.visible = false;
     dim = 0; if (dimEl) dimEl.style.opacity = shownDim = '0';
   }
   return {
@@ -163,6 +190,7 @@ const counterFx = (() => {
     clear,
     // tests: what shows now
     get state() { return { dim, cuts: cuts.filter(c => c.age !== Infinity).map(c => ({ kind: c.kind, age: c.age, open: c.age >= c.open, w: c.s.scale.y })),
-                           marks: marks.filter(m => m.age !== Infinity).length }; },
+                           marks: marks.filter(m => m.age !== Infinity).length, aura: aura && aura.visible ? auraK : 0,
+                           ring: ring && ring.visible ? ring.scale.x : 0 }; },
   };
 })();

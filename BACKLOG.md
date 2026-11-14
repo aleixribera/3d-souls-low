@@ -2,19 +2,19 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **From the sparring scene (pass 97, track A):** (1) PLAN 3d's looping clips of each move on the Controls page are
+  not built: a capture of the teacher's demo per drill (`SPARRING_DRILLS[].demo`, the pass's autopilot) to small
+  looping videos, shown on each Controls row. (2) The counter window's body cue judged 7 twice (flat): the even blue
+  fill flattens the body; a rim light or outline that keeps its shading and brightens as the window closes. (3) The
+  partner steps in by sliding (no walk pose) when the player wanders out of reach. (4) The lessons `stance` and
+  `execute` still teach kneeling; they go with track B's Finishing Blow.
+
 - **From the counter pass (pass 95, track A), for track B:** (1) PLAN's "deflected strings make the riposte chain a
   second time if the press comes again" is not built: a combat rule plus the server's riposte claim check
   (server/simulation.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
   blow during its startup (the heavy's 0.24 s); counters may want i-frames through their startup. (3) The boss's gold
-  hit flash on a riposte whites out the whole body for ~15 frames and hides the cut. Track A next: the judge wants a
-  cue on the body for the whole window (the blade glow and edge dim read small in frames); the new counter poses
+  hit flash on a riposte whites out the whole body for ~15 frames and hides the cut. The new counter poses
   (`counterFlash`, `counterRising`) were tuned only by eye in clips.
-
-- **For track A, from pass 96 (track B, "No hidden meters"):** the guard bar, stamina and player poise are gone, so
-  the BLOCK lesson's text (js/data/lessons.js, `block`: "Each one wears your guard down.") is now untrue: a block takes
-  a little damage and never breaks, and a blue-glowing blow goes through it. Ordinary hits flinch; only attacks marked
-  `heavy` (an amber body tint through their wind-up, `CONFIG.VISUALS.heavyTell`) stagger. The shield lessons are about
-  enemy guards and still hold.
 
 - **After item 4's pass (pass 93, track B):** (1) 92 of 197 boss attacks still can't be deflected, nearly all area
   hits and leaps; PLAN's "a quarter at most" needs either deflectable leaps or a hit-level `noParry` on mixed strings

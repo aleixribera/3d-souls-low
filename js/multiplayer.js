@@ -58,7 +58,7 @@ const multiplayer = (() => {
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
-    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Collection</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
+    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Collection</button><button id="lobbyTutorial" class="ui-text-button">Tutorial</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
@@ -1494,6 +1494,7 @@ const multiplayer = (() => {
     command('rest', { bonfire: b.id }); hud.showRested(); events.emit('rest', { bonfire: b });
   }
   el('lobbyLeave').onclick = () => leave(); el('lobbyResume').onclick = hide;
+  el('lobbyTutorial').onclick = () => { leave(); sparring.start({ then: () => join() }); };   // the sparring scene, then back into the lobby (js/sparring.js)
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
   el('lobbyAdventure').onchange = () => updateRoster();   // the row's click already sounds

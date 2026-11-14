@@ -185,7 +185,7 @@ const lessons = (() => {
   events.onAny(onEvent);
   Game.renderHooks.push(draw);
   return {
-    reset, update, owns, load,
+    reset, update, owns, load, caps,   // caps: an action's keycaps from the live bindings (the sparring card's too)
     // Options: forget every learned lesson, so they all show again.
     forget() { learned.clear(); keep(); for (const e of plan) e.fired = false; queue = []; card = null; seen = new Set(); waited = {}; },
     learned: id => learned.has(id),

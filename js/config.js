@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.123.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.124.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -452,6 +452,10 @@ const CONFIG = {
   // "Show lessons again" govern them too. Drawn `side` m past the foe's flank on the camera's right, at `height` x its
   // height.
   hints: { reach: 3.2, range: 7, near: 6, lead: 0.6, facing: 0.8, learn: 3, side: 0.35, height: 0.6, storageKey: 'combatArena.hints' },
+  // The sparring scene (js/sparring.js, pass 97): `well` s of a drill's seal before the next, `gap` s between the
+  // partner's swings at the player (`reach` m: it waits until the player is that close), `ready` s on the last seal
+  // before the scene hands on; `stepIn` m/s the partner closes in at. A player from before it (any save kept here) is offered it at launch up to `offers` times.
+  sparring: { well: 1.0, gap: 1.6, reach: 2.5, stepIn: 2.4, ready: 1.6, offers: 3, storageKey: 'combatArena.sparring' },
   // The title screen's look at the public lobby (js/multiplayer.js peek): every `interval` s while the title shows,
   // giving up on one request after `timeout` s.
   titleLobby: { interval: 8, timeout: 4 },

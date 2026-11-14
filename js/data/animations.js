@@ -108,6 +108,11 @@ const ANIM_SETTINGS = {
     mark: { size: 1.5, time: 0.5, color: 0xe8f4ff },
     trail: { color: 0x9cc6ff, boost: 1.5, life: 1.6 },
     cut: { length: 2.6, thin: 0.035, wide: 0.1, show: 0.42, color: 0xf2f8ff, sparks: 46, arcSparks: 60, tilt: 0.38 },
+    // Pass 97, the window's sign for all of it: a halo `size` m tall round the body (`boost` bright, from 1 as it
+    // opens down to `min` as it shuts, breathing `breath` of that at `pulse` Hz, steady with reduced motion), the body
+    // lit `body` of it, in and out over s; a ring on the floor closing from `from` to `to` m radius as the window runs.
+    aura: { color: 0x9fd0ff, size: 2.8, boost: 0.9, min: 0.85, breath: 0.18, pulse: 1.6, body: 0.16, in: 0.06, out: 0.18,
+            ring: { color: 0xd8ecff, from: 1.4, to: 0.5 } },
   },
   // A landing with weight (pass 92): the knees take it, `drop` m at most for a fall at `ref` m/s or faster.
   land: { rise: 0.04, hold: 0.05, fall: 0.22, drop: 0.2, min: 0.35, ref: 9, lean: 0.18 },

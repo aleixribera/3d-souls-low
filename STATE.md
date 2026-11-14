@@ -4,16 +4,17 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 95): v7.122.0 the counter: `counterOpen` (Player.openCounter) drives sound, slow beat (offline),
-  dim/mark/cut (`js/counter-fx.js`), blade trail, key hint once per body. Light = flash step (`flashStep`), heavy =
-  rising arc. In-page `pass 95`. Judge: window 3 to 7, counter 3 to 8 (`docs/scorecard/anim-p95-counter.jpg`).
-  Next: a body cue for the whole window (judge), then PLAN item 3d.
+- Track A (pass 97): PLAN 3d rough: sparring (`js/sparring.js`, `js/data/sparring.js`, `js/levels/sparring.js`): a
+  pale teacher (Player + BotHands, `Game.teacher`) shows each drill, the player copies it on a partner; before a new
+  player's first Story road / Boss Rush, 3 launch offers to old saves, Practice, lobby; ~50 s. In-page `pass 97` (a
+  bot does each drill). Counter window: halo + closing ring (`counterFx.aura`), judge 3 to 7 twice. Next: Controls
+  clips (BACKLOG), the Finishing Blow's look.
 - Track B (pass 96): v7.123.0 "fixes from Aleix's run" 1-4: one count, the fight (server `tally.won`/`at`, board
   `reached`); no stamina, guard bar or player poise; only `heavy: true` attacks stagger (amber wind-up,
   `VISUALS.heavyTell`); blocks chip (`CONFIG.block`), undeflectable melee is `rollOnly`; no rend; keys bottom centre;
   rares first. Curve back on pass 90's targets with `pace.rise` .55, press 1.3/1.4
   (`docs/scorecard/rush-curve-pass96.txt`, HUD `pass96-hud-*.jpg`). Next: PLAN item 6 (the name), Story's curve.
-  Track A: lessons still name the guard bar (`BACKLOG.md`); `PS.PARRY` is dead.
+  `PS.PARRY` is dead.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Release: `node tools/release.cjs "<title>" "<text>"` (any apostrophe is fine). Don't wait on CI after a push.
 
@@ -67,14 +68,11 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 
 ## wip// branches
 
-None.
-
-## Backlog
-
-In `BACKLOG.md`.
+None. Backlog: `BACKLOG.md`.
 
 ## Needs Aleix
 
+- (overridable) Sparring: a pale teacher shows each of 9 drills, you copy it; skippable.
 - (overridable) The skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`).
 - (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight; titles' wording.
 - (overridable) Endless: modifiers from fight 8, pairs from 9; warm-up bosses at 55-85% health; legendaries a third weaker.

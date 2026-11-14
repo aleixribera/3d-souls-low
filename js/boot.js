@@ -165,6 +165,7 @@ autoQuality.firstRun();   // first launch only: the preset this machine should s
 applySettings();
 $('version').textContent = VERSION;
 Game.showMenu('main');
+sparring.offerAtLaunch();   // a player from before the sparring scene is offered it (js/sparring.js)
 autoQuality.show();
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
@@ -188,7 +189,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Console handle for tuning and testing.
-window.__arena = { Game, story, spectral, STORY, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, ARENA, LESSONS, lessons, worldHints, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, makeStrike,
+window.__arena = { Game, story, spectral, STORY, CONFIG, VERSION, PLAYER_DEF, ITEMS, ENEMY_DEFS, ENEMY_BY_ID, LEVELS, TEST_LEVELS, ALL_LEVELS, TEST_DEFS, crowd, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, ARENA, LESSONS, lessons, worldHints, sparring, SPARRING_DRILLS, TEST_HEIGHTS, TEST_COURTYARD, TEST_MIXED, TEST_TOWN, makeStrike,
                    PS, ES, input, gamepad, hud, settings, camera, renderer, events, validateData, visuals, terrainFor, Enemy, projectiles, finale, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8, LEVEL_9, LEVEL_10, LEVEL_11, LEVEL_12, LEVEL_13, LEVEL_14, lore, LORE,
                    STORIES, realms,
                    get world() { return world; } };

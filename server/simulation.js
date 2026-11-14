@@ -128,7 +128,7 @@ globalThis.host = (() => {
     }
   }
   function catalog() {
-    return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l)).map(l => ({ id: l.id, name: l.name })),
+    return { version: VERSION, levels: ALL_LEVELS.filter(l => !TEST_LEVELS.includes(l) && !l.sparring).map(l => ({ id: l.id, name: l.name })),
       campaigns: STORIES.map(s => ({ id: s.id, name: s.name, chapters: s.chapters.length })),
       defaultAdventure: { ...C.defaultAdventure },
       bosses: ENEMY_DEFS.filter(isBossDef).map(e => ({ id: e.id, name: e.name })) };

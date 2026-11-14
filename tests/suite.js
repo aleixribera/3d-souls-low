@@ -734,6 +734,12 @@
       const s = W.shown;
       expect.ok(s && s.kind === 'counter' && s.word === 'Counter' && s.enemy === p, `the first window of the fight shows the counter's key by the blade (${s && s.kind})`);
       expect.ok(counterFx.state.marks === 1 && counterFx.state.dim > 0, `the foe shows the open mark, the edges dim (${JSON.stringify(counterFx.state)})`);
+      // Pass 97: the body keeps its halo and its closing ring for the whole window, long after the mark has faded.
+      const ring0 = counterFx.state.ring;
+      for (let i = 0; i < 60 && p.riposte > 0.25; i++) { sim.step(); Game.render(1, STEP); }
+      const late = counterFx.state;
+      expect.ok(p.riposte > 0 && late.aura > 0.5 && late.ring > 0 && late.ring < ring0,
+        `late in the window the halo and ring still show, the ring closed in (${ring0.toFixed(2)} to ${late.ring.toFixed(2)} m, aura ${late.aura.toFixed(2)}, ${p.riposte.toFixed(2)} s left)`);
       // The light counter: a flash step through the foe to its far side, one cut that opens a beat later.
       const fx = e.x - p.x, fz = e.z - p.z;
       sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
@@ -767,6 +773,89 @@
       W.reload();
     }
   });
+  // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
+  // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
+  // its drill fails here too.
+  const withSparring = fn => () => {
+    const key = CONFIG.sparring.storageKey; let kept = null;
+    try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
+    try { return fn(A.sparring); } finally {
+      sim.end(); if (A.sparring.active()) A.sparring.skip();
+      A.sparring.forget(kept ? JSON.parse(kept) : {});
+      try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
+    }
+  };
+  test('pass 97 sparring: a new player spars before the first Story road; each drill shows on the teacher, then the player does it', withSparring(S => {
+    sim.begin(); S.forget();
+    let went = 0; S.before(() => went++);
+    Game.loading = 0;
+    const p = Game.player, tb = Game.teacher, e = Game.enemies.find(x => x.def.id === 'sparringPartner');
+    expect.ok(Game.level.id === 'sparring' && S.active() && !went && tb && e, `the ring first, with the teacher and the partner (${Game.level.id}, ${!!tb}, ${!!e})`);
+    const card = document.getElementById('sparCard'), done = [];
+    A.events.on('sparringDrill', d => done.push(d.drill));
+    const teacherUsed = []; A.events.on('abilityPress', d => { if (d.body === Game.teacher) teacherUsed.push(d.ability.id || d.ability); });
+    const toward = name => {   // a demo step's direction, relative to facing the partner, as a world direction
+      const yaw = Math.atan2(e.x - p.x, e.z - p.z);
+      if (name === 'forward') sim.move(Math.sin(yaw), Math.cos(yaw));
+      else if (name === 'left') sim.move(Math.cos(yaw), -Math.sin(yaw));
+      else if (name === 'right') sim.move(-Math.cos(yaw), Math.sin(yaw));
+      else sim.move(null);
+    };
+    for (const D of A.SPARRING_DRILLS) {
+      const acts = new Set();
+      expect.ok(S.state.drill === D.id && S.state.phase === 'show', `${D.id}: shown first (${JSON.stringify(S.state)})`);
+      Game.render(1, STEP);
+      expect.ok(card.classList.contains('show') && card.classList.contains('teach') && card.querySelector('.spar-name').textContent === D.name
+        && card.querySelectorAll('.spar-keys kbd').length >= 1, `${D.id}: its name and keys over the teacher (${card.className}, ${card.textContent})`);
+      sim.until(() => { acts.add(tb.state); return S.state.phase === 'do'; }, D.demo.time + 1);
+      expect.ok(S.state.phase === 'do' && ([...acts].some(s => s !== PS.IDLE && s !== PS.WALK && s !== PS.RUN) || (D.ability && teacherUsed.length > 0)),
+        `${D.id}: the teacher did it (${[...acts].join(', ')}${D.ability ? `, abilities ${teacherUsed.join(' ')}` : ''})`);
+      // The player: the demo's own steps.
+      let from = 0;
+      if (D.swings) {
+        sim.until(() => e.state === ES.WINDUP && e.stateTime < 0.05, CONFIG.sparring.gap + 1);
+        from = D.demo.steps.find(s => s.swing).at;
+      }
+      const t0 = clock, steps = D.demo.steps.filter(s => !s.swing);
+      let k = 0;
+      const ok = sim.until(() => {
+        while (k < steps.length && (clock - t0) >= steps[k].at - from) {
+          const s = steps[k++];
+          if (s.press) sim.press(s.press);
+          if ('move' in s) toward(s.move);
+        }
+        return done.includes(D.id);
+      }, D.demo.time + 1) >= 0;
+      sim.move(null);
+      expect.ok(ok, `${D.id}: the player did it with the demo's keys (${JSON.stringify(S.state)}, hp ${p.hp.toFixed(0)}/${p.maxHp})`);
+      Game.render(1, STEP);
+      expect.ok(card.classList.contains('well'), `${D.id}: the card seals`);
+      sim.until(() => S.state && (S.state.drill !== D.id || S.state.phase === 'ready'), CONFIG.sparring.well + 4);
+      if (!ok) break;
+    }
+    sim.until(() => !S.active(), CONFIG.sparring.ready + 1);
+    expect.ok(!S.active() && went === 1 && S.record.done && S.record.seen, `then the Story road (${went}, ${JSON.stringify(S.record)})`);
+  }));
+  test('pass 97 sparring: skipped from the pause menu it goes on; it runs once for a new player; an old save is offered it three times', withSparring(S => {
+    sim.begin(); S.forget();
+    let went = 0; S.before(() => went++); Game.loading = 0;
+    Game.showMenu('pause');
+    expect.ok(document.getElementById('menuList').textContent.includes('Skip the tutorial'), 'the pause menu offers to skip it');
+    S.skip();
+    expect.ok(!S.active() && went === 1 && S.record.seen && !S.record.done, `skipped, the road goes on (${JSON.stringify(S.record)})`);
+    S.before(() => went++);
+    expect.ok(went === 2 && !S.active(), 'and the next road starts at once');
+    S.forget({ old: true, offers: 2 });
+    S.before(() => went++);
+    expect.ok(went === 3 && !S.active(), 'a player from before is not sent to it');
+    expect.ok(S.offerAtLaunch() && Game.screen === 'sparOffer' && S.record.offers === 3, `but offered it at launch (${Game.screen}, ${S.record.offers})`);
+    expect.ok(!S.offerAtLaunch(), 'once a launch');
+    S.forget({ old: true, offers: 3 });
+    expect.ok(!S.offerAtLaunch(), 'and three launches in all');
+    S.forget({ old: true, offers: 0, done: true });
+    expect.ok(!S.offerAtLaunch(), 'never once played through');
+    Game.showMenu('main');
+  }));
   test('pass 85 anti-mash: a boss under a run of blows breaks off with its own quick attack; ordinary hits never flinch it', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
     const p = Game.player, e = Game.duel, M = CONFIG.enemy.mash; faceOff(e, p, 2); e.cooldown = 30;

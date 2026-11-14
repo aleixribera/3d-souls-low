@@ -253,10 +253,10 @@ const story = (() => {
   const campaigns = Object.fromEntries(STORIES.map(C => [C.id, makeCampaign(C)]));
   let active = campaigns[STORIES[0].id];
   const A = () => active;
-  const startNew = () => {
+  const startNew = () => sparring.before(() => {   // a new player spars first (js/sparring.js)
     const campaign = A();
     Game.loadingFirst(...campaign.card(campaign.chapterIds()[0]), () => campaign.newGame());
-  };
+  });
   events.on('enemyDeath', d => { const e = d.enemy; if (Game.story && e.isBoss()) A().bossBeaten(e); });
   events.on('rest', d => { if (Game.story) A().save(d.bonfire.id); });
   events.on('gateOpened', () => A().autosave());

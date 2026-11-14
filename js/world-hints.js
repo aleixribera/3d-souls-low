@@ -83,7 +83,7 @@ const worldHints = (() => {
   function pick(game) {
     const p = game.player, C = H();
     if (!p || !p.alive() || game.mode !== 'play' || game.loading > 0 || game.kind === 'bossBattle' || p.state === PS.EXECUTE || p.state === PS.HELD
-      || settings.lessons === false || (typeof hud !== 'undefined' && hud.helpOpen())) return false;
+      || settings.lessons === false || (typeof hud !== 'undefined' && hud.helpOpen()) || (game.level && game.level.sparring)) return false;   // the sparring card teaches there
     let bestD = Infinity; pickE = pickKind = null;
     // The counter (pass 95): the first window of a fight shows its key by the blade, over every other hint.
     if (counterHint && p.riposte > 0 && !learned('counter')) { pickE = p; pickKind = 'counter'; pickWord = KINDS.counter.word; return true; }

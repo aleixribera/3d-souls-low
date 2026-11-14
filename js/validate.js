@@ -40,8 +40,11 @@ function validateData({ visual = true } = {}) {
     const Cf = A.counterFx, hex = c => Number.isInteger(c) && c >= 0 && c <= 0xffffff, pos = v => typeof v === 'number' && v > 0 && v < 20;
     need(Cf && Cf.dim && Cf.dim.peak >= 0 && Cf.dim.peak <= 0.8 && num(Cf.dim.in) && num(Cf.dim.out) && Cf.mark && pos(Cf.mark.size) && num(Cf.mark.time) && hex(Cf.mark.color)
       && Cf.trail && hex(Cf.trail.color) && pos(Cf.trail.boost) && Cf.trail.life >= 1 && Cf.trail.life < 6 && Cf.cut && pos(Cf.cut.length) && num(Cf.cut.thin) && Cf.cut.wide > Cf.cut.thin
-      && num(Cf.cut.show) && hex(Cf.cut.color) && Number.isInteger(Cf.cut.sparks) && Number.isInteger(Cf.cut.arcSparks) && Number.isFinite(Cf.cut.tilt),
-      'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad).');
+      && num(Cf.cut.show) && hex(Cf.cut.color) && Number.isInteger(Cf.cut.sparks) && Number.isInteger(Cf.cut.arcSparks) && Number.isFinite(Cf.cut.tilt)
+      && Cf.aura && hex(Cf.aura.color) && pos(Cf.aura.size) && pos(Cf.aura.boost) && Cf.aura.min >= 0 && Cf.aura.min <= 1 && Cf.aura.breath >= 0 && Cf.aura.breath < 0.5
+      && Cf.aura.pulse > 0 && Cf.aura.pulse < 3 && Cf.aura.body >= 0 && Cf.aura.body <= 1 && num(Cf.aura.in) && num(Cf.aura.out)
+      && Cf.aura.ring && hex(Cf.aura.ring.color) && pos(Cf.aura.ring.from) && pos(Cf.aura.ring.to) && Cf.aura.ring.to < Cf.aura.ring.from,
+      'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad), aura (colour, size, boost, min 0 to 1, breath under 0.5, pulse under 3 Hz, body 0 to 1, in and out s, ring colour and from > to m).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
@@ -63,6 +66,19 @@ function validateData({ visual = true } = {}) {
     need(typeof s.on === 'function' || typeof s.check === 'function', `Lesson ${id}: missing completion rule.`);
     need(Array.isArray(s.keys) && s.keys.length > 0 && s.keys.every(k => k === 'move' || k === 'camera' || typeof ACTIONS === 'undefined' || (typeof k === 'string' ? k in ACTIONS
       : !!k && k.action in ACTIONS && typeof k.key === 'string' && ACTIONS[k.action].includes(k.key))), `Lesson ${id}: keys must name actions (or { action, key } with a key bound to it).`);   // the server has no ACTIONS
+  }
+  // The sparring scene's drills (js/data/sparring.js): each names its keys, shows a timed demo and has a completion rule.
+  need(new Set(SPARRING_DRILLS.map(d => d.id)).size === SPARRING_DRILLS.length, 'Sparring: drill ids must be unique.');
+  for (const d of SPARRING_DRILLS) {
+    const tag = `Sparring drill ${d.id}`, steps = d.demo && d.demo.steps;
+    need(typeof d.id === 'string' && typeof d.name === 'string' && d.name.trim() && (typeof d.on === 'function' || typeof d.check === 'function'), `${tag}: needs a name and an on() or check() rule.`);
+    need(Array.isArray(d.keys) && d.keys.length > 0 && d.keys.every(k => k === 'move' || (typeof ACTIONS === 'undefined' ? typeof k === 'string' : k in ACTIONS)), `${tag}: keys must name actions or 'move'.`);
+    need(d.demo && typeof d.demo.time === 'number' && d.demo.time > 0 && Array.isArray(steps) && steps.length > 0
+      && steps.every((s, i) => typeof s.at === 'number' && s.at >= 0 && s.at < d.demo.time && (i === 0 || s.at >= steps[i - 1].at)
+        && ('press' in s ? typeof ACTIONS === 'undefined' || s.press in ACTIONS : 'move' in s ? [null, 'left', 'right', 'forward'].includes(s.move) : s.swing === true)),
+      `${tag}: demo needs time > 0 and steps in order, each at a time inside it that presses an action, moves (left, right, forward or null) or swings.`);
+    need(!d.ability || ABILITIES.some(b => b.id === d.ability), `${tag}: unknown ability ${d.ability}.`);
+    need(d.hurt === undefined || (typeof d.hurt === 'number' && d.hurt > 0 && d.hurt < 1), `${tag}: hurt is the share of health left, 0 to 1.`);
   }
   const num = v => typeof v === 'number' && Number.isFinite(v);
   need(BOSS_TEAMS.length === 2 && new Set(BOSS_TEAMS.map(t => t.id)).size === 2,
