@@ -4,9 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-- Track A (pass 77): item 4, the Antlered Hunger pass 1: learns each move you escape, a lit antler collar per move;
-  `docs/scorecard/hunger-moves.jpg`; judge 62, 66, 63 vs Hollis 75, 72, 74 (gaps: BACKLOG). It, Aldric, the
-  Giant, Bell Warden, Pillager Captain, King's Blade, Agathe, Kindling Tree: **awaiting Aleix**. Next: item 5.
+- Track A (pass 79): item 5 pass 1: 5 flasks found (4 -> 9), a climb by chapter; bot wins 75% -> 84%
+  (`docs/scorecard/story-climb-pass79.txt`, `flask-find-*.jpg`). 8 bosses **awaiting Aleix**. Next: item 6.
 - Track B (pass 80): the Lancer of Ash's own Blender model (`docs/scorecard/summon-lancer.jpg`), solid ash plate,
   violet cinders (overridable: was a ghost); CI's red render-audit test fixed. Next: the summons' own moves.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
@@ -48,15 +47,14 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
   (an enemy's `holyLight`), `kings-blade.js` (own moves since pass 55); each an old
   boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
-  `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only: darken with
-  another texture. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
+  `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30): `LEVEL_14.ending`, `LORE.endings['still-mere']`, the credits in `js/finale.js`; checked
   by the in-page `King's Blade's death` and `Still Mere:` tests and `tests/campaign-browser.cjs`.
-  `solo-browser.cjs` fails if the page throws while loading (a suite with a syntax error used to drop its tests unseen).
+- Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
+  in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
 - Bots: temperaments, strings, executions, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
   `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (10 min; `PERSON=1`: a person stand-in).
-- CI: Node checks and four browser shards on every push.
-- Scorecard evidence: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
+- Scorecard frames: `node tools/scorecard-frames.cjs [dir] [menu|levels|bosses]`.
 - Capture scripts (untracked, `.scratch/`): `lab-many.cjs <ids> [anim] [t]` (model lab), `lab-zoom.cjs`,
   `enemy-play.cjs <q> <dist> <levelId|arena> <enemyId[#n]>`, `lab-probe.cjs <id>`, `solo-multi.cjs "<f>" "<f>" ...`.
 
@@ -86,6 +84,8 @@ In `BACKLOG.md`.
   health); Bell Warden, Oswin, Ostrey, Varn 75-90% health in Boss Rush; legendaries a third weaker; "N bosses beaten".
 - (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
 - (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
+- (overridable) Story's bosses 0.8x pace, 0.75x health in chapter 1 to 1.1x / 1x; 5 flasks found (ch. 2, 4, 6, 9,
+  12), a warm light at a corpse, taken on touch.
 - (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
   the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
 - (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.

@@ -22,6 +22,14 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel
   reads as flat red at fighting distance.
 
+- Story's road, after item 5's pass 1 (pass 79, `docs/scorecard/story-climb-pass79.txt`, `flask-find-*.jpg`):
+  - The finds are lights only (a core, a haze, a thin shaft at a corpse already in the level): a Blender flask in the
+    dead hand, and a pickup pose, would read better.
+  - The bot drinks 0-1.2 flasks a fight, so `tools/story-curve.cjs` barely sees the found flasks; a person gains more.
+  - Low with the climb: the Kindling Tree 66%, Ostrey 72%, Hale and Harrow 75%, Oswin 75%, the Bell Warden 78%. A
+    chapter's `might` can ease one; Practice and co-op count the finds before the level, which Story gives on touch.
+  - Enemies' posture and stagger don't climb; only pace, health and damage do.
+
 - Aldric, after his pass 1 (pass 75; a blind judge 75, then 77 after the Iron Shoulder fix, vs Hollis 82;
   `docs/scorecard/aldric-moves.jpg`). Done: his own Blender greatsword in both hands and 12 own poses
   (`js/data/bosses/aldric.js`), the Ember's `mend` (each attacker's wound closes once they stop; a break seals it),
