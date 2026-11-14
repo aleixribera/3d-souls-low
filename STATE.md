@@ -7,10 +7,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track A (pass 86): item 3 pass 2: keys beside the foe (Attack, Deflect, Dodge) from the bindings, until done 3
   times (`js/world-hints.js`, in-page `World hints`, `world-hint-*.jpg`); CI's 3/4 timeout fixed (a test left ~360
   figures in the scene). Next: lessons' words on the new moves; then re-tune Story once the moveset is the only one.
-- Track B (pass 85): rework items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`). Next, in order: (1) ability
-  triggers, 1-4 keys; (2) own poses for the new moves, bots on them (0.2 s i-frames, deflects); (3) Boss Rush bosses
-  and curve (item 4); (4) item 5's proof and clips, then the only moveset. Track A: lessons and hints still say
-  stamina/parry; dash and jump attacks want hints.
+- Track B (pass 87): items 1-2 rough (in-page `pass 85`, `moveset-*.jpg`); abilities on keys 1-4 (`ABILITY_KEYS`,
+  `CONFIG.abilities.press`), filled by blows, deflects, dodges, executions; Boss Rush locks a filled key (in-page
+  `pass 87`, `tests/abilities.cjs`, `number-keys-*.jpg`). Dash i-frames 0.3 s again (CI's 3 boss tests). Next: (1)
+  own poses for the new moves, bots on them; (2) Boss Rush bosses and curve (item 4); (3) item 5's proof, then the
+  only moveset. Track A: lessons say stamina/parry; dash/jump attacks and keys 1-4 want hints; Story gives none.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -61,8 +62,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - `boss-only` (Node) is flaky: see `BACKLOG.md`.
 - In-page `Still Mere: the Oath Guard answers` flaked once in CI (pass 57).
-- CI since v7.109.0 (shorter i-frames): in-page `v4.2.4 bosses` (giant sweep), `Aldric: every strike leaves`,
-  `Night Gaol: the Ringer` (fetterStamp) fail; boss timings vs the dash: track B item 4, or the tests.
 - `lobby-polish-browser` (not in CI): flaky, a click times out now and then (passes 8, 52).
 
 ## Queued runs

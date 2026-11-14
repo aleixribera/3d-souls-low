@@ -2,6 +2,12 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- **Keys 1-4, after pass 87 (track B):** pressed abilities fill from play (`CONFIG.abilities.press`). Not yet: Story
+  gives no pressed ability (track A: four given abilities along the road, one a key); Thunder Call and Cataclysm reuse
+  Storm King's and Meteor Fall's effects, not their own; bots press a full key at once (heal when hurt, stance on a
+  wind-up), untuned; a press the server refuses spends the client's charge with no reply to refund it; no online test
+  of a dodged multi-hit string filling once (the server counts one per attack, the client too since the review).
+
 - **World hints, after pass 86 (track A):** keys beside the foe for Attack, Deflect, Dodge. Not yet: a hint for the
   dash attack, the finisher, jump attacks and the flask in the world (the HUD's "Press E to heal" stays); the lesson
   cards still teach the old moves in places (stamina, the parry's words). A test that empties `Game.enemies` without
