@@ -2,6 +2,11 @@
 
 The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`.
 
+- Crates, after item 7's pass 1 (pass 71): no emotes yet (the plan names them; needs an emote system); no common
+  crate ability; once everything is owned a crate gives a duplicate ("already yours") and nothing more; xp only from
+  Boss Rush (not Story or Practice); the Collection draws blade looks as flat icons, not on the 3D sword; Bloodsteel
+  reads as flat red at fighting distance.
+
 - The Pillager Captain, after his pass 2 (pass 66; judge vs Hollis 4-6 vs 5-7). Pass 66 gave the strikes their own
   ends (`docs/scorecard/captain-ends.jpg`), a bigger hook and spike, bots that step out of fires, and a check that a
   parry glint sits only on a parryable hit. Left:

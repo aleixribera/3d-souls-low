@@ -9,7 +9,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   the Waking at half health (chains fall, `hum` glow). Strips `docs/scorecard/warden-moves.jpg`; blind judge 76 vs
   Hollis 58; bots 3: 6/6 43 s 161 dmg, solo 3/4. Leftovers in `BACKLOG.md`. He, the Pillager Captain, the King's Blade,
   Agathe, the Kindling Tree: **awaiting Aleix**. Next Track A: the third of Ashmere's bosses by PLAN.md item 4.
-- Track B (pass 70): pick feedback done (frames `docs/scorecard/pick-*.jpg`, `pause-abilities.jpg`). Next: item 7.
+- Track B (pass 71): item 7 done (pass 1): `CRATES`, `js/progress.js`, `js/crate-screen.js`, `setGear`; `tests/crates.cjs`,
+  frames `docs/scorecard/crate-*.jpg`. Next: item 11.
 - Lean files (pass 36): one `STORY.md`; old docs: `git show v7.56.0:docs/<file>`.
 - Trap: a changelog text with an apostrophe must be written with Edit as `\'` and parsed (`node -e` vm) before
   commit (Python and Git Bash heredocs drop backslashes).
@@ -72,7 +73,7 @@ None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cj
 
 ## wip// branches
 
-- `wip/crates` (pass 70): item 7's data (`js/data/crates.js`) and two crate abilities, not wired in.
+None.
 
 ## Backlog
 
