@@ -155,6 +155,7 @@ const CONFIG = {
   restartConfirmTime: 2.2,   // R must be pressed twice within this time to restart mid-fight
   enemy: { hitstopScale: 0.0022, hitstopBase: 0.05, hitstopMax: 0.16, knockFriction: 7, accel: 14,
            windupTrack: 0.7,   // fraction of the wind-up during which the enemy still turns
+           counterArc: 1.0,    // a counter stance (a hit's `counter`, pass 55) turns blows from within this many rad of its front
            firstDelay: [0.6, 1.0],   // delay before a fresh enemy's first attack (an enemy can override)
            // A boss back on its feet after a posture break builds posture at `mul` for `time` s (v7.65.0): it gets to
            // fight before the next break, however many blades are on it, so a break stays a moment, not a loop.
@@ -658,7 +659,9 @@ const CONFIG = {
         goldbark: { size: 256, tile: 5, base: 0x8a6628, alt: 0xb08a42, accent: 0xe8bc64, accentMix: 0.25, rough: 0.7, grain: 9 },
         emberbark: { size: 256, tile: 5, base: 0x4a2a1c, alt: 0x7a5034, accent: 0xc87a3a, accentMix: 0.3, rough: 0.8, grain: 9, ember: 0.35 },
         palebark: { size: 256, tile: 5, base: 0x9a8e7e, alt: 0xd0c4b0, accent: 0x6a5e50, accentMix: 0.45, rough: 0.9, grain: 9 },
-        ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 } },
+        ash: { size: 256, tile: 6, base: 0x5a544e, alt: 0x7a726a, accent: 0x262220, accentMix: 0.6, rough: 1, ember: 0.9 },
+        // `cracks`: thin pale lines through it (pass 55, the frozen mere), that much of the accent.
+        ice: { size: 512, tile: 14, base: 0x3e5260, alt: 0x6a8494, accent: 0xc8dae6, accentMix: 0.15, rough: 0.22, cracks: 0.75 } },
       // Distant bolt geometry/lifetime. Shared surface lighting is tuned in effectLight.storm.
       // `pool` bolts are built with the realm and reused. The flash is `pulses` [[start s, strength]], each fading at `decay`/s:
       // two distinct pulses 0.4 s apart (under 3 Hz, never a rapid flicker); reduced motion keeps the first, capped.

@@ -62,6 +62,20 @@ function emitAttackEvents(actor, a, t0, t1) {
   }
 }
 
+// One still key pose, weighted k (0..1), added onto the rig as poseAttackKeys adds its keys (pass 55: a boss's own
+// `brokenPose`). `kneel` sets one knee down that far (Rig.kneel) before the rest is added.
+function applyKeyPose(rig, pose, k) {
+  if (pose.kneel) rig.kneel(pose.kneel * k);
+  for (const name in pose) {
+    if (name === 'kneel') continue;
+    if (name === 'crouch' || name === 'lean') continue;
+    const bone = rig.bones ? rig.bones[name] : rig[name], v = pose[name];
+    if (bone) { bone.rotation.x += v[0] * k; bone.rotation.y += v[1] * k; bone.rotation.z += v[2] * k; }
+  }
+  if (pose.crouch > 0) rig.crouch(pose.crouch * k);
+  if (pose.lean) rig.lean(pose.lean * k);
+}
+
 // Draw side: the blended key pose at time tt into the attack. Bones the rig lacks (a box body has no chest or elbows)
 // are skipped. Returns the blade glint strength (0..1) from `glint` markers.
 // charge: 0..1 of a held heavy; the pose's `charge` key pose is added that much through the wind-up and unwinds

@@ -50,6 +50,7 @@ if (DEV) (() => {
     if (def) {
       for (const a of def.attacks) lab.modes.push({ name: a.name, type: 'attack', a });
       lab.modes.push({ name: 'hurt', type: 'hurt' }, { name: 'stagger', type: 'stagger' }, { name: 'parried', type: 'parried' }, { name: 'death', type: 'dead' });
+      if (def.posture || def.guard || def.stagger) lab.modes.push({ name: 'broken', type: 'broken' });
     }
     if (lab.player) {
       const A = PLAYER_DEF.moveset.attacks;
@@ -72,20 +73,21 @@ if (DEV) (() => {
     switch (m.type) {
       case 'walk': e.state = ES.CHASE; e.vz = d.speed; e.walkPhase += d.speed * dt * 2.6 / d.scale; break;
       case 'attack': {
-        const a = m.a; e.attack = a; let t = tt % (a.hits.reduce((s, h) => s + h.startup + h.active, 0) + a.recovery + 0.8);
+        const a = m.a; e.attack = a; let t = tt % (a.hits.reduce((s, h) => s + h.startup + h.active + (h.follow || 0), 0) + a.recovery + 0.8);
         e.state = ES.RECOVER; tt = t;
         for (let i = 0; i < a.hits.length; i++) {
           const h = a.hits[i]; e.hitIndex = i;
           if (t < h.startup) { e.state = ES.WINDUP; tt = t; break; }
           t -= h.startup;
-          if (t < h.active) { e.state = ES.ACTIVE; tt = t; break; }
-          t -= h.active; tt = t;
+          if (t < h.active + (h.follow || 0)) { e.state = ES.ACTIVE; tt = t; break; }   // as in the game, the follow-through is part of ACTIVE
+          t -= h.active + (h.follow || 0); tt = t;
         }
         break;
       }
       case 'hurt': e.state = ES.HURT; tt = tt % (d.flinchTime + 0.8); break;
       case 'stagger': e.state = ES.STAGGER; tt = tt % (d.staggerTime + 0.6); break;
       case 'parried': e.state = ES.PARRIED; tt = tt % (d.parriedTime + 0.6); break;
+      case 'broken': e.state = ES.BROKEN; tt = tt % ((d.posture || d.guard || d.stagger).breakTime + 0.6); break;
       case 'dead': e.state = ES.DEAD; tt = tt % (CONFIG.enemy.deathFade + 0.8); break;
       default: e.state = ES.IDLE;
     }
@@ -98,7 +100,7 @@ if (DEV) (() => {
     switch (m.type) {
       case 'pattack': {
         const a = m.a; p.attack = a; p.state = PS.ATTACK;
-        tt = tt % (a.hits.reduce((s, h) => s + h.startup + h.active, 0) + a.recovery + 0.6); break;
+        tt = tt % (a.hits.reduce((s, h) => s + h.startup + h.active + (h.follow || 0), 0) + a.recovery + 0.6); break;
       }
       case 'pstate':
         p.state = m.s; tt = tt % (m.len ?? 1.5); p.stunTime = m.s === PS.STAGGER ? CONFIG.player.staggerTime : CONFIG.player.hurtTime;

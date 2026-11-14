@@ -588,9 +588,13 @@ lake under a white tree. The player comes down the tree's white boughs, through 
 carrying the dying Ember to drown it.
 
 **The King's Blade** waits on the ice: the hunger, beaten in every body it wore, in the last one it kept, the champion's
-burned-out memory. Red scarf, round shield, the King's sword. It fights as the player fights: the three cuts, the held
-blow, the leap; its shield turns blows from the front and answers them. Past half the Ember shows through it, and the
-bar names it **the King's Blade, Ember-Worn**. Who it was is never said.
+burned-out memory. Red scarf, round shield, the King's sword. Before he was the king's sword he was the king's shield,
+and the shield is what the memory kept: it waits behind it in the Oath Guard, and a blow into its front is turned and
+answered. Break its stance with a heavy, circle it, or wait for the sword over the rim. Every time its guard breaks it
+kneels as the champion knelt at Corvel, the sword planted point-down in the ice. Past half the Ember shows through it,
+and the bar names it **the King's Blade, Ember-Worn**: the hunger takes the memory and does what the champion refused.
+The sword is raised like a torch, the shield burns and the guard is gone; landing three blows through Corvel Burns
+makes the memory refuse again, and it kneels. Who it was is never said.
 
 The **Drowned** are thralls who walked into the mere so the hunger would have nothing left to hold, and stayed under.
 They lie in the shallows until you pass.

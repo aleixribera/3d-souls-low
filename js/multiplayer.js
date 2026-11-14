@@ -1385,7 +1385,7 @@ const multiplayer = (() => {
     if (!hitIds.has(hb)) hitIds.set(hb, String(++swing));
     command('hit', { enemy: e.netId, attack: strike.attackId, swing: hitIds.get(hb), charge: strike.charge || 0, riposte: strike.riposte });
     e.tint = 1; e.recoil = 1;
-    return { blocked: e.guarding() && isInFront(e, Game.player.x, Game.player.z), broke: false, died: false };
+    return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || e.counterAgainst(Game.player, strike.attackId) === 'turn', broke: false, died: false };   // a counter stance turns it (pass 55)
   }
   function parry(e) { command('parry', { enemy: e.netId, serial: e.netSerial }); e.netParried = e.netSerial; return e.getParried(); }
   function lifesteal(e) { command('lifesteal', { enemy: e.netId, serial: e.netSerial, hitIndex: e.hitIndex }); }

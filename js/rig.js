@@ -55,6 +55,7 @@ class Rig {
     this.weapon = pivot(this.armR, 0, -0.6, 0);
     W.build((geo, mat, x, y, z) => part(this.weapon, geo, mat, x, y, z), this.weaponMat, dark);
     this.warnGlow = makeWarnGlow(); this.weapon.add(this.warnGlow);   // wind-up halo, readable through any fog
+    this.shieldGlow = null;   // a model with a `shieldTell` (js/bodykit.js): the same halo on its shield
     if (visual && visual.embers) this.embers = addWeaponEmbers(this.weapon, W);   // section 9b
     if (visual && visual.cloak) part(this.spin, new THREE.BoxGeometry(0.6, 1.15, 0.05), dark, 0, 0.05, -0.19);   // a cloak down the back
     if (offhand) {
@@ -206,17 +207,25 @@ class Rig {
     return bend;
   }
   setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
-  setWarning(k, color = WARN_COLOR) {
-    this.weaponMat.color.copy(this.weaponBase).lerp(color, k);
-    this.weaponMat.emissive.copy(color).multiplyScalar(k * 1.6);
+  // shield: the blow coming is the shield's (a hit's `tell: 'shield'`), so a model with a `shieldTell` glows there
+  // instead of on its weapon.
+  setWarning(k, color = WARN_COLOR, shield = false) {
+    const S = shield ? this.shieldGlow : null, kw = S ? 0 : k;
+    this.weaponMat.color.copy(this.weaponBase).lerp(color, kw);
+    this.weaponMat.emissive.copy(color).multiplyScalar(kw * 1.6);
     const G = color === WARN_COLOR ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
     this.warnGlow.material.color.setHex(G.color).multiplyScalar(G.boost);
-    this.setGlow(k);
+    if (this.shieldGlow) {
+      this.shieldGlow.material.color.copy(this.warnGlow.material.color);
+      this.shieldGlow.visible = !!S && k > 0.002; this.shieldGlow.material.opacity = S ? k * CONFIG.VISUALS.windupGlow.opacity : 0;
+    }
+    this.setGlow(kw);
   }
   setFlash(k) {
     this.weaponMat.color.copy(this.weaponBase).lerp(HIT_COLOR, clamp(k, 0, 1));
     this.weaponMat.emissive.copy(HIT_COLOR).multiplyScalar(k * 2.5);
     this.setGlow(0);
+    if (this.shieldGlow) this.shieldGlow.visible = false;
   }
   setGlow(k) { this.warnGlow.visible = k > 0.002; this.warnGlow.material.opacity = k * CONFIG.VISUALS.windupGlow.opacity; }
   setOpacity(a) {
@@ -238,7 +247,7 @@ class Rig {
     scene.remove(this.root, this.shadow);
     this.root.traverse(o => { if (o.isMesh && !o.geometry.userData.shared) o.geometry.dispose(); });
     for (const m of this.mats) m.dispose();
-    this.shadow.material.dispose(); this.warnGlow.material.dispose();
+    this.shadow.material.dispose(); this.warnGlow.material.dispose(); if (this.shieldGlow) this.shieldGlow.material.dispose();
     if (this.glows) for (const g of this.glows) g.mat.dispose();
     if (this.skeleton) this.skeleton.dispose();
     if (this.glint) this.glint.sprite.material.dispose();

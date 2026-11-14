@@ -1648,6 +1648,8 @@ const KIT = (() => {
       if (!(M.posture && M.posture.elbowR && M.posture.elbowL)) bad('grip needs posture.elbowR and posture.elbowL (Rig.holdHaft turns the forearms from them every frame).');
     }
     if (M.eyes && 'halo' in M.eyes && !(typeof M.eyes.halo === 'number' && M.eyes.halo >= 0 && M.eyes.halo <= 1)) bad('eyes.halo (the glow round the eyes) must be an opacity from 0 to 1.');
+    if ('guardArm' in M && !(M.guardArm && typeof M.guardArm === 'object' && Object.keys(M.guardArm).length > 0 && Object.entries(M.guardArm).every(([b, v]) => ['armL', 'elbowL'].includes(b) && Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && Math.abs(x) <= Math.PI)))) bad('guardArm sets armL and/or elbowL to [x, y, z] (rad) while the shield is up.');   // (pass 55)
+    if ('shieldTell' in M && !(M.shieldTell && known(M.shieldTell.bone) && Array.isArray(M.shieldTell.at) && M.shieldTell.at.length === 3 && M.shieldTell.at.every(Number.isFinite))) bad('shieldTell is { bone, at: [x, y, z] }: where on which bone the shield\'s wind-up halo shows.');   // (pass 55)
     if ('weaponRest' in M && !(typeof M.weaponRest === 'number' && M.weaponRest >= -1.6 && M.weaponRest <= 1.6)) bad('weaponRest must be an angle from -1.6 to 1.6.');   // (pass 48) below -0.5 a long haft stands upright, like a crook
     if (M.weapon) {
       if (!(M.weapon.use in KIT_WEAPONS)) bad(`unknown weapon "${M.weapon.use}".`);
@@ -1737,11 +1739,16 @@ const KIT = (() => {
     }
     if (M.breathFrom) rig.breathFrom = rig.bones[M.breathFrom];   // (v7.58.0, opt-in) where a `breath` attack's fire comes from
     rig.fit = M.fit ?? 1;
+    if (M.guardArm) rig.guardArm = M.guardArm;   // (pass 55, opt-in) how the shield arm is held while it guards (Enemy.pose)
     if (M.weaponRest != null) rig.weaponRest = M.weaponRest;   // (pass 42, opt-in) the same for a weapon baked into the figure
     if (M.weapon && M.weapon.rest != null) rig.weaponRest = M.weapon.rest;   // (v7.43.0, opt-in) the angle a resting weapon hangs at
     rig.rest = Object.entries(M.posture || {}).map(([b, r]) => [rig.bones[b], r]);
     if (M.grip) { rig.grip = { y: -0.045, gap: 0.2, fist: 0.06, ...M.grip }; rig.gripWrist = rig.weapon.position.clone(); rig.haftNow = [...M.grip.rest]; rig.gripW = 0; rig.gripZ = 0; rig.haftW = 1; }   // (pass 53, opt-in) a two-handed haft: Rig.holdHaft
     rig.warnGlow = makeWarnGlow(); rig.weapon.add(rig.warnGlow);
+    rig.shieldGlow = null;
+    if (M.shieldTell) {   // (pass 55, opt-in) the wind-up halo on the shield, for hits whose blow is the shield's (`tell: 'shield'`)
+      rig.shieldGlow = makeWarnGlow(); rig.bones[M.shieldTell.bone].add(rig.shieldGlow); rig.shieldGlow.position.set(...M.shieldTell.at);
+    }
     // A glint of light that flashes along the weapon as a strike begins (driven by the animator): at the far end of the
     // weapon's own geometry, so every weapon gets one without data.
     const box = built.weaponBox;

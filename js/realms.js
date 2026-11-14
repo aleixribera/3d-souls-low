@@ -19,14 +19,14 @@
 //   blooms    [{ x, y?, z, r, count? }]: scarlet rot flowers scattered on a floor
 //   beams     colour: a pillar of grace light over every bonfire, seen from afar (the way on)
 //   pillars   [{ x, z, y0, y1, r, color }]: colossal columns on the horizon
-//   grounds   [{ kind: 'earth' | 'snow' | 'bark' | 'goldbark' | 'emberbark' | 'palebark' | 'ash', rooms: [ids] }]: a natural surface laid
+//   grounds   [{ kind: 'earth' | 'snow' | 'bark' | 'goldbark' | 'emberbark' | 'palebark' | 'ash' | 'ice', rooms: [ids] }]: a natural surface laid
 //             over those rooms' floors (earth and grass on a heath, the grain of a branch, snow, ash with embers in it); it
 //             leaves out trap floors, and sits under blood and cracks
 // Tuning: CONFIG.VISUALS.realms. Quality: particle counts follow the preset's `particles` (more on Ultra), floaters,
 // stars and the tree's crown follow it too. Lightning shares a persistent directional surface light
 // with js/effect-lighting.js; its small ambient fill is summed without changing shader light counts.
 const REALM_KEYS = ['tree', 'stars', 'lightning', 'weather', 'clouds', 'floaters', 'dragon', 'halos', 'runes', 'pools', 'roots', 'blooms', 'beams', 'pillars', 'grounds'];
-const REALM_GROUNDS = ['earth', 'snow', 'bark', 'goldbark', 'emberbark', 'palebark', 'ash'];
+const REALM_GROUNDS = ['earth', 'snow', 'bark', 'goldbark', 'emberbark', 'palebark', 'ash', 'ice'];
 const REALM_WEATHER = ['rain', 'snow', 'leaves', 'motes', 'spores', 'ash', 'petals'];
 const REALM_TREES = ['golden', 'burnt', 'haligtree'];
 const REALM_POOLS = ['rot', 'gold', 'water'];
@@ -500,6 +500,8 @@ void main() {
       let a = fbm(u, v, 8, 5), b = fbm(u * 2.3 + 7, v * 2.3 + 3, 8 * 2.3, 4);
       if (K.grain) { a = fbm(u * 0.35, v * 3, 8 * 0.35, 4) * 0.75 + 0.28 * Math.abs(Math.sin((v + fbm(u * 0.5, v, 4, 3) * 1.1) * K.grain)); }
       c.copy(base).lerp(alt, smooth(clamp((a - 0.42) * 3, 0, 1))).lerp(acc, smooth(clamp((b - 0.62) * 4, 0, 1)) * K.accentMix);
+      if (K.cracks) { const q = Math.abs(fbm(u * 0.9 + 3, v * 0.9 + 9, 8 * 0.9, 4) - 0.5), r = Math.abs(fbm(u * 2.1 + 5, v * 2.1 + 1, 8 * 2.1, 3) - 0.5);   // ice: the ridges of two noises
+        c.lerp(acc, Math.max(smooth(clamp(1 - q / 0.009, 0, 1)), smooth(clamp(1 - r / 0.006, 0, 1)) * 0.35) * K.cracks); }
       const k = 0.85 + 0.3 * fbm(u * 6, v * 6, 48, 2), i = (y * N + x) * 4;
       img.data[i] = clamp(c.r * k, 0, 1) * 255; img.data[i + 1] = clamp(c.g * k, 0, 1) * 255; img.data[i + 2] = clamp(c.b * k, 0, 1) * 255; img.data[i + 3] = 255;
       if (eimg) { const e = Math.max(0, fbm(u * 4 + 11, v * 4 + 5, 32, 3) - 0.66) * 8 * (b > 0.5 ? 1 : 0.3); eimg.data[i] = 255 * Math.min(1, e); eimg.data[i + 1] = 110 * Math.min(1, e); eimg.data[i + 2] = 30 * Math.min(1, e); eimg.data[i + 3] = 255; }

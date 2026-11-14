@@ -15,7 +15,7 @@ const LEVEL_14 = {
   ending: true,   // the story's end: no LEVEL COMPLETE; the King's Blade kneels, then the mere's cards and the credits (js/finale.js)
   name: 'Level 14: The Still Mere',
   description: 'There is one water in Thrale that never burned: a frozen lake under a white tree. Down the white boughs, through the drowned court, to the shore. Something waits on the ice, wearing your face.',
-  help: 'Level 14: the boughs have no rail: a fall is death. The Drowned lie under the shallows until you pass. On the ice, the one who waits fights as you fight: its shield turns blows from the front, so circle it, or hit it as it swings.',
+  help: 'Level 14: the boughs have no rail: a fall is death. The Drowned lie under the shallows until you pass. On the ice, the one who waits fights as you fight. When it stands behind its shield, a blow into its front is turned and answered: break the stance with a heavy, circle it, or wait for the thrust. When it raises the torch, strike it, and it remembers.',
   wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5, flasks: 9,
   atmosphere: { background: 0x2a3038, fog: 0x8a94a0, fogDensity: 0.0095,
                 moon: { color: 0xf0f4ff, intensity: 2.3, position: [-30, 40, 16] },
@@ -36,7 +36,7 @@ const LEVEL_14 = {
     pools: [{ rect: [121, 138, -61, -49], kind: 'water' }, { rect: [146, 163, -46, -33], kind: 'water' }, { rect: [126, 137, -40, -33], kind: 'water' },
             { rect: [186, 196, -58, -52], kind: 'water' }],
     beams: 0xe0ecff,
-    grounds: [{ kind: 'snow', rooms: ['white-bough', 'bough-fork', 'shore-yard', 'mere-shore'] }, { kind: 'palebark', rooms: ['first-bough', 'twig'] }],
+    grounds: [{ kind: 'snow', rooms: ['white-bough', 'bough-fork', 'shore-yard', 'mere-shore'] }, { kind: 'palebark', rooms: ['first-bough', 'twig'] }, { kind: 'ice', rooms: ['the-mere'] }],
   },
   start: { x: 4, y: 24, z: 0, yaw: Math.PI / 2 },
   rooms: [

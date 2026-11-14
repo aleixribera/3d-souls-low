@@ -34,6 +34,7 @@ const FILES = {
   'oswin': { sources: ['oswin'] },
   'agathe': { sources: ['agathe'] },
   'kindling-tree': { sources: ['kindling_tree'] },
+  'kings-blade': { sources: ['kings_blade'] },
 };
 
 function readGlb(file) {

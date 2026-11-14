@@ -13,24 +13,55 @@
     expect.ok(A.STORY.chapters[13].level === 'still-mere' && A.STORY.chapters[13].title === 'THE STILL MERE', 'chapter 14 of the Story');
     expect.ok(A.LEVEL_13.next === 'still-mere', 'the Levels menu carries on from the Root of the Ember too');
   });
-  test('Still Mere: the King\'s Blade fights with the player\'s own moves, within the boss rules', () => {
-    const d = A.ENEMY_BY_ID.kingsBlade, ids = new Set(d.attacks.map(a => a.id)), P = A.PLAYER_DEF.moveset.attacks;
-    for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2, `${a.id}: active ${h.active}`);
+  test('Still Mere: the King\'s Blade waits behind its shield and answers, within the boss rules', () => {
+    const d = A.ENEMY_BY_ID.kingsBlade, ids = new Set(d.attacks.map(a => a.id));
+    for (const a of d.attacks) for (const h of a.hits) expect.ok(h.active <= 0.2 || (h.box || a.box).ring, `${a.id}: active ${h.active}`);
     for (const Ph of Object.values(d.phases)) for (const id of Ph.attacks) expect.ok(ids.has(id), `phase move ${id} exists`);
     for (const a of d.attacks) for (const f of a.followUps || []) expect.ok(ids.has(f.attack), `${a.id} follows up into ${f.attack}`);
+    for (const a of d.attacks) expect.ok(a.pose && a.pose.startsWith('kb') && ATTACK_POSES[a.pose], `${a.id}: its own key poses (${a.pose})`);
     const by = id => d.attacks.find(a => a.id === id);
-    // The player's three cuts, chained as the player chains them, with the player's own poses and reach.
-    expect.ok(by('firstCut').pose === P.light.pose && by('secondCut').pose === P.light2.pose && by('thirdCut').pose === P.light3.pose, 'the three cuts\' poses are the player\'s');
-    expect.ok(by('firstCut').box.d === P.light.box.d && by('firstCut').hits[0].active === P.light.hits[0].active, 'their reach and strike are the player\'s');
-    expect.ok(by('firstCut').followUps[0].attack === 'secondCut' && by('secondCut').followUps[0].attack === 'thirdCut', 'first into second into third');
-    expect.ok(by('heldBlow').pose === P.heavy.pose && by('heldBlow').hits[0].hold, 'the held blow is the player\'s charged heavy');
-    expect.ok(by('leapingBlow').hits[0].leap, 'the leaping blow is the player\'s jump heavy');
-    expect.ok(d.attacks.some(a => a.when === 'healing') && d.attacks.some(a => a.when === 'shielded') && d.guard, 'it punishes a drink, and its shield turns blows and answers them');
+    expect.ok(!d.attacks.some(a => A.PLAYER_DEF.moveset.attacks[a.id]), 'none of the player\'s moves any more');
+    const oath = by('oathGuard').hits[0];
+    expect.ok(oath.counter && oath.counter.answer === 'theAnswer' && by('theAnswer').chance === 0 && d.phases.blade.attacks.includes('oathGuard'), 'the Oath Guard turns a blow and answers it');
+    expect.ok(by('corvel').hits[0].falter && by('corvel').hits[0].falter.hits === 3 && d.phases.emberWorn.attacks.includes('corvel'), 'Corvel Burns falters under three blows');
+    expect.ok(d.attacks.some(a => a.when === 'healing') && d.attacks.some(a => a.when === 'behind') && d.attacks.some(a => a.when === 'flank') && d.guard, 'it punishes a drink, a back and its shield side');
     const E = d.phases.emberWorn;
-    expect.ok(E.at === 0.5 && E.opener === 'emberLeap' && E.ignite && E.name === 'The King\'s Blade, Ember-Worn', 'past half the Ember shows through');
-    expect.ok(by('thirdCutBurning').followUps.some(f => f.attack === 'heldBlow'), 'and the third cut runs on into the held blow');
+    expect.ok(E.at === 0.5 && E.opener === 'torchTaken' && E.ignite && E.guard === null && E.name === 'The King\'s Blade, Ember-Worn', 'past half the hunger takes the torch, and the guard is gone');
+    expect.ok(d.brokenPose && d.brokenPose.kneel === 1, 'every break is the refusal: knelt');
+    expect.ok(d.hp === 3000, 'its health is kept');
     expect.ok(BOSS_FX.kingsBlade && BOSS_FX.kingsBlade.phases.emberWorn === 'fire', 'its effects are written, fire once the Ember shows');
     expect.ok(!OLD.test(JSON.stringify(d.attacks.map(a => a.name)) + d.name + d.description), 'no names of the old road');
+    expect.ok(MODEL_DEFS.kingsBlade.parts.length > 30 && MODEL_DEFS.kingsBlade.parts.every(p => p.use === 'baked'), 'its own Blender figure');
+    for (const a of d.attacks) for (const h of a.hits) if ((h.box || a.box) === by('shieldWall').box) expect.ok(h.tell === 'shield', `${a.id}: a shield blow is told on the shield`);
+    expect.ok(MODEL_DEFS.kingsBlade.shieldTell && ['rimStrike', 'shieldBurns'].every(id => by(id).hits[0].tell === 'shield'), 'its shield blows are told on the shield');
+  });
+  test('Still Mere: the Oath Guard answers a blow to its front, breaks to a heavy, and Corvel Burns falters', () => {
+    start();
+    const e = blade(), p = Game.player;
+    for (const z of Game.zones) if (z.id !== 'zone-blade') { z.gate.open = true; z.beaten = true; }
+    sim.place(e.x - 2.4, e.z, e.y); p.yaw = Math.PI / 2; p.hp = p.maxHp = 1e6; e.wake?.(); sim.step(0.2);
+    const blow = id => ({ damage: 20, knock: 1, poise: 10, postureDmg: 4, attackId: id, hitstop: 0.05 });
+    const stance = id => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); e.beginAttack(e.attackById(id)); e.stateTime = 0.5; e.posture = 0; };
+    stance('oathGuard');
+    let hp = e.hp, r = e.takeHit(blow('light'), p);
+    expect.ok(r.blocked && e.hp === hp && e.attack.id === 'theAnswer' && e.state === ES.WINDUP, `a light blow is turned and answered (${e.attack && e.attack.id})`);
+    stance('oathGuard'); hp = e.hp; r = e.takeHit(blow('heavy'), p);
+    expect.ok(r.broke && e.state === ES.BROKEN && e.hp < hp, `a heavy breaks the stance, and lands (${e.state})`);
+    sim.seconds(0.6, 6);
+    const W = new THREE.Vector3(); e.rig.weapon.getWorldDirection(W);
+    expect.ok(W.y < -0.75, `broken, it kneels with the sword planted point down (${W.y.toFixed(2)})`);
+    e.setState(ES.CHASE); stance('oathGuard'); hp = e.hp; r = e.takeHit(blow('heavy'), p);
+    expect.ok(!r.broke && !r.blocked && e.hp < hp && e.state === ES.WINDUP, `just up from a break, a heavy only lands: a break is a moment, not a loop (${e.state})`);
+    e.sinceBreak = Infinity; stance('oathGuard'); hp = e.hp;
+    r = e.takeHit(blow('light'), { x: e.x - Math.sin(e.yaw) * 2, z: e.z - Math.cos(e.yaw) * 2 });
+    expect.ok(!r.blocked && e.hp < hp && e.attack.id === 'oathGuard', 'from behind, the blow lands');
+    stance('corvel');
+    for (let i = 0; i < 2; i++) e.takeHit(blow('light'), p);
+    expect.ok(e.state === ES.WINDUP && e.attack.id === 'corvel', 'two blows: the torch still rises');
+    r = e.takeHit(blow('light'), p);
+    expect.ok(r.broke && e.state === ES.BROKEN, 'the third, and the memory refuses: it kneels, open');
+    e.setState(ES.CHASE); stance('rimStrike'); e.stateTime = 0.1; sim.seconds(0.15, 6);
+    expect.ok(e.state === ES.WINDUP && e.rig.shieldGlow && e.rig.shieldGlow.visible && !e.rig.warnGlow.visible, 'a shield blow\'s wind-up glows on the shield, not the sword');
   });
   test('Still Mere: the Drowned hold the court, and nothing of the old road is left', () => {
     const L = A.LEVEL_14, ids = new Set([...L.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...L.dispersed.map(s => s.enemy)]);
@@ -53,8 +84,8 @@
     for (const z of Game.zones) if (z !== zone) { z.gate.open = true; z.beaten = true; }   // the mere, won
     sim.place(e.x - 6, e.z, e.y); p.yaw = Math.PI / 2; p.hp = p.maxHp = 1e6; e.wake?.(); sim.step(0.5);
     e.hp = e.def.hp * 0.45; sim.step(0.5); sim.until(() => e.state !== ES.PHASE && e.def.phaseId === 'emberWorn', 12);
-    let opened = null; sim.until(() => (opened = e.attack && e.attack.id) === 'emberLeap', 4);
-    expect.ok(opened === 'emberLeap', `the phase opens with the Ember Leaps (${opened})`);
+    let opened = null; sim.until(() => (opened = e.attack && e.attack.id) === 'torchTaken', 4);
+    expect.ok(opened === 'torchTaken', `the phase opens with the Torch Taken Up (${opened})`);
     expect.ok(e.def.phaseId === 'emberWorn' && e.def.name === 'The King\'s Blade, Ember-Worn', `past half the Ember shows (${e.def.phaseId})`);
     for (let i = 0; i < 6 && e.alive(); i++) { e.deplete(); sim.step(1); sim.until(() => e.state !== ES.PHASE && !e.invulnerable(), 20); }
     sim.until(() => Game.complete, 10);
@@ -63,7 +94,7 @@
     A.finale.cancelEnding();
     if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);   // the Levels menu's mark
   });
-  test('Still Mere: the King\'s Blade strikes the player in a fair fight, and its shield turns a blow from the front', () => {
+  test('Still Mere: the King\'s Blade strikes the player in a fair fight, and its shield takes a blow from the front', () => {
     start();
     const e = blade(), p = Game.player;
     for (const z of Game.zones) if (z.id !== 'zone-blade') { z.gate.open = true; z.beaten = true; }

@@ -238,7 +238,14 @@ function validateData({ visual = true } = {}) {
         `${tag}: a hit's step needs from (0 to 1 of its wind-up), speed (m/s, 0 or more) and side (m/s, + to its left).`);
       if ('blink' in h) need(h.blink && num(h.blink.from) && h.blink.from >= 0 && h.blink.from < 1 && (num(h.blink.dist) || num(h.blink.back)) && (!('time' in h.blink) || (num(h.blink.time) && h.blink.time > 0)) && !h.leap,
         `${tag}: a hit's blink needs from (0 to 1 of its wind-up) and dist (m before the player) or back (m away), optionally time (s); not with a leap.`);
-      if ('damage' in h) need(num(h.damage) && h.damage > 0, `${tag}: a hit's damage must be a number above 0.`);   // v5.9: overrides the attack's
+      if ('damage' in h) need(num(h.damage) && h.damage > 0, `${tag}: a hit's damage must be a number above 0.`);
+      // Pass 55 (the King's Blade): a counter stance through the wind-up (js/enemy.js takeHit), and a wind-up that falters.
+      if ('counter' in h) need(h.counter && typeof h.counter.answer === 'string' && (!('arc' in h.counter) || (num(h.counter.arc) && h.counter.arc > 0 && h.counter.arc <= Math.PI))
+        && (!('from' in h.counter) || (num(h.counter.from) && h.counter.from >= 0 && h.counter.from < 1))
+        && (!('breakers' in h.counter) || (Array.isArray(h.counter.breakers) && h.counter.breakers.every(x => typeof x === 'string'))) && !h.falter,
+        `${tag}: a hit's counter needs answer (an attack id), optionally arc (rad), from (0 to 1 of its wind-up) and breakers (player attack ids); not with falter.`);
+      if ('falter' in h) need(h.falter && Number.isInteger(h.falter.hits) && h.falter.hits > 0, `${tag}: a hit's falter needs hits (a whole number above 0).`);
+      if ('tell' in h) need(h.tell === 'shield', `${tag}: a hit's tell can only be 'shield' (its wind-up glows on the model's shieldTell).`);   // v5.9: overrides the attack's
       if ('sigil' in h) need(num(h.sigil) && h.sigil > 0, `${tag}: a hit's sigil is the radius (m) of the rune drawn where it strikes.`);
       if (h.leap && 'back' in h.leap) need(num(h.leap.back) && h.leap.back > 0, `${tag}: a hit's leap.back must be metres above 0.`);
       if ('abort' in h) need(h.abort && num(h.abort.at) && h.abort.at > 0 && h.abort.at < 1 && num(h.abort.beyond) && typeof h.abort.into === 'string',
@@ -254,7 +261,11 @@ function validateData({ visual = true } = {}) {
     const aidList = new Set(d.attacks.map(a => a && a.id));   // follow-ups and aborts name attacks of the same enemy
     for (const a of d.attacks) if (a) {
       for (const f of a.followUps || []) need(aidList.has(f.attack), `Enemy "${d.id}" attack "${a.id}": follow-up "${f.attack}" is not one of its attacks.`);
+      for (const h of a.hits || []) if (h.counter) need(aidList.has(h.counter.answer) && h.counter.answer !== a.id, `Enemy "${d.id}" attack "${a.id}": counter answer "${h.counter.answer}" is not another of its attacks.`);
+      for (const h of a.hits || []) if (h.counter) need(!!(d.posture || d.guard || d.stagger), `Enemy "${d.id}" attack "${a.id}": a counter breaks the stance, so the enemy needs posture, guard or stagger.`);
+      for (const h of a.hits || []) if (h.falter) need(!!d.posture, `Enemy "${d.id}" attack "${a.id}": a falter breaks its posture, so the enemy needs posture.`);
       for (const h of a.hits || []) if (h.abort) need(aidList.has(h.abort.into), `Enemy "${d.id}" attack "${a.id}": abort into "${h.abort.into}" is not one of its attacks.`);
+      if (visual && (a.hits || []).some(h => h.tell === 'shield')) { const M = d.model && KIT.resolve(d.model); need(!!(M && M.shieldTell), `Enemy "${d.id}" attack "${a.id}": a shield tell needs a model with shieldTell.`); }
     }
     need(typeof d.id === 'string' && !ids.has(d.id), `Enemy "${d.name}": missing or duplicate id "${d.id}".`);
     ids.add(d.id);
@@ -286,6 +297,10 @@ function validateData({ visual = true } = {}) {
     if ('deathFade' in d) need(num(d.deathFade) && d.deathFade > 1, `Enemy "${d.id}": deathFade must be a number of seconds above 1.`);
     if ('holyLight' in d) need(d.holyLight && [d.holyLight.color, d.holyLight.core].every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffff),
       `Enemy "${d.id}": holyLight needs a color and a core colour (js/holy.js).`);   // v7.50.0 (the Kindling Tree)
+    // Pass 55 (the King's Blade): its own still pose while broken (js/attack-anim.js applyKeyPose).
+    if ('brokenPose' in d) need(d.posture && d.brokenPose && typeof d.brokenPose === 'object' && Object.entries(d.brokenPose).every(([k, v]) =>
+      ['crouch', 'lean', 'kneel'].includes(k) ? num(v) && Math.abs(v) <= 1.5 : Array.isArray(v) && v.length === 3 && v.every(x => num(x) && Math.abs(x) <= 4)),
+      `Enemy "${d.id}": brokenPose is a key pose (bone: [x, y, z] rad; crouch, lean, kneel numbers), for a boss with posture.`);
     if ('rooted' in d) need(typeof d.rooted === 'boolean', `Enemy "${d.id}": rooted must be true or false.`);   // pass 50 (the Kindling Tree)
     need(!('tether' in d), `Enemy "${d.id}": tether belongs in a phase (a later phase without one lets it go).`);   // pass 42
     if ('echoColor' in d) need(Number.isInteger(d.echoColor) && d.echoColor >= 0 && d.echoColor <= 0xffffff, `Enemy "${d.id}": echoColor must be a colour (0xrrggbb).`);   // pass 44

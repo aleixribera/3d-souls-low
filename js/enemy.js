@@ -766,6 +766,22 @@ class Enemy {
     this.setState(ES.BROKEN);
     return true;
   }
+  // A hit's `counter` (pass 55): what a blow from `from` with the player's attack `attackId` does to this wind-up:
+  // 'turn' (turned and answered), 'break' (a breaker: the stance breaks) or null (no stance, or not from its front).
+  // multiplayer.hit asks the same, so the striker's own client shows a turned blow as blocked.
+  counterAgainst(from, attackId) {
+    const W = this.state === ES.WINDUP && this.attack ? this.attack.hits[this.hitIndex] : null;
+    if (!W || !W.counter || this.stateTime < W.startup * (W.counter.from || 0)
+        || Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) >= (W.counter.arc ?? CONFIG.enemy.counterArc)) return null;
+    const G = this.def.guard || this.baseDef.guard;   // a phase that drops the guard mid-wind-up keeps its breakers
+    return (W.counter.breakers || (G && G.breakers) || []).includes(attackId) ? 'break' : 'turn';
+  }
+  // Broken at once, its posture full (a counter stance broken, a faltering wind-up). Returns true (it broke).
+  breakNow() {
+    if (this.def.posture) this.posture = this.def.posture.max;
+    this.hitbox = null; this.crack = 1; this.setState(ES.BROKEN);
+    return true;
+  }
   // A successful parry ends the current attack and leaves the enemy open. Returns true on a posture break.
   getParried() {
     this.hitbox = null;
@@ -794,6 +810,23 @@ class Enemy {
     }
     if (this.invulnerable()) return { broke: false, died: false };
     const def = this.def, P = def.posture;
+    // A hit's `counter` (pass 55, the King's Blade): through its wind-up (from `from` of it) it stands behind its shield;
+    // a blow from within `arc` of its front is turned and answered at once with the attack `answer`, and a heavy blow
+    // (the guard's breakers) breaks the stance: the blow lands and it is open (BROKEN). Behind its arc, blows land.
+    // Just up from a break (CONFIG.enemy.postureRest), a breaking blow only lands: a break is a moment, not a loop.
+    const W = this.state === ES.WINDUP ? this.attack.hits[this.hitIndex] : null, C = this.counterAgainst(from, strike.attackId);
+    if (C === 'break' && this.sinceBreak >= CONFIG.enemy.postureRest.time) {
+      this.hp = Math.max(0, this.hp - strike.damage); this.struckTime = 0;
+      if (this.hp <= 0 && this.outlast()) return { broke: false, died: false };
+      if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { broke: false, died: true }; }
+      return { broke: this.breakNow(), died: false };
+    }
+    if (C === 'turn') {
+      this.kx += kx * 0.2; this.kz += kz * 0.2; this.tint = 0.3; this.blockTime = 0;
+      events.emit('enemyCounter', { enemy: this, attack: this.attack });
+      this.beginAttack(this.attackById(W.counter.answer));
+      return { broke: false, died: false, blocked: true };
+    }
     if (this.guarding() && Math.abs(angDiff(Math.atan2(from.x - this.x, from.z - this.z), this.yaw)) < def.guard.arc)
       return this.blockHit(strike, kx, kz);
     this.hp = Math.max(0, this.hp - strike.damage);   // v5.2: no bonus while kneeling; the reward is the execution
@@ -805,6 +838,12 @@ class Enemy {
       // Bosses ignore interrupts. Every landed hit builds posture; one within `chainGap` s of the last builds `chainMul` times more.
       const chained = this.chainTime <= P.chainGap;
       this.chainTime = 0;
+      // A hit's `falter` (pass 55, the King's Blade): `hits` blows landed through its wind-up and it breaks off, open.
+      if (W && W.falter) {
+        const key = this.attackNo * 64 + this.hitIndex;
+        if (this.falterKey !== key) { this.falterKey = key; this.falterHits = 0; }
+        if (++this.falterHits >= W.falter.hits && this.sinceBreak >= CONFIG.enemy.postureRest.time) return { broke: this.breakNow(), died: false };
+      }
       if (this.in('unaware') || this.state === ES.DORMANT) this.setState(ES.CHASE);
       return { broke: this.addPosture(strike.postureDmg * (chained ? P.chainMul : 1)), died: false };
     }
@@ -898,8 +937,9 @@ class Enemy {
         r.armR.rotation.set(lerp(-0.4, -2.8, k), 0, -1.1 * k); r.armL.rotation.set(lerp(-0.1, 0.6, k), 0, 0.6 * k); r.head.rotation.x = -0.4 * k; break;
       }
       case ES.BROKEN: {
-        // Sinks to one knee, club on the floor, then hauls itself back up.
+        // Sinks to one knee, club on the floor, then hauls itself back up; a boss's own `brokenPose` (pass 55) instead.
         const T = (d.posture || d.guard || d.stagger).breakTime, k = ease(tt / 0.4) * (1 - ease((tt - T + 0.6) / 0.6));
+        if (d.brokenPose) { applyKeyPose(r, d.brokenPose, k); break; }
         r.kneel(k); r.lean(0.3 * k);
         r.armR.rotation.x = lerp(-0.4, 0.1, k); r.weapon.rotation.x = lerp(0.5, 1.4, k); r.head.rotation.x = 0.4 * k;
         r.spin.rotation.z = Math.sin(tt * 5) * 0.04 * k; break;
@@ -922,7 +962,10 @@ class Enemy {
       case ES.GONE: r.setOpacity(0); r.root.visible = false; break;
       case ES.DEAD: { const fade = d.deathFade || E.deathFade; deathPose(r, tt, fade); r.root.visible = tt < fade; break; }
     }
-    if (this.guarding()) { r.armL.rotation.x = -0.75; r.armL.rotation.z = -0.25; }   // shield held up in front
+    if (this.guarding()) {   // shield held up in front: a model's own `guardArm` (pass 55), or the old raised arm
+      if (r.guardArm) for (const b in r.guardArm) { const g = r.guardArm[b], bone = r.bones ? r.bones[b] : r[b]; if (bone) bone.rotation.set(g[0], g[1], g[2]); }
+      else { r.armL.rotation.x = -0.75; r.armL.rotation.z = -0.25; }
+    }
     // Blend idle personality in and out so aggro never pops.
     r.idleW += ((IDLE_BLEND[this.state] || 0) - r.idleW) * (1 - Math.exp(-CONFIG.fx.idleBlendRate * ctx.dt));
     if (this.alive() && this.state !== ES.DORMANT && !this.training) this.idleLayer(r, ctx, r.idleW);
@@ -942,7 +985,7 @@ class Enemy {
       r.haftW += ((HAFT_HELD[this.state] ? 1 : 0) - r.haftW) * (1 - Math.exp(-CONFIG.fx.haftBlendRate * ctx.dt));
       r.holdHaft(r.haftW);
     }
-    r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR);   // red: parryable; blue: cannot be parried (this hit)
+    r.setWarning(warn, canParryHit(a, this.hitIndex) ? WARN_COLOR : ROLL_ONLY_COLOR, warn > 0 && a.hits[this.hitIndex].tell === 'shield');   // red: parryable; blue: cannot be parried (this hit); on the shield when the shield strikes
     if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * 1.6);
     else if (this.execReady && this.state === ES.BROKEN) r.setTint(EXEC_CUE_COLOR, CONFIG.execution.cueGlow * (0.6 + 0.4 * Math.sin(ctx.t * Math.PI * 2 * CONFIG.execution.cuePulse)));   // can be executed
     else r.setTint(HIT_COLOR, this.tint * 0.8);
