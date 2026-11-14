@@ -10,7 +10,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   judge 51 vs Hollis 51. Agathe (pass 53) and the Kindling Tree also await Aleix. Track A's bosses 7-14 are done.
 - Pass 33 (v7.56.0): every preset draws native (`qualityDraw`, `js/visuals.js`); numbers:
   `git show v7.56.0:docs/render-scale-v7.56.0.md`. In-page `Graphics`, `High`, `Low performance`.
-- Track B (pass 56, v7.80.0): item 10 pass 2, done (leftovers: BACKLOG). Practice's Speed (frames
+- Track B (pass 56, v7.80.1): item 10 pass 2, done (leftovers: BACKLOG). Practice's Speed (frames
   `docs/scorecard/practice-speed-*.png`); Varn, Oswin and pass 55's King's Blade re-timed into the band (SKILLED
   alone: every boss 0.00-0.11 falls at fight 1, 0.01-0.12 at 11); curve rise 0.09, scale 6: runs reach fight 12 with
   no abilities, 19 with `KIT=strong` (`docs/scorecard/rush-1x-pass56.txt`).

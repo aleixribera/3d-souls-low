@@ -10,7 +10,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 function options(raw, denied = false) {
   const context = vm.createContext({
-    CONFIG: { input: { buffer: 0.2 }, VISUALS: { defaultQuality: 'high', quality: { low: {}, high: {}, ultra: {} } } },
+    CONFIG: { input: { buffer: 0.2 }, practice: { fights: [1, 5, 10] }, VISUALS: { defaultQuality: 'high', quality: { low: {}, high: {}, ultra: {} } } },
     clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
     localStorage: { getItem() { if (denied) throw new Error('Storage denied'); return raw; } },
     performance: { now: () => 1000 }, events: { emit() {} },
@@ -26,6 +26,9 @@ assert.equal(options('{"v":2,"volume":8}').settings.volume, 8, 'the migration ru
 assert.ok(!('hitboxes' in defaults) && !('fps' in defaults) && !('screenShake' in defaults));
 for (const raw of ['null', '[]', '9', '"text"', '{broken']) assert.deepEqual(options(raw).settings, defaults);
 assert.deepEqual(options(null, true).settings, defaults, 'refused storage keeps usable defaults');
+assert.equal(defaults.practiceFight, 1, "Practice's Speed starts at the base pace");
+assert.equal(options('{"practiceFight":10}').settings.practiceFight, 10, "a saved Speed from the list stays");
+for (const f of [7, '10', -1, null]) assert.equal(options(JSON.stringify({ practiceFight: f })).settings.practiceFight, 1, `a Speed off the list (${f}) falls back to 1`);
 const corrupt = options(JSON.stringify({ sensitivity: 'fast', hudScale: null, volume: {}, invert: 'false',
   fps: 1, hitboxes: [], graphics: 'constructor', cameraMotion: null, screenShake: 'off', unknown: 'ignored' })).settings;
 assert.deepEqual(corrupt, defaults, 'incorrect types and unknown keys cannot poison options');
